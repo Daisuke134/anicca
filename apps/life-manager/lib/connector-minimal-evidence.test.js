@@ -36,8 +36,9 @@ test("verified registration becomes one durable Calendar PNG Telegram applied bu
     async record(input) {
       calls.push(["evidence-record", input]);
       assert.equal(input.screenshot, png);
+      const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${pngSha}`).digest("hex");
       return Object.freeze({
-        external_receipt_ref: `provider-receipt://luma/${"a".repeat(64)}`,
+        external_receipt_ref: `provider-receipt://luma/${receiptId}`,
         artifact_ref: `object://sha256/${pngSha}`,
       });
     },
@@ -138,7 +139,7 @@ function peatixFixture(options = {}) {
     async findConnectorEvents(input) { calls.push(["calendar-read", input]); return reads++ === 0 ? [] : [receipt]; },
     async createConnectorEvent(input) { calls.push(["calendar-create", input]); return receipt; },
   };
-  const evidenceStore = options.evidenceStore || { async record(input) { calls.push(["evidence-record", input]); return { external_receipt_ref: `provider-receipt://peatix/${"b".repeat(64)}`, artifact_ref: `object://sha256/${pngSha}` }; } };
+  const evidenceStore = options.evidenceStore || { async record(input) { calls.push(["evidence-record", input]); const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${pngSha}`).digest("hex"); return { external_receipt_ref: `provider-receipt://peatix/${receiptId}`, artifact_ref: `object://sha256/${pngSha}` }; } };
   const chain = createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar, calendarId: "primary", telegramTarget: "private-target", peatixEvidenceStore: evidenceStore, now: () => new Date("2026-08-07T08:30:00.000Z"), sendMessage: options.sendMessage || (async (message, telegram) => { calls.push(["telegram-message", message, telegram]); return { messageId: 9101 }; }), sendPhoto: options.sendPhoto || (async (bytes, telegram) => { calls.push(["telegram-photo", bytes, telegram]); return { messageId: 9102 }; }) });
   let pageUrl = options.pageUrl || "https://peatix.com/event/5075819/ticket";
   const page = {
@@ -164,6 +165,131 @@ function peatixFixture(options = {}) {
 function bundleFiles(stateDir) {
   try { return fs.readdirSync(path.join(stateDir, "applied-bundles")); } catch { return []; }
 }
+
+function checkpointFiles(stateDir) {
+  try { return fs.readdirSync(path.join(stateDir, "evidence", "checkpoints")); } catch { return []; }
+}
+
+function recoveryStore(png, calls, options = {}) {
+  const artifactSha = createHash("sha256").update(png).digest("hex");
+  return { async record(input) { calls.push(["evidence-record", input]); const receiptHash = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${artifactSha}`).digest("hex"); return { external_receipt_ref: `provider-receipt://peatix/${receiptHash}`, artifact_ref: `object://sha256/${artifactSha}` }; },
+    async readExternalReceipt(tenant, ref) { calls.push(["evidence-read-receipt", tenant, ref]); if (options.missingReceipt) throw new Error("missing receipt"); return { kind: "provider_response", provider_id: String(ref).split("/").at(-1) }; },
+    async readArtifact(tenant, ref) { calls.push(["evidence-read-artifact", tenant, ref]); return options.artifact || png; } };
+}
+
+function recoveryCandidate() {
+  return peatixCandidate({ title: "Private Title", venue_name: "Private Venue", ticket_id: "private-ticket" });
+}
+
+function checkpointValue(fixture, overrides = {}) {
+  const observedAt = "2026-08-07T08:30:00.000Z"; const eventRef = fixture.candidate.event_ref; const artifactSha = fixture.pngSha;
+  const receiptId = createHash("sha256").update(`dais-local\n${eventRef}\n${observedAt}\n${artifactSha}`).digest("hex");
+  const urlSha = createHash("sha256").update(fixture.candidate.canonical_url).digest("hex");
+  return { schema_version: 1, stage: "evidence", provider: "peatix", event_ref: eventRef, canonical_url_sha256: urlSha, provider_status: "registered", provider_receipt_ref: `provider-receipt://peatix/${receiptId}`, artifact_ref: `object://sha256/${artifactSha}`, artifact_sha256: artifactSha, observed_at: observedAt, ...overrides };
+}
+
+function checkpointPathFor(fixture) {
+  const urlSha = createHash("sha256").update(fixture.candidate.canonical_url).digest("hex");
+  const identity = createHash("sha256").update(`peatix\n${fixture.candidate.event_ref}\n${urlSha}`).digest("hex");
+  return path.join(fixture.stateDir, "evidence", "checkpoints", `${identity}.json`);
+}
+function rawPointer(fixture, raw) {
+  const file = checkpointPathFor(fixture); fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 }); fs.writeFileSync(file, `${raw}\n`, { mode: 0o600 });
+}
+function symlinkPointer(fixture, raw, parent) {
+  const file = checkpointPathFor(fixture); const outside = fs.mkdtempSync(path.join(os.tmpdir(), "connector-checkpoint-outside-")); const target = path.join(outside, path.basename(file)); fs.writeFileSync(target, `${raw}\n`, { mode: 0o600 }); fixture.outside = outside;
+  if (parent) { fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 }); fs.rmSync(path.dirname(file), { recursive: true, force: true }); fs.symlinkSync(outside, path.dirname(file), "dir"); } else { fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 }); fs.symlinkSync(target, file); }
+}
+
+test("initial provider record rejects a forged receipt identity before pointer and downstream effects", async () => {
+  const fixture = peatixFixture({ evidenceStore: { async record(input) { fixture.calls.push(["evidence-record", input]); return { external_receipt_ref: `provider-receipt://peatix/${"f".repeat(64)}`, artifact_ref: `object://sha256/${fixture.pngSha}` }; } } });
+  try {
+    await assert.rejects(fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+    for (const name of ["calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) assert.equal(fixture.calls.filter(([callName]) => callName === name).length, 0, name);
+    assert.equal(checkpointFiles(fixture.stateDir).length, 0);
+  } finally { fixture.cleanup(); }
+});
+
+test("checkpoint corruption and symlink matrix fails before every downstream effect", async () => {
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 6)]);
+  const cases = [
+    ["invalid-json", (f, p) => rawPointer(f, "{")],
+    ["extra-key", (f, p) => rawPointer(f, JSON.stringify({ ...p, extra: "reject" }))],
+    ["wrong-provider", (f, p) => rawPointer(f, JSON.stringify({ ...p, provider: "luma" }))],
+    ["wrong-event", (f, p) => rawPointer(f, JSON.stringify({ ...p, event_ref: "peatix-event://event/999" }))],
+    ["wrong-url-hash", (f, p) => rawPointer(f, JSON.stringify({ ...p, canonical_url_sha256: "e".repeat(64) }))],
+    ["forged-receipt", (f, p) => rawPointer(f, JSON.stringify({ ...p, provider_receipt_ref: `provider-receipt://peatix/${"f".repeat(64)}` }))],
+    ["malformed-receipt-ref", (f, p) => rawPointer(f, JSON.stringify({ ...p, provider_receipt_ref: "provider-receipt://peatix/not-a-hash" }))],
+    ["malformed-artifact-ref", (f, p) => rawPointer(f, JSON.stringify({ ...p, artifact_ref: "object://sha256/not-a-hash" }))],
+    ["artifact-ref-sha", (f, p) => rawPointer(f, JSON.stringify({ ...p, artifact_ref: `object://sha256/${"a".repeat(64)}` }))],
+    ["missing-receipt", (f, p) => rawPointer(f, JSON.stringify(p)), { missingReceipt: true }],
+    ["internally-consistent-non-png", (f, p) => { const bytes = Buffer.alloc(6_008, 5); const sha = createHash("sha256").update(bytes).digest("hex"); const receipt = createHash("sha256").update(`dais-local\n${f.candidate.event_ref}\n${p.observed_at}\n${sha}`).digest("hex"); rawPointer(f, JSON.stringify({ ...p, provider_receipt_ref: `provider-receipt://peatix/${receipt}`, artifact_ref: `object://sha256/${sha}`, artifact_sha256: sha })); }, { artifact: Buffer.alloc(6_008, 5) }],
+    ["artifact-bytes", (f, p) => rawPointer(f, JSON.stringify(p)), { artifact: Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 5)]) }],
+    ["file-symlink", (f, p) => symlinkPointer(f, JSON.stringify(p), false)],
+    ["parent-symlink", (f, p) => symlinkPointer(f, JSON.stringify(p), true)],
+  ];
+  for (const [name, setup, storeOptions = {}] of cases) {
+    const audit = []; const store = recoveryStore(png, audit, storeOptions); const fixture = peatixFixture({ png, evidenceStore: store });
+    try {
+      setup(fixture, checkpointValue(fixture));
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }), undefined, name);
+      for (const effect of ["set-content", "goto", "url", "evaluate", "screenshot", "evidence-record", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) assert.equal(fixture.calls.filter(([callName]) => callName === effect).length, 0, `${name}:${effect}`);
+      assert.equal(bundleFiles(fixture.stateDir).length, 0, name);
+    } finally { fixture.cleanup(); if (fixture.outside) fs.rmSync(fixture.outside, { recursive: true, force: true }); }
+  }
+});
+
+test("evidence checkpoint recovers PNG/provider receipt without render, screenshot, or record", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-evidence-recovery-")); const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 9)]); const firstCalls = [];
+  const evidenceStore = recoveryStore(png, firstCalls); const failingCalendar = { async findConnectorEvents() { firstCalls.push(["calendar-read"]); throw new Error("Calendar unavailable"); }, async createConnectorEvent() { firstCalls.push(["calendar-create"]); throw new Error("must not create"); } };
+  const first = createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar: failingCalendar, calendarId: "primary", telegramTarget: "private-target", peatixEvidenceStore: evidenceStore, now: () => new Date("2026-08-07T08:30:00.000Z"), sendMessage: async () => { throw new Error("must not send"); }, sendPhoto: async () => { throw new Error("must not send"); } });
+  const firstPage = { async goto() {}, url() { return "about:blank"; }, async evaluate() { return true; }, async screenshot() { firstCalls.push(["screenshot"]); return png; } };
+  await assert.rejects(first.completeEvidence({ provider: "peatix", candidate: recoveryCandidate(), page: firstPage, providerState: { status: "registered" } }));
+  assert.equal(firstCalls.filter(([name]) => name === "evidence-record").length, 1);
+  assert.equal(firstCalls.filter(([name]) => name === "screenshot").length, 1);
+  assert.equal(checkpointFiles(stateDir).length, 1);
+  const checkpointFile = path.join(stateDir, "evidence", "checkpoints", checkpointFiles(stateDir)[0]);
+  const checkpoint = JSON.parse(fs.readFileSync(checkpointFile, "utf8"));
+  assert.deepEqual(Object.keys(checkpoint).sort(), ["artifact_ref", "artifact_sha256", "canonical_url_sha256", "event_ref", "observed_at", "provider", "provider_receipt_ref", "provider_status", "schema_version", "stage"]);
+  assert.equal(checkpoint.stage, "evidence");
+  assert.equal(fs.statSync(checkpointFile).mode & 0o777, 0o600);
+  assert.doesNotMatch(JSON.stringify(checkpoint), /Private Title|Private Venue|private-ticket|private-target|peatix\.com|6536845|PNG/i);
+
+  const secondCalls = [];
+  const calendarReceipt = { id: "google-recovery", htmlLink: "https://www.google.com/calendar/event?eid=recovery" };
+  let reads = 0;
+  const second = createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar: { async findConnectorEvents() { secondCalls.push(["calendar-read"]); return reads++ === 0 ? [calendarReceipt] : [calendarReceipt]; }, async createConnectorEvent() { secondCalls.push(["calendar-create"]); throw new Error("duplicate Calendar"); } }, calendarId: "primary", telegramTarget: "private-target", peatixEvidenceStore: recoveryStore(png, secondCalls), now: () => new Date("2026-08-07T08:31:00.000Z"), sendMessage: async () => ({ messageId: 1 }), sendPhoto: async () => ({ messageId: 2 }) });
+  const noEffectsPage = { async goto() { throw new Error("render"); }, url() { throw new Error("render"); }, async evaluate() { throw new Error("render"); }, async screenshot() { throw new Error("screenshot"); } };
+  const bundle = await second.completeEvidence({ provider: "peatix", candidate: recoveryCandidate(), page: noEffectsPage, providerState: { status: "registered" } });
+  assert.equal(bundle.status, "applied_bundle");
+  assert.equal(secondCalls.filter(([name]) => name === "evidence-read-receipt").length, 1);
+  assert.equal(secondCalls.filter(([name]) => name === "evidence-read-artifact").length, 1);
+  for (const name of ["screenshot", "evidence-record", "calendar-create"]) assert.equal(secondCalls.filter(([callName]) => callName === name).length, 0, name);
+  fs.rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("Calendar create/readback crash recovery reuses the one idempotent event", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-calendar-recovery-"));
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 8)]); const calls = []; const store = recoveryStore(png, calls);
+  const receipt = { id: "google-crash-recovery", htmlLink: "https://www.google.com/calendar/event?eid=crash-recovery" };
+  let phase = "crash"; let created = false;
+  const calendar = {
+    async findConnectorEvents() { calls.push(["calendar-read", phase]); if (phase === "crash") return created ? (() => { throw new Error("readback crashed"); })() : []; if (phase === "deleted") return []; return [receipt]; },
+    async createConnectorEvent() { calls.push(["calendar-create"]); created = true; return receipt; },
+  };
+  const chain = createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar, calendarId: "primary", telegramTarget: "private-target", peatixEvidenceStore: store, now: () => new Date("2026-08-07T08:30:00.000Z"), sendMessage: async () => ({ messageId: 10 }), sendPhoto: async () => ({ messageId: 11 }) });
+  const page = { async goto() {}, url() { return "about:blank"; }, async evaluate() { return true; }, async screenshot() { return png; } };
+  await assert.rejects(chain.completeEvidence({ provider: "peatix", candidate: recoveryCandidate(), page, providerState: { status: "registered" } }));
+  assert.equal(calls.filter(([name]) => name === "calendar-create").length, 1);
+  phase = "recovery";
+  const recovered = await chain.completeEvidence({ provider: "peatix", candidate: recoveryCandidate(), page, providerState: { status: "registered" } });
+  assert.equal(recovered.status, "applied_bundle");
+  assert.equal(calls.filter(([name]) => name === "calendar-create").length, 1);
+  phase = "deleted";
+  await assert.rejects(chain.completeEvidence({ provider: "peatix", candidate: recoveryCandidate(), page, providerState: { status: "registered" } }));
+  assert.equal(calls.filter(([name]) => name === "calendar-create").length, 2);
+  fs.rmSync(stateDir, { recursive: true, force: true });
+});
 
 test("Peatix evidence resets the owned page and parent-writes the receipt without setContent", async () => {
   const fixture = peatixFixture({ setContentNeverSettles: true });
