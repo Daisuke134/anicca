@@ -6783,7 +6783,13 @@ actual Calendar busy inventoryと同じPeatix discoveryを使うvalue-free/no-su
 
 次plan `docs/superpowers/plans/2026-08-10-connector-peatix-known-submit-control.md`はHarness/testの2 filesだけ、production +8〜18 LOC、tests +25〜45 LOCのsoft targetとする。exact Peatix ID、一意性、enabled、required-answer form exactly 1を全て満たすcontrolだけを既存`submittable`へ通し、generic rule、required優先、parent enforcement、same-page duplicate-effect guardは変更しない。Item 10B/14/19は未完、scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗273。これ以外の残TODO一覧は履歴）
+### O1B-25進捗274（known Peatix submit first GREEN / fresh review fix-first）
+
+LunaのTDD初回REDはfocused 30/31で、required completion後も`input#form-submit-button[type=button]`のpublic `value` labelが欠落しsubmit候補0になる一点だけを再現した。初回GREENはfocused 31/31、Luna adjacent 82/82、Sol expanded 103/103、両JS syntax、diff checkが全てPASS。差分はHarness production +5/-2、test +36で、exact ID/count、enabled、required-answer form exactly 1を満たす既知controlへ既存`submittable`を付けた。
+
+fresh Sol reviewはImportant 2件で`fix-first`。第一に、共通inspectorのPeatix特例がprovider/domainへ束縛されず、`provider=luma`でも同DOM IDがsubmit候補になった。第二に、labelを生成できないrequired answerが観測配列から消えると、parentのpending判定が不完全なsubsetだけを見てsubmitを許可した。planを先に改訂し、特例を`provider=peatix`かつstrict `https://peatix.com/sales/event/<id>/form`へ束縛し、registryもprovider一致を要求する。さらにenabled/non-hidden required answerが一つでもsanitized controlへ表現不能なら全submitをfail closedにする。初回diffは未commit、browser/model/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用0。Item 10B/14/19は未完。
+
+### Active remaining TODO SSOT（進捗274。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
