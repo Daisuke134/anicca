@@ -1,0 +1,98 @@
+# CFO-2a2.4b Gemini Live Usage Contract Implementation Plan
+
+**Status:** READY — only active task.
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
+
+**Goal:** Convert one Gemini Live provider `usageMetadata` message into truthful, content-free CFO evidence without
+inventing a provider response ID or response model.
+
+**Architecture:** Add one pure export beside `normalizeGeminiUsageEvidence`. Reuse existing validation helpers and
+the evidence shape; add no I/O or abstraction. The verified schema receives a separate local correlation identity.
+
+**Tech Stack:** CommonJS, Node built-in `node:test`, existing ledger validators.
+
+## Global constraints
+
+- Luna owns implementation commands and exactly `apps/life-call/lib/ledger.js` plus `ledger.test.js`.
+- Sol owns review, final verification, spec closure, commit, and push.
+- At most 35 production additions and 55 test additions; two files and 90 additions total.
+- No dependency, migration, RPC/store, span lifecycle, WebSocket/server, duration estimate, scheduler, launchd, or
+  Telegram change.
+- Provider counts are facts. Provider response ID/model stay `null`; local identity stays in `local_correlation_id`.
+- `usage_sequence` is local observation order only. It is not a delta; this slice never appends or sums observations.
+
+## Task 1: Normalize one Live usage message
+
+**Interface:** `normalizeGeminiLiveUsageEvidence(message, context)` returns the exact Section 13.3 contract.
+
+- [ ] **Step 1 — write two focused tests first**
+
+Normal fixture:
+
+```js
+const message = { usageMetadata: {
+  promptTokenCount: 515, responseTokenCount: 38, totalTokenCount: 560,
+  cachedContentTokenCount: 2, thoughtsTokenCount: 5, toolUsePromptTokenCount: 1,
+}, serverContent: { outputTranscription: { text: "LIVE_OUTPUT_SENTINEL" } } };
+const context = {
+  owner_id: "u1", financial_unit_id: "life_manager_saas",
+  occurred_at: "2026-08-10T01:02:03.000Z", trace_id: "1".repeat(32),
+  request_model: "models/gemini-2.5-flash-native-audio-preview-09-2025",
+  live_session_id: "2".repeat(32), usage_sequence: 7,
+};
+```
+
+Assert one hand-written complete result: provider ID/model are null; local correlation is exact; output is `38`;
+OTel output is `43`; stream is `true`; output type is `speech`; optional fields map exactly; no `gen_ai.response.*`
+or sentinel appears; inputs are unchanged; repeated calls are deep-equal.
+
+The second test proves zero/missing optionals plus a literal invalid matrix: missing/negative/string/fractional/unsafe
+counts, output+thought overflow, invalid/missing session ID, negative/fractional sequence, wrong Live model, invalid
+owner/unit/time/trace. Every error matches `/^cfo_provider_usage_invalid:[a-z_]+$/` and omits hostile values.
+
+- [ ] **Step 2 — run RED**
+
+```bash
+node --test lib/ledger.test.js
+```
+
+Expected: existing cases pass; exactly the two new cases fail because the export is absent.
+
+- [ ] **Step 3 — add the minimum pure implementation**
+
+Reuse `plainUsageInput`, `usageString`, `providerCount`, `validUsageTimestamp`, and `usageFail`. Validate the exact
+current wire model including `models/`, local ID, observation sequence, owner/unit/time/trace. Build the result directly:
+
+```js
+provider_request_id = null;
+local_correlation_id = `live-session:${context.live_session_id}`;
+response_model = null;
+tokens.output = message.usageMetadata.responseTokenCount;
+```
+
+OTel includes operation `generate_content`, provider `gcp.gemini`, exact request model, `gen_ai.request.stream: true`,
+`gen_ai.output.type: "speech"`, provider input/output/cache/reasoning counts, address, and `443`. OTel output equals
+response plus reasoning with safe-integer validation. Emit no `gen_ai.response.*`. Export beside the existing Gemini
+normalizer.
+
+- [ ] **Step 4 — run GREEN and scope gates**
+
+```bash
+node --test lib/ledger.test.js
+npm run test:cfo
+npm test
+node --check lib/ledger.js
+git diff --check -- lib/ledger.js lib/ledger.test.js
+git diff --numstat -- lib/ledger.js lib/ledger.test.js
+```
+
+Expected: every command exits `0`; exactly two files and at most 90 additions. Return exact RED/GREEN totals and
+line counts to Sol. Do not commit or push.
+
+## Plan self-review
+
+- Coverage: exact provider mapping, truthful null identity/model, privacy, optional absence, overflow, immutability.
+- Scope: two existing pure files; no runtime or persistence.
+- Rollup: intentionally absent; sequence is observation order and repeated observations are not declared additive.
+- Placeholders: none. Model, fields, attributes, errors, commands, and limits are fixed.

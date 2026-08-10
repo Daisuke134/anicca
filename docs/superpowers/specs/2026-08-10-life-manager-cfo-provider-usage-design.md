@@ -532,9 +532,44 @@ and `git diff --check`. The env-isolated real gate returned exactly
 responses. The implementation changes exactly three files and adds 65 lines. Fresh Sol review returned `ship`.
 No production database, runtime, scheduler, launchd job, or Telegram state was changed.
 
-### 13.3 Remaining Live slices
+### 13.3 CFO-2a2.4b — pure Live usage contract
 
-- **CFO-2a2.4b:** pure Live usage normalizer; provider counts only, local identity separate, no I/O.
+`normalizeGeminiLiveUsageEvidence(message, context)` consumes one plain Live server message plus caller-supplied
+identity/context. The message must contain top-level provider `usageMetadata` with required non-negative safe-integer
+`promptTokenCount`, `responseTokenCount`, and `totalTokenCount`; cache, thoughts, and tool counts are optional. Context
+must contain the owner, fixed Life Manager financial unit, timestamp, non-zero trace ID, exact current Live wire
+request model `models/gemini-2.5-flash-native-audio-preview-09-2025`, non-zero 32-hex local session ID, and
+non-negative safe-integer observation sequence.
+
+The result reuses the evidence record shape with truthful nullability:
+
+- `provider_request_id: null`, `response_model: null`, and
+  `local_correlation_id: "live-session:<local session ID>"`;
+- provider counts preserved in `tokens`, including provider total without local recomputation;
+- `evidence_status: "provider_reported"` for the token-count provenance;
+- content-free OTel attributes with `generate_content`, `gcp.gemini`, exact request model, streaming `true`, output
+  type `speech`, provider usage counts, `generativelanguage.googleapis.com`, and port `443`;
+- no provider-response ID/model attribute, message content, audio, transcript, tool argument, unknown key, or secret.
+
+`usage_sequence` is only the local order of provider usage observations within one Live session. It does not mean a
+delta and must not be summed. Gemini's primary schema does not state whether repeated Live usage messages are
+per-turn deltas or session-cumulative. CFO-2a2.4c may preserve observations, but no Live subtotal becomes available
+until CFO-2a2.4d proves the rollup rule from real traffic or an explicit provider contract.
+
+Only this pure two-file contract is active. Soft target: `ledger.js` and `ledger.test.js`, at most 90 additions. It
+performs no I/O and changes no migration, RPC/store, span lifecycle, WebSocket, duration estimate, scheduler, launchd,
+or Telegram behavior.
+
+Acceptance:
+
+- [ ] one literal Live message maps to the exact closed result without input mutation or content leakage;
+- [ ] explicit zero and missing optional provider counts remain distinguishable;
+- [ ] unsafe/missing counts, overflow, invalid local identity/sequence/model/owner/unit/time/trace fail redacted;
+- [ ] the output and plan label sequence as observation order only and never define additive rollup semantics;
+- [ ] focused ledger, CFO, and full suites pass within two files and 90 additions.
+
+### 13.4 Remaining Live slices
+
 - **CFO-2a2.4c:** append the normalized evidence idempotently and emit one content-free span.
 - **CFO-2a2.4d:** wire the existing Live bridge, prove real message → row → span, and stop using the duration estimate
   only after provider evidence succeeds.
