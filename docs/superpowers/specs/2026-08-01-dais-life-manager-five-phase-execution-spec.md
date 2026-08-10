@@ -6915,7 +6915,11 @@ Luna初回REDはfocused 12/17で新規5件全FAIL、GREEN後は17/17、圧縮後
 
 新runner integrationはreal `runMinimalConnectorWake`のparent pre-readback `registered`とreal evidence chainを合成し、registered external state Set size 1、provider evidence record 1、Calendar create 1、cache/direct/Harness Submit function call各0、final bundle 1を四境界sequenceで実計数した。runner production変更0。最終差分はevidence production +119/-10、evidence test +106/-1、runner test +28。Luna focused evidence 16/16・runner 16/16とadjacent、Sol独立expanded 90/90、3-file syntax、diff checkがPASS。変更外baseline3件は同一。fresh Sol reviewは初回Important 3件fix後、最終`ship`。これでItem12をacceptする。次はItem13の同一event既登録readback→Submit 0→未処理candidate continuationとevery-wake Telegram positive ID。scheduleはItems13〜16完了までunloaded。
 
-### Active remaining TODO SSOT（進捗298。これ以外の残TODO一覧は履歴）
+### O1B-25進捗299（Item 13A / existing bundle disposition plan）
+
+Item13は13A exact existing-bundle readback、13B runner continuation、13C official foreground wakeへ分割する。production stateをread-only実測するとmode 0600 exact-schema bundleはLuma 2、Peatix 1で、accepted Peatix bundleはItem12 checkpoint導入前に作成済み。provider receiptのobserved_at/event_ref/artifact SHAはbundle `created_at`/refsと一致する。このまま次wakeを走らせるとcheckpoint不在のためevidence recapture/photo resend後までrunnerが既完了を識別できない。先頭13A plan `docs/superpowers/plans/2026-08-11-connector-idempotent-wake-13a.md`はminimal evidence production/testの2 filesだけ。applied bundle exact schema/file digest、provider/event/status、deterministic provider receipt、raw artifact bytes/signature/SHA、現在Calendar exact 1 ID/URLを全て再検証し、runtime-only `completion_disposition: reused`を返す。新規bundleは`created`。persisted bundle schemaは変更せず、legacy checkpoint migration、runner変更、browser/provider action、Telegram resend、schedule作用は0。Item13は13B/13Cまで未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗299。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
