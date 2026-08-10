@@ -1,0 +1,46 @@
+# Connector Peatix hidden Kana recovery plan
+
+## Goal
+
+Meetupより前のPeatixで実測した`peatix_kana_control_unavailable`三連続failureを、保存済みPeatix attendee profileを再入力しない最小変更で修復する。同じofficial wakeがPeatixを安全に完了または継続し、Meetup discoveryへ到達できる状態に戻す。
+
+## Ponytail full gate
+
+- 新module、provider abstraction、profile store、selector cache、retry、scheduleを追加しない。
+- 既存`submitPeatixOnPage`とfocused testだけを変更する。
+- private Kana値、display text、account IDをstate/log/test fixtureへ追加しない。
+- hidden fieldを強制表示・fill・clickしない。既存form validationとparent readbackを再利用する。
+
+## Live evidence
+
+- official wake `wake-c86028333ac947edb19541de`はLuma、Connpass、Peatixまで進み、Peatix三候補で同じ`peatix_kana_control_unavailable`、failure count 3、circuit-open、Telegram positive ID `11375`。Meetup audit 0、bundle delta 0、process/owned target cleanup済み。
+- 実候補三件のconfirm pageは`#confirm-form`、exact `[name="lastname_edit"]`と`[name="firstname_edit"]`を各1件持つ。
+- 両fieldは親`.field-bundle { display:none }`内で0x0。既存profile displayの編集用controlであり、required=false。
+- 三件とも`jQuery(#confirm-form).valid()`はtrue。したがって値欠落ではなく、visible-only locatorが保存済みcontrolをunavailableへ誤分類している。
+
+## TDD slice
+
+Ownership: `apps/life-manager/lib/peatix-browser-provider.js`とmatching testの2 filesだけ。Production soft target 15–30 LOC、test 50–90 LOC。
+
+RED first:
+
+1. exact family/given各1件が両方hidden、confirm form validのfixtureはKana fill 0でfinal confirmへ進み、parent registered readbackを要求する。
+2. visible exact pairは従来どおりparent-owned profile値を両方fillする。
+3. zero、片側だけ、duplicate、visibility mismatch、disabled/non-fillable visible pairは`kana_control_unavailable`でfinal click 0。
+4. hidden exact pairでもform invalidなら`confirm_validation_failed`でfinal click 0。
+
+GREEN:
+
+- exact pairのcountを先に検証する。
+- visibilityが両方trueなら既存fillを行う。
+- visibilityが両方falseならsaved valueを再入力せず既存jQuery validationへ進む。
+- visibility mismatchとidentity/count ambiguityはfail closedを維持する。
+
+## Verification
+
+- focused Peatix browser provider RED/GREEN
+- Peatix workflow、production Harness、minimal runner/productionのadjacent tests
+- changed JS syntax、`git diff --check`
+- fresh Sol review Critical 0 / Important 0
+- commit/push後、schedule unloadedのofficial foreground wake exact 1回。Peatix同safe reason解消、Meetup audit到達または次exact safe boundary、Telegram positive ID、process/target cleanupを確認する。
+
