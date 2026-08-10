@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a/1b complete; CFO-2a2b.2 pure reconciliation is next |
+| Status | ACTIVE — CFO-2a2b.1a/1b/2 complete; CFO-2a2b.3 hourly publication is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -92,7 +92,8 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       Producer commit: `82a3b349`.
 - [x] **CFO-2a2b.1b — producer boundary:** write-ahead attempt row and focused real-runner tests. Producer commits:
       `ef233a90` + `a0fe0c35`; 2 files, `+80/-6`; fresh Sol review: ship.
-- [ ] **CFO-2a2b.2 — pure reconciliation:** add the strict local attempt/usage join and immutable counts receipt.
+- [x] **CFO-2a2b.2 — pure reconciliation:** strict local attempt/usage join and immutable counts receipt. Commit
+      `ea3f87408`; 3 files, `+92/-1`; focused 7/7; CFO 297/297; fresh Sol review: ship.
 - [ ] **CFO-2a2b.3 — hourly publication:** wire the receipt into the one-hour loop and prove forced usage-persistence
       failure appears as missing coverage, never zero cost or a complete total.
 - [ ] **CFO-2a2b.4 — real E2E and close:** verify real ledgers remain append-only, run one isolated provider-boundary

@@ -3,7 +3,7 @@
 > **For Luna:** use Superpowers test-driven-development and verification-before-completion. Luna owns production/test
 > edits; Sol owns plan, review, final verification, state, commit, and push.
 
-**Status:** READY FOR LUNA — fresh Sol plan review: ship
+**Status:** COMPLETE — implementation `ea3f87408`; fresh Sol implementation review: ship
 
 **Goal:** Join validated write-ahead attempts to normalized usage completions by their shared 24-hex ID and return one
 exact frozen counts receipt. Missing persistence becomes a coverage gap, never zero usage or zero cost.
@@ -82,10 +82,21 @@ const completions = usageChain.events.filter(event => Date.parse(event.occurred_
 
 ## Verify / state
 
-- [ ] Luna runs `node --test apps/life-call/lib/cfo-local-agent-capture-reconciliation.test.js`, existing local usage
+- [x] Luna runs `node --test apps/life-call/lib/cfo-local-agent-capture-reconciliation.test.js`, existing local usage
   normalizer/chain tests, `npm run test:cfo`, full `npm test`, `node --check` on both files, `git diff --check`, and
   `git diff --numstat`; exactly three files and <=95 gross additions. The focused command and `test:cfo` must both
   execute the new test; full `npm test` remains a separate regression gate. No docs, commit, push, or live state.
-- [ ] Fresh Sol review checks count truth, historical cutover, upstream coverage, algebra, redaction, and scope. Luna
+- [x] Fresh Sol review checks count truth, historical cutover, upstream coverage, algebra, redaction, and scope. Luna
   fixes only required issues in the same files.
-- [ ] Sol independently reruns gates, updates specs, commits/pushes, and advances only to CFO-2a2b.3.
+- [x] Sol independently reruns gates, updates specs, commits/pushes, and advances only to CFO-2a2b.3.
+
+## Closure evidence
+
+- Genuine RED: 4 of 7 contract tests failed against the incomplete first implementation. GREEN: focused 7/7 and
+  existing usage normalizer/chain tests 30/30 passed.
+- After lockfile dependency restoration, durable `test:cfo` passed 297/297 and full `npm test` exited 0. Syntax and
+  diff checks passed.
+- Fresh Sol review found and closed one hostile coercion hole; all three regex paths now reject non-string IDs/hashes
+  with zero coercion-hook reads. Final review: `ship`.
+- Final scope is exactly three files, `+92/-1`; implementation `ea3f87408` is pushed. No live state changed.
+- Telegram milestone delivered with `dryRun=false`, `ok=true`, provider `messageId=11195`.
