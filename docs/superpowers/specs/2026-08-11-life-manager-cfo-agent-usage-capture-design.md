@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a/3b/4/5a/5b complete; CFO-2a2b.5c two-source cutover is next |
+| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a/3b/4/5a/5b complete; CFO-2a2b.5c1 portable numeric truth is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -115,6 +115,10 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       the Life Manager usage/attempt pair, update the real E2E from its obsolete both-ledgers-absent premise, and prove
       both source prefixes remain append-only. Do not write a bounty canary into the Life Manager source and do not
       call capture ready while either source has a named exception.
+      - [ ] **5c1:** port strict numeric/null truth to the portable Life Manager runner. Plan:
+            `2026-08-11-life-manager-cfo-portable-runner-numeric-truth.md`.
+      - [ ] **5c2:** port write-ahead attempt/completion, add/use a Life Manager-owned safe probe, and update the real
+            two-source E2E. Keep this separate so each implementation stays within three files and 100 added LOC.
 
 ## Acceptance gates
 
