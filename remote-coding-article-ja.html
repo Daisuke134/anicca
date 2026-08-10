@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iPhoneだけで開発する。ChatGPT Remoteが変えた「作る場所」</title>
+<style>
+:root[data-theme="dark"]{--bg:#0b0e0d;--surface:#121816;--surface2:#18211d;--text:#edf4ef;--muted:#a8b7af;--line:#2b3a33;--accent:#9eea65;--accent2:#d7ffbd;--shadow:rgba(0,0,0,.35)}
+:root[data-theme="light"]{--bg:#f5f7f3;--surface:#fff;--surface2:#edf4ed;--text:#152019;--muted:#526158;--line:#d5e0d7;--accent:#237a35;--accent2:#0f5420;--shadow:rgba(20,50,30,.12)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;line-height:1.95;-webkit-font-smoothing:antialiased}.theme-toggle{position:fixed;z-index:5;top:16px;right:16px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;padding:9px 13px;cursor:pointer;box-shadow:0 8px 22px var(--shadow)}.hero{min-height:620px;display:flex;align-items:flex-end;position:relative;background:linear-gradient(90deg,rgba(5,9,8,.96) 0%,rgba(5,9,8,.7) 43%,rgba(5,9,8,.15) 100%),url("remote-article-assets/remote-hero.png") center/cover}.hero-inner{width:min(1120px,calc(100% - 40px));margin:0 auto;padding:90px 0 74px}.eyebrow{color:var(--accent);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700}.hero h1{max-width:760px;font-size:clamp(2.3rem,6vw,5.2rem);line-height:1.12;letter-spacing:-.06em;margin:18px 0;color:#fff}.hero p{max-width:650px;color:#d5e2d9;font-size:1.08rem}.layout{width:min(1120px,calc(100% - 40px));margin:0 auto;display:grid;grid-template-columns:230px 1fr;gap:64px}.toc{position:sticky;top:72px;height:max-content;padding:28px 0}.toc strong{font-size:.78rem;letter-spacing:.12em;color:var(--muted)}.toc a{display:block;color:var(--muted);text-decoration:none;border-left:2px solid var(--line);padding:7px 0 7px 14px;font-size:.88rem}.toc a:hover{color:var(--accent);border-color:var(--accent)}main{max-width:760px;padding:72px 0 110px}h2{font-size:clamp(1.65rem,3vw,2.4rem);line-height:1.3;letter-spacing:-.035em;margin:70px 0 20px}h3{font-size:1.2rem;margin:42px 0 8px;color:var(--accent2)}p{margin:0 0 1.25em}ul,ol{padding-left:1.35em}li{margin:.45em 0}.lead{font-size:1.3rem;line-height:1.8;color:var(--accent2);border-left:3px solid var(--accent);padding-left:20px}.callout{background:var(--surface2);border:1px solid var(--line);padding:23px 25px;margin:30px 0;border-radius:14px}.callout strong{color:var(--accent)}figure{margin:42px 0}figure img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 14px 35px var(--shadow)}figcaption{font-size:.82rem;color:var(--muted);margin-top:10px}blockquote{margin:28px 0;padding:18px 24px;border-left:3px solid var(--accent);background:var(--surface);color:var(--muted)}.source{margin-top:55px;padding-top:24px;border-top:1px solid var(--line);font-size:.86rem;color:var(--muted)}a{color:var(--accent)}.footer{border-top:1px solid var(--line);padding:25px 0;color:var(--muted);font-size:.82rem}@media(max-width:780px){.hero{min-height:570px}.layout{display:block}.toc{position:static;padding:28px 0 0;display:flex;gap:8px;overflow:auto}.toc strong{display:none}.toc a{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:7px 12px}.hero-inner{padding-bottom:58px}main{padding-top:42px}.hero h1{font-size:2.6rem}}
+</style>
+</head>
+<body>
+<button class="theme-toggle" type="button" aria-label="テーマを切り替える">☼ / ☾</button>
+<header class="hero"><div class="hero-inner"><div class="eyebrow">Build in public / Remote coding</div><h1>iPhoneだけで開発する。<br>Remoteが変えた「作る場所」</h1><p>ChatGPTのiOSアプリから、Mac上で動くCodexへ声で指示を送る。開発が机の前の作業から、生活の中のループに変わった話。</p></div></header>
+<div class="layout">
+<nav class="toc" aria-label="目次"><strong>CONTENTS</strong><a href="#what">何が変わったか</a><a href="#how">仕組み</a><a href="#voice">音声入力</a><a href="#less-friction">摩擦が減る</a><a href="#lessons">学び</a></nav>
+<main>
+<p class="lead">以前の私は、開発を始めるために「パソコンの前に座る」という儀式を必要としていました。Remoteを使うようになって、その儀式が小さくなりました。</p>
+<h2 id="what">東京のCodexイベントで話したかったこと</h2>
+<p>東京で開催されたCodexのイベントに参加したとき、私はこの感覚を誰かに伝えたくなりました。ChatGPTのiOSアプリにあるRemoteを使うと、iPhoneから、Mac上で動いているCodexの作業へアクセスできます。</p>
+<p>進行中のセッションを確認する。次の指示を送る。質問に答える。変更の承認を返す。つまり、実行環境はMacに置いたまま、判断する人間だけが場所を移動できます。</p>
+<figure><img src="remote-article-assets/remote-screen-1.jpg" alt="iPhoneのChatGPTアプリに複数のCodex作業が並んでいる画面"><figcaption>実際のRemote画面。複数の作業を、iPhoneから確認できる。</figcaption></figure>
+<p>これは、パソコンの画面をそのまま小さくして操作するリモートデスクトップとは少し違います。Codexがプロジェクトの文脈を持って作業を進め、人間は次の方向を決める。Remoteは、そのループにモバイルから参加する入口です。</p>
+<h2 id="how">「iPhoneだけで開発する」の正確な意味</h2>
+<p>ここは誤解しないように書いておきます。iPhoneだけでコードが実行されるわけではありません。必要なのは、次の3つです。</p>
+<ol><li>ChatGPTのiOSアプリ</li><li>Codexが動くMacなどのホスト環境</li><li>そのホストへ接続するRemote</li></ol>
+<div class="callout"><strong>一言でいうと：</strong>実行するコンピューターは残る。でも、開発を始める場所は、机に固定されなくなる。</div>
+<p>ホスト側ではCodexがファイルを読み、コードを変更し、テストやコマンドを実行します。iPhoneは、指示・確認・承認・レビューを行う場所です。だから「iPhoneだけで開発できる」という言葉は、実行環境が不要という意味ではなく、開発の主な操作端末をiPhoneにできるという意味で使うのが正確です。</p>
+<figure><img src="remote-article-assets/remote-screen-2.jpg" alt="Remote画面でホスト、プロジェクト、作業場所を選択している画面"><figcaption>ホスト、プロジェクト、作業場所を選び、音声で指示を送る。</figcaption></figure>
+<h2 id="voice">音声入力が、最後の壁を壊す</h2>
+<p>私が特に魅力を感じているのは、Remoteと音声入力の組み合わせです。iPhoneでマイクをタップして、やりたいことを話す。</p>
+<blockquote>「この画面の余白を直して」<br>「テスト結果を確認して、失敗していたら原因を調べて」<br>「この作業が終わったら、次のセッションを進めて」</blockquote>
+<p>これまでは、パソコンを開き、ターミナルを探し、作業中のセッションを確認し、キーボードで指示を書いていました。Remoteなら、思いついた瞬間に話せます。</p>
+<p>家の中でも、移動の合間でも、子どもと過ごしている時間でも、短い判断を返せる。長時間机に縛られなくても、開発の流れから完全に離れずに済みます。</p>
+<p>もちろん、歩きながら画面を見るのは危険です。音声で状況を聞く場合も、安全な場所で立ち止まって使うべきです。便利さと安全性は、別々に考えなければいけません。</p>
+<h2 id="less-friction">開発のハードルが下がると、作る回数が増える</h2>
+<p>一番大きかった変化は、1回あたりの作業が軽くなったことです。パソコンの前に座るほどではない小さなアイデアでも、iPhoneから依頼できます。</p>
+<ul><li>仕様の確認</li><li>バグの調査</li><li>テスト結果の確認</li><li>次にやることの整理</li><li>複数セッションの進捗確認</li></ul>
+<p>小さな判断をその場で返せると、作業が止まりにくい。結果として、開発に戻る回数が増えます。</p>
+<p>「開発時間が増えた」というより、「開発を始めるまでの摩擦が減った」。この違いは大きいです。机に座るための気力が必要な仕事から、思いついたときに一歩だけ進められる仕事へ変わるからです。</p>
+<h2 id="future">未来は、画面の前だけにない</h2>
+<p>私たちは長いあいだ、ソフトウェア開発を「机に座って、画面を見て、キーボードを打つ仕事」だと考えてきました。</p>
+<p>でもAIエージェントがコードを読み、変更し、テストを実行できるようになると、人間の役割は少し変わります。</p>
+<div class="callout"><strong>人間</strong>は、何を作るかを決める。<br><strong>AI</strong>は、実装と検証を進める。<br><strong>人間</strong>は、結果を見て、次の方向を選ぶ。</div>
+<p>Remoteは、このループにiPhoneから参加させてくれます。これは「目を使わなくていい」という話ではありません。重要な変更には画面を見て慎重にレビューする必要があります。音声だけで全てを安全に任せられるわけでもありません。</p>
+<p>それでも、開発の入口がキーボードから声に広がったことには意味があります。作ることが、特別な時間にだけ許された行為ではなく、生活の中で何度も戻れる行為になるからです。</p>
+<h2 id="lessons">学んだこと・気づき</h2>
+<h3>1. 摩擦は、才能より先に減らせる</h3><p>自分に才能がないから作れないと思っていた時期がありました。でも実際には、開始までの手順が重すぎただけかもしれない。Remoteは、才能を増やすものではなく、開始までの摩擦を減らすものです。</p>
+<h3>2. 「常時接続」は、常時作業することではない</h3><p>ずっとコードを書き続ける必要はありません。重要なのは、作業から離れている時間にも、必要なときに戻れることです。短い確認と判断が、長い停止を防ぎます。</p>
+<h3>3. 完全自動化より、現実に戻れる設計</h3><p>AIに全部任せるのではなく、必要な場面で人間がレビューする。Remoteの価値は、人間を消すことではなく、人間が場所を選べるようにすることにあります。</p>
+<h2 id="closing">まとめ</h2>
+<p>ChatGPTのRemoteで変わったのは、コードを書く速度だけではありません。「開発はパソコンの前に座らないと始められない」という前提が崩れました。</p>
+<p>iPhoneから声で指示し、Remoteで進捗を確認し、必要なときだけ深くレビューする。実行環境はMacに置いたまま、人間はもっと自由な場所から開発に参加できます。</p>
+<p>一人の人間と、一台のスマートフォンと、AIエージェント。この組み合わせで、以前なら始めなかった小さなアイデアを、今日も一つ作り始められる。</p>
+<div class="source"><p><strong>参考情報</strong></p><p>OpenAI公式リリースノート：<a href="https://help.openai.com/ja-jp/articles/6825453-chatgpt-%E3%83%AA%E3%83%BC%E3%82%B9%E3%83%8E%E3%83%BC%E3%83%88" target="_blank" rel="noopener">ChatGPTモバイルアプリからのCodexリモートアクセス</a></p><p>公開済みnote版：<a href="https://note.com/anicca123/n/n1eea41130301" target="_blank" rel="noopener">note.com/anicca123</a></p></div>
+<div class="footer">Written from a real Remote workflow. まだ試行錯誤中ですが、少しずつ作る場所が自由になっています。</div>
+</main></div>
+<script>document.querySelector('.theme-toggle').addEventListener('click',function(){var h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'});</script>
+</body></html>

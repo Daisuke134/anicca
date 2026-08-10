@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Building from an iPhone: How ChatGPT Remote Changed Where I Code</title>
+<style>
+:root[data-theme="dark"]{--bg:#0b0e0d;--surface:#121816;--surface2:#18211d;--text:#edf4ef;--muted:#a8b7af;--line:#2b3a33;--accent:#9eea65;--accent2:#d7ffbd;--shadow:rgba(0,0,0,.35)}
+:root[data-theme="light"]{--bg:#f5f7f3;--surface:#fff;--surface2:#edf4ed;--text:#152019;--muted:#526158;--line:#d5e0d7;--accent:#237a35;--accent2:#0f5420;--shadow:rgba(20,50,30,.12)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.85;-webkit-font-smoothing:antialiased}.theme-toggle{position:fixed;z-index:5;top:16px;right:16px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;padding:9px 13px;cursor:pointer;box-shadow:0 8px 22px var(--shadow)}.hero{min-height:620px;display:flex;align-items:flex-end;position:relative;background:linear-gradient(90deg,rgba(5,9,8,.96) 0%,rgba(5,9,8,.7) 43%,rgba(5,9,8,.15) 100%),url("remote-article-assets/remote-hero.png") center/cover}.hero-inner{width:min(1120px,calc(100% - 40px));margin:0 auto;padding:90px 0 74px}.eyebrow{color:var(--accent);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700}.hero h1{max-width:780px;font-size:clamp(2.3rem,6vw,5.2rem);line-height:1.08;letter-spacing:-.06em;margin:18px 0;color:#fff}.hero p{max-width:680px;color:#d5e2d9;font-size:1.08rem}.layout{width:min(1120px,calc(100% - 40px));margin:0 auto;display:grid;grid-template-columns:230px 1fr;gap:64px}.toc{position:sticky;top:72px;height:max-content;padding:28px 0}.toc strong{font-size:.78rem;letter-spacing:.12em;color:var(--muted)}.toc a{display:block;color:var(--muted);text-decoration:none;border-left:2px solid var(--line);padding:7px 0 7px 14px;font-size:.88rem}.toc a:hover{color:var(--accent);border-color:var(--accent)}main{max-width:760px;padding:72px 0 110px}h2{font-size:clamp(1.65rem,3vw,2.4rem);line-height:1.22;letter-spacing:-.035em;margin:70px 0 20px}h3{font-size:1.2rem;margin:42px 0 8px;color:var(--accent2)}p{margin:0 0 1.25em}ul,ol{padding-left:1.35em}li{margin:.45em 0}.lead{font-size:1.3rem;line-height:1.65;color:var(--accent2);border-left:3px solid var(--accent);padding-left:20px}.callout{background:var(--surface2);border:1px solid var(--line);padding:23px 25px;margin:30px 0;border-radius:14px}.callout strong{color:var(--accent)}figure{margin:42px 0}figure img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 14px 35px var(--shadow)}figcaption{font-size:.82rem;color:var(--muted);margin-top:10px}blockquote{margin:28px 0;padding:18px 24px;border-left:3px solid var(--accent);background:var(--surface);color:var(--muted)}.source{margin-top:55px;padding-top:24px;border-top:1px solid var(--line);font-size:.86rem;color:var(--muted)}a{color:var(--accent)}.footer{border-top:1px solid var(--line);padding:25px 0;color:var(--muted);font-size:.82rem}@media(max-width:780px){.hero{min-height:570px}.layout{display:block}.toc{position:static;padding:28px 0 0;display:flex;gap:8px;overflow:auto}.toc strong{display:none}.toc a{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:7px 12px}.hero-inner{padding-bottom:58px}main{padding-top:42px}.hero h1{font-size:2.6rem}}
+</style>
+</head>
+<body>
+<button class="theme-toggle" type="button" aria-label="Toggle theme">☼ / ☾</button>
+<header class="hero"><div class="hero-inner"><div class="eyebrow">Build in public / Remote coding</div><h1>Building from an iPhone.<br>How Remote changed where I code.</h1><p>With the ChatGPT iOS app, I can speak to Codex running on my Mac, review its progress, and keep the development loop moving without being tied to my desk.</p></div></header>
+<div class="layout">
+<nav class="toc" aria-label="Table of contents"><strong>CONTENTS</strong><a href="#moment">The moment</a><a href="#meaning">What iPhone-only means</a><a href="#voice">Voice changes the loop</a><a href="#friction">Less friction</a><a href="#lessons">Lessons</a></nav>
+<main>
+<p class="lead">For a long time, starting development meant performing a ritual: sit at a desk, open the computer, find the right terminal, reconstruct the context, and only then begin. Remote made that ritual smaller.</p>
+<h2 id="moment">The moment I wanted to explain at a Codex event</h2>
+<p>I talked about this feeling at a Codex event in Tokyo. ChatGPT's Remote feature lets me access supported Codex work running on my Mac from the ChatGPT mobile app.</p>
+<p>From the phone, I can check an active session, send the next instruction, answer a question, approve an action, and review what the agent found. The execution environment stays on the Mac. The person making decisions can move.</p>
+<figure><img src="remote-article-assets/remote-screen-1.jpg" alt="ChatGPT iOS Remote screen showing multiple Codex work sessions"><figcaption>The Remote screen I use: several pieces of work, visible from a phone.</figcaption></figure>
+<p>This is not quite the same as shrinking a desktop screen into a remote desktop window. Codex keeps the project context and works through files, commands, and tests. I join the loop from a different place and decide what should happen next.</p>
+<h2 id="meaning">What does “building from an iPhone” actually mean?</h2>
+<p>I want to be precise here. The iPhone is not magically executing the code by itself. In practice, the setup has three parts:</p>
+<ol><li>The ChatGPT iOS app</li><li>A host environment where Codex runs, such as a Mac</li><li>Remote access connecting the mobile app to that host</li></ol>
+<div class="callout"><strong>In one sentence:</strong> the computer that executes the work still exists, but the place where I initiate and steer development is no longer fixed to a desk.</div>
+<p>On the host, Codex reads the repository, changes code, runs tests, and executes commands. The iPhone becomes the place for direction, clarification, approval, and review. That is the useful meaning of “iPhone-first development”: not that compute disappears, but that the main human interface to development can become mobile.</p>
+<figure><img src="remote-article-assets/remote-screen-2.jpg" alt="ChatGPT Remote screen showing a host, project, and working directory"><figcaption>Select the host and project, then send the next instruction.</figcaption></figure>
+<h2 id="voice">Voice input removes the final barrier</h2>
+<p>The most compelling combination for me is Remote plus voice input. I tap the microphone and say what I need.</p>
+<blockquote>“Fix the spacing on this screen.”<br>“Check the test result and investigate the failure.”<br>“When this session finishes, move on to the next one.”</blockquote>
+<p>Before this, I would open the computer, find the terminal, locate the active session, reconstruct what was happening, and type the instruction. With voice, the idea can become an actionable request almost immediately.</p>
+<p>At home, between tasks, or while spending time with family, I can return a small decision without pretending I have another uninterrupted afternoon. I am still responsible for the decisions. I just do not have to be physically seated at the machine for every one of them.</p>
+<p>There is an important safety boundary: looking at a phone while walking is dangerous. Voice can reduce screen time, but it does not remove the need to stop somewhere safe for important decisions and reviews.</p>
+<h2 id="friction">When the activation energy drops, I build more often</h2>
+<p>The biggest change has not been a benchmark number. It is the weight of a single interaction. A small idea that would not justify opening a laptop can still become a useful request from my phone:</p>
+<ul><li>Clarify a specification</li><li>Investigate a bug</li><li>Check a test result</li><li>Organize the next tasks</li><li>Review progress across several sessions</li></ul>
+<p>When small decisions can be made where they occur, the work is less likely to stall. I come back to the project more often.</p>
+<p>It is not quite that I suddenly have ten times more time to code. The better description is that the friction before coding is lower. That difference matters. A project can move forward through several small returns instead of waiting for one perfect block of desk time.</p>
+<h2 id="future">The future of development is not only in front of a screen</h2>
+<p>For decades, we have imagined software development as a person sitting at a desk, looking at a screen, and typing on a keyboard.</p>
+<p>As coding agents become able to read a project, make changes, run tests, and report results, the human role starts to shift:</p>
+<div class="callout"><strong>The human</strong> chooses what to build.<br><strong>The agent</strong> moves through implementation and verification.<br><strong>The human</strong> reviews the result and chooses the next direction.</div>
+<p>Remote lets me participate in that loop from an iPhone. This does not mean I never need a screen. Important changes still deserve a careful review. Voice alone is not a safe replacement for seeing the diff, reading the result, and understanding the consequence.</p>
+<p>But it does mean the doorway into development can be a sentence spoken at the moment an idea appears. That is a meaningful change in the relationship between a person and a project.</p>
+<h2 id="lessons">What I learned</h2>
+<h3>1. Reduce friction before questioning talent</h3><p>There were times when I thought I could not build because I lacked discipline or talent. Sometimes the real problem was that the first ten minutes were too heavy. Remote does not give me talent. It lowers the cost of beginning.</p>
+<h3>2. Always connected does not mean always working</h3><p>The point is not to code every minute. The point is to be able to return to the work when a decision is needed. A short check-in can prevent a long period of silent drift.</p>
+<h3>3. Human review is part of the design</h3><p>The best version is not “let the AI do everything.” It is a loop where the agent can carry the implementation forward while the human remains responsible for direction, permissions, and important reviews.</p>
+<h2 id="closing">Conclusion</h2>
+<p>ChatGPT Remote changed more than my typing setup. It challenged the assumption that software development begins only when I sit down at a computer.</p>
+<p>I can speak from an iPhone, check the live state of work on my Mac, and go deep on the screen when the change deserves it. The machine stays where it is. The human gets more freedom about where to participate.</p>
+<p>One person, one phone, and an AI coding agent are not a replacement for judgment. But they are a new, practical shape for a small team. An idea that used to wait for the perfect desk session can now take its first step while life is still happening.</p>
+<div class="source"><p><strong>Sources</strong></p><p>OpenAI release notes: <a href="https://help.openai.com/en/articles/6825453-chatgpt-troubleshooting-guide" target="_blank" rel="noopener">Codex remote access from the ChatGPT mobile app</a></p><p>Japanese published version: <a href="https://note.com/anicca123/n/n1eea41130301" target="_blank" rel="noopener">note.com/anicca123</a></p></div>
+<div class="footer">Written from a real Remote workflow. Still experimental, but the place where I build is becoming more free.</div>
+</main></div>
+<script>document.querySelector('.theme-toggle').addEventListener('click',function(){var h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'});</script>
+</body></html>
