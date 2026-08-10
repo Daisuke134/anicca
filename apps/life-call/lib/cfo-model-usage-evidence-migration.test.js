@@ -15,5 +15,6 @@ test("CFO model usage evidence migration is structured, private, and append-only
   const sql = fs.readFileSync(migrationPath, "utf8");
   patterns.forEach((pattern) => assert.match(sql, pattern));
   assert.doesNotMatch(sql, /\bjsonb?\b|raw_response|otel_attributes|gen_ai_|prompt|candidate|tool_arguments?|output_content|input_content|(?:request|response)_metadata|lm_append_cfo_model_usage_evidence/i);
+  assert.doesNotMatch(sql, /^\s*(?:content|metadata)\s+\w+\b/im);
   assert.doesNotMatch(sql, /(?:input_tokens|output_tokens|cached_input_tokens|reasoning_output_tokens|tool_input_tokens)\s*\+\s*(?:input_tokens|output_tokens|cached_input_tokens|reasoning_output_tokens|tool_input_tokens)\s*=\s*total_tokens|total_tokens\s*=\s*(?:input_tokens|output_tokens|cached_input_tokens|reasoning_output_tokens|tool_input_tokens)\s*\+\s*(?:input_tokens|output_tokens|cached_input_tokens|reasoning_output_tokens|tool_input_tokens)/i);
 });
