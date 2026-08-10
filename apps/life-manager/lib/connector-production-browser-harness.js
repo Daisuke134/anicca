@@ -16,6 +16,10 @@ const PEATIX_FORM_SUBMIT_LABEL = "確認画面へ進む";
 const PEATIX_CONFIRM_LABEL = "チケットを申し込む";
 const PEATIX_FORM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/form$/;
 const PEATIX_CONFIRM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/confirm$/;
+const CONNPASS_FINAL_LABEL = "申し込みを確定する"; const CONNPASS_ACK_LABEL = "はい、わかりました";
+const CONNPASS_ONLINE_LABELS = new Set(["オンライン参加", "オンライン参加（無料）", "オンライン参加（無料・視聴のみ）", "オンライン視聴", "オンライン視聴（無料）", "オンライン視聴（無料・視聴のみ）", "無料オンライン視聴", "online viewing", "online viewing (free)", "free online viewing"]);
+const CONNPASS_ONLINE_QUESTIONS = new Set(["参加方法", "参加形式", "参加枠", "参加形態", "視聴方法", "participation method", "participation type"]);
+const CONNPASS_REFERRAL_QUESTIONS = new Set(["このイベントを何で知りましたか？", "このイベントを何で知りましたか?", "このイベントをどこで知りましたか？", "このイベントをどこで知りましたか?", "どこでこのイベントを知りましたか？", "どこでこのイベントを知りましたか?", "イベントを知ったきっかけ", "イベントを知ったきっかけは？", "イベントを知ったきっかけは?", "how did you hear about this event?", "how did you hear about us?"]);
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
 const FINAL_EFFECT_POLL_MS = 25;
 
@@ -291,6 +295,45 @@ async function operatePageControl(input = {}) {
 function normalizedLabel(value) {
   return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
 }
+function connpassSafeRadioCategory(control) {
+  if (!control || control.kind !== "radio") return null;
+  const label = normalizedLabel(control.label);
+  const question = normalizedLabel(control.question);
+  if (CONNPASS_ONLINE_LABELS.has(label)) {
+    return !question || CONNPASS_ONLINE_QUESTIONS.has(question) ? "online" : null;
+  }
+  if (label === "connpass") {
+    return !question || CONNPASS_REFERRAL_QUESTIONS.has(question) ? "referral" : null;
+  }
+  return label === normalizedLabel(CONNPASS_ACK_LABEL) && question ? "ack" : null;
+}
+
+function nativeConnpassControl(provider, controls) {
+  if (provider !== "connpass") return null;
+  const pending = controls.filter((control) => ACTIONABLE_KINDS.has(control.kind) && control.required && !control.completed);
+  if (pending.length > 0) {
+    for (const category of ["online", "referral"]) {
+      const matches = pending.filter((control) => connpassSafeRadioCategory(control) === category);
+      if (matches.length > 0) return matches.length === 1 ? matches[0].control : null;
+    }
+    const acknowledgements = pending.filter((control) => connpassSafeRadioCategory(control) === "ack");
+    if (acknowledgements.length > 0) {
+      const byQuestion = new Map();
+      for (const control of acknowledgements) {
+        const question = normalizedLabel(control.question);
+        if (!question) return null;
+        const group = byQuestion.get(question) || [];
+        group.push(control);
+        byQuestion.set(question, group);
+      }
+      if ([...byQuestion.values()].some((group) => group.length !== 1)) return null;
+      return byQuestion.values().next().value[0].control;
+    }
+    return null;
+  }
+  const submits = controls.filter((control) => control.kind === "button" && control.submittable === true && normalizedLabel(control.label) === normalizedLabel(CONNPASS_FINAL_LABEL));
+  return submits.length === 1 ? submits[0].control : null;
+}
 
 async function safeProfile(read) { try { const value = await read(); return value && typeof value === "object" && !Array.isArray(value) ? value : null; } catch { return null; } } function answerFor(profile, label) { const answers = profile && profile.form_answers; const value = answers && typeof answers === "object" && !Array.isArray(answers) ? Object.entries(answers).find(([key]) => normalizedLabel(key) === label)?.[1] : null; return typeof value === "string" || Array.isArray(value) ? value : null; }
 function approvedOption(profile, question, label) { const answers = profile && profile.form_answers; const exactQuestion = normalizedLabel(question); if (!exactQuestion) return false; const value = answers && typeof answers === "object" && !Array.isArray(answers) && Object.entries(answers).find(([key]) => normalizedLabel(key) === exactQuestion)?.[1]; return typeof value === "string" ? normalizedLabel(value) === label : Array.isArray(value) && value.some((item) => typeof item === "string" && normalizedLabel(item) === label); }
@@ -320,6 +363,7 @@ function createPrivateValueResolver(options = {}) {
   return async function resolveValue(input = {}) {
     const control = safeControl(input.control); const label = normalizedLabel(control.label); const question = normalizedLabel(control.question);
     if (["checkbox", "radio"].includes(control.kind)) {
+      if (input.provider === "connpass") return connpassSafeRadioCategory(control) ? true : null;
       const profile = await safeProfile(readPeatixProfile);
       const knownPrivacyOption = label === normalizedLabel("確認し同意する。") && /^.+のプライバシーポリシーを読んだ・確認した$/.test(question);
       if ((LABEL.privacy.test(label) || knownPrivacyOption) && profile && profile.accept_organizer_privacy === true) return true;
@@ -354,6 +398,8 @@ function createBoundedActionProposer(options = {}) {
       || !input.observation || !Array.isArray(input.observation.controls)
     ) invalid();
     const controls = input.observation.controls.map(safeControl);
+    const nativeControl = nativeConnpassControl(input.provider, controls);
+    if (nativeControl) return Object.freeze({ control: nativeControl });
     const pendingAnswers = controls.filter((control) => ACTIONABLE_KINDS.has(control.kind) && control.required && !control.completed);
     const actionableControls = pendingAnswers.length ? pendingAnswers : controls.filter((control) => control.kind === "button" && control.submittable === true);
     if (!actionableControls.length) return null;
@@ -485,6 +531,7 @@ function createProductionBrowserHarness(options = {}) {
     const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow }[input.provider];
     if (!workflow || typeof workflow.readProviderState !== "function") invalid();
     const seenMutations = new Set();
+    let connpassSubmitAttempted = false;
     let ambiguousEffect = false;
     let finalEffectProviderState = null;
     const adapter = createBrowserHarnessAdapter({
@@ -492,6 +539,13 @@ function createProductionBrowserHarness(options = {}) {
       async proposeAction(input) { const proposal = await proposeAction(input); const token = String(proposal && typeof proposal === "object" ? proposal.control || "" : ""); const control = input.observation.controls.find((item) => item.control === token); return CONTROL.test(token) && control ? actionForControl(control) : null; },
       async performAction(action) {
         const selected = action.action || action; const effect = ["ax_click", "coordinate_click", "keyboard_submit"].includes(selected.method) ? "activate" : ["ax_fill", "dom_fill"].includes(selected.method) ? "fill" : selected.method; const signature = MUTATING_METHODS.has(selected.method) ? selected.purpose === "submit" ? `${safePageState(action.page)}:submit:form-submit` : `${safePageState(action.page)}:${selected.purpose}:${effect}:${selected.control}` : null;
+        if (input.provider === "connpass" && selected.purpose === "submit") {
+          if (connpassSubmitAttempted) {
+            ambiguousEffect = true;
+            return Object.freeze({ status: "failed", safe_reason: "effect_unknown" });
+          }
+          connpassSubmitAttempted = true;
+        }
         if (signature && seenMutations.has(signature)) return Object.freeze({ status: "failed" });
         const result = await performAction({ ...action, provider: input.provider, candidate: input.candidate });
         if (result && result.safe_reason === "effect_unknown") ambiguousEffect = true;
