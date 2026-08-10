@@ -52,6 +52,20 @@ async function control(page, selector) {
   if (!page || typeof page.locator !== "function") return null;
   try { const x = page.locator(selector); return await x.count() === 1 && await x.isVisible() ? x : null; } catch { return null; }
 }
+async function inspectControl(page, selector) {
+  if (!page || typeof page.locator !== "function") return null;
+  try {
+    const locator = page.locator(selector);
+    const count = await locator.count();
+    if (count !== 1) return Object.freeze({ count, visible: false, enabled: false, editable: false, locator: null });
+    const visible = await locator.isVisible();
+    if (typeof locator.isEnabled !== "function" || typeof locator.isEditable !== "function") return null;
+    const enabled = await locator.isEnabled();
+    const editable = await locator.isEditable();
+    if (typeof visible !== "boolean" || typeof enabled !== "boolean" || typeof editable !== "boolean") return null;
+    return Object.freeze({ count, visible, enabled, editable, locator });
+  } catch { return null; }
+}
 async function evaluate(page, fn, payload) {
   try { const x = await page.evaluate(fn, payload); return x && typeof x === "object" && !Array.isArray(x) ? x : null; } catch { return null; }
 }
@@ -153,9 +167,12 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
     if (!await confirmNavigation) { const confirmUrl = pageHref(page); const u = (() => { try { return new URL(confirmUrl); } catch { return null; } })(); const match = u && STEP.exec(u.pathname); return out("unavailable", match && match[2] === "confirm" && match[1] !== c.id ? "confirm_event_mismatch" : "confirm_navigation_failed"); }
     const confirm = await evaluate(page, () => { const b = document.querySelector("#confirm-button"); return { text: b && String(b.innerText || b.value || "").replace(/\s+/g, " ").trim(), visible: !!(b && !b.hidden) }; }, { mode: "confirm", event_id: c.id });
     if (!confirm || confirm.text !== TEXT || confirm.visible !== true) return out("unavailable", "confirm_control_unavailable");
-    const family = await control(page, '#confirm-form [name="lastname_edit"]'); const given = await control(page, '#confirm-form [name="firstname_edit"]');
-    if (!family || !given || typeof family.fill !== "function" || typeof given.fill !== "function") return out("unavailable", "kana_control_unavailable");
-    await family.fill(p.family_name_kana); await given.fill(p.given_name_kana);
+    const family = await inspectControl(page, '#confirm-form [name="lastname_edit"]'); const given = await inspectControl(page, '#confirm-form [name="firstname_edit"]');
+    if (!family || !given || family.count !== 1 || given.count !== 1 || family.visible !== given.visible) return out("unavailable", "kana_control_unavailable");
+    if (family.visible) {
+      if (!family.enabled || !given.enabled || !family.editable || !given.editable) return out("unavailable", "kana_control_unavailable");
+      await family.locator.fill(p.family_name_kana); await given.locator.fill(p.given_name_kana);
+    }
     const validation = await evaluate(page, () => {
       const form = document.querySelector("#confirm-form"); const $ = window.jQuery;
       if (!$ || !form || typeof $(form).valid !== "function") return { valid: false };

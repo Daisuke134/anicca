@@ -20,7 +20,25 @@ function fixture(options = {}) {
   const href = () => state === "tickets" ? "https://peatix.com/sales/event/5075819/tickets" : state === "form" ? `https://peatix.com/sales/event/${options.formEvent || "5075819"}/form` : state === "confirm" ? (options.confirmUrl || `https://peatix.com/sales/event/${options.confirmEvent || "5075819"}/confirm`) : state === "complete" ? "https://peatix.com/sales/event/5075819/complete" : state === "ambiguous" ? "https://peatix.com/sales/event/5075819/unknown" : state === "auth" ? "https://peatix.com/login" : state === "canonical" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : "https://peatix.com/event/9999999";
   const count = (s) => { if (state === "form" && /#[^\\[]*[\[\]]/.test(s)) throw new Error("invalid selector"); if (state === "confirm" && Object.hasOwn(confirmControls, s)) return confirmControls[s].count; return state === "tickets" && s === "input[name=number_of_tickets_6536845]" ? 1 : state === "tickets" && s === "#next-button" ? 1 : state === "form" && formSelectors.has(s) ? 1 : state === "confirm" && s === "#confirm-button" ? 1 : 0; };
   const navigate = (next) => options.asyncNavigation ? setTimeout(() => { state = next; }, 0) : (state = next);
-  const locator = (selector) => ({ count: async () => count(selector), isVisible: async () => state === "confirm" && Object.hasOwn(confirmControls, selector) ? count(selector) === 1 && confirmControls[selector].visible === true : count(selector) === 1, fill: async (value) => calls.push(["fill", selector, value]), check: async () => { calls.push(["check", selector]); checked.add(selector); }, isChecked: async () => checked.has(selector), click: async () => { calls.push(["click", selector]); if (selector === "#next-button") navigate("form"); else if (selector === "#form-submit-button") navigate("confirm"); else if (selector === "#confirm-button") { finals += 1; state = options.complete === false ? "ambiguous" : "complete"; } } });
+  const locator = (selector) => {
+    const kana = state === "confirm" && Object.hasOwn(confirmControls, selector) ? confirmControls[selector] : {};
+    const result = {
+      count: async () => count(selector),
+      isVisible: async () => state === "confirm" && Object.hasOwn(confirmControls, selector) ? count(selector) === 1 && kana.visible === true : count(selector) === 1,
+      isEnabled: async () => kana.disabled !== true,
+      isEditable: async () => {
+        if (kana.isEditableThrows === true) throw new Error("editable probe failed");
+        if (Object.hasOwn(kana, "editable")) return kana.editable;
+        return true;
+      },
+      fill: async (value) => calls.push(["fill", selector, value]),
+      check: async () => { calls.push(["check", selector]); checked.add(selector); },
+      isChecked: async () => checked.has(selector),
+      click: async () => { calls.push(["click", selector]); if (selector === "#next-button") navigate("form"); else if (selector === "#form-submit-button") navigate("confirm"); else if (selector === "#confirm-button") { finals += 1; state = options.complete === false ? "ambiguous" : "complete"; } },
+    };
+    if (kana.isEditableMissing === true) delete result.isEditable;
+    return result;
+  };
   const page = {
     url: href,
     async goto(url) { calls.push(["goto", url]); state = /\/tickets$/.test(url) ? "tickets" : /\/form$/.test(url) ? "form" : "confirm"; },
@@ -116,6 +134,36 @@ test("measured ticket/form/confirm flow fills exact fields and clicks final boun
   assert.equal(JSON.stringify(result).includes(p.family_name_kana), false); assert.equal(JSON.stringify(result).includes("family_name_kana"), false);
 });
 
+test("hidden exact Kana pair skips fill and reaches jQuery validation and final readback", async () => {
+  const family = '#confirm-form [name="lastname_edit"]'; const given = '#confirm-form [name="firstname_edit"]';
+  const f = fixture({ confirmControls: { [family]: { count: 1, visible: false }, [given]: { count: 1, visible: false } } });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
+  assert.equal(f.calls.filter(([name, selector]) => name === "fill" && [family, given].includes(selector)).length, 0);
+  assert.equal(f.calls.filter(([name, selector]) => name === "click" && selector === "#confirm-button").length, 1);
+});
+
+test("hidden exact Kana pair with invalid jQuery validation fails before final click", async () => {
+  const family = '#confirm-form [name="lastname_edit"]'; const given = '#confirm-form [name="firstname_edit"]';
+  const f = fixture({ confirmValid: false, confirmControls: { [family]: { count: 1, visible: false }, [given]: { count: 1, visible: false } } });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "unavailable", reason: "confirm_validation_failed" });
+  assert.equal(f.finalCount(), 0);
+});
+
+test("visible Kana controls require enabled, editable, boolean editable probes before final click", async () => {
+  const family = '#confirm-form [name="lastname_edit"]'; const given = '#confirm-form [name="firstname_edit"]';
+  for (const invalid of [
+    { [family]: { count: 1, visible: true, editable: false }, [given]: { count: 1, visible: true } },
+    { [family]: { count: 1, visible: true, editable: "true" }, [given]: { count: 1, visible: true } },
+    { [family]: { count: 1, visible: true, isEditableMissing: true }, [given]: { count: 1, visible: true } },
+    { [family]: { count: 1, visible: true, isEditableThrows: true }, [given]: { count: 1, visible: true } },
+  ]) {
+    const f = fixture({ confirmControls: invalid });
+    assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "unavailable", reason: "kana_control_unavailable" });
+    assert.equal(f.calls.some(([name, selector]) => name === "fill" && [family, given].includes(selector)), false);
+    assert.equal(f.finalCount(), 0);
+  }
+});
+
 test("asynchronous ticket and form navigation waits for exact same-event URLs", async () => {
   const f = fixture({ asyncNavigation: true });
   assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
@@ -140,7 +188,7 @@ test("missing navigation wait fails before the next click", async () => {
 test("Kana profile and measured confirm controls fail closed before final click", async () => {
   const family = '#confirm-form [name="lastname_edit"]'; const given = '#confirm-form [name="firstname_edit"]';
   for (const invalid of [{ family_name_kana: "" }, { given_name_kana: "桜" }, { family_name_kana: "sakura" }, { family_name_kana: "サ".repeat(101) }]) { const f = fixture(); assert.notEqual((await submitPeatixOnPage(f.page, candidate(), profile(invalid))).status, "registered"); assert.equal(f.finalCount(), 0); }
-  for (const confirmControls of [{ [family]: { count: 0, visible: true }, [given]: { count: 1, visible: true } }, { [family]: { count: 2, visible: true }, [given]: { count: 1, visible: true } }, { [family]: { count: 1, visible: false }, [given]: { count: 1, visible: true } }]) { const f = fixture({ confirmControls }); assert.equal((await submitPeatixOnPage(f.page, candidate(), profile())).status, "unavailable"); assert.equal(f.finalCount(), 0); }
+  for (const confirmControls of [{ [family]: { count: 0, visible: true }, [given]: { count: 1, visible: true } }, { [family]: { count: 2, visible: true }, [given]: { count: 1, visible: true } }, { [family]: { count: 1, visible: false }, [given]: { count: 1, visible: true } }, { [family]: { count: 1, visible: true, disabled: true }, [given]: { count: 1, visible: true } }, { [family]: { count: 1, visible: true, editable: false }, [given]: { count: 1, visible: true } }]) { const f = fixture({ confirmControls }); assert.equal((await submitPeatixOnPage(f.page, candidate(), profile())).status, "unavailable"); assert.equal(f.finalCount(), 0); }
   for (const options of [{ confirmValid: false }, { confirmValidationMissing: true }, { confirmValidationThrows: true }]) { const f = fixture(options); assert.equal((await submitPeatixOnPage(f.page, candidate(), profile())).status, "unavailable"); assert.equal(f.finalCount(), 0); }
 });
 
