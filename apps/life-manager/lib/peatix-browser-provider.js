@@ -78,8 +78,17 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
     const form = await evaluate(page, () => {
       const norm = (x) => String(x || "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
       const label = (n) => norm(n.getAttribute("aria-label") || (n.labels && n.labels[0] && n.labels[0].textContent) || n.getAttribute("data-label"));
-      const fields = [...document.querySelectorAll("input[required],textarea[required],select[required],[aria-required='true']")].filter((n) => !["hidden","submit","button"].includes(String(n.type || "").toLowerCase())).map((n) => { const l = label(n); const name = norm(n.getAttribute("name")); const kind = ["氏名","名前","お名前","name","attendee name"].includes(l) ? "name" : ["メール","メールアドレス","email","e-mail","email address","account email"].includes(l) ? "email" : ["organizer privacy","organizer privacy confirmation","主催者のプライバシーポリシーに同意する","主催者のプライバシー確認"].includes(l) || ["organizer_privacy"].includes(name) ? "privacy" : "unknown"; return { selector: n.id ? `#${CSS.escape(n.id)}` : `[name="${n.name}"]`, kind, visible: !n.hidden, checked: !!n.checked }; });
-      return { fields, submit: !!document.querySelector("#form-submit-button") };
+      const selector = (n) => n.id ? `#${CSS.escape(n.id)}` : `[name="${n.name}"]`;
+      const fields = [...document.querySelectorAll("input[required],textarea[required],select[required],[aria-required='true']")].filter((n) => !["hidden","submit","button"].includes(String(n.type || "").toLowerCase())).map((n) => { const l = label(n); const name = norm(n.getAttribute("name")); const kind = ["氏名","名前","お名前","name","attendee name"].includes(l) ? "name" : ["メール","メールアドレス","email","e-mail","email address","account email"].includes(l) ? "email" : ["organizer privacy","organizer privacy confirmation","主催者のプライバシーポリシーに同意する","主催者のプライバシー確認"].includes(l) || ["organizer_privacy"].includes(name) ? "privacy" : "unknown"; return { selector: selector(n), kind, visible: !n.hidden, checked: !!n.checked }; });
+      const radioFields = [...document.querySelectorAll("dl.field.required")].flatMap((field) => {
+        const prompt = norm((field.querySelector(":scope > dt") || field.querySelector("dt") || {}).textContent);
+        const radios = [...field.querySelectorAll("input[type=\"radio\"]")].filter((n) => !n.hidden);
+        const privacyPrompt = !/peatix/i.test(prompt) && ((/[^\s]+のプライバシーポリシー/.test(prompt) && /読|確認|同意/.test(prompt)) || (/(?:organizer(?:'s)?|[^\s]+(?:'s|’s))\s+privacy\s+policy/i.test(prompt) && /read|review|confirm|agree|consent/i.test(prompt)));
+        if (!radios.length) return privacyPrompt ? [{ kind: "unknown", visible: true }] : [];
+        const consent = radios.length === 1 && privacyPrompt && !radios[0].disabled && /同意|確認|agree|accept|consent/i.test(label(radios[0]));
+        return [{ selector: consent ? selector(radios[0]) : "", kind: consent ? "privacy" : "unknown", visible: true, checked: !!radios[0].checked }];
+      });
+      return { fields: fields.concat(radioFields), submit: !!document.querySelector("#form-submit-button") };
     }, { mode: "form" });
     if (!form || !Array.isArray(form.fields) || form.fields.some((f) => f.visible !== false && f.kind === "unknown")) return out("needs_fallback", "unknown_required_field");
     const names = form.fields.filter((f) => f.visible !== false && f.kind === "name"); const emails = form.fields.filter((f) => f.visible !== false && f.kind === "email"); const privacy = form.fields.filter((f) => f.visible !== false && f.kind === "privacy");

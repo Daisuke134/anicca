@@ -24,10 +24,27 @@ function fixture(options = {}) {
     locator,
     async evaluate(_fn, payload) {
       assert.ok(payload && payload.mode);
-      if (payload.mode === "form" && options.domFields) {
+      if (payload.mode === "form" && (options.domFields || options.domPrivacy)) {
         const previousDocument = global.document; const previousCSS = global.CSS;
-        const nodes = options.domFields.map((field) => ({ id: field.id || "", name: field.name || "", type: field.type || "text", hidden: false, checked: false, labels: field.label ? [{ textContent: field.label }] : [], getAttribute: (name) => name === "aria-label" ? field.ariaLabel || null : name === "data-label" ? field.dataLabel || null : name === "name" ? field.name || null : null }));
-        global.document = { querySelectorAll: () => nodes, querySelector: () => options.formSubmit === false ? null : {} }; global.CSS = { escape: (value) => String(value).replace(/[^A-Za-z0-9_-]/g, "\\$&") };
+        const nodes = (options.domFields || []).map((field) => ({ id: field.id || "", name: field.name || "", type: field.type || "text", hidden: false, checked: false, labels: field.label ? [{ textContent: field.label }] : [], getAttribute: (name) => name === "aria-label" ? field.ariaLabel || null : name === "data-label" ? field.dataLabel || null : name === "name" ? field.name || null : null }));
+        const privacyDescriptions = options.domPrivacyGroups || (options.domPrivacy ? [options.domPrivacy] : []);
+        const allPrivacyNodes = [];
+        const privacyFields = privacyDescriptions.map((privacy) => {
+          let field;
+          const radioNodes = (privacy.options || []).map((option, index) => ({
+            id: option.id || `privacy-${index}`,
+            name: option.name || privacy.name || "organizer_privacy",
+            type: "radio", hidden: false, disabled: !!option.disabled, checked: !!option.checked,
+            labels: option.label ? [{ textContent: option.label }] : [],
+            getAttribute: (name) => name === "aria-label" ? option.ariaLabel || null : name === "name" ? option.name || privacy.name || "organizer_privacy" : null,
+            classList: { contains: () => false },
+            closest: (selector) => selector === "dl.field.required" ? field : null,
+          }));
+          field = { className: "field required", querySelector: (selector) => selector.includes("dt") ? { textContent: privacy.prompt || "" } : null, querySelectorAll: (selector) => /input\[type=["']?radio/.test(selector) ? radioNodes : [] };
+          allPrivacyNodes.push(...radioNodes);
+          return field;
+        });
+        global.document = { querySelectorAll: (selector) => selector === "dl.field.required" ? privacyFields : selector.includes("input[type") ? allPrivacyNodes : nodes, querySelector: () => options.formSubmit === false ? null : {} }; global.CSS = { escape: (value) => String(value).replace(/[^A-Za-z0-9_-]/g, "\\$&") };
         try { return _fn(); } finally { global.document = previousDocument; global.CSS = previousCSS; }
       }
       if (payload.mode === "form") return { fields };
@@ -43,7 +60,7 @@ function fixture(options = {}) {
 }
 
 test("invalid input fails closed and registered readback is an idempotent no-op", async () => {
-  for (const [c, p] of [[candidate({ provider: "luma" }), profile()], [candidate({ ticket_price_status: "paid", ticket_price_minor: 100 }), profile()], [candidate(), profile({ accept_organizer_privacy: false })], [{ id: "5075819", ticket: "6536845" }, profile()], [candidate({ canonical_url: "https://peatix.com:444/event/5075819" }), profile()]]) {
+  for (const [c, p] of [[candidate({ provider: "luma" }), profile()], [candidate({ ticket_price_status: "paid", ticket_price_minor: 100 }), profile()], [candidate(), profile({ accept_organizer_privacy: false })], [candidate(), profile({ accept_organizer_privacy: undefined })], [{ id: "5075819", ticket: "6536845" }, profile()], [candidate({ canonical_url: "https://peatix.com:444/event/5075819" }), profile()]]) {
     const f = fixture(); assert.deepEqual(await submitPeatixOnPage(f.page, c, p), { status: "unavailable", reason: "invalid_input" }); assert.equal(f.calls.some((x) => x[0] === "goto"), false); assert.equal(f.finalCount(), 0);
   }
   const f = fixture({ initial: "complete" }); assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" }); assert.equal(f.calls.some((x) => x[0] === "goto"), false); assert.equal(f.finalCount(), 0);
@@ -63,6 +80,34 @@ test("measured ticket/form/confirm flow fills exact fields and clicks final boun
 test("special-character DOM ids use escaped selectors before final confirmation", async () => {
   const f = fixture({ domFields: [{ id: "name[0]", name: "attendee_name", label: "name", type: "text" }, { id: "email[0]", name: "attendee_email", label: "email", type: "email" }], formSelectors: ["#name\\[0\\]", "#email\\[0\\]"] });
   assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" }); assert.equal(f.finalCount(), 1);
+});
+
+test("measured organizer privacy radio is classified and checked before form submit", async () => {
+  const f = fixture({
+    domFields: [{ id: "name", name: "attendee_name", label: "name", type: "text" }, { id: "email", name: "attendee_email", label: "email", type: "email" }],
+    domPrivacy: { prompt: "enXrossのプライバシーポリシーを読んだ・確認した", name: "organizer_privacy", options: [{ id: "organizer-privacy", label: "確認し同意する。" }] },
+    formSelectors: ["#organizer-privacy"],
+  });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
+  assert.deepEqual(f.calls.filter((x) => ["fill", "check", "click"].includes(x[0])), [["fill", "input[name=number_of_tickets_6536845]", "1"], ["click", "#next-button"], ["fill", "#name", "Dais Example"], ["fill", "#email", "dais@example.test"], ["check", "#organizer-privacy"], ["click", "#form-submit-button"], ["click", "#confirm-button"]]);
+});
+
+test("non-organizer, ambiguous, and malformed radio groups fail closed", async () => {
+  const fields = [{ id: "name", name: "attendee_name", label: "name", type: "text" }, { id: "email", name: "attendee_email", label: "email", type: "email" }];
+  for (const domPrivacy of [
+    { prompt: "Peatixの利用規約を確認し同意する", options: [{ label: "確認し同意する。" }] },
+    { prompt: "マーケティング配信に同意する", options: [{ label: "同意する" }] },
+    { prompt: "個人情報を第三者と共有する", options: [{ label: "同意する" }] },
+    { prompt: "イベント参加方法", options: [{ label: "オンライン" }] },
+    { prompt: "enXrossのプライバシーを確認した", options: [{ label: "確認し同意する。" }] },
+    { prompt: "enXrossのプライバシーポリシーを読んだ・確認した", options: [] },
+    { prompt: "enXrossのプライバシーポリシーを読んだ・確認した", options: [{ label: "確認し同意する。" }, { label: "確認しない" }] },
+  ]) {
+    const f = fixture({ domFields: fields, domPrivacy });
+    assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "needs_fallback", reason: "unknown_required_field" }); assert.equal(f.finalCount(), 0);
+  }
+  const duplicate = fixture({ domFields: fields, domPrivacyGroups: [{ prompt: "enXrossのプライバシーポリシーを読んだ・確認した", options: [{ label: "確認し同意する。" }] }, { prompt: "別主催者のプライバシーポリシーを読んだ・確認した", options: [{ label: "確認し同意する。" }] }] });
+  assert.deepEqual(await submitPeatixOnPage(duplicate.page, candidate(), profile()), { status: "unavailable", reason: "privacy_control_unavailable" }); assert.equal(duplicate.finalCount(), 0);
 });
 
 test("optional privacy control still reaches final confirmation and duplicates fail closed", async () => {
