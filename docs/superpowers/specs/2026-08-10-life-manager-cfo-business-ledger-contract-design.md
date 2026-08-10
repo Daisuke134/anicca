@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | AWAITING USER REVIEW — implementation is blocked until approval |
+| Status | APPROVED — implementation plan active |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Active item | CFO-2a only |
 | Runtime | Existing local `apps/life-call` package |
@@ -23,8 +23,8 @@ Three approaches were evaluated:
 2. New canonical ledger table plus dual-write. Rejected because CFO-2a needs a contract, not another source of truth.
 3. Instrument every earning loop first. Rejected because it changes nine economic units before one event is proven.
 
-The implementation soft target is two files and at most 80 added LOC total: approximately 45 production LOC and 35
-test LOC. If the task needs a third file, a dependency, SQL, or more than 100 added LOC, the plan is wrong and scope
+The implementation soft target is two files and at most 100 added LOC total: at most 45 production LOC and 55 test
+LOC. If the task needs a third file, a dependency, SQL, or more than 100 added LOC, the plan is wrong and scope
 must be reduced before implementation.
 
 ## 3. Flow
@@ -110,11 +110,11 @@ unbounded payload data.
 
 ## 7. Minimal verification
 
-Only two focused tests are required:
+Only three focused tests are required:
 
 1. A known-kind row produces the exact event, excludes secret-shaped `meta`, and leaves its input unchanged.
-2. An unknown kind remains unattributed, while a compact invalid-number table proves money values never default to
-   zero or leak into errors.
+2. An unknown kind remains unattributed rather than being guessed or rejected.
+3. A compact invalid-number table proves money values never default to zero or leak into errors.
 
 No database integration test is required because this slice performs no database write and uses an injected row.
 No Telegram, launchd, browser, OpenTelemetry, billing, tax, or multi-tenant E2E is part of CFO-2a.
