@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a/3b complete; CFO-2a2b.4 real E2E is next, then required local cutover |
+| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a/3b/4 complete; CFO-2a2b.5 local producer cutover is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -100,8 +100,9 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       If either capture source is unavailable, every aggregate is null; never publish a partial subtotal or fake zero.
       Commit `1370b19`; 3 files, +42 LOC; focused 9/9, related 20/20, CFO 302/302, full pass; fresh Sol: ship.
       Plan: `2026-08-11-life-manager-cfo-agent-usage-capture-hourly-counts.md`.
-- [ ] **CFO-2a2b.4 — real current-state E2E:** verify real ledgers remain append-only, run one isolated provider-boundary
+- [x] **CFO-2a2b.4 — real current-state E2E:** verified real ledgers remain append-only and ran isolated provider-boundary
       probe without a paid provider, and report the current missing attempt ledgers as `capture_not_started`, not ready.
+      Commit `7e79c33`; E2E twice; producer boundaries 2/2; CFO 302/302; full pass; one file `+7/-6`; fresh Sol: ship.
       Plan: `2026-08-11-life-manager-cfo-agent-usage-capture-real-e2e.md`.
 - [ ] **CFO-2a2b.5 — local producer cutover:** make the active managed local loops use the reviewed attempt/completion
       producer, then require new real rows before CFO calls capture complete. Do not infer rollout from a feature branch.

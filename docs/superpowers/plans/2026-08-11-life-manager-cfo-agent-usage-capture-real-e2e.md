@@ -3,7 +3,7 @@
 > **For Luna:** use Superpowers test-driven-development and verification-before-completion. Luna owns only the one
 > E2E file below; Sol owns this plan, review, final verification, state, commit, and push.
 
-**Status:** READY FOR LUNA
+**Status:** COMPLETE — implementation `7e79c33`; fresh Sol review: ship
 
 **Goal:** Update the existing isolated E2E to prove the current local truth after 3b: both real usage ledgers are
 published without mutation, while absent real attempt ledgers produce exact numeric zero counts plus
@@ -89,3 +89,12 @@ exceptions. The remaining exact values are:
    Luna fixes only required issues in the same file.
 7. Sol updates state, commits/pushes, sends one real Telegram milestone, and advances to CFO-2a2b.5 local producer
    cutover. This slice does not trigger or repoint any live loop.
+
+## Completion evidence
+
+- Real E2E passed twice with `discovered=5104`, `accepted=5104`, historical missing usage `351`, six historical
+  coverage exceptions, one span, and exact pre-cutover capture counts `attempted=0/success=0/failed=0/missing=0`.
+- Both isolated producer boundary tests passed; no paid provider or real ledger was used by those tests.
+- Related 20/20, CFO 302/302, full `npm test`, syntax, diff, and one-file `+7/-6` scope gates passed.
+- Both real usage ledgers remained regular `0600` files with unchanged starting prefixes; both real attempt ledgers
+  remained absent. Active producer cutover is still required and is CFO-2a2b.5.
