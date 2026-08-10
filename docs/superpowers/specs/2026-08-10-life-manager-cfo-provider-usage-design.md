@@ -230,6 +230,47 @@ Soft target: one migration, one dedicated static test, and one `test:cfo` script
   call-site, SDK, exporter, pricing, content, generic metadata, or production apply.
 - Fresh final review: Critical 0, Important 0, ship.
 
+### CFO-2a2.2b — only active slice
+
+Add one `SECURITY INVOKER` function, `public.lm_append_cfo_model_usage_evidence`, in a new forward migration. The
+function accepts the table's 17 evidence fields as typed scalar arguments and `RETURNS jsonb`; it accepts or stores
+no JSON/JSONB evidence input, content, metadata, price, span, or billing value. The JSON return is only the closed
+six-key receipt. The function inserts with the named composite unique constraint as the conflict arbiter.
+
+```mermaid
+flowchart TD
+    A[Typed evidence call] --> B[INSERT ON CONFLICT DO NOTHING]
+    B -->|new identity| C[Return closed receipt]
+    B -->|existing identity| D[Read stored row]
+    D -->|all 17 fields identical| C
+    D -->|any field differs| E[Fixed identity-conflict error]
+```
+
+The closed receipt has exactly `public_ref`, `provider`, `provider_request_id`, `usage_sequence`, `trace_id`, and
+`created_at`. It never returns owner, financial unit, token counts, models, or content. An identical retry returns
+the original receipt without another row. A retry with the same `(provider, provider_request_id, usage_sequence)`
+and any different stored field that independently satisfies the existing schema raises
+`provider_usage_identity_conflict` with SQLSTATE `23505`; invalid values still fail at the schema boundary. It never
+updates. Concurrent calls use the existing unique constraint and the insert-then-read path, not an application lock.
+
+The function runs with caller privileges and fixed `search_path = public, pg_temp`. Function execute privileges
+are reset for PUBLIC, anon, authenticated, and service_role before granting only service_role. Table grants remain
+unchanged. This slice creates no client, call-site, write-attempt ledger, SDK, exporter, scheduler, or production
+apply.
+
+Soft target: one forward migration plus the existing migration test, two files and 95 additions. The local
+PostgreSQL E2E must prove first insert, identical retry, conflicting retry, simultaneous duplicate dedupe, fixed
+receipt keys, and anon/authenticated denial.
+
+### CFO-2a2.2b acceptance
+
+- [ ] One typed RPC inserts a valid row and returns the exact closed six-key receipt.
+- [ ] An identical sequential or concurrent retry returns the same `public_ref` and leaves exactly one row.
+- [ ] A changed ownership, token, optional-null, or trace fact under the same identity returns only the fixed
+      conflict and never mutates the stored row.
+- [ ] The function is invoker-security with fixed search path; only service_role can execute it.
+- [ ] A disposable local PostgreSQL E2E and the focused/CFO/full suites pass without production apply.
+
 ### PostgreSQL evidence
 
 - [Unique constraints](https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS)
@@ -238,3 +279,5 @@ Soft target: one migration, one dedicated static test, and one `test:cfo` script
   normal access requires an applicable policy; command- and role-specific policies separate SELECT from INSERT.
 - [INSERT / ON CONFLICT](https://www.postgresql.org/docs/current/sql-insert.html) — later CFO-2a2.2b uses the unique
   key as its conflict arbiter; CFO-2a2.2a defines the invariant but adds no retry RPC.
+- [CREATE FUNCTION](https://www.postgresql.org/docs/current/sql-createfunction.html) — invoker security uses the
+  caller's privileges; PostgreSQL also documents fixed search paths and revoking default PUBLIC execute access.
