@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a/3b/4 complete; CFO-2a2b.5 local producer cutover is next |
+| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a/3b/4/5a complete; CFO-2a2b.5b attempt cutover is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -104,8 +104,9 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       probe without a paid provider, and report the current missing attempt ledgers as `capture_not_started`, not ready.
       Commit `7e79c33`; E2E twice; producer boundaries 2/2; CFO 302/302; full pass; one file `+7/-6`; fresh Sol: ship.
       Plan: `2026-08-11-life-manager-cfo-agent-usage-capture-real-e2e.md`.
-- [ ] **CFO-2a2b.5a — active numeric truth:** port reviewed commit `82a3b349` onto the newer active runner without
-      replacing its later Hermes fixes. Plan: `2026-08-11-life-manager-cfo-active-runner-numeric-truth.md`.
+- [x] **CFO-2a2b.5a — active numeric truth:** ported reviewed numeric behavior onto the newer active runner without
+      replacing its later Hermes fixes. Active commit `5ca6c00`; 2 files, +56; focused 1/1, telemetry 8/8, Hermes 3/3;
+      fresh Sol: ship. Plan: `2026-08-11-life-manager-cfo-active-runner-numeric-truth.md`.
 - [ ] **CFO-2a2b.5b — active attempt/completion cutover:** port reviewed commits `ef233a90` + `a0fe0c35`, then require
       a newly triggered real managed loop to write a new attempt and same-ID completion before CFO calls capture ready.
       Do not infer rollout from a feature branch.
