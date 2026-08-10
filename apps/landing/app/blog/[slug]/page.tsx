@@ -187,11 +187,12 @@ export default function ResearchPostPage({ params }: { params: { slug: string } 
   const post = loadPost(params.slug);
   if (!post) notFound();
   const remoteFolder = post.slug.endsWith("-en") ? "remote-coding-en" : "remote-coding-ja";
+  const voiceHeading = remoteFolder === "remote-coding-en"
+    ? "## Voice input removes the final barrier"
+    : "## 音声入力が、最後の壁を壊す";
+  const voiceImage = `![${remoteFolder === "remote-coding-en" ? "Voice-driven Remote screen for sending the next instruction" : "音声で次の指示を送るRemote画面"}](/blog/${remoteFolder}/remote-screen-2.jpg)`;
   const articleMarkdown = post.slug.startsWith("remote-coding-")
-    ? post.markdown.replace(
-        new RegExp(`(\\]\\(/blog/${remoteFolder}/remote-screen-1\\.jpg\\))`),
-        `$1\\n\\n![${remoteFolder === "remote-coding-en" ? "Connected host and project selection in ChatGPT Remote" : "接続先のホストとプロジェクトを選ぶRemote画面"}](/blog/${remoteFolder}/remote-screen-2.jpg)`
-      )
+    ? post.markdown.replace(voiceHeading, `${voiceHeading}\n\n${voiceImage}`)
     : post.markdown;
   const html = renderMarkdown(articleMarkdown);
   const m = post.mirrors ?? {};
