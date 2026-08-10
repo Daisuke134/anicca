@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — through CFO-2a2b.5c2b complete; CFO-2a2b.5c2c real two-source E2E is next |
+| Status | ACTIVE — through CFO-2a2b.5c2c1 canary complete; CFO-2a2b.5c2c2 real E2E is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -124,7 +124,12 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       - [x] **5c2b:** add the Life Manager-owned read-only safe-probe seam. Commit `8554a6616`; 3 files,
             `+95/-1`; focused `1/1`, daily `9/9`, wiring `6/6`, portable `18/18`; fresh Sol: ship. Plan:
             `2026-08-11-life-manager-cfo-safe-provider-probe.md`.
-      - [ ] **5c2c:** update the real two-source E2E and close readiness only when both sources prove append-only truth.
+      - [ ] **5c2c:** close readiness only when both sources prove append-only truth.
+            - [x] **5c2c1:** the existing Life Manager launchd label ran the reviewed read-only safe probe against
+              canonical telemetry. New run `0→1`, exit `1`; one exact attempt and one same-ID failed completion,
+              production cursor exceptions `[]`, both `0600`, prefix immutable, original plist restored. Plan:
+              `2026-08-11-life-manager-cfo-safe-provider-live-canary.md`.
+            - [ ] **5c2c2:** update and run the obsolete real two-source E2E against both actual attempt ledgers.
 
 ## Acceptance gates
 

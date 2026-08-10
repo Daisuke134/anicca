@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:verification-before-completion. This is a Sol-owned
 > operational gate; Luna writes no code in this sub-slice.
 
-**Status:** READY FOR SOL REVIEW
+**Status:** COMPLETE
 
 **Goal:** Use the existing `ai.anicca.life-manager-daily` launchd identity to append one real Life Manager attempt
 and one same-ID completion to the CFO's canonical telemetry pair, without running any marketing or messaging work.
@@ -165,3 +165,12 @@ Do not require or report a particular token/cost value. The provider row is the 
 If every gate passes, mark canary complete and advance only to `5c2c2`: Luna updates the existing real two-source E2E
 from its obsolete both-attempt-files-absent premise. If any data gate fails, keep `5c2c1` open with the named observed
 gap; never append a manual repair row and never call capture ready.
+
+## Completion evidence
+
+- Existing label proved a new execution: temporary job `runs 0→1`, terminal idle, provider loop exit `1`.
+- The untouched original plist SHA/path/environment were restored before data judgment; temporary files were removed.
+- Canonical Life Manager telemetry prefix remained immutable. Exactly one new attempt and one same-ID failed
+  completion passed the production cursor; both files are `0600`, and cursor coverage exceptions are empty.
+- No manual runner, marketing generator, post, message, purchase, success marker, or synthetic row was used.
+- Provider failure remains provider truth; it is not rewritten as success or zero. Next: `5c2c2` real two-source E2E.

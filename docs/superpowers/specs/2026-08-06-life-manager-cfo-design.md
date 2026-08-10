@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a2b through 5c2b complete; CFO-2a2b.5c2c real two-source E2E is next |
+| Status | M2 ACTIVE — CFO-2a2b through 5c2c1 complete; CFO-2a2b.5c2c2 real two-source E2E is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2b.5c2c: run the safe Life Manager provider probe and prove both real ledgers** |
+| First unfinished item | **CFO-2a2b.5c2c2: update and run the real two-source capture E2E** |
 
 ## 1. Overview — What and Why
 
