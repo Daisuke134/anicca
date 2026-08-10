@@ -2,6 +2,7 @@
 
 const PURPOSE = /^(?:navigate|observe|fill|submit|readback)$/;
 const METHOD = /^[a-z][a-z0-9_]{1,63}$/;
+const SAFE_REASON = /^[a-z0-9][a-z0-9_:-]{1,99}$/;
 
 function invalid() {
   throw new Error("Connector minimal runner invalid");
@@ -84,6 +85,12 @@ function registered(value) {
   return Boolean(value && ["registered", "pending"].includes(value.status));
 }
 
+function operationSafeReason(value, fallback) {
+  const reason = value && typeof value === "object" && typeof value.safe_reason === "string"
+    ? value.safe_reason : "";
+  return SAFE_REASON.test(reason) ? reason : fallback;
+}
+
 function safeDiscoveryReason(error) {
   const code = String(error && error.code || "");
   if (code === "PROVIDER_CANDIDATE_CONTRACT_FAILED") return "provider_candidate_contract_failed";
@@ -99,6 +106,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
   let consecutiveFailures = 0;
   let providerDiscoveryFailed = false;
   let discoveryFailureReason = "provider_discovery_failed";
+  let lastSafeReason = "provider_discovery_failed";
 
   const elapsed = () => Date.parse(exactInstant(deps.now())) - startedAt;
   const deadlineReached = () => elapsed() >= settings.maxWakeMs;
@@ -171,9 +179,10 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       } catch (error) {
         providerDiscoveryFailed = true;
         discoveryFailureReason = safeDiscoveryReason(error);
+        lastSafeReason = discoveryFailureReason;
         consecutiveFailures += 1;
         if (consecutiveFailures >= settings.maxConsecutiveFailures) {
-          return finish("circuit_open", "consecutive_failure_limit");
+          return finish("circuit_open", lastSafeReason);
         }
         continue;
       }
@@ -191,6 +200,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           phase: "pre_submit",
         }));
         let usedFallback = false;
+        let directFailureReason = null;
         if (!registered(providerState)) providerState = null;
         if (!providerState) {
         try {
@@ -218,6 +228,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         }
 
         if (!operation || operation.status !== "completed") {
+          directFailureReason = operationSafeReason(operation, "direct_action_unverified");
           if (deadlineReached()) return finish("circuit_open", "wake_deadline");
           try {
             operation = await action("submit", "browser_harness", () => deps.runAgentFallback({
@@ -270,8 +281,9 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         }
 
         consecutiveFailures += 1;
+        lastSafeReason = directFailureReason || operationSafeReason(operation, "direct_action_unverified");
         if (consecutiveFailures >= settings.maxConsecutiveFailures) {
-          return finish("circuit_open", "consecutive_failure_limit");
+          return finish("circuit_open", lastSafeReason);
         }
       }
     }

@@ -316,13 +316,56 @@ test("three consecutive candidate failures open the circuit before a fourth navi
   }, state.dependencies);
 
   assert.equal(result.status, "circuit_open");
-  assert.equal(result.safe_reason, "consecutive_failure_limit");
+  assert.equal(result.safe_reason, "direct_action_unavailable");
   assert.equal(state.calls.filter(([name]) => name === "navigate").length, 4);
   assert.equal(state.calls.filter(([name, , , , url]) => name === "navigate" && url === "about:blank").length, 1);
   assert.equal(state.calls.filter(([name, , , , url]) => name === "navigate" && url !== "about:blank").length, 3);
   assert.equal(state.calls.filter(([name]) => name === "agent").length, 3);
   assert.deepEqual(state.calls.filter(([name]) => name === "report").at(-1), [
-    "report", "circuit_open", "consecutive_failure_limit",
+    "report", "circuit_open", "direct_action_unavailable",
+  ]);
+});
+
+test("valid direct safe reason survives failed fallback and opens the circuit with that exact reason", async () => {
+  const state = fixture({
+    async runDirectAction() { return Object.freeze({ status: "failed", safe_reason: "peatix_unknown_required_field" }); },
+    async runAgentFallback() { return Object.freeze({ status: "failed", safe_reason: "agent_action_failed" }); },
+  });
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-safe-reason", providers: ["luma", "connpass"], maxConsecutiveFailures: 3,
+  }, state.dependencies);
+  assert.equal(result.safe_reason, "peatix_unknown_required_field");
+  assert.deepEqual(state.calls.filter(([name]) => name === "report").at(-1), [
+    "report", "circuit_open", "peatix_unknown_required_field",
+  ]);
+});
+
+test("malformed direct safe reason becomes generic and does not reach the circuit report", async () => {
+  const state = fixture({
+    async runDirectAction() { return Object.freeze({ status: "failed", safe_reason: "https://peatix.com/event/private" }); },
+    async runAgentFallback() { return Object.freeze({ status: "failed", safe_reason: "agent_action_failed" }); },
+  });
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-safe-generic", providers: ["luma", "connpass"], maxConsecutiveFailures: 3,
+  }, state.dependencies);
+  assert.equal(result.safe_reason, "direct_action_unverified");
+  assert.doesNotMatch(result.safe_reason, /peatix\.com|private/);
+});
+
+test("discovery circuit reports the exact bounded provider stage", async () => {
+  const state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      const error = Object.assign(new Error("provider changed"), { code: "CONNPASS_DETAIL_START_INVALID_FAILED" });
+      throw error;
+    },
+  });
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-discovery-reason", providers: ["connpass"], maxConsecutiveFailures: 1,
+  }, state.dependencies);
+  assert.equal(result.safe_reason, "connpass_detail_start_invalid_failed");
+  assert.deepEqual(state.calls.find(([name]) => name === "report").slice(1), [
+    "circuit_open", "connpass_detail_start_invalid_failed",
   ]);
 });
 

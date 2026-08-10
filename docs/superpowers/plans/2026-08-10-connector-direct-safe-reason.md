@@ -12,10 +12,10 @@
 
 ## Task 1: TDD safe stage propagation
 
-- [ ] RED: Peatix workflow maps `unknown_required_field` to failed `peatix_unknown_required_field`, rejects malformed/absent reasons to `direct_action_unverified`, and still maps registered to completed.
-- [ ] RED: runner preserves a valid direct safe reason when fallback fails and reports it at 3-failure circuit-open; malformed reasons fail to a generic safe reason.
-- [ ] GREEN: add only bounded safe-reason validation/propagation; keep action-history exact fields unchanged.
-- [ ] Run Peatix workflow, runner, production/native integration, syntax, and diff checks.
+- [x] RED: Peatix workflow maps `unknown_required_field` to failed `peatix_unknown_required_field`, rejects malformed/absent reasons to `direct_action_unverified`, and still maps registered to completed.
+- [x] RED: runner preserves a valid direct safe reason when fallback fails and reports it at 3-failure circuit-open; malformed reasons fail to a generic safe reason.
+- [x] GREEN: add only bounded safe-reason validation/propagation; keep action-history exact fields unchanged.
+- [x] Run Peatix workflow, runner, production/native integration, syntax, diff, and fresh review checks.
 
 ## Acceptance
 
