@@ -7113,7 +7113,13 @@ Ponytail fullで現runner/operations/launchd testsとimmutable live evidenceを�
 
 live正本はofficial wake `wake-a85aefe7a153ce0513e7d7df`の`circuit_open / peatix_unknown_required_field / 3`、positive Telegram ID `10868`、provider/Calendar/PNG/bundle effect 0、owned page/process/lock cleanup。人工failureを再発生させず、plan `docs/superpowers/plans/2026-08-11-connector-circuit-breaker-15.md`でnamed tests、durable row、5分window、現launchd unloadedを統合検証する。code/test LOC 0、Item15は検証完了まで未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗332。これ以外の残TODO一覧は履歴）
+### O1B-25進捗333（Item 15 / deadline boundary fix-first）
+
+初回統合検証はrunner/operations/launchd 33/33、durable failure3/report/delivery、positive Telegram `10868`、delivery後5分report 0、4 labels unloaded、process/lock 0、single daily/no retry templateを確認した。fresh Sol reviewはCritical 0 / Important 1で`fix-first`。Calendar readが600,001msを消費したfixtureはdeadline後にbrowser targetをopenし、候補0 discoveryが600,001msを消費したfixtureは`completed_no_effect / providers_exhausted`を返すことを独立再現した。10分OR branchとdeadline後target/action 0に反する。
+
+planを先に改訂し、ownershipを既存minimal runner/testの2 filesだけへ限定する。Calendar後open前、open後provider action前、discovery後candidate/次provider前、および次browser/readback/actionを開始し得る長時間境界後にdeadlineを再検査する。in-flight operationのcancel/race、新timer/module/service/retry/scheduleは追加しない。既存bounded dependencyが戻った時点でone terminal `circuit_open / wake_deadline`をreportし、owned cleanup以外の後続作用0を必須にする。Item15未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗333。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
