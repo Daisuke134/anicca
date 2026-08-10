@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Execute checkbox steps in order.
 
-**Status:** GREEN — real launchd E2E next
+**Status:** COMPLETE — implementation, review, real launchd E2E, and push evidence recorded
 
 **Goal:** Invoke the completed two-source usage runner once from the existing local hourly CFO entrypoint without
 changing Moneytree decisions, Telegram copy/dedupe/buttons, stdout, exit semantics, or scheduler count.
@@ -122,10 +122,26 @@ Expected: all exit 0; exactly two owned files and <=20 additions. Luna reports R
 ## Task 2 — Sol real loop verification and close
 
 - [x] Fresh Sol implementation review returns `ship`.
-- [ ] Record both source file hashes/sizes and immutable batch counts; verify the single loaded launchd job still has
+- [x] Record both source file hashes/sizes and immutable batch counts; verify the single loaded launchd job still has
   `StartInterval=3600` and points to this reviewed worktree.
-- [ ] Declare the production trigger, `launchctl kickstart` the existing job once, and wait for completion. Do not
+- [x] Declare the production trigger, `launchctl kickstart` the existing job once, and wait for completion. Do not
   create/repoint/reload a job.
-- [ ] Prove each source gained exactly one valid immutable batch, source files are byte-identical, logs are content
+- [x] Prove each source gained exactly one valid immutable batch, source files are byte-identical, logs are content
   safe, scheduler count remains one, and existing stdout/Telegram delivery semantics remain unchanged.
-- [ ] Update specs, commit, push, and send the content-free milestone. Then 5c becomes the only active item.
+- [x] Update specs, commit, push, and send the content-free milestone. Then 5c becomes the only active item.
+
+## Completion evidence
+
+- Luna RED exposed the missing hourly call; GREEN covers partial receipts, synchronous throws, and rejected Promises.
+  The final call forwards only a new `{env:{LIFE_MANAGER_STATE_HOME}}` object, never the full environment or finance
+  clock. Fresh Sol review returned `ship`.
+- Verification passed: focused hourly 9/9, runner plus hourly 13/13, CFO 290/290, full `npm test` exit 0, syntax checks,
+  and `git diff --check`. The production/test change stayed within two files and the 20-line soft target.
+- A real kickstart of the one existing `ai.anicca.life-manager-cfo-hourly` job finished with exit 0 and empty stderr.
+  `StartInterval` remained 3600 and no second scheduler was created.
+- Both live source files kept identical size/mtime evidence while each immutable chain advanced exactly 10→11 files;
+  every file hash verified. Life Manager retained 1,109 accepted rows and Anicca retained 3,887. Coverage exceptions
+  remained visible (`missing_usage`, `runner_identity_collision`, `unattributed_usage`) rather than being converted to
+  zero or hidden.
+- Existing finance output was `quiet`, revision 2, `appended=false`, `delivered=false`, `recovered=true`: unchanged
+  facts caused no duplicate Telegram message and no reporting behavior changed.
