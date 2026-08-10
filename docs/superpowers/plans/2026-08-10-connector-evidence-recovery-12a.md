@@ -2,7 +2,7 @@
 
 ## Goal
 
-Persist and validate the provider ticket/PNG and Calendar stages of one verified registration so a recreated evidence chain resumes after interruption without another screenshot, provider-evidence write, or Calendar create.
+Persist and validate one provider ticket/PNG pointer so a recreated evidence chain resumes after interruption without another screenshot or provider-evidence write, while the existing Calendar idempotency path independently reads or creates exactly one event.
 
 ## Current evidence
 
@@ -15,8 +15,9 @@ Persist and validate the provider ticket/PNG and Calendar stages of one verified
 
 - Reuse the current evidence store readers, Calendar idempotency/readback, mode-0600 state root, receipt validators, and atomic rename pattern.
 - Add no database, service, queue, retry loop, provider abstraction, browser action, runner dependency, or schedule.
-- This is Item 12A only: provider ticket/PNG and Calendar recovery. Telegram message/photo and final bundle checkpointing are the next 12B slice and are not claimed here.
-- Store only provider/event refs, canonical URL hash, artifact/receipt refs and SHA, Calendar ID/URL/readback time, and timestamps. Never persist title, venue, attendee, Telegram target, raw page, screenshot bytes, or private profile in the checkpoint.
+- Do not add a Calendar checkpoint. The existing private idempotency find/create/independent-readback path is the Calendar recovery authority; duplicating it would permit stale Calendar state.
+- This is Item 12A only: provider ticket/PNG pointer plus existing Calendar recovery. Telegram message/photo and final bundle checkpointing are the next 12B slice and are not claimed here.
+- Store only provider/event refs, canonical URL hash, artifact/receipt refs and SHA, provider status, and first-observed timestamp. Never persist Calendar data, title, venue, attendee, Telegram target, raw page, screenshot bytes, or private profile in the pointer.
 
 ## Implementation slice
 
@@ -25,23 +26,23 @@ Luna owns only:
 1. `apps/life-manager/lib/connector-minimal-evidence.test.js`
 2. `apps/life-manager/lib/connector-minimal-evidence.js`
 
-Soft target: 2 files; production +55–90 LOC; tests +65–95 LOC.
+Soft target: 2 files; production +65–110 LOC; tests +65–95 LOC. Broad flow rewrite is forbidden; preserve the current evidence/Calendar/Telegram/bundle sequence and add only the pointer branch.
 
 ### RED
 
 1. After a valid provider receipt/PNG is stored and Calendar fails, recreating the chain from the same state validates `readExternalReceipt` and `readArtifact`, then skips receipt render, screenshot, and `record` while completing through Calendar/Telegram/bundle.
-2. If Calendar create succeeds but its first independent readback is unavailable or representation-mismatched, recovery finds the one existing private-idempotency event and never creates a second event.
-3. The checkpoint is mode 0600, atomic, exact-schema, and contains no title, venue, attendee, target, ticket ID, URL, screenshot bytes, or private value.
-4. Corrupt JSON, extra keys, wrong provider/event/hash, invalid receipt/artifact ref, artifact SHA mismatch, missing provider receipt, or invalid PNG fails before page render, Calendar, Telegram, or bundle.
-5. Existing first-pass Luma and Peatix flows remain unchanged and all existing partial failures still write no bundle.
+2. If Calendar create succeeds but its first independent readback is unavailable or representation-mismatched, recovery uses the provider pointer, finds the one existing private-idempotency event, and never creates a second event.
+3. Every recovery, including after prior Calendar success, independently reads Calendar and requires one matching event before Telegram/bundle; deletion or ID mismatch fails and never trusts local pointer state as Calendar authority.
+4. The provider pointer is mode 0600, atomic, exact-schema, and contains no title, venue, attendee, target, ticket ID, URL, screenshot bytes, Calendar receipt, or private value.
+5. Corrupt JSON, extra keys, wrong provider/event/hash, invalid receipt/artifact ref, artifact SHA mismatch, missing provider receipt, or invalid PNG fails before page render, Calendar, Telegram, or bundle.
+6. Existing first-pass Luma and Peatix flows remain unchanged and all existing partial failures still write no bundle.
 
 ### GREEN
 
 - Derive a checkpoint identity from provider, exact event reference, and validated canonical event URL; store the URL only as its SHA-256 idempotency value.
-- After provider evidence succeeds, atomically persist an exact `evidence` checkpoint with stable first-observed timestamp and validated refs/SHA.
-- On restart, validate the checkpoint, provider receipt, artifact bytes/signature/SHA, and identity before skipping page receipt render/screenshot/store.
-- After one independent Calendar readback, atomically advance the same checkpoint to exact `calendar` stage with validated Calendar receipt and readback timestamp.
-- If Calendar already exists after a crash between create and checkpoint, reuse the one provider event; create remains zero on recovery.
+- After provider evidence succeeds, atomically persist one exact provider pointer with stable first-observed timestamp and validated refs/SHA.
+- On restart, validate the pointer, provider receipt, artifact bytes/signature/SHA, and identity before skipping page receipt render/screenshot/store.
+- Always run the existing Calendar find/create/independent-readback sequence. If Calendar already exists after a crash, reuse the one provider event; create remains zero on recovery. No Calendar data is persisted in the pointer.
 - Keep Telegram and final bundle behavior otherwise unchanged in this slice.
 
 ## Verify
