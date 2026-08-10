@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3b.1 pure allocation contract is first |
+| Status | ACTIVE — CFO-2a3b.1 complete; CFO-2a3b.2 real dimension source is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; no new DB, scheduler, or cloud export in the first slice |
 | Confirmed source | Existing immutable Google Cloud invoice total from CFO-2a3 |
 | Dimension source | Official Cost Table CSV first; existing standard BigQuery export only when actually available |
-| First unfinished item | **CFO-2a3b.1: allocate already-normalized official rows and preserve an exact unallocated remainder** |
+| First unfinished item | **CFO-2a3b.2: acquire and normalize one real official dimension source** |
 
 ## 1. Goal
 
@@ -63,7 +63,7 @@ flowchart LR
 
 ## 4. Ordered delivery
 
-- [ ] **CFO-2a3b.1 — Pure allocation contract.** Accept an existing confirmed invoice, already-normalized official
+- [x] **CFO-2a3b.1 — Pure allocation contract.** Accept an existing confirmed invoice, already-normalized official
       dimension rows, and one explicit versioned project mapping. Require exact invoice equality and return exact
       per-business allocation plus the visible unallocated remainder.
 - [ ] **CFO-2a3b.2 — Real dimension source.** After a real source is reachable, acquire one unfiltered Cost Table CSV
@@ -132,3 +132,19 @@ CFO-2a3b.2 does not begin from a fabricated CSV fixture. It begins only after on
 under default filters with required columns, or one official standard export table actually exists. Cloud Console
 currently needs password reauthentication; this remains a visible source-acquisition blocker, not a reason to invent
 provider rows or silently label estimates as confirmed allocation.
+
+## 9. CFO-2a3b.1 completion evidence
+
+- Luna changed exactly the two planned existing files. Final diff is 26 added/9 removed production lines and 37
+  added/1 removed test line, below the +55/+80 gates; no file, dependency, manifest, lock, I/O, or later-slice path
+  was added.
+- RED first failed only because `allocateProviderBilling` did not exist. GREEN proves signed exact allocation,
+  deterministic business totals, visible unallocated remainder, conservation, deep freeze, and unchanged inputs.
+- Fresh Sol review found one Important coercion defect: nested custom-prototype refs/period could pass regex coercion
+  and output freezing could freeze input. The same Luna added a failing nested-hostile regression and strict string
+  boundaries; final focused tests pass `6/6`, including cross-period and cross-currency rows and fixed redacted errors.
+- Luna and Sol independently verified the final code. Sol's final run passed CFO `323/323`, full `npm test`, both
+  syntax checks, `git diff --check`, and the LOC/two-file gates. A reviewer re-run could not be allocated because the
+  collaboration service returned `agent thread limit reached`; no second reviewer result is claimed.
+- CFO-2a3b.1 is closed. CFO-2a3b.2 remains first and cannot accept a fabricated CSV fixture as real provider
+  evidence.

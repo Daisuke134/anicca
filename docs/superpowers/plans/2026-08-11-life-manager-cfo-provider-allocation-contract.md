@@ -1,5 +1,7 @@
 # CFO-2a3b.1 — Pure Provider Allocation Contract Plan
 
+**Status: COMPLETE.** Luna's two-file TDD implementation passed final Sol verification after one fresh-review fix.
+
 > Workflow: Ponytail full → Superpowers GLVS. Sol owns this plan/spec and final verification. Luna owns all
 > production/test edits and implementation commands. The same Luna fixes review findings.
 
@@ -53,3 +55,10 @@ Implement the exact CFO-2a3b.1 contract and nothing after it.
 
 On pass, mark only CFO-2a3b.1 complete. CFO-2a3b.2 remains first unfinished until a real official dimension source
 exists. Do not mark CFO-2a3b complete from fixture-only evidence.
+
+## Completion
+
+- Final diff: production +26/-9, test +37/-1, two existing files only.
+- Verification: focused `6/6`, CFO `323/323`, full `npm test`, syntax, diff, and LOC gates passed.
+- Fresh review found coercible nested refs/period; the same Luna reproduced it RED and fixed it with strict string
+  boundaries. Sol independently reran the final suite. CFO-2a3b.2 is next.
