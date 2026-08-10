@@ -73,7 +73,43 @@ test("operations persist safe history and a positive every-wake Telegram receipt
   }
 });
 
-test("a later wake retries a durable Telegram report left pending by send failure", async () => {
+test("duplicate report uses stored created_at and rejects business-field drift", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-duplicate-"));
+  let clock = Date.parse("2026-08-08T08:30:00.000Z"); const sent = [];
+  const input = { status: "completed_no_effect", safe_reason: "providers_exhausted", consecutive_failure_count: 0 };
+  const make = () => createMinimalProductionOperations({
+    stateDir, wakeId: "wake-20260808-duplicate", telegramTarget: "private-target",
+    now: () => new Date(clock += 1000), async sendMessage() { sent.push(true); return { messageId: 9201 }; },
+  });
+  try {
+    const operations = make(); await operations.reportWake(input); await operations.reportWake(input);
+    assert.equal(sent.length, 1);
+    const row = JSON.parse(fs.readFileSync(path.join(stateDir, "wake-reports.jsonl"), "utf8").trim());
+    assert.equal(row.created_at, "2026-08-08T08:30:01.000Z");
+    await assert.rejects(() => operations.reportWake({ ...input, safe_reason: "consecutive_failure_limit" }));
+    assert.equal(sent.length, 1);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("reportWake fails closed before send on malformed delivery rows", async () => {
+  const report = { schema_version: 1, wake_id: "wake-20260808-delivery", status: "completed_no_effect", safe_reason: "providers_exhausted", consecutive_failure_count: 0, created_at: "2026-08-08T08:30:00.000Z" };
+  const valid = { schema_version: 1, wake_id: report.wake_id, telegram_provider_id: "9301", delivered_at: report.created_at };
+  const variants = [
+    { ...valid, schema_version: 2 }, { ...valid, telegram_provider_id: "0" }, { ...valid, telegram_provider_id: 9 },
+    { ...valid, wake_id: "x" }, { ...valid, delivered_at: "not-an-instant" },
+  ];
+  for (const delivery of variants) {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-delivery-invalid-")); let sends = 0;
+    try {
+      fs.writeFileSync(path.join(stateDir, "wake-reports.jsonl"), `${JSON.stringify(report)}\n`, { mode: 0o600 });
+      fs.writeFileSync(path.join(stateDir, "wake-report-deliveries.jsonl"), `${JSON.stringify(delivery)}\n`, { mode: 0o600 });
+      const operations = createMinimalProductionOperations({ stateDir, wakeId: report.wake_id, telegramTarget: "private-target", now: () => new Date(report.created_at), async sendMessage() { sends += 1; return { messageId: 9302 }; } });
+      await assert.rejects(() => operations.reportWake(report)); assert.equal(sends, 0);
+    } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+  }
+});
+
+test("a later wake delivers current before one pending historical report", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-retry-"));
   try {
     const failed = createMinimalProductionOperations({
@@ -88,6 +124,8 @@ test("a later wake retries a durable Telegram report left pending by send failur
       safe_reason: "providers_exhausted",
       consecutive_failure_count: 0,
     }));
+    const reportFile = path.join(stateDir, "wake-reports.jsonl");
+    const oldReport = fs.readFileSync(reportFile, "utf8").trim().split("\n")[0];
 
     const sent = [];
     const recovered = createMinimalProductionOperations({
@@ -97,24 +135,61 @@ test("a later wake retries a durable Telegram report left pending by send failur
       now: () => new Date("2026-08-08T08:30:00.000Z"),
       async sendMessage(message) {
         sent.push(message);
-        return { messageId: 8000 + sent.length };
+        if (message.includes("providers_exhausted")) throw new Error("historical transport failure");
+        return { messageId: 8001 };
       },
     });
     const result = await recovered.reportWake({
-      status: "completed_no_effect",
-      safe_reason: "providers_exhausted",
-      consecutive_failure_count: 0,
+      status: "circuit_open",
+      safe_reason: "consecutive_failure_limit",
+      consecutive_failure_count: 3,
     });
 
     assert.equal(sent.length, 2);
-    assert.deepEqual(result, { telegram_provider_id: "8002" });
+    assert.equal(sent[0].includes("consecutive_failure_limit"), true);
+    assert.equal(sent[1].includes("providers_exhausted"), true);
+    assert.deepEqual(result, { telegram_provider_id: "8001" });
     const deliveries = fs.readFileSync(
       path.join(stateDir, "wake-report-deliveries.jsonl"), "utf8",
     ).trim().split("\n").map(JSON.parse);
-    assert.deepEqual(deliveries.map((row) => row.wake_id), [
-      "wake-20260807-failed",
-      "wake-20260808-recovered",
-    ]);
+    assert.deepEqual(deliveries.map((row) => row.wake_id), ["wake-20260808-recovered"]);
+    const reportLines = fs.readFileSync(reportFile, "utf8").trim().split("\n");
+    assert.equal(reportLines[0], oldReport);
+    assert.equal(reportLines.length, 2);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("reportWake bounds historical recovery and keeps current failure hard", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-priority-"));
+  const report = { status: "completed_no_effect", safe_reason: "providers_exhausted", consecutive_failure_count: 0 };
+  const make = (wakeId, sendMessage) => createMinimalProductionOperations({
+    stateDir, wakeId, telegramTarget: "private-target", now: () => new Date("2026-08-08T08:30:00.000Z"), sendMessage,
+  });
+  try {
+    for (const wakeId of ["wake-20260807-old-1", "wake-20260807-old-2"]) {
+      await assert.rejects(() => make(wakeId, async () => { throw new Error("transport failure"); }).reportWake(report));
+    }
+    const sent = [];
+    const current = make("wake-20260808-current", async (message) => {
+      sent.push(message); return { messageId: 9000 + sent.length };
+    });
+    const first = await current.reportWake({ status: "circuit_open", safe_reason: "consecutive_failure_limit", consecutive_failure_count: 3 });
+    assert.deepEqual(first, { telegram_provider_id: "9001" });
+    assert.equal(sent.length, 2);
+
+    const duplicateSent = [];
+    const duplicate = make("wake-20260808-current", async (message) => {
+      duplicateSent.push(message); return { messageId: 9100 + duplicateSent.length };
+    });
+    assert.deepEqual(await duplicate.reportWake({ status: "circuit_open", safe_reason: "consecutive_failure_limit", consecutive_failure_count: 3 }), first);
+    assert.equal(duplicateSent.length, 1);
+
+    const hard = make("wake-20260808-hard", async () => { throw new Error("current transport failure"); });
+    await assert.rejects(() => hard.reportWake(report));
+    const deliveries = fs.readFileSync(path.join(stateDir, "wake-report-deliveries.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
+    assert.equal(deliveries.some((row) => row.wake_id === "wake-20260808-hard"), false);
   } finally {
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
