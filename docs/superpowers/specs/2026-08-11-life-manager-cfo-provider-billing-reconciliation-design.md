@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PLANNED — CFO-2a3.1 is the only active slice |
+| Status | ACTIVE — CFO-2a3.1 complete; CFO-2a3.2 local Gmail/PDF source is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains unchanged until real E2E passes |
 | First provider | Google Cloud monthly invoice delivered to the already-authenticated local Gmail account |
@@ -83,7 +83,9 @@ flowchart LR
 - `fields`: `billing_period`, `service_period_start`, `service_period_end`, `subtotal`, `tax`, `total`, `currency`;
 - `provenance`: raw `billing_account_id`, 64-hex `pdf_sha256`, and `observed_at`.
 
-All three money fields are canonical non-negative decimal strings. For this first real Japanese invoice contract,
+All three money fields are canonical non-negative decimal strings: zero is exactly `0`, whole values have no
+decimal point, and fractional values have neither leading whole-number zeroes nor trailing fractional zeroes. For
+example, `0`, `1`, and `1.25` are canonical; `00`, `1.0`, and `1.250` are rejected. For this first real Japanese invoice contract,
 `currency` is exactly `JPY` and `subtotal + tax` must exactly equal `total`. Other invoice-level adjustments are not
 silently folded into tax; a future observed format must update this spec before its parser is accepted.
 
@@ -112,7 +114,7 @@ allocation so narrower business totals can be derived honestly.
 
 ## 5. One-at-a-time delivery
 
-- [ ] **CFO-2a3.1 — Pure contract.** Normalize already-extracted Google invoice fields and reconcile one confirmed
+- [x] **CFO-2a3.1 — Pure contract.** Normalize already-extracted Google invoice fields and reconcile one confirmed
       total against one provisional total. Exact arithmetic, frozen output, redacted failures.
 - [ ] **CFO-2a3.2 — Local source.** Extend the existing `gog` transport with one read-only exact-invoice operation;
       download one PDF to a private temporary directory, verify sender/attachment/hash, extract with existing
@@ -146,3 +148,12 @@ adding code.
 4. Invalid or inconsistent invoice arithmetic fails with a stable redacted error and leaks no input values.
 5. Inputs and result are deeply frozen or proven unmodified; focused test, `npm run test:cfo`, full `npm test`, fresh
    Sol review, spec update, commit, and push pass before CFO-2a3.2 starts.
+
+## 8. CFO-2a3.1 completion evidence
+
+- Luna delivered one 44-line production module, one 47-line three-case test, and one existing package-script token.
+- RED failed because the production module did not exist. GREEN passed focused `3/3`, CFO `303/303`, and full
+  `961/961`; Sol independently repeated focused `3/3`, CFO `303/303`, full `npm test`, syntax, diff, and LOC checks.
+- Fresh Sol review found invalid-month and non-canonical-decimal acceptance. The same Luna fixed only those two
+  contracts; re-review returned `ship — Spec ✅`.
+- No Gmail/PDF I/O, storage, DB, OpenTelemetry, scheduler, allocation, or Telegram behavior was added.
