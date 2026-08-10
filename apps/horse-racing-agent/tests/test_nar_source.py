@@ -199,3 +199,46 @@ def test_planner_rejects_deeply_encoded_traversal(path):
             f'<a href="{path}">deep traversal</a>',
             "",
         )
+
+
+def _nested_percent_encoded_slash(rounds: int) -> str:
+    encoded = "/"
+    for _ in range(rounds):
+        encoded = encoded.replace("%", "%25").replace("/", "%2F")
+    return encoded
+
+
+def test_planner_rejects_raw_paths_longer_than_4096_characters():
+    path = "/KeibaWeb/DataDownload/" + ("a" * 4080) + "/RaceDataDownload?type=daily"
+
+    with pytest.raises(ValueError, match="official NAR URL"):
+        plan_nar_fetch(
+            datetime(2027, 11, 15, 2, tzinfo=JST),
+            f'<a href="{path}">oversized path</a>',
+            "",
+        )
+
+
+def test_planner_rejects_percent_decoding_that_exceeds_16_rounds():
+    path = "/KeibaWeb/DataDownload" + _nested_percent_encoded_slash(17) + "RaceDataDownload?type=daily"
+
+    with pytest.raises(ValueError, match="official NAR URL"):
+        plan_nar_fetch(
+            datetime(2027, 11, 15, 2, tzinfo=JST),
+            f'<a href="{path}">too many encoding rounds</a>',
+            "",
+        )
+
+    supported_path = (
+        "/KeibaWeb/DataDownload"
+        + _nested_percent_encoded_slash(16)
+        + "RaceDataDownload?type=daily"
+    )
+    requests = plan_nar_fetch(
+        datetime(2027, 11, 15, 2, tzinfo=JST),
+        f'<a href="{supported_path}">supported encoding rounds</a>',
+        "",
+    )
+
+    assert len(requests) == 1
+    assert requests[0].artifact_kind == "daily_race"

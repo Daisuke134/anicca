@@ -29,6 +29,8 @@ _PATH_PREFIXES = (
 )
 _SHA256 = re.compile(r"[0-9a-fA-F]{64}\Z")
 _BINARY_TYPES = {"application/zip", "application/x-zip-compressed", "application/octet-stream"}
+_MAX_RAW_PATH_LENGTH = 4096
+_MAX_PATH_DECODE_ROUNDS = 16
 
 
 class _LinkParser(HTMLParser):
@@ -50,6 +52,8 @@ class _LinkParser(HTMLParser):
 def _normalise_url(href: str) -> str:
     try:
         raw_path = urlsplit(href).path
+        if len(raw_path) > _MAX_RAW_PATH_LENGTH:
+            raise ValueError("official NAR URL is invalid")
         parsed = urlsplit(urljoin(_ORIGIN, href))
         port = parsed.port
         decoded_path = _decode_path(parsed.path)
@@ -72,12 +76,14 @@ def _normalise_url(href: str) -> str:
 
 def _decode_path(path: str) -> str:
     decoded = path
-    while True:
+    for _ in range(_MAX_PATH_DECODE_ROUNDS):
         unquoted = unquote(decoded)
         if unquoted == decoded:
-            break
+            return decoded
         decoded = unquoted
-    return decoded
+        if "%" not in decoded:
+            return decoded
+    raise ValueError("official NAR URL is invalid")
 
 
 def _reject_dot_segments(path: str) -> None:
