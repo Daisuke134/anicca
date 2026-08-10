@@ -129,50 +129,54 @@ slice records the mapping ID beside its ingestion receipt.
 
 Each source file keeps only:
 
-- stable source ID, committed complete-line byte offset, committed-prefix SHA-256, and discovered complete-row count;
+- stable source ID, committed complete-line byte offset, committed-prefix SHA-256, and last observed file size;
 - discovered, accepted, duplicate, conflicting, invalid, attributed, and unattributed row counts;
 - last terminal attempt timestamp and current coverage state.
 
 The pure cursor returns only the first item. The later I/O owner records scan time and aggregate counts; the cursor
 does not read a clock or write state.
 
-If the committed prefix shrinks, the prefix changes, JSON is truncated, or one runner `event_id` identifies distinct rows,
+If the file shrinks, the prefix changes, JSON is truncated, or one runner `event_id` identifies distinct rows,
 ingestion lowers coverage and preserves the accepted source-row observations. It never drops distinct rows merely
 because their runner IDs collide, and never reports a partial subtotal as complete.
 
 ## Append-only cursor contract
 
-`scanLocalAgentUsageSource(data, {source_id, prior_state})` is pure. `source_id` is exactly
-`life_manager_agent_usage|anicca_agent_usage`, `data` is one Buffer snapshot, and `prior_state` is null or exact:
+`scanLocalAgentUsageAppend(sourceId, bytes, previousState)` is pure. `sourceId` is exactly
+`life_manager_agent_usage|anicca_agent_usage`, `bytes` is one Buffer snapshot, and `previousState` is null or the exact
+prior cursor state:
 
 ```text
+schema_version: 1
 source_id
 byte_offset
 prefix_sha256
-discovered_rows
+observed_file_size
 ```
 
-`byte_offset` is the byte immediately after the last accepted LF and `prefix_sha256` hashes exactly
-`data.subarray(0, byte_offset)`. A source defect returns a new frozen copy equal in value to the prior state; it never
-freezes or mutates caller input.
+`byte_offset` is the byte immediately after the last accepted LF. `prefix_sha256` hashes exactly
+`bytes.subarray(0, byte_offset)`. `observed_file_size` is the whole snapshot length including any partial tail. Null
+input uses the fixed empty initial state. A source defect returns a new frozen copy equal in value to the prior state;
+it never freezes or mutates the caller's state object.
 
-The cursor verifies the previous prefix SHA-256 before it trusts a suffix. It scans Buffer byte indexes, so each
-`source_row_ref` uses the complete line's real zero-based byte offset, not a character offset. The completed reducer
-owns schema validation and dedupe; the later I/O owner may persist returned cursor state only after that reducer
-succeeds. The cursor does not duplicate the normalizer.
+The cursor verifies the previous observed size and SHA-256 of `[0, byte_offset)` before it trusts a suffix. It scans
+Buffer byte indexes, so each `source_row_ref` uses the complete line's real zero-based byte offset, not a character
+offset. Every complete new line must parse as JSON and pass the existing local-agent normalizer with unattributed
+context before any state advances.
 
 - unchanged append-only prefix: return new exact `{input, context}` pairs and advance through the last complete line;
-- fewer bytes than the committed offset: return no pairs, preserve prior state, emit exactly `["source_truncated"]`;
+- smaller file than the prior observed size: return no pairs, preserve prior state, emit exactly
+  `coverage_exceptions=["source_truncated"]`;
 - changed committed prefix: return no pairs, preserve prior state, emit exactly `["source_rewritten"]`;
-- malformed JSON or non-object complete line: return no pairs, preserve prior state, emit exactly
+- malformed or schema-invalid complete line: return no pairs, preserve prior state, emit exactly
   `["invalid_source_row"]`;
 - otherwise, trailing bytes without newline return preceding complete pairs, stop the offset before the partial line,
-  and emit exactly `["incomplete_tail"]`.
+  and emit exactly `["partial_tail"]`.
 
 The exact frozen result is `{pairs, state, coverage_exceptions}`. Exceptions are unique and lexicographically sorted.
-Defect precedence is truncate, rewrite, invalid complete row, then incomplete tail. Expected source defects are
-non-throwing evidence; only invalid function arguments throw fixed redacted
-`cfo_local_agent_source_invalid:<reason>` errors.
+Defect precedence is truncate, rewrite, invalid complete row, then partial tail. Expected source defects are
+non-throwing evidence; only invalid function arguments throw the fixed redacted prefix
+`cfo_local_agent_usage_cursor_invalid:<reason>`.
 
 ## Event dedupe contract
 
@@ -199,7 +203,7 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 |---|---|---|
 | 2a2a.1 ✅ | Pure event normalizer uses opaque source-row identity and preserves runner values/provenance | 2 files, +92/-1 cumulative LOC from pre-slice base |
 | 2a2a.2 ✅ | Pure batch reducer dedupes source-row refs and reports runner-ID collisions without dropping rows | 2 files, +69/-2 LOC |
-| 2a2a.3 ✅ | Append-only byte cursor detects committed-prefix defects and runs in the normal CFO suite | 3 files, +96/-1 LOC |
+| 2a2a.3 ✅ | Append-only file cursor proves hash/watermark/truncation coverage | 2 new files, +78 LOC |
 | 2a2a.4 NEXT | Versioned loop/task mapping yields attributed or visibly unattributed rows | <=3 files, <=100 added LOC |
 | 2a2a.5 | Local append/storage + OTel links accepted rows without exposing content | <=3 files per sub-slice |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
@@ -211,7 +215,7 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 - [x] Missing usage remains null and lowers coverage; it never becomes zero.
 - [x] Identical source-row refs are idempotent; conflicting refs fail closed; reused runner IDs lower coverage without
       deleting distinct source rows.
-- [x] Rewrite, committed-prefix truncation, and malformed complete rows reduce coverage without deleting accepted evidence.
+- [x] Rewrite, truncation, malformed complete rows, and partial tails reduce coverage without deleting accepted evidence.
 - [ ] An unread source reduces coverage without deleting accepted evidence.
 - [x] Explicit mapping attributes a row; missing mapping produces an unattributed row.
 - [ ] Subscription cash cost remains separate; token-derived USD is not labeled current spend.
