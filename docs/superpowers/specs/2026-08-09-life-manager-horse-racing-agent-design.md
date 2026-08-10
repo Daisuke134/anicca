@@ -276,7 +276,7 @@ sequenceDiagram
 | HRA-2S | observed schema/local store | **complete**。synthetic fixtureはtest_only、nullable未観測値、append-only identity |
 | HRA-3D | actual chronological coverage/cutoff audit | **code complete / actual BLOCKED**。records 0、model_ready false |
 | HRA-3C-monthly | actual NAR materialization probe | **complete / BLOCKED_NO_CUTOFF_TIMESTAMP**。321 joined settled candidates、safe records 0 |
-| HRA-3C-daily | one actual NAR daily cutoff snapshot | **ACTIVE**。HTTP completion <= start-10mだけを候補化 |
+| HRA-3C-daily | one actual NAR daily cutoff snapshot | **ACTIVE-FIX**。snapshot PASS、exact win complete coverageは7 races/76 runnersへ訂正 |
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
 | HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow runs 0 |
 | HRA-5 | Telegram + CFO real/shadow separation | **BLOCKED**。Telegram runs 0 |

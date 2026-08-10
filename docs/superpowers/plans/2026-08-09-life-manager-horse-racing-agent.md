@@ -84,7 +84,8 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 6 | HRA-2S observed schema/store | **complete** | commits `2feb29cfe` + `3f9f036f4`; focused 29/full 75 PASS |
 | 7 | HRA-3D audit implementation | **complete; actual gate blocked** | commits `1426d4e23..05c03391c`; actual records 0, model_ready false |
 | 7A | HRA-3C monthly NAR materialization probe | **complete; cutoff blocked** | commit `d4a2389ea`; 321 joined settled candidates, cutoff-safe records 0 |
-| 7B | HRA-3C daily cutoff snapshot probe | **ACTIVE** | one official daily odds snapshot with retrieval-time cutoff proof |
+| 7B | HRA-3C daily cutoff snapshot probe | **ACTIVE-FIX** | snapshot PASS; exact win-market completeness correction required |
+| 7C | HRA-3C win-market materializer | blocked by corrected 7B evidence | exact `単勝`, complete-runner races only |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3C/3D actual gate | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
@@ -408,7 +409,9 @@ Use CRWL once on the official TodayRaceInfo page and discover the current daily 
 
 Parse locally and join only by observed official keys. Build each race's scheduled timestamp from official race date + `発走時刻` in Asia/Tokyo. Use a conservative fixed operational cutoff of scheduled start minus 10 minutes. A candidate is cutoff-safe only when the daily-odds HTTP completion timestamp is at or before that cutoff and at least one observed single-runner odds row joins the race/runner key. Past races, disabled/not-published odds, missing start time, missing runner join, non-positive/blank odds, and archive retrieval after cutoff remain excluded/blocked; do not replace unknown with zero.
 
-Evidence records only redacted URLs/timestamps/hashes/schema/counts: future race count, pre-cutoff race count, joined single-runner key count, excluded counts by reason, and exact safely materializable race/runner counts. No odds values, names, payouts, or raw rows. Gate is one of `PASS_DAILY_CUTOFF_SNAPSHOT`, `NOT_PUBLISHED`, `BLOCKED_NO_FUTURE_RACE`, `BLOCKED_NO_JOIN_KEY`, or `BLOCKED_SOURCE`. Even PASS authorizes only parser implementation and later SHADOW data collection; model/cash/revenue stay false. Commit `docs(horse-racing): record NAR daily cutoff snapshot`, push both, verify modes/parity.
+Evidence records only redacted URLs/timestamps/hashes/schema/counts: future race count, pre-cutoff race count, joined single-runner key count, excluded counts by reason, and exact safely materializable race/runner counts. No odds values, names, payouts, or raw rows. A normalized market record must use one exact observed bet type and must cover every official horselist runner for that race with one unique positive odds row; cross-bet-type `single-runner` aggregates are candidates only. For v1 use exact `賭式=単勝`; incomplete markets are excluded, never silently drop a runner. Gate is one of `PASS_DAILY_CUTOFF_SNAPSHOT`, `NOT_PUBLISHED`, `BLOCKED_NO_FUTURE_RACE`, `BLOCKED_NO_JOIN_KEY`, or `BLOCKED_SOURCE`. Even PASS authorizes only parser implementation and later SHADOW data collection; model/cash/revenue stay false. Commit `docs(horse-racing): record NAR daily cutoff snapshot`, push both, verify modes/parity.
+
+Post-probe aggregate correction: all single-runner bet types yielded 12 races/126 runner candidates, but bet types are not interchangeable. Exact positive `単勝` yielded 12 races/125 runners; only 7 races/76 runners had complete positive win-odds coverage for every horselist runner. Five races were incomplete with six total missing runners and zero extra odds keys. The evidence must present 7/76 as safely materializable v1 win records and retain 12/126 only as cross-bet-type candidates. Snapshot transport/cutoff gate remains `PASS_DAILY_CUTOFF_SNAPSHOT`; parser/model/cash remain blocked until this truth correction is committed.
 
 ## Task 8: HRA-3M cutoff-safe baseline, model, and backtest
 
