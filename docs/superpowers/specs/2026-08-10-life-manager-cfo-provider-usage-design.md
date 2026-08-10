@@ -673,14 +673,23 @@ receipt. A store failure ends an error span and never produces a successful one.
 
 The caller supplies only `owner_id`, `financial_unit_id`, `request_model`, `live_session_id`, and `usage_sequence`;
 `occurred_at` comes from the injected/default clock and `trace_id` comes only from the recording span. The function
-never sums observations, changes `usage_sequence`, or treats it as a token delta.
+rejects any missing, extra, invalid, pre-supplied time, or pre-supplied trace field before starting a span. It never
+sums observations, changes `usage_sequence`, or treats it as a token delta.
+
+Every Live span starts with exactly these known request attributes: `gen_ai.operation.name=generate_content`,
+`gen_ai.provider.name=gcp.gemini`, the exact Live request model, `gen_ai.request.stream=true`,
+`gen_ai.output.type=speech`, server address, and port 443. A tracing, invalid-message, or store failure adds only the
+fixed `error.type`; it never invents usage counts or response attributes. Usage attributes are added only after the
+typed store succeeds.
 
 Acceptance:
 
 - [ ] one valid Live message stores once with the span trace/time and returns the exact closed local receipt;
+- [ ] receipt, append context, and span contain the same generated trace ID;
 - [ ] the finished span is CLIENT, uses the exact Live name/attributes/counts, and contains no content/raw metadata;
 - [ ] the successful span ends only after storage succeeds;
-- [ ] invalid message, tracing failure, or store failure ends at most one fixed error span and never retries/logs;
+- [ ] invalid caller context creates no span and no append; invalid message, tracing failure, or store failure ends at
+  most one exact base-only error span and never retries/logs;
 - [ ] existing GenerateContent capture behavior remains unchanged;
 - [ ] focused span, CFO, and full suites pass within exactly two files and at most 70 additions.
 
