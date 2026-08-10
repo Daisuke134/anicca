@@ -1,6 +1,6 @@
 # CFO-2a2.3a OpenTelemetry Dependency Plan
 
-**Status:** READY — only active task. **Goal:** Declare the two OTel imports honestly; no runtime change.
+**Status:** COMPLETE — verified and ready for the recording-span slice. **Goal:** Declare the two OTel imports honestly; no runtime change.
 
 > Luna changes manifests/runs commands. Sol reviews, verifies, closes, commits, and pushes.
 

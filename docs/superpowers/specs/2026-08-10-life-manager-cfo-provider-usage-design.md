@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.2c verified; CFO-2a2.3a direct OpenTelemetry dependencies is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3a verified; CFO-2a2.3b recording span helper is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -375,8 +375,12 @@ Declare the already-resolved compatible packages `@opentelemetry/api` and `@open
 runtime dependencies and tighten Node from `>=20` to the SDK's `>=20.6.0`. Change only `package.json` and
 `package-lock.json`; add no runtime behavior. Acceptance:
 
-- [ ] `npm ls` shows exact direct API `1.9.1` and SDK `2.8.0`; clean `npm ci` succeeds on Node >=20.6.0.
-- [ ] clean `npm ci` succeeds and the existing CFO/full suites remain green.
+- [x] `npm ls` shows exact direct API `1.9.1` and SDK `2.8.0`; clean `npm ci` succeeds on Node >=20.6.0.
+- [x] clean `npm ci` succeeds and the existing CFO/full suites remain green.
+
+Completion evidence: Luna changed only both manifests (6 additions/2 deletions), with no dependency-graph churn or
+runtime code. RED failed on the missing direct API. Fresh verification: clean install, CFO 259/259, full 897/897,
+and diff check passed. Fresh Sol review: Critical 0, Important 0, ship.
 
 ### 12.4 CFO-2a2.3b — one real, content-free span helper
 

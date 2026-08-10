@@ -23,11 +23,13 @@
     "cfo:inventory": "node scripts/cfo-business-inventory.js"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/sdk-trace-node": "2.8.0",
     "inngest": "^4.11.0",
     "stripe": "^22.2.3",
     "ws": "^8.18.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.6.0"
   }
 }
