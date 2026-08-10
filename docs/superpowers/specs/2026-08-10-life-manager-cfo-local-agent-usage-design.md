@@ -126,54 +126,50 @@ managed `loop + task_label` identities to the existing CFO financial-unit regist
 
 Each source file keeps only:
 
-- stable source ID, committed complete-line byte offset, committed-prefix SHA-256, and last observed file size;
+- stable source ID, committed complete-line byte offset, committed-prefix SHA-256, and discovered complete-row count;
 - discovered, accepted, duplicate, conflicting, invalid, attributed, and unattributed row counts;
 - last terminal attempt timestamp and current coverage state.
 
 The pure cursor returns only the first item. The later I/O owner records scan time and aggregate counts; the cursor
 does not read a clock or write state.
 
-If the file shrinks, the prefix changes, JSON is truncated, or one runner `event_id` identifies distinct rows,
+If the committed prefix shrinks, the prefix changes, JSON is truncated, or one runner `event_id` identifies distinct rows,
 ingestion lowers coverage and preserves the accepted source-row observations. It never drops distinct rows merely
 because their runner IDs collide, and never reports a partial subtotal as complete.
 
 ## Append-only cursor contract
 
-`scanLocalAgentUsageAppend(sourceId, bytes, previousState)` is pure. `sourceId` is exactly
-`life_manager_agent_usage|anicca_agent_usage`, `bytes` is one Buffer snapshot, and `previousState` is null or the exact
-prior cursor state:
+`scanLocalAgentUsageSource(data, {source_id, prior_state})` is pure. `source_id` is exactly
+`life_manager_agent_usage|anicca_agent_usage`, `data` is one Buffer snapshot, and `prior_state` is null or exact:
 
 ```text
-schema_version: 1
 source_id
 byte_offset
 prefix_sha256
-observed_file_size
+discovered_rows
 ```
 
-`byte_offset` is the byte immediately after the last accepted LF. `prefix_sha256` hashes exactly
-`bytes.subarray(0, byte_offset)`. `observed_file_size` is the whole snapshot length including any partial tail. Null
-input uses the fixed empty initial state. A source defect returns a new frozen copy equal in value to the prior state;
-it never freezes or mutates the caller's state object.
+`byte_offset` is the byte immediately after the last accepted LF and `prefix_sha256` hashes exactly
+`data.subarray(0, byte_offset)`. A source defect returns a new frozen copy equal in value to the prior state; it never
+freezes or mutates caller input.
 
-The cursor verifies the previous observed size and SHA-256 of `[0, byte_offset)` before it trusts a suffix. It scans
-Buffer byte indexes, so each `source_row_ref` uses the complete line's real zero-based byte offset, not a character
-offset. Every complete new line must parse as JSON and pass the existing local-agent normalizer with unattributed
-context before any state advances.
+The cursor verifies the previous prefix SHA-256 before it trusts a suffix. It scans Buffer byte indexes, so each
+`source_row_ref` uses the complete line's real zero-based byte offset, not a character offset. The completed reducer
+owns schema validation and dedupe; the later I/O owner may persist returned cursor state only after that reducer
+succeeds. The cursor does not duplicate the normalizer.
 
 - unchanged append-only prefix: return new exact `{input, context}` pairs and advance through the last complete line;
-- smaller file than the prior observed size: return no pairs, preserve prior state, emit exactly
-  `coverage_exceptions=["source_truncated"]`;
+- fewer bytes than the committed offset: return no pairs, preserve prior state, emit exactly `["source_truncated"]`;
 - changed committed prefix: return no pairs, preserve prior state, emit exactly `["source_rewritten"]`;
-- malformed or schema-invalid complete line: return no pairs, preserve prior state, emit exactly
+- malformed JSON or non-object complete line: return no pairs, preserve prior state, emit exactly
   `["invalid_source_row"]`;
 - otherwise, trailing bytes without newline return preceding complete pairs, stop the offset before the partial line,
-  and emit exactly `["partial_tail"]`.
+  and emit exactly `["incomplete_tail"]`.
 
 The exact frozen result is `{pairs, state, coverage_exceptions}`. Exceptions are unique and lexicographically sorted.
-Defect precedence is truncate, rewrite, invalid complete row, then partial tail. Expected source defects are
-non-throwing evidence; only invalid function arguments throw the fixed redacted prefix
-`cfo_local_agent_usage_cursor_invalid:<reason>`.
+Defect precedence is truncate, rewrite, invalid complete row, then incomplete tail. Expected source defects are
+non-throwing evidence; only invalid function arguments throw fixed redacted
+`cfo_local_agent_source_invalid:<reason>` errors.
 
 ## Event dedupe contract
 
@@ -200,7 +196,7 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 |---|---|---|
 | 2a2a.1 ✅ | Pure event normalizer uses opaque source-row identity and preserves runner values/provenance | 2 files, +92/-1 cumulative LOC from pre-slice base |
 | 2a2a.2 ✅ | Pure batch reducer dedupes source-row refs and reports runner-ID collisions without dropping rows | 2 files, +69/-2 LOC |
-| 2a2a.3 NEXT | Append-only file cursor proves hash/watermark/truncation coverage | 2 new files, <=100 added LOC |
+| 2a2a.3 NEXT | Append-only file cursor proves hash/watermark/truncation coverage and runs in the normal CFO suite | 3 files, +96/-1 LOC target |
 | 2a2a.4 | Versioned loop/task mapping yields attributed or visibly unattributed rows | <=3 files, <=100 added LOC |
 | 2a2a.5 | Local append/storage + OTel links accepted rows without exposing content | <=3 files per sub-slice |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |

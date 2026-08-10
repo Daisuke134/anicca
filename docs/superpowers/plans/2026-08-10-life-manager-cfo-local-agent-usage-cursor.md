@@ -1,81 +1,48 @@
 # CFO-2a2a.3 — Append-only Local Usage Cursor Plan
 
-Status: IN PROGRESS
+Status: IN PROGRESS — implementation reviewed; normal-suite registration remains
 
 ## Goal
 
-Read only newly appended complete JSONL rows while proving the previously accepted prefix has not been truncated or
-rewritten. A source defect returns coverage evidence and preserves the previous committed state.
+Read each newly appended complete JSONL row once, derive its identity from the source byte offset, and expose a
+trusted-prefix rewrite, truncation, invalid complete row, or partial tail without inventing usage.
 
 ## Ponytail gate
 
-- Add only `apps/life-call/lib/cfo-local-agent-usage-cursor.js` and its `.test.js`.
-- Reuse Node Buffer/crypto, the shared exact/freeze helpers, and `normalizeLocalAgentUsageEvent`.
-- Add no watcher, launchd job, filesystem writer, database, migration, scheduler, price logic, OTel, retry loop, or
-  external dependency.
-- Soft target: production 65 LOC, tests 35 LOC, total <=100 additions. Stop and re-plan before 100.
+- Add `apps/life-call/lib/cfo-local-agent-usage-source.js` and its `.test.js`; edit only the existing
+  `apps/life-call/package.json` `test:cfo` command to register the test.
+- Reuse Node Buffer/crypto and the shared exact/freeze helpers. Schema validation/dedupe remains in the completed
+  `reduceLocalAgentUsageEvents`; the caller persists cursor state only after that reducer succeeds.
+- Add no dependency, watcher, launchd job, I/O owner, database, scheduler, OTel, retry, price logic, or mapping.
+- Measured target: production 48 LOC, test 47 LOC, package command +1/-1; total +96/-1 across three files. Stop before
+  100 additions or a fourth file.
 
-## Task 1 — RED
+## Task 1 — RED/GREEN evidence
 
-Add compact contracts for `scanLocalAgentUsageAppend`:
+`scanLocalAgentUsageSource(data, {source_id, prior_state})` has one pure contract:
 
-1. initial Buffer with two valid newline-terminated rows returns two pairs with exact source refs derived from byte
-   offsets, one frozen state at EOF, and no coverage exception. The first row contains multibyte UTF-8; the second
-   ref is calculated from the raw Buffer's first LF index plus one, so a character-offset implementation fails;
-2. rescanning unchanged bytes from that state returns zero pairs and the identical state;
-3. an append returns only the new row; a partial tail returns preceding complete rows, stops before the tail, and
-   emits `partial_tail`;
-4. prior-size shrink and committed-prefix rewrite return no pairs, preserve the exact prior state, and emit their
-   fixed exception;
-5. malformed JSON and a separate well-formed/schema-invalid complete row are each transactional: zero pairs,
-   unchanged prior state, exact `coverage_exceptions=["invalid_source_row"]`, and no hostile text in output/error;
-6. invalid source/state/Buffer, unsafe offsets, sparse or extra state fields, Proxy input, and source mismatch throw
-   only `cfo_local_agent_usage_cursor_invalid:<fixed_reason>`.
+1. exact result `{pairs, state, coverage_exceptions}`; exact state
+   `{source_id, byte_offset, prefix_sha256, discovered_rows}`; exact pairs
+   `{input, context:{source_row_ref}}`;
+2. the two source IDs are closed; byte offsets and refs remain correct after multibyte UTF-8;
+3. unchanged resume returns zero rows and an append returns only new complete rows;
+4. shorter trusted data returns `source_truncated`; changed trusted prefix returns `source_rewritten`;
+5. a partial tail remains unparsed as `incomplete_tail`; any malformed complete row atomically returns no pairs and
+   preserves prior state as `invalid_source_row`;
+6. invalid arguments throw only `cfo_local_agent_source_invalid:<fixed_reason>`; output is cloned/deep-frozen and
+   input is neither mutated nor frozen.
 
-Record the expected missing-module RED.
+The missing-module RED and focused 3/3 GREEN are recorded. Fresh Sol review found and Luna fixed trusted-terminal-LF
+rewrite precedence. Re-review returned `ship — Spec ✅`. Implementation plus test is 95 additions.
 
-## Task 2 — GREEN
+## Task 2 — Normal-suite registration
 
-Implement the smallest pure cursor:
-
-- accept only the two fixed source IDs, a real Buffer, and null or one exact state;
-- reject `types.isProxy(bytes)` before `Buffer.isBuffer`, `.length`, or `.subarray` is accessed;
-- use initial state `{schema_version:1, source_id, byte_offset:0,
-  prefix_sha256:sha256(empty), observed_file_size:0}`;
-- validate non-negative safe integer sizes, `byte_offset <= observed_file_size`, exact source match, and lowercase
-  64-hex prefix hash;
-- define `byte_offset` as the byte after the last accepted LF, `prefix_sha256` as SHA-256 of exactly
-  `bytes.subarray(0, byte_offset)`, and `observed_file_size` as the whole snapshot length including partial tail;
-- treat null as the fixed empty effective prior state; on truncate/rewrite/invalid, return a new frozen state equal in
-  value to that prior state without mutating or freezing the caller's state object;
-- before scanning, classify `bytes.length < previous.observed_file_size` as `source_truncated`, then compare SHA-256
-  of `bytes.subarray(0, byte_offset)` for `source_rewritten`;
-- scan only byte indexes from `byte_offset`; a newline ends a complete row and the next byte is the next offset;
-- derive `source_row_ref = sha256("cfo-local-agent-row-v1\0" + sourceId + "\0" + decimal start offset)`;
-- parse and validate every complete new row with `normalizeLocalAgentUsageEvent(input,
-  {source_row_ref, financial_unit_id:null})` before returning its pair;
-- if any complete row is invalid, discard every pair from this call and return the unchanged prior state;
-- otherwise advance state only through the last newline, set `observed_file_size=bytes.length`, and emit
-  `partial_tail` iff bytes remain;
-- deep-freeze the exact three-key result and keep every error/exception content-free.
-
-Evaluate source defects in this order: truncate, rewrite, invalid complete row, partial tail. These return exactly one
-nonthrowing fixed `coverage_exceptions` value. Only invalid arguments throw the cursor error prefix.
-
-Run focused tests, syntax, `git diff --check`, and the 2-file/100-LOC gate.
+Append only `lib/cfo-local-agent-usage-source.test.js` to the existing `test:cfo` command. Do not edit the lockfile.
+Prove `npm run test:cfo` and `npm test` both execute the three named cursor cases, then run syntax and
+`git diff --check` and confirm the exact three-file +96/-1 gate.
 
 ## Task 3 — Real evidence and close
 
-Read both real ledgers into memory without modifying them. For each source, prove:
-
-- initial scan pairs equal the count of complete JSONL rows; call `reduceLocalAgentUsageEvents(scan.pairs)` directly
-  and assert `receipt.counts.discovered_rows === scan.pairs.length === completeRowCount` without token mismatch;
-- unchanged rescan returns zero pairs;
-- in-memory append returns exactly one synthetic row;
-- in-memory truncation, rewrite, partial tail, and invalid complete row return exact exception/state behavior;
-- result, state, pairs, contexts, and normalized nested values are deeply frozen;
-- stdout contains only counts and the four fixed exception names, never rows, paths, prompts, responses, accounts, or
-  credentials.
-
-Fresh Sol review checks correctness, byte identity, state atomicity, privacy, and YAGNI. Sol independently reruns focused,
-CFO, full, syntax, diff, and real read-only E2E, then updates specs, commits, pushes, and starts 2a2a.4.
+Read each real ledger into one Buffer exactly once. On each fixed snapshot prove initial scan, unchanged resume,
+source-ref uniqueness, byte watermark/hash, direct reducer acceptance, and reverse-order deterministic receipt. Print
+counts only. Fresh Sol review then marks 2a2a.3 complete and starts 2a2a.4.
