@@ -146,7 +146,7 @@ only when its originating evidence is known. The CFO uses this truth ladder ever
 | User label | Machine status | Meaning |
 |---|---|---|
 | `確定` / Confirmed | `provider_billed` | Reconciled to provider billing export, statement, or invoice |
-| `実測` / Measured | `provider_reported` | Taken from the provider response's usage metadata with request ID |
+| `実測` / Measured | `provider_reported` | Token counts taken from provider usage metadata. Provider IDs/models stay in provider fields; when absent, a separate local correlation identity plus provider-event sequence is used. Local identity never becomes a provider OTel response attribute. |
 | `推定` / Estimated | `locally_estimated` | Derived from duration, tokenizer, or public price; not provider-billed truth |
 | `配賦` / Allocated | `provider_billed_allocated` | Part of a confirmed provider total assigned by a documented business rule |
 | `不明` / Unknown | `unavailable` | Evidence is missing, stale, partial, or contradictory |
@@ -223,8 +223,9 @@ remain visible.
 - [ ] The business view lists every registered economic business, including zero-revenue and unavailable rows.
       A launchd job is a runtime, a payment provider is a channel, and an agent is an owner/cost centre; none is
       silently promoted into a business or hidden because it is not in the top three.
-- [ ] Every LLM call stores provider, model, business ID, owner ID, request/response ID, trace ID, input/output/
-      cached/reasoning/audio token counts when supplied, price-card version, evidence status, and reconciliation ID.
+- [ ] Every LLM call stores provider, request model, business ID, owner ID, provider response ID/model when supplied,
+      or a separate local correlation identity plus provider-event sequence otherwise, trace ID, input/output/cached/
+      reasoning/audio token counts when supplied, price-card version, evidence status, and reconciliation ID.
 - [ ] The CFO never labels duration-derived or local-tokenizer numbers as measured tokens. Missing provider usage
       remains estimated or unknown.
 - [ ] Daily operational totals reconcile request-level usage without duplication; monthly confirmed totals
@@ -337,7 +338,7 @@ stateDiagram-v2
 ```mermaid
 flowchart LR
     CALL[Agent makes model call] --> RESP[Provider response]
-    RESP -->|usage metadata + request ID| RAW[Immutable usage evidence]
+    RESP -->|usage metadata + truthful<br/>provider or local identity path| RAW[Immutable usage evidence]
     RAW --> OTEL[OpenTelemetry span]
     OTEL --> COST[Price-card calculation]
     COST --> PROV[Provisional business cost]

@@ -111,7 +111,9 @@ provider zero remains zero. Because `server.address` is emitted, the pinned Open
 
 ## 6. Evidence and privacy rules
 
-- `provider_reported` is allowed only when the exact provider response contains usage metadata and response ID.
+- `provider_reported` describes token-count provenance and is allowed only when the exact provider response contains
+  usage metadata. GenerateContent rows carry provider response ID/model. Gemini Live rows carry neither; their
+  separate local correlation ID must never be emitted as `gen_ai.response.id` or stored in a provider field.
 - Duration-derived `gemini_live` rows remain `locally_estimated`; CFO-2a2 never backfills them as measured.
 - The adapter is pure, deterministic, does not mutate inputs, and performs no I/O.
 - Invalid or unsafe values throw only `cfo_provider_usage_invalid:<reason>`. Errors contain no IDs, token values,
@@ -455,3 +457,75 @@ Primary evidence: [OTel JS instrumentation](https://opentelemetry.io/docs/langua
 provider or tracing is no-op; [OTel GenAI spans](https://github.com/open-telemetry/semantic-conventions-genai/blob/46d43c8949afb53765a202e89f4534eeb75ca3fa/docs/gen-ai/gen-ai-spans.md)
 end when the response is fully received; [Gemini usage metadata](https://ai.google.dev/api/generate-content#UsageMetadata)
 is the provider source for prompt/candidate/cache/thought/tool/total counts.
+
+## 13. CFO-2a2.4 — Gemini Live usage
+
+### 13.1 Verified boundary and Ponytail decision
+
+Gemini Live server messages may carry top-level `usageMetadata`. Its provider fields are `promptTokenCount`,
+`responseTokenCount`, `totalTokenCount`, and optional cache/thought/tool counts. Unlike `GenerateContentResponse`,
+a Live server message defines no `responseId` or `modelVersion`. The current bridge ignores this metadata and writes
+only a duration-derived `gemini_live` estimate when a socket closes.
+
+The first draft put a prefixed local session ID into `provider_request_id` and a prefixed requested model into
+`response_model`. Review rejected that design: visible prefixes do not change provenance, so both values would still
+be semantic lies inside provider-owned columns.
+
+Three approaches were evaluated:
+
+1. **Chosen — one additive provenance migration.** Keep the existing table and provider path, add one nullable local
+   correlation field, and enforce exactly one identity path with database constraints.
+2. Rename/redefine all identity columns globally. Rejected because the existing GenerateContent path is truthful and
+   verified; changing its RPC/client/receipts adds risk without user value.
+3. Add a separate Gemini Live table. Rejected because it duplicates the same token evidence schema, permissions,
+   retention, and reporting queries.
+
+```mermaid
+flowchart LR
+    A[2a2.4a\nTruthful provenance schema] --> B[2a2.4b\nPure Live usage contract]
+    B --> C[2a2.4c\nRecorder + append]
+    C --> D[2a2.4d\nBridge wiring + real E2E]
+    D --> DONE[CFO-2a2 complete]
+```
+
+Only CFO-2a2.4a is active. It changes the schema contract only. No normalizer, RPC, Node client, WebSocket, span,
+duration estimate, scheduler, launchd, or Telegram behavior belongs in this slice.
+
+### 13.2 CFO-2a2.4a closed input and output
+
+`normalizeGeminiLiveUsageEvidence(message, context)` consumes one plain Live server message and a plain context:
+
+- exact required provider counts: `promptTokenCount`, `responseTokenCount`, `totalTokenCount`;
+- optional provider counts: `cachedContentTokenCount`, `thoughtsTokenCount`, `toolUsePromptTokenCount`;
+- exact `owner_id`, `financial_unit_id: "life_manager_saas"`, RFC3339 `occurred_at`, non-zero 32-hex `trace_id`;
+- exact current Live `request_model: "gemini-2.5-flash-native-audio-preview-09-2025"`;
+- locally generated non-zero 32-hex `live_session_id` and non-negative safe-integer `usage_sequence`.
+
+The closed output reuses the existing evidence shape with these explicit provenance rules:
+
+- `provider_request_id` is `local-live-session:<live_session_id>`. The prefix makes local identity machine-visible;
+  it is never emitted as `gen_ai.response.id`.
+- `response_model` is `request-model:<request_model>`. The prefix makes the schema-required request-model fallback
+  machine-visible because Live reports no response model; it is never emitted as `gen_ai.response.model`.
+- provider counts map to `tokens.input`, `tokens.output`, optional tokens, and `tokens.total`.
+- `evidence_status` is `provider_reported` because it describes token-count provenance, not identity provenance.
+- OTel attributes contain exact operation `generate_content`, provider, request model, `gen_ai.request.stream: true`,
+  `gen_ai.output.type: "speech"`, provider token counts, address, and port only. The pinned convention defines
+  `generate_content` for multimodal content generation, requires the stream flag for streaming, and names requested
+  speech output `speech`; Gemini's setup spelling `AUDIO` is not copied into the OTel value.
+- all server content, audio, transcripts, tool arguments, unknown keys, and credentials are ignored.
+
+Acceptance:
+
+- [ ] literal provider counts, zero, and missing optionals map exactly without mutating input;
+- [ ] the local identity/model fallback is visible in evidence and absent from provider-response OTel attributes;
+- [ ] unsafe/negative/missing counts, invalid session/sequence/model/owner/time/trace fail with fixed redacted errors;
+- [ ] focused ledger, CFO, and full suites pass within the two-file/85-addition target.
+
+Primary evidence: [Gemini Live server messages](https://ai.google.dev/api/live#BidiGenerateContentServerMessage) place
+`usageMetadata` at the top level and define no response ID/model field; [Gemini Live UsageMetadata](https://ai.google.dev/api/live#UsageMetadata)
+defines `responseTokenCount` rather than generate-content's `candidatesTokenCount`; the official
+[`googleapis/js-genai` recorded Live response](https://github.com/googleapis/js-genai/blob/main/test/system/recordings/live_ML_Dev_should_send_text_in_async_session.websocket.log)
+shows `usageMetadata` on `turnComplete` with prompt, response, and total counts; the pinned
+[OpenTelemetry GenAI operation registry](https://github.com/open-telemetry/semantic-conventions-genai/blob/46d43c8949afb53765a202e89f4534eeb75ca3fa/docs/gen-ai/gen-ai-spans.md)
+defines `generate_content` for multimodal generation such as Gemini.
