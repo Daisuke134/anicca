@@ -17,7 +17,7 @@ const TOTAL_KEYS = new Set(["assetsMinor", "liabilitiesMinor", "netWorthMinor", 
 const SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "amountMinor", "verificationStatus"]);
 const EXCLUDED_KEYS = new Set(["label", "reason"]);
 const REPAIR_KEYS = new Set(["sourceLabel", "freshReread", "reconciled"]);
-const ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel"]);
+const ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel", "nextRetryAt"]); const ACTION_LABELS = Object.freeze({ reconsent: "接続後に自動再確認", provider_outage: "30分後に自動再確認" }); const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 const BUTTONS = Object.freeze({
   summary: [["accounts", "口座を見る", "View accounts"], ["accuracy", "正確さを見る", "View accuracy"]],
   accounts: [["summary", "概要に戻る", "Back to summary"], ["accuracy", "正確さを見る", "View accuracy"]],
@@ -47,6 +47,9 @@ function date(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) fail("invalid_reporting_date");
   const parsed = new Date(`${value}T00:00:00Z`);
   if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) fail("invalid_reporting_date");
+}
+function timestamp(value) {
+  const m = typeof value === "string" && RFC3339.exec(value); if (!m) return false; const year = +m[1], month = +m[2], day = +m[3], hour = +m[4], minute = +m[5], second = +m[6], zone = m[8], zh = zone === "Z" ? 0 : +zone.slice(1, 3), zm = zone === "Z" ? 0 : +zone.slice(4), local = new Date(0), end = new Date(0), fraction = m[7] ? +(m[7].slice(1) + "000").slice(0, 3) : 0; local.setUTCFullYear(year, month - 1, day); local.setUTCHours(hour, minute, second, fraction); end.setUTCFullYear(year, month, 0); if (month < 1 || month > 12 || day < 1 || day > end.getUTCDate() || hour > 23 || minute > 59 || second > 59 || zh > 23 || zm > 59) return false; const offset = zone === "Z" ? 0 : (zone[0] === "-" ? -1 : 1) * (zh * 60 + zm), ms = local.getTime() - offset * 60000; return Number.isFinite(ms) && Date.parse(value) === ms;
 }
 function escapeHtml(value) { return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function formatAmount(locale, value) {
@@ -86,8 +89,7 @@ function validateSnapshot(snapshot) {
   }
   if (snapshot.action !== null) {
     exact(snapshot.action, ACTION_KEYS, [...ACTION_KEYS]);
-    if (snapshot.action.kind !== "reconsent") fail("invalid_action");
-    [snapshot.action.sourceLabel, snapshot.action.retryLabel].forEach(label);
+    if (!Object.prototype.hasOwnProperty.call(ACTION_LABELS, snapshot.action.kind) || snapshot.action.sourceLabel !== "Moneytree" || snapshot.action.retryLabel !== ACTION_LABELS[snapshot.action.kind] || !timestamp(snapshot.action.nextRetryAt)) fail("invalid_action");
   }
   const { state, totals, sources, excluded, repair, action } = snapshot;
   if (["complete", "partial", "recovered"].includes(state) && sources.some((source) => source.status !== "fresh")) fail("source_not_fresh");

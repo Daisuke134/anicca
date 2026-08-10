@@ -48,7 +48,7 @@ function recoveredSnapshot() {
   return snapshot;
 }
 
-function actionRequiredSnapshot() {
+function actionRequiredSnapshot(kind = "reconsent") {
   const snapshot = completeSnapshot();
   snapshot.state = "action_required";
   snapshot.totals = {
@@ -61,9 +61,10 @@ function actionRequiredSnapshot() {
   snapshot.sources[0].amountMinor = null;
   snapshot.sources[0].verificationStatus = "unavailable";
   snapshot.action = {
-    kind: "reconsent",
+    kind,
     sourceLabel: "Moneytree",
-    retryLabel: "接続後に自動再確認",
+    retryLabel: kind === "provider_outage" ? "30分後に自動再確認" : "接続後に自動再確認",
+    nextRetryAt: "2026-08-08T06:30:00+09:00",
   };
   return snapshot;
 }
@@ -91,6 +92,32 @@ test("partial and action-required never claim a complete net worth", () => {
     assert.doesNotMatch(text, /純資産/);
     assert.doesNotMatch(text, /¥0(?:\D|$)/);
     assert.match(text, /不明|合計に入れていません/);
+  }
+});
+
+test("canonical action-required accepts reconsent and provider outage", () => {
+  for (const kind of ["reconsent", "provider_outage"]) {
+    assert.doesNotThrow(() => renderCfoTelegram({ locale: "ja", view: "summary", snapshot: actionRequiredSnapshot(kind) }));
+  }
+});
+
+test("canonical action rejects unknown kind, missing or extra keys, and bad retry timestamp", () => {
+  const unknownKind = actionRequiredSnapshot();
+  unknownKind.action.kind = "unknown";
+  assertInvalid(unknownKind, "invalid_action");
+
+  const missingRetryAt = actionRequiredSnapshot();
+  delete missingRetryAt.action.nextRetryAt;
+  assertInvalid(missingRetryAt, "missing_key");
+
+  const extraKey = actionRequiredSnapshot();
+  extraKey.action.extra = true;
+  assertInvalid(extraKey, "unknown_key");
+
+  for (const nextRetryAt of ["", "not-a-timestamp", "2026-02-31T06:30:00+09:00", "2026-08-08T24:00:00+09:00", "2026-08-08T06:30:00+24:00"]) {
+    const invalidTimestamp = actionRequiredSnapshot();
+    invalidTimestamp.action.nextRetryAt = nextRetryAt;
+    assertInvalid(invalidTimestamp, "invalid_action");
   }
 });
 
