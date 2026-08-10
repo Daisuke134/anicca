@@ -6187,7 +6187,19 @@ discoveryだけではprivate profileを読まず、direct action時だけin-memo
 PNG、Telegram bundleは0。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-discovery-audit.md`は既存5-count validatorを再利用し、
 `peatix-discovery-audits.jsonl`へ同一wake lineageのmode 0600 rowだけを追加する最小sliceである。
 
-### Active remaining TODO SSOT（進捗233。これ以外の残TODO一覧は履歴）
+### O1B-25進捗234（Peatix aggregate discovery audit GREEN / review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-discovery-audit.md`をTDD実装した。REDは4/5 pass・1 failで
+`recordPeatixDiscoveryAudit`未定義を検出し、既存`safeDiscoveryAudit`とappend-only writerを再利用する7 net LOCのproduction差分で閉じた。
+commit `cdf8758bf`、operations/production regression 12/12、`node --check`、`git diff --check` pass。
+fresh Sol reviewは正しい`peatix-discovery-audits.jsonl`、wake ID/timestamp、invalid orderingの非追記、mode 0600、
+保存fieldが5件数とlineageだけでprivate/provider detail 0であることを確認し、Critical 0・Important 0でshipした。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-production-router.md`は既存production factory/routerへPeatix workflow、
+workflow version、audit callback、lazy in-memory attendee profileを接続する。native `DEFAULT_PROVIDERS`はevidence chain完成まで
+`["luma", "connpass"]`を維持するため、この進捗でもSubmit、Calendar write、PNG、Telegram bundleは0。
+
+### Active remaining TODO SSOT（進捗234。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
