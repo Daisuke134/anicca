@@ -59,3 +59,10 @@ The product invariant is cross-provider continuation after Luma produces no exte
 - The first evidence-wiring diff passed an independent expanded `63/63`, but fresh review returned `fix-first`.
 - Existing Connpass store reads did not bind saved receipt event/artifact fields back to the provider ID, and the artifact marker carried an event ref that its read contract could not authenticate.
 - The evidence-wiring diff is frozen in a reversible stash. Prerequisite plan `2026-08-11-connector-connpass-evidence-store-hardening-14a0.md` closes the store in two files before this plan resumes; no code from this plan is shipped until that review passes.
+
+## Final result
+
+- After Item 14A0 shipped, Luna restored this two-file slice. RED reproduced the missing exact-five-field Connpass receipt gate at 27 pass / 1 fail; GREEN requires it only for Connpass and keeps the Luma/Peatix contracts unchanged.
+- Connpass captures the exact current candidate page with `fullPage: true`, never calls `setContent` or `goto`, and validates identity, state, receipt, artifact, object bytes, and created-to-reused behavior before downstream effects.
+- The first final review found that exact page URL validation occurred after existing-bundle scan. A second RED proved wrong event, query, hash, and `about:blank` could reuse a bundle; Luna moved the Connpass-only URL gate before the scan.
+- Final production/test diff is two files, 101 insertions and 1 deletion. Independent minimal-evidence plus all provider-store regression passes 33/33; syntax and `git diff --check` pass. Fresh Sol re-review: `ship`.

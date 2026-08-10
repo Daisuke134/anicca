@@ -6997,7 +6997,13 @@ Luna REDはvalid receipt readが3 fieldsしか返さないことと、stale prov
 
 fresh Sol reviewはCritical 0・Important 0で`ship`。live Connpass evidenceはまだ0のためmigrationは不要で、Luma/Peatix store production変更0。Item14A wiringはreversible stashの別sliceとして維持し、次に復元してexact Connpass descriptorと下流作用前のcorruption rejectionを閉じる。Item14未完、event Submit 0、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗313。これ以外の残TODO一覧は履歴）
+### O1B-25進捗314（Item 14A / Connpass minimal evidence wiring完了）
+
+Item14A0 push後にfrozen diffを復元し、Luna REDはConnpass 3-field receipt readerがminimal evidence reuseを通す穴を27 pass / 1 failで再現した。GREENはConnpass descriptorだけにexact 5-field/type gateを追加し、candidate canonical URLとcurrent page exact一致、actual full-page PNG、setContent/goto 0、created→reused、identity/status/receipt/artifact/object bytes corruptionの下流作用前拒否を固定した。Luma/Peatix contract変更0。
+
+最初のfresh reviewはexisting bundle scanがConnpass current URL確認より先にある点を`fix-first`とした。追加REDは作成後のwrong event/query/hash/about:blank pageでもreusedになることを27 pass / 1 failで再現し、GREENはConnpass-only page URL gateをbundle scan前へ移した。最終scopeはproduction/test 2 files、101 insertions/1 deletion。Sol独立minimal evidence + three provider stores 33/33、syntax、diff check PASS、fresh re-reviewは`ship`。次は4 labels unloadedを再確認後、official runner exact 1 wakeで実event `400028`を申込み、同一lineageのConnpass bundleを検証する。Item14未完、event Submit 0、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗314。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
