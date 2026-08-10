@@ -6835,7 +6835,13 @@ push済みcommit `45614f420`、Git/remote一致、4 Connector labels unloaded、
 
 実success ticket pageはstrict同一event URL、`body.webticket` 1、`section.ticket` 1、`#qr-code img.js-qrcode-image` 1。public ticket IDとlegacy registration markerはDOMにない。canonical event pageは同一event `/ticket` visible link 1、checkout control 0、legacy marker 0。現parent readerはこの実Peatix success shapeを未認識なため30秒settlementが正しく`effect_unknown`へ停止した。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-ticket-readback.md`は既存Peatix provider/testの2 filesだけで、strict同一event canonical ticket linkまたはticket shellをparent `registered`へ変換し、再Submit 0で既存成功をCalendar/PNG/Telegram/applied bundleへ続ける。Item 10B/14/19は実registrationのみ達成、bundle acceptanceは未完、scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗281。これ以外の残TODO一覧は履歴）
+### O1B-25進捗282（Peatix ticket readback first GREEN / malformed observation fix-first）
+
+Lunaの初回GREENはstrict same-event ticket page shellまたはcanonical visible ticket linkをparent `registered`へ追加した。provider 16/16、named adjacent 83/83、Sol独立relevant 107/107、全Connector 307/310 PASSで、残る3件はclean HEAD既知failure、新規FAIL 0。さらに新readerを実canonical event `5075819`へread-only接続し、Submitなしでexact `registered`を返す隔離E2EもPASSした。
+
+fresh Sol reviewはImportant 1件で`do not ship`。malformed DOM observationの`markers: ""`が`length===0`を満たしてticket shell booleanと組み合わさるとregisteredを捏造でき、`markers`欠落はTypeErrorになることを直接再現した。planを先に改訂し、measured success branchの前に`Array.isArray(observed.markers)`を必須化する。string/object/null/missingは全てthrow/submit/evidenceなしのprivacy-safe `unavailable`、valid empty arrayとlegacy exact markerは維持する。初回2-file差分は未commit、live作用0。Item 10B/14/19のbundle acceptanceは未完。
+
+### Active remaining TODO SSOT（進捗282。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
