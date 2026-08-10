@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3.2 and isolated real E2E complete; CFO-2a3.3b hourly aggregate publication is next |
+| Status | ACTIVE — CFO-2a3.3b1 hourly counts summary is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains unchanged until real E2E passes |
 | First provider | Google Cloud monthly invoice delivered to the already-authenticated local Gmail account |
@@ -137,7 +137,12 @@ allocation so narrower business totals can be derived honestly.
         arithmetic, normalized total, immutable dedupe, modes, raw-data exclusion, and cleanup all pass without
         sending or changing live state.
   - [ ] **CFO-2a3.3b — Hourly aggregate publication.** Compose the completed local source into the existing hourly
-        runner and publish only confirmed/unresolved counts through its existing local usage evidence boundary.
+        runner and publish only confirmed/unresolved aggregate state; never relabel it as a reconciled business cost.
+    - [ ] **CFO-2a3.3b1 — Counts-only summary.** Add exact confirmed/unresolved/unavailable counts to the existing
+          redacted hourly stdout/return without changing Telegram or launchd. Plan:
+          `docs/superpowers/plans/2026-08-11-life-manager-cfo-provider-billing-hourly-summary.md`.
+    - [ ] **CFO-2a3.3b2 — Live local cutover.** Run isolated no-send main E2E, then update the one existing launchd
+          runtime only after rollback/readback gates pass; prove one real autonomous hourly receipt and counts line.
 - [ ] **CFO-2a3b — Provider dimensions and allocation.** Obtain project/service/SKU dimensions from an official
       Cost Table CSV or billing export; use versioned allocation and retain an unallocated remainder.
 - [ ] **CFO-2a3c — Agent subscriptions.** Treat actual Codex/Claude receipts as cash cost and API-equivalent token
@@ -241,3 +246,12 @@ of CFO-2a3.2b2.
 - No parser/storage framework, OCR, LLM, DB, retry, OTel, scheduler, Telegram call, or live-state write was added.
   A fresh Sol reviewer could not be allocated because the collaboration service returned `agent thread limit
   reached`; no independent reviewer result is claimed.
+
+## 14. CFO-2a3.3b count semantics
+
+The latest invoice can be both **confirmed** and **unresolved**: provider billing truth is confirmed, while its
+business reconciliation remains unresolved until a matching provider/scope/period/currency provisional source is
+connected. A successful latest capture therefore publishes counts `confirmed=1`, `unresolved=1`, `unavailable=0`.
+Absent configuration, capture failure, or invalid receipt publishes `0/0/1`. Counts are local control-plane status,
+not money. Amounts and source references remain only in the private immutable record. OpenTelemetry continues to
+carry request/token correlation; no fake billing amount is created from spans.
