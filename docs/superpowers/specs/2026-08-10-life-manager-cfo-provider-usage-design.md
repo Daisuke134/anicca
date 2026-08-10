@@ -416,6 +416,15 @@ and transparently captures both real provider responses before reading the two s
 response IDs/models/counts, proves distinct non-zero trace IDs, and rejects prompt/output sentinel leakage. It never
 uses production DB or Telegram. Soft target: one E2E file/100 additions.
 
+Ponytail chooses one executable shell test, existing Node assertions, and the existing migrations/functions. It
+pins `postgres:18-alpine` and `postgrest/postgrest:v16.0` on one disposable Docker network. It adds no Compose file,
+test framework, dependency, production adapter, retry framework, or reusable container abstraction. A test-only JWT
+selects `service_role`; the real Gemini key is accepted only through the process environment and is never printed.
+Because the existing Supabase client emits `/rest/v1`, one test-local `fetch` adapter removes that prefix only for
+the disposable PostgREST host; no proxy or production branch is added. The script captures exporter output only
+long enough to prove both database trace IDs occur while the private input sentinel, real provider output strings,
+and Gemini key do not. Its only success output is one content-free PASS line.
+
 Acceptance for the combined CFO-2a2.3c gate:
 
 - [x] existing ask behavior and result are unchanged after two successful recorded calls;
