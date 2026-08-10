@@ -6137,7 +6137,24 @@ target/lease cleanup後もevent loopを保持したため、その診断process�
 `applied_bundle`はまだ0なので、Peatixをproduction supportedへ昇格せず`DEFAULT_PROVIDERS = ["luma", "connpass"]`を維持する。
 次cursorは所有アカウントのauthを確立し、event `5075819`を先頭にPeatix Submit→parent readback→evidence chainを最小sliceで閉じる。
 
-### Active remaining TODO SSOT（進捗230。これ以外の残TODO一覧は履歴）
+### O1B-25進捗231（Peatix owned account auth / measured checkout boundary）
+
+既存のConnector GmailとCalendar GmailはいずれもPeatix email loginでaccount-not-foundだったため、同じ所有Calendar Gmailで
+Peatix accountを新規作成した。氏名はprivate profileから読み、生成passwordはmacOS Keychain `peatix.com`へ保存し、repo/state/logへ
+private valueを保存していない。signupのreCAPTCHAをその場で通過後、実pageはPeatix user dashboardへ遷移し、logged-in
+`マイチケット`とaccount dashboardをreadbackした。外部event registration、Calendar write、evidence bundleはこのauth工程では0。
+
+同じowned pageでevent `5075819`のcheckoutをfinal Submit直前までread-only測定した。実flowは
+`/sales/event/5075819/tickets`の無料券input `number_of_tickets_6536845`→`#next-button`→`/form`の必須氏名・account email・
+organizer privacy確認→`#form-submit-button`→`/confirm`の唯一の外部申込境界`#confirm-button / チケットを申し込む`。
+最終buttonは押しておらず、Submit 0を維持する。
+
+Ponytail `full`で最初の実装をbrowser provider二ファイルへ限定した。plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-direct-submit-readback.md`は、exact event/ticket identity、explicit privacy consent、
+unknown required field fail-closed、final click at most once、click後のsame-event parent readbackをTDD固定する。login/CAPTCHA、generic form AI、
+production router、evidence、scheduleは含めない。次cursorはLunaによるこのprovider RED→GREENとfresh Sol reviewである。
+
+### Active remaining TODO SSOT（進捗231。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
