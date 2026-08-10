@@ -59,5 +59,6 @@ The first GREEN passed its focused tests but fresh Sol review found three Import
 2. Read `element.value` as a public label only for an `input` whose type is `submit` or `image`; never for a generic button or answer input.
 3. Parent `performAction` must inspect the whole registered observation and reject a submit while any required answer control is incomplete, independent of the proposer.
 4. Repeated submit prevention must use the same-page form-submit effect rather than a control token, so a second submit token or DOM reindex cannot trigger a duplicate action before the page path/readback state changes.
+5. Exactly one required-answer form must exist in the bounded observation before any submit can be marked submittable. If a registration form and a cookie/preferences form both contain required answer controls, all submit controls fail closed. Add a regression with a required cookie checkbox and its own submit alongside the registration form.
 
 Add regressions for a cookie form with its own submit, a generic button with a private-looking value, injected early submit with a pending required field, two submit tokens on one form, and a reindexed submit token on the same page. Preserve the existing ability to submit once after required completion and again only after an exact page-path transition.
