@@ -6965,7 +6965,13 @@ pushed commit `3e3a9ca94`のofficial foreground wake `wake-b3f05e7a9c4a5afc322e3
 
 `completeEvidence` throwがrunnerのterminal `reportWake`を通らずnative-pass exit 2となり、wake report/delivery delta 0。process/lock 0、owned page cleanup、CDP newtab 1、4 labels unloaded、Git clean/upstream 0/0はPASS。Item13 live reuse/continuation/Submit0は実証したがevery-wake positive reportとfinal later-event bundleが未完。Ponytail plan `docs/superpowers/plans/2026-08-11-connector-evidence-error-report-13c.md`はrunner production/testの2 filesだけで、evidence throwを一度だけ`circuit_open / evidence_completion_failed`へ収束し、failure count +1、positive report/delivery、cleanup、same-wake retry 0を固定する。Item12 checkpointから次official wakeがmessage再送0でphoto/final bundleを補完する。Item13未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗308。これ以外の残TODO一覧は履歴）
+### O1B-25進捗309（Item 13C evidence completion error reporting / GREEN・review完了）
+
+Luna REDは`completeEvidence` throwがrunner外へescapeしterminal report 0となる現行故障を2件で再現した。GREENはそのcall boundaryだけをcatchし、既存bounded failure countを一度だけ増やして既存`finish("circuit_open", "evidence_completion_failed")`へ収束する。同wakeのevidence retry、cache/direct/Harness Submit、raw error保存は0、finallyのowned page cleanupとreal production `reportWake`を維持する。Ponytailでduplicate fixtureを除き、最終scopeはrunner production/testの2 files、production `+13/-7`、test `+59/-10`。provider/evidence/Calendar/Telegram/browser/state schema/schedule production変更0。
+
+Luna serialized focused/adjacentは変更外の日付依存Peatix baseline 1件を除きPASS。Sol独立runner/operations/evidence/production/Harness/entrypoint/contract/outboxは63/63 PASS、syntaxとdiff check PASS。real operations fixtureはwake report 1、delivery 1、mode 0600、positive Telegram ID、send 1、failure count 1、生error非露出を実証した。fresh Sol reviewはCritical 0・Important 0で`ship`。次はcode/specをpush後、4 labels unloadedのままofficial foreground recovery wakeをexact 1回実行し、saved message ID `11079`の再送0、photo checkpoint、final bundle、positive every-wake report/delivery、cleanupを確認する。Item13未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗309。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

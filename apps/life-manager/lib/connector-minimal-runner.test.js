@@ -503,8 +503,10 @@ test("registered parent pre-readback composes real evidence recovery with zero s
     async saveRepairedActions() { return { status: "saved" }; }, async reportWake() { return { telegram_provider_id: "9001" }; }, async recordAction() {},
   });
   try {
-    await assert.rejects(wake(["2026-08-07T08:30:00.000Z", "2026-08-07T08:31:00.000Z"], async () => ({ messageId: 9401 }), async () => ({ messageId: 9402 })));
-    await assert.rejects(wake(["2026-08-07T08:31:00.000Z"], async () => { messageCalls += 1; return { messageId: 9401 }; }, async () => { photoCalls += 1; throw new Error("photo interruption"); }));
+    const first = await wake(["2026-08-07T08:30:00.000Z", "2026-08-07T08:31:00.000Z"], async () => ({ messageId: 9401 }), async () => ({ messageId: 9402 }));
+    assert.deepEqual(first, { status: "circuit_open", safe_reason: "evidence_completion_failed", telegram_provider_id: "9001" });
+    const second = await wake(["2026-08-07T08:31:00.000Z"], async () => { messageCalls += 1; return { messageId: 9401 }; }, async () => { photoCalls += 1; throw new Error("photo interruption"); });
+    assert.deepEqual(second, { status: "circuit_open", safe_reason: "evidence_completion_failed", telegram_provider_id: "9001" });
     const result = await wake(["2026-08-07T08:32:00.000Z"], async () => { messageCalls += 1; return { messageId: 9401 }; }, async () => { photoCalls += 1; return { messageId: 9402 }; });
     assert.equal(result.status, "applied_bundle"); assert.equal(lastBundle.created_at, "2026-08-07T08:30:00.000Z"); assert.deepEqual([registered.size, evidenceRecords, calendarCreates, messageCalls, photoCalls, cacheCalls, directCalls, harnessCalls, fs.readdirSync(path.join(stateDir, "applied-bundles")).length], [1, 1, 1, 1, 2, 0, 0, 0, 1]);
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
@@ -528,6 +530,46 @@ test("reused evidence skips Submit and continues the same owned page to a later 
   assert.deepEqual(navigations.map((call) => call.slice(1, 4)), [["session-owned-1", "TARGETOWNED1", "page-owned-1"], ["session-owned-1", "TARGETOWNED1", "page-owned-1"]]);
   assert.deepEqual(navigations.map(([, , , , url]) => url), ["https://luma.example.test/reused", "https://luma.example.test/new"]);
   assert.equal(state.calls.filter(([name]) => name === "report").length, 1);
+});
+
+test("evidence completion error becomes one bounded terminal report without retry or Submit", async () => {
+  let evidenceCalls = 0;
+  const state = fixture({
+    async discoverCandidates() { return [candidate("luma", "evidence-error")]; },
+    async readProviderState() {
+      return Object.freeze({ status: "registered", provider_receipt_id: "existing-receipt" });
+    },
+    async runCachedAction() { throw new Error("cache must not run"); },
+    async runDirectAction() { throw new Error("direct must not run"); },
+    async runAgentFallback() { throw new Error("Harness must not run"); },
+    async completeEvidence() {
+      evidenceCalls += 1;
+      throw new Error("raw evidence failure should stay out of the report");
+    },
+    async reportWake(report) {
+      state.calls.push(["report", report.status, report.safe_reason, report.consecutive_failure_count]);
+      return Object.freeze({ telegram_provider_id: "9015" });
+    },
+  });
+
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-13c-error",
+    providers: ["luma"],
+    maxConsecutiveFailures: 3,
+  }, state.dependencies);
+
+  assert.deepEqual(result, {
+    status: "circuit_open",
+    safe_reason: "evidence_completion_failed",
+    telegram_provider_id: "9015",
+  });
+  assert.equal(evidenceCalls, 1);
+  assert.equal(state.calls.filter(([name]) => ["cache", "direct", "agent"].includes(name)).length, 0);
+  assert.deepEqual(state.calls.filter(([name]) => name === "report"), [[
+    "report", "circuit_open", "evidence_completion_failed", 1,
+  ]]);
+  assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+  assert.doesNotMatch(JSON.stringify(state.calls), /raw evidence failure/);
 });
 
 test("malformed evidence result or disposition reports once and cleans up without Submit", async () => {
@@ -559,26 +601,33 @@ test("malformed evidence result or disposition reports once and cleans up withou
   }
 });
 
-test("malformed evidence uses real production operations for one durable positive report", async () => {
+test("evidence completion error uses real production operations for one durable positive report", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-runner-13b-invalid-operations-"));
   const sent = [];
   const operations = createMinimalProductionOperations({
-    stateDir, wakeId: "wake-connector-13b-invalid-operations", telegramTarget: "private-target",
+    stateDir, wakeId: "wake-connector-13c-error-operations", telegramTarget: "private-target",
     now: () => new Date("2026-08-11T08:30:00.000Z"),
-    async sendMessage(message, options) { sent.push({ message, options }); return { messageId: 7312 }; },
+    async sendMessage(message, options) { sent.push({ message, options }); return { messageId: 7315 }; },
   });
   let state = fixture({
     async readCalendarGaps() { return []; },
-    async discoverCandidates() { return [candidate("luma", "invalid-production")]; },
+    async discoverCandidates() { return [candidate("luma", "evidence-error-operations")]; },
     async readProviderState() { return Object.freeze({ status: "registered", provider_receipt_id: "existing-receipt" }); },
     async runCachedAction() { throw new Error("cache must not run"); }, async runDirectAction() { throw new Error("direct must not run"); },
     async runAgentFallback() { throw new Error("Harness must not run"); },
-    async completeEvidence() { return null; }, recordAction: operations.recordAction, reportWake: operations.reportWake,
+    async completeEvidence() { throw new Error("private raw evidence operation failure"); },
+    recordAction: operations.recordAction, reportWake: operations.reportWake,
   });
   try {
-    const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-13b-invalid-ops", providers: ["luma"] }, state.dependencies);
-    assert.deepEqual(result, { status: "circuit_open", safe_reason: "evidence_result_invalid", telegram_provider_id: "7312" });
-    assertDurableWakeReport(stateDir, "7312"); assert.equal(sent.length, 1); assert.equal(state.calls.filter(([name]) => name === "close").length, 1); assert.equal(state.calls.filter(([name]) => ["cache", "direct", "agent"].includes(name)).length, 0);
+    const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-13c-ops", providers: ["luma"] }, state.dependencies);
+    assert.deepEqual(result, { status: "circuit_open", safe_reason: "evidence_completion_failed", telegram_provider_id: "7315" });
+    assertDurableWakeReport(stateDir, "7315");
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].message.includes("private raw evidence operation failure"), false);
+    assert.equal(fs.readFileSync(path.join(stateDir, "wake-reports.jsonl"), "utf8").includes("private raw evidence operation failure"), false);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(stateDir, "wake-reports.jsonl"), "utf8")).consecutive_failure_count, 1);
+    assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+    assert.equal(state.calls.filter(([name]) => ["cache", "direct", "agent"].includes(name)).length, 0);
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
 
