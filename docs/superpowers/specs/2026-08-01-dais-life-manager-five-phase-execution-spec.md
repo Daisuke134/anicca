@@ -7179,7 +7179,17 @@ Firecrawl英日3 queryは同一quota不足のため停止せず、CloakBrowser G
 
 plan `docs/superpowers/plans/2026-08-10-connector-meetup-provider-19m.md`は、new Meetup workflow一つ、既存closed router/Harness/native allowlist、既存browser-provider evidence storeの実需要二件目parameterization、minimal evidence、gog Calendarのsurgical wiringだけ。Meetup専用agent/service/DB/queue/scheduler、推測direct-submit、provider-wide refactorは追加しない。初回未知flowはexisting bounded Harness、成功条件はexact pageの親`registered` readbackだけ。reviewed code merge時だけdaily labelを一時unloadし、official first wakeの実bundleとofficial second wakeのSubmit 0を確認後にMeetup `[x]`、09:00 single label reload、commit/pushする。現時点でItem19 Meetup未完、production supported表示なし、外部write 0。
 
-### Active remaining TODO SSOT（進捗342。これ以外の残TODO一覧は履歴）
+### O1B-25進捗343（Item 19M-A / Meetup discovery・parent readback完了）
+
+Lunaはnew Meetup workflow/test 2 filesだけをTDD実装した。初期REDはmodule missing後stub exportで0/8、初期GREEN 9/9。strict `www.meetup.com/<ascii-group>/events/<positive-id>/` identity、ordered dedup、JSON-LD exact identity、scheduled/offline/Tokyo/14日window、明示event/admission/participation-fee free、money/mandatory purchase/waitlist/full/cancel rejection、Calendar exact-marker recovery、five-count audit、親`Edit RSVP|Going` readback、stable direct safe failureを追加した。
+
+fresh Sol初回reviewはCritical 2 / Important 2。実Find anchorのrecommendation queryをdefault readerがraw返却してstrict parserが全拒否、detailはDOMContentLoaded時JSON-LD 1だがAttend 0で約2秒後にAttend 1、一般語`free`誤認、free keywordなしを再現した。Lunaはdefault readerだけverified Meetup anchorのquery/fragmentを除去し、注入入力のstrict rejectionは維持。Find URLをexact `keywords=free`へ変更し、default detail/parent viewへ5秒bounded registration-control waitを追加、一般free語を明示料金無料から分離した。第二RED 8/12→GREEN 12/12。
+
+fresh Sol再reviewはCritical 1 / Important 1。generic `Log in`がreadinessを即成立させることと`not a free event`の否定漏れを再現した。第三RED 9/12→GREEN 12/12で、predicateはvisible RSVP/event terminalだけを許可し、fake pageがlogin-only false→Attend/Going trueを実評価する。英日否定無料を拒否する。最終fresh Sol re-reviewはCritical 0 / Important 0で`ship`。Sol独立focused 12/12、syntax、diff checkもPASS。production/browser/Calendar/Telegram/state/schedule外部作用0。
+
+Meetup auth preflightはshared session未認証、Google OAuth saved session 0、Meetup Keychain existing credential 0、email recovery mail 0。公式email signup入力は全validだがhidden hCaptchaがsubmitを停止することを実frameで確認した。生成credentialはrepo/state/logではなくmacOS Keychainだけへmode外保存し、account/sessionは未作成。CAPTCHAをコードで迂回しない。Item19 Meetupは未完でproduction supported表示なし。scheduleはreview済みConnector branchの09:00 daily label loadedを維持し、new codeは分離worktreeだけ。
+
+### Active remaining TODO SSOT（進捗343。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
