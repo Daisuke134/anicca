@@ -62,3 +62,5 @@ The first fresh review found that the exact join-page provenance stopped at the 
 - Pass the same exact-join boolean into the browser-context inspector. On an exact join page, a custom question group has no generic ancestor fallback: only its nearest `.question_list` and direct `.question` child are valid. The special `participation_type` normalization remains unchanged.
 - Add RED regressions proving that a safe-looking control on a non-join Connpass page calls the agent once and resolves no private value, and that `.question` outside `.question_list` is not adopted on an exact join page.
 - Correct the implementation report from the earlier `80/24` transcription to the measured `94/24` test diff before this fix round.
+
+The scoped re-review confirmed those provenance fixes, then found that the shared URL regex made the path case-insensitive. Keep the browser-normalized lowercase host contract and make the entire literal path case-sensitive; `/EVENT/<id>/JOIN/` and either uppercase path segment must remain non-join. Add that focused negative before the next re-review.
