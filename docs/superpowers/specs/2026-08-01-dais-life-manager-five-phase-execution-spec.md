@@ -6943,7 +6943,11 @@ Luna RED 17/21からGREEN runner 19/19、operations 8/8、evidence 24/24、Sol�
 
 最終差分はrunner production +16/-2、test +116/-3。Luna focused runner 20/20、operations 8/8とadjacent、Sol独立expanded 110/110、syntax、diff checkがPASS。変更外baseline3件は同一。fresh Sol re-reviewは`ship`。13Bは完了、Item13 checkboxは13C official schedule-unloaded foreground wakeのlive reused Peatix、Submit 0 continuation、later candidate handling、positive every-wake Telegram ID、cleanup実証まで未完。schedule unloaded。
 
-### Active remaining TODO SSOT（進捗304。これ以外の残TODO一覧は履歴）
+### O1B-25進捗305（Item 13C / official second wake preflight）
+
+13C live plan `docs/superpowers/plans/2026-08-11-connector-idempotent-wake-13c-live.md`を作成した。preflightはHEAD `0f55ddf4c`、Git clean/upstream 0/0、Native/healthcheck/Healer shadow/host bridge 4 labels全unloaded、`:9222` raw Chromium healthy。baselineはapplied bundle 3、wake report 99、wake-report delivery 111。official `skills/connector/run.sh`をpushed worktreeからforegroundでexact 1回だけ起動し、plist load、新browser/session、manual provider action、substitute executorは0。既存exact bundleのprovider/Calendar readback後`reused`、同event cache/direct/Harness Submit 0、同じsession/target/pageでlater distinct candidateへnavigation/readback、terminal report 1とpositive Telegram delivery ID、既存bundle/evidence message/photo/Calendar create duplicate 0、process/lock/owned page cleanupをacceptanceとする。新candidateがbundleを作ればdelta exact1、作らなければdelta0とterminal safe reasonを必須化する。Item13はlive acceptanceまで未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗305。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
