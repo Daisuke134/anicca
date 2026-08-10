@@ -220,6 +220,84 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
                     (root / "home/.local/state/life-manager/state/.life-manager-core-last-pass").exists()
                 )
 
+    def test_safe_provider_probe_uses_diagnostic_route_before_marketing_effects(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            home.mkdir()
+            capture = root / "capture.json"
+            generator_marker = root / "generator-called"
+            generator = executable(
+                root / "generator",
+                "#!/usr/bin/env bash\n: >\"$GENERATOR_MARKER\"\nexit 91\n",
+            )
+            provider = root / "provider.py"
+            provider.write_text(
+                "import json,os,pathlib,sys\n"
+                "a=sys.argv[1:]\n"
+                "v=lambda k:a[a.index(k)+1]\n"
+                "p=pathlib.Path(v('--prompt-file')).read_text()\n"
+                "pathlib.Path(os.environ['CAPTURE_PROVIDER']).write_text(json.dumps({"
+                "'task_class':v('--task-class'),'task_label':v('--task-label'),"
+                "'loop':v('--loop'),'workdir':v('--workdir'),'prompt':p,"
+                "'usage':os.environ.get('ANICCA_USAGE_LEDGER'),"
+                "'attempt_override':os.environ.get('ANICCA_USAGE_ATTEMPT_LEDGER'),"
+                "'provider':os.environ.get('AGENT_RUNNER_PROVIDER')}))\n"
+                "raise SystemExit(int(os.environ.get('PROVIDER_RC','0')))\n",
+                encoding="utf-8",
+            )
+            env = os.environ.copy()
+            env.update({
+                "HOME": str(home),
+                "LIFE_MANAGER_SAFE_PROBE_ONLY": "1",
+                "LM_VIDEO_GENERATOR": str(generator),
+                "RUN_AGENT_BIN": str(ROOT / "skills/earn/marketing-engine/run_agent.sh"),
+                "AGENT_RUNNER_BIN": str(provider),
+                "LM_DAILY_USAGE_LEDGER": str(root / "agent-usage.jsonl"),
+                "LM_DAILY_RUN_LEDGER": str(root / "daily-runs.jsonl"),
+                "LM_SAFE_PROBE_WORKDIR": str(root / "workdir"),
+                "LM_DAILY_EVIDENCE_DIR": str(root / "evidence"),
+                "ANICCA_USAGE_ATTEMPT_LEDGER": str(root / "poison-attempts.jsonl"),
+                "CAPTURE_PROVIDER": str(capture),
+                "GENERATOR_MARKER": str(generator_marker),
+            })
+            result = subprocess.run(["bash", str(DAILY)], env=env, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            row = json.loads(capture.read_text(encoding="utf-8"))
+            self.assertEqual(row["task_class"], "diagnostic-agent")
+            self.assertEqual(row["task_label"], "life-manager-safe-probe")
+            self.assertEqual(row["loop"], "life-manager")
+            self.assertEqual(row["workdir"], str(root / "workdir"))
+            self.assertEqual(row["usage"], str(root / "agent-usage.jsonl"))
+            self.assertIsNone(row["attempt_override"])
+            self.assertEqual(row["provider"], "codex")
+            self.assertIn("Do not use tools", row["prompt"])
+            self.assertIn("do not access files or the network", row["prompt"])
+            self.assertFalse(generator_marker.exists())
+            self.assertFalse((root / "daily-runs.jsonl").exists())
+            self.assertFalse((home / ".local/state/life-manager/state/.life-manager-core-last-pass").exists())
+            env.update({
+                "LM_SAFE_PROBE_WORKDIR": str(root / "failed-workdir"),
+                "LM_DAILY_EVIDENCE_DIR": str(root / "failed-evidence"),
+                "CAPTURE_PROVIDER": str(root / "failed-capture.json"),
+                "PROVIDER_RC": "23",
+            })
+            failed = subprocess.run(["bash", str(DAILY)], env=env, text=True, capture_output=True)
+            self.assertEqual(failed.returncode, 23, failed.stderr)
+
+            occupied = root / "occupied-workdir"
+            occupied.mkdir()
+            env.update({
+                "LM_SAFE_PROBE_WORKDIR": str(occupied),
+                "LM_DAILY_EVIDENCE_DIR": str(root / "blocked-evidence"),
+                "CAPTURE_PROVIDER": str(root / "blocked-capture.json"),
+                "PROVIDER_RC": "0",
+            })
+            blocked = subprocess.run(["bash", str(DAILY)], env=env, text=True, capture_output=True)
+            self.assertEqual(blocked.returncode, 2)
+            self.assertEqual(blocked.stderr, "life-manager-safe-probe: workdir unavailable\n")
+            self.assertFalse((root / "blocked-capture.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

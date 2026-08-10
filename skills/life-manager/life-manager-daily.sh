@@ -38,6 +38,22 @@ if [ "${AGENT_WIRING_PROBE_ONLY:-0}" = "1" ]; then
   exit 0
 fi
 
+if [ "${LIFE_MANAGER_SAFE_PROBE_ONLY:-0}" = "1" ]; then
+  SAFE_WORKDIR="${LM_SAFE_PROBE_WORKDIR:-$LM_DATA_ROOT/state/agent-runner-safe-probe-workdir/$(date +%s)-$$}"
+  SAFE_EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$LM_DATA_ROOT/state/agent-runner-evidence/life-manager-safe-probe/$(date +%s)-$$}"
+  if ! mkdir -p "$(dirname "$SAFE_WORKDIR")" 2>/dev/null || ! mkdir "$SAFE_WORKDIR" 2>/dev/null; then
+    printf 'life-manager-safe-probe: workdir unavailable\n' >&2
+    exit 2
+  fi
+  export ANICCA_USAGE_LEDGER="$USAGE_LEDGER"
+  unset ANICCA_USAGE_ATTEMPT_LEDGER
+  export AGENT_RUNNER_PROVIDER="codex"
+  SAFE_PROMPT='Return exactly {"status":"ok","evidence":["provider response received"]}. Do not use tools; do not access files or the network; do not send messages, publish, purchase, or mutate anything.'
+  printf '%s\n' "$SAFE_PROMPT" | "$RUN_AGENT" --task-class diagnostic-agent \
+    --evidence-dir "$SAFE_EVIDENCE_DIR" --task-label life-manager-safe-probe \
+    --loop life-manager --workdir "$SAFE_WORKDIR" >>"$LOG" 2>&1
+  exit $?
+fi
 set +e
 GEN_RESULT="$("$VIDEO_GENERATOR" 2>>"$LOG")"
 GEN_RC=$?
