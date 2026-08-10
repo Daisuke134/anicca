@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development and verification-before-completion. Execute checkboxes in order.
 
-**Status:** READY FOR LUNA — fresh Sol plan review: ship
+**Status:** COMPLETE — reusable real-ledger proof, fresh review, independent reruns, and push evidence recorded
 
 **Goal:** Add one reusable, content-free E2E script that reads both real local usage ledgers without mutation and
 proves raw complete rows, immutable batches, normalized events, coverage, and the configured OTel correlation span all
@@ -79,18 +79,32 @@ collection exceptions remain zero and are not substituted. The fixed failure out
 
 ## Task 1 — Luna builds the verification script
 
-- [ ] Confirm the target script is absent and the current real sources satisfy the preconditions without printing
+- [x] Confirm the target script is absent and the current real sources satisfy the preconditions without printing
   private data. This slice adds verification code only; production behavior is already complete, so there is no fake
   failing production test to manufacture.
-- [ ] Implement the exact one-file script within the soft target. All assertions are executable acceptance checks;
+- [x] Implement the exact one-file script within the soft target. All assertions are executable acceptance checks;
   catch only at the outer boundary for the fixed failure line and cleanup.
-- [ ] Run the script twice. Both runs must exit 0 with the same exact counts-only schema, create no persistent file,
+- [x] Run the script twice. Both runs must exit 0 with the same exact counts-only schema, create no persistent file,
   mutate neither source, and finish one span each. Run runner+chain+hourly focused tests, CFO, full npm, syntax, and
   `git diff --check`. Luna does not edit docs, commit, or push.
 
 ## Task 2 — Sol review and close
 
-- [ ] Fresh Sol review returns `ship` and confirms the script cannot modify real source/state or emit private values.
-- [ ] Sol independently runs it twice, independently checks real source hashes around both runs, and reruns all gates.
-- [ ] Update this plan and both CFO specs with exact observed counts; fetch, commit, push, and send one content-free
-  Telegram milestone. Then the tax/location truth boundary becomes the only active item.
+- [x] Fresh Sol review returns `ship` and confirms the script cannot modify real source/state or emit private values.
+- [x] Sol independently runs it twice, independently checks real source hashes around both runs, and reruns all gates.
+- [x] Update this plan and both CFO specs with exact observed counts; fetch, commit, push, and send one content-free
+  Telegram milestone. Then CFO-2a2b becomes the next Ponytail audit; tax/location remains later in the parent SSOT.
+
+## Completion evidence
+
+- Luna added exactly one 35-line verification script; no production, package, launchd, Telegram, DB, or live-state file
+  changed. Fresh Sol implementation review returned `ship — Spec ✅`.
+- Luna and Sol each ran the script repeatedly. Every run returned exactly
+  `PASS sources=2 discovered=5004 accepted=5004 missing=283 coverage_exceptions=6 spans=1`.
+- The proof independently reconstructs all 5,004 domain-separated source IDs from LF byte offsets, requires
+  discovered=accepted=raw with duplicate/conflicting zero, derives missing/attribution/collision/coverage per source,
+  and exact-matches the one ended UNSET INTERNAL span's 15 closed attributes.
+- External SHA-256 comparison proved both real sources byte-identical across Sol's two runs. Temporary-tree residue was
+  zero; stdout contained only the fixed counts line; stderr/console and Telegram delivery were zero.
+- Focused runner/chain/hourly passed 19/19, CFO 292/292, full npm exited 0, and syntax/diff checks passed. Existing npm
+  audit warnings remain 1 moderate/4 high and were not broadened into this slice.
