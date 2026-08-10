@@ -40,6 +40,10 @@ Soft target: 2 files; production +15–25 LOC; tests +35–55 LOC.
 - Return `registered` only when the current strict URL and the corresponding exact measured DOM contract match the same candidate event ID and authentication is intact.
 - Preserve legacy explicit markers and every existing failure code. Do not expose title, attendee identity, QR payload, ticket contents, URL query, or DOM text.
 
+### Fresh review fix-first amendment
+
+Fresh review reproduced that a malformed observation with `markers: ""` can satisfy `markers.length === 0` and fabricate `registered` when paired with ticket-shell booleans; an absent `markers` field throws `TypeError`. Before either measured ticket/canonical success branch, require `Array.isArray(observed.markers)`. Add RED cases for string, object, null, and missing markers; all must return privacy-safe `unavailable` without throwing, submitting, or unlocking downstream evidence. Preserve the valid empty-array success case and legacy exact marker handling.
+
 ## Verify
 
 - Focused Peatix provider suite, Peatix workflow, production Harness, minimal production/runner/native entrypoint adjacent suites, changed-file syntax, and `git diff --check`.
