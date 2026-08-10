@@ -179,7 +179,7 @@ test("official factory composes the default Peatix Harness with the attendee pro
   const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: filled ? "pending" : "absent" }; } };
   const element = { tagName: "INPUT", type: "text", required: true, dataset: {}, labels: [{ innerText: "Name" }], innerText: "", getAttribute() { return ""; } };
   const page = { locator(selector) {
-    if (selector === "input, textarea, select, button, a[role=button]") return { async evaluateAll(callback) { return callback([element]); } };
+    if (selector === "input, textarea, select, button, a[role=button], a#confirm-button") return { async evaluateAll(callback) { return callback([element]); } };
     return { async count() { return 1; }, async fill(value) { filled = value; } };
   } };
   try {

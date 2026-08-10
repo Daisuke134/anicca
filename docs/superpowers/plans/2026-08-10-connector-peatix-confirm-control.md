@@ -73,3 +73,11 @@ The first settlement GREEN checked the 30-second deadline only between polling i
 - Fresh Sol correctness review focused on accidental final external effects and cross-event identity.
 - Fresh-review regressions for delayed final readback/no-next-candidate and hidden final anchors.
 - SSOT update, commit, push, clean preflight, then one official schedule-unloaded foreground wake. Acceptance is new parent `registered`/`pending` plus a durable `applied_bundle`, or an exact next safe boundary with zero duplicate final effects.
+
+## Result
+
+- Initial confirm-control RED exposed the omitted exact anchor and the form-transition race. The first GREEN reached focused 39/39 and adjacent 90/90.
+- Fresh review reproduced two unsafe boundaries: delayed registration could be misclassified as failure and advance to another candidate, and a hidden exact anchor could be admitted. The fix added strict browser visibility, bounded parent settlement, preserved final provider state, and exact `effect_unknown` propagation.
+- The three-file Harness boundary could not stop the outer candidate loop, so the plan was explicitly expanded to the existing minimal runner and one runner test. Only exact fallback `effect_unknown` now reports `circuit_open / effect_unknown` after one failure and before another candidate; ordinary failures retain the three-consecutive contract.
+- Fresh re-review then found a never-resolving parent readback could bypass the outer deadline. Per-readback remaining-budget racing and deterministic fake-time coverage closed it without weakening the fixed production 30-second budget.
+- Final evidence: Harness 42/42, runner 15/15, planned expanded adjacent 108/108, changed-file syntax and `git diff --check` PASS. Full Connector regression was 304/307; all three failures reproduce on clean HEAD (two stale provider-cursor expectations and one required-email fixture), so new failures are zero. Final fresh Sol review: Critical 0, Important 0, `ship`.

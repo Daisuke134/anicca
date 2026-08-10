@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { mock } = require("node:test");
 const test = require("node:test");
 
 const {
@@ -91,7 +92,7 @@ test("default page adapter observes labels and parent resolves private values be
   const locators = new Map();
   const page = {
     locator(selector) {
-      if (selector === "input, textarea, select, button, a[role=button]") {
+      if (selector === "input, textarea, select, button, a[role=button], a#confirm-button") {
         return { async evaluateAll(callback) { return callback([phoneElement, buttonElement]); } };
       }
       if (!locators.has(selector)) {
@@ -525,7 +526,7 @@ test("parent rejects arbitrary buttons and links even when an injected action se
 test("known Peatix input button is suppressed while required answers remain and exposed after completion", async () => {
   const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], getAttribute() { return ""; }, closest() { return null; }, ...element });
   const form = {}; const required = make({ tagName: "INPUT", type: "text", required: true, value: "", form, labels: [{ innerText: "Name" }] });
-  const known = make({ tagName: "INPUT", type: "button", id: "form-submit-button", value: "チケットを申し込む", disabled: false, form: null });
+  const known = make({ tagName: "INPUT", type: "button", id: "form-submit-button", value: "確認画面へ進む", disabled: false, form: null });
   const elements = [required, known, make({ tagName: "BUTTON", type: "button", innerText: "Accept all cookies" }), make({ tagName: "BUTTON", type: "button", innerText: "Filter" })];
   const page = { url() { return "https://peatix.com/sales/event/5075819/form"; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } };
   let request;
@@ -534,7 +535,7 @@ test("known Peatix input button is suppressed while required answers remain and 
   assert.deepEqual(await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls: pending } }), { control: pending[0].control });
   required.value = "filled";
   const complete = await inspectPageControls({ page, provider: "peatix" });
-  const submit = complete.find((control) => control.label === "チケットを申し込む");
+  const submit = complete.find((control) => control.label === "確認画面へ進む");
   assert.ok(submit);
   assert.equal(submit.submittable, true);
   assert.deepEqual(await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 2, observation: { controls: complete } }), { control: submit.control });
@@ -544,11 +545,12 @@ test("known Peatix input button is suppressed while required answers remain and 
 test("known Peatix submit fails closed for zero, duplicate, wrong-id, disabled, and competing-answer variants", async () => {
   const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], getAttribute() { return ""; }, closest() { return null; }, ...element });
   const form = {}; const answer = make({ tagName: "INPUT", type: "text", required: true, value: "filled", form, labels: [{ innerText: "Name" }] });
-  const submit = (overrides = {}) => make({ tagName: "INPUT", type: "button", id: "form-submit-button", value: "チケットを申し込む", disabled: false, form: null, ...overrides });
+  const submit = (overrides = {}) => make({ tagName: "INPUT", type: "button", id: "form-submit-button", value: "確認画面へ進む", disabled: false, form: null, ...overrides });
   const cases = [
     ["zero", [answer]],
     ["duplicate", [answer, submit(), submit()]],
     ["wrong-id", [answer, submit({ id: "other-submit" })]],
+    ["wrong-form-label", [answer, submit({ value: "チケットを申し込む" })]],
     ["disabled", [answer, submit({ disabled: true })]],
     ["competing-answer-form", [answer, submit(), make({ tagName: "INPUT", type: "checkbox", required: true, value: "on", form: {}, labels: [{ innerText: "Cookie" }] })]],
   ];
@@ -562,20 +564,22 @@ test("known submit requires the Peatix provider and canonical form URL", async (
   const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], getAttribute() { return ""; }, closest() { return null; }, ...element });
   const form = {}; const elements = [
     make({ tagName: "INPUT", type: "text", required: true, value: "filled", form, labels: [{ innerText: "Name" }] }),
-    make({ tagName: "INPUT", type: "button", id: "form-submit-button", value: "チケットを申し込む", disabled: false, form: null }),
+    make({ tagName: "INPUT", type: "button", id: "form-submit-button", value: "確認画面へ進む", disabled: false, form: null }),
   ];
   const cases = [["luma", "https://peatix.com/sales/event/5075819/form"], ["peatix", "https://evil.example/sales/event/5075819/form"], ["peatix", "https://peatix.com/event/5075819"]];
   for (const [provider, href] of cases) {
     const controls = await inspectPageControls({ provider, page: { url() { return href; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } } });
     assert.equal(controls.some((control) => control.submittable === true), false);
   }
+  const crossEvent = await inspectPageControls({ provider: "peatix", event_id: "5075819", page: { url() { return "https://peatix.com/sales/event/9999999/form"; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } } });
+  assert.equal(crossEvent.some((control) => control.submittable === true), false);
 });
 
 test("production harness does not reuse a Peatix observation for another provider", async () => {
   let operated = 0; const providers = []; const page = { url() { return "https://peatix.com/sales/event/5075819/form"; } };
   const harness = createProductionBrowserHarness({
     lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
-    inspectControls: async ({ provider }) => { providers.push(provider); return [{ control: "known_submit", kind: "button", label: "チケットを申し込む", required: false, submittable: provider == null || provider === "peatix" }]; },
+    inspectControls: async ({ provider }) => { providers.push(provider); return [{ control: "known_submit", kind: "button", label: "Register", required: false, submittable: provider == null || provider === "peatix" }]; },
     async proposeAction() { return { purpose: "submit", method: "ax_click", control: "known_submit" }; },
     async operateControl() { operated += 1; return { status: "success" }; },
     async resolveValue() { return null; },
@@ -586,12 +590,250 @@ test("production harness does not reuse a Peatix observation for another provide
   assert.deepEqual(providers, ["peatix", "luma"]);
 });
 
+test("production harness binds a cached observation to the same Peatix candidate event", async () => {
+  let operated = 0; const eventIds = []; const page = { url() { return "https://peatix.com/sales/event/5104728/form"; } };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    inspectControls: async ({ event_id }) => { eventIds.push(event_id); return [{ control: "known_submit", kind: "button", label: "Register", required: false, submittable: event_id === "5104728" }]; },
+    async proposeAction() { return { purpose: "submit", method: "ax_click", control: "known_submit" }; },
+    async operateControl() { operated += 1; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  const action = { purpose: "submit", method: "ax_click", control: "known_submit" };
+  assert.deepEqual(await harness.performAction({ page, provider: "peatix", candidate: { event_ref: "peatix-event://event/5104728" }, action }), { status: "success" });
+  assert.deepEqual(await harness.performAction({ page, provider: "peatix", candidate: { event_ref: "peatix-event://event/9999999" }, action }), { status: "failed" });
+  assert.equal(operated, 1);
+  assert.deepEqual(eventIds, ["5104728", "9999999"]);
+});
+
 test("known Peatix submit fails closed beside an unlabeled required answer", async () => {
   const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], getAttribute() { return ""; }, closest() { return null; }, ...element });
   const form = {}; const elements = [
     make({ tagName: "INPUT", type: "text", required: true, value: "filled", form }),
-    make({ tagName: "INPUT", type: "button", id: "form-submit-button", value: "チケットを申し込む", disabled: false, form: null }),
+    make({ tagName: "INPUT", type: "button", id: "form-submit-button", value: "確認画面へ進む", disabled: false, form: null }),
   ];
   const controls = await inspectPageControls({ provider: "peatix", page: { url() { return "https://peatix.com/sales/event/5075819/form"; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } } });
   assert.equal(controls.some((control) => control.submittable === true), false);
+});
+
+test("known Peatix confirm anchor is exposed only on the exact same-event confirmation page", async () => {
+  const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], disabled: false, hidden: false, isConnected: true, style: {}, getBoundingClientRect() { return { width: 120, height: 32 }; }, getAttribute() { return ""; }, closest() { return null; }, ...element });
+  const form = {};
+  const elements = [
+    make({ tagName: "INPUT", type: "text", required: true, value: "filled", form, labels: [{ innerText: "Name" }] }),
+    make({ tagName: "A", id: "confirm-button", innerText: "チケットを申し込む", form: null }),
+    make({ tagName: "A", id: "help-link", innerText: "Help", form: null }),
+    make({ tagName: "BUTTON", type: "button", innerText: "Accept cookies", form: null }),
+  ];
+  let selector = "";
+  const page = {
+    url() { return "https://peatix.com/sales/event/5104728/confirm"; },
+    locator(value) {
+      selector = value;
+      return { async evaluateAll(callback, context) { return callback(elements, context); } };
+    },
+  };
+  const controls = await inspectPageControls({ page, provider: "peatix", event_id: "5104728" });
+  assert.match(selector, /a#confirm-button/);
+  const confirm = controls.find((control) => control.label === "チケットを申し込む");
+  assert.ok(confirm);
+  assert.equal(confirm.kind, "button");
+  assert.equal(confirm.submittable, true);
+  assert.equal(controls.find((control) => control.label === "Help").kind, "link");
+  assert.equal(controls.find((control) => control.label === "Help").submittable, false);
+  assert.equal(controls.find((control) => control.label === "Accept cookies").submittable, false);
+});
+
+test("known Peatix confirm anchor fails closed when hidden, detached, CSS-hidden, or zero-sized", async () => {
+  const make = (element = {}) => {
+    const result = { dataset: {}, labels: [], innerText: "", options: [], disabled: false, hidden: false, isConnected: true, style: {}, ...element };
+    result.getBoundingClientRect = () => result.rect || { width: 120, height: 32 };
+    result.getAttribute = (name) => name === "hidden" ? (result.hidden ? "" : null) : name === "aria-hidden" ? (result.ariaHidden ? "true" : null) : "";
+    result.closest = () => null;
+    return result;
+  };
+  const variants = [
+    ["hidden-attribute", { hidden: true }],
+    ["aria-hidden", { ariaHidden: true }],
+    ["css-display-none", { style: { display: "none" } }],
+    ["css-visibility-hidden", { style: { visibility: "hidden" } }],
+    ["ancestor-css-display-none", { parentElement: { style: { display: "none" } } }],
+    ["zero-size", { rect: { width: 0, height: 0 } }],
+    ["detached", { isConnected: false }],
+  ];
+  for (const [name, overrides] of variants) {
+    const form = {};
+    const elements = [
+      make({ tagName: "INPUT", type: "text", required: true, value: "filled", form, labels: [{ innerText: "Name" }] }),
+      make({ tagName: "A", id: "confirm-button", innerText: "チケットを申し込む", form: null, ...overrides }),
+    ];
+    const controls = await inspectPageControls({ provider: "peatix", event_id: "5104728", page: { url() { return "https://peatix.com/sales/event/5104728/confirm"; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } } });
+    assert.equal(controls.some((control) => control.submittable === true), false, name);
+  }
+});
+
+test("known Peatix confirm fails closed for pending answers and identity, label, state, or uniqueness variants", async () => {
+  const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], disabled: false, getAttribute() { return ""; }, closest() { return null; }, ...element });
+  const baseAnswer = { tagName: "INPUT", type: "text", required: true, value: "filled", form: {}, labels: [{ innerText: "Name" }] };
+  const baseConfirm = { tagName: "A", id: "confirm-button", innerText: "チケットを申し込む", form: null };
+  const cases = [
+    ["pending", { answer: { value: "" } }],
+    ["unlabeled", { answer: { labels: [] } }],
+    ["zero-form-required-answer", { answer: { form: null } }],
+    ["competing-answer-form", { competing: true }],
+    ["wrong-provider", { provider: "luma" }],
+    ["wrong-host", { href: "https://evil.example/sales/event/5104728/confirm" }],
+    ["wrong-path", { href: "https://peatix.com/event/5104728" }],
+    ["wrong-event", { href: "https://peatix.com/sales/event/9999999/confirm" }],
+    ["wrong-tag", { confirm: { tagName: "BUTTON" } }],
+    ["wrong-id", { confirm: { id: "other-confirm" } }],
+    ["wrong-label", { confirm: { innerText: "申し込む" } }],
+    ["form-associated", { confirm: { form: {} } }],
+    ["disabled", { confirm: { disabled: true } }],
+    ["duplicate", { duplicate: true }],
+  ];
+  for (const [name, variant] of cases) {
+    const answer = make({ ...baseAnswer, ...(variant.answer || {}) });
+    const confirm = make({ ...baseConfirm, ...(variant.confirm || {}) });
+    const elements = [answer, ...(variant.competing ? [make({ tagName: "INPUT", type: "text", required: true, value: "filled", form: {}, labels: [{ innerText: "Email" }] })] : []), confirm, ...(variant.duplicate ? [make({ ...baseConfirm })] : [])];
+    const href = variant.href || "https://peatix.com/sales/event/5104728/confirm";
+    const controls = await inspectPageControls({
+      page: { url() { return href; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } },
+      provider: variant.provider || "peatix",
+      event_id: "5104728",
+    });
+    assert.equal(controls.some((control) => control.submittable === true), false, name);
+  }
+});
+
+test("Peatix form submit waits for the bounded same-event confirm navigation before succeeding", async () => {
+  let href = "https://peatix.com/sales/event/5104728/form";
+  let clicks = 0;
+  const waitCalls = [];
+  const page = {
+    url() { return href; },
+    waitForURL(predicate, options) {
+      waitCalls.push(options);
+      return new Promise((resolve, reject) => {
+        const started = Date.now();
+        const poll = () => {
+          if (predicate(href)) return resolve();
+          if (Date.now() - started > 100) return reject(new Error("confirm navigation timeout"));
+          setTimeout(poll, 1);
+        };
+        poll();
+      });
+    },
+  };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    peatixWorkflow: { async readProviderState() { return href.endsWith("/confirm") ? { status: "pending" } : { status: "absent" }; } },
+    async inspectControls() {
+      return href.endsWith("/form")
+        ? [{ control: "form_submit", kind: "button", label: "確認画面へ進む", required: false, submittable: true }]
+        : [{ control: "confirm_anchor", kind: "button", label: "Review", required: false, submittable: false }];
+    },
+    async proposeAction(input) {
+      return input.observation.controls[0].control === "form_submit"
+        ? { purpose: "submit", method: "ax_click", control: "form_submit" }
+        : null;
+    },
+    async operateControl() {
+      clicks += 1;
+      setTimeout(() => { href = "https://peatix.com/sales/event/5104728/confirm"; }, 5);
+      return { status: "success" };
+    },
+    async resolveValue() { return null; },
+  });
+  const result = await harness.runFallback({
+    provider: "peatix",
+    candidate: { event_ref: "peatix-event://event/5104728" },
+    page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/PEATIXCONFIRM1",
+    maxSteps: 2,
+    expectedState: "registered_or_pending",
+  });
+  assert.equal(result.status, "completed");
+  assert.equal(clicks, 1);
+  assert.equal(waitCalls.length, 1);
+  assert.deepEqual(waitCalls[0], { waitUntil: "domcontentloaded", timeout: 30_000 });
+  assert.deepEqual(result.repaired_actions, [{ purpose: "submit", method: "ax_click", control: "form_submit" }]);
+});
+
+test("Peatix form submit stops on a cross-event confirm mismatch before readback or final observation", async () => {
+  let href = "https://peatix.com/sales/event/5104728/form";
+  let observed = 0; let operated = 0; let readbacks = 0; let finalObserved = 0;
+  const page = {
+    url() { return href; },
+    waitForURL(predicate) {
+      assert.equal(predicate("https://peatix.com/sales/event/9999999/confirm"), false);
+      return Promise.reject(new Error("cross-event confirm"));
+    },
+  };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    peatixWorkflow: { async readProviderState() { readbacks += 1; return { status: "pending" }; } },
+    async inspectControls() {
+      observed += 1;
+      if (!href.endsWith("/form")) finalObserved += 1;
+      return [{ control: "form_submit", kind: "button", label: "確認画面へ進む", required: false, submittable: true }];
+    },
+    async proposeAction() { return { purpose: "submit", method: "ax_click", control: "form_submit" }; },
+    async operateControl() { operated += 1; href = "https://peatix.com/sales/event/9999999/confirm"; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  const result = await harness.runFallback({ provider: "peatix", candidate: { event_ref: "peatix-event://event/5104728" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/PEATIXMISMATCH1", maxSteps: 2, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "failed");
+  assert.equal(result.safe_reason, "agent_action_failed");
+  assert.equal(observed, 1);
+  assert.equal(operated, 1);
+  assert.equal(readbacks, 0);
+  assert.equal(finalObserved, 0);
+});
+
+test("Peatix final click settles delayed registration before one completed outcome", async () => {
+  let registered = false; let finalReadbackConsumed = false; let clicks = 0; let reads = 0;
+  const page = { url() { return "https://peatix.com/sales/event/5104728/confirm"; } };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    peatixWorkflow: { async readProviderState() { reads += 1; if (registered && !finalReadbackConsumed) { finalReadbackConsumed = true; return { status: "pending" }; } return { status: "absent" }; } },
+    async inspectControls() { return [{ control: "confirm_button", kind: "button", label: "チケットを申し込む", required: false, submittable: true }]; },
+    async proposeAction() { return { purpose: "submit", method: "ax_click", control: "confirm_button" }; },
+    async operateControl() { clicks += 1; setTimeout(() => { registered = true; }, 10); return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  const result = await harness.runFallback({ provider: "peatix", candidate: { event_ref: "peatix-event://event/5104728" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/PEATIXFINALDELAY1", maxSteps: 2, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "completed");
+  assert.equal(clicks, 1);
+  assert.equal(result.provider_state.status, "pending");
+  assert.ok(reads >= 1);
+});
+
+test("Peatix final click fails bounded when provider readback never settles", async () => {
+  mock.timers.enable({ apis: ["Date", "setTimeout"] });
+  try {
+    let readStarted = false; let clicks = 0; let settled = false;
+    const page = { url() { return "https://peatix.com/sales/event/5104728/confirm"; } };
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      peatixWorkflow: { async readProviderState() { readStarted = true; return new Promise(() => {}); } },
+      async inspectControls() { return [{ control: "confirm_button", kind: "button", label: "チケットを申し込む", required: false, submittable: true }]; },
+      async proposeAction() { return { purpose: "submit", method: "ax_click", control: "confirm_button" }; },
+      async operateControl() { clicks += 1; return { status: "success" }; },
+      async resolveValue() { return null; },
+    });
+    const resultPromise = harness.runFallback({ provider: "peatix", candidate: { event_ref: "peatix-event://event/5104728" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/PEATIXNEVER1", maxSteps: 2, expectedState: "registered_or_pending" });
+    for (let attempt = 0; attempt < 100 && !readStarted; attempt += 1) await Promise.resolve();
+    assert.equal(readStarted, true);
+    resultPromise.then(() => { settled = true; });
+    mock.timers.tick(30_001);
+    for (let attempt = 0; attempt < 20 && !settled; attempt += 1) await Promise.resolve();
+    assert.equal(settled, true);
+    const result = await resultPromise;
+    assert.equal(result.status, "failed");
+    assert.equal(result.safe_reason, "effect_unknown");
+    assert.equal(clicks, 1);
+  } finally {
+    mock.timers.reset();
+  }
 });
