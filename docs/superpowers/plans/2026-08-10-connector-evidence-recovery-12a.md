@@ -28,6 +28,8 @@ Luna owns only:
 
 Soft target: 2 files; production +65–110 LOC; tests +65–95 LOC. Broad flow rewrite is forbidden; preserve the current evidence/Calendar/Telegram/bundle sequence and add only the pointer branch.
 
+Final size: 2 files; production +109/-59 LOC and tests +128/-2 LOC. Production remains inside the soft target. Tests exceed it because the required fail-closed recovery matrix now fixes fourteen independent corruption/identity/symlink cases without weakening any case; no production scope or additional abstraction was added.
+
 ### RED
 
 1. After a valid provider receipt/PNG is stored and Calendar fails, recreating the chain from the same state validates `readExternalReceipt` and `readArtifact`, then skips receipt render, screenshot, and `record` while completing through Calendar/Telegram/bundle.
@@ -55,3 +57,12 @@ Soft target: 2 files; production +65–110 LOC; tests +65–95 LOC. Broad flow r
 - Fresh Sol review for checkpoint corruption, privacy, identity binding, artifact validation, Calendar duplication, crash ordering, Luma non-regression, and absence of provider Submit paths.
 - The corruption matrix must cover invalid JSON/extra keys, file and parent symlinks, wrong provider/event/URL hash, forged receipt identity, missing receipt, artifact ref/SHA/bytes mismatch, and invalid PNG, all with zero downstream effects.
 - Update SSOT, commit, and push. Item 12 remains open until 12B adds Telegram/photo/final-bundle recovery and the full four-boundary fixture matrix passes.
+
+## Result
+
+- Luna reproduced the initial forged-receipt failure, then made the first-pass and recovery paths require the same deterministic provider receipt identity. Checkpoint file and root-relative path components are rejected with `lstat` when symlinked.
+- The recovery matrix covers invalid JSON, extra keys, wrong provider/event/URL hash, forged and malformed receipt refs, malformed and mismatched artifact refs, missing receipt, artifact byte/SHA mismatch, internally consistent non-PNG bytes, and file/parent symlinks. Every case keeps page, Calendar, Telegram, and bundle effects at zero.
+- Provider evidence recovery validates the stored receipt and raw artifact bytes, then skips receipt rendering, screenshot, and provider `record`. Calendar remains an independent live find/create/readback authority; a create/readback crash recovers with total Calendar create one.
+- Luna focused/adjacent suites passed. Sol independently reran the frozen relevant suite at 43/43, changed-file syntax, and `git diff --check`. The unchanged Peatix date fixture remains 19/20 and native provider-order baseline remains 15/17; neither failing file is changed by this slice.
+- Fresh Sol review found the initial three Important issues, then one missing recovery-matrix case group. After Luna fixed or characterized all findings, final re-review returned `ship`.
+- Item 12A is complete. Item 12 remains open for 12B Telegram message/photo/final-bundle recovery and the complete four-boundary acceptance matrix. Production schedule remains unloaded.

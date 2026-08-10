@@ -6895,7 +6895,13 @@ Item 10B/11 acceptance後の次active gateはItem12。live recoveryはSubmit 0�
 
 12A最終初回差分はRED 8/11からGREEN focused 11/11、Sol独立expanded 127/127、production +102/-59、tests +81までscopeを圧縮したが、fresh Sol reviewはImportant 3件で`fix-first`。第一に初回provider `record`結果はref構文/SHAだけで、recovery側に追加したdeterministic provider ID（tenant/event_ref/observed_at/artifact SHA）検証が未適用。第二にcheckpoint `statSync`/`readFileSync`と親directoryがsymlinkを追従し、state root外read/writeを許す。第三にcorrupt testはextra-keyだけで、symlink、forged receipt identity、artifact bytes/SHA、missing receipt、wrong provider/event/URL hashを未固定。planを先に改訂し、初回/recovery共通identity validator、`lstat` path-component拒否、全matrix downstream effect 0を必須化する。現2-file差分は未commit、browser/provider/Calendar/Telegram/bundle/live作用0。Item12は未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗294。これ以外の残TODO一覧は履歴）
+### O1B-25進捗295（Item 12A / provider evidence・Calendar recovery完了）
+
+同じLunaが初回provider `record`とrecoveryの両方へtenant/event ref/observedAt/raw artifact SHAのdeterministic receipt identityを適用し、checkpoint fileとstate root配下の全path componentを`lstat`でsymlink拒否した。mode 0600 exact pointerはprovider/event refs、canonical URL hash、receipt/artifact refsとSHA、status、first observed timeだけを保存し、title、venue、attendee、Telegram target、ticket ID、canonical URL、Calendar data、raw PNG/private valueを保存しない。recreated chainはprovider storeのreceiptとraw artifact bytes/signature/SHA/identityを検証し、page render、screenshot、provider recordを0にする一方、Calendarは毎回private idempotency find/create/independent readbackを実行する。create後readback crash fixtureは再起動後に既存exact 1を再利用し、Calendar create total 1。
+
+corruption matrixはinvalid JSON/extra key、wrong provider/event/URL hash、forged/malformed receipt、malformed/mismatched artifact ref、missing receipt、artifact bytes/SHA mismatch、SHA/ref/receiptが内部整合するnon-PNG、file/parent symlinkを固定し、全caseでpage/Calendar/Telegram/bundle作用0。最終2-file差分はproduction +109/-59、test +128/-2。Luna focused/adjacent、Sol独立relevant 43/43、syntax、diff checkがPASS。変更外baselineはPeatix date fixture 19/20、native旧provider期待15/17で同一。fresh Solは初回Important 3件と追加matrix 1件をfix-first後、最終re-review `ship`。12Aは完了したがItem12 checkboxは12BのTelegram message/photo/final bundle recoveryと四境界matrixまで未完。scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗295。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
