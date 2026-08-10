@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const {
   createConnpassBrowserProvider,
+  readConnpassRegistrationStateOnPage,
   submitConnpassOnPage,
 } = require("./connpass-browser-provider.js");
 
@@ -42,6 +43,50 @@ function fixture(states) {
     },
   };
 }
+
+function domFixture({ pathname, bodyText, controls = [] }) {
+  return {
+    async evaluate(callback) {
+      const previousLocation = globalThis.location;
+      const previousDocument = globalThis.document;
+      globalThis.location = { pathname };
+      globalThis.document = {
+        body: { innerText: bodyText },
+        querySelectorAll() { return controls; },
+      };
+      try {
+        return await callback();
+      } finally {
+        if (previousLocation === undefined) delete globalThis.location;
+        else globalThis.location = previousLocation;
+        if (previousDocument === undefined) delete globalThis.document;
+        else globalThis.document = previousDocument;
+      }
+    },
+  };
+}
+
+test("join-page attendee-section text does not impersonate pending registration", async () => {
+  const page = domFixture({
+    pathname: "/event/400028/join/",
+    bodyText: "参加枠\n補欠者\n補欠者はいません\n申し込みを確定する",
+    controls: [{ innerText: "申し込みを確定する", value: "", getAttribute() { return null; } }],
+  });
+  assert.deepEqual(await readConnpassRegistrationStateOnPage(page), { state: "unknown" });
+});
+
+test("pending requires an exact visible line on the canonical event page", async () => {
+  const page = domFixture({ pathname: "/event/400028/", bodyText: "参加状況\n補欠\n" });
+  assert.deepEqual(await readConnpassRegistrationStateOnPage(page), { state: "pending" });
+});
+
+test("pending markers are rejected for substring-only and non-canonical paths", async () => {
+  for (const pathname of ["/event/400028/", "/event/0/", "/event/400028", "/event/400028/join/", "/events/400028/"]) {
+    const bodyText = pathname === "/event/400028/" ? "補欠者" : "補欠";
+    const page = domFixture({ pathname, bodyText });
+    assert.deepEqual(await readConnpassRegistrationStateOnPage(page), { state: "unknown" }, pathname);
+  }
+});
 
 test("parent readback separates login, absence, unavailable, pending, and registered", async () => {
   for (const [observed, expected] of [
