@@ -134,6 +134,18 @@ If the file shrinks, the prefix changes, JSON is truncated, or one runner `event
 ingestion lowers coverage and preserves the accepted source-row observations. It never drops distinct rows merely
 because their runner IDs collide, and never reports a partial subtotal as complete.
 
+The source scanner accepts one Buffer plus exact `{source_id, prior_state}` options. `source_id` is closed to
+`life_manager_agent_usage|anicca_agent_usage`; `prior_state` is null or exactly
+`{source_id, byte_offset, prefix_sha256, discovered_rows}`. It returns exactly
+`{pairs, state, coverage_exceptions}`. Pairs are exact `{input, context:{source_row_ref}}` values. Exceptions are unique
+lexicographically sorted values from `incomplete_tail|invalid_source_row|source_rewritten|source_truncated`.
+
+A trailing partial line is not parsed; complete rows before it may advance the byte watermark while `incomplete_tail`
+remains visible. A shorter file, trusted-prefix mismatch, or any malformed complete new row emits no pairs and returns
+the last trusted state unchanged. Prior state must match the configured source, end at zero or immediately after LF,
+and carry the exact trusted-prefix hash and complete non-empty row count. Paths, line contents, and hashes never enter
+errors. All receipts are cloned and deeply frozen without freezing or mutating caller input.
+
 ## Event dedupe contract
 
 The pure reducer consumes exact `{input, context}` pairs, calls the 2a2a.1 normalizer itself, and keys the resulting
@@ -159,7 +171,7 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 |---|---|---|
 | 2a2a.1 ✅ | Pure event normalizer uses opaque source-row identity and preserves runner values/provenance | 2 files, +92/-1 cumulative LOC from pre-slice base |
 | 2a2a.2 ✅ | Pure batch reducer dedupes source-row refs and reports runner-ID collisions without dropping rows | 2 files, +69/-2 LOC |
-| 2a2a.3 NEXT | Append-only file cursor proves hash/watermark/truncation coverage | <=3 files, <=100 added LOC |
+| 2a2a.3 NEXT | Append-only file cursor proves hash/watermark/truncation coverage | 2 files, <=100 added LOC |
 | 2a2a.4 | Versioned loop/task mapping yields attributed or visibly unattributed rows | <=3 files, <=100 added LOC |
 | 2a2a.5 | Local append/storage + OTel links accepted rows without exposing content | <=3 files per sub-slice |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
