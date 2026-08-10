@@ -1,6 +1,6 @@
 # CFO-2a2.4d2 Real Gemini Live Usage E2E Implementation Plan
 
-**Status:** BLOCKED — do not implement until CFO-2a2.4d1 review fixes are verified and committed.
+**Status:** READY — CFO-2a2.4d1 is verified; this is the first unfinished CFO item.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 

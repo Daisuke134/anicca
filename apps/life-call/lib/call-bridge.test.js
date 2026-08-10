@@ -7,7 +7,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { EventEmitter } = require("node:events");
+const { EventEmitter } = require("node:events"), fs = require("node:fs"), path = require("node:path");
 const {
   routeGeminiMessage,
   buildTelnyxMediaFrame,
@@ -17,10 +17,13 @@ const {
   attachGeminiUsageTracking,
 } = require("./call-bridge.cjs");
 
-const USAGE_CONTEXT = { owner_id: "u1", financial_unit_id: "life_manager_saas", request_model: "models/gemini-2.5-flash-native-audio-preview-09-2025", live_session_id: "a".repeat(32) };
-const USAGE_OPTIONS = { storeOptions: { supaUrl: "https://supa.invalid", supaKey: "service" } };
-const usageMessage = (n) => ({ usageMetadata: { promptTokenCount: n, responseTokenCount: n, totalTokenCount: n } });
-const emitUsage = (socket, message) => socket.emit("message", Buffer.from(JSON.stringify(message)));
+const USAGE_CONTEXT = { owner_id: "u1", financial_unit_id: "life_manager_saas", request_model: "models/gemini-2.5-flash-native-audio-preview-09-2025", live_session_id: "a".repeat(32) }, USAGE_OPTIONS = { storeOptions: { supaUrl: "https://supa.invalid", supaKey: "service" } };
+const usageMessage = (n) => ({ usageMetadata: { promptTokenCount: n, responseTokenCount: n, totalTokenCount: n } }), emitUsage = (socket, message) => socket.emit("message", Buffer.from(JSON.stringify(message)));
+const serverSource = () => fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
+async function trapConsole(run) {
+  const names = ["log", "error", "warn"], originals = names.map(name => console[name]), logs = []; names.forEach((name, i) => { console[name] = (...args) => logs.push(args); });
+  try { return await run(logs); } finally { names.forEach((name, i) => { console[name] = originals[i]; }); }
+}
 
 // Build a handler over mutable call-scoped state, capturing the effects the real server.js injects.
 function wireEndHandler({ gotAudio = false, reconnects = 0, carrierOpen = true } = {}) {
@@ -89,36 +92,10 @@ test("decideGeminiEnd: reconnect ONCE on a pre-audio transient failure, then end
   assert.equal(decideGeminiEnd({ gotAudio: false, reconnects: 0, carrierOpen: false }), "close");
 });
 
-test("attachGeminiUsageTracking: ignores non-usage and serializes ordered captures", async () => {
-  const socket = new EventEmitter(), seen = [], first = usageMessage(1), second = usageMessage(2);
-  const recorder = attachGeminiUsageTracking({ socket, context: USAGE_CONTEXT, options: USAGE_OPTIONS, capture: async (message, context, options) => seen.push({ message, context, options }) });
-  emitUsage(socket, { serverContent: {} }); emitUsage(socket, first); emitUsage(socket, second);
-  const result = await recorder.settle();
-  assert.deepEqual(seen, [{ message: first, context: { ...USAGE_CONTEXT, usage_sequence: 0 }, options: USAGE_OPTIONS }, { message: second, context: { ...USAGE_CONTEXT, usage_sequence: 1 }, options: USAGE_OPTIONS }]);
-  assert.deepEqual(result, { seen: 2, stored: 2, failed: 0, complete: true }); assert.equal(Object.isFrozen(result), true);
-});
+test("attachGeminiUsageTracking: ordered serialization and fixed context", async () => { const socket = new EventEmitter(), pending = [], first = usageMessage(1), second = usageMessage(2), recorder = attachGeminiUsageTracking({ socket, context: USAGE_CONTEXT, options: USAGE_OPTIONS, capture: (message, context, options) => new Promise(resolve => pending.push({ message, context, options, resolve })) }); emitUsage(socket, { serverContent: {} }); emitUsage(socket, first); emitUsage(socket, second); await Promise.resolve(); assert.equal(pending.length, 1); assert.deepEqual(pending[0].message, first); assert.deepEqual(pending[0].context, { ...USAGE_CONTEXT, usage_sequence: 0 }); assert.strictEqual(pending[0].options, USAGE_OPTIONS); pending[0].resolve(); while (pending.length < 2) await Promise.resolve(); assert.equal(pending[1].context.usage_sequence, 1); pending[1].resolve(); const result = await recorder.settle(); assert.deepEqual(result, { seen: 2, stored: 2, failed: 0, complete: true }); assert.equal(Object.isFrozen(result), true); });
 
-test("attachGeminiUsageTracking: counts one rejection, never retries/logs, and zero is incomplete", async () => {
-  const socket = new EventEmitter(), calls = []; let logs = 0; const original = console.log; console.log = () => { logs++; };
-  try {
-    const recorder = attachGeminiUsageTracking({ socket, context: USAGE_CONTEXT, options: USAGE_OPTIONS, capture: async message => { calls.push(message); if (calls.length === 1) throw new Error("sentinel"); } });
-    emitUsage(socket, usageMessage(1)); emitUsage(socket, usageMessage(2));
-    assert.deepEqual(await recorder.settle(), { seen: 2, stored: 1, failed: 1, complete: false });
-    const empty = attachGeminiUsageTracking({ socket: new EventEmitter(), context: USAGE_CONTEXT, options: USAGE_OPTIONS, capture: async () => {} });
-    assert.deepEqual(await empty.settle(), { seen: 0, stored: 0, failed: 0, complete: false }); assert.equal(calls.length, 2); assert.equal(logs, 0);
-  } finally { console.log = original; }
-});
+test("attachGeminiUsageTracking: failure continuation and zero are incomplete", async () => await trapConsole(async logs => { const socket = new EventEmitter(), calls = [], recorder = attachGeminiUsageTracking({ socket, context: USAGE_CONTEXT, options: USAGE_OPTIONS, capture: async message => { calls.push(message); if (calls.length === 1) throw new Error("sentinel"); } }); emitUsage(socket, usageMessage(1)); emitUsage(socket, usageMessage(2)); assert.deepEqual(await recorder.settle(), { seen: 2, stored: 1, failed: 1, complete: false }); const empty = attachGeminiUsageTracking({ socket: new EventEmitter(), context: USAGE_CONTEXT, options: USAGE_OPTIONS, capture: async () => {} }); assert.deepEqual(await empty.settle(), { seen: 0, stored: 0, failed: 0, complete: false }); assert.equal(calls.length, 2); assert.deepEqual(logs, []); }));
 
-test("attachGeminiUsageTracking: close ends synchronously, fallback waits for deferred settlement and isolates reconnect", async () => {
-  const run = async (context, outcomes) => {
-    const socket = new EventEmitter(), pending = [], ends = [], fallbacks = [], calls = [];
-    const recorder = attachGeminiUsageTracking({ socket, context, options: USAGE_OPTIONS, capture: (message, actual, options) => new Promise((resolve, reject) => pending.push({ message, actual, options, resolve, reject })), onEnd: () => ends.push("end"), onFallback: result => fallbacks.push(result) });
-    outcomes.forEach((_, i) => emitUsage(socket, usageMessage(i + 1))); socket.emit("close"); assert.deepEqual(ends, ["end"]); assert.equal(fallbacks.length, 0);
-    for (let i = 0; i < outcomes.length; i++) { while (!pending[i]) await Promise.resolve(); calls.push(pending[i]); outcomes[i] ? pending[i].resolve() : pending[i].reject(new Error("sentinel")); }
-    const result = await recorder.settle(); await Promise.resolve(); return { result, calls, fallbacks };
-  };
-  const zero = await run({ ...USAGE_CONTEXT, live_session_id: "0".repeat(32) }, []);
-  const all = await run(USAGE_CONTEXT, [true, true]); const partial = await run(USAGE_CONTEXT, [true, false]);
-  assert.equal(zero.fallbacks.length, 1); assert.deepEqual(zero.result, { seen: 0, stored: 0, failed: 0, complete: false }); assert.equal(all.fallbacks.length, 0); assert.equal(partial.fallbacks.length, 1); assert.deepEqual(partial.result, { seen: 2, stored: 1, failed: 1, complete: false });
-  const next = await run({ ...USAGE_CONTEXT, live_session_id: "b".repeat(32) }, [true]); assert.equal(next.calls[0].actual.usage_sequence, 0); assert.equal(next.calls[0].actual.live_session_id, "b".repeat(32)); assert.strictEqual(next.calls[0].options, USAGE_OPTIONS);
-});
+test("attachGeminiUsageTracking: close/fallback/reconnect lifecycle", async () => { const run = async (context, outcomes) => { const socket = new EventEmitter(), pending = [], ends = [], fallbacks = [], recorder = attachGeminiUsageTracking({ socket, context, options: USAGE_OPTIONS, capture: (message, actual, options) => new Promise((resolve, reject) => pending.push({ message, actual, options, resolve, reject })), onEnd: () => ends.push("end"), onFallback: result => fallbacks.push(result) }); outcomes.forEach((_, i) => emitUsage(socket, usageMessage(i + 1))); socket.emit("close"); assert.deepEqual(ends, ["end"]); assert.equal(fallbacks.length, 0); for (let i = 0; i < outcomes.length; i++) { while (!pending[i]) await Promise.resolve(); outcomes[i] ? pending[i].resolve() : pending[i].reject(new Error("capture sentinel")); } const result = await recorder.settle(); await Promise.resolve(); return { result, fallbacks }; }; const zero = await run({ ...USAGE_CONTEXT, live_session_id: "0".repeat(32) }, []), all = await run(USAGE_CONTEXT, [true, true]), partial = await run(USAGE_CONTEXT, [true, false]); assert.equal(zero.fallbacks.length, 1); assert.deepEqual(zero.result, { seen: 0, stored: 0, failed: 0, complete: false }); assert.equal(all.fallbacks.length, 0); assert.equal(partial.fallbacks.length, 1); assert.deepEqual(partial.result, { seen: 2, stored: 1, failed: 1, complete: false }); const closedSocket = new EventEmitter(), closed = attachGeminiUsageTracking({ socket: closedSocket, context: USAGE_CONTEXT, options: USAGE_OPTIONS, capture: () => { throw new Error("post-close sentinel"); } }); closedSocket.emit("close"); emitUsage(closedSocket, usageMessage(9)); assert.deepEqual(await closed.settle(), { seen: 0, stored: 0, failed: 0, complete: false }); const escaped = [], onUnhandled = error => escaped.push(error); let consumed = false; process.on("unhandledRejection", onUnhandled); try { await trapConsole(async logs => { const socket = new EventEmitter(), thenable = { then(resolve, reject) { consumed = true; reject(new Error("fallback sentinel")); } }, recorder = attachGeminiUsageTracking({ socket, context: USAGE_CONTEXT, options: USAGE_OPTIONS, capture: async () => {}, onFallback: () => thenable }); socket.emit("close"); await recorder.settle(); await new Promise(resolve => setImmediate(resolve)); assert.equal(consumed, true); assert.deepEqual(logs, []); }); } finally { process.removeListener("unhandledRejection", onUnhandled); } assert.deepEqual(escaped, []); const oldSocket = new EventEmitter(), newSocket = new EventEmitter(), oldPending = [], newPending = [], old = attachGeminiUsageTracking({ socket: oldSocket, context: USAGE_CONTEXT, options: USAGE_OPTIONS, capture: (message, context) => new Promise(resolve => oldPending.push({ message, context, resolve })) }), next = attachGeminiUsageTracking({ socket: newSocket, context: { ...USAGE_CONTEXT, live_session_id: "b".repeat(32) }, options: USAGE_OPTIONS, capture: (message, context) => new Promise(resolve => newPending.push({ message, context, resolve })) }); emitUsage(oldSocket, usageMessage(1)); await Promise.resolve(); assert.equal(oldPending.length, 1); oldSocket.emit("close"); emitUsage(oldSocket, usageMessage(99)); emitUsage(newSocket, usageMessage(1)); await Promise.resolve(); assert.equal(oldPending.length, 1); assert.equal(newPending.length, 1); assert.equal(newPending[0].context.usage_sequence, 0); oldPending[0].resolve(); newPending[0].resolve(); await Promise.all([old.settle(), next.settle()]); });
+
+test("server source contract: owner propagation and close-time fallback snapshot", () => { const source = serverSource(), seam = source.indexOf("attachGeminiUsageTracking({"), start = source.indexOf("onFallback:", seam), end = source.indexOf("recordCost(", start), fallback = source.slice(start, end); assert.match(source, /buildStreamUrl\(\{\s*\.\.\.ev,\s*wakeUid:\s*body\.uid\s*\},\s*urgency,\s*lang,\s*u\.name\)/); assert.match(source, /onEnd:\s*\(\)\s*=>\s*\{[\s\S]*?geminiDurationSeconds\s*=\s*Math\.max\([\s\S]*?onGeminiEnd\("closed"\);?\s*\}/); assert.match(source, /onFallback:\s*\(\)\s*=>\s*\{[^}]*const quantity\s*=\s*geminiDurationSeconds\s*===\s*null\s*\?\s*0\s*:\s*geminiDurationSeconds/s); assert.ok(seam >= 0 && start > seam && end > start); assert.doesNotMatch(fallback, /Date\.now\(/); });

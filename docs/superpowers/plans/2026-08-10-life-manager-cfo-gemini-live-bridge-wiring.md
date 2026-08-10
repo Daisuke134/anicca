@@ -1,6 +1,6 @@
 # CFO-2a2.4d1 Gemini Live Bridge Review-Fix Plan
 
-**Status:** READY — revised by Ponytail; fresh Sol review required before Luna fixes.
+**Status:** COMPLETE — revised by Ponytail, implemented by Luna, and independently verified by Sol.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 
@@ -15,14 +15,14 @@ Replace the current three added tests with small named contracts rather than sta
 
 - Luna owns exactly `apps/life-call/lib/call-bridge.cjs`, `apps/life-call/lib/call-bridge.test.js`, and
   `apps/life-call/server.js`. Sol owns docs, review, verification, commit, and push.
-- Final diff versus `7ee07646b`: helper <=23 additions, tests <=57, server <=20; exactly three files and <=100 additions.
+- Final diff versus `7ee07646b`: helper <=23 additions, tests <=47, server <=20; exactly three files and <=90 additions.
 - Preserve audio, reconnect, barge-in, transcript, recording, Telnyx cost, scheduler, and provider behavior.
 - No real provider call, database/deployment, aggregation, scheduler, launchd, Telegram, retry, or raw provider logging.
 - Run from `apps/life-call`; do not edit docs, commit, or push.
 
 ## Task 1: Close the reviewed gaps
 
-- [ ] **Step 1 — replace/extend tests into independent contracts**
+- [x] **Step 1 — replace/extend tests into independent contracts**
 
 Keep ordered once-only capture, zero/incomplete, failure continuation, synchronous end, and fallback-matrix coverage.
 Use compact helpers, then add five separately named contracts:
@@ -41,7 +41,7 @@ Use compact helpers, then add five separately named contracts:
 Trap `console.log`, `console.error`, and `console.warn` around content sentinels. Prove real serialization by emitting two
 usage messages, advancing one microtask, and asserting only the first capture started before resolving it.
 
-- [ ] **Step 2 — run honest RED**
+- [x] **Step 2 — run honest RED**
 
 ```bash
 node --test lib/call-bridge.test.js
@@ -54,7 +54,7 @@ the UID contract fails because `wakeUid` is absent; duration fails because fallb
 ignored. The reconnect-isolation contract passes because per-socket state is already separate. Historical behavior stays
 green. Record the exact totals; do not call a different failure RED.
 
-- [ ] **Step 3 — make the minimum production fixes**
+- [x] **Step 3 — make the minimum production fixes**
 
 In `attachGeminiUsageTracking`, start the message handler with `if (closed) return`. Route fallback through one local
 function that calls `onFallback(result)` inside `try`, assimilates its return with `Promise.resolve(...).catch(() => {})`,
@@ -64,7 +64,7 @@ In `/test-call`, pass `{ ...ev, wakeUid: body.uid }` to the existing `buildStrea
 `geminiDurationSeconds = null`; `onEnd` snapshots `Math.max(0, (Date.now() - geminiStartedAtMs) / 1000)` once before the
 existing synchronous `onGeminiEnd("closed")`; `onFallback` uses only that snapshot, defaulting to zero if absent.
 
-- [ ] **Step 4 — run GREEN and gates**
+- [x] **Step 4 — run GREEN and gates**
 
 ```bash
 node --test lib/call-bridge.test.js
@@ -74,7 +74,7 @@ node --check lib/call-bridge.cjs
 node --check server.js
 git diff 7ee07646b --check -- lib/call-bridge.cjs lib/call-bridge.test.js server.js
 git diff 7ee07646b --numstat -- lib/call-bridge.cjs lib/call-bridge.test.js server.js \
-  | awk '{ added += $1; files += 1 } END { print "files=" files, "added=" added; exit !(files == 3 && added <= 100) }'
+  | awk '{ added += $1; files += 1 } END { print "files=" files, "added=" added; exit !(files == 3 && added <= 90) }'
 ```
 
 Return RED/GREEN totals and final per-file additions. No real external call, commit, or push.
@@ -84,4 +84,11 @@ Return RED/GREEN totals and final per-file additions. No real external call, com
 - Truth: authenticated owner and close-time duration reach the stored/fallback facts without DB-latency inflation.
 - Reliability: close remains synchronous; late messages and rejected fallback thenables cannot escape.
 - Concurrency: the already-correct per-socket queue receives a real simultaneous proof, not a fabricated RED.
-- YAGNI: four minimal code edits, five named regressions, three existing files, <=100 additions.
+- YAGNI: four minimal code edits, compact behavioral contracts, three existing files, 61 additions.
+
+## Completion evidence
+
+Luna recorded revised RED at 8/10, then GREEN at 10/10. The final diff against `7ee07646b` is exactly three files
+and 61 additions: helper 23, tests 18, and server 20. Sol independently ran focused 10/10, CFO 270/270, full
+`npm test` exit `0`, syntax, diff, and size gates. Fresh Sol review returned `ship` with Critical 0 and Important 0.
+No real provider, production database, deployment, scheduler, launchd, or Telegram state changed.

@@ -344,7 +344,7 @@ const server = http.createServer((req, res) => {
           location: (body.location || "").toString().slice(0, 200),
         };
         const urgency = ["gentle", "firm", "harsh"].includes(body.urgency) ? body.urgency : "gentle";
-        const streamUrl = buildStreamUrl(ev, urgency, lang, u.name);
+        const streamUrl = buildStreamUrl({ ...ev, wakeUid: body.uid }, urgency, lang, u.name);
         const result = await placeCall({ to: phone, streamUrl });
         return reply(result.ok ? 200 : 502, result);
       } catch (e) {
@@ -628,6 +628,7 @@ wss.on("connection", (carrierWs, req) => {
     console.log(`[bridge] opening Gemini Live live_ws_opened=${liveWsOpened}`);
     gemini = new WebSocket(geminiLiveWsUrl(GEMINI_KEY));
     const geminiStartedAtMs = Date.now();
+    let geminiDurationSeconds = null;
     let geminiCostRecorded = false;
     gemini.on("open", () => geminiSend(geminiSetupForEvent(event, urgency, lang, name)));
     gemini.on("message", (data) => {
@@ -661,10 +662,15 @@ wss.on("connection", (carrierWs, req) => {
     attachGeminiUsageTracking({
       socket: gemini, capture: captureGeminiLiveUsageObservation,
       context: { owner_id: wakeUid || "", financial_unit_id: "life_manager_saas", request_model: `models/${LIVE_MODEL}`, live_session_id: crypto.randomUUID().replace(/-/g, "") },
-      options: { storeOptions: { supaUrl: SUPA_URL, supaKey: SUPA_KEY } }, onEnd: () => onGeminiEnd("closed"),
+      options: { storeOptions: { supaUrl: SUPA_URL, supaKey: SUPA_KEY } }, onEnd: () => {
+        if (geminiDurationSeconds === null) {
+          geminiDurationSeconds = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000);
+        }
+        onGeminiEnd("closed");
+      },
       onFallback: () => {
         if (geminiCostRecorded) return; geminiCostRecorded = true;
-        const quantity = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000);
+        const quantity = geminiDurationSeconds === null ? 0 : geminiDurationSeconds;
         recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds", estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
       },
     });
