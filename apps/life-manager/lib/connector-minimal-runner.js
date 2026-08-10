@@ -152,9 +152,13 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
     if (!Array.isArray(gaps)) invalid();
     owned = verifiedOwned(await deps.browserRail.open(Object.freeze({ ownerToken: settings.ownerToken })));
 
-    for (const provider of settings.providers) {
+    for (let providerIndex = 0; providerIndex < settings.providers.length; providerIndex += 1) {
+      const provider = settings.providers[providerIndex];
       let candidates;
       try {
+        if (providerIndex > 0) {
+          await action("navigate", "browser_rail", () => deps.browserRail.navigate(owned, "about:blank"));
+        }
         const discovered = await action(
           "observe", "provider_discovery", () => deps.discoverCandidates(provider, gaps, owned.page),
         );

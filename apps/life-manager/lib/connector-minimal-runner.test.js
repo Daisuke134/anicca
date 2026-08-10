@@ -107,18 +107,60 @@ test("one wake reuses one owned session, target, and page across candidates and 
   assert.equal(result.status, "circuit_open");
   assert.equal(state.calls.filter(([name]) => name === "open").length, 1);
   assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
-  assert.deepEqual(
-    state.calls.filter(([name]) => name === "navigate").map((call) => call.slice(1, 4)),
-    [
-      ["session-owned-1", "TARGETOWNED1", "page-owned-1"],
-      ["session-owned-1", "TARGETOWNED1", "page-owned-1"],
-      ["session-owned-1", "TARGETOWNED1", "page-owned-1"],
-    ],
-  );
+  const navigations = state.calls.filter(([name]) => name === "navigate");
+  assert.deepEqual(navigations.map((call) => call.slice(1, 4)), [
+    ["session-owned-1", "TARGETOWNED1", "page-owned-1"],
+    ["session-owned-1", "TARGETOWNED1", "page-owned-1"],
+    ["session-owned-1", "TARGETOWNED1", "page-owned-1"],
+    ["session-owned-1", "TARGETOWNED1", "page-owned-1"],
+  ]);
+  assert.equal(navigations.filter((call) => call[4] === "about:blank").length, 1);
+  assert.notEqual(navigations[0][4], "about:blank");
+  assert.notEqual(navigations.at(-1)[4], "about:blank");
+  const firstDiscovery = state.calls.findIndex(([name]) => name === "discover");
+  const secondDiscovery = state.calls.findIndex(([name, provider]) => name === "discover" && provider === "connpass");
+  const reset = state.calls.findIndex(([name, , , , url]) => name === "navigate" && url === "about:blank");
+  assert.ok(firstDiscovery < reset && reset < secondDiscovery);
+  assert.deepEqual(state.calls.slice(reset + 1, secondDiscovery).map(([name]) => name), ["history"]);
   assert.deepEqual(
     state.calls.filter(([name]) => name === "discover").map(([, provider]) => provider),
     ["luma", "connpass"],
   );
+});
+
+test("a failed provider reset records failure, skips discovery, and closes the owned page", async () => {
+  let state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return [];
+    },
+  });
+  const originalNavigate = state.dependencies.browserRail.navigate;
+  state.dependencies.browserRail.navigate = async (owned, url) => {
+    if (url === "about:blank") {
+      state.calls.push(["navigate", owned.session_id, owned.target_id, owned.page.page_id, url]);
+      throw new Error("provider reset failed");
+    }
+    return originalNavigate(owned, url);
+  };
+
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-reset",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  assert.deepEqual(state.calls.filter(([name]) => name === "discover").map(([, provider]) => provider), ["luma"]);
+  assert.equal(result.status, "completed_no_effect");
+  assert.equal(result.safe_reason, "provider_discovery_failed");
+  assert.ok(state.calls.some(([name, row]) => (
+    name === "history" && row.purpose === "navigate" && row.method === "browser_rail" && row.result === "failed"
+  )));
+  assert.deepEqual(state.calls.find(([name]) => name === "report").slice(1), [
+    "completed_no_effect", "provider_discovery_failed",
+  ]);
+  assert.deepEqual(state.calls.filter(([name]) => name === "close"), [[
+    "close", "session-owned-1", "TARGETOWNED1", "page-owned-1",
+  ]]);
 });
 
 test("provider discovery failure continues and still reports the wake", async () => {
@@ -275,7 +317,9 @@ test("three consecutive candidate failures open the circuit before a fourth navi
 
   assert.equal(result.status, "circuit_open");
   assert.equal(result.safe_reason, "consecutive_failure_limit");
-  assert.equal(state.calls.filter(([name]) => name === "navigate").length, 3);
+  assert.equal(state.calls.filter(([name]) => name === "navigate").length, 4);
+  assert.equal(state.calls.filter(([name, , , , url]) => name === "navigate" && url === "about:blank").length, 1);
+  assert.equal(state.calls.filter(([name, , , , url]) => name === "navigate" && url !== "about:blank").length, 3);
   assert.equal(state.calls.filter(([name]) => name === "agent").length, 3);
   assert.deepEqual(state.calls.filter(([name]) => name === "report").at(-1), [
     "report", "circuit_open", "consecutive_failure_limit",

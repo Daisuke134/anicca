@@ -12,12 +12,12 @@
 
 ## Task 1: TDD the exact provider boundary
 
-- [ ] Add a RED test proving two providers use one open/session/target/page, with exactly one `about:blank` navigation immediately before the second provider discovery.
-- [ ] Prove there is no reset before the first provider and no trailing reset after the last provider.
-- [ ] Add a RED failure test proving a second-provider reset failure records `navigate/browser_rail` failed, does not call that provider discovery, follows the existing failure count/report path, and still closes the exact owned page once.
-- [ ] Implement the smallest indexed provider loop or first-provider flag; call the existing `action` wrapper and existing rail only.
-- [ ] Run focused runner tests, then minimal production/native/renderer integration and syntax checks.
-- [ ] Report RED and GREEN evidence to Sol. Do not commit or push; Sol reviews and integrates.
+- [x] Add a RED test proving two providers use one open/session/target/page, with exactly one `about:blank` navigation immediately before the second provider discovery.
+- [x] Prove there is no reset before the first provider and no trailing reset after the last provider.
+- [x] Add a RED failure test proving a second-provider reset failure records `navigate/browser_rail` failed, does not call that provider discovery, follows the existing failure count/report path, and still closes the exact owned page once.
+- [x] Implement the smallest indexed provider loop or first-provider flag; call the existing `action` wrapper and existing rail only.
+- [x] Run focused runner tests, then minimal production/native/renderer integration and syntax checks.
+- [x] Report RED and GREEN evidence to Sol. Do not commit or push; Sol reviews and integrates.
 
 ## Acceptance
 
