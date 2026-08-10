@@ -40,6 +40,7 @@ ODDS_HEADERS = [
 SNAPSHOT = "2026-08-10T10:00:00+09:00"
 RACE_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily"
 ODDS_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/OddsDataDownload?type=daily"
+EVIDENCE_PATH = Path(__file__).parents[3] / "docs/evidence/horse-racing/nar-daily-materialized-records.md"
 
 
 def _csv_bytes(headers: list[str], rows: list[dict[str, str]]) -> bytes:
@@ -165,6 +166,20 @@ def test_rejects_expected_hash_mismatch_before_parsing(tmp_path: Path):
         )
 
 
+def test_rejects_arbitrary_real_provenance_but_accepts_synthetic(tmp_path: Path):
+    race_zip, odds_zip = _build_inputs(tmp_path)
+    assert _materialize(race_zip, odds_zip)
+    with pytest.raises(ValueError, match="provenance"):
+        materialize_daily_win(
+            race_zip,
+            odds_zip,
+            snapshot_at=SNAPSHOT,
+            expected_race_sha256=_hash(race_zip),
+            expected_odds_sha256=_hash(odds_zip),
+            evidence_class="REAL_PUBLIC_WEB_RECORD",
+        )
+
+
 @pytest.mark.parametrize(
     "mutator",
     [
@@ -206,6 +221,40 @@ def test_excludes_incomplete_and_non_win_markets_and_rejects_duplicate_win_key(t
     _write_zip(odds_zip, odds_entries)
     with pytest.raises(ValueError, match="duplicate"):
         _materialize(race_zip, odds_zip)
+
+
+def test_rejects_duplicate_exact_win_key_when_zero_precedes_positive(tmp_path: Path):
+    odds_rows = [
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "1", "賭式": "単勝", "番号1": "1", "番号2": "", "番号3": "", "オッズ": "0.0"},
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "1", "賭式": "単勝", "番号1": "1", "番号2": "", "番号3": "", "オッズ": "2.5"},
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "1", "賭式": "単勝", "番号1": "2", "番号2": "", "番号3": "", "オッズ": "4.0"},
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "2", "賭式": "単勝", "番号1": "1", "番号2": "", "番号3": "", "オッズ": "2.5"},
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "2", "賭式": "単勝", "番号1": "2", "番号2": "", "番号3": "", "オッズ": "4.0"},
+    ]
+    race_zip, odds_zip = _build_inputs(tmp_path, odds_rows=odds_rows)
+    with pytest.raises(ValueError, match="duplicate"):
+        _materialize(race_zip, odds_zip)
+
+
+def test_excludes_nonpositive_extra_runner_key_before_odds_filter(tmp_path: Path):
+    odds_rows = [
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "1", "賭式": "単勝", "番号1": "1", "番号2": "", "番号3": "", "オッズ": "2.5"},
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "1", "賭式": "単勝", "番号1": "2", "番号2": "", "番号3": "", "オッズ": "4.0"},
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "1", "賭式": "単勝", "番号1": "99", "番号2": "", "番号3": "", "オッズ": "0.0"},
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "2", "賭式": "単勝", "番号1": "1", "番号2": "", "番号3": "", "オッズ": "2.5"},
+        {"競馬場": "01", "競走年月日": "20260810", "レース番号": "2", "賭式": "単勝", "番号1": "2", "番号2": "", "番号3": "", "オッズ": "4.0"},
+    ]
+    race_zip, odds_zip = _build_inputs(tmp_path, odds_rows=odds_rows)
+    records = _materialize(race_zip, odds_zip)
+    assert len(records) == 1
+
+
+def test_evidence_distinguishes_private_numeric_fields_from_redacted_export():
+    text = EVIDENCE_PATH.read_text().lower()
+    assert "private normalized records" in text
+    assert "numeric odds" in text
+    assert "redacted evidence" in text
+    assert "exports none" in text
 
 
 def test_excludes_race_after_cutoff_without_inventing_zero(tmp_path: Path):

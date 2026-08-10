@@ -16,6 +16,15 @@ from horse_racing_agent.store import validate_normalized_race
 
 _JST = ZoneInfo("Asia/Tokyo")
 _ODDS_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/OddsDataDownload?type=daily"
+_REAL_PROVENANCE = frozenset(
+    {
+        (
+            "60c8fb659d6b31369453bf6121576d1af082ddc274e3380dd19e3135403d0135",
+            "feaa43d6bdaa019aa748a7ce05f527235647531bc90bfcc38fb0eadb5dc8c515",
+            "2026-08-10T10:46:23+09:00",
+        )
+    }
+)
 _MAX_ENTRIES = 8
 _MAX_MEMBER_BYTES = 50 * 1024 * 1024
 _BOM = b"\xef\xbb\xbf"
@@ -264,17 +273,17 @@ def _parse_rows(
         if not first:
             continue
         number = _positive_int(first, "odds runner number is invalid")
-        odd = _odds(_cell(row, "オッズ"))
         if second or third:
             continue
         exact_key = (key, number)
         if exact_key in seen_exact_keys:
             _fail("duplicate odds key")
         seen_exact_keys.add(exact_key)
-        if odd is None:
-            continue
+        odd = _odds(_cell(row, "オッズ"))
         if key not in race_map or number not in race_map[key]["runners"]:
             extras.add(key)
+            continue
+        if odd is None:
             continue
         keyed = win_odds.setdefault(key, {})
         if number in keyed:
@@ -344,17 +353,27 @@ def materialize_daily_win(
     race_path = _path(race_zip_path)
     odds_path = _path(odds_zip_path)
     snapshot = _timestamp(snapshot_at)
-    _scope(evidence_class)
-    race_csv = _read_archive(race_path, expected_race_sha256, {"race", "horse"})
-    odds_csv = _read_archive(odds_path, expected_odds_sha256, {"odds"})
+    scope = _scope(evidence_class)
+    if not isinstance(expected_race_sha256, str) or not isinstance(expected_odds_sha256, str):
+        _fail("expected archive hash is invalid")
+    race_sha256 = expected_race_sha256.casefold()
+    odds_sha256 = expected_odds_sha256.casefold()
+    if evidence_class == "REAL_PUBLIC_WEB_RECORD" and (
+        race_sha256,
+        odds_sha256,
+        snapshot.isoformat(),
+    ) not in _REAL_PROVENANCE:
+        _fail("real provenance is not accepted")
+    race_csv = _read_archive(race_path, race_sha256, {"race", "horse"})
+    odds_csv = _read_archive(odds_path, odds_sha256, {"odds"})
     records = _parse_rows(
         race_csv["race"],
         race_csv["horse"],
         odds_csv["odds"],
         snapshot,
-        expected_odds_sha256.casefold(),
+        odds_sha256,
         evidence_class,
     )
-    if _sha256_file(race_path).casefold() != expected_race_sha256.casefold() or _sha256_file(odds_path).casefold() != expected_odds_sha256.casefold():
+    if _sha256_file(race_path).casefold() != race_sha256 or _sha256_file(odds_path).casefold() != odds_sha256:
         _fail("archive input mutated")
     return records

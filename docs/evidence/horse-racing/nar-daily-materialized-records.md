@@ -42,3 +42,7 @@ outside Git at:
 returned `record_count=7`, `race_count=7`, `model_ready=false`,
 `settled_payback_rows=0`, and `cash_authorized=false`. This is a materialized
 private-shadow data result, not a model or purchase authorization.
+
+Private normalized records contain numeric odds and may contain a numeric body weight
+inside the Mac-local process. The committed redacted evidence and audit report export
+none of those values: redacted evidence exports none of the numeric odds or weights.
