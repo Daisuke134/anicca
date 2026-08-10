@@ -31,3 +31,10 @@ Run the official minimal Connector once in the foreground while all Connector sc
 ## Close
 
 Record exact wake ID, action/provider transitions, bundle/report/delivery deltas, positive IDs, and cleanup evidence in SSOT. Mark Item 13 complete only if every acceptance point passes; otherwise keep it open, plan the observed first failure, and repair with the same Sol-plan/Luna-build/review loop.
+
+## First run result
+
+- Wake `wake-9bb615ee5684f064d329e016` ended safely with `circuit_open / effect_unknown`, consecutive failures 2, bundle delta zero, report delta one, delivery delta one, positive Telegram provider ID `11062`.
+- Cleanup, Git, CDP, and unloaded-label invariants passed.
+- Acceptance failed because Peatix returned 18 Calendar-free candidates in search order; an unprocessed candidate became ambiguous before the exact same-event Calendar-covered accepted bundle candidate was visited.
+- No second wake was started. Repair plan: `docs/superpowers/plans/2026-08-11-connector-peatix-existing-first-13c.md`.
