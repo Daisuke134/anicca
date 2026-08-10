@@ -34,3 +34,36 @@ test("findLatestGoogleCloudInvoice fails closed for absent account, bad command/
   ];
   for (const [name, account, run] of cases) assert.equal(await makeGogMail({ account, run }).findLatestGoogleCloudInvoice(), null, name);
 });
+
+const downloadLocator = Object.freeze({ messageId: "abcdef0123456789", attachmentId: "Ab-_09", filename: "invoice.pdf", size: 1234, receivedAtLocal: "2026-08-02 10:00", source: "google_cloud_invoice_gmail" });
+const downloadPath = "/tmp/cfo-google-invoice.pdf";
+const downloadJson = (extra = {}) => JSON.stringify({ bytes: 1234, cached: false, path: downloadPath, ...extra });
+
+test("downloadGoogleCloudInvoice issues one fixed command and returns frozen safe metadata", async () => {
+  const calls = [];
+  const mail = makeGogMail({ account: "cfo@example.com", run: args => { calls.push(args); return downloadJson(); } });
+  const result = await mail.downloadGoogleCloudInvoice(downloadLocator, downloadPath);
+  assert.deepEqual(calls, [["gmail", "attachment", downloadLocator.messageId, downloadLocator.attachmentId, `--out=${downloadPath}`, "-j", "--gmail-no-send"]]);
+  assert.deepEqual(result, { bytes: 1234, cached: false });
+  assert.equal(Object.isFrozen(result), true);
+});
+
+test("downloadGoogleCloudInvoice fails closed for invalid input or transfer data", async () => {
+  const cases = [
+    ["account absent", "", downloadLocator, downloadPath, () => "{}"],
+    ["invalid message", "x@y", { ...downloadLocator, messageId: "not-hex" }, downloadPath, () => downloadJson()],
+    ["invalid attachment", "x@y", { ...downloadLocator, attachmentId: "bad/id" }, downloadPath, () => downloadJson()],
+    ["invalid source", "x@y", { ...downloadLocator, source: "other" }, downloadPath, () => downloadJson()],
+    ["relative path", "x@y", downloadLocator, "invoice.pdf", () => downloadJson()],
+    ["unsafe path", "x@y", downloadLocator, "/tmp/invoice.txt", () => downloadJson()],
+    ["command failure", "x@y", downloadLocator, downloadPath, () => { throw new Error("gog failed"); }],
+    ["invalid JSON", "x@y", downloadLocator, downloadPath, () => "bad"],
+    ["path mismatch", "x@y", downloadLocator, downloadPath, () => downloadJson({ path: "/tmp/other.pdf" })],
+    ["invalid bytes", "x@y", downloadLocator, downloadPath, () => downloadJson({ bytes: 0 })],
+    ["non-integer bytes", "x@y", downloadLocator, downloadPath, () => downloadJson({ bytes: 1.5 })],
+    ["non-boolean cached", "x@y", downloadLocator, downloadPath, () => downloadJson({ cached: "false" })],
+  ];
+  for (const [name, account, locator, outPath, run] of cases) {
+    assert.equal(await makeGogMail({ account, run }).downloadGoogleCloudInvoice(locator, outPath), null, name);
+  }
+});

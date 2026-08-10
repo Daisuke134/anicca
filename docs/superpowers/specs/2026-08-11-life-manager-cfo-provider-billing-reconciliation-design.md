@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3.2b1 private invoice download is next |
+| Status | ACTIVE — CFO-2a3.2b1 complete; CFO-2a3.2b2 local parse and immutable append is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains unchanged until real E2E passes |
 | First provider | Google Cloud monthly invoice delivered to the already-authenticated local Gmail account |
@@ -124,7 +124,7 @@ allocation so narrower business totals can be derived honestly.
         `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-gmail-locator.md`.
   - [ ] **CFO-2a3.2b — Download, parse, append.** Use the locator once, private temporary PDF, existing
         `pdftotext`, CFO-2a3.1 normalizer, and one immutable local receipt; no scheduler wiring.
-    - [ ] **CFO-2a3.2b1 — Private download.** Download the located PDF once to a caller-owned absolute private path
+    - [x] **CFO-2a3.2b1 — Private download.** Download the located PDF once to a caller-owned absolute private path
           and return only frozen transfer metadata. No file reading, parsing, hashing, persistence, or scheduling.
           Plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-download.md`.
     - [ ] **CFO-2a3.2b2 — Parse and append.** Verify the downloaded file, extract locally with `pdftotext`, normalize
@@ -192,3 +192,16 @@ A real local read-only probe proved the exact `gog gmail attachment` command ret
 and `path`, creates a non-empty `%PDF` file with mode `0600`, and can be cleaned up immediately. The probe printed
 only booleans and key names. CFO-2a3.2b1 therefore adds only the command boundary; file verification, parsing,
 hashing, receipt append, dedupe, and cleanup remain CFO-2a3.2b2.
+
+## 11. CFO-2a3.2b1 completion evidence
+
+- Luna changed exactly the two planned files: 12 added production LOC and 33 added test LOC. RED kept the two
+  locator tests passing and failed both new tests only because `downloadGoogleCloudInvoice` did not exist.
+- GREEN passed focused `4/4`, CFO `307/307`, full `npm test`, syntax, and `git diff --check`; Sol independently
+  repeated the same focused/CFO/full/syntax/diff checks.
+- A real authenticated local E2E located and downloaded the latest invoice once. Safe assertions proved a frozen
+  exact two-key result, positive reported bytes equal to the regular file size, `%PDF` magic, mode `0600`, and exact
+  temporary-file/directory removal. No identifier, account, filename, path, content, or amount was printed.
+- The implementation adds no retry, generic downloader, parser, hash, persistence, scheduler, DB, OTel, or Telegram
+  behavior. A fresh Sol reviewer could not be allocated because the collaboration service returned
+  `agent thread limit reached`; no independent review result is claimed.

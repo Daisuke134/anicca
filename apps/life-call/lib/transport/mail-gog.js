@@ -5,6 +5,7 @@
 "use strict";
 
 const { execFile, execFileSync } = require("node:child_process");
+const path = require("node:path");
 const { promisify } = require("node:util");
 
 const execFileAsync = promisify(execFile);
@@ -102,6 +103,17 @@ function makeGogMail({ bin, account, keyring, run, execFileSyncImpl = execFileSy
             !/^[A-Za-z0-9_-]+$/.test(attachmentId) || !Number.isSafeInteger(a.size) || a.size <= 0) return null;
         return Object.freeze({ messageId: hit.id, attachmentId, filename, size: a.size,
           receivedAtLocal: hit.date, source: "google_cloud_invoice_gmail" });
+      } catch { return null; }
+    },
+    async downloadGoogleCloudInvoice(locator, outPath) {
+      try {
+        const messageId = locator && String(locator.messageId || ""), attachmentId = locator && String(locator.attachmentId || "");
+        if (!acct || !locator || locator.source !== "google_cloud_invoice_gmail" || !/^[a-f0-9]+$/i.test(messageId) ||
+            !/^[A-Za-z0-9_-]+$/.test(attachmentId) || typeof outPath !== "string" || !path.isAbsolute(outPath) ||
+            !/\.pdf$/i.test(outPath) || /[\0\r\n]/.test(outPath)) return null;
+        const result = JSON.parse(await exec(["gmail", "attachment", messageId, attachmentId, `--out=${outPath}`, "-j", "--gmail-no-send"]));
+        if (!result || result.path !== outPath || !Number.isSafeInteger(result.bytes) || result.bytes <= 0 || typeof result.cached !== "boolean") return null;
+        return Object.freeze({ bytes: result.bytes, cached: result.cached });
       } catch { return null; }
     },
     async findReceipt({ nonce, afterMs }) {
