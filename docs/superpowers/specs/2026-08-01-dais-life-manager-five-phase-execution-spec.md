@@ -6991,7 +6991,13 @@ Luna REDはConnpass evidence provider descriptor未登録を25 pass / 1 failで�
 
 fresh Sol reviewは`fix-first`。既存`connpass-evidence-store` readerがreceiptの`event_ref/artifact_sha256`を返さず、minimal evidence側のoptional照合を通るため、保存receiptの意味的改変をprovider ID再計算で検出できない。artifact markerのevent refもread contractでは期待eventへbindingできない。4 files/100 LOC超へのscope膨張を避け、evidence diffはreversible stash `item14a-evidence-wiring-frozen`へ退避した。prerequisite plan `docs/superpowers/plans/2026-08-11-connector-connpass-evidence-store-hardening-14a0.md`はConnpass store production/test 2 filesだけで、receipt exact keys + tenant/event/time/artifact provider ID再計算、artifact marker exact `{sha256}` + object bytes digestを固定する。Item14未完、event Submit 0、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗312。これ以外の残TODO一覧は履歴）
+### O1B-25進捗313（Item 14A0 / Connpass evidence store hardening完了）
+
+Luna REDはvalid receipt readが3 fieldsしか返さないことと、stale provider IDを残したsemantic `event_ref`改ざんが通ることを0/2で再現した。GREENはConnpass store production/test 2 filesだけに限定し、receipt exact 5 keys、tenant/event/observedAt/artifact SHA tupleからのprovider ID再計算、artifact marker exact `{sha256}`、marker/ref/object bytesの同一digest検証を実装した。focused Connpass 2/2、serialized Connpass/Luma/Peatix store regression 6/6、syntax、diff checkがPASS。
+
+fresh Sol reviewはCritical 0・Important 0で`ship`。live Connpass evidenceはまだ0のためmigrationは不要で、Luma/Peatix store production変更0。Item14A wiringはreversible stashの別sliceとして維持し、次に復元してexact Connpass descriptorと下流作用前のcorruption rejectionを閉じる。Item14未完、event Submit 0、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗313。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
