@@ -1,5 +1,7 @@
 # Connector Peatix Parent-owned Japanese Full-name Plan
 
+**Status:** GREEN、fresh re-review `ship`。live acceptanceはSSOT進捗268以降で継続する。
+
 > **For Luna:** Use Superpowers test-driven-development. Own only the six production/test files below. Do not edit docs/spec, commit/push, browser/state/private profile, or external systems.
 
 **Goal:** Resolve the live Peatix fields `お名前（漢字）` and `お名前（ひらがな）` from the existing mode-0600 identity SSOT without exposing private values to the model or inventing questionnaire answers.

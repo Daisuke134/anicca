@@ -45,6 +45,13 @@ function requiredEmail(value) {
   return email;
 }
 
+function toHiragana(value) {
+  return [...value].map((char) => {
+    const code = char.codePointAt(0);
+    return code >= 0x30a1 && code <= 0x30f6 ? String.fromCodePoint(code - 0x60) : char;
+  }).join("");
+}
+
 function readKanaIdentity(env) {
   const home = absoluteDirectory(env.HOME || os.homedir());
   const file = path.join(home, ".config", "anicca", "job-search", "profile.json");
@@ -58,12 +65,16 @@ function readKanaIdentity(env) {
     ? profile.candidate?.name_kana : null;
   if (!nameKana || typeof nameKana !== "object" || Array.isArray(nameKana)
     || Object.keys(nameKana).length !== 2 || !Object.hasOwn(nameKana, "family") || !Object.hasOwn(nameKana, "given")) unavailable();
+  const rawNameJa = profile?.candidate?.name_ja;
+  if (typeof rawNameJa !== "string" || rawNameJa !== rawNameJa.trim() || !rawNameJa || rawNameJa.length > 200 || /[\x00-\x1f\x7f-\x9f]/.test(rawNameJa)) unavailable();
+  const nameJa = rawNameJa;
   const part = (value) => {
     if (typeof value !== "string" || value.length < 1 || value.length > 100 || value !== value.trim()
-      || !/^[\u30A1-\u30FA\u30FC]+$/u.test(value)) unavailable();
+      || !/^[\u30A1-\u30F6\u30FC]+$/u.test(value)) unavailable();
     return value;
   };
-  return Object.freeze({ family: part(nameKana.family), given: part(nameKana.given) });
+  const family = part(nameKana.family); const given = part(nameKana.given);
+  return Object.freeze({ family, given, name_kanji: nameJa, name_hiragana: `${toHiragana(family)} ${toHiragana(given)}` });
 }
 
 function resolvedTelegramTarget(env) {
@@ -94,7 +105,7 @@ function productionConfig(options, stateDir, ownerToken) {
   const attendeeName = requiredText(env.DAIS_LEGAL_NAME_ROMAJI);
   const kanaIdentity = readKanaIdentity(env);
   if (attendeeName.length > 200) unavailable();
-  const peatixAttendeeProfile = Object.freeze({ name: attendeeName, email: attendeeEmail, family_name_kana: kanaIdentity.family, given_name_kana: kanaIdentity.given, accept_organizer_privacy: true });
+  const peatixAttendeeProfile = Object.freeze({ name: attendeeName, email: attendeeEmail, family_name_kana: kanaIdentity.family, given_name_kana: kanaIdentity.given, name_kanji: kanaIdentity.name_kanji, name_hiragana: kanaIdentity.name_hiragana, accept_organizer_privacy: true });
   return Object.freeze({
     repoRoot: absoluteDirectory(options.repoRoot),
     stateDir,
