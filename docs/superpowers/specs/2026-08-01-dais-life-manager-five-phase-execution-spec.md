@@ -6953,7 +6953,13 @@ pushed code `0f55ddf4c`とlive-plan HEAD `a155f96db`のofficial foreground wake 
 
 原因はPeatix discoveryがCalendar-free 18件をsearch順のまま返し、exact overlapping same-event `connector_idempotency` marker付きのaccepted bundle candidateを先頭化しないこと。既存eventへ到達する前のambiguous candidateがrunnerの正しいeffect-unknown circuitを開いた。2回目wakeは起動していない。Ponytail修復plan `docs/superpowers/plans/2026-08-11-connector-peatix-existing-first-13c.md`はPeatix workflow/testの2 filesだけで、既存strict URL SHA+overlap predicateを再利用し、exact-covered候補群→残候補群のstable partitionを行う。filter/ranking/stop gate、runner/evidence/Calendar/provider action/browser/schedule変更0。Item13未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗306。これ以外の残TODO一覧は履歴）
+### O1B-25進捗307（Item 13C Peatix existing-first / GREEN・review完了）
+
+Luna REDは追加3件中2件で、single exact-coveredが`[A,B,C]`のまま、multiple exactも元search orderのままを再現し、wrong/absent/other/non-overlap controlは既存どおりPASS。GREENはtimed overlap + canonical URL SHA exact一致の一predicateをsame-event conflict exemptionとdiscovery stable partitionの両方へ再利用し、`exactCovered.concat(unprocessed)`を返す。両partition内の相対順序、candidate bytes、candidate count、audit 5 counts、重複0を維持し、wrong/absent/another-event/non-overlap/malformed markerは優先なし、unrelated overlapはblock維持。filter/ranking/state/runner/evidence/Calendar I/O/provider action/browser/schedule変更0。
+
+最終差分はPeatix workflow production +25/-13、test +69。Luna focused追加3件とadjacent、Sol独立新規3件を含むrelevant suiteがPASS。変更外baseline3件は同一。syntax、diff check PASS、fresh Sol reviewはCritical 0・Important 0で`ship`。次はcommit/push後、4 labels unloadedのofficial foreground wakeをexact 1回再実行し、existing Peatix reused、同event Submit 0、later candidate handling、positive Telegram report、cleanupを検証する。Item13未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗307。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

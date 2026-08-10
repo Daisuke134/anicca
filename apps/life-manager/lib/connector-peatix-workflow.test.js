@@ -52,6 +52,10 @@ function connectorHash(url) { return createHash("sha256").update(url, "utf8").di
 function timedCalendarEvent(id, marker, overrides = {}) { return { CalendarID: "primary", id, start: { dateTime: "2026-08-10T10:00:00+09:00" }, end: { dateTime: "2026-08-10T11:00:00+09:00" }, extendedProperties: { private: { lm_connector_event: marker } }, location: "Private location", ...overrides }; }
 async function discoverWithCalendar(calendar) { return createPeatixDiscoveryWorkflow({ now: () => NOW, async readSearchBindings() { return [binding(201)]; }, async readEventViewData() { return detail(201); } }).discoverCandidates({ page: {}, calendar }); }
 
+function datedDetail(id, date) { return detail(id, { event: { datetime: `${date} 10:00`, datetimeEnd: `${date} 11:00` } }); }
+function timedBusy(date, marker, overrides = {}) { return { kind: "timed", start_at: `${date}T01:00:00.000Z`, end_at: `${date}T02:00:00.000Z`, ...(marker == null ? {} : { connector_idempotency: marker }), ...overrides }; }
+function makeDatedWorkflow(ids, dates, options = {}) { const details = new Map(ids.map((id, index) => [id, datedDetail(id, dates[index])])); return createPeatixDiscoveryWorkflow({ now: () => NOW, async readSearchBindings() { return ids.map(binding); }, async readEventViewData(_page, canonicalUrl) { return details.get(Number(canonicalUrl.split("/").pop())); }, ...options }); }
+
 test("Google busy inventory exposes only a valid Connector marker on timed and all-day intervals", async () => {
   const marker = "a".repeat(64);
   const snapshot = await inspectGoogleCalendarBusyInventory(calendarInventoryOptions([
@@ -79,6 +83,71 @@ test("Peatix ignores only the exact candidate URL marker and blocks unrelated ov
     timedCalendarEvent("other", "b".repeat(64)),
   ]));
   assert.deepEqual(await discoverWithCalendar(unrelated), []);
+});
+
+test("Peatix stable-partitions an exact Calendar-covered candidate before unprocessed candidates", async () => {
+  const audits = [];
+  const workflow = makeDatedWorkflow([211, 212, 213], ["2026-08-12", "2026-08-10", "2026-08-13"], {
+    onDiscoveryAudit(audit) { audits.push(audit); },
+  });
+
+  const expected = await workflow.discoverCandidates({ page: {}, calendar: [] });
+  const calendar = [timedBusy("2026-08-10", connectorHash("https://peatix.com/event/212"))];
+  const result = await workflow.discoverCandidates({ page: {}, calendar });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [
+    "peatix-event://event/212",
+    "peatix-event://event/211",
+    "peatix-event://event/213",
+  ]);
+  for (const candidate of result) assert.deepEqual(candidate, expected.find((row) => row.event_ref === candidate.event_ref));
+  assert.deepEqual(audits.at(-1), {
+    observed_count: 3,
+    normalized_count: 3,
+    window_count: 3,
+    free_open_count: 3,
+    calendar_free_count: 3,
+  });
+});
+
+test("Peatix preserves mutual order inside exact-covered and unprocessed partitions", async () => {
+  const ids = [221, 222, 223, 224, 225];
+  const workflow = makeDatedWorkflow(ids, ids.map((_, index) => `2026-08-${String(10 + index).padStart(2, "0")}`));
+  const calendar = [
+    timedBusy("2026-08-11", connectorHash("https://peatix.com/event/222")),
+    timedBusy("2026-08-13", connectorHash("https://peatix.com/event/224")),
+  ];
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [
+    "peatix-event://event/222",
+    "peatix-event://event/224",
+    "peatix-event://event/221",
+    "peatix-event://event/223",
+    "peatix-event://event/225",
+  ]);
+});
+
+test("Peatix never prioritizes wrong, absent, other-event, or non-overlapping markers", async () => {
+  const ids = [231, 232, 233, 234, 235];
+  const workflow = makeDatedWorkflow(ids, ids.map((_, index) => `2026-08-${String(10 + index).padStart(2, "0")}`));
+  const calendar = [
+    timedBusy("2026-08-10", connectorHash("https://peatix.com/event/999")),
+    timedBusy("2026-08-11", null),
+    timedBusy("2026-08-12", connectorHash("https://peatix.com/event/998")),
+    timedBusy("2026-08-13", connectorHash("https://peatix.com/event/234"), {
+      start_at: "2026-08-13T03:00:00.000Z",
+      end_at: "2026-08-13T04:00:00.000Z",
+    }),
+  ];
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [
+    "peatix-event://event/234",
+    "peatix-event://event/235",
+  ]);
 });
 
 test("missing or malformed Connector markers never bypass Peatix conflicts", async () => {
