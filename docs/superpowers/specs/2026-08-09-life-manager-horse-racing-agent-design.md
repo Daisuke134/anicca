@@ -319,6 +319,7 @@ Tax state is fact-dependent, not a model output. NTA states that ordinary horse-
 | all-race SHADOW | HRA-4 source lanes | official recordはSHADOW/SKIP、secondary fallbackはSHADOW-only、blocked laneはpredictionなし |
 | official reconciliation | outcome receipt | pre-settlement payback 0をsettled payoutとせず、official settled receiptだけreal P&L |
 | purchase safety | disabled executor inspection | credential/network/DOM/wallet/bank side effect 0 |
+| one live purchase | official history pre/post + receipt chain | final action-time debit confirmation後、単勝¥100をsubmit call最大1回、official formed purchase差分が完全一致1件、同一receiptのsettlementとTelegram/CFO照合、agent-created duplicate 0。曖昧応答は再送せず履歴照会 |
 | target honesty | CFO/report scan | ROI/$10K claimなし、$10Kはevidence-driven target only |
 
 | Item | Value |

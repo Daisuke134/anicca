@@ -565,7 +565,9 @@ Tax ledger decision: CFO stores gross payout, winning-ticket stake, losing-ticke
 
 **Blocked until every remaining HRA-6 item passes; autonomous-order permission itself is owner-attested and must not be re-asked.** At action time obtain the required confirmation for an irreversible debit from the user's account. Owner-local-day total stake is at most `¥100`, only with positive confidence-adjusted EV, fresh data, pre-message success, and deterministic idempotency key. Any uncertainty becomes SKIP. Martingale, chasing, auto-escalation, and repeated submit are forbidden.
 
-Completion requires official purchase-history receipt plus settled payout/refund/void receipt and matching Telegram/CFO reconciliation. A browser success page alone is not completion.
+The one-live-order contract is exact: capture a redacted official purchase-history baseline immediately before submit; select one ordinary `win` ticket for exactly `¥100`; perform at most one final submit call; and never submit another order on an ambiguous response. On timeout or uncertain communication, query official purchase history until the first submission is authoritatively accepted or rejected; do not use a second click/request as recovery. A deposit or balance transfer is not a ticket and does not satisfy this contract.
+
+Completion requires all of the following evidence: official history changes by exactly one matching formed purchase; its receipt ID, race/market/selection, stake `¥100`, and accepted timestamp agree with the immutable decision/idempotency record; no second agent-created purchase exists for that owner-local day; a later official settled payout/refund/void receipt matches the same purchase; and Telegram plus CFO reconcile the same receipt IDs and amounts without credentials. A DOM message, browser success page, balance change, submit response alone, prediction, or SHADOW record is not completion. Any duplicate, mismatched receipt, or unresolved state is an incident and cannot be reported as the requested successful one-time bet.
 
 ## Task 14: HRA-8 evidence-driven scale and $10K review
 
