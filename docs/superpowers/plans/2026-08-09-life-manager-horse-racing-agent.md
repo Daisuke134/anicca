@@ -539,8 +539,12 @@ Observed official terms evidence:
 - SPAT4「会員ご利用条件」: https://www.nankankeiba.com/info/spat4/pdf/spat4_contract03.pdf?ver=20260624 — 投票内容照会は原則24時間で、成立不明時は照会し二重投票を避ける必要がある。
 - JRA「即PAT禁止事項・注意事項」: https://www.jra.go.jp/dento/soku/instructions/kinshi.html — 本人以外への申込み委任を禁止し、他サイト・アプリ連携による投票の成否・内容を保証しない。
 - JRA「購入履歴確認FAQ」: https://www.jra.go.jp/faq/pop04/1_29.html — 投票照会サービスで過去60日分を確認でき、原則21時更新と案内する。
+- 国税庁「No.1490 一時所得」: https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1490.htm — 一般の競馬払戻金は一時所得の例で、総収入から直接支出と最高50万円の特別控除を引く計算を示す。
+- 国税庁「競馬の馬券の払戻金に係る課税について」: https://www.nta.go.jp/information/other/data/h30/keiba/index.htm — 所得区分は購入期間・回数・頻度・利益規模等を総合判断し、一定の継続的な自動購入態様は雑所得になり得る一方、一般的な一時所得では外れ馬券費用を控除できないと説明する。
 
 Current decision: SPAT4 is the best evidence candidate for NAR because the official contract fixes the ¥100 unit, contract-formation event, inquiry behavior, and retained purchase record. It is not yet an allowed autonomous ordering path. HRA-6 remains fail-closed until the provider gives verifiable written clarification that owner-operated agent/browser automation is treated as an application by the subscriber rather than a prohibited third-party application. If that clarification is not obtained, the compliant fallback is AI-generated advice plus owner-performed final submission; it does not satisfy the requested humanless-live-order goal and must not be reported as such.
+
+Tax ledger decision: CFO stores gross payout, winning-ticket stake, losing-ticket stake, refund/void, purchase timestamp, and official receipt ID as separate immutable fields. It must not infer the user's final tax classification, net all losing tickets, or treat the ¥500,000 temporary-income deduction as a blanket tax-free betting allowance. Before LIVE_CASH scaling, HRA-6 requires current fact-pattern review by a qualified Japanese tax professional or equivalent authoritative determination.
 
 ## Task 13: HRA-7 one minimum live transaction
 

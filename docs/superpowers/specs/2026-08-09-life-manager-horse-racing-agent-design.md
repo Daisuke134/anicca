@@ -295,6 +295,8 @@ permission_document_verified=false、terms/order/tax/credential/receipt/reconcil
 
 SPAT4 is the preferred NAR receipt-contract candidate, not an approved autonomous executor. Its 2026-05-01 official contract fixes ordinary tickets at ¥100 units, defines acceptance/formation, prohibits third-party purchase applications, and retains application records for 30 days; its 2026-06-24 conditions require inquiry after uncertain communication to avoid duplicates. Sources: https://www.nankankeiba.com/info/spat4/pdf/spat4_contract01.pdf?ver=20260501 and https://www.nankankeiba.com/info/spat4/pdf/spat4_contract03.pdf?ver=20260624. Until written clarification resolves the agent-as-third-party question, order transport and credentials remain out of the implementation scope.
 
+Tax state is fact-dependent, not a model output. NTA states that ordinary horse-racing payouts are generally temporary income, while sustained systematic purchase patterns can be miscellaneous income depending on duration, frequency, scale, and profit facts. CFO therefore persists gross payout, winning-ticket stake, losing-ticket stake, refund/void, and official receipt ID separately and performs no automatic expense-netting or final tax classification. Sources: https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1490.htm and https://www.nta.go.jp/information/other/data/h30/keiba/index.htm.
+
 ## 8. Acceptance criteriaとE2E judgment
 
 | 契約 | 検証 | 合格条件 |
