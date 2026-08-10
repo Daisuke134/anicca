@@ -1,6 +1,6 @@
 # CFO-2a2a.3 — Append-only Local Usage Cursor Plan
 
-Status: IN PROGRESS — implementation reviewed; normal-suite registration remains
+Status: COMPLETE
 
 ## Goal
 
@@ -41,8 +41,17 @@ Append only `lib/cfo-local-agent-usage-source.test.js` to the existing `test:cfo
 Prove `npm run test:cfo` and `npm test` both execute the three named cursor cases, then run syntax and
 `git diff --check` and confirm the exact three-file +96/-1 gate.
 
+Evidence: `test:cfo` executes all three cursor cases and passes 273/273; `npm test`, focused, syntax, and diff checks
+pass. The implementation diff is exactly three files and +96/-1; the lockfile is unchanged. Fresh review returned
+`ship — Spec ✅`.
+
 ## Task 3 — Real evidence and close
 
 Read each real ledger into one Buffer exactly once. On each fixed snapshot prove initial scan, unchanged resume,
 source-ref uniqueness, byte watermark/hash, direct reducer acceptance, and reverse-order deterministic receipt. Print
 counts only. Fresh Sol review then marks 2a2a.3 complete and starts 2a2a.4.
+
+Evidence snapshot: the two real ledgers contained 1,101 and 3,845 complete rows. All 4,946 were accepted once;
+unchanged resume emitted zero rows; reverse-order reduction was identical. Missing usage remained visible for 273 rows
+and reused runner IDs remained visible as 436 collision groups. Scanner coverage exceptions were empty and stdout
+contained counts only.

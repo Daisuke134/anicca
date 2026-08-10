@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — slices 2a2a.1-2 complete; 2a2a.3 is next |
+| Status | ACTIVE — slices 2a2a.1-3 complete; 2a2a.4 is next |
 | Parent | `2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local Mac first |
 | Source | `~/.local/state/{life-manager,anicca}/telemetry/agent-usage.jsonl` |
@@ -196,8 +196,8 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 |---|---|---|
 | 2a2a.1 ✅ | Pure event normalizer uses opaque source-row identity and preserves runner values/provenance | 2 files, +92/-1 cumulative LOC from pre-slice base |
 | 2a2a.2 ✅ | Pure batch reducer dedupes source-row refs and reports runner-ID collisions without dropping rows | 2 files, +69/-2 LOC |
-| 2a2a.3 NEXT | Append-only file cursor proves hash/watermark/truncation coverage and runs in the normal CFO suite | 3 files, +96/-1 LOC target |
-| 2a2a.4 | Versioned loop/task mapping yields attributed or visibly unattributed rows | <=3 files, <=100 added LOC |
+| 2a2a.3 ✅ | Append-only byte cursor detects committed-prefix defects and runs in the normal CFO suite | 3 files, +96/-1 LOC |
+| 2a2a.4 NEXT | Versioned loop/task mapping yields attributed or visibly unattributed rows | <=3 files, <=100 added LOC |
 | 2a2a.5 | Local append/storage + OTel links accepted rows without exposing content | <=3 files per sub-slice |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
 
@@ -208,10 +208,11 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 - [x] Missing usage remains null and lowers coverage; it never becomes zero.
 - [x] Identical source-row refs are idempotent; conflicting refs fail closed; reused runner IDs lower coverage without
       deleting distinct source rows.
-- [ ] Rewrite, truncation, malformed tail, and unread source reduce coverage without deleting accepted evidence.
+- [x] Rewrite, committed-prefix truncation, and malformed complete rows reduce coverage without deleting accepted evidence.
+- [ ] An unread source reduces coverage without deleting accepted evidence.
 - [x] Explicit mapping attributes a row; missing mapping produces an unattributed row.
 - [ ] Subscription cash cost remains separate; token-derived USD is not labeled current spend.
-- [ ] Real local E2E reads existing redacted usage ledgers and emits counts only, never prompts, payloads, or secrets.
+- [x] Real local E2E reads existing redacted usage ledgers and emits counts only, never prompts, payloads, or secrets.
 
 ## Out of scope
 
