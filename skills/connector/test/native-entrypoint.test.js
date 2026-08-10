@@ -32,7 +32,7 @@ test("official native pass forwards only the bounded minimal wake contract", asy
 
     assert.deepEqual(result, { status: "circuit_open", safe_reason: "fixture" });
     assert.equal(observed.length, 1);
-    assert.deepEqual(observed[0].input.providers, ["luma", "connpass"]);
+    assert.deepEqual(observed[0].input.providers, ["luma", "connpass", "peatix"]);
     assert.equal(observed[0].input.maxConsecutiveFailures, 3);
     assert.equal(observed[0].input.maxWakeMs, 600_000);
     assert.equal(observed[0].input.maxAgentSteps, 10);
@@ -52,7 +52,8 @@ test("official native pass builds the production dependency boundary from allowl
       stateDir: path.join(directory, "state"),
       ownerToken: "native-pass-minimal-owner-123456",
       env: {
-        GOG_ACCOUNT: "private-account",
+        GOG_ACCOUNT: "private@example.com",
+        DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
         GOG_KEYRING_PASSWORD: "private-keyring",
         LM_CONNECTOR_TELEGRAM_TARGET: "private-target",
         LM_CONNECTOR_TENANT_ID: "dais-local",
@@ -69,7 +70,7 @@ test("official native pass builds the production dependency boundary from allowl
     });
     assert.deepEqual(result, { status: "completed_no_effect", safe_reason: "providers_exhausted" });
     assert.equal(observed[0][0], "factory");
-    assert.equal(observed[0][1].calendarAccount, "private-account");
+    assert.equal(observed[0][1].calendarAccount, "private@example.com");
     assert.equal(observed[0][1].gogKeyring, "private-keyring");
     assert.equal(observed[0][1].telegramTarget, "private-target");
     assert.match(observed[0][1].wakeId, /^wake-[0-9a-f]{24}$/);
@@ -78,6 +79,27 @@ test("official native pass builds the production dependency boundary from allowl
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("native Peatix profile is frozen at the factory boundary and invalid identity never reaches it", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-profile-"));
+  const baseEnv = { GOG_ACCOUNT: "private@example.com", DAIS_LEGAL_NAME_ROMAJI: "Dais Example", GOG_KEYRING_PASSWORD: "private-keyring", LM_CONNECTOR_TELEGRAM_TARGET: "private-target" };
+  let factoryInput; const wakeInputs = [];
+  try {
+    const result = await runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-profile-owner-123456", env: baseEnv, createDependencies(input) { factoryInput = input; return Object.freeze({ boundary: "production" }); }, async runWake(input) { wakeInputs.push(input); return { status: "completed_no_effect" }; } });
+    assert.deepEqual(result, { status: "completed_no_effect" });
+    assert.deepEqual(factoryInput.peatixAttendeeProfile, { name: "Dais Example", email: "private@example.com", accept_organizer_privacy: true });
+    assert.equal(Object.isFrozen(factoryInput), true);
+    assert.equal(Object.isFrozen(factoryInput.peatixAttendeeProfile), true);
+    assert.deepEqual(wakeInputs[0].providers, ["luma", "connpass", "peatix"]);
+    assert.equal("peatixAttendeeProfile" in wakeInputs[0], false);
+    assert.doesNotMatch(JSON.stringify(wakeInputs[0]), /Dais Example|private@example\.com/);
+    for (const override of [{ DAIS_LEGAL_NAME_ROMAJI: "" }, { GOG_ACCOUNT: "not-an-email" }]) {
+      let called = false;
+      await assert.rejects(runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "invalid-state"), ownerToken: "native-pass-invalid-owner-123456", env: { ...baseEnv, ...override }, createDependencies() { called = true; return {}; }, async runWake() { return { status: "unexpected" }; } }), /Connector minimal pass unavailable/);
+      assert.equal(called, false);
+    }
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
 test("native config resolves the existing Telegram owner without an inline shell parser", async () => {
@@ -93,7 +115,8 @@ test("native config resolves the existing Telegram owner without an inline shell
       ownerToken: "native-pass-minimal-owner-123456",
       env: {
         HOME: directory,
-        GOG_ACCOUNT: "private-account",
+        GOG_ACCOUNT: "private@example.com",
+        DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
         GOG_KEYRING_PASSWORD: "private-keyring",
       },
       createDependencies(input) {
