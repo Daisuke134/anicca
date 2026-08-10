@@ -1,6 +1,6 @@
 # CFO-2a2.3c2 Real Provider-to-Local-Ledger E2E Implementation Plan
 
-**Status:** READY — only active task.
+**Status:** COMPLETE — real gate independently verified before CFO-2a2.4.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
 
@@ -172,3 +172,11 @@ Return the exact provider-response count, row count, trace count, scope, and any
   are all in Task 1.
 - Scope: one test file; no production/package/database/Telegram change.
 - Placeholders: none. Exact images, roles, owner, models, commands, paths, output, and failure conditions are fixed.
+
+## Completion evidence
+
+- Luna created one executable 90-line file; no production/package/migration/Compose/proxy file changed.
+- The env-isolated real gate returned exactly `cfo-provider-usage-real-e2e: PASS rows=2 spans=2`.
+- Fresh Sol review: Spec compliant, Approved, Critical 0, Important 0, Minor 0.
+- Fresh Sol execution: `npm ci`, `bash -n`, real E2E, and `git diff --check` all exited `0`.
+- No production database, Telegram, scheduler, launchd, or cloud state was mutated.

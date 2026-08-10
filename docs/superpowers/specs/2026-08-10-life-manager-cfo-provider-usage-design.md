@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3c1 verified; CFO-2a2.3c2 real local E2E is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3 verified; CFO-2a2.4 Gemini Live usage is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -45,8 +45,7 @@ flowchart LR
     E --> DONE[CFO-2a2 complete]
 ```
 
-CFO-2a2.1 through CFO-2a2.2c are complete. CFO-2a2.3 is the only active slice; it closes through the three bounded
-sub-slices in section 12. Later slices cannot be pulled into it.
+CFO-2a2.1 through CFO-2a2.3 are complete. CFO-2a2.4 is the only active slice. Later slices cannot be pulled into it.
 
 ## 4. CFO-2a2.1 input
 
@@ -429,9 +428,9 @@ Acceptance for the combined CFO-2a2.3c gate:
 
 - [x] existing ask behavior and result are unchanged after two successful recorded calls;
 - [x] two literal provider responses produce two append receipts and two distinct non-zero trace IDs;
-- [ ] real Gemini + local PostgREST/PostgreSQL readback proves exact provider counts and trace correlation;
-- [ ] the real readback and exported spans contain no prompt or output content;
-- [ ] focused, CFO, and full suites pass; no production database or Telegram mutation occurs.
+- [x] real Gemini + local PostgREST/PostgreSQL readback proves exact provider counts and trace correlation;
+- [x] the real readback and exported spans contain no prompt or output content;
+- [x] focused, CFO, and full suites pass; no production database or Telegram mutation occurs.
 
 **CFO-2a2.3c1 completion evidence:** Luna first ran the focused suite RED at 12/15: the two raw calls had no usage
 context, no RPC append occurred, and the fixed store failure could not propagate. The minimal two-file change then
@@ -440,8 +439,15 @@ whose distinct non-zero trace IDs match their append bodies; literal owner, data
 are absent from both Gemini request bodies. Fresh Sol review returned Critical 0 / Important 0 / ship. Scope is
 exactly two files and 70 additions; no real provider, database, scheduler, or Telegram mutation occurred.
 
-Only CFO-2a2.3c2 is now active. It must supply the remaining real-provider/readback evidence before the combined
-gate or CFO-2a2.3 can be marked complete.
+**CFO-2a2.3c2 completion evidence:** Luna added one executable 90-line E2E shell file. A fresh Sol review returned
+Spec compliant / Approved with Critical 0, Important 0, and Minor 0. Sol then independently ran clean dependency
+installation, shell syntax, the env-isolated real gate, and diff checks. The gate returned exactly
+`cfo-provider-usage-real-e2e: PASS rows=2 spans=2`: two real Gemini response IDs and provider counts matched two
+disposable PostgREST/PostgreSQL rows, whose distinct non-zero trace IDs each occurred exactly once in the real
+ConsoleSpanExporter output. The input sentinel, real provider output strings, and Gemini key were absent. Cleanup
+removed only named disposable resources; no production database, scheduler, launchd, or Telegram mutation occurred.
+
+CFO-2a2.3 is complete. CFO-2a2.4 is now the only active child slice.
 
 Primary evidence: [OTel JS instrumentation](https://opentelemetry.io/docs/languages/js/instrumentation/) requires a
 provider or tracing is no-op; [OTel GenAI spans](https://github.com/open-telemetry/semantic-conventions-genai/blob/46d43c8949afb53765a202e89f4534eeb75ca3fa/docs/gen-ai/gen-ai-spans.md)
