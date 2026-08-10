@@ -41,3 +41,10 @@ Soft target: 2 files; production net `+8–30 LOC`; tests `+35–70 LOC`.
 - Fresh Sol review checks delayed-effect correctness, same-event URL binding, one click, bounded never-promise behavior, no later provider action after unknown effect, and Peatix non-regression.
 - Commit/push before the next official wake. Because the real Connpass registration now exists, the wake must pre-readback it with Submit 0 and create the missing Connpass evidence/Calendar/Telegram/applied bundle. Item 14 closes only on that durable bundle and cleanup.
 
+## Result
+
+- RED: the three Connpass final cases failed on delayed settlement, wrong-URL click admission, and never-resolving bounded completion (51/54).
+- GREEN generalized the existing final-effect helper only. Exact Connpass URL/event/unique-final/reader gates precede the one click; delayed provider state is returned, and never-resolving readback returns `effect_unknown` at the existing 30-second boundary.
+- Diff after Ponytail trim: production 28/14, tests 69/2. Luna and Sol independently passed the relevant 94/94, Harness 54/54, syntax, and diff check.
+- Pushed commit `f5e761557`. Fresh Sol review: `ship`, Critical 0, Important 0; Peatix semantics and Connpass one-submit latch are preserved.
+- Schedule remains unloaded. The next official wake is the no-resubmit recovery and durable bundle gate for Item 14.

@@ -7069,7 +7069,13 @@ pushed HEAD `d23fbd3a5`、4 labels unloaded、clean/upstream、process/lock 0、
 
 wake完了後のread-only exact canonical checkは`registered`へ変化しており、final clickの実外部作用が808msより遅れて成立したことを確認した。問題はSubmit失敗ではなく、Harnessがreal effect settlementを待たずlater providerへ進んだこと。既存Peatix final clickは30秒overall deadline、各readback promise race、click 1、timeout `effect_unknown`を既に持つ。plan `docs/superpowers/plans/2026-08-11-connector-connpass-final-settlement-14g.md`はHarness/test 2 filesだけで、この既存waitをexact Connpass join URL・same event ID・final labelへ束縛して再利用する。次wakeはcanonical pre-readback registeredのためSubmit 0で不足bundleを回収する。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗325。これ以外の残TODO一覧は履歴）
+### O1B-25進捗326（Item 14G / Connpass final effect bounded settlement完了）
+
+Luna REDはdelayed registration未settle、wrong URL click許可、never-resolving readback未boundedの3件を51/54で再現。GREENは既存Peatix final effect helperをprovider-neutral名へ一般化し、Connpass exact case-sensitive root/one-subdomain join URL、same positive event ID、unique exact submittable `申し込みを確定する`、parent readerをclick前に全検証する。pollはclick前に生成、click開始でreleaseし、registered/pendingの実provider stateだけをadapterへ返す。never-resolving/rejected/timeoutは既存30秒deadline raceから`effect_unknown`となり、adapterとminimal runnerがlater candidate/provider前に停止する。Peatix behaviorとConnpass one-submit latchは維持。
+
+Ponytail trim後の差分はHarness production/test 2 files、production 28/14、tests 69/2。Luna/Sol関連94/94、Harness 54/54、syntax、diff checkがPASS。pushed commit `f5e761557`。fresh Sol reviewはCritical 0・Important 0で`ship`、独立94/94。実装/test中browser/provider/Calendar/evidence/Telegram/state/schedule作用0。Item14未完、schedule unloaded。次の一件はcanonical registeredをpre-readbackしてSubmit 0のままConnpass receipt/artifact、Calendar exact 1、positive Telegram message/photo/report IDs、new applied bundle、cleanupをofficial recovery wake exact 1回で実証する。
+
+### Active remaining TODO SSOT（進捗326。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
