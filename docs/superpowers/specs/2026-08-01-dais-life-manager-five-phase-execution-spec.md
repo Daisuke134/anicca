@@ -7051,7 +7051,13 @@ Ponytailで既存Harnessのinspector、native selector、parent resolver/operato
 
 scoped re-reviewはwhole-regex `/i`がuppercase pathを許可するImportant 1を発見。fix round 2は50/51 RED後にcase-sensitive exact pathとuppercase path負例2件を追加し、最終85/85、syntax、diff check、clean statusがPASS。final fresh reviewはCritical 0・Important 0で`ship`。production/test commits `5a757e6c3`、`1c4084ad2`、`0d1839f7f`、plan commits `21b5b9d2d`、`13e58195d`。private profile read、browser fill/click/Submit、Calendar/evidence/Telegram/state write、schedule作用0。Item14 checkboxは未完のまま、次の一件は4 labels unloaded、clean/upstream、process/lock 0をpreconditionにofficial foreground wakeをexact 1回実行し、same-run Luma no-effect→Connpass native agent 0→canonical readback→applied bundleまたは次exact safe boundaryを実測する。
 
-### Active remaining TODO SSOT（進捗322。これ以外の残TODO一覧は履歴）
+### O1B-25進捗323（Item 14 live native wake / post-submit false pending plan）
+
+pushed HEAD `164774bdd`、4 labels unloaded、Git clean/upstream 0/0、process/lock 0、`:9222` healthy、baseline bundle/report/delivery/action/Connpass receipt `4/105/117/691/0`でofficial runnerをexact 1回起動した。wake `wake-963fc9da9e4da332ca9801a5`はLuma `32/32/17/10/0`の正しいeligible exhaustion後、同じowned railでConnpass `6/6/6/5/1`のevent `400028`へ継続。cache 0ms、direct 2,259ms、native Harness 324ms、post-submit readback 2ms、canonical navigate/readbackまでaction上はsuccessだったが、terminal `circuit_open/evidence_completion_failed`、bundle/Connpass receipt/artifact delta 0、every-wake Telegram positive ID `11250`、failure count 1。process/lock 0、wake target absent、4 labels unloadedでcleanup。成功扱いにしない。
+
+read-only canonical再検証はexact candidate URLのままprovider state `absent`。join pageはfinal controlだけを表示する一方、readerは`pending`を返した。DOM局所化で`補欠`部分一致は一般の参加者sectionにあるvisible `補欠者`文脈2 nodesだけで、user statusではない。現readerが全bodyをspace-collapse後に`/補欠/`部分一致するため、final click直後に偽pendingを返し、runnerがcanonicalへ早期遷移して申込を永続化しなかったことが根因。plan `docs/superpowers/plans/2026-08-11-connector-connpass-post-submit-readback-14f.md`はprovider/test 2 filesだけ。pendingをexact canonical event pathかつexact visible lineへ限定し、join page `補欠者`をunknownへ戻す。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗323。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
