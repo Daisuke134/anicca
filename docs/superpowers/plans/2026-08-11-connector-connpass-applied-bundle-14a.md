@@ -53,3 +53,9 @@ Soft target: 2 files; production `+25–45 LOC`; tests `+40–65 LOC`.
 ## Item 14 semantics
 
 The product invariant is cross-provider continuation after Luma produces no external effect. An artificial production failure hook would make live acceptance synthetic, so accepted Luma precursor states are bounded known-no-effect, exact existing-bundle reuse with Submit zero, or eligible-candidate exhaustion under the unchanged Calendar gate. Current measured state is ten free/open Luma events and zero Calendar-free candidates; live Item 14 therefore uses truthful Luma exhaustion followed by the real Connpass application.
+
+## Fresh review result
+
+- The first evidence-wiring diff passed an independent expanded `63/63`, but fresh review returned `fix-first`.
+- Existing Connpass store reads did not bind saved receipt event/artifact fields back to the provider ID, and the artifact marker carried an event ref that its read contract could not authenticate.
+- The evidence-wiring diff is frozen in a reversible stash. Prerequisite plan `2026-08-11-connector-connpass-evidence-store-hardening-14a0.md` closes the store in two files before this plan resumes; no code from this plan is shipped until that review passes.
