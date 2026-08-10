@@ -22,6 +22,7 @@ _MANIFEST_FIELDS = {
     "parsed_row_count",
     "content_sha256",
     "settled_payback_rows",
+    "settled_race_ids",
     "cash_authorized",
 }
 _EVIDENCE_CLASSES = {
@@ -117,6 +118,8 @@ def _validate_manifests(
 ) -> dict[str, dict[str, object]]:
     if not isinstance(manifests, TypingMapping):
         _reject("manifests must be a mapping")
+    if not manifests:
+        _reject("at least one manifest is required")
     normalized: dict[str, dict[str, object]] = {}
     for source_url, manifest in manifests.items():
         if not isinstance(source_url, str) or not source_url.strip():
@@ -135,6 +138,19 @@ def _validate_manifests(
             values["settled_payback_rows"], bool
         ) or values["settled_payback_rows"] < 0:
             _reject("manifest settled-payback count is invalid")
+        settled_race_ids = values["settled_race_ids"]
+        if not isinstance(settled_race_ids, (list, tuple)):
+            _reject("manifest settled race IDs are invalid")
+        if any(
+            not isinstance(race_id, str) or not race_id.strip()
+            for race_id in settled_race_ids
+        ):
+            _reject("manifest settled race IDs are invalid")
+        if len(set(settled_race_ids)) != len(settled_race_ids):
+            _reject("manifest settled race IDs are duplicate")
+        if len(settled_race_ids) > values["settled_payback_rows"]:
+            _reject("manifest settled race IDs exceed settled-payback count")
+        values["settled_race_ids"] = tuple(settled_race_ids)
         if not isinstance(values["content_sha256"], str) or not _SHA256.fullmatch(
             values["content_sha256"]
         ):
@@ -166,6 +182,7 @@ def audit_records(
     manifest_map = _validate_manifests(manifests)
 
     normalized_records: list[dict[str, object]] = []
+    record_entries: list[tuple[dict[str, object], dict[str, object], datetime]] = []
     seen_snapshots: set[tuple[str, str, datetime]] = set()
     previous_snapshot: datetime | None = None
     for record in records:
@@ -200,6 +217,7 @@ def audit_records(
             _reject("duplicate semantic snapshot")
         seen_snapshots.add(semantic_snapshot)
         normalized_records.append(normalized)
+        record_entries.append((normalized, manifest, snapshot_at))
 
     missingness = {
         "surface": 0,
@@ -208,42 +226,80 @@ def audit_records(
         "body_weight_kg": 0,
     }
     race_keys: set[tuple[str, str]] = set()
-    official_race_keys: set[tuple[str, str]] = set()
     race_times: list[datetime] = []
-    odds_observed = False
+    official_entries: list[tuple[dict[str, object], dict[str, object], datetime]] = []
     odds_ages: list[float | int] = []
-    for record in normalized_records:
+    for record, manifest, snapshot_at in record_entries:
         race_keys.add((record["jurisdiction"], record["race_id"]))
-        if record["evidence_class"] == "REAL_PUBLIC_WEB_RECORD" and record["source_authority"] == "official":
-            official_race_keys.add((record["jurisdiction"], record["race_id"]))
         race_times.append(_timestamp(record["race_at"]))
         missingness["surface"] += int(record["surface"] is None)
         missingness["track_condition"] += int(record["track_condition"] is None)
-        record_has_odds = False
         for runner in record["runners"]:
             missingness["odds"] += int(runner["odds"] is None)
             missingness["body_weight_kg"] += int(runner["body_weight_kg"] is None)
-            if runner["odds"] is not None:
-                odds_observed = True
-                record_has_odds = True
+        if (
+            record["evidence_class"] == "REAL_PUBLIC_WEB_RECORD"
+            and record["source_authority"] == "official"
+            and manifest["evidence_class"] == "REAL_PUBLIC_WEB_RECORD"
+            and manifest["source_authority"] == "official"
+        ):
+            official_entries.append((record, manifest, snapshot_at))
+
+    latest_official: dict[tuple[str, str], tuple[dict[str, object], dict[str, object], datetime]] = {}
+    for entry in official_entries:
+        key = (entry[0]["jurisdiction"], entry[0]["race_id"])
+        current = latest_official.get(key)
+        if current is None or entry[2] > current[2]:
+            latest_official[key] = entry
+
+    official_odds_observed = False
+    official_stale = False
+    official_zero_rows = False
+    unmatched_settlement = False
+    official_race_times: set[datetime] = set()
+    for record, manifest, _snapshot_at in latest_official.values():
+        official_race_times.add(_timestamp(record["race_at"]))
+        if record["freshness"]["status"] != "fresh":
+            official_stale = True
+        if manifest["parsed_row_count"] <= 0:
+            official_zero_rows = True
+        if record["race_id"] not in manifest["settled_race_ids"]:
+            unmatched_settlement = True
+        record_has_odds = any(runner["odds"] is not None for runner in record["runners"])
         if record_has_odds:
+            official_odds_observed = True
             odds_ages.append(record["freshness"]["age_seconds"])
 
     settled_payback_rows = sum(
-        int(manifest["settled_payback_rows"]) for manifest in manifest_map.values()
+        int(manifest["settled_payback_rows"])
+        for manifest in manifest_map.values()
+        if manifest["evidence_class"] == "REAL_PUBLIC_WEB_RECORD"
+        and manifest["source_authority"] == "official"
     )
     blockers: list[str] = []
     if not normalized_records:
         blockers.append("NO_NORMALIZED_ACTUAL_RECORDS")
     if settled_payback_rows == 0:
         blockers.append("NO_SETTLED_PAYBACK")
-    if not odds_observed:
+    if not official_odds_observed:
         blockers.append("NO_OBSERVED_ODDS")
+    if len(latest_official) < 2 or len(official_race_times) < 2:
+        blockers.append("INSUFFICIENT_CHRONOLOGY")
+    if official_stale:
+        blockers.append("STALE_OFFICIAL_RECORD")
+    if official_zero_rows:
+        blockers.append("NO_PARSED_OFFICIAL_ROWS")
+    if settled_payback_rows > 0 and latest_official and unmatched_settlement:
+        blockers.append("NO_MATCHING_SETTLED_PAYBACK")
 
     model_ready = bool(
-        len(official_race_keys) >= 2
-        and odds_observed
+        len(latest_official) >= 2
+        and len(official_race_times) >= 2
+        and official_odds_observed
         and settled_payback_rows > 0
+        and not official_stale
+        and not official_zero_rows
+        and not unmatched_settlement
         and not blockers
     )
     return AuditReport(

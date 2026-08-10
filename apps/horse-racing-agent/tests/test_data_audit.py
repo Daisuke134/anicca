@@ -58,6 +58,7 @@ def _manifest(
     parsed_row_count: int = 2,
     content_sha256: str = "a" * 64,
     settled_payback_rows: int = 0,
+    settled_race_ids: list[str] | tuple[str, ...] = (),
     cash_authorized: bool = False,
 ) -> dict[str, object]:
     return {
@@ -68,6 +69,7 @@ def _manifest(
         "parsed_row_count": parsed_row_count,
         "content_sha256": content_sha256,
         "settled_payback_rows": settled_payback_rows,
+        "settled_race_ids": list(settled_race_ids),
         "cash_authorized": cash_authorized,
     }
 
@@ -85,12 +87,14 @@ def _official_manifests(
             parsed_row_count=jra_rows,
             content_sha256="b" * 64,
             settled_payback_rows=jra_payback,
+            settled_race_ids=[JRA["race_id"]] if jra_payback else [],
         ),
         NAR_URL: _manifest(
             NAR,
             parsed_row_count=nar_rows,
             content_sha256="c" * 64,
             settled_payback_rows=nar_payback,
+            settled_race_ids=[NAR["race_id"]] if nar_payback else [],
         ),
     }
 
@@ -327,3 +331,149 @@ def test_report_is_frozen_and_nested_metadata_is_immutable():
         report.record_count = 3
     with pytest.raises((TypeError, AttributeError)):
         report.missingness["odds"] = 3
+
+
+def test_empty_manifest_mapping_is_rejected():
+    with pytest.raises(AuditRejected, match="manifest"):
+        audit_records([], {})
+
+
+def test_secondary_odds_and_payback_cannot_unlock_official_readiness():
+    secondary = _secondary(
+        NAR,
+        runners=[
+            {"runner_id": "runner-secondary-01", "horse_number": 1, "odds": 2.0, "body_weight_kg": 480.0},
+            {"runner_id": "runner-secondary-02", "horse_number": 2, "odds": 4.0, "body_weight_kg": 470.0},
+        ],
+    )
+    manifests = _official_manifests()
+    manifests[secondary["source_url"]] = _manifest(
+        secondary,
+        source_authority="secondary",
+        jurisdiction="JRA",
+        evidence_class="PUBLIC_WEB_SECONDARY",
+        allowed_scope="shadow_only",
+        settled_payback_rows=1,
+        settled_race_ids=[secondary["race_id"]],
+    )
+    report = audit_records([_official(NAR), secondary, _official(JRA)], manifests)
+
+    assert report.model_ready is False
+    assert report.settled_payback_rows == 0
+    assert "NO_SETTLED_PAYBACK" in report.blockers
+    assert "NO_OBSERVED_ODDS" in report.blockers
+
+
+def test_same_race_at_timestamp_cannot_satisfy_readiness_chronology():
+    nar = _official(
+        NAR,
+        race_at="2026-08-09T12:00:00+09:00",
+        runners=[
+            {"runner_id": "runner-nar-01", "horse_number": 1, "odds": 2.0, "body_weight_kg": 480.0},
+            {"runner_id": "runner-nar-02", "horse_number": 2, "odds": 4.0, "body_weight_kg": 470.0},
+        ],
+    )
+    jra = _official(
+        JRA,
+        race_at="2026-08-09T12:00:00+09:00",
+        runners=[
+            {"runner_id": "runner-jra-01", "horse_number": 1, "odds": 3.0, "body_weight_kg": 481.0},
+            {"runner_id": "runner-jra-02", "horse_number": 2, "odds": 5.0, "body_weight_kg": 471.0},
+        ],
+    )
+    manifests = _official_manifests(jra_payback=1, nar_payback=1)
+    report = audit_records([nar, jra], manifests)
+
+    assert report.model_ready is False
+    assert "INSUFFICIENT_CHRONOLOGY" in report.blockers
+
+
+def test_unused_manifest_settlement_cannot_settle_an_observed_record():
+    nar = _official(
+        NAR,
+        runners=[
+            {"runner_id": "runner-nar-01", "horse_number": 1, "odds": 2.0, "body_weight_kg": 480.0},
+            {"runner_id": "runner-nar-02", "horse_number": 2, "odds": 4.0, "body_weight_kg": 470.0},
+        ],
+    )
+    jra = _official(
+        JRA,
+        runners=[
+            {"runner_id": "runner-jra-01", "horse_number": 1, "odds": 3.0, "body_weight_kg": 481.0},
+            {"runner_id": "runner-jra-02", "horse_number": 2, "odds": 5.0, "body_weight_kg": 471.0},
+        ],
+    )
+    manifests = _official_manifests(jra_payback=1, nar_payback=1)
+    manifests[JRA_URL]["settled_race_ids"] = ["other-jra-race"]
+    manifests[NAR_URL]["settled_race_ids"] = ["other-nar-race"]
+    report = audit_records([nar, jra], manifests)
+
+    assert report.settled_payback_rows == 2
+    assert report.model_ready is False
+    assert "NO_MATCHING_SETTLED_PAYBACK" in report.blockers
+
+
+def test_stale_official_records_remain_blocked():
+    nar = _official(
+        NAR,
+        freshness={"status": "stale", "age_seconds": 3600},
+        runners=[
+            {"runner_id": "runner-nar-01", "horse_number": 1, "odds": 2.0, "body_weight_kg": 480.0},
+            {"runner_id": "runner-nar-02", "horse_number": 2, "odds": 4.0, "body_weight_kg": 470.0},
+        ],
+    )
+    jra = _official(
+        JRA,
+        freshness={"status": "stale", "age_seconds": 3601},
+        runners=[
+            {"runner_id": "runner-jra-01", "horse_number": 1, "odds": 3.0, "body_weight_kg": 481.0},
+            {"runner_id": "runner-jra-02", "horse_number": 2, "odds": 5.0, "body_weight_kg": 471.0},
+        ],
+    )
+    report = audit_records(
+        [nar, jra],
+        _official_manifests(jra_payback=1, nar_payback=1),
+    )
+
+    assert report.model_ready is False
+    assert "STALE_OFFICIAL_RECORD" in report.blockers
+
+
+def test_zero_row_official_manifest_remains_blocked():
+    nar = _official(
+        NAR,
+        runners=[
+            {"runner_id": "runner-nar-01", "horse_number": 1, "odds": 2.0, "body_weight_kg": 480.0},
+            {"runner_id": "runner-nar-02", "horse_number": 2, "odds": 4.0, "body_weight_kg": 470.0},
+        ],
+    )
+    jra = _official(
+        JRA,
+        runners=[
+            {"runner_id": "runner-jra-01", "horse_number": 1, "odds": 3.0, "body_weight_kg": 481.0},
+            {"runner_id": "runner-jra-02", "horse_number": 2, "odds": 5.0, "body_weight_kg": 471.0},
+        ],
+    )
+    manifests = _official_manifests(jra_payback=1, nar_payback=1)
+    manifests[JRA_URL]["parsed_row_count"] = 0
+    report = audit_records([nar, jra], manifests)
+
+    assert report.model_ready is False
+    assert "NO_PARSED_OFFICIAL_ROWS" in report.blockers
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"settled_race_ids": None},
+        {"settled_race_ids": "race-id"},
+        {"settled_race_ids": ["race-id", "race-id"]},
+        {"settled_race_ids": ["race-id"], "settled_payback_rows": 0},
+        {"settled_race_ids": ["", "other"]},
+    ],
+)
+def test_settled_race_ids_schema_and_count_are_rejected(changes):
+    values = _manifest(NAR, settled_payback_rows=1, settled_race_ids=[NAR["race_id"]])
+    values.update(changes)
+    with pytest.raises(AuditRejected, match="settled"):
+        audit_records([], {NAR_URL: values})
