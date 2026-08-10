@@ -7133,7 +7133,13 @@ Luna runner 36/36、minimal stack 81/81、Sol独立81/81、syntax/diff checkがP
 
 live正本 `wake-a85aefe7a153ce0513e7d7df`はexact safe reason、failure count 3、positive Telegram ID `10868`、application artifact 0、cleanup済み。delivery後5分report 0、4 labels unloaded、single daily templateにretry sidecar 0。実装/test中live作用0。Item15をacceptし、scheduleはItem16完了までunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗335。これ以外の残TODO一覧は履歴）
+### O1B-25進捗336（Item 16 / cached-action self-heal composed plan）
+
+Ponytail fullで現action cache、production provider router、bounded Harness adapter、minimal runnerを追跡した。検証済みfallback actionはparent `registered|pending` readback後だけexact provider/workflow/page-state entryへ保存され、cache replayもparent readback成功時だけcompletedを返す。Item16に新production/service/schema/repo editorは不要。未完はselector-change first wake→cache repair→second wake agent 0を一fixtureで合成するacceptanceだけ。
+
+plan `docs/superpowers/plans/2026-08-11-connector-cached-action-self-heal-16.md`は既存minimal production test 1 fileだけ、test +70〜110 LOC。mode 0600 temp cacheへsingle stale submit actionをseedし、同一owned pageでcached failure→direct failure→real bounded adapter replacement→parent registered→exact one-action replacementを通す。synthetic page stateだけresetしたsecond wakeはreplacement replay→parent registered、direct/Harness/proposer 0。単一action fixtureなので「壊れたactionだけ更新」を捏造せずexactに証明する。production/browser/provider/Calendar/Telegram/live state/launchd/schedule/repo edit/merge/deploy作用0。Item16未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗336。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
