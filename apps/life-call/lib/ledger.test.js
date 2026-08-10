@@ -182,7 +182,7 @@ test("normalizeGeminiUsageEvidence maps provider counts without content", () => 
   const context = { owner_id: "u1", financial_unit_id: "life_manager_saas", occurred_at: "2026-08-10T01:02:03.000Z", trace_id: "11111111111111111111111111111111", request_model: "gemini-2.5-flash", ignored: "CONTEXT_SENTINEL" };
   const before = { response: structuredClone(response), context: structuredClone(context) };
   const expected = { schema_version: 1, provider: "gcp.gemini", provider_request_id: "provider-response-id", usage_sequence: 0, occurred_at: "2026-08-10T01:02:03.000Z", owner_id: "u1", financial_unit_id: "life_manager_saas", trace_id: "11111111111111111111111111111111", request_model: "gemini-2.5-flash", response_model: "gemini-2.5-flash-001", tokens: { input: 100, output: 40, cached_input: 20, reasoning_output: 5, tool_input: 3, total: 148 }, evidence_status: "provider_reported", otel_attributes: {
-    "gen_ai.operation.name": "generate_content", "gen_ai.provider.name": "gcp.gemini", "gen_ai.request.model": "gemini-2.5-flash", "gen_ai.response.id": "provider-response-id", "gen_ai.response.model": "gemini-2.5-flash-001", "gen_ai.usage.input_tokens": 100, "gen_ai.usage.output_tokens": 45, "gen_ai.usage.cache_read.input_tokens": 20, "gen_ai.usage.reasoning.output_tokens": 5, "server.address": "generativelanguage.googleapis.com",
+    "gen_ai.operation.name": "generate_content", "gen_ai.provider.name": "gcp.gemini", "gen_ai.request.model": "gemini-2.5-flash", "gen_ai.response.id": "provider-response-id", "gen_ai.response.model": "gemini-2.5-flash-001", "gen_ai.usage.input_tokens": 100, "gen_ai.usage.output_tokens": 45, "gen_ai.usage.cache_read.input_tokens": 20, "gen_ai.usage.reasoning.output_tokens": 5, "server.address": "generativelanguage.googleapis.com", "server.port": 443,
   } };
   const actual = ledger().normalizeGeminiUsageEvidence(response, context);
   assert.deepEqual(actual, expected);
@@ -200,6 +200,9 @@ test("normalizeGeminiUsageEvidence preserves zero, omits missing optionals, and 
   assert.equal(zero.otel_attributes["gen_ai.usage.input_tokens"], 0);
   assert.equal(zero.otel_attributes["gen_ai.usage.output_tokens"], 0);
   assert.ok(!("gen_ai.usage.cache_read.input_tokens" in zero.otel_attributes) && !("gen_ai.usage.reasoning.output_tokens" in zero.otel_attributes));
+  const optionalZero = ledger().normalizeGeminiUsageEvidence({ ...response, usageMetadata: { ...response.usageMetadata, cachedContentTokenCount: 0, thoughtsTokenCount: 0 } }, context).otel_attributes;
+  assert.equal(optionalZero["gen_ai.usage.cache_read.input_tokens"], 0);
+  assert.equal(optionalZero["gen_ai.usage.reasoning.output_tokens"], 0);
   const cases = [
     ["missing id", { drop: "id" }], ["missing model", { drop: "model" }], ["missing count", { drop: "count" }],
     ["id", { response: { responseId: " " } }], ["model", { response: { modelVersion: "" } }],
