@@ -82,8 +82,8 @@ module. It accepts:
 - normalized rows with exact keys: `billing_period`, nullable hashed `project_ref`, nullable hashed `service_ref`,
   nullable hashed `sku_ref`, provider `cost_type`, signed canonical decimal-string `amount`, `currency`, and hashed
   `source_row_ref`;
-- a policy with exact keys `{ version, mappings }`, where every mapping has exact keys
-  `{ project_ref, business_id }`.
+- a policy with exact keys `{ version, mappings }`, where `version` is a positive safe integer and every mapping has
+  exact keys `{ project_ref, business_id }`.
 
 Rules:
 
@@ -102,7 +102,8 @@ Rules:
    exact keys `{ business_id, amount }`. Exact conservation is mandatory:
    `allocated_total + unallocated_total = account_total`.
 6. Output evidence is `provider_billed_allocated`; it never upgrades row evidence or changes the immutable confirmed
-   invoice. Input is never mutated and errors never include an input value.
+   invoice. Input is never mutated. Every invalid allocation input—including total mismatch—throws only
+   `cfo_provider_billing_invalid:invalid_allocation`; errors never include an input value.
 
 ## 6. Implementation budget
 

@@ -8,7 +8,8 @@ already-normalized official project rows by an explicit versioned rule, refuses 
 the confirmed invoice, and always exposes the exact unallocated remainder.
 
 **Public contract:** `allocateProviderBilling(confirmed, rows, policy)`, with policy exact keys
-`{ version, mappings }` and mapping exact keys `{ project_ref, business_id }`.
+`{ version, mappings }`, positive-safe-integer `version`, and mapping exact keys `{ project_ref, business_id }`.
+Every invalid allocation fails with only `cfo_provider_billing_invalid:invalid_allocation`.
 
 **Not in this slice:** CSV/browser/BigQuery, I/O/state, DB/SQL, scheduler, retry, OTel, Telegram, UI, generic plugin
 interfaces, or guessed allocation.
