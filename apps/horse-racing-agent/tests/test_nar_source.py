@@ -95,6 +95,12 @@ def test_classifier_marks_disabled_odds_as_not_published():
         body_sha256="",
         previous_sha256=None,
     ) == "NOT_PUBLISHED"
+    assert classify_download(
+        http_status=204,
+        content_type="application/octet-stream",
+        body_sha256="",
+        previous_sha256=None,
+    ) == "NOT_PUBLISHED"
 
 
 @pytest.mark.parametrize(

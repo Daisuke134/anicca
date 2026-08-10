@@ -130,7 +130,7 @@ def classify_download(
     if type(http_status) is not int or not isinstance(content_type, str) or not isinstance(body_sha256, str):
         return "INVALID"
     media_type = content_type.partition(";")[0].strip().casefold()
-    if http_status in {204, 404, 410} and media_type not in _BINARY_TYPES:
+    if http_status in {204, 404, 410} and (not body_sha256 or media_type not in _BINARY_TYPES):
         return "NOT_PUBLISHED"
     if http_status == 200 and media_type in {"text/html", "text/plain"}:
         return "NOT_PUBLISHED"
