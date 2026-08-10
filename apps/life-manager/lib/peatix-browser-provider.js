@@ -83,9 +83,9 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
       const radioFields = [...document.querySelectorAll("dl.field.required")].flatMap((field) => {
         const prompt = norm((field.querySelector(":scope > dt") || field.querySelector("dt") || {}).textContent);
         const radios = [...field.querySelectorAll("input[type=\"radio\"]")].filter((n) => !n.hidden);
-        const privacyPrompt = !/peatix/i.test(prompt) && ((/[^\s]+のプライバシーポリシー/.test(prompt) && /読|確認|同意/.test(prompt)) || (/(?:organizer(?:'s)?|[^\s]+(?:'s|’s))\s+privacy\s+policy/i.test(prompt) && /read|review|confirm|agree|consent/i.test(prompt)));
+        const privacyPrompt = /^.+のプライバシーポリシーを読んだ・確認した$/.test(prompt);
         if (!radios.length) return privacyPrompt ? [{ kind: "unknown", visible: true }] : [];
-        const consent = radios.length === 1 && privacyPrompt && !radios[0].disabled && /同意|確認|agree|accept|consent/i.test(label(radios[0]));
+        const consent = radios.length === 1 && privacyPrompt && !radios[0].disabled && label(radios[0]) === "確認し同意する。";
         return [{ selector: consent ? selector(radios[0]) : "", kind: consent ? "privacy" : "unknown", visible: true, checked: !!radios[0].checked }];
       });
       return { fields: fields.concat(radioFields), submit: !!document.querySelector("#form-submit-button") };

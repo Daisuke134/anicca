@@ -100,11 +100,18 @@ test("non-organizer, ambiguous, and malformed radio groups fail closed", async (
     { prompt: "個人情報を第三者と共有する", options: [{ label: "同意する" }] },
     { prompt: "イベント参加方法", options: [{ label: "オンライン" }] },
     { prompt: "enXrossのプライバシーを確認した", options: [{ label: "確認し同意する。" }] },
+    { prompt: "enXrossのプライバシーポリシーを読んだ・確認した、マーケティング配信にも同意する", options: [{ label: "確認し同意する。" }] },
+    { prompt: "enXrossのプライバシーポリシーを読んだ・確認した、第三者へのデータ共有に同意する", options: [{ label: "確認し同意する。" }] },
+    { prompt: "enXrossのプライバシーポリシーを読んだ・確認した、イベント写真撮影にも同意する", options: [{ label: "確認し同意する。" }] },
     { prompt: "enXrossのプライバシーポリシーを読んだ・確認した", options: [] },
     { prompt: "enXrossのプライバシーポリシーを読んだ・確認した", options: [{ label: "確認し同意する。" }, { label: "確認しない" }] },
+    { prompt: "enXrossのプライバシーポリシーを読んだ・確認した", options: [{ label: "同意しない" }] },
+    { prompt: "enXrossのプライバシーポリシーを読んだ・確認した", options: [{ label: "確認し同意しない。" }] },
+    { prompt: "Acme's privacy policy read and confirmed", options: [{ label: "I agree" }] },
+    { prompt: "enXrossのプライバシーポリシーを読んだ・確認した", options: [{ label: "I do not agree" }] },
   ]) {
     const f = fixture({ domFields: fields, domPrivacy });
-    assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "needs_fallback", reason: "unknown_required_field" }); assert.equal(f.finalCount(), 0);
+    assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "needs_fallback", reason: "unknown_required_field" }); assert.equal(f.calls.some((x) => x[0] === "check"), false); assert.equal(f.finalCount(), 0);
   }
   const duplicate = fixture({ domFields: fields, domPrivacyGroups: [{ prompt: "enXrossのプライバシーポリシーを読んだ・確認した", options: [{ label: "確認し同意する。" }] }, { prompt: "別主催者のプライバシーポリシーを読んだ・確認した", options: [{ label: "確認し同意する。" }] }] });
   assert.deepEqual(await submitPeatixOnPage(duplicate.page, candidate(), profile()), { status: "unavailable", reason: "privacy_control_unavailable" }); assert.equal(duplicate.finalCount(), 0);
