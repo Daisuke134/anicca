@@ -13,7 +13,7 @@ const { runMinimalConnectorWake } = require(
 );
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
 
-const DEFAULT_PROVIDERS = Object.freeze(["luma", "connpass"]);
+const DEFAULT_PROVIDERS = Object.freeze(["luma", "connpass", "peatix"]);
 
 function unavailable() {
   throw new Error("Connector minimal pass unavailable");
@@ -35,6 +35,13 @@ function requiredText(value, fallback) {
   const text = String(value == null || value === "" ? fallback || "" : value).trim();
   if (!text || text.length > 2_000 || /[\x00-\x1f\x7f]/.test(text)) unavailable();
   return text;
+}
+
+function requiredEmail(value) {
+  const raw = String(value == null ? "" : value);
+  const email = requiredText(raw);
+  if (raw !== email || email.length > 254 || !/^(?!\.)(?!.*\.\.)[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+(?<!\.)@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/.test(email)) unavailable();
+  return email;
 }
 
 function resolvedTelegramTarget(env) {
@@ -60,12 +67,15 @@ function productionConfig(options, stateDir, ownerToken) {
   const sharedFile = String(supplied.LM_CONNECTOR_SHARED_ENV_FILE || "").trim();
   const loaded = sharedFile && fs.existsSync(sharedFile) ? loadConnectorEnv(sharedFile) : {};
   const env = { ...loaded, ...supplied };
-  const calendarAccount = requiredText(env.GOG_ACCOUNT || env.LM_CONNECTOR_LUMA_EMAIL);
+  const calendarAccount = requiredEmail(env.GOG_ACCOUNT || env.LM_CONNECTOR_LUMA_EMAIL);
+  const attendeeEmail = requiredEmail(env.GOG_ACCOUNT);
+  const peatixAttendeeProfile = Object.freeze({ name: requiredText(env.DAIS_LEGAL_NAME_ROMAJI), email: attendeeEmail, accept_organizer_privacy: true });
   return Object.freeze({
     repoRoot: absoluteDirectory(options.repoRoot),
     stateDir,
     wakeId: `wake-${createHash("sha256").update(ownerToken).digest("hex").slice(0, 24)}`,
     calendarAccount,
+    peatixAttendeeProfile,
     gogKeyring: requiredText(env.GOG_KEYRING_PASSWORD),
     gogBin: String(env.GOG_BIN || "").trim() || undefined,
     telegramTarget: resolvedTelegramTarget(env),
