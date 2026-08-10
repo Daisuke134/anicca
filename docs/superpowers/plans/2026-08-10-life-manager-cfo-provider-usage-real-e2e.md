@@ -177,7 +177,8 @@ Return the exact provider-response count, row count, trace count, scope, and any
 
 - Luna created one executable 90-line file; no production/package/migration/Compose/proxy file changed.
 - The env-isolated real gate returned exactly `cfo-provider-usage-real-e2e: PASS rows=2 spans=2`.
-- First fresh Sol review found one Important provider-ordering defect; Luna fixed one line and scoped fresh re-review
-  returned ADDRESSED, no new breakage, and ship.
+- First fresh Sol review found one Important provider-ordering defect; Luna fixed one line. The later scoped Sol
+  re-review returned ordering ADDRESSED and no code breakage; it rejected the earlier premature claim of `ship`,
+  which this subsequent evidence update removes.
 - Luna's `npm ci` exited `0`; fresh Sol `bash -n`, env-isolated real E2E, and `git diff --check` all exited `0`.
 - No production database, Telegram, scheduler, launchd, or cloud state was mutated.
