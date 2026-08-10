@@ -63,6 +63,29 @@ and an invalid/empty retry timestamp remain fail-closed. Minimum GREEN: extend o
 validation; do not alter report copy, buttons, callbacks, snapshot storage, or other states. Run focused renderer tests,
 `npm run test:cfo`, `npm test`, and diff-check. Sol commits this prerequisite separately before runner closure.
 
+Evidence: action compatibility shipped separately as `a89f4c41c` after RED, renderer `20/20`, CFO `254/254`, full
+test exit `0`, strict calendar/time validation, <=6 added production lines, and fresh `ship — Spec ✅` review.
+
+## RED-discovered prerequisite — recovered Moneytree coverage remains partial
+
+The resumed runner RED exposed a second existing consumer mismatch. A successful Moneytree reread proves fresh assets
+but does not prove liabilities, so the canonical recovery builder correctly emits `state=recovered` with partial
+totals and exclusions. The renderer currently treats every recovered snapshot as complete and rejects that truthful
+bundle. Do not erase the repair proof or invent liabilities/net worth to satisfy the old renderer.
+
+**Luna owns only for this prerequisite:**
+
+- Modify `apps/life-call/lib/cfo-telegram.js`
+- Modify `apps/life-call/lib/cfo-telegram.test.js`
+
+Write RED with the actual canonical recovered partial shape: fresh assets remain visible, liabilities/net worth remain
+unknown, exclusions remain present, and the repair-success line is visible. Minimum GREEN: apply complete arithmetic
+and no-exclusion rules only to `complete`; apply the existing partial unknown/exclusion rules to both `partial` and
+`recovered`; keep recovered repair proof mandatory; use the partial title for truthful recovered coverage. Do not
+change copy, builder, storage, buttons, callbacks, or action validation. Production delta <=6 physical lines. Run
+renderer tests, `npm run test:cfo`, `npm test`, and diff-check. Sol commits/reviews this prerequisite separately, then
+the same Luna resumes the preserved hourly runner RED.
+
 ## Task 1 — Luna builds the runner with TDD
 
 **Luna owns only:**
