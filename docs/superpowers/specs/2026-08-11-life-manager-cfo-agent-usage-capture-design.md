@@ -91,7 +91,7 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
 - [x] **CFO-2a2b.1a — numeric truth:** absent optional values remain defaults; present invalid values are unavailable.
       Producer commit: `82a3b349`.
 - [x] **CFO-2a2b.1b — producer boundary:** write-ahead attempt row and focused real-runner tests. Producer commits:
-      `ef233a90` + `a0fe0c35`; 2 files, `+80/-6`; fresh Sol review: ship.
+      `ef233a90` + `a0fe0c35`; 2 files, `+83/-9`; fresh Sol review: ship.
 - [x] **CFO-2a2b.2 — pure reconciliation:** strict local attempt/usage join and immutable counts receipt. Commit
       `ea3f87408`; 3 files, `+92/-1`; focused 7/7; CFO 297/297; fresh Sol review: ship.
 - [x] **CFO-2a2b.3a — hourly gap gate:** fixed capture exception names now flow through the existing receipt/span;
@@ -109,7 +109,8 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       fresh Sol: ship. Plan: `2026-08-11-life-manager-cfo-active-runner-numeric-truth.md`.
 - [ ] **CFO-2a2b.5b — active attempt/completion cutover:** port reviewed commits `ef233a90` + `a0fe0c35`, then require
       a newly triggered real managed loop to write a new attempt and same-ID completion before CFO calls capture ready.
-      Do not infer rollout from a feature branch.
+      Do not infer rollout from a feature branch. Plan:
+      `2026-08-11-life-manager-cfo-active-runner-attempt-cutover.md`.
 
 ## Acceptance gates
 
