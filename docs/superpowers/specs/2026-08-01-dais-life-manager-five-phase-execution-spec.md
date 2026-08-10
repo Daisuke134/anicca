@@ -7057,7 +7057,13 @@ pushed HEAD `164774bdd`、4 labels unloaded、Git clean/upstream 0/0、process/l
 
 read-only canonical再検証はexact candidate URLのままprovider state `absent`。join pageはfinal controlだけを表示する一方、readerは`pending`を返した。DOM局所化で`補欠`部分一致は一般の参加者sectionにあるvisible `補欠者`文脈2 nodesだけで、user statusではない。現readerが全bodyをspace-collapse後に`/補欠/`部分一致するため、final click直後に偽pendingを返し、runnerがcanonicalへ早期遷移して申込を永続化しなかったことが根因。plan `docs/superpowers/plans/2026-08-11-connector-connpass-post-submit-readback-14f.md`はprovider/test 2 filesだけ。pendingをexact canonical event pathかつexact visible lineへ限定し、join page `補欠者`をunknownへ戻す。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗323。これ以外の残TODO一覧は履歴）
+### O1B-25進捗324（Item 14F / post-submit false pending修復完了）
+
+Luna REDはactual join-shaped DOMとcanonical substring-only `補欠者`を4/6で再現し、exact canonical line `補欠`はpendingを維持した。GREENは既存parent reader内だけでraw case-sensitive pathを`/event/<positive integer>/`へ限定し、visible `innerText`を改行単位で正規化したexact lineだけをpending markerとして許可。login、registered、unavailable、absent分岐は不変。差分はprovider/test 2 files、production 6/3、tests 45/0で、新waiter/action/cache/state/moduleは0。Luna combined 91/91、Sol独立91/91、syntax、diff checkがPASS。pushed commit `3feb31310`。
+
+actual current pageのread-only production reader再測定はjoin `unknown`、canonical `absent`、write 0で、一時target cleanup。fresh Sol reviewはCritical 0・Important 0で`ship`、reviewer独立107/107。偽pendingを成功扱いする経路は閉じた。Item14未完、schedule unloaded。次の一件はclean/upstream、4 labels unloaded、process/lock 0、`:9222` healthyを再確認し、official foreground wakeをexact 1回だけ起動する。実effectが成立すればcanonical readback→Connpass receipt/artifact→Calendar→Telegram→applied bundle、未確定なら既存one-submit latchで重複作用0のsafe boundaryを記録する。
+
+### Active remaining TODO SSOT（進捗324。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
