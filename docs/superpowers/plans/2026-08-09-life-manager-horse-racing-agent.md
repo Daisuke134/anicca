@@ -83,7 +83,8 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 5 | HRA-2R3 per-source index/gate | **complete** | commit `ab39e8546`; four independent lanes, no secondary promotion |
 | 6 | HRA-2S observed schema/store | **complete** | commits `2feb29cfe` + `3f9f036f4`; focused 29/full 75 PASS |
 | 7 | HRA-3D audit implementation | **complete; actual gate blocked** | commits `1426d4e23..05c03391c`; actual records 0, model_ready false |
-| 7A | HRA-3C actual NAR materialization probe | **ACTIVE** | current monthly race/odds/payback join evidence, Mac-private raw only |
+| 7A | HRA-3C monthly NAR materialization probe | **complete; cutoff blocked** | commit `d4a2389ea`; 321 joined settled candidates, cutoff-safe records 0 |
+| 7B | HRA-3C daily cutoff snapshot probe | **ACTIVE** | one official daily odds snapshot with retrieval-time cutoff proof |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3C/3D actual gate | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
@@ -385,7 +386,7 @@ Completion evidence: commits `1426d4e23..05c03391c`; final focused 36/full 111 t
 
 ## Task 7A: HRA-3C actual NAR materialization Reality Probe
 
-**State:** ACTIVE. This is an evidence probe before parser implementation; Luna executes commands/evidence edits, Sol owns the follow-on parser plan.
+**State:** COMPLETE — `BLOCKED_NO_CUTOFF_TIMESTAMP`. This is an evidence probe before parser implementation; Luna executes commands/evidence edits, Sol owns the follow-on parser plan.
 
 **File:** create `docs/evidence/horse-racing/nar-normalized-materialization-probe.md` only. Raw artifacts stay outside Git under `/Users/anicca/Library/Application Support/Anicca/horse-racing/raw/nar/` with directory mode 700 and files mode 600.
 
@@ -394,6 +395,20 @@ Use CRWL on the official Today/Monthly navigation pages to discover the current 
 Inspect locally without exporting row values. Record only retrieval/effective timestamps, exact official URLs, HTTP/content type/bytes/SHA-256, archive entry names, encoding, header names/types, per-file and total data-row counts, distinct date/race-key counts, duplicate-key counts, earliest/latest dates, null/missing counts, whether odds keys join race/runner keys, whether payback keys join race keys, settled race-id count, and cutoff fields actually available before race start. No horse/person names, odds values, payouts, credentials, or raw rows enter Git/chat.
 
 Gate outcomes are `PASS_MATERIALIZATION_PLAN`, `BLOCKED_NO_SETTLED_PAYBACK`, `BLOCKED_NO_JOIN_KEY`, `BLOCKED_NO_CUTOFF_TIMESTAMP`, or `BLOCKED_SOURCE`. HTTP/ZIP/schema success alone is not a normalized record. The probe must state the exact number of actual normalized records that can be constructed without invention; unknown is not zero. Cash/revenue/model readiness remain false. Verify evidence has no raw values, `git diff --check`, commit `docs(horse-racing): record NAR materialization probe`, push both remotes, and keep raw files private/non-Git.
+
+Completion evidence: commit `d4a2389ea`; monthly race 494, runners 4805, odds 327274, payback rows 322, settled race IDs 321, race+odds+settled candidates 321. All joins are real, but monthly odds expose no row-level snapshot timestamp, so cutoff-safe normalized records are 0 and the gate is `BLOCKED_NO_CUTOFF_TIMESTAMP`. Raw directory/files are 700/600, local/origin/canonical parity PASS, cash/model/revenue false.
+
+## Task 7B: HRA-3C one actual daily cutoff snapshot
+
+**State:** ACTIVE. One bounded fetch only; no polling loop, parser code, model, or cash.
+
+**File:** create `docs/evidence/horse-racing/nar-daily-cutoff-snapshot.md` only. Raw stays in the same Mac-private NAR directory with 700/600 modes and is never committed.
+
+Use CRWL once on the official TodayRaceInfo page and discover the current daily race and daily odds controls/links from the page. Preserve disabled/not-published state. If enabled, invoke CRWL once per binary link to record the limitation, then curl each exact official ZIP once. The HTTP completion time in Asia/Tokyo is the snapshot timestamp for that archive; do not reuse the monthly retrieval time and do not infer per-row timestamps.
+
+Parse locally and join only by observed official keys. Build each race's scheduled timestamp from official race date + `発走時刻` in Asia/Tokyo. Use a conservative fixed operational cutoff of scheduled start minus 10 minutes. A candidate is cutoff-safe only when the daily-odds HTTP completion timestamp is at or before that cutoff and at least one observed single-runner odds row joins the race/runner key. Past races, disabled/not-published odds, missing start time, missing runner join, non-positive/blank odds, and archive retrieval after cutoff remain excluded/blocked; do not replace unknown with zero.
+
+Evidence records only redacted URLs/timestamps/hashes/schema/counts: future race count, pre-cutoff race count, joined single-runner key count, excluded counts by reason, and exact safely materializable race/runner counts. No odds values, names, payouts, or raw rows. Gate is one of `PASS_DAILY_CUTOFF_SNAPSHOT`, `NOT_PUBLISHED`, `BLOCKED_NO_FUTURE_RACE`, `BLOCKED_NO_JOIN_KEY`, or `BLOCKED_SOURCE`. Even PASS authorizes only parser implementation and later SHADOW data collection; model/cash/revenue stay false. Commit `docs(horse-racing): record NAR daily cutoff snapshot`, push both, verify modes/parity.
 
 ## Task 8: HRA-3M cutoff-safe baseline, model, and backtest
 

@@ -6,7 +6,7 @@
 |---|---|
 | Status | **REALITY GATE REQUIRED — LIVE PURCHASE DISABLED** |
 | 対象 | Life Manager financial organ の第8候補 business_id: horse_racing |
-| 現在のactive stage | HRA-3C actual NAR materialization probe（ACTIVE）。HRA-3D codeはGREENだがactual records=0、cashはfalse |
+| 現在のactive stage | HRA-3C actual NAR daily cutoff snapshot probe（ACTIVE）。monthly joinはcutoff timestamp不在、cashはfalse |
 | plan / gate / verification owner | Sol |
 | edit / code / execution owner | Luna |
 | 購入処理 | PurchaseExecutorは常時disabled。HRA-6の全gateなしに有効化しない |
@@ -275,7 +275,8 @@ sequenceDiagram
 | HRA-2R3 | per-source Reality Gate index | **complete**。official 2 lanes PASS、secondary 2 lanes NOT_OBSERVED、cash false |
 | HRA-2S | observed schema/local store | **complete**。synthetic fixtureはtest_only、nullable未観測値、append-only identity |
 | HRA-3D | actual chronological coverage/cutoff audit | **code complete / actual BLOCKED**。records 0、model_ready false |
-| HRA-3C | actual NAR materialization probe | **ACTIVE**。monthly race/odds/payback joinを実測し、rawはMac-private |
+| HRA-3C-monthly | actual NAR materialization probe | **complete / BLOCKED_NO_CUTOFF_TIMESTAMP**。321 joined settled candidates、safe records 0 |
+| HRA-3C-daily | one actual NAR daily cutoff snapshot | **ACTIVE**。HTTP completion <= start-10mだけを候補化 |
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
 | HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow runs 0 |
 | HRA-5 | Telegram + CFO real/shadow separation | **BLOCKED**。Telegram runs 0 |
