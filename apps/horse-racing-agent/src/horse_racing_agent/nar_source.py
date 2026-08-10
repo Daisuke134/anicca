@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from html.parser import HTMLParser
 import re
 from typing import Literal
-from urllib.parse import parse_qs, urljoin, urlsplit
+from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 
 
 ArtifactKind = Literal[
@@ -49,10 +49,14 @@ class _LinkParser(HTMLParser):
 
 def _normalise_url(href: str) -> str:
     try:
+        raw_path = urlsplit(href).path
         parsed = urlsplit(urljoin(_ORIGIN, href))
         port = parsed.port
+        decoded_path = _decode_path(parsed.path)
     except (TypeError, ValueError):
         raise ValueError("official NAR URL is invalid") from None
+    _reject_dot_segments(raw_path)
+    _reject_dot_segments(decoded_path)
     if (
         parsed.scheme != "https"
         or parsed.hostname != "www.keiba.go.jp"
@@ -61,9 +65,24 @@ def _normalise_url(href: str) -> str:
         or parsed.password is not None
     ):
         raise ValueError("official NAR URL is invalid")
-    if not any(parsed.path == prefix or parsed.path.startswith(prefix + "/") for prefix in _PATH_PREFIXES):
+    if not any(decoded_path == prefix or decoded_path.startswith(prefix + "/") for prefix in _PATH_PREFIXES):
         raise ValueError("official NAR URL is invalid")
-    return parsed._replace(fragment="").geturl()
+    return parsed._replace(netloc="www.keiba.go.jp", path=decoded_path, fragment="").geturl()
+
+
+def _decode_path(path: str) -> str:
+    decoded = path
+    for _ in range(3):
+        unquoted = unquote(decoded)
+        if unquoted == decoded:
+            break
+        decoded = unquoted
+    return decoded
+
+
+def _reject_dot_segments(path: str) -> None:
+    if any(segment in {".", ".."} for segment in re.split(r"[/\\]", path)):
+        raise ValueError("official NAR URL is invalid")
 
 
 def _link_kind(url: str, default_period: Literal["daily", "monthly"]) -> ArtifactKind | None:
@@ -84,23 +103,20 @@ def _discover(html: str, default_period: Literal["daily", "monthly"]) -> list[tu
     parser = _LinkParser()
     parser.feed(html)
     discovered: list[tuple[str, ArtifactKind]] = []
-    seen: set[tuple[str, ArtifactKind]] = set()
     for href, disabled in parser.links:
-        marker = href.casefold()
-        if not any(token in marker for token in ("keibaweb/todayraceinfo", "keibaweb/dataroom", "keibaweb/monthlyconveneinfo", "keibaweb/datadownload")):
+        raw_path = urlsplit(href).path.casefold()
+        candidate_path = urlsplit(urljoin(_ORIGIN, href)).path.casefold()
+        if "keibaweb" not in raw_path and "keibaweb" not in candidate_path:
             continue
         url = _normalise_url(href)
         kind = _link_kind(url, default_period)
         if kind is None or (disabled and kind == "daily_odds"):
             continue
-        identity = (url, kind)
-        if identity not in seen:
-            discovered.append(identity)
-            seen.add(identity)
+        discovered.append((url, kind))
     return discovered
 
 
-def _not_before(now: datetime, kind: ArtifactKind, period: Literal["daily", "monthly"]) -> datetime:
+def _not_before(now: datetime, period: Literal["daily", "monthly"]) -> datetime:
     if period == "daily":
         return now + timedelta(minutes=2)
     update_gate = now.replace(hour=2, minute=0, second=0, microsecond=0)
@@ -111,16 +127,15 @@ def plan_nar_fetch(now: datetime, today_html: str, monthly_html: str) -> tuple[F
     if not isinstance(now, datetime) or not isinstance(today_html, str) or not isinstance(monthly_html, str):
         raise TypeError("now and HTML inputs have invalid types")
     requests: list[FetchRequest] = []
-    seen: set[tuple[str, ArtifactKind]] = set()
+    seen: set[str] = set()
     for html, period in ((today_html, "daily"), (monthly_html, "monthly")):
         for url, kind in _discover(html, period):
-            identity = (url, kind)
-            if identity in seen:
+            if url in seen:
                 continue
             requests.append(
-                FetchRequest(url, "crwl" if kind == "navigation" else "curl", kind, _not_before(now, kind, period))
+                FetchRequest(url, "crwl" if kind == "navigation" else "curl", kind, _not_before(now, period))
             )
-            seen.add(identity)
+            seen.add(url)
     return tuple(requests)
 
 
@@ -130,7 +145,9 @@ def classify_download(
     if type(http_status) is not int or not isinstance(content_type, str) or not isinstance(body_sha256, str):
         return "INVALID"
     media_type = content_type.partition(";")[0].strip().casefold()
-    if http_status in {204, 404, 410} and (not body_sha256 or media_type not in _BINARY_TYPES):
+    if http_status in {200, 204, 404, 410} and not body_sha256:
+        return "NOT_PUBLISHED"
+    if http_status in {204, 404, 410} and media_type not in _BINARY_TYPES:
         return "NOT_PUBLISHED"
     if http_status == 200 and media_type in {"text/html", "text/plain"}:
         return "NOT_PUBLISHED"
@@ -140,4 +157,4 @@ def classify_download(
         return "INVALID"
     if previous_sha256 is not None and not _SHA256.fullmatch(previous_sha256):
         return "INVALID"
-    return "UNCHANGED" if previous_sha256 == body_sha256 else "NEW"
+    return "UNCHANGED" if previous_sha256 is not None and previous_sha256.casefold() == body_sha256.casefold() else "NEW"

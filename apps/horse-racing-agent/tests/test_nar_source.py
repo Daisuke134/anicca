@@ -59,6 +59,7 @@ def test_planner_applies_daily_two_minute_and_monthly_two_am_gates():
 
     requests = plan_nar_fetch(now, TODAY_HTML, MONTHLY_HTML)
 
+    daily_origin = plan_nar_fetch(now, TODAY_HTML, "")
     daily = [request for request in requests if request.artifact_kind == "daily_race"]
     monthly = [request for request in requests if request.artifact_kind == "monthly_race"]
     monthly_navigation = [
@@ -67,8 +68,31 @@ def test_planner_applies_daily_two_minute_and_monthly_two_am_gates():
         if request.artifact_kind == "navigation" and "MonthlyConveneInfo" in request.url
     ]
     assert daily and daily[0].not_before == now + timedelta(minutes=2)
+    assert all(request.not_before >= now + timedelta(minutes=2) for request in daily_origin)
     assert monthly and monthly[0].not_before == datetime(2027, 11, 15, 2, tzinfo=JST)
     assert monthly_navigation and monthly_navigation[0].not_before == datetime(2027, 11, 15, 2, tzinfo=JST)
+
+    after_gate = plan_nar_fetch(datetime(2027, 11, 15, 3, tzinfo=JST), "", MONTHLY_HTML)
+    assert after_gate and all(request.not_before == datetime(2027, 11, 15, 3, tzinfo=JST) for request in after_gate)
+
+
+def test_disabled_daily_odds_link_is_omitted():
+    requests = plan_nar_fetch(datetime(2027, 11, 15, 2, tzinfo=JST), TODAY_HTML, "")
+
+    assert all(request.artifact_kind != "daily_odds" for request in requests)
+
+
+def test_same_canonical_url_from_daily_and_monthly_html_is_requested_once():
+    path = "/KeibaWeb/DataDownload/RaceDataDownload?date=20300101"
+
+    requests = plan_nar_fetch(
+        datetime(2030, 1, 1, 2, tzinfo=JST),
+        f'<a href="{path}">daily</a>',
+        f'<a href="https://WWW.KEIBA.GO.JP{path}">monthly</a>',
+    )
+
+    assert len(requests) == 1
+    assert requests[0].url == f"https://www.keiba.go.jp{path}"
 
 
 def test_classifier_marks_duplicate_binary_as_unchanged():
@@ -86,9 +110,21 @@ def test_classifier_marks_duplicate_binary_as_unchanged():
         body_sha256=digest,
         previous_sha256=None,
     ) == "NEW"
+    assert classify_download(
+        http_status=200,
+        content_type="application/zip",
+        body_sha256=digest.upper(),
+        previous_sha256=digest,
+    ) == "UNCHANGED"
 
 
 def test_classifier_marks_disabled_odds_as_not_published():
+    assert classify_download(
+        http_status=200,
+        content_type="",
+        body_sha256="",
+        previous_sha256=None,
+    ) == "NOT_PUBLISHED"
     assert classify_download(
         http_status=200,
         content_type="text/html",
@@ -129,4 +165,21 @@ def test_planner_rejects_non_official_download_host():
                 "https://www.keiba.go.jp.evil.example/KeibaWeb/DataDownload/",
             ),
             MONTHLY_HTML,
+        )
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/KeibaWeb/../../DataDownload/RaceDataDownload?type=daily",
+        "/KeibaWeb/%2e%2e/DataDownload/RaceDataDownload?type=daily",
+        "/KeibaWeb%2f..%2fDataDownload/RaceDataDownload?type=daily",
+    ],
+)
+def test_planner_rejects_raw_and_encoded_dot_segment_traversal(path):
+    with pytest.raises(ValueError, match="official NAR URL"):
+        plan_nar_fetch(
+            datetime(2027, 11, 15, 2, tzinfo=JST),
+            f'<a href="{path}">traversal</a>',
+            "",
         )
