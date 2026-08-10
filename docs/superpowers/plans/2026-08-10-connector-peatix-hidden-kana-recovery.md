@@ -44,3 +44,14 @@ GREEN:
 - fresh Sol review Critical 0 / Important 0
 - commit/push後、schedule unloadedのofficial foreground wake exact 1回。Peatix同safe reason解消、Meetup audit到達または次exact safe boundary、Telegram positive ID、process/target cleanupを確認する。
 
+## Follow-up D0b: confirmed settlement
+
+Hidden Kana fix後のofficial wakeは三候補すべてでconfirm操作を越えた。候補`5086816`だけが約2秒後にstrict same-event `/sales/event/5086816/confirmed`へ遷移し、後続canonical pageのvisible same-event ticket linkとticket page QR shellで実registeredをread-only確認した。前二候補はconfirmed遷移もticketもない。
+
+同じ2 filesで次のRED/GREENを追加する。
+
+1. final click後のstrict `https://peatix.com/sales/event/<same-id>/confirmed`をboundedに待つ。wrong event、auth、query/fragment/credential/port、unrelated pathは受理しない。
+2. exact confirmed後だけ同じpageでcanonical event URLへnavigateし、既存parent `readPeatixRegistrationStateOnPage`のsame-event ticket-link/marker readbackを行う。confirmed URL単独ではregisteredにしない。
+3. confirmedが来ないfixtureはprovider submitを再実行せず、従来どおりsafe unavailable。wrong-event transitionもregisteredにしない。
+4. delayed exact confirmed→canonical registeredのfixtureをREDにし、Submit/final click exact 1、registered exact 1を証明する。
+
