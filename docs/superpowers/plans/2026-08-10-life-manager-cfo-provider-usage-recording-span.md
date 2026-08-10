@@ -1,6 +1,6 @@
 # CFO-2a2.3b Recording Span Helper Plan
 
-**Status:** READY — only active task.
+**Status:** COMPLETE — real SDK span helper verified; call-site wiring remains separate.
 
 > Luna owns production code/tests/commands. Sol owns this plan, review, final verification, closure, commit, and push.
 

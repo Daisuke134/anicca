@@ -1,0 +1,23 @@
+"use strict";
+const { SpanKind, SpanStatusCode } = require("@opentelemetry/api");
+const { NodeTracerProvider, SimpleSpanProcessor, ConsoleSpanExporter } = require("@opentelemetry/sdk-trace-node");
+const { normalizeGeminiUsageEvidence } = require("./ledger.js");
+const { appendGeminiUsageEvidence } = require("./cfo-provider-usage-store.js");
+const ERROR_PREFIX = "cfo_provider_usage_span_failed:", REQUEST_MODEL = "gemini-2.5-flash", SPAN_NAME = "generate_content gemini-2.5-flash";
+const BASE_ATTRIBUTES = { "gen_ai.operation.name": "generate_content", "gen_ai.provider.name": "gcp.gemini", "gen_ai.request.model": REQUEST_MODEL, "server.address": "generativelanguage.googleapis.com", "server.port": 443 };
+const PROVIDER = new NodeTracerProvider({ spanProcessors: [new SimpleSpanProcessor(new ConsoleSpanExporter())] }), DEFAULT_TRACER = PROVIDER.getTracer("anicca-life-call-cfo");
+function fail(reason) { throw new Error(`${ERROR_PREFIX}${reason}`); }
+function validInput(request, context) { try { return typeof request === "function" && context !== null && typeof context === "object" && !Array.isArray(context) && typeof context.owner_id === "string" && context.owner_id.length > 0 && context.owner_id.trim() === context.owner_id && context.financial_unit_id === "life_manager_saas" && context.request_model === REQUEST_MODEL; } catch { return false; } }
+function configFor(options) { try { if (options === null || typeof options !== "object" || Array.isArray(options)) return null; const keys = Object.keys(options); if (keys.some(key => !["tracer", "append", "now", "storeOptions"].includes(key))) return null; const tracer = options.tracer === undefined ? DEFAULT_TRACER : options.tracer, append = options.append === undefined ? appendGeminiUsageEvidence : options.append, now = options.now === undefined ? () => new Date().toISOString() : options.now; if (!tracer || typeof tracer.startSpan !== "function" || typeof append !== "function" || typeof now !== "function") return null; return { tracer, append, now, storeOptions: options.storeOptions }; } catch { return null; } }
+function finish(span, reason, attributes) { try { if (attributes) span.setAttributes(attributes); if (reason) { span.setAttribute("error.type", reason); span.setStatus({ code: SpanStatusCode.ERROR }); } } catch {} try { span.end(); } catch {} }
+async function captureGeminiGenerateContent(request, context, options = {}) {
+  if (!validInput(request, context)) fail("invalid_input"); const config = configFor(options); if (!config) fail("invalid_input");
+  let span, traceId;
+  try { span = config.tracer.startSpan(SPAN_NAME, { kind: SpanKind.CLIENT, attributes: BASE_ATTRIBUTES }); const recording = span && typeof span.isRecording === "function" && span.isRecording(), spanContext = span && typeof span.spanContext === "function" ? span.spanContext() : null; traceId = spanContext && spanContext.traceId; if (!recording || !/^(?!0{32})[0-9a-f]{32}$/.test(traceId)) { finish(span, "tracing"); fail("tracing"); } } catch (error) { if (error && error.message === `${ERROR_PREFIX}tracing`) throw error; if (span) finish(span, "tracing"); fail("tracing"); }
+  let response; try { response = await request(); } catch { finish(span, "provider"); fail("provider"); }
+  const requestContext = { owner_id: context.owner_id, financial_unit_id: context.financial_unit_id, request_model: context.request_model, occurred_at: undefined, trace_id: traceId };
+  let evidence; try { requestContext.occurred_at = config.now(); evidence = normalizeGeminiUsageEvidence(response, requestContext); finish(span, null, evidence.otel_attributes); } catch { finish(span, "invalid_response"); fail("invalid_response"); }
+  try { await config.append(response, requestContext, config.storeOptions); } catch { fail("store"); }
+  return response;
+}
+module.exports = { captureGeminiGenerateContent };

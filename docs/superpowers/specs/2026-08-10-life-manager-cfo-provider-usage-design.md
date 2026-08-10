@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3a verified; CFO-2a2.3b recording span helper is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3b verified; CFO-2a2.3c ask-call wiring is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -394,10 +394,15 @@ Errors may contain only fixed redacted CFO reasons. Response ID/model/counts are
 attributes and structured evidence; content, credentials, bodies, prompts, and outputs enter neither. Soft target:
 helper, focused test, test-script entry; three files/100 additions. Acceptance:
 
-- [ ] a real SDK span is recording and has a non-zero 32-hex trace ID;
-- [ ] one call yields one ended CLIENT span, one receipt, exact attributes, and one shared trace ID;
-- [ ] request/normalize failures end an error span; append failure occurs after span end and remains fixed/redacted;
-- [ ] no prompt/output content is exported, stored, or exposed by errors.
+- [x] a real SDK span is recording and has a non-zero 32-hex trace ID;
+- [x] one call yields one ended CLIENT span, one receipt, exact attributes, and one shared trace ID;
+- [x] request/normalize/tracing failures end an error span; append failure occurs after span end and stays fixed;
+- [x] no prompt/output content is exported, stored, or exposed by errors.
+
+Completion evidence: Luna's initial RED failed only on the missing module. A fresh review reproduced an unended real
+zero-ID span; the same Luna added the bounded fix and a RED regression (`finished=0`) before GREEN. Final fresh Sol
+verification: focused 4/4, CFO 263/263, full suite exit 0, syntax/diff clean; real no-op and zero-ID spans end exactly
+once, and final review is Critical 0 / Important 0 / ship. Scope: three files and 64 additions.
 
 ### 12.5 CFO-2a2.3c — first production call-site
 
