@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Sol owns plan, review,
 > state, commit, push, and real rerun; Luna alone edits the one test file.
 
-**Status:** READY FOR SOL REVIEW
+**Status:** COMPLETE — commit `eb4a90a53`; fresh Sol review: ship
 
 **Goal:** Replace the obsolete assertion that both real attempt ledgers are absent with a truthful, append-safe E2E
 that validates both actual usage/attempt pairs, exact reconciliation, and dynamic OTel attributes.
@@ -37,7 +37,7 @@ real sources to remain prefix-immutable. Historical exceptions remain visible; n
   `SOURCES`/`attemptPath` mapping.
 - Produces: one content-free PASS line with dynamic source/capture counts, or the existing fixed FAIL line.
 
-- [ ] **Step 1: Retain the current RED**
+- [x] **Step 1: Retain the current RED**
 
 Run after `npm ci` in `apps/life-call`:
 
@@ -48,7 +48,7 @@ node test/cfo-local-agent-usage-real-e2e.js
 Expected: exact `cfo-local-agent-usage-real-e2e: FAIL`, exit `1`, because line 22 still requires both attempt files
 absent. Do not weaken the hidden-error/fixed-output behavior.
 
-- [ ] **Step 2: Add only the existing reconciliation import and count list**
+- [x] **Step 2: Add only the existing reconciliation import and count list**
 
 Import `reconcileLocalAgentCapture` from `../lib/cfo-local-agent-capture-reconciliation.js`. Define the existing eight
 capture count keys once:
@@ -58,7 +58,7 @@ const CAPTURE_COUNTS = ["attempted_rows", "success_rows", "failed_rows", "missin
   "unmatched_completion_rows", "duplicate_attempt_rows", "conflicting_attempt_rows", "ambiguous_completion_rows"];
 ```
 
-- [ ] **Step 3: Snapshot and copy both source pairs**
+- [x] **Step 3: Snapshot and copy both source pairs**
 
 Keep `scan` as the structural complete-line/0600/prefix snapshot. Change `before` to exact per-source pairs:
 
@@ -70,7 +70,7 @@ When building the temp tree, write/chmod both `usage.bytes` and `attempts.bytes`
 Update existing `verifySource` calls to receive `before[i].usage`. Do not read a live source again to calculate the
 temp receipt.
 
-- [ ] **Step 4: Derive and assert exact capture truth**
+- [x] **Step 4: Derive and assert exact capture truth**
 
 After collection, read each temp chain and parse its snapshotted attempt bytes. Reuse production reconciliation:
 
@@ -101,7 +101,7 @@ const expectedCapture = {
 Require aggregate `missing_completion_rows === 0`, `receipt.capture_counts` deep-equals `expectedCapture`, and
 receipt/top-level exceptions/status match it exactly. Do not require `complete`; current measured truth is partial.
 
-- [ ] **Step 5: Make the OTel assertion dynamic and exact**
+- [x] **Step 5: Make the OTel assertion dynamic and exact**
 
 Build the existing `exact` attribute object from the immutable receipt rather than zero literals:
 
@@ -132,13 +132,13 @@ assert.equal(spanRecord.status_code, receipt.status === "partial" ? 2 : 0);
 if (receipt.status === "partial") exact["error.type"] = "collection_partial";
 ```
 
-- [ ] **Step 6: Prove both real pairs remain append-only**
+- [x] **Step 6: Prove both real pairs remain append-only**
 
 In the final real-source reread, apply the existing prefix-size/hash/mode proof independently to both the usage
 snapshot and attempt snapshot. Allow concurrent suffix appends; require every original prefix byte unchanged. Remove
 only the obsolete absence assertion.
 
-- [ ] **Step 7: Emit only dynamic content-free evidence and run gates**
+- [x] **Step 7: Emit only dynamic content-free evidence and run gates**
 
 Add one outer `capture` variable beside `totals`, assign it only after every receipt/capture assertion passes, and use
 it in the final PASS line. The line keeps its existing source/discovered/accepted/missing/coverage/span fields and
@@ -159,3 +159,12 @@ Expected: real E2E exit `0` with one content-free PASS line; CFO and full suites
 exactly one modified file and `<=80` gross additions. Luna reports RED/GREEN, exact counts, scope, and concerns without
 staging/commit/push. Fresh Sol then reviews, reruns, commits/pushes, updates specs, and determines the next named
 coverage repair; it must not mark capture ready while exceptions remain.
+
+## Completion evidence
+
+- RED: obsolete both-attempt-ledgers-absent assertion exited `1` with the fixed FAIL line.
+- GREEN: real E2E observed two sources and reported `attempted=23`, `success=3`, `failed=20`,
+  `missing_completion=0`; capture stayed `partial` with six named coverage exceptions.
+- Scope: one existing test file, `+11/-9`, no production/runtime/provider/Telegram change.
+- Verification: focused real E2E, CFO `302/302`, full suite, syntax, and diff checks all exited `0`.
+- Review: fresh Sol found no Critical or Important issue and returned `ship`.

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — through CFO-2a2b.5c2c1 canary complete; CFO-2a2b.5c2c2 real E2E is next |
+| Status | ACTIVE — through CFO-2a2b.5c2c2 real E2E complete; CFO-2a2b.5c2c3 coverage repair is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -129,7 +129,12 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
               canonical telemetry. New run `0→1`, exit `1`; one exact attempt and one same-ID failed completion,
               production cursor exceptions `[]`, both `0600`, prefix immutable, original plist restored. Plan:
               `2026-08-11-life-manager-cfo-safe-provider-live-canary.md`.
-            - [ ] **5c2c2:** update and run the obsolete real two-source E2E against both actual attempt ledgers.
+            - [x] **5c2c2:** update and run the obsolete real two-source E2E against both actual attempt ledgers.
+              Commit `eb4a90a53`; one file, `+11/-9`; focused real E2E, CFO `302/302`, full suite, syntax, and
+              diff checks pass; fresh Sol: ship. Measured truth was `attempted=23`, `success=3`, `failed=20`,
+              `missing_completion=0`, but capture correctly remained `partial` with six coverage exceptions.
+            - [ ] **5c2c3:** diagnose the six named real coverage exceptions without reading prompt/response content,
+              then remove only the smallest false-positive or producer defect required for truthful readiness.
 
 ## Acceptance gates
 
