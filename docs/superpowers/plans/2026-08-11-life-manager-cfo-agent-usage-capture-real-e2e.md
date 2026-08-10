@@ -97,4 +97,5 @@ exceptions. The remaining exact values are:
 - Both isolated producer boundary tests passed; no paid provider or real ledger was used by those tests.
 - Related 20/20, CFO 302/302, full `npm test`, syntax, diff, and one-file `+7/-6` scope gates passed.
 - Both real usage ledgers remained regular `0600` files with unchanged starting prefixes; both real attempt ledgers
-  remained absent. Active producer cutover is still required and is CFO-2a2b.5.
+  remained absent. Telegram milestone was delivered by the real Life Manager bot as message `603`. Active producer
+  cutover is still required and is CFO-2a2b.5.
