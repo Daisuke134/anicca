@@ -19,6 +19,7 @@ const PEATIX_CONFIRM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\
 const CONNPASS_FINAL_LABEL = "申し込みを確定する";
 const CONNPASS_REFERRAL_QUESTION = "このイベントは何を見て知りましたか？";
 const CONNPASS_ONLINE_LABEL = /^オンライン視聴枠（YouTube） 無料(?: 参加者数 \d+人)?$/i;
+const CONNPASS_JOIN_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/join\/$/i;
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
 const FINAL_EFFECT_POLL_MS = 25;
 
@@ -29,6 +30,9 @@ function safePageState(page) { try { const url = new URL(String(page && typeof p
 function candidatePeatixEventId(candidate) {
   const match = /^peatix-event:\/\/event\/([1-9][0-9]*)$/.exec(String(candidate && candidate.event_ref || ""));
   return match ? match[1] : "";
+}
+function isConnpassJoin(provider, href) {
+  return provider === "connpass" && CONNPASS_JOIN_URL.test(String(href || ""));
 }
 
 function startPeatixConfirmWait(page, provider, control) {
@@ -151,9 +155,10 @@ async function inspectPageControls(input = {}) {
   const provider = String(input.provider || "");
   const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
   const eventId = String(input.event_id || "");
+  const connpassJoin = isConnpassJoin(provider, href);
   const observed = await locator.evaluateAll((elements, context) => {
     const visibleElements = elements.slice(0, 100);
-    const connpassJoin = Boolean(context && context.provider === "connpass" && /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/join\/$/.test(String(context.href || "")));
+    const connpassJoin = Boolean(context && context.connpassJoin === true);
     const kindOf = (element) => {
       const tag = String(element.tagName || "").toLowerCase();
       const type = String(element.type || "").toLowerCase();
@@ -166,7 +171,7 @@ async function inspectPageControls(input = {}) {
     };
     const groupOf = (element) => {
       if (typeof element.closest !== "function") return null;
-      if (connpassJoin) return element.closest(".question_list") || element.closest("fieldset, dl.field, [role='group'], .field");
+      if (connpassJoin) return element.closest(".question_list");
       return element.closest("fieldset, dl.field, [role='group'], .field");
     };
     const radioNameOf = (element) => String((element.getAttribute && element.getAttribute("name")) || element.name || "");
@@ -261,7 +266,7 @@ async function inspectPageControls(input = {}) {
       const submittable = requiredAnswersRepresentable && (knownPeatixSubmit || knownPeatixConfirm || kind === "button" && !!element.form && element.form === registrationForm && submitTypeOf(element) && submitCounts.get(element.form) === 1);
       return [{ control, kind, label, required, completed, submittable, ...(question ? { question } : {}) }];
     });
-  }, { provider, href, eventId });
+  }, { provider, href, eventId, connpassJoin });
   if (!Array.isArray(observed)) invalid();
   return Object.freeze(observed.map(safeControl));
 }
@@ -318,8 +323,8 @@ function connpassSafeRadioCategory(control) {
   return label === "connpass" && question === normalizedLabel(CONNPASS_REFERRAL_QUESTION) ? "referral" : null;
 }
 
-function nativeConnpassControl(provider, controls) {
-  if (provider !== "connpass") return null;
+function nativeConnpassControl(provider, state, controls) {
+  if (provider !== "connpass" || state !== "connpass_join") return null;
   const pending = controls.filter((control) => ACTIONABLE_KINDS.has(control.kind) && control.required && !control.completed);
   if (pending.length > 0) {
     for (const category of ["online", "referral"]) {
@@ -360,7 +365,7 @@ function createPrivateValueResolver(options = {}) {
   return async function resolveValue(input = {}) {
     const control = safeControl(input.control); const label = normalizedLabel(control.label); const question = normalizedLabel(control.question);
     if (["checkbox", "radio"].includes(control.kind)) {
-      if (input.provider === "connpass") return connpassSafeRadioCategory(control) ? true : null;
+      if (input.provider === "connpass") return input.state === "connpass_join" && connpassSafeRadioCategory(control) ? true : null;
       const profile = await safeProfile(readPeatixProfile);
       const knownPrivacyOption = label === normalizedLabel("確認し同意する。") && /^.+のプライバシーポリシーを読んだ・確認した$/.test(question);
       if ((LABEL.privacy.test(label) || knownPrivacyOption) && profile && profile.accept_organizer_privacy === true) return true;
@@ -395,14 +400,15 @@ function createBoundedActionProposer(options = {}) {
       || !input.observation || !Array.isArray(input.observation.controls)
     ) invalid();
     const controls = input.observation.controls.map(safeControl);
-    const nativeControl = nativeConnpassControl(input.provider, controls);
+    const observationState = String(input.observation.state || "");
+    const nativeControl = nativeConnpassControl(input.provider, observationState, controls);
     if (nativeControl) return Object.freeze({ control: nativeControl });
     const pendingAnswers = controls.filter((control) => ACTIONABLE_KINDS.has(control.kind) && control.required && !control.completed);
     const actionableControls = pendingAnswers.length ? pendingAnswers : controls.filter((control) => control.kind === "button" && control.submittable === true);
     if (!actionableControls.length) return null;
     const sequence = step === 1 ? (fallbackSequences.get(targetId) || 0) + 1 : (fallbackSequences.get(targetId) || 1);
     fallbackSequences.set(targetId, sequence);
-    const state = "registration_page";
+    const state = observationState === "connpass_join" ? "connpass_join" : "registration_page";
     const result = await runAgentRunner({
       prompt: [
         `Choose exactly one browser action for the current ${input.provider} registration page.`,
@@ -456,12 +462,14 @@ function createProductionBrowserHarness(options = {}) {
 
   async function observed(page, provider, candidate = null) {
     const eventId = candidatePeatixEventId(candidate);
-    const values = await inspectControls({ page, provider, event_id: eventId || undefined });
+    const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
+    const connpassJoin = isConnpassJoin(provider, href);
+    const values = await inspectControls({ page, provider, event_id: eventId || undefined, connpass_join: connpassJoin });
     if (!Array.isArray(values) || values.length < 1 || values.length > 100) invalid();
     const controls = values.map(safeControl);
     if (new Set(controls.map((item) => item.control)).size !== controls.length) invalid();
     const observation = Object.freeze({
-      state: "registration_page",
+      state: connpassJoin ? "connpass_join" : "registration_page",
       controls: Object.freeze(controls),
     });
     registry.set(page, { provider, eventId, observation });
@@ -475,6 +483,8 @@ function createProductionBrowserHarness(options = {}) {
     const eventId = candidatePeatixEventId(input.candidate) || String(input.event_id || "");
     const cached = registry.get(input.page);
     const observation = cached && cached.provider === provider && cached.eventId === eventId ? cached.observation : await observed(input.page, provider, input.candidate);
+    const currentHref = (() => { try { return String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } })();
+    const state = observation.state === "connpass_join" && isConnpassJoin(provider, currentHref) ? "connpass_join" : observation.state === "connpass_join" ? "registration_page" : observation.state;
     const control = observation.controls.find((item) => item.control === input.action.control);
     if (!control) return Object.freeze({ status: "failed" });
     const pendingRequiredAnswer = observation.controls.some((item) => ACTIONABLE_KINDS.has(item.kind) && item.required && !item.completed);
@@ -484,7 +494,7 @@ function createProductionBrowserHarness(options = {}) {
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
     let value = null;
     if (FILL.has(action.method)) {
-      value = await resolveValue({ provider, page: input.page, control, action });
+      value = await resolveValue({ provider, page: input.page, control, action, state });
       if (
         !(typeof value === "string" || typeof value === "boolean" || Array.isArray(value))
         || (typeof value === "string" && (!value.trim() || value.length > 2_000))
