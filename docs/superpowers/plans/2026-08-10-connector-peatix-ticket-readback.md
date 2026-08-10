@@ -49,3 +49,11 @@ Fresh review reproduced that a malformed observation with `markers: ""` can sati
 - Focused Peatix provider suite, Peatix workflow, production Harness, minimal production/runner/native entrypoint adjacent suites, changed-file syntax, and `git diff --check`.
 - Fresh Sol review focused on false registered states, event mismatch, idempotency, privacy, and duplicate external effects.
 - SSOT update, commit, push, clean preflight, then one official schedule-unloaded wake. Acceptance is pre-submit parent `registered` with no new Peatix click, followed by Calendar/PNG/Telegram and one durable `applied_bundle`; otherwise stop at the exact safe boundary and re-diagnose without another final click.
+
+## Result
+
+- RED reproduced both missing live success shapes: the ticket shell returned `unavailable`, while the canonical event page advanced toward another submit. The strict negative matrix already failed closed.
+- GREEN added only the measured event-level parent readback contract. Provider 16/16 and named adjacent 83/83 passed; an isolated read-only live call on canonical event `5075819` returned exact `registered` with no submit.
+- Fresh review found malformed `markers` could either fabricate registration or throw. The fix added an array schema guard before every measured/legacy length branch and regressions for string/object/null/missing payloads.
+- Final provider 17/17, expanded relevant 108/108, syntax, and `git diff --check` passed. Serialized full Connector regression was 308/311; the three failures reproduce on clean HEAD (two stale provider-cursor expectations and one required-email fixture). One default-concurrency synthetic 100 ms navigation fixture was transient under load and passed alone in 11 ms and in the serialized suite.
+- Fresh Sol re-review: Critical 0, Important 0, `ship`.

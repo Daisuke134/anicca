@@ -5,6 +5,7 @@ const ID = /^[1-9][0-9]*$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const KANA = /^[\u30A1-\u30FA\u30FC]+$/u;
 const STEP = /^\/sales\/event\/([1-9][0-9]*)\/(tickets|form|confirm)\/?$/;
+const TICKET = /^\/event\/([1-9][0-9]*)\/ticket$/;
 const TEXT = "チケットを申し込む";
 const VERIFIED = Symbol("peatixVerifiedCandidate");
 
@@ -45,6 +46,7 @@ async function waitForStep(page, id, step) {
   } catch { return false; }
 }
 function eventPageUrl(href, id) { let u; try { u = new URL(href); } catch { return false; } const m = /^\/event\/([1-9][0-9]*)\/?$/.exec(u.pathname); return u.protocol === "https:" && u.hostname === "peatix.com" && !u.port && !u.username && !u.password && !u.search && !u.hash && !!m && m[1] === id; }
+function ticketPageUrl(href, id) { let u; try { u = new URL(href); } catch { return false; } const m = TICKET.exec(u.pathname); return u.protocol === "https:" && u.hostname === "peatix.com" && !u.port && !u.username && !u.password && !u.search && !u.hash && !!m && m[1] === id; }
 async function canonicalStart(page, id) { if (!eventPageUrl(pageHref(page), id)) return false; const x = await evaluate(page, () => ({ auth: /\/(?:login|signin|signup)(?:\/|$)/i.test(location.pathname), markers: document.querySelectorAll('[data-registration-status="registered"],[data-registration-complete="true"],#registration-complete,[data-peatix-registration="registered"]').length }), { mode: "canonical", event_id: id }); return !!x && x.auth !== true && (x.markers === 0 || (Array.isArray(x.markers) && x.markers.length === 0)); }
 async function control(page, selector) {
   if (!page || typeof page.locator !== "function") return null;
@@ -58,18 +60,59 @@ async function readPeatixRegistrationStateOnPage(page, raw) {
   const c = candidate(raw); if (!c || !page || typeof page.evaluate !== "function") return out("unavailable", "invalid_input");
   const observed = await evaluate(page, (p) => {
     const clean = (x) => String(x || "").replace(/\s+/g, " ").trim();
+    const hiddenStyle = (style) => Boolean(style && ([style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase())) || String(style.opacity == null ? "" : style.opacity) === "0"));
+    const visible = (element) => {
+      if (!element || element.hidden === true || element.isConnected === false) return false;
+      const view = element.ownerDocument && element.ownerDocument.defaultView; let current = element;
+      while (current) {
+        if (current.hidden === true || current.isConnected === false || (typeof current.hasAttribute === "function" && current.hasAttribute("hidden")) || String((current.getAttribute && current.getAttribute("aria-hidden")) || "").toLowerCase() === "true") return false;
+        if (hiddenStyle(current.style || {})) return false;
+        let computed = null; try { computed = view && typeof view.getComputedStyle === "function" ? view.getComputedStyle(current) : null; } catch { computed = null; }
+        if (hiddenStyle(computed)) return false;
+        current = current.parentElement || null;
+      }
+      if (typeof element.getBoundingClientRect !== "function") return false;
+      let rect; try { rect = element.getBoundingClientRect(); } catch { return false; }
+      return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0);
+    };
     const markers = [...document.querySelectorAll('[data-registration-status="registered"],[data-registration-complete="true"],#registration-complete,[data-peatix-registration="registered"]')].map((n) => {
       const ref = /^peatix-event:\/\/event\/([1-9][0-9]*)$/.exec(clean(n.getAttribute("data-event-ref")));
       return { event_id: clean(n.getAttribute("data-event-id") || n.getAttribute("data-peatix-event-id") || (ref && ref[1])), ticket_id: clean(n.getAttribute("data-ticket-id") || n.getAttribute("data-peatix-ticket-id")) };
     });
     const path = String(location.pathname || "");
     const eventPage = new RegExp(`^/event/${p.event_id}/?$`).test(path);
-    return { href: String(location.href || ""), auth: /\/(?:login|signin|signup)(?:\/|$)/i.test(path), checkout: !!((/^\/sales\/event\/[1-9][0-9]*\/(?:tickets|form|confirm)\/?$/.test(path) || eventPage) && document.querySelector('input[name^="number_of_tickets_"],#next-button,#form-submit-button,#confirm-button')), markers };
+    const ticketPage = new RegExp(`^/event/${p.event_id}/ticket$`).test(path);
+    const auth = /\/(?:login|signin|signup)(?:\/|$)/i.test(path);
+    const checkout = !!((/^\/sales\/event\/[1-9][0-9]*\/(?:tickets|form|confirm)\/?$/.test(path) || eventPage) && document.querySelector('input[name^="number_of_tickets_"],#next-button,#form-submit-button,#confirm-button'));
+    const ticketEventId = (element) => {
+      let href = element && element.getAttribute && element.getAttribute("href");
+      if (!href && element) href = element.href;
+      try {
+        const url = new URL(String(href || ""), location.href);
+        const match = /^\/event\/([1-9][0-9]*)\/ticket$/.exec(url.pathname);
+        return url.protocol === "https:" && url.hostname === "peatix.com" && !url.port && !url.username && !url.password && !url.search && !url.hash && match ? match[1] : "";
+      } catch { return ""; }
+    };
+    const ticketLinks = eventPage && !auth ? [...document.querySelectorAll("a[href]")].map((element) => ({ event_id: ticketEventId(element), visible: visible(element) })).filter((link) => link.event_id) : [];
+    const canonicalTicketLinkCount = ticketLinks.filter((link) => link.event_id === p.event_id && link.visible).length;
+    const canonicalTicketLinkTotal = ticketLinks.filter((link) => link.event_id === p.event_id).length;
+    const competingTicketLinkCount = ticketLinks.filter((link) => link.event_id !== p.event_id).length;
+    const bodies = ticketPage && !auth ? [...document.querySelectorAll("body.webticket")] : [];
+    const sections = ticketPage && !auth ? [...document.querySelectorAll("section.ticket")] : [];
+    const qrImages = ticketPage && !auth ? [...document.querySelectorAll("#qr-code img.js-qrcode-image")] : [];
+    const ticketShell = bodies.length === 1 && sections.length === 1 && qrImages.length === 1 && bodies.every(visible) && sections.every(visible) && qrImages.every(visible);
+    return { href: String(location.href || ""), auth, checkout, markers, canonical_ticket_link_count: canonicalTicketLinkCount, canonical_ticket_link_total: canonicalTicketLinkTotal, competing_ticket_link_count: competingTicketLinkCount, ticket_shell: ticketShell };
   }, { mode: "readback", event_id: c.id, ticket_id: c.ticket });
   if (!observed) return out("unavailable", "readback_unavailable");
   if (observed.status === "registered") return String(observed.event_id) === c.id && String(observed.ticket_id) === c.ticket ? out("registered") : out("unavailable", "readback_unavailable");
   if (observed.status === "absent") return out("absent");
   if (observed.auth === true) return out("unavailable", "readback_unavailable");
+  if (!Array.isArray(observed.markers)) return out("unavailable", "readback_unavailable");
+  if (observed.markers.length === 0 && observed.checkout === false
+    && observed.ticket_shell === true && ticketPageUrl(observed.href, c.id)) return out("registered");
+  if (observed.markers.length === 0 && observed.checkout === false
+    && observed.canonical_ticket_link_count === 1 && observed.canonical_ticket_link_total === 1
+    && observed.competing_ticket_link_count === 0 && eventPageUrl(observed.href, c.id)) return out("registered");
   if (Array.isArray(observed.markers) && observed.markers.length) return observed.markers.length === 1 && String(observed.markers[0].event_id) === c.id && String(observed.markers[0].ticket_id) === c.ticket ? out("registered") : out("unavailable", "readback_unavailable");
   return observed.checkout === true && (stepUrl(observed.href, c.id, "tickets") || stepUrl(observed.href, c.id, "form") || stepUrl(observed.href, c.id, "confirm") || eventPageUrl(observed.href, c.id)) ? out("absent") : out("unavailable", "readback_unavailable");
 }
