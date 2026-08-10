@@ -6929,7 +6929,11 @@ Item13A最終実装はapplied-bundlesを最大128 exact entryでscanし、filena
 
 fresh review指摘後、semantic mutation 7件はcore digest/bundle ID/filenameを自己整合で再計算し各field guardへ到達、multipleは異なるvalid matching core 2件、boundはfully valid 129件、Lumaもexact deterministic reuseを実証した。review-fix production変更0、最終re-review `ship`。差分はproduction +122/-1、test +37/-8。Luna focused 24/24、Sol独立expanded 98/98、syntax、diff checkがPASS。変更外baseline3件は同一。13Aは完了、Item13 checkboxは13B runner continuationと13C official wakeまで未完。schedule unloaded。
 
-### Active remaining TODO SSOT（進捗301。これ以外の残TODO一覧は履歴）
+### O1B-25進捗302（Item 13B / reused bundle runner continuation plan）
+
+次active slice 13Bはminimal runner production/testの2 filesだけ。13A evidence chainのruntime `completion_disposition`をexact `created|reused`で必須化し、`created`は従来どおり新規`applied_bundle`でwake終了、`reused`だけはfailure countを増やさず同じsession/target/pageの次candidateへ継続する。pre-submit `registered`だけではreuseを推論せず、exact bundle/provider/artifact/current Calendarを検証したevidence結果だけを権威にする。all reusedで新規bundleなしなら`completed_no_effect / existing_bundles_reused`、provider discovery failureがあればそちらを優先する。every-wake Telegramは既存`reportWake`だけをterminal delivery点とし、runnerとreal `createMinimalProductionOperations` fixtureでwake report 1、mode 0600 positive delivery row 1、duplicate delivery 0を実証する。provider/evidence/operations/browser/schedule production変更0。13C official wakeまでItem13未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗302。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
