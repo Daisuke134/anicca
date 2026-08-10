@@ -6887,7 +6887,11 @@ pushed commit `ae8837498`のschedule-unloaded official wake `wake-57a417724891bb
 
 Item 10B/11 acceptance後の次active gateはItem12。live recoveryはSubmit 0、Calendar 1、bundle 1まで閉じたが、途中wakeでreceipt render/provider evidenceとTelegramが再実行され、「不足artifactだけを補完」のfixture契約は未完。Ponytailで既存provider storeの`readExternalReceipt`/`readArtifact`、Calendar private idempotency/readback、mode 0600 atomic stateを再利用し、Item12を2 sliceへ分ける。先頭12A plan `docs/superpowers/plans/2026-08-10-connector-evidence-recovery-12a.md`はminimal evidence production/testの2 filesだけで、provider ticket/PNG成功後とCalendar readback成功後のexact checkpointを追加する。recreated chainは保存済みreceipt/artifactを検証してpage render/screenshot/storeを0、既存Calendarを検証してcreateを0にする。title、venue、attendee、target、ticket ID、canonical URL、raw page/PNG/private valueはcheckpointへ保存しない。Telegram/photo/final bundle recoveryは次12Bまで前倒しせず、Item12 checkboxは未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗292。これ以外の残TODO一覧は履歴）
+### O1B-25進捗293（Item 12A Ponytail scope reduction / provider pointer only）
+
+12A初回GREENはfocused 11/11まで到達したが、Calendar stageをcheckpointへ複製するとproduction差分がsoft targetを超え、checkpointだけでCalendar成功を信じるstale authorityも生じる。Ponytailでscopeを削り、Calendar checkpointは作らない。保存するのはprovider receipt/PNGへのmode 0600 exact pointerだけ。recreated chainはprovider store readerでpointer/receipt/artifact/SHAを検証してpage render/screenshot/storeをskipする一方、Calendarは既存private idempotency find/create/independent-readbackを毎回実行する。Calendar create後crashは次runのfindでexisting exact 1を再利用し、create total 1。prior Calendar success後にeventが削除・変化してもlocal pointerだけでTelegram/bundleへ進まない。planを先に改訂し、Lunaへbroad rewriteを戻してpointer branchだけへ圧縮する。現2-file差分は未commit、Item12は未完、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗293。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
