@@ -6501,7 +6501,20 @@ focused 8/8、operations/runner/production/native/renderer integration 33/33、s
 維持するためで、追加service/queue/transportは0。次の一件はschedule unloaded、dashboard count 0でofficial wakeを一度実行し、
 Peatix page1 retry、direct registration/readback、current-first report ID、owned cleanupを同一wakeで確認する。
 
-### Active remaining TODO SSOT（進捗255。これ以外の残TODO一覧は履歴）
+### O1B-25進捗256（long-wake provider page degradation / same-owned-page reset plan）
+
+`wake-1c35ba934bd42dc1b0ff5c4d`はCalendar成功後、Luma 276,735ms、Connpass 72,912msまで同じowned pageで探索し、
+Peatix page1 retryを2回とも失敗して44,952msで`provider_discovery_failed`になった。Submit、provider action、Calendar write、bundleは0。
+一方、Peatix単独fresh pageはpage1 20 rowsを1.7秒、専用Connpass→Peatix同一pageも4,298msで成功している。source/parserではなく、
+長時間provider遷移後のpage state劣化が現在の最小反証可能root causeである。reportはcurrent-first順序を通ったが、current送信自体が
+OpenClaw gateway 10秒timeoutとなりpositive ID 0。このtransport故障はpage reset後の別sliceで閉じる。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-provider-page-reset.md`は、最初以外の各provider探索直前に既存
+`browserRail.navigate(owned, "about:blank")`を既存action recorder経由で一回だけ行う。同じsession/target/pageを維持し、
+new target/session/tab、retry、timeout拡張、provider-specific分岐、persistent stateは0。reset failureは当該providerのdiscovery failureとして
+既存failure count/circuit/report/cleanupへ流す。変更targetはrunner/test 2 files、production ≤12 LOC、test ≤55 LOC。
+
+### Active remaining TODO SSOT（進捗256。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
