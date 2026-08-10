@@ -41,6 +41,7 @@ Soft target: 2 files; production +15–35 LOC; tests +70–120 LOC.
 ### GREEN
 
 - Exact-validate `completion_disposition` as `created` or `reused` after every complete evidence result.
+- A malformed evidence result or disposition terminates once as `circuit_open / evidence_result_invalid` or `evidence_disposition_invalid` through the existing `finish` path, preserving one positive every-wake report receipt and owned-page cleanup. It never throws past reporting merely because the result contract is malformed.
 - For `created`, call the existing terminal `finish(applied_bundle)` path.
 - For `reused`, set one wake-local observation flag and continue the current candidate loop without changing failure count, session, target, page, provider order, or action cache.
 - At normal exhaustion, report provider discovery failure when present; otherwise report `existing_bundles_reused` when at least one exact bundle was reused, else `providers_exhausted`.
