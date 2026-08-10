@@ -9,7 +9,7 @@ Accept the existing minimal Connector circuit breaker only from composed contrac
 - Do not add another circuit module, timer, retry queue, healthcheck, healer, schedule, or test framework.
 - Reuse `connector-minimal-runner.js`, `connector-minimal-operations.js`, the single daily launchd renderer contract, their existing focused tests, and immutable official wake records.
 - No live provider failure is induced: an artificial or deliberately destructive registration failure is not necessary because an existing official wake already reached the exact three-failure terminal boundary.
-- Code/test LOC target is zero. Only this plan and the SSOT acceptance record may change if every existing proof passes.
+- Initial code/test LOC target is zero. If fresh review proves a missing deadline boundary, only the existing runner and its focused test may change; no new module or scheduler is allowed.
 
 ## Acceptance matrix
 
@@ -30,4 +30,7 @@ Accept the existing minimal Connector circuit breaker only from composed contrac
 
 ## Result
 
-Pending verification.
+- Initial focused runner/operations/launchd verification passed 33/33. Durable wake and delivery rows matched `circuit_open / peatix_unknown_required_field / 3` and positive Telegram ID `10868`; the five-minute follow-up report count was zero; four labels remained unloaded; process and lock were absent; the native template linted and contained no retry sidecar.
+- Fresh Sol review returned `fix-first`, Critical 0 / Important 1. Independent fixtures showed Calendar observation and a zero-candidate provider discovery can consume 600,001 ms and still return `completed_no_effect`; the Calendar case also creates the browser target after the deadline. This violates the ten-minute branch and post-deadline target/action-zero contract.
+- Revised implementation ownership is exactly `connector-minimal-runner.js` and its test. Luna must first reproduce both failures, then add deadline checks after long boundaries, including Calendar before target open, target open before provider actions, discovery before candidate handling/provider continuation, and any candidate browser/readback/action boundary that could otherwise start another action after expiry. In-flight operations are not cancelled or raced; existing bounded dependency timeouts finish normally, then the runner records one `circuit_open / wake_deadline`, performs only owned-page cleanup, and starts no later action.
+- Live/provider failure will not be induced. Final acceptance remains pending TDD, re-review, SSOT update, commit, and push.
