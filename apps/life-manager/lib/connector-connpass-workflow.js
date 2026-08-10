@@ -166,6 +166,7 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         throw stageError("CONNPASS_DISCOVERY_RESULT_CONTRACT_FAILED");
       }
       const window = candidateWindow(now);
+      const registeredExisting = [];
       const result = [];
       let normalizedCount = 0;
       let windowCount = 0;
@@ -178,6 +179,10 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         const startsAt = Date.parse(candidate.starts_at);
         if (startsAt < window.start || startsAt >= window.end) continue;
         windowCount += 1;
+        if (candidate.registration_status === "registered") {
+          registeredExisting.push(Object.freeze({ ...candidate }));
+          continue;
+        }
         if (candidate.registration_status !== "available") continue;
         if (candidate.ticket_price_status !== "free" || candidate.ticket_price_minor !== 0) continue;
         freeOpenCount += 1;
@@ -192,9 +197,9 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         normalized_count: normalizedCount,
         window_count: windowCount,
         free_open_count: freeOpenCount,
-        calendar_free_count: result.length,
+        calendar_free_count: registeredExisting.length + result.length,
       }));
-      return Object.freeze(result);
+      return Object.freeze([...registeredExisting, ...result]);
     },
     async runDirectAction({ page, candidate }) {
       const selected = exactCandidate(candidate);

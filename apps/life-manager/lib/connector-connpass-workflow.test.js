@@ -44,6 +44,56 @@ test("Connpass discovery keeps provider order and only returns eligible fourteen
   assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/105"]);
 });
 
+test("Connpass recovery stably returns registered before available candidates", async () => {
+  const registered = event(106, { registration_status: "registered" });
+  const availableA = event(107);
+  const availableB = event(108);
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() { return [availableA, registered, availableB]; },
+  });
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(result, [registered, availableA, availableB]);
+});
+
+test("Connpass registered recovery bypasses Calendar conflict while available remains blocked", async () => {
+  const registered = event(109, { registration_status: "registered" });
+  const available = event(110);
+  const checked = [];
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() { return [registered, available]; },
+    async isCalendarFree(candidate) { checked.push(candidate.event_ref); return false; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [{ kind: "timed" }] });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [registered.event_ref]);
+  assert.deepEqual(checked, [available.event_ref]);
+});
+
+test("Connpass recovery audit counts registered separately from free-open candidates", async () => {
+  const audits = [];
+  const registered = event(111, { registration_status: "registered" });
+  const available = event(112);
+  const paid = event(113, { registration_status: "unknown", ticket_price_status: "paid", ticket_price_minor: 1000 });
+  const outsideRegistered = event(115, { registration_status: "registered", starts_at: "2026-08-22T10:00:00.000Z", ends_at: "2026-08-22T11:00:00.000Z" });
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() { return [registered, available, paid, outsideRegistered]; },
+    onDiscoveryAudit(audit) { audits.push(audit); },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [registered.event_ref, available.event_ref]);
+  assert.deepEqual(audits, [{
+    observed_count: 4, normalized_count: 4, window_count: 3,
+    free_open_count: 1, calendar_free_count: 2,
+  }]);
+});
+
 test("Connpass discovery reports the ordered eligibility gate counts", async () => {
   const audits = [];
   const workflow = createConnpassScriptFirstWorkflow({
