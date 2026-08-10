@@ -1,6 +1,6 @@
 # CFO-2a2.3c1 Ask Candidate Usage Wiring Plan
 
-**Status:** READY — only active task.
+**Status:** COMPLETE — verified and closed before CFO-2a2.3c2.
 
 > Luna owns production code/tests/commands. Sol owns planning, review, verification, closure, commit, and push.
 
@@ -45,3 +45,10 @@ Injected raw functions keep working and merely receive an ignored third argument
    Keep one existing injected-raw assertion that both calls receive the same exact closed usage object.
 5. Run `node --test lib/lm-p0.test.js`, `npm run test:cfo`, `npm test`, `node --check lib/ask.js`, and
    `git diff --check`. Confirm two files/70 additions. Do not commit/push; return RED/GREEN totals and scope to Sol.
+
+## Completion evidence
+
+- RED: focused suite 12/15, with the three intended missing-wiring failures.
+- GREEN: focused 15/15, CFO 263/263, full suite exit 0, syntax and diff checks clean.
+- Scope: only the two planned files, 70 additions and 7 deletions.
+- Fresh Sol review: Critical 0, Important 0, ship.

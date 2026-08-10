@@ -174,8 +174,10 @@ test("LM-3: no candidate is a silent null so existing open question remains", as
 test("life-manager#11: ask-kind event with a found candidate autofills, sends no ask", async () => {
   const patches = [], records = [];
   const bodies = [];
-  const raw = async (body) => {
+  const usageArgs = [];
+  const raw = async (body, _key, usage) => {
     bodies.push(body);
+    usageArgs.push(usage);
     if (bodies.length === 1) return { candidates: [{ content: { parts: [{ text: "Official page: Tokyo Hall." }] } }] };
     return { candidates: [{ content: { parts: [{ functionCall: { name: "submit_candidate", args: { found: true, candidate: "Tokyo Hall", source: "gmail" } } }] } }] };
   };
@@ -193,6 +195,55 @@ test("life-manager#11: ask-kind event with a found candidate autofills, sends no
   assert.deepEqual(result, { autofilled: 1, asked: 0, resolved: 0 });
   assert.deepEqual(patches[0], ["u1", "e1", { location: "Tokyo Hall" }, "c", undefined]);
   assert.deepEqual(records[0], ["u1", "e1", "gmail", "http://s", "k"]);
+  assert.equal(usageArgs.length, 2);
+  assert.strictEqual(usageArgs[0], usageArgs[1]);
+  assert.deepEqual(usageArgs[0], { owner_id: "u1", financial_unit_id: "life_manager_saas", request_model: "gemini-2.5-flash", storeOptions: { supaUrl: "http://s", supaKey: "k" } });
+});
+
+test("CFO-2a2.3c1: default ask candidate records both Gemini calls", async () => {
+  const original = global.fetch, geminiBodies = [], rpcBodies = [], rpcReceipts = [];
+  const responses = [
+    { responseId: "ask-response-1", modelVersion: "gemini-2.5-flash-001", usageMetadata: { promptTokenCount: 11, candidatesTokenCount: 5, totalTokenCount: 16 }, candidates: [{ content: { parts: [{ text: "Official page: Tokyo Hall." }] } }] },
+    { responseId: "ask-response-2", modelVersion: "gemini-2.5-flash-001", usageMetadata: { promptTokenCount: 17, candidatesTokenCount: 6, totalTokenCount: 23 }, candidates: [{ content: { parts: [{ functionCall: { name: "submit_candidate", args: { found: true, candidate: "Tokyo Hall", source: "web_search" } } }] } }] },
+  ];
+  let geminiCalls = 0;
+  global.fetch = async (url, init = {}) => {
+    if (url.includes("generativelanguage.googleapis.com")) {
+      geminiBodies.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => responses[geminiCalls++] };
+    }
+    if (url.endsWith("/rest/v1/rpc/lm_append_cfo_model_usage_evidence")) {
+      const body = JSON.parse(init.body); rpcBodies.push(body); const receipt = { public_ref: `30000000-0000-4000-8000-00000000000${rpcBodies.length}`, provider: body.p_provider, provider_request_id: body.p_provider_request_id, usage_sequence: body.p_usage_sequence, trace_id: body.p_trace_id, created_at: "2026-08-10T01:02:04.000Z" }; rpcReceipts.push(receipt); return { ok: true, status: 200, json: async () => receipt };
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+  try {
+    const patches = []; const result = await askTick("u1", {
+      composioKey: "c", supaUrl: "https://db.example", supaKey: "service-role-secret", geminiKey: "g",
+      listEvents: async () => [{ id: "e1", summary: "MUIT 集会", description: "", start: { dateTime: "2026-07-01T12:00:00Z" } }],
+      askedSet: async () => new Set(), patchEvent: async (...args) => patches.push(args), recordResolution: async () => {},
+      recall: async () => null, resolve: async () => ({ kind: "ask" }), mailAvailable: async () => false,
+      mail: { ready: () => false, searchInbox: async () => [] },
+    });
+    assert.deepEqual(result, { autofilled: 1, asked: 0, resolved: 0 }); assert.deepEqual(patches[0].slice(0, 3), ["u1", "e1", { location: "Tokyo Hall" }]);
+    assert.equal(geminiCalls, 2); assert.equal(rpcBodies.length, 2); assert.equal(rpcReceipts.length, 2);
+    const traces = rpcBodies.map((body) => body.p_trace_id); assert.ok(traces.every((trace) => /^(?!0{32})[0-9a-f]{32}$/.test(trace))); assert.notEqual(traces[0], traces[1]);
+    assert.deepEqual(rpcReceipts.map((receipt) => receipt.trace_id), traces);
+    for (const body of geminiBodies) { const rawBody = JSON.stringify(body); assert.doesNotMatch(rawBody, /owner_id|financial_unit_id|supaUrl|supaKey|storeOptions/); assert.ok(!["u1", "https://db.example", "service-role-secret"].some((sentinel) => rawBody.includes(sentinel))); }
+  } finally { global.fetch = original; }
+});
+
+test("CFO-2a2.3c1: default path propagates fixed store error", async () => {
+  const original = global.fetch;
+  const response = { responseId: "ask-response-error", modelVersion: "gemini-2.5-flash-001", usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 }, candidates: [{ content: { parts: [{ text: "research" }] } }] };
+  global.fetch = async (url) => url.includes("generativelanguage.googleapis.com")
+    ? { ok: true, status: 200, json: async () => response }
+    : { ok: false, status: 503, json: async () => ({}) };
+  try {
+    await assert.rejects(() => agentSearchCandidate({ summary: "MUIT" }, {
+      geminiKey: "g", providerUsage: { owner_id: "u1", financial_unit_id: "life_manager_saas", request_model: "gemini-2.5-flash", storeOptions: { supaUrl: "https://db.example", supaKey: "service-role-secret" } },
+      mailAvailable: async () => false, mail: { ready: () => false, searchInbox: async () => [] },
+    }), error => { assert.equal(error.message, "cfo_provider_usage_span_failed:store"); return true; });
+  } finally { global.fetch = original; }
 });
 
 // life-manager#11 (control): when NO candidate is found either, the event still falls through to the ask

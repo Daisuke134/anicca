@@ -22,18 +22,25 @@ const { newReplyToken } = require("./reply-token.js");
 const { sendAsk } = require("./mail-resend.js");
 const { mailAvailable } = require("./mail-availability.js");
 const { interpretCalendarEvent, PLACE_QUESTION } = require("./calendar-interpreter.js");
+const { captureGeminiGenerateContent } = require("./cfo-provider-usage-span.js");
 
 // Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
-// into logs/referrers). Returns the parsed response, or {} on failure.
-async function geminiRaw(body, geminiKey) {
-  try {
+// into logs/referrers). Legacy calls return {} on failure; usage calls propagate fixed tracing/provider/invalid_response/store errors.
+async function geminiRaw(body, geminiKey, usage) {
+  const request = async () => {
     const r = await fetch(GEMINI, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey },
       body: JSON.stringify(body),
     });
     return await r.json();
-  } catch { return {}; }
+  };
+  if (!usage) {
+    try { return await request(); } catch { return {}; }
+  }
+  return captureGeminiGenerateContent(request, {
+    owner_id: usage.owner_id, financial_unit_id: usage.financial_unit_id, request_model: usage.request_model,
+  }, { storeOptions: usage.storeOptions });
 }
 // One-shot JSON call (no tools) — for tasks that are a single judgment, not a search.
 async function geminiJson(prompt, geminiKey) {
@@ -78,7 +85,7 @@ async function agentSearchCandidate(event, deps = {}) {
       `Find the physical venue for this calendar event. Use Google Search and the optional Gmail snippets as evidence. Do not guess.\nEvent title: ${JSON.stringify(event.summary || "")}\nDescription: ${JSON.stringify(event.description || "")}\n${available ? `Gmail snippets: ${JSON.stringify(compactMail)}` : "Gmail unavailable: use web_search directly."}` }] }],
     tools: [{ google_search: {} }],
     generationConfig: { temperature: 0 },
-  }, deps.geminiKey);
+  }, deps.geminiKey, deps.providerUsage);
   const groundedText = responseText(grounded);
   if (!groundedText) return empty;
   const extracted = await raw({
@@ -98,7 +105,7 @@ async function agentSearchCandidate(event, deps = {}) {
     }] }],
     toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["submit_candidate"] } },
     generationConfig: { temperature: 0 },
-  }, deps.geminiKey);
+  }, deps.geminiKey, deps.providerUsage);
   const args = responseFunctionArgs(extracted, "submit_candidate");
   const candidate = String(args.candidate || "").trim();
   const source = args.source === "gmail" ? "gmail" : "web_search";
@@ -366,6 +373,10 @@ async function recallOrResolve(event, opts) {
 // Returns { autofilled, asked, resolved }.
 async function askTick(uid, opts) {
   const { composioKey, userEmail, resendKey, supaUrl, supaKey, mapsKey, geminiKey } = opts;
+  const providerUsage = {
+    owner_id: uid, financial_unit_id: "life_manager_saas", request_model: "gemini-2.5-flash",
+    storeOptions: { supaUrl, supaKey },
+  };
   const nowMs = opts.nowMs || Date.now();
   // Injectable (default to the real impls) so the ask-vs-autofill decision is unit-testable without
   // hitting the calendar transport / Supabase over the network — same DI pattern as recall/resolve above.
@@ -413,6 +424,7 @@ async function askTick(uid, opts) {
     const candidate = await agentSearchCandidate(event, {
       geminiKey, geminiRaw: opts.geminiRaw, mail: opts.mail,
       gmailAccountId: opts.gmailAccountId, unipileToken: opts.unipileToken, unipileDsn: opts.unipileDsn,
+      providerUsage,
     });
     if (candidate.found) {
       await patch(uid, event.id, { location: candidate.candidate }, composioKey, opts.gmailAccountId);

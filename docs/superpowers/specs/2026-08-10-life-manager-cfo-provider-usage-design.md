@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3b verified; CFO-2a2.3c1 ask-call wiring is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3c1 verified; CFO-2a2.3c2 real local E2E is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -418,11 +418,21 @@ uses production DB or Telegram. Soft target: one E2E file/100 additions.
 
 Acceptance for the combined CFO-2a2.3c gate:
 
-- [ ] existing ask behavior and result are unchanged after two successful recorded calls;
-- [ ] two literal provider responses produce two append receipts and two distinct non-zero trace IDs;
+- [x] existing ask behavior and result are unchanged after two successful recorded calls;
+- [x] two literal provider responses produce two append receipts and two distinct non-zero trace IDs;
 - [ ] real Gemini + local PostgREST/PostgreSQL readback proves exact provider counts and trace correlation;
 - [ ] the real readback and exported spans contain no prompt or output content;
 - [ ] focused, CFO, and full suites pass; no production database or Telegram mutation occurs.
+
+**CFO-2a2.3c1 completion evidence:** Luna first ran the focused suite RED at 12/15: the two raw calls had no usage
+context, no RPC append occurred, and the fixed store failure could not propagate. The minimal two-file change then
+passed focused 15/15, CFO 263/263, the full suite, syntax, and diff checks. Two Gemini calls now yield two receipts
+whose distinct non-zero trace IDs match their append bodies; literal owner, database URL, and credential sentinels
+are absent from both Gemini request bodies. Fresh Sol review returned Critical 0 / Important 0 / ship. Scope is
+exactly two files and 70 additions; no real provider, database, scheduler, or Telegram mutation occurred.
+
+Only CFO-2a2.3c2 is now active. It must supply the remaining real-provider/readback evidence before the combined
+gate or CFO-2a2.3 can be marked complete.
 
 Primary evidence: [OTel JS instrumentation](https://opentelemetry.io/docs/languages/js/instrumentation/) requires a
 provider or tracing is no-op; [OTel GenAI spans](https://github.com/open-telemetry/semantic-conventions-genai/blob/46d43c8949afb53765a202e89f4534eeb75ca3fa/docs/gen-ai/gen-ai-spans.md)
