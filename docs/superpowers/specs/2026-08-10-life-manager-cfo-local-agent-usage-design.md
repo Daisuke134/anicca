@@ -57,12 +57,13 @@ would therefore delete real usage.
 The later file collector assigns each complete line an opaque `source_row_ref`:
 
 ```text
-sha256("cfo-local-agent-row-v1\0" + configured_source_id + "\0" + complete_line_start_byte_offset)
+sha256("cfo-local-agent-row-v1\0" + configured_source_id + "\0" + complete_line_start_byte_offset_decimal_ascii)
 ```
 
-The configured source ID is a closed label, never a filesystem path. Prefix hash and byte watermark checks quarantine
-rewrites before offsets are trusted. The runner `event_id` survives only as `runner_event_id` for correlation and
-collision coverage; it is never the CFO idempotency key.
+The configured source ID is exactly `life_manager_agent_usage` or `anicca_agent_usage`, never a filesystem path. The
+offset is the zero-based byte offset of the complete line's first byte encoded as decimal ASCII. Prefix hash and byte
+watermark checks quarantine rewrites before offsets are trusted. The runner `event_id` survives only as
+`runner_event_id` for correlation and collision coverage; it is never the CFO idempotency key.
 
 ## Canonical input contract
 
@@ -135,7 +136,8 @@ because their runner IDs collide, and never reports a partial subtotal as comple
 
 ## Event dedupe contract
 
-The pure reducer consumes only normalized events from 2a2a.1 and keys them by `source_event_id`:
+The pure reducer consumes exact `{input, context}` pairs, calls the 2a2a.1 normalizer itself, and keys the resulting
+content-free events by `source_event_id`. It never trusts a caller-supplied object merely labeled “normalized”:
 
 - first ID + first exact canonical value: accept once;
 - same ID + same canonical value: count as an idempotent duplicate and do not add usage;
@@ -143,10 +145,13 @@ The pure reducer consumes only normalized events from 2a2a.1 and keys them by `s
   conflicting; do not choose the first, last, largest, or smallest value;
 - accepted events are sorted by `source_event_id`, so input order cannot change the result.
 
-The receipt satisfies `discovered_rows = accepted_rows + duplicate_rows + conflicting_rows`. A conflicting
-`source_event_id` sets `coverage_status=conflicting_usage`; downstream totals may be shown only as incomplete evidence,
-never complete spend. Reused `runner_event_id` values are counted separately as source-identity defects and do not
-remove distinct source-row observations.
+The receipt satisfies `discovered_rows = accepted_rows + duplicate_rows + conflicting_rows`. `missing_usage_rows`
+counts only final accepted events with missing usage. `runner_collision_groups` counts runner IDs that have at least
+two distinct `source_event_id` values among final accepted events. Duplicates never increment either count, and every
+conflicting source ID is excluded from both populations. The receipt also returns a unique, lexicographically sorted
+`coverage_exceptions` array drawn from `conflicting_usage|missing_usage|runner_identity_collision`. An empty array
+means covered. Downstream totals may be shown only as incomplete evidence when the array is non-empty. Reused
+`runner_event_id` values never remove distinct source-row observations.
 
 ## One-by-one slices
 
