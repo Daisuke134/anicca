@@ -53,10 +53,10 @@ Connectorの進行中正本はbranch `feature/connector-native-completion`のwor
 | 観測 | 現在の事実 | target / 境界 |
 |---|---|---|
 | branch / owner | `feature/connector-native-completion` のworktreeが実装SSOT | canonical mergeはItem23まで保留 |
-| production providers | `skills/connector/native-pass.js` の`DEFAULT_PROVIDERS = ["luma", "connpass"]`のみ。順序はLuma → Connpass | Peatix → Meetup → Doorkeeper → EventbriteはItem19、未知/次サイトはItem20 |
+| production providers | `skills/connector/native-pass.js` の`DEFAULT_PROVIDERS = ["luma", "connpass", "peatix"]`。順序はLuma → Connpass → Peatix | PeatixはItem10B unblocker兼Item19先頭sliceとしてlive acceptance中。Meetup → Doorkeeper → EventbriteはItem19、未知/次サイトはItem20 |
 | acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
-| agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerを最大10 step使うが、現行proposerと`applied_bundle` evidence chainはLuma専用 | Connpass discovery/direct actionは配線済みだが、bounded fallbackと`applied_bundle`のproduction接続・live acceptanceはItem14 |
-| latest official wake | `wake-44d1f986c595554429c6ea29`: `completed_no_effect / providers_exhausted / consecutive_failure_count 0`、Telegram provider ID `10332`。Luma `30→30→16→4→0`、Connpass `6→6→6→0→0`、Submit/Calendar write/applied bundle増分なし | Lumaはfree/open 4件が全Calendar conflict、Connpassは14日内6件がfree/open 0。次はItem19 Peatixを10B unblockerとして先行 |
+| agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerを最大10 step使う。parent action enforcementはLuma/Connpass/Peatix共通、`applied_bundle` evidence chainはLumaとPeatixに配線済み | Connpassのbounded fallback live acceptanceとevidence接続はItem14。PeatixはItem19先頭sliceとしてlive acceptance中 |
+| latest official wake | `wake-07aceaf5f2c3aeb0f14f1fbf`: `circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10850`。Luma `30→30→16→9→0`、Connpass `6→6→6→0→0`、Peatix `100→100→87→57→19` | Peatix候補1・3はparent-resolvable required answersを完了したが、実DOMの`input#form-submit-button[type=button]`がgeneric form-association gateで除外された。Submit/Calendar write/PNG/applied bundle増分0 |
 | lifecycle / lock | orphan target lockは修復後run終了時にabsent。Native・healthcheck・Healer labelは全てunloaded | installed Native plistのlegacy `StartInterval=300`もunloaded。Items10〜16 acceptance後、Item17で一日一回scheduleだけをload |
 | TODO境界 | Items1〜9と10Aは完了。10BとItems11〜23は未完 | 完了判定は最新Active TODOの10B〜23で行う |
 
@@ -6775,7 +6775,15 @@ Lunaがplan `docs/superpowers/plans/2026-08-10-connector-harness-form-submit-con
 
 Luna最終focused 29/29、adjacent 80/80、Sol拡張再実行93/93、2 file syntax、diff checkが全てPASS。最終fresh re-reviewはCritical 0・Important 0で`ship`。implementation/test中のbrowser/model/Submit/Calendar/PNG/evidence/Telegram/state/private profile/schedule/launchd作用は0。Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを1回実行し、候補3でrequired 3 field後のexact form submit、confirm/readback/applied bundleまたは次exact safe boundaryを実測する。
 
-### Active remaining TODO SSOT（進捗272。これ以外の残TODO一覧は履歴）
+### O1B-25進捗273（Peatix JavaScript submit exact DOM diagnosis）
+
+push済みcommit `106d350b7`、Git/remote一致、scheduleと4 Connector labels unloaded、lock/process absent、temporary raw Chromium owner PID `22279`の`:9222` healthyをpreconditionにofficial foreground wakeを実行した。wake `wake-07aceaf5f2c3aeb0f14f1fbf`はCalendar、Luma、Connpass、Peatix discoveryを全てsuccessで完了し、auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/57/19`。候補1のHarnessは`control_4 → control_6`で氏名とprivacy、候補3は`control_4 → control_5 → control_8`で漢字氏名・ひらがな氏名・電話番号をparent-owned resolverだけで完了した。その後はいずれもagent stepを追加せず、最終reportは`circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10850`。Provider registration、Calendar write、PNG/applied bundle増分は0。owned pageはcleanupされ、`:9222`はnewtab 1枚、lock/process absent、Git cleanを確認した。
+
+actual Calendar busy inventoryと同じPeatix discoveryを使うvalue-free/no-submit診断で、先頭3候補をtickets→formまで再測定した。全候補のrequired-answer formはexactly 1つ。実送信controlは全てexactly 1つの`input#form-submit-button[type=button]`、enabled、HTML form associationなしだった。cookie/filter controlsは別IDで、候補2のsubjective required answersは引き続き未解決のためsafe skip対象である。MDNのcontractどおり`input[type=button]`は`value`がpublic labelで、default submit behaviorではなくJavaScript click handlerが作用を持つ。既存Peatix direct providerも同じexact IDを既に使用している。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-known-submit-control.md`はHarness/testの2 filesだけ、production +8〜18 LOC、tests +25〜45 LOCのsoft targetとする。exact Peatix ID、一意性、enabled、required-answer form exactly 1を全て満たすcontrolだけを既存`submittable`へ通し、generic rule、required優先、parent enforcement、same-page duplicate-effect guardは変更しない。Item 10B/14/19は未完、scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗273。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -6788,8 +6796,8 @@ Luna最終focused 29/29、adjacent 80/80、Sol拡張再実行93/93、2 file synt
 7. [x] **Browser Harness bounded adapterを接続する。** Connector-owned claimed pageだけを操作対象にし、AX tree→targeted DOM→screenshot/coordinateの順で観察する。navigate/observe/fill/submit/readbackを一作用ずつ実行し、candidateごと最大10 agent step、browser/session/target作成権限なし、永続更新先はprovider skill/helper/cacheだけに制限する。証拠: 進捗177、adapter/core 9/9 GREEN。
 8. [x] **Luma script-first workflowを接続する。** Lumaを必ず最初に探索し、無料・受付中・Calendar非衝突の最初のcandidateへ既存reader/filler/Submitをdirect actionとして適用する。未知ordinary required fieldまたはUI変更だけBrowser Harnessへ渡す。過去attempt/suppressionを申込停止gateにしない。証拠: 進捗178、Luma関連43/43 GREEN。
 9. [x] **versioned provider/action cacheを実装する。** provider、workflow version、page state、safe selector/action、expected effectを保存する。fallback成功時は親がexpected stateを確認後、replacement actionだけ更新する。credential、cookie、private value、raw promptは保存しない。証拠: 進捗179、cache/core 10/10 GREEN。
-10. [ ] **production配線後にforeground Luma live E2Eを実行する。** 10A [x]: 14日Google Calendar inventory、single owned browser rail、Luma、action cache、bounded Browser Harness fallback、parent readback、evidence/report dependencyをofficial entrypointへ接続済み。10B [ ]: scheduling disabledのままbounded foreground runnerを起動し、今日を含む14日内の実際の無料・Calendar非衝突Luma eventへSubmitする。AI/cryptoは同日競合候補のtie-breakだけに使い、一般eventをstop/filterしない。失敗時は同じsession/pageで修復または次候補へ進む。完了条件はparent readbackが新規`registered`または`pending`を観測すること。
-11. [ ] **同じLuma registrationのexternal evidence chainを完成する。** Provider receipt/ticket/QRまたは同等receipt、Calendar event IDと独立readback、registered page full-page PNGとSHA-256、Telegram message positive ID、Telegram photo positive IDを同一lineageのdurable `applied_bundle`へ保存する。不足が一つでもあれば成功扱いにしない。
+10. [ ] **production配線後にforeground configured-provider live E2Eを実行する。** 10A [x]: 14日Google Calendar inventory、single owned browser rail、Luma、action cache、bounded Browser Harness fallback、parent readback、evidence/report dependencyをofficial entrypointへ接続済み。10B [ ]: scheduling disabledのままbounded foreground runnerを起動し、Lumaを先頭に、候補0なら同一session/pageで次providerへ進み、今日を含む14日内の実際の無料・Calendar非衝突eventへSubmitする。AI/cryptoは同日競合候補のtie-breakだけに使い、一般eventをstop/filterしない。完了条件はparent readbackが新規`registered`または`pending`を観測すること。
+11. [ ] **同じregistrationのexternal evidence chainを完成する。** Provider receipt/ticket/QRまたは同等receipt、Calendar event IDと独立readback、registered page full-page PNGとSHA-256、Telegram message positive ID、Telegram photo positive IDを同一lineageのdurable `applied_bundle`へ保存する。不足が一つでもあれば成功扱いにしない。
 12. [ ] **post-registration recoveryを実証する。** Calendar、PNG、ticket、Telegram各境界の中断fixtureから、providerへ再Submitせず不足artifactだけを補完する。完了条件は外部registration 1、Calendar event 1、bundle 1、duplicate Submit 0。
 13. [ ] **idempotent second foreground wakeを実証する。** 同じeventを既登録としてreadbackし、Submit 0で未処理candidateへ継続する。every-wake Telegram positive message IDを保存する。
 14. [ ] **Luma failure→Connpass continuationをlive実証する。** Luma candidateをknown-no-effectにした同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。
