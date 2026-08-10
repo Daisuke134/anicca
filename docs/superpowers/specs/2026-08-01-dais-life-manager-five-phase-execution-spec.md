@@ -7163,7 +7163,15 @@ Item17後のpreflightはnative loaded 1、state not running、runs 0、never exi
 
 launchd runs 0→1、terminal report/delivery positive ID、new bundleまたは既存registered/bundle reuseから未処理candidateへのSubmit 0 continuation、live Connector target lease最大1、final process/lock/lease 0をacceptanceとする。session IDはsafe historyへ意図的に永続化しないため、production session-one contract testとlive target-oneを組み合わせる。他3 labels loaded 0とsingle daily trigger、Git clean/upstreamを維持する。Item18未完。
 
-### Active remaining TODO SSOT（進捗340。これ以外の残TODO一覧は履歴）
+### O1B-25進捗341（Item 18 / first launchd-owned wake acceptance完了）
+
+baseline bundle/report/delivery/action `5/110/122/744`、native runs 0からloaded labelへ`launchctl kickstart` exact 1回。manual runner/Node/browser executorとsecond kick 0。launchd PID `86408`、runs 1でofficial wake `wake-be80daf280c27a9aab26163c`を実行し、state not running、last exit 0へ復帰した。同一wake auditはLuma `32/32/17/10/0`、Connpass `6/6/6/4/1`、Peatix `100/100/87/59/11`。今回claim targetはexact 1。
+
+action delta 14はobserve/navigate/readbackだけでcache/direct/Harness Submit 0。Luma no-effect→Connpass existing registration/bundle reuse→Peatix existing registrationのmissing photo/final bundleを回収した。bundle 5→6、new `applied-bundle:1fd10f527dd4270e3bfb7ac305dd695d60f2f84c5130ad8374b6cd08f7f50a30`、mode 0600、provider peatix、registered、Telegram既存message `11167` reuse、new photo positive ID `11333`。wake report `applied_bundle`、failure count 0、positive Telegram ID `11334`。
+
+外部gog再検証はCalendar ID exact 1、confirmed、link/private 64-char markerあり。PNG 16,826 bytes、mode 0600、recomputed SHA exact一致。exit後current wake lease 0、CDP current target 0、process/lock 0。ledgerには今回以前のlegacy target records 9件が残るため削除せずItem22 cleanupへ登録する。native loaded 1、runs 1、09:00 daily、他3 labels unloaded、Git clean/upstream。Item18をacceptし、次はItem19 Meetup provider。
+
+### Active remaining TODO SSOT（進捗341。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -7184,7 +7192,7 @@ launchd runs 0→1、terminal report/delivery positive ID、new bundleまたは�
 15. [x] **circuit breakerを実証する。** 3連続safe failureまたは10分でcircuit-openし、その後のbrowser action/target creationが0、exact safe stage/action historyとTelegram recovery positive IDが保存されることを確認する。5分automatic retryは0。証拠: 進捗335。
 16. [x] **cached action self-healを実証する。** selector変更fixtureでdirect replay failure→同じpageのbounded fallback→expected state readback→cache更新→agentなしrerun成功を確認する。更新は壊れたactionだけ、repo-wide edit/merge/deployは0。証拠: 進捗337。
 17. [x] **単一daily production scheduleをrender/loadする。** Items 10–16のacceptance後だけ、official minimal runnerを一日一回起動するConnector labelを一つloadする。Native旧schedule、healthcheck、Healer、bridge、5分retry、重複runnerはloaded 0にする。証拠: 進捗339。
-18. [ ] **最初のscheduled wakeを完走観測する。** 実`applied_bundle`または既登録readbackによるSubmit 0 continuation、Telegram every-wake positive ID、session/target各1、owned page cleanup、process exitを確認する。failure時はscheduleを増やさず同じentrypointだけを修復する。
+18. [x] **最初のscheduled wakeを完走観測する。** 実`applied_bundle`または既登録readbackによるSubmit 0 continuation、Telegram every-wake positive ID、session/target各1、owned page cleanup、process exitを確認する。failure時はscheduleを増やさず同じentrypointだけを修復する。証拠: 進捗341。
 19. [ ] **providerを一つずつ拡張する。** Peatix [x] → Meetup [ ] → Doorkeeper [ ] → Eventbrite [ ] → 発見済み次provider [ ] の順に、未知browser flow、parent readback、Calendar、PNG、Telegram、idempotencyを個別にlive実証する。各providerは実`applied_bundle`を得るまでproduction supportedと表示しない。Peatix証拠: 進捗291。
 20. [ ] **unknown-provider discovery contractを閉じる。** 事前domain skillのないevent site一件で、same-page Browser Harness fallbackが登録可能性を判断し、許可された無料申込を完遂するかsafe failureで次providerへ進むことを実証する。成功時は新provider skill/cacheを保存し、次run agent call 0を確認する。
 21. [ ] **restartとdurable continuationを実証する。** 各external-effect境界でprocess restartし、既存provider registration、Calendar、evidence、Telegram receiptをreadbackして重複作用0で継続する。append-only historyと既存receiptを変更・削除しない。
