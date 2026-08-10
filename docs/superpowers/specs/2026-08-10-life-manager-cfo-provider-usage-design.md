@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3b verified; CFO-2a2.3c ask-call wiring is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3b verified; CFO-2a2.3c1 ask-call wiring is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -406,9 +406,17 @@ once, and final review is Critical 0 / Important 0 / ship. Scope: three files an
 
 ### 12.5 CFO-2a2.3c — first production call-site
 
-Wire only `askTick(uid) → agentSearchCandidate()`, passing existing owner/Supabase facts around each default raw
-call. Preserve test injection; do not touch resolution, replies, preflight, eval, Live, pricing, or other providers.
-Soft target: `ask.js`, `lm-p0.test.js`, and one E2E file; three files/100 additions. Acceptance:
+This gate has two bounded sub-slices. **CFO-2a2.3c1** wires only
+`askTick(uid) → agentSearchCandidate()`, passing existing owner/Supabase facts to both default raw calls. Preserve
+test injection; do not touch resolution, replies, preflight, eval, Live, pricing, or other providers. Soft target:
+`ask.js` and `lm-p0.test.js`, two files/70 additions.
+
+**CFO-2a2.3c2** adds one local E2E that starts disposable PostgreSQL plus pinned PostgREST, uses a real Gemini key,
+and transparently captures both real provider responses before reading the two stored rows. It compares exact
+response IDs/models/counts, proves distinct non-zero trace IDs, and rejects prompt/output sentinel leakage. It never
+uses production DB or Telegram. Soft target: one E2E file/100 additions.
+
+Acceptance for the combined CFO-2a2.3c gate:
 
 - [ ] existing ask behavior and result are unchanged after two successful recorded calls;
 - [ ] two literal provider responses produce two append receipts and two distinct non-zero trace IDs;
