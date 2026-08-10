@@ -5,7 +5,7 @@ const test = require("node:test");
 const { readPeatixRegistrationStateOnPage, submitPeatixOnPage } = require("./peatix-browser-provider.js");
 
 const candidate = (extra = {}) => ({ provider: "peatix", event_ref: "peatix-event://event/5075819", canonical_url: "https://peatix.com/event/5075819", ticket_id: "6536845", registration_status: "available", ticket_price_status: "free", ticket_price_minor: 0, ...extra });
-const profile = (extra = {}) => ({ name: "Dais Example", email: "dais@example.test", accept_organizer_privacy: true, ...extra });
+const profile = (extra = {}) => ({ name: "Dais Example", email: "dais@example.test", family_name_kana: "サクラ", given_name_kana: "テスト", accept_organizer_privacy: true, ...extra });
 
 function fixture(options = {}) {
   let state = options.initial || "tickets"; const calls = []; const checked = new Set(); let finals = 0;
@@ -14,10 +14,12 @@ function fixture(options = {}) {
     { selector: "#email", kind: "email", visible: true, checked: false },
     { selector: "#privacy", kind: "privacy", visible: true, checked: false },
   ];
+  const familySelector = '#confirm-form [name="lastname_edit"]'; const givenSelector = '#confirm-form [name="firstname_edit"]';
+  const confirmControls = options.confirmControls || { [familySelector]: { count: 1, visible: true }, [givenSelector]: { count: 1, visible: true } };
   const formSelectors = new Set(["#name", "#email", "#privacy", "#form-submit-button", ...(options.formSelectors || [])]);
   const href = () => state === "tickets" ? "https://peatix.com/sales/event/5075819/tickets" : state === "form" ? "https://peatix.com/sales/event/5075819/form" : state === "confirm" ? (options.confirmUrl || `https://peatix.com/sales/event/${options.confirmEvent || "5075819"}/confirm`) : state === "complete" ? "https://peatix.com/sales/event/5075819/complete" : state === "ambiguous" ? "https://peatix.com/sales/event/5075819/unknown" : state === "auth" ? "https://peatix.com/login" : state === "canonical" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : "https://peatix.com/event/9999999";
-  const count = (s) => { if (state === "form" && /#[^\\[]*[\[\]]/.test(s)) throw new Error("invalid selector"); return state === "tickets" && s === "input[name=number_of_tickets_6536845]" ? 1 : state === "tickets" && s === "#next-button" ? 1 : state === "form" && formSelectors.has(s) ? 1 : state === "confirm" && s === "#confirm-button" ? 1 : 0; };
-  const locator = (selector) => ({ count: async () => count(selector), isVisible: async () => count(selector) === 1, fill: async (value) => calls.push(["fill", selector, value]), check: async () => { calls.push(["check", selector]); checked.add(selector); }, isChecked: async () => checked.has(selector), click: async () => { calls.push(["click", selector]); if (selector === "#next-button") state = "form"; else if (selector === "#form-submit-button") state = "confirm"; else if (selector === "#confirm-button") { finals += 1; state = options.complete === false ? "ambiguous" : "complete"; } } });
+  const count = (s) => { if (state === "form" && /#[^\\[]*[\[\]]/.test(s)) throw new Error("invalid selector"); if (state === "confirm" && Object.hasOwn(confirmControls, s)) return confirmControls[s].count; return state === "tickets" && s === "input[name=number_of_tickets_6536845]" ? 1 : state === "tickets" && s === "#next-button" ? 1 : state === "form" && formSelectors.has(s) ? 1 : state === "confirm" && s === "#confirm-button" ? 1 : 0; };
+  const locator = (selector) => ({ count: async () => count(selector), isVisible: async () => state === "confirm" && Object.hasOwn(confirmControls, selector) ? count(selector) === 1 && confirmControls[selector].visible === true : count(selector) === 1, fill: async (value) => calls.push(["fill", selector, value]), check: async () => { calls.push(["check", selector]); checked.add(selector); }, isChecked: async () => checked.has(selector), click: async () => { calls.push(["click", selector]); if (selector === "#next-button") state = "form"; else if (selector === "#form-submit-button") state = "confirm"; else if (selector === "#confirm-button") { finals += 1; state = options.complete === false ? "ambiguous" : "complete"; } } });
   const page = {
     url: href,
     async goto(url) { calls.push(["goto", url]); state = /\/tickets$/.test(url) ? "tickets" : /\/form$/.test(url) ? "form" : "confirm"; },
@@ -48,6 +50,7 @@ function fixture(options = {}) {
         try { return _fn(); } finally { global.document = previousDocument; global.CSS = previousCSS; }
       }
       if (payload.mode === "form") return { fields };
+      if (payload.mode === "confirm_validation") { if (options.confirmValidationThrows) throw new Error("validator failed"); return options.confirmValidationMissing ? {} : { valid: options.confirmValid !== false }; }
       if (payload.mode === "confirm") return { text: options.confirmText || "チケットを申し込む", visible: true };
       if (state === "complete") return { href: href(), markers: options.marker === false ? [] : [{ event_id: "5075819", ticket_id: "6536845" }], checkout: false };
       if (state === "auth") return { href: href(), auth: true, markers: [], checkout: false };
@@ -73,8 +76,16 @@ test("invalid input fails closed and registered readback is an idempotent no-op"
 test("measured ticket/form/confirm flow fills exact fields and clicks final boundary once", async () => {
   const f = fixture(); const p = profile(); const result = await submitPeatixOnPage(f.page, candidate(), p);
   assert.deepEqual(result, { status: "registered" }); assert.equal(f.finalCount(), 1);
-  assert.deepEqual(f.calls.filter((x) => ["fill", "check", "click"].includes(x[0])), [["fill", "input[name=number_of_tickets_6536845]", "1"], ["click", "#next-button"], ["fill", "#name", p.name], ["fill", "#email", p.email], ["check", "#privacy"], ["click", "#form-submit-button"], ["click", "#confirm-button"]]);
+  assert.deepEqual(f.calls.filter((x) => ["fill", "check", "click"].includes(x[0])), [["fill", "input[name=number_of_tickets_6536845]", "1"], ["click", "#next-button"], ["fill", "#name", p.name], ["fill", "#email", p.email], ["check", "#privacy"], ["click", "#form-submit-button"], ["fill", '#confirm-form [name="lastname_edit"]', p.family_name_kana], ["fill", '#confirm-form [name="firstname_edit"]', p.given_name_kana], ["click", "#confirm-button"]]);
   assert.equal(JSON.stringify(result).includes(p.email), false);
+  assert.equal(JSON.stringify(result).includes(p.family_name_kana), false); assert.equal(JSON.stringify(result).includes("family_name_kana"), false);
+});
+
+test("Kana profile and measured confirm controls fail closed before final click", async () => {
+  const family = '#confirm-form [name="lastname_edit"]'; const given = '#confirm-form [name="firstname_edit"]';
+  for (const invalid of [{ family_name_kana: "" }, { given_name_kana: "桜" }, { family_name_kana: "sakura" }, { family_name_kana: "サ".repeat(101) }]) { const f = fixture(); assert.notEqual((await submitPeatixOnPage(f.page, candidate(), profile(invalid))).status, "registered"); assert.equal(f.finalCount(), 0); }
+  for (const confirmControls of [{ [family]: { count: 0, visible: true }, [given]: { count: 1, visible: true } }, { [family]: { count: 2, visible: true }, [given]: { count: 1, visible: true } }, { [family]: { count: 1, visible: false }, [given]: { count: 1, visible: true } }]) { const f = fixture({ confirmControls }); assert.equal((await submitPeatixOnPage(f.page, candidate(), profile())).status, "unavailable"); assert.equal(f.finalCount(), 0); }
+  for (const options of [{ confirmValid: false }, { confirmValidationMissing: true }, { confirmValidationThrows: true }]) { const f = fixture(options); assert.equal((await submitPeatixOnPage(f.page, candidate(), profile())).status, "unavailable"); assert.equal(f.finalCount(), 0); }
 });
 
 test("special-character DOM ids use escaped selectors before final confirmation", async () => {
@@ -89,7 +100,7 @@ test("measured organizer privacy radio is classified and checked before form sub
     formSelectors: ["#organizer-privacy"],
   });
   assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
-  assert.deepEqual(f.calls.filter((x) => ["fill", "check", "click"].includes(x[0])), [["fill", "input[name=number_of_tickets_6536845]", "1"], ["click", "#next-button"], ["fill", "#name", "Dais Example"], ["fill", "#email", "dais@example.test"], ["check", "#organizer-privacy"], ["click", "#form-submit-button"], ["click", "#confirm-button"]]);
+  assert.deepEqual(f.calls.filter((x) => ["fill", "check", "click"].includes(x[0])), [["fill", "input[name=number_of_tickets_6536845]", "1"], ["click", "#next-button"], ["fill", "#name", "Dais Example"], ["fill", "#email", "dais@example.test"], ["check", "#organizer-privacy"], ["click", "#form-submit-button"], ["fill", '#confirm-form [name="lastname_edit"]', "サクラ"], ["fill", '#confirm-form [name="firstname_edit"]', "テスト"], ["click", "#confirm-button"]]);
 });
 
 test("non-organizer, ambiguous, and malformed radio groups fail closed", async () => {
