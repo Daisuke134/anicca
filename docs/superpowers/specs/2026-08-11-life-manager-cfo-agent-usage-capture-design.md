@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a/3b/4/5a complete; CFO-2a2b.5b attempt cutover is next |
+| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a/3b/4/5a/5b complete; CFO-2a2b.5c two-source cutover is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -107,10 +107,14 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
 - [x] **CFO-2a2b.5a — active numeric truth:** ported reviewed numeric behavior onto the newer active runner without
       replacing its later Hermes fixes. Active commit `5ca6c00`; 2 files, +56; focused 1/1, telemetry 8/8, Hermes 3/3;
       fresh Sol: ship. Plan: `2026-08-11-life-manager-cfo-active-runner-numeric-truth.md`.
-- [ ] **CFO-2a2b.5b — active attempt/completion cutover:** port reviewed commits `ef233a90` + `a0fe0c35`, then require
+- [x] **CFO-2a2b.5b — active attempt/completion cutover:** port reviewed commits `ef233a90` + `a0fe0c35`, then require
       a newly triggered real managed loop to write a new attempt and same-ID completion before CFO calls capture ready.
       Do not infer rollout from a feature branch. Plan:
       `2026-08-11-life-manager-cfo-active-runner-attempt-cutover.md`.
+- [ ] **CFO-2a2b.5c — truthful two-source cutover:** make one existing Life Manager-owned safe managed loop write to
+      the Life Manager usage/attempt pair, update the real E2E from its obsolete both-ledgers-absent premise, and prove
+      both source prefixes remain append-only. Do not write a bounty canary into the Life Manager source and do not
+      call capture ready while either source has a named exception.
 
 ## Acceptance gates
 
