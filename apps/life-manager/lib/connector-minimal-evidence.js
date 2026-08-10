@@ -233,6 +233,113 @@ function deliveryValue({ stage, provider, candidate, identity, checkpoint, calen
   return Object.freeze(value);
 }
 
+const BUNDLE_KEYS = "artifact_ref,artifact_sha256,bundle_id,calendar_event_id,calendar_event_url,calendar_readback_at,created_at,event_ref,provider,provider_receipt_ref,provider_status,schema_version,status,telegram_message_provider_id,telegram_photo_provider_id";
+const BUNDLE_FILE = /^([0-9a-f]{64})\.json$/;
+const MAX_BUNDLE_ENTRIES = 128;
+const MAX_BUNDLE_BYTES = 16_384;
+
+function validateAppliedBundle(value, file, providers) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || Object.keys(value).sort().join(",") !== BUNDLE_KEYS
+    || value.schema_version !== 1 || value.status !== "applied_bundle") invalid();
+  const provider = providers[value.provider];
+  if (!provider || typeof value.event_ref !== "string" || !provider.eventRef.test(value.event_ref)
+    || typeof value.provider_status !== "string" || !provider.states.includes(value.provider_status)) invalid();
+  const receiptRef = String(value.provider_receipt_ref || "");
+  const receiptMatch = provider.receiptRef.exec(receiptRef);
+  const artifactRef = String(value.artifact_ref || "");
+  const artifactMatch = ARTIFACT_REF.exec(artifactRef);
+  const artifactSha = String(value.artifact_sha256 || "");
+  if (!receiptMatch || !artifactMatch || !/^[0-9a-f]{64}$/.test(artifactSha) || artifactMatch[1] !== artifactSha) invalid();
+  const calendar = calendarReceipt({ id: value.calendar_event_id, htmlLink: value.calendar_event_url });
+  if (calendar.htmlLink !== value.calendar_event_url) invalid();
+  const calendarReadbackAt = exactInstant(value.calendar_readback_at);
+  const createdAt = exactInstant(value.created_at);
+  const messageId = deliveryId(value.telegram_message_provider_id, "telegram_message_provider_id");
+  const photoId = deliveryId(value.telegram_photo_provider_id, "telegram_photo_provider_id");
+  const core = {
+    schema_version: value.schema_version,
+    status: value.status,
+    provider: value.provider,
+    event_ref: value.event_ref,
+    provider_status: value.provider_status,
+    provider_receipt_ref: receiptRef,
+    artifact_ref: artifactRef,
+    artifact_sha256: artifactSha,
+    calendar_event_id: calendar.id,
+    calendar_event_url: calendar.htmlLink,
+    calendar_readback_at: calendarReadbackAt,
+    telegram_message_provider_id: messageId,
+    telegram_photo_provider_id: photoId,
+    created_at: createdAt,
+  };
+  const digest = sha256(stableJson(core));
+  const filename = path.basename(file, ".json");
+  if (filename !== digest || value.bundle_id !== `applied-bundle:${digest}`) invalid();
+  return Object.freeze({ ...value, ...core, bundle_id: value.bundle_id });
+}
+
+function scanAppliedBundles(stateDir, providers, provider, candidate, status) {
+  const directory = path.join(stateDir, "applied-bundles");
+  assertNoSymlinkPath(stateDir, directory);
+  let stat;
+  try { stat = fs.lstatSync(directory); }
+  catch (error) { if (error && error.code === "ENOENT") return []; invalid(); }
+  if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o777) !== 0o700) invalid();
+  let entries;
+  try { entries = fs.readdirSync(directory); } catch { invalid(); }
+  if (entries.length > MAX_BUNDLE_ENTRIES) invalid();
+  const matches = [];
+  for (const name of entries) {
+    const match = BUNDLE_FILE.exec(name);
+    if (!match) invalid();
+    const file = path.join(directory, name);
+    assertNoSymlinkPath(stateDir, file);
+    let fileStat;
+    try { fileStat = fs.lstatSync(file); } catch { invalid(); }
+    if (!fileStat.isFile() || fileStat.isSymbolicLink() || (fileStat.mode & 0o777) !== 0o600 || fileStat.size > MAX_BUNDLE_BYTES) invalid();
+    let value;
+    try { value = JSON.parse(fs.readFileSync(file, "utf8")); } catch { invalid(); }
+    const bundle = validateAppliedBundle(value, file, providers);
+    if (bundle.provider === provider && bundle.event_ref === candidate.event_ref) {
+      if (bundle.provider_status !== status) invalid();
+      matches.push(bundle);
+    }
+  }
+  if (matches.length > 1) invalid();
+  return matches;
+}
+
+async function validateBundleEvidence(provider, bundle, tenantId) {
+  await validateCheckpointEvidence(provider, {
+    eventRef: bundle.event_ref,
+    observedAt: bundle.created_at,
+    receiptRef: bundle.provider_receipt_ref,
+    artifactRef: bundle.artifact_ref,
+    artifactSha256: bundle.artifact_sha256,
+  }, tenantId);
+}
+
+async function validateExistingCheckpoints(stateDir, provider, candidate, identity, bundle, tenantId) {
+  const checkpoint = readCheckpoint(stateDir, identity.file, provider, candidate, identity.canonicalUrlSha256);
+  if (!checkpoint) return null;
+  if (checkpoint.status !== bundle.provider_status || checkpoint.eventRef !== bundle.event_ref
+    || checkpoint.observedAt !== bundle.created_at || checkpoint.receiptRef !== bundle.provider_receipt_ref
+    || checkpoint.artifactRef !== bundle.artifact_ref || checkpoint.artifactSha256 !== bundle.artifact_sha256) invalid();
+  await validateCheckpointEvidence(provider, checkpoint, tenantId);
+  const deliveries = deliveryPaths(stateDir, provider, candidate, identity, checkpoint);
+  const message = readDeliveryCheckpoint(stateDir, deliveries.message, "telegram_message", provider, candidate, identity, checkpoint);
+  const photo = readDeliveryCheckpoint(stateDir, deliveries.photo, "telegram_photo", provider, candidate, identity, checkpoint);
+  if (!message || !photo || photo.messageCheckpointSha256 !== message.checkpointSha256
+    || photo.telegramMessageProviderId !== message.telegramMessageProviderId
+    || photo.calendarReadbackAt !== message.calendarReadbackAt
+    || photo.calendarEventId !== bundle.calendar_event_id || photo.calendarEventUrl !== bundle.calendar_event_url
+    || message.calendarEventId !== bundle.calendar_event_id || message.calendarEventUrl !== bundle.calendar_event_url
+    || message.telegramMessageProviderId !== bundle.telegram_message_provider_id
+    || photo.telegramPhotoProviderId !== bundle.telegram_photo_provider_id) invalid();
+  return checkpoint;
+}
+
 async function captureProviderEvidence({ provider, providerName, page, candidate, providerStatus, tenantId, now, canonicalUrlSha256 }) {
   const observedAt = exactInstant(now());
   if (providerName === "peatix"
@@ -303,6 +410,20 @@ function createMinimalEvidenceChain(options = {}) {
       if (Date.parse(endsAt) <= Date.parse(startsAt)) invalid();
       const venue = text(candidate.venue_address || candidate.venue_name || "See event page", 2_000);
       const identity = checkpointPath(stateDir, input.provider, candidate.event_ref, eventUrl);
+      const existing = scanAppliedBundles(stateDir, providers, provider.name, candidate, input.providerState.status);
+      if (existing.length === 1) {
+        const bundle = existing[0];
+        const checkpoint = await validateExistingCheckpoints(stateDir, provider, candidate, identity, bundle, tenantId);
+        if (!checkpoint) await validateBundleEvidence(provider, bundle, tenantId);
+        const idempotencyValue = identity.canonicalUrlSha256;
+        const timeMin = new Date(Date.parse(startsAt) - 60_000).toISOString();
+        const timeMax = new Date(Date.parse(endsAt) + 60_000).toISOString();
+        const current = await calendar.findConnectorEvents({ calendarId, idempotencyValue, timeMin, timeMax });
+        if (!Array.isArray(current) || current.length !== 1) invalid();
+        const verifiedCalendar = calendarReceipt(current[0]);
+        if (verifiedCalendar.id !== bundle.calendar_event_id || verifiedCalendar.htmlLink !== bundle.calendar_event_url) invalid();
+        return Object.freeze({ ...bundle, completion_disposition: "reused" });
+      }
       let checkpoint = readCheckpoint(stateDir, identity.file, provider, candidate, identity.canonicalUrlSha256);
       let screenshot;
       if (checkpoint) {
@@ -402,7 +523,7 @@ function createMinimalEvidenceChain(options = {}) {
       const bundleFile = path.join(stateDir, "applied-bundles", `${digest}.json`);
       assertNoSymlinkPath(stateDir, bundleFile);
       immutableJson(bundleFile, bundle);
-      return bundle;
+      return Object.freeze({ ...bundle, completion_disposition: "created" });
     },
   });
 }

@@ -6923,7 +6923,13 @@ Item13は13A exact existing-bundle readback、13B runner continuation、13C offi
 
 Luna 13A初回RED 5/5からGREEN、full evidence 21/21、adjacent 104/107で残る3件はclean HEAD baseline。Sol独立expanded 95/95、syntax、diff checkもPASSしたがfresh Sol reviewはImportant 3件で`fix-first`。第一にsemantic corruptionはfield変更後のdigest/filenameを再構成せずouter digest mismatchで落ちるため、provider/status/receipt/artifact/ID/time個別guard未証明。第二にmultiple fixtureはwrong filename copyで複数matching分岐へ届かず、128 entry boundも実測していない。第三にLuma bundleはunrelated scanだけで、Luma deterministic receipt/artifact/Calendar reuse path未証明。planを先に改訂し、全semantic mutationを自己整合core digest・bundle ID・filenameで作成、同一provider/eventの異なるvalid matching core 2件、valid entries 129件、Luma exact legacy reuseとrender/record/Telegram/Calendar create 0を必須化する。production差分は凍結、test fixtureだけを同じLunaへ戻す。Item13未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗300。これ以外の残TODO一覧は履歴）
+### O1B-25進捗301（Item 13A / existing bundle disposition完了）
+
+Item13A最終実装はapplied-bundlesを最大128 exact entryでscanし、filename/mode/size/exact schema/stable digest/provider/event/status、deterministic provider receipt、raw PNG signature/SHA、positive Telegram IDs、現在Calendar exact ID/URLを再検証する。legacy Luma/Peatix bundleはruntime-only `completion_disposition: reused`を返し、page render/screenshot/provider record/Telegram/Calendar create/bundle mutation全0。新規bundleは`created`、次invocationは同じpersisted bytesの`reused`。matching legacy後のCalendar missing/duplicate/ID-URL mismatchはreplacement createせずfail closed。valid same-event bundle 2件とvalid entries 129件もfail closed、unrelated valid bundleは非match。
+
+fresh review指摘後、semantic mutation 7件はcore digest/bundle ID/filenameを自己整合で再計算し各field guardへ到達、multipleは異なるvalid matching core 2件、boundはfully valid 129件、Lumaもexact deterministic reuseを実証した。review-fix production変更0、最終re-review `ship`。差分はproduction +122/-1、test +37/-8。Luna focused 24/24、Sol独立expanded 98/98、syntax、diff checkがPASS。変更外baseline3件は同一。13Aは完了、Item13 checkboxは13B runner continuationと13C official wakeまで未完。schedule unloaded。
+
+### Active remaining TODO SSOT（進捗301。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
