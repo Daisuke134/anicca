@@ -209,7 +209,7 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 | 2a2a.3 ✅ | Append-only file cursor proves hash/watermark/truncation coverage | 2 new files, +78 LOC |
 | 2a2a.4 ✅ | Versioned loop/task mapping yields attributed or visibly unattributed rows | 3 files, +51/-1 LOC |
 | 2a2a.5a ✅ | Pure collector composes cursor, mapping, and reducer; state exists only after reducer success | 3 files, +60/-1 LOC |
-| 2a2a.5b1 ✅ | Immutable batches atomically couple normalized events with prior/current cursor state | 3 files, +54/-1 LOC |
+| 2a2a.5b1 ✅ | Immutable batches atomically couple normalized events with prior/current cursor state | 3 files, +61/-1 LOC |
 | 2a2a.5b2a NEXT | Read one immutable chain, dedupe transitions/events, and return the last durable cursor | 3 files, <=100 added LOC |
 | 2a2a.5b2b | Read both source ledgers once, resume from durable cursors, and publish the next batches | <=3 files, <=100 added LOC |
 | 2a2a.5b2c | Invoke that runner from the existing local hourly loop without changing Telegram copy | <=3 files, <=100 added LOC |

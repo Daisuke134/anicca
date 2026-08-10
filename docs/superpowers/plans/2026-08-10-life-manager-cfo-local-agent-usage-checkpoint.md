@@ -92,10 +92,10 @@ and resume from the last accepted record.
 
 ## Completion evidence
 
-- Missing-module RED; focused store 2/2 and combined cursor/attribution/collector/store 11/11.
-- Scope: 32 production lines + 21 test lines + one suite entry = 3 files and 54 additions; lockfile unchanged.
-- CFO suite and full `npm test` have zero failures; syntax and diff checks pass; fresh Sol review returned `ship`.
-- Real isolated E2E published two immutable records containing 4,978/4,978 accepted events: 3,910 attributed,
+- Missing-module RED plus four mutation REDs; focused store 3/3 and combined cursor/attribution/collector/store 12/12.
+- Scope: 32 production lines + 28 test lines + one suite entry = 3 files and 61 additions; lockfile unchanged.
+- CFO suite passed 282/282; full `npm test`, syntax, and diff checks passed; scoped fresh Sol re-review returned `ship — Spec ✅`.
+- Real isolated E2E published two immutable records containing 4,982/4,982 accepted events: 3,914 attributed,
   1,068 unattributed, 279 missing-usage rows, and 436 runner-collision groups. The temporary root was removed; live
   state and launchd were untouched.
 - Root aliases are rejected, caller state-root mode is preserved, file-fsync failure publishes nothing, and
