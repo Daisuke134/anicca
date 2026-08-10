@@ -7207,7 +7207,13 @@ read-only実DOM測定では実三候補のconfirm pageすべてが`#confirm-form
 
 Lunaがplan `2026-08-10-connector-peatix-hidden-kana-recovery.md`をPeatix browser provider production/testの2 filesだけでTDD実装した。REDは16/19で、hidden exact pair validが`kana_control_unavailable`、hidden pair invalidも同reason、visible non-editable controlがfinalまで進む3 failureを再現した。初回GREEN後のfresh Sol reviewは、Playwright Locatorが常に`fill()` methodを持つためmethod有無がeditable proofにならないImportant 1を発見。fix round 2はfixtureが常にfillを持つ実semanticsで18/20 REDを再現し、exact single locatorの`isEnabled()`と`isEditable()`が両方boolean trueの場合だけvisible Kana pairをfillする。欠落/throw/nonboolean/disabled/non-editable、zero/one-sided/duplicate/visibility mismatchはfinal click前にfail closed。exact hidden pairはprivate stored valueをread/fill/forceせず既存jQuery validationへ進み、invalidなら`confirm_validation_failed`。Luna/ Sol独立focused+adjacent 123/123、syntax、diff checkがPASS。変更外Peatix workflow 22/23の1 failureはstable clean HEAD同一の日付fixtureで新規回帰0。fresh Sol re-reviewはCritical 0・Important 0で`ship`。implementation/test/review中のbrowser/provider/Calendar/evidence/Telegram/state/launchd/schedule作用0。Item19 Meetupは未完で、次の一件はcommit/push後のofficial schedule-unloaded wakeでPeatix同reason解消とMeetup audit到達をlive検証する。
 
-### Active remaining TODO SSOT（進捗347。これ以外の残TODO一覧は履歴）
+### O1B-25進捗348（Item 19M-D0 live wake 2 / Peatix confirmed settlement blocker確定）
+
+pushed repair `8ae15d93c`をstable worktreeへfast-forwardし、4 labels unloaded、process 0、`:9222` page 1、Git clean/upstream 0/0、bundle 6からofficial foreground wakeをexact 1回実行した。wake `wake-75c37a34330326e9a35672db`はhidden Kana reasonを越え、Peatix三候補のdirect confirm操作へ進んだが、全てparent readback `peatix_readback_unavailable`となりfailure count 3でcircuit-open。wake report 112→113、delivery 124→125、positive Telegram ID `11384`、bundle 6→6、Meetup audit 0。終了後process/active target 0、CDP baseline page 1、Git clean。
+
+read-only canonical/ticket再測定で候補`5086816`はvisible same-event ticket linkとQR shellを持つ実`registered`、前二候補はticketなし。Browser historyは成功候補だけfinal clickの約2秒後にstrict `/sales/event/5086816/confirmed`へ遷移し、前二候補はconfirmに留まることを示した。旧direct providerはfinal click直後にreadbackし、`confirmed` pathを認識せずeffect済み成功もunavailableへ落としていた。既存planへD0bを追記し、final click後のbounded exact same-event confirmed待機→同じpageのcanonical event navigation→既存parent ticket/marker readbackをTDD追加する。confirmed URL単独は成功証拠にせず、wrong/missing transitionは再Submit 0でfail closed。scheduleはunloaded、Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗348。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
