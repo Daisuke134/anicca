@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 verified; CFO-2a2.2a local-tested storage schema is next |
+| Status | ACTIVE — CFO-2a2.1 and CFO-2a2.2a verified; CFO-2a2.2b idempotent append RPC is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -45,7 +45,7 @@ flowchart LR
     E --> DONE[CFO-2a2 complete]
 ```
 
-Only CFO-2a2.1 is active. Later slices cannot be pulled into its implementation.
+CFO-2a2.1 and CFO-2a2.2a are complete. CFO-2a2.2b is the only active slice; later slices cannot be pulled into it.
 
 ## 4. CFO-2a2.1 input
 
@@ -180,7 +180,7 @@ flowchart LR
     D --> DONE[Stored evidence + correlated span]
 ```
 
-### CFO-2a2.2a — only active slice
+### CFO-2a2.2a — verified
 
 Add `public.lm_cfo_model_usage_evidence` as a structured table. Do not store a raw response or duplicated
 `otel_attributes` JSON. Required columns are:
@@ -208,14 +208,27 @@ Soft target: one migration, one dedicated static test, and one `test:cfo` script
 
 ### CFO-2a2.2a acceptance
 
-- [ ] The table has one non-null composite unique dedupe key and never stores raw content or generic metadata JSON.
-- [ ] Required counts reject null/negative values; optional counts preserve null and explicit zero.
-- [ ] Attribution state and financial-unit nullability cannot contradict each other.
-- [ ] Financial-unit IDs use the canonical registry grammar and reject a leading digit.
-- [ ] RLS, grants, and the trigger permit service SELECT/INSERT only and reject UPDATE/DELETE.
-- [ ] A disposable local PostgreSQL E2E proves valid insert, duplicate rejection, invalid-count rejection, and
+- [x] The table has one non-null composite unique dedupe key and never stores raw content or generic metadata JSON.
+- [x] Required counts reject null/negative values; optional counts preserve null and explicit zero.
+- [x] Attribution state and financial-unit nullability cannot contradict each other.
+- [x] Financial-unit IDs use the canonical registry grammar and reject a leading digit.
+- [x] RLS, grants, and the trigger permit service SELECT/INSERT only and reject UPDATE/DELETE.
+- [x] A disposable local PostgreSQL E2E proves valid insert, duplicate rejection, invalid-count rejection, and
       append-only rejection without touching production.
-- [ ] The focused migration test, CFO suite, and full suite pass.
+- [x] The focused migration test, CFO suite, and full suite pass.
+
+### CFO-2a2.2a completion evidence
+
+- Luna implementation commits: `33882cfd7`, `884f76638`, `0709344a5`, and canonical registry fix `f30a5d365`.
+- RED gates independently failed for the absent migration, incomplete ACL reset, forbidden content/metadata columns,
+  and the non-canonical financial-unit grammar before each minimal fix.
+- Fresh Sol verification on the final head: focused 1/1 and full suite 893/893, with zero failures.
+- Fresh disposable PostgreSQL 18 E2E started from intentionally broad default ACLs, then proved exact service-role
+  SELECT/INSERT and sequence usage, RLS, two real inserts, nullable/zero preservation, dedupe, invalid-count and
+  attribution rejection, canonical financial-unit rejection, and append-only behavior.
+- Ponytail gate: exactly three implementation files and 67 additions, with no RPC, client, scheduler, provider
+  call-site, SDK, exporter, pricing, content, generic metadata, or production apply.
+- Fresh final review: Critical 0, Important 0, ship.
 
 ### PostgreSQL evidence
 

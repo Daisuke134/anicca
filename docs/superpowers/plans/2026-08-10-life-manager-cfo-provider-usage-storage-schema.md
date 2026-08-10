@@ -1,6 +1,6 @@
 # Life Manager CFO-2a2.2a Usage Storage Schema Implementation Plan
 
-**Status:** READY — one Luna task; schema boundary only.
+**Status:** COMPLETE — schema boundary verified locally; no production apply.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Implement this one task
 > with strict RED → minimal GREEN → disposable local PostgreSQL E2E.
@@ -38,7 +38,7 @@ part of this plan.
 - Create: `apps/life-call/migrations/2026-08-10-cfo-model-usage-evidence.sql`
 - Modify: `apps/life-call/package.json`
 
-- [ ] **Step 1 — Add the static contract test and test:cfo entry**
+- [x] **Step 1 — Add the static contract test and test:cfo entry**
 
 The test reads the exact migration path and uses a compact literal pattern table to prove:
 
@@ -56,7 +56,7 @@ The test reads the exact migration path and uses a compact literal pattern table
 
 Add the test path once to `package.json` `test:cfo`.
 
-- [ ] **Step 2 — Run RED**
+- [x] **Step 2 — Run RED**
 
 From `apps/life-call`:
 
@@ -67,7 +67,7 @@ node --test lib/cfo-model-usage-evidence-migration.test.js
 Expected: one test fails only because the planned migration file does not exist. A syntax error or a different
 failure is fixed before SQL is written.
 
-- [ ] **Step 3 — Add the minimal migration**
+- [x] **Step 3 — Add the minimal migration**
 
 Create one table with these columns:
 
@@ -95,7 +95,7 @@ Enable RLS. Create service-role SELECT and INSERT policies only. Revoke all from
 service SELECT/INSERT and sequence usage/select; explicitly revoke UPDATE/DELETE. Add one invoker,
 fixed-`search_path` trigger function and one BEFORE UPDATE OR DELETE trigger that always raises a fixed error.
 
-- [ ] **Step 4 — Run focused and repository GREEN**
+- [x] **Step 4 — Run focused and repository GREEN**
 
 ```bash
 node --test lib/cfo-model-usage-evidence-migration.test.js
@@ -105,7 +105,7 @@ npm test
 
 Expected: focused 1/1; CFO 255/255; full aggregate 893/893.
 
-- [ ] **Step 5 — Run a disposable local PostgreSQL E2E**
+- [x] **Step 5 — Run a disposable local PostgreSQL E2E**
 
 Reuse the bootstrap pattern from `test/postgres/cfo-daily-snapshot-postgres.integration.sh`; do not change that
 script. In a fresh `mktemp -d` PostgreSQL cluster:
@@ -122,7 +122,7 @@ script. In a fresh `mktemp -d` PostgreSQL cluster:
 Stop the cluster and remove only its generated temp directory. Record only pass/fail facts and synthetic IDs; no
 credentials, raw provider response, or private content.
 
-- [ ] **Step 6 — Enforce Ponytail scope and commit**
+- [x] **Step 6 — Enforce Ponytail scope and commit**
 
 ```bash
 git diff --check
