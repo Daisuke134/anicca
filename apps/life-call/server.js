@@ -22,12 +22,15 @@ const {
   buildTelnyxMediaFrame,
   carrierActionForGeminiKind,
   makeGeminiEndHandler,
+  attachGeminiUsageTracking,
 } = require("./lib/call-bridge.cjs");
 const {
+  LIVE_MODEL,
   geminiLiveWsUrl,
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
+const { captureGeminiLiveUsageObservation } = require("./lib/cfo-provider-usage-span.js");
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
@@ -655,19 +658,17 @@ wss.on("connection", (carrierWs, req) => {
       onClose: () => { try { carrierWs.close(); } catch {} },
       log: (reason) => console.log(`[bridge] gemini ${reason} gotAudio=${gotAudio} reconnects=${geminiReconnects}`),
     });
-    gemini.on("error", (e) => onGeminiEnd(`err ${e.message}`));
-    gemini.on("close", () => {
-      if (!geminiCostRecorded) {
-        geminiCostRecorded = true;
+    attachGeminiUsageTracking({
+      socket: gemini, capture: captureGeminiLiveUsageObservation,
+      context: { owner_id: wakeUid || "", financial_unit_id: "life_manager_saas", request_model: `models/${LIVE_MODEL}`, live_session_id: crypto.randomUUID().replace(/-/g, "") },
+      options: { storeOptions: { supaUrl: SUPA_URL, supaKey: SUPA_KEY } }, onEnd: () => onGeminiEnd("closed"),
+      onFallback: () => {
+        if (geminiCostRecorded) return; geminiCostRecorded = true;
         const quantity = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000);
-        // Duration proxy from spec §13's measured ~$0.023/min. Google bills Live API by actual
-        // token usage, not wall time (https://ai.google.dev/gemini-api/docs/live-api/best-practices#pricing-billing),
-        // but this bridge does not receive billable token totals, so the ledger stores this explicit estimate.
-        recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds",
-          estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
-      }
-      onGeminiEnd("closed");
+        recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds", estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
+      },
     });
+    gemini.on("error", (e) => onGeminiEnd(`err ${e.message}`));
   }
 
   carrierWs.on("message", (data) => {

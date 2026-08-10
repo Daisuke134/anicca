@@ -182,6 +182,23 @@ function makeGeminiEndHandler({ getGotAudio, getReconnects, incReconnects, carri
   };
 }
 
+function attachGeminiUsageTracking({ socket, capture, context, options, onEnd, onFallback }) {
+  let seen = 0, stored = 0, failed = 0, nextSequence = 0, tail = Promise.resolve(), closed = false;
+  const settle = () => tail.then(() => Object.freeze({ seen, stored, failed, complete: seen > 0 && stored === seen && failed === 0 }));
+  socket.on("message", data => {
+    let message; try { message = JSON.parse(data.toString()); } catch { return; }
+    if (!message || !message.usageMetadata) return;
+    const sequence = nextSequence++; seen++;
+    tail = tail.then(() => capture(message, { ...context, usage_sequence: sequence }, options)).then(() => { stored++; }, () => { failed++; });
+  });
+  socket.on("close", () => {
+    if (closed) return; closed = true;
+    try { if (onEnd) onEnd(); } catch {}
+    settle().then(result => { if (!result.complete && onFallback) { try { onFallback(result); } catch {} } }, () => { try { if (onFallback) onFallback(); } catch {} });
+  });
+  return { settle };
+}
+
 module.exports = {
   routeTwilioMessage,
   routeTelnyxMessage,
@@ -191,6 +208,7 @@ module.exports = {
   decideGeminiEnd,
   carrierActionForGeminiKind,
   makeGeminiEndHandler,
+  attachGeminiUsageTracking,
 };
 
 // ── Network shell (only runs when invoked directly) ───────────────────────────

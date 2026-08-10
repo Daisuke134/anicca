@@ -1,6 +1,6 @@
 # CFO-2a2.4d1 Gemini Live Bridge Wiring Implementation Plan
 
-**Status:** READY — Ponytail scope and fresh Sol review required before Luna implementation.
+**Status:** COMPLETE — implemented by Luna and independently verified by fresh Sol plus the controller.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 
@@ -26,7 +26,7 @@ scheduler, or reporting path.
 
 ## Task 1: Queue provider usage and wire the socket
 
-- [ ] **Step 1 — write the smallest RED tests**
+- [x] **Step 1 — write the smallest RED tests**
 
 Export the production seam `attachGeminiUsageTracking` from `call-bridge.cjs`. Add three behavioral tests:
 
@@ -40,7 +40,7 @@ Export the production seam `attachGeminiUsageTracking` from `call-bridge.cjs`. A
    settlement. Prove `0/0/0 -> fallback`, `2/2/0 -> no fallback`, and `2/1/1 -> fallback`, exact CFO/store context, and
    that a reconnect socket with a distinct session starts again at sequence zero without sharing settlement state.
 
-- [ ] **Step 2 — run RED**
+- [x] **Step 2 — run RED**
 
 ```bash
 node --test lib/call-bridge.test.js
@@ -48,7 +48,7 @@ node --test lib/call-bridge.test.js
 
 Expected: historical six tests pass and only the three new contracts fail because the production seam is absent.
 
-- [ ] **Step 3 — add the minimum queue and wiring**
+- [x] **Step 3 — add the minimum queue and wiring**
 
 `attachGeminiUsageTracking({ socket, capture, context, options, onEnd, onFallback })` creates one private recorder for
 that socket, keeps `seen/stored/failed/nextSequence/tail`, and attaches only `message` and `close`. A parsed message
@@ -63,7 +63,7 @@ audio message handler unchanged. The seam's close callback runs existing `onGemi
 the old exact duration `recordCost` runs later only as `onFallback`. Remove the replaced close listener. A recorder or
 settlement failure must never delay or stop reconnect/carrier teardown.
 
-- [ ] **Step 4 — run GREEN and scope gates**
+- [x] **Step 4 — run GREEN and scope gates**
 
 ```bash
 node --test lib/call-bridge.test.js

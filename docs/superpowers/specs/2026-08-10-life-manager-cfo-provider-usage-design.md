@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c3 verified; CFO-2a2.4d1 Live bridge wiring is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4d1 verified; CFO-2a2.4d2 real Live E2E is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -702,7 +702,7 @@ case. Final GREEN passed focused 6/6, CFO 269/269, and full 911/911. Re-review r
 repeated focused, CFO, full, syntax, and diff gates. The implementation is exactly two files and 38 additions. No
 provider call, database deployment, bridge, runtime, or Telegram state changed.
 
-#### CFO-2a2.4d1 — ordered Live bridge wiring (next)
+#### CFO-2a2.4d1 — ordered Live bridge wiring (complete)
 
 Add one small recorder closure to the existing `call-bridge.cjs` and wire it in `server.js`. Each Gemini WebSocket gets
 one random 32-hex local session ID and a sequence starting at zero. A message without `usageMetadata` is ignored. Each
@@ -720,21 +720,26 @@ slice does not claim that aggregation already prevents double counting. Aggregat
 
 Acceptance:
 
-- [ ] non-usage messages cause zero capture calls; usage messages receive exact ordered sequences `0..n-1` once;
-- [ ] settle reports exact seen/stored/failed counts and complete only for nonzero all-success observations;
-- [ ] one failure does not retry, log provider data, or stop later observations;
-- [ ] `server.js` attaches the tested production usage seam once per Gemini socket with random session ID and exact
+- [x] non-usage messages cause zero capture calls; usage messages receive exact ordered sequences `0..n-1` once;
+- [x] settle reports exact seen/stored/failed counts and complete only for nonzero all-success observations;
+- [x] one failure does not retry, log provider data, or stop later observations;
+- [x] `server.js` attaches the tested production usage seam once per Gemini socket with random session ID and exact
       CFO/store context;
-- [ ] close invokes the existing end handler synchronously, then asynchronously records duration fallback unless the
+- [x] close invokes the existing end handler synchronously, then asynchronously records duration fallback unless the
       recorder settles complete;
-- [ ] a deferred capture cannot delay reconnect/carrier teardown, and the exact fallback matrix is behaviorally tested;
-- [ ] a fake Gemini socket drives the same production seam and proves parsed usage observation plus isolated
+- [x] a deferred capture cannot delay reconnect/carrier teardown, and the exact fallback matrix is behaviorally tested;
+- [x] a fake Gemini socket drives the same production seam and proves parsed usage observation plus isolated
       session/sequence state after reconnect;
-- [ ] existing audio, reconnect, barge-in, and provider behavior remains unchanged;
-- [ ] focused bridge, CFO, and full suites pass within exactly three files and at most 90 additions.
+- [x] existing audio, reconnect, barge-in, and provider behavior remains unchanged;
+- [x] focused bridge, CFO, and full suites pass within exactly three files and at most 90 additions.
 
 This slice makes no real provider call, migration/database deployment, aggregation decision, scheduler, launchd, or
 Telegram change.
+
+Completion evidence: TDD RED kept all historical bridge tests green and failed only the three absent-seam contracts
+(6/9 pass). GREEN passed focused 9/9, CFO 270/270, full 915/915, syntax, diff, and the exact three-file/71-addition gate.
+Fresh Sol review returned `ship — Spec ✅` with no findings, and Sol independently repeated focused, CFO, full, syntax,
+diff, and size gates. No provider, database, deployment, scheduler, launchd, or Telegram state changed.
 
 #### CFO-2a2.4d2 — real Live message → row → span proof
 
