@@ -4,7 +4,7 @@
 failures, stores the first daily snapshot or a meaningful same-day correction, and sends at most one Telegram report
 per snapshot revision.
 
-**Status:** LIVE — one hourly launchd job installed; autonomous real-data successes 1/2.
+**Status:** COMPLETE — one hourly launchd job installed; autonomous real-data successes 2/2.
 
 **Ponytail decision:** Reuse the existing reader, recovery, report builder, revision RPC, delivery dedupe, renderer,
 and Telegram transport. Add no agent, service, queue, database, framework, dependency, or cloud runner. The committed
@@ -195,4 +195,8 @@ append-only and delivered once, and logs contain no private finance data or cred
 - Broken `ai.anicca.cfo-daily` (exit 127) and `ai.anicca.life-manager-financial-report` (exit 1) were booted out without
   deleting their plist files. Exactly one `ai.anicca.life-manager-cfo-hourly` job is loaded with interval 3600.
 - Autonomous launchd run 1/2: `runs=1`, last exit `0`, safe result `quiet`, revision 1, append false, delivery false,
-  stderr 0 bytes. No manual kickstart was used. Product Stage 7 remains active until run 2/2 passes.
+  stderr 0 bytes. No manual kickstart was used. Product Stage 7 remained active pending run 2/2.
+- Autonomous launchd run 2/2: `runs=2`, last exit `0`, safe result `quiet`, revision 1, append false, delivery false,
+  stderr 0 bytes. No manual kickstart was used. Durable metadata remained one snapshot, one delivery claim, and one
+  positive provider receipt, so unchanged data produced neither a duplicate revision nor Telegram spam. CFO-1i and
+  Product Stage 7 are complete.

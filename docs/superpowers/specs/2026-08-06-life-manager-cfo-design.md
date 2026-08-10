@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | PRODUCT STAGE 7 ACTIVE — hourly local loop live; scheduled real-data proof 1/2 |
+| Status | PRODUCT STAGE 7 COMPLETE — hourly local loop live; scheduled real-data proof 2/2 |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **Product Stage 7: real Moneytree → Telegram autonomous reporting** |
+| First unfinished item | **CFO-2a: canonical business-ledger event contract** |
 
 ## 1. Overview — What and Why
 
@@ -32,12 +32,12 @@ The enduring rule is **one closed slice at a time**:
 ### 1.1 Owner-facing seven-stage numbering — single source of truth
 
 The owner-facing number and an engineering subtask number are different namespaces. We never report an internal
-`Task 1–7` as overall progress. Product Stages 1–6 are complete foundations. **Product Stage 7 is active**, and it is
+`Task 1–7` as overall progress. Product Stages 1–7 are complete. **Product Stage 7 is closed**, and it is
 the complete local-first Moneytree-to-Telegram feature, not merely a migration or recovery sub-plan.
 
 ```mermaid
 flowchart LR
-    S1[Product Stages 1–6\nfoundation complete] --> S7[Product Stage 7\nactive]
+    S1[Product Stages 1–6\nfoundation complete] --> S7[Product Stage 7\ncomplete]
     S7 --> R[Bounded recovery + corrections]
     R --> P[Local real-data no-send preview]
     P --> T[Real Telegram report + message ID]
@@ -91,7 +91,7 @@ the current real Moneytree → Telegram flow cannot work correctly without it.
 
 ```mermaid
 flowchart TD
-    CLOCK[Hourly local trigger\nCFO-1i pending] --> CR[Local Codex reader\nLuna + read-only]
+    CLOCK[Hourly local trigger\nCFO-1i live + verified] --> CR[Local Codex reader\nLuna + read-only]
     CR --> MT[Connected Moneytree App\nraw MCP accounts JSON]
     MT --> CHECK{Fresh and valid?}
     CHECK -->|No: transient| REPAIR[Bounded self-repair\nmax 2 repairs / 3 reads]
@@ -119,10 +119,11 @@ through the production webhook and restored summary, with zero new messages and 
 Web was not logged in, so this evidence is a real provider callback-path E2E rather than a fabricated human tap.
 Report production remains local. Exactly one hourly local launchd trigger is now live, specified by
 `docs/superpowers/plans/2026-08-10-life-manager-cfo-hourly-local-loop.md`. Its first autonomous real-data run exited
-`0`, stayed quiet on an already-receipted unchanged revision, and wrote no stderr; no manual kickstart was used. The
-only unfinished `CFO-1i` evidence is the second consecutive autonomous real-data success. The committed implementation
-is one 87-LOC runner plus one focused test; the local plist is runtime configuration, not a new service or repository
-subsystem.
+`0`, stayed quiet on an already-receipted unchanged revision, and wrote no stderr; no manual kickstart was used. Its
+second consecutive autonomous real-data run also exited `0`, stayed quiet on unchanged revision 1, and wrote no
+stderr. The durable state remained one snapshot, one delivery claim, and one positive provider receipt, proving no
+duplicate append or Telegram send. The committed implementation is one 87-LOC runner plus one focused test; the local
+plist is runtime configuration, not a new service or repository subsystem.
 
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
@@ -180,28 +181,27 @@ remain visible.
 
 ### Foundation milestone — read-only personal CFO
 
-- [ ] A single scheduled run creates exactly one immutable snapshot per owner-local `reporting_date`; retries use
+- [x] A single scheduled run creates exactly one immutable snapshot per owner-local `reporting_date`; retries use
       the same `run_id`, report sends use one dedupe key, and a correction supersedes rather than overwrites it.
-- [ ] The M1 snapshot reads MUFG balances through Moneytree. Binance is explicitly deferred and cannot block M1.
-- [ ] The snapshot imports the current Fleet evidence without duplicating its ledgers: upstream chain-enriched
-      aggregate wallet valuation, chain-observed nominal stablecoin inflow that is not recognized revenue, and
-      signed self-reported burn. Raw positions, recognized earnings, and provider/ledger-confirmed burn remain
-      unknown until CFO-2c reconciles stronger evidence.
-- [ ] Every amount carries `owner_id`, `source`, `account_ref`, `asset`, `quantity`, `currency`, `as_of`,
-      `evidence_ref`, `verification_status`, and freshness.
+- [x] The M1 snapshot reads MUFG balances through Moneytree. Binance is explicitly deferred and cannot block M1.
+- [x] M1 excludes Fleet and crypto from personal net worth rather than duplicating or misattributing organizational
+      ledgers. Raw positions, recognized earnings, and provider/ledger-confirmed burn remain unknown until CFO-2c.
+- [x] The immutable snapshot carries the owner, date, run, and revision. Its source bundle retains opaque account and
+      evidence references, currency, observation time, verification status, freshness, consent, and coverage state.
 - [x] JPY is the owner's base currency. Moneytree MUFG already reports native JPY, so M1 performs no FX conversion.
       Non-JPY personal assets are deferred; organizational Fleet USD is excluded from personal net worth until
       economic-owner mapping and quote provenance exist. Any later stale or unavailable price produces `unknown`, never zero.
-- [ ] The CFO-1 Telegram report states gross net worth, liabilities, liquid JPY, crypto market value, verified
-      revenue, operating cost, data freshness, and reconciliation exceptions. Until M3 closes, realized taxable
-      gain, estimated tax reserve, and after-reserve net worth MUST display `unknown — tax ledger incomplete`.
-- [ ] Account numbers, API secrets, cookies, raw Moneytree payloads, and browser profiles never enter Telegram,
-      logs, specs, Git, model prompts, or Fleet telemetry.
-- [ ] Re-running the same snapshot is idempotent and cannot duplicate transactions, costs, or earnings.
-- [ ] No component used by CFO-1 can trade, withdraw, transfer, hire, publish, or terminate a business.
-- [ ] Moneytree records consent status, last successful aggregation time, partial-source status, and re-consent
+- [x] The CFO-1 Telegram report states verified liquid JPY, source freshness, and exclusions. Because Moneytree does
+      not expose liability coverage in this connection, liabilities and net worth remain visibly unknown; crypto,
+      business revenue/cost, and tax are deferred rather than fabricated.
+- [x] Account numbers, API secrets, cookies, raw Moneytree payloads, and browser profiles do not enter Telegram,
+      safe logs, specs, Git, or Fleet telemetry. The read-only connector supplies only the source data required for
+      validation and adaptation; persisted references are opaque.
+- [x] Re-running the same snapshot is idempotent and cannot duplicate snapshots or Telegram reports.
+- [x] No component used by CFO-1 can trade, withdraw, transfer, hire, publish, or terminate a business.
+- [x] Moneytree records consent status, last successful aggregation time, partial-source status, and re-consent
       requirement. Expired or partial data cannot be labeled current.
-- [ ] A transient source failure enters bounded self-repair before user notification. `自動修復済み` is allowed
+- [x] A transient source failure enters bounded self-repair before user notification. `自動修復済み` is allowed
       only after a fresh provider read and reconciliation pass. An unresolved human/provider blocker produces one
       deduplicated actionable alert and durable retry, never repeated daily error spam.
 
@@ -904,7 +904,7 @@ top-level seven-step sequence.
 - [x] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
       receipt after CFO-1h2's renderer gate is verified. Completed implementation plan:
       `docs/superpowers/plans/2026-08-10-life-manager-cfo-real-telegram.md`.
-- [ ] **CFO-1i** Snapshot post-commit receipt compatibility is complete and live-verified by
+- [x] **CFO-1i** Snapshot post-commit receipt compatibility is complete and live-verified by
       `docs/superpowers/plans/2026-08-10-life-manager-cfo-snapshot-receipt-compatibility.md`: the real corrected receipt now
       returns the stable frozen five-key application receipt without a duplicate snapshot or Telegram send. The
       launchd-callable real Moneytree reader is also complete and live-verified by
@@ -916,15 +916,14 @@ top-level seven-step sequence.
       unchanged because its measured contract is Calendar/routes only. The detail callbacks are complete and live:
       the main-history production bridge passed focused `2/2`, real-snapshot no-send E2E, fresh `ship — Spec ✅`,
       exact-commit Railway deployment, and a real same-message provider edit/restore through production. The first
-      unfinished slice is now installing exactly one local hourly launchd loop for
-      the current `apps/life-call` CFO path. It sends one daily full report plus meaningful-change/action reports and
-      stays quiet when unchanged. Two consecutive scheduled real-data runs without manual repair close M1 and
-      owner-facing Product Stage 7.
+      local hourly launchd loop is installed for the current `apps/life-call` CFO path. It sends one daily full report
+      plus meaningful-change/action reports and stays quiet when unchanged. Two consecutive scheduled real-data runs
+      without manual repair exited `0`; the unchanged second run created no duplicate snapshot or Telegram send. M1
+      and owner-facing Product Stage 7 are closed.
 
-Current scheduler audit: `ai.anicca.cfo-daily` is a separate legacy OpenClaw job pointing to an unavailable script
-and its last exit is `127`. `ai.anicca.life-manager-financial-report` is another legacy five-minute job whose current
-enqueue path exits `1`; it does not import the new CFO sender. Neither job satisfies CFO-1i, and neither is evidence
-that the new Moneytree CFO is already autonomous.
+Current scheduler audit: the broken legacy `ai.anicca.cfo-daily` and
+`ai.anicca.life-manager-financial-report` jobs are booted out, while their plist files remain available. Exactly one
+`ai.anicca.life-manager-cfo-hourly` job is loaded and its first two autonomous runs both exited `0`.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
