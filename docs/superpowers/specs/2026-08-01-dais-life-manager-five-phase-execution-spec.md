@@ -6254,7 +6254,23 @@ Critical 0・Important 0でshipした。
 `DAIS_LEGAL_NAME_ROMAJI + GOG_ACCOUNT`からin-memory attendee profileを構築し、official foreground provider順を
 `Luma → Connpass → Peatix`へ変更する。scheduleはunloadedを維持し、このplanの実装testでは外部application effect 0。
 
-### Active remaining TODO SSOT（進捗238。これ以外の残TODO一覧は履歴）
+### O1B-25進捗239（Peatix native foreground wiring GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-native-foreground.md`をTDD実装し、official foreground provider順を
+`Luma → Connpass → Peatix`へ変更した。既存private envの`DAIS_LEGAL_NAME_ROMAJI + GOG_ACCOUNT`だけから
+凍結attendee profileをin-memory構築し、Peatix dependency factoryへの入力に限定した。private値はwake settings、JSON、
+logへ保存しない。欠落・不正email・不正氏名はdependency factory前にfail-closedする。
+
+初回commit `9e347e013`のfresh Sol reviewはnative氏名上限2,000文字とPeatix provider上限200文字の不一致をImportantとして発見した。
+同じLunaが201文字をfactory前に拒否する回帰を追加し、commit `b1f9de00c`で境界を200文字へ一致させた。re-reviewは200文字で
+factory/wake各1、201文字で各0を実測し、Critical 0・Important 0でshipした。focused 5/5、指定回帰29/29、`node --check`、
+`bash -n`、`git diff --check`は全PASS。schedule/launchd変更と外部application effectは0。
+
+次の一件はschedule unloadedのまま`skills/connector/run.sh`をofficial foreground wakeとして一度だけ実行し、実Peatix候補の
+Submit→parent readback→Calendar→PNG/SHA→Telegram→immutable applied bundleを同一lineageで実測する。post-click ambiguity時は
+再Submitせず、同じregistrationのreadbackと不足artifact recoveryだけを修復する。
+
+### Active remaining TODO SSOT（進捗239。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
