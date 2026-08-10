@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a2a complete; CFO-2a2b is next |
+| Status | M2 ACTIVE — CFO-2a2b.1a strict provider numerics is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2b: prove producer attempt/success/failure durability and capture coverage before any total-cost label** |
+| First unfinished item | **CFO-2a2b.1a: reject present invalid provider numerics instead of converting them to zero** |
 
 ## 1. Overview — What and Why
 
@@ -961,7 +961,10 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       rescan raw Codex/Claude session logs for managed loops. Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-local-agent-usage-design.md`.
 - [ ] **CFO-2a2b** Make usage-ledger attempts observable and durable; measure producer attempt/success/failure,
-      reject invalid numeric values, and expose capture coverage before any total-cost label is enabled.
+      reject invalid numeric values, and expose capture coverage before any total-cost label is enabled. Deliver it as
+      five one-at-a-time local slices: strict provider numerics, producer write-ahead attempt, pure reconciliation,
+      hourly publication, then real E2E/close. Child SSOT:
+      `docs/superpowers/specs/2026-08-11-life-manager-cfo-agent-usage-capture-design.md`.
 - [ ] **CFO-2a3** Add billing-export/invoice reconciliation; confirmed cost supersedes provisional cost without
       deleting either record, and unexplained differences remain visible.
 - [ ] **CFO-2a3b** Confirm only provider-supported billing dimensions. Shared-project business costs use a versioned
