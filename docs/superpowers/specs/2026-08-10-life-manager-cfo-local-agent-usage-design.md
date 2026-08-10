@@ -201,7 +201,9 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 | 2a2a.2 ✅ | Pure batch reducer dedupes source-row refs and reports runner-ID collisions without dropping rows | 2 files, +69/-2 LOC |
 | 2a2a.3 ✅ | Append-only byte cursor detects committed-prefix defects and runs in the normal CFO suite | 3 files, +96/-1 LOC |
 | 2a2a.4 ✅ | Versioned loop/task mapping yields attributed or visibly unattributed rows | 3 files, +51/-1 LOC |
-| 2a2a.5 NEXT | Local append/storage + OTel links accepted rows without exposing content | <=3 files per sub-slice |
+| 2a2a.5a NEXT | Pure collector composes scanner, mapping, and reducer; state exists only after reducer success | 3 files, <=100 added LOC |
+| 2a2a.5b | Atomically persist only checkpoint/batch receipts; do not duplicate the raw usage ledger | <=3 files, <=100 added LOC |
+| 2a2a.5c | One content-free internal OTel batch span links checkpoint and counts; it is not token truth | <=3 files, <=100 added LOC |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
 
 ## Acceptance
