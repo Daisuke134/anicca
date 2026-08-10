@@ -31,10 +31,12 @@ snapshot was no later than the scheduled start minus ten minutes. Incomplete rac
 zero odds, non-win bet types, and post-cutoff candidates were excluded without
 inventing zero values.
 
-The output contains deterministic opaque identifiers and normalized schema metadata
-only. It contains no horse/person names, odds values, body-weight values, result or
-payout fields, raw CSV rows, credentials, or archive members. The private ZIPs remain
-outside Git at:
+Private Mac-local normalized records contain deterministic opaque identifiers,
+normalized numeric `odds`, and may contain numeric `body_weight_kg` for parser/audit
+input. These values remain inside the private process. The committed redacted
+evidence and `AuditReport` export no numeric odds or weights, no horse/person names,
+result or payout fields, raw CSV rows, credentials, or archive members. The private
+ZIPs remain outside Git at:
 
 `/Users/anicca/Library/Application Support/Anicca/horse-racing/raw/nar/`
 
@@ -42,7 +44,3 @@ outside Git at:
 returned `record_count=7`, `race_count=7`, `model_ready=false`,
 `settled_payback_rows=0`, and `cash_authorized=false`. This is a materialized
 private-shadow data result, not a model or purchase authorization.
-
-Private normalized records contain numeric odds and may contain a numeric body weight
-inside the Mac-local process. The committed redacted evidence and audit report export
-none of those values: redacted evidence exports none of the numeric odds or weights.

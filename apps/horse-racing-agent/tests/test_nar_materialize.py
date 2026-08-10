@@ -250,11 +250,12 @@ def test_excludes_nonpositive_extra_runner_key_before_odds_filter(tmp_path: Path
 
 
 def test_evidence_distinguishes_private_numeric_fields_from_redacted_export():
-    text = EVIDENCE_PATH.read_text().lower()
-    assert "private normalized records" in text
+    text = " ".join(EVIDENCE_PATH.read_text().lower().split())
+    assert "private mac-local normalized records" in text
     assert "numeric odds" in text
-    assert "redacted evidence" in text
-    assert "exports none" in text
+    assert "redacted evidence and `auditreport` export no numeric odds or weights" in text
+    assert "the output contains deterministic opaque identifiers and normalized schema metadata only" not in text
+    assert "it contains no horse/person names, odds values, body-weight values" not in text
 
 
 def test_excludes_race_after_cutoff_without_inventing_zero(tmp_path: Path):
