@@ -24781,3 +24781,10 @@
 {"ts":1786333645,"wake_id":"00MSMOXIKG89E2E2AC22E347ED","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786333793,"wake_id":"00MSMP0OLFF2752AEDA7AC4D69","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786333923,"wake_id":"00MSMP3GIV1320973AB98A4FC2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786334077,"wake_id":"00MSMP6RAK8F9C9D4209E54BBC","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786334203,"wake_id":"00MSMP9H0A294F7651777741C3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786334332,"wake_id":"00MSMPC86J6F3ED95450004BC0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786334460,"wake_id":"00MSMPEYZIA144DC08CBA34624","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786334587,"wake_id":"00MSMPHPA647ACE5E7F2604029","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paying agents USDC for data labeling or AI tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore"}
+{"ts":1786334717,"wake_id":"00MSMPKHQACC6033FA40924DF5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786334847,"wake_id":"00MSMPN9GF721FEFABA3194816","kind":"narrate","sleep_s":120,"model":"auto"}
