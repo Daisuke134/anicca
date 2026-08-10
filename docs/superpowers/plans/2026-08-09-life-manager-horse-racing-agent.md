@@ -38,6 +38,7 @@
 | live orders/payments | 0 |
 | revenue / real P&L | 0 |
 | observed purchase-account credential evidence | NOT_OBSERVED |
+| eligible bank-account evidence | MUFG observed through Moneytree CFO source |
 
 JRA official resultはcommits `526381236` + `e79ed1d11`で12 actual rows、`PASS_PRIVATE_SHADOW`、private raw 700/600、`cash_authorized=false`。NARの46/456/327274行、payback 0 pre-settlementはcommit `6a6cdd1356ea9f1d5064cdd24bb05d4342fe6730`から始まるredacted observationで、commits `33ef30c1d` + `a289babba`により`PASS_PRIVATE_SHADOW`。NAR ephemeral raw archiveは不在で`CANNOT_RECOMPUTE_RAW_ARCHIVE_ABSENT`である。backtest、SHADOW、Telegram、orders、revenueは現在値0としてblocked表示する。
 
@@ -96,7 +97,7 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
 | 11 | HRA-5 CFO adapter | blocked by HRA-4b and CFO-0c | `cfo.py` and `test_cfo.py` |
-| 12 | HRA-6 terms/order/tax/receipt gate | **order permission attested / account credential NOT_OBSERVED** | no provider recontact; account/login, tax/cap/idempotency/receipt/reconciliation remain |
+| 12 | HRA-6 terms/order/tax/receipt gate | **SPAT4+MUFG selected / wagering credential NOT_OBSERVED** | eligible bank observed; official signup/login, tax/cap/idempotency/receipt/reconciliation remain |
 | 13 | HRA-7 owner-local-day ¥100 gate | blocked future gate | document only, no bet execution |
 | 14 | HRA-8 scale review | blocked future gate | evidence-driven target only |
 
@@ -553,6 +554,8 @@ Observed official terms evidence:
 Current decision: the public-terms findings and the already-sent Rakuten inquiry remain historical evidence, but they no longer block implementation. The owner's direct statement is the SSOT for autonomous-order permission across the target official purchase sites: `USER_ATTESTED_AUTONOMOUS_ORDER_APPROVAL`, document not independently verified, no provider recontact. HRA-6 still fails closed on tax boundary, credential isolation, owner-local-day cap, idempotent submit, official purchase/settlement receipt, timeout/duplicate handling, and reconciliation. `PurchaseExecutor` remains disabled until those non-permission gates and the data/model/Telegram/CFO dependencies pass.
 
 Credential inventory truth: at 2026-08-10T12:52+09:00, read-only checks found no purchase-account evidence in the configured Gmail history, no target-domain cookie rows across the existing Cloak cookie databases, and no exact target-host internet-password entry in macOS Keychain. The two JRA-related Gmail threads were JRA-VAN data inquiries, and the one Rakuten Keiba thread was the permission inquiry; these are not wagering-account receipts. Record `account_credential_state=NOT_OBSERVED`, not `ACCOUNT_ABSENT`. Do not treat generic payment information as an official wagering account. Before LIVE_CASH, reuse a separately observed existing official account or complete the provider's official signup/login flow, then isolate credentials without exporting their values.
+
+Account-route decision: use `SPAT4 + MUFG` as the first NAR live-order path. NAR's official purchase guide states that SPAT4 covers all local races, while Rakuten Keiba requires Rakuten Bank, OddsPark excludes the four South Kanto tracks and Hokkaido, and JRA internet voting has narrower sale-day availability: https://www.keiba.go.jp/beginner/step4.html. SPAT4's official bank application page lists MUFG as an accepted account and says an MUFG Direct contract is not required for application: https://www.nankankeiba.com/info/spat4/netbank/accountapplication.html. The CFO SSOT records a live Moneytree read of one owner MUFG deposit account at `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md`; this changes `bank_eligibility_state` to `OBSERVED_MUFG_VIA_MONEYTREE` but does not create or reveal SPAT4 credentials. Task 12 must use the official MUFG application route, preserve bank/SPAT4 secrets outside Git and Telegram, and verify the resulting SPAT4 login plus purchase-history inquiry before LIVE_CASH.
 
 Tax ledger decision: CFO stores gross payout, winning-ticket stake, losing-ticket stake, refund/void, purchase timestamp, and official receipt ID as separate immutable fields. It must not infer the user's final tax classification, net all losing tickets, or treat the ¥500,000 temporary-income deduction as a blanket tax-free betting allowance. Before LIVE_CASH scaling, HRA-6 requires current fact-pattern review by a qualified Japanese tax professional or equivalent authoritative determination.
 
