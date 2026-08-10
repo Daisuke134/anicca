@@ -9,6 +9,7 @@ const { buildCfoDailyReportFromRecovery } = require("../lib/cfo-recovery-snapsho
 const { renderCfoTelegram } = require("../lib/cfo-telegram.js");
 const { deliverCfoTelegram } = require("../lib/cfo-telegram-send.js");
 const { createCfoSupabaseRpc } = require("../lib/cfo-supabase-rpc.js");
+const { runLocalAgentUsageCollection } = require("../lib/cfo-local-agent-usage-runner.js");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const rpc = createCfoSupabaseRpc("cfo_hourly_local_failed:");
@@ -80,7 +81,7 @@ async function runHourlyCfo(options = {}) {
     return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, nextRevision, true, delivered.status === "sent", recovery.status === "recovered");
   } catch { return summary("failed", reportingDate, null, false, false, false); }
 }
-async function main(options = {}) { const result = await runHourlyCfo(options); const stdout = options && typeof options.stdout === "function" ? options.stdout : (line) => process.stdout.write(`${line}\n`); stdout(JSON.stringify(result)); return { exitCode: ["sent", "quiet"].includes(result.status) ? 0 : 1, summary: result }; }
+async function main(options = {}) { try { const env = options.env || process.env, now = options.now, usage = pick(options, "runLocalAgentUsageCollection", runLocalAgentUsageCollection); await usage({ env, ...(typeof now === "function" ? { now } : {}) }); } catch {} const result = await runHourlyCfo(options); const stdout = options && typeof options.stdout === "function" ? options.stdout : (line) => process.stdout.write(`${line}\n`); stdout(JSON.stringify(result)); return { exitCode: ["sent", "quiet"].includes(result.status) ? 0 : 1, summary: result }; }
 
 if (require.main === module) main().then((result) => { process.exitCode = result.exitCode; });
 

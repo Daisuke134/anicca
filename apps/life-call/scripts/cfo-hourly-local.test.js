@@ -48,7 +48,7 @@ function reordered(value) { if (Array.isArray(value)) return value.map(reordered
 
 function baseOptions(overrides = {}) {
   return {
-    env: ENV, uid: UID, chatId: CHAT, now: () => CLOCK,
+    env: ENV, uid: UID, chatId: CHAT, now: () => CLOCK, runLocalAgentUsageCollection: async () => undefined,
     readMoneytreeViaCodex: async () => moneytreeRead(100),
     resolveCfoDailyRun: async () => ({ public_ref: "30000000-0000-4000-8000-000000000001", reporting_date: DATE, run_id: RUN, time_zone: "Asia/Tokyo", created_at: CLOCK.toISOString() }),
     latestSnapshot: async () => null,
@@ -151,7 +151,7 @@ test("recovery sends only the recovered report", async () => {
 test("provider/config failure has one fixed redacted result", async () => {
   const output = [];
   const result = await main({
-    env: { ...ENV, SENTINEL_AMOUNT: "999999", SENTINEL_ACCOUNT: "account-secret" }, uid: UID, chatId: CHAT, now: () => CLOCK,
+    env: { ...ENV, SENTINEL_AMOUNT: "999999", SENTINEL_ACCOUNT: "account-secret" }, uid: UID, chatId: CHAT, now: () => CLOCK, runLocalAgentUsageCollection: async () => undefined,
     readMoneytreeViaCodex: async () => moneytreeRead(100), latestSnapshot: async () => null,
     resolveCfoDailyRun: async () => ({ public_ref: "30000000-0000-4000-8000-000000000001", reporting_date: DATE, run_id: RUN, time_zone: "Asia/Tokyo", created_at: CLOCK.toISOString() }),
     stdout: (line) => output.push(line),
@@ -161,4 +161,13 @@ test("provider/config failure has one fixed redacted result", async () => {
   assert.equal(output.length, 1);
   assert.deepEqual(JSON.parse(output[0]), { status: "failed", reportingDate: DATE, revision: null, appended: false, delivered: false, recovered: false });
   assert.doesNotMatch(output[0], /999999|account-secret|service-role-fixture|SENTINEL/i);
+});
+
+test("main runs local usage once before finance and isolates receipts or hostile errors", async () => {
+  for (const usage of [() => ({ status: "partial", hostile: "LEAK" }), () => { throw new Error("HOSTILE_USAGE"); }, async () => { throw new Error("HOSTILE_ASYNC_USAGE"); }]) {
+    const events = [], output = [], persisted = snapshotRow(REF1, 100), delivered = [], clock = () => CLOCK;
+    const result = await main({ ...baseOptions({ now: clock, latestSnapshot: async () => persisted, runLocalAgentUsageCollection: input => { events.push([input.env, input.now]); return usage(); }, readMoneytreeViaCodex: async () => { events.push("finance"); return moneytreeRead(100); }, deliverCfoTelegram: async input => { delivered.push(input); return { status: "sent", messageId: 42 }; } }), stdout: line => output.push(line) });
+    assert.equal(events.length, 2); assert.strictEqual(events[0][0], ENV); assert.strictEqual(events[0][1], clock); assert.equal(events[1], "finance");
+    assert.deepEqual(result, { exitCode: 0, summary: { status: "sent", reportingDate: DATE, revision: 1, appended: false, delivered: true, recovered: false } }); assert.deepEqual(JSON.parse(output[0]), result.summary); assert.strictEqual(delivered[0].snapshot, persisted.report_payload); assert.doesNotMatch(output[0], /LEAK|HOSTILE_USAGE/);
+  }
 });
