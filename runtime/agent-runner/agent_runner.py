@@ -259,6 +259,7 @@ def extract_claude_payload(stdout_path: Path, result_path: Path) -> str:
 def append_usage_event(path: Path, event: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(path, os.O_CREAT | os.O_WRONLY | os.O_APPEND, 0o600)
+    os.fchmod(descriptor, 0o600)
     with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
         handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
@@ -927,6 +928,9 @@ def run() -> int:
             )
         task_config = config["task_classes"][parsed.task_class]
         candidates = task_config["candidates"]
+        for value, reason in ((parsed.loop, "loop"), (parsed.task_label, "task label")):
+            if not isinstance(value, str) or not value.strip() or value != value.strip():
+                raise ValueError(f"{reason} must be a nonempty trimmed string")
         selected_provider = os.environ.get("AGENT_RUNNER_PROVIDER", "").strip()
         if selected_provider:
             if selected_provider not in config.get("providers", {}):
@@ -937,6 +941,17 @@ def run() -> int:
             ]
             if not candidates:
                 raise ValueError("selected provider is not a candidate for task class")
+        if any(
+            not isinstance(candidate, dict)
+            or not isinstance(candidate.get("provider"), str)
+            or not candidate["provider"].strip()
+            or candidate["provider"] != candidate["provider"].strip()
+            or not isinstance(candidate.get("model"), str)
+            or not candidate["model"].strip()
+            or candidate["model"] != candidate["model"].strip()
+            for candidate in candidates
+        ):
+            raise ValueError("candidate provider/model must be nonempty trimmed strings")
         timeout_seconds = int(task_config.get("timeout_seconds", config["timeout_seconds"]))
         route = str(task_config.get("route") or f"{parsed.task_class}:configured")
         escalation_reason = (
@@ -990,6 +1005,12 @@ def run() -> int:
             or daily_token_budget <= 0
         ):
             raise ValueError("enabled token budgets and task reservation must be positive")
+        usage_value = os.environ.get("ANICCA_USAGE_LEDGER", "").strip() or str(DEFAULT_USAGE_LEDGER)
+        usage_path = Path(usage_value).expanduser().resolve()
+        attempt_value = os.environ.get("ANICCA_USAGE_ATTEMPT_LEDGER", "").strip() or str(usage_path.with_name("agent-usage-attempts.jsonl"))
+        attempt_ledger_path = Path(attempt_value).expanduser().resolve()
+        if usage_path == attempt_ledger_path:
+            raise ValueError("usage and attempt ledgers must differ")
         # Admission must reserve an upper bound, not the task class's planning
         # estimate. Settlement replaces this hold with provider-reported usage,
         # but a provider may already have spent far more than the estimate by
@@ -1032,6 +1053,7 @@ def run() -> int:
     attempts: list[dict[str, Any]] = []
     selected: dict[str, Any] | None = None
     budget_blocked: dict[str, Any] | None = None
+    attempt_capture_failed = False
     last_budget: dict[str, Any] = {
         "status": "disabled",
         "reason": "budget_not_configured",
@@ -1063,6 +1085,16 @@ def run() -> int:
                 break
         effective_candidate = dict(candidate)
         provider = effective_candidate["provider"]
+        attempt_event_id = uuid.uuid4().hex[:24]
+        attempt_started = utc_now()
+        try:
+            append_usage_event(attempt_ledger_path, {"version": 1, "event_id": attempt_event_id, "timestamp": attempt_started, "loop": parsed.loop, "task_label": parsed.task_label, "attempt": index, "provider": provider, "model": effective_candidate.get("model")})
+        except OSError:
+            if budget_enabled:
+                settlement = budget_ledger.settle(event_id=budget_event_id, actual_tokens=0, measurement="unavailable")
+                last_budget.update(charged_tokens=0, measurement="unavailable", pass_consumed_after_tokens=settlement["pass_consumed_after_tokens"], daily_consumed_after_tokens=settlement["daily_consumed_after_tokens"])
+            attempt_capture_failed = True
+            break
         provider_config = config.get("providers", {}).get(provider, {})
         profile_openclaw: dict[str, Any] = {}
         if provider == "openclaw" and candidate_profile:
@@ -1076,7 +1108,6 @@ def run() -> int:
         result_path = evidence_dir / f"attempt-{index:02d}.result.json"
         for stale_path in (stdout_path, stderr_path, result_path):
             stale_path.unlink(missing_ok=True)
-        attempt_started = utc_now()
         attempt_started_ns = time.time_ns()
         monotonic_start = time.monotonic()
         session_id = f"agent-runner-{uuid.uuid4().hex}" if provider == "openclaw" else None
@@ -1183,6 +1214,7 @@ def run() -> int:
         )
 
         row = {
+            "event_id": attempt_event_id,
             "attempt": index,
             "started_at": attempt_started,
             "finished_at": utc_now(),
@@ -1223,16 +1255,13 @@ def run() -> int:
             "quota": provider_config.get("quota"),
             "usage": usage,
         }
-        usage_path = Path(os.environ.get("ANICCA_USAGE_LEDGER", DEFAULT_USAGE_LEDGER))
         provider_name = usage.get("upstream_provider") or {
             "codex": "openai", "claude": "anthropic",
             "claude-direct": "anthropic",
         }.get(provider, provider)
         usage_event = {
             "version": 1,
-            "event_id": hashlib.sha256(
-                f"{evidence_dir}:{index}".encode("utf-8")
-            ).hexdigest()[:24],
+            "event_id": attempt_event_id,
             "timestamp": row["finished_at"],
             "loop": parsed.loop,
             "task_label": parsed.task_label,
@@ -1311,6 +1340,8 @@ def run() -> int:
     print(json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
     if selected:
         return 0
+    if attempt_capture_failed:
+        print("agent-runner: usage attempt capture failed", file=sys.stderr)
     return 75 if budget_blocked else 1
 
 
