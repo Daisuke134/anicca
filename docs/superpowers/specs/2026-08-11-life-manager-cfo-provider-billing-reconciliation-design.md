@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3.2b1 complete; CFO-2a3.2b2 local parse and immutable append is next |
+| Status | ACTIVE — CFO-2a3.2 and isolated real E2E complete; CFO-2a3.3b hourly aggregate publication is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains unchanged until real E2E passes |
 | First provider | Google Cloud monthly invoice delivered to the already-authenticated local Gmail account |
@@ -116,7 +116,7 @@ allocation so narrower business totals can be derived honestly.
 
 - [x] **CFO-2a3.1 — Pure contract.** Normalize already-extracted Google invoice fields and reconcile one confirmed
       total against one provisional total. Exact arithmetic, frozen output, redacted failures.
-- [ ] **CFO-2a3.2 — Local source.** Extend the existing `gog` transport with one read-only exact-invoice operation;
+- [x] **CFO-2a3.2 — Local source.** Extend the existing `gog` transport with one read-only exact-invoice operation;
       download one PDF to a private temporary directory, verify sender/attachment/hash, extract with existing
       `pdftotext`, normalize, append one immutable local receipt, and remove temporary content after parsing.
   - [x] **CFO-2a3.2a — Locator.** Find the latest exact Google invoice and return only safe attachment locator
@@ -127,12 +127,17 @@ allocation so narrower business totals can be derived honestly.
     - [x] **CFO-2a3.2b1 — Private download.** Download the located PDF once to a caller-owned absolute private path
           and return only frozen transfer metadata. No file reading, parsing, hashing, persistence, or scheduling.
           Plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-download.md`.
-    - [ ] **CFO-2a3.2b2 — Parse and append.** Verify the downloaded file, extract locally with `pdftotext`, normalize
+    - [x] **CFO-2a3.2b2 — Parse and append.** Verify the downloaded file, extract locally with `pdftotext`, normalize
           through CFO-2a3.1, append one deduplicated immutable receipt, and always remove temporary content. Plan:
           `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-local-capture.md`.
 - [ ] **CFO-2a3.3 — Real E2E and hourly publication.** Read the latest real invoice without sending Telegram, prove
       the normalized total matches the PDF arithmetic, prove rerun dedupe and source immutability, then publish only
       confirmed/unresolved aggregate counts through the existing hourly runner. Close CFO-2a3.
+  - [x] **CFO-2a3.3a — Isolated real E2E.** Actual authenticated Gmail PDF, actual `pdftotext`, independent
+        arithmetic, normalized total, immutable dedupe, modes, raw-data exclusion, and cleanup all pass without
+        sending or changing live state.
+  - [ ] **CFO-2a3.3b — Hourly aggregate publication.** Compose the completed local source into the existing hourly
+        runner and publish only confirmed/unresolved counts through its existing local usage evidence boundary.
 - [ ] **CFO-2a3b — Provider dimensions and allocation.** Obtain project/service/SKU dimensions from an official
       Cost Table CSV or billing export; use versioned allocation and retain an unallocated remainder.
 - [ ] **CFO-2a3c — Agent subscriptions.** Treat actual Codex/Claude receipts as cash cost and API-equivalent token
@@ -220,3 +225,19 @@ immutable write and `existing` on a validated rerun. The parser accepts only the
 three-part uppercase-alphanumeric billing account ID, same-month month-boundary service dates, internally identical
 repeated Yen totals, and exact arithmetic; every unknown layout fails closed. No scheduler or Telegram call is part
 of CFO-2a3.2b2.
+
+## 13. CFO-2a3.2b2 and CFO-2a3.3a completion evidence
+
+- Luna changed exactly three planned files: one 30-line production module, one 66-line two-case test, and one
+  `test:cfo` registration token. RED failed only because the new module did not exist.
+- Controller review found malformed comma grouping could be misread and cleanup errors could be swallowed. The same
+  Luna tightened amount/account token boundaries and made both cleanup paths fail with one fixed redacted error.
+- Final GREEN passed focused `2/2`, CFO `309/309`, full `npm test`, syntax, diff, and LOC checks; Sol independently
+  repeated all of them after the last code change.
+- Sol's isolated real E2E used the authenticated Gmail account and actual `pdftotext`. Safe assertions proved first
+  `appended`, rerun `existing`, one byte-identical record, exact confirmed JSON, `0600` file, `0700` directories,
+  frozen receipts, repeated PDF values consistent, exact invoice arithmetic, confirmed total equal to the PDF,
+  raw account/labels absent, two private PDF temps removed, and isolated state removed. No private value was printed.
+- No parser/storage framework, OCR, LLM, DB, retry, OTel, scheduler, Telegram call, or live-state write was added.
+  A fresh Sol reviewer could not be allocated because the collaboration service returned `agent thread limit
+  reached`; no independent reviewer result is claimed.
