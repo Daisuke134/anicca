@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a3b.1 complete; CFO-2a3b.2 real official dimension source is next |
+| Status | M2 ACTIVE — CFO-2a3b.1 complete; CFO-2a3b.2 awaits one-time Cloud Console reauthentication |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |

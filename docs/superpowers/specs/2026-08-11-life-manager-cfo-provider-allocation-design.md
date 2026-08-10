@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3b.1 complete; CFO-2a3b.2 real dimension source is next |
+| Status | ACTIVE — CFO-2a3b.1 complete; CFO-2a3b.2 awaits one-time Cloud Console reauthentication |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; no new DB, scheduler, or cloud export in the first slice |
 | Confirmed source | Existing immutable Google Cloud invoice total from CFO-2a3 |
@@ -132,6 +132,23 @@ CFO-2a3b.2 does not begin from a fabricated CSV fixture. It begins only after on
 under default filters with required columns, or one official standard export table actually exists. Cloud Console
 currently needs password reauthentication; this remains a visible source-acquisition blocker, not a reason to invent
 provider rows or silently label estimates as confirmed allocation.
+
+Measured source checks are now exhaustive for the local-first routes:
+
+- Downloads/Documents contain zero billing/cost/invoice CSV candidates.
+- Gmail contains three Google-domain CSV attachments, but none has a Google Cloud/invoice subject or a cost/invoice
+  filename; they are not provider-billing evidence and were not downloaded into CFO state.
+- Public Cloud Billing v1/v1beta discovery has no account-cost-row or export-setting method; public GitHub searches
+  found no supported cost-table API. Private Console endpoints are rejected as an everlasting runtime dependency.
+- The active gcloud identity can see one open billing account and one configured project, but there are zero BigQuery
+  datasets and zero billing-export tables.
+- A browser-leased, owner-created Cost Table tab reached the known Google account's password reauthentication page.
+  The password field was empty and the saved-password candidate check remained empty. No password was read or
+  submitted; the tab was closed and the `interactive:dais` lease was released.
+
+**Exact unblock:** Dais signs in once to Google Cloud Console in the existing CloakBrowser `daily-driver` profile.
+No credential is sent to the agent. After that, Sol acquires the guarded browser lease and downloads one default-filter
+Cost Table CSV to a private path; only then does Luna implement normalization against the observed header/schema.
 
 ## 9. CFO-2a3b.1 completion evidence
 
