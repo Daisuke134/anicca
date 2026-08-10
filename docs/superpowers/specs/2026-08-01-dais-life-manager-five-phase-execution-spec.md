@@ -6985,7 +6985,13 @@ Ponytail `full`でItem14の現行production境界を再測定した。unauthenti
 
 plan `docs/superpowers/plans/2026-08-11-connector-connpass-applied-bundle-14a.md`はminimal evidence production/test 2 filesだけ。既存`createConnpassEvidenceStore`、checkpoint、Calendar、Telegram、bundle scannerを再利用し、Connpassだけparent-verified actual pageをfull-page PNG化する。discovery/registration/Harness/runner/Calendar gate/provider order/schedule変更0。人工Luma failure hookはlive acceptanceをsyntheticにするため作らず、Item14のproduct invariantを「Luma external effect 0（bounded known-no-effect / exact reuse / eligible exhaustion）→同じowned pageで実Connpass bundle」と明文化する。現在はLuma free/open 10、Calendar-free 0なのでtruthful exhaustionを使う。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗311。これ以外の残TODO一覧は履歴）
+### O1B-25進捗312（Item 14A0 / fresh review store tuple-binding fix-first）
+
+Luna REDはConnpass evidence provider descriptor未登録を25 pass / 1 failで再現し、GREENはminimal evidence production/test 2 files、production +30/-3、test +64へ縮約した。Connpass exact candidate/current page URL、actual full-page screenshot、setContent/navigation 0、created→reused、identity/status fail-closedを追加し、Luna focused 27/27 + three stores 5/5、Sol独立expanded 63/63がPASSした。
+
+fresh Sol reviewは`fix-first`。既存`connpass-evidence-store` readerがreceiptの`event_ref/artifact_sha256`を返さず、minimal evidence側のoptional照合を通るため、保存receiptの意味的改変をprovider ID再計算で検出できない。artifact markerのevent refもread contractでは期待eventへbindingできない。4 files/100 LOC超へのscope膨張を避け、evidence diffはreversible stash `item14a-evidence-wiring-frozen`へ退避した。prerequisite plan `docs/superpowers/plans/2026-08-11-connector-connpass-evidence-store-hardening-14a0.md`はConnpass store production/test 2 filesだけで、receipt exact keys + tenant/event/time/artifact provider ID再計算、artifact marker exact `{sha256}` + object bytes digestを固定する。Item14未完、event Submit 0、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗312。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
