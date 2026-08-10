@@ -289,7 +289,7 @@ def audit_records(
         blockers.append("STALE_OFFICIAL_RECORD")
     if official_zero_rows:
         blockers.append("NO_PARSED_OFFICIAL_ROWS")
-    if settled_payback_rows > 0 and latest_official and unmatched_settlement:
+    if settled_payback_rows > 0 and (not latest_official or unmatched_settlement):
         blockers.append("NO_MATCHING_SETTLED_PAYBACK")
 
     model_ready = bool(
