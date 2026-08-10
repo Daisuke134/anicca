@@ -262,5 +262,5 @@ def audit_records(
         allowed_scopes=tuple(sorted({manifest["allowed_scope"] for manifest in manifest_map.values()})),
         cash_authorized=False,
         model_ready=model_ready,
-        blockers=tuple(blockers),
+        blockers=tuple(sorted(blockers)),
     )
