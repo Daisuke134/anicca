@@ -15,6 +15,7 @@ const { createMinimalProductionOperations } = require("./connector-minimal-opera
 const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js");
 const { createConnpassScriptFirstWorkflow } = require("./connector-connpass-workflow.js");
 const { createPeatixDiscoveryWorkflow } = require("./connector-peatix-workflow.js");
+const { createMeetupScriptFirstWorkflow } = require("./connector-meetup-workflow.js");
 const { readLumaFormProfile } = require("./luma-form-profile.js");
 const {
   createBoundedActionProposer,
@@ -35,6 +36,7 @@ const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
 const LUMA_WORKFLOW_VERSION = "luma_registration_v1";
 const CONNPASS_WORKFLOW_VERSION = "connpass_registration_v1";
 const PEATIX_WORKFLOW_VERSION = "peatix_registration_v1";
+const MEETUP_WORKFLOW_VERSION = "meetup_registration_v1";
 const LUMA_PAGE_STATE = "registration_page_v1";
 const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
 
@@ -126,6 +128,7 @@ function createProductionProviderRouter(options = {}) {
   const lumaWorkflow = options.lumaWorkflow;
   const connpassWorkflow = options.connpassWorkflow;
   const peatixWorkflow = options.peatixWorkflow;
+  const meetupWorkflow = options.meetupWorkflow;
   const actionCache = options.actionCache;
   const browserHarness = options.browserHarness;
   const performAction = options.performAction;
@@ -140,6 +143,9 @@ function createProductionProviderRouter(options = {}) {
     || (peatixWorkflow != null && (typeof peatixWorkflow.discoverCandidates !== "function"
       || typeof peatixWorkflow.runDirectAction !== "function"
       || typeof peatixWorkflow.readProviderState !== "function"))
+    || (meetupWorkflow != null && (typeof meetupWorkflow.discoverCandidates !== "function"
+      || typeof meetupWorkflow.runDirectAction !== "function"
+      || typeof meetupWorkflow.readProviderState !== "function"))
     || !actionCache || typeof actionCache.replay !== "function"
     || typeof actionCache.saveVerifiedRepair !== "function"
     || !browserHarness || typeof browserHarness.runFallback !== "function"
@@ -147,15 +153,17 @@ function createProductionProviderRouter(options = {}) {
   ) invalid();
 
   function selected(input) {
-    if (!input || !["luma", "connpass", "peatix"].includes(input.provider)) invalid();
+    if (!input || !["luma", "connpass", "peatix", "meetup"].includes(input.provider)) invalid();
     const workflow = input.provider === "luma" ? lumaWorkflow
-      : input.provider === "connpass" ? connpassWorkflow : peatixWorkflow;
+      : input.provider === "connpass" ? connpassWorkflow
+        : input.provider === "peatix" ? peatixWorkflow : meetupWorkflow;
     if (!workflow) invalid();
     return Object.freeze({
       input,
       workflow,
       workflowVersion: input.provider === "luma" ? LUMA_WORKFLOW_VERSION
-        : input.provider === "connpass" ? CONNPASS_WORKFLOW_VERSION : PEATIX_WORKFLOW_VERSION,
+        : input.provider === "connpass" ? CONNPASS_WORKFLOW_VERSION
+          : input.provider === "peatix" ? PEATIX_WORKFLOW_VERSION : MEETUP_WORKFLOW_VERSION,
     });
   }
 
@@ -266,6 +274,10 @@ function createMinimalProductionDependencies(options = {}) {
     onDiscoveryAudit: operations.recordPeatixDiscoveryAudit || (() => {}),
     readAttendeeProfile: () => options.peatixAttendeeProfile,
   });
+  const meetupWorkflow = options.meetupWorkflow || createMeetupScriptFirstWorkflow({
+    now,
+    onDiscoveryAudit: operations.recordMeetupDiscoveryAudit || (() => {}),
+  });
   const actionCache = options.actionCache || createConnectorActionCache({
     path: path.join(stateDir, "action-cache.json"),
   });
@@ -281,6 +293,7 @@ function createMinimalProductionDependencies(options = {}) {
     lumaWorkflow,
     connpassWorkflow,
     peatixWorkflow,
+    meetupWorkflow,
     inspectControls: inspectPageControls,
     proposeAction,
     operateControl: operatePageControl,
@@ -290,6 +303,7 @@ function createMinimalProductionDependencies(options = {}) {
     lumaWorkflow,
     connpassWorkflow,
     peatixWorkflow,
+    meetupWorkflow,
     actionCache,
     browserHarness,
     performAction: browserHarness.performAction,

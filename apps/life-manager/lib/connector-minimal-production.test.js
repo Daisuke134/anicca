@@ -347,6 +347,40 @@ test("production provider router routes Peatix cache direct and readback on one 
   assert.doesNotMatch(JSON.stringify(cached), /Private Name|private@example\.test/);
 });
 
+test("official production factory routes Meetup after Peatix on the same page", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-meetup-"));
+  const page = Object.freeze({ page_id: "owned-page-meetup" });
+  const candidate = Object.freeze({
+    provider: "meetup", event_ref: "meetup-event://event/315756352",
+    canonical_url: "https://www.meetup.com/tokyo-builders/events/315756352/",
+  });
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  const meetupWorkflow = {
+    async discoverCandidates(input) { assert.equal(input.page, page); return [candidate]; },
+    async runDirectAction(input) { assert.equal(input.page, page); return { status: "failed", safe_reason: "meetup_direct_requires_harness" }; },
+    async readProviderState(input) { assert.equal(input.page, page); return { status: "registered" }; },
+  };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-meetup-1",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      browserRail: { open() {}, navigate() {}, close() {} }, calendar: { ready() { return true; } },
+      calendarReader: { async readCalendarGaps() { return []; } }, lumaWorkflow: emptyWorkflow,
+      connpassWorkflow: emptyWorkflow, peatixWorkflow: emptyWorkflow, meetupWorkflow,
+      browserHarness: { async runFallback(input) { assert.equal(input.page, page); return { status: "completed" }; }, async performAction() {} },
+      actionCache: { async replay() { return { status: "cache_miss" }; }, saveVerifiedRepair() {} },
+      evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} },
+    });
+    assert.deepEqual(await dependencies.discoverCandidates("meetup", [], page), [candidate]);
+    assert.deepEqual(await dependencies.runDirectAction({ provider: "meetup", candidate, page }), { status: "failed", safe_reason: "meetup_direct_requires_harness" });
+    assert.deepEqual(await dependencies.runAgentFallback({ provider: "meetup", candidate, page }), { status: "completed" });
+    assert.deepEqual(await dependencies.readProviderState({ provider: "meetup", candidate, page }), { status: "registered" });
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("production calendar reader uses gog for exactly fourteen Tokyo calendar days", async () => {
   const calls = [];
   const calendar = Object.freeze({ kind: "gog", ready: () => true });

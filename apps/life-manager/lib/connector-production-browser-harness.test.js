@@ -393,6 +393,43 @@ test("production harness uses Peatix parent readback for a Peatix fallback", asy
   assert.equal(result.status, "completed");
 });
 
+test("production harness accepts Meetup and completes only after same-page parent registered readback", async () => {
+  const page = Object.freeze({ page_id: "owned-meetup-page" });
+  let operated = 0;
+  let readbacks = 0;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    connpassWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    peatixWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    meetupWorkflow: {
+      async readProviderState(input) {
+        assert.equal(input.page, page);
+        readbacks += 1;
+        return operated > 0 ? { status: "registered" } : { status: "absent" };
+      },
+    },
+    async inspectControls() {
+      return [{ control: "meetup_submit", kind: "button", label: "Attend", required: false, submittable: true }];
+    },
+    async proposeAction() { return { purpose: "submit", method: "ax_click", control: "meetup_submit" }; },
+    async operateControl(input) { assert.equal(input.page, page); operated += 1; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+
+  const result = await harness.runFallback({
+    provider: "meetup",
+    candidate: { event_ref: "meetup-event://event/315756352" },
+    page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/MEETUPTARGET1",
+    maxSteps: 2,
+    expectedState: "registered_or_pending",
+  });
+  assert.equal(result.status, "completed");
+  assert.equal(result.provider_state.status, "registered");
+  assert.equal(operated, 1);
+  assert.equal(readbacks, 1);
+});
+
 test("provider-neutral resolver returns only parent-owned Peatix/form values", async () => {
   const resolver = createPrivateValueResolver({
     readPeatixProfile: async () => ({ name: "Private Name", email: "private@example.test", family_name_kana: "サクラ", given_name_kana: "テスト", accept_organizer_privacy: true }),

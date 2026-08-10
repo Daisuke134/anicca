@@ -43,7 +43,7 @@ test("official native pass forwards only the bounded minimal wake contract", asy
 
     assert.deepEqual(result, { status: "circuit_open", safe_reason: "fixture" });
     assert.equal(observed.length, 1);
-    assert.deepEqual(observed[0].input.providers, ["luma", "connpass", "peatix"]);
+    assert.deepEqual(observed[0].input.providers, ["luma", "connpass", "peatix", "meetup"]);
     assert.equal(observed[0].input.maxConsecutiveFailures, 3);
     assert.equal(observed[0].input.maxWakeMs, 600_000);
     assert.equal(observed[0].input.maxAgentSteps, 10);
@@ -105,7 +105,7 @@ test("native Peatix profile is frozen at the factory boundary and invalid identi
     assert.deepEqual(factoryInput.peatixAttendeeProfile, { name: "Dais Example", email: "private@example.com", family_name_kana: VALID_KANA.family, given_name_kana: VALID_KANA.given, name_kanji: VALID_NAME_JA, name_hiragana: "さくら てすと", accept_organizer_privacy: true });
     assert.equal(Object.isFrozen(factoryInput), true);
     assert.equal(Object.isFrozen(factoryInput.peatixAttendeeProfile), true);
-    assert.deepEqual(wakeInputs[0].providers, ["luma", "connpass", "peatix"]);
+    assert.deepEqual(wakeInputs[0].providers, ["luma", "connpass", "peatix", "meetup"]);
     assert.equal("peatixAttendeeProfile" in wakeInputs[0], false);
     assert.doesNotMatch(JSON.stringify(wakeInputs[0]), /Dais Example|private@example\.com|family_name_kana|given_name_kana|name_kanji|name_hiragana|桜 太郎|さくら てすと|サクラ|テスト/);
     for (const override of [{ DAIS_LEGAL_NAME_ROMAJI: "" }, { DAIS_LEGAL_NAME_ROMAJI: "x".repeat(201) }, { GOG_ACCOUNT: "not-an-email" }]) {
