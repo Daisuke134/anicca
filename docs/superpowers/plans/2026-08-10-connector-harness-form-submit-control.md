@@ -51,3 +51,13 @@ Soft target: 2 files; production +20–35 LOC; tests +35–55 LOC.
 - `node --check` for both modified JavaScript files and `git diff --check`.
 - Fresh Sol correctness review, SSOT update, commit, push, then one schedule-unloaded official foreground wake.
 
+## Fresh-review amendments
+
+The first GREEN passed its focused tests but fresh Sol review found three Important gaps. They are part of this slice and must be RED/GREEN before acceptance:
+
+1. A submit-type control is `submittable` only when its form is the same form that contains the observed required answer controls. A cookie/preferences form submit must remain false even though it is form-associated and type submit. If the registration form has multiple submit controls, fail closed rather than expose multiple final effects.
+2. Read `element.value` as a public label only for an `input` whose type is `submit` or `image`; never for a generic button or answer input.
+3. Parent `performAction` must inspect the whole registered observation and reject a submit while any required answer control is incomplete, independent of the proposer.
+4. Repeated submit prevention must use the same-page form-submit effect rather than a control token, so a second submit token or DOM reindex cannot trigger a duplicate action before the page path/readback state changes.
+
+Add regressions for a cookie form with its own submit, a generic button with a private-looking value, injected early submit with a pending required field, two submit tokens on one form, and a reindexed submit token on the same page. Preserve the existing ability to submit once after required completion and again only after an exact page-path transition.
