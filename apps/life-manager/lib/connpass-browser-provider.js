@@ -31,8 +31,11 @@ async function readConnpassRegistrationStateOnPage(page) {
   let value;
   try {
     value = await page.evaluate(() => {
-      const path = String(location.pathname || "").toLowerCase();
-      const body = String(document.body && document.body.innerText || "").replace(/\s+/g, " ").trim();
+      const rawPath = String(location.pathname || "");
+      const path = rawPath.toLowerCase();
+      const bodyText = String(document.body && document.body.innerText || "");
+      const body = bodyText.replace(/\s+/g, " ").trim();
+      const lines = bodyText.split(/\r?\n/).map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean);
       const controls = [...document.querySelectorAll('button,a[role="button"],a.btn,input[type="submit"]')]
         .map((element) => String(element.innerText || element.value || element.getAttribute("aria-label") || "")
           .replace(/\s+/g, " ").trim()).filter(Boolean);
@@ -43,7 +46,7 @@ async function readConnpassRegistrationStateOnPage(page) {
       if (exact(["参加票を表示", "受付票を見る", "申し込みをキャンセル", "キャンセルする", "Registered"])) {
         return { state: "registered" };
       }
-      if (/抽選待ち|補欠|承認待ち|キャンセル待ち/.test(body)) return { state: "pending" };
+      if (/^\/event\/[1-9][0-9]*\/$/.test(rawPath) && ["抽選待ち", "補欠", "承認待ち", "キャンセル待ち"].some((marker) => lines.includes(marker))) return { state: "pending" };
       if (/受付終了|募集終了|満員|定員に達しました/.test(body)) return { state: "unavailable", reason: "closed" };
       if (exact(["このイベントに申し込む", "イベントに申し込む", "参加申し込み", "申し込む"])) {
         return { state: "absent" };
