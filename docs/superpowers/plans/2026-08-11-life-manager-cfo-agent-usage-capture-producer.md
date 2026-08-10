@@ -3,7 +3,7 @@
 > **For Luna:** use Superpowers test-driven-development and verification-before-completion. Luna owns production/test
 > edits; Sol owns this plan, review, final verification, state, commit, and push.
 
-**Status:** READY FOR LUNA — CFO-2a2b.1a is closed
+**Status:** COMPLETE — producer commits `ef233a90` + `a0fe0c35`; fresh Sol review: ship
 
 **Goal:** Before the shared agent runner can launch a provider, fsync one minimal attempt row; reuse its unique ID on
 the existing completion usage row so the later CFO join can detect a missing completion exactly.
@@ -41,13 +41,13 @@ Fixtures stay private. No paid provider, network, live ledger/evidence, Telegram
 
 ## GREEN
 
-- [ ] Resolve usage and attempt paths once. Default attempt path beside usage as `agent-usage-attempts.jsonl`; reject
+- [x] Resolve usage and attempt paths once. Default attempt path beside usage as `agent-usage-attempts.jsonl`; reject
   equal resolved paths before effects.
-- [ ] Validate non-empty `loop`, `task_label`, and every candidate `provider`/`model` before effects. Generate one
+- [x] Validate non-empty `loop`, `task_label`, and every candidate `provider`/`model` before effects. Generate one
   24-lowercase-hex ID per candidate attempt. Append the exact attempt schema with the existing locked,
   flush+fsync, `0600` writer before launch. On failure, settle a current reservation at zero, print one fixed redacted
   message, return nonzero, and launch no provider/fallback.
-- [ ] Reuse the ID as the completion `event_id`. Preserve success/failure, measurement, tokens, cost basis, evidence,
+- [x] Reuse the ID as the completion `event_id`. Preserve success/failure, measurement, tokens, cost basis, evidence,
   fallback, and result behavior. Add no retry, abstraction, service, DB, or OTel code.
 
 Use this direct production shape; do not introduce a helper or schema class:
@@ -84,7 +84,7 @@ self.assertEqual(attempt_ids, completion_ids)
 
 ## VERIFY / STATE
 
-- [ ] Run the five focused commands:
+- [x] Run the five focused commands:
   `python3 -m unittest skills.gig-work.tests.test_agent_runner.AgentRunnerContractTest.test_attempt_row_is_visible_before_launch_and_completion_reuses_id`,
   `python3 -m unittest skills.gig-work.tests.test_agent_runner.AgentRunnerContractTest.test_usage_completion_failure_leaves_durable_unmatched_attempt`,
   `python3 -m unittest skills.gig-work.tests.test_agent_runner.AgentRunnerContractTest.test_attempt_ledger_failure_blocks_all_providers_and_settles_zero`,
@@ -95,8 +95,17 @@ self.assertEqual(attempt_ids, completion_ids)
   `python3 -m py_compile skills/agent-runner/agent_runner.py skills/gig-work/tests/test_agent_runner.py`.
   Run `git diff --check`, `git diff --numstat`, and require exactly the two owned files with summed gross additions
   `<=100`. Luna edits no docs, live state, commit, or remote.
-- [ ] Fresh Sol review is retained because the user's explicit adversarial-review direction and global Sol/Luna routing
+- [x] Fresh Sol review is retained because the user's explicit adversarial-review direction and global Sol/Luna routing
   outrank the producer repository's generic Codex-review ban. It checks provider-before-persistence ordering, numeric
   truth, secret safety, and scope only; Luna fixes required issues in the same files.
-- [ ] Sol reruns gates, updates this plan and child/parent specs, commits/pushes the producer repo, then advances only to
+- [x] Sol reruns gates, updates this plan and child/parent specs, commits/pushes the producer repo, then advances only to
   CFO-2a2b.2.
+
+## Closure evidence
+
+- All five focused subprocess tests passed independently for Sol; compile and diff checks passed.
+- The full runner suite ran 62 tests with one existing config-drift error and one existing executable-fixture failure;
+  the untouched token-budget suite retains two existing `daily_scope` API-drift errors.
+- Fresh Sol review returned `ship`. Cumulative slice scope is exactly two files, `+80/-6`, below the 100-addition gate.
+- Producer commits `ef233a90` and `a0fe0c35` are pushed to `origin/feature/cfo-agent-usage-capture`; no paid provider,
+  live ledger, launchd, Telegram, DB, or cloud state was touched.

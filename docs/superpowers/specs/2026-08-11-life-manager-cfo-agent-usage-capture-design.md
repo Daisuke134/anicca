@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a complete; CFO-2a2b.1b producer boundary is active |
+| Status | ACTIVE — CFO-2a2b.1a/1b complete; CFO-2a2b.2 pure reconciliation is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -88,7 +88,8 @@ malformed, truncated, or unread evidence adds a named coverage exception. Until 
 
 - [x] **CFO-2a2b.1a — numeric truth:** absent optional values remain defaults; present invalid values are unavailable.
       Producer commit: `82a3b349`.
-- [ ] **CFO-2a2b.1b — producer boundary:** add the write-ahead attempt row and focused real-runner tests.
+- [x] **CFO-2a2b.1b — producer boundary:** write-ahead attempt row and focused real-runner tests. Producer commits:
+      `ef233a90` + `a0fe0c35`; 2 files, `+80/-6`; fresh Sol review: ship.
 - [ ] **CFO-2a2b.2 — pure reconciliation:** add the strict local attempt/usage join and immutable counts receipt.
 - [ ] **CFO-2a2b.3 — hourly publication:** wire the receipt into the one-hour loop and prove forced usage-persistence
       failure appears as missing coverage, never zero cost or a complete total.
