@@ -6700,7 +6700,29 @@ native runtime/write 37/39の2失敗は`expected connpass / actual peatix`で、
 session/target/page作成、schedule変更は0。Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを
 一度だけ実行し、required fieldの親method、form/confirm進行または次のexact safe boundary、dashboard増分、Gateway positive ID、cleanupを実測する。
 
-### Active remaining TODO SSOT（進捗266。これ以外の残TODO一覧は履歴）
+### O1B-25進捗267（required-parent method live proof / Japanese full-name boundary）
+
+push済みcommit `2ca1fc8f7`、schedule/Native/healthcheck/Healer/legacy bridge unloaded、process/lockなし、remote一致、`:9222` healthyで
+official foreground `skills/connector/run.sh`を一度実行した。`wake-57b1fcec2b743b251614c7a6`はCalendar 2,939ms、Luma 55,839ms、
+reset 223ms、Connpass 6,353ms、reset 497ms、Peatix 169,440msでsame owned pageを維持した。Lumaはwindow 16、free/open 9、
+calendar-free 0、Connpassは6/6/6/0/0、Peatixは100/100/87/56/18だった。
+
+Peatix先頭3候補はdirect action後、Harnessが162ms failure、15,752msで2 step、5,362msで1 step。agent evidenceはcontrol tokenだけで、
+候補2が`control_4`→`control_6`、候補3が別`fallback-2/step-1`の`control_4`を選択した。前wakeのagent-supplied methodは0で、
+全action methodを親がobserved kindから決める契約をlive実証した。runは`circuit_open / peatix_unknown_required_field / 3`、
+Gateway Telegram provider ID `10746`。final click、provider registration、Calendar write、PNG、applied bundle増分は0。
+
+final submitを持たない専用owned-target診断で同じcalendar-free候補18件の先頭3 formを再測定した。候補1の氏名とexact organizer privacyは
+親resolver可能。候補2は氏名だけ可能で、渋谷との関係、参加動機、発見経路、個人情報同意のsubjective required回答は未登録。
+候補3は電話だけ可能で、exact `お名前（漢字）`と`お名前（ひらがな）`が未解決だった。dashboardはHTTP 200、authenticated、
+event link 0、registration marker 0。production owned targetと診断targetはexact ID absent、lock/process absent、Git/remote一致を確認した。
+
+任意質問を推測して申込む案は棄却し、候補2はsafe skipを維持する。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-japanese-full-name.md`は既存mode-0600 identity SSOTの`candidate.name_ja`と
+validated Katakana family/givenだけから親in-memoryの漢字氏名・ひらがな氏名を作り、上記exact 2 labelsだけを解決する。
+private valueのmodel/log/state出力、profile write、arbitrary answer、browser action、schedule変更は0。Item 10B/14/19は未完。
+
+### Active remaining TODO SSOT（進捗267。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
