@@ -6396,7 +6396,23 @@ invalid fieldは`lastname_edit`と`firstname_edit`だけで、ruleは両方`requ
 `docs/superpowers/plans/2026-08-10-connector-peatix-kana-identity.md`はそれをmode-0600 private identity SSOTへ移し、
 native frozen profileへだけ渡す。推測transliteration、repo/state/logへの値保存、provider form変更はこのsliceで0。
 
-### Active remaining TODO SSOT（進捗248。これ以外の残TODO一覧は履歴）
+### O1B-25進捗249（Peatix private Kana identity boundary GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-kana-identity.md`をTDD実装した。REDはfocused 6件中4 pass・2 failで、
+factory profileの姓/名カナ欠落とidentity file欠損時の非fail-closedを再現した。production変更は`native-pass.js` 24行追加・1行変更、
+testは44行追加・3行変更の2 filesだけ。mode-0600 private identity SSOTから`candidate.name_kana.family/given`を読み、regular file、
+bounded size、exact mode、JSON shape、各1〜100文字の全角Katakana+長音を検証する。final path symlink、欠損、緩いmode、invalid JSON、
+empty、Hiragana、Kanji、Latin、digit、punctuation、control、overlengthはdependency/browser作成前にfail-closedする。
+
+既存application answerのlabelを除く2 segmentを値非表示でprivate SSOTへ移した。実fileはmode 0600、regular、family/given key、
+長さ3/4、character class valid。実値はrepo diff、test、wake input、result、Telegramへ0。factory profileだけが
+`family_name_kana/given_name_kana`を持ち、profile/configともfrozen、wake contractは不変。focused 6/6、syntax、diff check、
+実SSOTを使うbrowserなしfactory probeは全PASS。fresh Sol reviewはCritical 0・Important 0で`ship`。
+
+次の一件はPeatix providerがconfirm画面の測定済み`lastname_edit/firstname_edit`だけへprivate Katakana値をfillし、jQuery valid後に
+既存final boundaryを一回だけ実行する別2-file TDD slice。登録成功はclickで推定せず、parent readbackを維持する。
+
+### Active remaining TODO SSOT（進捗249。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

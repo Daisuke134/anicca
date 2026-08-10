@@ -33,15 +33,15 @@
 - Modify: `skills/connector/native-pass.js`
 - Private config only: `~/.config/anicca/job-search/profile.json` (mode 0600, never Git)
 
-- [ ] **Step 1: Add focused failing factory-boundary tests**
+- [x] **Step 1: Add focused failing factory-boundary tests**
 
 Create a temporary mode-0600 `$HOME/.config/anicca/job-search/profile.json` fixture containing `candidate.name_kana.family` and `.given`. Assert the factory receives both fields in the frozen `peatixAttendeeProfile`, while the wake input and serialized outcomes contain neither keys nor values.
 
-- [ ] **Step 2: Add fail-closed tests**
+- [x] **Step 2: Add fail-closed tests**
 
 Cover missing file, permissive file mode, invalid JSON, missing family/given, empty value, Hiragana, Kanji, Latin, digit/punctuation, controls, and overlength. Assert dependency creation and browser work remain 0.
 
-- [ ] **Step 3: Run focused RED**
+- [x] **Step 3: Run focused RED**
 
 ```bash
 node --test skills/connector/test/native-entrypoint.test.js
@@ -49,15 +49,15 @@ node --test skills/connector/test/native-entrypoint.test.js
 
 Expected: new profile assertions fail because the native boundary does not read or carry Katakana identity.
 
-- [ ] **Step 4: Implement the minimum private reader**
+- [x] **Step 4: Implement the minimum private reader**
 
 Add a private bounded reader/validator in `native-pass.js`. Resolve the identity SSOT under the effective home, require the exact object shape, and add only `family_name_kana` and `given_name_kana` to the frozen `peatixAttendeeProfile`.
 
-- [ ] **Step 5: Seed the private SSOT without exposing values**
+- [x] **Step 5: Seed the private SSOT without exposing values**
 
 Read the existing submitted application answer locally, extract the two full-width Katakana segments after the `フリガナ` label, and update `candidate.name_kana.family/given` in the mode-0600 private profile using `apply_patch`. Do not echo the values or include them in any report, diff, log, test, commit, or Telegram message. Validate only key presence, character class, lengths, and file mode.
 
-- [ ] **Step 6: Run focused GREEN and privacy checks**
+- [x] **Step 6: Run focused GREEN and privacy checks**
 
 ```bash
 node --test skills/connector/test/native-entrypoint.test.js
@@ -68,6 +68,6 @@ git diff -- skills/connector/native-pass.js skills/connector/test/native-entrypo
 
 Expected: all pass; diff contains fixture-only invented test values and no real identity.
 
-- [ ] **Step 7: Report exact RED/GREEN evidence to Sol**
+- [x] **Step 7: Report exact RED/GREEN evidence to Sol**
 
 Do not commit or push. Sol performs fresh review, commits/pushes the approved two-file implementation, then plans the separate Peatix confirm-form filling slice.
