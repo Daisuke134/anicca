@@ -4,6 +4,8 @@
 > task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Sol owns this plan, review, state, commit, and push;
 > Luna alone writes production code and tests.
 
+**Status:** COMPLETE
+
 **Goal:** Give the existing `ai.anicca.life-manager-daily` route one explicit provider-only mode that records real
 Life Manager attempt/usage rows without generating media, posting, messaging, paying, or mutating business state.
 
@@ -190,3 +192,11 @@ Expected: focused `1/1`, daily runtime `9/9`, wrapper wiring `6/6`, portable run
 Require exactly the three owned files, no real provider process, and `<=95` gross additions. Report RED/GREEN,
 exact diff counts, and any concern. Do not stage or commit; Sol performs fresh review, verification, commit, push,
 spec state, Telegram milestone, and the bounded live rollout in 5c2c.
+
+## Completion evidence
+
+- Portable commit `8554a6616`, pushed to `feature/cfo-life-manager-agent-usage-cutover`.
+- Exact owned diff: 3 files, `+95/-1`; no new file or dependency.
+- TDD RED: the fail-fast generator ran and returned `91` before the safe branch existed.
+- GREEN: focused `1/1`, daily runtime `9/9`, wrapper wiring `6/6`, portable runner `18/18`; syntax/diff PASS.
+- Fresh Sol review: `ship`, Critical 0 / Important 0. No real provider, live ledger, launchd, or Telegram effect.
