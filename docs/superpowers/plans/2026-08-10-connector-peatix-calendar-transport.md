@@ -45,3 +45,11 @@ Soft target: 2 files; production +8–18 LOC; tests +20–35 LOC.
 - Focused transport tests, minimal evidence/production/runner, Peatix workflow/provider/Harness, native entrypoint, changed-file syntax, and `git diff --check`.
 - Fresh Sol review for URL canonicalization, argv injection, Luma non-regression, arbitrary source-title leakage, and duplicate Calendar creation.
 - SSOT update, commit, push, clean preflight, then one official schedule-unloaded wake. Acceptance remains pre-submit registered, Peatix clicks 0, Calendar create/readback 1, Telegram message/photo positive IDs, durable applied bundle, exact cleanup.
+
+## Result
+
+- Luna measured RED at 18/19: exact Peatix create failed with `Connector calendar invalid`; all twelve malformed variants already failed before `run`.
+- GREEN changes only `calendar-gog.js` and its test. The Connector-only gate returns a validated URL and fixed source title, accepts only raw-exact `https://peatix.com/event/<positive integer>` for Peatix, preserves existing Luma behavior, and keeps every other gog argument and receipt check unchanged.
+- Luna focused transport was 19/19 and all named adjacent groups passed; Sol independently ran the expanded transport/evidence/minimal/Peatix/Harness/native-entrypoint set at 135/135. Changed-file syntax and `git diff --check` passed.
+- Fresh Sol review found no Critical or Important issue and returned `ship`. No browser, provider, Calendar, evidence, Telegram, state, profile, launchd, or schedule side effect occurred during implementation and test.
+- Live acceptance remains the next step after push: official schedule-unloaded wake, registered pre-readback, Peatix clicks zero, Calendar create/readback one, positive Telegram message/photo IDs, durable applied bundle, and exact cleanup.

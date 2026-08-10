@@ -80,6 +80,7 @@ test("connector calendar lookup and create use one private idempotency property 
   assert.deepEqual(calls[1].slice(0, 4), ["calendar", "create", "primary", "-j"]);
   assert.ok(calls[1].includes(`--private-prop=lm_connector_event=${"a".repeat(64)}`));
   assert.ok(calls[1].includes("--source-url=https://luma.com/founder-night"));
+  assert.deepEqual(calls[1].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Luma"]);
   assert.ok(calls[1].includes("--no-input"));
 });
 
@@ -101,6 +102,40 @@ test("connector calendar accepts the www.google.com event URL returned by gog 0.
     id: "created-by-gog",
     htmlLink: "https://www.google.com/calendar/event?eid=created-by-gog",
   });
+});
+
+test("connector calendar accepts strict Peatix identity with a fixed source title", async () => {
+  const { run, calls } = recorder(JSON.stringify({ id: "peatix-created", htmlLink: "https://calendar.google.com/calendar/event?eid=peatix-created" }));
+  const result = await makeGogCalendar({ account: ACCT, run }).createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "c".repeat(64), title: "Injected title",
+    startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+    location: "Shibuya", canonicalUrl: "https://peatix.com/event/5075819",
+  });
+  assert.deepEqual(result, { id: "peatix-created", htmlLink: "https://calendar.google.com/calendar/event?eid=peatix-created" });
+  assert.ok(calls[0].includes("--source-url=https://peatix.com/event/5075819"));
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Peatix"]);
+  assert.equal(calls[0].some((arg) => String(arg).includes("Injected title")), true);
+});
+
+test("connector calendar rejects every non-canonical Peatix identity before gog run", async () => {
+  const variants = [
+    "https://www.peatix.com/event/5075819", "https://events.peatix.com/event/5075819",
+    "https://peatix.com:444/event/5075819", "https://peatix.com/event/5075819/",
+    "https://peatix.com/event/5075819?utm_source=test", "https://peatix.com/event/5075819#details",
+    "https://user:pass@peatix.com/event/5075819", "https://peatix.com/event/not-a-number",
+    "https://peatix.com/event/0", "https://peatix.com/event/5075819/ticket",
+    "https://peatix.com/sales/event/5075819", "https://peatix.com/search?q=5075819",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "d".repeat(64), title: "x",
+      startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+      location: "x", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
 });
 
 test("connector calendar methods reject malformed IDs, URLs, times, and ambiguous provider receipts", async () => {

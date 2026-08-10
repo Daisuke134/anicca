@@ -6863,7 +6863,11 @@ Ponytailで既存owned page、固定escaped receipt、PNG/evidence/Calendar/Tele
 
 pushed commit `083b7a2cb`のschedule-unloaded official wake `wake-b9c68c36c0ff24c5a9117b52`はCalendar busy 3,087ms、Luma discovery 30,214ms、Connpass 3,482ms、Peatix 57,922ms後、candidate 1を384msでnavigateし、parent pre-readback `registered`を6msで観測した。Provider submit/direct/Harness clickは0でno-resubmitを再実証した。修復済みrendererはPeatix provider receiptとSHA-256 PNG artifactを実保存したが、Calendar event、Telegram message/photo、applied bundleは増分0でexit 2。原因は`transport/calendar-gog.js`のConnector URL gateがLuma hostだけを許可し、source titleも`Luma`固定のため、strict Peatix canonical URLをGoogle Calendar create前に拒否すること。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-calendar-transport.md`はcalendar gog production/testの2 filesだけで、exact `https://peatix.com/event/<positive integer>`と固定`Peatix` source titleを追加し、Lumaと全malformed rejectionを維持する。Item 10B/11/14/19 bundle acceptanceは未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗286。これ以外の残TODO一覧は履歴）
+### O1B-25進捗287（Peatix Calendar transport / TDD・review完了）
+
+LunaのREDはfocused transport 18/19で、exact Peatix createだけが`Connector calendar invalid`、www/subdomain/port/trailing slash/query/hash/credentials/nonnumeric/zero/ticket/sales/searchの12 variantsは旧実装でもgog run 0で拒否されることを実測した。最終差分は`transport/calendar-gog.js`とtestの2 filesだけ。Connector URL gateはvalidated `{url, sourceTitle}`を返し、Peatixはraw inputとcanonical outputがともにexact `https://peatix.com/event/<positive integer>`の場合だけ固定`Peatix` source titleで許可する。Lumaは既存hostsと固定`Luma` titleを維持し、idempotency property、gog argv、Calendar receipt readbackは不変。Luna focused 19/19と全named adjacent、Sol独立expanded 135/135、syntax、diff checkがPASS。fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test中のbrowser/provider/Calendar/evidence/Telegram/state/profile/launchd/schedule作用は0。Item 10B/11/14/19 bundle acceptanceは未完で、次の一件はcommit/push後のschedule-unloaded official wakeによるCalendar create/readback、positive Telegram IDs、durable applied bundle、exact cleanupの実証。
+
+### Active remaining TODO SSOT（進捗287。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
