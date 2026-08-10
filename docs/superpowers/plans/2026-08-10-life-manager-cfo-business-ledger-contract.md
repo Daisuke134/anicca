@@ -1,5 +1,7 @@
 # Life Manager CFO-2a Business-Ledger Contract Implementation Plan
 
+**Status:** COMPLETE — implementation `dcfa7376e`, fresh verification 10/10 + 254/254 + 890/890, final review clean.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Normalize each existing `lm_api_cost` row into one deterministic, privacy-safe, honestly estimated financial-unit event.
@@ -42,7 +44,7 @@ OpenTelemetry, aggregation, other businesses, and UI stay deferred.
 - Produces: exported synchronous `normalizeApiCostEvent(row)` returning the exact event in the CFO-2a spec.
 - Downstream: CFO-2b may consume the normalized event later; this task adds no downstream caller or persistence.
 
-- [ ] **Step 1: Add the three behavioral tests before production code**
+- [x] **Step 1: Add the three behavioral tests before production code**
 
 Append these tests to `apps/life-call/lib/ledger.test.js`. The production break each test catches is respectively:
 wrong fact mapping/private metadata leakage, guessed attribution, and invalid money silently becoming zero.
@@ -106,7 +108,7 @@ test("normalizeApiCostEvent rejects invalid identity and money with redacted err
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -118,7 +120,7 @@ Expected: the existing seven tests pass and all three new tests fail because
 `ledger().normalizeApiCostEvent is not a function`. Any syntax error or different failure must be fixed in the test
 before production code is written.
 
-- [ ] **Step 3: Add the minimal pure normalizer**
+- [x] **Step 3: Add the minimal pure normalizer**
 
 In `apps/life-call/lib/ledger.js`, reuse the existing CFO boundary validator by adding this import and projection
 immediately after `"use strict"`; do not reimplement plain-object or RFC3339 validation.
@@ -184,7 +186,7 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 4: Run GREEN and regression commands**
+- [x] **Step 4: Run GREEN and regression commands**
 
 Run in `apps/life-call`:
 
@@ -197,7 +199,7 @@ npm test
 Expected: focused ledger tests report 10/10; CFO reports 254/254; full `npm test` exits 0. Output must contain no
 `META_SENTINEL`, `AMOUNT_SENTINEL`, UID, or raw metadata outside test names/source diagnostics.
 
-- [ ] **Step 5: Enforce the Ponytail size and scope gate**
+- [x] **Step 5: Enforce the Ponytail size and scope gate**
 
 Run:
 
@@ -212,7 +214,7 @@ Expected: only the two planned implementation files are modified; production add
 additions at most 55 lines, total additions at most 100, and `git diff --check` is silent. If exceeded, reduce scope;
 do not widen the target.
 
-- [ ] **Step 6: Commit the self-reviewed implementation for task review**
+- [x] **Step 6: Commit the self-reviewed implementation for task review**
 
 After RED/GREEN, regressions, scope checks, and Luna self-review pass, commit only the two implementation files so the
 controller can generate the exact task-review package:

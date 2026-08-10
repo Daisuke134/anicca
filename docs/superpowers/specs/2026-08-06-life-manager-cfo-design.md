@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — Product Stage 7 complete; CFO-2a business-ledger contract is the only active slice |
+| Status | M2 ACTIVE — Product Stage 7 and CFO-2a complete; CFO-2a2 is the only active slice |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a: canonical business-ledger event contract** |
+| First unfinished item | **CFO-2a2: provider usage evidence and OpenTelemetry GenAI attributes** |
 
 ## 1. Overview — What and Why
 
@@ -941,7 +941,7 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
 
 ### M2 — Business P&L and resource accounting
 
-- [ ] **CFO-2a** Normalize existing `lm_api_cost` rows into the canonical financial-unit event contract without
+- [x] **CFO-2a** Normalize existing `lm_api_cost` rows into the canonical financial-unit event contract without
       rewriting the source table. Only the four current Life Manager kinds are attributed; unknown kinds remain
       `unattributed`. Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-business-ledger-contract-design.md`.

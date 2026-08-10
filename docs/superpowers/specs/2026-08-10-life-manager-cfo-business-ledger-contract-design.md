@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | APPROVED — implementation plan active |
+| Status | COMPLETE — implemented and independently verified |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Active item | CFO-2a only |
 | Runtime | Existing local `apps/life-call` package |
@@ -99,14 +99,14 @@ unbounded payload data.
 
 ## 6. Acceptance criteria
 
-- [ ] One current `lm_api_cost` fixture maps to the exact closed event shape above.
-- [ ] The four existing kinds map only to `life_manager_saas`; an unknown valid kind is visibly `unattributed`.
-- [ ] `est_usd` always remains `locally_estimated`; normalization never upgrades it to measured or confirmed.
-- [ ] Zero remains zero. Invalid, negative, missing, `NaN`, and infinite numbers fail instead of becoming zero.
-- [ ] `source_event_id` is stable from the positive source row ID and contains no personal data.
-- [ ] `meta` and unknown source keys never appear in the normalized event or an error.
-- [ ] The normalizer is pure, deterministic, and leaves the input unchanged.
-- [ ] Existing ledger tests and the normal CFO test command pass.
+- [x] One current `lm_api_cost` fixture maps to the exact closed event shape above.
+- [x] The four existing kinds map only to `life_manager_saas`; an unknown valid kind is visibly `unattributed`.
+- [x] `est_usd` always remains `locally_estimated`; normalization never upgrades it to measured or confirmed.
+- [x] Zero remains zero. Invalid, negative, missing, `NaN`, and infinite numbers fail instead of becoming zero.
+- [x] `source_event_id` is stable from the positive source row ID and contains no personal data.
+- [x] `meta` and unknown source keys never appear in the normalized event or an error.
+- [x] The normalizer is pure, deterministic, and leaves the input unchanged.
+- [x] Existing ledger tests and the normal CFO test command pass.
 
 ## 7. Minimal verification
 
@@ -140,3 +140,14 @@ and minimal focused tests.
 
 Out of scope: schema migration, new table, writes, aggregation, price cards, tokens, OpenTelemetry SDK, billing
 reconciliation, other business producers, Telegram UI, tax, Binance, cloud, trading, hiring, and capital allocation.
+
+## 10. Completion evidence
+
+- Luna implementation commit: `dcfa7376e00ee240b9e55c70220e660b83ce5a36`.
+- TDD report: the three new tests first failed only because `normalizeApiCostEvent` did not exist, then passed after
+  the minimal implementation.
+- Fresh Sol verification on the implementation commit: focused ledger 10/10, CFO 254/254, full suite 890/890,
+  zero failures.
+- Ponytail gate: two existing files only; 44 production additions and 55 test additions, 99 total.
+- Fresh final review: Critical 0, Important 0, merge approved. The sole report-only wording issue was corrected.
+- No dependency, migration, table, write path, OpenTelemetry SDK, scheduler, or Telegram behavior was added.
