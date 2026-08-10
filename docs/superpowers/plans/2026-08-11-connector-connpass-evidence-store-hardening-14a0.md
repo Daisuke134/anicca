@@ -43,3 +43,10 @@ Soft target: 2 files; production `+15–30 LOC`; tests `+25–45 LOC`.
 - Focused Connpass store RED/GREEN, all provider-store regression, syntax, and `git diff --check`.
 - Fresh Sol review for tuple binding, exact schemas, immutable bytes, path/tenant safety, and no unrelated behavior.
 - Update SSOT, commit, and push this prerequisite before restoring the frozen Item 14A minimal-evidence diff.
+
+## Result
+
+- Luna RED reproduced both gaps: a valid receipt read returned only three fields, and a semantic `event_ref` rewrite with the stale provider ID was accepted.
+- GREEN keeps the slice to the two owned files. Receipt reads now require the exact five-key schema and recompute the provider ID from tenant, event, observed time, and artifact SHA. Artifact markers require exact `{sha256}` and verify the immutable object bytes against the same digest.
+- Focused Connpass tests pass 2/2; serialized Connpass/Luma/Peatix store regression passes 6/6; syntax and `git diff --check` pass.
+- Fresh Sol review: `ship` (Critical 0, Important 0). No live Connpass evidence existed, so no migration was required. Item 14A wiring remains a separate frozen slice.

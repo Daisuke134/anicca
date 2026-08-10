@@ -9,6 +9,8 @@ const EVENT_REF = /^connpass-event:\/\/event\/[1-9][0-9]*$/;
 const RECEIPT_REF = /^provider-receipt:\/\/connpass\/([0-9a-f]{64})$/;
 const OBJECT_REF = /^object:\/\/sha256\/([0-9a-f]{64})$/;
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const RECEIPT_KEYS = "artifact_sha256,event_ref,kind,observed_at,provider_id";
+const ARTIFACT_KEYS = "sha256";
 
 function invalid(message = "Connpass evidence unavailable") { throw new Error(message); }
 function tenant(value) {
@@ -20,6 +22,9 @@ function instant(value) {
   const text = String(value || "");
   if (!Number.isFinite(Date.parse(text)) || new Date(Date.parse(text)).toISOString() !== text) invalid();
   return text;
+}
+function providerId(tenantId, eventRef, observedAt, artifactHash) {
+  return createHash("sha256").update(`${tenantId}\n${eventRef}\n${observedAt}\n${artifactHash}`, "utf8").digest("hex");
 }
 function atomicWrite(file, bytes) {
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
@@ -42,7 +47,7 @@ function createConnpassEvidenceStore(options = {}) {
   const root = (tenantId) => path.join(dataDir, "tenants", tenant(tenantId), "outbound", "connpass");
   return Object.freeze({
     async record(input = {}) {
-      const tenantId = tenant(input.tenantId);
+      const tenantIdValue = tenant(input.tenantId);
       const eventRef = String(input.eventRef || "");
       const observedAt = instant(input.observedAt);
       const screenshot = input.screenshot;
@@ -51,40 +56,46 @@ function createConnpassEvidenceStore(options = {}) {
         || !screenshot.subarray(0, PNG.length).equals(PNG)
       ) invalid();
       const artifactHash = createHash("sha256").update(screenshot).digest("hex");
-      const providerId = createHash("sha256")
-        .update(`${tenantId}\n${eventRef}\n${observedAt}\n${artifactHash}`, "utf8").digest("hex");
+      const receiptId = providerId(tenantIdValue, eventRef, observedAt, artifactHash);
       atomicWrite(path.join(dataDir, "objects", "sha256", artifactHash), screenshot);
-      atomicWrite(path.join(root(tenantId), "provider-receipts", `${providerId}.json`), Buffer.from(`${JSON.stringify({
-        kind: "provider_response", provider_id: providerId, observed_at: observedAt,
+      atomicWrite(path.join(root(tenantIdValue), "provider-receipts", `${receiptId}.json`), Buffer.from(`${JSON.stringify({
+        kind: "provider_response", provider_id: receiptId, observed_at: observedAt,
         event_ref: eventRef, artifact_sha256: artifactHash,
       })}\n`));
-      atomicWrite(path.join(root(tenantId), "artifacts", `${artifactHash}.json`), Buffer.from(`${JSON.stringify({
-        sha256: artifactHash, event_ref: eventRef,
-      })}\n`));
+      atomicWrite(path.join(root(tenantIdValue), "artifacts", `${artifactHash}.json`), Buffer.from(`${JSON.stringify({ sha256: artifactHash })}\n`));
       return Object.freeze({
-        external_receipt_ref: `provider-receipt://connpass/${providerId}`,
+        external_receipt_ref: `provider-receipt://connpass/${receiptId}`,
         artifact_ref: `object://sha256/${artifactHash}`,
       });
     },
     async readExternalReceipt(tenantId, ref) {
+      const tenantIdValue = tenant(tenantId);
       const match = RECEIPT_REF.exec(String(ref || ""));
       if (!match) invalid();
       let value;
-      try { value = JSON.parse(fs.readFileSync(path.join(root(tenantId), "provider-receipts", `${match[1]}.json`))); }
+      try { value = JSON.parse(fs.readFileSync(path.join(root(tenantIdValue), "provider-receipts", `${match[1]}.json`))); }
       catch { invalid(); }
       if (
-        value.kind !== "provider_response" || value.provider_id !== match[1]
-        || !EVENT_REF.test(value.event_ref) || !/^[0-9a-f]{64}$/.test(value.artifact_sha256)
+        !value || typeof value !== "object" || Array.isArray(value)
+        || Object.keys(value).sort().join(",") !== RECEIPT_KEYS
+        || value.kind !== "provider_response" || typeof value.provider_id !== "string" || value.provider_id !== match[1]
+        || typeof value.event_ref !== "string" || !EVENT_REF.test(value.event_ref)
+        || typeof value.artifact_sha256 !== "string" || !/^[0-9a-f]{64}$/.test(value.artifact_sha256)
       ) invalid();
-      return Object.freeze({ kind: value.kind, provider_id: value.provider_id, observed_at: instant(value.observed_at) });
+      if (typeof value.observed_at !== "string") invalid();
+      const observedAt = instant(value.observed_at);
+      if (value.provider_id !== providerId(tenantIdValue, value.event_ref, observedAt, value.artifact_sha256)) invalid();
+      return Object.freeze({ kind: value.kind, provider_id: value.provider_id, observed_at: observedAt, event_ref: value.event_ref, artifact_sha256: value.artifact_sha256 });
     },
     async readArtifact(tenantId, ref) {
+      const tenantIdValue = tenant(tenantId);
       const match = OBJECT_REF.exec(String(ref || ""));
       if (!match) invalid();
       try {
-        const marker = JSON.parse(fs.readFileSync(path.join(root(tenantId), "artifacts", `${match[1]}.json`)));
+        const marker = JSON.parse(fs.readFileSync(path.join(root(tenantIdValue), "artifacts", `${match[1]}.json`)));
         const bytes = fs.readFileSync(path.join(dataDir, "objects", "sha256", match[1]));
-        if (marker.sha256 !== match[1] || !EVENT_REF.test(marker.event_ref)
+        if (!marker || typeof marker !== "object" || Array.isArray(marker)
+          || Object.keys(marker).sort().join(",") !== ARTIFACT_KEYS || marker.sha256 !== match[1]
           || createHash("sha256").update(bytes).digest("hex") !== match[1]) invalid();
         return bytes;
       } catch { invalid(); }
