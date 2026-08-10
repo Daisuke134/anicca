@@ -7145,7 +7145,13 @@ Lunaはplanned existing minimal production test 1 fileだけへcomposed fixture 
 
 synthetic page stateだけabsentへ戻したsecond wakeはreplacement cache replay→parent registeredでapplied bundleへ進み、direct/fallback/proposer/Harness action増分0、cache bytes不変。両wakeでsynthetic evidence/report/open/close各1、repo edit/merge/deployとlive external作用0。Luna composed 11/11、full 90/90、Sol独立90/90、syntax/diff checkがPASS。native entrypoint 2 failuresはknown cursor baseline。fresh Sol reviewはCritical 0 / Important 0で`ship`、独立focused/adjacent 55/55。Item16をacceptする。次はItem17 single daily production schedule cutover。
 
-### Active remaining TODO SSOT（進捗337。これ以外の残TODO一覧は履歴）
+### O1B-25進捗338（Item 17 / single daily production schedule plan）
+
+Items10〜16 acceptance後のread-only preflightはclean/upstream HEAD `6abe5acc0`、Native/healthcheck/Healer/bridge 4 labels unloaded、process/lock 0。installed native plistはunloadedだがlegacy `StartInterval=300`、canonical repo templateは09:00 `StartCalendarInterval`で`StartInterval` 0。次plan `docs/superpowers/plans/2026-08-11-connector-single-daily-schedule-17.md`はcode/test変更0、既存rendererとcanonical templateだけを再利用する。
+
+rendererはlive LaunchAgents直書きを拒否するため`mktemp -d`へexact 1 plistをrenderし、plutil、ProgramArguments、WorkingDirectory、09:00 daily、no StartInterval/healthcheck/Healer/bridge/`:9223`を検証後、installed native exact fileだけをmode 0600で置換する。native labelだけbootstrapし、他3 labels unloaded、process/lock 0を確認する。Item17ではkickstartしない。Item18でloaded production ownerを`launchctl kickstart`し、別executorを作らずfirst launchd-owned wakeをwatchする。Item17未完、現時点は4 labels unloaded。
+
+### Active remaining TODO SSOT（進捗338。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
