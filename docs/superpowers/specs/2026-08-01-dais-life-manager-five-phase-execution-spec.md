@@ -6362,7 +6362,22 @@ HTML validity PASSを確認した。form submit後も`/form`に残り、公開er
 `accept_organizer_privacy=true`を根拠に、この測定済み一択required privacy radioだけを検出・checkする。generic radioや他同意は
 fail-closedを維持する。
 
-### Active remaining TODO SSOT（進捗246。これ以外の残TODO一覧は履歴）
+### O1B-25進捗247（Peatix organizer privacy radio GREEN / adversarial review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-organizer-privacy-radio.md`をTDD実装した。REDは実測`dl.field.required`の一択privacy radioを
+checkせずform submitする挙動をfocused 8件中7 pass・1 failで再現。初稿`91b61cc5a`はprivacy prompt/optionを部分一致したため、fresh
+Sol reviewがprivacy+marketing、第三者提供、写真同意、「同意しない」、`I do not agree`までcheck/final effectへ進むImportantを発見した。
+
+同じLunaがadversarial REDを追加し、commit `510d019b4`でpromptを
+`^.+のプライバシーポリシーを読んだ・確認した$`、optionを`確認し同意する。`の正規化後完全一致へ限定した。re-reviewは5攻撃caseが
+全て`needs_fallback`、check 0、final 0、実測positiveだけregistered/check 1/final 1を確認し、Critical 0・Important 0でship。
+focused 9/9、指定回帰46/46、review suite 41/41、syntax、diff checkはPASS。
+
+`connector-native-runtime.test.js`の2件は親commitでも同一で、旧Connpass停止cursorを期待するtest debt。production/native runtime差分は0、
+現行required順`Luma → Connpass → Peatix`とはtest期待だけが不一致で、このprivacy sliceのintegration defectではない。次の一件は
+schedule unloaded、stable CDP、auth、dashboard count 0でofficial foreground runnerを再実行する。
+
+### Active remaining TODO SSOT（進捗247。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
