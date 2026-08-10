@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a complete; CFO-2a2b.1b producer boundary is next |
+| Status | ACTIVE — CFO-2a2b.1a/1b complete; CFO-2a2b.2 pure reconciliation is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -85,19 +85,22 @@ For rows at or after the capture cutover, the consumer validates both schemas an
 - `success_rows`
 - `failed_rows`
 - `missing_completion_rows`
+- `unmatched_completion_rows`
 - `duplicate_attempt_rows`
 - `conflicting_attempt_rows`
-- `invalid_numeric_rows`
+- `ambiguous_completion_rows`
 
-`success_rows + failed_rows + missing_completion_rows = attempted_rows` must hold. Any missing, duplicate,
-conflicting, malformed, truncated, or unread source adds a named coverage exception. Until every required source is
-fresh and `missing_completion_rows=0`, no total-cost label is allowed.
+`success_rows + failed_rows + missing_completion_rows = attempted_rows` must hold. Capture coverage starts at the
+earliest durable attempt row; older usage remains measured historical evidence but is not fabricated as write-attempt
+covered. Any missing, unmatched, duplicate, conflicting, ambiguous, malformed, truncated, or unread source adds a
+named coverage exception. Invalid numeric input was closed at CFO-2a2b.1a and remains rejected by the existing usage
+normalizer. Until every required source is fresh and all exceptions are zero, no total-cost label is allowed.
 
 ## One-at-a-time delivery
 
 - [x] **CFO-2a2b.1a — numeric truth:** Luna distinguishes absent optional values from present invalid values for all
       supported provider payloads.
-- [ ] **CFO-2a2b.1b — producer boundary:** Luna adds the write-ahead attempt row and focused real-runner tests.
+- [x] **CFO-2a2b.1b — producer boundary:** Luna adds the write-ahead attempt row and focused real-runner tests.
 - [ ] **CFO-2a2b.2 — pure reconciliation:** Luna adds the strict local attempt/usage join and immutable counts receipt.
 - [ ] **CFO-2a2b.3 — hourly publication:** Luna wires the receipt into the existing one-hour loop and proves a forced
       usage persistence failure appears as missing coverage, never zero cost or a green/complete total.
