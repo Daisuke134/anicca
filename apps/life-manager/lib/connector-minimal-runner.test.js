@@ -326,6 +326,60 @@ test("three consecutive candidate failures open the circuit before a fourth navi
   ]);
 });
 
+test("ambiguous agent effect stops the candidate sequence after one attempt", async () => {
+  const state = fixture({
+    async runAgentFallback({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage.page_id, "page-owned-1");
+      state.calls.push(["agent", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "failed", safe_reason: "effect_unknown" });
+    },
+  });
+  state.dependencies.reportWake = async (report) => {
+    state.calls.push(["report", report.status, report.safe_reason, report.consecutive_failure_count]);
+    return Object.freeze({ telegram_provider_id: "9001" });
+  };
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-ambiguous",
+    providers: ["luma"],
+  }, state.dependencies);
+
+  assert.deepEqual(result, Object.freeze({
+    status: "circuit_open",
+    safe_reason: "effect_unknown",
+    telegram_provider_id: "9001",
+  }));
+  assert.deepEqual(state.calls.filter(([name]) => name === "discover").map(([, provider]) => provider), ["luma"]);
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 1);
+  assert.equal(state.calls.filter(([name, , , , url]) => name === "navigate" && url !== "about:blank").length, 1);
+  assert.equal(state.calls.some(([name, eventRef]) => name === "agent" && eventRef.endsWith("/two")), false);
+  assert.deepEqual(state.calls.filter(([name]) => name === "report").at(-1), [
+    "report", "circuit_open", "effect_unknown", 1,
+  ]);
+});
+
+test("ordinary agent action failure still uses the bounded three-candidate circuit", async () => {
+  const state = fixture({
+    async runAgentFallback({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage.page_id, "page-owned-1");
+      state.calls.push(["agent", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
+    },
+  });
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-ordinary-agent-failure",
+    providers: ["luma", "connpass"],
+    maxConsecutiveFailures: 3,
+  }, state.dependencies);
+
+  assert.equal(result.status, "circuit_open");
+  assert.equal(result.safe_reason, "direct_action_unavailable");
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 3);
+  assert.equal(state.calls.filter(([name, , , , url]) => name === "navigate" && url !== "about:blank").length, 3);
+  assert.deepEqual(state.calls.filter(([name]) => name === "report").at(-1), [
+    "report", "circuit_open", "direct_action_unavailable",
+  ]);
+});
+
 test("valid direct safe reason survives failed fallback and opens the circuit with that exact reason", async () => {
   const state = fixture({
     async runDirectAction() { return Object.freeze({ status: "failed", safe_reason: "peatix_unknown_required_field" }); },

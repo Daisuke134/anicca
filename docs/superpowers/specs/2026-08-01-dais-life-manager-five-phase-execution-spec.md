@@ -6821,7 +6821,13 @@ fresh Sol reviewはImportant 2件を実証して`fix-first`。第一に、最終
 
 fresh Sol re-reviewは追加Important 1件を発見した。30秒deadline判定がpoll iteration間だけにあり、単一の`readProviderState()` promiseが未解決ならsettlementとrunnerが無期限停止する。planを先に改訂し、各parent readbackを残りoverall budgetとのraceにし、readback側settle時はtimerをclear、budget expiryはexact `failed / effect_unknown`としてrunner即停止へ渡す。never-resolving readbackでもbounded completion、final click 1、次候補0を決定的回帰にする。現差分は未commit、live作用0。Item 10B/14/19は未完。
 
-### Active remaining TODO SSOT（進捗279。これ以外の残TODO一覧は履歴）
+### O1B-25進捗280（Peatix final effect settlement final GREEN / ship）
+
+同じLunaが5-file ownership内で最終修正した。strict same-event confirm上のbrowser-visibleなexact `a#confirm-button`だけを最終作用へ許可し、final click前から固定30秒のparent readback settlementを開始する。各readbackはremaining overall budgetとraceし、never-resolving promiseでもboundedに`failed / effect_unknown`へ収束する。`registered|pending`だけをsuccess authorityとしてstashし、adapter直後の再readbackで一時的に`absent`へ戻っても検証済みstateを失わない。timeout/click例外の`effect_unknown`はrunnerがfailure count 1で即`circuit_open / effect_unknown`にし、次候補navigation/direct/Harness作用を行わない。通常failureの3-consecutive契約は維持した。
+
+REDはhidden finalと10ms delayed registrationが2/2 FAIL、追加REDはnever-resolving readbackが旧実装でbounded completion不能、runnerは`effect_unknown`後も次候補へ進むことを再現した。最終GREENはHarness 42/42、runner 15/15、minimal production 10/10、Sol独立expanded adjacent 108/108、全changed JS syntax、diff checkがPASS。全Connectorは304/307 PASSで、残る3件はclean HEADでも同一のlegacy provider cursor期待値2件とrequired-email fixture 1件、新規FAIL 0。fresh Sol re-reviewはCritical 0・Important 0で`ship`。変更は既存Harness/test、minimal runner/test、selector fixtureの5 filesだけで、新module/service/stateは0。implementation/test中のbrowser/model/provider/Calendar/evidence/Telegram/private profile/schedule/launchd作用0。Item 10B/14/19は未完。次の一件はcommit/push後のclean preflightを通し、schedule unloadedのofficial foreground wakeを1回実行してparent `registered|pending`、durable `applied_bundle`、Calendar/PNG/Telegram、exact cleanupまたは次safe boundaryを実測する。
+
+### Active remaining TODO SSOT（進捗280。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

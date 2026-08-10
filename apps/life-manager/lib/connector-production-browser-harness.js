@@ -12,11 +12,112 @@ const ACTIONS = { input: ["fill", "ax_fill"], textarea: ["fill", "ax_fill"], sel
 const ACTIONABLE_KINDS = new Set(["input", "textarea", "select", "checkbox", "radio"]);
 const MUTATING_METHODS = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check", "ax_click", "coordinate_click", "keyboard_submit"]);
 const PROVIDERS = new Set(["luma", "connpass", "peatix"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシー確認|主催者のプライバシーポリシーに同意する)$/ };
+const PEATIX_FORM_SUBMIT_LABEL = "確認画面へ進む";
+const PEATIX_CONFIRM_LABEL = "チケットを申し込む";
+const PEATIX_FORM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/form$/;
+const PEATIX_CONFIRM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/confirm$/;
+const FINAL_EFFECT_TIMEOUT_MS = 30_000;
+const FINAL_EFFECT_POLL_MS = 25;
 
 function invalid() {
   throw new Error("Connector production Browser Harness invalid");
 }
 function safePageState(page) { try { const url = new URL(String(page && typeof page.url === "function" ? page.url() : "")); return url.origin !== "null" && url.pathname ? `${url.origin}${url.pathname}` : "unavailable"; } catch { return "unavailable"; } }
+function candidatePeatixEventId(candidate) {
+  const match = /^peatix-event:\/\/event\/([1-9][0-9]*)$/.exec(String(candidate && candidate.event_ref || ""));
+  return match ? match[1] : "";
+}
+
+function startPeatixConfirmWait(page, provider, control) {
+  if (
+    provider !== "peatix" || !control || control.kind !== "button" || control.submittable !== true
+    || control.label !== PEATIX_FORM_SUBMIT_LABEL
+  ) return null;
+  let currentHref = "";
+  try { currentHref = String(typeof page.url === "function" ? page.url() : ""); } catch { currentHref = ""; }
+  const formMatch = PEATIX_FORM_URL.exec(currentHref);
+  if (!formMatch) return null;
+  if (typeof page.waitForURL !== "function") return { unavailable: true, promise: Promise.resolve(false) };
+  let wait;
+  try {
+    wait = page.waitForURL((url) => {
+      const match = PEATIX_CONFIRM_URL.exec(String(url || ""));
+      return Boolean(match && match[1] === formMatch[1]);
+    }, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  } catch {
+    return { unavailable: true, promise: Promise.resolve(false) };
+  }
+  return {
+    promise: Promise.resolve(wait).then((settled) => {
+      if (settled === false) return false;
+      try {
+        const match = PEATIX_CONFIRM_URL.exec(String(typeof page.url === "function" ? page.url() : ""));
+        return Boolean(match && match[1] === formMatch[1]);
+      } catch {
+        return false;
+      }
+    }, () => false),
+  };
+}
+
+function readPeatixStateWithinDeadline(page, candidate, readProviderState, deadline) {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) return Promise.resolve({ expired: true });
+  return new Promise((resolve) => {
+    let timer;
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      if (timer !== undefined) clearTimeout(timer);
+      resolve(value);
+    };
+    try { timer = setTimeout(() => finish({ expired: true }), remaining); }
+    catch { finish({ expired: true }); return; }
+    Promise.resolve()
+      .then(() => readProviderState({ page, candidate }))
+      .then((state) => finish({ state }), () => finish({ error: true }));
+  });
+}
+
+function startPeatixFinalEffectWait(page, provider, control, candidate, readProviderState) {
+  if (provider !== "peatix" || !control || control.kind !== "button" || control.submittable !== true || control.label !== PEATIX_CONFIRM_LABEL) return null;
+  const eventId = candidatePeatixEventId(candidate);
+  let href = "";
+  try { href = String(typeof page.url === "function" ? page.url() : ""); } catch { href = ""; }
+  const confirmMatch = PEATIX_CONFIRM_URL.exec(href);
+  if (!eventId || !confirmMatch || confirmMatch[1] !== eventId || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
+  let releaseClick;
+  let cancelled = false;
+  const clickStarted = new Promise((resolve) => { releaseClick = resolve; });
+  const promise = (async () => {
+    await clickStarted;
+    const deadline = Date.now() + FINAL_EFFECT_TIMEOUT_MS;
+    while (!cancelled) {
+      const readback = await readPeatixStateWithinDeadline(page, candidate, readProviderState, deadline);
+      if (readback.expired) return { status: "unknown" };
+      if (readback.state && ["registered", "pending"].includes(readback.state.status)) {
+        return { status: readback.state.status, providerState: readback.state };
+      }
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      await new Promise((resolve) => setTimeout(resolve, Math.min(FINAL_EFFECT_POLL_MS, remaining)));
+    }
+    return { status: cancelled ? "cancelled" : "unknown" };
+  })();
+  return { markClicked: releaseClick, cancel() { cancelled = true; releaseClick(); }, promise };
+}
+
+async function settlePeatixFinalEffect(wait) {
+  let settled = null;
+  try { settled = await wait.promise; } catch { settled = null; }
+  if (!settled || !["registered", "pending"].includes(settled.status)) {
+    return Object.freeze({ status: "failed", safe_reason: "effect_unknown" });
+  }
+  const providerState = settled.providerState && typeof settled.providerState === "object" && !Array.isArray(settled.providerState)
+    ? Object.freeze({ ...settled.providerState }) : null;
+  return Object.freeze({ status: "success", ...(providerState ? { provider_state: providerState } : {}) });
+}
 
 function safeControl(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) invalid();
@@ -41,10 +142,12 @@ function actionForControl(control) { const action = ACTIONS[control.kind]; retur
 async function inspectPageControls(input = {}) {
   const page = input.page;
   if (!page || typeof page.locator !== "function") invalid();
-  const locator = page.locator("input, textarea, select, button, a[role=button]");
+  let locator;
+  try { locator = page.locator("input, textarea, select, button, a[role=button], a#confirm-button"); } catch { locator = null; }
   if (!locator || typeof locator.evaluateAll !== "function") invalid();
   const provider = String(input.provider || "");
   const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
+  const eventId = String(input.event_id || "");
   const observed = await locator.evaluateAll((elements, context) => {
     const visibleElements = elements.slice(0, 100);
     const kindOf = (element) => {
@@ -74,14 +177,47 @@ async function inspectPageControls(input = {}) {
         tag === "input" && (["submit", "image"].includes(type) || allowKnownValue) ? element.value : null,
       ].map((value) => String(value || "").replace(/\s+/g, " ").trim()).find(Boolean) || "";
     };
+    const visibleOf = (element) => {
+      const view = element.ownerDocument && element.ownerDocument.defaultView;
+      const hiddenStyle = (style) => Boolean(style && (
+        [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase()))
+        || String(style.opacity || "") === "0"
+      ));
+      let current = element;
+      while (current) {
+        if (current.hidden === true || current.isConnected === false || (typeof current.hasAttribute === "function" && current.hasAttribute("hidden"))) return false;
+        if (String((current.getAttribute && current.getAttribute("aria-hidden")) || "").toLowerCase() === "true") return false;
+        if (hiddenStyle(current.style || {})) return false;
+        let computed = null;
+        try { computed = view && typeof view.getComputedStyle === "function" ? view.getComputedStyle(current) : null; } catch { computed = null; }
+        if (hiddenStyle(computed)) return false;
+        current = current.parentElement || null;
+      }
+      if (typeof element.getBoundingClientRect !== "function") return false;
+      let rect;
+      try { rect = element.getBoundingClientRect(); } catch { return false; }
+      return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0);
+    };
     const answerKinds = ["input", "textarea", "select", "checkbox", "radio"];
     const requiredAnswers = visibleElements.filter((element) => String(element.type || "").toLowerCase() !== "hidden" && element.disabled !== true && answerKinds.includes(kindOf(element)) && requiredOf(element));
     const requiredAnswersRepresentable = requiredAnswers.every((element) => !!labelOf(element));
+    const completedOf = (element) => {
+      const kind = kindOf(element);
+      const radioName = String((element.getAttribute && element.getAttribute("name")) || element.name || "");
+      return ["input", "textarea", "select"].includes(kind) ? Boolean(String(element.value || "").trim()) : kind === "checkbox" ? element.checked === true : kind === "radio" ? radioName.trim() ? elements.some((candidate) => String(candidate.type || "").toLowerCase() === "radio" && String((candidate.getAttribute && candidate.getAttribute("name")) || candidate.name || "") === radioName && candidate.checked === true) : element.checked === true : false;
+    };
+    const requiredAnswersComplete = requiredAnswers.every(completedOf);
     const answerForms = new Set(requiredAnswers.map((element) => element.form).filter(Boolean));
     const registrationForm = answerForms.size === 1 ? answerForms.values().next().value : null;
+    const requiredAnswerFormUnique = answerForms.size <= 1;
+    const requiredAnswersBound = Boolean(registrationForm && requiredAnswers.every((element) => element.form === registrationForm));
     const idOf = (element) => String(element.id || (element.getAttribute && element.getAttribute("id")) || "");
     const knownSubmitCount = visibleElements.filter((element) => idOf(element) === "form-submit-button").length;
-    const knownPage = context && context.provider === "peatix" && /^https:\/\/peatix\.com\/sales\/event\/[1-9][0-9]*\/form$/.test(String(context.href || ""));
+    const formPageMatch = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/form$/.exec(String(context && context.href || ""));
+    const knownPage = Boolean(context && context.provider === "peatix" && formPageMatch && (!context.eventId || formPageMatch[1] === String(context.eventId)));
+    const confirmPageMatch = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/confirm$/.exec(String(context && context.href || ""));
+    const knownConfirmPage = Boolean(context && context.provider === "peatix" && context.eventId && confirmPageMatch && confirmPageMatch[1] === String(context.eventId));
+    const knownConfirmCount = visibleElements.filter((element) => idOf(element) === "confirm-button").length;
     const submitCounts = new Map();
     for (const element of visibleElements) {
       const kind = kindOf(element);
@@ -91,22 +227,22 @@ async function inspectPageControls(input = {}) {
       const tag = String(element.tagName || "").toLowerCase();
       const type = String(element.type || "").toLowerCase();
       if (type === "hidden" || element.disabled === true) return [];
-      const kind = kindOf(element);
+      const knownPeatixConfirm = knownConfirmPage && requiredAnswersRepresentable && requiredAnswersComplete && requiredAnswerFormUnique && requiredAnswersBound && !element.form && visibleOf(element) && tag === "a" && idOf(element) === "confirm-button" && knownConfirmCount === 1 && element.disabled !== true && labelOf(element) === "チケットを申し込む";
+      const kind = knownPeatixConfirm ? "button" : kindOf(element);
       if (!["input", "textarea", "select", "checkbox", "radio", "button", "link"].includes(kind)) return [];
-      const knownPeatixSubmit = knownPage && requiredAnswersRepresentable && tag === "input" && type === "button" && idOf(element) === "form-submit-button" && element.disabled !== true && !!registrationForm && knownSubmitCount === 1;
+      const knownPeatixSubmit = knownPage && requiredAnswersRepresentable && tag === "input" && type === "button" && idOf(element) === "form-submit-button" && element.disabled !== true && !!registrationForm && knownSubmitCount === 1 && labelOf(element, true) === "確認画面へ進む";
       const label = labelOf(element, knownPeatixSubmit);
       if (!label) return [];
       const control = `control_${index + 1}`;
       element.dataset.lmConnectorControl = control;
       const group = groupOf(element);
       const question = ["checkbox", "radio"].includes(kind) && group && typeof group.querySelector === "function" ? String(group.querySelector("legend,dt,[data-question]")?.textContent || "").replace(/\s+/g, " ").trim() : "";
-      const radioName = String((element.getAttribute && element.getAttribute("name")) || element.name || "");
-      const completed = ["input", "textarea", "select"].includes(kind) ? Boolean(String(element.value || "").trim()) : kind === "checkbox" ? element.checked === true : kind === "radio" ? radioName.trim() ? elements.some((candidate) => String(candidate.type || "").toLowerCase() === "radio" && String((candidate.getAttribute && candidate.getAttribute("name")) || candidate.name || "") === radioName && candidate.checked === true) : element.checked === true : false;
+      const completed = completedOf(element);
       const required = requiredOf(element);
-      const submittable = requiredAnswersRepresentable && (knownPeatixSubmit || kind === "button" && !!element.form && element.form === registrationForm && submitTypeOf(element) && submitCounts.get(element.form) === 1);
+      const submittable = requiredAnswersRepresentable && (knownPeatixSubmit || knownPeatixConfirm || kind === "button" && !!element.form && element.form === registrationForm && submitTypeOf(element) && submitCounts.get(element.form) === 1);
       return [{ control, kind, label, required, completed, submittable, ...(question ? { question } : {}) }];
     });
-  }, { provider, href });
+  }, { provider, href, eventId });
   if (!Array.isArray(observed)) invalid();
   return Object.freeze(observed.map(safeControl));
 }
@@ -275,8 +411,9 @@ function createProductionBrowserHarness(options = {}) {
   ) invalid();
   const registry = new WeakMap();
 
-  async function observed(page, provider) {
-    const values = await inspectControls({ page, provider });
+  async function observed(page, provider, candidate = null) {
+    const eventId = candidatePeatixEventId(candidate);
+    const values = await inspectControls({ page, provider, event_id: eventId || undefined });
     if (!Array.isArray(values) || values.length < 1 || values.length > 100) invalid();
     const controls = values.map(safeControl);
     if (new Set(controls.map((item) => item.control)).size !== controls.length) invalid();
@@ -284,7 +421,7 @@ function createProductionBrowserHarness(options = {}) {
       state: "registration_page",
       controls: Object.freeze(controls),
     });
-    registry.set(page, { provider, observation });
+    registry.set(page, { provider, eventId, observation });
     return observation;
   }
 
@@ -292,8 +429,9 @@ function createProductionBrowserHarness(options = {}) {
     if (!input.page || !input.action || !CONTROL.test(String(input.action.control || ""))) invalid();
     const provider = input.provider == null ? "luma" : String(input.provider);
     if (!PROVIDERS.has(provider)) invalid();
+    const eventId = candidatePeatixEventId(input.candidate) || String(input.event_id || "");
     const cached = registry.get(input.page);
-    const observation = cached && cached.provider === provider ? cached.observation : await observed(input.page, provider);
+    const observation = cached && cached.provider === provider && cached.eventId === eventId ? cached.observation : await observed(input.page, provider, input.candidate);
     const control = observation.controls.find((item) => item.control === input.action.control);
     if (!control) return Object.freeze({ status: "failed" });
     const pendingRequiredAnswer = observation.controls.some((item) => ACTIONABLE_KINDS.has(item.kind) && item.required && !item.completed);
@@ -310,15 +448,36 @@ function createProductionBrowserHarness(options = {}) {
         || (Array.isArray(value) && (value.length < 1 || value.length > 3))
       ) return Object.freeze({ status: "failed" });
     }
-    const result = await operateControl({
-      page: input.page,
+    const navigationWait = startPeatixConfirmWait(input.page, provider, control);
+    if (navigationWait && navigationWait.unavailable) return Object.freeze({ status: "failed" });
+    const finalEffectWait = startPeatixFinalEffectWait(
+      input.page,
+      provider,
       control,
-      action,
-      value,
-    });
-    return result && result.status === "success"
-      ? Object.freeze({ status: "success" })
-      : Object.freeze({ status: "failed" });
+      input.candidate,
+      provider === "peatix" && peatixWorkflow ? peatixWorkflow.readProviderState : null,
+    );
+    if (finalEffectWait && finalEffectWait.unavailable) return Object.freeze({ status: "failed" });
+    if (finalEffectWait) finalEffectWait.markClicked();
+    let result;
+    try {
+      result = await operateControl({
+        page: input.page,
+        control,
+        action,
+        value,
+      });
+    } catch {
+      if (finalEffectWait) return settlePeatixFinalEffect(finalEffectWait);
+      return Object.freeze({ status: "failed" });
+    }
+    if (!result || result.status !== "success") {
+      if (finalEffectWait) return settlePeatixFinalEffect(finalEffectWait);
+      return Object.freeze({ status: "failed" });
+    }
+    if (navigationWait && !(await navigationWait.promise)) return Object.freeze({ status: "failed" });
+    if (finalEffectWait) return settlePeatixFinalEffect(finalEffectWait);
+    return Object.freeze({ status: "success" });
   }
 
   async function runFallback(input = {}) {
@@ -326,22 +485,33 @@ function createProductionBrowserHarness(options = {}) {
     const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow }[input.provider];
     if (!workflow || typeof workflow.readProviderState !== "function") invalid();
     const seenMutations = new Set();
+    let ambiguousEffect = false;
+    let finalEffectProviderState = null;
     const adapter = createBrowserHarnessAdapter({
-      observePage: ({ page }) => observed(page, input.provider),
+      observePage: ({ page }) => observed(page, input.provider, input.candidate),
       async proposeAction(input) { const proposal = await proposeAction(input); const token = String(proposal && typeof proposal === "object" ? proposal.control || "" : ""); const control = input.observation.controls.find((item) => item.control === token); return CONTROL.test(token) && control ? actionForControl(control) : null; },
       async performAction(action) {
         const selected = action.action || action; const effect = ["ax_click", "coordinate_click", "keyboard_submit"].includes(selected.method) ? "activate" : ["ax_fill", "dom_fill"].includes(selected.method) ? "fill" : selected.method; const signature = MUTATING_METHODS.has(selected.method) ? selected.purpose === "submit" ? `${safePageState(action.page)}:submit:form-submit` : `${safePageState(action.page)}:${selected.purpose}:${effect}:${selected.control}` : null;
         if (signature && seenMutations.has(signature)) return Object.freeze({ status: "failed" });
-        const result = await performAction({ ...action, provider: input.provider });
+        const result = await performAction({ ...action, provider: input.provider, candidate: input.candidate });
+        if (result && result.safe_reason === "effect_unknown") ambiguousEffect = true;
+        if (result && result.status === "success" && result.provider_state && ["registered", "pending"].includes(result.provider_state.status)) {
+          finalEffectProviderState = result.provider_state;
+        }
         if (signature && result && result.status === "success") seenMutations.add(signature);
         return result;
       },
-      readExpectedState: ({ page }) => workflow.readProviderState({
-        page,
-        candidate: input.candidate,
-      }),
+      readExpectedState: ({ page }) => finalEffectProviderState
+        ? finalEffectProviderState
+        : workflow.readProviderState({
+          page,
+          candidate: input.candidate,
+        }),
     });
-    return adapter.runFallback(input);
+    const result = await adapter.runFallback(input);
+    return ambiguousEffect && result && result.status === "failed"
+      ? Object.freeze({ ...result, safe_reason: "effect_unknown" })
+      : result;
   }
 
   return Object.freeze({ performAction, runFallback });

@@ -200,6 +200,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           phase: "pre_submit",
         }));
         let usedFallback = false;
+        let ambiguousAgentEffect = false;
         let directFailureReason = null;
         if (!registered(providerState)) providerState = null;
         if (!providerState) {
@@ -240,6 +241,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
               expectedState: "registered_or_pending",
             }));
             usedFallback = operation && operation.status === "completed";
+            ambiguousAgentEffect = Boolean(operation && operation.status === "failed" && operation.safe_reason === "effect_unknown");
           } catch {
             operation = Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
           }
@@ -282,6 +284,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
 
         consecutiveFailures += 1;
         lastSafeReason = directFailureReason || operationSafeReason(operation, "direct_action_unverified");
+        if (ambiguousAgentEffect) return finish("circuit_open", "effect_unknown");
         if (consecutiveFailures >= settings.maxConsecutiveFailures) {
           return finish("circuit_open", lastSafeReason);
         }
