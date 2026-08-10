@@ -10,6 +10,9 @@ const SAFE_REASON = /^[a-z0-9][a-z0-9_:-]{1,99}$/;
 const SAFE_METHOD = /^[a-z][a-z0-9_]{1,63}$/;
 const PURPOSE = /^(?:navigate|observe|fill|submit|readback)$/;
 const RESULT = /^(?:success|failed)$/;
+const REPORT_KEYS = "consecutive_failure_count,created_at,safe_reason,schema_version,status,wake_id";
+const DELIVERY_KEYS = "delivered_at,schema_version,telegram_provider_id,wake_id";
+const POSITIVE_PROVIDER_ID = /^[1-9][0-9]*$/;
 const STATUSES = new Set(["applied_bundle", "completed_no_effect", "circuit_open"]);
 
 function invalid() {
@@ -85,6 +88,19 @@ function safeReport(input, wakeId, createdAt) {
   });
 }
 
+function safeDelivery(input) {
+  if (
+    !input || typeof input !== "object" || Array.isArray(input)
+    || Object.keys(input).sort().join(",") !== DELIVERY_KEYS
+    || input.schema_version !== 1
+    || typeof input.wake_id !== "string" || !SAFE_ID.test(input.wake_id)
+    || typeof input.telegram_provider_id !== "string" || !POSITIVE_PROVIDER_ID.test(input.telegram_provider_id)
+    || !Number.isSafeInteger(Number(input.telegram_provider_id))
+    || typeof input.delivered_at !== "string" || exactInstant(input.delivered_at) !== input.delivered_at
+  ) invalid();
+  return Object.freeze({ ...input });
+}
+
 function safeDiscoveryAudit(input, wakeId, recordedAt) {
   const keys = [
     "calendar_free_count", "free_open_count", "normalized_count", "observed_count", "window_count",
@@ -152,23 +168,29 @@ function createMinimalProductionOperations(options = {}) {
   }
 
   async function reportWake(input) {
-    const report = safeReport(input, wakeId, exactInstant(now()));
+    let report = safeReport(input, wakeId, exactInstant(now()));
     const reports = readRows(reportFile);
     const existing = reports.find((row) => row && row.wake_id === wakeId);
     if (existing) {
-      if (JSON.stringify(existing) !== JSON.stringify(report)) invalid();
+      const createdAt = exactInstant(existing.created_at);
+      const canonical = safeReport(input, wakeId, createdAt);
+      if (Object.keys(existing).sort().join(",") !== REPORT_KEYS
+        || REPORT_KEYS.split(",").some((key) => existing[key] !== canonical[key])) invalid();
+      report = canonical;
     } else {
       append(reportFile, report);
       reports.push(report);
     }
     const deliveries = readRows(deliveryFile);
-    const byWake = new Map(deliveries.map((row) => [row && row.wake_id, row]));
-    for (const pending of reports) {
+    const byWake = new Map(deliveries.map((row) => {
+      const delivery = safeDelivery(row);
+      return [delivery.wake_id, delivery];
+    }));
+    async function deliver(pending) {
       if (!pending || !SAFE_ID.test(String(pending.wake_id || ""))) invalid();
-      if (byWake.has(pending.wake_id)) continue;
       const response = await sendMessage(reportMessage(pending), { telegramTarget });
       const providerId = parseOpenClawMessageId(response);
-      const delivery = Object.freeze({
+      const delivery = safeDelivery({
         schema_version: 1,
         wake_id: pending.wake_id,
         telegram_provider_id: providerId,
@@ -177,9 +199,23 @@ function createMinimalProductionOperations(options = {}) {
       append(deliveryFile, delivery);
       byWake.set(pending.wake_id, delivery);
     }
-    const current = byWake.get(wakeId);
+    const current = reports.find((row) => row && row.wake_id === wakeId);
     if (!current) invalid();
-    return Object.freeze({ telegram_provider_id: current.telegram_provider_id });
+    if (!byWake.has(wakeId)) await deliver(current);
+    let historical;
+    for (const pending of reports) {
+      if (!pending || !SAFE_ID.test(String(pending.wake_id || ""))) invalid();
+      if (pending.wake_id !== wakeId && !byWake.has(pending.wake_id)) {
+        historical = pending;
+        break;
+      }
+    }
+    if (historical) {
+      try { await deliver(historical); } catch {}
+    }
+    const currentDelivery = byWake.get(wakeId);
+    if (!currentDelivery) invalid();
+    return Object.freeze({ telegram_provider_id: currentDelivery.telegram_provider_id });
   }
 
   return Object.freeze({

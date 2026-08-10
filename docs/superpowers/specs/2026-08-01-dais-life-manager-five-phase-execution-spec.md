@@ -6484,7 +6484,24 @@ old pendingとcurrent deliveryの順序結合がroot cause。次plan
 一件だけをbest-effort recoveryする。current失敗はhard failure、historical失敗はpending維持。JSONL削除/変更、Bot API、gateway restart、
 queue、backoff、browser/discovery/Submit/schedule変更は0。
 
-### Active remaining TODO SSOT（進捗254。これ以外の残TODO一覧は履歴）
+### O1B-25進捗255（current-wake report priority GREEN / adversarial review ship）
+
+Lunaがplan `2026-08-10-connector-current-wake-report-priority.md`をTDD実装した。初回REDはfocused 6件中4 pass・2 failで、
+historical送信failureのcurrentへの伝播とoldest-firstによるcurrent ID後回しを再現。current reportを先に一回送って実positive IDを保存後、
+oldest pending一件だけをbest-effort送信するよう変更した。current failureはhard、historical failureはreceiptを作らずpending維持、duplicate
+currentは再送0、JSONLはappend-only。
+
+fresh Sol reviewは、実時計duplicateで新しい`created_at`が既存rowと衝突するImportantと、既存delivery rowを未検証で信頼するImportantを
+発見。同じLunaがadversarial REDを追加し、保存済み`created_at`を正本として業務fieldだけ照合、driftはrejectへ修正した。deliveryは
+exact keys、schema 1、safe wake ID、正のnumeric-string provider ID、canonical ISO instantをread時に検証し、malformed schema/ID/type/
+wake/instantはsend 0でfail-closed。re-reviewはCritical 0・Important 0で`ship`。
+
+focused 8/8、operations/runner/production/native/renderer integration 33/33、syntax、diff checkはPASS。productionは44追加・8削除、testは
+85追加・10削除の2 files。100 LOC soft target超過は、外部報告を誤って成功扱いしない実時計duplicateと破損receipt matrixの最小regressionを
+維持するためで、追加service/queue/transportは0。次の一件はschedule unloaded、dashboard count 0でofficial wakeを一度実行し、
+Peatix page1 retry、direct registration/readback、current-first report ID、owned cleanupを同一wakeで確認する。
+
+### Active remaining TODO SSOT（進捗255。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

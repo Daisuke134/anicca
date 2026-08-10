@@ -35,15 +35,15 @@
 - Modify: `apps/life-manager/lib/connector-minimal-operations.test.js`
 - Modify: `apps/life-manager/lib/connector-minimal-operations.js`
 
-- [ ] **Step 1: Add a focused failing current-first test**
+- [x] **Step 1: Add a focused failing current-first test**
 
 Seed one older pending report. On the later wake, make the sender succeed for the current report and fail for the old one. Assert send order is current then old, result carries the current positive ID, current delivery exists, old delivery does not, and the old report remains unchanged.
 
-- [ ] **Step 2: Add bounded recovery and hard-current-failure regressions**
+- [x] **Step 2: Add bounded recovery and hard-current-failure regressions**
 
 Seed two historical pending reports and assert only one is attempted after current success. A later call/wake can recover the next. Assert current send failure still rejects and appends no current delivery. Assert duplicate current `reportWake` never resends current and may attempt at most one backlog item.
 
-- [ ] **Step 3: Run focused RED**
+- [x] **Step 3: Run focused RED**
 
 ```bash
 node --test apps/life-manager/lib/connector-minimal-operations.test.js
@@ -51,11 +51,11 @@ node --test apps/life-manager/lib/connector-minimal-operations.test.js
 
 Expected: current-first/bounded assertions fail because production iterates all pending reports oldest-first and propagates historical failure.
 
-- [ ] **Step 4: Implement the minimum delivery helper and ordering**
+- [x] **Step 4: Implement the minimum delivery helper and ordering**
 
 Create a private helper that sends one validated report and appends its delivery receipt. Use it for current first, then one historical pending report inside a best-effort catch. Keep the existing receipt map and current return contract.
 
-- [ ] **Step 5: Run focused and required integration GREEN**
+- [x] **Step 5: Run focused and required integration GREEN**
 
 ```bash
 node --test apps/life-manager/lib/connector-minimal-operations.test.js \
@@ -69,6 +69,6 @@ git diff --check
 
 Expected: all pass, no network or external write.
 
-- [ ] **Step 6: Report exact RED/GREEN evidence to Sol**
+- [x] **Step 6: Report exact RED/GREEN evidence to Sol**
 
 Do not commit or push. Sol performs fresh review, commits/pushes the approved two-file implementation, updates the SSOT, then runs one official foreground wake with scheduling still unloaded.
