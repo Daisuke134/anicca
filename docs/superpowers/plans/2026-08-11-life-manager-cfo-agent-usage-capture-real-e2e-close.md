@@ -4,7 +4,7 @@
 > superpowers:test-driven-development to implement this plan task-by-task. Luna owns the one test-harness edit; Sol
 > owns this plan, real verification, review, state, commit, and push.
 
-**Status:** READY FOR LUNA — fresh plan review `ship`
+**Status:** COMPLETE — implementation `2414587a3`; fresh implementation review `Spec ✅ / Approved`
 
 **Goal:** Close durable agent-usage capture with real local evidence: existing owner usage ledgers stay byte-identical,
 historical rows without write-ahead attempts report `capture_not_started` rather than fake complete coverage, and the
@@ -55,7 +55,7 @@ local files, fake local provider binary.
   event counts and source attributes remain derived exactly.
 - PASS stdout adds only `capture_not_started_sources=2`; it prints no per-row or private value.
 
-- [ ] **Step 1: Run the stale harness for genuine RED**
+- [x] **Step 1: Run the stale harness for genuine RED**
 
 ```bash
 cd apps/life-call
@@ -65,13 +65,13 @@ node test/cfo-local-agent-usage-real-e2e.js
 Expected: fixed `FAIL` and exit 1 because the old exact receipt/status/span contract rejects the new capture fields.
 Missing dependencies or missing real source files are blockers, not RED.
 
-- [ ] **Step 2: Make the minimum one-file harness update**
+- [x] **Step 2: Make the minimum one-file harness update**
 
 Update only the exact receipt/capture/span assertions and counts-only PASS line described above. Keep real-source scan,
 clone, permissions, causal-chain verification, console-silence guard, before/after digest comparison, provider shutdown,
 and exact-prefix temp cleanup unchanged. Do not add a producer invocation to Node.
 
-- [ ] **Step 3: Run GREEN and regression checks**
+- [x] **Step 3: Run GREEN and regression checks**
 
 ```bash
 cd apps/life-call
@@ -87,7 +87,7 @@ Expected: every command exits 0; Node E2E emits one counts-only PASS line with `
 `capture_not_started_sources=2`, and `spans=1`. Luna reports exact counts/LOC/diff and touches no other file; no commit,
 push, live mutation, or Telegram.
 
-- [ ] **Step 4: Sol runs the existing real Python provider-boundary probes**
+- [x] **Step 4: Sol runs the existing real Python provider-boundary probes**
 
 ```bash
 cd /Users/anicca/profitable-claude/.worktrees/cfo-agent-usage-capture
@@ -100,9 +100,24 @@ Expected: 2/2 pass. These tests execute the real Python runner against a fake lo
 visible before launch, success/failure completion reuses the same random 24-hex ID, and a completion-write failure
 leaves the attempt durable with measured usage evidence. They perform no paid or network provider call.
 
-- [ ] **Step 5: Fresh review and close state**
+- [x] **Step 5: Fresh review and close state**
 
 Fresh Sol review checks real-ledger immutability, historical cutover truth, exact receipt/span privacy, fake-provider
 boundary evidence, temp cleanup, and Ponytail scope. Luna fixes only load-bearing findings in the same one harness file.
 Sol independently re-runs the Node E2E and both Python probes, updates this plan and parent/child specs, commits/pushes,
 sends one counts-only Telegram milestone, checks CFO-2a2b complete, and advances only to CFO-2a3.
+
+## Completion evidence
+
+- Genuine RED after locked dependency restoration: the stale real E2E returned the fixed `FAIL` and exit 1 because its
+  exact receipt/status/span oracle rejected the new capture contract.
+- Luna changed exactly the one existing harness file, 4 additions / 4 deletions, with no production, package, lock,
+  provider, network, live-ledger, launchd, DB, or Telegram mutation.
+- Real Node E2E PASS: two owner ledgers, 5,096 discovered and accepted historical rows, 346 historical missing-usage
+  rows, six chain coverage exceptions, two `capture_not_started` sources, and one exact span. Independent before/after
+  SHA-256 comparison returned `real_ledgers_unchanged=2` without printing digests.
+- Real Python provider-boundary probes passed 2/2 against the actual `agent_runner.py` with fake local executables:
+  attempt-before-launch and same-ID completion, plus durable attempt after completion-write failure. No paid/network
+  provider ran.
+- Regression gates: focused capture/runner 14/14, registered CFO 300/300, full npm test exit 0, syntax and diff check
+  pass. Fresh review returned `Spec ✅`, `Task quality: Approved`, and zero findings.
