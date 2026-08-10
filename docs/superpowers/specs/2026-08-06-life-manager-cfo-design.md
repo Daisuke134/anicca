@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PRODUCT STAGE 7 COMPLETE — hourly local loop live; scheduled real-data proof 2/2 |
+| Status | M2 ACTIVE — Product Stage 7 complete; CFO-2a business-ledger contract is the only active slice |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -86,6 +86,17 @@ the current real Moneytree → Telegram flow cannot work correctly without it.
 - Same-day append-only correction revisions are not required for the first accurate report. Build them only after a
   real delivered report produces a correction requirement that the existing snapshot/delivery identity cannot handle.
 - Steel parity, multi-tenancy, Binance, tax, business P&L, and spending advice do not block Product Stage 7.
+
+### 1.3.1 M2 execution rule — Sol plans, Luna builds
+
+M2 is not one implementation batch. The parent spec fixes order only. Each checkbox receives one child spec and one
+implementation plan, and closes through RED → minimal GREEN → focused review → real E2E → spec update → commit/push
+before the next checkbox starts. Sol owns product decisions, specs, plans, and final evidence. Luna exclusively owns
+production code, tests, SQL, and implementation commands.
+
+`financial_unit_id` from the implemented CFO registry is the canonical economic identity. Historic `business_id`
+wording in planning prose means the same identity and MUST NOT create a second registry, ID, or database column.
+OpenTelemetry is deferred to CFO-2a2; CFO-2a adds no SDK, collector, span, migration, or write path.
 
 ### 1.4 Product Stage 7 — complete operating flow
 
@@ -930,7 +941,10 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
 
 ### M2 — Business P&L and resource accounting
 
-- [ ] **CFO-2a** Define the canonical business ledger event contract and map `lm_api_cost` without rewriting it.
+- [ ] **CFO-2a** Normalize existing `lm_api_cost` rows into the canonical financial-unit event contract without
+      rewriting the source table. Only the four current Life Manager kinds are attributed; unknown kinds remain
+      `unattributed`. Child SSOT:
+      `docs/superpowers/specs/2026-08-10-life-manager-cfo-business-ledger-contract-design.md`.
 - [ ] **CFO-2a2** Implement provider usage evidence ingestion and OpenTelemetry GenAI attributes. Existing
       duration/tokenizer values migrate as `locally_estimated`; they are never backfilled as provider-measured.
 - [ ] **CFO-2a2a** Ingest local Codex cumulative session usage and Claude per-response usage with source-specific
