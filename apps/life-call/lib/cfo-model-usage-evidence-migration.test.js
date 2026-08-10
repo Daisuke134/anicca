@@ -1,0 +1,18 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const { test } = require("node:test");
+const migrationPath = path.join(__dirname, "..", "migrations", "2026-08-10-cfo-model-usage-evidence.sql");
+const patterns = [
+  /CREATE TABLE IF NOT EXISTS public\.lm_cfo_model_usage_evidence/i, /id\s+bigint\s+GENERATED ALWAYS AS IDENTITY\s+PRIMARY KEY/i, /public_ref\s+uuid\s+NOT NULL\s+DEFAULT\s+gen_random_uuid\(\)\s+UNIQUE.*public_ref\s*<>\s*'00000000-0000-0000-0000-000000000000'::uuid/is, /uid\s+text\s+NOT NULL\s+REFERENCES\s+public\.lm_users\(uid\).*btrim\(uid\)\s*<>\s*''/is,
+  /financial_unit_id\s+text.*financial_unit_id\s+~\s*'\^\[a-z0-9\]\+\(\?:_\[a-z0-9\]\+\)\*\$'/is, /attribution_status\s+text.*attribution_status\s*=\s*'attributed'.*financial_unit_id\s+IS NOT NULL.*attribution_status\s*=\s*'unattributed'.*financial_unit_id\s+IS NULL/is, /provider\s+text.*\^\[a-z0-9\].*provider_request_id\s+text.*btrim\(provider_request_id\)\s*<>\s*''/is, /usage_sequence\s+bigint.*CHECK\s*\(\s*usage_sequence\s*>=\s*0\s*\)/is, /occurred_at\s+timestamptz\s+NOT NULL.*trace_id\s+text.*\^\[0-9a-f\]\{32\}.*repeat\('0',\s*32\)/is,
+  /request_model\s+text\s+NOT NULL.*response_model\s+text\s+NOT NULL/is, /input_tokens\s+bigint\s+NOT NULL.*CHECK\s*\(\s*input_tokens\s*>=\s*0\s*\).*output_tokens\s+bigint\s+NOT NULL.*CHECK\s*\(\s*output_tokens\s*>=\s*0\s*\).*total_tokens\s+bigint\s+NOT NULL.*CHECK\s*\(\s*total_tokens\s*>=\s*0\s*\)/is, /cached_input_tokens\s+bigint.*IS NULL\s+OR\s+cached_input_tokens\s*>=\s*0.*reasoning_output_tokens\s+bigint.*IS NULL\s+OR\s+reasoning_output_tokens\s*>=\s*0.*tool_input_tokens\s+bigint.*IS NULL\s+OR\s+tool_input_tokens\s*>=\s*0/is, /evidence_status\s+text.*provider_reported.*locally_estimated.*created_at\s+timestamptz\s+NOT NULL\s+DEFAULT\s+clock_timestamp\(\)/is,
+  /CONSTRAINT\s+lm_cfo_model_usage_evidence_identity_unique\s+UNIQUE\s*\(provider,\s*provider_request_id,\s*usage_sequence\)/i, /ENABLE ROW LEVEL SECURITY/i, /CREATE POLICY\s+\S+\s+ON public\.lm_cfo_model_usage_evidence\s+FOR SELECT\s+TO service_role\s+USING\s*\(true\)/i, /CREATE POLICY\s+\S+\s+ON public\.lm_cfo_model_usage_evidence\s+FOR INSERT\s+TO service_role\s+WITH CHECK\s*\(true\)/i, /REVOKE ALL ON TABLE public\.lm_cfo_model_usage_evidence FROM PUBLIC, anon, authenticated/i,
+  /GRANT SELECT, INSERT ON TABLE public\.lm_cfo_model_usage_evidence TO service_role/i, /REVOKE UPDATE, DELETE ON TABLE public\.lm_cfo_model_usage_evidence FROM service_role/i, /GRANT USAGE, SELECT ON SEQUENCE public\.lm_cfo_model_usage_evidence_id_seq TO service_role/i, /BEFORE UPDATE OR DELETE ON public\.lm_cfo_model_usage_evidence/i, /RETURNS trigger.*SECURITY INVOKER.*SET search_path\s*=\s*public,\s*pg_temp/is, /RAISE EXCEPTION 'lm_cfo_model_usage_evidence is append-only'/i,
+];
+test("CFO model usage evidence migration is structured, private, and append-only", () => {
+  const sql = fs.readFileSync(migrationPath, "utf8");
+  patterns.forEach((pattern) => assert.match(sql, pattern));
+  assert.doesNotMatch(sql, /\bjsonb?\b|raw_response|otel_attributes|lm_append_cfo_model_usage_evidence/i);
+});
