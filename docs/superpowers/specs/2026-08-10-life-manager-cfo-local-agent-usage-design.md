@@ -203,7 +203,9 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 | 2a2a.4 ✅ | Versioned loop/task mapping yields attributed or visibly unattributed rows | 3 files, +51/-1 LOC |
 | 2a2a.5a ✅ | Pure collector composes scanner, mapping, and reducer; state exists only after reducer success | 3 files, +62/-1 LOC |
 | 2a2a.5b1 ✅ | Atomically replace one content-free checkpoint per source; never store normalized events twice | 3 files, +99/-1 LOC |
-| 2a2a.5b2 NEXT | Read checkpoints and resume both sources in the existing local hourly loop | <=3 files per sub-slice |
+| 2a2a.5b2a NEXT | Read and validate one fixed per-source checkpoint; missing means first run | 2 files, <=100 added LOC |
+| 2a2a.5b2b | Collect and checkpoint both sources in one local runner | <=3 files, <=100 added LOC |
+| 2a2a.5b2c | Invoke the runner from the existing local hourly loop without changing Telegram copy | <=3 files, <=100 added LOC |
 | 2a2a.5c | One content-free internal OTel batch span links checkpoint and counts; it is not token truth | <=3 files, <=100 added LOC |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
 
