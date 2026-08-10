@@ -64,3 +64,13 @@ The first GREEN passed focused 31/31, Luna adjacent 82/82, and Sol expanded 103/
 2. If any enabled, non-hidden required answer control cannot be represented as a sanitized labeled control, mark every submit non-submittable. The parent/proposer must never infer completeness from a filtered subset of required controls.
 
 Add regressions that reproduce both findings: the same exact ID under `provider=luma`, wrong host/path, cross-provider registry reuse, and one unlabeled required input alongside an otherwise valid Peatix submit. Preserve the measured Peatix happy path and all original fail-closed variants.
+
+## Result
+
+- Initial RED/GREEN: focused 30/31 then 31/31. Initial Luna adjacent 82/82 and Sol expanded 103/103 passed.
+- Fresh review returned `fix-first` with two Important findings: the exception was not provider/domain-bound, and an unlabeled required answer disappeared from the sanitized observation.
+- Amendment RED reproduced three failures in 31/34: wrong provider/host/path, cross-provider registry reuse, and unlabeled required answer.
+- Final GREEN: focused 34/34, Luna adjacent 85/85, Sol expanded 106/106, both JavaScript syntax checks, and `git diff --check` all passed.
+- The inspector now receives provider and exact page URL context. The known exception is limited to `provider=peatix` and `https://peatix.com/sales/event/<id>/form`; the registry is provider-bound; any unrepresentable enabled/non-hidden required answer makes all submits non-submittable.
+- Final fresh re-review returned `ship` with no Critical or Important findings.
+- Final code delta: production +31/-18 and tests +75/-1 across the two owned files only. No browser, provider, Calendar, evidence, Telegram, state/profile, schedule, or launchd action occurred during implementation and tests.

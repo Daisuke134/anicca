@@ -6789,7 +6789,13 @@ LunaのTDD初回REDはfocused 30/31で、required completion後も`input#form-su
 
 fresh Sol reviewはImportant 2件で`fix-first`。第一に、共通inspectorのPeatix特例がprovider/domainへ束縛されず、`provider=luma`でも同DOM IDがsubmit候補になった。第二に、labelを生成できないrequired answerが観測配列から消えると、parentのpending判定が不完全なsubsetだけを見てsubmitを許可した。planを先に改訂し、特例を`provider=peatix`かつstrict `https://peatix.com/sales/event/<id>/form`へ束縛し、registryもprovider一致を要求する。さらにenabled/non-hidden required answerが一つでもsanitized controlへ表現不能なら全submitをfail closedにする。初回diffは未commit、browser/model/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用0。Item 10B/14/19は未完。
 
-### Active remaining TODO SSOT（進捗274。これ以外の残TODO一覧は履歴）
+### O1B-25進捗275（known Peatix submit final GREEN / ship）
+
+同じLunaがfresh-review amendmentをTDD実装した。改訂REDはfocused 31/34で、wrong provider/host/path、cross-provider same-page registry reuse、unlabeled enabled required answerの3 fail-openを再現。最終GREENはfocused 34/34、Luna adjacent 85/85、Sol expanded 106/106、両JS syntax、diff checkが全てPASS。最終fresh re-reviewはCritical 0・Important 0で`ship`。
+
+最終実装はinspectorへproviderとpage URL contextを渡し、既知Peatix特例を`provider=peatix`かつstrict `https://peatix.com/sales/event/<id>/form`へ限定する。registryはpageだけでなくproviderも束縛し、provider切替時は再観測する。enabled/non-hidden required answerをsanitized label付きcontrolへ一つでも表現できなければ、既知Peatixとgeneric form submitの両方を全てnon-submittableにする。generic form-associated submit/image、required優先、parent enforcement、same-page duplicate-effect guardは維持した。最終差分はHarness production +31/-18、test +75/-1の2 filesのみ。implementation/test中のbrowser/model/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用は0。Item 10B/14/19は未完。次の一件はcommit/push後のclean preflightを通し、schedule unloadedのofficial foreground wakeでexact submit→confirm→parent readback→applied bundleまたは次safe boundaryを実測する。
+
+### Active remaining TODO SSOT（進捗275。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

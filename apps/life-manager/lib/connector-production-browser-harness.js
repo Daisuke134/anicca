@@ -43,7 +43,9 @@ async function inspectPageControls(input = {}) {
   if (!page || typeof page.locator !== "function") invalid();
   const locator = page.locator("input, textarea, select, button, a[role=button]");
   if (!locator || typeof locator.evaluateAll !== "function") invalid();
-  const observed = await locator.evaluateAll((elements) => {
+  const provider = String(input.provider || "");
+  const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
+  const observed = await locator.evaluateAll((elements, context) => {
     const visibleElements = elements.slice(0, 100);
     const kindOf = (element) => {
       const tag = String(element.tagName || "").toLowerCase();
@@ -60,9 +62,26 @@ async function inspectPageControls(input = {}) {
       const group = groupOf(element);
       return element.required === true || String((element.getAttribute && element.getAttribute("aria-required")) || "").toLowerCase() === "true" || Boolean(group && (((group.classList && typeof group.classList.contains === "function") && group.classList.contains("required")) || /(?:^|\s)required(?:\s|$)/.test(String(group.className || "")) || String((group.getAttribute && group.getAttribute("aria-required")) || "").toLowerCase() === "true"));
     };
+    const labelOf = (element, allowKnownValue = false) => {
+      const tag = String(element.tagName || "").toLowerCase(); const type = String(element.type || "").toLowerCase();
+      const labels = Array.from(element.labels || []).map((label) => label.innerText || label.textContent || "");
+      return [
+        ...labels,
+        element.getAttribute && element.getAttribute("aria-label"),
+        element.getAttribute && element.getAttribute("placeholder"),
+        element.getAttribute && element.getAttribute("name"),
+        element.innerText,
+        tag === "input" && (["submit", "image"].includes(type) || allowKnownValue) ? element.value : null,
+      ].map((value) => String(value || "").replace(/\s+/g, " ").trim()).find(Boolean) || "";
+    };
     const answerKinds = ["input", "textarea", "select", "checkbox", "radio"];
-    const answerForms = new Set(visibleElements.filter((element) => String(element.type || "").toLowerCase() !== "hidden" && element.disabled !== true && answerKinds.includes(kindOf(element)) && requiredOf(element)).map((element) => element.form).filter(Boolean));
+    const requiredAnswers = visibleElements.filter((element) => String(element.type || "").toLowerCase() !== "hidden" && element.disabled !== true && answerKinds.includes(kindOf(element)) && requiredOf(element));
+    const requiredAnswersRepresentable = requiredAnswers.every((element) => !!labelOf(element));
+    const answerForms = new Set(requiredAnswers.map((element) => element.form).filter(Boolean));
     const registrationForm = answerForms.size === 1 ? answerForms.values().next().value : null;
+    const idOf = (element) => String(element.id || (element.getAttribute && element.getAttribute("id")) || "");
+    const knownSubmitCount = visibleElements.filter((element) => idOf(element) === "form-submit-button").length;
+    const knownPage = context && context.provider === "peatix" && /^https:\/\/peatix\.com\/sales\/event\/[1-9][0-9]*\/form$/.test(String(context.href || ""));
     const submitCounts = new Map();
     for (const element of visibleElements) {
       const kind = kindOf(element);
@@ -74,15 +93,8 @@ async function inspectPageControls(input = {}) {
       if (type === "hidden" || element.disabled === true) return [];
       const kind = kindOf(element);
       if (!["input", "textarea", "select", "checkbox", "radio", "button", "link"].includes(kind)) return [];
-      const labels = Array.from(element.labels || []).map((label) => label.innerText || label.textContent || "");
-      const label = [
-        ...labels,
-        element.getAttribute && element.getAttribute("aria-label"),
-        element.getAttribute && element.getAttribute("placeholder"),
-        element.getAttribute && element.getAttribute("name"),
-        element.innerText,
-        tag === "input" && ["submit", "image"].includes(type) ? element.value : null,
-      ].map((value) => String(value || "").replace(/\s+/g, " ").trim()).find(Boolean);
+      const knownPeatixSubmit = knownPage && requiredAnswersRepresentable && tag === "input" && type === "button" && idOf(element) === "form-submit-button" && element.disabled !== true && !!registrationForm && knownSubmitCount === 1;
+      const label = labelOf(element, knownPeatixSubmit);
       if (!label) return [];
       const control = `control_${index + 1}`;
       element.dataset.lmConnectorControl = control;
@@ -91,10 +103,10 @@ async function inspectPageControls(input = {}) {
       const radioName = String((element.getAttribute && element.getAttribute("name")) || element.name || "");
       const completed = ["input", "textarea", "select"].includes(kind) ? Boolean(String(element.value || "").trim()) : kind === "checkbox" ? element.checked === true : kind === "radio" ? radioName.trim() ? elements.some((candidate) => String(candidate.type || "").toLowerCase() === "radio" && String((candidate.getAttribute && candidate.getAttribute("name")) || candidate.name || "") === radioName && candidate.checked === true) : element.checked === true : false;
       const required = requiredOf(element);
-      const submittable = kind === "button" && !!element.form && element.form === registrationForm && submitTypeOf(element) && submitCounts.get(element.form) === 1;
+      const submittable = requiredAnswersRepresentable && (knownPeatixSubmit || kind === "button" && !!element.form && element.form === registrationForm && submitTypeOf(element) && submitCounts.get(element.form) === 1);
       return [{ control, kind, label, required, completed, submittable, ...(question ? { question } : {}) }];
     });
-  });
+  }, { provider, href });
   if (!Array.isArray(observed)) invalid();
   return Object.freeze(observed.map(safeControl));
 }
@@ -263,8 +275,8 @@ function createProductionBrowserHarness(options = {}) {
   ) invalid();
   const registry = new WeakMap();
 
-  async function observed(page) {
-    const values = await inspectControls({ page });
+  async function observed(page, provider) {
+    const values = await inspectControls({ page, provider });
     if (!Array.isArray(values) || values.length < 1 || values.length > 100) invalid();
     const controls = values.map(safeControl);
     if (new Set(controls.map((item) => item.control)).size !== controls.length) invalid();
@@ -272,7 +284,7 @@ function createProductionBrowserHarness(options = {}) {
       state: "registration_page",
       controls: Object.freeze(controls),
     });
-    registry.set(page, observation);
+    registry.set(page, { provider, observation });
     return observation;
   }
 
@@ -280,7 +292,8 @@ function createProductionBrowserHarness(options = {}) {
     if (!input.page || !input.action || !CONTROL.test(String(input.action.control || ""))) invalid();
     const provider = input.provider == null ? "luma" : String(input.provider);
     if (!PROVIDERS.has(provider)) invalid();
-    const observation = registry.get(input.page) || await observed(input.page);
+    const cached = registry.get(input.page);
+    const observation = cached && cached.provider === provider ? cached.observation : await observed(input.page, provider);
     const control = observation.controls.find((item) => item.control === input.action.control);
     if (!control) return Object.freeze({ status: "failed" });
     const pendingRequiredAnswer = observation.controls.some((item) => ACTIONABLE_KINDS.has(item.kind) && item.required && !item.completed);
@@ -314,7 +327,7 @@ function createProductionBrowserHarness(options = {}) {
     if (!workflow || typeof workflow.readProviderState !== "function") invalid();
     const seenMutations = new Set();
     const adapter = createBrowserHarnessAdapter({
-      observePage: ({ page }) => observed(page),
+      observePage: ({ page }) => observed(page, input.provider),
       async proposeAction(input) { const proposal = await proposeAction(input); const token = String(proposal && typeof proposal === "object" ? proposal.control || "" : ""); const control = input.observation.controls.find((item) => item.control === token); return CONTROL.test(token) && control ? actionForControl(control) : null; },
       async performAction(action) {
         const selected = action.action || action; const effect = ["ax_click", "coordinate_click", "keyboard_submit"].includes(selected.method) ? "activate" : ["ax_fill", "dom_fill"].includes(selected.method) ? "fill" : selected.method; const signature = MUTATING_METHODS.has(selected.method) ? selected.purpose === "submit" ? `${safePageState(action.page)}:submit:form-submit` : `${safePageState(action.page)}:${selected.purpose}:${effect}:${selected.control}` : null;
