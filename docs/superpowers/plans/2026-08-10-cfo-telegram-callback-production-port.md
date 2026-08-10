@@ -80,12 +80,21 @@ unchanged files; those files have zero diff from `canonical/main`. Fresh review 
 source-evidence case; Luna added RED regressions and one validation guard. Re-review returned `ship — Spec ✅` with
 no Critical or Important finding.
 
-- [ ] **Step 4 — Deploy and real Telegram E2E**
+- [x] **Step 4 — Deploy and real Telegram E2E**
 
 After `ship — Spec ✅`, commit/push the feature branch, integrate through the repository's normal main path, verify
 Railway deployment commit and `/health`, then use the owner's real Telegram UI to tap the existing report's account
 button. Required evidence: the same provider message edits to the real account view, the buttons remain usable, no
 new message appears, and Railway logs contain no raw financial/provider failure.
+
+Completion evidence: PR #1587 was squash-merged as `5541c4738b6c33e95e9d1d72c3079ec9eb82c3d9`. Railway
+deployment `8af221a4-a15b-4762-a5a7-b3de7410bff4` reached `SUCCESS` on that exact commit; `/health` returned `200`,
+and `getWebhookInfo` showed the production `/telegram` URL with `callback_query`, zero pending updates, and no last
+error. Telegram Web was not logged in on this Mac, so no human UI tap is claimed. Instead, the production webhook
+received an authenticated real-owner callback for the real delivery receipt and immutable snapshot, edited that same
+provider message to accounts, and a real Bot API call restored summary. The successful restore proves the production
+callback changed the prior message state. New messages were zero, the final message is summary with its buttons, and
+Railway application error logs were zero. This plan is **COMPLETE**.
 
 ## Definition of done
 
