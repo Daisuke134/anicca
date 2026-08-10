@@ -7,7 +7,7 @@
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2a.5b2: validate immutable local-usage chains and resume both sources** |
+| First unfinished item | **CFO-2a2a.5b2a: validate one immutable local-usage chain and return its resume cursor** |
 
 ## 1. Overview — What and Why
 
