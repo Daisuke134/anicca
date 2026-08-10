@@ -6959,7 +6959,13 @@ Luna REDは追加3件中2件で、single exact-coveredが`[A,B,C]`のまま、mu
 
 最終差分はPeatix workflow production +25/-13、test +69。Luna focused追加3件とadjacent、Sol独立新規3件を含むrelevant suiteがPASS。変更外baseline3件は同一。syntax、diff check PASS、fresh Sol reviewはCritical 0・Important 0で`ship`。次はcommit/push後、4 labels unloadedのofficial foreground wakeをexact 1回再実行し、existing Peatix reused、同event Submit 0、later candidate handling、positive Telegram report、cleanupを検証する。Item13未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗307。これ以外の残TODO一覧は履歴）
+### O1B-25進捗308（Item 13C second official wake / reuse成功・evidence report境界）
+
+pushed commit `3e3a9ca94`のofficial foreground wake `wake-b3f05e7a9c4a5afc322e3d2d`をschedule-unloadedでexact 1回実行した。Peatix stable partition後、candidate 1はnavigate 435ms、parent readback 23msの直後にcache/direct/Harness Submit row 0で13A exact bundleを`reused`し、同じsession/target/pageのcandidate 2へnavigate 347ms、readback 10msで継続した。candidate 2のpublic event refは`peatix-event://event/5065833`、pre-readback `registered`でSubmit row 0。provider receipt/PNG checkpoint、Google Calendar exact event/readback、Telegram message checkpoint positive ID `11079`をmode 0600で保存したが、photo deliveryが失敗してbundle delta 0。
+
+`completeEvidence` throwがrunnerのterminal `reportWake`を通らずnative-pass exit 2となり、wake report/delivery delta 0。process/lock 0、owned page cleanup、CDP newtab 1、4 labels unloaded、Git clean/upstream 0/0はPASS。Item13 live reuse/continuation/Submit0は実証したがevery-wake positive reportとfinal later-event bundleが未完。Ponytail plan `docs/superpowers/plans/2026-08-11-connector-evidence-error-report-13c.md`はrunner production/testの2 filesだけで、evidence throwを一度だけ`circuit_open / evidence_completion_failed`へ収束し、failure count +1、positive report/delivery、cleanup、same-wake retry 0を固定する。Item12 checkpointから次official wakeがmessage再送0でphoto/final bundleを補完する。Item13未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗308。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

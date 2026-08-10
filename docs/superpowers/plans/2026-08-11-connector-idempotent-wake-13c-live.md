@@ -38,3 +38,10 @@ Record exact wake ID, action/provider transitions, bundle/report/delivery deltas
 - Cleanup, Git, CDP, and unloaded-label invariants passed.
 - Acceptance failed because Peatix returned 18 Calendar-free candidates in search order; an unprocessed candidate became ambiguous before the exact same-event Calendar-covered accepted bundle candidate was visited.
 - No second wake was started. Repair plan: `docs/superpowers/plans/2026-08-11-connector-peatix-existing-first-13c.md`.
+
+## Second run result
+
+- Wake `wake-b3f05e7a9c4a5afc322e3d2d` proved live existing-bundle reuse and later-candidate continuation with Submit zero for both registered Peatix candidates.
+- Later event `5065833` durably reached provider receipt/PNG, Calendar exact event/readback, and Telegram message ID `11079`; photo delivery then failed.
+- Item 12 checkpoints preserved the partial lineage, but the thrown evidence error bypassed terminal `reportWake`, producing report/delivery delta zero and exit 2.
+- Cleanup and unloaded schedule invariants passed. Repair plan: `docs/superpowers/plans/2026-08-11-connector-evidence-error-report-13c.md`.
