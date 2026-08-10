@@ -25255,3 +25255,9 @@
 {"ts":1786397002,"wake_id":"00MSNQNH7IA4C4A5C7D45045EF","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
 {"ts":1786397129,"wake_id":"00MSNQQ70L1361380C5D974F87","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786397257,"wake_id":"00MSNQSXDXA12CC8EDA5BE4F6D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786397389,"wake_id":"00MSNQVRTR95B9C0BAE2184D67","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana platform paying USDC for on-chain data verification or oracle reporting tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] record"}
+{"ts":1786397550,"wake_id":"00MSNQZ7UMF7473634D63A4431","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786397678,"wake_id":"00MSNR1YC044E63003B67A4DB6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786397841,"wake_id":"00MSNR5G5E7EF148A47B0241AF","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786398013,"wake_id":"00MSNR959N9DDC081A673440CE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786398142,"wake_id":"00MSNRBW7C8DF9FFEFC47A46B4","kind":"wake_error","sleep_s":60,"model":"auto"}
