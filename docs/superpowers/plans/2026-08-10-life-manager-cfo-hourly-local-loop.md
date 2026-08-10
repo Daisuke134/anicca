@@ -4,14 +4,14 @@
 failures, stores the first daily snapshot or a meaningful same-day correction, and sends at most one Telegram report
 per snapshot revision.
 
-**Status:** ACTIVE — this is the only unfinished CFO-1i implementation slice.
+**Status:** ACTIVE — fresh review fix round; this is the only unfinished CFO-1i implementation slice.
 
 **Ponytail decision:** Reuse the existing reader, recovery, report builder, revision RPC, delivery dedupe, renderer,
 and Telegram transport. Add no agent, service, queue, database, framework, dependency, or cloud runner. The committed
 change is exactly one runner plus one focused test. The local plist is runtime configuration, not repository code.
 
-**Soft target:** 2 files; runner <=100 production LOC; focused tests <=180 LOC. If the runner exceeds 100 production
-LOC, remove abstraction or defer nonessential output before implementation continues.
+**Soft target:** two sequential minimal changes, each <=2 files: renderer compatibility <=6 production LOC, then
+runner <=100 production LOC with focused tests <=180 LOC. If either target is exceeded, cut scope before continuing.
 
 ## Operating flow
 
@@ -45,6 +45,24 @@ flowchart TD
 - Live read-only audit: the correction RPC, revision-one RPC, and delivery-claim RPC all exist. A fresh real Moneytree
   read matched today's stored asset total; no private amount was printed.
 
+## Review-discovered prerequisite — Luna aligns the existing action renderer
+
+The first fresh review found a real normal-path mismatch: canonical recovery snapshots contain `nextRetryAt` and may
+use `provider_outage`, while the existing renderer accepts neither. Appending that correction before rendering would
+make the latest revision unreadable. Fix the consumer before resuming the runner; do not reshape or weaken the
+canonical persisted snapshot.
+
+**Luna owns only for this prerequisite:**
+
+- Modify `apps/life-call/lib/cfo-telegram.js`
+- Modify `apps/life-call/lib/cfo-telegram.test.js`
+
+Write RED using an actual canonical action-required bundle shape. Require both `reconsent` and `provider_outage` with
+the exact `nextRetryAt` field to render without a number or stale balance. Unknown action kinds, missing/extra keys,
+and an invalid/empty retry timestamp remain fail-closed. Minimum GREEN: extend only the exact action key/kind/value
+validation; do not alter report copy, buttons, callbacks, snapshot storage, or other states. Run focused renderer tests,
+`npm run test:cfo`, `npm test`, and diff-check. Sol commits this prerequisite separately before runner closure.
+
 ## Task 1 — Luna builds the runner with TDD
 
 **Luna owns only:**
@@ -67,12 +85,14 @@ configuration, package metadata, existing CFO modules, or unrelated user changes
 ### RED tests
 
 1. A fresh first daily read performs one revision-1 append and one deduped Telegram delivery.
-2. A second same-facts hourly read performs no append and no Telegram send, returns `quiet`, and exits successfully.
+2. A second same-facts hourly read performs no append, passes the existing snapshot once through durable delivery
+   dedupe, creates no provider send when already receipted, returns `quiet`, and exits successfully. This also heals a
+   crash that persisted the snapshot before claiming delivery.
 3. Changed financial facts append exactly revision `N+1`, then deliver that exact revision once.
 4. A transient read failure recovered by the existing bounded recovery path sends only the recovered accurate report;
    it never sends the failed attempt.
-5. Provider/config failure returns one fixed redacted failure status and cannot expose sentinel amount/account/secret
-   values in stdout or stderr.
+5. `reconcile` remains retry/nonzero instead of quiet success; unknown delivery status fails closed. Provider/config
+   failure returns one fixed redacted failure status and cannot expose sentinel amount/account/secret values.
 
 Run RED:
 
@@ -92,8 +112,9 @@ Expected: missing-module failure.
 4. Read only the latest snapshot metadata/report for the same UID and reporting date. Validate the returned report
    with the existing renderer before comparing it. Reject a mismatched run/date/revision.
 5. If no snapshot exists and recovery succeeded, use `appendCfoDailySnapshot` for revision 1.
-6. If the latest verified financial facts are unchanged, return `quiet`; the hourly refresh is real but Telegram is
-   not spammed.
+6. If the latest verified financial facts are unchanged, pass that exact persisted snapshot/ref through
+   `deliverCfoTelegram`. `already_sent` returns `quiet`, `sent` closes a prior snapshot-before-delivery crash, and
+   `reconcile` returns `retry`; durable claim/receipt prevents Telegram spam.
 7. If facts changed or an existing healthy snapshot becomes action-required, build canonical revision `N+1` with
    `buildCfoDailyReportFromRecovery`, call the already-live `lm_append_cfo_daily_snapshot_revision` through the shared
    redacted RPC helper, and use the returned public ref. The downstream composite FK and delivery validator must keep
@@ -101,6 +122,8 @@ Expected: missing-module failure.
 8. Call `deliverCfoTelegram` only with the exact persisted snapshot/revision. Its existing claim/receipt path prevents
    duplicate/new sends on retries.
 9. If the first-ever read remains unavailable, return a safe retry status without inventing or sending a balance.
+   `main` exits zero only for `sent` or verified `quiet`; `retry` and `failed` are nonzero and cannot count toward the
+   two scheduled-success acceptance criterion.
 
 ### Verify before handoff
 
