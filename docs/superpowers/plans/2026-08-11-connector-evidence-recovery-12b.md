@@ -25,8 +25,9 @@ Luna owns only:
 
 1. `apps/life-manager/lib/connector-minimal-evidence.test.js`
 2. `apps/life-manager/lib/connector-minimal-evidence.js`
+3. `apps/life-manager/lib/connector-minimal-runner.test.js` (one composed pre-readback integration only; runner production is unchanged)
 
-Soft target: 2 files; production +70–120 LOC; tests +90–150 LOC. Reuse the existing checkpoint validation and helpers; no broad evidence-chain rewrite.
+Revised soft target after fresh review: 3 files; evidence production +70–120 LOC; evidence tests +90–130 LOC; runner integration test +35–70 LOC. Reuse the existing checkpoint validation and helpers; no broad evidence-chain rewrite and no runner production change.
 
 ### RED
 
@@ -38,6 +39,7 @@ Soft target: 2 files; production +70–120 LOC; tests +90–150 LOC. Reuse the e
 6. Missing message before photo, wrong provider/event/URL hash/artifact/calendar identity, non-positive or unsafe provider IDs, invalid JSON/extra keys, mismatched stage, file/parent symlink, and bundle collision fail before any missing Telegram delivery or bundle write. Provider and Calendar read-only validation remains allowed where required.
 7. The full composed interruption matrix proves: provider PNG/ticket checkpoint recovery, Calendar create/readback crash recovery, message-success/photo-failure recovery, and photo-success/bundle-failure recovery. Final totals are external registration one, Calendar create one, durable bundle one, provider Submit zero.
 8. Existing first-pass Luma/Peatix complete bundles and every partial-failure no-bundle contract remain unchanged.
+9. A real minimal-runner integration starts from parent pre-readback `registered`, composes the real evidence chain across the interruption fixtures, and instruments cache/direct/Harness Submit paths. It must prove one registered external state, every Submit path zero, Calendar create one, and final bundle one; counting an unused synthetic label is forbidden.
 
 ### GREEN
 
@@ -45,11 +47,14 @@ Soft target: 2 files; production +70–120 LOC; tests +90–150 LOC. Reuse the e
 - Read and exact-validate any message/photo receipt before Calendar. After the mandatory current Calendar readback, require the stored Calendar ID/URL to match before reuse.
 - Immediately after a positive message ID, atomically write the message receipt with the first successful Calendar readback timestamp. After a positive photo ID, atomically write the photo receipt bound to the message receipt and artifact identity.
 - On recovery, send only an absent stage. A photo receipt without its matching message receipt is invalid.
+- The photo receipt must match the message receipt's positive message ID and first Calendar readback timestamp in addition to its checkpoint SHA; duplicated fields may never diverge.
 - Build the final bundle from the stable message checkpoint timestamp and the two positive IDs. If the bundle already exists, require byte-identical immutable content and return the same bundle.
+- Preserve the existing bundle `created_at` meaning as the provider evidence first-observed timestamp; only `calendar_readback_at` comes from the stable message receipt.
 - Assert the final bundle path is state-root-contained and symlink-free before write/reuse.
 
 ## Verify
 
 - Focused evidence suite; minimal runner pre-registered Submit-zero regression; minimal production; Peatix workflow/store/Harness; native entrypoint; changed-file syntax; `git diff --check`.
 - Fresh Sol review for delivery identity, corrupt receipts, checkpoint ordering, Telegram duplicates, bundle determinism/collision, Calendar freshness, privacy, symlink/root escape, Luma/Peatix non-regression, and absence of provider Submit paths.
+- The corruption matrix must exercise photo-specific message ID/timestamp/checkpoint-SHA mismatch, message-missing/photo-present, delivery receipt/artifact mismatch, unsafe message/photo IDs, file and parent symlinks, and bundle symlink/immutable collision.
 - Update SSOT, commit, and push. Mark Item 12 complete only when the full four-boundary composed fixture passes with registration one, Calendar one, bundle one, and Submit zero. Keep production schedule unloaded.

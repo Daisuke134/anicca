@@ -6905,7 +6905,11 @@ corruption matrixはinvalid JSON/extra key、wrong provider/event/URL hash、for
 
 次active sliceは12B。現chainはTelegram message/photoのpositive IDをfinal bundleにだけ保存するため、message成功後のphoto failureまたは両方成功後のbundle write failureで、recreated chainが先行deliveryを再送する。Ponytailで新transport/DB/queue/retry/serviceを棄却し、12Aのevent identity、checkpoint root、`immutableJson`、positive ID parser、Calendar independent readbackを再利用する。plan `docs/superpowers/plans/2026-08-11-connector-evidence-recovery-12b.md`はminimal evidence production/testの2 filesだけをLuna ownershipとし、exact immutable message/photo receiptを追加する。checkpointはtarget、message/caption、title、venue、attendee、ticket ID、canonical URL、raw PNG/private valueを保存せず、provider/event/URL hash/receipt/artifact/Calendar identityとpositive delivery IDだけをbindする。recreated chainはprovider evidenceと現在Calendarを毎回検証し、保存済みmessage/photoをskipして不足stageだけを送る。final bundleは最初の成功Calendar timestampと両positive IDからdeterministicに再構成し、既存fileとbyte-identicalなら同一bundleを返す。runnerの次candidate continuationはItem13まで前倒ししない。Item12は四境界fixtureがregistration 1、Calendar 1、bundle 1、Submit 0を満たすまで未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗296。これ以外の残TODO一覧は履歴）
+### O1B-25進捗297（Item 12B / fresh review fix-first・runner proof追加）
+
+Luna初回REDはfocused 12/17で新規5件全FAIL、GREEN後は17/17、圧縮後16/16、production +116/-11、test +100。Sol独立expanded 89/89、syntax、diff checkもPASSしたが、fresh Sol reviewはImportant 3件で`fix-first`。第一にphoto receiptはmessage checkpoint SHAだけを照合し、重複保持するmessage provider IDとCalendar timestampのexact一致を要求しないため、photo側だけ改変して再送skip/bundle化できる。第二にcorruption testはmessage中心で、photo固有identity、message欠落、receipt/artifact mismatch、unsafe IDs、parent symlink、bundle symlink/collisionが未固定。第三に四境界testの`records`はprovider evidence保存回数でexternal registration数ではなく、存在しない`provider-submit` labelの0件countはSubmit 0の証明にならない。planを先に3-fileへ改訂し、evidence production/testに加えてrunner test一件だけをLuna ownershipへ追加する。real runnerのparent pre-readback `registered`とreal evidence chainを合成し、cache/direct/Harness Submit pathを実計数してexternal registered state 1、Submit 0、Calendar create 1、bundle 1を固定する。runner production、provider、browser、scheduleは変更しない。bundle `created_at`は既存provider first-observed意味を維持し、stable message timestampは`calendar_readback_at`だけへ使う。現code/test差分は未commit、Item12未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗297。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
