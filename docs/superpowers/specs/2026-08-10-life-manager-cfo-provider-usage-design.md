@@ -439,9 +439,10 @@ whose distinct non-zero trace IDs match their append bodies; literal owner, data
 are absent from both Gemini request bodies. Fresh Sol review returned Critical 0 / Important 0 / ship. Scope is
 exactly two files and 70 additions; no real provider, database, scheduler, or Telegram mutation occurred.
 
-**CFO-2a2.3c2 completion evidence:** Luna added one executable 90-line E2E shell file. A fresh Sol review returned
-Spec compliant / Approved with Critical 0, Important 0, and Minor 0. Sol then independently ran clean dependency
-installation, shell syntax, the env-isolated real gate, and diff checks. The gate returned exactly
+**CFO-2a2.3c2 completion evidence:** Luna added one executable 90-line E2E shell file and ran a clean dependency
+installation. The first fresh Sol review found one Important ordering defect: raw Gemini responses were sorted before
+projection. The same Luna changed one line to project before sorting; scoped fresh re-review returned ADDRESSED with
+no new breakage and ship. Sol independently reran shell syntax, the env-isolated real gate, and diff checks. The gate returned exactly
 `cfo-provider-usage-real-e2e: PASS rows=2 spans=2`: two real Gemini response IDs and provider counts matched two
 disposable PostgREST/PostgreSQL rows, whose distinct non-zero trace IDs each occurred exactly once in the real
 ConsoleSpanExporter output. The input sentinel, real provider output strings, and Gemini key were absent. Cleanup

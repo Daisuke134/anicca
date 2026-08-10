@@ -39,7 +39,7 @@ from requests to the disposable PostgREST host; production code and endpoints re
   `migrations/2026-08-10-cfo-model-usage-evidence-append-rpc.sql`.
 - Produces: exit `0` plus exactly `cfo-provider-usage-real-e2e: PASS rows=2 spans=2`; any other state exits non-zero.
 
-- [ ] **Step 1: Establish the no-harness baseline**
+- [x] **Step 1: Establish the no-harness baseline**
 
 Run from `apps/life-call`:
 
@@ -50,7 +50,7 @@ test ! -e test/postgres/cfo-provider-usage-real-e2e.sh
 Expected: exit `0`. This slice adds only a verification harness, not production behavior, so do not invent a fake
 RED unit test for the test itself.
 
-- [ ] **Step 2: Write the minimum hermetic shell boundary**
+- [x] **Step 2: Write the minimum hermetic shell boundary**
 
 Start with `set -euo pipefail`; require `GEMINI_API_KEY`, `docker`, `psql`, `curl`, and `node`. Create one `mktemp -d`
 directory and names suffixed with `$$`. The cleanup trap stops exactly both named containers, removes exactly the
@@ -66,7 +66,7 @@ docker run --rm -d --name "$PG_NAME" --network "$NETWORK" \
 
 Resolve the PostgreSQL dynamic host port with `docker port` and a bounded readiness loop. Never use fixed host ports.
 
-- [ ] **Step 3: Apply only the real schema and RPC**
+- [x] **Step 3: Apply only the real schema and RPC**
 
 Through host `psql`, create only `anon`, `authenticated`, `service_role`, `authenticator`, `public.lm_users`, and one
 `cfo-e2e-owner` row. Grant `service_role` to `authenticator`, then apply both existing migration files unchanged:
@@ -91,13 +91,13 @@ docker run --rm -d --name "$REST_NAME" --network "$NETWORK" \
   -p 127.0.0.1::3000 postgrest/postgrest:v16.0 >/dev/null
 ```
 
-- [ ] **Step 4: Generate one test-only service-role JWT without a dependency**
+- [x] **Step 4: Generate one test-only service-role JWT without a dependency**
 
 Use Node `crypto.createHmac('sha256', JWT_SECRET)` with base64url header
 `{"alg":"HS256","typ":"JWT"}` and payload `{"role":"service_role"}`. Keep the token only in an environment
 variable passed to the embedded Node process. Do not print it.
 
-- [ ] **Step 5: Call the real existing flow and compare provider truth to stored truth**
+- [x] **Step 5: Call the real existing flow and compare provider truth to stored truth**
 
 Before requiring `ask.js`, retain native `fetch` and intercept `console.log`/`console.dir` into one in-memory exporter
 string. Replace `global.fetch` with a wrapper that (a) forwards Gemini requests unchanged and stores
@@ -142,7 +142,7 @@ assert.ok(!JSON.stringify(rows).includes(process.env.CFO_E2E_SENTINEL));
 asserts provider `gcp.gemini`, request model `gemini-2.5-flash`, sequence `0`, and status `provider_reported`. Write
 only both trace IDs to a temporary trace file.
 
-- [ ] **Step 6: Prove the exported spans correlate and contain no content**
+- [x] **Step 6: Prove the exported spans correlate and contain no content**
 
 For each trace ID, require exactly one matching entry in the intercepted real `ConsoleSpanExporter` output. Extract
 all non-empty provider `text`, function-call names, and string function-argument values from both cloned responses;
@@ -150,7 +150,7 @@ require at least one provider text value and reject every extracted value of 12+
 Also reject the private input sentinel and exact `GEMINI_API_KEY` value. Restore console functions, write no captured
 content, and print only the closed PASS line through `process.stdout.write`.
 
-- [ ] **Step 7: Execute the real gate**
+- [x] **Step 7: Execute the real gate**
 
 Run from `apps/life-call` after dependencies are installed:
 
@@ -177,6 +177,7 @@ Return the exact provider-response count, row count, trace count, scope, and any
 
 - Luna created one executable 90-line file; no production/package/migration/Compose/proxy file changed.
 - The env-isolated real gate returned exactly `cfo-provider-usage-real-e2e: PASS rows=2 spans=2`.
-- Fresh Sol review: Spec compliant, Approved, Critical 0, Important 0, Minor 0.
-- Fresh Sol execution: `npm ci`, `bash -n`, real E2E, and `git diff --check` all exited `0`.
+- First fresh Sol review found one Important provider-ordering defect; Luna fixed one line and scoped fresh re-review
+  returned ADDRESSED, no new breakage, and ship.
+- Luna's `npm ci` exited `0`; fresh Sol `bash -n`, env-isolated real E2E, and `git diff --check` all exited `0`.
 - No production database, Telegram, scheduler, launchd, or cloud state was mutated.
