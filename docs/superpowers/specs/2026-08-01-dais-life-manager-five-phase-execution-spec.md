@@ -6977,7 +6977,15 @@ pushed repair commit `25d8e423d`のofficial `skills/connector/run.sh`を4 labels
 
 独立read-only Calendar検証はcanonical idempotency marker exact 1件でbundle event ID `heomnknrb9a60ibva27716lvs8`と一致。bundle digest/filename、provider receipt identity、PNG SHA/signature、message→photo checkpoint lineage、regular file/no symlink、mode 0600が全PASS。process/lock 0、owned page cleanup、CDP original newtab 1、4 labels exit 113 unloaded、Git clean/upstream 0/0。進捗308の既存Peatix bundle exact reuse、同event Submit 0、same session/target/pageでlater candidate continuationと、このrecovery wakeのevery-wake positive report/final bundleを合わせてItem13 acceptanceを閉じる。scheduleはItems10–16 acceptanceまでunloaded維持。
 
-### Active remaining TODO SSOT（進捗310。これ以外の残TODO一覧は履歴）
+### O1B-25進捗311（Item 14A / Connpass auth・live candidate・evidence plan）
+
+Ponytail `full`でItem14の現行production境界を再測定した。unauthenticated Connpass detail 6件は全て無料だがstatus `unknown`、うち5件にevent固有high-priority `ログイン・会員登録`があった。所有emailは既存Connpass account登録済みで、official password reset→`:9222` loginを完了し、実event pageでexact `このイベントに申し込む`をreadbackした。account重複作成0、event application Submit 0。macOS Keychain保存はOS対話待ちで完了せず、成功扱いにしない。
+
+認証済みpageと実14日Google Calendar inventoryで再測定すると、無料・受付中・Calendar非衝突candidateはevent `400028` exact 1件。join pageはparticipation radio 2、required bounded radio 1問、optional fields、final `申し込みを確定する` 1で、既存Browser Harnessのbounded form境界に収まる。現行runner/router/Connpass direct/readbackは接続済みだが、minimal evidence chainのprovider descriptorはLuma/Peatixだけなので、今wakeすると実登録後にbundleを完成できない。実申込は起動していない。
+
+plan `docs/superpowers/plans/2026-08-11-connector-connpass-applied-bundle-14a.md`はminimal evidence production/test 2 filesだけ。既存`createConnpassEvidenceStore`、checkpoint、Calendar、Telegram、bundle scannerを再利用し、Connpassだけparent-verified actual pageをfull-page PNG化する。discovery/registration/Harness/runner/Calendar gate/provider order/schedule変更0。人工Luma failure hookはlive acceptanceをsyntheticにするため作らず、Item14のproduct invariantを「Luma external effect 0（bounded known-no-effect / exact reuse / eligible exhaustion）→同じowned pageで実Connpass bundle」と明文化する。現在はLuma free/open 10、Calendar-free 0なのでtruthful exhaustionを使う。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗311。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -6994,7 +7002,7 @@ pushed repair commit `25d8e423d`のofficial `skills/connector/run.sh`を4 labels
 11. [x] **同じregistrationのexternal evidence chainを完成する。** Provider receipt/ticket/QRまたは同等receipt、Calendar event IDと独立readback、registered page full-page PNGとSHA-256、Telegram message positive ID、Telegram photo positive IDを同一lineageのdurable `applied_bundle`へ保存する。不足が一つでもあれば成功扱いにしない。証拠: 進捗291。
 12. [x] **post-registration recoveryを実証する。** Calendar、PNG、ticket、Telegram各境界の中断fixtureから、providerへ再Submitせず不足artifactだけを補完する。完了条件は外部registration 1、Calendar event 1、bundle 1、duplicate Submit 0。証拠: 進捗295、298。
 13. [x] **idempotent second foreground wakeを実証する。** 同じeventを既登録としてreadbackし、Submit 0で未処理candidateへ継続する。every-wake Telegram positive message IDを保存する。証拠: 進捗308、310。
-14. [ ] **Luma failure→Connpass continuationをlive実証する。** Luma candidateをknown-no-effectにした同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。
+14. [ ] **Luma no-effect→Connpass continuationをlive実証する。** Lumaがexternal effect 0（bounded known-no-effect、exact bundle reuse、またはCalendar gate後eligible exhaustion）の同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。人工failure hookは使わない。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。
 15. [ ] **circuit breakerを実証する。** 3連続safe failureまたは10分でcircuit-openし、その後のbrowser action/target creationが0、exact safe stage/action historyとTelegram recovery positive IDが保存されることを確認する。5分automatic retryは0。
 16. [ ] **cached action self-healを実証する。** selector変更fixtureでdirect replay failure→同じpageのbounded fallback→expected state readback→cache更新→agentなしrerun成功を確認する。更新は壊れたactionだけ、repo-wide edit/merge/deployは0。
 17. [ ] **単一daily production scheduleをrender/loadする。** Items 10–16のacceptance後だけ、official minimal runnerを一日一回起動するConnector labelを一つloadする。Native旧schedule、healthcheck、Healer、bridge、5分retry、重複runnerはloaded 0にする。
