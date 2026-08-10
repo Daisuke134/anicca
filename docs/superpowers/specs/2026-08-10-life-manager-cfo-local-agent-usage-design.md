@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — slices 2a2a.1-3 complete; 2a2a.4 is next |
+| Status | ACTIVE — slices 2a2a.1-4 complete; 2a2a.5 is next |
 | Parent | `2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local Mac first |
 | Source | `~/.local/state/{life-manager,anicca}/telemetry/agent-usage.jsonl` |
@@ -204,8 +204,8 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 | 2a2a.1 ✅ | Pure event normalizer uses opaque source-row identity and preserves runner values/provenance | 2 files, +92/-1 cumulative LOC from pre-slice base |
 | 2a2a.2 ✅ | Pure batch reducer dedupes source-row refs and reports runner-ID collisions without dropping rows | 2 files, +69/-2 LOC |
 | 2a2a.3 ✅ | Append-only file cursor proves hash/watermark/truncation coverage | 2 new files, +78 LOC |
-| 2a2a.4 NEXT | Versioned loop/task mapping yields attributed or visibly unattributed rows | <=3 files, <=100 added LOC |
-| 2a2a.5 | Local append/storage + OTel links accepted rows without exposing content | <=3 files per sub-slice |
+| 2a2a.4 ✅ | Versioned loop/task mapping yields attributed or visibly unattributed rows | 3 files, +51/-1 LOC |
+| 2a2a.5 NEXT | Local append/storage + OTel links accepted rows without exposing content | <=3 files per sub-slice |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
 
 ## Acceptance
