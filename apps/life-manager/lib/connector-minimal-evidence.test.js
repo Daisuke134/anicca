@@ -508,6 +508,74 @@ test("Peatix canonical URL rejects parser-normalized variants before every side 
   }
 });
 
+function connpassCandidate(extra = {}) {
+  return { provider: "connpass", event_ref: "connpass-event://event/400028", canonical_url: "https://tokyo-builders.connpass.com/event/400028/", title: "Connpass Parent Verified Event", starts_at: "2026-08-12T10:00:00.000Z", ends_at: "2026-08-12T11:00:00.000Z", venue_name: "Tokyo", ...extra };
+}
+
+function connpassFixture(options = {}) {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-connpass-evidence-")); const png = options.png || Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 17)]); const pngSha = createHash("sha256").update(png).digest("hex"); const calls = [];
+  const calendarReceipt = { id: "google-connpass-1", htmlLink: "https://www.google.com/calendar/event?eid=connpass-one" };
+  let reads = 0;
+  const calendar = { async findConnectorEvents(input) { calls.push(["calendar-read", input]); return reads++ === 0 ? [] : [calendarReceipt]; }, async createConnectorEvent(input) { calls.push(["calendar-create", input]); return calendarReceipt; } };
+  const evidenceStore = {
+    async record(input) { calls.push(["evidence-record", input]); const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${pngSha}`).digest("hex"); return { external_receipt_ref: `provider-receipt://connpass/${receiptId}`, artifact_ref: `object://sha256/${pngSha}` }; },
+    async readExternalReceipt(tenant, ref) { calls.push(["evidence-read-receipt", tenant, ref]); return { kind: "provider_response", provider_id: ref.split("/").at(-1), observed_at: "2026-08-11T08:30:00.000Z", event_ref: "connpass-event://event/400028", artifact_sha256: pngSha }; },
+    async readArtifact(tenant, ref) { calls.push(["evidence-read-artifact", tenant, ref]); return png; },
+  };
+  const chain = createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar, calendarId: "primary", telegramTarget: "private-target", connpassEvidenceStore: evidenceStore, now: () => new Date("2026-08-11T08:30:00.000Z"), sendMessage: async (message, telegram) => { calls.push(["telegram-message", message, telegram]); return { messageId: 9401 }; }, sendPhoto: async (bytes, telegram) => { calls.push(["telegram-photo", bytes, telegram]); return { messageId: 9402 }; } });
+  const page = { async screenshot(input) { calls.push(["screenshot", input]); return png; }, async setContent() { throw new Error("Connpass must not replace the verified page"); }, async goto() { throw new Error("Connpass must not navigate away from the verified page"); }, url() { calls.push(["url"]); return options.pageUrl || "https://tokyo-builders.connpass.com/event/400028/"; } };
+  return { stateDir, png, pngSha, calls, evidenceStore, chain, candidate: connpassCandidate(), page, cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
+}
+function assertConnpassNoDownstream(fixture, label) { assert.equal(fixture.calls.filter(([name]) => ["screenshot", "evidence-record", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"].includes(name)).length, 0, label); }
+
+test("Connpass captures the current parent-verified page and reuses the exact applied bundle", async () => {
+  const fixture = connpassFixture();
+  try {
+    const first = await fixture.chain.completeEvidence({ provider: "connpass", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } });
+    assert.equal(first.provider, "connpass"); assert.equal(first.completion_disposition, "created");
+    assert.match(first.provider_receipt_ref, /^provider-receipt:\/\/connpass\/[0-9a-f]{64}$/);
+    assert.equal(first.artifact_sha256, fixture.pngSha);
+    const count = (name) => fixture.calls.filter(([entry]) => entry === name).length;
+    assert.equal(count("screenshot"), 1);
+    assert.deepEqual(fixture.calls.find(([name]) => name === "screenshot")[1], { type: "png", fullPage: true });
+    assert.deepEqual([count("calendar-create"), count("telegram-message"), count("telegram-photo")], [1, 1, 1]);
+    const counts = new Map(["screenshot", "evidence-record", "calendar-create", "telegram-message", "telegram-photo"].map((name) => [name, count(name)]));
+    const second = await fixture.chain.completeEvidence({ provider: "connpass", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } });
+    assert.equal(second.completion_disposition, "reused"); assert.equal(second.bundle_id, first.bundle_id);
+    for (const [name, expected] of counts) assert.equal(count(name), expected, name);
+    for (const pageUrl of ["https://tokyo-builders.connpass.com/event/400029/", "https://tokyo-builders.connpass.com/event/400028/?next=other", "https://tokyo-builders.connpass.com/event/400028/#other", "about:blank"]) {
+      const before = fixture.calls.length; fixture.page.url = () => pageUrl;
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "connpass", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+      assertConnpassNoDownstream({ calls: fixture.calls.slice(before) }, pageUrl);
+    }
+  } finally { fixture.cleanup(); }
+});
+
+test("Connpass identity, status, and current page URL reject before downstream effects", async () => {
+  const cases = [{ candidate: { canonical_url: "https://tokyo-builders.connpass.com:443/event/400028/" } }, { candidate: { canonical_url: "https://tokyo-builders.connpass.com/event/400028/?utm_source=test" } }, { candidate: { canonical_url: "https://tokyo-builders.connpass.com/event/400029/" } }, { candidate: { event_ref: "connpass-event://event/0" } }, { status: "absent" }, ...["https://tokyo-builders.connpass.com/event/400029/", "https://tokyo-builders.connpass.com/event/400028/?next=other", "about:blank"].map((pageUrl) => ({ pageUrl }))];
+  for (const input of cases) {
+    const fixture = connpassFixture({ pageUrl: input.pageUrl });
+    try { await assert.rejects(fixture.chain.completeEvidence({ provider: "connpass", candidate: connpassCandidate(input.candidate), page: fixture.page, providerState: { status: input.status || "registered" } })); assertConnpassNoDownstream(fixture, input.pageUrl || input.candidate?.canonical_url); }
+    finally { fixture.cleanup(); }
+  }
+});
+
+test("Connpass reused evidence fails closed on receipt or artifact corruption before downstream effects", async () => {
+  for (const corruption of ["event", "artifact", "bytes", "missing"]) {
+    const fixture = connpassFixture();
+    try {
+      const first = await fixture.chain.completeEvidence({ provider: "connpass", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } });
+      const before = fixture.calls.length;
+      if (corruption === "event") fixture.evidenceStore.readExternalReceipt = async () => ({ kind: "provider_response", provider_id: first.provider_receipt_ref.split("/").at(-1), observed_at: "2026-08-11T08:30:00.000Z", event_ref: "connpass-event://event/400029", artifact_sha256: fixture.pngSha });
+      if (corruption === "artifact") fixture.evidenceStore.readExternalReceipt = async (tenant, ref) => ({ kind: "provider_response", provider_id: ref.split("/").at(-1), observed_at: "2026-08-11T08:30:00.000Z", event_ref: fixture.candidate.event_ref, artifact_sha256: "a".repeat(64) });
+      if (corruption === "bytes") fixture.evidenceStore.readArtifact = async () => Buffer.concat([fixture.png, Buffer.from("tamper")]);
+      if (corruption === "missing") fixture.evidenceStore.readExternalReceipt = async (tenant, ref) => ({ kind: "provider_response", provider_id: ref.split("/").at(-1), observed_at: "2026-08-11T08:30:00.000Z" });
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "connpass", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+      assertConnpassNoDownstream({ calls: fixture.calls.slice(before) }, corruption);
+    } finally { fixture.cleanup(); }
+  }
+});
+
 test("Telegram message checkpoint retries only a missing photo", async () => {
   const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 12)]); let photoAttempts = 0;
   const fixture = peatixFixture({ png, sendMessage: async (m, o) => { fixture.calls.push(["telegram-message", m, o]); return { messageId: 9201 }; }, sendPhoto: async (b, o) => { fixture.calls.push(["telegram-photo", b, o]); if (++photoAttempts === 1) throw new Error("photo interrupted"); return { messageId: 9202 }; } });
