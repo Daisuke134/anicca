@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — hourly owner-visible delivery is live; CFO-2a3 billing reconciliation is next |
+| Status | M2 ACTIVE — CFO-2a3 and 2a3b.1 live; CFO-2a3c subscription receipts is the active unblocked item |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a3: reconcile provider billing/export evidence without erasing provisional usage** |
+| First unfinished item | **CFO-2a3c: reconcile actual Codex/Claude subscription receipts separately from API forecasts** |
 
 ## 1. Overview — What and Why
 
@@ -965,10 +965,17 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-agent-usage-capture-design.md`. The real two-source E2E
       closes this item with append-only `0600` evidence and exact attempt/completion counts. Coverage is intentionally
       `partial`; unknown historical/provider usage stays visible and the total-cost label remains disabled.
-- [ ] **CFO-2a3** Add billing-export/invoice reconciliation; confirmed cost supersedes provisional cost without
-      deleting either record, and unexplained differences remain visible.
+- [x] **CFO-2a3** Add billing-export/invoice reconciliation; confirmed cost supersedes provisional cost without
+      deleting either record, and unexplained differences remain visible. The live local runtime captures the actual
+      Google Cloud Gmail/PDF invoice into one immutable `0600` record, publishes `confirmed_unresolved`, and passed a
+      real hourly launchd cutover. Implementation/runtime branch: `feature/cfo-4d1-finalize-sol`; child SSOT:
+      `docs/superpowers/specs/2026-08-11-life-manager-cfo-provider-billing-reconciliation-design.md` at commit
+      `46f185327`.
 - [ ] **CFO-2a3b** Confirm only provider-supported billing dimensions. Shared-project business costs use a versioned
-      allocation rule, `provider_billed_allocated`, and a visible unallocated remainder.
+      allocation rule, `provider_billed_allocated`, and a visible unallocated remainder. The pure exact allocation
+      contract is complete. Real Cost Table acquisition remains blocked only by one-time Google Cloud Console
+      reauthentication; no fabricated CSV is accepted. Child SSOT:
+      `docs/superpowers/specs/2026-08-11-life-manager-cfo-provider-allocation-design.md` at commit `46f185327`.
 - [ ] **CFO-2a3c** Reconcile actual Codex/Claude subscription receipts separately from the versioned
       `api_equivalent_forecast`; after API migration reconcile actual provider billing exports.
 - [ ] **CFO-2b** Instrument each existing earning loop in registry order: revenue receipt, landed cash, direct
