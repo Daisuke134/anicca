@@ -7107,7 +7107,13 @@ pushed commit `5d6ca0489`、clean/upstream、4 labels unloaded、process/lock 0�
 
 既存provider receipt `099d…`とartifact SHA `10f34…`を再利用し、bundle 4→5。new bundle `applied-bundle:d9f0c88a13319c0c5917af61aef834b195377d412ad4400267a7c3705ef954c1`はmode 0600、provider `connpass`、event ref `connpass-event://event/400028`、status `registered`、Calendar ID `k7mufbmh1045f4phnooc5dbckc`、readback timestamp、Telegram message positive ID `11307`、photo positive ID `11308`を同一lineageに保存した。PNG objectは1,394,431 bytes、mode 0600、recomputed SHA exact一致。外部`gog` read-only再検証は記録Calendar ID exact 1、`confirmed`、html link/intervalあり、64文字private idempotency markerあり。wake reportは`applied_bundle`、failure count 0、positive Telegram ID `11309`。process/lock 0、target lease 0、4 labels unloaded、Git clean/upstream。Item14をacceptする。次の一件はItem15 circuit breaker acceptance。
 
-### Active remaining TODO SSOT（進捗331。これ以外の残TODO一覧は履歴）
+### O1B-25進捗332（Item 15 / existing-first circuit-breaker acceptance plan）
+
+Ponytail fullで現runner/operations/launchd testsとimmutable live evidenceを照合し、Item15に新production/testが不要と判定した。現runnerは3 consecutive failureと600,000ms deadline、safe five-field action history、terminal report、owned-page cleanupを既に個別回帰化する。operationsはcurrent circuit reportのpositive Telegram ID、current-first recovery、delivery idempotencyを持つ。production rendererはsingle daily plistだけを出し、`StartInterval`/healthcheck/healer/bridge/`:9223`/retry sidecarを禁止する。
+
+live正本はofficial wake `wake-a85aefe7a153ce0513e7d7df`の`circuit_open / peatix_unknown_required_field / 3`、positive Telegram ID `10868`、provider/Calendar/PNG/bundle effect 0、owned page/process/lock cleanup。人工failureを再発生させず、plan `docs/superpowers/plans/2026-08-11-connector-circuit-breaker-15.md`でnamed tests、durable row、5分window、現launchd unloadedを統合検証する。code/test LOC 0、Item15は検証完了まで未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗332。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
