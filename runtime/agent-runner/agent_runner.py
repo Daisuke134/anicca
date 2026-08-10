@@ -135,6 +135,8 @@ def extract_provider_usage(provider: str, stdout_text: str, model: str | None = 
             output_tokens = _token(completed.get("output_tokens"))
             if input_tokens is None or output_tokens is None:
                 return usage
+            if any(_token(completed[key]) is None for key in ("cached_input_tokens", "reasoning_output_tokens") if key in completed):
+                return usage
             usage.update({
                 "measurement": "provider_reported",
                 "input_tokens": input_tokens,
@@ -170,6 +172,8 @@ def extract_provider_usage(provider: str, stdout_text: str, model: str | None = 
             output_tokens = _token(raw.get("output_tokens"))
             if direct is None or output_tokens is None:
                 return usage
+            if any(_token(raw[key]) is None for key in ("cache_creation_input_tokens", "cache_read_input_tokens", "reasoning_output_tokens") if key in raw):
+                return usage
             cache_create = _token(raw.get("cache_creation_input_tokens")) or 0
             cache_read = _token(raw.get("cache_read_input_tokens")) or 0
             cost = wrapper.get("total_cost_usd")
@@ -181,10 +185,10 @@ def extract_provider_usage(provider: str, stdout_text: str, model: str | None = 
                 "output_tokens": output_tokens,
                 "reasoning_output_tokens": _token(raw.get("reasoning_output_tokens")) or 0,
                 "total_tokens": direct + cache_create + cache_read + output_tokens,
-                "provider_cost_usd": float(cost) if isinstance(cost, (int, float)) and not isinstance(cost, bool) else None,
+                "provider_cost_usd": float(cost) if isinstance(cost, (int, float)) and not isinstance(cost, bool) and 0 <= cost <= sys.float_info.max else None,
                 # Claude CLI exposes an API-price equivalent even when OAuth/subscription is
                 # paying the actual bill. It is useful telemetry, but not actual marginal cost.
-                "cost_basis": "api_equivalent_estimate" if isinstance(cost, (int, float)) and not isinstance(cost, bool) else "unavailable",
+                "cost_basis": "api_equivalent_estimate" if isinstance(cost, (int, float)) and not isinstance(cost, bool) and 0 <= cost <= sys.float_info.max else "unavailable",
             })
             return usage
         if provider == "openclaw":
@@ -196,6 +200,8 @@ def extract_provider_usage(provider: str, stdout_text: str, model: str | None = 
             output_tokens = _token(raw.get("output"))
             if input_tokens is None or output_tokens is None:
                 return usage
+            if any(_token(raw[key]) is None for key in ("cacheRead", "cacheWrite", "total") if key in raw):
+                return usage
             usage.update({
                 "measurement": "provider_reported",
                 "input_tokens": input_tokens,
@@ -203,7 +209,7 @@ def extract_provider_usage(provider: str, stdout_text: str, model: str | None = 
                 "cache_creation_input_tokens": _token(raw.get("cacheWrite")) or 0,
                 "output_tokens": output_tokens,
                 "reasoning_output_tokens": 0,
-                "total_tokens": _token(raw.get("total")) or input_tokens + output_tokens,
+                "total_tokens": _token(raw.get("total")) if "total" in raw else input_tokens + output_tokens,
                 "upstream_provider": agent_meta.get("provider"),
                 "upstream_model": agent_meta.get("model"),
             })
