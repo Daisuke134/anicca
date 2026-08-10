@@ -6199,7 +6199,19 @@ fresh Sol reviewは正しい`peatix-discovery-audits.jsonl`、wake ID/timestamp�
 workflow version、audit callback、lazy in-memory attendee profileを接続する。native `DEFAULT_PROVIDERS`はevidence chain完成まで
 `["luma", "connpass"]`を維持するため、この進捗でもSubmit、Calendar write、PNG、Telegram bundleは0。
 
-### Active remaining TODO SSOT（進捗234。これ以外の残TODO一覧は履歴）
+### O1B-25進捗235（Peatix production factory/router GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-production-router.md`をTDD実装した。REDは9件中7 pass・2 failで、
+Peatixがselected provider外であることを検出した。既存factoryにPeatix workflowを一度だけ生成し、third route、
+`peatix_registration_v1`、aggregate audit callback、direct action時だけ評価するin-memory attendee profileを追加した。
+commit `8c40002fc`、指定production/operations/workflow/provider/runner regression 42/42、`node --check`、`git diff --check` pass。
+
+fresh Sol reviewは同一pageのcache/direct/readback、Peatix audit、profileのdiscovery時0回/direct時1回・出力非漏洩、unknown provider fail-closed、
+既存Luma/Connpass/Browser Harness不変、native `DEFAULT_PROVIDERS`不変を確認し、Critical 0・Important 0でshipした。
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-evidence-store.md`は、exact Peatix event identityとregistered-page PNGだけから
+tenant-scoped immutable provider receipt/artifactを保存する二ファイルsliceである。evidence chain/native order未接続なので外部作用は引き続き0。
+
+### Active remaining TODO SSOT（進捗235。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
