@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const {
   createBoundedActionProposer,
+  createPrivateValueResolver,
   createLumaPrivateValueResolver,
   createProductionBrowserHarness,
   inspectPageControls,
@@ -43,6 +44,23 @@ test("bounded proposer requests one structured action from Terra with sanitized 
   assert.doesNotMatch(request.prompt, /private-phone|cookie|password/i);
   assert.equal(JSON.stringify(request).includes("page_websocket"), false);
   assert.equal(JSON.stringify(request).includes("ws://"), false);
+});
+
+test("bounded proposer accepts Peatix while sending only provider and sanitized controls", async () => {
+  let request;
+  const proposer = createBoundedActionProposer({
+    repoRoot: "/private/repo", evidenceDir: "/private/evidence",
+    async runAgentRunner(input) {
+      request = input;
+      return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { purpose: "fill", method: "ax_fill", control: "name_field" } };
+    },
+  });
+  const action = await proposer({ provider: "peatix", target_id: "OWNEDTARGET1", expected_state: "registered_or_pending", step: 1, observation: {
+    state: "registration_page", controls: [{ control: "name_field", kind: "input", label: "Name", required: true }],
+  } });
+  assert.deepEqual(action, { purpose: "fill", method: "ax_fill", control: "name_field" });
+  assert.match(request.prompt, /Peatix/i);
+  assert.doesNotMatch(JSON.stringify(request), /event_ref|private-phone|private@example|cookie|password|ws:\/\//i);
 });
 
 test("default page adapter observes labels and parent resolves private values before DOM actions", async () => {
@@ -214,4 +232,62 @@ test("production harness uses Connpass parent readback for a Connpass fallback",
   });
 
   assert.equal(result.status, "completed");
+});
+
+test("production harness uses Peatix parent readback for a Peatix fallback", async () => {
+  const page = Object.freeze({ page_id: "owned-peatix-page" }); let operated = false;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    connpassWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    peatixWorkflow: { async readProviderState(input) { assert.equal(input.page, page); return operated ? { status: "pending" } : { status: "absent" }; } },
+    async inspectControls() { return [{ control: "name_field", kind: "input", label: "Name", required: true }]; },
+    async proposeAction() { return { purpose: "submit", method: "ax_click", control: "name_field" }; },
+    async operateControl() { operated = true; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  const result = await harness.runFallback({ provider: "peatix", candidate: { event_ref: "peatix-event://event/1" }, page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/OWNEDTARGET1", maxSteps: 10, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "completed");
+});
+
+test("provider-neutral resolver returns only parent-owned Peatix/form values", async () => {
+  const resolver = createPrivateValueResolver({
+    readPeatixProfile: async () => ({ name: "Private Name", email: "private@example.test", family_name_kana: "サクラ", given_name_kana: "テスト", accept_organizer_privacy: true }),
+    readFormProfile: async () => ({ phone: "+81 90 0000 0000", form_answers: { "Which role?": "Founder", "Approved option": ["Yes"] } }),
+  });
+  const control = (kind, label) => ({ control: "safe_control", kind, label, required: true });
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "Name") }), "Private Name");
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "Email") }), "private@example.test");
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "Family name kana") }), "サクラ");
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "Phone") }), "+81 90 0000 0000");
+  assert.equal(await resolver({ provider: "peatix", control: control("select", "Which role?") }), "Founder");
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "Invented question") }), null);
+});
+
+test("provider-neutral resolver rejects a radio option from a different form question", async () => { const resolver = createPrivateValueResolver({ readPeatixProfile: async () => ({ accept_organizer_privacy: false }), readFormProfile: async () => ({ form_answers: { "Role question": "Yes", "Other question": "No" } }) });
+  const control = (question) => ({ control: "safe_radio", kind: "radio", label: "Yes", question, required: true });
+  assert.equal(await resolver({ provider: "peatix", control: control("Other question") }), null); assert.equal(await resolver({ provider: "peatix", control: control("Role question") }), true);
+});
+
+test("provider-neutral resolver supports Peatix confirm Kana names and exact privacy consent label", async () => { const resolver = createPrivateValueResolver({ readPeatixProfile: async () => ({ family_name_kana: "サクラ", given_name_kana: "テスト", accept_organizer_privacy: true }), readFormProfile: async () => ({ form_answers: {} }) });
+  const control = (kind, label) => ({ control: "safe_control", kind, label, required: true });
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "lastname_edit") }), "サクラ"); assert.equal(await resolver({ provider: "peatix", control: control("input", "firstname_edit") }), "テスト");
+  assert.equal(await resolver({ provider: "peatix", control: { ...control("radio", "確認し同意する。"), question: "主催者のプライバシーポリシーを読んだ・確認した" } }), true);
+  assert.equal(await resolver({ provider: "peatix", control: control("radio", "確認し同意する。") }), null); assert.equal(await resolver({ provider: "peatix", control: { ...control("radio", "確認し同意する。"), question: "別の質問" } }), null);
+  for (const label of ["Last name", "First name", "姓", "名"]) assert.equal(await resolver({ provider: "peatix", control: control("input", label) }), null);
+});
+
+test("production harness rejects unapproved Peatix radio before DOM action", async () => {
+  let operated = 0;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    peatixWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    inspectControls: async () => [{ control: "unknown_radio", kind: "radio", label: "Invented answer", required: true }],
+    proposeAction: async () => ({ purpose: "fill", method: "ax_check", control: "unknown_radio" }),
+    operateControl: async () => { operated += 1; return { status: "success" }; },
+    resolveValue: createPrivateValueResolver({ readPeatixProfile: async () => ({ accept_organizer_privacy: false }), readFormProfile: async () => ({ form_answers: {} }) }),
+  });
+  const result = await harness.runFallback({ provider: "peatix", candidate: { event_ref: "peatix-event://event/1" }, page: {},
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/OWNEDTARGET1", maxSteps: 1, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "failed"); assert.equal(result.safe_reason, "agent_action_failed"); assert.equal(operated, 0);
 });

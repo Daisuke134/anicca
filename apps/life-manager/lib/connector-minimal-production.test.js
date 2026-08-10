@@ -173,6 +173,23 @@ test("official production factory installs Peatix audit and keeps attendee profi
   }
 });
 
+test("official factory composes the default Peatix Harness with the attendee profile", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-peatix-harness-")); let filled = null; let reads = 0;
+  const profile = { name: "Private Name", email: "private@example.test", family_name_kana: "サクラ", given_name_kana: "テスト", accept_organizer_privacy: true };
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: filled ? "pending" : "absent" }; } };
+  const element = { tagName: "INPUT", type: "text", required: true, dataset: {}, labels: [{ innerText: "Name" }], innerText: "", getAttribute() { return ""; } };
+  const page = { locator(selector) {
+    if (selector === "input, textarea, select, button, a[role=button]") return { async evaluateAll(callback) { return callback([element]); } };
+    return { async count() { return 1; }, async fill(value) { filled = value; } };
+  } };
+  try {
+    const dependencies = createMinimalProductionDependencies({ repoRoot: "/private/repo", stateDir, wakeId: "wake-production-peatix-harness-1", calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target", lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence", calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } }, lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow, peatixWorkflow: emptyWorkflow, peatixAttendeeProfile: profile, proposeAction: async () => ({ purpose: "fill", method: "ax_fill", control: "control_1" }), actionCache: { async replay() { return { status: "cache_miss" }; }, saveVerifiedRepair() {} }, evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} }, now: () => new Date("2026-08-10T08:30:00.000Z") });
+    const result = await dependencies.runAgentFallback({ provider: "peatix", candidate: { event_ref: "peatix-event://event/1" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/OWNEDTARGET1", maxSteps: 1, expectedState: "registered_or_pending" });
+    assert.equal(result.status, "completed"); assert.equal(filled, profile.name); assert.equal(JSON.stringify(result).includes(profile.email), false); reads += 1;
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+  assert.equal(reads, 1);
+});
+
 test("production provider router keeps Luma cache direct fallback and readback on one page", async () => {
   const calls = [];
   const page = Object.freeze({ page_id: "owned-page-1" });
@@ -200,7 +217,7 @@ test("production provider router keeps Luma cache direct fallback and readback o
   const browserHarness = {
     async runFallback(input) { calls.push(["fallback", input]); return { status: "failed" }; },
   };
-  const performAction = async () => ({ status: "success" });
+  let performed; const performAction = async (input) => { performed = input; return { status: "success" }; };
   const router = createProductionProviderRouter({
     lumaWorkflow,
     connpassWorkflow: {
@@ -241,7 +258,7 @@ test("production provider router keeps Luma cache direct fallback and readback o
   assert.equal(replay.pageState, "registration_page_v1");
   assert.equal(replay.expectedEffect, "registered_or_pending");
   assert.equal(replay.page, page);
-  assert.equal(replay.performAction, performAction);
+  await replay.performAction({ purpose: "fill", method: "ax_fill", control: "control_1" }); assert.equal(performed.provider, "luma");
   assert.equal(typeof replay.readExpectedState, "function");
   assert.equal(calls.find(([name]) => name === "discover")[1].calendar, calendar);
   assert.equal(calls.find(([name]) => name === "fallback")[1].page, page);
@@ -250,7 +267,7 @@ test("production provider router keeps Luma cache direct fallback and readback o
 });
 
 test("production provider router continues from Luma to Connpass on the same page", async () => {
-  const calls = [];
+  const calls = []; let performed;
   const page = Object.freeze({ page_id: "owned-page-1" });
   const candidate = Object.freeze({
     provider: "connpass",
@@ -274,7 +291,7 @@ test("production provider router continues from Luma to Connpass on the same pag
     connpassWorkflow: workflow,
     actionCache,
     browserHarness,
-    async performAction() { return { status: "success" }; },
+    async performAction(input) { performed = input; return { status: "success" }; },
     now: () => new Date("2026-08-07T08:30:00.000Z"),
   });
 
@@ -288,6 +305,7 @@ test("production provider router continues from Luma to Connpass on the same pag
   assert.equal(cached.workflowVersion, "connpass_registration_v1");
   assert.equal(cached.pageState, "registration_page_v1");
   assert.equal(cached.page, page);
+  await cached.performAction({ purpose: "fill", method: "ax_fill", control: "control_1" }); assert.equal(performed.provider, "connpass");
   assert.equal(calls.filter(([name]) => name === "discover")[0][1].page, page);
 });
 

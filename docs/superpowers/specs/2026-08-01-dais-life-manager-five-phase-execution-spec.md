@@ -6589,7 +6589,27 @@ retry/store/event identity/URL/title/DOM/selector/private値は0。focused+brows
 fresh Sol reviewはCritical 0・Important 0で`ship`。次の一件はdashboard registration 0、clean HEAD、schedule unloadedでofficial wakeを一度実行し、
 最初の3候補が返すexact safe stageをcurrent Gateway report positive IDとともに取得する。
 
-### Active remaining TODO SSOT（進捗261。これ以外の残TODO一覧は履歴）
+### O1B-25進捗262（Peatix same-page Browser Harness GREEN / fresh review ship）
+
+plan `docs/superpowers/plans/2026-08-10-connector-peatix-browser-harness.md`をLunaがTDD実装した。最初のREDはPeatix proposer、
+fallback readback route、provider-neutral private resolver、unapproved radio guard、production factory compositionの5契約を再現した。
+primary Sol diff reviewでcross-question option誤適用と実Peatix Kana/privacy control欠落を見つけ、追加RED 2件を再現して修復した。
+fresh Sol reviewはprivacy question欠落許可、汎用surnameのKana誤解釈、Connpass cached replay provider欠落のImportant 3件を反証し、
+同じLunaが追加REDで全件を再現してから修復した。fresh re-reviewはCritical 0・Important 0で`ship`。
+
+production Harnessは既存allowlistへPeatixを追加し、same owned page、最大10 step、parent `registered|pending` readbackを維持する。
+モデルへ渡すのはvalidated providerとsanitized control/questionだけで、page、websocket、candidate identity、private value、dynamic page stateは渡さない。
+入力値は親のin-memory Peatix attendee profileまたは既存mode 0600 form profileのexact answerだけに限定し、radio/checkboxは
+exact question+option、またはexact Peatix privacy question+consentだけを許可する。KanaはKana明示labelまたは`lastname_edit`/`firstname_edit`だけで、
+汎用Last/First/姓/名は拒否する。cached replayもLuma/Connpass/Peatix全てでvalidated provider contextを渡す。
+
+差分はHarness/factoryと各testの4 files、production +54/-17、tests +98。Sol再実行はfocused 20/20、runner adjacent 23/23、
+native contract 7/7、4 file syntax、diff checkが全てPASS。browser、model、Submit、Calendar write、PNG、Telegram、state/private profile write、
+session/target/page作成、schedule変更は0。Item 10B/14/19は未完。次の一件はこのcommitをpush後、schedule unloadedのままofficial foreground
+`skills/connector/run.sh`を一度bounded実行し、Peatix parent readbackまたはexact safe failure、dashboard registration増分、Gateway positive ID、
+lock/process/owned target cleanupを実測する。
+
+### Active remaining TODO SSOT（進捗262。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
