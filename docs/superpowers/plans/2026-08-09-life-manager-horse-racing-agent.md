@@ -86,7 +86,9 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 7A | HRA-3C monthly NAR materialization probe | **complete; cutoff blocked** | commit `d4a2389ea`; 321 joined settled candidates, cutoff-safe records 0 |
 | 7B | HRA-3C daily cutoff snapshot probe | **complete** | commits `3c003293d` + `9063ebfc6`; fixed win complete 7 races/76 runners |
 | 7C1 | HRA-3C normalized market dimension | **complete** | commit `204d26e9e`; focused 37/full 119 PASS |
-| 7C2 | HRA-3C win-market materializer | **ACTIVE** | exact `単勝`, complete-runner races only |
+| 7C2 | HRA-3C win-market materializer | **complete** | commits `fb0038409` + `e8abb094c` + `72d152356`; actual 7/76 |
+| 7D1 | HRA-3C official win outcome parser | **ACTIVE** | dead-heat-safe winner/payout join, redacted IDs |
+| 7D2 | HRA-3C current-day settlement capture | waiting for 2026-08-10 races to settle | target 7 race IDs, no polling before finish |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3C/3D actual gate | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
@@ -443,6 +445,24 @@ Record mapping is deterministic and name-free: `race_id = nar-race- + sha256(ven
 Tests construct only ephemeral synthetic ZIPs under temp directories, pass `SYNTHETIC_TEST`, and never persist them as evidence. RED covers hash mismatch, ZIP safety/header/encoding, cutoff, exact win filter, duplicate odds, incomplete field exclusion, deterministic opaque IDs/order, market label, nullable weight, and absence of name/raw fields. Actual execution uses the private daily ZIP hashes `60c8fb659d6b31369453bf6121576d1af082ddc274e3380dd19e3135403d0135` and `feaa43d6bdaa019aa748a7ce05f527235647531bc90bfcc38fb0eadb5dc8c515`, snapshot `2026-08-10T10:46:23+09:00`; expected exact output is 7 records/76 runners. Then run `audit_records` with an official daily-odds manifest (`settled_payback_rows=0`, `settled_race_ids=[]`): expected `record_count=7`, `race_count=7`, official odds observed, `model_ready=false`, `NO_SETTLED_PAYBACK`, cash false. Evidence contains only hashes/counts/times/status, no IDs/names/odds/raw rows. Commit `feat(horse-racing): materialize daily win records`, push both/parity; model and cash stay blocked.
 
 **REAL promotion boundary:** caller-supplied `evidence_class` plus caller-supplied hashes is not provenance. The module contains an accepted-real allowlist keyed by the exact tuple `(race_sha256, odds_sha256, snapshot_at)` from the committed Task 7B Reality Gate; currently it contains only the hashes/timestamp above. `REAL_PUBLIC_WEB_RECORD` is rejected unless the full tuple matches. Arbitrary conforming ZIPs remain `SYNTHETIC_TEST/test_only`; a future real snapshot needs its own accepted evidence update before promotion. For exact `単勝` rows, register the race+runner key and detect duplicate/extra keys before filtering blank/non-positive odds, so `0 + positive` duplicates and horselist-missing extra keys cannot disappear. Evidence wording must say private normalized records contain numeric odds (and possibly weight) while the committed redacted evidence/audit report exports none.
+
+Completion evidence: commits `fb0038409` + `e8abb094c` + `72d152356`; final focused 13/full 132 PASS, compileall/diff-check PASS, fresh Sol re-review CLEAN, local/origin/canonical parity PASS. Exact accepted provenance produced 7 private records/76 runners; audit is 7/7, `model_ready=false`, `NO_SETTLED_PAYBACK`, cash false. Private records contain numeric odds/optional weight; Git evidence/AuditReport export none.
+
+## Task 7D1: HRA-3C official win outcome parser
+
+**State:** ACTIVE. Build parser now; current-day target execution stays blocked until races settle.
+
+**Files:** create `src/horse_racing_agent/nar_outcome.py`, create `tests/test_nar_outcome.py`, and modify `nar_materialize.py` only to expose deterministic `nar_race_id(venue,date,race_number)` and `nar_runner_id(race_id,horse_number)` helpers used by both parsers.
+
+**Interface:** `materialize_nar_win_outcomes(race_zip_path, *, captured_at, expected_sha256, source_url, evidence_class) -> tuple[WinOutcome, ...]`. `WinOutcome` and nested `WinPayout` are frozen `repr=False` dataclasses; private fields are opaque race/runner IDs, market=`win`, status=`settled`, official source metadata, capture timestamp/hash, and one or more `(winner_runner_id, payout_yen_per_100)` items. No horse/person names. Public `redacted_summary(outcomes)` returns counts/hash/status only and never IDs/payout values.
+
+Reuse the materializer ZIP safety/BOM/key parsing rather than creating a second permissive ZIP reader. Required horselist fields are race key + `馬番/着順`; payback fields are race key + `単勝組番/単勝払戻金（円）`. A payback row is settled only when winner number is digits-only positive and payout is a finite positive integer. Multiple rows for one race are allowed only for distinct winners (dead heat); exact duplicate/conflicting winner rows reject. For every settled race, the payback winner-number set must exactly equal the horselist rows with `着順=1`; missing/extra winner, missing horse join, duplicate horse key, or invalid payout rejects. Unsettled races with no payback are omitted, not zero-filled.
+
+REAL promotion uses an accepted provenance allowlist. Initial accepted actual tuple is the committed monthly race URL/hash/capture from Task 7A: URL `https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=monthly&k_year=2026&k_month=8`, SHA `ca512328b477054738f0a926710c3c5c16b1e25d9f7e4ffaf7f9cfc9604c2149`, captured_at `2026-08-10T10:37:13+09:00`. Arbitrary self-hashed synthetic ZIPs cannot request REAL. Tests use ephemeral ZIPs and `SYNTHETIC_TEST`, covering normal/dead heat, unsettled omission, mismatch/duplicate/conflict, invalid payout/key, provenance, opaque deterministic IDs, repr/redacted leakage, ZIP/hash safety. Actual monthly execution must yield exactly 321 outcomes/322 winner-payout items with all joins complete, but it does not unlock the model because those monthly odds lack cutoff timestamps. Focused/full/compileall/diff-check, commit `feat(horse-racing): parse official win outcomes`, push both/parity; no current-day settlement, model, cash, Telegram, or CFO.
+
+## Task 7D2: HRA-3C current-day settlement capture
+
+**State:** WAITING on external race completion. The seven 2026-08-10 cutoff-safe target races span 11:40–18:10 JST. Do not claim settlement or poll before completion. After the final race, perform one official daily archive fetch, accept its exact provenance through a Reality Gate, parse target outcomes, require all seven race IDs to settle, then rerun audit. Until then `NO_SETTLED_PAYBACK`, model false, cash false.
 
 ## Task 8: HRA-3M cutoff-safe baseline, model, and backtest
 
