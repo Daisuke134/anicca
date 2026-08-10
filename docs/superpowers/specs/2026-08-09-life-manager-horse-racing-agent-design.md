@@ -6,18 +6,18 @@
 |---|---|
 | Status | **REALITY GATE REQUIRED — LIVE PURCHASE DISABLED** |
 | 対象 | Life Manager financial organ の第8候補 business_id: horse_racing |
-| 現在のactive stage | HRA-2R-JRA official actual record（ACTIVE）。HRA-2FはGREEN、NAR officialは`PASS_PRIVATE_SHADOW`、JRA recordsは0 |
+| 現在のactive stage | HRA-2N NAR official acquisition planner（ACTIVE）。HRA-2FとJRA/NAR official Reality GatesはGREEN、cashはfalse |
 | plan / gate / verification owner | Sol |
 | edit / code / execution owner | Luna |
 | 購入処理 | PurchaseExecutorは常時disabled。HRA-6の全gateなしに有効化しない |
 
-この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。HRA-2Fはcommits `ae56d3524` + `956d1b50d`でGREEN、NAR official public dataはcommits `33ef30c1d` + `a289babba`で`PASS_PRIVATE_SHADOW`になった。JRA official actual recordが0のため、HRA-2Sはまだunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
+この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。HRA-2F、NAR official 46/456/327274 rows、JRA official 12 result rowsはすべてprivate-shadow gateを通過した。HRA-2N acquisition contractとper-source indexが未完了のためHRA-2Sはまだunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
 
 ### 現在のevidence table
 
 | Evidence | 実測値 |
 |---|---:|
-| real JRA official public-web records | 0 |
+| real JRA official public-web result rows | 12 |
 | real NAR official race rows | 46 |
 | real NAR official horse rows | 456 |
 | real NAR official monthly odds rows | 327274 |
@@ -118,7 +118,7 @@ raw snapshotはMac-local private append-only boundaryに留める。Git、Telegr
 
 | lane | URL / authority | 観測・許可 | gateとtruth |
 |---|---|---|---|
-| JRA primary | https://www.jra.go.jp/ / official | robotsはUser-agent:*とempty Disallow。use pageのprivate use/citation境界内でcrwl navigation/HTMLを取得する | record 0。1件以上のactual row + manifestでREAL_PUBLIC_WEB_RECORD |
+| JRA primary | https://www.jra.go.jp/ / official | current home→official result index→2026-08-09 detailを発見。robotsはUser-agent:*とempty Disallow。private raw HTMLから12 actual rows x 14 fieldsを観測 | REAL_PUBLIC_WEB_RECORD、PASS_PRIVATE_SHADOW、cash false |
 | NAR official Today | https://www.keiba.go.jp/KeibaWeb/TodayRaceInfo/TodayRaceInfoTop / official | crwl exit 0。2026-08-10 daily venuesとofficial daily-data linkを観測。robotsはCrawl-delay: 10とdynamic path Disallowを保持し、probeはUSER_ATTESTED_PERMISSION basis | REAL_PUBLIC_WEB_RECORD、PASS_PRIVATE_SHADOW、NAR 46 race rows |
 | NAR official daily archive | https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily / official | crwlはPage.goto: Download is starting。curl fallback HTTP 200 application/zip、UTF-8 BOM CSV、race 46 / horse 456 / payback 0 pre-settlement | REAL_PUBLIC_WEB_RECORD、PASS_PRIVATE_SHADOW、raw non-export |
 | NAR official monthly navigation | https://www.keiba.go.jp/KeibaWeb/MonthlyConveneInfo/MonthlyConveneInfoTop / official | crwl exit 0。monthly race/odds endpointsを観測 | official NAR lane |
@@ -269,7 +269,7 @@ sequenceDiagram
 | HRA-1 | registry dependency、PurchaseExecutor disabled、truth labels | **complete** |
 | HRA-2a | Mac-local private append-only raw boundary | **superseded design only**。0fe627cdは現行証拠ではない |
 | HRA-2F | JRA/NAR official + secondary fallback authority、permission metadata、Mac-local raw non-export、crwl/curl boundary | **complete**。focused 24/full 32 PASS、cash authorization false |
-| HRA-2R-JRA | JRA official actual record + manifest | **ACTIVE**。JRA records 0 |
+| HRA-2R-JRA | JRA official actual record + manifest | **complete**。12 actual result rows、PASS_PRIVATE_SHADOW、cash false |
 | HRA-2R-NAR | NAR official: 46 races / 456 horses / 327274 monthly odds / payback 0 pre-settlement | **complete**。PASS_PRIVATE_SHADOW、raw absent、cash false |
 | HRA-2S | observed schema/local store | **BLOCKED**。HRA-2F + source manifest acceptanceまで不可 |
 | HRA-3D | actual chronological coverage/cutoff audit | **BLOCKED**。historical backtest evidence 0 |
@@ -312,7 +312,7 @@ permission_document_verified=false、terms/order/tax/credential/receipt/reconcil
 | ケース | 想定 | 判断 |
 |---|---|---|
 | Best | NAR official manifestは受理済み。JRAもactual rowを取得 | official laneごとにschema/audit/SHADOWを進め、HRA-6を別審査する。secondaryはfallback |
-| Base | HRA-2FとNAR private-shadow gateはGREEN。permission document未検証、JRA 0、payback pre-settlement 0 | JRA official recordを取得し、cash/revenue/ROIは0のまま維持 |
+| Base | HRA-2FとJRA/NAR private-shadow gateはGREEN。permission document未検証、NAR payback pre-settlement 0 | HRA-2N取得contractへ進み、cash/revenue/ROIは0のまま維持 |
 | Worst | robots/terms/permission境界、raw boundary、timestamp/hash、official outcome reconciliationが破綻 | fail-closedし、rawを外へ出さず、PurchaseExecutor disabled、revenue 0 |
 
 棄却案の最強の論拠は、USER_ATTESTED_PERMISSIONを一般bot許可・再配布許可・cash execution許可へ拡張解釈すると、robots/terms、raw boundary、receipt/reconciliationを静かに破壊することである。

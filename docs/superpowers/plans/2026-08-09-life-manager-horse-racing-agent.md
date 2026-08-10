@@ -26,7 +26,7 @@
 
 | Evidence | 実測値 |
 |---|---:|
-| real JRA official public-web records | 0 |
+| real JRA official public-web result rows | 12 |
 | real NAR official race rows | 46 |
 | real NAR official horse rows | 456 |
 | real NAR official monthly odds rows | 327274 |
@@ -37,7 +37,7 @@
 | live orders/payments | 0 |
 | revenue / real P&L | 0 |
 
-NARの46/456/327274行、payback 0 pre-settlementはcommit `6a6cdd1356ea9f1d5064cdd24bb05d4342fe6730`から始まる`docs/evidence/horse-racing/nar-official-data-probe.md`のredacted observationである。HRA-2FはGREEN、NAR evidenceはcommits `33ef30c1d` + `a289babba`で`PASS_PRIVATE_SHADOW`。ephemeral raw archiveは不在で`CANNOT_RECOMPUTE_RAW_ARCHIVE_ABSENT`、`cash_authorized=false`である。未取得のJRA、backtest、SHADOW、Telegram、orders、revenueはunknownを0へ変換せず、現在値0としてblocked表示する。
+JRA official resultはcommits `526381236` + `e79ed1d11`で12 actual rows、`PASS_PRIVATE_SHADOW`、private raw 700/600、`cash_authorized=false`。NARの46/456/327274行、payback 0 pre-settlementはcommit `6a6cdd1356ea9f1d5064cdd24bb05d4342fe6730`から始まるredacted observationで、commits `33ef30c1d` + `a289babba`により`PASS_PRIVATE_SHADOW`。NAR ephemeral raw archiveは不在で`CANNOT_RECOMPUTE_RAW_ARCHIVE_ABSENT`である。backtest、SHADOW、Telegram、orders、revenueは現在値0としてblocked表示する。
 
 ## Architecture flow
 
@@ -78,8 +78,8 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 0 | Completed safety and design | complete | historical commits, approved official public-web design, NAR evidence commit |
 | 1 | HRA-2F ingest boundary refactor | **complete** | commits `ae56d3524` + `956d1b50d`; focused 24/full 32 PASS |
 | 2 | HRA-2R2 NAR official evidence gate validation | **complete** | `PASS_PRIVATE_SHADOW`; commits `33ef30c1d` + `a289babba` |
-| 3 | HRA-2R1 JRA public-web record | **ACTIVE** | one evidence file; current row count 0 |
-| 4 | HRA-2N NAR official free acquisition component | blocked by Task 3 close | HTML/curl planner and Mac-local archive contract |
+| 3 | HRA-2R1 JRA public-web record | **complete** | 12 actual rows; commits `526381236` + `e79ed1d11` |
+| 4 | HRA-2N NAR official free acquisition component | **ACTIVE** | HTML/curl planner and Mac-local archive contract |
 | 5 | HRA-2R3 per-source index/gate | blocked by source records | JRA official, NAR official, optional secondary fallback rows |
 | 6 | HRA-2S observed schema/store | blocked by HRA-2R3 | quarantine three files only |
 | 7 | HRA-3D audit | blocked by HRA-2S | `data_audit.py` and `test_data_audit.py` |
@@ -270,15 +270,15 @@ Check content hashes, archive entry names, line counts, UTF-8 BOM, and header na
 
 PASS requires HRA-2F GREEN plus exact source URL, official authority, timestamps, HTTP/fetch evidence, parsed rows, observed raw schema types, hashes, permission metadata, and raw non-export. `USER_ATTESTED_PERMISSION` keeps `cash_authorized=false`. Commit a correction only when the evidence file actually changes.
 
-## Task 3: HRA-2R1 JRA official actual record
+## Task 3: HRA-2R1 JRA official actual record (COMPLETE)
 
-**State:** ACTIVE; current JRA record count remains 0 until this task produces `parsed_row_count>=1`.
+**State:** complete at commits `526381236` + `e79ed1d11`. Official home discovery produced the most recent 2026-08-09 result URL; private HTML hash matched, one result table contained 12 actual rows x 14 fields, fresh Sol review approved, and the final gate is `PASS_PRIVATE_SHADOW` with cash false.
 **File:** create `docs/evidence/horse-racing/jra-public-web-probe.md`.
 
-- [ ] Step 1: Discover a current official JRA race/result URL from `https://www.jra.go.jp/` with crwl; do not hardcode a stale race id.
-- [ ] Step 2: Capture one bounded official page under the JRA private-use policy. Store raw only under `/Users/anicca/Library/Application Support/Anicca/horse-racing/raw/`; keep it outside Git.
-- [ ] Step 3: Parse at least one actual race row and record source URL, authority, jurisdiction, retrieved/effective time, fetch exit/HTTP status, schema names/raw types, SHA-256, robots/terms status, permission basis, and `raw_values_exported=false`.
-- [ ] Step 4: Verify and commit.
+- [x] Step 1: Discover a current official JRA race/result URL from `https://www.jra.go.jp/` with crwl; do not hardcode a stale race id.
+- [x] Step 2: Capture one bounded official page under the JRA private-use policy. Store raw only under `/Users/anicca/Library/Application Support/Anicca/horse-racing/raw/`; keep it outside Git.
+- [x] Step 3: Parse at least one actual race row and record source URL, authority, jurisdiction, retrieved/effective time, fetch exit/HTTP status, schema names/raw types, SHA-256, robots/terms status, permission basis, and `raw_values_exported=false`.
+- [x] Step 4: Verify and commit.
 
 ~~~sh
 git diff --check -- docs/evidence/horse-racing/jra-public-web-probe.md
@@ -291,6 +291,8 @@ git push canonical HEAD
 Expected: `parsed_row_count>=1` and `REAL_PUBLIC_WEB_RECORD`; HTTP/DOM success alone fails.
 
 ## Task 4: HRA-2N NAR official acquisition component
+
+**State:** ACTIVE. HRA-2F and both official source Reality Gates are complete; this task creates only the pure acquisition planner/classifier.
 
 **Files:**
 - Create: `apps/horse-racing-agent/src/horse_racing_agent/nar_source.py`
