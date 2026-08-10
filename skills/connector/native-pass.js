@@ -69,7 +69,9 @@ function productionConfig(options, stateDir, ownerToken) {
   const env = { ...loaded, ...supplied };
   const calendarAccount = requiredEmail(env.GOG_ACCOUNT || env.LM_CONNECTOR_LUMA_EMAIL);
   const attendeeEmail = requiredEmail(env.GOG_ACCOUNT);
-  const peatixAttendeeProfile = Object.freeze({ name: requiredText(env.DAIS_LEGAL_NAME_ROMAJI), email: attendeeEmail, accept_organizer_privacy: true });
+  const attendeeName = requiredText(env.DAIS_LEGAL_NAME_ROMAJI);
+  if (attendeeName.length > 200) unavailable();
+  const peatixAttendeeProfile = Object.freeze({ name: attendeeName, email: attendeeEmail, accept_organizer_privacy: true });
   return Object.freeze({
     repoRoot: absoluteDirectory(options.repoRoot),
     stateDir,
