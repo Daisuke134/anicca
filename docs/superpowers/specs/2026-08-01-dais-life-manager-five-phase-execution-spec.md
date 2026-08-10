@@ -7101,7 +7101,13 @@ fix REDはfocused 20/21、review指摘3 hostが`run` actual 3 / expected 0。最
 
 Luna transport 21/21、minimal evidence/production/runner 61/61、Connpass workflow/provider 20/20、Harness 58/58、native entrypoint 8/8、canonical helper 4/4、syntax/diff checkがPASS。Sol独立166/166とfocused/canonical 25/25、idempotency/evidence 33/33、adversarial 10/10もPASS。native-runtime 2 failuresはclean HEAD同一cursor baselineで新規failure 0。fresh Sol re-reviewはCritical 0 / Important 0で`ship`。実装/test中browser/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用0。Item14未完、schedule unloaded。次はcommit/push後のofficial recovery wake exact 1回でcheckpoint reuse、Connpass Submit 0、Calendar create/readback 1、positive Telegram message/photo IDs、durable applied bundle、same-run Luma→Connpass lineage、exact cleanupを実証する。
 
-### Active remaining TODO SSOT（進捗330。これ以外の残TODO一覧は履歴）
+### O1B-25進捗331（Item 14 live Connpass applied bundle acceptance完了）
+
+pushed commit `5d6ca0489`、clean/upstream、4 labels unloaded、process/lock 0、`:9222` healthy、baseline bundle/provider receipt/report/delivery/action `4/24/109/121/738`でofficial wakeをexact 1回起動した。wake `wake-bc2b2f00e4eb1aeb237e6743`はexit 0。同一wake auditでLuma `32/32/17/10/0`、about:blank handoff後Connpass `6/6/6/4/1`。Connpass candidateをparent `registered`でreadbackし、action deltaはcalendar observe、Luma discovery、handoff navigate、Connpass discovery、candidate navigate、readbackの6件だけ。provider cache/direct/Harness Submit actionは全0。
+
+既存provider receipt `099d…`とartifact SHA `10f34…`を再利用し、bundle 4→5。new bundle `applied-bundle:d9f0c88a13319c0c5917af61aef834b195377d412ad4400267a7c3705ef954c1`はmode 0600、provider `connpass`、event ref `connpass-event://event/400028`、status `registered`、Calendar ID `k7mufbmh1045f4phnooc5dbckc`、readback timestamp、Telegram message positive ID `11307`、photo positive ID `11308`を同一lineageに保存した。PNG objectは1,394,431 bytes、mode 0600、recomputed SHA exact一致。外部`gog` read-only再検証は記録Calendar ID exact 1、`confirmed`、html link/intervalあり、64文字private idempotency markerあり。wake reportは`applied_bundle`、failure count 0、positive Telegram ID `11309`。process/lock 0、target lease 0、4 labels unloaded、Git clean/upstream。Item14をacceptする。次の一件はItem15 circuit breaker acceptance。
+
+### Active remaining TODO SSOT（進捗331。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -7118,7 +7124,7 @@ Luna transport 21/21、minimal evidence/production/runner 61/61、Connpass workf
 11. [x] **同じregistrationのexternal evidence chainを完成する。** Provider receipt/ticket/QRまたは同等receipt、Calendar event IDと独立readback、registered page full-page PNGとSHA-256、Telegram message positive ID、Telegram photo positive IDを同一lineageのdurable `applied_bundle`へ保存する。不足が一つでもあれば成功扱いにしない。証拠: 進捗291。
 12. [x] **post-registration recoveryを実証する。** Calendar、PNG、ticket、Telegram各境界の中断fixtureから、providerへ再Submitせず不足artifactだけを補完する。完了条件は外部registration 1、Calendar event 1、bundle 1、duplicate Submit 0。証拠: 進捗295、298。
 13. [x] **idempotent second foreground wakeを実証する。** 同じeventを既登録としてreadbackし、Submit 0で未処理candidateへ継続する。every-wake Telegram positive message IDを保存する。証拠: 進捗308、310。
-14. [ ] **Luma no-effect→Connpass continuationをlive実証する。** Lumaがexternal effect 0（bounded known-no-effect、exact bundle reuse、またはCalendar gate後eligible exhaustion）の同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。人工failure hookは使わない。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。
+14. [x] **Luma no-effect→Connpass continuationをlive実証する。** Lumaがexternal effect 0（bounded known-no-effect、exact bundle reuse、またはCalendar gate後eligible exhaustion）の同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。人工failure hookは使わない。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。証拠: 進捗331。
 15. [ ] **circuit breakerを実証する。** 3連続safe failureまたは10分でcircuit-openし、その後のbrowser action/target creationが0、exact safe stage/action historyとTelegram recovery positive IDが保存されることを確認する。5分automatic retryは0。
 16. [ ] **cached action self-healを実証する。** selector変更fixtureでdirect replay failure→同じpageのbounded fallback→expected state readback→cache更新→agentなしrerun成功を確認する。更新は壊れたactionだけ、repo-wide edit/merge/deployは0。
 17. [ ] **単一daily production scheduleをrender/loadする。** Items 10–16のacceptance後だけ、official minimal runnerを一日一回起動するConnector labelを一つloadする。Native旧schedule、healthcheck、Healer、bridge、5分retry、重複runnerはloaded 0にする。
