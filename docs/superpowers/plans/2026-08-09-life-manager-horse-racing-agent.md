@@ -81,8 +81,8 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 3 | HRA-2R1 JRA public-web record | **complete** | 12 actual rows; commits `526381236` + `e79ed1d11` |
 | 4 | HRA-2N NAR official free acquisition component | **complete** | commits `d22fff7ae..b67198e6`; focused 17/full 49 PASS |
 | 5 | HRA-2R3 per-source index/gate | **complete** | commit `ab39e8546`; four independent lanes, no secondary promotion |
-| 6 | HRA-2S observed schema/store | **ACTIVE** | quarantine three files only |
-| 7 | HRA-3D audit | blocked by HRA-2S | `data_audit.py` and `test_data_audit.py` |
+| 6 | HRA-2S observed schema/store | **complete** | commits `2feb29cfe` + `3f9f036f4`; focused 29/full 75 PASS |
+| 7 | HRA-3D audit | **ACTIVE** | `data_audit.py` and `test_data_audit.py` |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3D | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
@@ -341,7 +341,7 @@ Completion evidence: commit `ab39e8546`; exactly one index file, four independen
 
 ## Task 6: HRA-2S observed schema and append-only store
 
-**State:** ACTIVE. Adopt the quarantined files only after Sol verifies their content against the accepted source manifests and Reality Gate index.
+**State:** COMPLETE. The former quarantine files are adopted only after Sol verifies their content against the accepted source manifests and Reality Gate index.
 
 **Files:**
 - Modify/adopt: `apps/horse-racing-agent/src/horse_racing_agent/store.py`
@@ -360,7 +360,11 @@ Reuse the accepted `ingest._source_scope` exact HTTPS host/authority/jurisdictio
 
 RED tests cover accepted NAR official and JRA official scope-contract examples, a correctly labeled secondary scope-contract example, source/jurisdiction/scope mismatch, `raw_values_exported=true`, nullable `NOT_OBSERVED` values versus invalid zero/non-finite values, deterministic hash excluding storage ids, duplicate ids/source-hash, caller/return alias mutation, and stale/equal snapshot replacement. The committed JSON fixture must itself be machine-labeled `SYNTHETIC_TEST` + `test_only`, use the exact accepted official source URLs, contain only normalized opaque test values, use `null` for unobserved content, and copy no horse/person/raw row. Tests may create ephemeral copies to exercise REAL/secondary source-scope branches, but must never persist or describe those copies as observed evidence. GREEN requires focused tests, the full package suite, compileall, diff-check, and exactly these three files. Target: one in-memory store, no DB/service/serialization layer, no new dependency, no extra file. Commit only after Sol confirms the fixture boundary.
 
+Completion evidence: commits `2feb29cfe` + `3f9f036f4`; final focused 29/full 75 tests PASS, compileall/diff-check PASS, local/origin/canonical parity PASS. Fresh Sol review caught synthetic-to-real promotion; Luna changed committed fixtures to `SYNTHETIC_TEST/test_only`, nullable unobserved content, and accepted official URLs; scoped re-review is CLEAN. Cash authorization remains false.
+
 ## Task 7: HRA-3D actual coverage and cutoff audit
+
+**State:** ACTIVE. Audit only accepted stored records/manifests; do not create or infer historical coverage.
 
 **Files:**
 - Create: `apps/horse-racing-agent/src/horse_racing_agent/data_audit.py`
