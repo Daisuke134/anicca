@@ -6227,7 +6227,22 @@ Critical 0・Important 0でshipした。
 exact identity/storeだけで分岐し、provider receipt、full-page PNG/SHA、Calendar create+readback、Telegram message/photo positive IDsを
 一つのimmutable `applied_bundle`へ束ねる。native order未接続なので、この進捗でも実application external effectは0。
 
-### Active remaining TODO SSOT（進捗236。これ以外の残TODO一覧は履歴）
+### O1B-25進捗237（Peatix applied bundle GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-applied-bundle.md`をTDD実装した。初回REDは3件中2 pass・1 failで、
+Peatix positiveだけが既存Luma-only gateに拒否された。既存orchestrationをprovider descriptorで最小分岐し、Peatix exact event ref/URL、
+registered-only、review済みPeatix store/receipt、Calendar create+独立readback、full-page PNG/SHA、Telegram message/photo positive IDs、
+immutable provider-specific bundleを接続した。
+
+fresh Sol reviewはLuma photo captionから`Connector:::`が落ちたbyte回帰と、URL parser正規化によりPeatixのdot-segment、`:443`、
+uppercase host、空白等をcanonicalとして受理するImportantを発見した。同じLunaがLuma message/caption完全一致を復元し、Peatix URLを
+primitive raw string `https://peatix.com/event/<same-positive-id>`との厳密比較へ変更した。攻撃8種はscreenshot/store/Calendar/Telegram/bundle
+call各0。最終commit `513a9ff34`、focused 4/4、指定回帰26/26、fresh Sol re-reviewはCritical 0・Important 0でshipした。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-private-identity-loader.md`は既存private envの
+`DAIS_LEGAL_NAME_ROMAJI`一keyだけをConnector closed allowlistへ追加する。native order未接続なのでこの進捗でも外部application effectは0。
+
+### Active remaining TODO SSOT（進捗237。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
