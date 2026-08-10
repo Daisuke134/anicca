@@ -1,6 +1,6 @@
 # CFO-2a2a.5b1 — Local Usage Checkpoint Plan
 
-Status: READY
+Status: COMPLETE
 
 ## Goal
 
@@ -59,8 +59,16 @@ checkpoint.
 Record missing-module RED, implement only the writer, register the test, and run focused, CFO, full, syntax, diff, and
 3-file/100-added-LOC gates.
 
+Evidence: missing-module RED; focused 2/2, CFO 279/279, full suite, syntax, and diff checks PASS. The normal suites
+execute both checkpoint tests. Implementation is exactly three files and +99/-1; the lockfile is unchanged. Fresh
+Sol review returned `ship — Spec ✅` after the filesystem-root safety fix.
+
 ## Task 2 — Isolated real-shape evidence and close
 
 Collect each real ledger once, write both resulting batches below a `mktemp` state root, read the two JSON files back,
 and assert their cursor/count/coverage values reconcile while no events or raw rows are present. Do not touch the live
 state root or launchd loop in this slice. Fresh Sol review then closes 2a2a.5b1 before reader/resume wiring 2a2a.5b2.
+
+Evidence: two checkpoint files reconciled 4,963 real-source rows below one isolated temporary state root. Files were
+`0600`, the directory was `0700`, and raw events stored were zero. The temporary root was removed; live state and
+launchd were untouched.
