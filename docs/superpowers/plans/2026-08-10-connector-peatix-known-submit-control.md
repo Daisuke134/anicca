@@ -55,3 +55,12 @@ Soft target: 2 files; production +8–18 LOC; tests +25–45 LOC.
 - `node --check` for both changed files and `git diff --check`.
 - Fresh Sol correctness review.
 - SSOT update, commit, push, then one official schedule-unloaded foreground wake. Acceptance is parent `registered`/`pending` readback plus `applied_bundle`, or an exact next safe boundary with no duplicate external effect.
+
+## Fresh-review amendments
+
+The first GREEN passed focused 31/31, Luna adjacent 82/82, and Sol expanded 103/103, but fresh Sol review found two Important fail-open paths. They are part of this same slice and must receive explicit RED/GREEN regressions before acceptance:
+
+1. Bind the known Peatix exception to both `provider === "peatix"` and the strict canonical Peatix form page `https://peatix.com/sales/event/<id>/form`. The shared inspector must not mark the same DOM ID submittable for Luma, Connpass, another host, another Peatix path, or a stale registry observation. Pass provider into observation and bind cached observations to the same provider.
+2. If any enabled, non-hidden required answer control cannot be represented as a sanitized labeled control, mark every submit non-submittable. The parent/proposer must never infer completeness from a filtered subset of required controls.
+
+Add regressions that reproduce both findings: the same exact ID under `provider=luma`, wrong host/path, cross-provider registry reuse, and one unlabeled required input alongside an otherwise valid Peatix submit. Preserve the measured Peatix happy path and all original fail-closed variants.
