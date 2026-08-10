@@ -144,14 +144,14 @@ test("Connpass native requires known question context", async () => {
 });
 
 test("Connpass fallback latches the first submit attempt across a path change", async () => {
-  let href = "https://tokyo-builders.connpass.com/event/400028/join/";
+  let href = "https://tokyo-builders.connpass.com/event/400028/";
   let proposals = 0;
   let operated = 0;
   const page = { url() { return href; } };
   const harness = createProductionBrowserHarness({
     lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
     connpassWorkflow: { async readProviderState() { return { status: "absent" }; } },
-    async inspectControls() { return [{ control: proposals === 0 ? "submit_one" : "submit_two", kind: "button", label: "申し込みを確定する", required: false, submittable: true }]; },
+    async inspectControls() { return [{ control: proposals === 0 ? "submit_one" : "submit_two", kind: "button", label: "Register", required: false, submittable: true }]; },
     async proposeAction(input) { proposals += 1; return { purpose: "submit", method: "ax_click", control: input.observation.controls[0].control }; },
     async operateControl() { operated += 1; href = "https://tokyo-builders.connpass.com/event/400028/complete/"; return { status: "success" }; },
     async resolveValue() { return null; },
@@ -1020,6 +1020,48 @@ test("Peatix final click settles delayed registration before one completed outco
   assert.ok(reads >= 1);
 });
 
+test("Connpass final click settles delayed registration before one completed outcome", async () => {
+  let registered = false; let clicks = 0; let observations = 0; let proposals = 0; let reads = 0;
+  const page = { url() { return "https://tokyo-builders.connpass.com/event/400028/join/"; } };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    connpassWorkflow: { async readProviderState() { reads += 1; return registered ? { status: "registered" } : { status: "absent" }; } },
+    async inspectControls() { observations += 1; return [{ control: "confirm_button", kind: "button", label: "申し込みを確定する", required: false, submittable: true }]; },
+    async proposeAction() { proposals += 1; return { purpose: "submit", method: "ax_click", control: "confirm_button" }; },
+    async operateControl() { clicks += 1; setTimeout(() => { registered = true; }, 10); return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  const result = await harness.runFallback({ provider: "connpass", candidate: { event_ref: "connpass-event://event/400028" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/CONNPASSFINALDELAY1", maxSteps: 2, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "completed"); assert.equal(result.provider_state.status, "registered"); assert.equal(clicks, 1);
+  assert.equal(observations, 1); assert.equal(proposals, 1);
+  assert.ok(reads >= 1);
+});
+
+test("Connpass final settlement fails closed for identity, label, duplicate, and reader variants", async () => {
+  const base = { href: "https://tokyo-builders.connpass.com/event/400028/join/", candidate: { event_ref: "connpass-event://event/400028" }, controls: [{ control: "confirm_button", kind: "button", label: "申し込みを確定する", required: false, submittable: true }], reader: true };
+  const variants = [
+    ["wrong-url", { href: "https://tokyo-builders.connpass.com/event/400028/" }],
+    ["wrong-event", { candidate: { event_ref: "connpass-event://event/400029" } }],
+    ["wrong-label", { controls: [{ ...base.controls[0], label: "申し込みを確定" }] }],
+    ["non-submittable", { controls: [{ ...base.controls[0], submittable: false }] }],
+    ["duplicate", { controls: [base.controls[0], { ...base.controls[0], control: "confirm_two" }] }],
+    ["missing-reader", { reader: false }],
+  ];
+  for (const [name, variant] of variants) {
+    let operated = 0;
+    const config = { ...base, ...variant };
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      ...(config.reader ? { connpassWorkflow: { async readProviderState() { return { status: "absent" }; } } } : {}),
+      async inspectControls() { return config.controls; },
+      async operateControl() { operated += 1; return { status: "success" }; }, async resolveValue() { return null; },
+      async proposeAction() { return { purpose: "submit", method: "ax_click", control: config.controls[0].control }; },
+    });
+    assert.deepEqual(await harness.performAction({ provider: "connpass", candidate: config.candidate, page: { url() { return config.href; } }, action: { purpose: "submit", method: "ax_click", control: config.controls[0].control } }), { status: "failed" }, name);
+    assert.equal(operated, 0, name);
+  }
+});
+
 test("Peatix final click fails bounded when provider readback never settles", async () => {
   mock.timers.enable({ apis: ["Date", "setTimeout"] });
   try {
@@ -1044,6 +1086,31 @@ test("Peatix final click fails bounded when provider readback never settles", as
     assert.equal(result.status, "failed");
     assert.equal(result.safe_reason, "effect_unknown");
     assert.equal(clicks, 1);
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test("Connpass final click fails bounded when provider readback never settles", async () => {
+  mock.timers.enable({ apis: ["Date", "setTimeout"] });
+  try {
+    let readStarted = false; let clicks = 0; let settled = false; const page = { url() { return "https://tokyo-builders.connpass.com/event/400028/join/"; } };
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      connpassWorkflow: { async readProviderState() { readStarted = true; return new Promise(() => {}); } },
+      async inspectControls() { return [{ control: "confirm_button", kind: "button", label: "申し込みを確定する", required: false, submittable: true }]; },
+      async proposeAction() { return { purpose: "submit", method: "ax_click", control: "confirm_button" }; },
+      async operateControl() { clicks += 1; return { status: "success" }; },
+      async resolveValue() { return null; },
+    });
+    const resultPromise = harness.runFallback({ provider: "connpass", candidate: { event_ref: "connpass-event://event/400028" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/CONNPASSFINALNEVER1", maxSteps: 2, expectedState: "registered_or_pending" });
+    for (let attempt = 0; attempt < 100 && !readStarted; attempt += 1) await Promise.resolve();
+    assert.equal(readStarted, true); resultPromise.then(() => { settled = true; });
+    mock.timers.tick(30_001);
+    for (let attempt = 0; attempt < 20 && !settled; attempt += 1) await Promise.resolve();
+    assert.equal(settled, true);
+    const result = await resultPromise;
+    assert.equal(result.status, "failed"); assert.equal(result.safe_reason, "effect_unknown"); assert.equal(clicks, 1);
   } finally {
     mock.timers.reset();
   }
