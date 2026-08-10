@@ -230,9 +230,9 @@ remain visible.
       remains estimated or unknown.
 - [ ] Daily operational totals reconcile request-level usage without duplication; monthly confirmed totals
       reconcile to provider billing exports/invoices, with an explicit unexplained difference.
-- [ ] Local subscription loops use provider/harness session usage, never prose estimates. Codex takes the latest
-      cumulative total per session; Claude sums per-response deltas. Truncated or missing logs reduce capture
-      coverage instead of becoming zero.
+- [ ] Managed local subscription loops use the existing agent-runner attempt ledger, never prose estimates. Its
+      deterministic event ID is counted once; missing, conflicting, truncated, or unread rows reduce capture
+      coverage instead of becoming zero. Raw interactive sessions are excluded until explicitly mapped.
 - [ ] Subscription cash expense and API-equivalent scale cost are separate: the former reconciles the actual plan
       receipt; the latter is a labeled forecast from measured token mix and a versioned API price card.
 - [ ] Every attempted ledger write has an attempt ID and durable success/failure outcome. Reports show capture
@@ -389,13 +389,16 @@ flowchart LR
 ```
 
 The local JSONL values are provider/harness-reported usage, not numbers invented by the CFO. They are operational
-evidence, not invoices. Codex emits cumulative `total_token_usage`; the collector stores the latest observed value
-for each session and MUST NOT add every cumulative event. Claude emits per-response `message.usage`; the collector
-sums non-synthetic response deltas, including input, cache creation, cache read, and output fields. A file hash,
-byte watermark, terminal state, and discovered-session count expose deleted, truncated, or unread sessions.
+evidence, not invoices. Managed local loops already emit one normalized `agent-usage.jsonl` row per provider attempt:
+Codex values come from `turn.completed.usage`, and Claude values come from the CLI result envelope's `usage` object.
+The CFO MUST reuse this ledger and its deterministic `event_id`; it MUST NOT build a second raw-session scanner for
+managed loops. A source file SHA-256, byte watermark, terminal attempt status, discovered-row count, and conflicting
+duplicate detection expose deleted, truncated, unread, or rewritten evidence. Unmanaged interactive sessions remain
+outside business P&L until a stable run-to-business sidecar exists; the CFO never guesses their owner.
 
-Every row maps through explicit `business_id + runtime_label + run_id + cwd`. Anything unmatched is
-`unattributed`, never guessed. While a subscription is used, the real cash cost is its provider receipt and a
+Managed local rows map through a versioned `loop + task_label` rule into the existing financial-unit registry;
+other runtimes require an explicit `business_id + runtime_label + run_id` sidecar. Anything unmatched is
+`unattributed`, never guessed from cwd. While a subscription is used, the real cash cost is its provider receipt and a
 business split is `provider_billed_allocated`. The measured token mix can additionally answer “what would this
 cost on the API?” using a pinned model/rate/context-bracket version; that number is
 `api_equivalent_forecast`, never `spent` or `confirmed`. After cloud/API migration, provider billing exports make
@@ -709,8 +712,8 @@ Local and cloud use the same contract. Only infrastructure changes:
 | 22 | Ledger capture coverage | Forced persistence failure appears as missing coverage, never zero cost | Planned |
 | 23 | Shared-project allocation | Provider total confirmed; business shares labeled allocated with remainder | Planned |
 | 24 | Fail-closed health UI | Missing material source forbids green/net-worth total/confidence percentage | Planned |
-| 25 | Codex local usage dedupe | Multiple cumulative events produce the latest per-session total, not their sum | Planned |
-| 26 | Claude local usage sum | Non-synthetic response deltas and cache fields sum once; fixtures match JSONL | Planned |
+| 25 | Managed-loop local usage dedupe | Re-reading the same deterministic `event_id` produces one row; conflicting duplicates fail coverage | Planned |
+| 26 | Codex/Claude local usage truth | Runner-normalized token fields survive once with provider/model provenance and a basis that does not relabel defaulted zeros as field-measured | Planned |
 | 27 | Subscription/API separation | Receipt is actual cash; token-based API equivalent is visibly forecast | Planned |
 | 28 | Log coverage | Truncated/deleted/unmapped sessions reduce coverage and remain unattributed | Planned |
 | 29 | Self-heal success | Failure → repair → fresh provider read → reconciliation sends one recovered report | Planned |
@@ -950,8 +953,10 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       duration/tokenizer values migrate as `locally_estimated`; they are never backfilled as provider-measured.
       Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-provider-usage-design.md`.
-- [ ] **CFO-2a2a** Ingest local Codex cumulative session usage and Claude per-response usage with source-specific
-      dedupe, hashes/watermarks, terminal-state coverage, stable runtime-to-business mapping, and unattributed rows.
+- [ ] **CFO-2a2a** Ingest the existing local agent-runner usage ledger with deterministic-event dedupe,
+      hashes/watermarks, terminal-attempt coverage, stable runtime-to-business mapping, and unattributed rows. Do not
+      rescan raw Codex/Claude session logs for managed loops. Child SSOT:
+      `docs/superpowers/specs/2026-08-10-life-manager-cfo-local-agent-usage-design.md`.
 - [ ] **CFO-2a2b** Make usage-ledger attempts observable and durable; measure producer attempt/success/failure,
       reject invalid numeric values, and expose capture coverage before any total-cost label is enabled.
 - [ ] **CFO-2a3** Add billing-export/invoice reconciliation; confirmed cost supersedes provisional cost without
