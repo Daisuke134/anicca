@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3.2a complete; CFO-2a3.2b local download/parse/append is next |
+| Status | ACTIVE — CFO-2a3.2b1 private invoice download is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains unchanged until real E2E passes |
 | First provider | Google Cloud monthly invoice delivered to the already-authenticated local Gmail account |
@@ -124,6 +124,11 @@ allocation so narrower business totals can be derived honestly.
         `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-gmail-locator.md`.
   - [ ] **CFO-2a3.2b — Download, parse, append.** Use the locator once, private temporary PDF, existing
         `pdftotext`, CFO-2a3.1 normalizer, and one immutable local receipt; no scheduler wiring.
+    - [ ] **CFO-2a3.2b1 — Private download.** Download the located PDF once to a caller-owned absolute private path
+          and return only frozen transfer metadata. No file reading, parsing, hashing, persistence, or scheduling.
+          Plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-download.md`.
+    - [ ] **CFO-2a3.2b2 — Parse and append.** Verify the downloaded file, extract locally with `pdftotext`, normalize
+          through CFO-2a3.1, append one deduplicated immutable receipt, and always remove temporary content.
 - [ ] **CFO-2a3.3 — Real E2E and hourly publication.** Read the latest real invoice without sending Telegram, prove
       the normalized total matches the PDF arithmetic, prove rerun dedupe and source immutability, then publish only
       confirmed/unresolved aggregate counts through the existing hourly runner. Close CFO-2a3.
@@ -174,3 +179,16 @@ adding code.
 - A fresh reviewer could not be allocated because the collaboration service rejected both spawn and follow-up with
   `agent thread limit reached`. No review result is claimed; Sol inspected the exact diff and the next slice keeps
   the locator behind another fail-closed parser boundary.
+
+## 10. CFO-2a3.2b1 implementation budget and observed boundary
+
+| Element | Files | Soft target |
+|---|---:|---:|
+| Existing `gog` transport method | 1 modified production file | <= 20 added LOC |
+| Existing focused mail tests | 1 modified test file | <= 35 added LOC |
+| Total | exactly 2 files | <= 55 added LOC |
+
+A real local read-only probe proved the exact `gog gmail attachment` command returns JSON keys `bytes`, `cached`,
+and `path`, creates a non-empty `%PDF` file with mode `0600`, and can be cleaned up immediately. The probe printed
+only booleans and key names. CFO-2a3.2b1 therefore adds only the command boundary; file verification, parsing,
+hashing, receipt append, dedupe, and cleanup remain CFO-2a3.2b2.
