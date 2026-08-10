@@ -182,3 +182,34 @@ test("operations persist only safe Connpass discovery aggregate counts", async (
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
 });
+
+test("operations persist only safe Peatix discovery aggregate counts", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-peatix-discovery-"));
+  try {
+    const operations = createMinimalProductionOperations({
+      stateDir, wakeId: "wake-20260810-peatix-discovery", telegramTarget: "private-target",
+      now: () => new Date("2026-08-10T08:30:00.000Z"), async sendMessage() { return { messageId: 7001 }; },
+    });
+    await operations.recordPeatixDiscoveryAudit({
+      observed_count: 41, normalized_count: 40, window_count: 11, free_open_count: 3, calendar_free_count: 1,
+    });
+    await assert.rejects(() => operations.recordPeatixDiscoveryAudit({
+      observed_count: 1, normalized_count: 2, window_count: 1, free_open_count: 1, calendar_free_count: 1,
+    }));
+
+    const file = path.join(stateDir, "peatix-discovery-audits.jsonl");
+    const lines = fs.readFileSync(file, "utf8").trim().split("\n");
+    const row = JSON.parse(lines[0]);
+    assert.equal(lines.length, 1);
+    assert.deepEqual(Object.keys(row).sort(), [
+      "calendar_free_count", "free_open_count", "normalized_count", "observed_count",
+      "recorded_at", "schema_version", "wake_id", "window_count",
+    ]);
+    assert.equal(row.wake_id, "wake-20260810-peatix-discovery");
+    assert.equal(row.recorded_at, "2026-08-10T08:30:00.000Z");
+    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    assert.doesNotMatch(JSON.stringify(row), /https?:\/\/|5075819|title|ticket|profile/i);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
