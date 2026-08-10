@@ -7075,7 +7075,13 @@ Luna REDはdelayed registration未settle、wrong URL click許可、never-resolvi
 
 Ponytail trim後の差分はHarness production/test 2 files、production 28/14、tests 69/2。Luna/Sol関連94/94、Harness 54/54、syntax、diff checkがPASS。pushed commit `f5e761557`。fresh Sol reviewはCritical 0・Important 0で`ship`、独立94/94。実装/test中browser/provider/Calendar/evidence/Telegram/state/schedule作用0。Item14未完、schedule unloaded。次の一件はcanonical registeredをpre-readbackしてSubmit 0のままConnpass receipt/artifact、Calendar exact 1、positive Telegram message/photo/report IDs、new applied bundle、cleanupをofficial recovery wake exact 1回で実証する。
 
-### Active remaining TODO SSOT（進捗326。これ以外の残TODO一覧は履歴）
+### O1B-25進捗327（Item 14 recovery wake / registered candidate filter plan）
+
+pushed HEAD `f986aee1c`、4 labels unloaded、clean/upstream、process/lock 0、`:9222` healthy、baseline bundle/report/delivery/action/Connpass receipt `4/107/119/720/0`でofficial recovery wakeをexact 1回起動した。wake `wake-8073885e011beebea1bfc0da`はLuma no-effect後、Connpass audit `6/6/6/5/1`を保存したがConnpass candidate readback/action 0のままPeatixへ進み、terminal `circuit_open/evidence_completion_failed`、failure count 1、every-wake Telegram positive ID `11281`。bundle/Connpass receipt delta 0、process/lock 0、owned target cleanup、4 labels unloaded。成功扱いにしない。
+
+actual detailのread-only正規化はevent `400028`、`registration_status=registered`、free、exact interval。production Calendar reader＋同じConnpass workflowのisolated read-only再現はbusy intervals 90、audit `6/6/6/4/0`、returned candidates 0。current workflowがwindow後に`registration_status !== available`を除外するため、既登録eventをparent pre-readback/evidenceへ戻せないことが根因。plan `docs/superpowers/plans/2026-08-11-connector-connpass-existing-first-recovery-14h.md`はworkflow/test 2 filesだけ。in-window exact registeredをrecovery partitionとしてavailable eligibleより先に返し、新規申込用Calendar/free-open gateはavailableだけに維持する。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗327。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
