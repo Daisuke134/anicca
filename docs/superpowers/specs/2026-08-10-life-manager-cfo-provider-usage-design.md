@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.2c verified; CFO-2a2.3 real Gemini wiring is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.2c verified; CFO-2a2.3a direct OpenTelemetry dependencies is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -45,7 +45,8 @@ flowchart LR
     E --> DONE[CFO-2a2 complete]
 ```
 
-CFO-2a2.1 through CFO-2a2.2c are complete. CFO-2a2.3 is the only active slice; later slices cannot be pulled into it.
+CFO-2a2.1 through CFO-2a2.2c are complete. CFO-2a2.3 is the only active slice; it closes through the three bounded
+sub-slices in section 12. Later slices cannot be pulled into it.
 
 ## 4. CFO-2a2.1 input
 
@@ -342,3 +343,71 @@ does not call Gemini, emit a span, apply migrations, or touch production/remote 
   caller's privileges; PostgreSQL also documents fixed search paths and revoking default PUBLIC execute access.
 - [PostgREST functions as RPC](https://docs.postgrest.org/en/stable/references/api/functions.html#calling-with-post)
   — a JSON object's keys become named PostgreSQL function arguments under the `/rpc` route.
+
+## 12. CFO-2a2.3 — real Gemini response, stored evidence, and a real span
+
+### 12.1 Verified facts and Ponytail decision
+
+OpenTelemetry currently exists only as an undeclared Inngest dependency. A probe before and after requiring
+`server.js` is non-recording with the all-zero trace ID, so API-only instrumentation would be fake. The first
+owner-attributable production boundary is `askTick(uid) → agentSearchCandidate() → geminiRaw()`: grounded research
+and candidate extraction make two calls, and both must be recorded. Ownerless preflight and eval-only calls are
+rejected. Reuse the normalizer, append client, owner ID, Supabase options, and REST call; add no agent, collector,
+queue, pricing, generic provider framework, or broad Gemini instrumentation.
+
+```mermaid
+flowchart LR
+    A[2a2.3a\nDeclare OTel API + trace SDK] --> B[2a2.3b\nOne content-free recording span helper]
+    B --> C[2a2.3c\nWire ask candidate search]
+    C --> D[Real Gemini response]
+    D --> E[Provider token evidence row]
+    D --> F[Ended recording span]
+    E --> G{Same non-zero trace ID?}
+    F --> G
+    G -->|yes| DONE[2a2.3 complete]
+```
+
+Only the first unchecked sub-slice is active.
+
+### 12.3 CFO-2a2.3a — direct dependency boundary
+
+Declare the already-resolved compatible packages `@opentelemetry/api` and `@opentelemetry/sdk-trace-node` as direct
+runtime dependencies and tighten Node from `>=20` to the SDK's `>=20.6.0`. Change only `package.json` and
+`package-lock.json`; add no runtime behavior. Acceptance:
+
+- [ ] `npm ls` shows exact direct API `1.9.1` and SDK `2.8.0`; clean `npm ci` succeeds on Node >=20.6.0.
+- [ ] clean `npm ci` succeeds and the existing CFO/full suites remain green.
+
+### 12.4 CFO-2a2.3b — one real, content-free span helper
+
+Add one CFO helper with a real `NodeTracerProvider` and synchronous console exporter. Start a `SpanKind.CLIENT` span
+named `generate_content gemini-2.5-flash`, capture/validate its non-zero trace ID, then make the request. After the
+response is fully received, normalize using that trace ID, set only section 5 attributes, and end the span **before**
+the PostgREST append so DB latency never becomes model latency. Append with the same ID, then return the unchanged
+response only after its receipt. Tests inspect an ended SDK span via the in-memory exporter, never a hand-made fake.
+
+Errors may contain only fixed redacted CFO reasons. Response ID/model/counts are allowed only in the closed span
+attributes and structured evidence; content, credentials, bodies, prompts, and outputs enter neither. Soft target:
+helper, focused test, test-script entry; three files/100 additions. Acceptance:
+
+- [ ] a real SDK span is recording and has a non-zero 32-hex trace ID;
+- [ ] one call yields one ended CLIENT span, one receipt, exact attributes, and one shared trace ID;
+- [ ] request/normalize failures end an error span; append failure occurs after span end and remains fixed/redacted;
+- [ ] no prompt/output content is exported, stored, or exposed by errors.
+
+### 12.5 CFO-2a2.3c — first production call-site
+
+Wire only `askTick(uid) → agentSearchCandidate()`, passing existing owner/Supabase facts around each default raw
+call. Preserve test injection; do not touch resolution, replies, preflight, eval, Live, pricing, or other providers.
+Soft target: `ask.js`, `lm-p0.test.js`, and one E2E file; three files/100 additions. Acceptance:
+
+- [ ] existing ask behavior and result are unchanged after two successful recorded calls;
+- [ ] two literal provider responses produce two append receipts and two distinct non-zero trace IDs;
+- [ ] real Gemini + local PostgREST/PostgreSQL readback proves exact provider counts and trace correlation;
+- [ ] the real readback and exported spans contain no prompt or output content;
+- [ ] focused, CFO, and full suites pass; no production database or Telegram mutation occurs.
+
+Primary evidence: [OTel JS instrumentation](https://opentelemetry.io/docs/languages/js/instrumentation/) requires a
+provider or tracing is no-op; [OTel GenAI spans](https://github.com/open-telemetry/semantic-conventions-genai/blob/46d43c8949afb53765a202e89f4534eeb75ca3fa/docs/gen-ai/gen-ai-spans.md)
+end when the response is fully received; [Gemini usage metadata](https://ai.google.dev/api/generate-content#UsageMetadata)
+is the provider source for prompt/candidate/cache/thought/tool/total counts.
