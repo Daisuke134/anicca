@@ -6560,7 +6560,24 @@ duplicate notificationを防ぐcompatibility回帰を閉じるために必要で
 focused+runner/production/native/renderer/outboxを含むSol再実行69/69、全syntax、diff checkはPASS。次の一件はclean push後、CDP stale probe
 cleanup後のofficial foreground wakeを一度実行し、provider discovery回復とcurrent report positive IDを同一runで確認する。
 
-### Active remaining TODO SSOT（進捗259。これ以外の残TODO一覧は履歴）
+### O1B-25進捗260（CDP cleanup recovery / Gateway live proof / Peatix safe-stage plan）
+
+clean HEAD `28b37ad3d`、schedule/legacy bridge/process/lock/owned target absent、CDP Node client 6でofficial
+`wake-906cff42e7602a666f8c91aa`を実行。Calendar 2,641ms、Luma discovery 41,045ms、reset 48ms、Connpass 4,052ms、reset 96ms、
+Peatix 96,422msですべて成功。Peatix aggregateは`100→100→87→59→21`。直前wakeの全provider failureと32秒resetは再現せず、
+Connector worktree由来stale CDP probe 39本のcleanupがshared discovery故障を解消した。
+
+Peatix先頭3候補はpre-readback後、cache miss、direct non-completed、未対応Harness failedとなり3連続circuit-open。current reportは新Gateway
+senderでpositive ID `10661`、old pending一件も`10662`、lock/process/owned target cleanupはPASS。Submit成功、Calendar write、PNG、bundleは0。
+終了後Peatix dashboardを専用read-only targetで監査し、authenticated/dashboard true、event link 0、registration marker 0、exact target cleanup PASS。
+従って3候補のunknown post-click registrationと重複外部作用は0。
+
+browser providerは静的safe `reason`を返すが、Peatix workflowが全て`direct_action_unverified`へ、runnerが3回目を
+`consecutive_failure_limit`へ潰すため現在のrepair actionを一意化できない。次plan
+`docs/superpowers/plans/2026-08-10-connector-direct-safe-reason.md`は既存reason→workflow operation→circuit reportだけをbounded伝播する。
+action history schema、新store、event identity/URL/title、DOM/selector/private値、browser action、retryは0。
+
+### Active remaining TODO SSOT（進捗260。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
