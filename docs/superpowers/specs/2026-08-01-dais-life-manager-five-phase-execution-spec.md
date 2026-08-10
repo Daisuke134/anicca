@@ -6847,7 +6847,15 @@ fresh Sol reviewはImportant 1件で`do not ship`。malformed DOM observationの
 
 最終provider 17/17、named adjacent 83/83、Sol独立expanded relevant 108/108、2-file syntax、diff checkがPASS。serialized全Connectorは308/311 PASS、残る3件はclean HEAD同一baseline。default concurrencyでHarnessの100ms synthetic navigation fixtureが一度118msとなったが、単独11msとserialized suiteでPASSしproduction timeout 30秒の差分回帰ではない。fresh Sol re-reviewはCritical 0・Important 0で`ship`。実canonical event `5075819`へのread-only隔離E2EもSubmitなしでexact `registered`。最終差分は既存Peatix provider/testの2 filesのみ、実装/test中のbrowser write/model/Calendar/evidence/Telegram/private profile/schedule/launchd作用0。次はcommit/push後、schedule unloadedのofficial wakeでpre-submit registered、Peatix click 0、Calendar/PNG/Telegram/applied bundleを実証する。Item 10B/14/19のbundle acceptanceは未完。
 
-### Active remaining TODO SSOT（進捗283。これ以外の残TODO一覧は履歴）
+### O1B-25進捗284（Peatix registered no-resubmit live / evidence page boundary）
+
+push済みcommit `aa61ffafb`、Git/remote一致、4 Connector labels unloaded、lock/process absent、`:9222` healthy、bundle/message/photo baselines `2/3/2`でofficial foreground wakeを1回実行した。wake `wake-8acecb7a754670f673321262`はCalendar `3288ms`、Luma `49959ms`、Connpass `7237ms`、Peatix discovery `69752ms`で全てsuccess。auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/55/18`。
+
+Peatix候補1へnavigate後、parent pre-readbackは32msで実登録を認識した。provider cache/direct/Browser Harness/Peatix clickは全て0で、再Submit防止をlive実証した。その直後`completeEvidence`が`Connector minimal pass unavailable`でthrowし、evidence file、Calendar write、Telegram delivery、wake report、bundle増分は0、baseline `2/3/2`を維持した。
+
+専用CDP targetの隔離診断で、registered Peatix page上の`page.setContent`はdefault load、`domcontentloaded`、事前`about:blank` resetの全てで30秒timeoutを再現した。一方、同じowned pageでstrict `about:blank`へ移動後、親固定のescaped receipt HTMLを`document.open/write/close`し、screenshotするとvalid PNG 16,901 bytesを得た。診断のfile/Calendar/Telegram/state writeは0、exact target cleanup済み。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-evidence-page-reset.md`はminimal evidence/testの2 filesだけで、Peatix receipt renderのみこの実測pathへ変え、Lumaと後段evidence/Calendar/Telegram/bundle gateを維持する。Item 10B/14/19のbundle acceptanceは未完、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗284。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
