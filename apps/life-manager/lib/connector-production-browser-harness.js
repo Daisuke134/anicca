@@ -17,9 +17,10 @@ const PEATIX_CONFIRM_LABEL = "チケットを申し込む";
 const PEATIX_FORM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/form$/;
 const PEATIX_CONFIRM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/confirm$/;
 const CONNPASS_FINAL_LABEL = "申し込みを確定する"; const CONNPASS_ACK_LABEL = "はい、わかりました";
-const CONNPASS_ONLINE_LABELS = new Set(["オンライン参加", "オンライン参加（無料）", "オンライン参加（無料・視聴のみ）", "オンライン視聴", "オンライン視聴（無料）", "オンライン視聴（無料・視聴のみ）", "無料オンライン視聴", "online viewing", "online viewing (free)", "free online viewing"]);
-const CONNPASS_ONLINE_QUESTIONS = new Set(["参加方法", "参加形式", "参加枠", "参加形態", "視聴方法", "participation method", "participation type"]);
-const CONNPASS_REFERRAL_QUESTIONS = new Set(["このイベントを何で知りましたか？", "このイベントを何で知りましたか?", "このイベントをどこで知りましたか？", "このイベントをどこで知りましたか?", "どこでこのイベントを知りましたか？", "どこでこのイベントを知りましたか?", "イベントを知ったきっかけ", "イベントを知ったきっかけは？", "イベントを知ったきっかけは?", "how did you hear about this event?", "how did you hear about us?"]);
+const CONNPASS_ONLINE_LABELS = new Set(["オンライン参加（無料）"]);
+const CONNPASS_ONLINE_QUESTIONS = new Set(["参加方法"]);
+const CONNPASS_REFERRAL_QUESTIONS = new Set(["このイベントを何で知りましたか？"]);
+const CONNPASS_ACK_QUESTIONS = new Set(["注意事項", "個人情報"]);
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
 const FINAL_EFFECT_POLL_MS = 25;
 
@@ -300,12 +301,12 @@ function connpassSafeRadioCategory(control) {
   const label = normalizedLabel(control.label);
   const question = normalizedLabel(control.question);
   if (CONNPASS_ONLINE_LABELS.has(label)) {
-    return !question || CONNPASS_ONLINE_QUESTIONS.has(question) ? "online" : null;
+    return CONNPASS_ONLINE_QUESTIONS.has(question) ? "online" : null;
   }
   if (label === "connpass") {
-    return !question || CONNPASS_REFERRAL_QUESTIONS.has(question) ? "referral" : null;
+    return CONNPASS_REFERRAL_QUESTIONS.has(question) ? "referral" : null;
   }
-  return label === normalizedLabel(CONNPASS_ACK_LABEL) && question ? "ack" : null;
+  return label === normalizedLabel(CONNPASS_ACK_LABEL) && CONNPASS_ACK_QUESTIONS.has(question) ? "ack" : null;
 }
 
 function nativeConnpassControl(provider, controls) {

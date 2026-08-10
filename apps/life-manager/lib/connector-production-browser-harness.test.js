@@ -81,7 +81,7 @@ test("Connpass known form completes natively before the agent when the runner is
 test("Connpass resolver approves only the exact safe radio predicates", async () => {
   let privateReads = 0;
   const resolver = createPrivateValueResolver({ async readPeatixProfile() { privateReads += 1; return {}; }, async readFormProfile() { privateReads += 1; return { form_answers: {} }; } });
-  const cases = [["オンライン参加（無料）", "参加方法", true], ["Connpass", "このイベントを何で知りましたか？", true], ["はい、わかりました", "注意事項", true], ["登壇者", "speaker", null], ["オンライン参加（有料）", "paid", null], ["いいえ", "negative", null], ["X", "other referral", null], ["Connpass / SNS", "ambiguous", null], ["unknown", "unknown", null]];
+  const cases = [["オンライン参加（無料）", "参加方法", true], ["Connpass", "このイベントを何で知りましたか？", true], ["はい、わかりました", "注意事項", true], ["オンライン参加", "参加方法", null], ["オンライン参加（無料）", "", null], ["Connpass", "", null], ["はい、わかりました", "未登録質問", null], ["登壇者", "speaker", null], ["オンライン参加（有料）", "paid", null], ["いいえ", "negative", null], ["X", "other referral", null], ["Connpass / SNS", "ambiguous", null], ["unknown", "unknown", null]];
   for (const [label, question, expected] of cases) {
     assert.equal(await resolver({ provider: "connpass", control: { control: "safe_radio", kind: "radio", label, question, required: true } }), expected, label);
   }
@@ -99,6 +99,34 @@ test("Connpass native ack selection falls through for duplicate or empty-questio
     } });
     assert.deepEqual(await proposer({ provider: "connpass", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls } }), { control: controls[0].control });
     assert.equal(agentCalls, 1);
+  }
+});
+
+test("Connpass native rejects an unqualified online label", async () => {
+  let agentCalls = 0;
+  const control = { control: "online_unqualified", kind: "radio", label: "オンライン参加", question: "参加方法", required: true };
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) {
+    agentCalls += 1;
+    return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: input.schema.properties.control.enum[0] } };
+  } });
+  assert.deepEqual(await proposer({ provider: "connpass", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls: [control] } }), { control: control.control });
+  assert.equal(agentCalls, 1);
+});
+
+test("Connpass native requires known question context", async () => {
+  const cases = [
+    { control: "online_empty_question", kind: "radio", label: "オンライン参加（無料）", question: "", required: true },
+    { control: "referral_empty_question", kind: "radio", label: "Connpass", question: "", required: true },
+    { control: "ack_unknown_question", kind: "radio", label: "はい、わかりました", question: "未登録質問", required: true },
+  ];
+  for (const control of cases) {
+    let agentCalls = 0;
+    const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) {
+      agentCalls += 1;
+      return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: input.schema.properties.control.enum[0] } };
+    } });
+    assert.deepEqual(await proposer({ provider: "connpass", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls: [control] } }), { control: control.control });
+    assert.equal(agentCalls, 1, control.control);
   }
 });
 
