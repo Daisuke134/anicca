@@ -6211,7 +6211,23 @@ fresh Sol reviewは同一pageのcache/direct/readback、Peatix audit、profile�
 次plan `docs/superpowers/plans/2026-08-10-connector-peatix-evidence-store.md`は、exact Peatix event identityとregistered-page PNGだけから
 tenant-scoped immutable provider receipt/artifactを保存する二ファイルsliceである。evidence chain/native order未接続なので外部作用は引き続き0。
 
-### Active remaining TODO SSOT（進捗235。これ以外の残TODO一覧は履歴）
+### O1B-25進捗236（Peatix evidence store adversarial GREEN / final review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-evidence-store.md`をTDD実装し、初回REDはmodule-not-found、focused GREEN 2/2、
+Luma/Connpass/Peatix store regression 5/5だった。fresh Sol adversarial reviewは初稿に、case-insensitive filesystemでのtenant大小文字横断、
+receipt tuple digest非再計算、構造を持たないsignature-only PNG受理、`exists→rename` TOCTOU、CRC/IDAT未検証を発見した。
+
+同じLunaがcanonical lowercase tenant、request tenant/event/time/artifactからのprovider ID再計算、exact `{sha256}` marker、
+`linkSync` atomic no-replace、全chunk CRC32、IHDR制約、bounded IDAT inflate、exact row length、filter 0–4を実装した。
+最終commit `6aa3e963b`、focused 2/2、3-store 5/5、構文/diff check pass。fresh Sol final reviewはtenant/digest/marker/atomicの
+adversarial tamperをすべて拒否し、実Playwright full-page PNG 1280×2421・63,727 bytesのrecord/read SHA一致を確認、
+Critical 0・Important 0でshipした。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-applied-bundle.md`は既存minimal evidence orchestrationをLuma/Peatixの
+exact identity/storeだけで分岐し、provider receipt、full-page PNG/SHA、Calendar create+readback、Telegram message/photo positive IDsを
+一つのimmutable `applied_bundle`へ束ねる。native order未接続なので、この進捗でも実application external effectは0。
+
+### Active remaining TODO SSOT（進捗236。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
