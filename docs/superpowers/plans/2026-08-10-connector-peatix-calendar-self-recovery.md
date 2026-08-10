@@ -62,3 +62,12 @@ Soft target: 3 files; production +12–24 LOC; tests +25–45 LOC.
 - Final focused workflow is 20/20; busy inventory 3/3, evidence 8/8, minimal production/runner 25/25, provider/Harness 59/59, Sol expanded 123/123, changed-file syntax, and `git diff --check` all pass. The two native cursor failures are unchanged clean-HEAD baselines outside this slice.
 - Fresh Sol re-review found no Critical or Important issue and returned `ship`. No browser, provider, Calendar, evidence, Telegram, state, profile, launchd, or schedule side effect occurred during implementation and test.
 - Live acceptance remains the next step after push: the original registered event must re-enter discovery only through its exact hash marker, submit zero times, reuse the one Calendar event, produce positive Telegram message/photo IDs, persist one new applied bundle, and clean up exactly.
+
+## Live acceptance
+
+- Official schedule-unloaded wake `wake-57a417724891bb095e4b864b` on pushed commit `ae8837498` exited 0 with `applied_bundle`.
+- The original `peatix-event://event/5075819` re-entered discovery through the exact same-event hash, parent readback returned registered in 17 ms, and provider cache/direct/Harness submit actions were all zero.
+- The private idempotency readback returns exactly one Google Calendar event; no duplicate create occurred. The bundle stores that event ID and independent readback timestamp.
+- Bundle count increased 2 to 3. The new immutable mode-0600 bundle references the mode-0600 16,901-byte PNG whose measured SHA-256 exactly matches the bundle.
+- Evidence Telegram message ID is `10971`, photo ID is `10973`, and every-wake report delivery ID is `10975`; all are positive. Process and lock are absent, target lease is empty, CDP remains healthy, Git is clean, and upstream is 0/0.
+- This closes Item 10B and Item 11 and the Peatix substage of Item 19. Item 12 and later active gates remain open; the production schedule remains unloaded.
