@@ -6759,7 +6759,15 @@ Lunaがplan `docs/superpowers/plans/2026-08-10-connector-peatix-navigation-wait.
 
 差分はprovider/testの2 files、production +11/-4、tests +29/-2。Lunaはprovider 13/13、計画adjacent 72/72、Sol独立再実行はexpanded adjacent 75/75、2 file syntax、diff checkが全てPASS。Sol差分監査でwrong-event testのvacuous selector assertionを1件発見し、同じLunaがselector比較へ修正後に全testを再PASSした。fresh Sol reviewはCritical 0・Important 0で`ship`。implementation/test中のbrowser、model、Submit、Calendar、PNG/evidence、Telegram、state/private profile、schedule/launchd変更は0。Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを1回実行し、directがformへ入りHarnessの日本語氏名処理へ進むか、confirm/readback/applied bundleまたは次exact safe boundaryを実測する。
 
-### Active remaining TODO SSOT（進捗270。これ以外の残TODO一覧は履歴）
+### O1B-25進捗271（Peatix required fields complete / wrong button boundary）
+
+push済みcommit `70fd3acf1`、Git/remote一致、scheduleと4 Connector labels unloaded、lock/process absent、temporary raw Chromium ownerの同一PID・`:9222` healthyをpreconditionにofficial foreground wakeを1回実行した。wake `wake-d3924a29861bd5e0e973d9e3`はCalendar `success 2717ms`、Luma `30593ms`、Connpass `3565ms`、Peatix discovery `57515ms`で全てsuccess。auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/56/18`。Peatix候補1のdirectは旧実測987ms未満から2896msに変わり、form navigation waitをliveで越えた。
+
+候補3のHarnessは`control_4 → control_5 → control_8 → control_11`の4 stepまで進んだ。値を出力しない専用no-submit診断で、最初の3 controlはexact `お名前（漢字）`、`お名前（ひらがな）`、`電話番号`で全てparent resolverが解決可能、3 field fill後の残requiredは0と実測した。その後のmodel enumは`Close`/`Accept all cookies`/`Back`/`Filter`/`Clear`/`Apply`/`Cancel`/`Save preferences`の8 buttonだけで、選ばれた`control_11`は`Accept all cookies`だった。Peatixの実form submitはinput submitのpublic `value`を表示文字に使うが、現行inspectorはanswer値漏洩防止のため全input valueをlabel源から除外し、実submitを欠落させていた。
+
+最終reportは`circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10818`。Provider registration、Calendar write、PNG/bundleは0。dashboardはHTTP/authenticated、registration marker 0。official/diagnostic targetはexact cleanup、lock/process absent、Git clean、既存Coconala pageのみ残した。次plan `docs/superpowers/plans/2026-08-10-connector-harness-form-submit-control.md`はHarness/testの2 filesだけで、未完requiredがあればそれだけ、完了後はform-associated submitだけをagentとparent DOM actionに許す。Item 10B/14/19は未完、scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗271。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
