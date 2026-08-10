@@ -294,8 +294,12 @@ test("provider-neutral resolver rejects a radio option from a different form que
   assert.equal(await resolver({ provider: "peatix", control: control("Other question") }), null); assert.equal(await resolver({ provider: "peatix", control: control("Role question") }), true);
 });
 
-test("provider-neutral resolver supports Peatix confirm Kana names and exact privacy consent label", async () => { const resolver = createPrivateValueResolver({ readPeatixProfile: async () => ({ family_name_kana: "サクラ", given_name_kana: "テスト", accept_organizer_privacy: true }), readFormProfile: async () => ({ form_answers: {} }) });
+test("provider-neutral resolver supports Peatix confirm Kana names and exact privacy consent label", async () => { const resolver = createPrivateValueResolver({ readPeatixProfile: async () => ({ family_name_kana: "サクラ", given_name_kana: "テスト", name_kanji: "桜 太郎", name_hiragana: "さくら てすと", accept_organizer_privacy: true }), readFormProfile: async () => ({ form_answers: {} }) });
   const control = (kind, label) => ({ control: "safe_control", kind, label, required: true });
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "お名前（漢字）") }), "桜 太郎");
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "お名前（ひらがな）") }), "さくら てすと");
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "お名前（漢字）追加") }), null);
+  assert.equal(await resolver({ provider: "peatix", control: control("input", "お名前（ひらがな）追加") }), null);
   assert.equal(await resolver({ provider: "peatix", control: control("input", "lastname_edit") }), "サクラ"); assert.equal(await resolver({ provider: "peatix", control: control("input", "firstname_edit") }), "テスト");
   assert.equal(await resolver({ provider: "peatix", control: { ...control("radio", "確認し同意する。"), question: "主催者のプライバシーポリシーを読んだ・確認した" } }), true);
   assert.equal(await resolver({ provider: "peatix", control: control("radio", "確認し同意する。") }), null); assert.equal(await resolver({ provider: "peatix", control: { ...control("radio", "確認し同意する。"), question: "別の質問" } }), null);

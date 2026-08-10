@@ -148,7 +148,7 @@ function createPrivateValueResolver(options = {}) {
       if ((LABEL.privacy.test(label) || knownPrivacyOption) && profile && profile.accept_organizer_privacy === true) return true;
       return approvedOption(await safeProfile(readFormProfile), question, label) ? true : null;
     }
-    const key = LABEL.name.test(label) ? "name" : LABEL.email.test(label) ? "email" : LABEL.family.test(label) ? "family_name_kana" : LABEL.given.test(label) ? "given_name_kana" : null;
+    const key = label === normalizedLabel("お名前（漢字）") ? "name_kanji" : label === normalizedLabel("お名前（ひらがな）") ? "name_hiragana" : LABEL.name.test(label) ? "name" : LABEL.email.test(label) ? "email" : LABEL.family.test(label) ? "family_name_kana" : LABEL.given.test(label) ? "given_name_kana" : null;
     if (key) { const profile = await safeProfile(readPeatixProfile); return profile && typeof profile[key] === "string" ? profile[key] : null; }
     const profile = await safeProfile(readFormProfile);
     return LABEL.phone.test(label) ? profile && typeof profile.phone === "string" ? profile.phone : null : answerFor(profile, label);

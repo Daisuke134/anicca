@@ -6722,7 +6722,30 @@ event link 0、registration marker 0。production owned targetと診断targetは
 validated Katakana family/givenだけから親in-memoryの漢字氏名・ひらがな氏名を作り、上記exact 2 labelsだけを解決する。
 private valueのmodel/log/state出力、profile write、arbitrary answer、browser action、schedule変更は0。Item 10B/14/19は未完。
 
-### Active remaining TODO SSOT（進捗267。これ以外の残TODO一覧は履歴）
+### O1B-25進捗268（parent-owned Japanese full-name / privacy-safe evidence GREEN）
+
+Lunaがplan `docs/superpowers/plans/2026-08-10-connector-peatix-japanese-full-name.md`をRED→GREEN実装した。初回REDはexact
+`お名前（漢字）`/`お名前（ひらがな）`がnull、in-memory attendee profileの2値欠落、missing/invalid/padded `name_ja`受理を再現。
+既存mode-0600 private SSOTのtrim済み`candidate.name_ja`とvalidated Katakana family/givenだけを読み、親in-memory profileへ
+`name_kanji`/`name_hiragana`を追加し、上記exact 2 labelsだけをresolverへ接続した。agent request、wake input、action history、JSON state、
+error textへprivate値は渡さない。実private SSOTは値非表示のread-only auditでmode 0600、required key/type、trim、length、non-emptyを満たした。
+
+初回fresh reviewはImportant 3件で`rethink`した。`name_ja`がC1制御文字を許すこと、`ヷ..ヺ`を単純変換すると等価Hiraganaにならないこと、
+登録成功pageの生full-page PNGが既存name/emailを含むprivate値をdurable artifact/Telegramへ漏らし得ることを反証した。plan scopeを6 filesへ
+明示改訂・push後、同じLunaが追加REDでevidence DOM replacement欠落とreplacement failure後の副作用継続を再現した。
+
+GREENはC0/DEL/C1を拒否し、Katakanaを`U+30A1..U+30F6`と長音記号だけへ限定する。registered readback後、evidence chainは
+validated provider/status/event_refと静的labelだけのself-contained receiptへ`page.setContent`で元DOMを完全置換してからfull-page PNGを取得する。
+title、URL、original DOM、form/profile value、script、external resourceはreceiptに入れない。置換失敗はscreenshot、evidence store、Calendar、
+Telegram、bundle全て0でfail-closedする。既存PNG SHA、provider receipt、Calendar readback、Telegram IDs、applied bundle順序は維持する。
+
+差分は6 files、production +23/-5、tests +55/-7で改訂soft target内。Luna focused 55/55、Sol再実行privacy/evidence含む64/64、
+Peatix/provider/native隣接63/65。残る2失敗はclean HEADでも同一のlegacy provider cursor期待値で今回差分外。6-file syntax、diff checkはPASS。
+fresh re-reviewはCritical 0・Important 0で`ship`。browser/model/Submit/Calendar/PNG/Telegram/state/private profile write、schedule変更は0。
+Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを一度だけ実行し、candidate 3の
+漢字→ひらがな→電話→form/confirm→parent registered readback、privacy-safe PNG、Calendar/Telegram/applied bundleまたは次exact safe boundaryを実測する。
+
+### Active remaining TODO SSOT（進捗268。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

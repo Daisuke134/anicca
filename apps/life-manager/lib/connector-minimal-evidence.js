@@ -18,9 +18,15 @@ const PEATIX_EVENT_REF = /^peatix-event:\/\/event\/([1-9][0-9]*)$/;
 const PEATIX_RECEIPT_REF = /^provider-receipt:\/\/peatix\/[0-9a-f]{64}$/;
 const ARTIFACT_REF = /^object:\/\/sha256\/([0-9a-f]{64})$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const RECEIPT_ESCAPE = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 
 function invalid() {
   throw new Error("Connector minimal evidence invalid");
+}
+
+function receiptHtml(provider, status, eventRef) {
+  const safe = (value) => String(value).replace(/[&<>"']/g, (char) => RECEIPT_ESCAPE[char]);
+  return `<!doctype html><html><body><dl><dt>provider</dt><dd>${safe(provider)}</dd><dt>status</dt><dd>${safe(status)}</dd><dt>event reference</dt><dd>${safe(eventRef)}</dd></dl></body></html>`;
 }
 
 function text(value, max = 2_000) {
@@ -128,7 +134,7 @@ function createMinimalEvidenceChain(options = {}) {
     async completeEvidence(input = {}) {
       const provider = providers[input.provider];
       if (
-        !provider || !input.page || typeof input.page.screenshot !== "function"
+        !provider || !input.page || typeof input.page.setContent !== "function" || typeof input.page.screenshot !== "function"
         || !input.providerState || !provider.states.includes(input.providerState.status)
       ) invalid();
       const candidate = input.candidate;
@@ -141,6 +147,7 @@ function createMinimalEvidenceChain(options = {}) {
       const venue = text(candidate.venue_address || candidate.venue_name || "See event page", 2_000);
       const observedAt = exactInstant(now());
 
+      try { await input.page.setContent(receiptHtml(input.provider, input.providerState.status, candidate.event_ref)); } catch { invalid(); }
       const screenshot = await input.page.screenshot({ type: "png", fullPage: true });
       if (
         !Buffer.isBuffer(screenshot) || screenshot.length < 5_000

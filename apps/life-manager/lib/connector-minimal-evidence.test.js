@@ -69,6 +69,7 @@ test("verified registration becomes one durable Calendar PNG Telegram applied bu
     venue_name: "Tokyo",
   });
   const page = {
+    async setContent(content) { calls.push(["set-content", content]); },
     async screenshot(input) {
       calls.push(["screenshot", input]);
       return png;
@@ -137,7 +138,7 @@ function peatixFixture(options = {}) {
   };
   const evidenceStore = options.evidenceStore || { async record(input) { calls.push(["evidence-record", input]); return { external_receipt_ref: `provider-receipt://peatix/${"b".repeat(64)}`, artifact_ref: `object://sha256/${pngSha}` }; } };
   const chain = createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar, calendarId: "primary", telegramTarget: "private-target", peatixEvidenceStore: evidenceStore, now: () => new Date("2026-08-07T08:30:00.000Z"), sendMessage: options.sendMessage || (async (message, telegram) => { calls.push(["telegram-message", message, telegram]); return { messageId: 9101 }; }), sendPhoto: options.sendPhoto || (async (bytes, telegram) => { calls.push(["telegram-photo", bytes, telegram]); return { messageId: 9102 }; }) });
-  return { chain, stateDir, calls, pngSha, candidate: peatixCandidate(), page: { async screenshot(input) { calls.push(["screenshot", input]); return png; } }, cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
+  return { chain, stateDir, calls, pngSha, candidate: peatixCandidate(), page: { async setContent(content) { calls.push(["set-content", content]); }, async screenshot(input) { calls.push(["screenshot", input]); return png; } }, cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
 }
 function bundleFiles(stateDir) {
   try { return fs.readdirSync(path.join(stateDir, "applied-bundles")); } catch { return []; }
@@ -160,6 +161,30 @@ test("Peatix registered readback creates a provider-specific complete applied bu
     const persisted = JSON.parse(fs.readFileSync(path.join(fixture.stateDir, "applied-bundles", `${bundle.bundle_id.slice("applied-bundle:".length)}.json`), "utf8"));
     assert.equal(persisted.provider, "peatix");
     assert.doesNotMatch(JSON.stringify(persisted), /Private Name|private@example\.test|6536845|private-target/);
+  } finally { fixture.cleanup(); }
+});
+
+test("evidence replaces the live page with a fixed privacy-safe receipt before screenshot", async () => {
+  const fixture = peatixFixture();
+  try {
+    await fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } });
+    const replacement = fixture.calls.find(([name]) => name === "set-content");
+    const screenshotIndex = fixture.calls.findIndex(([name]) => name === "screenshot");
+    assert.ok(replacement);
+    assert.ok(fixture.calls.indexOf(replacement) < screenshotIndex);
+    assert.match(replacement[1], /peatix-event:\/\/event\/5075819/);
+    assert.match(replacement[1], /<dt>provider<\/dt><dd>peatix<\/dd>/i);
+    assert.match(replacement[1], /<dt>status<\/dt><dd>registered<\/dd>/i);
+    assert.doesNotMatch(replacement[1], /Peatix Public Event|https:\/\/peatix\.com|6536845|<script|<img|<iframe|<link|<style/i);
+  } finally { fixture.cleanup(); }
+});
+
+test("receipt replacement failure prevents screenshot, evidence, Calendar, Telegram, and bundle effects", async () => {
+  const fixture = peatixFixture(); fixture.page.setContent = async () => { throw new Error("replacement failed"); };
+  try {
+    await assert.rejects(fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+    for (const name of ["screenshot", "evidence-record", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) assert.equal(fixture.calls.filter(([callName]) => callName === name).length, 0, name);
+    assert.equal(bundleFiles(fixture.stateDir).length, 0);
   } finally { fixture.cleanup(); }
 });
 

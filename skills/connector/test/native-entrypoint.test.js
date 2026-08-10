@@ -10,12 +10,14 @@ const { runNativePass } = require("../native-pass.js");
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const VALID_KANA = Object.freeze({ family: "サクラ", given: "テスト" });
+const VALID_NAME_JA = "桜 太郎";
 const BASE_ENV = Object.freeze({ GOG_ACCOUNT: "private@example.com", DAIS_LEGAL_NAME_ROMAJI: "Dais Example", GOG_KEYRING_PASSWORD: "private-keyring", LM_CONNECTOR_TELEGRAM_TARGET: "private-target" });
 
-function writeKanaProfile(home, value = VALID_KANA, mode = 0o600) {
+function writeKanaProfile(home, value = VALID_KANA, mode = 0o600, nameJa) {
   const file = path.join(home, ".config", "anicca", "job-search", "profile.json");
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
-  const raw = typeof value === "string" ? value : JSON.stringify({ candidate: { name_kana: value } });
+  const candidate = { name_kana: value, name_ja: arguments.length < 4 ? VALID_NAME_JA : nameJa };
+  const raw = typeof value === "string" ? value : JSON.stringify({ candidate });
   fs.writeFileSync(file, `${raw}\n`, { mode });
   fs.chmodSync(file, mode);
 }
@@ -100,12 +102,12 @@ test("native Peatix profile is frozen at the factory boundary and invalid identi
     writeKanaProfile(directory);
     const result = await runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-profile-owner-123456", env: baseEnv, createDependencies(input) { factoryInput = input; return Object.freeze({ boundary: "production" }); }, async runWake(input) { wakeInputs.push(input); return { status: "completed_no_effect" }; } });
     assert.deepEqual(result, { status: "completed_no_effect" });
-    assert.deepEqual(factoryInput.peatixAttendeeProfile, { name: "Dais Example", email: "private@example.com", family_name_kana: VALID_KANA.family, given_name_kana: VALID_KANA.given, accept_organizer_privacy: true });
+    assert.deepEqual(factoryInput.peatixAttendeeProfile, { name: "Dais Example", email: "private@example.com", family_name_kana: VALID_KANA.family, given_name_kana: VALID_KANA.given, name_kanji: VALID_NAME_JA, name_hiragana: "さくら てすと", accept_organizer_privacy: true });
     assert.equal(Object.isFrozen(factoryInput), true);
     assert.equal(Object.isFrozen(factoryInput.peatixAttendeeProfile), true);
     assert.deepEqual(wakeInputs[0].providers, ["luma", "connpass", "peatix"]);
     assert.equal("peatixAttendeeProfile" in wakeInputs[0], false);
-    assert.doesNotMatch(JSON.stringify(wakeInputs[0]), /Dais Example|private@example\.com|family_name_kana|given_name_kana|サクラ|テスト/);
+    assert.doesNotMatch(JSON.stringify(wakeInputs[0]), /Dais Example|private@example\.com|family_name_kana|given_name_kana|name_kanji|name_hiragana|桜 太郎|さくら てすと|サクラ|テスト/);
     for (const override of [{ DAIS_LEGAL_NAME_ROMAJI: "" }, { DAIS_LEGAL_NAME_ROMAJI: "x".repeat(201) }, { GOG_ACCOUNT: "not-an-email" }]) {
       let called = false;
       await assert.rejects(runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "invalid-state"), ownerToken: "native-pass-invalid-owner-123456", env: { ...baseEnv, ...override }, createDependencies() { called = true; return {}; }, async runWake() { return { status: "unexpected" }; } }), /Connector minimal pass unavailable/);
@@ -151,7 +153,7 @@ test("native Kana identity fails closed before dependency or wake creation", asy
     ["empty value", { family: "", given: VALID_KANA.given }], ["Hiragana", { family: "さくら", given: VALID_KANA.given }],
     ["Kanji", { family: "桜", given: VALID_KANA.given }], ["Latin", { family: "Sakura", given: VALID_KANA.given }],
     ["digit", { family: "サク1", given: VALID_KANA.given }], ["punctuation", { family: "サク!", given: VALID_KANA.given }],
-    ["control", { family: "サク\nラ", given: VALID_KANA.given }], ["overlength", { family: "サ".repeat(101), given: VALID_KANA.given }],
+    ["control", { family: "サク\nラ", given: VALID_KANA.given }], ["outside-katakana-range", { family: "ヷ", given: VALID_KANA.given }], ["overlength", { family: "サ".repeat(101), given: VALID_KANA.given }],
   ];
   for (const [name, value, mode] of invalidCases) {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-kana-invalid-")); let factoryCalls = 0; let wakeCalls = 0;
@@ -170,4 +172,21 @@ test("native Kana identity fails closed before dependency or wake creation", asy
       fs.rmSync(directory, { recursive: true, force: true });
     }
   }
+});
+
+test("native Japanese identity is required, bounded, and control-free", async () => {
+  const invalidCases = [["missing", undefined], ["empty", ""], ["whitespace", "   "], ["padded", " 桜 太郎"], ["overlength", "桜".repeat(201)], ["control", "桜\n太郎"], ["c1-control", "桜\u0080太郎"], ["non-string", { family: "桜", given: "太郎" }]];
+  for (const [name, nameJa] of invalidCases) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-name-ja-invalid-")); let factoryCalls = 0; let wakeCalls = 0;
+    try {
+      writeKanaProfile(directory, VALID_KANA, 0o600, nameJa);
+      await assert.rejects(runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-name-ja-invalid-owner-123456", env: { ...BASE_ENV, HOME: directory }, createDependencies() { factoryCalls += 1; return {}; }, async runWake() { wakeCalls += 1; return { status: "unexpected" }; } }), /Connector minimal pass unavailable/, name);
+      assert.equal(factoryCalls, 0, name); assert.equal(wakeCalls, 0, name);
+    } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("native Japanese identity preserves the Katakana long-vowel mark", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-name-ja-long-vowel-")); let profile;
+  try { writeKanaProfile(directory, { family: "サー", given: "テスト" }, 0o600, "佐藤 太郎"); await runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-name-ja-long-vowel-123456", env: { ...BASE_ENV, HOME: directory }, createDependencies(input) { profile = input.peatixAttendeeProfile; return {}; }, async runWake() { return { status: "completed_no_effect" }; } }); assert.equal(profile.name_hiragana, "さー てすと"); } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
