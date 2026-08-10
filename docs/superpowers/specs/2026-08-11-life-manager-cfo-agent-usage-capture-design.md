@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a strict provider numerics is next |
+| Status | ACTIVE — CFO-2a2b.1a complete; CFO-2a2b.1b producer boundary is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -95,7 +95,7 @@ fresh and `missing_completion_rows=0`, no total-cost label is allowed.
 
 ## One-at-a-time delivery
 
-- [ ] **CFO-2a2b.1a — numeric truth:** Luna distinguishes absent optional values from present invalid values for all
+- [x] **CFO-2a2b.1a — numeric truth:** Luna distinguishes absent optional values from present invalid values for all
       supported provider payloads.
 - [ ] **CFO-2a2b.1b — producer boundary:** Luna adds the write-ahead attempt row and focused real-runner tests.
 - [ ] **CFO-2a2b.2 — pure reconciliation:** Luna adds the strict local attempt/usage join and immutable counts receipt.

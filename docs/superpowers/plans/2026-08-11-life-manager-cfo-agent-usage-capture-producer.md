@@ -4,7 +4,7 @@
 > verification-before-completion. Execute checkboxes in order. Luna owns production/test edits; Sol owns this plan,
 > review, final verification, state, commit, and push.
 
-**Status:** WAITING — starts only after CFO-2a2b.1a closes
+**Status:** READY FOR LUNA — CFO-2a2b.1a is closed
 
 **Goal:** Before the shared agent runner can launch a provider, fsync one minimal attempt row; reuse its unique ID on
 the existing completion usage row so the later CFO join can detect a missing completion exactly.
