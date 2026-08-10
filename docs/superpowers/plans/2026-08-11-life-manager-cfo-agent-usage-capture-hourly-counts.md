@@ -3,7 +3,7 @@
 > **For Luna:** use Superpowers test-driven-development and verification-before-completion. Luna owns only the three
 > implementation files below; Sol owns this plan, review, final verification, state, commit, and push.
 
-**Status:** READY FOR LUNA
+**Status:** COMPLETE — implementation `1370b19`; fresh Sol review: ship
 
 **Goal:** Add one truthful capture-count envelope to the existing hourly local usage receipt and its existing local
 OTel span. Exact attempt/success/failure/missing counts are visible; an unreadable source makes every aggregate count
@@ -111,9 +111,10 @@ The runner changes from four to exactly five enumerable keys by adding `capture_
 
 ## Verify / state
 
-- [ ] Luna observes the intended RED, then runs runner focused, reconciliation+chain+runner, `npm run test:cfo`, full
+- [x] Luna observed the intended RED, then ran runner focused, reconciliation+chain+runner, `npm run test:cfo`, full
   `npm test`, syntax for all three files, `git diff --check`, and the exact three-path numstat/status gate. No docs,
   commit, push, live ledger, OTel configuration, launchd, or Telegram.
-- [ ] Fresh Sol checks null-not-zero truth, safe addition, algebra, exact union, old receipt compatibility, OTel omission
+- [x] Fresh Sol checked null-not-zero truth, safe addition, algebra, exact union, old receipt compatibility, OTel omission
   on unavailable, privacy, finance isolation, and Ponytail scope. Luna fixes only required issues in the same files.
-- [ ] Sol reruns gates, updates plan/specs, commits/pushes, and advances only to CFO-2a2b.4 real local E2E.
+- [x] Sol reran focused 20/20, CFO 302/302, full `npm test`, syntax, diff, and three-file/42-addition gates.
+  Implementation commit: `1370b19`. Next: CFO-2a2b.4 real local E2E.

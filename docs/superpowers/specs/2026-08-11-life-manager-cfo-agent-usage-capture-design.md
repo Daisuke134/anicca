@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a complete; CFO-2a2b.3b exact hourly counts are next |
+| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a/3b complete; CFO-2a2b.4 real E2E is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -96,8 +96,9 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       `ea3f87408`; 3 files, `+92/-1`; focused 7/7; CFO 297/297; fresh Sol review: ship.
 - [x] **CFO-2a2b.3a — hourly gap gate:** fixed capture exception names now flow through the existing receipt/span;
       forced missing completion stays `missing_completion`. Commit `75d699597`; 3 files, +45 LOC; CFO 301/301; ship.
-- [ ] **CFO-2a2b.3b — hourly exact counts:** add exact capture envelopes and aggregate counts after the gap gate works.
+- [x] **CFO-2a2b.3b — hourly exact counts:** exact capture envelopes and aggregate counts follow the gap gate.
       If either capture source is unavailable, every aggregate is null; never publish a partial subtotal or fake zero.
+      Commit `1370b19`; 3 files, +42 LOC; focused 9/9, related 20/20, CFO 302/302, full pass; fresh Sol: ship.
       Plan: `2026-08-11-life-manager-cfo-agent-usage-capture-hourly-counts.md`.
 - [ ] **CFO-2a2b.4 — real E2E and close:** verify real ledgers remain append-only, run one isolated provider-boundary
       probe without a paid provider, review, update state, push, and send one counts-only Telegram milestone.
