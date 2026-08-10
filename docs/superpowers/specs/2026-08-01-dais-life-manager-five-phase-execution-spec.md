@@ -6283,7 +6283,19 @@ lock absent、Connector-owned Peatix page 0で、scheduleはunloadedを維持す
 同じowned Peatix accountのdashboard/ticketをread-only測定し、今回の登録有無を先に確定する。登録済みならreceipt/readback recoveryだけ、
 登録0ならfinal Submit直前までのbounded診断で壊れたactionを一つに特定する。
 
-### Active remaining TODO SSOT（進捗240。これ以外の残TODO一覧は履歴）
+### O1B-25進捗241（Peatix circuit root cause / pre-submit privacy mismatch）
+
+同じCDP `:9222` contextでowned Peatix accountへ再loginした。passwordはKeychainから値非表示で利用し、CAPTCHAなしで成功。
+dashboard `attending_events`の実ticket APIは`count=0`で、wake 240による登録は0と確定した。event `5086816`を診断pageで
+final confirm前まで測定すると、free ticket、required visible name 1、email 1、unknown 0、form submit 1に対し、organizer privacy
+controlは0だった。実direct provider outcomeは`status=unavailable / reason=privacy_control_unavailable`、URLは同eventの`/form`。
+
+したがって3候補共通failureはpost-click ambiguityではなく、Peatix providerがprivacy controlを常に1個要求したpre-submit contract mismatch。
+final confirm、Calendar、Telegram application report、state/repo writeは診断中0。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-optional-privacy-control.md`はprivate profileの明示consent `true`を維持し、
+実formでcontrol 0なら続行、1ならcheck、複数ならfail-closedへ最小TDD修正する。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗241。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
