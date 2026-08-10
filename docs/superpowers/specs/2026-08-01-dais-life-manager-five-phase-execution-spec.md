@@ -6377,7 +6377,26 @@ focused 9/9、指定回帰46/46、review suite 41/41、syntax、diff checkはPAS
 現行required順`Luma → Connpass → Peatix`とはtest期待だけが不一致で、このprivacy sliceのintegration defectではない。次の一件は
 schedule unloaded、stable CDP、auth、dashboard count 0でofficial foreground runnerを再実行する。
 
-### Active remaining TODO SSOT（進捗247。これ以外の残TODO一覧は履歴）
+### O1B-25進捗248（Peatix foreground wake 4 / confirm Kana validation root cause）
+
+schedule unloadedでofficial wake `wake-ee7cb6e10d6aac929b40458b`を実行した。Peatix aggregateは
+`100 → 100 → 87 → 59 → 21`。先頭`5075819 / 6536845`はtickets、name/email、測定済みorganizer privacy radio、
+`/confirm`まで到達したが、最終作用後の登録readbackはなく、後続2候補もunknown required fieldで失敗し、3連続
+`circuit_open / consecutive_failure_limit`。recovery Telegram provider IDは`10541`。dashboard count 0、applied bundle、
+Calendar write、PNGは0、lock/page cleanupはPASS。
+
+同eventをregistration 0確認後にroute-abort付きで診断した。`#confirm-button`はvisible/enabled、direct jQuery click handler 1件、
+document ready complete。通常Playwright clickも一回のcancelable/bubbling `MouseEvent`もconfirm POST 0、URL/button/error不変だった。
+handlerを`HTMLFormElement.submit` stub付きで一回だけinstrumentすると、`$.fn.valid()`がfalse、`preventDefault` 1、submit 0。
+invalid fieldは`lastname_edit`と`firstname_edit`だけで、ruleは両方`required,kanaAlphabet`、公開errorは姓・名を全角カタカナで
+入力する要求だった。他controlのvalidityはtrue。wrapperは全復元し、dashboard count 0、診断page closeを確認した。
+
+したがってroot causeはclick方式ではなく、現private attendee profileがPeatix固有の姓・名カナを持たずconfirm formへ入力できないこと。
+既存private application evidenceにはフリガナlabel後の全角Katakana 2 segmentがあり、値を表示せず確認済み。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-kana-identity.md`はそれをmode-0600 private identity SSOTへ移し、
+native frozen profileへだけ渡す。推測transliteration、repo/state/logへの値保存、provider form変更はこのsliceで0。
+
+### Active remaining TODO SSOT（進捗248。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
