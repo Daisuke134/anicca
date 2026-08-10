@@ -6526,19 +6526,23 @@ runner focused 10/10、production/operations/native/renderer integrationを含�
 fresh Sol reviewはCritical 0・Important 0で`ship`。次の一件はschedule unloaded、dashboard 0、owned page/lock absentを再確認し、
 official foreground wakeを一度だけ実行してLuma→reset→Connpass→reset→Peatix discovery/direct/readbackとexact cleanupを実測する。
 
-### O1B-25進捗258（provider reset live proof / shared discovery + report transport blockers）
+### O1B-25進捗258（page-reset live反証 / stale CDP probes cleanup / Gateway report plan）
 
 schedule unloaded、clean HEAD `4cc2fd6ee5`でofficial `wake-d94d51d12b091af392ae0337`を実行。開始前に再loadedされていた
 legacy Connector host bridge PID 910 / `127.0.0.1:18793`をexact labelだけbootoutし、plist/state/browser/Gig変更0を確認した。
-同じsession/target/page `A2029C90...`でLuma失敗129,578ms→`about:blank` reset成功32,280ms→Connpass失敗101,787ms→
-同reset成功9,109ms→Peatix page1失敗23,431ms。reset 2回、new target/session 0、Submit/Calendar write/bundle 0。
-同一page resetのlive contractは成立したが、3 providerすべてaudit前に失敗したため、page蓄積だけではなくofficial shared discoveryの共通故障が残る。
+Calendarは3,200ms成功。同じsession/target/pageでLuma失敗129,578ms→`about:blank` reset成功32,280ms→Connpass失敗101,787ms→
+同reset成功9,109ms→Peatix失敗23,431ms、3連続circuit-open。reset 2回、new target/session 0、Submit/Calendar write/bundle 0。
+page stateだけがroot causeという仮説は反証され、3 providerすべてaudit前に失敗するshared discovery故障が残る。
 
-report rowは`circuit_open/consecutive_failure_limit/3`としてappendされたが、delivery rowは0。子`openclaw`がgateway timeout後もplugin stopで
-5分超hangし、wake全体は約8分29秒後に`worker_failed`。その後exact owned tab、Connector lock、processは自動cleanup済み。
-local installed OpenClaw message CLIにはtimeout optionがなく内部default 10秒だけ。次plan
-`docs/superpowers/plans/2026-08-10-connector-bounded-telegram-delivery.md`は、既存private bot tokenをconstructor injectionするConnector-local
-Bot API adapterを2 filesでTDDする。text/photo各一回、bounded AbortSignal、positive ID、retry 0、secret-free error。loader/factory配線は次slice。
+report rowは`circuit_open/consecutive_failure_limit/3`としてappendされたが、message CLI固定10秒Gateway timeoutでdelivery 0、worker exit 1。
+owned targetはfinally後も残ったためowner ledger完全一致IDだけを手動closeし、lock/process/target absentを再確認した。`:9222`には終了済み
+read-only probeのNode WebSocketが45本残っていた。Connector worktree、parent 1109、無名/既知page列挙probe、`:9222`接続中を全て満たす
+39 PIDだけをSIGTERMしsurvivor 0。browser本体、named service、別cwd、code-mode kernel、user pageは不触。
+
+installed OpenClawの一次実装ではmessage CLIにtimeout optionがなく内部default 10秒。一方、正式Gateway CLIは`--timeout`を持ち、内部と同じ
+method `send`を使える。60秒・caller idempotency keyの一回実送信probeはpositive message ID `10646`を返した。従って先行commitのraw Bot API
+計画は実装前に棄却し、次plan `docs/superpowers/plans/2026-08-10-connector-gateway-report-send.md`でtext reportだけを既存Gateway callへ置換し、
+wake IDをidempotency keyとして渡す。raw token配線、retry、queue、Gateway restart、photo変更は0。
 
 ### Active remaining TODO SSOT（進捗258。これ以外の残TODO一覧は履歴）
 
