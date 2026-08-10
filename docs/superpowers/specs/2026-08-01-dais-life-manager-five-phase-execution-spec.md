@@ -6933,7 +6933,11 @@ fresh review指摘後、semantic mutation 7件はcore digest/bundle ID/filename�
 
 次active slice 13Bはminimal runner production/testの2 filesだけ。13A evidence chainのruntime `completion_disposition`をexact `created|reused`で必須化し、`created`は従来どおり新規`applied_bundle`でwake終了、`reused`だけはfailure countを増やさず同じsession/target/pageの次candidateへ継続する。pre-submit `registered`だけではreuseを推論せず、exact bundle/provider/artifact/current Calendarを検証したevidence結果だけを権威にする。all reusedで新規bundleなしなら`completed_no_effect / existing_bundles_reused`、provider discovery failureがあればそちらを優先する。every-wake Telegramは既存`reportWake`だけをterminal delivery点とし、runnerとreal `createMinimalProductionOperations` fixtureでwake report 1、mode 0600 positive delivery row 1、duplicate delivery 0を実証する。provider/evidence/operations/browser/schedule production変更0。13C official wakeまでItem13未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗302。これ以外の残TODO一覧は履歴）
+### O1B-25進捗303（Item 13B / fresh review malformed disposition reporting）
+
+Luna RED 17/21からGREEN runner 19/19、operations 8/8、evidence 24/24、Sol独立expanded 109/109、syntax、diff checkがPASS。production差分はrunner +12/-2だけでreused continuation、created terminal、all reused reason、provider discovery failure priorityを実装した。fresh Sol reviewはImportant 1件で`fix-first`。malformed `completion_disposition`は`invalid()`をthrowしてowned page cleanupは行うが`reportWake` 0のため、planのevery terminal wake positive Telegram receiptに反する。planを先に改訂し、malformed evidence resultは`circuit_open / evidence_result_invalid`、malformed dispositionは`circuit_open / evidence_disposition_invalid`として既存`finish`をexact 1回通し、positive ID、report row 1、delivery row 1、cleanup 1、Submit追加0を必須化する。現2-file差分は未commit、Item13未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗303。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
