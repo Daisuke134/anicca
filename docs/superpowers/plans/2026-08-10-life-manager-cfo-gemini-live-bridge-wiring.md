@@ -84,11 +84,12 @@ Return RED/GREEN totals and final per-file additions. No real external call, com
 - Truth: authenticated owner and close-time duration reach the stored/fallback facts without DB-latency inflation.
 - Reliability: close remains synchronous; late messages and rejected fallback thenables cannot escape.
 - Concurrency: the already-correct per-socket queue receives a real simultaneous proof, not a fabricated RED.
-- YAGNI: four minimal code edits, compact behavioral contracts, three existing files, 61 additions.
+- YAGNI: four minimal code edits, independent behavioral contracts, three existing files, 67 additions.
 
 ## Completion evidence
 
-Luna recorded revised RED at 8/10, then GREEN at 10/10. The final diff against `7ee07646b` is exactly three files
-and 61 additions: helper 23, tests 18, and server 20. Sol independently ran focused 10/10, CFO 270/270, full
-`npm test` exit `0`, syntax, diff, and size gates. Fresh Sol review returned `ship` with Critical 0 and Important 0.
+Luna recorded isolated RED at 10 pass/4 fail, then GREEN at 14/14. The final diff against `7ee07646b` is exactly three
+files and 67 additions: helper 20, tests 32, and server 15. Sol independently ran focused 14/14, CFO 270/270, full
+920/920, syntax, diff, and size gates. Fresh Sol review returned `ship — Spec ✅` with no findings, and final integration
+matched the reviewed three files by SHA-256.
 No real provider, production database, deployment, scheduler, launchd, or Telegram state changed.

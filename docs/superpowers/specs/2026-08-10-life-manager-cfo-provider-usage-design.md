@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c3 verified; CFO-2a2.4d1 review fixes are next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4d1 verified; CFO-2a2.4d2 real Live E2E is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -747,10 +747,11 @@ This slice makes no real provider call, migration/database deployment, aggregati
 Telegram change.
 
 The reviewed baseline exposed owner propagation, duration timing, rejected-thenable containment, post-close, and
-simultaneous reconnect proof gaps. Luna's revised RED was 8/10 and final GREEN was 10/10. Sol independently verified
-focused 10/10, CFO 270/270, full `npm test` exit `0`, syntax, diff, and the exact three-file/61-addition gate. Fresh Sol
-review returned `ship` with Critical 0 and Important 0. No real provider call, migration/database deployment,
-aggregation decision, scheduler, launchd, or Telegram state changed.
+simultaneous reconnect proof gaps. Isolated RED was 10 pass/4 fail, with only the four real defects failing and reconnect
+isolation already passing. Final GREEN passed focused 14/14, CFO 270/270, full 920/920, syntax, diff, and the exact
+three-file/67-addition gate. Fresh Sol review twice returned `ship — Spec ✅` with no findings; final integration matched
+the reviewed files by SHA-256. No real provider call, migration/database deployment, aggregation decision, scheduler,
+launchd, or Telegram state changed.
 
 #### CFO-2a2.4d2 — real Live message → row → span proof
 

@@ -662,15 +662,10 @@ wss.on("connection", (carrierWs, req) => {
     attachGeminiUsageTracking({
       socket: gemini, capture: captureGeminiLiveUsageObservation,
       context: { owner_id: wakeUid || "", financial_unit_id: "life_manager_saas", request_model: `models/${LIVE_MODEL}`, live_session_id: crypto.randomUUID().replace(/-/g, "") },
-      options: { storeOptions: { supaUrl: SUPA_URL, supaKey: SUPA_KEY } }, onEnd: () => {
-        if (geminiDurationSeconds === null) {
-          geminiDurationSeconds = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000);
-        }
-        onGeminiEnd("closed");
-      },
+      options: { storeOptions: { supaUrl: SUPA_URL, supaKey: SUPA_KEY } }, onEnd: () => { geminiDurationSeconds = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000); onGeminiEnd("closed"); },
       onFallback: () => {
         if (geminiCostRecorded) return; geminiCostRecorded = true;
-        const quantity = geminiDurationSeconds === null ? 0 : geminiDurationSeconds;
+        const quantity = geminiDurationSeconds == null ? 0 : geminiDurationSeconds;
         recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds", estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
       },
     });

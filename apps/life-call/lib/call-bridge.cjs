@@ -184,11 +184,7 @@ function makeGeminiEndHandler({ getGotAudio, getReconnects, incReconnects, carri
 
 function attachGeminiUsageTracking({ socket, capture, context, options, onEnd, onFallback }) {
   let seen = 0, stored = 0, failed = 0, nextSequence = 0, tail = Promise.resolve(), closed = false;
-  const result = () => Object.freeze({ seen, stored, failed, complete: seen > 0 && stored === seen && failed === 0 }); const settle = () => tail.then(result, result);
-  const fallback = (value) => {
-    if (!onFallback) return;
-    try { Promise.resolve(onFallback(value)).catch(() => {}); } catch {}
-  };
+  const settle = () => tail.then(() => Object.freeze({ seen, stored, failed, complete: seen > 0 && stored === seen && failed === 0 }));
   socket.on("message", data => {
     if (closed) return;
     let message; try { message = JSON.parse(data.toString()); } catch { return; }
@@ -199,7 +195,8 @@ function attachGeminiUsageTracking({ socket, capture, context, options, onEnd, o
   socket.on("close", () => {
     if (closed) return; closed = true;
     try { if (onEnd) onEnd(); } catch {}
-    settle().then(value => { if (!value.complete) fallback(value); }, () => fallback());
+    const fallback = (result) => { if (!onFallback) return; try { Promise.resolve(onFallback(result)).catch(() => {}); } catch {} };
+    settle().then(result => { if (!result.complete) fallback(result); }, () => fallback());
   });
   return { settle };
 }
