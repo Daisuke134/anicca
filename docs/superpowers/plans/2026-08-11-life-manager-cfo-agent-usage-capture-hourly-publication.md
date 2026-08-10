@@ -85,3 +85,4 @@ token/cost attribute, or cloud path.
   finance isolation, and Ponytail scope. Luna fixes only required issues in the same files.
 - [x] Sol reruns gates: focused 8/8, reconciliation+chain+runner 19/19, CFO 301/301, full `npm test` exit 0,
   syntax/diff/scope pass. Implementation is exactly three files and 45 gross added LOC. Advance only to CFO-2a2b.3b.
+- [x] Telegram milestone delivered with `dryRun=false`, `ok=true`, provider `messageId=599`.
