@@ -6656,7 +6656,32 @@ syntax/diff checkが全てPASS。browser/model/Submit/Calendar/PNG/Telegram/stat
 Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを一度だけ実行し、Peatix Harnessが
 同一control repetitionを0にして次field/form/confirmまたは新しいexact safe boundaryへ進むことを実測する。
 
-### Active remaining TODO SSOT（進捗264。これ以外の残TODO一覧は履歴）
+### O1B-25進捗265（Peatix Harness live progress / optional-method boundary確定）
+
+push済みcommit `c12a0fbb8`、schedule/legacy labels unloaded、process/lockなし、clean branch/remote一致、`:9222` healthyを
+preconditionにofficial foreground `skills/connector/run.sh`を一度だけ実行した。`wake-c937e27dea6b55e51327e83e`はCalendar 2,761ms、
+Luma discovery 48,648ms、reset 62ms、Connpass 4,721ms、reset 179ms、Peatix 158,333msでsame owned pageを維持した。
+
+Peatix先頭3候補のdirect actionは22,531/3,086/1,287msでnon-completed。Harnessは63ms safe failure、20,935msで2 step、
+5,604msで1 stepを実行した。前wakeの同じ`control_4`×10は0になり、candidate 2はstep 1 `control_4/fill`からstep 2
+`control_6/check`へ進んだ。candidate 3は別`fallback-2/step-1`へ保存され、evidence上書き0。completed observationとcandidate sequenceを
+live実証した。
+
+停止したstep 2はagentが任意text inputを選び、kind非互換のcheck methodを返したことがroot cause。専用pre-submit診断targetでfinal submit 0のまま
+同formを測定し、control 6はrequired falseの所属組織text inputと確認した。別の既知eligible formの公開required controlは漢字氏名、ひらがな氏名、
+email、phoneの4つで、既存private form profileはphoneのみを持つが値は表示・保存していない。診断targetは各exact ID absentまでcleanupした。
+
+runは`circuit_open / peatix_unknown_required_field / consecutive_failure_count 3`、Gateway Telegram provider ID `10729`。
+read-only auditはHTTP 200、authenticated true、event link 0、registration marker 0。agent作用はfillとDOM前に失敗した非互換checkだけで、
+final submit click、provider registration、Calendar write、PNG、bundle増分0。owned/audit target absent、lock/process absent、browser healthy、Git clean。
+Item 10B/14/19は未完。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-harness-required-control-method.md`はHarness/test 2 filesだけで、
+required incomplete answer controlとbutton/linkだけをagent enumへ残し、agentはcontrolだけ選ぶ。purpose/methodは親がkindから
+input/textarea→fill、select→select、checkbox/radio→check、button/link→clickへ決定する。次の一件はTDD、fresh review、push後の一回だけの
+official foreground wakeである。
+
+### Active remaining TODO SSOT（進捗265。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
