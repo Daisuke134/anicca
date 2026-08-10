@@ -7151,7 +7151,13 @@ Items10〜16 acceptance後のread-only preflightはclean/upstream HEAD `6abe5acc
 
 rendererはlive LaunchAgents直書きを拒否するため`mktemp -d`へexact 1 plistをrenderし、plutil、ProgramArguments、WorkingDirectory、09:00 daily、no StartInterval/healthcheck/Healer/bridge/`:9223`を検証後、installed native exact fileだけをmode 0600で置換する。native labelだけbootstrapし、他3 labels unloaded、process/lock 0を確認する。Item17ではkickstartしない。Item18でloaded production ownerを`launchctl kickstart`し、別executorを作らずfirst launchd-owned wakeをwatchする。Item17未完、現時点は4 labels unloaded。
 
-### Active remaining TODO SSOT（進捗338。これ以外の残TODO一覧は履歴）
+### O1B-25進捗339（Item 17 / single daily production schedule loaded）
+
+pushed HEAD `fab51d60b`、clean/upstream、4 labels unloaded、process/lock 0からcutover。private `mktemp -d`へexisting rendererでexact 1 native plistを生成し、plutilとJSON assertionでlabel、current worktree `run.sh`、WorkingDirectory、09:00 `StartCalendarInterval`、Throttle 60、`StartInterval` 0、healthcheck/Healer/bridge/`:9223` token 0を確認した。installed native exact fileだけをmode 0600で置換し、temporary renderはexact削除。
+
+`launchctl bootstrap`後、native label loaded 1、state `not running`、runs 0、never exited、event trigger Hour 9 / Minute 0。installed lint PASS、mode 0600。native healthcheck、Healer shadow、host bridgeはloaded 0、Connector process/lock 0、Git clean/upstream。Item17をacceptする。次はItem18としてloaded native ownerを`launchctl kickstart`し、別executorを作らずfirst launchd-owned wakeのbundle/continuation、positive Telegram、session/target、cleanup、exitをwatchする。
+
+### Active remaining TODO SSOT（進捗339。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -7171,7 +7177,7 @@ rendererはlive LaunchAgents直書きを拒否するため`mktemp -d`へexact 1 
 14. [x] **Luma no-effect→Connpass continuationをlive実証する。** Lumaがexternal effect 0（bounded known-no-effect、exact bundle reuse、またはCalendar gate後eligible exhaustion）の同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。人工failure hookは使わない。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。証拠: 進捗331。
 15. [x] **circuit breakerを実証する。** 3連続safe failureまたは10分でcircuit-openし、その後のbrowser action/target creationが0、exact safe stage/action historyとTelegram recovery positive IDが保存されることを確認する。5分automatic retryは0。証拠: 進捗335。
 16. [x] **cached action self-healを実証する。** selector変更fixtureでdirect replay failure→同じpageのbounded fallback→expected state readback→cache更新→agentなしrerun成功を確認する。更新は壊れたactionだけ、repo-wide edit/merge/deployは0。証拠: 進捗337。
-17. [ ] **単一daily production scheduleをrender/loadする。** Items 10–16のacceptance後だけ、official minimal runnerを一日一回起動するConnector labelを一つloadする。Native旧schedule、healthcheck、Healer、bridge、5分retry、重複runnerはloaded 0にする。
+17. [x] **単一daily production scheduleをrender/loadする。** Items 10–16のacceptance後だけ、official minimal runnerを一日一回起動するConnector labelを一つloadする。Native旧schedule、healthcheck、Healer、bridge、5分retry、重複runnerはloaded 0にする。証拠: 進捗339。
 18. [ ] **最初のscheduled wakeを完走観測する。** 実`applied_bundle`または既登録readbackによるSubmit 0 continuation、Telegram every-wake positive ID、session/target各1、owned page cleanup、process exitを確認する。failure時はscheduleを増やさず同じentrypointだけを修復する。
 19. [ ] **providerを一つずつ拡張する。** Peatix [x] → Meetup [ ] → Doorkeeper [ ] → Eventbrite [ ] → 発見済み次provider [ ] の順に、未知browser flow、parent readback、Calendar、PNG、Telegram、idempotencyを個別にlive実証する。各providerは実`applied_bundle`を得るまでproduction supportedと表示しない。Peatix証拠: 進捗291。
 20. [ ] **unknown-provider discovery contractを閉じる。** 事前domain skillのないevent site一件で、same-page Browser Harness fallbackが登録可能性を判断し、許可された無料申込を完遂するかsafe failureで次providerへ進むことを実証する。成功時は新provider skill/cacheを保存し、次run agent call 0を確認する。
