@@ -4176,3 +4176,4 @@
 {"ts":1786396352,"source":"cook","task":"explore: Solana API marketplace paying USDC for webhook calls","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSNQ9C5GEC8E1D60133F4616"}
 {"ts":1786397429,"source":"cook","task":"explore: Solana platform paying USDC for on-chain data verification or oracle reporting tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSNQVRTR95B9C0BAE2184D67"}
 {"ts":1786398833,"source":"cook","task":"explore: Solana bounty platform paying USDC for developer tasks and code contributions","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSNRQDTV3D08589CA02842FB"}
+{"ts":1786400427,"source":"cook","task":"explore: Solana microtask platform paying USDC for AI data labeling or code contributions","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSNSOJ83B752F4C2BD8446CC"}
