@@ -6855,7 +6855,11 @@ Peatix候補1へnavigate後、parent pre-readbackは32msで実登録を認識し
 
 専用CDP targetの隔離診断で、registered Peatix page上の`page.setContent`はdefault load、`domcontentloaded`、事前`about:blank` resetの全てで30秒timeoutを再現した。一方、同じowned pageでstrict `about:blank`へ移動後、親固定のescaped receipt HTMLを`document.open/write/close`し、screenshotするとvalid PNG 16,901 bytesを得た。診断のfile/Calendar/Telegram/state writeは0、exact target cleanup済み。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-evidence-page-reset.md`はminimal evidence/testの2 filesだけで、Peatix receipt renderのみこの実測pathへ変え、Lumaと後段evidence/Calendar/Telegram/bundle gateを維持する。Item 10B/14/19のbundle acceptanceは未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗284。これ以外の残TODO一覧は履歴）
+### O1B-25進捗285（Peatix evidence page reset / TDD・review完了）
+
+Ponytailで既存owned page、固定escaped receipt、PNG/evidence/Calendar/Telegram/bundle chainを再利用し、新target・renderer・library・retry・state schemaは追加しない境界を維持した。LunaのREDはPeatix `setContent` never-settlesが250ms内に完了せず、reset API欠落がdownstream前にfail closedしないことを再現した。最終実装はminimal evidence/testの2 filesだけで、Peatixのみexact `about:blank` resetとURL readback後、親生成済み`receiptHtml`を`document.open/write/close`し、3組の`dt/dd` skeleton booleanを検証してから既存chainへ戻す。Lumaは従来`setContent`のまま。Luna focused 8/8・adjacent 83/83、Sol独立expanded Peatix/Harness/native-entrypoint 116/116、syntax、diff checkがPASS。fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test中のbrowser/provider/Calendar/evidence/Telegram/profile/state/launchd/schedule作用は0。Item 10B/11/14/19 bundle acceptanceは未完で、次の一件はcommit/push後のclean preflightとschedule-unloaded official wakeによるregistered pre-readback、Peatix click 0、Calendar/PNG/Telegram/applied bundleの実証。
+
+### Active remaining TODO SSOT（進捗285。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

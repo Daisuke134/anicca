@@ -130,7 +130,7 @@ function peatixCandidate(extra = {}) {
 }
 function peatixFixture(options = {}) {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-peatix-evidence-"));
-  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 7)]); const pngSha = createHash("sha256").update(png).digest("hex");
+  const png = options.png || Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 7)]); const pngSha = createHash("sha256").update(png).digest("hex");
   const calls = []; const receipt = { id: "google-peatix-1", htmlLink: "https://www.google.com/calendar/event?eid=peatix-one" }; let reads = 0;
   const calendar = options.calendar || {
     async findConnectorEvents(input) { calls.push(["calendar-read", input]); return reads++ === 0 ? [] : [receipt]; },
@@ -138,11 +138,75 @@ function peatixFixture(options = {}) {
   };
   const evidenceStore = options.evidenceStore || { async record(input) { calls.push(["evidence-record", input]); return { external_receipt_ref: `provider-receipt://peatix/${"b".repeat(64)}`, artifact_ref: `object://sha256/${pngSha}` }; } };
   const chain = createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar, calendarId: "primary", telegramTarget: "private-target", peatixEvidenceStore: evidenceStore, now: () => new Date("2026-08-07T08:30:00.000Z"), sendMessage: options.sendMessage || (async (message, telegram) => { calls.push(["telegram-message", message, telegram]); return { messageId: 9101 }; }), sendPhoto: options.sendPhoto || (async (bytes, telegram) => { calls.push(["telegram-photo", bytes, telegram]); return { messageId: 9102 }; }) });
-  return { chain, stateDir, calls, pngSha, candidate: peatixCandidate(), page: { async setContent(content) { calls.push(["set-content", content]); }, async screenshot(input) { calls.push(["screenshot", input]); return png; } }, cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
+  let pageUrl = options.pageUrl || "https://peatix.com/event/5075819/ticket";
+  const page = {
+    async setContent(content) { calls.push(["set-content", content]); if (options.setContentNeverSettles) return new Promise(() => {}); if (options.setContentThrows) throw new Error("setContent failed"); },
+    async goto(url, input) { calls.push(["goto", url, input]); if (options.gotoThrows) throw new Error("reset failed"); pageUrl = options.gotoReadback || url; },
+    url() { calls.push(["url"]); return pageUrl; },
+    async evaluate(fn, payload) {
+      calls.push(["evaluate", payload]); if (options.evaluateThrows) throw new Error("receipt write failed");
+      const previousDocument = global.document;
+      global.document = {
+        open() { calls.push(["document-open"]); },
+        write(value) { calls.push(["document-write", value]); },
+        close() { calls.push(["document-close"]); },
+        querySelector() { return options.receiptValid === false ? null : {}; },
+        querySelectorAll() { return options.receiptValid === false ? [] : [{}, {}, {}]; },
+      };
+      try { const result = await fn(payload); return options.evaluateResult === undefined ? result : options.evaluateResult; } finally { global.document = previousDocument; }
+    },
+    async screenshot(input) { calls.push(["screenshot", input]); return png; },
+  };
+  return { chain, stateDir, calls, pngSha, candidate: peatixCandidate(), page, cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
 }
 function bundleFiles(stateDir) {
   try { return fs.readdirSync(path.join(stateDir, "applied-bundles")); } catch { return []; }
 }
+
+test("Peatix evidence resets the owned page and parent-writes the receipt without setContent", async () => {
+  const fixture = peatixFixture({ setContentNeverSettles: true });
+  try {
+    const result = await Promise.race([
+      fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }),
+      new Promise((resolve) => setTimeout(() => resolve({ status: "timeout" }), 250)),
+    ]);
+    assert.equal(result.status, "applied_bundle");
+    assert.equal(fixture.calls.filter(([name]) => name === "set-content").length, 0);
+    assert.deepEqual(fixture.calls.find(([name]) => name === "goto"), ["goto", "about:blank", { waitUntil: "domcontentloaded", timeout: 30_000 }]);
+    const write = fixture.calls.find(([name]) => name === "document-write");
+    assert.ok(write);
+    assert.match(write[1], /<dt>provider<\/dt><dd>peatix<\/dd>/i);
+    assert.match(write[1], /<dt>status<\/dt><dd>registered<\/dd>/i);
+    assert.match(write[1], /peatix-event:\/\/event\/5075819/);
+    assert.doesNotMatch(write[1], /Peatix Public Event|https:\/\/peatix\.com|6536845|<script|<img|<iframe|<link|<style/i);
+    assert.deepEqual(fixture.calls.filter(([name]) => ["document-open", "document-close"].includes(name)).map(([name]) => name), ["document-open", "document-close"]);
+    assert.ok(fixture.calls.findIndex(([name]) => name === "document-close") < fixture.calls.findIndex(([name]) => name === "screenshot"));
+    assert.equal(bundleFiles(fixture.stateDir).length, 1);
+  } finally { fixture.cleanup(); }
+});
+
+test("Peatix receipt reset and validation fail before every downstream side effect", async () => {
+  const cases = [
+    ["missing-goto", (page) => { delete page.goto; }],
+    ["missing-url", (page) => { delete page.url; }],
+    ["missing-evaluate", (page) => { delete page.evaluate; }],
+    ["reset-throws", (page) => { page.goto = async () => { throw new Error("reset failed"); }; }],
+    ["wrong-reset-readback", (page) => { page.goto = async () => {}; }],
+    ["receipt-write-throws", (page) => { page.evaluate = async () => { throw new Error("write failed"); }; }],
+    ["receipt-validation-false", (page) => { page.evaluate = async () => false; }],
+    ["invalid-png", (page) => { page.screenshot = async () => Buffer.from("not-a-png"); }],
+    ["provider-mismatch", (page, fixture) => { fixture.candidate = peatixCandidate({ event_ref: "luma-event://event/mismatch" }); }],
+  ];
+  for (const [name, mutate] of cases) {
+    const fixture = peatixFixture();
+    try {
+      mutate(fixture.page, fixture);
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }), undefined, name);
+      for (const effect of ["screenshot", "evidence-record", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) assert.equal(fixture.calls.filter(([callName]) => callName === effect).length, 0, `${name}:${effect}`);
+      assert.equal(bundleFiles(fixture.stateDir).length, 0, name);
+    } finally { fixture.cleanup(); }
+  }
+});
 
 test("Peatix registered readback creates a provider-specific complete applied bundle", async () => {
   const fixture = peatixFixture();
@@ -164,11 +228,11 @@ test("Peatix registered readback creates a provider-specific complete applied bu
   } finally { fixture.cleanup(); }
 });
 
-test("evidence replaces the live page with a fixed privacy-safe receipt before screenshot", async () => {
+test("evidence parent-writes a fixed privacy-safe receipt before screenshot", async () => {
   const fixture = peatixFixture();
   try {
     await fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } });
-    const replacement = fixture.calls.find(([name]) => name === "set-content");
+    const replacement = fixture.calls.find(([name]) => name === "document-write");
     const screenshotIndex = fixture.calls.findIndex(([name]) => name === "screenshot");
     assert.ok(replacement);
     assert.ok(fixture.calls.indexOf(replacement) < screenshotIndex);
@@ -180,7 +244,7 @@ test("evidence replaces the live page with a fixed privacy-safe receipt before s
 });
 
 test("receipt replacement failure prevents screenshot, evidence, Calendar, Telegram, and bundle effects", async () => {
-  const fixture = peatixFixture(); fixture.page.setContent = async () => { throw new Error("replacement failed"); };
+  const fixture = peatixFixture(); fixture.page.evaluate = async () => { throw new Error("replacement failed"); };
   try {
     await assert.rejects(fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
     for (const name of ["screenshot", "evidence-record", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) assert.equal(fixture.calls.filter(([callName]) => callName === name).length, 0, name);

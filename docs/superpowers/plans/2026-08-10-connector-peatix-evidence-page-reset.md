@@ -46,3 +46,11 @@ Soft target: 2 files; production +12–22 LOC; tests +30–50 LOC.
 - Focused minimal evidence suite, minimal runner/production, Peatix provider/workflow/Harness, native entrypoint adjacent suites, changed-file syntax, and `git diff --check`.
 - Fresh Sol review focused on parent-owned HTML, navigation scope, privacy, Luma non-regression, duplicate external effects, and partial-side-effect ordering.
 - SSOT update, commit, push, clean preflight, then one official schedule-unloaded wake. Acceptance is pre-submit `registered`, zero Peatix clicks, one evidence/Calendar/message/photo increment, and one durable `applied_bundle` with exact cleanup.
+
+## Result
+
+- Luna reproduced RED on the clean starting diff: a never-settling Peatix `setContent` exceeded the 250 ms test bound, and missing reset APIs did not fail before downstream effects.
+- GREEN changes only `connector-minimal-evidence.js` and its test. Peatix now resets the already-owned page to exact `about:blank`, verifies the URL, parent-writes the existing escaped `receiptHtml`, validates the exact three-pair receipt skeleton, then resumes the unchanged screenshot/evidence/Calendar/Telegram/bundle chain. Luma keeps `setContent`.
+- Luna focused evidence was 8/8 and adjacent was 83/83. Sol independently ran the expanded Peatix/Harness/native-entrypoint set at 116/116; changed-file syntax and `git diff --check` passed.
+- Fresh Sol review found no Critical or Important issue and returned `ship`. No browser, provider, Calendar, evidence, Telegram, profile, state, launchd, or schedule side effect occurred during implementation and test.
+- Live acceptance remains the next step after push: the official schedule-unloaded wake must observe registered before submit, perform zero Peatix clicks, and persist one complete durable `applied_bundle` with exact cleanup.
