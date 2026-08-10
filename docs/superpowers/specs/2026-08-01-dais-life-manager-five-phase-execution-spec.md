@@ -7009,7 +7009,13 @@ pushed commit `e3663062e`のofficial runnerを4 labels unloaded、process/lock 0
 
 raw exceptionは設計どおり保存しない。Luna read-only診断は、direct actionがevent application link click後にjoin/completion pageからcanonicalへ戻さない一方、Item14A evidenceがstore前にcurrent URL exact一致を要求する境界を最有力原因とした。次slice plan `docs/superpowers/plans/2026-08-11-connector-connpass-canonical-recovery-14b.md`はrunner production/test 2 filesだけ。同じowned pageをcanonicalへexact 1回navigateし、canonical parent readbackを再実行してregistered/pendingならevidence、そうでなければcache/direct/Harness/Submit retry 0でsafe failする。URL gateは弱めない。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗315。これ以外の残TODO一覧は履歴）
+### O1B-25進捗316（Item 14B / canonical evidence recovery実装完了）
+
+Luna REDはConnpass direct completed後のjoin URLを現行runnerがそのままevidenceへ渡し、`circuit_open/evidence_completion_failed`になることを0/1で再現した。GREENはcompleted operation後のConnpassだけ、同じowned pageをcandidate canonicalへnavigateし、既存action wrapperでcanonical parent readbackを再実行する。registered/pendingだけevidenceへ渡し、navigation/readback/nonregisteredはcache/direct/Harness/Submit retry 0のまま同じsafe terminalへ収束する。session/target/page/cleanup追加0。
+
+最初のfresh reviewはpre-submit already registeredにも不要なrecoveryを実行する点を`fix-first`とした。追加REDはcanonical navigate 2回を2 pass / 1 failで再現し、GREENは`completed operation`がある場合だけに限定。pre-submit registeredはinitial navigate 1、pre-readback 1、cache/direct/Harness/Submit 0、recovery 0、evidence 1、cleanup 1。最終scopeはrunner production/test 2 files、production +13、test +50。Sol独立adjacent 82/82、syntax、diff check PASS、fresh re-reviewは`ship`。次はpushed codeでofficial recovery wake exact 1回を実行し、Submit 0とConnpass bundleを確認する。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗316。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

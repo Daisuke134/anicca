@@ -321,6 +321,56 @@ test("a parent readback after navigation skips every submit path when already re
   ]);
 });
 
+function connpassRecoveryFixture(failure = null, preRegistered = false) {
+  const canonicalUrl = "https://tokyo-builders.connpass.com/event/400028/";
+  const joinUrl = "https://tokyo-builders.connpass.com/event/400028/join";
+  const selected = Object.freeze({ provider: "connpass", event_ref: "connpass-event://event/400028", canonical_url: canonicalUrl, starts_at: "2026-08-12T10:00:00.000Z", ends_at: "2026-08-12T11:00:00.000Z" });
+  let currentUrl = ""; let navigationCount = 0; let state;
+  state = fixture({
+    async discoverCandidates() { return [selected]; },
+    async runCachedAction() { state.calls.push(["cache"]); return Object.freeze({ status: "cache_miss" }); },
+    async runDirectAction() { state.calls.push(["direct"]); currentUrl = joinUrl; return Object.freeze({ status: "completed" }); },
+    async runAgentFallback() { throw new Error("Connpass recovery must not invoke Harness"); },
+    async readProviderState({ phase }) {
+      state.calls.push(["readback", phase, currentUrl]);
+      if (phase === "pre_submit") return Object.freeze({ status: preRegistered ? "registered" : "absent" });
+      if (phase === "canonical_recovery" && failure === "readback") throw new Error("canonical readback unavailable");
+      return Object.freeze({ status: phase === "canonical_recovery" && failure === "status" ? "absent" : "registered" });
+    },
+    async completeEvidence() { state.calls.push(["evidence", currentUrl]); if (currentUrl !== canonicalUrl) throw new Error("evidence requires canonical Connpass URL"); return Object.freeze({ status: "applied_bundle", bundle_id: "applied-bundle-connpass", completion_disposition: "created" }); },
+  });
+  const originalNavigate = state.dependencies.browserRail.navigate;
+  state.dependencies.browserRail.navigate = async (owned, url) => { currentUrl = url; navigationCount += 1; if (navigationCount === 2 && failure === "navigation") throw new Error("canonical navigation unavailable"); return originalNavigate(owned, url); };
+  return { state, canonicalUrl, joinUrl };
+}
+
+test("Connpass canonical recovery rereads the same page before evidence without duplicate Submit", async () => {
+  const { state, canonicalUrl, joinUrl } = connpassRecoveryFixture();
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-connpass-recovery", providers: ["connpass"] }, state.dependencies);
+  assert.deepEqual(result, { status: "applied_bundle", bundle_id: "applied-bundle-connpass", telegram_provider_id: "9001" });
+  assert.deepEqual(state.calls.filter(([name]) => name === "navigate").map(([, , , , url]) => url), [canonicalUrl, canonicalUrl]);
+  assert.deepEqual(state.calls.filter(([name]) => name === "readback").map(([, phase, url]) => [phase, url]), [["pre_submit", canonicalUrl], ["post_submit", joinUrl], ["canonical_recovery", canonicalUrl]]);
+  for (const [name, count] of [["cache", 1], ["direct", 1], ["agent", 0], ["evidence", 1], ["close", 1]]) assert.equal(state.calls.filter(([entry]) => entry === name).length, count, name);
+});
+
+test("Connpass canonical recovery failures stop before evidence and Submit retry", async () => {
+  for (const failure of ["status", "readback", "navigation"]) {
+    const { state } = connpassRecoveryFixture(failure);
+    const result = await runMinimalConnectorWake({ ownerToken: `owner-token-connector-recovery-${failure}`, providers: ["connpass"] }, state.dependencies);
+    assert.deepEqual(result, { status: "circuit_open", safe_reason: "evidence_completion_failed", telegram_provider_id: "9001" }, failure);
+    for (const [name, count] of [["cache", 1], ["direct", 1], ["agent", 0], ["evidence", 0], ["close", 1]]) assert.equal(state.calls.filter(([entry]) => entry === name).length, count, `${failure}:${name}`);
+  }
+});
+
+test("Connpass pre-submit registered skips canonical recovery and every Submit path", async () => {
+  const { state, canonicalUrl } = connpassRecoveryFixture(null, true);
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-connpass-existing", providers: ["connpass"] }, state.dependencies);
+  assert.deepEqual(result, { status: "applied_bundle", bundle_id: "applied-bundle-connpass", telegram_provider_id: "9001" });
+  assert.deepEqual(state.calls.filter(([name]) => name === "navigate").map(([, , , , url]) => url), [canonicalUrl]);
+  assert.deepEqual(state.calls.filter(([name]) => name === "readback").map(([, phase]) => phase), ["pre_submit"]);
+  for (const [name, count] of [["cache", 0], ["direct", 0], ["agent", 0], ["evidence", 1], ["close", 1]]) assert.equal(state.calls.filter(([entry]) => entry === name).length, count, name);
+});
+
 test("three consecutive candidate failures open the circuit before a fourth navigation", async () => {
   const state = fixture();
 
