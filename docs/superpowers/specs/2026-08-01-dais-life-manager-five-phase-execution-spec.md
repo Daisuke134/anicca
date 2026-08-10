@@ -6947,7 +6947,13 @@ Luna RED 17/21からGREEN runner 19/19、operations 8/8、evidence 24/24、Sol�
 
 13C live plan `docs/superpowers/plans/2026-08-11-connector-idempotent-wake-13c-live.md`を作成した。preflightはHEAD `0f55ddf4c`、Git clean/upstream 0/0、Native/healthcheck/Healer shadow/host bridge 4 labels全unloaded、`:9222` raw Chromium healthy。baselineはapplied bundle 3、wake report 99、wake-report delivery 111。official `skills/connector/run.sh`をpushed worktreeからforegroundでexact 1回だけ起動し、plist load、新browser/session、manual provider action、substitute executorは0。既存exact bundleのprovider/Calendar readback後`reused`、同event cache/direct/Harness Submit 0、同じsession/target/pageでlater distinct candidateへnavigation/readback、terminal report 1とpositive Telegram delivery ID、既存bundle/evidence message/photo/Calendar create duplicate 0、process/lock/owned page cleanupをacceptanceとする。新candidateがbundleを作ればdelta exact1、作らなければdelta0とterminal safe reasonを必須化する。Item13はlive acceptanceまで未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗305。これ以外の残TODO一覧は履歴）
+### O1B-25進捗306（Item 13C first official wake / safe failure・Peatix ordering境界）
+
+pushed code `0f55ddf4c`とlive-plan HEAD `a155f96db`のofficial foreground wake `wake-9bb615ee5684f064d329e016`をschedule-unloadedでexact 1回実行した。Calendar 3,099ms、Luma discovery 28,907ms、Connpass 4,145ms、Peatix 61,168ms。auditはLuma `31/31/17/10/1`、Connpass `6/6/6/0/0`、Peatix `100/100/87/59/18`。wakeはPeatixの最初の未処理candidateがcache/direct/Harness後`effect_unknown`となり、consecutive failure 2で安全停止。bundle delta 0、report 99→100、delivery 111→112、positive Telegram provider ID `11062`。process/lock 0、owned page cleanup、CDP newtab 1、4 labels unloaded、Git clean/upstream 0/0。Item13 acceptanceは未達。
+
+原因はPeatix discoveryがCalendar-free 18件をsearch順のまま返し、exact overlapping same-event `connector_idempotency` marker付きのaccepted bundle candidateを先頭化しないこと。既存eventへ到達する前のambiguous candidateがrunnerの正しいeffect-unknown circuitを開いた。2回目wakeは起動していない。Ponytail修復plan `docs/superpowers/plans/2026-08-11-connector-peatix-existing-first-13c.md`はPeatix workflow/testの2 filesだけで、既存strict URL SHA+overlap predicateを再利用し、exact-covered候補群→残候補群のstable partitionを行う。filter/ranking/stop gate、runner/evidence/Calendar/provider action/browser/schedule変更0。Item13未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗306。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
