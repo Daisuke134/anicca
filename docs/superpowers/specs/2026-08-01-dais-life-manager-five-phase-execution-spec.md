@@ -7081,7 +7081,13 @@ pushed HEAD `f986aee1c`、4 labels unloaded、clean/upstream、process/lock 0、
 
 actual detailのread-only正規化はevent `400028`、`registration_status=registered`、free、exact interval。production Calendar reader＋同じConnpass workflowのisolated read-only再現はbusy intervals 90、audit `6/6/6/4/0`、returned candidates 0。current workflowがwindow後に`registration_status !== available`を除外するため、既登録eventをparent pre-readback/evidenceへ戻せないことが根因。plan `docs/superpowers/plans/2026-08-11-connector-connpass-existing-first-recovery-14h.md`はworkflow/test 2 filesだけ。in-window exact registeredをrecovery partitionとしてavailable eligibleより先に返し、新規申込用Calendar/free-open gateはavailableだけに維持する。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗327。これ以外の残TODO一覧は履歴）
+### O1B-25進捗328（Item 14H / Connpass existing-first recovery完了）
+
+Luna REDはregistered omission、registeredへのCalendar gate誤適用、audit mismatchを11/14で再現。GREENは既存window gate直後に`registeredExisting` partitionだけを追加し、in-window registeredをavailable candidatesより先にstable returnする。registered recoveryだけがavailable-only price/open/Calendar gateをbypassし、availableの順序・無料・受付中・非衝突条件は不変。`free_open_count`はavailable free/openのみ、`calendar_free_count`はreturned candidate count。差分workflow/test 2 files、production 7/2、tests 50/0。real timed intervalを使うCalendar conflict fixtureをtest-only follow-upで固定した。
+
+Luna/Sol関連144/144、syntax、diff checkがPASS。pushed commits `2a4809974`、`39775a5f6`。actual production Calendar reader＋workflowのread-only再測定はaudit `6/6/6/4/1`、candidate exact 1、event `400028`、status registered、write 0で一時target cleanup。fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test中Submit/browser write/Calendar write/evidence/Telegram/state/schedule作用0。Item14未完、schedule unloaded。次のofficial recovery wake exact 1回はsame-run Luma no-effect→Connpass registered pre-readback→Submit 0→receipt/artifact→Calendar→Telegram→applied bundleをacceptanceとする。
+
+### Active remaining TODO SSOT（進捗328。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
