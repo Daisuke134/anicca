@@ -6841,7 +6841,13 @@ Lunaの初回GREENはstrict same-event ticket page shellまたはcanonical visib
 
 fresh Sol reviewはImportant 1件で`do not ship`。malformed DOM observationの`markers: ""`が`length===0`を満たしてticket shell booleanと組み合わさるとregisteredを捏造でき、`markers`欠落はTypeErrorになることを直接再現した。planを先に改訂し、measured success branchの前に`Array.isArray(observed.markers)`を必須化する。string/object/null/missingは全てthrow/submit/evidenceなしのprivacy-safe `unavailable`、valid empty arrayとlegacy exact markerは維持する。初回2-file差分は未commit、live作用0。Item 10B/14/19のbundle acceptanceは未完。
 
-### Active remaining TODO SSOT（進捗282。これ以外の残TODO一覧は履歴）
+### O1B-25進捗283（Peatix ticket readback final GREEN / ship）
+
+同じLunaがmalformed observationをRED化し、`markers: ""`は旧実装でregistered誤判定、null/欠落は例外になることを再現した。GREENはexplicit status処理後、measured ticket/canonical successとlegacy marker length参照の前に`Array.isArray(observed.markers)`を必須化した。string/object/null/missingは全てthrow/goto/clickなしの`unavailable / readback_unavailable`、valid empty arrayとlegacy exact marker authorityは維持する。
+
+最終provider 17/17、named adjacent 83/83、Sol独立expanded relevant 108/108、2-file syntax、diff checkがPASS。serialized全Connectorは308/311 PASS、残る3件はclean HEAD同一baseline。default concurrencyでHarnessの100ms synthetic navigation fixtureが一度118msとなったが、単独11msとserialized suiteでPASSしproduction timeout 30秒の差分回帰ではない。fresh Sol re-reviewはCritical 0・Important 0で`ship`。実canonical event `5075819`へのread-only隔離E2EもSubmitなしでexact `registered`。最終差分は既存Peatix provider/testの2 filesのみ、実装/test中のbrowser write/model/Calendar/evidence/Telegram/private profile/schedule/launchd作用0。次はcommit/push後、schedule unloadedのofficial wakeでpre-submit registered、Peatix click 0、Calendar/PNG/Telegram/applied bundleを実証する。Item 10B/14/19のbundle acceptanceは未完。
+
+### Active remaining TODO SSOT（進捗283。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

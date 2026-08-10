@@ -68,6 +68,35 @@ function fixture(options = {}) {
   return { page, calls, finalCount: () => finals };
 }
 
+function readbackFixture(options = {}) {
+  const href = options.href || "https://peatix.com/event/5075819";
+  const url = new URL(href); const calls = [];
+  const node = (item = {}) => ({ hidden: item.hidden === true, isConnected: item.detached !== true, style: item.style || {}, ownerDocument: { defaultView: { getComputedStyle: () => item.computedStyle || {} } }, getAttribute: (name) => item.attributes && item.attributes[name] || null, getBoundingClientRect: () => item.rect || { width: item.visible === false ? 0 : 120, height: item.visible === false ? 0 : 32 } });
+  const shell = options.ticketShell || {}; const links = (options.ticketLinks || []).map((item) => node({ ...item, attributes: { href: item.href || `/event/${item.eventId || "5075819"}/ticket` } }));
+  const list = (count, item) => Array.from({ length: count || 0 }, () => node(item));
+  const document = {
+    querySelectorAll(selector) {
+      if (selector.includes("data-registration-status")) return options.markers || [];
+      if (selector === "body.webticket") return list(shell.bodyCount, shell.body);
+      if (selector === "section.ticket") return list(shell.sectionCount, shell.section);
+      if (selector === "#qr-code img.js-qrcode-image") return list(shell.qrCount, shell.qr);
+      if (selector === "a[href]") return links;
+      return [];
+    },
+    querySelector(selector) { return options.checkoutControls ? node() : null; },
+  };
+  const page = {
+    url() { return href; },
+    async goto(next) { calls.push(["goto", next]); throw new Error("submit must not run"); },
+    async evaluate(fn, payload) {
+      const previousDocument = global.document; const previousLocation = global.location;
+      global.document = document; global.location = { href: url.href, pathname: url.pathname };
+      try { return fn(payload); } finally { global.document = previousDocument; global.location = previousLocation; }
+    },
+  };
+  return { page, calls };
+}
+
 test("invalid input fails closed and registered readback is an idempotent no-op", async () => {
   for (const [c, p] of [[candidate({ provider: "luma" }), profile()], [candidate({ ticket_price_status: "paid", ticket_price_minor: 100 }), profile()], [candidate(), profile({ accept_organizer_privacy: false })], [candidate(), profile({ accept_organizer_privacy: undefined })], [{ id: "5075819", ticket: "6536845" }, profile()], [candidate({ canonical_url: "https://peatix.com:444/event/5075819" }), profile()]]) {
     const f = fixture(); assert.deepEqual(await submitPeatixOnPage(f.page, c, p), { status: "unavailable", reason: "invalid_input" }); assert.equal(f.calls.some((x) => x[0] === "goto"), false); assert.equal(f.finalCount(), 0);
@@ -177,4 +206,59 @@ test("wrong ticket, event, and final button identity stay pre-submit", async () 
 test("ambiguous post-click and cross-event/auth readbacks never report success", async () => {
   const ambiguous = fixture({ complete: false }); assert.deepEqual(await submitPeatixOnPage(ambiguous.page, candidate(), profile()), { status: "unavailable", reason: "readback_unavailable" }); assert.equal(ambiguous.finalCount(), 1);
   for (const [initial, expected] of [["tickets", { status: "absent" }], ["cross", { status: "unavailable", reason: "readback_unavailable" }], ["auth", { status: "unavailable", reason: "readback_unavailable" }]]) assert.deepEqual(await readPeatixRegistrationStateOnPage(fixture({ initial }).page, candidate()), expected);
+});
+
+test("measured Peatix ticket shell and canonical ticket link prove same-event registration", async () => {
+  const ticket = readbackFixture({ href: "https://peatix.com/event/5075819/ticket", ticketShell: { bodyCount: 1, sectionCount: 1, qrCount: 1 } });
+  const ticketResult = await readPeatixRegistrationStateOnPage(ticket.page, candidate());
+  assert.deepEqual(ticketResult, { status: "registered" });
+  assert.doesNotMatch(JSON.stringify(ticketResult), /6536845|webticket|qr-code/i);
+  const canonical = readbackFixture({ ticketLinks: [{ eventId: "5075819" }] });
+  assert.deepEqual(await readPeatixRegistrationStateOnPage(canonical.page, candidate()), { status: "registered" });
+});
+
+test("Peatix ticket readback fails closed for identity, auth, missing, duplicate, hidden, zero-size, competing, and checkout states", async () => {
+  const urls = ["http://peatix.com/event/5075819/ticket", "https://peatix.com:444/event/5075819/ticket", "https://evil.example/event/5075819/ticket", "https://peatix.com/event/9999999/ticket", "https://peatix.com/event/5075819/other", "https://peatix.com/event/5075819/ticket?x=1", "https://peatix.com/event/5075819/ticket#x", "https://peatix.com/login"];
+  for (const href of urls) {
+    const page = readbackFixture({ href, ticketShell: { bodyCount: 1, sectionCount: 1, qrCount: 1 }, ticketLinks: [{ eventId: "5075819" }] });
+    assert.notEqual((await readPeatixRegistrationStateOnPage(page.page, candidate())).status, "registered", href);
+  }
+  for (const shell of [{ bodyCount: 0, sectionCount: 1, qrCount: 1 }, { bodyCount: 2, sectionCount: 1, qrCount: 1 }, { bodyCount: 1, sectionCount: 1, qrCount: 1, qr: { visible: false } }, { bodyCount: 1, sectionCount: 1, qrCount: 1, qr: { rect: { width: 0, height: 0 } } }, { bodyCount: 1, sectionCount: 1, qrCount: 1, qr: { style: { opacity: 0 } } }]) {
+    const page = readbackFixture({ href: "https://peatix.com/event/5075819/ticket", ticketShell: shell });
+    assert.notEqual((await readPeatixRegistrationStateOnPage(page.page, candidate())).status, "registered");
+  }
+  for (const ticketLinks of [[{ eventId: "5075819" }, { eventId: "5075819" }], [{ eventId: "9999999" }], [{ eventId: "5075819" }, { eventId: "9999999" }], [{ eventId: "5075819", visible: false }], [{ eventId: "5075819", rect: { width: 0, height: 0 } }]]) {
+    const page = readbackFixture({ ticketLinks, checkoutControls: ticketLinks.length === 1 && ticketLinks[0].eventId === "5075819" && !ticketLinks[0].visible });
+    assert.notEqual((await readPeatixRegistrationStateOnPage(page.page, candidate())).status, "registered");
+  }
+  const checkout = readbackFixture({ ticketLinks: [{ eventId: "5075819" }], checkoutControls: true });
+  assert.notEqual((await readPeatixRegistrationStateOnPage(checkout.page, candidate())).status, "registered");
+});
+
+test("pre-registered Peatix ticket readback is an idempotent direct-submit no-op", async () => {
+  const page = readbackFixture({ ticketLinks: [{ eventId: "5075819" }] });
+  assert.deepEqual(await submitPeatixOnPage(page.page, candidate(), profile()), { status: "registered" });
+  assert.equal(page.calls.filter(([name]) => name === "goto").length, 0);
+});
+
+test("malformed Peatix readback markers fail closed without browser actions", async () => {
+  for (const markers of ["", {}, null, undefined]) {
+    const calls = []; const observed = {
+      href: "https://peatix.com/event/5075819/ticket", auth: false, checkout: false,
+      ticket_shell: true, canonical_ticket_link_count: 0, canonical_ticket_link_total: 0,
+      competing_ticket_link_count: 0,
+    };
+    if (markers !== undefined) observed.markers = markers;
+    const page = {
+      url: () => observed.href,
+      async evaluate() { return observed; },
+      async goto() { calls.push("goto"); throw new Error("submit must not run"); },
+      locator() { calls.push("locator"); throw new Error("submit must not run"); },
+    };
+    await assert.doesNotReject(async () => {
+      assert.deepEqual(await readPeatixRegistrationStateOnPage(page, candidate()), { status: "unavailable", reason: "readback_unavailable" });
+      assert.deepEqual(await submitPeatixOnPage(page, candidate(), profile()), { status: "unavailable", reason: "readback_unavailable" });
+    });
+    assert.deepEqual(calls, []);
+  }
 });
