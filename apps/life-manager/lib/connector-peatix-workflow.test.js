@@ -73,7 +73,7 @@ function eligibilityFixture() {
     })],
     [binding(105), detail(105)],
     [binding(106), detail(106, {
-      event: { name: "Eligible Event 106" },
+      event: { name: "Eligible Event 106", tickets: [ticket({ id: 6 }), ticket({ id: 7 })] },
     })],
   ];
 }
@@ -111,12 +111,58 @@ test("Peatix normalizes public details and keeps only ordered free/open calendar
     registration_status: "available",
     ticket_price_status: "free",
     ticket_price_minor: 0,
+    ticket_id: "6",
   }]);
   assert.equal(readerPages.length, 7);
   assert.equal(readerPages.every((suppliedPage) => suppliedPage === page), true);
   assert.deepEqual(detailCalls, fixture.map(([row]) => row.canonical_url));
   assert.equal(Object.isFrozen(result), true);
   assert.equal(Object.isFrozen(result[0]), true);
+});
+
+test("Peatix direct action carries the exact ticket/profile and readback stays privacy-safe", async () => {
+  const selected = {
+    provider: "peatix", event_ref: "peatix-event://event/106", canonical_url: "https://peatix.com/event/106",
+    title: "Eligible Event 106", starts_at: "2026-08-10T01:00:00.000Z", ends_at: "2026-08-10T02:00:00.000Z",
+    registration_status: "available", ticket_price_status: "free", ticket_price_minor: 0, ticket_id: "6",
+  };
+  const page = Object.freeze({}); const profile = { name: "Private Name", email: "private@example.test", accept_organizer_privacy: true }; const calls = [];
+  const workflow = createPeatixDiscoveryWorkflow({
+    readAttendeeProfile: async () => { calls.push("profile"); return profile; },
+    async submitOnPage(suppliedPage, candidate, suppliedProfile) { calls.push(["submit", suppliedPage, candidate, suppliedProfile]); return { status: "registered", reason: "private" }; },
+    async readStateOnPage(suppliedPage, candidate) { calls.push(["read", suppliedPage, candidate]); return { status: "registered", reason: "private", email: profile.email }; },
+  });
+  assert.deepEqual(await workflow.runDirectAction({ page, candidate: selected }), { status: "completed", method: "peatix_direct_submit" });
+  assert.equal(calls[0], "profile"); assert.equal(calls[1][1], page); assert.equal(calls[1][2], selected); assert.equal(calls[1][3], profile);
+  assert.deepEqual(await workflow.readProviderState({ page, candidate: selected }), { status: "registered" });
+  assert.equal(JSON.stringify(await workflow.readProviderState({ page, candidate: selected })).includes(profile.email), false);
+  const ambiguous = createPeatixDiscoveryWorkflow({ readAttendeeProfile: async () => profile, async submitOnPage() { return { status: "unavailable", reason: "private" }; } });
+  assert.deepEqual(await ambiguous.runDirectAction({ page, candidate: selected }), { status: "failed", safe_reason: "direct_action_unverified" });
+  await assert.rejects(workflow.runDirectAction({ page, candidate: { ...selected, ticket_id: "" } }));
+});
+
+test("Peatix workflow readback exposes only registered, absent, or unavailable", async () => {
+  const candidate = { provider: "peatix", event_ref: "peatix-event://event/106", canonical_url: "https://peatix.com/event/106", title: "Event", starts_at: "2026-08-10T01:00:00.000Z", ends_at: "2026-08-10T02:00:00.000Z", registration_status: "available", ticket_price_status: "free", ticket_price_minor: 0, ticket_id: "6" };
+  for (const observed of ["registered", "absent", "unavailable"]) {
+    const workflow = createPeatixDiscoveryWorkflow({ async readStateOnPage() { return { status: observed, reason: "private", name: "private" }; } });
+    assert.deepEqual(await workflow.readProviderState({ page: {}, candidate }), { status: observed });
+  }
+});
+
+test("Peatix action/readback reject non-claimable candidates before private/provider calls", async () => {
+  const base = { provider: "peatix", event_ref: "peatix-event://event/106", canonical_url: "https://peatix.com/event/106", title: "Event", starts_at: "2026-08-10T01:00:00.000Z", ends_at: "2026-08-10T02:00:00.000Z", registration_status: "available", ticket_price_status: "free", ticket_price_minor: 0, ticket_id: "6" };
+  const invalid = [
+    { registration_status: "closed" }, { ticket_price_status: "paid", ticket_price_minor: 100 },
+    { event_ref: "peatix-event://event/106", canonical_url: "https://peatix.com/event/107" },
+    { canonical_url: "https://peatix.com:444/event/106" }, { ticket_id: 6 },
+  ];
+  for (const patch of invalid) {
+    let calls = 0; const workflow = createPeatixDiscoveryWorkflow({ readAttendeeProfile: async () => { calls += 1; return {}; }, async submitOnPage() { calls += 1; }, async readStateOnPage() { calls += 1; } });
+    const candidate = { ...base, ...patch };
+    await assert.rejects(workflow.runDirectAction({ page: {}, candidate }));
+    await assert.rejects(workflow.readProviderState({ page: {}, candidate }));
+    assert.equal(calls, 0);
+  }
 });
 
 test("Peatix reports the ordered five-count discovery audit", async () => {

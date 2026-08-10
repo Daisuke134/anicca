@@ -1,6 +1,7 @@
 "use strict";
 
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
+const { submitPeatixOnPage, readPeatixRegistrationStateOnPage } = require("./peatix-browser-provider.js");
 
 const SEARCH_URL_BASE = "https://peatix.com/search?q=%E7%84%A1%E6%96%99&country=JP&l.text=Tokyo";
 const SEARCH_RESPONSE_TIMEOUT_MS = 10_000;
@@ -195,7 +196,21 @@ function exactCandidate(value) {
     || !Number.isFinite(Date.parse(String(value.starts_at || "")))
     || !Number.isFinite(Date.parse(String(value.ends_at || "")))
     || Date.parse(value.starts_at) >= Date.parse(value.ends_at)
+    || (value.registration_status === "available" && !EVENT_ID.test(String(value.ticket_id || "")))
   ) invalid();
+  return value;
+}
+
+function actionCandidate(value) {
+  exactCandidate(value);
+  const ref = /^peatix-event:\/\/event\/([1-9][0-9]*)$/.exec(String(value.event_ref || ""));
+  let url; try { url = new URL(String(value.canonical_url || "")); } catch { invalid(); }
+  const path = /^\/event\/([1-9][0-9]*)\/?$/.exec(url.pathname);
+  if (value.provider !== "peatix" || value.registration_status !== "available"
+    || value.ticket_price_status !== "free" || value.ticket_price_minor !== 0
+    || typeof value.ticket_id !== "string" || !EVENT_ID.test(value.ticket_id)
+    || !ref || !path || ref[1] !== path[1] || url.protocol !== "https:"
+    || url.hostname !== "peatix.com" || url.port || url.username || url.password || url.search || url.hash) invalid();
   return value;
 }
 
@@ -208,7 +223,7 @@ function numericMinor(tickets) {
 
 function usableFreeTicket(ticket, nowMs) {
   if (!ticket || typeof ticket !== "object" || Array.isArray(ticket)) return false;
-  if (ticket.price !== 0 || ticket.status !== 10) return false;
+  if (ticket.price !== 0 || ticket.status !== 10 || !EVENT_ID.test(String(ticket.id || ""))) return false;
   if (!Number.isInteger(ticket.seatsAvailable) || ticket.seatsAvailable <= 0) return false;
   const deadline = ticket.salesEnds && ticket.salesEnds.datetime;
   if (deadline == null || String(deadline).trim() === "") return true;
@@ -233,10 +248,11 @@ function normalizeDetail(binding, raw, nowMs) {
   const title = String(event.name || "").trim();
   if (!title) invalid();
   const freeObserved = tickets.some((ticket) => ticket && ticket.price === 0);
+  const freeTicket = tickets.find((ticket) => usableFreeTicket(ticket, nowMs));
   const freeOpen = event.status === "OPEN"
     && event.isOpen === true
     && event.isFinished !== true
-    && tickets.some((ticket) => usableFreeTicket(ticket, nowMs));
+    && Boolean(freeTicket);
   const candidate = Object.freeze({
     provider: "peatix",
     event_ref: binding.event_ref,
@@ -247,6 +263,7 @@ function normalizeDetail(binding, raw, nowMs) {
     registration_status: freeOpen ? "available" : "closed",
     ticket_price_status: freeObserved ? "free" : "paid",
     ticket_price_minor: freeObserved ? 0 : numericMinor(tickets),
+    ...(freeOpen ? { ticket_id: String(freeTicket.id) } : {}),
   });
   exactCandidate(candidate);
   return Object.freeze({ candidate, free_open: freeOpen });
@@ -336,16 +353,43 @@ async function defaultReadEventViewData(page, canonicalUrl) {
   }
 }
 
+function normalizedProviderState(value) {
+  const status = String(value && value.status || "");
+  return Object.freeze({ status: ["registered", "absent"].includes(status) ? status : "unavailable" });
+}
+
 function createPeatixDiscoveryWorkflow(options = {}) {
   const now = options.now || (() => new Date());
   const readSearchBindings = options.readSearchBindings || defaultReadSearchBindings;
   const readEventViewData = options.readEventViewData || defaultReadEventViewData;
   const isCalendarFree = options.isCalendarFree || defaultCalendarFree;
   const onDiscoveryAudit = options.onDiscoveryAudit || (() => {});
+  const submitOnPage = options.submitOnPage || submitPeatixOnPage;
+  const readStateOnPage = options.readStateOnPage || readPeatixRegistrationStateOnPage;
+  const readAttendeeProfile = options.readAttendeeProfile;
   if ([now, readSearchBindings, readEventViewData, isCalendarFree, onDiscoveryAudit]
-    .some((value) => typeof value !== "function")) invalid();
+    .some((value) => typeof value !== "function") || typeof submitOnPage !== "function"
+    || typeof readStateOnPage !== "function"
+    || (readAttendeeProfile != null && typeof readAttendeeProfile !== "function")) invalid();
 
   return Object.freeze({
+    async runDirectAction({ page, candidate }) {
+      const selected = actionCandidate(candidate);
+      try {
+        const profile = typeof readAttendeeProfile === "function" ? await readAttendeeProfile() : null;
+        const outcome = await submitOnPage(page, selected, profile);
+        return outcome && outcome.status === "registered"
+          ? Object.freeze({ status: "completed", method: "peatix_direct_submit" })
+          : Object.freeze({ status: "failed", safe_reason: "direct_action_unverified" });
+      } catch {
+        return Object.freeze({ status: "failed", safe_reason: "direct_action_failed" });
+      }
+    },
+    async readProviderState({ page, candidate }) {
+      const selected = actionCandidate(candidate);
+      try { return normalizedProviderState(await readStateOnPage(page, selected)); }
+      catch { return Object.freeze({ status: "unavailable" }); }
+    },
     async discoverCandidates({ page, calendar }) {
       if (!page || typeof page !== "object" || Array.isArray(page)) {
         throw stageError("PEATIX_PAGE_VALIDATION_FAILED");
