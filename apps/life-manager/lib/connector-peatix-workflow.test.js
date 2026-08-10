@@ -1,9 +1,11 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { createHash } = require("node:crypto");
 const test = require("node:test");
 
 const { createPeatixDiscoveryWorkflow } = require("./connector-peatix-workflow.js");
+const { inspectGoogleCalendarBusyInventory, isVerifiedGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 
 const NOW = new Date("2026-08-07T08:30:00.000Z");
 
@@ -44,6 +46,81 @@ function binding(id) {
     canonical_url: `https://peatix.com/event/${id}`,
   };
 }
+
+function calendarInventoryOptions(events) { return { calendar: { async listCalendarsRaw() { return [{ id: "primary" }]; }, async listAllEventsRaw() { return events; } }, timeMin: "2026-08-10T00:00:00+09:00", timeMax: "2026-08-11T00:00:00+09:00", now: "2026-08-07T08:30:00.000Z", timeZone: "Asia/Tokyo" }; }
+function connectorHash(url) { return createHash("sha256").update(url, "utf8").digest("hex"); }
+function timedCalendarEvent(id, marker, overrides = {}) { return { CalendarID: "primary", id, start: { dateTime: "2026-08-10T10:00:00+09:00" }, end: { dateTime: "2026-08-10T11:00:00+09:00" }, extendedProperties: { private: { lm_connector_event: marker } }, location: "Private location", ...overrides }; }
+async function discoverWithCalendar(calendar) { return createPeatixDiscoveryWorkflow({ now: () => NOW, async readSearchBindings() { return [binding(201)]; }, async readEventViewData() { return detail(201); } }).discoverCandidates({ page: {}, calendar }); }
+
+test("Google busy inventory exposes only a valid Connector marker on timed and all-day intervals", async () => {
+  const marker = "a".repeat(64);
+  const snapshot = await inspectGoogleCalendarBusyInventory(calendarInventoryOptions([
+    timedCalendarEvent("timed", marker),
+    timedCalendarEvent("all-day", marker, {
+      start: { date: "2026-08-10" }, end: { date: "2026-08-11" },
+    }),
+  ]));
+  assert.equal(isVerifiedGoogleCalendarBusyInventory(snapshot), true);
+  assert.deepEqual(Object.keys(snapshot.busy_intervals[0]).sort(), ["calendar_ref", "connector_idempotency", "end_at", "event_ref", "kind", "start_at"]);
+  assert.deepEqual(Object.keys(snapshot.busy_intervals[1]).sort(), ["calendar_ref", "connector_idempotency", "end_date", "event_ref", "kind", "start_date"]);
+  assert.equal(snapshot.busy_intervals[0].connector_idempotency, marker);
+  assert.equal(snapshot.busy_intervals[1].connector_idempotency, marker);
+  assert.doesNotMatch(JSON.stringify(snapshot.busy_intervals), /Private location|extendedProperties|primary/);
+});
+
+test("Peatix ignores only the exact candidate URL marker and blocks unrelated overlap", async () => {
+  const candidateUrl = "https://peatix.com/event/201";
+  const same = await inspectGoogleCalendarBusyInventory(calendarInventoryOptions([
+    timedCalendarEvent("same", connectorHash(candidateUrl)),
+  ]));
+  assert.equal((await discoverWithCalendar(same)).length, 1);
+  const unrelated = await inspectGoogleCalendarBusyInventory(calendarInventoryOptions([
+    timedCalendarEvent("same", connectorHash(candidateUrl)),
+    timedCalendarEvent("other", "b".repeat(64)),
+  ]));
+  assert.deepEqual(await discoverWithCalendar(unrelated), []);
+});
+
+test("missing or malformed Connector markers never bypass Peatix conflicts", async () => {
+  for (const marker of ["A".repeat(64), "a".repeat(63), "a".repeat(65), 1234, null]) {
+    await assert.rejects(
+      inspectGoogleCalendarBusyInventory(calendarInventoryOptions([timedCalendarEvent("bad", marker)])),
+      /Google Calendar busy inventory invalid/,
+      String(marker),
+    );
+  }
+  for (const extendedProperties of [null, "private", [], { private: null }, { private: "marker" }, { private: [] }]) {
+    await assert.rejects(
+      inspectGoogleCalendarBusyInventory(calendarInventoryOptions([timedCalendarEvent("bad-container", "a".repeat(64), { extendedProperties })])),
+      /Google Calendar busy inventory invalid/,
+      JSON.stringify(extendedProperties),
+    );
+  }
+  const genuineAbsenceEvent = timedCalendarEvent("genuine-absence", undefined);
+  delete genuineAbsenceEvent.extendedProperties;
+  const genuineAbsence = await inspectGoogleCalendarBusyInventory(calendarInventoryOptions([genuineAbsenceEvent]));
+  assert.equal(Object.hasOwn(genuineAbsence.busy_intervals[0], "connector_idempotency"), false);
+  const absent = await inspectGoogleCalendarBusyInventory(calendarInventoryOptions([
+    timedCalendarEvent("absent", undefined, { extendedProperties: { private: {} } }),
+  ]));
+  assert.equal(Object.hasOwn(absent.busy_intervals[0], "connector_idempotency"), false);
+  assert.deepEqual(await discoverWithCalendar(absent), []);
+  const wrong = await inspectGoogleCalendarBusyInventory(calendarInventoryOptions([
+    timedCalendarEvent("wrong", "c".repeat(64)),
+  ]));
+  assert.deepEqual(await discoverWithCalendar(wrong), []);
+});
+
+test("cancelled and transparent events exclude before malformed Connector marker parsing", async () => {
+  for (const overrides of [{ status: "cancelled" }, { transparency: "transparent" }]) {
+    const snapshot = await inspectGoogleCalendarBusyInventory(calendarInventoryOptions([
+      timedCalendarEvent("excluded", "not-a-marker", overrides),
+    ]));
+    assert.equal(snapshot.source_event_count, 1);
+    assert.equal(snapshot.busy_event_count, 0);
+    assert.deepEqual(snapshot.busy_intervals, []);
+  }
+});
 
 function searchResponse(pageNumber, events) {
   return { url: () => `https://peatix.com/search/events?p=${pageNumber}&size=20`, ok: () => true, status: () => 200, async json() { return { json_data: { page: pageNumber, events } }; } };

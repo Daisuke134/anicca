@@ -43,6 +43,19 @@ function privateLocation(value) {
   return text && text.length <= 2_000 && !/[\x00-\x1f\x7f]/.test(text) ? text : null;
 }
 
+function connectorMarker(event) {
+  if (!Object.hasOwn(event, "extendedProperties")) return null;
+  const extended = event.extendedProperties;
+  if (!extended || typeof extended !== "object" || Array.isArray(extended)) invalid();
+  if (!Object.hasOwn(extended, "private")) return null;
+  const properties = extended.private;
+  if (!properties || typeof properties !== "object" || Array.isArray(properties)) invalid();
+  if (!Object.hasOwn(properties, "lm_connector_event")) return null;
+  const marker = properties.lm_connector_event;
+  if (typeof marker !== "string" || !/^[0-9a-f]{64}$/.test(marker)) invalid();
+  return marker;
+}
+
 function stableJson(value) {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
   if (value && typeof value === "object") {
@@ -63,6 +76,7 @@ function normalizeBusyEvent(event, calendars, seen) {
   seen.add(identity);
   if (String(event.status || "").toLowerCase() === "cancelled") return null;
   if (String(event.transparency || "").toLowerCase() === "transparent") return null;
+  const connectorIdempotency = connectorMarker(event);
   const calendarRef = `calendar-evidence://google/calendar/${digest(calendarId)}`;
   const eventRef = `calendar-evidence://google/event/${digest(identity)}`;
   if (event.start && event.end && event.start.dateTime != null && event.end.dateTime != null) {
@@ -71,6 +85,7 @@ function normalizeBusyEvent(event, calendars, seen) {
     if (Date.parse(endAt) <= Date.parse(startAt)) invalid();
     return Object.freeze({
       kind: "timed",
+      ...(connectorIdempotency ? { connector_idempotency: connectorIdempotency } : {}),
       calendar_ref: calendarRef,
       event_ref: eventRef,
       start_at: startAt,
@@ -83,6 +98,7 @@ function normalizeBusyEvent(event, calendars, seen) {
     if (endDate <= startDate) invalid();
     return Object.freeze({
       kind: "all_day",
+      ...(connectorIdempotency ? { connector_idempotency: connectorIdempotency } : {}),
       calendar_ref: calendarRef,
       event_ref: eventRef,
       start_date: startDate,

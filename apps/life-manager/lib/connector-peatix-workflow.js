@@ -1,5 +1,6 @@
 "use strict";
 
+const { createHash } = require("node:crypto");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const { submitPeatixOnPage, readPeatixRegistrationStateOnPage } = require("./peatix-browser-provider.js");
 
@@ -281,10 +282,12 @@ function defaultCalendarFree(candidate, calendar) {
     : (calendar && Array.isArray(calendar.busy_intervals) ? calendar.busy_intervals : []);
   const start = Date.parse(candidate.starts_at);
   const end = Date.parse(candidate.ends_at);
+  const connectorIdempotency = createHash("sha256").update(String(candidate.canonical_url), "utf8").digest("hex");
   return !intervals.some((busy) => (
     busy && busy.kind === "timed"
     && start < Date.parse(busy.end_at)
     && end > Date.parse(busy.start_at)
+    && busy.connector_idempotency !== connectorIdempotency
   ));
 }
 

@@ -6875,7 +6875,11 @@ LunaのREDはfocused transport 18/19で、exact Peatix createだけが`Connector
 
 Luna REDはfocused workflow 16/19で、valid marker非公開、same-event overlap除外不能、malformed marker非rejectを再現した。初回GREENはfocused 19/19、busy inventory 3/3、Sol独立expanded 122/122、syntax、diff checkがPASSしたが、fresh Sol reviewはImportant 2件で`fix-first`。第一にactive eventのpresent-invalid `extendedProperties`/`private` container（primitive/null/array）がmarker absentとしてverified inventoryへ入る。第二にmarker parseがcancelled/transparent除外より先で、従来なら無視するeventのmalformed markerがinventory全体を停止する。planを先に改訂し、active eventではcontainerのgenuine absenceとpresent-invalidを分離して後者をfail closed、cancelled/transparentはmarker parse前に従来どおり除外する回帰を追加する。現3-file差分は未commit、実装/test中のbrowser/provider/Calendar/evidence/Telegram/state/profile/launchd/schedule作用0。Item 10B/11/12/14/19 bundle acceptanceは未完。
 
-### Active remaining TODO SSOT（進捗289。これ以外の残TODO一覧は履歴）
+### O1B-25進捗290（Calendar self-recovery / 最終GREEN・re-review）
+
+review指摘をRED 18/20で再現後、active eventの`extendedProperties`と`private`はgenuine absenceだけmarker-freeとして許可し、present-invalid primitive/null/arrayをinventory invalidへ変更した。cancelled/transparentはmarker parse前に除外し、malformed markerを持つexcluded eventも従来どおりbusy inventoryへ影響させない。Peatixはstrict canonical URL SHA-256とexact一致するtimed overlapだけを自己eventとして無視し、別overlap・wrong/absent markerはblockする。最終差分はplanned 3 filesだけ。Luna focused 20/20、busy 3/3、evidence 8/8、minimal production/runner 25/25、provider/Harness 59/59、Sol独立expanded 123/123、syntax、diff checkがPASS。native 2 failuresはclean HEAD同一baseline。fresh Sol re-reviewはCritical 0・Important 0で`ship`。実装/test中のbrowser/provider/Calendar/evidence/Telegram/state/profile/launchd/schedule作用0。Item 10B/11/12/14/19 bundle acceptanceは未完で、次の一件はcommit/push後のofficial recovery wakeでoriginal event registered、Submit 0、Calendar create 0/readback 1、positive Telegram IDs、new durable bundle、exact cleanupを実証する。
+
+### Active remaining TODO SSOT（進捗290。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
