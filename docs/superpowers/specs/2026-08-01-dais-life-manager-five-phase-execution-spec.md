@@ -6307,7 +6307,21 @@ Important 0でshipした。focused 6/6、指定回帰54/54、合成境界13/13�
 次の一件はschedule unloaded、dashboard ticket count 0、Peatix auth復旧済みをpreconditionにofficial foreground runnerを再実行し、
 実registrationから同一lineageのapplied bundleまで完走させる。
 
-### Active remaining TODO SSOT（進捗242。これ以外の残TODO一覧は履歴）
+### O1B-25進捗243（Peatix foreground wake 2 / shared CDP profile recovery）
+
+official foreground wake `wake-86b8bc9ba54736f1ff436f1c`をschedule unloadedのまま実行した。Calendar、Luma、Connpass、Peatix
+discoveryは成功し、Peatix aggregateは`100 → 100 → 87 → 60 → 21`。先頭3候補はdirect non-completed、Peatix未対応の
+Browser Harnessもfailedし、`circuit_open / consecutive_failure_limit`でexit 1。recovery Telegram provider IDは`10478`。
+dashboardの実`attending_events` countは0、新規bundle、Calendar write、PNGは0。lock/page cleanupはPASS。
+
+read-only再診断中に共有CDP `:9222` ownerが起動直後SIGTRAPするprofile固有故障を発現した。empty profileでは同じwrapper/binaryが
+3/3安定する一方、canonical profileはcache 1.2GBとsession restoreを除外してもcrashした。CloakBrowser wrapperを公式最新0.5.6へ
+更新後も旧profileだけ再現したため、旧profileとcacheを削除せずlocal quarantineへ退避し、canonical pathへclean profileを作成した。
+復旧後は18秒4/4 probe、launchd running、runs 1、never exited、single about:blank pageを実測。旧Cookies/History/Local Storageは
+quarantineに保全している。次の一件はKeychainからPeatix authだけを復旧し、dashboard登録0確認後、official条件の先頭3候補を
+final confirmなしで測定してdirect non-completedの次のexact actionを特定する。
+
+### Active remaining TODO SSOT（進捗243。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
