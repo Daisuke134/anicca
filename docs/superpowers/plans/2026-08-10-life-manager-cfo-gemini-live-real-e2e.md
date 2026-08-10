@@ -28,15 +28,22 @@ pass that exact object once to `captureGeminiLiveUsageObservation`.
 
 - [ ] **Step 1 — write the smallest RED contract**
 
-Add an empty `providerLiveMessages` collection and final assertions requiring one Live message, one matching Live row,
-one matching span, and the exact success line `rows=3 spans=3 live=1`. Keep the existing real provider and disposable
-database assertions unchanged.
+Add empty `providerLiveMessages` and `postTurnLiveMessages` collections and final assertions requiring one captured
+Live usage message, one matching Live row, exactly three rows, and exactly three matching spans. Require the exact
+success line `rows=3 spans=3 live=1`. Keep the existing real provider and disposable database assertions unchanged.
 
 - [ ] **Step 2 — run RED against the real disposable boundary**
 
-Run the script with `GEMINI_API_KEY` injected from `/Users/anicca/.openclaw/.env` via `env -i`. Expected: Docker,
-PostgREST, and the existing two genuine `generateContent` calls succeed; the new assertion fails only because Live
-observations are zero. Secrets and private content must not appear.
+Run from `apps/life-call` with the already-proven isolated environment:
+
+```bash
+env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" \
+  GEMINI_API_KEY="$(node --env-file=/Users/anicca/.openclaw/.env -p 'process.env.GEMINI_API_KEY')" \
+  test/postgres/cfo-provider-usage-real-e2e.sh
+```
+
+Expected: Docker, PostgREST, and the existing two genuine `generateContent` calls succeed; the new assertion fails
+only because Live observations are zero. Secrets and private content must not appear.
 
 - [ ] **Step 3 — add the minimum real WebSocket path**
 
@@ -44,18 +51,23 @@ Inside the existing Node heredoc:
 
 1. require existing `ws`, `crypto`, `geminiLiveWsUrl`, `buildGeminiSetup`, `buildGeminiTurn`, `LIVE_MODEL`, and
    `captureGeminiLiveUsageObservation`;
-2. open one WebSocket, send one minimal AUDIO/Charon setup, wait for `setupComplete`, then send one text turn containing
-   the existing private sentinel;
+2. build the setup exactly once, open one WebSocket, send that minimal AUDIO/Charon setup, wait for `setupComplete`,
+   then send one text turn containing the existing private sentinel;
 3. resolve on the first later parsed message with top-level `usageMetadata`; use fixed timeout/error/early-close reasons,
-   one 30-second timer, no retry, and no raw logging; close the socket after capture;
-4. create one random nonzero 32-hex session and call the capture once with the unchanged message, exact CFO context,
-   sequence zero, and existing local PostgREST store options;
+   one 30-second timer, no retry, and no raw logging; retain all post-turn parsed messages in memory and close the
+   socket after capture;
+4. create one random nonzero 32-hex session and call the capture once with the unchanged message and exact context:
+   owner `cfo-e2e-owner`, unit `life_manager_saas`, `request_model: setup.setup.model`, session ID, sequence zero, and
+   existing local PostgREST store options;
 5. project the Live message into the expected row and prove exact provider counts, null provider/response IDs,
-   `live-session:<id>`, distinct trace ID, one span, and content privacy. Keep provider payloads in memory only.
+   `live-session:<id>`, and a distinct trace ID. Extract every exported span trace ID and require its exact multiset to
+   equal the three distinct row trace IDs. Reuse `collectStrings` over all post-turn messages to reject every observed
+   text/transcript/audio string of at least 12 characters from exporter output; also reject the sentinel, API key, and
+   content attribute names. Keep provider payloads in memory only.
 
 - [ ] **Step 4 — run GREEN and scope gates**
 
-Run the real script again with the same secret-safe `env -i` injection, then `bash -n`, `git diff --check`, and the exact
+Run the real script again with the exact Step 2 `env -i` command, then `bash -n`, `git diff --check`, and the exact
 one-file/75-addition gate. Expected success line: `cfo-provider-usage-real-e2e: PASS rows=3 spans=3 live=1`.
 
 ## Plan self-review
