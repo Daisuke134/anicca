@@ -513,6 +513,78 @@ test("the ten-minute wake deadline stops browser churn and still reports the wak
   ]);
 });
 
+test("calendar observation crossing the deadline does not create a browser target", async () => {
+  let state;
+  state = fixture({ async readCalendarGaps() { state.calls.push(["calendar"]); state.advance(600_001); return []; } });
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-calendar-deadline", providers: ["luma"], maxWakeMs: 600_000 }, state.dependencies);
+
+  assert.deepEqual(result, { status: "circuit_open", safe_reason: "wake_deadline", telegram_provider_id: "9001" });
+  assert.equal(state.calls.filter(([name]) => name === "open").length, 0); assert.equal(state.calls.filter(([name]) => name === "discover").length, 0);
+});
+
+test("browser target opening that crosses the deadline starts no provider action", async () => {
+  let state;
+  state = fixture();
+  const originalOpen = state.dependencies.browserRail.open;
+  state.dependencies.browserRail.open = async (...args) => { const owned = await originalOpen(...args); state.advance(600_001); return owned; };
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-open-deadline", providers: ["luma"], maxWakeMs: 600_000 }, state.dependencies);
+
+  assert.deepEqual(result, { status: "circuit_open", safe_reason: "wake_deadline", telegram_provider_id: "9001" });
+  assert.equal(state.calls.filter(([name]) => name === "open").length, 1); assert.equal(state.calls.filter(([name]) => name === "discover").length, 0); assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+});
+
+test("provider discovery crossing the deadline stops before candidate handling or the next provider", async () => {
+  let state;
+  state = fixture({ async discoverCandidates(provider) { state.calls.push(["discover", provider]); state.advance(600_001); return []; } });
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-discovery-deadline", providers: ["luma", "connpass"], maxWakeMs: 600_000 }, state.dependencies);
+
+  assert.deepEqual(result, { status: "circuit_open", safe_reason: "wake_deadline", telegram_provider_id: "9001" });
+  assert.deepEqual(state.calls.filter(([name]) => name === "discover").map(([, provider]) => provider), ["luma"]);
+  assert.equal(state.calls.filter(([name, , , , url]) => name === "navigate" && url === "about:blank").length, 0);
+});
+
+test("candidate navigation crossing the deadline stops before provider readback or action", async () => {
+  let state;
+  state = fixture();
+  const originalNavigate = state.dependencies.browserRail.navigate;
+  state.dependencies.browserRail.navigate = async (owned, url) => { await originalNavigate(owned, url); if (url !== "about:blank") state.advance(600_001); };
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-candidate-deadline", providers: ["luma"], maxWakeMs: 600_000 }, state.dependencies);
+
+  assert.deepEqual(result, { status: "circuit_open", safe_reason: "wake_deadline", telegram_provider_id: "9001" });
+  assert.equal(state.calls.filter(([name]) => name === "readback").length, 0); assert.equal(state.calls.filter(([name]) => ["cache", "direct", "agent"].includes(name)).length, 0);
+});
+
+test("deadline-crossing uncaught boundary errors report once and clean up owned pages", async (t) => {
+  const cases = [
+    ["calendar", (state) => { state.dependencies.readCalendarGaps = async () => { state.advance(600_001); throw new Error("calendar raw"); }; }, 0],
+    ["open", (state) => { const open = state.dependencies.browserRail.open; state.dependencies.browserRail.open = async (...args) => { await open(...args); state.advance(600_001); throw new Error("open raw"); }; }, 0],
+    ["candidate-navigation", (state) => { const navigate = state.dependencies.browserRail.navigate; state.dependencies.browserRail.navigate = async (owned, url) => { if (url !== "about:blank") { state.advance(600_001); throw new Error("navigate raw"); } return navigate(owned, url); }; }, 1],
+    ["pre-readback", (state) => { state.dependencies.readProviderState = async ({ phase }) => { if (phase === "pre_submit") { state.advance(600_001); throw new Error("pre-readback raw"); } return { status: "absent" }; }; }, 1],
+    ["post-readback", (state) => { state.dependencies.runDirectAction = async () => ({ status: "completed" }); state.dependencies.readProviderState = async ({ phase }) => { if (phase === "pre_submit") return { status: "absent" }; state.advance(600_001); throw new Error("post-readback raw"); }; }, 1],
+    ["save-repaired-actions", (state) => { state.dependencies.runDirectAction = async () => ({ status: "failed", safe_reason: "direct_action_failed" }); state.dependencies.runAgentFallback = async () => ({ status: "completed", repaired_actions: [{ purpose: "submit", method: "ax_click" }] }); state.dependencies.readProviderState = async ({ phase }) => ({ status: phase === "pre_submit" ? "absent" : "registered" }); state.dependencies.saveRepairedActions = async () => { state.advance(600_001); throw new Error("save raw"); }; }, 1],
+  ];
+  for (const [name, configure, closeCount] of cases) {
+    await t.test(name, async () => {
+      const state = fixture(); configure(state);
+      const result = await runMinimalConnectorWake({ ownerToken: `owner-token-connector-throw-${name}`, providers: ["luma"], maxWakeMs: 600_000 }, state.dependencies);
+      assert.deepEqual(result, { status: "circuit_open", safe_reason: "wake_deadline", telegram_provider_id: "9001" });
+      assert.equal(state.calls.filter(([entry]) => entry === "report").length, 1);
+      assert.equal(state.calls.filter(([entry]) => entry === "close").length, closeCount);
+    });
+  }
+});
+
+test("an uncaught boundary error before the deadline remains the original rejection without reporting", async () => {
+  const raw = new Error("raw before deadline");
+  const state = fixture({ async readCalendarGaps() { throw raw; } });
+  await assert.rejects(
+    runMinimalConnectorWake({ ownerToken: "owner-token-connector-raw-before-deadline", providers: ["luma"] }, state.dependencies),
+    (error) => error === raw,
+  );
+  assert.equal(state.calls.filter(([entry]) => entry === "report").length, 0);
+  assert.equal(state.calls.filter(([entry]) => entry === "close").length, 0);
+});
+
 test("every recorded action contains only the safe audit fields", async () => {
   const state = fixture();
 
