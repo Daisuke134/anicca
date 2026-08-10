@@ -44,7 +44,9 @@ existing claim/receipt path send once or return `already_sent`.
 
 ### Step 1: RED in the existing test file
 
-Change `snapshotRow` to include a sixth exact key, `created_at`, defaulting to `CLOCK.toISOString()`. Add one test:
+Change `snapshotRow` to include a sixth exact key, `created_at`, defaulting to `CLOCK.toISOString()`. Also add
+`created_at: CLOCK.toISOString()` to the one hand-built `persisted` fixture in the JSONB key-order test, which does
+not use `snapshotRow`. Add one test:
 
 - current clock is `CLOCK`;
 - latest snapshot has identical facts but `created_at` exactly one hour earlier;
