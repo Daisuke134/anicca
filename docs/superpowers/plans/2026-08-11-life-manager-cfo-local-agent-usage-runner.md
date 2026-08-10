@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Execute the checkbox steps in order.
 
-**Status:** READY FOR LUNA — fresh Sol plan review: ship
+**Status:** COMPLETE
 
 **Goal:** Read the two fixed local agent-usage ledgers once each, resume each from its immutable chain, and publish the next content-free batch without deleting prior evidence when one source is unavailable.
 
@@ -102,7 +102,7 @@ Export `runLocalAgentUsageCollection(options = {})`.
 
 ## Task 1 — Luna writes RED then minimum GREEN
 
-- [ ] **Step 1: Create the focused test and record RED**
+- [x] **Step 1: Create the focused test and record RED**
 
 Use exact fixed fixtures, not real files. The test setup follows this shape:
 
@@ -142,7 +142,7 @@ node --test lib/cfo-local-agent-usage-runner.test.js
 
 Expected: missing-module failure.
 
-- [ ] **Step 2: Implement the minimum direct composition**
+- [x] **Step 2: Implement the minimum direct composition**
 
 The production control flow is exactly:
 
@@ -166,7 +166,7 @@ return deepFreezeClosedReceipt();
 Implement only these validators and direct flow. Do not add classes, generalized source registries, retries, logging,
 filesystem locking, parallelism, or a CLI.
 
-- [ ] **Step 3: Run focused GREEN**
+- [x] **Step 3: Run focused GREEN**
 
 ```bash
 node --test lib/cfo-local-agent-usage-runner.test.js
@@ -175,7 +175,7 @@ node --test lib/cfo-local-agent-usage-batch-store.test.js lib/cfo-local-agent-us
 
 ## Task 2 — Verify and hand back to Sol
 
-- [ ] **Step 4: Run complete gates and report evidence**
+- [x] **Step 4: Run complete gates and report evidence**
 
 ```bash
 cd apps/life-call
@@ -191,3 +191,14 @@ git diff --check
 Report RED evidence, GREEN counts, changed files, and added LOC. Sol performs fresh review, real isolated two-ledger
 E2E, spec/state update, commit, and push. Completion requires both real source files to be read once into an isolated
 state root, two immutable receipts with verified hashes, and no raw/private output.
+
+## Completion evidence
+
+- Missing-module RED; runner focused 4/4 and writer/chain/runner focused 11/11.
+- Scope is exactly 3 files and 92 additions: production 35, tests 56, suite entry 1; no dependency/lockfile change.
+- CFO suite 290/290 and full `npm test` exit 0 after lockfile-faithful `npm ci`; syntax and diff checks pass.
+- Real isolated E2E read each live ledger once, published two verified content-addressed receipts, and reconciled
+  1,109 Life Manager + 3,884 Anicca = 4,993 normalized events. Temporary state was removed; live state and launchd
+  were untouched.
+- Fresh Sol review found and Luna fixed non-string `record_id` coercion; the regression fails closed without leaking
+  hostile values. Final fresh Sol verdict: `ship`.
