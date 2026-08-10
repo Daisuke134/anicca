@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — Product Stage 7, CFO-2a, and CFO-2a2.1 through CFO-2a2.4c1 complete; CFO-2a2.4c2 is next |
+| Status | M2 ACTIVE — Product Stage 7, CFO-2a, and CFO-2a2.1 through CFO-2a2.4c2 complete; CFO-2a2.4c3 is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2.4c2: pass one normalized Gemini Live observation through the existing Node store** |
+| First unfinished item | **CFO-2a2.4c3: emit one content-free span for a stored Gemini Live observation** |
 
 ## 1. Overview — What and Why
 

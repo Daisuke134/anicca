@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c1 verified; CFO-2a2.4c2 Node store is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c2 verified; CFO-2a2.4c3 Live span is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -633,7 +633,7 @@ changed.
 
 #### Later slices
 
-#### CFO-2a2.4c2 — existing Node store accepts one Live observation (next)
+#### CFO-2a2.4c2 — existing Node store accepts one Live observation (verified)
 
 Reuse `cfo-provider-usage-store.js`, `createCfoSupabaseRpc`, the 4b normalizer, and the 4c1 RPC. Add one exported
 `appendGeminiLiveUsageEvidence(message, context, options)` function. It normalizes first, then makes one RPC call with
@@ -648,15 +648,20 @@ Every invalid input, transport failure, or receipt mismatch stays fixed-prefix, 
 
 Acceptance:
 
-- [ ] one Live message produces one exact typed RPC body and one isolated, frozen local receipt;
-- [ ] the message's content sentinel never appears in the request, receipt, or error;
-- [ ] a representative invalid Live input is rejected before network access;
-- [ ] wrong common trace, wrong/mixed identity, or an extra receipt key fails closed without retry or logging;
-- [ ] all existing provider-store behavior and exact provider request body remain unchanged;
-- [ ] focused store, CFO, and full suites pass within exactly two files and at most 65 additions.
+- [x] one Live message produces one exact typed RPC body and one isolated, frozen local receipt;
+- [x] the message's content sentinel never appears in the request, receipt, or error;
+- [x] a representative invalid Live input is rejected before network access;
+- [x] wrong common trace, wrong/mixed identity, or an extra receipt key fails closed without retry or logging;
+- [x] all existing provider-store behavior and exact provider request body remain unchanged;
+- [x] focused store, CFO, and full suites pass within exactly two files and at most 65 additions.
 
 This slice performs no migration, database deployment, span lifecycle, WebSocket/bridge wiring, aggregation, duration
 estimate removal, scheduler, launchd, or Telegram change. It makes no real provider call.
+
+Verification evidence: RED passed the three provider tests and failed only the two absent Live-export tests. GREEN
+passed focused 5/5, CFO 267/267, and full 909/909. Fresh review returned `ship`; Sol independently repeated focused,
+CFO, full, syntax, and diff gates. The implementation is exactly two files and 47 additions. No provider call,
+database deployment, runtime, or Telegram state changed.
 
 - **CFO-2a2.4c3:** emit one content-free OTel span for the successfully stored observation without summing observations.
 - **CFO-2a2.4d:** wire the existing Live bridge, prove real message → row → span, and stop using the duration estimate

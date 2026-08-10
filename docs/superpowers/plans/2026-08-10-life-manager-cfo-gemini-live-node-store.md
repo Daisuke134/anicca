@@ -1,6 +1,6 @@
 # CFO-2a2.4c2 Gemini Live Node Store Implementation Plan
 
-**Status:** READY — Ponytail scope and fresh Sol review required before Luna implementation.
+**Status:** COMPLETE — Luna TDD, fresh review, independent verification, and scope gates passed.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 
@@ -25,7 +25,7 @@ dependency, migration, service, or runtime wiring.
 
 ## Task 1: Append one Live usage observation
 
-- [ ] **Step 1 — write the smallest RED tests**
+- [x] **Step 1 — write the smallest RED tests**
 
 Add one complete success test using a Live message that contains both `usageMetadata` and a content sentinel. Require:
 
@@ -42,7 +42,7 @@ Add one compact failure test: one representative invalid Live input makes zero c
 `trace_id`, mixed provider/local identity, or one extra receipt key each fails with the existing fixed redacted prefix,
 makes one call, never retries, and never logs. Do not duplicate the normalizer's count/context edge-case matrix.
 
-- [ ] **Step 2 — run RED**
+- [x] **Step 2 — run RED**
 
 ```bash
 node --test lib/cfo-provider-usage-store.test.js
@@ -50,7 +50,7 @@ node --test lib/cfo-provider-usage-store.test.js
 
 Expected: the historical provider tests pass and only the new Live tests fail because the export is absent.
 
-- [ ] **Step 3 — add the minimum store extension**
+- [x] **Step 3 — add the minimum store extension**
 
 Import `normalizeGeminiLiveUsageEvidence`. Keep one internal RPC-body builder for already-normalized evidence. Make the
 receipt validator choose the exact provider or local six-key set from the normalized evidence, compare only the
@@ -59,7 +59,7 @@ six-key projection. Export `appendGeminiLiveUsageEvidence` beside the existing f
 message or content to the RPC helper. The existing provider path must keep its exact 17-key body and must not send
 `p_local_correlation_id`.
 
-- [ ] **Step 4 — run GREEN and scope gates**
+- [x] **Step 4 — run GREEN and scope gates**
 
 ```bash
 node --test lib/cfo-provider-usage-store.test.js
