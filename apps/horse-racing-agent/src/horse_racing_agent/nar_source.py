@@ -72,7 +72,7 @@ def _normalise_url(href: str) -> str:
 
 def _decode_path(path: str) -> str:
     decoded = path
-    for _ in range(3):
+    while True:
         unquoted = unquote(decoded)
         if unquoted == decoded:
             break

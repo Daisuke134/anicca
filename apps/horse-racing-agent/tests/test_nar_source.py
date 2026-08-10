@@ -183,3 +183,19 @@ def test_planner_rejects_raw_and_encoded_dot_segment_traversal(path):
             f'<a href="{path}">traversal</a>',
             "",
         )
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/KeibaWeb/DataDownload/%252525252525252e%252525252525252e/RaceDataDownload?type=daily",
+        "/KeibaWeb/DataDownload/%252525252525252f..%252525252525252fRaceDataDownload?type=daily",
+    ],
+)
+def test_planner_rejects_deeply_encoded_traversal(path):
+    with pytest.raises(ValueError, match="official NAR URL"):
+        plan_nar_fetch(
+            datetime(2027, 11, 15, 2, tzinfo=JST),
+            f'<a href="{path}">deep traversal</a>',
+            "",
+        )
