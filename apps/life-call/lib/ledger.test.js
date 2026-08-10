@@ -173,3 +173,50 @@ test("normalizeApiCostEvent rejects invalid identity and money with redacted err
     );
   }
 });
+
+test("normalizeGeminiUsageEvidence maps provider counts without content", () => {
+  const response = { responseId: "provider-response-id", modelVersion: "gemini-2.5-flash-001", usageMetadata: {
+    promptTokenCount: 100, candidatesTokenCount: 40, totalTokenCount: 148, cachedContentTokenCount: 20,
+    thoughtsTokenCount: 5, toolUsePromptTokenCount: 3,
+  }, candidates: [{ text: "CANDIDATE_SENTINEL" }], unknown: "UNKNOWN_SENTINEL" };
+  const context = { owner_id: "u1", financial_unit_id: "life_manager_saas", occurred_at: "2026-08-10T01:02:03.000Z", trace_id: "11111111111111111111111111111111", request_model: "gemini-2.5-flash", ignored: "CONTEXT_SENTINEL" };
+  const before = { response: structuredClone(response), context: structuredClone(context) };
+  const expected = { schema_version: 1, provider: "gcp.gemini", provider_request_id: "provider-response-id", usage_sequence: 0, occurred_at: "2026-08-10T01:02:03.000Z", owner_id: "u1", financial_unit_id: "life_manager_saas", trace_id: "11111111111111111111111111111111", request_model: "gemini-2.5-flash", response_model: "gemini-2.5-flash-001", tokens: { input: 100, output: 40, cached_input: 20, reasoning_output: 5, tool_input: 3, total: 148 }, evidence_status: "provider_reported", otel_attributes: {
+    "gen_ai.operation.name": "generate_content", "gen_ai.provider.name": "gcp.gemini", "gen_ai.request.model": "gemini-2.5-flash", "gen_ai.response.id": "provider-response-id", "gen_ai.response.model": "gemini-2.5-flash-001", "gen_ai.usage.input_tokens": 100, "gen_ai.usage.output_tokens": 45, "gen_ai.usage.cache_read.input_tokens": 20, "gen_ai.usage.reasoning.output_tokens": 5, "server.address": "generativelanguage.googleapis.com",
+  } };
+  const actual = ledger().normalizeGeminiUsageEvidence(response, context);
+  assert.deepEqual(actual, expected);
+  assert.doesNotMatch(JSON.stringify(actual), /CANDIDATE_SENTINEL|UNKNOWN_SENTINEL|CONTEXT_SENTINEL/);
+  assert.deepEqual(response, before.response);
+  assert.deepEqual(context, before.context);
+  assert.deepEqual(ledger().normalizeGeminiUsageEvidence(response, context), actual);
+});
+
+test("normalizeGeminiUsageEvidence preserves zero, omits missing optionals, and redacts invalid input", () => {
+  const response = { responseId: "r0", modelVersion: "m0", usageMetadata: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 } };
+  const context = { owner_id: "u1", financial_unit_id: "life_manager_saas", occurred_at: "2026-08-10T01:02:03Z", trace_id: "22222222222222222222222222222222", request_model: "m0" };
+  const zero = ledger().normalizeGeminiUsageEvidence(response, context);
+  assert.deepEqual(zero.tokens, { input: 0, output: 0, cached_input: null, reasoning_output: null, tool_input: null, total: 0 });
+  assert.equal(zero.otel_attributes["gen_ai.usage.input_tokens"], 0);
+  assert.equal(zero.otel_attributes["gen_ai.usage.output_tokens"], 0);
+  assert.ok(!("gen_ai.usage.cache_read.input_tokens" in zero.otel_attributes) && !("gen_ai.usage.reasoning.output_tokens" in zero.otel_attributes));
+  const cases = [
+    ["missing id", { drop: "id" }], ["missing model", { drop: "model" }], ["missing count", { drop: "count" }],
+    ["id", { response: { responseId: " " } }], ["model", { response: { modelVersion: "" } }],
+    ["count", { usage: { promptTokenCount: "SENTINEL" } }], ["negative", { usage: { candidatesTokenCount: -1 } }],
+    ["fraction", { usage: { totalTokenCount: 1.5 } }], ["nan", { usage: { promptTokenCount: NaN } }],
+    ["infinite", { usage: { promptTokenCount: Infinity } }], ["unsafe", { usage: { promptTokenCount: Number.MAX_SAFE_INTEGER + 1 } }],
+    ["sum", { usage: { candidatesTokenCount: Number.MAX_SAFE_INTEGER, thoughtsTokenCount: 1 } }],
+    ["timestamp", { context: { occurred_at: "not-a-time" } }], ["trace", { context: { trace_id: "0".repeat(32) } }],
+    ["owner", { context: { owner_id: " " } }], ["request", { context: { request_model: "" } }],
+    ["unit", { context: { financial_unit_id: "other" } }],
+  ];
+  for (const [label, patch] of cases) {
+    const value = { ...response, usageMetadata: { ...response.usageMetadata, ...(patch.usage || {}) }, ...(patch.response || {}) };
+    const metadata = { ...context, ...(patch.context || {}) };
+    if (patch.drop === "id") delete value.responseId;
+    if (patch.drop === "model") delete value.modelVersion;
+    if (patch.drop === "count") delete value.usageMetadata.promptTokenCount;
+    assert.throws(() => ledger().normalizeGeminiUsageEvidence(value, metadata), (error) => /^cfo_provider_usage_invalid:[a-z_]+$/.test(error.message) && !/SENTINEL/.test(error.message), label);
+  }
+});
