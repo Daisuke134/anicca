@@ -82,8 +82,9 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 4 | HRA-2N NAR official free acquisition component | **complete** | commits `d22fff7ae..b67198e6`; focused 17/full 49 PASS |
 | 5 | HRA-2R3 per-source index/gate | **complete** | commit `ab39e8546`; four independent lanes, no secondary promotion |
 | 6 | HRA-2S observed schema/store | **complete** | commits `2feb29cfe` + `3f9f036f4`; focused 29/full 75 PASS |
-| 7 | HRA-3D audit | **ACTIVE** | `data_audit.py` and `test_data_audit.py` |
-| 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3D | cutoff-safe odds and settled-payback contract |
+| 7 | HRA-3D audit implementation | **complete; actual gate blocked** | commits `1426d4e23..05c03391c`; actual records 0, model_ready false |
+| 7A | HRA-3C actual NAR materialization probe | **ACTIVE** | current monthly race/odds/payback join evidence, Mac-private raw only |
+| 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3C/3D actual gate | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
 | 11 | HRA-5 CFO adapter | blocked by HRA-4b and CFO-0c | `cfo.py` and `test_cfo.py` |
@@ -364,7 +365,7 @@ Completion evidence: commits `2feb29cfe` + `3f9f036f4`; final focused 29/full 75
 
 ## Task 7: HRA-3D actual coverage and cutoff audit
 
-**State:** ACTIVE. Audit only accepted stored records/manifests; do not create or infer historical coverage.
+**State:** IMPLEMENTATION COMPLETE; ACTUAL GATE BLOCKED. Audit only accepted stored records/manifests; do not create or infer historical coverage.
 
 **Files:**
 - Create: `apps/horse-racing-agent/src/horse_racing_agent/data_audit.py`
@@ -379,6 +380,20 @@ Reuse `validate_normalized_race` and `canonical_content_hash`. Every record requ
 `records=[]` with non-empty valid accepted manifests is a valid audit result, not an exception: coverage is `null`, counts are 0, `model_ready=false`, and blockers include `NO_NORMALIZED_ACTUAL_RECORDS`; official `settled_payback_rows=0` adds `NO_SETTLED_PAYBACK`; no official observed odds adds `NO_OBSERVED_ODDS`. Empty manifests are rejected. This is the current real execution and must be recorded after unit GREEN. `model_ready=true` requires at least two distinct official `REAL_PUBLIC_WEB_RECORD` race IDs at at least two distinct `race_at` timestamps; every included official race must be `fresh`, have at least one observed positive odds value, use a matching official manifest with `parsed_row_count>0`, and appear in that same manifest's `settled_race_ids`. Only official manifest payback rows count toward the report/readiness gate. Synthetic/secondary records or unused manifests can never supply odds, settlement, freshness, race count, or chronology for readiness. Zero cutoff violations and no blocker remain mandatory. This only unlocks model evaluation, not cash.
 
 RED tests reject missing/empty/mismatched manifests, invalid or duplicate `settled_race_ids`, settlement count mismatch, future/leaking timestamps, random ordering, duplicate semantic snapshots, invalid hashes/counts, cash promotion, and secondary-to-official promotion. Explicit regressions prove that secondary odds/payback cannot unlock official readiness, same-time official races cannot satisfy chronology, unused manifest settlements cannot settle a record, and stale records or zero-row manifests remain blocked. GREEN mechanics may use only `SYNTHETIC_TEST/test_only` fixture records or ephemeral scope-contract copies explicitly marked not evidence. After focused/full GREEN, run the current actual audit with zero normalized records plus the two accepted official manifest summaries (`settled_race_ids=[]`) and persist only its redacted result in the Task 7 completion evidence. Expected current gate: `model_ready=false`; Task 8 remains blocked. No model task activates until a later actual chronological coverage and leakage audit passes.
+
+Completion evidence: commits `1426d4e23..05c03391c`; final focused 36/full 111 tests PASS, compileall/diff-check PASS, local/origin/canonical parity PASS. Fresh Sol review counterexamples closed secondary/synthetic readiness, same-time chronology, unmatched settlement, stale/zero-row manifests, empty manifests, and per-official-race odds. Current actual audit is `records=0`, coverage `null`, `model_ready=false`, `cash_authorized=false`, with blockers `INSUFFICIENT_CHRONOLOGY`, `NO_NORMALIZED_ACTUAL_RECORDS`, `NO_OBSERVED_ODDS`, and `NO_SETTLED_PAYBACK`. Task 8 stays blocked.
+
+## Task 7A: HRA-3C actual NAR materialization Reality Probe
+
+**State:** ACTIVE. This is an evidence probe before parser implementation; Luna executes commands/evidence edits, Sol owns the follow-on parser plan.
+
+**File:** create `docs/evidence/horse-racing/nar-normalized-materialization-probe.md` only. Raw artifacts stay outside Git under `/Users/anicca/Library/Application Support/Anicca/horse-racing/raw/nar/` with directory mode 700 and files mode 600.
+
+Use CRWL on the official Today/Monthly navigation pages to discover the current daily/monthly race and odds links; use curl only for the official ZIP endpoints after recording CRWL's binary-download limitation. Fetch the current monthly race archive and current monthly odds archive, plus daily race archive only if needed for current publication status. Respect the documented cadence and do not loop/poll. Do not use remembered month-specific URLs when navigation provides the current links.
+
+Inspect locally without exporting row values. Record only retrieval/effective timestamps, exact official URLs, HTTP/content type/bytes/SHA-256, archive entry names, encoding, header names/types, per-file and total data-row counts, distinct date/race-key counts, duplicate-key counts, earliest/latest dates, null/missing counts, whether odds keys join race/runner keys, whether payback keys join race keys, settled race-id count, and cutoff fields actually available before race start. No horse/person names, odds values, payouts, credentials, or raw rows enter Git/chat.
+
+Gate outcomes are `PASS_MATERIALIZATION_PLAN`, `BLOCKED_NO_SETTLED_PAYBACK`, `BLOCKED_NO_JOIN_KEY`, `BLOCKED_NO_CUTOFF_TIMESTAMP`, or `BLOCKED_SOURCE`. HTTP/ZIP/schema success alone is not a normalized record. The probe must state the exact number of actual normalized records that can be constructed without invention; unknown is not zero. Cash/revenue/model readiness remain false. Verify evidence has no raw values, `git diff --check`, commit `docs(horse-racing): record NAR materialization probe`, push both remotes, and keep raw files private/non-Git.
 
 ## Task 8: HRA-3M cutoff-safe baseline, model, and backtest
 

@@ -6,12 +6,12 @@
 |---|---|
 | Status | **REALITY GATE REQUIRED — LIVE PURCHASE DISABLED** |
 | 対象 | Life Manager financial organ の第8候補 business_id: horse_racing |
-| 現在のactive stage | HRA-3D actual coverage/cutoff audit（ACTIVE）。HRA-2SまでGREEN、cashはfalse |
+| 現在のactive stage | HRA-3C actual NAR materialization probe（ACTIVE）。HRA-3D codeはGREENだがactual records=0、cashはfalse |
 | plan / gate / verification owner | Sol |
 | edit / code / execution owner | Luna |
 | 購入処理 | PurchaseExecutorは常時disabled。HRA-6の全gateなしに有効化しない |
 
-この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。HRA-2F、NAR official 46/456/327274 rows、JRA official 12 result rows、HRA-2N acquisition contract、four-lane Reality Gate index、truth-safe append-only storeはprivate-shadow前提のgateを通過した。HRA-3D coverage/cutoff auditだけをunlockする。Sol owns plan/gate/verification; Luna owns edits/code/execution.
+この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。HRA-2F、NAR official 46/456/327274 rows、JRA official 12 result rows、HRA-2N acquisition contract、four-lane Reality Gate index、truth-safe append-only store、HRA-3D audit codeはprivate-shadow前提のgateを通過した。actual normalized recordsは0のためHRA-3C materialization probeだけをunlockし、modelはunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
 
 ### 現在のevidence table
 
@@ -274,7 +274,8 @@ sequenceDiagram
 | HRA-2N | NAR official acquisition planner/classifier | **complete**。focused 17/full 49 PASS、bounded URL decode、cash false |
 | HRA-2R3 | per-source Reality Gate index | **complete**。official 2 lanes PASS、secondary 2 lanes NOT_OBSERVED、cash false |
 | HRA-2S | observed schema/local store | **complete**。synthetic fixtureはtest_only、nullable未観測値、append-only identity |
-| HRA-3D | actual chronological coverage/cutoff audit | **ACTIVE**。historical backtest evidence 0を維持したままcoverageを監査 |
+| HRA-3D | actual chronological coverage/cutoff audit | **code complete / actual BLOCKED**。records 0、model_ready false |
+| HRA-3C | actual NAR materialization probe | **ACTIVE**。monthly race/odds/payback joinを実測し、rawはMac-private |
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
 | HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow runs 0 |
 | HRA-5 | Telegram + CFO real/shadow separation | **BLOCKED**。Telegram runs 0 |
