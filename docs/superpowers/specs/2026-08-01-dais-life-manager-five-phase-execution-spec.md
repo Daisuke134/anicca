@@ -6335,7 +6335,18 @@ official discovery再測定は`100 → 100 → 87 → 60 → 21`。先頭3候補
 about:blankを維持。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-css-id-selector.md`は先頭candidateを阻害する
 raw DOM id selectorだけをbrowser-native `CSS.escape`相当へ最小TDD修正する。後続2件のunknown question/Harnessはdeferする。
 
-### Active remaining TODO SSOT（進捗244。これ以外の残TODO一覧は履歴）
+### O1B-25進捗245（Peatix special DOM ID selector GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-css-id-selector.md`をTDD実装した。REDは`name[0]`/`email[0]`のvalid DOM idで
+raw selectorがrejectされ、focused 7件中6 pass・1 fail、exact result `required_field_unavailable`を再現。commit `20bc57e30`は
+form browser context内のid selector生成一行だけを`#${CSS.escape(n.id)}`へ変更し、空idのname attribute fallbackを維持した。
+
+fresh Sol reviewは角括弧、leading digit、引用符、backslash、空id fallbackを含む合成6 case、focused/workflow 21件、runner 9件を
+全PASSし、Critical 0・Important 0でshipした。重複/不足field、unknown required、cross-event confirm、ambiguous readbackは
+fail-closedを維持し、private出力とscope creepは0。次の一件はschedule unloaded、stable `:9222`、Peatix auth、dashboard count 0を
+preconditionにofficial foreground runnerを再実行し、先頭candidateのregistration→applied bundleを完走させる。
+
+### Active remaining TODO SSOT（進捗245。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
