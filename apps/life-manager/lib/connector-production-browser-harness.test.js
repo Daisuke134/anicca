@@ -50,6 +50,79 @@ test("bounded proposer requests one structured action from Terra with sanitized 
   assert.equal(JSON.stringify(request).includes("ws://"), false);
 });
 
+test("Connpass known form completes natively before the agent when the runner is unavailable", async () => {
+  const radio = (control, label, question, group) => ({ control, kind: "radio", label, question, required: true, group });
+  const groups = [radio("online_radio", "オンライン参加（無料）", "参加方法", "online"), radio("online_speaker", "登壇者", "参加方法", "online"),
+    radio("referral_radio", "Connpass", "このイベントを何で知りましたか？", "referral"), radio("referral_sns", "SNS", "このイベントを何で知りましたか？", "referral"),
+    radio("ack_one", "はい、わかりました", "注意事項", "ack_one"), radio("ack_one_no", "いいえ", "注意事項", "ack_one"),
+    radio("ack_two", "はい、わかりました", "個人情報", "ack_two"), radio("ack_two_no", "いいえ", "個人情報", "ack_two"),
+    { control: "confirm_button", kind: "button", label: "申し込みを確定する", required: false, submittable: true }];
+  const groupOrder = { online: 0, referral: 1, ack_one: 2, ack_two: 3 };
+  let step = 0;
+  let agentCalls = 0;
+  const operated = [];
+  const page = Object.freeze({ page_id: "known-connpass-page" });
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner() { agentCalls += 1; throw new Error("agent unavailable"); } });
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    connpassWorkflow: { async readProviderState() { return step === 5 ? { status: "registered" } : { status: "absent" }; } },
+    async inspectControls() { return groups.map((control) => ({ ...control, completed: control.group ? step > groupOrder[control.group] : false })); },
+    proposeAction: proposer,
+    async operateControl(input) { operated.push(input.action.control); step += 1; return { status: "success" }; },
+    resolveValue: createPrivateValueResolver({ async readPeatixProfile() { throw new Error("private profile must not be read"); }, async readFormProfile() { throw new Error("form profile must not be read"); } }),
+  });
+
+  const result = await harness.runFallback({ provider: "connpass", candidate: { event_ref: "connpass-event://event/400028" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/KNOWNCONNPASS1", maxSteps: 10, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "completed");
+  assert.equal(agentCalls, 0);
+  assert.deepEqual(operated, ["online_radio", "referral_radio", "ack_one", "ack_two", "confirm_button"]);
+});
+
+test("Connpass resolver approves only the exact safe radio predicates", async () => {
+  let privateReads = 0;
+  const resolver = createPrivateValueResolver({ async readPeatixProfile() { privateReads += 1; return {}; }, async readFormProfile() { privateReads += 1; return { form_answers: {} }; } });
+  const cases = [["オンライン参加（無料）", "参加方法", true], ["Connpass", "このイベントを何で知りましたか？", true], ["はい、わかりました", "注意事項", true], ["登壇者", "speaker", null], ["オンライン参加（有料）", "paid", null], ["いいえ", "negative", null], ["X", "other referral", null], ["Connpass / SNS", "ambiguous", null], ["unknown", "unknown", null]];
+  for (const [label, question, expected] of cases) {
+    assert.equal(await resolver({ provider: "connpass", control: { control: "safe_radio", kind: "radio", label, question, required: true } }), expected, label);
+  }
+  assert.equal(privateReads, 0);
+});
+
+test("Connpass native ack selection falls through for duplicate or empty-question matches", async () => {
+  const radio = (control, question) => ({ control, kind: "radio", label: "はい、わかりました", question, required: true });
+  const cases = [[radio("ack_a", "注意事項"), radio("ack_b", "注意事項")], [radio("ack_empty", "")]];
+  for (const controls of cases) {
+    let agentCalls = 0;
+    const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) {
+      agentCalls += 1;
+      return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: input.schema.properties.control.enum[0] } };
+    } });
+    assert.deepEqual(await proposer({ provider: "connpass", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls } }), { control: controls[0].control });
+    assert.equal(agentCalls, 1);
+  }
+});
+
+test("Connpass fallback latches the first submit attempt across a path change", async () => {
+  let href = "https://tokyo-builders.connpass.com/event/400028/join/";
+  let proposals = 0;
+  let operated = 0;
+  const page = { url() { return href; } };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    connpassWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    async inspectControls() { return [{ control: proposals === 0 ? "submit_one" : "submit_two", kind: "button", label: "申し込みを確定する", required: false, submittable: true }]; },
+    async proposeAction(input) { proposals += 1; return { purpose: "submit", method: "ax_click", control: input.observation.controls[0].control }; },
+    async operateControl() { operated += 1; href = "https://tokyo-builders.connpass.com/event/400028/complete/"; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+
+  const result = await harness.runFallback({ provider: "connpass", candidate: { event_ref: "connpass-event://event/400028" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/CONNPASSLATCH1", maxSteps: 2, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "failed");
+  assert.equal(result.safe_reason, "effect_unknown");
+  assert.equal(proposals, 2);
+  assert.equal(operated, 1);
+});
+
 test("bounded proposer accepts Peatix while sending only provider and sanitized controls", async () => {
   let request;
   const proposer = createBoundedActionProposer({
