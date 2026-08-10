@@ -86,6 +86,8 @@ test("verified registration becomes one durable Calendar PNG Telegram applied bu
 
   assert.equal(bundle.status, "applied_bundle");
   assert.match(bundle.bundle_id, /^applied-bundle:[0-9a-f]{64}$/);
+  assert.equal(calls.filter(([name]) => name === "set-content").length, 1);
+  assert.equal(calls.some(([name]) => ["goto", "url", "evaluate", "document-open", "document-write", "document-close"].includes(name)), false);
   assert.equal(calls.filter(([name]) => name === "screenshot").length, 1);
   assert.deepEqual(calls.find(([name]) => name === "screenshot")[1], { type: "png", fullPage: true });
   assert.equal(calls.filter(([name]) => name === "calendar-create").length, 1);
