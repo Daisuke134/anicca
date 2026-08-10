@@ -6544,7 +6544,23 @@ method `send`を使える。60秒・caller idempotency keyの一回実送信prob
 計画は実装前に棄却し、次plan `docs/superpowers/plans/2026-08-10-connector-gateway-report-send.md`でtext reportだけを既存Gateway callへ置換し、
 wake IDをidempotency keyとして渡す。raw token配線、retry、queue、Gateway restart、photo変更は0。
 
-### Active remaining TODO SSOT（進捗258。これ以外の残TODO一覧は履歴）
+### O1B-25進捗259（bounded Gateway Connector text delivery GREEN / fresh re-review ship）
+
+Lunaがplan `2026-08-10-connector-gateway-report-send.md`をTDD実装した。初回REDは旧message CLI、60秒timeout/params欠落、
+malformed keyのspawn前拒否欠落、current/historical wake ID未伝達を再現。installed/live-proven Gateway `send`専用senderを追加し、numeric target、
+safe idempotency key、message boundをspawn前検証、60秒timeout、top-level positive IDだけを成功とし、stderr/private値をgeneric errorへ封じた。
+
+初回fresh reviewは、global legacy senderを必須key化したことでevidence/coverage/legacy outboxを壊すCriticalと、scope外Guardian incident keyの
+timeout不安定性Importantを発見。同じLunaが再REDし、legacy sender/Guardianを元のまま残して別Gateway senderを追加した。minimal operationsは
+各wake ID、evidenceは既存event URL SHA、coverageは既存snapshot ID、legacy outboxはwake IDをstable keyとして渡す。Guardian incident変更は
+全除去しscope外へ戻した。re-reviewはCritical 0・Important 0で`ship`。
+
+実差分は10 files、production +46/-12、test +126/-4。4-file soft target超過は、全既存Connector text callerのpartial external effectと
+duplicate notificationを防ぐcompatibility回帰を閉じるために必要で、新service/token/raw Bot API/retry/queue/config/photo変更は0。
+focused+runner/production/native/renderer/outboxを含むSol再実行69/69、全syntax、diff checkはPASS。次の一件はclean push後、CDP stale probe
+cleanup後のofficial foreground wakeを一度実行し、provider discovery回復とcurrent report positive IDを同一runで確認する。
+
+### Active remaining TODO SSOT（進捗259。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

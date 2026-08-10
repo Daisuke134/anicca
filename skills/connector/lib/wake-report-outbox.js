@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { notifyOpenClaw, parseOpenClawMessageId } = require("../../../apps/life-manager/lib/outbound-guardian.js");
+const { notifyOpenClawGateway, parseOpenClawMessageId } = require("../../../apps/life-manager/lib/outbound-guardian.js");
 
 const SAFE_ID = /^[A-Za-z0-9:._-]{1,160}$/;
 const SAFE_REASON = /^[a-z0-9_:-]{1,100}$/;
@@ -97,12 +97,15 @@ async function deliverPendingWakeReports(stateDir, options = {}) {
   const delivered = new Set(deliveries.map((row) => row.wake_id));
   const target = String(options.telegramTarget || "").trim();
   if (!target) return;
-  const send = typeof options.send === "function" ? options.send : notifyOpenClaw;
+  const send = typeof options.send === "function" ? options.send : notifyOpenClawGateway;
   for (const report of reports) {
     if (delivered.has(report.wake_id)) continue;
     let response;
     try {
-      response = await send(reportMessage(report), { telegramTarget: target });
+      response = await send(reportMessage(report), {
+        telegramTarget: target,
+        idempotencyKey: report.wake_id,
+      });
     } catch {
       return;
     }

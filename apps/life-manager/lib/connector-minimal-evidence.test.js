@@ -102,6 +102,10 @@ test("verified registration becomes one durable Calendar PNG Telegram applied bu
       "calendar event ID: google-event-1",
     ].join("\n"),
   );
+  assert.equal(
+    calls.find(([name]) => name === "telegram-message")[2].idempotencyKey,
+    `connector-evidence:${calls.find(([name]) => name === "calendar-create")[1].idempotencyValue}`,
+  );
   assert.equal(calls.find(([name]) => name === "telegram-photo")[2].caption, "Connector::: Verified Technology Event / registered");
 
   const bundleFile = path.join(stateDir, "applied-bundles", `${bundle.bundle_id.slice("applied-bundle:".length)}.json`);

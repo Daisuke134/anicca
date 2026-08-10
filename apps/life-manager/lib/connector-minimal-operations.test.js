@@ -45,6 +45,7 @@ test("operations persist safe history and a positive every-wake Telegram receipt
     assert.deepEqual(duplicate, first);
     assert.equal(sent.length, 1);
     assert.equal(sent[0].options.telegramTarget, "private-target");
+    assert.equal(sent[0].options.idempotencyKey, "wake-20260807-001");
     assert.match(sent[0].message, /^Connector:::/);
     assert.match(sent[0].message, /circuit_open/);
     assert.doesNotMatch(sent[0].message, /private-target/);
@@ -133,8 +134,8 @@ test("a later wake delivers current before one pending historical report", async
       wakeId: "wake-20260808-recovered",
       telegramTarget: "private-target",
       now: () => new Date("2026-08-08T08:30:00.000Z"),
-      async sendMessage(message) {
-        sent.push(message);
+      async sendMessage(message, options) {
+        sent.push({ message, options });
         if (message.includes("providers_exhausted")) throw new Error("historical transport failure");
         return { messageId: 8001 };
       },
@@ -146,8 +147,11 @@ test("a later wake delivers current before one pending historical report", async
     });
 
     assert.equal(sent.length, 2);
-    assert.equal(sent[0].includes("consecutive_failure_limit"), true);
-    assert.equal(sent[1].includes("providers_exhausted"), true);
+    assert.equal(sent[0].message.includes("consecutive_failure_limit"), true);
+    assert.equal(sent[1].message.includes("providers_exhausted"), true);
+    assert.deepEqual(sent.map(({ options }) => options.idempotencyKey), [
+      "wake-20260808-recovered", "wake-20260807-failed",
+    ]);
     assert.deepEqual(result, { telegram_provider_id: "8001" });
     const deliveries = fs.readFileSync(
       path.join(stateDir, "wake-report-deliveries.jsonl"), "utf8",

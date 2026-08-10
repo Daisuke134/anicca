@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { notifyOpenClaw, parseOpenClawMessageId } = require("./outbound-guardian.js");
+const { notifyOpenClawGateway, parseOpenClawMessageId } = require("./outbound-guardian.js");
 
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/;
 const SAFE_REASON = /^[a-z0-9][a-z0-9_:-]{1,99}$/;
@@ -138,7 +138,7 @@ function createMinimalProductionOperations(options = {}) {
   const wakeId = String(options.wakeId || "");
   const telegramTarget = String(options.telegramTarget || "").trim();
   const now = options.now || (() => new Date());
-  const sendMessage = options.sendMessage || notifyOpenClaw;
+  const sendMessage = options.sendMessage || notifyOpenClawGateway;
   if (
     !SAFE_ID.test(wakeId) || !telegramTarget || telegramTarget.length > 200
     || typeof now !== "function" || typeof sendMessage !== "function"
@@ -188,7 +188,7 @@ function createMinimalProductionOperations(options = {}) {
     }));
     async function deliver(pending) {
       if (!pending || !SAFE_ID.test(String(pending.wake_id || ""))) invalid();
-      const response = await sendMessage(reportMessage(pending), { telegramTarget });
+      const response = await sendMessage(reportMessage(pending), { telegramTarget, idempotencyKey: pending.wake_id });
       const providerId = parseOpenClawMessageId(response);
       const delivery = safeDelivery({
         schema_version: 1,
