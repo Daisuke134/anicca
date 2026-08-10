@@ -6609,7 +6609,30 @@ session/target/page作成、schedule変更は0。Item 10B/14/19は未完。次�
 `skills/connector/run.sh`を一度bounded実行し、Peatix parent readbackまたはexact safe failure、dashboard registration増分、Gateway positive ID、
 lock/process/owned target cleanupを実測する。
 
-### Active remaining TODO SSOT（進捗262。これ以外の残TODO一覧は履歴）
+### O1B-25進捗263（Peatix Harness live / completed-control blind spot確定）
+
+push済みcommit `7b72dfcc7`、schedule/Native/healthcheck/Healer/legacy bridge unloaded、Connector process/lockなし、`:9222` healthy、
+clean branch/remote一致をpreconditionにofficial `skills/connector/run.sh`を一度だけforeground実行した。
+`wake-db550678c5bda2cf1f3890bb`はCalendar 2,535ms、Luma discovery 42,460ms、same-page reset 78ms、Connpass discovery
+6,020ms、reset 109ms、Peatix discovery 125,495msで全providerを同じowned page上で通過した。
+
+Peatix先頭3候補はpre-readback後、direct actionが2,793/2,424/2,321msでnon-completedとなり、今回初めてproduction Browser Harnessへ到達した。
+候補1は19msでsafe failure。候補2は59,420ms、最大10 step全てでTerraが同じ`control_4`へ`fill/ax_fill`を返し続け、
+候補3も6,622msのstep 1で同じactionを返してnon-completed。Harness observationはcontrolのlabel/requiredだけで、親が値をfillした後も
+「入力済み」を示すbooleanがないため、各stepがモデルには同じ未完画面に見えることを実evidenceで確定した。private値、URL、candidate identityは
+agent request/resultへ0。全作用はfillだけでsubmit/final confirmation clickは0。
+
+runは`circuit_open / peatix_unknown_required_field / consecutive_failure_count 3`、current Gateway Telegram provider ID `10714`、
+historical recovery ID `10715`。専用read-only Peatix auditはHTTP 200、authenticated true、event link 0、registration marker 0。
+監査targetはexact root targetだけcloseし、記録済みowned target absent、target lease 0、lock/process absent、browser healthy、Git cleanを確認した。
+Provider registration、Calendar write、PNG、applied bundle増分は0。Item 10B/14/19は未完。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-harness-progress-observation.md`はHarness/test 2 filesだけで、値を読まず
+input/select/check groupのcompleted booleanだけを観察し、completed fieldを次action enumから除外する。同一targetを候補間で共有しても
+agent evidenceが`fallback-N/step-N`で上書きされないようin-process連番を付ける。次の一件はこのRED→GREEN、fresh review、push後の一回だけの
+official foreground再wakeである。
+
+### Active remaining TODO SSOT（進捗263。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
