@@ -117,4 +117,5 @@ The runner changes from four to exactly five enumerable keys by adding `capture_
 - [x] Fresh Sol checked null-not-zero truth, safe addition, algebra, exact union, old receipt compatibility, OTel omission
   on unavailable, privacy, finance isolation, and Ponytail scope. Luna fixes only required issues in the same files.
 - [x] Sol reran focused 20/20, CFO 302/302, full `npm test`, syntax, diff, and three-file/42-addition gates.
-  Implementation commit: `1370b19`. Next: CFO-2a2b.4 real local E2E.
+  Implementation commit: `1370b19`. Telegram milestone was delivered by the real Life Manager bot as message `601`.
+  Next: CFO-2a2b.4 real local E2E.
