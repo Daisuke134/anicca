@@ -24698,3 +24698,10 @@
 {"ts":1786322485,"wake_id":"00MSMIAB5B9756A430946546B2","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
 {"ts":1786322613,"wake_id":"00MSMID1PECE3A44EF5E654E53","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paid API earn USDC instant payout [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidat"}
 {"ts":1786322744,"wake_id":"00MSMIFV105BA480476A994544","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786322874,"wake_id":"00MSMIINBB79DA56544ED64B2B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786323003,"wake_id":"00MSMILEPS7F68C22A5EAF4CDA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786323134,"wake_id":"00MSMIO7M2C601988C36624D73","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786323261,"wake_id":"00MSMIQXYZ1BB5BFFBE99C4E0D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786323405,"wake_id":"00MSMIU0Q07F4628BA016A439C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786323532,"wake_id":"00MSMIWR6365D11CBBEDDF4544","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786323660,"wake_id":"00MSMIZI0QA9F2D8557E134390","kind":"narrate","sleep_s":120,"model":"auto"}
