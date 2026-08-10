@@ -68,8 +68,11 @@ pricing, percentage, or report UI in this slice.
 - Genuine RED: the focused test failed because the reconciliation module did not exist.
 - Final scope: exactly two new files, 86 added LOC total (47 production + 39 test), with no dependency or runtime
   mutation.
-- Sol verification: focused 5/5, relevant usage/CFO tests 38/38, CFO 292/292, full `npm test` exit 0, syntax and
-  `git diff --check` pass.
+- Sol verification: focused 5/5, relevant usage/CFO tests 38/38, registered CFO suite 297/297, full `npm test` exit 0,
+  syntax and `git diff --check` pass.
 - Fresh review fix round 1 closed derived-chain validation and accessor evaluation; both findings are ADDRESSED, no new
   breakage, final verdict `ship — Spec ✅`.
+- Controller fix round 2 registered the five reconciliation tests in `test:cfo` exactly once. RED proved the prior CFO
+  suite contained zero of their exact names; GREEN proved all five run inside the 297/297 suite. Fresh scoped review
+  again returned `ship — Spec ✅`.
 - This slice reads and writes no ledger, publishes no OTel span, computes no price, and sends no Telegram message.
