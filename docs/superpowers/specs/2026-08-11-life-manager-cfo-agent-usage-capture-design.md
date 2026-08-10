@@ -78,11 +78,13 @@ For rows at or after the capture cutover, the consumer validates both schemas an
 - `missing_completion_rows`
 - `duplicate_attempt_rows`
 - `conflicting_attempt_rows`
-- `invalid_numeric_rows`
+- `unmatched_completion_rows`
+- `ambiguous_completion_rows`
 
 `success_rows + failed_rows + missing_completion_rows = attempted_rows` must hold. Missing, duplicate, conflicting,
-malformed, truncated, or unread evidence adds a named coverage exception. Until all required sources are fresh and
-`missing_completion_rows=0`, no total-cost label is allowed.
+ambiguous, malformed, truncated, or unread evidence adds a named coverage exception. A nonempty upstream usage-chain
+coverage array adds `usage_chain_incomplete`. Until all required sources are fresh and every exception is zero, no
+total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capture-reconciliation.md`.
 
 ## One-at-a-time delivery
 
@@ -104,4 +106,5 @@ malformed, truncated, or unread evidence adds a named coverage exception. Until 
 4. Missing optional numerics use documented defaults; present invalid values become unavailable/null, never coerced.
 5. Duplicate/conflicting rows cannot increase totals.
 6. Source ledgers remain append-only `0600`; tests emit no prompt, output, token value, path, credential, or owner.
-7. Each implementation slice uses at most three files and no more than 100 gross added LOC.
+7. Each implementation slice uses at most three files and no more than 100 gross added LOC; new CFO tests are
+   registered in the durable `test:cfo` command.
