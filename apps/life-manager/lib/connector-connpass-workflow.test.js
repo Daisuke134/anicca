@@ -73,8 +73,8 @@ test("Connpass discovery reports the ordered eligibility gate counts", async () 
 });
 
 test("Connpass direct action and parent readback use the supplied owned page", async () => {
-  const page = Object.freeze({ page_id: "same-owned-page" });
   const candidate = event(105);
+  const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
   const calls = [];
   const workflow = createConnpassScriptFirstWorkflow({
     async discoverOnPage() { return []; },
@@ -93,6 +93,49 @@ test("Connpass direct action and parent readback use the supplied owned page", a
   });
   assert.deepEqual(await workflow.readProviderState({ page, candidate }), { status: "pending" });
   assert.equal(calls.every((entry) => entry[1] === page), true);
+});
+
+test("Connpass direct action requires exact canonical URL without browser side effects", async () => {
+  const candidate = event(106);
+  const cases = [
+    ["join", `${candidate.canonical_url}join/`],
+    ["complete", `${candidate.canonical_url}complete/`],
+    ["query", `${candidate.canonical_url}?submitted=1`],
+    ["hash", `${candidate.canonical_url}#submitted`],
+    ["wrong-event", "https://tokyo-builders.connpass.com/event/108/"],
+    ["about-blank", "about:blank"],
+    ["missing-url", null],
+    ["throwing-url", "throw"],
+  ];
+  for (const [label, resultingUrl] of cases) {
+    let currentUrl = candidate.canonical_url;
+    let submitCalls = 0;
+    const forbiddenCalls = [];
+    const page = label === "missing-url" ? {} : {
+      url() {
+        if (resultingUrl === "throw") throw new Error("url unavailable");
+        return currentUrl;
+      },
+      goto() { forbiddenCalls.push("goto"); },
+      getByRole() { forbiddenCalls.push("click"); },
+      readCredentials() { forbiddenCalls.push("credentials"); },
+    };
+    const workflow = createConnpassScriptFirstWorkflow({
+      async discoverOnPage() { return []; },
+      async submitOnPage() {
+        submitCalls += 1;
+        currentUrl = resultingUrl;
+        return { status: "registered" };
+      },
+    });
+    assert.deepEqual(
+      await workflow.runDirectAction({ page, candidate }),
+      { status: "failed", safe_reason: "direct_action_unverified" },
+      label,
+    );
+    assert.equal(submitCalls, 1, label);
+    assert.deepEqual(forbiddenCalls, [], label);
+  }
 });
 
 test("Connpass default discovery reuses one page across two calendar months and event details", async () => {

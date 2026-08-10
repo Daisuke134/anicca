@@ -7021,7 +7021,13 @@ pushed commit `b471264ec`のofficial runnerを4 labels unloaded、process/lock 0
 
 runnerの唯一の分岐から、canonical parent stateはregistered/pendingではなかったと確定する。したがってevent pageのinitial application link click後にjoin formへ遷移した状態を既存text readbackがfalse-positive registeredとしており、final `申し込みを確定する`は2 wakesとも未実行。plan `docs/superpowers/plans/2026-08-11-connector-connpass-join-handoff-14c.md`はConnpass workflow production/test 2 filesだけ。direct completedはaction結果registered/pendingかつpage URLがcandidate canonical exactの場合だけとし、join/complete/query/hash/wrong/about:blankはsafe direct failureとして既存bounded Browser Harnessへsame-page handoffする。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗317。これ以外の残TODO一覧は履歴）
+### O1B-25進捗318（Item 14C / Connpass join-form handoff実装完了）
+
+Luna REDはcanonical positiveに加えjoinとexact URL rejection matrixを追加し、現行workflowがjoin/noncanonicalでもcompletedを返すことを1 pass / 2 failで再現した。GREENはsupplied direct action後にowned `page.url()`だけを読み、outcome registered/pendingかつcandidate canonical exactの場合だけcompletedを返す。join/complete/query/hash/wrong-event/about:blank/missing/throwing URLは既存`failed/direct_action_unverified`。guard自身のnavigate/click/credential read 0で、runnerは同じjoin pageを既存bounded Browser Harnessへ渡せる。
+
+最終scopeはConnpass workflow production/test 2 files。Sol独立workflow/provider/runner/production/operations/Harnessは98/98、syntax、diff check PASS。fresh Sol reviewは`ship`。次はpushed codeのofficial wake exact 1回で、Browser Harness handoff、final confirmation Submit最大1、canonical registered/pending、Connpass applied bundleをlive検証する。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗318。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

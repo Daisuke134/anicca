@@ -197,8 +197,16 @@ function createConnpassScriptFirstWorkflow(options = {}) {
       return Object.freeze(result);
     },
     async runDirectAction({ page, candidate }) {
-      const outcome = await submitOnPage(page, exactCandidate(candidate));
+      const selected = exactCandidate(candidate);
+      const outcome = await submitOnPage(page, selected);
+      let currentUrl = "";
+      if (outcome && ["registered", "pending"].includes(outcome.status)) {
+        try {
+          currentUrl = page && typeof page.url === "function" ? String(page.url()) : "";
+        } catch { currentUrl = ""; }
+      }
       return outcome && ["registered", "pending"].includes(outcome.status)
+        && currentUrl === selected.canonical_url
         ? Object.freeze({ status: "completed", method: "connpass_direct_submit" })
         : Object.freeze({ status: "failed", safe_reason: "direct_action_unverified" });
     },
