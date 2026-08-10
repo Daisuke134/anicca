@@ -99,6 +99,17 @@ test("Connpass native rejects an unqualified online label", async () => {
   assert.equal(agentCalls, 1);
 });
 
+test("Connpass native ignores safe-looking controls outside the exact join page", async () => {
+  let agentCalls = 0;
+  const control = { control: "online_nonjoin", kind: "radio", label: "オンライン視聴枠（YouTube） 無料 参加者数 30人", question: "参加枠", required: true };
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) {
+    agentCalls += 1;
+    return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: input.schema.properties.control.enum[0] } };
+  } });
+  assert.deepEqual(await proposer({ provider: "connpass", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { state: "registration_page", controls: [control] } }), { control: control.control });
+  assert.equal(agentCalls, 1);
+});
+
 test("Connpass native fails closed for duplicate safe viewing options", async () => {
   let agentCalls = 0;
   const controls = [
