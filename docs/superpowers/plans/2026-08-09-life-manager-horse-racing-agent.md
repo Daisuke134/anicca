@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - 個人利用のみ。zero-cost public-web ingestionを許可し、raw page/rowのredistribution、public publication、SaaS化をしない。
-- JRA primaryはofficial public pages。JRA robots snapshotは`User-agent:*`とempty `Disallow`、private use/citation境界を記録する。現時点のJRA actual rowは0。
+- JRA primaryはofficial public pages。JRA robots snapshotは`User-agent:*`とempty `Disallow`、private use/citation境界を記録する。現時点のJRA actual result rowは12。
 - NAR primaryはofficial `www.keiba.go.jp`。`robots.txt`の`Crawl-delay: 10`とTodayRaceInfo/DataRoom/DataDownloadのDisallowをmanifestへ保持する。NAR probeのpermission basisは`USER_ATTESTED_PERMISSION`（2026-08-10）、`permission_document_verified=false`であり、一般的なbot許可、redistribution/publication許可、cash execution許可とは解釈しない。
 - NAR officialのdaily/monthly取得はmanual cadenceを守る。dailyは約2分ごとの更新情報をそれより頻繁にpollせず、monthly dataは毎日午前2時頃の更新を基準にする。pre-raceのdaily odds buttonがdisabledなら`NOT_PUBLISHED`としてbounded retryし、failureやfake zeroに変換しない。
 - Evidence classesは`SYNTHETIC_TEST`、`REAL_PUBLIC_WEB_RECORD`、`PUBLIC_WEB_SECONDARY`、`LIVE_SHADOW`、`LIVE_CASH`。HTTP/DOM success、download開始、schema存在だけをrecord completionとしない。
@@ -79,8 +79,8 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 1 | HRA-2F ingest boundary refactor | **complete** | commits `ae56d3524` + `956d1b50d`; focused 24/full 32 PASS |
 | 2 | HRA-2R2 NAR official evidence gate validation | **complete** | `PASS_PRIVATE_SHADOW`; commits `33ef30c1d` + `a289babba` |
 | 3 | HRA-2R1 JRA public-web record | **complete** | 12 actual rows; commits `526381236` + `e79ed1d11` |
-| 4 | HRA-2N NAR official free acquisition component | **ACTIVE** | HTML/curl planner and Mac-local archive contract |
-| 5 | HRA-2R3 per-source index/gate | blocked by source records | JRA official, NAR official, optional secondary fallback rows |
+| 4 | HRA-2N NAR official free acquisition component | **complete** | commits `d22fff7ae..b67198e6`; focused 17/full 49 PASS |
+| 5 | HRA-2R3 per-source index/gate | **ACTIVE** | JRA official, NAR official, optional secondary fallback rows |
 | 6 | HRA-2S observed schema/store | blocked by HRA-2R3 | quarantine three files only |
 | 7 | HRA-3D audit | blocked by HRA-2S | `data_audit.py` and `test_data_audit.py` |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3D | cutoff-safe odds and settled-payback contract |
@@ -292,7 +292,7 @@ Expected: `parsed_row_count>=1` and `REAL_PUBLIC_WEB_RECORD`; HTTP/DOM success a
 
 ## Task 4: HRA-2N NAR official acquisition component
 
-**State:** ACTIVE. HRA-2F and both official source Reality Gates are complete; this task creates only the pure acquisition planner/classifier.
+**State:** COMPLETE. HRA-2F and both official source Reality Gates are complete; this task creates only the pure acquisition planner/classifier.
 
 **Files:**
 - Create: `apps/horse-racing-agent/src/horse_racing_agent/nar_source.py`
@@ -312,20 +312,24 @@ def plan_nar_fetch(now: datetime, today_html: str, monthly_html: str) -> tuple[F
 def classify_download(*, http_status: int, content_type: str, body_sha256: str, previous_sha256: str | None) -> Literal["NEW", "UNCHANGED", "NOT_PUBLISHED", "INVALID"]: ...
 ~~~
 
-- [ ] Step 1: Write RED tests proving URLs are discovered from official HTML, not permanently hardcoded to August 2026; binary endpoints use curl; HTML uses crwl; duplicate hashes return `UNCHANGED`; disabled odds links are omitted; empty/HTML/204 odds responses return `NOT_PUBLISHED`; raw and percent-encoded dot-segment traversal is rejected. URL validation is fail-closed at 4,096 raw path characters and 16 percent-decode rounds; input that exceeds either bound or has not stabilized within the decode bound is rejected.
-- [ ] Step 2: Run RED.
+- [x] Step 1: Write RED tests proving URLs are discovered from official HTML, not permanently hardcoded to August 2026; binary endpoints use curl; HTML uses crwl; duplicate hashes return `UNCHANGED`; disabled odds links are omitted; empty/HTML/204 odds responses return `NOT_PUBLISHED`; raw and percent-encoded dot-segment traversal is rejected. URL validation is fail-closed at 4,096 raw path characters and 16 percent-decode rounds; input that exceeds either bound or has not stabilized within the decode bound is rejected.
+- [x] Step 2: Run RED.
 
 ~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
 rtk python3.12 -m pytest tests/test_nar_source.py -q
 ~~~
 
-- [ ] Step 3: Implement the pure planner/classifier. Enforce HTTPS exact host `www.keiba.go.jp`, decoded path-segment safety with the 4,096-character/16-round fail-closed resource bound, one request per canonical URL, daily polling no faster than 2 minutes, monthly acquisition after the documented approximately 02:00 update, and case-normalized SHA-256 comparison. `previous_sha256` is the caller's prior hash for that request URL.
-- [ ] Step 4: Run focused and full GREEN; commit/push only the two files.
+- [x] Step 3: Implement the pure planner/classifier. Enforce HTTPS exact host `www.keiba.go.jp`, decoded path-segment safety with the 4,096-character/16-round fail-closed resource bound, one request per canonical URL, daily polling no faster than 2 minutes, monthly acquisition after the documented approximately 02:00 update, and case-normalized SHA-256 comparison. `previous_sha256` is the caller's prior hash for that request URL.
+- [x] Step 4: Run focused and full GREEN; commit/push only the two files.
 
 Runtime contract: crwl navigates Today/DataRoom/Monthly HTML. When crwl reports `Page.goto: Download is starting`, curl retrieves the linked ZIP. A disabled daily-odds link creates no fetch request; an empty/HTML/204 response from an attempted odds endpoint is `NOT_PUBLISHED`. Task 4 is pure and does not persist archives: Task 6 owns append-only identity `(source_url, normalized content_sha256)` and supplies the per-URL `previous_sha256`. Race data covers 1998-01 onward; odds cover 2026-03 onward. Payback remains pending until official settlement.
 
+Completion evidence: commits `d22fff7ae..b67198e6`; final focused 17/full 49 tests PASS, compileall and diff-check PASS, local/origin/canonical parity PASS. Fresh Sol review found and Luna closed traversal, identity, cadence, publication-state, and resource-bound defects; scoped re-review is CLEAN. Cash authorization remains false.
+
 ## Task 5: HRA-2R3 per-source Reality Gate index
+
+**State:** ACTIVE. This task indexes accepted evidence without fetching new records or upgrading unobserved secondary candidates.
 
 **File:** create `docs/evidence/horse-racing/reality-gate-index.md`.
 

@@ -6,12 +6,12 @@
 |---|---|
 | Status | **REALITY GATE REQUIRED — LIVE PURCHASE DISABLED** |
 | 対象 | Life Manager financial organ の第8候補 business_id: horse_racing |
-| 現在のactive stage | HRA-2N NAR official acquisition planner（ACTIVE）。HRA-2FとJRA/NAR official Reality GatesはGREEN、cashはfalse |
+| 現在のactive stage | HRA-2R3 per-source Reality Gate index（ACTIVE）。HRA-2NとJRA/NAR official Reality GatesはGREEN、cashはfalse |
 | plan / gate / verification owner | Sol |
 | edit / code / execution owner | Luna |
 | 購入処理 | PurchaseExecutorは常時disabled。HRA-6の全gateなしに有効化しない |
 
-この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。HRA-2F、NAR official 46/456/327274 rows、JRA official 12 result rowsはすべてprivate-shadow gateを通過した。HRA-2N acquisition contractとper-source indexが未完了のためHRA-2Sはまだunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
+この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。HRA-2F、NAR official 46/456/327274 rows、JRA official 12 result rows、HRA-2N acquisition contractはprivate-shadow前提のgateを通過した。per-source indexが未完了のためHRA-2Sはまだunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
 
 ### 現在のevidence table
 
@@ -271,6 +271,8 @@ sequenceDiagram
 | HRA-2F | JRA/NAR official + secondary fallback authority、permission metadata、Mac-local raw non-export、crwl/curl boundary | **complete**。focused 24/full 32 PASS、cash authorization false |
 | HRA-2R-JRA | JRA official actual record + manifest | **complete**。12 actual result rows、PASS_PRIVATE_SHADOW、cash false |
 | HRA-2R-NAR | NAR official: 46 races / 456 horses / 327274 monthly odds / payback 0 pre-settlement | **complete**。PASS_PRIVATE_SHADOW、raw absent、cash false |
+| HRA-2N | NAR official acquisition planner/classifier | **complete**。focused 17/full 49 PASS、bounded URL decode、cash false |
+| HRA-2R3 | per-source Reality Gate index | **ACTIVE**。unobserved secondary candidateをrecordへ昇格しない |
 | HRA-2S | observed schema/local store | **BLOCKED**。HRA-2F + source manifest acceptanceまで不可 |
 | HRA-3D | actual chronological coverage/cutoff audit | **BLOCKED**。historical backtest evidence 0 |
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
