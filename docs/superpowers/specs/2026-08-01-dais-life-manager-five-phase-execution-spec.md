@@ -6120,7 +6120,24 @@ plan `docs/superpowers/plans/2026-08-10-connector-peatix-bounded-coverage.md`は
 今日からday 13、20件×最大5ページ、100 uniqueに限定し、detail/free/open/Calendar gateは変更しない。Submit、production order、registry、
 scheduleは変更せず、このcorrectionのfresh review/live audit完了後にのみPeatix auth/submitへ進む。
 
-### Active remaining TODO SSOT（進捗228。これ以外の残TODO一覧は履歴）
+### O1B-25進捗230（Peatix bounded XHR coverage GREEN / live eligible candidate）
+
+Lunaがplan `2026-08-10-connector-peatix-bounded-coverage.md`をTDD実装し、Peatix discoveryをDOM readinessから
+navigation前に待機する公開`/search/events` responseへ置き換えた。REDは5/11 pass・6 fail、GREENはfocused 11/11、
+Luma/Connpass/Peatix/provider regression 37/37。fresh Sol reviewはCritical 0・Important 0・Minor 0でshipと判定した。
+実装commitは`df31b2dcb`で、provider順、registry、Submit、scheduleには変更を加えていない。
+
+同commitのofficial Connector railを実Google Calendar inventory付き、owned session/target/page各1、external write 0でread-only実行した。
+実aggregateはPeatix `observed 100 → normalized 100 → 14日window 87 → free/open 61 → Calendar-free 22`。
+search順の最初の候補はevent `5075819`、2026-08-21 19:00–20:30 JST、一般無料券`price 0 / status 10 /
+seatsAvailable 45`で、実Calendar非衝突だった。終了後はPeatix target 0、owner lock absentを確認した。診断用NodeのCDP接続だけが
+target/lease cleanup後もevent loopを保持したため、その診断process自身へCtrl-Cしたが、browser/sessionやproduction processは停止していない。
+
+これによりPeatixのeligible candidate探索は閉じた。一方、account auth、Submit、parent readback、Calendar write、PNG、Telegram、
+`applied_bundle`はまだ0なので、Peatixをproduction supportedへ昇格せず`DEFAULT_PROVIDERS = ["luma", "connpass"]`を維持する。
+次cursorは所有アカウントのauthを確立し、event `5075819`を先頭にPeatix Submit→parent readback→evidence chainを最小sliceで閉じる。
+
+### Active remaining TODO SSOT（進捗230。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
