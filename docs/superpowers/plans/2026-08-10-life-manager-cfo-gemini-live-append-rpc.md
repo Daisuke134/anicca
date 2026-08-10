@@ -1,6 +1,6 @@
 # CFO-2a2.4c1 Gemini Live Append RPC Implementation Plan
 
-**Status:** READY — first review fixes applied; fresh re-review required before Luna implementation.
+**Status:** READY — fresh Sol review returned `ship`; ready for Luna implementation.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 
@@ -219,6 +219,7 @@ GEMINI_API_KEY="$GEMINI_API_KEY" bash test/postgres/cfo-provider-usage-real-e2e.
 npm run test:cfo
 npm test
 bash -n test/postgres/cfo-provider-usage-real-e2e.sh
+git add -N migrations/2026-08-10-cfo-model-usage-evidence-live-append-rpc.sql
 git diff --check -- migrations/2026-08-10-cfo-model-usage-evidence-live-append-rpc.sql lib/cfo-model-usage-evidence-migration.test.js test/postgres/cfo-provider-usage-real-e2e.sh
 git diff --numstat -- migrations/2026-08-10-cfo-model-usage-evidence-live-append-rpc.sql lib/cfo-model-usage-evidence-migration.test.js test/postgres/cfo-provider-usage-real-e2e.sh \
   | awk '{ added += $1; files += 1 } END { print "files=" files, "added=" added; exit !(files == 3 && added <= 90) }'
