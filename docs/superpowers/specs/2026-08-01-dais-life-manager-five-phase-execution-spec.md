@@ -6270,7 +6270,20 @@ factory/wake各1、201文字で各0を実測し、Critical 0・Important 0でshi
 Submit→parent readback→Calendar→PNG/SHA→Telegram→immutable applied bundleを同一lineageで実測する。post-click ambiguity時は
 再Submitせず、同じregistrationのreadbackと不足artifact recoveryだけを修復する。
 
-### Active remaining TODO SSOT（進捗239。これ以外の残TODO一覧は履歴）
+### O1B-25進捗240（Peatix official foreground wake / circuit-open diagnosis）
+
+schedule unloadedのままofficial `skills/connector/run.sh`を一度foreground起動した。wake
+`wake-f75b5ddac08c7f35ff9f6a46`のPeatix aggregateは`100 → 100 → 87 → 61 → 21`で、実eligible candidateは存在した。
+先頭3候補はいずれもpre-submit provider readback後にdirect actionがnon-completedとなり、Peatix未対応のBrowser Harness fallbackも
+failed、3連続で`status=circuit_open / safe_reason=consecutive_failure_limit`となった。official runnerはexit 1。
+
+recovery Telegramはpositive provider ID `10466`。新規applied bundle、Calendar write、PNG evidenceは0。runner終了後はConnector process 0、
+lock absent、Connector-owned Peatix page 0で、scheduleはunloadedを維持する。action historyはdirect action内部のsafe reasonを保存しないため、
+現時点ではform/control認識失敗とfinal click後readback ambiguityをdurable evidenceだけで区別できない。再run/再Submitは行わず、次の一件は
+同じowned Peatix accountのdashboard/ticketをread-only測定し、今回の登録有無を先に確定する。登録済みならreceipt/readback recoveryだけ、
+登録0ならfinal Submit直前までのbounded診断で壊れたactionを一つに特定する。
+
+### Active remaining TODO SSOT（進捗240。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
