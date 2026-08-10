@@ -6346,7 +6346,23 @@ fresh Sol reviewは角括弧、leading digit、引用符、backslash、空id fal
 fail-closedを維持し、private出力とscope creepは0。次の一件はschedule unloaded、stable `:9222`、Peatix auth、dashboard count 0を
 preconditionにofficial foreground runnerを再実行し、先頭candidateのregistration→applied bundleを完走させる。
 
-### Active remaining TODO SSOT（進捗245。これ以外の残TODO一覧は履歴）
+### O1B-25進捗246（Peatix foreground wake 3 / organizer privacy radio root cause）
+
+official wake `wake-25b38794d36ad3e2f2933b51`をschedule unloadedで実行した。Peatix aggregateは
+`100 → 100 → 87 → 60 → 21`。先頭3候補はdirect non-completed、Peatix未対応Harness failedで
+`circuit_open / consecutive_failure_limit`、recovery Telegram provider ID `10515`。新規bundle、Calendar、PNGは0、cleanup PASS。
+dashboard `attending_events` countは0で、3候補とも未登録のためpost-click ambiguityはない。
+
+先頭`5075819 / 6536845`のpatched-equivalent診断はspecial ID escaping後にname/emailを正しくfillし、両fieldのDOM intended-value一致と
+HTML validity PASSを確認した。form submit後も`/form`に残り、公開errorは「必須項目にすべて入力してください。」。未選択controlは
+一択radio「確認し同意する。」で、input自体にrequired属性はないが親は`dl.field.required`。公開promptは主催者のprivacy policyを
+読んだ・確認した旨で、Peatix terms、marketing、data-sharing、event questionではない。final confirm clickとregistrationは0。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-organizer-privacy-radio.md`は既存private profileの
+`accept_organizer_privacy=true`を根拠に、この測定済み一択required privacy radioだけを検出・checkする。generic radioや他同意は
+fail-closedを維持する。
+
+### Active remaining TODO SSOT（進捗246。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
