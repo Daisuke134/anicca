@@ -4,6 +4,8 @@
 > superpowers:test-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for
 > tracking. Luna owns production/test edits; Sol owns this plan, review, verification, state, commit, and push.
 
+**Status:** COMPLETE — implementation `7f6424d95`; fresh fix-round review `ship`
+
 **Goal:** Make the existing local one-hour usage runner publish truthful attempt/completion coverage in its immutable
 receipt and existing OTel span, including a forced usage-persistence gap as `missing_completion`, never zero cost.
 
@@ -82,7 +84,7 @@ cfo.local_agent_usage.capture.coverage_exception.count
 
 - If aggregate counts leave the safe-integer range, emit no span. Never add token or cost attributes in this slice.
 
-- [ ] **Step 1: Write the failing behavioral test**
+- [x] **Step 1: Write the failing behavioral test**
 
 Extend the existing runner test with only three compact behaviors:
 
@@ -98,7 +100,7 @@ Extend the existing runner test with only three compact behaviors:
 Name the production change that makes each assertion pass. Update old exact receipt/call/span assertions only where the
 new required reads and fields make them stale; do not broaden unrelated tests.
 
-- [ ] **Step 2: Run RED and record the real failure**
+- [x] **Step 2: Run RED and record the real failure**
 
 Run:
 
@@ -110,7 +112,7 @@ node --test lib/cfo-local-agent-usage-runner.test.js
 Expected: the new assertion fails because `capture_sources` and the capture OTel attributes do not exist. A syntax,
 fixture, or missing-dependency error is not RED; fix the test setup until the intended behavior assertion fails.
 
-- [ ] **Step 3: Implement the minimum runner change**
+- [x] **Step 3: Implement the minimum runner change**
 
 Use the existing source usage path to derive the adjacent attempt path. Parse only complete newline-terminated JSONL
 rows; pass parsed objects to the pure reconciler, which owns schema validation and immutable receipt construction. Run
@@ -118,7 +120,7 @@ the capture pass after existing batch attempts so the second chain read observes
 capture failures isolated per source, union their fixed exceptions into the current top-level receipt, derive aggregate
 span counts from non-null pure receipts once, and deep-freeze the final result with the existing helper.
 
-- [ ] **Step 4: Run GREEN and bounded regression gates**
+- [x] **Step 4: Run GREEN and bounded regression gates**
 
 Run:
 
@@ -136,10 +138,23 @@ git diff --check
 Expected: all commands exit 0. Report exact test counts, production/test added LOC, diffstat, and confirm only the two
 owned files changed. Do not edit docs, commit, push, launchd, live ledgers, OTel configuration, or Telegram.
 
-- [ ] **Step 5: Fresh review and state**
+- [x] **Step 5: Fresh review and state**
 
 Fresh Sol review checks the exact envelopes, post-write ordering, forced missing-coverage proof, ENOENT distinction,
 safe aggregate counts, OTel privacy, existing finance isolation, and Ponytail scope. Luna fixes only load-bearing
 findings in the same two implementation files. After the implementation review passes, Sol independently re-runs the
 gates, records completion in this plan and the parent/child specs as separate controller documentation, commits/pushes
 the complete slice, and advances only to CFO-2a2b.4.
+
+## Completion evidence
+
+- RED: runner 9 tests produced 6 pass / 3 intended failures because `capture_sources` did not exist; no syntax,
+  fixture, or dependency error qualified as RED.
+- Final implementation: exactly the two named files, 49 additions / 14 deletions total; production added 8 LOC and
+  no module, dependency, runner, span store, launchd label, DB, Telegram, or cloud path.
+- GREEN: runner 9/9, related reconciliation/chain/runner 18/18, registered CFO suite 300/300, full npm suite 958/958,
+  syntax and `git diff --check` pass.
+- The forced usage-persistence failure leaves the durable attempt visible as `missing_completion_rows=1` and the same
+  OTel aggregate count; no token or cost attribute is emitted.
+- Fresh review found one weakened span assertion. Luna restored one exact deep-equality contract containing every
+  legacy attribute plus all 12 capture attributes; scoped re-review marked it ADDRESSED with no new breakage.
