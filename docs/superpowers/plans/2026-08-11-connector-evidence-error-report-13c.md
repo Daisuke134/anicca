@@ -45,3 +45,11 @@ Soft target: 2 files; production +5–12 LOC; tests +30–60 LOC.
 - Focused runner and operations; evidence, minimal production, Peatix workflow/store/Harness, native entrypoint; syntax; `git diff --check`.
 - Fresh Sol review for catch scope, error sanitization, exact-once reporting, failure count, cleanup, no retry/Submit, and created/reused non-regression.
 - Update SSOT, commit, push, then run one official foreground recovery wake with schedules unloaded. Item 13 completes only when saved message is reused, photo/final bundle are completed, a positive every-wake report is durable, and cleanup passes.
+
+## Result
+
+- RED reproduced the defect in two tests: a thrown `completeEvidence` error escaped the runner and omitted the terminal wake report.
+- GREEN catches only that call boundary, increments the existing bounded failure count once, and returns the existing `circuit_open / evidence_completion_failed` terminal path. The same wake performs no evidence retry and no cache/direct/Harness Submit.
+- Ponytail reduced the final scope to the two owned files, production `+13/-7` and tests `+59/-10`. No provider, evidence, Calendar, Telegram, browser, state schema, or schedule production code changed.
+- Luna's serialized focused and adjacent suites passed except the unchanged date-dependent Peatix baseline. Sol independently ran the authoritative runner/operations/evidence/production/Harness/entrypoint/contract/outbox set at `63/63` PASS; syntax and `git diff --check` passed.
+- Fresh Sol review returned `ship` with Critical 0 and Important 0. Live acceptance remains the next exact-one official foreground wake with all four schedules unloaded.

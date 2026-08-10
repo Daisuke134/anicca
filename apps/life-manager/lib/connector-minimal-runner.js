@@ -272,13 +272,19 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             });
             if (!saved || saved.status !== "saved") invalid();
           }
-          const bundle = await deps.completeEvidence({
-            provider,
-            candidate: selected,
-            page: owned.page,
-            providerState,
-            repairedActions,
-          });
+          let bundle;
+          try {
+            bundle = await deps.completeEvidence({
+              provider,
+              candidate: selected,
+              page: owned.page,
+              providerState,
+              repairedActions,
+            });
+          } catch {
+            consecutiveFailures += 1;
+            return finish("circuit_open", "evidence_completion_failed");
+          }
           if (!bundle || typeof bundle !== "object" || Array.isArray(bundle)) {
             return finish("circuit_open", "evidence_result_invalid");
           }
