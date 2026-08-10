@@ -134,7 +134,9 @@ function createMinimalEvidenceChain(options = {}) {
     async completeEvidence(input = {}) {
       const provider = providers[input.provider];
       if (
-        !provider || !input.page || typeof input.page.setContent !== "function" || typeof input.page.screenshot !== "function"
+        !provider || !input.page || (input.provider === "peatix"
+          ? typeof input.page.goto !== "function" || typeof input.page.url !== "function" || typeof input.page.evaluate !== "function"
+          : typeof input.page.setContent !== "function") || typeof input.page.screenshot !== "function"
         || !input.providerState || !provider.states.includes(input.providerState.status)
       ) invalid();
       const candidate = input.candidate;
@@ -147,7 +149,21 @@ function createMinimalEvidenceChain(options = {}) {
       const venue = text(candidate.venue_address || candidate.venue_name || "See event page", 2_000);
       const observedAt = exactInstant(now());
 
-      try { await input.page.setContent(receiptHtml(input.provider, input.providerState.status, candidate.event_ref)); } catch { invalid(); }
+      const receipt = receiptHtml(input.provider, input.providerState.status, candidate.event_ref);
+      if (input.provider === "peatix") {
+        try {
+          await input.page.goto("about:blank", { waitUntil: "domcontentloaded", timeout: 30_000 });
+          if (String(input.page.url()) !== "about:blank") invalid();
+          const rendered = await input.page.evaluate((html) => {
+            document.open(); document.write(html); document.close();
+            const root = document.querySelector("body > dl");
+            return root !== null && document.querySelectorAll("body > dl > dt").length === 3 && document.querySelectorAll("body > dl > dd").length === 3;
+          }, receipt);
+          if (rendered !== true) invalid();
+        } catch { invalid(); }
+      } else {
+        try { await input.page.setContent(receipt); } catch { invalid(); }
+      }
       const screenshot = await input.page.screenshot({ type: "png", fullPage: true });
       if (
         !Buffer.isBuffer(screenshot) || screenshot.length < 5_000
