@@ -24907,3 +24907,10 @@
 {"ts":1786350556,"wake_id":"00MSMYZYUSDD8E5F05E124404F","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid API marketplace for AI services USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced"}
 {"ts":1786350684,"wake_id":"00MSMZ2PPC143F0879B72B4125","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786350816,"wake_id":"00MSMZ5JROB2780180087047D3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786350951,"wake_id":"00MSMZ8FLFB7963C22E0274104","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786351081,"wake_id":"00MSMZB86D557F272790464E6E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786351212,"wake_id":"00MSMZE0QB1321C4A72BF64258","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786351342,"wake_id":"00MSMZGTDP3898AA942CA34FAF","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786351472,"wake_id":"00MSMZJLUF7B948EACBDA94222","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana gig platform pay USDC microtasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the "}
+{"ts":1786351612,"wake_id":"00MSMZMLE8E18D491C4A914E5A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786351746,"wake_id":"00MSMZPH1N3F9A851A0ECA4937","kind":"narrate","sleep_s":120,"model":"auto"}
