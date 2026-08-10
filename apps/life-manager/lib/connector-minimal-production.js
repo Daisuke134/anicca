@@ -14,6 +14,7 @@ const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js"
 const { createMinimalProductionOperations } = require("./connector-minimal-operations.js");
 const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js");
 const { createConnpassScriptFirstWorkflow } = require("./connector-connpass-workflow.js");
+const { createPeatixDiscoveryWorkflow } = require("./connector-peatix-workflow.js");
 const { readLumaFormProfile } = require("./luma-form-profile.js");
 const {
   createBoundedActionProposer,
@@ -33,6 +34,7 @@ const LUMA_DISCOVERY_URL = "https://luma.com/tokyo?k=p";
 const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
 const LUMA_WORKFLOW_VERSION = "luma_registration_v1";
 const CONNPASS_WORKFLOW_VERSION = "connpass_registration_v1";
+const PEATIX_WORKFLOW_VERSION = "peatix_registration_v1";
 const LUMA_PAGE_STATE = "registration_page_v1";
 const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
 
@@ -123,6 +125,7 @@ function createProductionCalendarReader(options = {}) {
 function createProductionProviderRouter(options = {}) {
   const lumaWorkflow = options.lumaWorkflow;
   const connpassWorkflow = options.connpassWorkflow;
+  const peatixWorkflow = options.peatixWorkflow;
   const actionCache = options.actionCache;
   const browserHarness = options.browserHarness;
   const performAction = options.performAction;
@@ -134,6 +137,9 @@ function createProductionProviderRouter(options = {}) {
     || !connpassWorkflow || typeof connpassWorkflow.discoverCandidates !== "function"
     || typeof connpassWorkflow.runDirectAction !== "function"
     || typeof connpassWorkflow.readProviderState !== "function"
+    || (peatixWorkflow != null && (typeof peatixWorkflow.discoverCandidates !== "function"
+      || typeof peatixWorkflow.runDirectAction !== "function"
+      || typeof peatixWorkflow.readProviderState !== "function"))
     || !actionCache || typeof actionCache.replay !== "function"
     || typeof actionCache.saveVerifiedRepair !== "function"
     || !browserHarness || typeof browserHarness.runFallback !== "function"
@@ -141,11 +147,15 @@ function createProductionProviderRouter(options = {}) {
   ) invalid();
 
   function selected(input) {
-    if (!input || !["luma", "connpass"].includes(input.provider)) invalid();
+    if (!input || !["luma", "connpass", "peatix"].includes(input.provider)) invalid();
+    const workflow = input.provider === "luma" ? lumaWorkflow
+      : input.provider === "connpass" ? connpassWorkflow : peatixWorkflow;
+    if (!workflow) invalid();
     return Object.freeze({
       input,
-      workflow: input.provider === "luma" ? lumaWorkflow : connpassWorkflow,
-      workflowVersion: input.provider === "luma" ? LUMA_WORKFLOW_VERSION : CONNPASS_WORKFLOW_VERSION,
+      workflow,
+      workflowVersion: input.provider === "luma" ? LUMA_WORKFLOW_VERSION
+        : input.provider === "connpass" ? CONNPASS_WORKFLOW_VERSION : PEATIX_WORKFLOW_VERSION,
     });
   }
 
@@ -251,6 +261,11 @@ function createMinimalProductionDependencies(options = {}) {
     now,
     onDiscoveryAudit: operations.recordConnpassDiscoveryAudit || (() => {}),
   });
+  const peatixWorkflow = options.peatixWorkflow || createPeatixDiscoveryWorkflow({
+    now,
+    onDiscoveryAudit: operations.recordPeatixDiscoveryAudit || (() => {}),
+    readAttendeeProfile: () => options.peatixAttendeeProfile,
+  });
   const actionCache = options.actionCache || createConnectorActionCache({
     path: path.join(stateDir, "action-cache.json"),
   });
@@ -272,6 +287,7 @@ function createMinimalProductionDependencies(options = {}) {
   const providerRouter = options.providerRouter || createProductionProviderRouter({
     lumaWorkflow,
     connpassWorkflow,
+    peatixWorkflow,
     actionCache,
     browserHarness,
     performAction: browserHarness.performAction,
