@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3.3b1 complete; CFO-2a3.3b2 live local cutover is next |
+| Status | COMPLETE — CFO-2a3 closed by one real local launchd run; parent continues at CFO-2a3b |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Runtime | Local first; existing hourly launchd remains unchanged until real E2E passes |
+| Runtime | Local; the one existing hourly launchd now runs the verified CFO worktree after real E2E passed |
 | First provider | Google Cloud monthly invoice delivered to the already-authenticated local Gmail account |
 | Excluded now | BigQuery billing export, new database, per-business allocation, Codex/Claude subscriptions, Telegram wording |
 
@@ -122,7 +122,7 @@ allocation so narrower business totals can be derived honestly.
   - [x] **CFO-2a3.2a — Locator.** Find the latest exact Google invoice and return only safe attachment locator
         metadata. No download or parsing. Plan:
         `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-gmail-locator.md`.
-  - [ ] **CFO-2a3.2b — Download, parse, append.** Use the locator once, private temporary PDF, existing
+  - [x] **CFO-2a3.2b — Download, parse, append.** Use the locator once, private temporary PDF, existing
         `pdftotext`, CFO-2a3.1 normalizer, and one immutable local receipt; no scheduler wiring.
     - [x] **CFO-2a3.2b1 — Private download.** Download the located PDF once to a caller-owned absolute private path
           and return only frozen transfer metadata. No file reading, parsing, hashing, persistence, or scheduling.
@@ -130,18 +130,18 @@ allocation so narrower business totals can be derived honestly.
     - [x] **CFO-2a3.2b2 — Parse and append.** Verify the downloaded file, extract locally with `pdftotext`, normalize
           through CFO-2a3.1, append one deduplicated immutable receipt, and always remove temporary content. Plan:
           `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-local-capture.md`.
-- [ ] **CFO-2a3.3 — Real E2E and hourly publication.** Read the latest real invoice without sending Telegram, prove
+- [x] **CFO-2a3.3 — Real E2E and hourly publication.** Read the latest real invoice without sending Telegram, prove
       the normalized total matches the PDF arithmetic, prove rerun dedupe and source immutability, then publish only
       confirmed/unresolved aggregate counts through the existing hourly runner. Close CFO-2a3.
   - [x] **CFO-2a3.3a — Isolated real E2E.** Actual authenticated Gmail PDF, actual `pdftotext`, independent
         arithmetic, normalized total, immutable dedupe, modes, raw-data exclusion, and cleanup all pass without
         sending or changing live state.
-  - [ ] **CFO-2a3.3b — Hourly aggregate publication.** Compose the completed local source into the existing hourly
+  - [x] **CFO-2a3.3b — Hourly aggregate publication.** Compose the completed local source into the existing hourly
         runner and publish only confirmed/unresolved aggregate state; never relabel it as a reconciled business cost.
     - [x] **CFO-2a3.3b1 — Counts-only summary.** Add exact confirmed/unresolved/unavailable counts to the existing
           redacted hourly stdout/return without changing Telegram or launchd. Plan:
           `docs/superpowers/plans/2026-08-11-life-manager-cfo-provider-billing-hourly-summary.md`.
-    - [ ] **CFO-2a3.3b2 — Live local cutover.** Run isolated no-send main E2E, then update the one existing launchd
+    - [x] **CFO-2a3.3b2 — Live local cutover.** Run isolated no-send main E2E, then update the one existing launchd
           runtime only after rollback/readback gates pass; prove one real autonomous hourly receipt and counts line.
           Plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-provider-billing-live-cutover.md`.
 - [ ] **CFO-2a3b — Provider dimensions and allocation.** Obtain project/service/SKU dimensions from an official
@@ -273,3 +273,21 @@ carry request/token correlation; no fake billing amount is created from spans.
   amount, hash, scope, account, path, or provider error enters stdout. No launchd change occurred in b1.
 - A fresh Sol reviewer could not be allocated because the collaboration service returned `agent thread limit
   reached`; no independent reviewer result is claimed.
+
+## 16. CFO-2a3.3b2 completion evidence
+
+- The first live bootstrap correctly failed RED because the target worktree had not installed an already-declared
+  runtime dependency. Sol immediately restored both old plist paths and reloaded the original job before diagnosis;
+  no finance stdout, Telegram message, or provider record was produced by that attempt.
+- Luna ran only the existing lockfile install: tracked LOC and manifest/lock changes were zero. Exact target-CWD
+  resolution proved `@opentelemetry/api@1.9.1`; focused usage-runner tests passed `9/9` and CFO tests `320/320`.
+- Sol changed only `ProgramArguments[2]` and `WorkingDirectory` to the same verified worktree, preserving the one
+  launchd label, `RunAtLoad=true`, 3600-second interval, four environment keys, and existing stdout/stderr paths.
+- The single bootstrap run completed with exit `0`. Its one new redacted stdout line was finance `quiet` and provider
+  billing `confirmed_unresolved / 1 / 1 / 0`; stderr added zero bytes and forbidden account/invoice/hash/path/error/
+  secret patterns were absent. `quiet` proves delivery dedupe rather than a fake send.
+- Live private state contains exactly one normalized `provider_billed` Google Cloud JPY record, mode `0600`, under
+  fixed `0700` directories. No other file, PDF, text, or temp artifact remains. Values, source references, and private
+  identifiers were not printed.
+- CFO-2a3 is closed. CFO-2a3b is the next parent item; no new DB, scheduler, service, wrapper, retry, forced Telegram
+  duplicate, or unrelated npm audit upgrade was added.

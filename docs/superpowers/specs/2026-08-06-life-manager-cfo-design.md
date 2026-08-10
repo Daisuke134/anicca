@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a3.3b1 complete; CFO-2a3.3b2 live local cutover is next |
+| Status | M2 ACTIVE — CFO-2a3 complete; CFO-2a3b provider dimensions/allocation is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a3.3b2: cut the existing local launchd loop over and prove one autonomous real run** |
+| First unfinished item | **CFO-2a3b: confirm provider-supported dimensions and preserve an unallocated remainder** |
 
 ## 1. Overview — What and Why
 
@@ -941,7 +941,8 @@ top-level seven-step sequence.
 
 Current scheduler audit: the broken legacy `ai.anicca.cfo-daily` and
 `ai.anicca.life-manager-financial-report` jobs are booted out, while their plist files remain available. Exactly one
-`ai.anicca.life-manager-cfo-hourly` job is loaded and its first two autonomous runs both exited `0`.
+`ai.anicca.life-manager-cfo-hourly` job is loaded from the verified CFO worktree at a 3600-second interval; its
+latest autonomous real Moneytree/Gmail/provider-billing run exited `0`.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
@@ -965,7 +966,7 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       five one-at-a-time local slices: strict provider numerics, producer write-ahead attempt, pure reconciliation,
       hourly publication, then real E2E/close. Child SSOT:
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-agent-usage-capture-design.md`.
-- [ ] **CFO-2a3** Add billing-export/invoice reconciliation; confirmed cost supersedes provisional cost without
+- [x] **CFO-2a3** Add billing-export/invoice reconciliation; confirmed cost supersedes provisional cost without
       deleting either record, and unexplained differences remain visible. Deliver it local-first as a pure contract,
       existing-`gog` Gmail/PDF source, then real read-only E2E/hourly publication. No BigQuery export, new DB, or
       scheduler is required. Child SSOT:
