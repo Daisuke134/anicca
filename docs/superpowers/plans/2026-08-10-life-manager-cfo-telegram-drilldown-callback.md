@@ -108,7 +108,7 @@ git diff --check
 
 Expected: all exit `0`; exactly three files changed; changed production LOC <=90.
 
-- [ ] **Step 5: Fresh review and real no-send E2E**
+- [x] **Step 5: Fresh review and real no-send E2E**
 
 Fresh Sol review checks only Critical/Important: wrong-owner reads, mismatched snapshot rendering, unvalidated money,
 duplicate/new Telegram messages, private output, callback acknowledgement, and plan/LOC drift. Sol then uses the real
@@ -123,9 +123,14 @@ added production lines. The first fresh review found one Important owner-lookup 
 HTTP regression and contained that lookup so the callback still receives one fixed answer without edit, send, or raw
 logging. Re-review returned `ship — Spec ✅`. A real owner mapping plus real immutable Supabase snapshot no-send E2E
 returned the exact requested accounts view with one intercepted edit, one intercepted answer, zero sends, and no
-private output. Step 5 remains open only for the actual Telegram tap after deploying this reviewed webhook build.
+private output. The current production package lives on the unrelated-history `canonical/main:apps/life-manager`, so
+the reviewed callback was ported there through the separate 99-production-LOC plan
+`2026-08-10-cfo-telegram-callback-production-port.md`. PR #1587 merged as `5541c4738`; Railway deployed that exact
+commit successfully. A real delivery receipt and immutable snapshot then passed the production webhook path: the same
+Telegram provider message changed to accounts and was restored to summary, with zero new messages and zero application
+error logs. Telegram Web was not logged in, so no human tap is fabricated; the real provider callback effect is proven.
 
-- [ ] **Step 6: Close**
+- [x] **Step 6: Close**
 
 Update this plan and the parent CFO spec with RED/GREEN/review/E2E evidence, commit, and push. Make the single hourly
 local launchd loop the only active item.
@@ -135,3 +140,5 @@ local launchd loop the only active item.
 An existing CFO report button deterministically opens accounts, accuracy, explanation, or summary for the same owner,
 date, and revision in the same Telegram message. No amount comes from callback data or model prose, no new message is
 created, and a wrong owner or wrong snapshot can never be displayed.
+
+This callback slice is **COMPLETE**. The single hourly local launchd loop is the first unfinished CFO-1i slice.

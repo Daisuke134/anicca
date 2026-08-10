@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PRODUCT STAGE 7 ACTIVE — real Moneytree reader complete; Telegram detail callbacks next |
+| Status | PRODUCT STAGE 7 ACTIVE — Telegram detail callbacks live; one hourly local loop next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -111,15 +111,14 @@ flowchart TD
     OWNER --> DETAILS[Accounts / accuracy / explanation]
 ```
 
-Current boundary: the Moneytree read, reconciliation, immutable snapshot, renderer, no-send preview, real Telegram
-delivery, durable provider receipt, and launchd-callable local reader are proven. The first unfinished `CFO-1i` slice
-is the existing Telegram detail-button callback plan at
-`docs/superpowers/plans/2026-08-10-life-manager-cfo-telegram-drilldown-callback.md`. The callback alone reuses the
-existing public bot webhook because Telegram sends button taps there; report production and hourly scheduling remain
-local. Its implementation, focused `18/18`, CFO `252/252`, full tests, real-snapshot no-send E2E, and fresh
-`ship — Spec ✅` review are complete; the only callback evidence still open is deployment plus one real Telegram tap.
-After that tap works, `CFO-1i` installs one hourly local trigger and closes only after two consecutive autonomous
-real-data successes.
+Current boundary: Moneytree read, reconciliation, immutable snapshot, renderer, no-send preview, real Telegram
+delivery/receipt, launchd-callable local reader, and detail callbacks are proven. The callback bridge is live in the
+current production `apps/life-manager` package through PR #1587 / merge commit `5541c4738`; Railway deployed that
+exact commit. A real delivery receipt and immutable snapshot changed the same Telegram provider message to accounts
+through the production webhook and restored summary, with zero new messages and zero application error logs. Telegram
+Web was not logged in, so this evidence is a real provider callback-path E2E rather than a fabricated human tap.
+Report production remains local. The first unfinished `CFO-1i` slice is now exactly one hourly local launchd trigger,
+followed by two consecutive autonomous real-data successes.
 
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
@@ -910,8 +909,10 @@ top-level seven-step sequence.
       `item.result.structured_content`, and passes it to the existing adapter without asking an LLM to copy a financial
       number. Its final real run returned one connected account with exit `0`; focused `7/7`, CFO `249/249`, the full
       test command, and fresh `ship — Spec ✅` review passed. The existing local connector-host bridge remains
-      unchanged because its measured contract is Calendar/routes only. The first unfinished slice is now wiring the
-      existing CFO detail buttons to real callback handling. Then install exactly one local hourly launchd loop for
+      unchanged because its measured contract is Calendar/routes only. The detail callbacks are complete and live:
+      the main-history production bridge passed focused `2/2`, real-snapshot no-send E2E, fresh `ship — Spec ✅`,
+      exact-commit Railway deployment, and a real same-message provider edit/restore through production. The first
+      unfinished slice is now installing exactly one local hourly launchd loop for
       the current `apps/life-call` CFO path. It sends one daily full report plus meaningful-change/action reports and
       stays quiet when unchanged. Two consecutive scheduled real-data runs without manual repair close M1 and
       owner-facing Product Stage 7.
