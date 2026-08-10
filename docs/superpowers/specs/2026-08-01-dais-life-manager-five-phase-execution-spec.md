@@ -6901,7 +6901,11 @@ Item 10B/11 acceptance後の次active gateはItem12。live recoveryはSubmit 0�
 
 corruption matrixはinvalid JSON/extra key、wrong provider/event/URL hash、forged/malformed receipt、malformed/mismatched artifact ref、missing receipt、artifact bytes/SHA mismatch、SHA/ref/receiptが内部整合するnon-PNG、file/parent symlinkを固定し、全caseでpage/Calendar/Telegram/bundle作用0。最終2-file差分はproduction +109/-59、test +128/-2。Luna focused/adjacent、Sol独立relevant 43/43、syntax、diff checkがPASS。変更外baselineはPeatix date fixture 19/20、native旧provider期待15/17で同一。fresh Solは初回Important 3件と追加matrix 1件をfix-first後、最終re-review `ship`。12Aは完了したがItem12 checkboxは12BのTelegram message/photo/final bundle recoveryと四境界matrixまで未完。scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗295。これ以外の残TODO一覧は履歴）
+### O1B-25進捗296（Item 12B / Telegram・final bundle recovery plan）
+
+次active sliceは12B。現chainはTelegram message/photoのpositive IDをfinal bundleにだけ保存するため、message成功後のphoto failureまたは両方成功後のbundle write failureで、recreated chainが先行deliveryを再送する。Ponytailで新transport/DB/queue/retry/serviceを棄却し、12Aのevent identity、checkpoint root、`immutableJson`、positive ID parser、Calendar independent readbackを再利用する。plan `docs/superpowers/plans/2026-08-11-connector-evidence-recovery-12b.md`はminimal evidence production/testの2 filesだけをLuna ownershipとし、exact immutable message/photo receiptを追加する。checkpointはtarget、message/caption、title、venue、attendee、ticket ID、canonical URL、raw PNG/private valueを保存せず、provider/event/URL hash/receipt/artifact/Calendar identityとpositive delivery IDだけをbindする。recreated chainはprovider evidenceと現在Calendarを毎回検証し、保存済みmessage/photoをskipして不足stageだけを送る。final bundleは最初の成功Calendar timestampと両positive IDからdeterministicに再構成し、既存fileとbyte-identicalなら同一bundleを返す。runnerの次candidate continuationはItem13まで前倒ししない。Item12は四境界fixtureがregistration 1、Calendar 1、bundle 1、Submit 0を満たすまで未完、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗296。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
