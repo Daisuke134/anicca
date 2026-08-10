@@ -104,8 +104,11 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       probe without a paid provider, and report the current missing attempt ledgers as `capture_not_started`, not ready.
       Commit `7e79c33`; E2E twice; producer boundaries 2/2; CFO 302/302; full pass; one file `+7/-6`; fresh Sol: ship.
       Plan: `2026-08-11-life-manager-cfo-agent-usage-capture-real-e2e.md`.
-- [ ] **CFO-2a2b.5 — local producer cutover:** make the active managed local loops use the reviewed attempt/completion
-      producer, then require new real rows before CFO calls capture complete. Do not infer rollout from a feature branch.
+- [ ] **CFO-2a2b.5a — active numeric truth:** port reviewed commit `82a3b349` onto the newer active runner without
+      replacing its later Hermes fixes. Plan: `2026-08-11-life-manager-cfo-active-runner-numeric-truth.md`.
+- [ ] **CFO-2a2b.5b — active attempt/completion cutover:** port reviewed commits `ef233a90` + `a0fe0c35`, then require
+      a newly triggered real managed loop to write a new attempt and same-ID completion before CFO calls capture ready.
+      Do not infer rollout from a feature branch.
 
 ## Acceptance gates
 
