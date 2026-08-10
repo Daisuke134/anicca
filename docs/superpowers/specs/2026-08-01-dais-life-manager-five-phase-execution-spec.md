@@ -6883,7 +6883,11 @@ review指摘をRED 18/20で再現後、active eventの`extendedProperties`と`pr
 
 pushed commit `ae8837498`のschedule-unloaded official wake `wake-57a417724891bb095e4b864b`は、Luma→Connpass後のPeatix discoveryで作成済みCalendar intervalのexact same-event hashだけを自己衝突から除外し、original `peatix-event://event/5075819`へ戻った。navigate 209ms、parent pre-readback `registered` 17ms、provider cache/direct/Harness Submit actionは全0。Google Calendar private idempotency readbackはevent exact 1でduplicate create 0。immutable applied bundleは2→3へ増え、bundle `applied-bundle:cb4be9afc9d0d55212c84908b7483dfd964ea6b5eefaff7a20c89b180e9759b0`、mode 0600、PNG 16,901 bytes・bundle SHA exact一致・mode 0600、Calendar ID/readback、Telegram message positive ID `10971`、photo positive ID `10973`を同一lineageで保存した。wake reportも`applied_bundle`、delivery positive ID `10975`。exit 0後process/lock 0、active target leaseなし、CDP healthy、Git clean/upstream 0/0。これによりItem 10B、Item 11、Item19のPeatix substageをacceptする。scheduleはItems10〜16完了までunloadedを維持し、次の一件はItem12の各partial boundary recovery fixtureとduplicate Submit 0の証明。
 
-### Active remaining TODO SSOT（進捗291。これ以外の残TODO一覧は履歴）
+### O1B-25進捗292（Item 12A / ticket・PNG・Calendar recovery plan）
+
+Item 10B/11 acceptance後の次active gateはItem12。live recoveryはSubmit 0、Calendar 1、bundle 1まで閉じたが、途中wakeでreceipt render/provider evidenceとTelegramが再実行され、「不足artifactだけを補完」のfixture契約は未完。Ponytailで既存provider storeの`readExternalReceipt`/`readArtifact`、Calendar private idempotency/readback、mode 0600 atomic stateを再利用し、Item12を2 sliceへ分ける。先頭12A plan `docs/superpowers/plans/2026-08-10-connector-evidence-recovery-12a.md`はminimal evidence production/testの2 filesだけで、provider ticket/PNG成功後とCalendar readback成功後のexact checkpointを追加する。recreated chainは保存済みreceipt/artifactを検証してpage render/screenshot/storeを0、既存Calendarを検証してcreateを0にする。title、venue、attendee、target、ticket ID、canonical URL、raw page/PNG/private valueはcheckpointへ保存しない。Telegram/photo/final bundle recoveryは次12Bまで前倒しせず、Item12 checkboxは未完、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗292。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
