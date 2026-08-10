@@ -6827,7 +6827,15 @@ fresh Sol re-reviewは追加Important 1件を発見した。30秒deadline判定�
 
 REDはhidden finalと10ms delayed registrationが2/2 FAIL、追加REDはnever-resolving readbackが旧実装でbounded completion不能、runnerは`effect_unknown`後も次候補へ進むことを再現した。最終GREENはHarness 42/42、runner 15/15、minimal production 10/10、Sol独立expanded adjacent 108/108、全changed JS syntax、diff checkがPASS。全Connectorは304/307 PASSで、残る3件はclean HEADでも同一のlegacy provider cursor期待値2件とrequired-email fixture 1件、新規FAIL 0。fresh Sol re-reviewはCritical 0・Important 0で`ship`。変更は既存Harness/test、minimal runner/test、selector fixtureの5 filesだけで、新module/service/stateは0。implementation/test中のbrowser/model/provider/Calendar/evidence/Telegram/private profile/schedule/launchd作用0。Item 10B/14/19は未完。次の一件はcommit/push後のclean preflightを通し、schedule unloadedのofficial foreground wakeを1回実行してparent `registered|pending`、durable `applied_bundle`、Calendar/PNG/Telegram、exact cleanupまたは次safe boundaryを実測する。
 
-### Active remaining TODO SSOT（進捗280。これ以外の残TODO一覧は履歴）
+### O1B-25進捗281（Peatix live registration / real ticket readback boundary）
+
+push済みcommit `45614f420`、Git/remote一致、4 Connector labels unloaded、lock/process absent、`:9222` healthyをpreconditionにofficial foreground wakeを1回実行した。wake `wake-877cc479184926f7e70c1d65`はCalendar `3470ms`、Luma `38292ms`、Connpass `4684ms`、Peatix discovery `72844ms`で全てsuccess。auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/55/18`。Peatix候補1はpre-readback、cache、direct `2752ms`の後、Browser Harnessを`35195ms`実行した。
+
+最終reportは`circuit_open / effect_unknown / 1`、Telegram provider ID `10906`。修復どおり次候補navigation/submitは0で、曖昧外部作用後の重複をliveで防いだ。Calendar/PNG/applied bundle増分0、owned target/process/lockはcleanupされた。専用read-only CDP targetでPeatix実dashboardを監査するとauthenticated true、新規`https://peatix.com/event/5075819/ticket`と同一event attendance linkがexactly 1で、実申込成功が確定した。
+
+実success ticket pageはstrict同一event URL、`body.webticket` 1、`section.ticket` 1、`#qr-code img.js-qrcode-image` 1。public ticket IDとlegacy registration markerはDOMにない。canonical event pageは同一event `/ticket` visible link 1、checkout control 0、legacy marker 0。現parent readerはこの実Peatix success shapeを未認識なため30秒settlementが正しく`effect_unknown`へ停止した。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-ticket-readback.md`は既存Peatix provider/testの2 filesだけで、strict同一event canonical ticket linkまたはticket shellをparent `registered`へ変換し、再Submit 0で既存成功をCalendar/PNG/Telegram/applied bundleへ続ける。Item 10B/14/19は実registrationのみ達成、bundle acceptanceは未完、scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗281。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
