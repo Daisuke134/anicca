@@ -43,3 +43,11 @@ Add one private helper that starts an exact `page.waitForURL` before clicking, w
 - `git diff --check`.
 - Fresh Sol correctness review, then SSOT update, commit, push, and one official foreground wake with schedule unloaded.
 
+## Result
+
+- RED reproduced the live defect: delayed ticket navigation returned `form_navigation_failed` under the old immediate URL check.
+- GREEN starts the strict `waitForURL` before each click and validates the same event and expected `/form` or `/confirm` step after `domcontentloaded` within 30 seconds.
+- Missing `waitForURL` and wrong-event navigation fail closed before later form/final actions.
+- Luna: provider 13/13 and planned adjacent 72/72 PASS. Sol: expanded adjacent 75/75 PASS, both JavaScript syntax checks PASS, `git diff --check` PASS.
+- Fresh Sol review: `ship` (Critical 0, Important 0).
+- Final implementation diff: provider +11/-4, tests +29/-2. No browser, model, provider submit, Calendar, evidence, Telegram, state/profile, schedule, or launchd action occurred during implementation or test.
