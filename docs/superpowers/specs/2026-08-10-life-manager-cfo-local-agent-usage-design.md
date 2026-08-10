@@ -212,8 +212,8 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 | 2a2a.5b1 ✅ | Immutable batches atomically couple normalized events with prior/current cursor state | 3 files, +61/-1 LOC |
 | 2a2a.5b2a ✅ | Read one immutable chain, dedupe transitions/events, and return the last durable cursor | 3 files, +100/-1 LOC |
 | 2a2a.5b2b ✅ | Read both source ledgers once, resume from durable cursors, and publish the next batches | 3 files, +92/-1 LOC |
-| 2a2a.5b2c NEXT | Invoke that runner from the existing local hourly loop without changing Telegram copy | <=3 files, <=100 added LOC |
-| 2a2a.5c | One content-free internal OTel batch span links checkpoint and counts; it is not token truth | <=3 files, <=100 added LOC |
+| 2a2a.5b2c ✅ | Invoke that runner from the existing local hourly loop without changing Telegram copy | 2 files, +17/-3 LOC |
+| 2a2a.5c NEXT | One content-free internal OTel batch span links checkpoint and counts; it is not token truth | <=3 files, <=100 added LOC |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
 
 ## Acceptance

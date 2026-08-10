@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Execute checkbox steps in order.
 
-**Status:** GREEN — real launchd E2E next
+**Status:** COMPLETE
 
 **Goal:** Invoke the completed two-source usage runner once from the existing local hourly CFO entrypoint without
 changing Moneytree decisions, Telegram copy/dedupe/buttons, stdout, exit semantics, or scheduler count.
@@ -122,10 +122,31 @@ Expected: all exit 0; exactly two owned files and <=20 additions. Luna reports R
 ## Task 2 — Sol real loop verification and close
 
 - [x] Fresh Sol implementation review returns `ship`.
-- [ ] Record both source file hashes/sizes and immutable batch counts; verify the single loaded launchd job still has
-  `StartInterval=3600` and points to this reviewed worktree.
-- [ ] Declare the production trigger, `launchctl kickstart` the existing job once, and wait for completion. Do not
-  create/repoint/reload a job.
-- [ ] Prove each source gained exactly one valid immutable batch, source files are byte-identical, logs are content
-  safe, scheduler count remains one, and existing stdout/Telegram delivery semantics remain unchanged.
-- [ ] Update specs, commit, push, and send the content-free milestone. Then 5c becomes the only active item.
+- [x] Record both source file bytes/hashes/sizes and immutable batch counts; verify the single loaded launchd job has
+  `StartInterval=3600`. Hard-gate both the on-disk `ProgramArguments`/`WorkingDirectory` and loaded job path to the
+  reviewed `cfo-m0-business-registry` script. If either still points elsewhere, record the old path for rollback,
+  wait until idle, declare the production change, repoint that same plist, validate it, and bootout/bootstrap the same
+  label. Never create a second job. On validation/reload failure, restore the recorded path and reload the old job.
+- [x] Declare and trigger the reviewed existing job exactly once, using reload's `RunAtLoad` or `launchctl kickstart`
+  but never both, and wait for completion.
+- [x] Prove each source gained exactly one valid immutable batch and the pre-run source bytes remain an exact prefix.
+  The Moneytree Codex read may append its own usage row after the usage runner has captured the baseline; that new row
+  is intentionally collected next hour. Prove logs are content safe, scheduler count remains one, and existing
+  stdout/Telegram delivery semantics remain unchanged.
+- [x] Update specs, commit, push, and send the content-free milestone. Then 5c becomes the only active item.
+
+## Completion evidence
+
+- RED proved the missing call. Hourly focused 9/9, runner+hourly 13/13, CFO/full suites, syntax, and diff checks pass.
+- Scope: exactly 2 implementation files, +17/-3 lines; no dependency, DB, report, Telegram, or scheduler file change.
+- Fresh Sol implementation review returned `ship`. Tests prove sanitized env only, financial clock exactly once, and
+  silent isolation of partial/synchronous/rejected usage outcomes.
+- An initial missing no-op seam in one legacy `main()` test appended seven legitimate immutable observations per
+  source. They were preserved; after the seam fix, full tests kept live final counts exactly 10→10.
+- A competing session had repointed the only loaded/on-disk job to `cfo-4d1-finalize`. That old run completed exit 0
+  and `quiet`. The same idle plist/label was then validated and reloaded to reviewed `cfo-m0-business-registry`; no
+  second scheduler was created.
+- Reviewed real E2E completed exit 0: physical finals increased exactly 11→12 for each source; both source ledgers
+  retained identical size and SHA-256; chain reads validate the new content-addressed evidence; scheduler count is 1,
+  interval 3600, stderr has 0 lines, and existing financial output delivered actual Telegram revision 3 with
+  `status=sent`.
