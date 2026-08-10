@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — slices 2a2a.1-4 complete; 2a2a.5 is next |
+| Status | ACTIVE — slices 2a2a.1-5a complete; 2a2a.5b is next |
 | Parent | `2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local Mac first |
 | Source | `~/.local/state/{life-manager,anicca}/telemetry/agent-usage.jsonl` |
@@ -205,8 +205,8 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 | 2a2a.2 ✅ | Pure batch reducer dedupes source-row refs and reports runner-ID collisions without dropping rows | 2 files, +69/-2 LOC |
 | 2a2a.3 ✅ | Append-only file cursor proves hash/watermark/truncation coverage | 2 new files, +78 LOC |
 | 2a2a.4 ✅ | Versioned loop/task mapping yields attributed or visibly unattributed rows | 3 files, +51/-1 LOC |
-| 2a2a.5a NEXT | Pure collector composes scanner, mapping, and reducer; state exists only after reducer success | 3 files, <=100 added LOC |
-| 2a2a.5b | Atomically persist only checkpoint/batch receipts; do not duplicate the raw usage ledger | <=3 files, <=100 added LOC |
+| 2a2a.5a ✅ | Pure collector composes cursor, mapping, and reducer; state exists only after reducer success | 3 files, +60/-1 LOC |
+| 2a2a.5b NEXT | Atomically persist only checkpoint/batch receipts; do not duplicate the raw usage ledger | <=3 files, <=100 added LOC |
 | 2a2a.5c | One content-free internal OTel batch span links checkpoint and counts; it is not token truth | <=3 files, <=100 added LOC |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
 
