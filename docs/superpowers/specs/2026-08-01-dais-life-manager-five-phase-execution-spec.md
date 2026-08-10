@@ -7171,7 +7171,15 @@ action delta 14はobserve/navigate/readbackだけでcache/direct/Harness Submit 
 
 外部gog再検証はCalendar ID exact 1、confirmed、link/private 64-char markerあり。PNG 16,826 bytes、mode 0600、recomputed SHA exact一致。exit後current wake lease 0、CDP current target 0、process/lock 0。ledgerには今回以前のlegacy target records 9件が残るため削除せずItem22 cleanupへ登録する。native loaded 1、runs 1、09:00 daily、他3 labels unloaded、Git clean/upstream。Item18をacceptし、次はItem19 Meetup provider。
 
-### Active remaining TODO SSOT（進捗341。これ以外の残TODO一覧は履歴）
+### O1B-25進捗342（Item 19M / Meetup provider grounded plan）
+
+Ponytail fullでproduction call pathとshared CloakBrowser `:9222`の実ページを測定した。Meetupはlegacy registry/daily-driver host allowlistに名前だけ存在するが、official minimal runner、provider router、Harness workflow、evidence、Calendar、native provider列には未接続。Tokyo Find pageはevent linkを返し、detailのSchema.org Event JSON-LDはcanonical URL、start/end、offline mode、Place/addressを持つ。shared sessionはMeetup未認証でlogin pageにGoogle/Apple/Facebook/emailがある。
+
+Firecrawl英日3 queryは同一quota不足のため停止せず、CloakBrowser Google検索3 queryとMeetup Help原文3件へ切替えた。公式Finding guideはRSVPでhost groupへ自動加入、attendance guideは登録済みevent pageの`Edit RSVP`、waitlist guideはGoing badgeだけがattendingでwaitlistにはstatus labelがないと定義する。実ページではMeetup UIが`Free`でも本文に現地1,500円、ワンドリンク、gym feeを持つ候補が複数ある。そのためUI Freeだけを採用せず、対面Tokyo JSON-LD＋明示free文言＋金額/mandatory purchase marker 0＋visible Attend＋Calendar非衝突を同時に要求する。strict eligibleの観測候補はIQ Cafe Tokyo event `315756352`、2026-08-20 20:00–21:00 JST、本文`Free Event`/`無料イベント`、金額marker 0。live時点で再読取する。
+
+plan `docs/superpowers/plans/2026-08-10-connector-meetup-provider-19m.md`は、new Meetup workflow一つ、既存closed router/Harness/native allowlist、既存browser-provider evidence storeの実需要二件目parameterization、minimal evidence、gog Calendarのsurgical wiringだけ。Meetup専用agent/service/DB/queue/scheduler、推測direct-submit、provider-wide refactorは追加しない。初回未知flowはexisting bounded Harness、成功条件はexact pageの親`registered` readbackだけ。reviewed code merge時だけdaily labelを一時unloadし、official first wakeの実bundleとofficial second wakeのSubmit 0を確認後にMeetup `[x]`、09:00 single label reload、commit/pushする。現時点でItem19 Meetup未完、production supported表示なし、外部write 0。
+
+### Active remaining TODO SSOT（進捗342。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
