@@ -30,6 +30,8 @@ _MAX_MEMBER_BYTES = 50 * 1024 * 1024
 _BOM = b"\xef\xbb\xbf"
 _RACE_HEADERS = {"競馬場", "競走年月日", "レース番号", "発走時刻", "芝ダート区分", "馬場"}
 _HORSE_HEADERS = {"競馬場", "競走年月日", "レース番号", "馬番", "馬体重"}
+_OUTCOME_HORSE_HEADERS = {"競馬場", "競走年月日", "レース番号", "馬番", "着順"}
+_PAYBACK_HEADERS = {"競馬場", "競走年月日", "レース番号", "単勝組番", "単勝払戻金（円）"}
 _ODDS_HEADERS = {"競馬場", "競走年月日", "レース番号", "賭式", "番号1", "番号2", "番号3", "オッズ"}
 
 
@@ -87,8 +89,10 @@ def _role(headers: list[str]) -> str | None:
     fields = set(headers)
     if _RACE_HEADERS <= fields:
         return "race"
-    if _HORSE_HEADERS <= fields:
+    if _HORSE_HEADERS <= fields or _OUTCOME_HORSE_HEADERS <= fields:
         return "horse"
+    if _PAYBACK_HEADERS <= fields:
+        return "payback"
     if _ODDS_HEADERS <= fields:
         return "odds"
     return None
@@ -216,6 +220,18 @@ def _digest(*parts: object) -> str:
     return hashlib.sha256("|".join(str(part) for part in parts).encode("utf-8")).hexdigest()
 
 
+def nar_race_id(venue: str, date: str, race_number: int) -> str:
+    """Return the deterministic opaque identifier for one NAR race key."""
+
+    return "nar-race-" + _digest(venue, date, race_number)
+
+
+def nar_runner_id(race_id: str, horse_number: int) -> str:
+    """Return the deterministic opaque identifier for one NAR runner key."""
+
+    return "nar-runner-" + _digest(race_id, horse_number)
+
+
 def _scope(evidence_class: str) -> str:
     if evidence_class == "SYNTHETIC_TEST":
         return "test_only"
@@ -302,12 +318,12 @@ def _parse_rows(
         cutoff_at = race_at - timedelta(minutes=10)
         if snapshot > cutoff_at:
             continue
-        race_id = "nar-race-" + _digest(key[0], key[1], key[2])
+        race_id = nar_race_id(key[0], key[1], key[2])
         event_id = "nar-event-" + _digest(race_id, "market=win", snapshot_iso, odds_sha256.casefold())
         record_id = "nar-record-" + _digest(race_id, "market=win", snapshot_iso, odds_sha256.casefold())
         runners = [
             {
-                "runner_id": "nar-runner-" + _digest(race_id, number),
+                "runner_id": nar_runner_id(race_id, number),
                 "horse_number": number,
                 "odds": odds_for_race[number],
                 "body_weight_kg": runner_weights[number],
