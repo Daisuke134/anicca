@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | APPROVED — CFO-2a2.1 contract is the only active implementation slice |
+| Status | ACTIVE — CFO-2a2.1 verified; CFO-2a2.2 append-only storage is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -96,7 +96,8 @@ Unknown response/context keys and all prompt, candidate, tool argument, or outpu
     "gen_ai.usage.output_tokens": 45,
     "gen_ai.usage.cache_read.input_tokens": 20,
     "gen_ai.usage.reasoning.output_tokens": 5,
-    "server.address": "generativelanguage.googleapis.com"
+    "server.address": "generativelanguage.googleapis.com",
+    "server.port": 443
   }
 }
 ```
@@ -105,7 +106,8 @@ Unknown response/context keys and all prompt, candidate, tool argument, or outpu
 reported reasoning count because the pinned GenAI convention says reasoning output is included in output tokens.
 The provider's `totalTokenCount` is preserved independently and is not replaced by a locally recomputed total.
 Missing optional provider fields become `null` in `tokens` and are omitted from `otel_attributes`; an explicit
-provider zero remains zero.
+provider zero remains zero. Because `server.address` is emitted, the pinned OpenTelemetry convention also requires
+`server.port: 443` for the HTTPS endpoint.
 
 ## 6. Evidence and privacy rules
 
@@ -119,15 +121,15 @@ provider zero remains zero.
 
 ## 7. Acceptance criteria for CFO-2a2.1
 
-- [ ] One literal Gemini response maps to the exact closed record and exact OpenTelemetry attributes.
-- [ ] The record preserves provider input, candidate output, cached, reasoning, tool, and total counts without
+- [x] One literal Gemini response maps to the exact closed record and exact OpenTelemetry attributes.
+- [x] The record preserves provider input, candidate output, cached, reasoning, tool, and total counts without
       converting an absent count to zero.
-- [ ] The OpenTelemetry output count includes reported reasoning and fails on unsafe integer addition.
-- [ ] Provider response ID, requested model, response model, owner, fixed Life Manager financial unit, timestamp, and trace ID are
+- [x] The OpenTelemetry output count includes reported reasoning and fails on unsafe integer addition.
+- [x] Provider response ID, requested model, response model, owner, fixed Life Manager financial unit, timestamp, and trace ID are
       validated; failures are fixed and redacted.
-- [ ] Unknown keys and content-shaped fields never enter the result or errors.
-- [ ] Inputs remain unchanged; repeated calls return deep-equal results.
-- [ ] Focused ledger tests and the CFO suite pass.
+- [x] Unknown keys and content-shaped fields never enter the result or errors.
+- [x] Inputs remain unchanged; repeated calls return deep-equal results.
+- [x] Focused ledger tests and the CFO suite pass.
 
 ## 8. Deferred completion gates
 
@@ -150,3 +152,16 @@ Write-attempt coverage and durable failure accounting remain CFO-2a2b. Billing/p
   attributes are opt-in and sensitive.
 - [OpenTelemetry Google GenAI reference scenario at commit 46d43c8](https://github.com/open-telemetry/semantic-conventions-genai/blob/46d43c8949afb53765a202e89f4534eeb75ca3fa/reference/scenarios/google-genai/scenario.py) —
   provider usage metadata maps to `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens`.
+
+## 10. CFO-2a2.1 completion evidence
+
+- Luna implementation commits: `97a04baef1dd4bbc647d64835e41ca8c8deda4c6` and review fix
+  `105922f65ba372ee967ef8748019d14e4681dbbe`.
+- Initial RED: existing 10 tests passed and the two new tests failed only because the export did not exist.
+- Review-fix RED: 11/12 passed; the sole failure was the missing conditionally required `server.port: 443`.
+- Fresh Sol verification on the final head: focused 12/12, CFO 254/254, full suite 892/892, zero failures; syntax and
+  diff checks passed.
+- Ponytail gate: exactly two existing files; 43 production additions and 50 test additions, 93 total.
+- Fresh final re-review: Critical 0, Important 0, ship.
+- No I/O, dependency, OpenTelemetry SDK, collector, exporter, database, pricing, Gemini call-site, or Live behavior
+  was added. Those remain explicit later slices, so CFO-2a2 itself remains active.

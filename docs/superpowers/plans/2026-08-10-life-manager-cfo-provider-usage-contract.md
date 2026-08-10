@@ -1,6 +1,6 @@
 # Life Manager CFO-2a2.1 Provider Usage Contract Implementation Plan
 
-**Status:** READY — one Luna task; no later CFO-2a2 slice is included.
+**Status:** COMPLETE — final head `105922f65`, fresh verification 12/12 + 254/254 + 892/892, final re-review clean.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Implement the single
 > task with strict RED → minimal GREEN → focused review.
@@ -40,7 +40,7 @@ SDK/export, pricing, call-site wiring, and Gemini Live remain later slices.
 
 **Estimated change:** 45–55 test LOC, then 35–45 production LOC.
 
-- [ ] **Step 1 — Write two behavioral tests first**
+- [x] **Step 1 — Write two behavioral tests first**
 
 Add one exact happy-path test and one compact zero/missing/invalid test:
 
@@ -48,18 +48,20 @@ Add one exact happy-path test and one compact zero/missing/invalid test:
    content maps to the exact record from the child spec. Assert:
    - `tokens.output` is the provider candidate count;
    - `gen_ai.usage.output_tokens` is candidate + reasoning;
+   - `server.address` and its conditionally required `server.port: 443` are both present;
    - no content or unknown key survives;
    - both inputs remain unchanged;
    - a repeated call is deep-equal.
 2. A valid response with zero required counts and absent optional counts preserves required zero, returns optional
-   `null`, and omits optional OTel keys. In the same test, a compact cases table rejects:
+   `null`, and omits optional OTel keys. The same test proves explicit optional provider zero appears as zero in
+   the matching OTel cache/reasoning keys. In the same test, a compact cases table rejects:
    - missing/blank response ID or model;
    - missing, negative, fractional, `NaN`, infinite, or unsafe counts;
    - unsafe candidate + reasoning addition;
    - invalid timestamp, trace ID, owner, requested model, or non-`life_manager_saas` unit.
    Every error must match only `/^cfo_provider_usage_invalid:[a-z_]+$/` and exclude a sentinel value.
 
-- [ ] **Step 2 — Run RED**
+- [x] **Step 2 — Run RED**
 
 From `apps/life-call`:
 
@@ -70,7 +72,7 @@ node --test lib/ledger.test.js
 Expected: the existing ten tests pass and the two new tests fail only because
 `ledger().normalizeGeminiUsageEvidence is not a function`.
 
-- [ ] **Step 3 — Implement the smallest pure adapter**
+- [x] **Step 3 — Implement the smallest pure adapter**
 
 Reuse `createCfoSupabaseRpc` with a separate `cfo_provider_usage_invalid:` error provenance to obtain
 `fail`, `plain`, and `timestamp`. Add only:
@@ -95,11 +97,12 @@ The output must match child spec §5 exactly. Required mappings:
 | OTel `output_tokens` | provider candidates + provider thoughts; safe-integer checked |
 
 Optional OTel cache/reasoning keys are present when and only when the provider field exists, including explicit
-zero. Do not recompute or validate the provider's `totalTokenCount` against component sums.
+zero. Emit both `server.address: "generativelanguage.googleapis.com"` and the conditionally required
+`server.port: 443`. Do not recompute or validate the provider's `totalTokenCount` against component sums.
 
 Export `normalizeGeminiUsageEvidence` beside `normalizeApiCostEvent`.
 
-- [ ] **Step 4 — Run GREEN and regressions**
+- [x] **Step 4 — Run GREEN and regressions**
 
 ```bash
 node --test lib/ledger.test.js
@@ -110,7 +113,7 @@ node --check lib/ledger.js
 
 Expected: focused ledger 12/12; CFO suite 254/254; full suite exits 0; syntax check exits 0.
 
-- [ ] **Step 5 — Enforce Ponytail scope**
+- [x] **Step 5 — Enforce Ponytail scope**
 
 ```bash
 git diff --check
@@ -120,7 +123,7 @@ git status --short
 
 Expected: only the two planned files; production additions ≤45, tests ≤55, total ≤100.
 
-- [ ] **Step 6 — Commit for review, do not push**
+- [x] **Step 6 — Commit for review, do not push**
 
 ```bash
 git add apps/life-call/lib/ledger.js apps/life-call/lib/ledger.test.js
@@ -129,4 +132,3 @@ git commit -m "feat(cfo): normalize provider-reported Gemini usage"
 
 Write the RED/GREEN/count/scope evidence to the ignored Superpowers task report. Sol then generates an exact diff
 package, obtains a fresh focused review, reruns final verification, closes spec checkboxes, fetches, and pushes.
-
