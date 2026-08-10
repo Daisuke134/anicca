@@ -1,6 +1,6 @@
 # CFO-2a2a.2 — Local Agent Usage Dedupe Plan
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Goal
 
@@ -75,3 +75,12 @@ both real local ledgers read-only. Print counts only and assert:
 
 Fresh Sol review checks only correctness, evidence truth, redaction, determinism, and YAGNI. Sol then updates the child
 status, commits, pushes, and starts 2a2a.3.
+
+## Completion evidence
+
+- Fresh Sol review: `ship — Spec ✅`; exact raw-pair input, reducer-owned normalization, mixed coverage, dense array,
+  freeze, ordering, and redaction probes pass.
+- Real read-only E2E: discovered 4,938, accepted 4,938, duplicate 0, conflicting 0, missing usage 273, runner collision
+  groups 434; reversed input produces the identical receipt.
+- Focused 22/22, CFO 270/270, and full 928/928 tests pass; syntax and diff checks pass.
+- Scope is exactly two files and +62/-2 LOC.

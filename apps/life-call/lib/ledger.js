@@ -1,9 +1,11 @@
 "use strict";
 
 const { createCfoSupabaseRpc } = require("./cfo-supabase-rpc.js");
+const { canonicalJson } = require("./cfo-registry.js");
 const { fail: costEventFail, plain: plainCostRow, timestamp: validCostTimestamp } = createCfoSupabaseRpc("cfo_business_ledger_invalid:");
 const { fail: usageFail, internal: usageInternal, plain: plainUsageInput, timestamp: validUsageTimestamp } = createCfoSupabaseRpc("cfo_provider_usage_invalid:");
-const { fail: localAgentUsageFail, freeze: freezeLocalAgentUsage, internal: localAgentUsageInternal, plain: plainLocalAgentUsageInput, timestamp: validLocalAgentUsageTimestamp } = createCfoSupabaseRpc("cfo_local_agent_usage_invalid:");
+const { exact: exactLocalAgentUsage, fail: localAgentUsageFail, freeze: freezeLocalAgentUsage, internal: localAgentUsageInternal, plain: plainLocalAgentUsageInput, timestamp: validLocalAgentUsageTimestamp } = createCfoSupabaseRpc("cfo_local_agent_usage_invalid:");
+const LOCAL_AGENT_PAIR_KEYS = new Set(["input", "context"]);
 
 function headers(key, extra) {
   return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
@@ -259,6 +261,35 @@ function normalizeLocalAgentUsageEvent(input, mapping) {
   }
 }
 
+function reduceLocalAgentUsageEvents(pairs) {
+  try {
+    if (!Array.isArray(pairs)) localAgentUsageFail("invalid_input");
+    const groups = new Map();
+    for (let index = 0; index < pairs.length; index += 1) {
+      if (!Object.prototype.hasOwnProperty.call(pairs, index)) localAgentUsageFail("invalid_input");
+      const pair = pairs[index]; exactLocalAgentUsage(pair, LOCAL_AGENT_PAIR_KEYS);
+      const event = normalizeLocalAgentUsageEvent(pair.input, pair.context), canonical = canonicalJson(event), id = event.source_event_id;
+      const group = groups.get(id) || { rows: [], variants: new Map() };
+      group.rows.push(event); group.variants.set(canonical, event); groups.set(id, group);
+    }
+    const accepted = [], counts = { accepted_rows: 0, duplicate_rows: 0, conflicting_rows: 0 };
+    for (const group of groups.values()) {
+      if (group.variants.size > 1) counts.conflicting_rows += group.rows.length;
+      else { counts.accepted_rows += 1; counts.duplicate_rows += group.rows.length - 1; accepted.push(group.variants.values().next().value); }
+    }
+    accepted.sort((a, b) => a.source_event_id < b.source_event_id ? -1 : a.source_event_id > b.source_event_id ? 1 : 0);
+    const events = accepted.map((event) => JSON.parse(canonicalJson(event))), runnerSets = new Map();
+    for (const event of accepted) { const ids = runnerSets.get(event.runner_event_id) || new Set(); ids.add(event.source_event_id); runnerSets.set(event.runner_event_id, ids); }
+    const missing = accepted.filter((event) => event.measurement === "unavailable").length;
+    const collisions = [...runnerSets.values()].filter((ids) => ids.size > 1).length;
+    const coverage_exceptions = []; if (counts.conflicting_rows) coverage_exceptions.push("conflicting_usage"); if (missing) coverage_exceptions.push("missing_usage"); if (collisions) coverage_exceptions.push("runner_identity_collision");
+    return freezeLocalAgentUsage({ events, discovered_rows: pairs.length, ...counts, missing_usage_rows: missing, runner_collision_groups: collisions, coverage_exceptions });
+  } catch (error) {
+    if (localAgentUsageInternal(error)) throw error;
+    localAgentUsageFail("invalid_input");
+  }
+}
+
 function finite(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -298,4 +329,4 @@ function businessSummary(daysBack, rows, nowMs) {
   return summary;
 }
 
-module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, normalizeApiCostEvent, normalizeGeminiUsageEvidence, normalizeGeminiLiveUsageEvidence, normalizeLocalAgentUsageEvent, businessSummary };
+module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, normalizeApiCostEvent, normalizeGeminiUsageEvidence, normalizeGeminiLiveUsageEvidence, normalizeLocalAgentUsageEvent, reduceLocalAgentUsageEvents, businessSummary };
