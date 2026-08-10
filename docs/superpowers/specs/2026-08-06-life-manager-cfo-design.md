@@ -118,7 +118,9 @@ exact commit. A real delivery receipt and immutable snapshot changed the same Te
 through the production webhook and restored summary, with zero new messages and zero application error logs. Telegram
 Web was not logged in, so this evidence is a real provider callback-path E2E rather than a fabricated human tap.
 Report production remains local. The first unfinished `CFO-1i` slice is now exactly one hourly local launchd trigger,
-followed by two consecutive autonomous real-data successes.
+specified by `docs/superpowers/plans/2026-08-10-life-manager-cfo-hourly-local-loop.md`, followed by two consecutive
+autonomous real-data successes. The committed implementation is limited to one <=100-LOC runner plus one focused
+test; the local plist is runtime configuration, not a new service or repository subsystem.
 
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
