@@ -118,9 +118,12 @@ credential, account token, full filesystem path, or provider stdout enters the n
 
 ## Attribution
 
-Attribution is an explicit input to the pure normalizer. A later collector resolves it from a versioned mapping of
-managed `loop + task_label` identities to the existing CFO financial-unit registry. No match means
-`financial_unit_id=null` and `attribution_status=unattributed`; cwd text is never used as a guess.
+Attribution is an explicit input to the pure normalizer. Mapping `local_agent_usage_v1` resolves only closed,
+evidence-backed `loop + task_label` prefix/exact rules whose target exists in the CFO financial-unit registry. It
+covers known Gig Work, job-search, Capafy, Life Manager, Reddit-for-Life-Manager, and Anicca marketing identities. No
+match—including connector/shared/tooling identities without a registered financial unit—means
+`financial_unit_id=null` and `attribution_status=unattributed`; cwd text is never used as a guess. The later storage
+slice records the mapping ID beside its ingestion receipt.
 
 ## Durable collector state
 
