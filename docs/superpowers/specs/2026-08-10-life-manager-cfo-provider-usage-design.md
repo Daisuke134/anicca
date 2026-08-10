@@ -741,14 +741,15 @@ Acceptance:
 - [ ] a fake Gemini socket drives the same production seam and proves parsed usage observation plus isolated
       session/sequence state after reconnect while the old queue is still pending;
 - [ ] existing audio, reconnect, barge-in, and provider behavior remains unchanged;
-- [ ] focused bridge, CFO, and full suites pass within exactly three files and at most 90 additions.
+- [ ] focused bridge, CFO, and full suites pass within exactly three files and at most 100 additions.
 
 This slice makes no real provider call, migration/database deployment, aggregation decision, scheduler, launchd, or
 Telegram change.
 
-Pre-review evidence passed focused 9/9, CFO 270/270, full 915/915, syntax, and size gates, but fresh Sol review found
-real owner propagation, duration timing, rejected-thenable containment, post-close, and concurrent reconnect gaps not
-covered by those tests. This slice is not complete until those review fixes pass the revised gates and re-review.
+Pre-review evidence passed focused 9/9, CFO 270/270, full 915/915, syntax, and size gates, but further review found real
+owner propagation, duration timing, rejected-thenable containment, and post-close gaps plus missing simultaneous
+reconnect proof. This slice is not complete until those four fixes and the missing proof pass the revised gates and
+fresh re-review.
 
 #### CFO-2a2.4d2 — real Live message → row → span proof
 

@@ -1,143 +1,70 @@
-# CFO-2a2.4d1 Gemini Live Bridge Wiring Implementation Plan
+# CFO-2a2.4d1 Gemini Live Bridge Review-Fix Plan
 
-**Status:** READY — reviewed repair plan returned `ship`; ready for Luna implementation.
+**Status:** READY — revised by Ponytail; fresh Sol review required before Luna fixes.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 
-**Goal:** Feed each provider-reported Live usage message once, in order, into the verified capture path while retaining
-the duration estimate only as an honest fallback.
+**Goal:** Close four observed truth/reliability defects and one missing reconnect proof in the existing Live usage wiring,
+without adding a service, module, dependency, migration, retry, or reporting path.
 
-**Architecture:** Add one injected per-socket recorder closure to `call-bridge.cjs`, test its observation and close
-lifecycle there, and wire it into the existing `server.js` Gemini socket. Reuse the 4c3 capture function, current
-per-socket close path, Node crypto, Supabase env, and duration ledger. Add no module, dependency, migration, service,
-scheduler, or reporting path.
+**Architecture:** Keep `attachGeminiUsageTracking` and the current `server.js` wiring. Add only a closed guard and safe
+thenable containment to the seam; propagate the already-authenticated test-call UID; snapshot duration at socket close.
+Replace the current three added tests with small named contracts rather than stacking more test code.
 
-**Tech Stack:** CommonJS, existing `ws`, Node crypto/promises/test.
-
-## Global constraints
+## Scope and size
 
 - Luna owns exactly `apps/life-call/lib/call-bridge.cjs`, `apps/life-call/lib/call-bridge.test.js`, and
-  `apps/life-call/server.js`; Sol owns docs/review/verification/commit/push.
-- Soft targets: bridge helper 25 additions, tests 40, server wiring 25; exactly 3 files / at most 90 additions total.
-- Preserve audio routing, reconnect, barge-in, transcripts, call recording, Telnyx cost, and all existing tests.
-- No real provider call, migration/database deployment, aggregation/rollup, scheduler, launchd, Telegram, retry, raw
-  provider logging, dependency, or new file.
-- Run every command from `apps/life-call`. Do not commit or push.
+  `apps/life-call/server.js`. Sol owns docs, review, verification, commit, and push.
+- Final diff versus `7ee07646b`: helper <=23 additions, tests <=57, server <=20; exactly three files and <=100 additions.
+- Preserve audio, reconnect, barge-in, transcript, recording, Telnyx cost, scheduler, and provider behavior.
+- No real provider call, database/deployment, aggregation, scheduler, launchd, Telegram, retry, or raw provider logging.
+- Run from `apps/life-call`; do not edit docs, commit, or push.
 
-## Task 1: Queue provider usage and wire the socket
+## Task 1: Close the reviewed gaps
 
-- [ ] **Step 1 — write the smallest revised RED tests**
+- [ ] **Step 1 — replace/extend tests into independent contracts**
 
-Export the production seam `attachGeminiUsageTracking` from `call-bridge.cjs`. Add three behavioral tests and one
-compact server source-contract test:
+Keep ordered once-only capture, zero/incomplete, failure continuation, synchronous end, and fallback-matrix coverage.
+Use compact helpers, then add five separately named contracts:
 
-1. non-usage input is ignored; two usage messages are captured once in arrival order with `usage_sequence` 0 and 1,
-   the exact fixed base context/options, and `settle()` returns the exact frozen
-   `{ seen: 2, stored: 2, failed: 0, complete: true }`;
-2. a first capture rejection is swallowed and counted, the second observation still stores, no retry/log occurs, and
-   settle returns `{ seen: 2, stored: 1, failed: 1, complete: false }`; zero observed also settles incomplete;
-3. drive `attachGeminiUsageTracking` with fake Gemini sockets and deliberately deferred capture. The same production seam
-   must parse socket messages into observation, invoke `onEnd` synchronously on close, and decide fallback only after
-   settlement. Prove `0/0/0 -> fallback`, `2/2/0 -> no fallback`, and `2/1/1 -> fallback`, exact CFO/store context, and
-   that a reconnect socket with a distinct session starts again at sequence zero without sharing settlement state.
-   Start the reconnect socket while the old socket's first capture remains pending. Prove the new capture starts at
-   sequence zero without waiting, a post-close old message is ignored, and an async rejecting `onFallback` creates no
-   `unhandledRejection`. Trap `console.log`, `console.error`, and `console.warn` around content sentinels.
+1. `server propagates authenticated test-call owner` reads `server.js` and narrowly matches
+   `buildStreamUrl({ ...ev, wakeUid: body.uid }, urgency, lang, u.name)`;
+2. `server fallback uses the close-time duration snapshot` locates only the production seam's `onFallback` prefix up to
+   `recordCost(`, proves it contains `geminiDurationSeconds`, and proves that slice contains no `Date.now(`;
+3. `closed socket ignores later usage` closes, emits a usage message, settles, and proves `seen/stored/failed` remains
+   `0/0/0` with zero capture calls;
+4. `rejecting fallback thenable is consumed` returns a custom thenable that marks itself consumed and rejects; after
+   close and one event-loop turn it must be consumed with no log or escaped rejection;
+5. `reconnect socket is independent while old capture is pending` opens two seams, leaves old capture pending, closes
+   old, emits on new, and proves new capture starts immediately at sequence zero with a distinct session.
 
-Prove actual serialization before resolving the first capture:
+Trap `console.log`, `console.error`, and `console.warn` around content sentinels. Prove real serialization by emitting two
+usage messages, advancing one microtask, and asserting only the first capture started before resolving it.
 
-```js
-emitUsage(socket, first); emitUsage(socket, second);
-await Promise.resolve();
-assert.equal(pending.length, 1);
-pending[0].resolve();
-while (pending.length < 2) await Promise.resolve();
-assert.equal(pending[1].context.usage_sequence, 1);
-```
-
-Use two simultaneous production seams for reconnect isolation:
-
-```js
-oldSocket.emit("close");
-emitUsage(oldSocket, usageMessage(99));
-emitUsage(newSocket, usageMessage(1));
-await Promise.resolve();
-assert.equal(oldPending.length, 1);
-assert.equal(newPending.length, 1);
-assert.equal(newPending[0].context.usage_sequence, 0);
-```
-
-Read `server.js` in the same test file and pin both server-only fixes so direct seam tests cannot hide them:
-
-```js
-const fs = require("node:fs"), path = require("node:path");
-const serverSource = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
-assert.match(serverSource, /buildStreamUrl\(\{\s*\.\.\.ev,\s*wakeUid:\s*body\.uid\s*\},\s*urgency,\s*lang,\s*u\.name\)/);
-assert.match(serverSource, /onEnd:\s*\(\)\s*=>\s*\{[\s\S]*?geminiDurationSeconds\s*=\s*Math\.max\([\s\S]*?onGeminiEnd\("closed"\);?\s*\}/);
-assert.match(serverSource, /onFallback:\s*\(\)\s*=>\s*\{[^}]*const quantity\s*=\s*geminiDurationSeconds\s*===\s*null\s*\?\s*0\s*:\s*geminiDurationSeconds/s);
-const fallbackSource = serverSource.slice(serverSource.indexOf("onFallback:", serverSource.indexOf("attachGeminiUsageTracking")), serverSource.indexOf("});", serverSource.indexOf("onFallback:", serverSource.indexOf("attachGeminiUsageTracking"))));
-assert.doesNotMatch(fallbackSource, /Date\.now\(/);
-```
-
-- [ ] **Step 2 — run revised RED**
+- [ ] **Step 2 — run honest RED**
 
 ```bash
 node --test lib/call-bridge.test.js
 ```
 
-Expected: at least one revised contract fails against the current implementation for the observed owner/timing/async
-containment/post-close/reconnect defect. Record the exact failure before production edits.
+Run these revised tests against a temporary copy of committed `8e79637c6`, not by reverting the shared worktree.
+Copy only the revised test into that temporary tree and reuse the installed `node_modules`. Expected on that baseline:
+the UID contract fails because `wakeUid` is absent; duration fails because fallback reads
+`Date.now`; post-close fails because the handler still accepts messages; rejecting-thenable fails because the return is
+ignored. The reconnect-isolation contract passes because per-socket state is already separate. Historical behavior stays
+green. Record the exact totals; do not call a different failure RED.
 
-- [ ] **Step 3 — add the minimum queue and wiring**
+- [ ] **Step 3 — make the minimum production fixes**
 
-`attachGeminiUsageTracking({ socket, capture, context, options, onEnd, onFallback })` creates one private recorder for
-that socket, keeps `seen/stored/failed/nextSequence/tail`, and attaches only `message` and `close`. A parsed message
-without `usageMetadata` is ignored; otherwise it reserves the next sequence immediately, appends one capture task to
-`tail`, and catches that task into `failed`. Close invokes `onEnd` synchronously, then settles the queue asynchronously
-and invokes `onFallback` unless the exact frozen result has `complete === true`; it contains a settlement rejection and
-still invokes fallback. It never retries or logs, and may return the recorder's settlement promise only for tests.
+In `attachGeminiUsageTracking`, start the message handler with `if (closed) return`. Route fallback through one local
+function that calls `onFallback(result)` inside `try`, assimilates its return with `Promise.resolve(...).catch(() => {})`,
+and also contains synchronous throws. Keep ordered `tail`, exact frozen settlement, once-only close, and no logging.
 
-The message handler starts with `if (closed) return`. Contain both synchronous throws and rejected fallback thenables:
+In `/test-call`, pass `{ ...ev, wakeUid: body.uid }` to the existing `buildStreamUrl`. In each `openGeminiLive`, add
+`geminiDurationSeconds = null`; `onEnd` snapshots `Math.max(0, (Date.now() - geminiStartedAtMs) / 1000)` once before the
+existing synchronous `onGeminiEnd("closed")`; `onFallback` uses only that snapshot, defaulting to zero if absent.
 
-```js
-const fallback = result => {
-  if (!onFallback) return;
-  try { Promise.resolve(onFallback(result)).catch(() => {}); } catch {}
-};
-```
-
-In `server.js`, import `LIVE_MODEL`, `captureGeminiLiveUsageObservation`, and the seam. Inside each `openGeminiLive`
-invocation, attach it once using a random session ID and the existing owner/unit/model/Supabase context. Keep the existing
-audio message handler unchanged. The seam's close callback runs existing `onGeminiEnd("closed")` synchronously, while
-the old exact duration `recordCost` runs later only as `onFallback`. Remove the replaced close listener. A recorder or
-settlement failure must never delay or stop reconnect/carrier teardown.
-
-Preserve the authenticated owner in `/test-call`:
-
-```js
-const streamUrl = buildStreamUrl({ ...ev, wakeUid: body.uid }, urgency, lang, u.name);
-```
-
-Snapshot duration synchronously at close and never include database settlement latency:
-
-```js
-let geminiDurationSeconds = null;
-onEnd: () => {
-  if (geminiDurationSeconds === null) {
-    geminiDurationSeconds = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000);
-  }
-  onGeminiEnd("closed");
-},
-onFallback: () => {
-  if (geminiCostRecorded) return;
-  geminiCostRecorded = true;
-  const quantity = geminiDurationSeconds === null ? 0 : geminiDurationSeconds;
-  recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds",
-    estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
-},
-```
-
-- [ ] **Step 4 — run GREEN and scope gates**
+- [ ] **Step 4 — run GREEN and gates**
 
 ```bash
 node --test lib/call-bridge.test.js
@@ -147,18 +74,14 @@ node --check lib/call-bridge.cjs
 node --check server.js
 git diff 7ee07646b --check -- lib/call-bridge.cjs lib/call-bridge.test.js server.js
 git diff 7ee07646b --numstat -- lib/call-bridge.cjs lib/call-bridge.test.js server.js \
-  | awk '{ added += $1; files += 1 } END { print "files=" files, "added=" added; exit !(files == 3 && added <= 90) }'
+  | awk '{ added += $1; files += 1 } END { print "files=" files, "added=" added; exit !(files == 3 && added <= 100) }'
 ```
 
-Expected: all commands exit `0`; exactly three files and at most 90 additions. Return exact RED/GREEN totals and line
-counts to Sol. Do not commit or push.
+Return RED/GREEN totals and final per-file additions. No real external call, commit, or push.
 
 ## Plan self-review
 
-- Truth: all-success observations suppress the duration proxy; partial failure visibly leaves the stored subset plus
-  fallback, with aggregation policy explicitly deferred rather than falsely claimed complete.
-- Ordering: sequence is reserved at arrival and work is serialized; one failure cannot poison later tasks.
-- Reliability: capture failure cannot block audio/reconnect/close; teardown is synchronous and fallback is asynchronous.
-- Privacy: the helper neither logs nor projects provider payloads.
-- YAGNI: three existing files, one private queue, no deployment or new service.
-- Placeholders: none. API, state, fallback rule, wiring, tests, commands, and size limit are fixed.
+- Truth: authenticated owner and close-time duration reach the stored/fallback facts without DB-latency inflation.
+- Reliability: close remains synchronous; late messages and rejected fallback thenables cannot escape.
+- Concurrency: the already-correct per-socket queue receives a real simultaneous proof, not a fabricated RED.
+- YAGNI: four minimal code edits, five named regressions, three existing files, <=100 additions.
