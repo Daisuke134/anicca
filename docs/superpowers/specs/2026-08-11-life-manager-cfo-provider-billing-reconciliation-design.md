@@ -128,7 +128,8 @@ allocation so narrower business totals can be derived honestly.
           and return only frozen transfer metadata. No file reading, parsing, hashing, persistence, or scheduling.
           Plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-download.md`.
     - [ ] **CFO-2a3.2b2 — Parse and append.** Verify the downloaded file, extract locally with `pdftotext`, normalize
-          through CFO-2a3.1, append one deduplicated immutable receipt, and always remove temporary content.
+          through CFO-2a3.1, append one deduplicated immutable receipt, and always remove temporary content. Plan:
+          `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-local-capture.md`.
 - [ ] **CFO-2a3.3 — Real E2E and hourly publication.** Read the latest real invoice without sending Telegram, prove
       the normalized total matches the PDF arithmetic, prove rerun dedupe and source immutability, then publish only
       confirmed/unresolved aggregate counts through the existing hourly runner. Close CFO-2a3.
@@ -205,3 +206,17 @@ hashing, receipt append, dedupe, and cleanup remain CFO-2a3.2b2.
 - The implementation adds no retry, generic downloader, parser, hash, persistence, scheduler, DB, OTel, or Telegram
   behavior. A fresh Sol reviewer could not be allocated because the collaboration service returned
   `agent thread limit reached`; no independent review result is claimed.
+
+## 12. CFO-2a3.2b2 local record contract
+
+The one observed Japanese invoice layout is parsed locally and normalized before storage. The record path is
+`<stateRoot>/cfo/provider-billing/google-cloud/<pdf-sha256>.json`; its content is exactly the normalized confirmed
+record from §4. Directories are `0700`, the record is `0600`, first append is file-and-directory fsynced, and the
+same PDF hash can only return the byte-identical existing normalized record. Raw PDF, extracted text, account ID,
+invoice number, Gmail locator, temp path, and provider error never enter state, logs, receipts, or tests.
+
+The public capture receipt has exactly `status`, `record_id`, and `confirmed`. `status` is `appended` on the first
+immutable write and `existing` on a validated rerun. The parser accepts only the real observed Japanese labels,
+three-part uppercase-alphanumeric billing account ID, same-month month-boundary service dates, internally identical
+repeated Yen totals, and exact arithmetic; every unknown layout fails closed. No scheduler or Telegram call is part
+of CFO-2a3.2b2.
