@@ -7063,7 +7063,13 @@ Luna REDはactual join-shaped DOMとcanonical substring-only `補欠者`を4/6�
 
 actual current pageのread-only production reader再測定はjoin `unknown`、canonical `absent`、write 0で、一時target cleanup。fresh Sol reviewはCritical 0・Important 0で`ship`、reviewer独立107/107。偽pendingを成功扱いする経路は閉じた。Item14未完、schedule unloaded。次の一件はclean/upstream、4 labels unloaded、process/lock 0、`:9222` healthyを再確認し、official foreground wakeをexact 1回だけ起動する。実effectが成立すればcanonical readback→Connpass receipt/artifact→Calendar→Telegram→applied bundle、未確定なら既存one-submit latchで重複作用0のsafe boundaryを記録する。
 
-### Active remaining TODO SSOT（進捗324。これ以外の残TODO一覧は履歴）
+### O1B-25進捗325（Item 14 live wake / delayed real effectとsettlement plan）
+
+pushed HEAD `d23fbd3a5`、4 labels unloaded、clean/upstream、process/lock 0、`:9222` healthy、baseline bundle/report/delivery/action/Connpass receipt `4/106/118/703/0`でofficial wakeをexact 1回起動した。wake `wake-f56a23d2571628dbcb718a70`はLuma `25/25/17/10/0`後、同じowned railでConnpass `6/6/6/5/1`へ継続。pre-readback absent、cache 0ms、direct 2,034ms、native Harness 808ms。14Fにより偽pendingは発生せず、final click後の即時readbackをterminalにせず、同event再Submitは0。その後same pageでPeatix `100/100/87/60/13`へ進み、terminal `circuit_open/evidence_completion_failed`、failure count 2、every-wake Telegram positive ID `11265`。bundle/Connpass receipt delta 0、process/lock 0、owned target absent、4 labels unloaded。成功扱いにしない。
+
+wake完了後のread-only exact canonical checkは`registered`へ変化しており、final clickの実外部作用が808msより遅れて成立したことを確認した。問題はSubmit失敗ではなく、Harnessがreal effect settlementを待たずlater providerへ進んだこと。既存Peatix final clickは30秒overall deadline、各readback promise race、click 1、timeout `effect_unknown`を既に持つ。plan `docs/superpowers/plans/2026-08-11-connector-connpass-final-settlement-14g.md`はHarness/test 2 filesだけで、この既存waitをexact Connpass join URL・same event ID・final labelへ束縛して再利用する。次wakeはcanonical pre-readback registeredのためSubmit 0で不足bundleを回収する。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗325。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
