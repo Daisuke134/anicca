@@ -30,4 +30,7 @@ Replace the unloaded five-minute installed native plist with the verified single
 
 ## Result
 
-Pending production cutover.
+- Rendered exactly one plist in a private temporary directory from pushed branch HEAD `fab51d60b`, with `/Users/anicca/.local/state/life-manager` as the log home. `plutil` and exact JSON assertions passed: native label, current worktree runner and working directory, 09:00 `StartCalendarInterval`, throttle 60, no `StartInterval`, and no healthcheck/Healer/bridge/`:9223` token.
+- Replaced only the installed native plist with mode 0600 and bootstrapped only `ai.anicca.life-manager-connector-native`. The temporary render was removed exactly.
+- `launchctl print` reports the native job loaded, `state = not running`, `runs = 0`, never exited, and one event trigger at Hour 9 / Minute 0. Installed plist lint passes and retains the exact daily contract and log paths.
+- Native healthcheck, Healer shadow, and host bridge remain unloaded; Connector process and lock are absent; Git is clean/upstream. Item 17 is complete. Item 18 must use `launchctl kickstart` on this loaded owner and watch its first launchd-owned wake.
