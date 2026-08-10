@@ -6577,7 +6577,19 @@ browser providerは静的safe `reason`を返すが、Peatix workflowが全て`di
 `docs/superpowers/plans/2026-08-10-connector-direct-safe-reason.md`は既存reason→workflow operation→circuit reportだけをbounded伝播する。
 action history schema、新store、event identity/URL/title、DOM/selector/private値、browser action、retryは0。
 
-### Active remaining TODO SSOT（進捗260。これ以外の残TODO一覧は履歴）
+### O1B-25進捗261（Peatix direct safe stage GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-direct-safe-reason.md`をTDD実装した。REDはPeatix `unknown_required_field`が
+`direct_action_unverified`、valid/malformed candidate failureが`providers_exhausted`、discovery circuitが`consecutive_failure_limit`へ潰れる
+4契約を再現。browser providerが返す既存静的reason全件だけをallowlistし、valid reasonを`peatix_<reason>`、unknown/URL/private/欠落を
+`direct_action_unverified`へした。runnerはvalid direct reasonをfailed fallbackより優先し、candidate/discovery circuit reportへ最後のexact safe stageを渡す。
+
+差分はworkflow/runner + testsの4 files、production +21、tests +51でsoft target内。action-history exact schema、external effect、browser action、
+retry/store/event identity/URL/title/DOM/selector/private値は0。focused+browser provider+production/nativeを含むSol再実行55/55、syntax、diff checkはPASS。
+fresh Sol reviewはCritical 0・Important 0で`ship`。次の一件はdashboard registration 0、clean HEAD、schedule unloadedでofficial wakeを一度実行し、
+最初の3候補が返すexact safe stageをcurrent Gateway report positive IDとともに取得する。
+
+### Active remaining TODO SSOT（進捗261。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

@@ -148,8 +148,12 @@ test("Peatix direct action carries the exact ticket/profile and readback stays p
   assert.equal(calls[0], "profile"); assert.equal(calls[1][1], page); assert.equal(calls[1][2], selected); assert.equal(calls[1][3], profile);
   assert.deepEqual(await workflow.readProviderState({ page, candidate: selected }), { status: "registered" });
   assert.equal(JSON.stringify(await workflow.readProviderState({ page, candidate: selected })).includes(profile.email), false);
-  const ambiguous = createPeatixDiscoveryWorkflow({ readAttendeeProfile: async () => profile, async submitOnPage() { return { status: "unavailable", reason: "private" }; } });
-  assert.deepEqual(await ambiguous.runDirectAction({ page, candidate: selected }), { status: "failed", safe_reason: "direct_action_unverified" });
+  const mapped = createPeatixDiscoveryWorkflow({ readAttendeeProfile: async () => profile, async submitOnPage() { return { status: "needs_fallback", reason: "unknown_required_field" }; } });
+  assert.deepEqual(await mapped.runDirectAction({ page, candidate: selected }), { status: "failed", safe_reason: "peatix_unknown_required_field" });
+  for (const outcome of [{ status: "unavailable", reason: "private" }, { status: "unavailable" }, { status: "unavailable", reason: "https://peatix.com/event/106" }]) {
+    const ambiguous = createPeatixDiscoveryWorkflow({ readAttendeeProfile: async () => profile, async submitOnPage() { return outcome; } });
+    assert.deepEqual(await ambiguous.runDirectAction({ page, candidate: selected }), { status: "failed", safe_reason: "direct_action_unverified" });
+  }
   await assert.rejects(workflow.runDirectAction({ page, candidate: { ...selected, ticket_id: "" } }));
 });
 
