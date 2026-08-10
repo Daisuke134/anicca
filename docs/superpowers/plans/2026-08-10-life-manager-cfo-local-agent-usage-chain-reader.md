@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** READY FOR LUNA
+**Status:** COMPLETE
 
 **Goal:** Read one source's immutable batches, accept exactly one contiguous history, and return its last durable cursor plus deduplicated normalized events.
 
@@ -78,7 +78,7 @@ paths, record bytes, event content, and errno never escape.
 
 **Interface:** `readLocalAgentUsageChain(stateRoot, sourceId)` returns a deeply frozen exact six-key result and performs no writes.
 
-- [ ] **Step 1: Write missing-module RED**
+- [x] **Step 1: Write missing-module RED**
 
 Create the test/import first. Run from `apps/life-call`:
 
@@ -88,7 +88,7 @@ node --test lib/cfo-local-agent-usage-chain.test.js
 
 Expected RED: `MODULE_NOT_FOUND` for the chain module. Record it before production code exists.
 
-- [ ] **Step 2: Implement only record validation and chain derivation**
+- [x] **Step 2: Implement only record validation and chain derivation**
 
 Use the Contract verbatim. One directory listing, one fd-bound read per final, no write/recovery behavior. Return exact keys in this order:
 
@@ -98,7 +98,7 @@ status, source_state, record_count, events, counts, coverage_exceptions
 
 `counts` uses the existing eight collector count keys. Clone/deep-freeze the result; never freeze caller or parsed temporary inputs.
 
-- [ ] **Step 3: Prove the three observable behaviors**
+- [x] **Step 3: Prove the three observable behaviors**
 
 Luna writes three compact tests:
 
@@ -111,7 +111,7 @@ Luna writes three compact tests:
    state, fork, the same event ID repeated across distinct transitions with either identical or different content,
    and a re-hashed event carrying an extra `prompt: "HOSTILE_SECRET"` key.
 
-- [ ] **Step 4: Run GREEN and Ponytail gates**
+- [x] **Step 4: Run GREEN and Ponytail gates**
 
 Run from `apps/life-call`:
 
@@ -129,6 +129,13 @@ From the worktree root run `git diff --check`, `git diff --name-only`, and `git 
 
 ### Task 2 — Sol real isolated evidence and close
 
-- [ ] Sol publishes one real batch per source under `mktemp`, reads both chains, and proves event/count/cursor equality with
+- [x] Sol publishes one real batch per source under `mktemp`, reads both chains, and proves event/count/cursor equality with
 the writer receipts. Fresh Sol review must return ship before commit/push. Then 2a2a.5b2b becomes the sole active item:
 read both source files once, resume from these cursors, and publish the next immutable batches in one local runner.
+
+## Completion evidence
+
+- Missing-module RED plus mixed-offset ordering and post-lstat `ENOENT` race REDs; two fix rounds; scoped fresh re-review `ship — Spec ✅`.
+- Focused `7/7`, all local usage `19/19`, CFO `289/289`, full `npm test`, syntax, and diff checks passed.
+- Exactly 3 files, +91/-1; no dependency, writer, runner, launchd, OTel, DB, or report implementation.
+- Real isolated E2E returned two ready chains with 4,987 accepted events: 3,917 attributed, 1,070 unattributed, 279 missing-usage rows, and 437 runner-collision groups. Both record hashes matched; raw rows stored `0`; live source size/mtime stayed unchanged.
