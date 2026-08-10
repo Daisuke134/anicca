@@ -285,13 +285,15 @@ sequenceDiagram
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
 | HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow runs 0 |
 | HRA-5 | Telegram + CFO real/shadow separation | **BLOCKED**。Telegram runs 0 |
-| HRA-6 | terms/order/tax/credential/cap/receipt/reconciliation | **BLOCKED**。permission document未検証 |
+| HRA-6 | terms/order/tax/credential/cap/receipt/reconciliation | **PARTIAL / BLOCKED_AUTONOMOUS_ORDER_PERMISSION**。SPAT4の100円単位・照会・記録保持は確認済み、agent操作許可の公式書面なし |
 | HRA-7 | HRA-6後のone ¥100 max/day review | **BLOCKED。PurchaseExecutor disabled** |
 | HRA-8 | evidence-driven target review | **BLOCKED** |
 
 ### HRA-6 / HRA-7 policy
 
-permission_document_verified=false、terms/order/tax/credential/receipt/reconciliation未完了の間はLIVE_CASHをfail-closedする。通過後もstale/manifest/Telegram/reconciliation failureのSKIP、martingale/chasing禁止、公式settled receipt確認を必須にし、USER_ATTESTED_PERMISSIONを再配布・cash実行の根拠にしない。
+permission_document_verified=false、terms/order/tax/credential/receipt/reconciliation未完了の間はLIVE_CASHをfail-closedする。JRA即PATとSPAT4はいずれも申込みを加入者本人が行い第三者に行わせない趣旨を公式規約に置くため、owner-operated agent/browser automationを本人申込みとして許容するproviderの検証可能な書面も必須とする。通過後もstale/manifest/Telegram/reconciliation failureのSKIP、martingale/chasing禁止、公式settled receipt確認を必須にし、USER_ATTESTED_PERMISSIONを再配布・cash実行の根拠にしない。
+
+SPAT4 is the preferred NAR receipt-contract candidate, not an approved autonomous executor. Its 2026-05-01 official contract fixes ordinary tickets at ¥100 units, defines acceptance/formation, prohibits third-party purchase applications, and retains application records for 30 days; its 2026-06-24 conditions require inquiry after uncertain communication to avoid duplicates. Sources: https://www.nankankeiba.com/info/spat4/pdf/spat4_contract01.pdf?ver=20260501 and https://www.nankankeiba.com/info/spat4/pdf/spat4_contract03.pdf?ver=20260624. Until written clarification resolves the agent-as-third-party question, order transport and credentials remain out of the implementation scope.
 
 ## 8. Acceptance criteriaとE2E judgment
 

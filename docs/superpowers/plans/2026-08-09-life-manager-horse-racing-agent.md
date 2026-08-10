@@ -18,6 +18,7 @@
 - Manifest必須欄は`evidence_class`、`source_url`、`source_authority`、`jurisdiction`、`retrieved_at`、`page_or_effective_timestamp`、`fetch_exit_code`、`http_status`、`parsed_row_count`、observed schema names/types、`content_sha256`、`robots_snapshot_url/status`、`terms_url/status`、`permission_basis`、`permission_document_verified`、`raw_values_exported=false`、`allowed_scope`、`cash_authorized=false`。official JRA/NARの`allowed_scope`は`private_shadow`、secondaryは`shadow_only`。
 - raw snapshotはMac-local private append-only storageだけに保持する。ETag、content hash、source URLでidempotencyを判定し、同一archiveを二重appendしない。raw values、実馬名、credential、secret、subscription id、receiptは外へ出さない。
 - `PurchaseExecutor`は常時disabled。HRA-6のterms/order/tax/credential/receipt/reconciliation gate以前に注文・決済・bet・wallet/bank mutationを作らない。`USER_ATTESTED_PERMISSION`だけではcashをauthorizeしない。
+- JRA即PATとSPAT4の現行公式規約はいずれも、購入申込みを加入者本人が行い、第三者に行わせない趣旨を明記する。owner-operated AI/browser automationがこの条件を満たすとの公式書面は未取得であるため、完全自律注文は`BLOCKED_AUTONOMOUS_ORDER_PERMISSION`とする。crawl許可、個人利用、口座保有、credential保有を代替根拠にしない。
 - `$10K/month`はevidence-driven target only。ROI、勝率、収益、forecast、guaranteeを作らず、official settled receiptとlater-window evidenceがない値をrevenueへ加算しない。
 - Solはplan、gate、verificationを所有し、Lunaはこのplanに記載されたedit、code、command、evidence作成を実行する。
 - 未完項目は先頭の一件だけをactiveにする。各sliceは最大3 files、estimated LOC 100以下、RED→GREEN→実E2E/state更新→commit→origin/canonical pushで閉じてから次へ進む。
@@ -94,7 +95,7 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
 | 11 | HRA-5 CFO adapter | blocked by HRA-4b and CFO-0c | `cfo.py` and `test_cfo.py` |
-| 12 | HRA-6 terms/order/tax/receipt gate | blocked research gate | document only, `PurchaseExecutor` disabled |
+| 12 | HRA-6 terms/order/tax/receipt gate | **partial evidence / blocked autonomous order** | SPAT4 minimum/receipt contract observed; provider automation permission unresolved |
 | 13 | HRA-7 owner-local-day ¥100 gate | blocked future gate | document only, no bet execution |
 | 14 | HRA-8 scale review | blocked future gate | evidence-driven target only |
 
@@ -531,9 +532,19 @@ Blocked message: exact missing source/permission/odds/payback reason and next re
 
 Permission to crawl does not equal permission to place a bet. No DOM-success receipt and no unsupported private ordering endpoint can pass this gate.
 
+Observed official terms evidence:
+
+- NAR「馬券を買う」: https://www.keiba.go.jp/beginner/step4.html — NARが地方競馬の公式購入先としてJRAネット投票、SPAT4、楽天競馬、オッズパークを案内し、各サービスの締切時刻を区別している。
+- SPAT4「ネットバンク投票サービス約定」第8条・第15条・第18条: https://www.nankankeiba.com/info/spat4/pdf/spat4_contract01.pdf?ver=20260501 — 通常券は100円単位、申込みは加入者自ら行い第三者に行わせられず、申込記録は30日保存される。
+- SPAT4「会員ご利用条件」: https://www.nankankeiba.com/info/spat4/pdf/spat4_contract03.pdf?ver=20260624 — 投票内容照会は原則24時間で、成立不明時は照会し二重投票を避ける必要がある。
+- JRA「即PAT禁止事項・注意事項」: https://www.jra.go.jp/dento/soku/instructions/kinshi.html — 本人以外への申込み委任を禁止し、他サイト・アプリ連携による投票の成否・内容を保証しない。
+- JRA「購入履歴確認FAQ」: https://www.jra.go.jp/faq/pop04/1_29.html — 投票照会サービスで過去60日分を確認でき、原則21時更新と案内する。
+
+Current decision: SPAT4 is the best evidence candidate for NAR because the official contract fixes the ¥100 unit, contract-formation event, inquiry behavior, and retained purchase record. It is not yet an allowed autonomous ordering path. HRA-6 remains fail-closed until the provider gives verifiable written clarification that owner-operated agent/browser automation is treated as an application by the subscriber rather than a prohibited third-party application. If that clarification is not obtained, the compliant fallback is AI-generated advice plus owner-performed final submission; it does not satisfy the requested humanless-live-order goal and must not be reported as such.
+
 ## Task 13: HRA-7 one minimum live transaction
 
-**Blocked until every HRA-6 item passes.** At action time obtain the required confirmation for an irreversible debit from the user's account. Owner-local-day total stake is at most `¥100`, only with positive confidence-adjusted EV, fresh data, pre-message success, and deterministic idempotency key. Any uncertainty becomes SKIP. Martingale, chasing, auto-escalation, and repeated submit are forbidden.
+**Blocked until every HRA-6 item passes, including written autonomous-order permission.** At action time obtain the required confirmation for an irreversible debit from the user's account. Owner-local-day total stake is at most `¥100`, only with positive confidence-adjusted EV, fresh data, pre-message success, and deterministic idempotency key. Any uncertainty becomes SKIP. Martingale, chasing, auto-escalation, and repeated submit are forbidden.
 
 Completion requires official purchase-history receipt plus settled payout/refund/void receipt and matching Telegram/CFO reconciliation. A browser success page alone is not completion.
 
