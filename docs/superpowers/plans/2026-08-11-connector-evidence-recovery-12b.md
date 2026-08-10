@@ -29,6 +29,8 @@ Luna owns only:
 
 Revised soft target after fresh review: 3 files; evidence production +70–120 LOC; evidence tests +90–130 LOC; runner integration test +35–70 LOC. Reuse the existing checkpoint validation and helpers; no broad evidence-chain rewrite and no runner production change.
 
+Final size: evidence production +119/-10 LOC, evidence tests +106/-1 LOC, and runner integration test +28 LOC. The runner test stayed below its revised soft target by reusing its existing fixture; runner production remained unchanged.
+
 ### RED
 
 1. Message succeeds and photo fails. A recreated chain validates the message receipt, skips message resend, retries only the photo, and writes one bundle. Message successful effect total one.
@@ -58,3 +60,13 @@ Revised soft target after fresh review: 3 files; evidence production +70–120 L
 - Fresh Sol review for delivery identity, corrupt receipts, checkpoint ordering, Telegram duplicates, bundle determinism/collision, Calendar freshness, privacy, symlink/root escape, Luma/Peatix non-regression, and absence of provider Submit paths.
 - The corruption matrix must exercise photo-specific message ID/timestamp/checkpoint-SHA mismatch, message-missing/photo-present, delivery receipt/artifact mismatch, unsafe message/photo IDs, file and parent symlinks, and bundle symlink/immutable collision.
 - Update SSOT, commit, and push. Mark Item 12 complete only when the full four-boundary composed fixture passes with registration one, Calendar one, bundle one, and Submit zero. Keep production schedule unloaded.
+
+## Result
+
+- Luna reproduced all five initial delivery failures, then added exact immutable message/photo receipts below the existing checkpoint root. Recovery validates receipt syntax and identity before Calendar, independently reads current Calendar, and reuses a delivery only when its event ID/URL matches.
+- Photo receipts bind the message checkpoint SHA, positive message ID, first Calendar readback timestamp, provider/event/canonical hash/provider receipt, and artifact ref/SHA. Orphan, divergent, corrupt, unsafe-ID, file/parent symlink, bundle symlink, and immutable collision fixtures fail closed.
+- A message-success/photo-failure restart sends only the photo. A photo-success/bundle-failure restart sends neither delivery and writes one deterministic bundle. A completed rerun returns the same bundle ID and leaves bundle count one.
+- The final bundle preserves provider first-observed `created_at`; its stable `calendar_readback_at` comes from the message receipt. Provider evidence and Calendar are still validated on every invocation.
+- A real minimal-runner integration composes parent pre-readback `registered` with the real evidence chain. It observes one registered external state, calls cache/direct/Harness Submit paths zero times, creates Calendar once, records provider evidence once, and ends with one bundle across the interruption sequence.
+- Luna focused evidence 16/16 and runner 16/16 passed with all named adjacent suites. Sol independently reran the frozen expanded suite at 90/90 plus three-file syntax and `git diff --check`. The three unchanged baseline failures remain isolated to the date-dependent Peatix fixture and old native provider expectations.
+- Fresh Sol review found three Important gaps, the plan was revised before fixes, and final re-review returned `ship`. Item 12 is complete; Item 13 is next. Production schedule remains unloaded.
