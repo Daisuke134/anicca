@@ -6514,7 +6514,19 @@ OpenClaw gateway 10秒timeoutとなりpositive ID 0。このtransport故障はpa
 new target/session/tab、retry、timeout拡張、provider-specific分岐、persistent stateは0。reset failureは当該providerのdiscovery failureとして
 既存failure count/circuit/report/cleanupへ流す。変更targetはrunner/test 2 files、production ≤12 LOC、test ≤55 LOC。
 
-### Active remaining TODO SSOT（進捗256。これ以外の残TODO一覧は履歴）
+### O1B-25進捗257（same-owned-page provider reset GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-provider-page-reset.md`をTDD実装した。REDはfocused 2件とも期待どおりfailし、
+provider間`about:blank`欠落とreset failure後の誤discovery継続を再現。runnerのprovider loopをindexedにし、最初以外のproviderで既存
+`action("navigate", "browser_rail", ...)`から同じ`owned`を`about:blank`へ一回だけnavigateする最小差分を入れた。
+reset failureはfailed actionを記録し、当該provider discoveryを呼ばず、既存failure count/report/finally closeへ流れる。
+
+production +5/-1、test +53/-9の2 filesでsoft target内。new session/target/page、trailing reset、retry、timeout、provider分岐、persistent stateは0。
+runner focused 10/10、production/operations/native/renderer integrationを含むSol再実行34/34、syntax、diff checkはPASS。
+fresh Sol reviewはCritical 0・Important 0で`ship`。次の一件はschedule unloaded、dashboard 0、owned page/lock absentを再確認し、
+official foreground wakeを一度だけ実行してLuma→reset→Connpass→reset→Peatix discovery/direct/readbackとexact cleanupを実測する。
+
+### Active remaining TODO SSOT（進捗257。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
