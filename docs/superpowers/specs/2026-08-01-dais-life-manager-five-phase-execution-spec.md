@@ -6154,7 +6154,23 @@ Ponytail `full`で最初の実装をbrowser provider二ファイルへ限定し�
 unknown required field fail-closed、final click at most once、click後のsame-event parent readbackをTDD固定する。login/CAPTCHA、generic form AI、
 production router、evidence、scheduleは含めない。次cursorはLunaによるこのprovider RED→GREENとfresh Sol reviewである。
 
-### Active remaining TODO SSOT（進捗231。これ以外の残TODO一覧は履歴）
+### O1B-25進捗232（Peatix direct browser provider GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-direct-submit-readback.md`をTDD実装した。初回REDはmodule-not-found、0 pass・1 fail。
+初稿GREEN後のPonytail gateで687 LOCの汎用化を棄却し、実測三画面だけへproduction 97 LOC・test 71 LOCまで縮約した。
+最終focusedは5/5、Peatix/Luma/Connpass/runner regressionは42/42、`node --check`と`git diff --check`もpass。
+最終commitは`80ed90662913d5427c36574d31ec1d064d242990`。
+
+fresh Sol reviewと実canonical-page preflightは、full candidate gateを迂回する簡略object、pathだけのconfirm照合、runnerが渡す
+`/event/<id>`からticketsへ進めない停止、`https://peatix.com:444`をexact originと誤認する4件を発見した。同じLunaがすべて修正し、
+final reviewはCritical 0・Important 0でship。現在のproviderはfull Peatix/free/open/ticket identity、exact HTTPS origin/port/userinfo/query/hash、
+same-event canonical開始、unknown required fieldのpre-submit停止、final click最大1、exact event/ticket markerのpost-click readbackを固定する。
+
+この進捗ではproduction workflow/router/orderへ未接続なので外部Submit、Calendar write、PNG、Telegram bundleは0。
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-workflow-submit.md`は、公開detailのusable free ticket IDをcandidateへ運び、
+既存Peatix workflowからreview済みproviderのdirect action/readbackへdelegateする二ファイルsliceである。
+
+### Active remaining TODO SSOT（進捗232。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
