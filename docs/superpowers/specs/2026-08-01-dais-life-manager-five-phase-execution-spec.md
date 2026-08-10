@@ -7027,7 +7027,13 @@ Luna REDはcanonical positiveに加えjoinとexact URL rejection matrixを追加
 
 最終scopeはConnpass workflow production/test 2 files。Sol独立workflow/provider/runner/production/operations/Harnessは98/98、syntax、diff check PASS。fresh Sol reviewは`ship`。次はpushed codeのofficial wake exact 1回で、Browser Harness handoff、final confirmation Submit最大1、canonical registered/pending、Connpass applied bundleをlive検証する。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗318。これ以外の残TODO一覧は履歴）
+### O1B-25進捗319（Item 14 live Harness / provider quota blockerとnative known-form plan）
+
+pushed commit `d3b62b0ac`のofficial runnerを4 labels unloaded、process/lock 0、CDP newtab 1、Git clean/upstream 0でexact 1回起動した。wake `wake-928666cc8425d896f6e85ac9`はLuma exhaustion後にConnpass event `400028`へ継続し、pre-readback、cache、direct safe failure、Browser Harnessへ初めてhandoffした。Harness actionは3,317msでsafe failしDOM action/final confirmation Submit 0。その後provider/candidateを継続し、3 consecutive safe failuresで`circuit_open/evidence_completion_failed`、failure count 3、every-wake Telegram positive ID `11168`。bundle 4、Connpass receipt/artifact/checkpoint 0、process/lock 0、owned page cleanup、CDP newtab 1、schedule unloaded。
+
+latest sanitized agent evidenceはHarnessがlocal Codex開始前quotaで2 attemptsとも失敗したことを示す。実可用性probeはClaude direct monthly limit、local Claude proxy 403、DeepSeek credit不足、Gemini 401。OpenClaw free Qwenは応答したがwallet warningをJSON前へ付け、既存strict contractが意図どおり拒否するためvalidatorを弱めない。plan `docs/superpowers/plans/2026-08-11-connector-connpass-native-known-form-14d.md`はHarness production/test 2 filesだけ。既存sanitized observationからfree online viewing、exact Connpass referral、exact `はい、わかりました`、exact final `申し込みを確定する`だけをunique native controlとして選び、parent resolverとfallback-local final Submit one-shotを固定する。未知UIは従来agent fallbackでsafe fail。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗319。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
