@@ -6295,7 +6295,19 @@ final confirm、Calendar、Telegram application report、state/repo writeは診�
 `docs/superpowers/plans/2026-08-10-connector-peatix-optional-privacy-control.md`はprivate profileの明示consent `true`を維持し、
 実formでcontrol 0なら続行、1ならcheck、複数ならfail-closedへ最小TDD修正する。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗241。これ以外の残TODO一覧は履歴）
+### O1B-25進捗242（Peatix optional privacy control GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-optional-privacy-control.md`をTDD実装した。REDはprivacy control 0の実form fixtureが
+`privacy_control_unavailable`で停止する既存挙動を再現。commit `c0d62283a`はprivate profileの
+`accept_organizer_privacy=true`必須を維持し、control 0なら続行、1ならcheck、2以上ならfinal effect前にfail-closedへ変更した。
+production差分は2行、変更fileはproviderとfocused testの2つだけ。
+
+fresh Sol reviewはname/email、unknown required field、cross-event confirm、ambiguous readback、private値非露出も含めてCritical 0・
+Important 0でshipした。focused 6/6、指定回帰54/54、合成境界13/13、syntax、`git diff --check`は全PASS。
+次の一件はschedule unloaded、dashboard ticket count 0、Peatix auth復旧済みをpreconditionにofficial foreground runnerを再実行し、
+実registrationから同一lineageのapplied bundleまで完走させる。
+
+### Active remaining TODO SSOT（進捗242。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
