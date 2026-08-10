@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — slices 2a2a.1-5b1 complete; 2a2a.5b2 is next |
+| Status | ACTIVE — slices 2a2a.1-5b2c complete; 2a2a.5c is active |
 | Parent | `2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local Mac first |
 | Source | `~/.local/state/{life-manager,anicca}/telemetry/agent-usage.jsonl` |
@@ -213,7 +213,7 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 | 2a2a.5b2a ✅ | Read one immutable chain, dedupe transitions/events, and return the last durable cursor | 3 files, +100/-1 LOC |
 | 2a2a.5b2b ✅ | Read both source ledgers once, resume from durable cursors, and publish the next batches | 3 files, +92/-1 LOC |
 | 2a2a.5b2c ✅ | Invoke that runner from the existing local hourly loop without changing Telegram copy | 2 files, +17/-3 LOC |
-| 2a2a.5c NEXT | One content-free internal OTel batch span links checkpoint and counts; it is not token truth | <=3 files, <=100 added LOC |
+| 2a2a.5c ACTIVE | One real content-free INTERNAL OTel span links both source checkpoints and event counts; local sink makes it observable without stdout or fake/no-op export | <=3 files, <=100 additions; plan: `2026-08-11-life-manager-cfo-local-agent-usage-otel-span.md` |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
 
 ## Acceptance
@@ -224,7 +224,7 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 - [x] Identical source-row refs are idempotent; conflicting refs fail closed; reused runner IDs lower coverage without
       deleting distinct source rows.
 - [x] Rewrite, truncation, malformed complete rows, and partial tails reduce coverage without deleting accepted evidence.
-- [ ] An unread source reduces coverage without deleting accepted evidence.
+- [x] An unread source reduces coverage without deleting accepted evidence.
 - [x] Explicit mapping attributes a row; missing mapping produces an unattributed row.
 - [ ] Subscription cash cost remains separate; token-derived USD is not labeled current spend.
 - [x] Real local E2E reads existing redacted usage ledgers and emits counts only, never prompts, payloads, or secrets.
