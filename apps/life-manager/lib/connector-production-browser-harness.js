@@ -8,6 +8,7 @@ const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
 const KINDS = new Set(["input", "textarea", "select", "checkbox", "radio", "button", "link"]);
 const FILL = new Set(["ax_fill", "dom_fill", "ax_select"]);
+const PROVIDERS = new Set(["luma", "connpass", "peatix"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシー確認|主催者のプライバシーポリシーに同意する)$/ };
 
 function invalid() {
   throw new Error("Connector production Browser Harness invalid");
@@ -18,11 +19,14 @@ function safeControl(input) {
   const control = String(input.control || "");
   const kind = String(input.kind || "");
   const label = String(input.label || "").replace(/\s+/g, " ").trim();
+  const question = String(input.question || "").replace(/\s+/g, " ").trim();
   if (
     !CONTROL.test(control) || !KINDS.has(kind) || !label || label.length > 300
-    || /[\x00-\x1f\x7f]/.test(label) || typeof input.required !== "boolean"
+    || /[\x00-\x1f\x7f]/.test(label) || question.length > 300
+    || /[\x00-\x1f\x7f]/.test(question) || (question && !["checkbox", "radio"].includes(kind))
+    || typeof input.required !== "boolean"
   ) invalid();
-  return Object.freeze({ control, kind, label, required: input.required });
+  return Object.freeze({ control, kind, label, required: input.required, ...(question ? { question } : {}) });
 }
 
 async function inspectPageControls(input = {}) {
@@ -48,7 +52,9 @@ async function inspectPageControls(input = {}) {
     if (!label) return [];
     const control = `control_${index + 1}`;
     element.dataset.lmConnectorControl = control;
-    return [{ control, kind, label, required: element.required === true }];
+    const group = ["checkbox", "radio"].includes(kind) && typeof element.closest === "function" ? element.closest("fieldset, dl.field, [role='group'], .field") : null;
+    const question = group && typeof group.querySelector === "function" ? String(group.querySelector("legend,dt,[data-question]")?.textContent || "").replace(/\s+/g, " ").trim() : "";
+    return [{ control, kind, label, required: element.required === true, ...(question ? { question } : {}) }];
   }));
   if (!Array.isArray(observed)) invalid();
   return Object.freeze(observed.map(safeControl));
@@ -99,6 +105,9 @@ function normalizedLabel(value) {
   return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
+async function safeProfile(read) { try { const value = await read(); return value && typeof value === "object" && !Array.isArray(value) ? value : null; } catch { return null; } } function answerFor(profile, label) { const answers = profile && profile.form_answers; const value = answers && typeof answers === "object" && !Array.isArray(answers) ? Object.entries(answers).find(([key]) => normalizedLabel(key) === label)?.[1] : null; return typeof value === "string" || Array.isArray(value) ? value : null; }
+function approvedOption(profile, question, label) { const answers = profile && profile.form_answers; const exactQuestion = normalizedLabel(question); if (!exactQuestion) return false; const value = answers && typeof answers === "object" && !Array.isArray(answers) && Object.entries(answers).find(([key]) => normalizedLabel(key) === exactQuestion)?.[1]; return typeof value === "string" ? normalizedLabel(value) === label : Array.isArray(value) && value.some((item) => typeof item === "string" && normalizedLabel(item) === label); }
+
 function createLumaPrivateValueResolver(options = {}) {
   const readProfile = options.readProfile;
   if (typeof readProfile !== "function") invalid();
@@ -117,6 +126,25 @@ function createLumaPrivateValueResolver(options = {}) {
   };
 }
 
+function createPrivateValueResolver(options = {}) {
+  const readPeatixProfile = options.readPeatixProfile || (() => null);
+  const readFormProfile = options.readFormProfile || (() => null);
+  if (typeof readPeatixProfile !== "function" || typeof readFormProfile !== "function") invalid();
+  return async function resolveValue(input = {}) {
+    const control = safeControl(input.control); const label = normalizedLabel(control.label); const question = normalizedLabel(control.question);
+    if (["checkbox", "radio"].includes(control.kind)) {
+      const profile = await safeProfile(readPeatixProfile);
+      const knownPrivacyOption = label === normalizedLabel("確認し同意する。") && /^.+のプライバシーポリシーを読んだ・確認した$/.test(question);
+      if ((LABEL.privacy.test(label) || knownPrivacyOption) && profile && profile.accept_organizer_privacy === true) return true;
+      return approvedOption(await safeProfile(readFormProfile), question, label) ? true : null;
+    }
+    const key = LABEL.name.test(label) ? "name" : LABEL.email.test(label) ? "email" : LABEL.family.test(label) ? "family_name_kana" : LABEL.given.test(label) ? "given_name_kana" : null;
+    if (key) { const profile = await safeProfile(readPeatixProfile); return profile && typeof profile[key] === "string" ? profile[key] : null; }
+    const profile = await safeProfile(readFormProfile);
+    return LABEL.phone.test(label) ? profile && typeof profile.phone === "string" ? profile.phone : null : answerFor(profile, label);
+  };
+}
+
 function absoluteDirectory(value) {
   const directory = path.resolve(String(value || ""));
   if (!path.isAbsolute(directory) || directory === path.parse(directory).root) invalid();
@@ -132,20 +160,21 @@ function createBoundedActionProposer(options = {}) {
     const targetId = String(input.target_id || "");
     const step = Number(input.step);
     if (
-      input.provider !== "luma" || !/^[A-Za-z0-9._-]{3,128}$/.test(targetId)
+      !PROVIDERS.has(input.provider) || !/^[A-Za-z0-9._-]{3,128}$/.test(targetId)
       || input.expected_state !== "registered_or_pending"
       || !Number.isInteger(step) || step < 1 || step > 10
       || !input.observation || !Array.isArray(input.observation.controls)
     ) invalid();
     const controls = input.observation.controls.map(safeControl);
+    const state = "registration_page";
     const result = await runAgentRunner({
       prompt: [
-        "Choose exactly one browser action for the current Luma registration page.",
+        `Choose exactly one browser action for the current ${input.provider} registration page.`,
         "Return only purpose, method, and one control token from the supplied list.",
-        "Prefer filling required ordinary fields before submitting. Never navigate, open or close pages, run commands, or edit code.",
+        "Prefer filling only parent-owned values. Never invent answers, navigate, open or close pages, run commands, or edit code.",
         "The parent process owns all private values, executes the action, and verifies registered or pending state.",
         `Step: ${step} of 10`,
-        `Page state: ${String(input.observation.state || "registration_page")}`,
+        `Page state: ${state}`,
         `Controls: ${JSON.stringify(controls)}`,
       ].join("\n"),
       schema: {
@@ -185,6 +214,7 @@ function createBoundedActionProposer(options = {}) {
 function createProductionBrowserHarness(options = {}) {
   const lumaWorkflow = options.lumaWorkflow;
   const connpassWorkflow = options.connpassWorkflow;
+  const peatixWorkflow = options.peatixWorkflow;
   const inspectControls = options.inspectControls;
   const proposeAction = options.proposeAction;
   const operateControl = options.operateControl;
@@ -192,6 +222,7 @@ function createProductionBrowserHarness(options = {}) {
   if (
     !lumaWorkflow || typeof lumaWorkflow.readProviderState !== "function"
     || (connpassWorkflow != null && typeof connpassWorkflow.readProviderState !== "function")
+    || (peatixWorkflow != null && typeof peatixWorkflow.readProviderState !== "function")
     || typeof inspectControls !== "function" || typeof proposeAction !== "function"
     || typeof operateControl !== "function" || typeof resolveValue !== "function"
   ) invalid();
@@ -212,14 +243,17 @@ function createProductionBrowserHarness(options = {}) {
 
   async function performAction(input = {}) {
     if (!input.page || !input.action || !CONTROL.test(String(input.action.control || ""))) invalid();
+    const provider = input.provider == null ? "luma" : String(input.provider);
+    if (!PROVIDERS.has(provider)) invalid();
     const observation = registry.get(input.page) || await observed(input.page);
     const control = observation.controls.find((item) => item.control === input.action.control);
     if (!control) return Object.freeze({ status: "failed" });
     let value = null;
-    if (FILL.has(input.action.method)) {
-      value = await resolveValue({ page: input.page, control, action: input.action });
+    const answerControl = ["checkbox", "radio"].includes(control.kind) && ["ax_check", "ax_click", "coordinate_click"].includes(input.action.method);
+    if (FILL.has(input.action.method) || answerControl) {
+      value = await resolveValue({ provider, page: input.page, control, action: input.action });
       if (
-        !(typeof value === "string" || Array.isArray(value))
+        !(typeof value === "string" || typeof value === "boolean" || Array.isArray(value))
         || (typeof value === "string" && (!value.trim() || value.length > 2_000))
         || (Array.isArray(value) && (value.length < 1 || value.length > 3))
       ) return Object.freeze({ status: "failed" });
@@ -236,13 +270,13 @@ function createProductionBrowserHarness(options = {}) {
   }
 
   async function runFallback(input = {}) {
-    if (!["luma", "connpass"].includes(input.provider) || !input.candidate) invalid();
-    const workflow = input.provider === "luma" ? lumaWorkflow : connpassWorkflow;
+    if (!PROVIDERS.has(input.provider) || !input.candidate) invalid();
+    const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow }[input.provider];
     if (!workflow || typeof workflow.readProviderState !== "function") invalid();
     const adapter = createBrowserHarnessAdapter({
       observePage: ({ page }) => observed(page),
       proposeAction,
-      performAction,
+      performAction: (action) => performAction({ ...action, provider: input.provider }),
       readExpectedState: ({ page }) => workflow.readProviderState({
         page,
         candidate: input.candidate,
@@ -256,6 +290,7 @@ function createProductionBrowserHarness(options = {}) {
 
 module.exports = {
   createBoundedActionProposer,
+  createPrivateValueResolver,
   createLumaPrivateValueResolver,
   createProductionBrowserHarness,
   inspectPageControls,

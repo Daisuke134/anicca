@@ -18,7 +18,7 @@ const { createPeatixDiscoveryWorkflow } = require("./connector-peatix-workflow.j
 const { readLumaFormProfile } = require("./luma-form-profile.js");
 const {
   createBoundedActionProposer,
-  createLumaPrivateValueResolver,
+  createPrivateValueResolver,
   createProductionBrowserHarness,
   inspectPageControls,
   operatePageControl,
@@ -173,7 +173,7 @@ function createProductionProviderRouter(options = {}) {
         pageState: LUMA_PAGE_STATE,
         expectedEffect: EXPECTED_REGISTRATION_EFFECT,
         page: route.input.page,
-        performAction,
+        performAction: (action) => performAction({ ...action, provider: route.input.provider }),
         readExpectedState: ({ page }) => route.workflow.readProviderState({
           page,
           candidate: route.input.candidate,
@@ -273,12 +273,14 @@ function createMinimalProductionDependencies(options = {}) {
     repoRoot,
     evidenceDir: lunaEvidenceDir,
   });
-  const resolveValue = options.resolveValue || createLumaPrivateValueResolver({
-    readProfile: () => readLumaFormProfile({ path: lumaFormProfilePath }),
+  const resolveValue = options.resolveValue || createPrivateValueResolver({
+    readPeatixProfile: () => options.peatixAttendeeProfile,
+    readFormProfile: () => readLumaFormProfile({ path: lumaFormProfilePath }),
   });
   const browserHarness = options.browserHarness || createProductionBrowserHarness({
     lumaWorkflow,
     connpassWorkflow,
+    peatixWorkflow,
     inspectControls: inspectPageControls,
     proposeAction,
     operateControl: operatePageControl,

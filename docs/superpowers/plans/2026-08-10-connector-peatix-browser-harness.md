@@ -50,3 +50,11 @@ node --test \
 ## Live acceptance owned by Sol
 
 After fresh review and push, Sol runs one official schedule-disabled foreground wake. Acceptance is either a new parent-verified Peatix `registered|pending` state or a more specific safe failure proving no unapproved answer/final confirmation occurred. Sol then audits the Peatix dashboard, external-effect counts, cleanup, Gateway positive ID, updates the Active SSOT, commits, and pushes before continuing.
+
+## Implementation status
+
+- [x] RED reproduced the missing Peatix proposer, fallback, resolver, and factory contracts.
+- [x] Luna implemented the bounded provider route and parent-owned value policy.
+- [x] Primary Sol and fresh Sol review found and closed cross-question, Kana/privacy, and cached-provider regressions.
+- [x] Focused 20/20, adjacent 23/23, native 7/7, syntax, and diff checks pass.
+- [ ] Sol live acceptance remains pending until the pushed official foreground wake is measured.
