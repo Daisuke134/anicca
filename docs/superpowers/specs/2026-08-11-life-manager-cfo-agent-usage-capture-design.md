@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a–3 complete; CFO-2a2b.4 real E2E and close is next |
+| Status | ACTIVE — CFO-2a2b.1a–3 complete; CFO-2a2b.4 plan reviewed, Luna harness update next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -107,7 +107,8 @@ normalizer. Until every required source is fresh and all exceptions are zero, no
       plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-agent-usage-capture-hourly-publication.md`.
 - [ ] **CFO-2a2b.4 — real E2E and close:** Sol verifies the two real ledgers are unchanged, runs one isolated real
       provider-boundary probe without a paid provider, obtains fresh review, updates the parent SSOT, commits, pushes,
-      and sends one counts-only Telegram milestone.
+      and sends one counts-only Telegram milestone. Execution plan:
+      `docs/superpowers/plans/2026-08-11-life-manager-cfo-agent-usage-capture-real-e2e-close.md`.
 
 ## Acceptance gates
 
