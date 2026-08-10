@@ -11,7 +11,7 @@ const FILL = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check"]);
 const ACTIONS = { input: ["fill", "ax_fill"], textarea: ["fill", "ax_fill"], select: ["fill", "ax_select"], checkbox: ["fill", "ax_check"], radio: ["fill", "ax_check"], button: ["submit", "ax_click"], link: ["submit", "ax_click"] };
 const ACTIONABLE_KINDS = new Set(["input", "textarea", "select", "checkbox", "radio"]);
 const MUTATING_METHODS = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check", "ax_click", "coordinate_click", "keyboard_submit"]);
-const PROVIDERS = new Set(["luma", "connpass", "peatix"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシー確認|主催者のプライバシーポリシーに同意する)$/ };
+const PROVIDERS = new Set(["luma", "connpass", "peatix", "meetup"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシー確認|主催者のプライバシーポリシーに同意する)$/ };
 const PEATIX_FORM_SUBMIT_LABEL = "確認画面へ進む";
 const PEATIX_CONFIRM_LABEL = "チケットを申し込む";
 const PEATIX_FORM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/form$/;
@@ -29,6 +29,10 @@ function invalid() {
 function safePageState(page) { try { const url = new URL(String(page && typeof page.url === "function" ? page.url() : "")); return url.origin !== "null" && url.pathname ? `${url.origin}${url.pathname}` : "unavailable"; } catch { return "unavailable"; } }
 function candidatePeatixEventId(candidate) {
   const match = /^peatix-event:\/\/event\/([1-9][0-9]*)$/.exec(String(candidate && candidate.event_ref || ""));
+  return match ? match[1] : "";
+}
+function candidateMeetupEventId(candidate) {
+  const match = /^meetup-event:\/\/event\/([1-9][0-9]*)$/.exec(String(candidate && candidate.event_ref || ""));
   return match ? match[1] : "";
 }
 function candidateConnpassEventId(candidate) { const match = /^connpass-event:\/\/event\/([1-9][0-9]*)$/.exec(String(candidate && candidate.event_ref || "")); return match ? match[1] : ""; }
@@ -458,6 +462,7 @@ function createProductionBrowserHarness(options = {}) {
   const lumaWorkflow = options.lumaWorkflow;
   const connpassWorkflow = options.connpassWorkflow;
   const peatixWorkflow = options.peatixWorkflow;
+  const meetupWorkflow = options.meetupWorkflow;
   const inspectControls = options.inspectControls;
   const proposeAction = options.proposeAction;
   const operateControl = options.operateControl;
@@ -466,13 +471,14 @@ function createProductionBrowserHarness(options = {}) {
     !lumaWorkflow || typeof lumaWorkflow.readProviderState !== "function"
     || (connpassWorkflow != null && typeof connpassWorkflow.readProviderState !== "function")
     || (peatixWorkflow != null && typeof peatixWorkflow.readProviderState !== "function")
+    || (meetupWorkflow != null && typeof meetupWorkflow.readProviderState !== "function")
     || typeof inspectControls !== "function" || typeof proposeAction !== "function"
     || typeof operateControl !== "function" || typeof resolveValue !== "function"
   ) invalid();
   const registry = new WeakMap();
 
   async function observed(page, provider, candidate = null) {
-    const eventId = candidatePeatixEventId(candidate);
+    const eventId = candidatePeatixEventId(candidate) || candidateMeetupEventId(candidate);
     const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     const connpassJoin = isConnpassJoin(provider, href);
     const values = await inspectControls({ page, provider, event_id: eventId || undefined, connpass_join: connpassJoin });
@@ -491,7 +497,7 @@ function createProductionBrowserHarness(options = {}) {
     if (!input.page || !input.action || !CONTROL.test(String(input.action.control || ""))) invalid();
     const provider = input.provider == null ? "luma" : String(input.provider);
     if (!PROVIDERS.has(provider)) invalid();
-    const eventId = candidatePeatixEventId(input.candidate) || String(input.event_id || "");
+    const eventId = candidatePeatixEventId(input.candidate) || candidateMeetupEventId(input.candidate) || String(input.event_id || "");
     const cached = registry.get(input.page);
     const observation = cached && cached.provider === provider && cached.eventId === eventId ? cached.observation : await observed(input.page, provider, input.candidate);
     const currentHref = (() => { try { return String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } })();
@@ -549,7 +555,7 @@ function createProductionBrowserHarness(options = {}) {
 
   async function runFallback(input = {}) {
     if (!PROVIDERS.has(input.provider) || !input.candidate) invalid();
-    const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow }[input.provider];
+    const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow, meetup: meetupWorkflow }[input.provider];
     if (!workflow || typeof workflow.readProviderState !== "function") invalid();
     const seenMutations = new Set();
     let connpassSubmitAttempted = false;
@@ -576,12 +582,14 @@ function createProductionBrowserHarness(options = {}) {
         if (signature && result && result.status === "success") seenMutations.add(signature);
         return result;
       },
-      readExpectedState: ({ page }) => finalEffectProviderState
-        ? finalEffectProviderState
-        : workflow.readProviderState({
+      async readExpectedState({ page }) {
+        const state = finalEffectProviderState || await workflow.readProviderState({
           page,
           candidate: input.candidate,
-        }),
+        });
+        return input.provider === "meetup" && (!state || state.status !== "registered")
+          ? Object.freeze({ status: "unavailable" }) : state;
+      },
     });
     const result = await adapter.runFallback(input);
     return ambiguousEffect && result && result.status === "failed"

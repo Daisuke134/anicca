@@ -7189,7 +7189,11 @@ fresh Sol再reviewはCritical 1 / Important 1。generic `Log in`がreadinessを�
 
 Meetup auth preflightはshared session未認証、Google OAuth saved session 0、Meetup Keychain existing credential 0、email recovery mail 0。公式email signup入力は全validだがhidden hCaptchaがsubmitを停止することを実frameで確認した。生成credentialはrepo/state/logではなくmacOS Keychainだけへmode外保存し、account/sessionは未作成。CAPTCHAをコードで迂回しない。Item19 Meetupは未完でproduction supported表示なし。scheduleはreview済みConnector branchの09:00 daily label loadedを維持し、new codeは分離worktreeだけ。
 
-### Active remaining TODO SSOT（進捗343。これ以外の残TODO一覧は履歴）
+### O1B-25進捗344（Item 19M-B / Meetup closed production wiring完了）
+
+Meetup discovery・parent readbackのpushed `823ad0d5b`を既存official production factory/router、bounded Browser Harness、native provider順へ最小配線した。LunaのREDはproduction 11/12、Harness 54/55、native 6/8で、Meetup route/provider/order欠落を再現した。最終差分はplanned 6 filesだけで、workflow version `meetup_registration_v1`、closed provider allowlist、Peatix後のnative順、同じowned pageとMeetup event identityに束縛したcache observationを追加した。Meetup fallbackはexact parent state `registered`だけを成功とし、absent/pending/unavailableを成功へ昇格しない。Luna GREENはproduction 12/12、Harness 55/55、native 8/8、adjacent runner 36/36。Sol独立expanded 123/123、production syntax、diff checkがPASSし、fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test/review中のbrowser/provider/Calendar/evidence/Telegram/profile/state/launchd/schedule作用は0。Item19のMeetup acceptanceは未完で、次の一件はregistered Meetup pageのfull-page PNG、deterministic provider receipt/readback、strict Meetup Calendar URL/source titleをTDDで接続する19M-C。
+
+### Active remaining TODO SSOT（進捗344。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
