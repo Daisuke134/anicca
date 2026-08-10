@@ -7203,7 +7203,11 @@ review済みMeetup commits `823ad0d5b`、`83e9d1ba2`、`607c14048`をstable sche
 
 read-only実DOM測定では実三候補のconfirm pageすべてが`#confirm-form`内にexact `lastname_edit`/`firstname_edit`を各1件持つが、保存済みattendee profileの編集用`.field-bundle`が`display:none`で両control 0x0、required falseだった。三件とも既存jQuery form validationはtrue。旧direct providerはvisible-only `control()`で両方をnullにして値欠落と誤分類していた。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-hidden-kana-recovery.md`はPeatix browser provider production/testの2 filesだけ。両exact control visibleなら従来fill、両方hiddenかつform validなら保存済み値を再入力せずconfirm、片側/重複/visibility mismatch/invalidはfail closedとする。scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗346。これ以外の残TODO一覧は履歴）
+### O1B-25進捗347（Item 19M-D0 / Peatix hidden Kana recovery GREEN）
+
+Lunaがplan `2026-08-10-connector-peatix-hidden-kana-recovery.md`をPeatix browser provider production/testの2 filesだけでTDD実装した。REDは16/19で、hidden exact pair validが`kana_control_unavailable`、hidden pair invalidも同reason、visible non-editable controlがfinalまで進む3 failureを再現した。初回GREEN後のfresh Sol reviewは、Playwright Locatorが常に`fill()` methodを持つためmethod有無がeditable proofにならないImportant 1を発見。fix round 2はfixtureが常にfillを持つ実semanticsで18/20 REDを再現し、exact single locatorの`isEnabled()`と`isEditable()`が両方boolean trueの場合だけvisible Kana pairをfillする。欠落/throw/nonboolean/disabled/non-editable、zero/one-sided/duplicate/visibility mismatchはfinal click前にfail closed。exact hidden pairはprivate stored valueをread/fill/forceせず既存jQuery validationへ進み、invalidなら`confirm_validation_failed`。Luna/ Sol独立focused+adjacent 123/123、syntax、diff checkがPASS。変更外Peatix workflow 22/23の1 failureはstable clean HEAD同一の日付fixtureで新規回帰0。fresh Sol re-reviewはCritical 0・Important 0で`ship`。implementation/test/review中のbrowser/provider/Calendar/evidence/Telegram/state/launchd/schedule作用0。Item19 Meetupは未完で、次の一件はcommit/push後のofficial schedule-unloaded wakeでPeatix同reason解消とMeetup audit到達をlive検証する。
+
+### Active remaining TODO SSOT（進捗347。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
