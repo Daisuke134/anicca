@@ -6803,7 +6803,13 @@ no-final-submit診断をactual候補3で実行し、required 3件をparent resol
 
 次plan `docs/superpowers/plans/2026-08-10-connector-peatix-confirm-control.md`はHarness/testの2 filesだけで、strict provider/host/same-event confirm path/tag/ID/exact label/enabled/uniqueの全条件を満たすanchorだけをbutton/submittableへ変換し、form submitはsame-event confirm URL wait後だけsuccessを返す。ordinary link、cookie/filter、未完・unlabeled・competing required、cross-eventはfail closed。Item 10B/14/19は未完、scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗276。これ以外の残TODO一覧は履歴）
+### O1B-25進捗277（Peatix final control first GREEN / fresh review fix-first）
+
+Lunaの初回GREENは、strict Peatix confirm URL・candidate event ID・exact `a#confirm-button`・公開label `チケットを申し込む`・enabled・unique・form非関連・全required answer完了かつ同一form所属を満たすcontrolだけを最終作用へ変換し、form submitの前にsame-event `/confirm` waitを開始するところまで実装した。focused 39/39、planned adjacent 90/90、Sol全Connector回帰は299/302 PASS。残る3件はclean HEADの別展開でも同一再現し、legacy provider cursor期待値2件と必須email未注入fixture 1件で今回差分外だった。
+
+fresh Sol reviewはImportant 2件を実証して`fix-first`。第一に、最終click後の遷移/readback待機がなく、即時readbackは`absent`でfallback failedとなる一方10ms後に実登録になるfixtureを再現した。外側runnerはfallback completed時だけpost-submit readbackするため、この状態で次候補へ進むと重複申込になり得る。第二に、CSS-hiddenのexact `a#confirm-button`がsubmittableとして露出した。planを先に改訂し、最終click前からbounded effect/readback waitを開始してambiguous timeoutでは次候補を許可しないこと、delayed registrationでclick 1回・terminal outcome 1回・次候補作用0を回帰化すること、最終anchorにbrowser-visible条件を追加することを必須にした。初回diffは未commit、browser/model/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用0。Item 10B/14/19は未完。
+
+### Active remaining TODO SSOT（進捗277。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
