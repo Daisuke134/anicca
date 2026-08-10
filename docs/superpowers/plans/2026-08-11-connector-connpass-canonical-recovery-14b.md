@@ -43,3 +43,10 @@ Build one Connpass fixture: pre-submit absent, cache miss, direct completed, pos
 - Fresh Sol review for action ordering, exact canonical identity, no repeat Submit, and cleanup.
 - Update SSOT, commit, and push before another official wake.
 - The next official wake is a recovery wake. Acceptance requires canonical pre-readback or canonical recovery readback `registered|pending`, provider Submit zero, exact Connpass bundle one, Calendar exact one, positive Telegram message/photo/every-wake IDs, and normal cleanup.
+
+## Result
+
+- RED reproduced the live boundary: Connpass direct action left the page on a join URL and the current runner returned `circuit_open/evidence_completion_failed` before evidence.
+- GREEN adds one Connpass-only canonical navigation and action-wrapped parent readback after a completed operation. Navigation, readback, or nonregistered-state failures stop before evidence and never re-enter cache/direct/Harness/Submit.
+- Fresh review found the first condition also recovered an already-registered canonical pre-readback. A second RED showed the extra navigation/readback; GREEN limits recovery to a completed operation. Already-registered now uses initial navigate one, Submit zero, recovery zero, evidence one.
+- Final diff is the two owned files, production +13 LOC and tests +50 LOC. Sol independent adjacent regression passes 82/82; syntax and diff check pass. Fresh Sol re-review: `ship`.
