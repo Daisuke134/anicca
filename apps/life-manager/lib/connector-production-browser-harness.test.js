@@ -61,7 +61,7 @@ test("Connpass known form completes natively before the agent when the runner is
   let step = 0;
   let agentCalls = 0;
   const operated = [];
-  const page = Object.freeze({ page_id: "known-connpass-page" });
+  const page = Object.freeze({ page_id: "known-connpass-page", url() { return "https://osaka-driven-dev.connpass.com/event/400028/join/"; } });
   const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner() { agentCalls += 1; throw new Error("agent unavailable"); } });
   const harness = createProductionBrowserHarness({
     lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
@@ -83,7 +83,7 @@ test("Connpass resolver approves only the exact safe radio predicates", async ()
   const resolver = createPrivateValueResolver({ async readPeatixProfile() { privateReads += 1; return {}; }, async readFormProfile() { privateReads += 1; return { form_answers: {} }; } });
   const cases = [["オンライン視聴枠（YouTube） 無料 参加者数 30人", "参加枠", true], ["Connpass", "このイベントは何を見て知りましたか？", true], ["オンライン視聴枠（YouTube） 無料", "参加枠", true], ["オンライン視聴枠（YouTube） 無料 参加者数 30人", "", null], ["Connpass", "", null], ["オンライン登壇枠（Zoom） 無料 先着順 3/3人", "参加枠", null], ["オンライン視聴枠（YouTube） 有料 参加者数 30人", "参加枠", null], ["いいえ", "negative", null], ["X", "other referral", null], ["Connpass / SNS", "ambiguous", null], ["unknown", "unknown", null]];
   for (const [label, question, expected] of cases) {
-    assert.equal(await resolver({ provider: "connpass", control: { control: "safe_radio", kind: "radio", label, question, required: true } }), expected, label);
+    assert.equal(await resolver({ provider: "connpass", state: "connpass_join", control: { control: "safe_radio", kind: "radio", label, question, required: true } }), expected, label);
   }
   assert.equal(privateReads, 0);
 });
@@ -108,6 +108,8 @@ test("Connpass native ignores safe-looking controls outside the exact join page"
   } });
   assert.deepEqual(await proposer({ provider: "connpass", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { state: "registration_page", controls: [control] } }), { control: control.control });
   assert.equal(agentCalls, 1);
+  const resolver = createPrivateValueResolver({ readPeatixProfile: async () => ({ accept_organizer_privacy: true }), readFormProfile: async () => ({}) });
+  assert.equal(await resolver({ provider: "connpass", state: "registration_page", control }), null);
 });
 
 test("Connpass native fails closed for duplicate safe viewing options", async () => {
@@ -663,6 +665,31 @@ test("Connpass join inspector normalizes the measured ticket and question DOM", 
   const wrongNameControls = await inspectPageControls({ provider: "connpass", page: { url() { return "https://osaka-driven-dev.connpass.com/event/400028/join/"; }, locator() { return { async evaluateAll(callback, context) { return callback([wrongName, submit], context); } }; } } });
   assert.equal(wrongNameControls[0].required, false);
   assert.equal(wrongNameControls[0].question, undefined);
+});
+
+test("Connpass exact join does not adopt a generic question outside .question_list", async () => {
+  const form = {};
+  const genericTitle = { textContent: "必須 参加枠" };
+  const genericGroup = { querySelector(selector) { return selector === ":scope > .question" ? genericTitle : null; } };
+  const outsideQuestion = {
+    dataset: {}, labels: [{ innerText: "オンライン視聴枠（YouTube） 無料 参加者数 30人" }], innerText: "", options: [], value: "", checked: false,
+    required: true, disabled: false, form, tagName: "INPUT", type: "radio", name: "other_radio",
+    getAttribute() { return ""; },
+    closest(selector) { return selector === "fieldset, dl.field, [role='group'], .field" ? genericGroup : null; },
+  };
+  const page = {
+    url() { return "https://osaka-driven-dev.connpass.com/event/400028/join/"; },
+    locator() { return { async evaluateAll(callback, context) { return callback([outsideQuestion], context); } }; },
+  };
+  const controls = await inspectPageControls({ page, provider: "connpass" });
+  assert.equal(controls[0].question, undefined);
+  let agentCalls = 0;
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) {
+    agentCalls += 1;
+    return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: input.schema.properties.control.enum[0] } };
+  } });
+  assert.deepEqual(await proposer({ provider: "connpass", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { state: "connpass_join", controls } }), { control: controls[0].control });
+  assert.equal(agentCalls, 1);
 });
 
 test("bounded proposer exposes pending answers first and only submittable buttons after completion", async () => {
