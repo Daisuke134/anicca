@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
+const { createPeatixEvidenceStore } = require("./peatix-evidence-store.js");
 const {
   notifyOpenClaw,
   notifyOpenClawPhoto,
@@ -13,6 +14,8 @@ const {
 
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const RECEIPT_REF = /^provider-receipt:\/\/luma\/[0-9a-f]{64}$/;
+const PEATIX_EVENT_REF = /^peatix-event:\/\/event\/([1-9][0-9]*)$/;
+const PEATIX_RECEIPT_REF = /^provider-receipt:\/\/peatix\/[0-9a-f]{64}$/;
 const ARTIFACT_REF = /^object:\/\/sha256\/([0-9a-f]{64})$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -48,6 +51,14 @@ function lumaUrl(value) {
     || !/^\/[A-Za-z0-9_-]+\/?$/.test(url.pathname) || url.username || url.password
   ) invalid();
   return `https://${url.hostname.toLowerCase()}${url.pathname.replace(/\/$/, "")}`;
+}
+
+function peatixUrl(value, eventRef) {
+  if (typeof eventRef !== "string" || typeof value !== "string") invalid();
+  const match = PEATIX_EVENT_REF.exec(eventRef);
+  const expected = match ? `https://peatix.com/event/${match[1]}` : "";
+  if (!match || value !== expected) invalid();
+  return expected;
 }
 
 function calendarReceipt(value) {
@@ -92,28 +103,37 @@ function createMinimalEvidenceChain(options = {}) {
   const calendar = options.calendar;
   const calendarId = text(options.calendarId, 1_024);
   const telegramTarget = text(options.telegramTarget, 200);
-  const evidenceStore = options.evidenceStore || createLumaEvidenceStore({
+  const lumaEvidenceStore = options.evidenceStore || createLumaEvidenceStore({
     dataDir: path.join(stateDir, "evidence"),
   });
+  const peatixEvidenceStore = options.peatixEvidenceStore || createPeatixEvidenceStore({
+    dataDir: path.join(stateDir, "evidence"),
+  });
+  const providers = {
+    luma: { eventRef: EVENT_REF, receiptRef: RECEIPT_REF, url: lumaUrl, states: ["registered", "pending"], store: lumaEvidenceStore },
+    peatix: { eventRef: PEATIX_EVENT_REF, receiptRef: PEATIX_RECEIPT_REF, url: peatixUrl, states: ["registered"], store: peatixEvidenceStore },
+  };
   const now = options.now || (() => new Date());
   const sendMessage = options.sendMessage || notifyOpenClaw;
   const sendPhoto = options.sendPhoto || notifyOpenClawPhoto;
   if (
     !calendar || typeof calendar.findConnectorEvents !== "function"
     || typeof calendar.createConnectorEvent !== "function"
-    || !evidenceStore || typeof evidenceStore.record !== "function"
+    || !lumaEvidenceStore || typeof lumaEvidenceStore.record !== "function"
+    || !peatixEvidenceStore || typeof peatixEvidenceStore.record !== "function"
     || typeof now !== "function" || typeof sendMessage !== "function" || typeof sendPhoto !== "function"
   ) invalid();
 
   return Object.freeze({
     async completeEvidence(input = {}) {
+      const provider = providers[input.provider];
       if (
-        input.provider !== "luma" || !input.page || typeof input.page.screenshot !== "function"
-        || !input.providerState || !["registered", "pending"].includes(input.providerState.status)
+        !provider || !input.page || typeof input.page.screenshot !== "function"
+        || !input.providerState || !provider.states.includes(input.providerState.status)
       ) invalid();
       const candidate = input.candidate;
-      if (!candidate || !EVENT_REF.test(String(candidate.event_ref || ""))) invalid();
-      const eventUrl = lumaUrl(candidate.canonical_url);
+      if (!candidate || !provider.eventRef.test(String(candidate.event_ref || ""))) invalid();
+      const eventUrl = provider.url(candidate.canonical_url, candidate.event_ref);
       const title = text(candidate.title, 500);
       const startsAt = exactInstant(candidate.starts_at);
       const endsAt = exactInstant(candidate.ends_at);
@@ -127,7 +147,7 @@ function createMinimalEvidenceChain(options = {}) {
         || !screenshot.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)
       ) invalid();
       const artifactSha = createHash("sha256").update(screenshot).digest("hex");
-      const evidence = await evidenceStore.record({
+      const evidence = await provider.store.record({
         tenantId,
         eventRef: candidate.event_ref,
         observedAt,
@@ -135,7 +155,7 @@ function createMinimalEvidenceChain(options = {}) {
       });
       const artifactMatch = ARTIFACT_REF.exec(String(evidence && evidence.artifact_ref || ""));
       if (
-        !RECEIPT_REF.test(String(evidence && evidence.external_receipt_ref || ""))
+        !provider.receiptRef.test(String(evidence && evidence.external_receipt_ref || ""))
         || !artifactMatch || artifactMatch[1] !== artifactSha
       ) invalid();
 
@@ -166,7 +186,7 @@ function createMinimalEvidenceChain(options = {}) {
       const status = input.providerState.status;
       const message = [
         "Connector::: イベント申込を確認しました",
-        `provider: luma`,
+        `provider: ${input.provider}`,
         `event: ${title}`,
         `status: ${status}`,
         `starts at: ${startsAt}`,
@@ -175,13 +195,13 @@ function createMinimalEvidenceChain(options = {}) {
       const messageId = parseOpenClawMessageId(await sendMessage(message, { telegramTarget }));
       const photoId = parseOpenClawMessageId(await sendPhoto(screenshot, {
         telegramTarget,
-        caption: `Connector::: ${title} / ${status}`,
+        caption: input.provider === "luma" ? `Connector::: ${title} / ${status}` : `Connector::: ${input.provider} / ${title} / ${status}`,
       }));
 
       const core = Object.freeze({
         schema_version: 1,
         status: "applied_bundle",
-        provider: "luma",
+        provider: input.provider,
         event_ref: candidate.event_ref,
         provider_status: status,
         provider_receipt_ref: evidence.external_receipt_ref,
