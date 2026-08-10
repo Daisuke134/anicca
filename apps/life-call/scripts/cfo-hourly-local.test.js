@@ -2,11 +2,14 @@
 
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs"), os = require("node:os"), path = require("node:path");
+const { SpanKind, SpanStatusCode } = require("@opentelemetry/api");
 const { deriveMoneytreeState, composeMoneytreeRead } = require("../lib/cfo-moneytree-state.js");
 const { buildCfoDailyReport } = require("../lib/cfo-daily-snapshot.js");
 const { buildCfoDailyReportFromRecovery } = require("../lib/cfo-recovery-snapshot.js");
 const { renderCfoTelegram } = require("../lib/cfo-telegram.js");
 const { runHourlyCfo, main } = require("./cfo-hourly-local.js");
+const { captureLocalAgentUsageCollection } = require("../lib/cfo-local-agent-usage-span.js");
 
 const CLOCK = new Date("2026-08-10T03:04:05.000Z");
 const DATE = "2026-08-10";
@@ -48,7 +51,7 @@ function reordered(value) { if (Array.isArray(value)) return value.map(reordered
 
 function baseOptions(overrides = {}) {
   return {
-    env: ENV, uid: UID, chatId: CHAT, now: () => CLOCK, runLocalAgentUsageCollection: async () => undefined,
+    env: ENV, uid: UID, chatId: CHAT, now: () => CLOCK, runLocalAgentUsageCollection: async () => undefined, captureLocalAgentUsageCollection: async () => undefined, captureLocalAgentUsageCollection: async () => undefined,
     readMoneytreeViaCodex: async () => moneytreeRead(100),
     resolveCfoDailyRun: async () => ({ public_ref: "30000000-0000-4000-8000-000000000001", reporting_date: DATE, run_id: RUN, time_zone: "Asia/Tokyo", created_at: CLOCK.toISOString() }),
     latestSnapshot: async () => null,
@@ -151,7 +154,7 @@ test("recovery sends only the recovered report", async () => {
 test("provider/config failure has one fixed redacted result", async () => {
   const output = [];
   const result = await main({
-    env: { ...ENV, SENTINEL_AMOUNT: "999999", SENTINEL_ACCOUNT: "account-secret" }, uid: UID, chatId: CHAT, now: () => CLOCK, runLocalAgentUsageCollection: async () => undefined,
+    env: { ...ENV, SENTINEL_AMOUNT: "999999", SENTINEL_ACCOUNT: "account-secret" }, uid: UID, chatId: CHAT, now: () => CLOCK, runLocalAgentUsageCollection: async () => undefined, captureLocalAgentUsageCollection: async () => undefined,
     readMoneytreeViaCodex: async () => moneytreeRead(100), latestSnapshot: async () => null,
     resolveCfoDailyRun: async () => ({ public_ref: "30000000-0000-4000-8000-000000000001", reporting_date: DATE, run_id: RUN, time_zone: "Asia/Tokyo", created_at: CLOCK.toISOString() }),
     stdout: (line) => output.push(line),
@@ -163,8 +166,28 @@ test("provider/config failure has one fixed redacted result", async () => {
   assert.doesNotMatch(output[0], /999999|account-secret|service-role-fixture|SENTINEL/i);
 });
 
+test("local usage span rejects an undefined accessor before effects", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cfo-span-accessor-"));
+  try { const accessorEnv = {}; Object.defineProperty(accessorEnv, "LIFE_MANAGER_STATE_HOME", { enumerable: true, get: undefined, set: undefined }); let calls = 0; await assert.rejects(() => captureLocalAgentUsageCollection(() => { calls += 1; }, { env: accessorEnv }), error => error.message === "cfo_local_agent_usage_span_failed:invalid_input"); assert.equal(calls, 0); assert.equal(fs.existsSync(path.join(root, "telemetry")), false); } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test("local usage span writes one content-free line and fixed failures", async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cfo-local-agent-span-")), target = path.join(root, "telemetry", "cfo-local-agent-usage-otel-spans.jsonl"), id = "a".repeat(64), source = (sourceId, status, recordId, byteOffset, eventCount, mappingId, coverage) => ({ source_id: sourceId, status, record_id: recordId, byte_offset: byteOffset, event_count: eventCount, mapping_id: mappingId, coverage_exceptions: coverage });
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const input = { env: { LIFE_MANAGER_STATE_HOME: root } }, complete = { status: "complete", collected_at: "2026-08-11T01:02:03.000Z", sources: [source("life_manager_agent_usage", "published", id, 7, 2, "local_agent_usage_v1", []), source("anicca_agent_usage", "published", "b".repeat(64), 9, 3, "local_agent_usage_v1", [])], coverage_exceptions: [] }, partial = { status: "partial", collected_at: complete.collected_at, sources: [complete.sources[0], source("anicca_agent_usage", "unavailable", null, null, null, null, ["source_unreadable"])], coverage_exceptions: ["source_unreadable"] }, read = () => fs.readFileSync(target, "utf8").trimEnd().split("\n").filter(Boolean).map(JSON.parse), logs = { count: 0 }, originals = [console.log, console.error, console.warn];
+  [console.log, console.error, console.warn] = [() => { logs.count += 1; }, () => { logs.count += 1; }, () => { logs.count += 1; }];
+  try {
+    let calls = 0; const returned = await captureLocalAgentUsageCollection(value => { calls += 1; assert.strictEqual(value, input); return complete; }, input); assert.strictEqual(returned, complete); assert.equal(calls, 1);
+    let lines = read(); assert.equal(lines.length, 1); assert.deepEqual(lines[0].attributes, {"cfo.operation.name":"local_agent_usage.collect","cfo.usage.collection.status":"complete","cfo.usage.collection.collected_at":complete.collected_at,"cfo.usage.collection.source_count":2,"cfo.usage.collection.coverage_exception_count":0,"cfo.usage.source.life_manager_agent_usage.status":"published","cfo.usage.source.life_manager_agent_usage.record_id":id,"cfo.usage.source.life_manager_agent_usage.byte_offset":7,"cfo.usage.source.life_manager_agent_usage.event_count":2,"cfo.usage.source.life_manager_agent_usage.mapping_id":"local_agent_usage_v1","cfo.usage.source.anicca_agent_usage.status":"published","cfo.usage.source.anicca_agent_usage.record_id":"b".repeat(64),"cfo.usage.source.anicca_agent_usage.byte_offset":9,"cfo.usage.source.anicca_agent_usage.event_count":3,"cfo.usage.source.anicca_agent_usage.mapping_id":"local_agent_usage_v1"}); assert.deepEqual(Object.keys(lines[0]).sort(), ["attributes", "kind", "name", "schema_version", "span_id", "status_code", "trace_id"].sort()); assert.equal(lines[0].kind, SpanKind.INTERNAL); assert.equal(lines[0].status_code, SpanStatusCode.UNSET); assert.match(lines[0].trace_id, /^(?!0{32})[0-9a-f]{32}$/); assert.match(lines[0].span_id, /^(?!0{16})[0-9a-f]{16}$/); assert.equal(lines[0].attributes["cfo.usage.source.life_manager_agent_usage.byte_offset"], 7); assert.equal(lines[0].attributes["cfo.usage.source.anicca_agent_usage.event_count"], 3); assert.equal(lines[0].attributes["cfo.usage.collection.coverage_exception_count"], 0); assert.equal(lines[0].attributes["cfo.usage.collection.coverage_exceptions"], undefined); assert.doesNotMatch(JSON.stringify(lines[0]), /TOKEN_SENTINEL|PROMPT_SENTINEL|SECRET_SENTINEL|HOSTILE|receipt_extra/i); assert.equal(JSON.stringify(lines[0]).includes(root), false);
+    const partialReturned = await captureLocalAgentUsageCollection(() => partial, input); assert.strictEqual(partialReturned, partial); lines = read(); assert.equal(lines.length, 2); assert.equal(lines[1].status_code, SpanStatusCode.ERROR); assert.equal(lines[1].attributes["error.type"], "collection_partial"); assert.deepEqual(lines[1].attributes["cfo.usage.collection.coverage_exceptions"], ["source_unreadable"]);
+    const thrown = new Error("HOSTILE_THROW_TOKEN"); await assert.rejects(() => captureLocalAgentUsageCollection(() => { throw thrown; }, input), error => error.message === "cfo_local_agent_usage_span_failed:collection"); lines = read(); assert.equal(lines.length, 3); assert.equal(lines[2].status_code, SpanStatusCode.ERROR); assert.equal(lines[2].attributes["error.type"], "collection_failed"); assert.doesNotMatch(JSON.stringify(lines), /HOSTILE_THROW_TOKEN/);
+    fs.unlinkSync(target); fs.mkdirSync(target, { recursive: true }); let getterReads = 0; const invalid = { ...complete, extra: "HOSTILE_RECEIPT_EXTRA", sources: complete.sources.slice() }; Object.defineProperty(invalid.sources, "array_extra", { value: "HOSTILE_ARRAY_EXTRA", enumerable: true }); Object.defineProperty(invalid, "getter", { enumerable: true, get: () => { getterReads += 1; throw new Error("HOSTILE_GETTER"); } });
+    const exportErrors = []; for (const collect of [() => { throw new Error("HOSTILE_COLLECT"); }, () => invalid]) await assert.rejects(() => captureLocalAgentUsageCollection(collect, input), error => { exportErrors.push(error.message); return /^cfo_local_agent_usage_span_failed:export$/.test(error.message); }); assert.equal(getterReads, 0); assert.equal(fs.statSync(target).isDirectory(), true); assert.equal(logs.count, 0); assert.doesNotMatch(JSON.stringify({ lines, exportErrors, logs }), /HOSTILE|TOKEN|SECRET/i);
+  } finally { [console.log, console.error, console.warn] = originals; }
+});
+
 test("hourly main isolates usage failures and preserves finance", async () => {
-  for (const mode of ["partial", "throw", "reject"]) { const calls = [], output = [], delivered = [], sentinel = new Error(`HOSTILE_${mode}`); let now = 0; const options = baseOptions({ env: { ...ENV, LIFE_MANAGER_STATE_HOME: "/tmp/cfo-state", HOSTILE_SECRET: "must-not-pass" }, now: () => { now += 1; return CLOCK; }, runLocalAgentUsageCollection: input => { calls.push(["usage", input]); if (mode === "partial") return { status: "partial", usage_secret: "USAGE_SECRET" }; if (mode === "throw") throw sentinel; return Promise.reject(sentinel); }, readMoneytreeViaCodex: async () => { calls.push(["moneytree"]); return moneytreeRead(100); }, deliverCfoTelegram: async input => { delivered.push(input); return { status: "sent" }; }, stdout: line => output.push(line) }); const result = await main(options);
-    assert.deepEqual(calls.map(([name]) => name), ["usage", "moneytree"]); assert.deepEqual(calls[0][1], { env: { LIFE_MANAGER_STATE_HOME: "/tmp/cfo-state" } }); assert.equal(now, 1); assert.deepEqual(result.summary, { status: "sent", reportingDate: DATE, revision: 1, appended: true, delivered: true, recovered: false }); assert.equal(result.exitCode, 0); assert.equal(output.length, 1); assert.deepEqual(JSON.parse(output[0]), result.summary); assert.deepEqual(Object.keys(delivered[0]).sort(), ["chatId", "snapshot", "snapshotPublicRef", "telegramToken", "uid"].sort()); assert.doesNotMatch(JSON.stringify({ result, output, delivered }), /HOSTILE_|USAGE_SECRET/);
+  for (const mode of ["partial", "throw", "reject"]) { const calls = [], output = [], delivered = [], sentinel = new Error(`HOSTILE_${mode}`); let now = 0; const usage = input => { calls.push(["usage", input]); if (mode === "partial") return { status: "partial", usage_secret: "USAGE_SECRET" }; if (mode === "throw") throw sentinel; return Promise.reject(sentinel); }; const options = baseOptions({ env: { ...ENV, LIFE_MANAGER_STATE_HOME: "/tmp/cfo-state", HOSTILE_SECRET: "must-not-pass" }, now: () => { now += 1; return CLOCK; }, runLocalAgentUsageCollection: usage, captureLocalAgentUsageCollection: async (selected, input) => { calls.push(["capture", selected, input]); return selected(input); }, readMoneytreeViaCodex: async () => { calls.push(["moneytree"]); return moneytreeRead(100); }, deliverCfoTelegram: async input => { delivered.push(input); return { status: "sent" }; }, stdout: line => output.push(line) }); const result = await main(options);
+    assert.deepEqual(calls.map(([name]) => name), ["capture", "usage", "moneytree"]); assert.strictEqual(calls[0][1], usage); assert.deepEqual(calls[0][2], { env: { LIFE_MANAGER_STATE_HOME: "/tmp/cfo-state" } }); assert.deepEqual(calls[1][1], { env: { LIFE_MANAGER_STATE_HOME: "/tmp/cfo-state" } }); assert.equal(now, 1); assert.deepEqual(result.summary, { status: "sent", reportingDate: DATE, revision: 1, appended: true, delivered: true, recovered: false }); assert.equal(result.exitCode, 0); assert.equal(output.length, 1); assert.deepEqual(JSON.parse(output[0]), result.summary); assert.deepEqual(Object.keys(delivered[0]).sort(), ["chatId", "snapshot", "snapshotPublicRef", "telegramToken", "uid"].sort()); assert.doesNotMatch(JSON.stringify({ result, output, delivered }), /HOSTILE_|USAGE_SECRET/);
   }
 });

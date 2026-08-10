@@ -10,6 +10,7 @@ const { renderCfoTelegram } = require("../lib/cfo-telegram.js");
 const { deliverCfoTelegram } = require("../lib/cfo-telegram-send.js");
 const { createCfoSupabaseRpc } = require("../lib/cfo-supabase-rpc.js");
 const { runLocalAgentUsageCollection } = require("../lib/cfo-local-agent-usage-runner.js");
+const { captureLocalAgentUsageCollection } = require("../lib/cfo-local-agent-usage-span.js");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const rpc = createCfoSupabaseRpc("cfo_hourly_local_failed:");
@@ -83,10 +84,11 @@ async function runHourlyCfo(options = {}) {
 }
 async function main(options = {}) {
   const usage = options && typeof options.runLocalAgentUsageCollection === "function" ? options.runLocalAgentUsageCollection : runLocalAgentUsageCollection;
+  const capture = options && typeof options.captureLocalAgentUsageCollection === "function" ? options.captureLocalAgentUsageCollection : captureLocalAgentUsageCollection;
   try {
     const sourceEnv = options.env || process.env, descriptor = Object.getOwnPropertyDescriptor(sourceEnv, "LIFE_MANAGER_STATE_HOME");
     const env = descriptor && Object.hasOwn(descriptor, "value") ? { LIFE_MANAGER_STATE_HOME: descriptor.value } : {};
-    await usage({ env });
+    await capture(usage, { env });
   } catch {}
   const result = await runHourlyCfo(options); const stdout = options && typeof options.stdout === "function" ? options.stdout : (line) => process.stdout.write(`${line}\n`); stdout(JSON.stringify(result)); return { exitCode: ["sent", "quiet"].includes(result.status) ? 0 : 1, summary: result }; }
 
