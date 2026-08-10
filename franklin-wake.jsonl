@@ -24705,3 +24705,10 @@
 {"ts":1786323405,"wake_id":"00MSMIU0Q07F4628BA016A439C","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786323532,"wake_id":"00MSMIWR6365D11CBBEDDF4544","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786323660,"wake_id":"00MSMIZI0QA9F2D8557E134390","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786323794,"wake_id":"00MSMJ2CX3FEAF481ECD4041D3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786323922,"wake_id":"00MSMJ53OJA2CB2BFBAF574590","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786324129,"wake_id":"00MSMJ9JEU881526B9E9264D30","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana AI microtask paid API USDC instant payout platform [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates"}
+{"ts":1786324256,"wake_id":"00MSMJC9VHC8EDAC030A2D4EA3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786324385,"wake_id":"00MSMJF1HO833F48B9EBCD4864","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paid USDC per API call instant payout [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (cand"}
+{"ts":1786324517,"wake_id":"00MSMJHUPD43DC47771FFE4B30","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786324684,"wake_id":"00MSMJLFX03E1150D486B04EEF","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana AI compute marketplace paid API USDC instant payout [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidate"}
