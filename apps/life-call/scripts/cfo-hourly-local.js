@@ -81,7 +81,7 @@ async function runHourlyCfo(options = {}) {
     return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, nextRevision, true, delivered.status === "sent", recovery.status === "recovered");
   } catch { return summary("failed", reportingDate, null, false, false, false); }
 }
-async function main(options = {}) { try { const env = options.env || process.env, now = options.now, usage = pick(options, "runLocalAgentUsageCollection", runLocalAgentUsageCollection); await usage({ env, ...(typeof now === "function" ? { now } : {}) }); } catch {} const result = await runHourlyCfo(options); const stdout = options && typeof options.stdout === "function" ? options.stdout : (line) => process.stdout.write(`${line}\n`); stdout(JSON.stringify(result)); return { exitCode: ["sent", "quiet"].includes(result.status) ? 0 : 1, summary: result }; }
+async function main(options = {}) { const usage = typeof options.runLocalAgentUsageCollection === "function" ? options.runLocalAgentUsageCollection : runLocalAgentUsageCollection; try { const sourceEnv = options.env || process.env, descriptor = Object.getOwnPropertyDescriptor(sourceEnv, "LIFE_MANAGER_STATE_HOME"), env = descriptor && Object.hasOwn(descriptor, "value") ? { LIFE_MANAGER_STATE_HOME: descriptor.value } : {}; await usage({ env }); } catch {} const result = await runHourlyCfo(options); const stdout = options && typeof options.stdout === "function" ? options.stdout : (line) => process.stdout.write(`${line}\n`); stdout(JSON.stringify(result)); return { exitCode: ["sent", "quiet"].includes(result.status) ? 0 : 1, summary: result }; }
 
 if (require.main === module) main().then((result) => { process.exitCode = result.exitCode; });
 

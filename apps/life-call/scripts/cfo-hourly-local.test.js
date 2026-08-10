@@ -165,9 +165,10 @@ test("provider/config failure has one fixed redacted result", async () => {
 
 test("main runs local usage once before finance and isolates receipts or hostile errors", async () => {
   for (const usage of [() => ({ status: "partial", hostile: "LEAK" }), () => { throw new Error("HOSTILE_USAGE"); }, async () => { throw new Error("HOSTILE_ASYNC_USAGE"); }]) {
-    const events = [], output = [], persisted = snapshotRow(REF1, 100), delivered = [], clock = () => CLOCK;
-    const result = await main({ ...baseOptions({ now: clock, latestSnapshot: async () => persisted, runLocalAgentUsageCollection: input => { events.push([input.env, input.now]); return usage(); }, readMoneytreeViaCodex: async () => { events.push("finance"); return moneytreeRead(100); }, deliverCfoTelegram: async input => { delivered.push(input); return { status: "sent", messageId: 42 }; } }), stdout: line => output.push(line) });
-    assert.equal(events.length, 2); assert.strictEqual(events[0][0], ENV); assert.strictEqual(events[0][1], clock); assert.equal(events[1], "finance");
-    assert.deepEqual(result, { exitCode: 0, summary: { status: "sent", reportingDate: DATE, revision: 1, appended: false, delivered: true, recovered: false } }); assert.deepEqual(JSON.parse(output[0]), result.summary); assert.strictEqual(delivered[0].snapshot, persisted.report_payload); assert.doesNotMatch(output[0], /LEAK|HOSTILE_USAGE/);
+    const calls = [], output = [], persisted = snapshotRow(REF1, 100), delivered = [], state = "/tmp/cfo-state"; let clockCalls = 0;
+    const clock = () => { clockCalls += 1; return CLOCK; }, options = baseOptions({ env: { ...ENV, LIFE_MANAGER_STATE_HOME: state, HOSTILE_SECRET: "must-not-pass" }, now: clock, latestSnapshot: async () => persisted, runLocalAgentUsageCollection: input => { calls.push(["usage", input]); return usage(); }, readMoneytreeViaCodex: async () => { calls.push(["moneytree"]); return moneytreeRead(100); }, deliverCfoTelegram: async input => { delivered.push(input); return { status: "sent", messageId: 42 }; }, stdout: line => output.push(line) });
+    const result = await main(options);
+    assert.deepEqual(calls.map(([name]) => name), ["usage", "moneytree"]); assert.deepEqual(calls[0][1], { env: { LIFE_MANAGER_STATE_HOME: state } }); assert.equal(clockCalls, 1);
+    assert.deepEqual(result, { exitCode: 0, summary: { status: "sent", reportingDate: DATE, revision: 1, appended: false, delivered: true, recovered: false } }); assert.deepEqual(JSON.parse(output[0]), result.summary); assert.strictEqual(delivered[0].snapshot, persisted.report_payload); assert.doesNotMatch(output[0], /LEAK|HOSTILE|must-not-pass|usage|partial/);
   }
 });
