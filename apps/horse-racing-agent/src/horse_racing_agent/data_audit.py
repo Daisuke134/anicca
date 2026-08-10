@@ -253,6 +253,7 @@ def audit_records(
             latest_official[key] = entry
 
     official_odds_observed = False
+    missing_official_odds = False
     official_stale = False
     official_zero_rows = False
     unmatched_settlement = False
@@ -269,6 +270,8 @@ def audit_records(
         if record_has_odds:
             official_odds_observed = True
             odds_ages.append(record["freshness"]["age_seconds"])
+        else:
+            missing_official_odds = True
 
     settled_payback_rows = sum(
         int(manifest["settled_payback_rows"])
@@ -283,6 +286,8 @@ def audit_records(
         blockers.append("NO_SETTLED_PAYBACK")
     if not official_odds_observed:
         blockers.append("NO_OBSERVED_ODDS")
+    elif missing_official_odds:
+        blockers.append("MISSING_OFFICIAL_ODDS")
     if len(latest_official) < 2 or len(official_race_times) < 2:
         blockers.append("INSUFFICIENT_CHRONOLOGY")
     if official_stale:
@@ -296,6 +301,7 @@ def audit_records(
         len(latest_official) >= 2
         and len(official_race_times) >= 2
         and official_odds_observed
+        and not missing_official_odds
         and settled_payback_rows > 0
         and not official_stale
         and not official_zero_rows

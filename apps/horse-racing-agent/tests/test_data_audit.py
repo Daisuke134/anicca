@@ -462,6 +462,30 @@ def test_zero_row_official_manifest_remains_blocked():
     assert "NO_PARSED_OFFICIAL_ROWS" in report.blockers
 
 
+def test_every_latest_official_race_requires_observed_odds():
+    nar = _official(
+        NAR,
+        runners=[
+            {"runner_id": "runner-nar-01", "horse_number": 1, "odds": None, "body_weight_kg": 480.0},
+            {"runner_id": "runner-nar-02", "horse_number": 2, "odds": None, "body_weight_kg": 470.0},
+        ],
+    )
+    jra = _official(
+        JRA,
+        runners=[
+            {"runner_id": "runner-jra-01", "horse_number": 1, "odds": 3.0, "body_weight_kg": 481.0},
+            {"runner_id": "runner-jra-02", "horse_number": 2, "odds": 5.0, "body_weight_kg": 471.0},
+        ],
+    )
+    report = audit_records(
+        [nar, jra],
+        _official_manifests(jra_payback=1, nar_payback=1),
+    )
+
+    assert report.model_ready is False
+    assert "MISSING_OFFICIAL_ODDS" in report.blockers
+
+
 @pytest.mark.parametrize(
     "changes",
     [
