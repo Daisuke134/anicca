@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — through CFO-2a2b.5c1 complete; CFO-2a2b.5c2a portable attempt boundary is next |
+| Status | ACTIVE — through CFO-2a2b.5c2a complete; CFO-2a2b.5c2b safe provider probe is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -118,7 +118,8 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       - [x] **5c1:** port strict numeric/null truth to the portable Life Manager runner. Commit `61e1727ac`; focused
             `1/1`, portable suite `13/13`, 2 files and 38 gross additions; fresh Sol: ship. Plan:
             `2026-08-11-life-manager-cfo-portable-runner-numeric-truth.md`.
-      - [ ] **5c2a:** port write-ahead attempt/completion to the portable runner. Plan:
+      - [x] **5c2a:** port write-ahead attempt/completion to the portable runner. Commit `027795ae9`; 2 files,
+            `+75/-7`; prompt `10/10`, numeric `1/1`, portable `18/18`; fresh Sol: ship. Plan:
             `2026-08-11-life-manager-cfo-portable-runner-attempt-cutover.md`.
       - [ ] **5c2b:** add a Life Manager-owned safe-probe seam and exercise it through the existing launchd label.
       - [ ] **5c2c:** update the real two-source E2E and close readiness only when both sources prove append-only truth.

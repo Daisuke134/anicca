@@ -3,7 +3,7 @@
 > **For Luna:** use Superpowers test-driven-development and verification-before-completion. Sol owns plan, review,
 > state, commit, and push. Luna owns only the two listed files in the existing feature worktree.
 
-**Status:** READY FOR SOL REVIEW
+**Status:** COMPLETE
 
 **Goal:** Before the portable Life Manager runner launches any provider candidate, fsync one exact attempt row. Reuse
 its random 24-hex ID on the existing completion usage row so the CFO can detect a missing completion without inventing
@@ -73,3 +73,11 @@ pricing, Telegram, Moneytree, cloud, or real provider call. Safe probe and real 
    preservation, fixed-error privacy, and scope. Required fixes return to the same Luna.
 6. Sol reruns gates, commits/pushes only the two files, updates state, reports one real `Codex:::` milestone, then
    advances only to 5c2b safe-probe seam.
+
+## Completion evidence
+
+- Portable commit `027795ae9`, pushed to `feature/cfo-life-manager-agent-usage-cutover`.
+- Exact owned diff: 2 files, `+75/-7` (`agent_runner.py` `+36/-5`; focused test `+39/-2`).
+- TDD RED: all five focused cases failed against the pre-change production boundary.
+- GREEN: prompt suite `10/10`, numeric suite `1/1`, portable discovery `18/18`, compile and diff checks pass.
+- Fresh Sol review: `ship`, Critical 0 / Important 0. No provider, launchd, Telegram, or live-ledger effect.

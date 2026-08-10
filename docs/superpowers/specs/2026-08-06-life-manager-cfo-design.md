@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a2b.1a/1b/2/3a/3b/4/5a/5b complete; CFO-2a2b.5c two-source cutover is next |
+| Status | M2 ACTIVE — CFO-2a2b.1a/1b/2/3a/3b/4/5a/5b/5c1/5c2a complete; CFO-2a2b.5c2b is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2b.5c2a: add write-ahead attempt/completion to the portable Life Manager runner** |
+| First unfinished item | **CFO-2a2b.5c2b: add one Life Manager-owned safe provider-probe seam** |
 
 ## 1. Overview — What and Why
 
