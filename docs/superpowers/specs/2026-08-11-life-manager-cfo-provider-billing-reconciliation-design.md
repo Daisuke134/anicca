@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3.3b1 hourly counts summary is next |
+| Status | ACTIVE — CFO-2a3.3b1 complete; CFO-2a3.3b2 live local cutover is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains unchanged until real E2E passes |
 | First provider | Google Cloud monthly invoice delivered to the already-authenticated local Gmail account |
@@ -138,7 +138,7 @@ allocation so narrower business totals can be derived honestly.
         sending or changing live state.
   - [ ] **CFO-2a3.3b — Hourly aggregate publication.** Compose the completed local source into the existing hourly
         runner and publish only confirmed/unresolved aggregate state; never relabel it as a reconciled business cost.
-    - [ ] **CFO-2a3.3b1 — Counts-only summary.** Add exact confirmed/unresolved/unavailable counts to the existing
+    - [x] **CFO-2a3.3b1 — Counts-only summary.** Add exact confirmed/unresolved/unavailable counts to the existing
           redacted hourly stdout/return without changing Telegram or launchd. Plan:
           `docs/superpowers/plans/2026-08-11-life-manager-cfo-provider-billing-hourly-summary.md`.
     - [ ] **CFO-2a3.3b2 — Live local cutover.** Run isolated no-send main E2E, then update the one existing launchd
@@ -255,3 +255,20 @@ connected. A successful latest capture therefore publishes counts `confirmed=1`,
 Absent configuration, capture failure, or invalid receipt publishes `0/0/1`. Counts are local control-plane status,
 not money. Amounts and source references remain only in the private immutable record. OpenTelemetry continues to
 carry request/token correlation; no fake billing amount is created from spans.
+
+## 15. CFO-2a3.3b1 completion evidence
+
+- Luna modified exactly the three planned existing files: 14 added production LOC, 14 added test LOC, and one
+  `test:cfo` registration token. RED proved the counts/call were absent; GREEN passed focused `11/11`, CFO
+  `320/320`, full `npm test`, syntax, diff, and LOC checks.
+- Controller review found an incomplete normalized record could still count as confirmed. The same Luna added exact
+  receipt/confirmed/scope/amount identity checks, valid month/timestamp checks, and a compact invalid-record case.
+  Sol independently repeated all final test and static gates after that fix.
+- Sol ran the actual authenticated Gmail/PDF/`pdftotext` path twice through `main()` in an isolated state root while
+  injecting usage, Moneytree persistence, and Telegram delivery so no external send or live-state mutation occurred.
+  Safe assertions proved both finance runs succeeded, both counts were exact `1/1/0`, two stdout lines were redacted,
+  Telegram was injected-only, one `0600` record remained byte-identical, and isolated state was removed.
+- `runHourlyCfo`'s finance summary, Moneytree snapshot, Telegram input, and exit-code behavior are unchanged. No
+  amount, hash, scope, account, path, or provider error enters stdout. No launchd change occurred in b1.
+- A fresh Sol reviewer could not be allocated because the collaboration service returned `agent thread limit
+  reached`; no independent reviewer result is claimed.

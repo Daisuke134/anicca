@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a3.3b1 hourly counts summary is next |
+| Status | M2 ACTIVE — CFO-2a3.3b1 complete; CFO-2a3.3b2 live local cutover is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a3.3b1: add truthful provider-billing counts to the existing hourly summary** |
+| First unfinished item | **CFO-2a3.3b2: cut the existing local launchd loop over and prove one autonomous real run** |
 
 ## 1. Overview — What and Why
 

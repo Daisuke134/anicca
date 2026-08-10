@@ -1,5 +1,7 @@
 "use strict";
 
+const os = require("node:os");
+const path = require("node:path");
 const { readMoneytreeViaCodex } = require("./cfo-moneytree-codex-read.js");
 const { recoverMoneytreeRead } = require("../lib/cfo-moneytree-recovery.js");
 const { resolveCfoDailyRun } = require("../lib/cfo-daily-run.js");
@@ -10,6 +12,8 @@ const { renderCfoTelegram } = require("../lib/cfo-telegram.js");
 const { deliverCfoTelegram } = require("../lib/cfo-telegram-send.js");
 const { createCfoSupabaseRpc } = require("../lib/cfo-supabase-rpc.js");
 const { runLocalAgentUsageCollection } = require("../lib/cfo-local-agent-usage-runner.js");
+const { makeGogMail } = require("../lib/transport/mail-gog.js");
+const { captureLatestGoogleCloudInvoice } = require("../lib/cfo-google-invoice-local-source.js");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const rpc = createCfoSupabaseRpc("cfo_hourly_local_failed:");
@@ -81,6 +85,13 @@ async function runHourlyCfo(options = {}) {
     return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, nextRevision, true, delivered.status === "sent", recovery.status === "recovered");
   } catch { return summary("failed", reportingDate, null, false, false, false); }
 }
+const unavailableBilling = Object.freeze({ status: "unavailable", confirmedCount: 0, unresolvedCount: 0, unavailableCount: 1 });
+const exactObject = (value, keys) => value && typeof value === "object" && !Array.isArray(value) && Reflect.ownKeys(value).length === keys.length && keys.every(key => { const descriptor = Object.getOwnPropertyDescriptor(value, key); return descriptor && descriptor.enumerable && Object.hasOwn(descriptor, "value"); });
+function billingCounts(receipt) {
+  const c = receipt && receipt.confirmed, scope = c && c.scope, amount = c && c.amount;
+  const confirmed = exactObject(receipt, ["status", "record_id", "confirmed"]) && (receipt.status === "appended" || receipt.status === "existing") && typeof receipt.record_id === "string" && /^sha256:[0-9a-f]{64}$/.test(receipt.record_id) && exactObject(c, ["schema_version", "provider", "billing_period", "scope", "amount", "source", "source_document_ref", "observed_at", "evidence_status"]) && c.schema_version === 1 && c.provider === "google_cloud" && /^(?:\d{4}(?:0[1-9]|1[0-2]))$/.test(c.billing_period) && exactObject(scope, ["kind", "ref"]) && scope.kind === "billing_account" && /^sha256:[0-9a-f]{64}$/.test(scope.ref) && exactObject(amount, ["value", "currency"]) && amount.currency === "JPY" && typeof amount.value === "string" && /^(?:0|[1-9]\d*)$/.test(amount.value) && c.source === "provider_invoice_pdf" && c.source_document_ref === receipt.record_id && /^sha256:[0-9a-f]{64}$/.test(c.source_document_ref) && typeof c.observed_at === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(c.observed_at) && Number.isFinite(Date.parse(c.observed_at)) && c.evidence_status === "provider_billed";
+  return confirmed ? Object.freeze({ status: "confirmed_unresolved", confirmedCount: 1, unresolvedCount: 1, unavailableCount: 0 }) : unavailableBilling;
+}
 async function main(options = {}) {
   const usage = options && typeof options.runLocalAgentUsageCollection === "function" ? options.runLocalAgentUsageCollection : runLocalAgentUsageCollection;
   try {
@@ -88,7 +99,9 @@ async function main(options = {}) {
     const env = descriptor && Object.hasOwn(descriptor, "value") ? { LIFE_MANAGER_STATE_HOME: descriptor.value } : {};
     await usage({ env });
   } catch {}
-  const result = await runHourlyCfo(options); const stdout = options && typeof options.stdout === "function" ? options.stdout : (line) => process.stdout.write(`${line}\n`); stdout(JSON.stringify(result)); return { exitCode: ["sent", "quiet"].includes(result.status) ? 0 : 1, summary: result }; }
+  const sourceEnv = options.env || process.env, clock = new Date(typeof options.now === "function" ? options.now() : (options.now || new Date())); let providerBilling = unavailableBilling;
+  if (sourceEnv.GOG_ACCOUNT) try { const mail = (typeof options.makeGogMail === "function" ? options.makeGogMail : makeGogMail)({ account: sourceEnv.GOG_ACCOUNT }); const capture = typeof options.captureLatestGoogleCloudInvoice === "function" ? options.captureLatestGoogleCloudInvoice : captureLatestGoogleCloudInvoice; providerBilling = billingCounts(await capture({ stateRoot: sourceEnv.LIFE_MANAGER_STATE_HOME || path.join(os.homedir(), ".local", "state", "life-manager"), observedAt: clock.toISOString(), mail })); } catch {}
+  const result = await runHourlyCfo({ ...options, now: clock }); const stdout = options && typeof options.stdout === "function" ? options.stdout : (line) => process.stdout.write(`${line}\n`); stdout(JSON.stringify({ ...result, providerBilling })); return { exitCode: ["sent", "quiet"].includes(result.status) ? 0 : 1, summary: result, providerBilling }; }
 
 if (require.main === module) main().then((result) => { process.exitCode = result.exitCode; });
 
