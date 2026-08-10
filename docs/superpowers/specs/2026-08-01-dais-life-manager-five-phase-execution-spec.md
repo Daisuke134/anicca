@@ -6170,7 +6170,24 @@ same-event canonical開始、unknown required fieldのpre-submit停止、final c
 次plan `docs/superpowers/plans/2026-08-10-connector-peatix-workflow-submit.md`は、公開detailのusable free ticket IDをcandidateへ運び、
 既存Peatix workflowからreview済みproviderのdirect action/readbackへdelegateする二ファイルsliceである。
 
-### Active remaining TODO SSOT（進捗232。これ以外の残TODO一覧は履歴）
+### O1B-25進捗233（Peatix workflow Submit/readback integration GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-workflow-submit.md`をTDD実装した。初回REDは13件中10 pass・3 failで、
+ticket identity欠落、`runDirectAction`未定義、`readProviderState`未定義を検出した。初稿GREEN後のfresh Sol reviewは、
+discovery用の緩いcandidate validationをactionでも再利用したため、closed、paid、cross-event、numeric ticketでも
+private profile/providerへ到達し、注入providerの`registered`を`completed`へ誤昇格できるImportantを発見した。
+
+同じLunaがprofile/provider呼出し前のstrict `actionCandidate`を追加し、Peatix provider、event ref/canonical同一ID、exact HTTPS origin、
+available/free/0、string positive ticket ID、title/time rangeを固定した。無効5種はprofile/submit/readback call 0。
+最終commit `ba2d0c5ce86727b351a518768a6ee3647435ea80`、focused 14/14、Peatix/Luma/Connpass/runner regression 45/45。
+fresh Sol re-reviewはCritical 0・Important 0でshipした。公開detailのsource順で最初のusable free ticket IDをcandidateへ保存し、
+discoveryだけではprivate profileを読まず、direct action時だけin-memory profileをproviderへ渡す。
+
+まだofficial operationsにPeatix aggregate audit sinkがなく、production router/native provider順にも未接続なので、Submit、Calendar write、
+PNG、Telegram bundleは0。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-discovery-audit.md`は既存5-count validatorを再利用し、
+`peatix-discovery-audits.jsonl`へ同一wake lineageのmode 0600 rowだけを追加する最小sliceである。
+
+### Active remaining TODO SSOT（進捗233。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
