@@ -53,3 +53,12 @@ Soft target: 3 files; production +12–24 LOC; tests +25–45 LOC.
 - Focused Peatix workflow tests including real busy-inventory composition; busy inventory existing suite; minimal production/runner/evidence; Peatix provider/Harness; native entrypoint; changed-file syntax; `git diff --check`.
 - Fresh Sol review for privacy, hash identity, malformed marker behavior, unrelated overlap safety, candidate canonicalization, and duplicate external effects.
 - SSOT update, commit, push, clean preflight, then one official schedule-unloaded recovery wake. Acceptance is original event pre-submit registered, provider clicks zero, Calendar create zero/readback one, positive Telegram message/photo IDs, one new durable applied bundle, exact cleanup.
+
+## Result
+
+- Luna measured RED at 16/19: valid marker was absent from the safe inventory, same-event overlap still removed the candidate, and malformed marker values were not rejected. Existing sixteen workflow tests remained green.
+- Initial GREEN changed only the planned three files and passed focused 19/19; Sol expanded was 122/122. Fresh Sol review then found two Important shape/order defects: active present-invalid containers were treated as absence, and excluded events parsed markers too early.
+- The plan was tightened before the fix. Luna reproduced both findings at 18/20, then distinguished genuine absence from present-invalid containers and moved cancelled/transparent exclusion ahead of marker parsing.
+- Final focused workflow is 20/20; busy inventory 3/3, evidence 8/8, minimal production/runner 25/25, provider/Harness 59/59, Sol expanded 123/123, changed-file syntax, and `git diff --check` all pass. The two native cursor failures are unchanged clean-HEAD baselines outside this slice.
+- Fresh Sol re-review found no Critical or Important issue and returned `ship`. No browser, provider, Calendar, evidence, Telegram, state, profile, launchd, or schedule side effect occurred during implementation and test.
+- Live acceptance remains the next step after push: the original registered event must re-enter discovery only through its exact hash marker, submit zero times, reuse the one Calendar event, produce positive Telegram message/photo IDs, persist one new applied bundle, and clean up exactly.
