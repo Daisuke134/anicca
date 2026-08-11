@@ -752,7 +752,7 @@ async function inspectPageControls(input = {}) {
   return Object.freeze(observed.map(safeControl));
 }
 
-async function validateEventbriteMarketingOperation(target, token) {
+async function validateEventbriteMarketingOperation(target, token, expected = null) {
   const match = EVENTBRITE_MARKETING_CONTROL.exec(String(token || ""));
   if (!match || !target || typeof target.locator !== "function") return false;
   const controls = await inspectEventbriteAttendeeFrame(target, match[2]);
@@ -762,19 +762,20 @@ async function validateEventbriteMarketingOperation(target, token) {
   try { locator = target.locator("input, textarea, select, button, label, [data-testid]"); } catch { return false; }
   if (!locator || typeof locator.evaluateAll !== "function") return false;
   try {
-    return await locator.evaluateAll((elements, { control, key }) => {
-      if (!Array.isArray(elements)) return false;
+    const identity = await locator.evaluateAll((elements, { control, key, expectedId }) => {
+      if (!Array.isArray(elements)) return null;
       const tagOf = (element) => String(element && element.tagName || "").toLowerCase();
       const idOf = (element) => String((element && element.getAttribute && element.getAttribute("id")) || (element && element.id) || "");
       const forOf = (element) => String((element && element.getAttribute && element.getAttribute("for")) || (element && element.htmlFor) || "");
       const name = key === "organization" ? "organizationMarketingOptIn" : "ebMarketingOptIn";
       const marked = elements.filter((element) => String(element && element.dataset && element.dataset.lmConnectorControl || "") === control);
-      if (marked.length !== 1 || tagOf(marked[0]) !== "label") return false;
+      if (marked.length !== 1 || tagOf(marked[0]) !== "label") return null;
       const id = forOf(marked[0]);
       const labels = elements.filter((element) => tagOf(element) === "label" && forOf(element) === id);
       const inputs = elements.filter((element) => tagOf(element) === "input" && String((element && element.getAttribute && element.getAttribute("name")) || (element && element.name) || "") === name);
-      return Boolean(id && labels.length === 1 && labels[0] === marked[0] && inputs.length === 1 && idOf(inputs[0]) === id && elements.filter((element) => idOf(element) === id).length === 1);
-    }, { control: token, key: match[1] }) === true;
+      return id && (!expectedId || id === expectedId) && labels.length === 1 && labels[0] === marked[0] && inputs.length === 1 && idOf(inputs[0]) === id && elements.filter((element) => idOf(element) === id).length === 1 ? { id } : null;
+    }, { control: token, key: match[1], expectedId: expected?.id || "" });
+    return identity && typeof identity.id === "string" ? Object.freeze({ key: match[1], id: identity.id }) : null;
   } catch { return false; }
 }
 
@@ -798,10 +799,12 @@ async function operatePageControl(input = {}) {
       await locator.check();
       break;
     case "ax_uncheck":
-      if (!(await validateEventbriteMarketingOperation(target, token))) return Object.freeze({ status: "failed" });
+      const identity = await validateEventbriteMarketingOperation(target, token);
+      if (!identity) return Object.freeze({ status: "failed" });
       let labelLocator;
-      try { labelLocator = target.locator(`label[data-lm-connector-control="${token}"]`); } catch { return Object.freeze({ status: "failed" }); }
+      try { labelLocator = target.locator(`label[data-lm-connector-control="${token}"][for=${JSON.stringify(identity.id)}]`); } catch { return Object.freeze({ status: "failed" }); }
       if (!labelLocator || typeof labelLocator.count !== "function" || await labelLocator.count() !== 1 || typeof labelLocator.click !== "function") return Object.freeze({ status: "failed" });
+      if (!(await validateEventbriteMarketingOperation(target, token, identity))) return Object.freeze({ status: "failed" });
       await labelLocator.click();
       break;
     case "ax_select":
