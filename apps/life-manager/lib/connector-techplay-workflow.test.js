@@ -50,6 +50,33 @@ function workflowFor(rows, details, options = {}) {
   return { workflow, audits, reads };
 }
 
+function readbackCandidate(id, ticketId = "12345") {
+  const row = binding(id);
+  return { ...row, provider: "techplay", title: `Tokyo TECH PLAY ${id}`, starts_at: "2026-08-20T09:00:00.000Z", ends_at: "2026-08-20T10:00:00.000Z", ticket_id: ticketId, registration_status: "available", ticket_price_status: "free", ticket_price_minor: 0 };
+}
+
+function pageAt(url) {
+  return { current: url, url() { return this.current; } };
+}
+
+function responsePage(url, payload, options = {}) {
+  const responseUrl = options.responseUrl === undefined ? url : options.responseUrl; const status = options.status === undefined ? 200 : options.status;
+  return {
+    current: url,
+    url() { return this.current; },
+    async goto(nextUrl) {
+      this.current = options.redirectUrl === undefined ? nextUrl : options.redirectUrl;
+      if (options.transportError) throw new Error("transport");
+      return {
+        url() { return responseUrl; }, status() { return status; },
+        async text() {
+          if (options.readError) throw new Error("read"); return inertiaHtml({ props: payload });
+        },
+      };
+    },
+  };
+}
+
 test("TECH PLAY discovers free Tokyo events and returns exact candidates", async () => {
   const row = binding("999180");
   const { workflow, audits, reads } = workflowFor([row], { [row.canonical_url]: detail("999180") });
@@ -181,6 +208,87 @@ test("TECH PLAY direct action fails safely and readback remains unavailable", as
     await assert.rejects(workflow.runDirectAction({ page: {}, candidate: { ...row, ticket_id: invalidTicketId } }));
   }
   await assert.rejects(workflow.runDirectAction({ page: {}, candidate: { ...row, ticket_id: 12345 } }));
+});
+
+test("TECH PLAY parent readback proves only the exact canonical joined or actionable ticket", async () => {
+  const row = binding("999210");
+  const candidate = readbackCandidate("999210");
+  const joined = createTechPlayDiscoveryWorkflow({ readEventDetail: async () => detail("999210", { ticket: { is_joined: true } }) });
+  assert.deepEqual(await joined.readProviderState({ page: pageAt(row.canonical_url), candidate }), { status: "registered" });
+  const absent = createTechPlayDiscoveryWorkflow({ readEventDetail: async () => detail("999210") });
+  assert.deepEqual(await absent.readProviderState({ page: pageAt(row.canonical_url), candidate }), { status: "absent" });
+});
+
+test("TECH PLAY absent readback requires a currently open event and valid factory clock", async () => {
+  const row = binding("999214");
+  const candidate = readbackCandidate("999214");
+  const cases = [["future recruitment", detail("999214", { event: { join_started_at: 1788000000, join_ended_at: 1788100000 } })], ["ended event", detail("999214", { event: { ended_at: Math.floor(NOW.getTime() / 1000) - 1 } })]];
+  for (const [name, payload] of cases) {
+    const workflow = createTechPlayDiscoveryWorkflow({ now: () => new Date(NOW), readEventDetail: async () => payload });
+    assert.deepEqual(await workflow.readProviderState({ page: pageAt(row.canonical_url), candidate }), { status: "unavailable" }, name);
+  }
+  for (const invalidNow of [() => "invalid", () => { throw new Error("clock"); }]) {
+    const workflow = createTechPlayDiscoveryWorkflow({ now: invalidNow, readEventDetail: async () => detail("999214") }); assert.deepEqual(await workflow.readProviderState({ page: pageAt(row.canonical_url), candidate }), { status: "unavailable" }, "invalid now");
+  }
+});
+
+test("TECH PLAY default parent readback returns status-only registered and absent results", async () => {
+  const row = binding("999215");
+  const candidate = readbackCandidate("999215");
+  const joinedPayload = { ...detail("999215", { ticket: { is_joined: true } }), currentUrl: row.canonical_url };
+  const joined = createTechPlayDiscoveryWorkflow({ now: () => new Date(NOW) });
+  const joinedResult = await joined.readProviderState({ page: responsePage(row.canonical_url, joinedPayload), candidate });
+  assert.deepEqual(joinedResult, { status: "registered" });
+  assert.deepEqual(Object.keys(joinedResult), ["status"]);
+  const absentPayload = { ...detail("999215"), currentUrl: row.canonical_url };
+  const absent = createTechPlayDiscoveryWorkflow({ now: () => new Date(NOW) });
+  const absentResult = await absent.readProviderState({ page: responsePage(row.canonical_url, absentPayload), candidate });
+  assert.deepEqual(absentResult, { status: "absent" });
+  assert.deepEqual(Object.keys(absentResult), ["status"]);
+  assert.equal(JSON.stringify(absentResult).includes("Tokyo TECH PLAY"), false);
+});
+
+test("TECH PLAY parent readback fails closed for join/confirm, identity, ticket, state, and action ambiguity", async () => {
+  const candidate = readbackCandidate("999211");
+  const secondTicket = { id: 54321, capacity: 20, entrance_fee: 0, entered: 0, is_full: false, is_joined: true, use_stripe: false };
+  const cases = [
+    ["join", detail("999211", { current_url: "https://techplay.jp/event/join/999211", ticket: { is_joined: true } })],
+    ["confirm", detail("999211", { current_url: "https://techplay.jp/event/join/999211/confirm", ticket: { is_joined: true } })],
+    ["event", detail("999211", { event: { id: 999212 }, ticket: { is_joined: true } })],
+    ["ticket", detail("999211", { ticket: { id: 54321, is_joined: true } })],
+    ["duplicate", detail("999211", { attend_types: [detail("999211").attend_types[0], secondTicket] })],
+    ["malformed", detail("999211", { ticket: { is_joined: "true" } })],
+    ["closed", detail("999211", { event_button_states: { button_display_type: "closed" } })],
+    ["hidden", detail("999211", { event_button_states: { visible: false } })],
+  ];
+  for (const [name, payload] of cases) {
+    const workflow = createTechPlayDiscoveryWorkflow({ readEventDetail: async () => payload });
+    assert.deepEqual(await workflow.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" }, name);
+  }
+  const wrongCurrent = createTechPlayDiscoveryWorkflow({ readEventDetail: async () => detail("999211") });
+  assert.deepEqual(await wrongCurrent.readProviderState({ page: pageAt("https://techplay.jp/event/999299"), candidate }), { status: "unavailable" }, "current URL");
+  const missingPage = createTechPlayDiscoveryWorkflow({ readEventDetail: async () => detail("999211") });
+  assert.deepEqual(await missingPage.readProviderState({ page: {}, candidate }), { status: "unavailable" }, "missing page URL");
+});
+
+test("TECH PLAY parent readback rejects response, navigation, read, and pre/post page drift", async () => {
+  const row = binding("999213");
+  const candidate = readbackCandidate("999213");
+  const payload = detail("999213", { ticket: { is_joined: true } });
+  const cases = [
+    ["response URL", { responseUrl: "https://techplay.jp/event/999214" }],
+    ["status", { status: 500 }],
+    ["redirect", { redirectUrl: "https://techplay.jp/event/999214" }],
+    ["transport", { transportError: true }],
+    ["read", { readError: true }],
+  ];
+  for (const [name, options] of cases) {
+    const workflow = createTechPlayDiscoveryWorkflow();
+    assert.deepEqual(await workflow.readProviderState({ page: responsePage(row.canonical_url, payload, options), candidate }), { status: "unavailable" }, name);
+  }
+  const driftPage = pageAt(row.canonical_url);
+  const drift = createTechPlayDiscoveryWorkflow({ readEventDetail: async () => { driftPage.current = "https://techplay.jp/event/join/999213"; return payload; } });
+  assert.deepEqual(await drift.readProviderState({ page: driftPage, candidate }), { status: "unavailable" }, "post-read page drift");
 });
 
 test("TECH PLAY default readers navigate exact RSS/detail URLs and minimize Inertia fields", async () => {

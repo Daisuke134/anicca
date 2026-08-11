@@ -251,6 +251,43 @@ function normalizeDetail(binding, raw, observed) {
   return { candidate, starts, ends, eligible };
 }
 
+function exactPositiveId(value) {
+  if (typeof value === "number") return Number.isSafeInteger(value) && value > 0 ? String(value) : null;
+  if (typeof value === "string" && /^[1-9][0-9]*$/.test(value)) return value;
+  return null;
+}
+
+function readbackActionable(event, info, button, ticket, observedMs) {
+  const applyStatus = info.apply_status;
+  const applyOpen = applyStatus == null || /^(?:apply|available|open)$/i.test(String(applyStatus));
+  const ends = unixMillis(event.ended_at);
+  return event.event_url === null && button.event_url === null
+    && button.button_display_type === "apply" && button.visible !== false && applyOpen
+    && info.show_event_button === true && info.is_ended === false
+    && info.event_format === "offline_only" && info.external_link_status == null
+    && Number.isFinite(ends) && ends > observedMs && recruitmentOpen(event, observedMs)
+    && ticketIsEligible(ticket);
+}
+
+function readbackStatus(selected, raw, observedMs) {
+  let parts;
+  try { parts = payloadParts(raw); } catch { return null; }
+  if (parts.currentUrl !== selected.canonical_url) return null;
+  const { payload } = parts;
+  const event = payload.event; const info = payload.event_info_states;
+  const button = payload.event_button_states; const tickets = payload.attend_types;
+  if (!event || typeof event !== "object" || Array.isArray(event)
+    || !info || typeof info !== "object" || Array.isArray(info)
+    || !button || typeof button !== "object" || Array.isArray(button)
+    || !Array.isArray(tickets) || tickets.length !== 1) return null;
+  if (exactPositiveId(event.id) !== selected.event_ref.split("/").pop()) return null;
+  const ticket = tickets[0];
+  if (!ticket || typeof ticket !== "object" || Array.isArray(ticket)
+    || exactPositiveId(ticket.id) !== selected.ticket_id || typeof ticket.is_joined !== "boolean") return null;
+  if (ticket.is_joined === true) return "registered";
+  return readbackActionable(event, info, button, ticket, observedMs) ? "absent" : null;
+}
+
 function createTechPlayDiscoveryWorkflow(options = {}) {
   const now = options.now || (() => new Date());
   const readRss = options.readRss || options.readRssFeed || options.readListingBindings || options.readListing || defaultReadRss;
@@ -303,8 +340,21 @@ function createTechPlayDiscoveryWorkflow(options = {}) {
       return Object.freeze({ status: "failed", safe_reason: "techplay_direct_requires_harness" });
     },
     async readProviderState({ page, candidate }) {
-      exactCandidate(candidate); void page;
-      return Object.freeze({ status: "unavailable" });
+      const selected = exactCandidate(candidate);
+      let observed;
+      try { observed = now(); } catch { return Object.freeze({ status: "unavailable" }); }
+      if (!(observed instanceof Date) || !Number.isFinite(observed.getTime())) return Object.freeze({ status: "unavailable" });
+      if (!page || typeof page.url !== "function") return Object.freeze({ status: "unavailable" });
+      let before;
+      try { before = String(page.url()); } catch { return Object.freeze({ status: "unavailable" }); }
+      if (before !== selected.canonical_url) return Object.freeze({ status: "unavailable" });
+      let raw;
+      try { raw = await readEventDetail(page, selected.canonical_url); } catch { return Object.freeze({ status: "unavailable" }); }
+      let after;
+      try { after = String(page.url()); } catch { return Object.freeze({ status: "unavailable" }); }
+      if (after !== selected.canonical_url) return Object.freeze({ status: "unavailable" });
+      const status = readbackStatus(selected, raw, observed.getTime());
+      return Object.freeze({ status: status || "unavailable" });
     },
   });
 }
