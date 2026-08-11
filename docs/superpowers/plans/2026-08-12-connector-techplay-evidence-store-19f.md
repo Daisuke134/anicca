@@ -20,10 +20,10 @@
 
 ## Contract
 
-- [ ] RED: `createTechPlayEvidenceStore` is unavailable.
-- [ ] Add only a thin generic-store wrapper and export it.
-- [ ] Accept only `techplay-event://event/<positive ID>` and return only `provider-receipt://techplay/<64 lowercase hex>` plus the shared object ref.
-- [ ] Record/read the exact receipt tuple and PNG; tenant path is private, files are `0600`, refs contain no tenant/private values.
-- [ ] Wrong event identity, wrong receipt provider/hash, receipt tuple tampering, and artifact tampering fail closed.
-- [ ] Run focused/full evidence-store tests, syntax, diff check, mutation proof, and fresh Sol review.
-- [ ] Do not change generic store behavior, production factory, Calendar, applied-bundle chain, native order, launchd, or perform external effects.
+- [x] RED: `createTechPlayEvidenceStore` is unavailable.
+- [x] Add only a thin generic-store wrapper and export it.
+- [x] Accept only `techplay-event://event/<positive ID>` and return only `provider-receipt://techplay/<64 lowercase hex>` plus the shared object ref.
+- [x] Record/read the exact receipt tuple and PNG; tenant path is private, files are `0600`, refs contain no tenant/private values.
+- [x] Wrong event identity, wrong receipt provider/hash, receipt tuple tampering, and artifact tampering fail closed.
+- [x] Run focused/full evidence-store tests, syntax, diff check, mutation proof, and fresh Sol review.
+- [x] Do not change generic store behavior, production factory, Calendar, applied-bundle chain, native order, launchd, or perform external effects.
