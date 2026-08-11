@@ -7479,7 +7479,11 @@ LunaがEventbrite provider-local workflow/test 2 filesだけをSuperpowers TDD�
 
 review済みimplementation `3930c1688`をstable Connector branchへfast-forwardした。exact `.com` canonical/dedupe、Event/SocialEvent、zero Offer/AggregateOffer、InStock、body money否定、Tokyo offline 14日窓、Calendar、five-count privacy、strict readback、zero-click direct safe failureがcode-levelで完了。shared router、Harness checkout、audit persistence、native provider order、official wakeは未変更・未実行。次active sliceはproduction router/factoryへEventbrite workflowをclosed injectionする。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗392。これ以外の残TODO一覧は履歴）
+### O1B-25進捗393（Item 19E-B / Eventbrite closed production router plan）
+
+review済みEventbrite workflowをproductionへ接続する次sliceをPonytailでshared 2 files、production 15〜30 LOC、test 45〜90 LOCへ限定した。既存Doorkeeper optional workflow patternを再利用し、Eventbrite version、routerのdiscovery/cache/direct/injected-fallback/readback/save-repair、factory default/injected workflowだけをTDD配線する。operations audit persistence、default Browser Harness、native `DEFAULT_PROVIDERS`、evidence、live wakeは変更0。これによりpartial providerがofficial wakeへ入らないclosed wiringを維持する。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-production-router-19e.md`がexecutor SSOT。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗393。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
