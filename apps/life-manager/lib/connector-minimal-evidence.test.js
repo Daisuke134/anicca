@@ -762,3 +762,78 @@ test("Meetup initial record requires receipt and artifact readback before downst
     } finally { fixture.cleanup(); }
   }
 });
+
+function doorkeeperCandidate(extra = {}) {
+  return {
+    provider: "doorkeeper", event_ref: "doorkeeper-event://event/101",
+    canonical_url: "https://tokyo-builders.doorkeeper.jp/events/101",
+    title: "Community Event", starts_at: "2026-08-13T10:00:00.000Z", ends_at: "2026-08-13T11:00:00.000Z",
+    venue_name: "Tokyo", ...extra,
+  };
+}
+
+function doorkeeperFixture(options = {}) {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-doorkeeper-evidence-"));
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 19)]);
+  const calls = [];
+  const receipt = { id: "google-doorkeeper-1", htmlLink: "https://www.google.com/calendar/event?eid=doorkeeper-one" };
+  let reads = 0;
+  const calendar = {
+    async findConnectorEvents(input) { calls.push(["calendar-read", input]); return reads++ === 0 ? [] : [receipt]; },
+    async createConnectorEvent(input) { calls.push(["calendar-create", input]); return receipt; },
+  };
+  const chain = createMinimalEvidenceChain({
+    stateDir, tenantId: "doorkeeper-test", calendar, calendarId: "primary", telegramTarget: "test-target",
+    now: () => new Date("2026-08-12T08:30:00.000Z"),
+    sendMessage: async (message, telegram) => { calls.push(["telegram-message", message, telegram]); return { messageId: 9601 }; },
+    sendPhoto: async (bytes, telegram) => { calls.push(["telegram-photo", bytes, telegram]); return { messageId: 9602 }; },
+  });
+  const pageUrl = { value: options.pageUrl || "https://tokyo-builders.doorkeeper.jp/events/101" };
+  const page = {
+    async setContent() { calls.push(["set-content"]); throw new Error("Doorkeeper page replacement forbidden"); },
+    async goto() { calls.push(["goto"]); throw new Error("Doorkeeper evidence navigation forbidden"); },
+    async evaluate() { calls.push(["evaluate"]); throw new Error("Doorkeeper receipt render forbidden"); },
+    url() { calls.push(["url"]); return pageUrl.value; },
+    async screenshot(input) { calls.push(["screenshot", input]); return png; },
+  };
+  return { stateDir, calls, chain, page, candidate: doorkeeperCandidate(options.candidate), cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
+}
+
+test("Doorkeeper captures the registered page and reuses immutable evidence without navigation or replacement", async () => {
+  const fixture = doorkeeperFixture();
+  try {
+    const input = { provider: "doorkeeper", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } };
+    const first = await fixture.chain.completeEvidence(input);
+    assert.equal(first.provider, "doorkeeper");
+    assert.equal(first.completion_disposition, "created");
+    assert.match(first.provider_receipt_ref, /^provider-receipt:\/\/doorkeeper\/[0-9a-f]{64}$/);
+    assert.deepEqual(fixture.calls.find(([name]) => name === "screenshot")[1], { type: "png", fullPage: true });
+    assert.equal(fixture.calls.filter(([name]) => ["set-content", "goto", "evaluate"].includes(name)).length, 0);
+    const effects = new Map(["screenshot", "calendar-create", "telegram-message", "telegram-photo"].map((name) => [name, fixture.calls.filter(([entry]) => entry === name).length]));
+    const second = await fixture.chain.completeEvidence(input);
+    assert.equal(second.completion_disposition, "reused");
+    assert.equal(second.bundle_id, first.bundle_id);
+    for (const [name, count] of effects) assert.equal(fixture.calls.filter(([entry]) => entry === name).length, count, name);
+  } finally { fixture.cleanup(); }
+});
+
+test("Doorkeeper identity, registered state, and current page URL fail closed before downstream effects", async () => {
+  const cases = [
+    { candidate: { event_ref: "doorkeeper-event://event/0" } },
+    { candidate: { event_ref: "doorkeeper-event://event/102" } },
+    { candidate: { canonical_url: "https://www.doorkeeper.jp/events/101" } },
+    { candidate: { canonical_url: "https://Tokyo-builders.doorkeeper.jp/events/101" } },
+    { candidate: { canonical_url: "https://tokyo-builders.doorkeeper.jp/events/101/" } },
+    { candidate: { canonical_url: "https://tokyo-builders.doorkeeper.jp/events/101?x=1" } },
+    { candidate: { canonical_url: "https://tokyo-builders.doorkeeper.jp/events/102" } },
+    { status: "pending" }, { status: "absent" },
+    { pageUrl: "https://tokyo-builders.doorkeeper.jp/events/102" }, { pageUrl: "about:blank" },
+  ];
+  for (const value of cases) {
+    const fixture = doorkeeperFixture(value);
+    try {
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "doorkeeper", candidate: fixture.candidate, page: fixture.page, providerState: { status: value.status || "registered" } }));
+      assert.equal(fixture.calls.filter(([name]) => ["screenshot", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"].includes(name)).length, 0);
+    } finally { fixture.cleanup(); }
+  }
+});
