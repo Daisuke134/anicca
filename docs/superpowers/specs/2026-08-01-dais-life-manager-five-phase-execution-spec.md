@@ -7968,3 +7968,9 @@ Node公式`fs.appendFileSync`と英語・日本語のGitHub code searchを照合
 Lunaがoperations/test exact 2 filesをSuperpowers TDD実装し、code commit `59b1d6696`をpushした。production +5 LOCでexact private file `techplay-discovery-audits.jsonl`、既存`safeDoorkeeperDiscoveryAudit`＋appendを使うthin `recordTechPlayDiscoveryAudit`、frozen operations exportを追加した。新logger/package/schema/DBは0。
 
 REDはmissing methodで新規test 1 fail。GREENはexact schema/counts/timestamp、private field非保持、directory `0700`、file `0600`、missing/extra/type/range/monotonic invalidの非appendを証明した。shared monotonic guard mutationはnamed TECH PLAY testをFAILさせ、復元後focused 1/1＋operations 12/12、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0で`ship`。factory/router以降と実applicationは未実行。Item19実bundleは未完。
+
+### O1B-25進捗465（Item 19F-D10 / TECH PLAY production factory＋router plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-production-router-19f.md`はproduction factory/test exact 2 files。既存explicit provider branchesだけを拡張し、`createTechPlayDiscoveryWorkflow`、cache identity `techplay_registration_v1`、router six operations、default audit callback、Browser Harness readback injectionを同一workflow instanceへ接続する。production約20〜35 LOC、test約60〜110 LOC。
+
+Node CommonJS公式docs、英語provider-router、 日本語dependency-injectionの3検索と既存Eventbrite/Doorkeeper実装を照合し、新registry/framework/packageは不要と判断。private profile wiringは現行を再利用し、evidence、Calendar、native order、launchd、実applicationは変更0。Item19実bundleは未完。
