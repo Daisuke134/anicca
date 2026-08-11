@@ -17,6 +17,7 @@ const { createConnpassScriptFirstWorkflow } = require("./connector-connpass-work
 const { createPeatixDiscoveryWorkflow } = require("./connector-peatix-workflow.js");
 const { createMeetupScriptFirstWorkflow } = require("./connector-meetup-workflow.js");
 const { createDoorkeeperScriptFirstWorkflow } = require("./connector-doorkeeper-workflow.js");
+const { createEventbriteScriptFirstWorkflow } = require("./connector-eventbrite-workflow.js");
 const { readLumaFormProfile } = require("./luma-form-profile.js");
 const {
   createBoundedActionProposer,
@@ -39,6 +40,7 @@ const CONNPASS_WORKFLOW_VERSION = "connpass_registration_v1";
 const PEATIX_WORKFLOW_VERSION = "peatix_registration_v1";
 const MEETUP_WORKFLOW_VERSION = "meetup_registration_v1";
 const DOORKEEPER_WORKFLOW_VERSION = "doorkeeper_registration_v1";
+const EVENTBRITE_WORKFLOW_VERSION = "eventbrite_registration_v1";
 const LUMA_PAGE_STATE = "registration_page_v1";
 const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
 
@@ -132,6 +134,7 @@ function createProductionProviderRouter(options = {}) {
   const peatixWorkflow = options.peatixWorkflow;
   const meetupWorkflow = options.meetupWorkflow;
   const doorkeeperWorkflow = options.doorkeeperWorkflow;
+  const eventbriteWorkflow = options.eventbriteWorkflow;
   const actionCache = options.actionCache;
   const browserHarness = options.browserHarness;
   const performAction = options.performAction;
@@ -152,6 +155,9 @@ function createProductionProviderRouter(options = {}) {
     || (doorkeeperWorkflow != null && (typeof doorkeeperWorkflow.discoverCandidates !== "function"
       || typeof doorkeeperWorkflow.runDirectAction !== "function"
       || typeof doorkeeperWorkflow.readProviderState !== "function"))
+    || (eventbriteWorkflow != null && (typeof eventbriteWorkflow.discoverCandidates !== "function"
+      || typeof eventbriteWorkflow.runDirectAction !== "function"
+      || typeof eventbriteWorkflow.readProviderState !== "function"))
     || !actionCache || typeof actionCache.replay !== "function"
     || typeof actionCache.saveVerifiedRepair !== "function"
     || !browserHarness || typeof browserHarness.runFallback !== "function"
@@ -159,11 +165,12 @@ function createProductionProviderRouter(options = {}) {
   ) invalid();
 
   function selected(input) {
-    if (!input || !["luma", "connpass", "peatix", "meetup", "doorkeeper"].includes(input.provider)) invalid();
+    if (!input || !["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite"].includes(input.provider)) invalid();
     const workflow = input.provider === "luma" ? lumaWorkflow
       : input.provider === "connpass" ? connpassWorkflow
         : input.provider === "peatix" ? peatixWorkflow
-          : input.provider === "meetup" ? meetupWorkflow : doorkeeperWorkflow;
+          : input.provider === "meetup" ? meetupWorkflow
+            : input.provider === "doorkeeper" ? doorkeeperWorkflow : eventbriteWorkflow;
     if (!workflow) invalid();
     return Object.freeze({
       input,
@@ -171,7 +178,8 @@ function createProductionProviderRouter(options = {}) {
       workflowVersion: input.provider === "luma" ? LUMA_WORKFLOW_VERSION
         : input.provider === "connpass" ? CONNPASS_WORKFLOW_VERSION
           : input.provider === "peatix" ? PEATIX_WORKFLOW_VERSION
-            : input.provider === "meetup" ? MEETUP_WORKFLOW_VERSION : DOORKEEPER_WORKFLOW_VERSION,
+            : input.provider === "meetup" ? MEETUP_WORKFLOW_VERSION
+              : input.provider === "doorkeeper" ? DOORKEEPER_WORKFLOW_VERSION : EVENTBRITE_WORKFLOW_VERSION,
     });
   }
 
@@ -290,6 +298,10 @@ function createMinimalProductionDependencies(options = {}) {
     now,
     onDiscoveryAudit: operations.recordDoorkeeperDiscoveryAudit || (() => {}),
   });
+  const eventbriteWorkflow = options.eventbriteWorkflow || createEventbriteScriptFirstWorkflow({
+    now,
+    onDiscoveryAudit: operations.recordEventbriteDiscoveryAudit || (() => {}),
+  });
   const actionCache = options.actionCache || createConnectorActionCache({
     path: path.join(stateDir, "action-cache.json"),
   });
@@ -318,6 +330,7 @@ function createMinimalProductionDependencies(options = {}) {
     peatixWorkflow,
     meetupWorkflow,
     doorkeeperWorkflow,
+    eventbriteWorkflow,
     actionCache,
     browserHarness,
     performAction: browserHarness.performAction,
