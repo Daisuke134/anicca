@@ -92,7 +92,7 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 7C2 | HRA-3C win-market materializer | **complete** | commits `fb0038409` + `e8abb094c` + `72d152356`; actual 7/76 |
 | 7D1 | HRA-3C official win outcome parser | **complete** | commit `0b5177452`; actual 321 outcomes/322 payouts |
 | 7D2a | HRA-3D reject caller-declared settlement | **complete** | commit `8d344a97f`; production guard 2 LOC, full 148 PASS |
-| 7D2b | HRA-3C current-day settlement capture | **ACTIVE B1** | monthly acquisition PASS target 7/7; exact REAL provenance allowlist next |
+| 7D2b | HRA-3C current-day settlement capture | **ACTIVE B2** | exact REAL provenance complete; typed outcome audit next |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3C/3D actual gate | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
@@ -468,7 +468,7 @@ Completion evidence: commit `0b5177452`; TDD RED was the expected missing-helper
 
 ## Task 7D2: HRA-3C current-day settlement capture
 
-**State:** ACTIVE B1. The unverified-manifest path is closed and the 2026-08-10 targets have exact official settlements; the newly observed monthly tuple is not yet accepted for REAL parsing.
+**State:** ACTIVE B2. The unverified-manifest path is closed, the 2026-08-10 targets have exact official settlements, and the new monthly tuple is accepted for REAL parsing. Typed outcomes are not yet connected to the audit.
 
 ### Task 7D2a: reject caller-declared settlement
 
@@ -489,6 +489,8 @@ Pre-acquisition verification at 2026-08-10T13:26+09:00 is PASS without a network
 Phase A completion evidence: Luna performed exactly one monthly request at `2026-08-11T14:11:02+09:00`; URL `https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=monthly&k_year=2026&k_month=8`, SHA-256 `9252f89fde027a918eb2fb98c1a815c6d7b2a41ca27201551ed36f38c8b252ce`, 464036 bytes, HTTP 200, `application/zip`, ZIP validation PASS. Non-promoting parse returned 367 settled win outcomes / 368 payout items and exact target coverage 7/7 with zero unmatched. Sol independently reproduced all counts, positive target payouts, unique archive match, mode 600, and current REAL rejection. The acquisition window added exactly three private artifacts and no tracked change.
 
 **Phase B1 — accepted provenance; files 2, production target under 20 LOC:** only after Sol observes the exact new monthly URL/SHA/captured-at tuple may Luna modify `nar_outcome.py` and `test_nar_outcome.py`. Add only that exact tuple to the existing `_REAL_PROVENANCE` trust boundary; do not add wildcard/date-prefix acceptance, a registry service, config loader, or dependency. Keep arbitrary REAL tuples rejected. The required RED is the actual private monthly parser call failing with `real provenance is not accepted`; GREEN is that same actual call returning official settled `WinOutcome` objects. The committed regression exercises the same provenance predicate used by `materialize_nar_win_outcomes` with the exact redacted tuple and proves a one-character hash/captured-at mutation remains rejected; the private raw ZIP itself stays outside Git. Run focused tests, full suite, compileall, and the actual private E2E.
+
+Phase B1 completion evidence: Luna commit `278cf4fd2` changed only `nar_outcome.py` and `test_nar_outcome.py`, with 14 production changed LOC. Focused 20/full 152/compileall/diff-check PASS; actual REAL parse returned 367 outcomes/368 payout items; exact SHA and captured-at mutations remain rejected. Fresh Sol task review SHIP, Sol independent E2E PASS, and local/origin/canonical parity PASS.
 
 **Phase B2 — typed audit input; files 2, production target under 60 LOC:** Luna modifies only `data_audit.py` and `test_data_audit.py`. Extend the existing function as `audit_records(records, manifests, *, outcomes=())`; do not add a reconciler/service/table. Manifest settlement fields remain required-zero and caller-declared nonzero values remain rejected. Accept only a sequence of actual `WinOutcome` instances whose market/status, official/NAR/REAL metadata, exact official source scope, nonempty payouts, unique race IDs, and source hashes are valid. For a positive NAR audit, the selected typed outcome race-ID set must equal the latest official NAR record race-ID set exactly; missing, duplicate, or substituted outcomes fail closed. Unrelated daily outcomes are filtered by the caller before the audit and cannot satisfy a target record. Derive `settled_payback_rows` only from `sum(len(outcome._payouts))`, and include accepted outcome SHA-256 values in the redacted `content_hashes`; never restore settlement counts/IDs from manifests.
 
