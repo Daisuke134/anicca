@@ -80,6 +80,13 @@ function connectorCanonicalUrl(value) {
     if (raw !== expected || url !== expected) connectorInvalid();
     return Object.freeze({ url: expected, sourceTitle: "Eventbrite" });
   }
+  const techPlayMatch = host === "techplay.jp"
+    && /^\/event\/([1-9][0-9]*)$/.exec(parsed.pathname);
+  if (techPlayMatch) {
+    const expected = `https://techplay.jp/event/${techPlayMatch[1]}`;
+    if (raw !== expected || url !== expected) connectorInvalid();
+    return Object.freeze({ url: expected, sourceTitle: "TECH PLAY" });
+  }
   const match = host === "peatix.com" && /^\/event\/([1-9][0-9]*)$/.exec(parsed.pathname);
   const expected = match ? `https://peatix.com/event/${match[1]}` : "";
   if (!expected || raw !== expected || url !== expected) connectorInvalid();

@@ -138,6 +138,43 @@ test("connector calendar rejects every non-canonical Peatix identity before gog 
   assert.equal(calls, 0);
 });
 
+test("connector calendar accepts exact TECH PLAY event identity with fixed source title", async () => {
+  const canonicalUrl = "https://techplay.jp/event/2045782";
+  const { run, calls } = recorder(JSON.stringify({ id: "techplay-created", htmlLink: "https://calendar.google.com/calendar/event?eid=techplay-created" }));
+  const result = await makeGogCalendar({ account: ACCT, run }).createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "a".repeat(64), title: "Injected title",
+    startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+    location: "Tokyo", canonicalUrl,
+  });
+  assert.deepEqual(result, { id: "techplay-created", htmlLink: "https://calendar.google.com/calendar/event?eid=techplay-created" });
+  assert.ok(calls[0].includes(`--description=${canonicalUrl}`));
+  assert.ok(calls[0].includes(`--source-url=${canonicalUrl}`));
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=TECH PLAY"]);
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--private-prop=lm_connector_event=")), [`--private-prop=lm_connector_event=${"a".repeat(64)}`]);
+});
+
+test("connector calendar rejects every non-canonical TECH PLAY identity before gog run", async () => {
+  const variants = [
+    "http://techplay.jp/event/2045782", "https://www.techplay.jp/event/2045782", "https://TECHPLAY.JP/event/2045782",
+    "https://user:pass@techplay.jp/event/2045782", "https://techplay.jp:443/event/2045782",
+    "https://techplay.jp/event/0", "https://techplay.jp/event/not-a-number", "https://techplay.jp/event/2045782?utm_source=test",
+    "https://techplay.jp/event/2045782#details", "https://techplay.jp/event/2045782/", "https://techplay.jp/event/2045782/join",
+    "https://techplay.jp/event/join/2045782", "https://techplay.jp/event/join/2045782/confirm",
+    "https://techplay.jp/event/2045782/confirm", "https://techplay.jp/event/2045782/list", "https://techplay.jp/event/2045782/search",
+    "https://techplay.jp/join/complete", "https://techplay.jp/confirm", "https://techplay.jp/list", "https://techplay.jp/search?q=2045782",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "b".repeat(64), title: "x",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
 test("connector calendar accepts exact Connpass root and one-subdomain identities", async () => {
   const canonicalUrls = ["https://connpass.com/event/400028/", "https://tokyo-builders.connpass.com/event/400028/"];
   const { run, calls } = recorder((args) => JSON.stringify({ id: `connpass-created-${calls.length}`, htmlLink: "https://calendar.google.com/calendar/event?eid=connpass-created" }));
