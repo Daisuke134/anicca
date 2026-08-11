@@ -7986,3 +7986,9 @@ REDはTECH PLAY未配線でfocused 4 fail。GREENはrouter 6経路＋private-fre
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-evidence-store-19f.md`はgeneric browser evidence store/test exact 2 files。既存`createBrowserProviderEvidenceStore`へprovider `techplay`、exact positive event ref、exact 64 lowercase hex receipt ref、provider collision messageだけを渡すthin wrapperに限定する。production約8〜12 LOC、test約35〜60 LOC。
 
 Node公式atomic file API、英語immutable provider receipt、日本語tamper-evident SHA-256の3検索と既存Eventbrite/Doorkeeper wrapperを照合し、generic store変更や新packageは不要と判断。factory、Calendar、applied-bundle chain、native order、launchd、実applicationは変更0。Item19実bundleは未完。
+
+### O1B-25進捗468（Item 19F-D11 / TECH PLAY immutable evidence store ship）
+
+Lunaがgeneric evidence store/test exact 2 filesをSuperpowers TDD実装し、code commit `792d860d0`をpushした。production net +9 LOCのthin `createTechPlayEvidenceStore`だけで、provider `techplay`、positive event ref、64 lowercase hex receipt ref、provider collision messageを既存content-addressed storeへ固定した。generic behavior・依存追加は0。
+
+REDはmissing exportで新規2 fail。GREENはexact receipt tuple＋PNG readback、private tenant path、file `0600`、tenant非露出、wrong event/ref/provider、receipt tuple・artifact marker・object tamper、collision fail-closedを証明した。provider namespace mutationは2 testsをFAILさせ、復元後focused 10/10、evidence suites 50/50、outbound pretest 33/33、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0、Ponytail `Lean already. Ship.`。Calendar、applied-bundle chain、native order、launchd、実applicationは未実行。Item19実bundleは未完。
