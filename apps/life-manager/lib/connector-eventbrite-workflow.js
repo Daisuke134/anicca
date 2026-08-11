@@ -318,8 +318,7 @@ function createEventbriteScriptFirstWorkflow(options = {}) {
       const controlCompletion = allControls.some((control) => completionCount(control.text));
       if (exactLink && completionCount(view.body_text) === 1 && !controlCompletion) return Object.freeze({ status: "registered" });
       const tickets = controls.filter((control) => isTicketControl(control.text));
-      const linksSafe = view.canonical_links.length === 0 || (view.canonical_links.length === 1 && exactLink);
-      if (linksSafe && controls.length === 1 && tickets.length === 1 && completionCount(view.body_text) === 0 && !controlCompletion) return Object.freeze({ status: "absent" });
+      if (exactLink && controls.length === 1 && tickets.length === 1 && completionCount(view.body_text) === 0 && !controlCompletion) return Object.freeze({ status: "absent" });
       return Object.freeze({ status: "unavailable" });
     },
   });
