@@ -7992,3 +7992,9 @@ Node公式atomic file API、英語immutable provider receipt、日本語tamper-e
 Lunaがgeneric evidence store/test exact 2 filesをSuperpowers TDD実装し、code commit `792d860d0`をpushした。production net +9 LOCのthin `createTechPlayEvidenceStore`だけで、provider `techplay`、positive event ref、64 lowercase hex receipt ref、provider collision messageを既存content-addressed storeへ固定した。generic behavior・依存追加は0。
 
 REDはmissing exportで新規2 fail。GREENはexact receipt tuple＋PNG readback、private tenant path、file `0600`、tenant非露出、wrong event/ref/provider、receipt tuple・artifact marker・object tamper、collision fail-closedを証明した。provider namespace mutationは2 testsをFAILさせ、復元後focused 10/10、evidence suites 50/50、outbound pretest 33/33、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0、Ponytail `Lean already. Ship.`。Calendar、applied-bundle chain、native order、launchd、実applicationは未実行。Item19実bundleは未完。
+
+### O1B-25進捗469（Item 19F-D12 / TECH PLAY Calendar canonical URL plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-calendar-url-19f.md`はCalendar gog transport/test exact 2 files。`connectorCanonicalUrl`へexact `https://techplay.jp/event/<positive ID>`とfixed source title `TECH PLAY`だけを追加し、raw-equals-canonical gateでHTTP、host/case、credentials、port、query、fragment、trailing slash、join/confirm/list/searchをgog実行前に拒否する。production約7〜12 LOC、test約30〜55 LOC。
+
+Google Calendar Events insert公式docs、英語canonical source URL、日本語event source URLの3検索と既存Doorkeeper/Eventbrite branchesを照合し、generic canonicalizer変更は不要と判断。evidence chain/store、factory/router、native order、launchd、実Calendar mutationは変更0。Item19実bundleは未完。
