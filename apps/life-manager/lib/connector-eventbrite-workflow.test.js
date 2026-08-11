@@ -429,6 +429,8 @@ test("Eventbrite direct checkout readback rejects ambiguous, nested, and partial
     ["wrong-host", [frame({ body: complete, host: "evil.example" })], "unavailable"],
     ["port", [frame({ body: complete, href: "https://www.eventbrite.com:444/checkout-external?eid=1997468673574" })], "unavailable"],
     ["userinfo", [frame({ body: complete, href: "https://user:pass@www.eventbrite.com/checkout-external?eid=1997468673574" })], "unavailable"],
+    ["empty-userinfo", [frame({ body: complete, href: "https://@www.eventbrite.com/checkout-external?eid=1997468673574" })], "unavailable"],
+    ["empty-userpass", [frame({ body: complete, href: "https://:@www.eventbrite.com/checkout-external?eid=1997468673574" })], "unavailable"],
     ["hash", [frame({ body: complete, href: "https://www.eventbrite.com/checkout-external?eid=1997468673574#done" })], "unavailable"],
   ];
   const workflow = createEventbriteScriptFirstWorkflow();

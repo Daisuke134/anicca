@@ -259,9 +259,9 @@ function eventbriteCheckoutFrameIdentity(frame, eventId) {
   if (url.pathname !== "/checkout-external") return { checkout: false, valid: false };
   const ids = url.searchParams.getAll("eid");
   const authority = /^[a-z][a-z\d+.-]*:\/\/([^/?#]*)/i.exec(href)?.[1] || "";
-  const hostPart = authority.slice(authority.lastIndexOf("@") + 1);
   const valid = url.protocol === "https:" && url.hostname.toLowerCase() === "www.eventbrite.com"
-    && !url.port && !url.username && !url.password && !url.hash && !href.includes("#") && !hostPart.includes(":")
+    && authority.toLowerCase() === "www.eventbrite.com"
+    && !url.port && !url.username && !url.password && !url.hash && !href.includes("#")
     && ids.length === 1 && ids[0] === String(eventId);
   return { checkout: true, valid };
 }
