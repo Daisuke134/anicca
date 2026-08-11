@@ -27,6 +27,7 @@ const DOORKEEPER_EVENT_URL = /^https:\/\/([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\
 const EVENTBRITE_EVENT_REF = /^eventbrite-event:\/\/event\/([1-9][0-9]*)$/;
 const EVENTBRITE_EVENT_URL = /^https:\/\/www\.eventbrite\.com\/e\/(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)-tickets-([1-9][0-9]*)|([1-9][0-9]*))$/i;
 const EVENTBRITE_TRIGGER_CONTROL = /^eventbrite_checkout_([1-9][0-9]*)$/;
+const EVENTBRITE_TICKET_REGISTER_CONTROL = /^eventbrite_ticket_register_([1-9][0-9]*)$/;
 const EVENTBRITE_CTA_LABELS = new Set(["Get tickets", "Reserve a spot"]);
 const EVENTBRITE_FRAME_TIMEOUT_MS = 30_000;
 const EVENTBRITE_FRAME_STABILITY_MS = 500;
@@ -99,6 +100,54 @@ function eventbriteFrameMatches(frame, eventId) {
 function eventbriteChildFrame(frame) {
   try { return typeof frame?.parentFrame === "function" && frame.parentFrame() !== null; } catch { return false; }
 }
+function eventbriteCheckoutFrameSet(page, eventId) {
+  let frames = [];
+  try { frames = typeof page?.frames === "function" ? page.frames() : []; } catch { frames = []; }
+  const official = Array.isArray(frames) ? frames.map((frame) => ({ frame, parsed: eventbriteFrameUrl(frame) })).filter(({ frame, parsed }) => parsed && eventbriteChildFrame(frame)) : [];
+  return { official, matching: official.filter(({ frame }) => eventbriteFrameMatches(frame, eventId)) };
+}
+function eventbriteTicketFrame(page, eventId, canonicalUrl) {
+  let href = "";
+  try { href = String(typeof page?.url === "function" ? page.url() : ""); } catch { return null; }
+  if (href !== String(canonicalUrl)) return null;
+  const { official, matching } = eventbriteCheckoutFrameSet(page, eventId);
+  return official.length === 1 && matching.length === 1 ? matching[0].frame : null;
+}
+async function inspectEventbriteTicketFrame(frame, eventId) {
+  if (!frame || typeof frame.locator !== "function") return null;
+  let locator;
+  try { locator = frame.locator("[data-testid]"); } catch { return null; }
+  if (!locator || typeof locator.evaluateAll !== "function") return null;
+  try {
+    return await locator.evaluateAll((elements, context) => {
+      if (!Array.isArray(elements) || elements.length > 100) return { cardCount: -1, control: null };
+      const testIdOf = (element) => String((element.getAttribute && element.getAttribute("data-testid")) || (element.dataset && element.dataset.testid) || "").toLowerCase();
+      const textOf = (element) => String(element && (element.innerText || element.textContent || element.value) || "").replace(/\s+/g, " ").trim();
+      const labelOf = (element) => `${String((element.getAttribute && element.getAttribute("aria-label")) || "")} ${testIdOf(element)} ${textOf(element)}`.toLowerCase();
+      const visibleOf = (element) => { let current = element; while (current) { if (current.hidden === true || current.isConnected === false || String((current.getAttribute && current.getAttribute("aria-hidden")) || "").toLowerCase() === "true") return false; current = current.parentElement || null; } const rect = element && typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null; return Boolean(element && (!rect || (Number(rect.width) > 0 && Number(rect.height) > 0))); };
+      const descendants = (element) => [element, ...(typeof element.querySelectorAll === "function" ? [...element.querySelectorAll("*")] : [])];
+      const cards = elements.filter((element) => /(?:^|[-_])ticket[-_]card$/.test(testIdOf(element)) && visibleOf(element));
+      const primary = elements.filter((element) => {
+        const tag = String(element.tagName || "").toLowerCase(); const type = String(element.type || "").toLowerCase();
+        return visibleOf(element) && element.disabled !== true && String((element.getAttribute && element.getAttribute("aria-disabled")) || "").toLowerCase() !== "true"
+          && tag === "button" && type === "button" && testIdOf(element) === "eds-modal__primary-button" && textOf(element) === "Register";
+      });
+      if (cards.length !== 1 || primary.length !== 1) return { cardCount: cards.length, control: null };
+      const card = cards[0]; const cardText = textOf(card);
+      const stepper = descendants(card).filter((element) => /(?:stepper|quantity[-_]selector|ticket[-_]quantity[-_]selector|eds[-_]quantity(?:[-_]selector)?)/.test(testIdOf(element)));
+      const parts = stepper.length === 1 ? descendants(stepper[0]).filter(visibleOf) : [];
+      const quantity = parts.filter((element) => /(?:quantity|count|value)/.test(testIdOf(element)) && textOf(element) === "1");
+      const enabledOf = (element) => element.disabled !== true && String((element.getAttribute && element.getAttribute("aria-disabled")) || "").toLowerCase() !== "true";
+      const increase = parts.filter((element) => String(element.tagName || "").toLowerCase() === "button" && enabledOf(element) && /(?:increase|increment|add)/.test(labelOf(element)));
+      const decrease = parts.filter((element) => String(element.tagName || "").toLowerCase() === "button" && /(?:decrease|decrement|remove)/.test(labelOf(element)));
+      const paid = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:jpy|yen|円)\b|\bcash\b|\bpaid\b|\bdoor\s*(?:fee|price)\b|\bat\s+the\s+door\b|\bminimum\s+purchase\b|\bone\s+drink\s+minimum\b|\bpurchase\s+required\b|会場払い|当日払い|有料)/i.test(cardText);
+      const free = /(?:^|[^A-Za-z])Free(?:$|[^A-Za-z])/.test(cardText);
+      const valid = stepper.length === 1 && quantity.length === 1 && increase.length === 1 && decrease.length === 1 && !enabledOf(decrease[0]) && free && !paid;
+      if (valid && primary[0].dataset) primary[0].dataset.lmConnectorControl = `eventbrite_ticket_register_${context.eventId}`;
+      return { cardCount: cards.length, control: valid ? `eventbrite_ticket_register_${context.eventId}` : null };
+    }, { eventId });
+  } catch { return null; }
+}
 async function waitForEventbriteCheckoutFrame(page, eventId, canonicalUrl) {
   if (!page || typeof page.frames !== "function" || !canonicalUrl) return false;
   const deadline = Date.now() + EVENTBRITE_FRAME_TIMEOUT_MS;
@@ -108,11 +157,7 @@ async function waitForEventbriteCheckoutFrame(page, eventId, canonicalUrl) {
     let pageHref = "";
     try { pageHref = String(typeof page.url === "function" ? page.url() : ""); } catch { return false; }
     if (pageHref !== String(canonicalUrl)) return false;
-    let frames = [];
-    try { frames = page.frames(); } catch { frames = []; }
-    const official = Array.isArray(frames)
-      ? frames.map((frame) => ({ frame, parsed: eventbriteFrameUrl(frame) })).filter(({ frame, parsed }) => parsed && eventbriteChildFrame(frame)) : [];
-    const matching = official.filter(({ frame }) => eventbriteFrameMatches(frame, eventId));
+    const { official, matching } = eventbriteCheckoutFrameSet(page, eventId);
     if (official.length === 1 && matching.length === 1) {
       const signature = official[0].parsed.href;
       if (stableSignature !== signature) {
@@ -123,6 +168,34 @@ async function waitForEventbriteCheckoutFrame(page, eventId, canonicalUrl) {
       stableSignature = null;
       stableSince = null;
     }
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(FINAL_EFFECT_POLL_MS, remaining)));
+  }
+  return false;
+}
+function isEventbriteTicketRegister({ provider, page, candidate, control, controls = [] } = {}) {
+  if (provider !== "eventbrite" || !control || control.kind !== "button" || control.label !== "Register"
+    || control.required !== false || control.completed !== false || control.submittable !== true) return false;
+  const binding = candidateEventbriteBinding(candidate);
+  if (!binding) return false;
+  const match = EVENTBRITE_TICKET_REGISTER_CONTROL.exec(String(control.control || ""));
+  let href = "";
+  try { href = String(typeof page?.url === "function" ? page.url() : ""); } catch { return false; }
+  const semantic = Array.isArray(controls) ? controls.filter((item) => item && item.kind === "button" && item.label === "Register"
+    && item.required === false && item.completed === false && item.submittable === true && EVENTBRITE_TICKET_REGISTER_CONTROL.test(String(item.control || ""))) : [];
+  return Boolean(match && match[1] === binding.eventId && href === binding.canonicalUrl && semantic.length === 1 && semantic[0].control === control.control);
+}
+async function waitForEventbriteTicketStep(page, eventId, canonicalUrl) {
+  const deadline = Date.now() + EVENTBRITE_FRAME_TIMEOUT_MS;
+  let stableSince = null;
+  while (Date.now() <= deadline) {
+    const frame = eventbriteTicketFrame(page, eventId, canonicalUrl);
+    const state = frame ? await inspectEventbriteTicketFrame(frame, eventId) : null;
+    if (state && state.cardCount === 0) {
+      if (stableSince == null) stableSince = Date.now();
+      if (Date.now() - stableSince >= EVENTBRITE_FRAME_STABILITY_MS) return true;
+    } else stableSince = null;
     const remaining = deadline - Date.now();
     if (remaining <= 0) break;
     await new Promise((resolve) => setTimeout(resolve, Math.min(FINAL_EFFECT_POLL_MS, remaining)));
@@ -311,6 +384,15 @@ async function inspectPageControls(input = {}) {
   const eventbriteUrl = EVENTBRITE_EVENT_URL.exec(canonicalUrl);
   const eventbriteEventId = eventbriteUrl && (eventbriteUrl[1] || eventbriteUrl[2]);
   if (provider === "eventbrite" && (!eventbriteEventId || eventbriteEventId !== eventId)) return Object.freeze([]);
+  if (provider === "eventbrite") {
+    const { official, matching } = eventbriteCheckoutFrameSet(page, eventId);
+    if (official.length > 0) {
+      if (href !== canonicalUrl || official.length !== 1 || matching.length !== 1) return Object.freeze([]);
+      const ticket = await inspectEventbriteTicketFrame(matching[0].frame, eventId);
+      if (!ticket || !ticket.control) return Object.freeze([]);
+      return Object.freeze([{ control: ticket.control, kind: "button", label: "Register", required: false, completed: false, submittable: true }]);
+    }
+  }
   const observed = await locator.evaluateAll((elements, context) => {
     if (context && context.provider === "eventbrite" && Array.isArray(elements) && elements.length > 100) return [];
     const visibleElements = elements.slice(0, 100);
@@ -504,10 +586,11 @@ async function inspectPageControls(input = {}) {
 }
 
 async function operatePageControl(input = {}) {
-  if (!input.page || typeof input.page.locator !== "function" || !input.control || !input.action) invalid();
+  const target = input.frame || input.page;
+  if (!input.page || !target || typeof target.locator !== "function" || !input.control || !input.action) invalid();
   const token = String(input.control.control || "");
   if (!CONTROL.test(token) || input.action.control !== token) invalid();
-  const locator = input.page.locator(`[data-lm-connector-control="${token}"]`);
+  const locator = target.locator(`[data-lm-connector-control="${token}"]`);
   if (!locator || typeof locator.count !== "function" || await locator.count() !== 1) {
     return Object.freeze({ status: "failed" });
   }
@@ -715,8 +798,9 @@ function createProductionBrowserHarness(options = {}) {
     if (!Array.isArray(values) || values.length < 1 || values.length > 100) invalid();
     const controls = values.map(safeControl);
     if (new Set(controls.map((item) => item.control)).size !== controls.length) invalid();
+    const eventbriteTicket = provider === "eventbrite" && controls.some((item) => EVENTBRITE_TICKET_REGISTER_CONTROL.test(item.control));
     const observation = Object.freeze({
-      state: connpassJoin ? "connpass_join" : "registration_page",
+      state: eventbriteTicket ? "eventbrite_ticket_step" : connpassJoin ? "connpass_join" : "registration_page",
       controls: Object.freeze(controls),
     });
     registry.set(page, { provider, eventId, observation });
@@ -733,7 +817,8 @@ function createProductionBrowserHarness(options = {}) {
     if (provider === "eventbrite" && !eventbriteBinding) return Object.freeze({ status: "failed" });
     const eventId = candidatePeatixEventId(input.candidate) || candidateMeetupEventId(input.candidate) || candidateDoorkeeperEventId(input.candidate) || eventbriteBinding?.eventId || String(input.event_id || "");
     const cached = registry.get(input.page);
-    const observation = cached && cached.provider === provider && cached.eventId === eventId ? cached.observation : await observed(input.page, provider, input.candidate);
+    const observation = provider === "eventbrite" || !cached || cached.provider !== provider || cached.eventId !== eventId
+      ? await observed(input.page, provider, input.candidate) : cached.observation;
     const currentHref = (() => { try { return String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } })();
     const state = observation.state === "connpass_join" && isConnpassJoin(provider, currentHref) ? "connpass_join" : observation.state === "connpass_join" ? "registration_page" : observation.state;
     const control = observation.controls.find((item) => item.control === input.action.control);
@@ -741,13 +826,17 @@ function createProductionBrowserHarness(options = {}) {
     if (provider !== "eventbrite" && EVENTBRITE_TRIGGER_CONTROL.test(control.control)) return Object.freeze({ status: "failed" });
     const doorkeeperModalTrigger = isDoorkeeperModalTrigger({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
     const eventbriteTrigger = isEventbriteCheckoutTrigger({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
-    if (provider === "eventbrite" && !eventbriteTrigger) return Object.freeze({ status: "failed" });
+    const eventbriteTicket = isEventbriteTicketRegister({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
+    const ticketFrame = eventbriteTicket ? eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) : null;
+    if (provider === "eventbrite" && !eventbriteTrigger && !eventbriteTicket) return Object.freeze({ status: "failed" });
+    if (eventbriteTicket && !ticketFrame) return Object.freeze({ status: "failed" });
     const pendingRequiredAnswer = observation.controls.some((item) => ACTIONABLE_KINDS.has(item.kind) && item.required && !item.completed);
     if (control.kind === "button" && pendingRequiredAnswer) return Object.freeze({ status: "failed" });
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
     if ((control.kind === "link" && !doorkeeperModalTrigger) || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
     if (doorkeeperModalTrigger && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
     if (eventbriteTrigger && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
+    if (eventbriteTicket && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
     if (provider === "connpass" && state === "connpass_join" && control.kind === "button" && control.label !== CONNPASS_FINAL_LABEL) return Object.freeze({ status: "failed" });
     if (provider === "doorkeeper" && control.kind === "button" && control.label !== DOORKEEPER_FINAL_LABEL) return Object.freeze({ status: "failed" });
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
@@ -780,6 +869,7 @@ function createProductionBrowserHarness(options = {}) {
     try {
       result = await operateControl({
         page: input.page,
+        ...(ticketFrame ? { frame: ticketFrame } : {}),
         control,
         action,
         value,
@@ -792,6 +882,7 @@ function createProductionBrowserHarness(options = {}) {
       if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
       return Object.freeze({ status: "failed" });
     }
+    if (eventbriteTicket) return Object.freeze({ status: await waitForEventbriteTicketStep(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) ? "success" : "failed" });
     if (eventbriteTrigger) return Object.freeze({ status: await waitForEventbriteCheckoutFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) ? "success" : "failed" });
     if (navigationWait && !(await navigationWait.promise)) return Object.freeze({ status: "failed" });
     if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);

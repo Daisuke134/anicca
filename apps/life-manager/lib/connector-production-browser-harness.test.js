@@ -1762,3 +1762,74 @@ test("Eventbrite CTA action clicks once and succeeds only on the exact checkout 
     assert.equal(operated, 0, name);
   }
 });
+
+function makeEventbriteTicketElement({ tagName = "DIV", type = "", testId = "", innerText = "", ariaLabel = "", disabled = false, hidden = false, children = [], ...overrides } = {}) {
+  const element = {
+    tagName, type, innerText, textContent: innerText, disabled, hidden, isConnected: true,
+    style: {}, dataset: testId ? { testid: testId } : {}, parentElement: null, children,
+    getAttribute(name) {
+      if (name === "data-testid") return testId;
+      if (name === "aria-label") return ariaLabel;
+      return null;
+    },
+    hasAttribute(name) { return name === "hidden" && hidden === true; },
+    getBoundingClientRect() { return hidden ? { width: 0, height: 0 } : { width: 120, height: 32 }; },
+    querySelectorAll() { return children.flatMap((child) => [child, ...(child.querySelectorAll ? child.querySelectorAll("*") : [])]); },
+    ownerDocument: { defaultView: { getComputedStyle() { return {}; } } },
+    ...overrides,
+  };
+  for (const child of children) child.parentElement = element;
+  return element;
+}
+
+test("Eventbrite inspector exposes the exact free ticket Register control from the matching checkout child frame", async () => {
+  const candidate = {
+    provider: "eventbrite",
+    event_ref: "eventbrite-event://event/1901",
+    canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901",
+  };
+  const increase = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "ticket-increase", ariaLabel: "Increase quantity" });
+  const decrease = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "ticket-decrease", ariaLabel: "Decrease quantity", disabled: true });
+  const quantity = makeEventbriteTicketElement({ testId: "ticket-quantity", innerText: "1" });
+  const stepper = makeEventbriteTicketElement({ testId: "ticket-quantity-selector", children: [decrease, quantity, increase] });
+  const card = makeEventbriteTicketElement({ testId: "ticket-card", innerText: "General Admission Free", children: [stepper] });
+  const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
+  let ticketVisible = true; let operated = 0; let operatedFrame;
+  const frameElements = () => ticketVisible ? [card, stepper, quantity, increase, decrease, primary] : [primary];
+  const frame = {
+    url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; },
+    parentFrame() { return {}; },
+    locator() { return { async evaluateAll(callback, context) { return callback(frameElements(), context); } }; },
+  };
+  const page = {
+    url() { return candidate.canonical_url; },
+    frames() { return [frame]; },
+    locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; },
+  };
+  for (const marker of ["$10", "cash", "paid", "door fee", "minimum purchase", "会場払い", "当日払い", "有料"]) {
+    card.innerText = `General Admission Free ${marker}`;
+    assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], marker);
+  }
+  card.innerText = "General Admission Free";
+  primary.disabled = true;
+  assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], "disabled-primary");
+  primary.disabled = false;
+  const controls = await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url });
+  assert.deepEqual(controls, [{ control: "eventbrite_ticket_register_1901", kind: "button", label: "Register", required: false, completed: false, submittable: true }]);
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("readback must not run"); } },
+    async inspectControls(input) { return inspectPageControls(input); },
+    async proposeAction() { return { control: controls[0].control }; },
+    async operateControl(input) { operated += 1; operatedFrame = input.frame; ticketVisible = false; return { status: "success" }; },
+    async resolveValue() { throw new Error("private value must not resolve"); },
+  });
+  mock.timers.enable({ apis: ["Date", "setTimeout"] });
+  try {
+    const resultPromise = harness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "submit", method: "ax_click", control: controls[0].control } });
+    let settled = false; resultPromise.then(() => { settled = true; });
+    for (let attempt = 0; attempt < 1_300 && !settled; attempt += 1) { await Promise.resolve(); mock.timers.tick(25); }
+    assert.deepEqual(await resultPromise, { status: "success" });
+  } finally { mock.timers.reset(); }
+  assert.equal(operated, 1);
+  assert.equal(operatedFrame, frame);
+});
