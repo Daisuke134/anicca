@@ -7213,7 +7213,13 @@ pushed repair `8ae15d93c`をstable worktreeへfast-forwardし、4 labels unloade
 
 read-only canonical/ticket再測定で候補`5086816`はvisible same-event ticket linkとQR shellを持つ実`registered`、前二候補はticketなし。Browser historyは成功候補だけfinal clickの約2秒後にstrict `/sales/event/5086816/confirmed`へ遷移し、前二候補はconfirmに留まることを示した。旧direct providerはfinal click直後にreadbackし、`confirmed` pathを認識せずeffect済み成功もunavailableへ落としていた。既存planへD0bを追記し、final click後のbounded exact same-event confirmed待機→同じpageのcanonical event navigation→既存parent ticket/marker readbackをTDD追加する。confirmed URL単独は成功証拠にせず、wrong/missing transitionは再Submit 0でfail closed。scheduleはunloaded、Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗348。これ以外の残TODO一覧は履歴）
+### O1B-25進捗349（Item 19M-D0b / Peatix confirmed settlement ship）
+
+LunaへPeatix browser provider production/testの既存2 filesだけを所有させ、final click後のsettlementをSuperpowers TDDで修復した。REDはfocused 22件中9 failureで、8ms delayed exact same-event `/confirmed`が旧即時readbackでは`readback_unavailable`、malformed/missing confirmedはcanonical readbackなしとなる故障を再現した。GREEN commit `e9f953eac`はstrict same-event confirmedを30秒bounded waitし、exact confirmed後だけ同じowned pageをcanonical event URLへnavigateし、既存parent ticket/marker readbackで実registeredを判定する。confirmed URL単独、wrong event、auth、query/fragment、credential/port、unrelated/missing transitionは成功0、final click再試行0。既登録pre-readback no-opは維持する。
+
+Luna focused 22/22、production Harness 55/55、minimal runner 36/36、minimal production 12/12、Sol独立expanded 125/125、syntax、diff checkがPASS。fresh Sol reviewはCritical 0 / Important 0で`ship`。別workflow 1 failureは未変更の日付依存testで単独再現し新規回帰0。review済みcommitをstable scheduled worktreeへfast-forwardし、両remote branchへpushした。implementation/test/review中のbrowser、provider Submit、Calendar、evidence、Telegram、state、launchd、schedule外部作用0。Item19 Meetupは未完。次は4 labels unloaded、process/lock 0、clean/upstreamからofficial foreground wakeをexact 1回実行し、実登録済みPeatixのpre-readback/evidence回復とMeetup audit到達または次のexact safe boundaryを観測する。
+
+### Active remaining TODO SSOT（進捗349。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
