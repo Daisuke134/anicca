@@ -181,10 +181,13 @@ function actionForControl(control) { const action = ACTIONS[control.kind]; retur
 async function inspectPageControls(input = {}) {
   const page = input.page;
   if (!page || typeof page.locator !== "function") invalid();
-  let locator;
-  try { locator = page.locator("input, textarea, select, button, a[role=button], a#confirm-button"); } catch { locator = null; }
-  if (!locator || typeof locator.evaluateAll !== "function") invalid();
   const provider = String(input.provider || "");
+  const selector = provider === "doorkeeper"
+    ? "input, textarea, select, button, a[role=button], a#confirm-button, a[href=\"#new_registration_modal\"]"
+    : "input, textarea, select, button, a[role=button], a#confirm-button";
+  let locator;
+  try { locator = page.locator(selector); } catch { locator = null; }
+  if (!locator || typeof locator.evaluateAll !== "function") invalid();
   const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
   const eventId = String(input.event_id || "");
   const connpassJoin = isConnpassJoin(provider, href);
@@ -254,6 +257,52 @@ async function inspectPageControls(input = {}) {
       const radioName = radioNameOf(element);
       return ["input", "textarea", "select"].includes(kind) ? Boolean(String(element.value || "").trim()) : kind === "checkbox" ? element.checked === true : kind === "radio" ? radioName.trim() ? elements.some((candidate) => String(candidate.type || "").toLowerCase() === "radio" && String((candidate.getAttribute && candidate.getAttribute("name")) || candidate.name || "") === radioName && candidate.checked === true) : element.checked === true : false;
     };
+    const doorkeeperFormIdOf = (form) => String(form && (form.id || (form.getAttribute && form.getAttribute("id")) || ""));
+    const doorkeeperHrefOf = (element) => String((element.getAttribute && element.getAttribute("href")) || element.href || "");
+    const doorkeeperTextOf = (element) => String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim();
+    const doorkeeperTriggerOf = (element) => String(element.tagName || "").toLowerCase() === "a" && doorkeeperHrefOf(element) === "#new_registration_modal" && doorkeeperTextOf(element) === "申し込む";
+    const doorkeeperVisibleElements = visibleElements.filter(visibleOf);
+    const hasDoorkeeperTrigger = doorkeeperVisibleElements.some(doorkeeperTriggerOf);
+    const doorkeeperPageMatch = /^https:\/\/([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.doorkeeper\.jp\/events\/([1-9][0-9]*)$/.exec(String(context && context.href || ""));
+    const knownDoorkeeperPage = Boolean(context && context.provider === "doorkeeper" && context.eventId && doorkeeperPageMatch && doorkeeperPageMatch[1] !== "www" && doorkeeperPageMatch[2] === String(context.eventId));
+    if (hasDoorkeeperTrigger && context && context.provider !== "doorkeeper") return [];
+    if (context && context.provider === "doorkeeper") {
+      if (!knownDoorkeeperPage) return [];
+      const idOf = (element) => String(element.id || (element.getAttribute && element.getAttribute("id")) || "");
+      const nameOf = (element) => String((element.getAttribute && element.getAttribute("name")) || element.name || "");
+      const requiredEmailOf = (element) => String(element.tagName || "").toLowerCase() === "input"
+        && String(element.type || "").toLowerCase() === "email"
+        && idOf(element) === "event_registration_email"
+        && nameOf(element) === "event_registration[email]"
+        && element.required === true
+        && doorkeeperFormIdOf(element.form) === "new_event_registration";
+      const submitOf = (element) => String(element.tagName || "").toLowerCase() === "input"
+        && String(element.type || "").toLowerCase() === "submit"
+        && nameOf(element) === "commit"
+        && String(element.value || "") === "申し込む";
+      const triggerCandidates = doorkeeperVisibleElements.filter(doorkeeperTriggerOf);
+      const emailCandidates = doorkeeperVisibleElements.filter(requiredEmailOf);
+      const requiredAnswers = doorkeeperVisibleElements.filter((element) => element.disabled !== true && ["input", "textarea", "select", "checkbox", "radio"].includes(kindOf(element)) && requiredOf(element));
+      const answerForms = new Set(requiredAnswers.map((element) => element.form).filter(Boolean));
+      const registrationForm = answerForms.size === 1 ? answerForms.values().next().value : null;
+      const requiredAnswersComplete = requiredAnswers.length === 1 && requiredAnswers.every(completedOf);
+      const requiredAnswersRepresentable = requiredAnswers.length === 1 && emailCandidates.length === 1 && requiredAnswers[0] === emailCandidates[0];
+      const requiredAnswersBound = Boolean(registrationForm && requiredAnswers.every((element) => element.form === registrationForm) && doorkeeperFormIdOf(registrationForm) === "new_event_registration");
+      const submitCandidates = doorkeeperVisibleElements.filter(submitOf);
+      const submitReady = requiredAnswersRepresentable && requiredAnswersComplete && requiredAnswersBound && submitCandidates.length === 1 && submitCandidates[0].form === registrationForm;
+      const publicControl = (element, kind, label, required, completed, submittable) => {
+        const index = visibleElements.indexOf(element);
+        const control = `control_${index + 1}`;
+        if (element.dataset) element.dataset.lmConnectorControl = control;
+        return { control, kind, label, required, completed, submittable };
+      };
+      if (triggerCandidates.length !== 1) return [];
+      const controls = [];
+      controls.push(publicControl(triggerCandidates[0], "link", "申し込む", false, false, false));
+      for (const email of emailCandidates) controls.push(publicControl(email, "input", "Email", true, completedOf(email), false));
+      for (const submit of submitCandidates) controls.push(publicControl(submit, "button", "申し込む", false, false, submitReady && submit === submitCandidates[0]));
+      return controls;
+    }
     const requiredAnswersComplete = requiredAnswers.every(completedOf);
     const answerForms = new Set(requiredAnswers.map((element) => element.form).filter(Boolean));
     const registrationForm = answerForms.size === 1 ? answerForms.values().next().value : null;

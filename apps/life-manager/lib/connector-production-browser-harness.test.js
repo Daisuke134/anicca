@@ -1304,3 +1304,119 @@ test("Doorkeeper ambiguous click still uses readback and never clicks twice", as
     assert.equal(clicks, 1, outcome);
   }
 });
+
+function makeDoorkeeperElement(overrides = {}) {
+  const element = {
+    tagName: "INPUT", type: "", id: "", name: "", value: "", innerText: "", textContent: "",
+    labels: [], required: false, disabled: false, hidden: false, isConnected: true, style: {}, rect: { width: 120, height: 32 },
+    dataset: {}, form: null, parentElement: null, ...overrides,
+  };
+  element.getAttribute = (name) => {
+    if (name === "href") return element.href ?? null;
+    if (name === "id") return element.id || null;
+    if (name === "name") return element.name || null;
+    if (name === "type") return element.type || null;
+    if (name === "hidden") return element.hidden ? "" : null;
+    if (name === "aria-hidden") return element.ariaHidden ? "true" : null;
+    return element.attributes && Object.hasOwn(element.attributes, name) ? element.attributes[name] : null;
+  };
+  element.closest = () => null;
+  element.getBoundingClientRect = () => element.rect;
+  return element;
+}
+
+function makeDoorkeeperForm(id = "new_event_registration") {
+  return { id, getAttribute(name) { return name === "id" ? id : null; } };
+}
+
+async function inspectDoorkeeperDom(elements, { provider = "doorkeeper", href = "https://techgym.doorkeeper.jp/events/198719", event_id = "198719" } = {}) {
+  let selector = "";
+  const page = {
+    url() { return href; },
+    locator(value) { selector = value; return { async evaluateAll(callback, context) { return callback(elements, context); } }; },
+  };
+  const controls = await inspectPageControls({ page, provider, event_id });
+  return { controls, selector };
+}
+
+test("Doorkeeper DOM inspector exposes only the exact visible trigger while modal is closed", async () => {
+  const form = makeDoorkeeperForm();
+  const elements = [
+    makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "申し込む" }),
+    makeDoorkeeperElement({ type: "email", id: "event_registration_email", name: "event_registration[email]", required: true, form, hidden: true, value: "private@example.com" }),
+    makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form, hidden: true }),
+  ];
+  const { controls, selector } = await inspectDoorkeeperDom(elements);
+  assert.match(selector, /a\[href="#new_registration_modal"\]/);
+  assert.deepEqual(controls.map(({ kind, label, submittable }) => ({ kind, label, submittable })), [{ kind: "link", label: "申し込む", submittable: false }]);
+  assert.doesNotMatch(JSON.stringify(controls), /private@example\.com|event_registration\[email\]/);
+});
+
+test("Doorkeeper modal exposes public Email first and the exact single submit only after completion", async () => {
+  const form = makeDoorkeeperForm();
+  const trigger = makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "申し込む" });
+  const email = makeDoorkeeperElement({ type: "email", id: "event_registration_email", name: "event_registration[email]", required: true, form, value: "" });
+  const submit = makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form });
+  let { controls } = await inspectDoorkeeperDom([trigger, email, submit]);
+  assert.deepEqual(controls.map(({ kind, label, required, submittable }) => ({ kind, label, required, submittable })), [
+    { kind: "link", label: "申し込む", required: false, submittable: false },
+    { kind: "input", label: "Email", required: true, submittable: false },
+    { kind: "button", label: "申し込む", required: false, submittable: false },
+  ]);
+  assert.equal(controls.some((control) => control.submittable), false);
+  email.value = "private@example.com";
+  ({ controls } = await inspectDoorkeeperDom([trigger, email, submit]));
+  assert.deepEqual(controls.map(({ kind, label, completed, submittable }) => ({ kind, label, completed, submittable })), [
+    { kind: "link", label: "申し込む", completed: false, submittable: false },
+    { kind: "input", label: "Email", completed: true, submittable: false },
+    { kind: "button", label: "申し込む", completed: false, submittable: true },
+  ]);
+  assert.doesNotMatch(JSON.stringify(controls), /private@example\.com|event_registration\[email\]|secret|Jane Doe/);
+});
+
+test("Doorkeeper trigger requires exact identity, href, label, uniqueness, and visibility", async () => {
+  const base = makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "申し込む" });
+  const cases = [
+    ["duplicate", [base, makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "申し込む" })], {}],
+    ["wrong-href", [makeDoorkeeperElement({ tagName: "A", href: "#other", innerText: "申し込む" })], {}],
+    ["wrong-label", [makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "参加する" })], {}],
+    ["wrong-provider", [base], { provider: "peatix" }],
+    ["wrong-page", [base], { href: "https://techgym.doorkeeper.jp/groups/198719" }],
+    ["wrong-event", [base], { event_id: "198720" }],
+    ["www", [base], { href: "https://www.doorkeeper.jp/events/198719" }],
+    ["uppercase", [base], { href: "https://Techgym.doorkeeper.jp/events/198719" }],
+    ["query", [base], { href: "https://techgym.doorkeeper.jp/events/198719?x=1" }],
+    ["fragment", [base], { href: "https://techgym.doorkeeper.jp/events/198719#final" }],
+    ["port", [base], { href: "https://techgym.doorkeeper.jp:443/events/198719" }],
+    ["credentials", [base], { href: "https://user:pass@techgym.doorkeeper.jp/events/198719" }],
+    ["hidden", [makeDoorkeeperElement({ ...base, hidden: true })], {}],
+    ["detached", [makeDoorkeeperElement({ ...base, isConnected: false })], {}],
+    ["css-hidden", [makeDoorkeeperElement({ ...base, style: { display: "none" } })], {}],
+    ["zero-size", [makeDoorkeeperElement({ ...base, rect: { width: 0, height: 0 } })], {}],
+  ];
+  for (const [name, elements, context] of cases) {
+    const { controls } = await inspectDoorkeeperDom(elements, context);
+    assert.equal(controls.some((control) => control.kind === "link" && control.label === "申し込む"), false, name);
+  }
+});
+
+test("Doorkeeper submit fails closed for duplicate, wrong-form, hidden, and ambiguous required answers", async () => {
+  const makeCase = (extra = [], submitOverrides = {}) => {
+    const form = makeDoorkeeperForm();
+    const email = makeDoorkeeperElement({ type: "email", id: "event_registration_email", name: "event_registration[email]", required: true, form, value: "private@example.com" });
+    const submit = makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form, ...submitOverrides });
+    return [makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "申し込む" }), email, submit, ...extra(form)];
+  };
+  const cases = [
+    ["duplicate-submit", (form) => [makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form })]],
+    ["wrong-form", () => [makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form: makeDoorkeeperForm("cookie_form") })]],
+    ["hidden-submit", () => [], { hidden: true }],
+    ["unlabeled-required-answer", (form) => [makeDoorkeeperElement({ type: "text", required: true, form, value: "secret" })]],
+    ["ambiguous-required-answer", (form) => [makeDoorkeeperElement({ type: "text", required: true, form, value: "Jane Doe", labels: [{ innerText: "Email" }] })]],
+  ];
+  for (const [name, extra, submitOverrides] of cases) {
+    const { controls } = await inspectDoorkeeperDom(makeCase(extra, submitOverrides));
+    assert.equal(controls.some((control) => control.submittable === true), false, name);
+    assert.doesNotMatch(JSON.stringify(controls), /private@example\.com|event_registration\[email\]|secret|Jane Doe/);
+  }
+});
