@@ -1821,6 +1821,33 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
     assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], marker);
   }
   card.innerText = "General Admission Free";
+  for (const [name, style] of [
+    ["element-display-none", { display: "none" }],
+    ["element-visibility-hidden", { visibility: "hidden" }],
+    ["element-visibility-collapse", { visibility: "collapse" }],
+    ["element-content-visibility-hidden", { contentVisibility: "hidden" }],
+    ["element-opacity-zero", { opacity: "0" }],
+  ]) {
+    primary.style = style;
+    assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], name);
+    primary.style = {};
+  }
+  for (const [name, style] of [
+    ["ancestor-display-none", { display: "none" }],
+    ["ancestor-visibility-hidden", { visibility: "hidden" }],
+    ["ancestor-visibility-collapse", { visibility: "collapse" }],
+    ["ancestor-content-visibility-hidden", { contentVisibility: "hidden" }],
+    ["ancestor-opacity-zero", { opacity: "0" }],
+  ]) {
+    primary.parentElement = { style, parentElement: null };
+    assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], name);
+    primary.parentElement = null;
+  }
+  const ownerDocument = primary.ownerDocument;
+  primary.ownerDocument = { defaultView: { getComputedStyle() { return { opacity: "0" }; } } };
+  assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], "computed-opacity-zero");
+  primary.ownerDocument = ownerDocument;
+  card.innerText = "General Admission Free";
   primary.disabled = true;
   assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], "disabled-primary");
   primary.disabled = false;

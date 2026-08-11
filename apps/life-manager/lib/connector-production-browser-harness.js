@@ -123,7 +123,27 @@ async function inspectEventbriteTicketFrame(frame, eventId) {
       if (!Array.isArray(elements) || elements.length > 100) return { cardCount: -1, control: null };
       const testIdOf = (element) => String((element.getAttribute && element.getAttribute("data-testid")) || (element.dataset && element.dataset.testid) || "").toLowerCase();
       const textOf = (element) => String(element && (element.innerText || element.textContent || element.value) || "").replace(/\s+/g, " ").trim();
-      const visibleOf = (element) => { let current = element; while (current) { if (current.hidden === true || current.isConnected === false || String((current.getAttribute && current.getAttribute("aria-hidden")) || "").toLowerCase() === "true") return false; current = current.parentElement || null; } const rect = element && typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null; return Boolean(element && (!rect || (Number(rect.width) > 0 && Number(rect.height) > 0))); };
+      const hiddenStyle = (style) => Boolean(style && (
+        [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase()))
+        || String(style.opacity ?? "") === "0"
+      ));
+      const visibleOf = (element) => {
+        const view = element && element.ownerDocument && element.ownerDocument.defaultView;
+        let current = element;
+        while (current) {
+          if (current.hidden === true || current.isConnected === false || (typeof current.hasAttribute === "function" && current.hasAttribute("hidden"))) return false;
+          if (String((current.getAttribute && current.getAttribute("aria-hidden")) || "").toLowerCase() === "true") return false;
+          if (hiddenStyle(current.style || {})) return false;
+          let computed = null;
+          try { computed = view && typeof view.getComputedStyle === "function" ? view.getComputedStyle(current) : null; } catch { computed = null; }
+          if (hiddenStyle(computed)) return false;
+          current = current.parentElement || null;
+        }
+        if (!element || typeof element.getBoundingClientRect !== "function") return false;
+        let rect;
+        try { rect = element.getBoundingClientRect(); } catch { return false; }
+        return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0);
+      };
       const descendants = (element) => [element, ...(typeof element.querySelectorAll === "function" ? [...element.querySelectorAll("*")] : [])];
       const cardCandidates = elements.filter((element) => testIdOf(element) === "ticket-display-card-content-full-size");
       const cards = cardCandidates.filter(visibleOf);
