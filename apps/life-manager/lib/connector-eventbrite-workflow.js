@@ -9,6 +9,8 @@ const OFFLINE_MODE = new Set(["https://schema.org/OfflineEventAttendanceMode", "
 const IN_STOCK = new Set(["InStock", "https://schema.org/InStock", "http://schema.org/InStock"]);
 const BLOCKED_MARKER = /(?:sold[ -]?out|wait[ -]?list|waitlist|cancel(?:led|ed|lation)?|registration closed|event closed|error|failed|受付終了|キャンセル|満席|満員|売り切れ|販売終了|エラー)/i;
 const MONEY_MARKER = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:(?:jpy|yen)\b|円)|door\s*(?:price|fee)|at\s+the\s+door|participation\s+fee|admission\s+fee|entry\s+fee|payment\s+required|paid\s+at\s+door|参加費|入場料|会場払い|当日払い|有料|支払い(?:が)?(?:必要|必須))/i;
+const EXPLICIT_FREE_MARKER = /(?:参加費無料|入場無料|\bfree\s+admission\b|\bno\s+participation\s+fee\b)/gi;
+const MINIMUM_PURCHASE_MARKER = /(?:\bone\s+drink\s+minimum\b|\bminimum\s+purchase\b|\bpurchase\s+required\b|ワンドリンク必須)/i;
 const READBACK_UNSAFE = /(?:auth|log\s*in|sign\s*in|payment|pay(?:ment)?|credit\s*card|checkout|error|failed|sold[ -]?out|wait[ -]?list|waitlist|cancel(?:led|ed)?|受付終了|キャンセル|満席|エラー|支払い)/i;
 const COMPLETION_MARKER = /(?:registration\s+(?:is\s+)?(?:complete|completed|confirmed)|order\s+confirmed|ticket(?:s)?\s+confirmed|you(?:'re| are)\s+going|登録完了|申し込みが完了しました)/gi;
 const SAFE_CODES = new Set("EVENTBRITE_LISTING_NAVIGATION_FAILED EVENTBRITE_LISTING_READ_FAILED EVENTBRITE_LISTING_RESULT_CONTRACT_FAILED EVENTBRITE_DETAIL_NAVIGATION_FAILED EVENTBRITE_DETAIL_READ_FAILED EVENTBRITE_DETAIL_IDENTITY_MISMATCH_FAILED EVENTBRITE_CALENDAR_CONFLICT_CHECK_FAILED EVENTBRITE_REGISTRATION_READ_FAILED".split(" "));
@@ -159,7 +161,8 @@ function normalizeDetail(binding, raw) {
   const title = String(event.name || "").trim();
   if (!title || !Number.isFinite(starts) || !Number.isFinite(ends) || starts >= ends) return null;
   const controls = controlsOf(raw);
-  const text = `${bodyText(raw, event)} ${controls.map((control) => control.text).join(" ")}`;
+  const text = `${bodyText(raw, event)} ${controls.map((control) => control.text).join(" ")}`.replace(/\s+/g, " ").trim();
+  const paidText = text.replace(EXPLICIT_FREE_MARKER, " ");
   const candidate = Object.freeze({
     provider: "eventbrite", event_ref: binding.event_ref, canonical_url: binding.canonical_url, title,
     starts_at: new Date(starts).toISOString(), ends_at: new Date(ends).toISOString(),
@@ -169,7 +172,7 @@ function normalizeDetail(binding, raw) {
     && freeOffers(event, binding.canonical_url)
     && controls.filter((control) => control.visible).length === 1
     && controls.some((control) => control.visible && isTicketControl(control.text))
-    && !BLOCKED_MARKER.test(text) && !MONEY_MARKER.test(text) });
+    && !BLOCKED_MARKER.test(text) && !MONEY_MARKER.test(paidText) && !MINIMUM_PURCHASE_MARKER.test(paidText) });
 }
 function calendarIntervals(calendar) {
   return Array.isArray(calendar) ? calendar : calendar && Array.isArray(calendar.busy_intervals) ? calendar.busy_intervals : [];
