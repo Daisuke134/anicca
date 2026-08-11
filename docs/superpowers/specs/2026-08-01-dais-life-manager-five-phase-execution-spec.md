@@ -7918,3 +7918,11 @@ Luna実装commit `75975b32b`はvalidated DOM後binding、parent deterministic 13
 しかしauthenticated実DOM E2Eはaction後のimmediate post-inspectionが0 controlsとなり`agent_action_failed`。run差により6 answer後または最初のscalar後に再現したが、いずれも意図したDOM値自体は変化し、review/final click 0、private projection leak 0、owned pageは4→5→4へcleanupした。guard番号付き実関数診断と前後countで、stable DOMはselector 65 nodes / safe controls 49、mutation直後だけ88件のauxiliary `INPUT type=text`が加わり153 nodesとなって150 boundを超え、短時間後65へ戻ることを確定した。role空のhidden native checkbox 7件はstable Inspectorが既に49 controlsで受理し、原因ではない。
 
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-optout-companion-repair-19f.md`は同じHarness/test exact 2 files。150-node Inspector contractは緩めず、operation成功後だけsame join URL＋candidateへのbounded reinspectionでstable 49-control postconditionを待つ。mutation再実行、oversized observation受理、model callは0。never-stable/page drift/wrong postconditionは失敗を維持する。review/final、factory/router/native order、evidence、Calendar、scheduleは変更0。修復後に同じ実E2Eを再実行する。Item19実bundleは未完。
+
+### O1B-25進捗458（Item 19F-D6 / TECH PLAY exact input operation live ship）
+
+Repair commit `84873e7f6`はInspectorの150-node上限を維持したまま、TECH PLAY input mutation成功後だけ最大20 attempts・19 sleeps×25ms＝475msのread-only stable postcheckを追加した。各pollはsame event/canonical URL/ticket binding＋exact join URLを再検証し、同じtoken/kind/label/questionが`completed:true`のときだけ成功する。allow-empty observationはこのpostcheck callsiteだけで、操作・private resolve・model proposerのretryは0。never-stable、inspector throw、wrong completion、page/candidate drift、invalid injected sleepはfail closed。
+
+REDはpost-inspect call 3だけ104 auxiliary nodesを加え153 nodes→0 controls、その次をstable49にして旧実装FAIL。postcondition guard弱体化mutationはwrong-completedをsuccessへ誤判定してnamed test FAIL、復元後Harness 131/131＋TECH PLAY workflow 16/16、合計147/147、syntax、diffがPASS。fresh reviewは必須finding 0で`ship`。repair差分はHarness +18/-9、test +44/-1のexact 2 files。
+
+authenticated実E2E再実行はparent deterministic actions 13、external proposer 0、safe controls 49、answer controls 40全完了、opt-out 7全OFF、review CTA submittable、join URL維持、review/final click 0。scalar private（氏名/email/DOB/所属）のprojection leak 0。career/職種は公開radio labelsなのでprivacy対象外と明示した。owned pageは4→5→4へcleanup。次active sliceはreview CTA navigation＋confirm final action/effect readback。Item19実bundleは未完。
