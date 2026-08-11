@@ -8,7 +8,7 @@ const candidate = (extra = {}) => ({ provider: "peatix", event_ref: "peatix-even
 const profile = (extra = {}) => ({ name: "Dais Example", email: "dais@example.test", family_name_kana: "サクラ", given_name_kana: "テスト", accept_organizer_privacy: true, ...extra });
 
 function fixture(options = {}) {
-  let state = options.initial || "tickets"; const calls = []; const checked = new Set(); let finals = 0;
+  let state = options.initial || "tickets"; const calls = []; const checked = new Set(); let finals = 0; let canonicalVisits = 0;
   const fields = options.fields || [
     { selector: "#name", kind: "name", visible: true, checked: false },
     { selector: "#email", kind: "email", visible: true, checked: false },
@@ -17,7 +17,7 @@ function fixture(options = {}) {
   const familySelector = '#confirm-form [name="lastname_edit"]'; const givenSelector = '#confirm-form [name="firstname_edit"]';
   const confirmControls = options.confirmControls || { [familySelector]: { count: 1, visible: true }, [givenSelector]: { count: 1, visible: true } };
   const formSelectors = new Set(["#name", "#email", "#privacy", "#form-submit-button", ...(options.formSelectors || [])]);
-  const href = () => state === "tickets" ? "https://peatix.com/sales/event/5075819/tickets" : state === "billing" ? (options.billingUrl || "https://peatix.com/sales/event/5075819/billing") : state === "form" ? `https://peatix.com/sales/event/${options.formEvent || "5075819"}/form` : state === "confirm" ? (options.nextConfirmUrl || options.confirmUrl || `https://peatix.com/sales/event/${options.confirmEvent || "5075819"}/confirm`) : state === "pending-confirm" ? (options.pendingConfirmedUrl || "https://peatix.com/sales/event/5075819/confirm") : state === "confirmed" ? (options.confirmedUrl || "https://peatix.com/sales/event/5075819/confirmed") : state === "complete" ? "https://peatix.com/sales/event/5075819/complete" : state === "ambiguous" ? "https://peatix.com/sales/event/5075819/unknown" : state === "auth" ? "https://peatix.com/login" : state === "canonical" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : state === "canonical-registered" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : "https://peatix.com/event/9999999";
+  const href = () => state === "tickets" ? "https://peatix.com/sales/event/5075819/tickets" : state === "billing" ? (options.billingUrl || "https://peatix.com/sales/event/5075819/billing") : state === "form" ? `https://peatix.com/sales/event/${options.formEvent || "5075819"}/form` : state === "confirm" ? (options.nextConfirmUrl || options.confirmUrl || `https://peatix.com/sales/event/${options.confirmEvent || "5075819"}/confirm`) : state === "pending-confirm" ? (options.pendingConfirmedUrl || "https://peatix.com/sales/event/5075819/confirm") : state === "confirmed" ? (options.confirmedUrl || "https://peatix.com/sales/event/5075819/confirmed") : state === "complete" ? "https://peatix.com/sales/event/5075819/complete" : state === "ambiguous" ? "https://peatix.com/sales/event/5075819/unknown" : state === "auth" ? "https://peatix.com/login" : state === "canonical" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : state === "canonical-registered" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : state === "ticket-registered" || state === "ticket-unproven" ? "https://peatix.com/event/5075819/ticket" : "https://peatix.com/event/9999999";
   const count = (s) => { if (state === "form" && /#[^\\[]*[\[\]]/.test(s)) throw new Error("invalid selector"); if (state === "confirm" && Object.hasOwn(confirmControls, s)) return confirmControls[s].count; return state === "tickets" && s === "input[name=number_of_tickets_6536845]" ? 1 : state === "tickets" && s === "#next-button" ? 1 : state === "form" && formSelectors.has(s) ? 1 : state === "confirm" && s === "#confirm-button" ? 1 : 0; };
   const navigate = (next) => options.asyncNavigation ? setTimeout(() => { state = next; }, 0) : (state = next);
   const locator = (selector) => {
@@ -62,7 +62,7 @@ function fixture(options = {}) {
     url: href,
     async goto(url) {
       calls.push(["goto", url]);
-      state = /\/tickets$/.test(url) ? "tickets" : /\/form$/.test(url) ? "form" : /^https:\/\/peatix\.com\/event\/5075819$/.test(url) ? "canonical-registered" : "confirm";
+      state = /\/tickets$/.test(url) ? "tickets" : /\/form$/.test(url) ? "form" : /^https:\/\/peatix\.com\/event\/5075819$/.test(url) ? ((options.canonicalUnavailable || (options.canonicalUnavailableOnce && canonicalVisits++ === 0)) ? "canonical" : "canonical-registered") : /^https:\/\/peatix\.com\/event\/5075819\/ticket$/.test(url) ? (options.ticketRegistered ? "ticket-registered" : "ticket-unproven") : "confirm";
     },
     async waitForURL(predicate, waitOptions = {}) {
       calls.push(["wait-for-url", waitOptions]); const deadline = Date.now() + Math.min(Number(waitOptions.timeout) || 30_000, 50);
@@ -101,6 +101,8 @@ function fixture(options = {}) {
       if (state === "confirmed" || state === "pending-confirm") return { href: href(), markers: [], checkout: false };
       if (state === "complete") return { href: href(), markers: options.marker === false ? [] : [{ event_id: "5075819", ticket_id: "6536845" }], checkout: false };
       if (state === "canonical-registered") return { href: href(), markers: options.complete === false ? [] : [{ event_id: "5075819", ticket_id: "6536845" }], checkout: false };
+      if (state === "ticket-registered") return { href: href(), markers: [], checkout: false, ticket_shell: false, swipe_shell: true };
+      if (state === "ticket-unproven") return { href: href(), markers: [], checkout: false, ticket_shell: false, swipe_shell: false };
       if (state === "auth") return { href: href(), auth: true, markers: [], checkout: false };
       if (state === "cross") return { href: "https://peatix.com/sales/event/9999999/complete", markers: [{ event_id: "9999999", ticket_id: "6536845" }], checkout: false };
       if (state === "canonical" && options.markerEvent) return { href: href(), markers: [{ event_id: options.markerEvent, ticket_id: "6536845" }], checkout: false };
@@ -114,7 +116,7 @@ function readbackFixture(options = {}) {
   const href = options.href || "https://peatix.com/event/5075819";
   const url = new URL(href); const calls = [];
   const node = (item = {}) => ({ hidden: item.hidden === true, isConnected: item.detached !== true, style: item.style || {}, ownerDocument: { defaultView: { getComputedStyle: () => item.computedStyle || {} } }, getAttribute: (name) => item.attributes && item.attributes[name] || null, getBoundingClientRect: () => item.rect || { width: item.visible === false ? 0 : 120, height: item.visible === false ? 0 : 32 } });
-  const shell = options.ticketShell || {}; const links = (options.ticketLinks || []).map((item) => node({ ...item, attributes: { href: item.href || `/event/${item.eventId || "5075819"}/ticket` } }));
+  const shell = options.ticketShell || options.swipeShell || {}; const swipe = options.swipeShell || {}; const links = (options.ticketLinks || []).map((item) => node({ ...item, attributes: { href: item.href || `/event/${item.eventId || "5075819"}/ticket` } }));
   const list = (count, item) => Array.from({ length: count || 0 }, () => node(item));
   const document = {
     querySelectorAll(selector) {
@@ -122,6 +124,10 @@ function readbackFixture(options = {}) {
       if (selector === "body.webticket") return list(shell.bodyCount, shell.body);
       if (selector === "section.ticket") return list(shell.sectionCount, shell.section);
       if (selector === "#qr-code img.js-qrcode-image") return list(shell.qrCount, shell.qr);
+      if (selector === ".ticket_cover") return list(swipe.coverCount, swipe.cover);
+      if (selector === ".ticket_event") return list(swipe.eventCount, swipe.event);
+      if (selector === ".ticket_event-name") return list(swipe.eventNameCount, swipe.eventName);
+      if (selector === ".ticket_summary") return list(swipe.summaryCount, swipe.summary);
       if (selector === "a[href]") return links;
       return [];
     },
@@ -144,7 +150,7 @@ test("invalid input fails closed and registered readback is an idempotent no-op"
     const f = fixture(); assert.deepEqual(await submitPeatixOnPage(f.page, c, p), { status: "unavailable", reason: "invalid_input" }); assert.equal(f.calls.some((x) => x[0] === "goto"), false); assert.equal(f.finalCount(), 0);
   }
   const f = fixture({ initial: "complete" }); assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" }); assert.equal(f.calls.some((x) => x[0] === "goto"), false); assert.equal(f.finalCount(), 0);
-  const canonical = fixture({ initial: "canonical" }); assert.deepEqual(await submitPeatixOnPage(canonical.page, candidate(), profile()), { status: "registered" });
+  const canonical = fixture({ initial: "canonical", canonicalUnavailableOnce: true }); assert.deepEqual(await submitPeatixOnPage(canonical.page, candidate(), profile()), { status: "registered" });
   const wrong = fixture({ initial: "wrong" }); assert.equal((await submitPeatixOnPage(wrong.page, candidate(), profile())).status, "unavailable"); assert.equal(wrong.calls.some((x) => x[0] === "goto"), false);
   const wrongMarker = fixture({ initial: "canonical", markerEvent: "9999999" }); assert.equal((await submitPeatixOnPage(wrongMarker.page, candidate(), profile())).status, "unavailable"); assert.equal(wrongMarker.calls.some((x) => x[0] === "goto"), false);
   const portCanonical = fixture({ initial: "canonical", canonicalUrl: "https://peatix.com:444/event/5075819" }); assert.equal((await submitPeatixOnPage(portCanonical.page, candidate(), profile())).status, "unavailable"); assert.equal(portCanonical.calls.some((x) => x[0] === "goto"), false);
@@ -208,6 +214,8 @@ test("Peatix confirmed settlement rejects malformed or missing same-event URLs w
   assert.equal(confirmedOnly.finalCount(), 1);
   assert.deepEqual(confirmedOnly.calls.filter(([name]) => name === "goto"), [
     ["goto", "https://peatix.com/sales/event/5075819/tickets"],
+    ["goto", "https://peatix.com/event/5075819"],
+    ["goto", "https://peatix.com/event/5075819/ticket"],
     ["goto", "https://peatix.com/event/5075819"],
   ]);
 });
@@ -357,6 +365,61 @@ test("measured Peatix ticket shell and canonical ticket link prove same-event re
   assert.doesNotMatch(JSON.stringify(ticketResult), /6536845|webticket|qr-code/i);
   const canonical = readbackFixture({ ticketLinks: [{ eventId: "5075819" }] });
   assert.deepEqual(await readPeatixRegistrationStateOnPage(canonical.page, candidate()), { status: "registered" });
+});
+
+test("measured Peatix swipe ticket shell proves same-event registration without private ticket reads", async () => {
+  const ticket = readbackFixture({
+    href: "https://peatix.com/event/5075819/ticket",
+    swipeShell: { bodyCount: 1, sectionCount: 1, coverCount: 1, eventCount: 1, eventNameCount: 1, summaryCount: 1 },
+  });
+  const result = await readPeatixRegistrationStateOnPage(ticket.page, candidate());
+  assert.deepEqual(result, { status: "registered" });
+  assert.doesNotMatch(JSON.stringify(result), /6536845|confirmation|ticket_number|ticket_value|ticket_text/i);
+});
+
+test("swipe ticket proof fails closed for malformed URL and missing, duplicate, hidden, or zero-size shell", async () => {
+  for (const href of [
+    "http://peatix.com/event/5075819/ticket", "https://peatix.com:444/event/5075819/ticket", "https://evil.example/event/5075819/ticket",
+    "https://peatix.com/event/9999999/ticket", "https://peatix.com/event/5075819/other", "https://peatix.com/event/5075819/ticket?x=1",
+    "https://peatix.com/event/5075819/ticket#x", "https://peatix.com/login",
+  ]) {
+    const page = readbackFixture({ href, swipeShell: { bodyCount: 1, sectionCount: 1, coverCount: 1, eventCount: 1, eventNameCount: 1, summaryCount: 1 } });
+    assert.notEqual((await readPeatixRegistrationStateOnPage(page.page, candidate())).status, "registered", href);
+  }
+  for (const swipeShell of [
+    { bodyCount: 1, sectionCount: 1, coverCount: 0, eventCount: 1, eventNameCount: 1, summaryCount: 1 },
+    { bodyCount: 1, sectionCount: 1, coverCount: 2, eventCount: 1, eventNameCount: 1, summaryCount: 1 },
+    { bodyCount: 1, sectionCount: 1, coverCount: 1, eventCount: 1, eventNameCount: 1, summaryCount: 1, cover: { visible: false } },
+    { bodyCount: 1, sectionCount: 1, coverCount: 1, eventCount: 1, eventNameCount: 1, summaryCount: 1, summary: { rect: { width: 0, height: 0 } } },
+  ]) {
+    const page = readbackFixture({ href: "https://peatix.com/event/5075819/ticket", swipeShell });
+    assert.notEqual((await readPeatixRegistrationStateOnPage(page.page, candidate())).status, "registered");
+  }
+});
+
+test("canonical unavailable pre-readback recovers a registered swipe ticket without Submit", async () => {
+  const f = fixture({ initial: "canonical", canonicalUnavailable: true, ticketRegistered: true });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
+  assert.equal(f.finalCount(), 0);
+  assert.deepEqual(f.calls.filter(([name]) => name === "goto"), [["goto", "https://peatix.com/event/5075819/ticket"]]);
+});
+
+test("unproven ticket probe restores canonical before continuing the normal flow", async () => {
+  const f = fixture({ initial: "canonical", canonicalUnavailableOnce: true, ticketRegistered: false });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
+  assert.equal(f.finalCount(), 1);
+  assert.deepEqual(f.calls.filter(([name]) => name === "goto").slice(0, 3), [
+    ["goto", "https://peatix.com/event/5075819/ticket"],
+    ["goto", "https://peatix.com/event/5075819"],
+    ["goto", "https://peatix.com/sales/event/5075819/tickets"],
+  ]);
+});
+
+test("post-confirm canonical unavailable recovers a registered swipe ticket after one final click", async () => {
+  const f = fixture({ canonicalUnavailable: true, ticketRegistered: true });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
+  assert.equal(f.finalCount(), 1);
+  assert.equal(f.calls.filter(([name, url]) => name === "goto" && url === "https://peatix.com/event/5075819/ticket").length, 1);
 });
 
 test("Peatix ticket readback fails closed for identity, auth, missing, duplicate, hidden, zero-size, competing, and checkout states", async () => {
