@@ -21,24 +21,24 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 ## Exact action contract
 
 1. marketing tokenだけを`purpose=fill / method=ax_uncheck`へ写像する。generic checkboxの`ax_check`は不変。marketing identity/actionはlabel DOMへ依存しない。
-2. private value resolverは呼ばない。same parent canonical、same official child exact1/eid、same Frame、selected input/label exact1、checked=trueを操作直前に再検査する。
-3. observerは可視label/forを含むidentity確認後、operation tokenをknown input自身へbindする。`operatePageControl`は`input[data-lm-connector-control=token][name=knownName]` exact1からstable `ElementHandle`とoriginal idを一度だけ取得し、そのsame handleのtag/name/id/type/optional/visible/enabled/checked/connectedを確認後、handleへPlaywright `uncheck({ force: true })`をexact1回だけ行う。lazy locator再解決、page-owned getter/method、label click、coordinate、DOM property assignmentは0。
+2. private value resolverは呼ばない。same parent canonical、same official child exact1/eid、same Frame、selected known input exact1、checked=true、token keyと固定control labelのexact対応を操作直前に再検査する。
+3. observerはoperation tokenをknown input自身へbindする。`operatePageControl`は`input[data-lm-connector-control=token][name=knownName]` exact1からstable `ElementHandle`とoriginal idを一度だけ取得し、そのsame handleのtag/name/id/type/optional/visible/enabled/checked/connectedを確認後、handleへPlaywright `uncheck({ force: true })`をexact1回だけ行う。DOM label/for、lazy locator再解決、page-owned getter/method、label click、coordinate、DOM property assignmentは0。
 4. 操作後にsame canonical/frame/eidとsame original handle/idで、tag/name/id/type/optional/visible/enabled/connected/uncheckedを500ms連続して確認した場合だけsuccess。marketing invalid/hiddenをabsentと同一視しない。page/frame/eid/element identity drift、locator0/2、action error、async controlled reversion、postcondition falseはfailed。
 5. `eventbrite_attendee_register_*`は引き続きunbind/unactionableで、final click/final-effect wait/readbackは0。
 
 ## Fresh-review scope correction
 
-1. click直前にtokenをmarketing labelからprimary Registerへ移す反例で、postcondition failedでもfinal click 1が発生した。`ax_uncheck` operation境界はtoken count1だけでなく、exact label tag/for、known input name/id/type/optional/visible/enabled/checked、raw identity exact1を再拘束してからclickする。
-2. marketing input idの一意性はinput集合だけでなくinspection対象全elementsでraw exact1を要求する。同じidのbutton/inputはcontrol 0。
+1. 旧label clickはtoken移送でfinal clickを起こしたため廃止した。operation境界はknown input name/id/type/optional/visible/enabled/checked、raw identity exact1をstable handleへ再拘束してからuncheckする。
+2. marketing input idの一意性はattendee control selector外も含む全DOM `[id]` elementsでraw exact1を要求する。同じidのlabel/button/div/inputはcontrol 0。
 3. dedicated `ax_uncheck`はBrowser Harness adapterのfill allowlistとHarness mutation dedupeへ追加する。Eventbrite providerはまだHarness workflow mapへ未統合なので、adapter単体E2Eを既存Harness test内に置き、proposalした`fill/ax_uncheck`がperformへexact1回届くことを確認する。Eventbrite full `runFallback`、workflow injection/dedupe E2Eはfactory/native統合sliceへdeferする。adapter test file、新抽象化、別methodへの意味的偽装は追加しない。
 4. page-contextの`input.click` getter/methodはoverride可能なので操作primitiveにしない。exact input locatorのPlaywright state-aware uncheckを使い、別label/button/final controlはselector上操作不能にする。同期OFF後に次taskでONへ戻るcontrolled inputは500ms stability gateでfailedにする。
 5. Playwright locatorはcount後もlazyに再解決されるため、countとactionの間でhidden decoyへtoken/nameを移せる。operationはcount時のsame `ElementHandle`を保持し、post stabilityもそのoriginal handle/idを追跡する。decoy swapはdecoy/final作用0、status failed。
 
 ## TDD / verification
 
-1. RED: checked organizer marketing input＋可視exact labelからopt-out controlを期待し、現行fields onlyを確認する。
-2. checked2件のone-at-a-time、unchecked no-control＋final-visible、duplicate/wrong/hidden/disabled/required input、missing/duplicate/hidden/wrong-for labelをtable regressionにする。
-3. action RED: exact label click1、resolver0、post uncheckedを期待する。wrong action、page/frame/eid/DOM drift、locator0/2、click error、postcondition false、final token action0を回帰化する。
+1. RED: live同型のDOM labelなしchecked organizer inputから固定label opt-out controlを期待し、fields onlyを再現する。
+2. checked2件のone-at-a-time、unchecked no-control＋final-visible、duplicate/wrong/hidden/disabled/required input、selector-faithfulなlabel/button/divを含むglobal duplicate idをtable regressionにする。DOM labelの存在・forは観測条件にしない。
+3. action RED: exact input uncheck1、resolver0、post uncheckedを期待する。token key↔固定labelのwrong/swapped mapping、wrong action、page/frame/eid/DOM drift、handle0/2、action error、postcondition false、final token action0を回帰化する。
 4. GREEN後、focused Harness、adapter単体E2E、Eventbrite/minimal-production/native adjacent、syntax、`git diff --check`、3-file ownership、4 labels unloadedを確認する。
 5. fresh Sol reviewでCritical/Important 0を得てからstableへ統合する。
 
