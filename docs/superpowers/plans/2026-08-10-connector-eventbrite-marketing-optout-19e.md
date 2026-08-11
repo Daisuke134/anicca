@@ -7,7 +7,7 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 ## Ponytail gate / size
 
 - 既存attendee inspector、event-bound control、same-frame operationを拡張し、新規service/workflow/selector fallbackは作らない。
-- Harness production/test 2 filesのみ。soft target production 50–80 LOC、test 70–110 LOC。
+- Harness production/test 2 filesと、production `runFallback`が専用methodを許可するadapter 1 fileのexact 3 files。soft target production 55–90 LOC、test 80–125 LOC。
 - DOM property代入、`force` click、coordinate click、未知checkbox操作は作らない。
 
 ## Exact observation contract
@@ -26,12 +26,18 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 4. 操作後にsame frameを再観測し、selected marketing tokenが消え、対応inputがuncheckedになった場合だけsuccess。page/frame/eid/DOM drift、locator0/2、click error、postcondition falseはfailed。
 5. `eventbrite_attendee_register_*`は引き続きunbind/unactionableで、final click/final-effect wait/readbackは0。
 
+## Fresh-review scope correction
+
+1. click直前にtokenをmarketing labelからprimary Registerへ移す反例で、postcondition failedでもfinal click 1が発生した。`ax_uncheck` operation境界はtoken count1だけでなく、exact label tag/for、known input name/id/type/optional/visible/enabled/checked、raw identity exact1を再拘束してからclickする。
+2. marketing input idの一意性はinput集合だけでなくinspection対象全elementsでraw exact1を要求する。同じidのbutton/inputはcontrol 0。
+3. dedicated `ax_uncheck`はBrowser Harness adapterのfill allowlistとHarness mutation dedupeへ追加する。`runFallback` E2Eを既存Harness test内に置き、agent proposalからlabel click exact1、次step/final click0を確認する。adapter test file、新抽象化、別methodへの意味的偽装は追加しない。
+
 ## TDD / verification
 
 1. RED: checked organizer marketing input＋可視exact labelからopt-out controlを期待し、現行fields onlyを確認する。
 2. checked2件のone-at-a-time、unchecked no-control＋final-visible、duplicate/wrong/hidden/disabled/required input、missing/duplicate/hidden/wrong-for labelをtable regressionにする。
 3. action RED: exact label click1、resolver0、post uncheckedを期待する。wrong action、page/frame/eid/DOM drift、locator0/2、click error、postcondition false、final token action0を回帰化する。
-4. GREEN後、focused Harness、Eventbrite/minimal-production/native adjacent、syntax、`git diff --check`、2-file ownership、4 labels unloadedを確認する。
+4. GREEN後、focused Harness、adapter経由`runFallback`、Eventbrite/minimal-production/native adjacent、syntax、`git diff --check`、3-file ownership、4 labels unloadedを確認する。
 5. fresh Sol reviewでCritical/Important 0を得てからstableへ統合する。
 
 ## Deferred
