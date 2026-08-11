@@ -22,8 +22,8 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 
 1. marketing tokenだけを`purpose=fill / method=ax_uncheck`へ写像する。generic checkboxの`ax_check`は不変。
 2. private value resolverは呼ばない。same parent canonical、same official child exact1/eid、same Frame、selected input/label exact1、checked=trueを操作直前に再検査する。
-3. observerは可視label/forを含むidentity確認後、operation tokenをknown input自身へbindする。`operatePageControl`は`input[data-lm-connector-control=token][name=knownName]` exact1にPlaywright `uncheck({ force: true })`をexact1回だけ行う。page-owned getter/method、label click、coordinate、DOM property assignmentは0。
-4. 操作後にsame canonical/frame/eidで、selected marketing token absentかつ対応input uncheckedを500ms連続して再観測した場合だけsuccess。page/frame/eid/DOM drift、locator0/2、action error、async controlled reversion、postcondition falseはfailed。
+3. observerは可視label/forを含むidentity確認後、operation tokenをknown input自身へbindする。`operatePageControl`は`input[data-lm-connector-control=token][name=knownName]` exact1からstable `ElementHandle`とoriginal idを一度だけ取得し、そのsame handleのtag/name/id/type/optional/visible/enabled/checked/connectedを確認後、handleへPlaywright `uncheck({ force: true })`をexact1回だけ行う。lazy locator再解決、page-owned getter/method、label click、coordinate、DOM property assignmentは0。
+4. 操作後にsame canonical/frame/eidとsame original handle/idで、tag/name/id/type/optional/visible/enabled/connected/uncheckedを500ms連続して確認した場合だけsuccess。marketing invalid/hiddenをabsentと同一視しない。page/frame/eid/element identity drift、locator0/2、action error、async controlled reversion、postcondition falseはfailed。
 5. `eventbrite_attendee_register_*`は引き続きunbind/unactionableで、final click/final-effect wait/readbackは0。
 
 ## Fresh-review scope correction
@@ -32,6 +32,7 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 2. marketing input idの一意性はinput集合だけでなくinspection対象全elementsでraw exact1を要求する。同じidのbutton/inputはcontrol 0。
 3. dedicated `ax_uncheck`はBrowser Harness adapterのfill allowlistとHarness mutation dedupeへ追加する。Eventbrite providerはまだHarness workflow mapへ未統合なので、adapter単体E2Eを既存Harness test内に置き、proposalした`fill/ax_uncheck`がperformへexact1回届くことを確認する。Eventbrite full `runFallback`、workflow injection/dedupe E2Eはfactory/native統合sliceへdeferする。adapter test file、新抽象化、別methodへの意味的偽装は追加しない。
 4. page-contextの`input.click` getter/methodはoverride可能なので操作primitiveにしない。exact input locatorのPlaywright state-aware uncheckを使い、別label/button/final controlはselector上操作不能にする。同期OFF後に次taskでONへ戻るcontrolled inputは500ms stability gateでfailedにする。
+5. Playwright locatorはcount後もlazyに再解決されるため、countとactionの間でhidden decoyへtoken/nameを移せる。operationはcount時のsame `ElementHandle`を保持し、post stabilityもそのoriginal handle/idを追跡する。decoy swapはdecoy/final作用0、status failed。
 
 ## TDD / verification
 
