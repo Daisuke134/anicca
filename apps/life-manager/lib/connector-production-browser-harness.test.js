@@ -1959,6 +1959,11 @@ test("Eventbrite attendee inspector exposes only the exact required fields after
   const expected = [{ control: "eventbrite_attendee_first_name_1901", kind: "input", label: "First name", required: true, completed: true, submittable: false }, { control: "eventbrite_attendee_last_name_1901", kind: "input", label: "Last name", required: true, completed: false, submittable: false }, { control: "eventbrite_attendee_email_1901", kind: "input", label: "Email", required: true, completed: true, submittable: false }, { control: "eventbrite_attendee_confirm_email_1901", kind: "input", label: "Confirm email", required: true, completed: false, submittable: false }];
   assert.deepEqual(await inspect(), expected);
   assert.doesNotMatch(JSON.stringify(await inspect()), /Given|person@example\.test|buyer\.1/);
+  for (const [name, duplicate] of [["hidden-duplicate", { ...first, hidden: true }], ["disabled-duplicate", { ...first, disabled: true }]]) {
+    frameElements = [...base, duplicate];
+    assert.deepEqual(await inspect(), [], name);
+  }
+  frameElements = base;
   for (const [name, extra] of [
     ["ticket-card-remains", makeEventbriteTicketElement({ testId: "ticket-display-card-content-full-size" })],
     ["unknown-required", makeEventbriteTicketElement({ tagName: "SELECT", name: "unknown", required: true })],

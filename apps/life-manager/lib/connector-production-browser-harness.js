@@ -199,15 +199,14 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
       const nameOf = (element) => String((element && element.getAttribute && element.getAttribute("name")) || (element && element.name) || "");
       const requiredOf = (element) => element.required === true || element.hasAttribute?.("required") || String(element.getAttribute?.("aria-required") || "").toLowerCase() === "true";
       const enabledOf = (element) => element.disabled !== true && !element.hasAttribute?.("disabled") && String(element.getAttribute?.("aria-disabled") || "").toLowerCase() !== "true";
+      const fields = [{ key: "first_name", label: "First name", pattern: /^buyer\.([0-9]+)-first_name$/, type: "text" }, { key: "last_name", label: "Last name", pattern: /^buyer\.([0-9]+)-last_name$/, type: "text" }, { key: "email", label: "Email", pattern: /^buyer\.([0-9]+)-email$/, type: "email" }, { key: "confirm_email", label: "Confirm email", pattern: /^buyer\.confirmEmailAddress$/, type: "email" }];
+      const candidates = fields.map((field) => elements.filter((element) => tagOf(element) === "input" && field.pattern.test(nameOf(element)) && typeOf(element) === field.type));
       const required = elements.filter((element) => {
         const tag = tagOf(element); const type = typeOf(element);
         return ["input", "select", "textarea"].includes(tag) && (tag !== "input" || type !== "hidden") && visibleOf(element) && enabledOf(element) && requiredOf(element);
       });
-      if (required.length !== 4) return [];
-      const fields = [{ key: "first_name", label: "First name", pattern: /^buyer\.([0-9]+)-first_name$/, type: "text" }, { key: "last_name", label: "Last name", pattern: /^buyer\.([0-9]+)-last_name$/, type: "text" }, { key: "email", label: "Email", pattern: /^buyer\.([0-9]+)-email$/, type: "email" }, { key: "confirm_email", label: "Confirm email", pattern: /^buyer\.confirmEmailAddress$/, type: "email" }];
-      const matches = fields.map((field) => required.filter((element) => tagOf(element) === "input" && field.pattern.test(nameOf(element)) && typeOf(element) === field.type));
-      if (matches.some((items) => items.length !== 1)) return [];
-      const buyerIndexes = matches.slice(0, 3).map(([element]) => /^buyer\.([0-9]+)-/.exec(nameOf(element))?.[1]);
+      if (required.length !== 4 || candidates.some((items) => items.length !== 1 || !required.includes(items[0]))) return [];
+      const buyerIndexes = candidates.slice(0, 3).map(([element]) => /^buyer\.([0-9]+)-/.exec(nameOf(element))?.[1]);
       if (new Set(buyerIndexes).size !== 1) return [];
       const completedOf = (element) => Boolean(String(element && element.value || "").trim());
       return fields.map((field, index) => ({
@@ -215,7 +214,7 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
         kind: "input",
         label: field.label,
         required: true,
-        completed: completedOf(matches[index][0]),
+        completed: completedOf(candidates[index][0]),
         submittable: false,
       }));
     }, { eventId });
