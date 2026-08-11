@@ -763,6 +763,13 @@ function createPrivateValueResolver(options = {}) {
   if (typeof readPeatixProfile !== "function" || typeof readFormProfile !== "function") invalid();
   return async function resolveValue(input = {}) {
     const control = safeControl(input.control); const label = normalizedLabel(control.label); const question = normalizedLabel(control.question);
+    if (input.provider === "eventbrite") {
+      if (control.kind !== "input" || control.required !== true || control.completed !== false || control.submittable !== false) return null;
+      const key = control.label === "First name" ? "given_name" : control.label === "Last name" ? "family_name" : ["Email", "Confirm email"].includes(control.label) ? "email" : null;
+      if (!key) return null;
+      const profile = await safeProfile(readPeatixProfile); const value = profile && profile[key];
+      return typeof value === "string" && value.length > 0 && value.length <= 2_000 && value === value.trim() ? value : null;
+    }
     if (["checkbox", "radio"].includes(control.kind)) {
       if (input.provider === "connpass") return input.state === "connpass_join" && connpassSafeRadioCategory(control) ? true : null;
       const profile = await safeProfile(readPeatixProfile);

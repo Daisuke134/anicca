@@ -444,6 +444,28 @@ test("provider-neutral resolver returns only parent-owned Peatix/form values", a
   assert.equal(await resolver({ provider: "peatix", control: control("input", "Invented question") }), null);
 });
 
+test("Eventbrite attendee resolver maps exact incomplete fields to the private profile", async () => {
+  let profile = { given_name: "GivenFixture", family_name: "FamilyFixture", email: "EmailFixture" };
+  const resolver = createPrivateValueResolver({ readPeatixProfile: async () => profile, readFormProfile: async () => ({ form_answers: {} }) });
+  const control = (label, extra = {}) => ({ control: "eventbrite_attendee_field", kind: "input", label, required: true, completed: false, submittable: false, ...extra });
+  assert.equal(await resolver({ provider: "eventbrite", control: control("First name") }), "GivenFixture");
+  assert.equal(await resolver({ provider: "eventbrite", control: control("Last name") }), "FamilyFixture");
+  assert.equal(await resolver({ provider: "eventbrite", control: control("Email") }), "EmailFixture");
+  assert.equal(await resolver({ provider: "eventbrite", control: control("Confirm email") }), "EmailFixture");
+  for (const [label, extra] of [["first name"], ["First name please"], ["Unknown"], ["First name", { kind: "checkbox" }], ["First name", { completed: true }], ["First name", { required: false }], ["First name", { kind: "button", submittable: true }]]) {
+    assert.equal(await resolver({ provider: "eventbrite", control: control(label, extra) }), null, label);
+  }
+  assert.equal(await resolver({ provider: "peatix", control: control("First name") }), null);
+  profile = { given_name: " GivenFixture ", family_name: "FamilyFixture", email: "EmailFixture" };
+  assert.equal(await resolver({ provider: "eventbrite", control: control("First name") }), null);
+  for (const given_name of [undefined, "x".repeat(2_001)]) {
+    profile = { given_name, family_name: "FamilyFixture", email: "EmailFixture" };
+    assert.equal(await resolver({ provider: "eventbrite", control: control("First name") }), null);
+  }
+  profile = null;
+  assert.equal(await resolver({ provider: "eventbrite", control: control("Email") }), null);
+});
+
 test("provider-neutral resolver rejects a radio option from a different form question", async () => { const resolver = createPrivateValueResolver({ readPeatixProfile: async () => ({ accept_organizer_privacy: false }), readFormProfile: async () => ({ form_answers: { "Role question": "Yes", "Other question": "No" } }) });
   const control = (question) => ({ control: "safe_radio", kind: "radio", label: "Yes", question, required: true });
   assert.equal(await resolver({ provider: "peatix", control: control("Other question") }), null); assert.equal(await resolver({ provider: "peatix", control: control("Role question") }), true);
