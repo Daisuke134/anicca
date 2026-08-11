@@ -25489,3 +25489,10 @@
 {"ts":1786428288,"wake_id":"00MSO9A10A5B7BBA47DC574075","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786428419,"wake_id":"00MSO9CTZ8E6F922FDF6E74EB3","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786428547,"wake_id":"00MSO9FLGVD17F68247F85493B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786428677,"wake_id":"00MSO9ID7T66227222FE514F64","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786428805,"wake_id":"00MSO9L46K67C49FA7185F43EC","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana decentralized compute marketplace paying USDC for GPU tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (c"}
+{"ts":1786428934,"wake_id":"00MSO9NVH6C2864FB4D9A04C66","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786429064,"wake_id":"00MSO9QO9A4903DFDEA8FC41BF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786429196,"wake_id":"00MSO9THNUB8D335AC70F7459F","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786429325,"wake_id":"00MSO9W9EF4BEA779E642F4214","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786429454,"wake_id":"00MSO9Z0TW71AF70C68C1C4593","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
