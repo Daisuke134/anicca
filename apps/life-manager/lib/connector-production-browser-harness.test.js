@@ -1644,6 +1644,12 @@ test("Eventbrite inspector binds the unique visible top CTA to the exact candida
   });
   const valid = await inspect([makeEventbriteCta(), makeEventbriteCta({ tagName: "BUTTON", innerText: "Reserve a spot" })]);
   assert.deepEqual(valid, []);
+  for (const [name, duplicate] of [
+    ["visible-fuzzy", makeEventbriteCta({ innerText: "Get tickets now" })],
+    ["visible-disabled", makeEventbriteCta({ disabled: true })],
+  ]) {
+    assert.deepEqual(await inspect([makeEventbriteCta(), duplicate]), [], name);
+  }
   const single = await inspect([makeEventbriteCta()]);
   assert.equal(single.length, 1);
   assert.deepEqual({ kind: single[0].kind, label: single[0].label, submittable: single[0].submittable }, { kind: "button", label: "Get tickets", submittable: true });
@@ -1672,7 +1678,11 @@ test("Eventbrite CTA action clicks once and succeeds only on the exact checkout 
     let operated = 0; let resolved = 0; let reads = 0;
     const page = {
       url() { return candidate.canonical_url; },
-      frames() { reads += 1; return (frameUrls || []).map((href) => ({ url() { return href; } })); },
+      frames() {
+        reads += 1;
+        const urls = typeof frameUrls === "function" ? frameUrls(reads) : frameUrls || [];
+        return urls.map((href) => ({ url() { return href; } }));
+      },
     };
     const harness = createProductionBrowserHarness({
       lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
@@ -1684,8 +1694,12 @@ test("Eventbrite CTA action clicks once and succeeds only on the exact checkout 
     mock.timers.enable({ apis: ["Date", "setTimeout"] });
     try {
       const resultPromise = harness.performAction({ provider, candidate: candidateValue, page, action });
-      for (let attempt = 0; attempt < 100 && reads === 0; attempt += 1) await Promise.resolve();
-      mock.timers.tick(30_001);
+      let settled = false;
+      resultPromise.then(() => { settled = true; });
+      for (let attempt = 0; attempt < 1_300 && !settled; attempt += 1) {
+        await Promise.resolve();
+        mock.timers.tick(25);
+      }
       const result = await resultPromise;
       return { result, operated, resolved };
     } finally {
@@ -1701,15 +1715,22 @@ test("Eventbrite CTA action clicks once and succeeds only on the exact checkout 
     ["wrong-origin", ["https://evil.example/checkout-external?eid=1901"]],
     ["wrong-path", ["https://www.eventbrite.com/checkout?eid=1901"]],
     ["wrong-event", ["https://www.eventbrite.com/checkout-external?eid=1902"]],
+    ["exact-and-wrong-event", ["https://www.eventbrite.com/checkout-external?eid=1901", "https://www.eventbrite.com/checkout-external?eid=1902"]],
     ["duplicate", ["https://www.eventbrite.com/checkout-external?eid=1901", "https://www.eventbrite.com/checkout-external?eid=1901"]],
   ]) {
     const { result, operated } = await run({ frameUrls });
     assert.deepEqual(result, { status: "failed" }, name);
     assert.equal(operated, 1, name);
   }
+  const unstable = await run({ frameUrls: (poll) => poll === 1
+    ? ["https://www.eventbrite.com/checkout-external?eid=1901"]
+    : ["https://www.eventbrite.com/checkout-external?eid=1901", "https://www.eventbrite.com/checkout-external?eid=1901"] });
+  assert.deepEqual(unstable.result, { status: "failed" }, "frame-count-grew-after-first-poll");
+  assert.equal(unstable.operated, 1);
   for (const [name, action, provider, candidateValue, controls] of [
     ["wrong-action", { purpose: "fill", method: "ax_fill", control: trigger.control }],
     ["wrong-token", { purpose: "submit", method: "ax_click", control: "other_button" }],
+    ["mixed-fuzzy-semantic", { purpose: "submit", method: "ax_click", control: trigger.control }, "eventbrite", candidate, [trigger, { ...trigger, control: "eventbrite_checkout_1902", label: "Get tickets now" }]],
     ["duplicate-semantic", { purpose: "submit", method: "ax_click", control: trigger.control }, "eventbrite", candidate, [trigger, { ...trigger, control: "eventbrite_checkout_1902" }]],
     ["wrong-provider", { purpose: "submit", method: "ax_click", control: trigger.control }, "luma"],
   ]) {
