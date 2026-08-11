@@ -1796,7 +1796,16 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
   const card = makeEventbriteTicketElement({ testId: "ticket-display-card-content-full-size", innerText: "General Admission", children: [stepper, price] });
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   let ticketVisible = true; let operated = 0; let operatedFrame; let frameExtras = [];
-  const frameElements = () => ticketVisible ? [card, stepper, quantity, increase, decrease, price, primary, ...frameExtras] : [primary];
+  let frameInspectReads = 0; let mutationMode = "";
+  const frameElements = () => {
+    frameInspectReads += 1;
+    if (mutationMode && frameInspectReads === 2) {
+      if (mutationMode === "paid") card.innerText = "General Admission Free 1,000円";
+      if (mutationMode === "duplicate") frameExtras = [makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: primary.dataset.testid, innerText: "Register" })];
+      if (mutationMode === "disabled") primary.disabled = true;
+    }
+    return ticketVisible ? [card, stepper, quantity, increase, decrease, price, primary, ...frameExtras] : [primary];
+  };
   const frame = {
     url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; },
     parentFrame() { return {}; },
@@ -1807,7 +1816,7 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
     frames() { return [frame]; },
     locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; },
   };
-  for (const marker of ["$10", "cash", "paid", "door fee", "minimum purchase", "会場払い", "当日払い", "有料"]) {
+  for (const marker of ["$10", "1,000円", "1000 円", "cash", "paid", "door fee", "minimum purchase", "会場払い", "当日払い", "有料"]) {
     card.innerText = `General Admission Free ${marker}`;
     assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], marker);
   }
@@ -1859,4 +1868,30 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
   } finally { mock.timers.reset(); }
   assert.equal(operated, 1);
   assert.equal(operatedFrame, frame);
+
+  for (const mutation of ["paid", "duplicate", "disabled"]) {
+    ticketVisible = true;
+    card.innerText = "General Admission Free";
+    primary.disabled = false;
+    frameExtras = [];
+    frameInspectReads = 0;
+    mutationMode = mutation;
+    let mutationOperated = 0;
+    const mutationHarness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("readback must not run"); } },
+      async inspectControls(input) { return inspectPageControls(input); },
+      async proposeAction() { return { control: controls[0].control }; },
+      async operateControl() { mutationOperated += 1; ticketVisible = false; return { status: "success" }; },
+      async resolveValue() { throw new Error("private value must not resolve"); },
+    });
+    mock.timers.enable({ apis: ["Date", "setTimeout"] });
+    try {
+      const mutationPromise = mutationHarness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "submit", method: "ax_click", control: controls[0].control } });
+      let settled = false; mutationPromise.then(() => { settled = true; });
+      for (let attempt = 0; attempt < 1_300 && !settled; attempt += 1) { await Promise.resolve(); mock.timers.tick(25); }
+      assert.deepEqual(await mutationPromise, { status: "failed" }, `pre-operate-${mutation}`);
+    } finally { mock.timers.reset(); }
+    assert.equal(mutationOperated, 0, `pre-operate-${mutation}-must-not-click`);
+    mutationMode = "";
+  }
 });
