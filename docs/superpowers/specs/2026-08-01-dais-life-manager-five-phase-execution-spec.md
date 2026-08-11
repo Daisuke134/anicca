@@ -7738,3 +7738,9 @@ PonytailでDoorkeeper evidence adapterを2 sliceへ分割する。先頭plan `do
 Lunaが`connpass-evidence-store.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは既存4件GREEN、新Doorkeeper 2件だけ`createDoorkeeperEvidenceStore is not a function`でFAIL。GREEN commit `81e26e153`は既存private `createBrowserProviderEvidenceStore`を変更せず、exact Doorkeeper event/receipt namespaceとcollision messageを持つwrapper/exportだけを追加した。production +10/-1、test +55/-1。
 
 Doorkeeper store testは実mode-0600 receipt/artifact/object、deterministic receipt tuple、tenant非露出、invalid event ID、tampered receipt rejectionを固定する。Sol独立でevidence関連37/37、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality APPROVED、Critical/Important/Minor 0で`ship`。browser、Calendar、Telegram、Connector state、launchd、external effectは0。次active sliceはDoorkeeperをminimal evidence chainへ配線し、current registered pageのfull-page PNG→provider receipt→Calendar→Telegram→`applied_bundle` contractをTDDする。Item19 Doorkeeper実bundleは未完。
+
+### O1B-25進捗432（Item 19D-E2 / Doorkeeper minimal evidence chain plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-evidence-chain-19d.md`は`connector-minimal-evidence.js`とmatching testのexact 2 files。review済みDoorkeeper storeをprovider mapへ追加し、exact event refと`https://<lowercase-group>.doorkeeper.jp/events/<same ID>`を束縛する。registered current pageを置換・navigate・receipt renderせずfull-page PNG化し、初回provider receipt/artifact readback後だけ既存Calendar/Telegram/checkpoint/bundle pipelineへ進む。production約25〜40 LOC、test約65〜95 LOC。
+
+Calendar gog transport、discovery/action/readback、Harness、native、schedule、live stateは変更0。このsliceはinjected Calendar/Telegramで`created→reused`とinvalid identity/state/current URLのdownstream effect 0をTDD固定する。review/push後にDoorkeeper Calendar transportを別sliceで追加し、official wakeはその後だけ実行する。Item19 Doorkeeper実bundleは未完。
