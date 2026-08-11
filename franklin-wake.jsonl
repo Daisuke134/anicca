@@ -25921,3 +25921,10 @@
 {"ts":1786484047,"wake_id":"00MSP6H5CZ6A381653BE2144A4","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana AI inference marketplace pay per request [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced "}
 {"ts":1786484208,"wake_id":"00MSP6KL36209953866D5A4BE5","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786484353,"wake_id":"00MSP6NPB6965E8F3C19C64151","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786484483,"wake_id":"00MSP6QHTO13817833DCD64603","kind":"wake","sleep_s":120,"model":"auto","slot":"self/issue-dev","profitable":false,"exit_code":0,"result":"[issue-dev] no actionable problem in recent behaviour — healthy, nothing to file. "}
+{"ts":1786484614,"wake_id":"00MSP6TAWS47A403037F414C63","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786484742,"wake_id":"00MSP6W12ZB5134DEBF4814853","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786484872,"wake_id":"00MSP6YTPZF3AAC30CCEE547DA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786485018,"wake_id":"00MSP71YKIE2FE3F76442845F7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786485146,"wake_id":"00MSP74OX3ABCAA701A02D4A3A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786485273,"wake_id":"00MSP77F4R18BFFC299BA841CB","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
