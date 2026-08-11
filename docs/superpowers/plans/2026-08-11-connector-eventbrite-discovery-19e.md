@@ -41,3 +41,8 @@ GitHub code search across current Eventbrite listing selectors, JSON-LD `Aggrega
 
 Fresh review reports Critical 0 / Important 0; Sol independently reproduces focused and adjacent GREEN; reviewed code is integrated into the stable Connector branch and pushed. Official wake remains zero until the next production-wiring slice is reviewed.
 
+## Result
+
+Luna added only the Eventbrite workflow and focused test. Initial RED was module-not-found; initial GREEN was 8/8 with Doorkeeper/Meetup 27/27. Fresh review found three Important fail-open cases: unqualified Japanese yen text, unsupported zero-price offer types, and hidden completion-marker ambiguity. Luna added failing regressions first and fixed all three. A second reviewer then reproduced a foreign-domain `/Offer` suffix acceptance; Luna restricted types to compact `Offer|AggregateOffer` or exact `http(s)://schema.org/` equivalents and added foreign/mixed-type regressions.
+
+Final focused tests are 11/11, Doorkeeper/Meetup adjacent tests are 27/27, and the stable combined set including minimal production is 53/53. Syntax, whitespace, exact two-file ownership, clean branch, and remote implementation equality pass. Production is 319 LOC. Final scoped review reports SHIP with Critical/Important 0. Reviewed implementation ends at `3930c1688`; browser, checkout, shared production wiring, official wake, and external state effects remain zero in this slice.
