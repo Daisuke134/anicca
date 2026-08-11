@@ -8,7 +8,7 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 
 - 既存attendee inspector、event-bound control、same-frame operationを拡張し、新規service/workflow/selector fallbackは作らない。
 - Harness production/test 2 filesと、production `runFallback`が専用methodを許可するadapter 1 fileのexact 3 files。soft target production 55–90 LOC、test 80–125 LOC。
-- DOM property代入、`force` click、coordinate click、未知checkbox操作は作らない。
+- DOM property代入、`force` click、coordinate click、未知checkbox操作は作らない。実inputはiframe viewport外でPlaywright標準`uncheck()`がtimeoutするため、verified exact input自身のDOM `click()`だけをatomic validation callback内で許可する。
 
 ## Exact observation contract
 
@@ -22,7 +22,7 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 
 1. marketing tokenだけを`purpose=fill / method=ax_uncheck`へ写像する。generic checkboxの`ax_check`は不変。
 2. private value resolverは呼ばない。same parent canonical、same official child exact1/eid、same Frame、selected input/label exact1、checked=trueを操作直前に再検査する。
-3. `operatePageControl`はtokenをbindした可視labelへ通常の`click()`をexact1回だけ行う。`force`、coordinate、DOM property assignmentは0。
+3. `operatePageControl`はsame renderer task内で、tokenを持つexact label/forとknown input name/id/type/optional/visible/enabled/checked/raw exact1を再検証し、その同じverified input自身へDOM `click()`をexact1回だけ行う。遅延再解決locator、label click、`force`、coordinate、DOM property assignmentは0。
 4. 操作後にsame frameを再観測し、selected marketing tokenが消え、対応inputがuncheckedになった場合だけsuccess。page/frame/eid/DOM drift、locator0/2、click error、postcondition falseはfailed。
 5. `eventbrite_attendee_register_*`は引き続きunbind/unactionableで、final click/final-effect wait/readbackは0。
 
@@ -31,6 +31,7 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 1. click直前にtokenをmarketing labelからprimary Registerへ移す反例で、postcondition failedでもfinal click 1が発生した。`ax_uncheck` operation境界はtoken count1だけでなく、exact label tag/for、known input name/id/type/optional/visible/enabled/checked、raw identity exact1を再拘束してからclickする。
 2. marketing input idの一意性はinput集合だけでなくinspection対象全elementsでraw exact1を要求する。同じidのbutton/inputはcontrol 0。
 3. dedicated `ax_uncheck`はBrowser Harness adapterのfill allowlistとHarness mutation dedupeへ追加する。Eventbrite providerはまだHarness workflow mapへ未統合なので、adapter単体E2Eを既存Harness test内に置き、proposalした`fill/ax_uncheck`がperformへexact1回届くことを確認する。Eventbrite full `runFallback`、workflow injection/dedupe E2Eはfactory/native統合sliceへdeferする。adapter test file、新抽象化、別methodへの意味的偽装は追加しない。
+4. compound locatorのsecond validation後からlazy `click()`までのraceはprecheck追加では閉じない。operationはall-elements atomic callbackでidentity/state確認とexact input clickを同一JavaScript taskに置く。callback開始前のtoken/id/checked driftはclick 0、callback内で検証済み以外のlabel/button/final controlは操作0。
 
 ## TDD / verification
 
