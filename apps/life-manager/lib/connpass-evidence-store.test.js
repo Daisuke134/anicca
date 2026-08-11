@@ -6,7 +6,11 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
-const { createConnpassEvidenceStore, createMeetupEvidenceStore } = require("./connpass-evidence-store.js");
+const {
+  createConnpassEvidenceStore,
+  createMeetupEvidenceStore,
+  createDoorkeeperEvidenceStore,
+} = require("./connpass-evidence-store.js");
 
 test("atomically stores and reads one Connpass PNG receipt without identity data", async (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-evidence-"));
@@ -110,4 +114,54 @@ test("Meetup receipt tuple and artifact tampering fail closed", async (t) => {
   fs.writeFileSync(markerFile, `${JSON.stringify({ sha256: artifactSha })}\n`);
   fs.writeFileSync(objectFile, Buffer.concat([png, Buffer.from("tamper")]));
   await assert.rejects(store.readArtifact("meetup-test", refs.artifact_ref));
+});
+
+test("Doorkeeper wrapper stores exact event receipt and private immutable artifacts", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "doorkeeper-evidence-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const png = Buffer.alloc(5_000, 0x65);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png);
+  const store = createDoorkeeperEvidenceStore({ dataDir: directory });
+  const refs = await store.record({
+    tenantId: "doorkeeper-test", eventRef: "doorkeeper-event://event/101",
+    observedAt: "2026-08-12T01:02:03.000Z", screenshot: png,
+  });
+  assert.match(refs.external_receipt_ref, /^provider-receipt:\/\/doorkeeper\/[0-9a-f]{64}$/);
+  const receipt = await store.readExternalReceipt("doorkeeper-test", refs.external_receipt_ref);
+  assert.deepEqual(receipt, {
+    kind: "provider_response", provider_id: refs.external_receipt_ref.split("/").at(-1),
+    observed_at: "2026-08-12T01:02:03.000Z", event_ref: "doorkeeper-event://event/101",
+    artifact_sha256: refs.artifact_ref.split("/").at(-1),
+  });
+  const root = path.join(directory, "tenants", "doorkeeper-test", "outbound", "doorkeeper");
+  const artifactSha = refs.artifact_ref.split("/").at(-1);
+  const files = [
+    path.join(root, "provider-receipts", `${refs.external_receipt_ref.split("/").at(-1)}.json`),
+    path.join(root, "artifacts", `${artifactSha}.json`),
+    path.join(directory, "objects", "sha256", artifactSha),
+  ];
+  for (const file of files) assert.equal(fs.statSync(file).mode & 0o777, 0o600, file);
+  assert.deepEqual(await store.readArtifact("doorkeeper-test", refs.artifact_ref), png);
+  assert.equal(JSON.stringify(refs).includes("doorkeeper-test"), false);
+});
+
+test("Doorkeeper wrapper rejects wrong event identity and receipt tuple tampering", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "doorkeeper-evidence-hardening-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const png = Buffer.alloc(5_000, 0x66);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png);
+  const store = createDoorkeeperEvidenceStore({ dataDir: directory });
+  await assert.rejects(store.record({
+    tenantId: "doorkeeper-test", eventRef: "doorkeeper-event://event/0",
+    observedAt: "2026-08-12T01:02:03.000Z", screenshot: png,
+  }));
+  const refs = await store.record({
+    tenantId: "doorkeeper-test", eventRef: "doorkeeper-event://event/101",
+    observedAt: "2026-08-12T01:02:03.000Z", screenshot: png,
+  });
+  const providerId = refs.external_receipt_ref.split("/").at(-1);
+  const file = path.join(directory, "tenants", "doorkeeper-test", "outbound", "doorkeeper", "provider-receipts", `${providerId}.json`);
+  const receipt = JSON.parse(fs.readFileSync(file, "utf8"));
+  fs.writeFileSync(file, `${JSON.stringify({ ...receipt, event_ref: "doorkeeper-event://event/102" })}\n`);
+  await assert.rejects(store.readExternalReceipt("doorkeeper-test", refs.external_receipt_ref));
 });
