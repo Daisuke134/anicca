@@ -7869,6 +7869,6 @@ LunaがTECH PLAY workflow/testのexact 2 filesをTDD変更し、code commit `f91
 
 ### O1B-25進捗450（Item 19F-D3 / TECH PLAY input・confirm inspector plan）
 
-Plan `docs/superpowers/plans/2026-08-12-connector-techplay-input-inspector-19f.md`はproduction Browser Harness/testのexact 2 files。exact input/confirm URL、same event/ticket、dynamic required question groups、known default-on opt-outs、review/final CTAをbounded privacy-safe controlsへ投影するだけのread-only slice。production約70〜100 LOC、test約110〜170 LOC。
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-input-inspector-19f.md`はproduction Browser Harness/testのexact 2 files。初回Lunaが大きいHarness境界の読込段階で差分0のまま停止したため、code前にscopeをinput pageだけへ縮小した。exact input URL、same event/ticket、dynamic required question groups、known default-on opt-outs、review CTAをbounded privacy-safe controlsへ投影するread-only slice。confirm final CTAは次slice。production約70〜100 LOC、test約110〜170 LOC。
 
 value resolver、private profile更新、click/fill、final-effect readback配線、workflow factory/router/native order、evidence、Calendar、live stateは変更0。review/push後にaction operationを別sliceで追加する。Item19実bundleは未完。
