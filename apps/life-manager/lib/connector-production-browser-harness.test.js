@@ -3078,3 +3078,156 @@ test("TECH PLAY private values stay out of the bounded runner prompt", async () 
   } });
   assert.doesNotMatch(JSON.stringify(request), /NameFixture|email\.fixture@example\.test|2002-08-12|CompanyFixture/);
 });
+
+function makeTechPlayOperationFixture(options = {}) {
+  const fixture = makeTechPlayInputFixture();
+  fixture.answers.forEach((answer) => { answer.value = ""; answer.checked = false; });
+  fixture.radioAnswers.forEach((answer) => { answer.checked = false; });
+  fixture.optouts.forEach((optout) => { optout.ariaChecked = true; });
+  let href = fixture.candidate.canonical_url.replace("/event/", "/event/join/");
+  const tokenOf = (selector) => /^\[data-lm-connector-control="([^\"]+)"\]$/.exec(selector)?.[1] || "";
+  const page = {
+    url() { return href; },
+    locator(selector) {
+      const token = tokenOf(selector);
+      const matches = token ? () => fixture.elements.filter((element) => element.dataset?.lmConnectorControl === token) : () => [];
+      return {
+        async evaluateAll(callback, context) { return callback(fixture.elements, context); },
+        async count() { return options.locatorCount == null ? matches().length : options.locatorCount; },
+        async fill(value) { const target = matches()[0]; if (target && options.apply !== false) target.value = value; },
+        async check() { const target = matches()[0]; if (target && options.apply !== false) target.checked = true; },
+        async click() { const target = matches()[0]; if (target && options.apply !== false && target.role === "checkbox") target.ariaChecked = false; },
+        async press(key) { const target = matches()[0]; if (target && key === "Space" && options.apply !== false && target.role === "checkbox") target.ariaChecked = false; },
+      };
+    },
+  };
+  return { ...fixture, page, options, setHref(value) { href = value; } };
+}
+
+function makeTechPlayOperationHarness(fixture, options = {}) {
+  const resolverFixture = makeTechPlayPrivateResolverFixture();
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("TECH PLAY must not use provider readback"); } },
+    inspectControls: async (input) => inspectPageControls(input),
+    proposeAction: async () => { options.proposeCalls = (options.proposeCalls || 0) + 1; throw new Error("TECH PLAY proposer must not run"); },
+    operateControl: async (input) => { options.operateCalls = (options.operateCalls || 0) + 1; return operatePageControl(input); },
+    resolveValue: options.resolveValue || resolverFixture.resolver,
+  });
+  return { harness, resolverFixture };
+}
+
+test("TECH PLAY input inspector binds ephemeral tokens only after full validation", async () => {
+  const fixture = makeTechPlayOperationFixture();
+  const controls = await inspectTechPlayFixture(fixture);
+  assert.equal(controls.length, 49);
+  for (const control of controls.filter(({ control }) => !control.startsWith("techplay_ticket_"))) assert.equal(fixture.elements.filter((element) => element.dataset?.lmConnectorControl === control.control).length, 1, control.control);
+  assert.equal(fixture.ticket.dataset.lmConnectorControl, undefined);
+  const invalidFixture = makeTechPlayOperationFixture(); invalidFixture.answers[0].hidden = true;
+  assert.deepEqual(await inspectTechPlayFixture(invalidFixture), []);
+  assert.equal(invalidFixture.elements.some((element) => element.dataset?.lmConnectorControl), false);
+  const setterFailure = makeTechPlayOperationFixture(); setterFailure.answers[1].dataset = new Proxy({}, { set(target, key, value) { Reflect.set(target, key, value); throw new Error("dataset setter"); } });
+  assert.deepEqual(await inspectTechPlayFixture(setterFailure), []);
+  assert.equal(setterFailure.elements.some((element) => element.dataset?.lmConnectorControl), false);
+});
+
+test("TECH PLAY parent operation fills scalar, checks the unique approved radio, and unchecks opt-out", async () => {
+  const scalar = makeTechPlayOperationFixture(); const scalarHarness = makeTechPlayOperationHarness(scalar, {});
+  assert.deepEqual(await scalarHarness.harness.performAction({ provider: "techplay", candidate: scalar.candidate, page: scalar.page, action: { purpose: "fill", method: "ax_fill", control: "techplay_answer_1" } }), { status: "success" });
+  assert.equal(scalar.answers[0].value, "NameFixture");
+  const radio = makeTechPlayOperationFixture(); const radioHarness = makeTechPlayOperationHarness(radio, {});
+  assert.deepEqual(await radioHarness.harness.performAction({ provider: "techplay", candidate: radio.candidate, page: radio.page, action: { purpose: "fill", method: "ax_check", control: "techplay_answer_5_1" } }), { status: "success" });
+  assert.equal(radio.radioAnswers[0].checked, true);
+  const optout = makeTechPlayOperationFixture(); const optoutHarness = makeTechPlayOperationHarness(optout, {});
+  assert.deepEqual(await optoutHarness.harness.performAction({ provider: "techplay", candidate: optout.candidate, page: optout.page, action: { purpose: "fill", method: "ax_uncheck", control: "techplay_optout_area_1" } }), { status: "success" });
+  assert.equal(optout.optouts[0].ariaChecked, false);
+});
+
+test("TECH PLAY parent operation rejects radio ambiguity, drift, failed postcondition, and review/final clicks", async () => {
+  for (const [name, resolveValue] of [
+    ["zero-approved", async () => null],
+    ["multiple-approved", async (input) => input.control.kind === "radio" ? true : "NameFixture"],
+  ]) {
+    const fixture = makeTechPlayOperationFixture(); const options = { resolveValue }; const { harness } = makeTechPlayOperationHarness(fixture, options);
+    const result = await harness.performAction({ provider: "techplay", candidate: fixture.candidate, page: fixture.page, action: { purpose: "fill", method: "ax_check", control: "techplay_answer_5_1" } });
+    assert.deepEqual(result, { status: "failed" }, name); assert.equal(options.operateCalls || 0, 0, `${name}-operate`);
+  }
+  for (const [name, mutate] of [
+    ["page-drift", (fixture) => fixture.setHref("https://techplay.jp/event/join/999191")],
+    ["postcondition", (fixture) => { fixture.options.apply = false; }],
+    ["duplicate-locator", (fixture) => { fixture.options.locatorCount = 2; }],
+    ["missing-locator", (fixture) => { fixture.options.locatorCount = 0; }],
+  ]) {
+    const fixture = makeTechPlayOperationFixture(); const options = {}; const { harness } = makeTechPlayOperationHarness(fixture, options); mutate(fixture);
+    const result = await harness.performAction({ provider: "techplay", candidate: fixture.candidate, page: fixture.page, action: { purpose: "fill", method: "ax_fill", control: "techplay_answer_1" } });
+    assert.deepEqual(result, { status: "failed" }, name);
+  }
+  const wrongMethod = makeTechPlayOperationFixture(); const wrongOptions = {}; const { harness: wrongHarness } = makeTechPlayOperationHarness(wrongMethod, wrongOptions);
+  assert.deepEqual(await wrongHarness.performAction({ provider: "techplay", candidate: wrongMethod.candidate, page: wrongMethod.page, action: { purpose: "submit", method: "ax_click", control: "techplay_answer_1" } }), { status: "failed" }, "wrong-method");
+  assert.equal(wrongOptions.operateCalls || 0, 0);
+  const driftCandidate = makeTechPlayOperationFixture(); const { harness: driftHarness } = makeTechPlayOperationHarness(driftCandidate, {});
+  assert.deepEqual(await driftHarness.performAction({ provider: "techplay", candidate: { ...driftCandidate.candidate, event_ref: "techplay-event://event/999191" }, page: driftCandidate.page, action: { purpose: "fill", method: "ax_fill", control: "techplay_answer_1" } }), { status: "failed" }, "candidate-drift");
+  const blocked = makeTechPlayOperationFixture(); blocked.answers.forEach((answer) => { answer.value = "filled"; }); blocked.radioAnswers[0].checked = true; blocked.radioAnswers[3].checked = true; blocked.optouts.forEach((optout) => { optout.ariaChecked = false; });
+  const { harness: blockedHarness } = makeTechPlayOperationHarness(blocked, {});
+  for (const control of ["techplay_review_999190", "techplay_final_999190"]) assert.deepEqual(await blockedHarness.performAction({ provider: "techplay", candidate: blocked.candidate, page: blocked.page, action: { purpose: "submit", method: "ax_click", control } }), { status: "failed" }, control);
+  assert.deepEqual(await blockedHarness.performAction({ provider: "techplay", candidate: blocked.candidate, page: blocked.page, action: { purpose: "fill", method: "ax_check", control: "techplay_ticket_999190" } }), { status: "failed" }, "ticket");
+});
+
+test("TECH PLAY fallback selects scalar/radio/opt-out inputs in the parent and blocks review", async () => {
+  const fixture = makeTechPlayOperationFixture(); const options = {};
+  const base = makeTechPlayPrivateResolverFixture();
+  options.resolveValue = async (input) => input.control.question === "職種" ? (input.control.label === "職種1" ? true : null) : base.resolver(input);
+  const { harness } = makeTechPlayOperationHarness(fixture, options);
+  const result = await harness.runFallback({ provider: "techplay", candidate: fixture.candidate, page: fixture.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TECHPLAYINPUT1", maxSteps: 20, expectedState: "registered_or_pending" });
+  assert.equal(options.proposeCalls || 0, 0); assert.equal(options.operateCalls || 0, 13);
+  assert.equal(result.status, "failed"); assert.equal(result.safe_reason, "review_blocked"); assert.equal(result.repaired_actions.length, 13);
+  assert.equal(fixture.answers.every((answer) => Boolean(String(answer.value).trim())), true); assert.equal(fixture.radioAnswers[0].checked, true); assert.equal(fixture.radioAnswers[3].checked, true); assert.equal(fixture.optouts.every((optout) => optout.ariaChecked === false), true);
+  assert.equal(fixture.elements.filter((element) => element.innerText === "同意して内容を確認する").some((element) => element.clicked), false);
+});
+
+test("TECH PLAY fallback stops before DOM action for zero or multiple approved radio options", async () => {
+  for (const [name, resolveValue] of [["zero", async (input) => input.control.kind === "radio" ? null : "NameFixture"], ["multiple", async (input) => input.control.kind === "radio" ? true : "NameFixture"]]) {
+    const fixture = makeTechPlayOperationFixture(); const options = { resolveValue }; const { harness } = makeTechPlayOperationHarness(fixture, options);
+    const result = await harness.runFallback({ provider: "techplay", candidate: fixture.candidate, page: fixture.page, pageWebsocket: `ws://127.0.0.1:9222/devtools/page/TECHPLAY-${name}`, maxSteps: 20, expectedState: "registered_or_pending" });
+    assert.equal(options.proposeCalls || 0, 0, `${name}-proposer`); assert.equal(options.operateCalls || 0, 4, `${name}-operate`); assert.equal(result.status, "failed", name); assert.equal(result.safe_reason, "agent_action_failed", name);
+  }
+});
+
+test("TECH PLAY fallback preserves exact page scope, candidate binding, and bounded private-free action history", async () => {
+  const fixture = makeTechPlayOperationFixture(); const options = {};
+  const base = makeTechPlayPrivateResolverFixture();
+  options.resolveValue = async (input) => input.control.question === "職種" ? (input.control.label === "職種1" ? true : null) : base.resolver(input);
+  const { harness } = makeTechPlayOperationHarness(fixture, options);
+  const scoped = { provider: "techplay", candidate: fixture.candidate, page: fixture.page, maxSteps: 10, expectedState: "registered_or_pending" };
+  for (const pageWebsocket of [
+    "ws://127.0.0.1:9222/devtools/browser/TECHPLAY_SCOPE1",
+    "ws://127.0.0.1:9223/devtools/page/TECHPLAY_SCOPE1",
+    "ws://127.0.0.1:9222/devtools/page/",
+    "ws://user:secret@127.0.0.1:9222/devtools/page/TECHPLAY_SCOPE1",
+    "ws://127.0.0.1:9222/devtools/page/TECHPLAY_SCOPE1?query=1",
+  ]) {
+    await assert.rejects(() => harness.runFallback({ ...scoped, pageWebsocket }), /Connector production Browser Harness invalid/);
+  }
+  const { maxSteps, ...missingMaxSteps } = scoped;
+  await assert.rejects(() => harness.runFallback({ ...missingMaxSteps, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TECHPLAY_SCOPE1" }), /Connector production Browser Harness invalid/);
+  const { expectedState, ...missingExpectedState } = scoped;
+  await assert.rejects(() => harness.runFallback({ ...missingExpectedState, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TECHPLAY_SCOPE1" }), /Connector production Browser Harness invalid/);
+  for (const invalidMaxSteps of [0, 21]) {
+    await assert.rejects(() => harness.runFallback({ ...scoped, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TECHPLAY_SCOPE1", maxSteps: invalidMaxSteps }), /Connector production Browser Harness invalid/);
+  }
+  await assert.rejects(() => harness.runFallback({ ...scoped, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TECHPLAY_SCOPE1", candidate: { ...fixture.candidate, event_ref: "techplay-event://event/999191" } }), /Connector production Browser Harness invalid/);
+
+  const ticketDrift = makeTechPlayOperationFixture(); const ticketOptions = {};
+  const ticketBase = makeTechPlayPrivateResolverFixture(); ticketOptions.resolveValue = async (input) => input.control.question === "職種" ? (input.control.label === "職種1" ? true : null) : ticketBase.resolver(input);
+  const { harness: ticketHarness } = makeTechPlayOperationHarness(ticketDrift, ticketOptions);
+  const ticketResult = await ticketHarness.runFallback({ ...scoped, candidate: { ...ticketDrift.candidate, ticket_id: "98037" }, page: ticketDrift.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TECHPLAY_SCOPE2" });
+  assert.deepEqual(ticketResult, { status: "failed", safe_reason: "agent_action_failed", repaired_actions: [] });
+  assert.equal(ticketOptions.operateCalls || 0, 0);
+
+  const limited = makeTechPlayOperationFixture(); const limitedOptions = {};
+  const limitedBase = makeTechPlayPrivateResolverFixture(); limitedOptions.resolveValue = async (input) => input.control.question === "職種" ? (input.control.label === "職種1" ? true : null) : limitedBase.resolver(input);
+  const { harness: limitedHarness } = makeTechPlayOperationHarness(limited, limitedOptions);
+  const limitedResult = await limitedHarness.runFallback({ provider: "techplay", candidate: limited.candidate, page: limited.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TECHPLAY_SCOPE3", maxSteps: 10, expectedState: "registered_or_pending" });
+  assert.equal(limitedResult.safe_reason, "agent_step_limit"); assert.equal(limitedResult.repaired_actions.length, 10); assert.equal(limitedOptions.proposeCalls || 0, 0); assert.equal(limitedOptions.operateCalls || 0, 10);
+  assert.ok(limitedResult.repaired_actions.every((action) => typeof action.control === "string" && typeof action.method === "string" && !Object.hasOwn(action, "value")));
+  assert.doesNotMatch(JSON.stringify(limitedResult.repaired_actions), /NameFixture|email\.fixture@example\.test|CompanyFixture|2002-08-12/);
+});

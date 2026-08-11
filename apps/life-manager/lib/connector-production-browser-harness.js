@@ -6,12 +6,13 @@ const { createBrowserHarnessAdapter } = require("./connector-browser-harness-ada
 const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
+const PAGE_WEBSOCKET = /^ws:\/\/127\.0\.0\.1:9222\/devtools\/page\/[A-Za-z0-9._-]{3,128}$/;
 const KINDS = new Set(["input", "textarea", "select", "checkbox", "radio", "button", "link"]);
 const FILL = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check"]);
 const ACTIONS = { input: ["fill", "ax_fill"], textarea: ["fill", "ax_fill"], select: ["fill", "ax_select"], checkbox: ["fill", "ax_check"], radio: ["fill", "ax_check"], button: ["submit", "ax_click"], link: ["submit", "ax_click"] };
 const ACTIONABLE_KINDS = new Set(["input", "textarea", "select", "checkbox", "radio"]);
 const MUTATING_METHODS = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check", "ax_uncheck", "ax_click", "coordinate_click", "keyboard_submit"]);
-const PROVIDERS = new Set(["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシーポリシーに同意する)$/ };
+const PROVIDERS = new Set(["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシーポリシーに同意する)$/ };
 const PEATIX_FORM_SUBMIT_LABEL = "確認画面へ進む";
 const PEATIX_CONFIRM_LABEL = "チケットを申し込む";
 const PEATIX_FORM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/form$/;
@@ -680,6 +681,7 @@ function actionForControl(control) {
 
 function inspectTechPlayInput(elements, context = {}) {
   if (!Array.isArray(elements) || elements.length > 150) return [];
+  try { elements.forEach((element) => { if (element && element.dataset) delete element.dataset.lmConnectorControl; }); } catch { return []; }
   const TECHPLAY_EVENT_URL = /^https:\/\/techplay\.jp\/event\/([1-9][0-9]*)$/; const TECHPLAY_JOIN_URL = /^https:\/\/techplay\.jp\/event\/join\/([1-9][0-9]*)$/;
   const TECHPLAY_ANSWER_NAME = /^enqueteAnswers\[([1-9][0-9]*)\]$/; const TECHPLAY_OPT_OUT_ID = /^(?:area_[1-9][0-9]*|tag_[1-9][0-9]*|organizer_[1-9][0-9]*|icon_published|use_as_preset)$/;
   const TECHPLAY_QUESTIONS = new Set(["氏名", "メールアドレス", "年齢", "キャリア状況", "所属企業（学校）名", "職種"]); const TECHPLAY_RADIO_COUNTS = { "キャリア状況": 3, "職種": 33 }; const TECHPLAY_SCALAR_TYPES = { "氏名": "text", "メールアドレス": "text", "年齢": "number", "所属企業（学校）名": "text" };
@@ -741,6 +743,15 @@ function inspectTechPlayInput(elements, context = {}) {
   const reviews = elements.filter((element) => visible(element) && text(element) === "同意して内容を確認する");
   if (reviews.length !== 1 || tag(reviews[0]) !== "button" || type(reviews[0]) !== "submit" || reviews[0].disabled === true || attr(reviews[0], "aria-disabled").toLowerCase() === "true") return [];
   const ticketCompleted = radios[0].checked === true; const complete = ticketCompleted && answers.every(({ completed }) => completed) && optouts.every(({ completed }) => completed);
+  const bindings = [
+    ...answers.flatMap(({ elements: groupElements, id, radio }) => radio
+      ? groupElements.map((element, index) => [element, `techplay_answer_${id}_${index + 1}`])
+      : [[groupElements[0], `techplay_answer_${id}`]]),
+    ...optouts.map(({ id }, index) => [checkboxes.filter((element) => (attr(element, "id") || String(element.id || "")) === id)[0], `techplay_optout_${id}`]),
+    [reviews[0], `techplay_review_${eventId}`],
+  ];
+  if (bindings.some(([element]) => !element || !element.dataset)) return [];
+  try { for (const [element, control] of bindings) element.dataset.lmConnectorControl = control; } catch { for (const [element] of bindings) { try { if (element?.dataset) delete element.dataset.lmConnectorControl; } catch {} } return []; }
   return [
     { control: `techplay_ticket_${eventId}`, kind: "radio", label: "無料チケット", required: true, completed: ticketCompleted, submittable: false },
     ...answers.flatMap(({ elements: groupElements, question, id, radio, completed }) => radio ? groupElements.map((element, index) => ({ control: `techplay_answer_${id}_${index + 1}`, kind: "radio", label: label(element), required: true, completed, submittable: false, question })) : [{ control: `techplay_answer_${id}`, kind: tag(groupElements[0]) === "textarea" ? "textarea" : tag(groupElements[0]) === "select" ? "select" : "input", label: question, required: true, completed, submittable: false }]),
@@ -1074,6 +1085,24 @@ async function operatePageControl(input = {}) {
   if (!input.page || !target || typeof target.locator !== "function" || !input.control || !input.action) invalid();
   const token = String(input.control.control || "");
   if (!CONTROL.test(token) || input.action.control !== token) invalid();
+  if (input.provider === "techplay") {
+    const binding = candidateTechPlayBinding(input.candidate); let href = "";
+    try { href = String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { href = ""; }
+    const scalar = /^techplay_answer_[1-9][0-9]*$/.test(token) && input.control.kind === "input" && input.action.purpose === "fill" && input.action.method === "ax_fill";
+    const radio = /^techplay_answer_[1-9][0-9]*_[1-9][0-9]*$/.test(token) && input.control.kind === "radio" && input.action.purpose === "fill" && input.action.method === "ax_check";
+    const optout = /^techplay_optout_(?:area_[1-9][0-9]*|tag_[1-9][0-9]*|organizer_[1-9][0-9]*|icon_published|use_as_preset)$/.test(token) && input.control.kind === "checkbox" && input.action.purpose === "fill" && input.action.method === "ax_uncheck";
+    if (!binding || href !== `${binding.canonicalUrl.replace("/event/", "/event/join/")}` || input.control.required !== true || input.control.completed !== false || input.control.submittable !== false || (!scalar && !radio && !optout)) return Object.freeze({ status: "failed" });
+    let locator; try { locator = target.locator(`[data-lm-connector-control="${token}"]`); } catch { return Object.freeze({ status: "failed" }); }
+    try {
+      if (!locator || typeof locator.count !== "function" || await locator.count() !== 1) return Object.freeze({ status: "failed" });
+      if (scalar) { if (typeof input.value !== "string" || typeof locator.fill !== "function") return Object.freeze({ status: "failed" }); await locator.fill(input.value); }
+      else if (radio) { if (typeof locator.check !== "function") return Object.freeze({ status: "failed" }); await locator.check(); }
+      else if (typeof locator.press === "function") await locator.press("Space");
+      else if (typeof locator.click === "function") await locator.click();
+      else return Object.freeze({ status: "failed" });
+    } catch { return Object.freeze({ status: "failed" }); }
+    return Object.freeze({ status: "success" });
+  }
   if (input.action.method === "ax_uncheck") {
     if (!eventbriteMarketingControlMeaning(input.control)) return Object.freeze({ status: "failed" });
     const operation = await operateEventbriteMarketing(target, token, input.page);
@@ -1263,6 +1292,7 @@ function createBoundedActionProposer(options = {}) {
       || !Number.isInteger(step) || step < 1 || step > 10
       || !input.observation || !Array.isArray(input.observation.controls)
     ) invalid();
+    if (input.provider === "techplay") return null;
     const controls = input.observation.controls.map(safeControl);
     const observationState = String(input.observation.state || "");
     const nativeControl = nativeConnpassControl(input.provider, observationState, controls);
@@ -1334,10 +1364,11 @@ function createProductionBrowserHarness(options = {}) {
 
   async function observed(page, provider, candidate = null) {
     const eventbriteBinding = provider === "eventbrite" ? candidateEventbriteBinding(candidate) : null;
-    const eventId = candidatePeatixEventId(candidate) || candidateMeetupEventId(candidate) || candidateDoorkeeperEventId(candidate) || eventbriteBinding?.eventId || "";
+    const techplayBinding = provider === "techplay" ? candidateTechPlayBinding(candidate) : null;
+    const eventId = candidatePeatixEventId(candidate) || candidateMeetupEventId(candidate) || candidateDoorkeeperEventId(candidate) || eventbriteBinding?.eventId || techplayBinding?.eventId || "";
     const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     const connpassJoin = isConnpassJoin(provider, href);
-    const values = await inspectControls({ page, provider, event_id: eventId || undefined, canonical_url: eventbriteBinding?.canonicalUrl, connpass_join: connpassJoin });
+    const values = await inspectControls({ page, provider, candidate: provider === "techplay" ? candidate : undefined, event_id: eventId || undefined, canonical_url: eventbriteBinding?.canonicalUrl || techplayBinding?.canonicalUrl, ticket_id: techplayBinding?.ticketId, connpass_join: connpassJoin });
     if (!Array.isArray(values) || values.length > 100 || (values.length < 1 && provider !== "eventbrite")) invalid();
     const controls = values.map(safeControl);
     if (new Set(controls.map((item) => item.control)).size !== controls.length) invalid();
@@ -1353,10 +1384,40 @@ function createProductionBrowserHarness(options = {}) {
     return observation;
   }
 
+  async function performTechPlayInputAction(input, binding) {
+    const token = String(input.action && input.action.control || ""); const scalar = /^techplay_answer_[1-9][0-9]*$/.test(token); const radio = /^techplay_answer_[1-9][0-9]*_[1-9][0-9]*$/.test(token); const optout = /^techplay_optout_(?:area_[1-9][0-9]*|tag_[1-9][0-9]*|organizer_[1-9][0-9]*|icon_published|use_as_preset)$/.test(token);
+    const action = input.action || {}; if (!binding || action.purpose !== "fill" || (!scalar && !radio && !optout) || (scalar && action.method !== "ax_fill") || (radio && action.method !== "ax_check") || (optout && action.method !== "ax_uncheck")) return Object.freeze({ status: "failed" });
+    const joinUrl = `${binding.canonicalUrl.replace("/event/", "/event/join/")}`; const readHref = () => { try { return String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } };
+    if (readHref() !== joinUrl) return Object.freeze({ status: "failed" });
+    let before; try { before = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed" }); }
+    const selected = before.controls.find((control) => control.control === token);
+    if (!selected || selected.required !== true || selected.completed !== false || selected.submittable !== false || (scalar && selected.kind !== "input") || (radio && selected.kind !== "radio") || (optout && selected.kind !== "checkbox")) return Object.freeze({ status: "failed" });
+    let value = null;
+    if (scalar) { try { value = await resolveValue({ provider: "techplay", page: input.page, candidate: input.candidate, control: selected, action, state: "registration_page" }); } catch { return Object.freeze({ status: "failed" }); } if (typeof value !== "string" || !value.trim() || value.length > 2_000) return Object.freeze({ status: "failed" }); }
+    if (radio) {
+      const group = before.controls.filter((control) => control.kind === "radio" && control.question === selected.question && /^techplay_answer_[1-9][0-9]*_[1-9][0-9]*$/.test(control.control)); const approved = [];
+      for (const control of group) { let result = null; try { result = await resolveValue({ provider: "techplay", page: input.page, candidate: input.candidate, control, action, state: "registration_page" }); } catch { return Object.freeze({ status: "failed" }); } if (result === true) approved.push(control); }
+      if (approved.length !== 1 || approved[0].control !== token) return Object.freeze({ status: "failed" });
+    }
+    if (readHref() !== joinUrl) return Object.freeze({ status: "failed" });
+    let current; try { current = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed" }); }
+    const rebound = current.controls.find((control) => control.control === token);
+    if (!rebound || rebound.kind !== selected.kind || rebound.label !== selected.label || rebound.question !== selected.question || rebound.required !== true || rebound.completed !== false || rebound.submittable !== false) return Object.freeze({ status: "failed" });
+    let result; try { result = await operateControl({ page: input.page, provider: "techplay", candidate: input.candidate, control: rebound, action, value }); } catch { return Object.freeze({ status: "failed" }); }
+    if (!result || result.status !== "success" || readHref() !== joinUrl) return Object.freeze({ status: "failed" });
+    let after; try { after = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed" }); }
+    const completed = after.controls.find((control) => control.control === token);
+    return completed && completed.kind === rebound.kind && completed.label === rebound.label && completed.question === rebound.question && completed.required === true && completed.completed === true && completed.submittable === false ? Object.freeze({ status: "success" }) : Object.freeze({ status: "failed" });
+  }
+
   async function performAction(input = {}) {
     if (!input.page || !input.action || !CONTROL.test(String(input.action.control || ""))) invalid();
     const provider = input.provider == null ? "luma" : String(input.provider);
     if (!PROVIDERS.has(provider)) invalid();
+    if (provider === "techplay") {
+      const binding = candidateTechPlayBinding(input.candidate);
+      return binding ? performTechPlayInputAction(input, binding) : Object.freeze({ status: "failed" });
+    }
     const doorkeeperBinding = provider === "doorkeeper" ? candidateDoorkeeperBinding(input.candidate) : null;
     if (provider === "doorkeeper" && !doorkeeperBinding) return Object.freeze({ status: "failed" });
     const eventbriteBinding = provider === "eventbrite" ? candidateEventbriteBinding(input.candidate) : null;
@@ -1507,8 +1568,43 @@ function createProductionBrowserHarness(options = {}) {
     return Object.freeze({ status: "success" });
   }
 
+  async function selectTechPlayInputAction(observation, page, candidate) {
+    const controls = Array.isArray(observation?.controls) ? observation.controls : [];
+    const scalar = controls.find((control) => /^techplay_answer_[1-9][0-9]*$/.test(control.control) && control.kind === "input" && control.required === true && control.completed === false && control.submittable === false);
+    if (scalar) return Object.freeze({ purpose: "fill", method: "ax_fill", control: scalar.control });
+    const groups = new Map();
+    for (const control of controls) if (/^techplay_answer_[1-9][0-9]*_[1-9][0-9]*$/.test(control.control) && control.kind === "radio" && control.required === true && control.completed === false && control.submittable === false) { const list = groups.get(control.question) || []; list.push(control); groups.set(control.question, list); }
+    for (const group of groups.values()) {
+      const approved = []; for (const control of group) { let value = null; try { value = await resolveValue({ provider: "techplay", page, candidate, control, action: { purpose: "fill", method: "ax_check", control: control.control }, state: "registration_page" }); } catch { return null; } if (value === true) approved.push(control); }
+      if (approved.length !== 1) return null;
+      return Object.freeze({ purpose: "fill", method: "ax_check", control: approved[0].control });
+    }
+    const optout = controls.find((control) => /^techplay_optout_(?:area_[1-9][0-9]*|tag_[1-9][0-9]*|organizer_[1-9][0-9]*|icon_published|use_as_preset)$/.test(control.control) && control.kind === "checkbox" && control.required === true && control.completed === false && control.submittable === false);
+    return optout ? Object.freeze({ purpose: "fill", method: "ax_uncheck", control: optout.control }) : null;
+  }
+
+  async function runTechPlayInputFallback(input) {
+    const binding = candidateTechPlayBinding(input.candidate); const maxSteps = Number(input.maxSteps);
+    if (!binding || !PAGE_WEBSOCKET.test(String(input.pageWebsocket || "")) || !input.page || typeof input.page !== "object" || input.expectedState !== "registered_or_pending" || input.maxSteps == null || !Number.isInteger(maxSteps) || maxSteps < 1 || maxSteps > 20) invalid();
+    const repaired = [];
+    for (let step = 0; step < maxSteps; step += 1) {
+      let observation; try { observation = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([...repaired]) }); }
+      if (!observation || !observation.controls.length) return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([...repaired]) });
+      const action = await selectTechPlayInputAction(observation, input.page, input.candidate);
+      if (!action) {
+        const complete = observation.controls.every((control) => !/^techplay_(?:answer|optout)_/.test(control.control) || control.completed === true);
+        return Object.freeze({ status: "failed", safe_reason: complete ? "review_blocked" : "agent_action_failed", repaired_actions: Object.freeze([...repaired]) });
+      }
+      const result = await performTechPlayInputAction({ ...input, action }, binding);
+      if (!result || result.status !== "success") return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([...repaired]) });
+      repaired.push(action);
+    }
+    return Object.freeze({ status: "failed", safe_reason: "agent_step_limit", repaired_actions: Object.freeze([...repaired]) });
+  }
+
   async function runFallback(input = {}) {
     if (!PROVIDERS.has(input.provider) || !input.candidate) invalid();
+    if (input.provider === "techplay") return runTechPlayInputFallback(input);
     const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow, meetup: meetupWorkflow, doorkeeper: doorkeeperWorkflow, eventbrite: eventbriteWorkflow }[input.provider];
     if (!workflow || typeof workflow.readProviderState !== "function") {
       if (input.provider === "doorkeeper") return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([]) });
