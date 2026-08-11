@@ -218,6 +218,49 @@ test("connector calendar rejects every non-canonical Meetup identity before gog 
   assert.equal(calls, 0);
 });
 
+test("connector calendar accepts exact Doorkeeper identity with fixed Doorkeeper source title", async () => {
+  const { run, calls } = recorder(JSON.stringify({ id: "doorkeeper-created", htmlLink: "https://calendar.google.com/calendar/event?eid=doorkeeper-created" }));
+  const result = await makeGogCalendar({ account: ACCT, run }).createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "c".repeat(64), title: "Injected title",
+    startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+    location: "Tokyo", canonicalUrl: "https://tokyo-builders.doorkeeper.jp/events/101",
+  });
+  assert.deepEqual(result, { id: "doorkeeper-created", htmlLink: "https://calendar.google.com/calendar/event?eid=doorkeeper-created" });
+  assert.ok(calls[0].includes("--description=https://tokyo-builders.doorkeeper.jp/events/101"));
+  assert.ok(calls[0].includes("--source-url=https://tokyo-builders.doorkeeper.jp/events/101"));
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Doorkeeper"]);
+  assert.ok(calls[0].includes(`--private-prop=lm_connector_event=${"c".repeat(64)}`));
+});
+
+test("connector calendar rejects every non-canonical Doorkeeper identity before gog run", async () => {
+  const variants = [
+    "http://tokyo-builders.doorkeeper.jp/events/101",
+    "https://Tokyo-builders.doorkeeper.jp/events/101",
+    "https://www.doorkeeper.jp/events/101",
+    "https://doorkeeper.jp/events/101",
+    "https://east.tokyo-builders.doorkeeper.jp/events/101",
+    "https://tokyo-builders.doorkeeper.jp:443/events/101",
+    "https://user:pass@tokyo-builders.doorkeeper.jp/events/101",
+    "https://tokyo-builders.doorkeeper.jp/events/101/",
+    "https://tokyo-builders.doorkeeper.jp/events/101?x=1",
+    "https://tokyo-builders.doorkeeper.jp/events/101#details",
+    "https://tokyo-builders.doorkeeper.jp/events/0",
+    "https://tokyo-builders.doorkeeper.jp/events/not-a-number",
+    "https://tokyo-builders.doorkeeper.jp/events/101/tickets",
+    "https://tokyo-builders.doorkeeper.jp/events",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "d".repeat(64), title: "x",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
 test("connector calendar methods reject malformed IDs, URLs, times, and ambiguous provider receipts", async () => {
   let calls = 0;
   const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
