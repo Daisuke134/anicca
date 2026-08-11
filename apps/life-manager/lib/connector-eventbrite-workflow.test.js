@@ -96,6 +96,24 @@ test("Eventbrite accepts SocialEvent and both zero Offer/AggregateOffer bounds o
   assert.equal(result[0].ticket_price_minor, 0);
 });
 
+test("Eventbrite rejects an unqualified Japanese yen amount in body text", async () => {
+  const row = binding("350");
+  const { workflow } = workflowFor(
+    [{ href: row.canonical_url, event_id: "350" }],
+    { [row.canonical_url]: detail("350", { body_text: "1,000円" }) },
+  );
+  assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), []);
+});
+
+test("Eventbrite requires an exact Offer or AggregateOffer type for zero-price offers", async () => {
+  const row = binding("351");
+  const { workflow } = workflowFor(
+    [{ href: row.canonical_url, event_id: "351" }],
+    { [row.canonical_url]: detail("351", { event: { offers: { "@type": "Thing", price: 0, availability: "InStock", url: row.canonical_url } } }) },
+  );
+  assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), []);
+});
+
 test("Eventbrite fails closed for online, outside-Tokyo, invalid-window, paid, unsafe, body-price, and duplicate-control details", async () => {
   const cases = [
     ["online", { event: { eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode" } }],
@@ -182,6 +200,16 @@ test("Eventbrite parent readback is strict and fail-closed", async () => {
     readRegistrationView: async () => ({ page_url: candidate.canonical_url, canonical_links: [], controls: [{ text: "Get tickets", visible: true }], body_text: "" }),
   });
   assert.deepEqual(await absent.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "absent" });
+
+  const hiddenCompletion = createEventbriteScriptFirstWorkflow({
+    readRegistrationView: async () => ({
+      page_url: candidate.canonical_url,
+      canonical_links: [{ href: candidate.canonical_url, visible: true }],
+      controls: [{ text: "Registration complete", visible: false }],
+      body_text: "Registration complete",
+    }),
+  });
+  assert.deepEqual(await hiddenCompletion.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" });
 
   for (const view of [
     { page_url: candidate.canonical_url, canonical_links: [{ href: candidate.canonical_url, visible: true }, { href: candidate.canonical_url, visible: true }], controls: [], body_text: "Registration complete" },

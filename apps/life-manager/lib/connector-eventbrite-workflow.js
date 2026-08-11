@@ -1,8 +1,6 @@
 "use strict";
-
 const { createHash } = require("node:crypto");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
-
 const TIME_ZONE = "Asia/Tokyo";
 const LIST_URL = "https://www.eventbrite.com/d/japan--tokyo/free--events/";
 const EVENT_REF = /^eventbrite-event:\/\/event\/[1-9][0-9]*$/;
@@ -10,7 +8,7 @@ const EVENT_PATH = /^\/e\/(?:([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)-tickets-([1-9][0-
 const OFFLINE_MODE = new Set(["https://schema.org/OfflineEventAttendanceMode", "http://schema.org/OfflineEventAttendanceMode"]);
 const IN_STOCK = new Set(["InStock", "https://schema.org/InStock", "http://schema.org/InStock"]);
 const BLOCKED_MARKER = /(?:sold[ -]?out|wait[ -]?list|waitlist|cancel(?:led|ed|lation)?|registration closed|event closed|error|failed|受付終了|キャンセル|満席|満員|売り切れ|販売終了|エラー)/i;
-const MONEY_MARKER = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:jpy|yen|円)\b|door\s*(?:price|fee)|at\s+the\s+door|participation\s+fee|admission\s+fee|entry\s+fee|payment\s+required|paid\s+at\s+door|参加費|入場料|会場払い|当日払い|有料|支払い(?:が)?(?:必要|必須))/i;
+const MONEY_MARKER = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:(?:jpy|yen)\b|円)|door\s*(?:price|fee)|at\s+the\s+door|participation\s+fee|admission\s+fee|entry\s+fee|payment\s+required|paid\s+at\s+door|参加費|入場料|会場払い|当日払い|有料|支払い(?:が)?(?:必要|必須))/i;
 const READBACK_UNSAFE = /(?:auth|log\s*in|sign\s*in|payment|pay(?:ment)?|credit\s*card|checkout|error|failed|sold[ -]?out|wait[ -]?list|waitlist|cancel(?:led|ed)?|受付終了|キャンセル|満席|エラー|支払い)/i;
 const COMPLETION_MARKER = /(?:registration\s+(?:is\s+)?(?:complete|completed|confirmed)|order\s+confirmed|ticket(?:s)?\s+confirmed|you(?:'re| are)\s+going|登録完了|申し込みが完了しました)/gi;
 const SAFE_CODES = new Set("EVENTBRITE_LISTING_NAVIGATION_FAILED EVENTBRITE_LISTING_READ_FAILED EVENTBRITE_LISTING_RESULT_CONTRACT_FAILED EVENTBRITE_DETAIL_NAVIGATION_FAILED EVENTBRITE_DETAIL_READ_FAILED EVENTBRITE_DETAIL_IDENTITY_MISMATCH_FAILED EVENTBRITE_CALENDAR_CONFLICT_CHECK_FAILED EVENTBRITE_REGISTRATION_READ_FAILED".split(" "));
@@ -145,6 +143,9 @@ function freeOffers(event, canonicalUrl) {
   return offers.every((offer) => {
     if (String(offer.url || "").trim() !== canonicalUrl || !IN_STOCK.has(String(offer.availability || ""))) return false;
     const types = Array.isArray(offer["@type"]) ? offer["@type"] : [offer["@type"]];
+    const allowed = (type) => type === "Offer" || type === "AggregateOffer"
+      || String(type || "").endsWith("/Offer") || String(type || "").endsWith("/AggregateOffer");
+    if (!types.length || !types.every(allowed)) return false;
     const aggregate = types.some((type) => type === "AggregateOffer" || String(type || "").endsWith("/AggregateOffer"));
     return aggregate ? numericZero(offer.lowPrice) && numericZero(offer.highPrice) : numericZero(offer.price);
   });
@@ -248,7 +249,6 @@ function createEventbriteScriptFirstWorkflow(options = {}) {
   const isCalendarFree = options.isCalendarFree || defaultCalendarFree;
   const onDiscoveryAudit = options.onDiscoveryAudit || (() => {});
   if ([now, readListingBindings, readEventDetail, readRegistrationView, isCalendarFree, onDiscoveryAudit].some((value) => typeof value !== "function")) invalid();
-
   return Object.freeze({
     async discoverCandidates({ page, calendar }) {
       const observed = now();
@@ -302,14 +302,16 @@ function createEventbriteScriptFirstWorkflow(options = {}) {
       try { if (page && typeof page.url === "function" && String(page.url()) !== selected.canonical_url) return Object.freeze({ status: "unavailable" }); } catch { return Object.freeze({ status: "unavailable" }); }
       if (view.canonical_links.some((link) => link.href !== selected.canonical_url)) return Object.freeze({ status: "unavailable" });
       const visibleLinks = view.canonical_links.filter((link) => link.visible);
-      const controls = view.controls.filter((control) => control.visible);
-      const text = `${view.body_text} ${controls.map((control) => control.text).join(" ")}`;
+      const allControls = view.controls;
+      const controls = allControls.filter((control) => control.visible);
+      const text = `${view.body_text} ${allControls.map((control) => control.text).join(" ")}`;
       if (view.auth_required || view.waitlist || READBACK_UNSAFE.test(text)) return Object.freeze({ status: "unavailable" });
       const exactLink = visibleLinks.length === 1 && visibleLinks[0].href === selected.canonical_url && view.canonical_links.length === 1;
-      if (exactLink && completionCount(view.body_text) === 1 && !controls.some((control) => completionCount(control.text))) return Object.freeze({ status: "registered" });
+      const controlCompletion = allControls.some((control) => completionCount(control.text));
+      if (exactLink && completionCount(view.body_text) === 1 && !controlCompletion) return Object.freeze({ status: "registered" });
       const tickets = controls.filter((control) => control.text === "Get tickets");
       const linksSafe = view.canonical_links.length === 0 || (view.canonical_links.length === 1 && exactLink);
-      if (linksSafe && tickets.length === 1 && completionCount(view.body_text) === 0) return Object.freeze({ status: "absent" });
+      if (linksSafe && tickets.length === 1 && completionCount(view.body_text) === 0 && !controlCompletion) return Object.freeze({ status: "absent" });
       return Object.freeze({ status: "unavailable" });
     },
   });
