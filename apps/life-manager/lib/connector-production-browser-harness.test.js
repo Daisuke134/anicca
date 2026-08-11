@@ -1819,6 +1819,49 @@ function makeEventbriteFinalHandle(element, click) {
   };
 }
 
+function eventbriteFallbackFixture(readProviderState) {
+  const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
+  const field = (name, type = "text") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value: "complete" });
+  const fields = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email")];
+  const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
+  const elements = [...fields, primary]; const stats = { proposals: 0, operations: 0, clicks: 0, readbacks: 0, luma: 0 };
+  const handle = makeEventbriteFinalHandle(primary, () => { stats.clicks += 1; });
+  const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
+    if (String(selector).includes("data-lm-connector-control") && String(selector).includes("eds-modal__primary-button")) return { async count() { return 1; }, async elementHandles() { return [handle]; } };
+    return { async evaluateAll(callback, context) { return callback(elements, context); } };
+  } };
+  const page = { url() { return candidate.canonical_url; }, frames() { return [frame]; }, locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; } };
+  const action = { purpose: "submit", method: "ax_click", control: "eventbrite_attendee_register_1901" };
+  const harness = createProductionBrowserHarness({
+    eventbriteWorkflow: { async readProviderState(input) { stats.readbacks += 1; return readProviderState(input); } },
+    lumaWorkflow: { async readProviderState() { stats.luma += 1; throw new Error("wrong workflow"); } },
+    async inspectControls(input) { return inspectPageControls(input); },
+    async proposeAction() { stats.proposals += 1; return { control: action.control }; },
+    async operateControl(input) { stats.operations += 1; return operatePageControl(input); },
+    async resolveValue() { throw new Error("resolver must not run"); },
+  });
+  return { harness, candidate, page, action, stats };
+}
+
+test("Eventbrite runFallback dispatches the Eventbrite workflow and never Luma", async () => {
+  const fixture = eventbriteFallbackFixture(async () => ({ status: "registered", receipt_id: "evt-1901" }));
+  const result = await fixture.harness.runFallback({ provider: "eventbrite", candidate: fixture.candidate, page: fixture.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EVENTBRITEFALLBACK1", maxSteps: 2, expectedState: "registered_or_pending" });
+  assert.deepEqual(result, { status: "completed", provider_state: { status: "registered", receipt_id: "evt-1901" }, repaired_actions: [fixture.action] });
+  assert.deepEqual(fixture.stats, { proposals: 1, operations: 1, clicks: 1, readbacks: 1, luma: 0 });
+});
+
+test("Eventbrite runFallback stops after one final effect_unknown without retry", async () => {
+  const fixture = eventbriteFallbackFixture(async () => ({ status: "pending" }));
+  mock.timers.enable({ apis: ["Date", "setTimeout"] });
+  try {
+    const resultPromise = fixture.harness.runFallback({ provider: "eventbrite", candidate: fixture.candidate, page: fixture.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EVENTBRITEEFFECTUNKNOWN1", maxSteps: 2, expectedState: "registered_or_pending" });
+    let settled = false; resultPromise.then(() => { settled = true; }, () => { settled = true; });
+    for (let attempt = 0; attempt < 1_300 && !settled; attempt += 1) { await Promise.resolve(); mock.timers.tick(25); }
+    assert.deepEqual(await resultPromise, { status: "failed", safe_reason: "effect_unknown", repaired_actions: [] });
+  } finally { mock.timers.reset(); }
+  assert.equal(fixture.stats.proposals, 1); assert.equal(fixture.stats.operations, 1); assert.equal(fixture.stats.clicks, 1); assert.equal(fixture.stats.luma, 0); assert.ok(fixture.stats.readbacks > 0);
+});
+
 test("Eventbrite inspector exposes the exact free ticket Register control from the matching checkout child frame", async () => {
   const candidate = {
     provider: "eventbrite",
