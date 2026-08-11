@@ -7654,3 +7654,13 @@ Harness 98/98、Eventbrite workflow 19/19、adapter 4/4、minimal production 18/
 ### O1B-25進捗417（Item 19E-D5c / Eventbrite native provider order plan）
 
 Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-native-order-19e.md`はnative-pass production/test exact 2 files。frozen provider orderをexact `Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite`へ末尾1項目拡張する。production 1 LOC、test 3 LOC。failure 3、wake 600000ms、agent steps 10、private identity factory-only境界は不変。implementation/review中official wake 0、4 labels UNLOADED。D5cをTDD・fresh review・pushで閉じた後だけ実production wakeへ進む。
+
+### O1B-25進捗418（Item 19E-D5c / Eventbrite native provider order ship）
+
+Lunaがnative-pass production/test exact 2 filesだけをSuperpowers TDD変更した。既存exact-order assertions 3件を6-providerへ先に更新し、REDは10件中7 pass / 3 failで旧5-providerとの差分だけを再現。GREEN commit `d21205b1b`はfrozen `DEFAULT_PROVIDERS`末尾へ`eventbrite`を一項目追加しnative 10/10。exact orderはLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbrite。budgets 3/600000/10、private identity factory-only/non-wake境界は不変。
+
+runner 41/41、minimal production 18/18、contract 1/1、Harness 98/98、Eventbrite workflow 19/19、Sol combined 186/186、syntax、diff、exact2-file scope PASS。native-runtime 15/17の2件はbase `bd1ef2e4d`でも同じ`actual peatix / expected connpass`を再現し、native-pass import 0の変更外既知fixture。fresh Sol review SHIP、Critical/Important 0。remote push完了。
+
+### O1B-25進捗419（Item 19E-D6 / Eventbrite official live acceptance plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-live-acceptance-19e.md`はcode変更0。pushed/clean/upstream、4 labels UNLOADED、Connector process 0、lock absent、current target intersection 0をpreconditionに、official `skills/connector/run.sh`を660秒hard timeout付きforegroundでexact 1回だけ実行する。baselineはbundle 13、report 129、delivery 141、action 1322、Eventbrite audit 0、unrelated CDP pages 4。plist load、launchctl、manual provider/browser action、second wakeは0。既登録Eventbrite候補ならfinal Submit 0のpre-readback reuseからCalendar/evidence/Telegram `applied_bundle`、候補なし/conflictならdurable audit＋external write 0＋positive reportを受入する。終了後process/lock/owned target 0、unrelated pages不変、4 labels UNLOADEDを必須とする。
