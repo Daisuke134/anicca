@@ -19,12 +19,12 @@
 
 ## Contract
 
-- [ ] RED: `completeEvidence` rejects provider `techplay`.
-- [ ] Add exact `techplay-event://event/<positive ID>`, `provider-receipt://techplay/<64 lowercase hex>`, and canonical `https://techplay.jp/event/<same ID>` identity.
-- [ ] Create/inject `createTechPlayEvidenceStore`; validate its exact generic browser receipt tuple on checkpoint reuse.
-- [ ] Accept only provider state `registered` and require the current owned page URL equals the canonical parent event URL before any screenshot/downstream effect.
-- [ ] Capture one full-page PNG without `setContent`, `goto`, `evaluate`, or receipt rendering; read receipt/artifact before Calendar.
-- [ ] Reuse existing exact Calendar create/readback, Telegram message/photo, checkpoints, bundle digest, and second-call reuse with no duplicate external effects.
-- [ ] Reject event/canonical/page drift, pending/absent, wrong receipt/artifact, and tampered checkpoint/bundle before downstream effects.
-- [ ] Run focused/full evidence tests, store/Calendar/production adjacent tests, syntax, diff check, mutation proof, and fresh Sol review.
-- [ ] Do not change generic bundle schema, production factory, native order, launchd, or perform real external effects.
+- [x] RED: `completeEvidence` rejects provider `techplay`.
+- [x] Add exact `techplay-event://event/<positive ID>`, `provider-receipt://techplay/<64 lowercase hex>`, and canonical `https://techplay.jp/event/<same ID>` identity.
+- [x] Create/inject `createTechPlayEvidenceStore`; validate its exact generic browser receipt tuple on checkpoint reuse.
+- [x] Accept only provider state `registered` and require the current owned page URL equals the canonical parent event URL before any screenshot/downstream effect.
+- [x] Capture one full-page PNG without `setContent`, `goto`, `evaluate`, or receipt rendering; read receipt/artifact before Calendar.
+- [x] Reuse existing exact Calendar create/readback, Telegram message/photo, checkpoints, bundle digest, and second-call reuse with no duplicate external effects.
+- [x] Reject event/canonical/page drift, pending/absent, wrong receipt/artifact, and tampered checkpoint/bundle before downstream effects.
+- [x] Run focused/full evidence tests, store/Calendar/production adjacent tests, syntax, diff check, mutation proof, and fresh Sol review.
+- [x] Do not change generic bundle schema, production factory, native order, launchd, or perform real external effects.
