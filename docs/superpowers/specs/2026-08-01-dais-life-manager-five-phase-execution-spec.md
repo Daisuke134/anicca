@@ -7381,7 +7381,11 @@ Lunaがoperations production/testの2 filesだけをTDD変更した。REDは既�
 
 fresh Sol reviewはspec PASS / quality SHIP、Critical/Important 0。単調各境界の個別testはoptional Minorで、全4条件のproduction検証と非単調rejectは成立。Sol独立10/10、29/29、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommit `c7269d886`をstableへfast-forwardしpushした。次の一件はB3 native provider orderへDoorkeeperをMeetup後に追加する2-file slice。HarnessはB4まで未接続、Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗374。これ以外の残TODO一覧は履歴）
+### O1B-25進捗375（Item 19D-B3 / Doorkeeper native order plan）
+
+次active B3 plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-native-order-19d.md`はnative-pass production/testの2 filesだけ。review済みfactory/router/workflow/auditをofficial bounded wakeから到達可能にするため、frozen provider順をexact `Luma → Connpass → Peatix → Meetup → Doorkeeper`へ一行拡張する。failure 3、wake 10分、agent step 10、private profile境界は不変。Harness allowlistはB4まで凍結し、このslice中のofficial wakeは0、4 labels UNLOADEDを維持する。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗375。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
