@@ -396,8 +396,8 @@ test("Eventbrite direct checkout readback rejects ambiguous, nested, and partial
   const candidate = { ...binding("1997468673574"), provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" };
   const canonical = { href: candidate.canonical_url, getAttribute(name) { return name === "rel" ? "canonical" : this.href; } };
   const control = { innerText: "Reserve a spot", offsetWidth: 120, offsetHeight: 32 };
-  const frame = ({ eid = "1997468673574", body = "", register = 0, nested = [], error = false, host = "www.eventbrite.com" } = {}) => ({
-    url() { return `https://${host}/checkout-external?eid=${eid}`; },
+  const frame = ({ eid = "1997468673574", body = "", register = 0, nested = [], error = false, host = "www.eventbrite.com", href = "" } = {}) => ({
+    url() { return href || `https://${host}/checkout-external?eid=${eid}`; },
     childFrames() { return nested; },
     async evaluate(callback) {
       if (error) throw new Error("checkout evaluate failed");
@@ -427,6 +427,9 @@ test("Eventbrite direct checkout readback rejects ambiguous, nested, and partial
     ["register-residual", [frame({ body: complete, register: 1 })], "absent"],
     ["evaluate-error", [frame({ error: true })], "unavailable"],
     ["wrong-host", [frame({ body: complete, host: "evil.example" })], "unavailable"],
+    ["port", [frame({ body: complete, href: "https://www.eventbrite.com:444/checkout-external?eid=1997468673574" })], "unavailable"],
+    ["userinfo", [frame({ body: complete, href: "https://user:pass@www.eventbrite.com/checkout-external?eid=1997468673574" })], "unavailable"],
+    ["hash", [frame({ body: complete, href: "https://www.eventbrite.com/checkout-external?eid=1997468673574#done" })], "unavailable"],
   ];
   const workflow = createEventbriteScriptFirstWorkflow();
   for (const [name, children, status] of cases) {
