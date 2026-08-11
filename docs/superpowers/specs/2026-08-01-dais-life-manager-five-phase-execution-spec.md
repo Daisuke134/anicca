@@ -8016,3 +8016,9 @@ Node SHA-256公式docsと英語・日本語bundle検索、既存Eventbrite/Doork
 Lunaがevidence chain/test exact 2 filesをSuperpowers TDD実装し、code commit `ed907d3a8`をpushした。TECH PLAY exact event/receipt refs、same-ID canonical parser、shipped store injection、registered-only provider mapを追加。owned pageがcanonical parent URLと一致するときだけfull-page PNGを1回取得し、`setContent`/`goto`/`evaluate`/receipt renderingは0。receipt/artifactの厳密readback後だけ既存Calendar→Telegram message/photo→checkpoint→bundle→reuseへ進む。
 
 REDはprovider未配線で1 fail。GREENはcreated→reused bundle、duplicate external effect 0、receipt/artifact-before-Calendar、exact Calendar canonical、Telegram receipts、event/canonical/page drift、pending/absent、wrong receipt/artifact/tamper fail-closedを証明した。no-render branch mutationはnamed testをFAILさせ、復元後evidence 39/39＋adjacent 103/103、両syntax、diff check PASS。fresh Sol reviewは主要5 guardsのmutationも再確認しCritical/Important 0で`ship`。generic bundle schema、factory、native order、launchd、実外部作用は変更0。Item19実bundleは未完。
+
+### O1B-25進捗473（Item 19F-D14 / TECH PLAY native reachability plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-native-reachability-19f.md`はnative pass/test exact 2 files。frozen provider order末尾へ`techplay`を追加し、official native inputの`maxAgentSteps`を10→15にするexact 2 LOC production change。runner default、failure cap 3、wake timeout 600000、cursorなし、private-free boundary、CLI/exit、launchd plistは維持する。
+
+Node process公式docs、英語max-step/provider-order、日本語provider順検索と既存native boundaryを照合し、新registry/runtime変更は不要と判断。実launchd wake/applicationは次slice。Item19実bundleは未完。
