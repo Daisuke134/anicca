@@ -7726,3 +7726,9 @@ Root `README.md`へConnectorのtrigger→6-provider discovery→deterministic ga
 Live受入とREADME/SSOT同期をpushed HEAD `471b0e357`で完了後、installed mode-0600 native plistだけを`gui/501`へbootstrapした。exact label `ai.anicca.life-manager-connector-native`はloaded、state `not running`、active count 0、runs 0、last exit never、calendar trigger exact `Hour=9 / Minute=0`、program/working directoryはcurrent Connector worktreeのofficial `skills/connector/run.sh`。RunAtLoad、KeepAlive、StartInterval、second kickは0。
 
 `ai.anicca.life-manager-connector-native-healthcheck`、`ai.anicca.life-manager-connector-healer-shadow`、`ai.anicca.life-manager-connector-host-bridge`はexact全UNLOADED。Connector process 0、lock idle、current CDP pageと9件のlegacy target-ledger historyのintersection 0、Git clean/upstream 0/0、Gig code/state変更0。旧plist filesは削除せずunloaded inventoryとして保持し、実行consumerはNative daily owner exact1。Item22を完了する。
+
+### O1B-25進捗430（Item 19D-E1 / Doorkeeper evidence store plan）
+
+Current worktreeは`feature/connector-native-completion`、HEAD/remote `37ddf1d85e22`、dirty 0、ahead/behind 0/0。Native daily labelだけloaded・not running・runs 0、他3 labels unloaded、process 0、lock absent。最新durable wakeは`wake-e289aa2e9963209e6996f099`のままで、Doorkeeper実`applied_bundle`は未完。
+
+PonytailでDoorkeeper evidence adapterを2 sliceへ分割する。先頭plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-evidence-store-19d.md`は既存provider-neutral evidence store production/test exact 2 filesだけを変更し、`doorkeeper-event://event/<positive integer>`と`provider-receipt://doorkeeper/<64 hex>`をmode-0600 immutable receipt/artifactへ束縛するwrapperをTDD追加する。production約8〜12 LOC、test約40〜70 LOC。minimal evidence chain、Calendar transport、Telegram、browser、native order、launchd、live state変更0。store review/push後にだけevidence-chain配線へ進む。Item19 Doorkeeperは実bundleまで未完。
