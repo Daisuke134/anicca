@@ -240,6 +240,10 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
 
         if (!operation || operation.status !== "completed") {
           directFailureReason = operationSafeReason(operation, "direct_action_unverified");
+          if (directFailureReason === "peatix_readback_unavailable") {
+            consecutiveFailures += 1;
+            return finish("circuit_open", "effect_unknown");
+          }
           try {
             operation = await action("submit", "browser_harness", () => deps.runAgentFallback({
               provider,
