@@ -7323,7 +7323,15 @@ pushed HEAD `d1466d7a3`からofficial continuation wake `wake-ad059ed57b669d7bb1
 
 pushed HEAD `baad99d47`からofficial continuation wake `wake-0f40af62c3f097c6e52ea1d6`をexact 1回実行した。exit 0、action `1068→1106`、report `123→124`、delivery `135→136`、Peatix audit `40→41`、bundle `12→13`、Meetup audit 0。Peatix既登録event `5129151`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11476/11477`、new bundle `3c8820c2…`を回収した。terminal `applied_bundle`、failure 0、every-wake ID `11478`。cleanup後process 0、Connector ledger target/CDP交差0。次wakeもbacklog exhaustionからMeetup到達まで継続する。Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗365。これ以外の残TODO一覧は履歴）
+### O1B-25進捗366（Item 19M-D1 / Meetup discovery到達・Calendar-safe skip・audit欠落を確定）
+
+pushed HEAD `9fc3e88c4`、4 labels unloaded、process 0、CDP page 2、Connector ledger target交差0からofficial continuation wake `wake-698594817b79bbe91ab869a5`をexact 1回実行した。Peatix audit `41→42`で既存10 bundlesをreadback/reuseし、新bundle 0。その後same owned railでMeetup discoveryを48,171ms実行したがcandidate 0。terminal `completed_no_effect / existing_bundles_reused`、failure count 1、report `124→125`、delivery `136→137`、positive Telegram ID `11483`、bundle 13、process 0、Connector target交差0。Peatix evidence backlogはexhaustしMeetup production到達をlive実証した。
+
+isolated exact-target read-only測定でdefault Meetup workflow＋実Calendarは`observed/normalized/window/free-open/calendar-free = 14/12/12/1/0`、candidate 0。唯一のstrict free eventは2026-08-20 20:00–21:00 JSTで、実Calendarの19:30–21:00 timed Connector eventと重複し、安全skipは正しい。Calendarなしでは同eventがcandidate 1。英`free`/`free event`・日`無料`の3-query診断は追加detail readiness failureでwhole discoveryをfail closedしたためproduction拡張を棄却した。
+
+`createMinimalProductionDependencies`は`operations.recordMeetupDiscoveryAudit || noop`を渡すが、production operationsに同methodがなくMeetup auditがdurable保存0。plan `2026-08-11-connector-meetup-discovery-audit-19m.md`はoperations production/test 2 filesだけで、既存safe five-count validatorをMeetup fileへcopy-tweakする。URL/title/event/profile/authは保存0。Item19 Meetup bundle acceptanceは候補なしのため未完、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗366。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
