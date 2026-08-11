@@ -115,6 +115,81 @@ Some internal package names, environment variables, service labels, and older do
 
 ---
 
+## Connector agent — how event applications work
+
+Connector is the local Life Manager agent that searches Tokyo event sites, removes unsafe or conflicting candidates, applies through one owned browser page, verifies the provider result, and reports an evidence-backed outcome in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
+
+```mermaid
+flowchart LR
+    TRIGGER["Daily launchd trigger<br/>or supervised foreground wake"] --> ENTRY["run.sh<br/>single lock + heartbeat"]
+    ENTRY --> CAL["Google Calendar<br/>14-day busy inventory"]
+    CAL --> RAIL["One CloakBrowser target<br/>one owned page"]
+
+    subgraph LOOP["Forward-only provider loop"]
+        PROVIDERS["Luma → Connpass → Peatix<br/>→ Meetup → Doorkeeper → Eventbrite"]
+        DISCOVER["Provider discovery<br/>privacy-safe count audit"]
+        GATE{"Free · open · Tokyo · in window<br/>and Calendar-safe?"}
+        NEXT["Next candidate<br/>or next provider"]
+        PROVIDERS --> DISCOVER --> GATE
+        GATE -->|No| NEXT --> PROVIDERS
+    end
+
+    RAIL --> PROVIDERS
+    GATE -->|Yes| NAV["Navigate on the same page"]
+    NAV --> PRE{"Provider readback<br/>already registered?"}
+    PRE -->|Yes| PROVE
+    PRE -->|No| CACHE["Verified action cache"]
+    CACHE --> DIRECT["Provider script-first action"]
+    DIRECT --> HARNESS["Bounded Browser Harness<br/>observe → propose → operate"]
+    HARNESS --> POST{"Official readback<br/>registered or pending?"}
+    POST -->|No / safe failure| NEXT
+    POST -->|Yes| PROVE
+
+    subgraph EVIDENCE["External proof — agent self-report is insufficient"]
+        PROVE["Provider receipt / state"] --> GCAL["Idempotent Calendar write<br/>plus independent readback"]
+        GCAL --> PNG["Privacy-safe screenshot<br/>and SHA-256"]
+        PNG --> TG["Telegram message + photo<br/>positive provider IDs"]
+        TG --> BUNDLE["Durable applied_bundle"]
+    end
+
+    NEXT -->|All exhausted| NOEFFECT["completed_no_effect<br/>external write 0"]
+    HARNESS -->|effect unknown| CIRCUIT["circuit_open<br/>never repeat the mutation"]
+    BUNDLE --> REPORT["Durable wake report"]
+    NOEFFECT --> REPORT
+    CIRCUIT --> REPORT
+    REPORT --> CLEAN["Release owned target and lock<br/>leave unrelated tabs untouched"]
+```
+
+```mermaid
+stateDiagram-v2
+    [*] --> Discovered
+    Discovered --> Skipped: paid / closed / out of window / conflict
+    Discovered --> Absent: eligible and not registered
+    Discovered --> Registered: official pre-readback
+    Absent --> Registered: one verified final effect
+    Absent --> EffectUnknown: mutation happened, readback not proven
+    Registered --> AppliedBundle: provider + Calendar + artifact + Telegram verified
+    Skipped --> ReportedNoEffect
+    EffectUnknown --> CircuitOpen
+    AppliedBundle --> Cleaned
+    ReportedNoEffect --> Cleaned
+    CircuitOpen --> Cleaned
+    Cleaned --> [*]
+```
+
+| Provider | Production rail | Acceptance status |
+|---|---|---|
+| Luma | Discovery, action, readback, evidence | Live bundle proven |
+| Connpass | Discovery, action, readback, evidence | Live bundle proven |
+| Peatix | Discovery, action, readback, evidence | Live bundle proven |
+| Meetup | Discovery, action, readback, evidence | Connected; current strict candidates conflict with Calendar |
+| Doorkeeper | Discovery, action, readback | Connected; evidence adapter and non-conflict live bundle remain |
+| Eventbrite | Three-page discovery, ticket/attendee/final action, child-frame readback | Connected; current production inventory has no eligible candidate, so external write is correctly zero |
+
+Safety invariants: one schedule owner, one browser target per wake, final mutation at most once, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` is a completed application. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
+
+---
+
 ## What's real today (honest)
 
 | Capability | Status |
