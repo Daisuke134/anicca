@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — Anicca RevenueCat gross receipts complete; `CFO-2b.2b` Apple Finance is the only active slice |
+| Status | ACTIVE — Anicca RevenueCat gross receipts complete; `CFO-2b.2b1` Apple Finance row truth is the only active slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local `apps/life-call`; existing ledgers and provider APIs only |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -50,6 +50,9 @@ Only the first unchecked item is active.
         webhook into privacy-safe provider-reported gross receipts.
   - [ ] **2b.2b** Read Apple Finance Detail as the authoritative settled Partner Share source and reconcile the
         RevenueCat receipt set without turning an unavailable fiscal period into zero.
+    - [ ] **2b.2b1** Normalize one allowlisted Anicca Finance Detail sale/return row into signed Partner Share.
+    - [ ] **2b.2b2** Parse one complete fiscal report, prove its metadata/header/footer boundary, and reconcile its
+          closed Anicca totals with RevenueCat without treating the current unavailable report as zero.
   - [ ] **2b.2c** Compose the Anicca iOS business fact from reconciled revenue, payout coverage, attributed local
         token usage, and the still-missing production API-cost coverage.
 - [ ] **CFO-2b.3 — Writer Agent**: publisher receipts and its measured runtime cost.
@@ -371,3 +374,67 @@ later read-only Railway collector will produce: `provider_event_id`, `event_type
   transaction/subscriber value was printed or persisted.
 - Every receipt still says provider gross only. Apple payout is unavailable; cash and refund coverage are unknown;
   no whole-business revenue, profit, ROI, or bank-landed claim is enabled. The next active item is CFO-2b.2b.
+
+## 12. CFO-2b.2b1 contract — one signed Apple Finance Detail row
+
+Extend the existing Anicca earning module with one pure `normalizeAniccaIosAppleFinanceRow(row)` function. A later
+streaming parser passes exactly eleven safe fields: `fiscal_month`, positive safe-integer `row_ordinal`,
+`transaction_date`, `settlement_date`, `apple_identifier`, `sku`, signed canonical `quantity`, positive canonical
+`partner_share_decimal`, signed canonical `extended_partner_share_decimal`, uppercase ISO-3 `currency`, and
+`sale_or_return` (`S` or `R`). Raw TSV, vendor/title/developer/country/customer price/promo/order/region fields never
+enter this boundary.
+
+The identity allowlist is the exact App Store Connect app and subscription Apple-ID/SKU pairs measured for Anicca:
+`6755129214/anicca-ios-001`, `6755320744/ai.anicca.app.ios.annual`, `6755320627/ai.anicca.app.ios.monthly`,
+`6762049696/ai.anicca.app.ios.yearly.b`, `6769264298/ai.anicca.app.ios.monthly.b`,
+`6762049888/ai.anicca.app.ios.weekly.b`, `6762320930/ai.anicca.app.ios.yearly.retention`, and
+`6758591116/Anicca`. When neither field is registered, the row belongs to another app and returns `null`. When only
+one field matches or the pair conflicts, the function fails closed; title or developer name can never establish
+ownership.
+
+```mermaid
+flowchart LR
+    ROW[Apple Finance row] --> ID{Exact Apple ID + SKU pair?}
+    ID -->|No match| IGN[Ignore other app]
+    ID -->|Conflict| FAIL[Fixed error]
+    ID -->|Match| SIGN{S sale or R return}
+    SIGN --> AMT[Signed Extended Partner Share]
+    AMT --> RECEIPT[Apple finance receipt]
+    RECEIPT -. still separate .-> PAYOUT[Apple payout unknown]
+    PAYOUT -. still separate .-> MUFG[MUFG arrival unknown]
+```
+
+Rules:
+
+- Calendar dates are real `MM/DD/YYYY`, transaction is not later than settlement, and output dates are ISO calendar
+  dates without inventing a timezone. Fiscal month is canonical `YYYY-MM` and remains Apple's report key, not a
+  Gregorian transaction-month claim.
+- `row_ordinal` is the 1-based position among every original report data row before Anicca filtering, excluding the
+  three metadata lines, header, and footer; a later parser preserves it unchanged. It is an integer from 1 through
+  1,000,000. Apple ID is exactly ten ASCII digits; SKU is 1–128 ASCII
+  letters/digits/dot/underscore/hyphen before exact-pair lookup. Quantity is an optional minus plus 1–16 canonical
+  integer digits with no leading zero. Unit and Extended Partner Share use 1–16 integer digits and optional 1–8
+  fractional digits, forbid exponent/plus/whitespace/leading zero, allow provider trailing fractional zeros, and
+  forbid negative zero. Numeric JavaScript values are never accepted for these report strings.
+- `S` requires positive quantity and positive Extended Partner Share; `R` requires both negative. Partner Share is
+  always positive per-unit evidence. Exact decimal/BigInt arithmetic proves
+  `Extended Partner Share = Partner Share × Quantity`; no floating-point conversion or FX occurs.
+- The opaque source ID is SHA-256 over the fixed domain plus all eleven canonical values, retaining 24 hex. The exact
+  recursively frozen result exposes only unit/source/channel, opaque ID, fiscal/date/kind/quantity, unit Partner
+  Share, signed `{decimal,currency}`, recognition `apple_finance_reported_partner_share`, payout `unknown`, bank
+  landing `unknown`, and evidence `apple_finance_detail`.
+- Invalid/accessor/proxy/extra/missing/unsafe/inconsistent input throws only
+  `cfo_anicca_ios_earning_invalid:apple_finance_row`. The function performs no file/API/environment/clock read, I/O,
+  logging, aggregation, persistence, payout inference, or Telegram action.
+
+### CFO-2b.2b1 acceptance
+
+- [ ] Exact synthetic JPY sale and GBP return fixtures produce the two closed signed receipts; inputs stay unchanged,
+      nested amount/results are frozen, and repeated input yields the same opaque ID.
+- [ ] Wrong-app pairs return `null`; partial/contradictory Anicca identity, sign/multiplication mismatch, malformed
+      fiscal/date/money/quantity/shape, accessor, symbol, and transparent/throwing Proxy return only the fixed error.
+- [ ] No Apple/SKU/title/developer/customer/vendor/promo/order/region/raw value escapes in output, error, or logs.
+- [ ] Focused, CFO, full, syntax, diff, and exact two-file scope gates pass with at most 100 gross additions.
+- [ ] Read-only E2E passes every safely projected Anicca row from the four completed reports through the normalizer and
+      reproduces exactly: fiscal 07 = 12 rows / JPY 7,326 / GBP -14.50 / USD 28; 08 = 3 / JPY 9,472; 09 = 2 / JPY
+      1,184; 10 = 1 / JPY 425. It prints no raw row or identifier and does not claim payout, bank cash, or profit.
