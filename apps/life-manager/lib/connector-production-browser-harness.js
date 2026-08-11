@@ -30,8 +30,11 @@ const EVENTBRITE_TRIGGER_CONTROL = /^eventbrite_checkout_([1-9][0-9]*)$/;
 const EVENTBRITE_TICKET_REGISTER_CONTROL = /^eventbrite_ticket_register_([1-9][0-9]*)$/;
 const EVENTBRITE_ATTENDEE_CONTROL = /^eventbrite_attendee_(first_name|last_name|email|confirm_email)_([1-9][0-9]*)$/;
 const EVENTBRITE_MARKETING_CONTROL = /^eventbrite_marketing_opt_out_(organization|eventbrite)_([1-9][0-9]*)$/;
+const EVENTBRITE_MARKETING_LABELS = Object.freeze({ organization: "Organizer marketing opt-out", eventbrite: "Eventbrite marketing opt-out" });
 const EVENTBRITE_ATTENDEE_LABELS = Object.freeze({ first_name: "First name", last_name: "Last name", email: "Email", confirm_email: "Confirm email" });
 const EVENTBRITE_CTA_LABELS = new Set(["Get tickets", "Reserve a spot"]);
+const EVENTBRITE_ACTIONABLE_ELEMENT_LIMIT = 100;
+const EVENTBRITE_ID_SCAN_LIMIT = 256;
 const EVENTBRITE_FRAME_TIMEOUT_MS = 30_000;
 const EVENTBRITE_FRAME_STABILITY_MS = 500;
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
@@ -182,12 +185,36 @@ async function inspectEventbriteTicketFrame(frame, eventId) {
 }
 async function inspectEventbriteAttendeeFrame(frame, eventId) {
   if (!frame || typeof frame.locator !== "function") return null;
-  let locator;
-  try { locator = frame.locator("input, textarea, select, button, [data-testid]"); } catch { return null; }
-  if (!locator || typeof locator.evaluateAll !== "function") return null;
+  let locator; let idLocator;
   try {
-    return await locator.evaluateAll((elements, { eventId: id }) => {
-      if (!Array.isArray(elements) || elements.length > 100) return [];
+    locator = frame.locator("input, textarea, select, button, [data-testid]");
+    idLocator = frame.locator("[id]");
+  } catch { return null; }
+  if (!locator || typeof locator.evaluateAll !== "function" || !idLocator || typeof idLocator.evaluateAll !== "function") return null;
+  let idCounts;
+  try {
+    if (typeof idLocator.count === "function") {
+      const idCount = await idLocator.count();
+      if (!Number.isSafeInteger(idCount) || idCount < 0 || idCount > EVENTBRITE_ID_SCAN_LIMIT) return [];
+    }
+    idCounts = await idLocator.evaluateAll((elements, { limit }) => {
+      if (!Array.isArray(elements) || elements.length > limit) return null;
+      const counts = [];
+      for (const element of elements) {
+        const id = String((element && element.getAttribute && element.getAttribute("id")) || (element && element.id) || "");
+        if (!id) continue;
+        const entry = counts.find(([value]) => value === id);
+        if (entry) entry[1] += 1;
+        else counts.push([id, 1]);
+      }
+      return counts;
+    }, { limit: EVENTBRITE_ID_SCAN_LIMIT });
+  } catch { return null; }
+  if (!Array.isArray(idCounts)) return [];
+  try {
+    return await locator.evaluateAll((elements, { eventId: id, idCounts: allIds, actionableLimit }) => {
+      if (!Array.isArray(elements) || elements.length > actionableLimit) return [];
+      const globalIdCount = (id) => allIds.find(([value]) => value === id)?.[1] || 0;
       const hidden = (style) => Boolean(style && [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase())) || String(style.opacity ?? "") === "0");
       const visibleOf = (element) => {
         const view = element?.ownerDocument?.defaultView;
@@ -237,7 +264,7 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
           if (tagOf(input) !== "input" || typeOf(input) !== "checkbox" || !visibleOf(input) || !enabledOf(input) || requiredOf(input)) marketingValid = false;
           if (input.checked === true) {
             const id = idOf(input);
-            if (!id || elements.filter((element) => idOf(element) === id).length !== 1 || !input.dataset) marketingValid = false;
+            if (!id || globalIdCount(id) !== 1 || !input.dataset) marketingValid = false;
             else checkedMarketing.push({ key: spec.key, input, label: spec.label });
           }
         }
@@ -254,7 +281,7 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
       if (!primaryValid) return controls;
       controls.push({ control: `eventbrite_attendee_register_${id}`, kind: "button", label: "Register", required: false, completed: false, submittable: true });
       return controls;
-    }, { eventId });
+    }, { eventId, idCounts, actionableLimit: EVENTBRITE_ACTIONABLE_ELEMENT_LIMIT });
   } catch { return null; }
 }
 async function waitForEventbriteCheckoutFrame(page, eventId, canonicalUrl) {
@@ -303,7 +330,9 @@ function eventbriteAttendeeControlsForEvent(controls, eventId) {
   return Array.isArray(controls) ? controls.filter((control) => eventbriteAttendeeControlMeaning(control) && EVENTBRITE_ATTENDEE_CONTROL.exec(String(control.control))[2] === String(eventId)) : [];
 }
 function eventbriteMarketingControlMeaning(control) {
-  return Boolean(control && EVENTBRITE_MARKETING_CONTROL.test(String(control.control || "")) && control.kind === "checkbox" && typeof control.label === "string" && control.label.trim() && control.required === true && control.completed === false && control.submittable === false);
+  const match = EVENTBRITE_MARKETING_CONTROL.exec(String(control && control.control || ""));
+  return Boolean(control && match && EVENTBRITE_MARKETING_LABELS[match[1]] === control.label
+    && control.kind === "checkbox" && control.required === true && control.completed === false && control.submittable === false);
 }
 function eventbriteMarketingControlsForEvent(controls, eventId) {
   return Array.isArray(controls) ? controls.filter((control) => eventbriteMarketingControlMeaning(control) && EVENTBRITE_MARKETING_CONTROL.exec(String(control.control))[2] === String(eventId)) : [];
@@ -864,6 +893,7 @@ async function operatePageControl(input = {}) {
   const token = String(input.control.control || "");
   if (!CONTROL.test(token) || input.action.control !== token) invalid();
   if (input.action.method === "ax_uncheck") {
+    if (!eventbriteMarketingControlMeaning(input.control)) return Object.freeze({ status: "failed" });
     const operation = await operateEventbriteMarketing(target, token, input.page);
     return operation ? Object.freeze({ status: "success", [EVENTBRITE_MARKETING_OPERATION]: operation }) : Object.freeze({ status: "failed" });
   }
