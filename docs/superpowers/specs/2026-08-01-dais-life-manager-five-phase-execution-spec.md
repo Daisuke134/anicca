@@ -7998,3 +7998,9 @@ REDはmissing exportで新規2 fail。GREENはexact receipt tuple＋PNG readback
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-calendar-url-19f.md`はCalendar gog transport/test exact 2 files。`connectorCanonicalUrl`へexact `https://techplay.jp/event/<positive ID>`とfixed source title `TECH PLAY`だけを追加し、raw-equals-canonical gateでHTTP、host/case、credentials、port、query、fragment、trailing slash、join/confirm/list/searchをgog実行前に拒否する。production約7〜12 LOC、test約30〜55 LOC。
 
 Google Calendar Events insert公式docs、英語canonical source URL、日本語event source URLの3検索と既存Doorkeeper/Eventbrite branchesを照合し、generic canonicalizer変更は不要と判断。evidence chain/store、factory/router、native order、launchd、実Calendar mutationは変更0。Item19実bundleは未完。
+
+### O1B-25進捗470（Item 19F-D12 / TECH PLAY Calendar canonical URL ship）
+
+LunaがCalendar gog transport/test exact 2 filesをSuperpowers TDD実装し、code commit `1f6b57857`をpushした。production +7 LOCでexact `https://techplay.jp/event/<positive ID>`のみをfixed source title `TECH PLAY`へ写し、既存共通経路が同じURLをdescription/source URLとprivate idempotency propertyへ渡す。
+
+REDはcanonical acceptance 1 fail。GREENはHTTP、host/case、credentials、port、zero/non-numeric ID、query、fragment、trailing slash、list/search、実形`/event/join/<id>`・`/confirm`をinjected runner実行前に拒否した。raw-equality mutationはreject testのcalls 0→3でFAILし、復元後focused 2/2、既存provider込みtransport 29/29、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0、Ponytail最小差分で`ship`。applied-bundle chain、native order、launchd、実Calendar mutation/applicationは未実行。Item19実bundleは未完。

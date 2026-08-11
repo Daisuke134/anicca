@@ -20,10 +20,10 @@
 
 ## Contract
 
-- [ ] RED: exact TECH PLAY canonical URL is rejected.
-- [ ] Accept only `https://techplay.jp/event/<positive ID>` and emit fixed source title `TECH PLAY`.
-- [ ] Send the same exact URL as description and source URL with the existing idempotency property.
-- [ ] Reject HTTP, host/case drift, credentials, explicit port, zero/non-numeric ID, query, fragment, trailing slash, join/confirm/list/search/non-event paths before `gog` run.
-- [ ] Existing providers and malformed-input guards remain unchanged.
-- [ ] Run focused/full transport tests, syntax, diff check, mutation proof, and fresh Sol review.
-- [ ] Do not change generic canonicalization, evidence chain/store, factory/router, native order, launchd, or perform a real Calendar mutation.
+- [x] RED: exact TECH PLAY canonical URL is rejected.
+- [x] Accept only `https://techplay.jp/event/<positive ID>` and emit fixed source title `TECH PLAY`.
+- [x] Send the same exact URL as description and source URL with the existing idempotency property.
+- [x] Reject HTTP, host/case drift, credentials, explicit port, zero/non-numeric ID, query, fragment, trailing slash, join/confirm/list/search/non-event paths before `gog` run.
+- [x] Existing providers and malformed-input guards remain unchanged.
+- [x] Run focused/full transport tests, syntax, diff check, mutation proof, and fresh Sol review.
+- [x] Do not change generic canonicalization, evidence chain/store, factory/router, native order, launchd, or perform a real Calendar mutation.
