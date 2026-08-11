@@ -121,7 +121,7 @@ async function inspectEventbriteTicketFrame(frame, eventId) {
   try {
     return await locator.evaluateAll((elements, context) => {
       if (!Array.isArray(elements) || elements.length > 100) return { cardCount: -1, control: null };
-      const testIdOf = (element) => String((element.getAttribute && element.getAttribute("data-testid")) || (element.dataset && element.dataset.testid) || "").toLowerCase();
+      const testIdOf = (element) => String((element.getAttribute && element.getAttribute("data-testid")) || (element.dataset && element.dataset.testid) || "");
       const textOf = (element) => String(element && (element.innerText || element.textContent || element.value) || "").replace(/\s+/g, " ").trim();
       const hiddenStyle = (style) => Boolean(style && (
         [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase()))
@@ -166,7 +166,7 @@ async function inspectEventbriteTicketFrame(frame, eventId) {
       const enabledOf = (element) => element.disabled !== true && String((element.getAttribute && element.getAttribute("aria-disabled")) || "").toLowerCase() !== "true";
       const increase = increaseCandidates.filter((element) => visibleOf(element) && String(element.tagName || "").toLowerCase() === "button" && enabledOf(element));
       const decrease = decreaseCandidates.filter((element) => visibleOf(element) && String(element.tagName || "").toLowerCase() === "button");
-      const paid = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:jpy|yen|円)|\bcash\b|\bpaid\b|\bdoor\s*(?:fee|price)\b|\bat\s+the\s+door\b|\bminimum\s+purchase\b|\bone\s+drink\s+minimum\b|\bpurchase\s+required\b|会場払い|当日払い|有料)/i.test(cardText);
+      const paid = /(?:[$€£¥￥]\s*\d|\b(?:jpy|usd)\s*\d[\d,]*(?:\.\d+)?(?:\b|(?=\s|$))|\b\d[\d,]*(?:\.\d+)?\s*(?:jpy|usd|yen|円)(?![A-Za-z0-9])|\bcash\b|\bpaid\b|\bdoor\s*(?:fee|price)\b|\bat\s+the\s+door\b|\bminimum\s+purchase\b|\bone\s+drink\s+minimum\b|\bpurchase\s+required\b|会場払い|当日払い|有料)/i.test(cardText);
       const free = prices.length === 1 && visibleOf(prices[0]) && textOf(prices[0]) === "Free";
       const valid = stepperCandidates.length === 1 && stepper.length === 1 && quantityCandidates.length === 1 && quantity.length === 1
         && increaseCandidates.length === 1 && increase.length === 1 && decreaseCandidates.length === 1 && decrease.length === 1
@@ -897,6 +897,7 @@ function createProductionBrowserHarness(options = {}) {
     if (eventbriteTicket) {
       const ticket = await inspectEventbriteTicketFrame(ticketFrame, eventbriteBinding.eventId);
       if (!ticket || ticket.control !== control.control) return Object.freeze({ status: "failed" });
+      if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== ticketFrame) return Object.freeze({ status: "failed" });
     }
     try {
       result = await operateControl({
