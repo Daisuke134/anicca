@@ -7974,3 +7974,9 @@ REDはmissing methodで新規test 1 fail。GREENはexact schema/counts/timestamp
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-production-router-19f.md`はproduction factory/test exact 2 files。既存explicit provider branchesだけを拡張し、`createTechPlayDiscoveryWorkflow`、cache identity `techplay_registration_v1`、router six operations、default audit callback、Browser Harness readback injectionを同一workflow instanceへ接続する。production約20〜35 LOC、test約60〜110 LOC。
 
 Node CommonJS公式docs、英語provider-router、 日本語dependency-injectionの3検索と既存Eventbrite/Doorkeeper実装を照合し、新registry/framework/packageは不要と判断。private profile wiringは現行を再利用し、evidence、Calendar、native order、launchd、実applicationは変更0。Item19実bundleは未完。
+
+### O1B-25進捗466（Item 19F-D10 / TECH PLAY production factory＋router ship）
+
+Lunaがproduction factory/test exact 2 filesをSuperpowers TDD実装し、code commit `cfbf7455a`をpushした。既存explicit branchesへ`createTechPlayDiscoveryWorkflow`、cache identity `techplay_registration_v1`、optional 3-method validation、router six operationsを追加し、default factoryは同一TECH PLAY workflowをaudit callback付きでBrowser Harnessとrouterへ注入する。private profile追加、新registry/framework/packageは0で、unknown provider fail-closedを維持した。
+
+REDはTECH PLAY未配線でfocused 4 fail。GREENはrouter 6経路＋private-free cache metadata、injected discovery/no rail、default audit callback、default Harness exact final＋registered readback＋proposer 0を証明した。cache version mutationでnamed router testがFAILし、復元後production 22/22、Harness 147/147、TECH PLAY workflow 16/16、adapter 4/4、operations 12/12、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0で`ship`。evidence、Calendar、native order、launchd、実applicationは未実行。Item19実bundleは未完。
