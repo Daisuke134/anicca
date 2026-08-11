@@ -31,8 +31,10 @@ flowchart LR
 - `claude auth status` reports an active first-party `max` subscription.
 - The authenticated Gmail account contains successful official receipts from `mail.anthropic.com`; Gmail's own
   `Authentication-Results` reports both DKIM and DMARC pass for that exact domain. The latest observed
-  successful receipt is dated 2026-07-20 and says `Max plan - 20x`, subtotal USD 200.00, Japan consumption tax USD
-  20.00, and amount paid USD 220.00 for 2026-07-20 through 2026-08-20.
+  successful receipt is dated 2026-07-20 and says `Max plan - 20x`, subtotal 200.00, Japan consumption tax 20.00,
+  and amount paid 220.00 for 2026-07-20 through 2026-08-20. The same authenticated email's official Stripe invoice
+  PDF was fetched read-only into a private temporary directory, identified the currency as USD, matched the paid
+  amount, and was immediately deleted.
 - Failed-payment emails also exist and MUST NOT be counted as expense.
 - Codex's signed local ID token reports an active `pro` plan and its active interval, but no paid amount. No matching
   official OpenAI subscription receipt was found in the authenticated Gmail account, and the daily-driver browser is
@@ -51,12 +53,12 @@ Build only the next observable slice and close it before continuing.
 The eventual private normalized record has exactly:
 
 `schema_version`, `provider`, `plan`, `billing_period_start`, `billing_period_end`, `subtotal`, `tax`, `total`,
-`currency`, `paid_at`, `source_hash`, `evidence_status`.
+`currency`, `paid_date`, `source_hash`, `evidence_status`.
 
 Rules:
 
 - `provider = anthropic`, `plan = max_20x`, `currency = USD`, `evidence_status = provider_receipt` for the observed
-  layout;
+  exact-dollar layout, whose ISO currency is pinned by the same receipt's official invoice PDF;
 - decimal strings remain exact; `subtotal + tax = total` and `amount paid = total`;
 - the successful receipt period is half-open `[start, end)` and must match the body exactly;
 - receipt number, invoice number, account, email, payment method, URLs, Gmail IDs, and raw body never enter state,
@@ -87,7 +89,8 @@ failure is retried by the existing next hourly run; the last validated immutable
       Telegram change. Plan:
       `docs/superpowers/plans/2026-08-11-life-manager-cfo-anthropic-receipt-source.md`.
 - [ ] **CFO-2a3c.2 — Exact parser and immutable local record.** Parse only the observed successful receipt layout,
-      verify arithmetic/period/plan, append a private `0600` hash-addressed record, and prove rerun dedupe.
+      verify arithmetic/period/plan, append a private `0600` hash-addressed record, and prove rerun dedupe. Plan:
+      `docs/superpowers/plans/2026-08-11-life-manager-cfo-anthropic-receipt-local-capture.md`.
 - [ ] **CFO-2a3c.3 — Hourly aggregate and Telegram.** Reuse the one hourly launchd loop; publish actual subscription
       total and coverage separately from API-equivalent forecast. Run a real authenticated no-send E2E, then one real
       hourly Telegram delivery and verify its receipt.
