@@ -147,6 +147,38 @@ test("Eventbrite accepts explicit free phrases and rejects conditional purchase 
   }
 });
 
+test("Eventbrite bounds free clauses and preserves negative purchase statements", async () => {
+  const paidContexts = [
+    "Free admission fee required.",
+    "No participation fee waiver is available.",
+    "参加費無料化の対象外です。",
+  ];
+  for (const [index, phrase] of paidContexts.entries()) {
+    const id = String(390 + index); const row = binding(id);
+    const { workflow } = workflowFor([{ href: row.canonical_url, event_id: id }], {
+      [row.canonical_url]: detail(id, { body_text: `Tokyo event: ${phrase}` }),
+    });
+    assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), [], phrase);
+  }
+
+  const negativePurchase = ["No minimum purchase.", "No purchase required."];
+  for (const [index, phrase] of negativePurchase.entries()) {
+    const id = String(400 + index); const row = binding(id);
+    const { workflow } = workflowFor([{ href: row.canonical_url, event_id: id }], {
+      [row.canonical_url]: detail(id, { body_text: `Tokyo event: Free admission. ${phrase}` }),
+    });
+    assert.equal((await workflow.discoverCandidates({ page: {}, calendar: [] })).length, 1, phrase);
+  }
+
+  for (const [index, phrase] of ["参加費は無料", "参加費：無料"].entries()) {
+    const id = String(410 + index); const row = binding(id);
+    const { workflow } = workflowFor([{ href: row.canonical_url, event_id: id }], {
+      [row.canonical_url]: detail(id, { body_text: `Tokyo event: ${phrase}` }),
+    });
+    assert.equal((await workflow.discoverCandidates({ page: {}, calendar: [] })).length, 1, phrase);
+  }
+});
+
 test("Eventbrite rejects mixed visible exact and fuzzy checkout controls", async () => {
   const row = binding("355");
   const controls = [{ text: "Reserve a spot", visible: true }, { text: "Reserve a spot now", visible: true }];
