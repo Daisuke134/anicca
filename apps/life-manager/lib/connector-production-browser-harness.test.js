@@ -1967,9 +1967,9 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
 test("Eventbrite attendee inspector exposes only the exact required fields after the ticket card is gone", async () => {
   const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
   const field = (name, type = "text", value = "") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value });
-  const first = field("buyer.1-first_name", "text", " Given ");
-  const last = field("buyer.1-last_name");
-  const email = field("buyer.1-email", "email", "person@example.test");
+  const first = field("buyer.N-first_name", "text", " Given ");
+  const last = field("buyer.N-last_name");
+  const email = field("buyer.N-email", "email", "person@example.test");
   const confirm = field("buyer.confirmEmailAddress", "email");
   const marketing = field("marketing_opt_in", "checkbox"); marketing.required = false;
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
@@ -1980,7 +1980,7 @@ test("Eventbrite attendee inspector exposes only the exact required fields after
   const inspect = () => inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url });
   const expected = [{ control: "eventbrite_attendee_first_name_1901", kind: "input", label: "First name", required: true, completed: true, submittable: false }, { control: "eventbrite_attendee_last_name_1901", kind: "input", label: "Last name", required: true, completed: false, submittable: false }, { control: "eventbrite_attendee_email_1901", kind: "input", label: "Email", required: true, completed: true, submittable: false }, { control: "eventbrite_attendee_confirm_email_1901", kind: "input", label: "Confirm email", required: true, completed: false, submittable: false }];
   assert.deepEqual(await inspect(), expected);
-  assert.doesNotMatch(JSON.stringify(await inspect()), /Given|person@example\.test|buyer\.1/);
+  assert.doesNotMatch(JSON.stringify(await inspect()), /Given|person@example\.test|buyer\.(?:1|N)/);
   for (const [name, duplicate] of [["hidden-duplicate", { ...first, hidden: true }], ["disabled-duplicate", { ...first, disabled: true }], ["detached-duplicate", { ...first, isConnected: false }]]) {
     frameElements = [...base, duplicate];
     assert.deepEqual(await inspect(), [], name);
@@ -1989,10 +1989,10 @@ test("Eventbrite attendee inspector exposes only the exact required fields after
   for (const [name, extra] of [
     ["ticket-card-remains", makeEventbriteTicketElement({ testId: "ticket-display-card-content-full-size" })],
     ["unknown-required", makeEventbriteTicketElement({ tagName: "SELECT", name: "unknown", required: true })],
-    ["duplicate", field("buyer.1-first_name")],
+    ["duplicate", field("buyer.N-first_name")],
     ["wrong-type", { ...first, type: "email" }],
     ["wrong-tag", { ...first, tagName: "SELECT" }],
-    ["wrong-name", { ...first, name: "buyer.1-middle_name" }],
+    ["wrong-name", { ...first, name: "buyer.N-middle_name" }],
     ["hidden", { ...first, hidden: true }],
     ["disabled", { ...first, disabled: true }],
   ]) {
@@ -2017,10 +2017,34 @@ test("Eventbrite attendee inspector exposes only the exact required fields after
   assert.equal(resolved, 0);
 });
 
+test("Eventbrite attendee inspector accepts the live literal N attendee field names", async () => {
+  const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
+  const field = (name, type = "text") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value: "" });
+  const makeFields = (names) => names.map((name, index) => field(name, index > 1 ? "email" : "text"));
+  let elements = makeFields(["buyer.N-first_name", "buyer.N-last_name", "buyer.N-email", "buyer.confirmEmailAddress"]);
+  const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } };
+  const page = { url() { return candidate.canonical_url; }, frames() { return [frame]; }, locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; } };
+  const inspect = () => inspectPageControls({ provider: "eventbrite", page, event_id: "1901", canonical_url: candidate.canonical_url });
+  assert.deepEqual(await inspect(), [
+    { control: "eventbrite_attendee_first_name_1901", kind: "input", label: "First name", required: true, completed: false, submittable: false },
+    { control: "eventbrite_attendee_last_name_1901", kind: "input", label: "Last name", required: true, completed: false, submittable: false },
+    { control: "eventbrite_attendee_email_1901", kind: "input", label: "Email", required: true, completed: false, submittable: false },
+    { control: "eventbrite_attendee_confirm_email_1901", kind: "input", label: "Confirm email", required: true, completed: false, submittable: false },
+  ]);
+  for (const names of [
+    ["buyer.1-first_name", "buyer.1-last_name", "buyer.1-email", "buyer.confirmEmailAddress"],
+    ["buyer.n-first_name", "buyer.n-last_name", "buyer.n-email", "buyer.confirmEmailAddress"],
+    ["buyer.N-first_name-extra", "buyer.N-last_name", "buyer.N-email", "buyer.confirmEmailAddress"],
+  ]) {
+    elements = makeFields(names);
+    assert.deepEqual(await inspect(), [], names[0]);
+  }
+});
+
 test("Eventbrite attendee fill binds the selected field to the same checkout child frame", async () => {
   const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
   const field = (name, type = "text") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value: "" });
-  const first = field("buyer.1-first_name"); const last = field("buyer.1-last_name"); const email = field("buyer.1-email", "email"); const confirm = field("buyer.confirmEmailAddress", "email");
+  const first = field("buyer.N-first_name"); const last = field("buyer.N-last_name"); const email = field("buyer.N-email", "email"); const confirm = field("buyer.confirmEmailAddress", "email");
   const marketing = field("marketing_opt_in", "checkbox"); marketing.required = false;
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   let elements = [first, last, email, confirm, marketing, primary]; let fillCalls = 0; let resolved = 0; let operateCalls = 0; let locatorCount = 1; let applyFill = true;
@@ -2052,7 +2076,7 @@ test("Eventbrite attendee fill binds the selected field to the same checkout chi
     ["page-drift", action, () => { pageHref = "https://www.eventbrite.com/e/tokyo-free-event-tickets-1902"; }, 1, 0],
     ["frame-drift", action, () => { pageFrames = [replacementFrame]; }, 1, 0],
     ["eid-drift", action, () => { frameHref = "https://www.eventbrite.com/checkout-external?eid=1902"; }, 1, 0],
-    ["dom-drift", action, () => { elements = [...elements, field("buyer.1-first_name")]; }, 1, 0],
+    ["dom-drift", action, () => { elements = [...elements, field("buyer.N-first_name")]; }, 1, 0],
     ["locator-zero", action, () => { locatorCount = 0; }, 1, 1],
     ["locator-duplicate", action, () => { locatorCount = 2; }, 1, 1],
     ["postcondition", action, () => { applyFill = false; }, 1, 1],
