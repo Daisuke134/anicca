@@ -183,7 +183,7 @@ async function inspectEventbriteTicketFrame(frame, eventId) {
 async function inspectEventbriteAttendeeFrame(frame, eventId) {
   if (!frame || typeof frame.locator !== "function") return null;
   let locator;
-  try { locator = frame.locator("input, textarea, select, button, label, [data-testid]"); } catch { return null; }
+  try { locator = frame.locator("input, textarea, select, button, [data-testid]"); } catch { return null; }
   if (!locator || typeof locator.evaluateAll !== "function") return null;
   try {
     return await locator.evaluateAll((elements, { eventId: id }) => {
@@ -224,8 +224,10 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
       }));
       if (!controls.every((control) => control.completed === true)) return controls;
       const idOf = (element) => String((element && element.getAttribute && element.getAttribute("id")) || (element && element.id) || "");
-      const forOf = (element) => String((element && element.getAttribute && element.getAttribute("for")) || (element && element.htmlFor) || "");
-      const marketingSpecs = [{ key: "organization", name: "organizationMarketingOptIn" }, { key: "eventbrite", name: "ebMarketingOptIn" }];
+      const marketingSpecs = [
+        { key: "organization", name: "organizationMarketingOptIn", label: "Organizer marketing opt-out" },
+        { key: "eventbrite", name: "ebMarketingOptIn", label: "Eventbrite marketing opt-out" },
+      ];
       const checkedMarketing = [];
       let marketingValid = true;
       for (const spec of marketingSpecs) {
@@ -235,10 +237,8 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
           if (tagOf(input) !== "input" || typeOf(input) !== "checkbox" || !visibleOf(input) || !enabledOf(input) || requiredOf(input)) marketingValid = false;
           if (input.checked === true) {
             const id = idOf(input);
-            const labels = elements.filter((element) => tagOf(element) === "label" && forOf(element) === id);
-            const visibleLabels = labels.filter(visibleOf);
-            if (!id || elements.filter((element) => idOf(element) === id).length !== 1 || labels.length !== 1 || visibleLabels.length !== 1 || !textOf(visibleLabels[0]) || !input.dataset) marketingValid = false;
-            else checkedMarketing.push({ key: spec.key, input, label: visibleLabels[0] });
+            if (!id || elements.filter((element) => idOf(element) === id).length !== 1 || !input.dataset) marketingValid = false;
+            else checkedMarketing.push({ key: spec.key, input, label: spec.label });
           }
         }
       }
@@ -248,7 +248,7 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
       if (!marketingValid) return controls;
       for (const item of checkedMarketing) {
         item.input.dataset.lmConnectorControl = `eventbrite_marketing_opt_out_${item.key}_${id}`;
-        controls.push({ control: `eventbrite_marketing_opt_out_${item.key}_${id}`, kind: "checkbox", label: textOf(item.label), required: true, completed: false, submittable: false });
+        controls.push({ control: `eventbrite_marketing_opt_out_${item.key}_${id}`, kind: "checkbox", label: item.label, required: true, completed: false, submittable: false });
       }
       if (checkedMarketing.length > 0) return controls;
       if (!primaryValid) return controls;
