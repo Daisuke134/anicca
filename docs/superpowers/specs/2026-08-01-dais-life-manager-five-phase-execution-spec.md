@@ -7331,7 +7331,13 @@ isolated exact-target read-only測定でdefault Meetup workflow＋実Calendarは
 
 `createMinimalProductionDependencies`は`operations.recordMeetupDiscoveryAudit || noop`を渡すが、production operationsに同methodがなくMeetup auditがdurable保存0。plan `2026-08-11-connector-meetup-discovery-audit-19m.md`はoperations production/test 2 filesだけで、既存safe five-count validatorをMeetup fileへcopy-tweakする。URL/title/event/profile/authは保存0。Item19 Meetup bundle acceptanceは候補なしのため未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗366。これ以外の残TODO一覧は履歴）
+### O1B-25進捗367（Item 19M-D1 / Meetup discovery audit persistence ship）
+
+Lunaへoperations production/testの2 filesだけを所有させSuperpowers TDDを実行した。REDは8/9で`recordMeetupDiscoveryAudit is not a function`を再現。GREEN commit `189b57bc8`は既存`safeDiscoveryAudit`、append、wake ID、exact timestampを再利用し、`meetup-discovery-audits.jsonl` writerとfrozen exportだけを追加した。invalid monotonic countsはappend 0、valid rowはschema/wake/five counts/timeのみ、mode 0600、URL/event/title/profile/ticket/auth/private bytes 0。
+
+Luna/ Sol独立operations 9/9、production 12/12、Meetup 12/12、runner 41/41、evidence 31/31、Harness 55/55、combined 160/160 PASS。syntax、diff、clean/upstream PASS。fresh Sol reviewはCritical 0 / Important 0で`ship`。既存production factoryが同methodをMeetup workflowへ注入済みで追加配線0、他provider/report/action変更0。review済みcommitをstableへfast-forwardしpushした。次の一件はschedule-unloaded official wake exact 1回でMeetup audit `14/12/12/1/0`相当のdurable row、positive every-wake report、target cleanupをlive受入する。Item19 Meetup bundleは候補Calendar conflictのため未完。
+
+### Active remaining TODO SSOT（進捗367。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
