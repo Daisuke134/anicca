@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — Anicca RevenueCat gross receipts complete; `CFO-2b.2b1` Apple Finance row truth is the only active slice |
+| Status | ACTIVE — signed Apple Finance rows complete; `CFO-2b.2b2` whole-report parsing/reconciliation is the only active slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local `apps/life-call`; existing ledgers and provider APIs only |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -50,7 +50,7 @@ Only the first unchecked item is active.
         webhook into privacy-safe provider-reported gross receipts.
   - [ ] **2b.2b** Read Apple Finance Detail as the authoritative settled Partner Share source and reconcile the
         RevenueCat receipt set without turning an unavailable fiscal period into zero.
-    - [ ] **2b.2b1** Normalize one allowlisted Anicca Finance Detail sale/return row into signed Partner Share.
+    - [x] **2b.2b1** Normalize one allowlisted Anicca Finance Detail sale/return row into signed Partner Share.
     - [ ] **2b.2b2** Parse one complete fiscal report, prove its metadata/header/footer boundary, and reconcile its
           closed Anicca totals with RevenueCat without treating the current unavailable report as zero.
   - [ ] **2b.2c** Compose the Anicca iOS business fact from reconciled revenue, payout coverage, attributed local
@@ -429,12 +429,25 @@ Rules:
 
 ### CFO-2b.2b1 acceptance
 
-- [ ] Exact synthetic JPY sale and GBP return fixtures produce the two closed signed receipts; inputs stay unchanged,
+- [x] Exact synthetic JPY sale and GBP return fixtures produce the two closed signed receipts; inputs stay unchanged,
       nested amount/results are frozen, and repeated input yields the same opaque ID.
-- [ ] Wrong-app pairs return `null`; partial/contradictory Anicca identity, sign/multiplication mismatch, malformed
+- [x] Wrong-app pairs return `null`; partial/contradictory Anicca identity, sign/multiplication mismatch, malformed
       fiscal/date/money/quantity/shape, accessor, symbol, and transparent/throwing Proxy return only the fixed error.
-- [ ] No Apple/SKU/title/developer/customer/vendor/promo/order/region/raw value escapes in output, error, or logs.
-- [ ] Focused, CFO, full, syntax, diff, and exact two-file scope gates pass with at most 100 gross additions.
-- [ ] Read-only E2E passes every safely projected Anicca row from the four completed reports through the normalizer and
+- [x] No Apple/SKU/title/developer/customer/vendor/promo/order/region/raw value escapes in output, error, or logs.
+- [x] Focused, CFO, full, syntax, diff, and exact two-file scope gates pass with at most 100 gross additions.
+- [x] Read-only E2E passes every safely projected Anicca row from the four completed reports through the normalizer and
       reproduces exactly: fiscal 07 = 12 rows / JPY 7,326 / GBP -14.50 / USD 28; 08 = 3 / JPY 9,472; 09 = 2 / JPY
       1,184; 10 = 1 / JPY 425. It prints no raw row or identifier and does not claim payout, bank cash, or profit.
+
+### CFO-2b.2b1 completion evidence
+
+- Code commit `f1986663b` extends the existing Anicca earning module and test in exactly two files with 65 gross
+  additions. It adds no dependency, parser, API, scheduler, database, state write, or Telegram action.
+- Focused tests pass 5/5, the CFO suite passes 346/346, full `npm test` exits 0, and syntax/diff/scope gates pass.
+  Fresh Sol review is `ship` after Luna pinned the negative-unit-share and sign-inconsistent-quantity money guards.
+- A read-only in-memory E2E validated the metadata/header/footer boundary of four completed Apple Finance Detail
+  reports, passed all 24 original data rows through the committed boundary, accepted 18 Anicca rows, ignored six
+  other-app rows, observed 17 sales and one signed return, and produced 18 unique opaque IDs. The exact fiscal and
+  currency totals above matched; the privacy gate passed; payout, MUFG landing, profit, and FX remain unknown.
+- The next and only active slice is `CFO-2b.2b2`: move the proven one-off report boundary into the smallest durable
+  parser and reconcile report-level Apple Partner Share coverage with RevenueCat without converting absence to zero.
