@@ -25666,3 +25666,10 @@
 {"ts":1786451492,"wake_id":"00MSON3DS68A7B25AA538C48FB","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786451620,"wake_id":"00MSON6430F8F81C6E74754CD4","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786451749,"wake_id":"00MSON8W8GBD41B54EF7194FDD","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786451886,"wake_id":"00MSONBTK839A221A95A5D4EDE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786452015,"wake_id":"00MSONEL651D4A2CD1506547E2","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786452142,"wake_id":"00MSONHB1L7E6AF4EBE1614B48","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786452270,"wake_id":"00MSONK2943C80B1FFDF3B4622","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana paid API marketplace for AI services [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for "}
+{"ts":1786452404,"wake_id":"00MSONMXKAF8BDD7D2EC7D43D4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786452532,"wake_id":"00MSONPNYPC94EF0168AB14295","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786452662,"wake_id":"00MSONSGD00F516CC5653B4F26","kind":"narrate","sleep_s":120,"model":"auto"}
