@@ -1490,3 +1490,78 @@ test("Doorkeeper ancestor visibility is scoped to exactly one target control", a
     }
   }
 });
+
+function makeDoorkeeperFallbackFixture(proposalForStep) {
+  const candidate = { provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001" };
+  const page = { url() { return candidate.canonical_url; } };
+  let modal = false; let email = ""; let registered = false; const operated = [];
+  const controls = () => modal ? [
+    { control: "doorkeeper_trigger", kind: "link", label: "申し込む", required: false, completed: false, submittable: false },
+    { control: "event_email", kind: "input", label: "Email", required: true, completed: Boolean(email), submittable: false },
+    { control: "doorkeeper_submit", kind: "button", label: "申し込む", required: false, completed: false, submittable: Boolean(email) },
+  ] : [{ control: "doorkeeper_trigger", kind: "link", label: "申し込む", required: false, completed: false, submittable: false }];
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    doorkeeperWorkflow: { async readProviderState() { return registered ? { status: "registered" } : { status: "absent" }; } },
+    async inspectControls() { return controls(); },
+    async proposeAction(input) {
+      const selected = proposalForStep ? proposalForStep(input.step) : input.observation.controls.find((control) => control.required && !control.completed)?.control || input.observation.controls.find((control) => control.submittable)?.control || input.observation.controls[0].control;
+      return { control: selected };
+    },
+    async operateControl({ control, action, value }) {
+      operated.push({ control: control.control, method: action.method });
+      if (control.control === "doorkeeper_trigger") modal = true;
+      if (control.control === "event_email") email = value;
+      if (control.control === "doorkeeper_submit") registered = true;
+      return { status: "success" };
+    },
+    async resolveValue({ control }) { return control.control === "event_email" ? "member@example.test" : null; },
+  });
+  return { candidate, page, harness, operated };
+}
+
+test("Doorkeeper fallback performs trigger, Email fill, and one final submit", async () => {
+  const { candidate, page, harness, operated } = makeDoorkeeperFallbackFixture();
+  const result = await harness.runFallback({ provider: "doorkeeper", candidate, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/DOORKEEPERFLOW1", maxSteps: 3, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "completed");
+  assert.deepEqual(result.repaired_actions, [
+    { purpose: "submit", method: "ax_click", control: "doorkeeper_trigger" },
+    { purpose: "fill", method: "ax_fill", control: "event_email" },
+    { purpose: "submit", method: "ax_click", control: "doorkeeper_submit" },
+  ]);
+  assert.deepEqual(operated.map(({ control }) => control), ["doorkeeper_trigger", "event_email", "doorkeeper_submit"]);
+});
+
+test("Doorkeeper fallback latches a repeated trigger without blocking fill or final submit", async () => {
+  const sequence = ["doorkeeper_trigger", "doorkeeper_trigger", "event_email", "doorkeeper_submit"];
+  const { candidate, page, harness, operated } = makeDoorkeeperFallbackFixture((step) => sequence[step - 1]);
+  const result = await harness.runFallback({ provider: "doorkeeper", candidate, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/DOORKEEPERFLOW2", maxSteps: 4, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "completed");
+  assert.deepEqual(operated.map(({ control }) => control), ["doorkeeper_trigger", "event_email", "doorkeeper_submit"]);
+});
+
+test("Doorkeeper modal trigger rejects wrong provider, identity, label, duplicate, and action", async () => {
+  const candidate = { provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001" };
+  const trigger = { control: "doorkeeper_trigger", kind: "link", label: "申し込む", required: false, completed: false, submittable: false };
+  const cases = [
+    ["arbitrary", { controls: [{ ...trigger, control: "help_link", label: "Help" }], action: { purpose: "submit", method: "ax_click", control: "help_link" } }],
+    ["wrong-provider", { provider: "luma" }],
+    ["wrong-identity", { candidate: { ...candidate, event_ref: "doorkeeper-event://event/1002" } }],
+    ["wrong-current-url", { href: "https://tokyo-builders.doorkeeper.jp/events/1002" }],
+    ["wrong-label", { controls: [{ ...trigger, label: "参加する" }] }],
+    ["duplicate", { controls: [trigger, { ...trigger, control: "doorkeeper_trigger_two" }] }],
+    ["wrong-action-token", { action: { purpose: "submit", method: "ax_click", control: "missing_trigger" } }],
+    ["wrong-action-method", { action: { purpose: "fill", method: "ax_fill", control: trigger.control } }],
+  ];
+  for (const [name, variant] of cases) {
+    let operated = 0; const config = { provider: "doorkeeper", candidate, controls: [trigger], action: { purpose: "submit", method: "ax_click", control: trigger.control }, ...variant };
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+      doorkeeperWorkflow: { async readProviderState() { return { status: "absent" }; } },
+      async inspectControls() { return config.controls; }, async proposeAction() { return config.action; },
+      async operateControl() { operated += 1; return { status: "success" }; }, async resolveValue() { return null; },
+    });
+    const result = await harness.performAction({ provider: config.provider, candidate: config.candidate, page: { url() { return config.href || candidate.canonical_url; } }, action: config.action });
+    assert.deepEqual(result, { status: "failed" }, name); assert.equal(operated, 0, name);
+  }
+});
