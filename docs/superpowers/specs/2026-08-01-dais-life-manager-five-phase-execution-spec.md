@@ -7301,7 +7301,15 @@ pushed HEAD `927ebf892`、4 labels unloaded、process/active lease 0、Connector
 
 cleanup後process/active lease 0。current CDP page 4は全てopenerなしのCoconala既存pageで、Connector target/orphanではないためclose 0。故障はcandidate navigationの期限前throwだけがlocal safe-failure境界を持たず、outer catchが意図どおりraw rethrowすること。plan `2026-08-11-connector-candidate-navigation-report-19m.md`はrunner/test 2 filesだけで、failed candidateをreadback/Submit 0のまま`candidate_navigation_failed`として加算し次へ継続、3回でexisting circuit/report/cleanupへ収束させる。deadline crossingは`wake_deadline`を維持する。Item19 Meetupは未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗361。これ以外の残TODO一覧は履歴）
+### O1B-25進捗362（Item 19M-D0i / candidate navigation safe reporting ship）
+
+Lunaへrunner production/testの2 filesだけを所有させSuperpowers TDDを実行した。初回RED 38/40は期限前candidate navigation raw throwのescapeを再現し、初回GREEN commit `6885c7f64`はnavigation failureを1回加算、failed candidateのreadback/cache/direct/Harness/evidence 0、次candidate継続、3回で`circuit_open / candidate_navigation_failed` report 1、deadline crossingは`wake_deadline`として40/40 PASSにした。
+
+fresh Sol reviewはcatchが`action()`内の`recordAction` errorも誤変換するImportant 1を発見。fix RED 40/41はnavigation成功後のaudit errorがraw rejectせずresolveする欠陥を再現した。fix commit `900c04c3f`はnavigation task内でthrown valueをcaptureし、outer catchはsentinel trueかつ`Object.is` identity exact一致だけをsafe変換する。success audit failureとnavigation failure後のfailed audit failureは従来raw reject、report 0、provider処理0、cleanup 1を維持する。
+
+Luna runner 41/41、operations 8/8、production 12/12、evidence 31/31、Meetup 12/12、Harness 55/55。Sol独立combined 159/159、syntax、diff check、clean/upstream PASS。Peatix 22/23の1件は変更外の既知date-sensitive fixture。fresh Sol re-reviewはCritical 0 / Important 0で`ship`。review済み2 commitsをstable branchへfast-forwardしremoteへpushした。実装/test/review中のbrowser/provider/Calendar/evidence/Telegram/state/schedule作用0。次の一件は4 labels unloadedのofficial wake exact 1回でpositive every-wake reportまたはPeatix/Meetup safe continuation、process/lease/target cleanupをlive受入する。Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗362。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
