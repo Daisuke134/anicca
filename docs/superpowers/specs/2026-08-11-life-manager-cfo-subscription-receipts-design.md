@@ -101,6 +101,7 @@ failure is retried by the existing next hourly run; the last validated immutable
         authenticated local receipt rendered the confirmed amount/unknown OpenAI state without private evidence.
   - [ ] **CFO-2a3c.3b — Hourly wiring and live delivery.** Capture/reuse the confirmed local receipt, attach the exact
         `aiCost` fact before snapshot append, then trigger the existing launchd and verify one real Telegram receipt.
+        Plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-subscription-hourly-live.md`.
 - [ ] **CFO-2a3c.4 — OpenAI confirmed amount.** Ingest only an official OpenAI receipt or authenticated billing
       statement when one becomes accessible. Until then retain the signed active-plan evidence with amount unknown.
 
@@ -108,12 +109,14 @@ failure is retried by the existing next hourly run; the last validated immutable
 
 ```text
 AI費用
-実支出: Claude $220.00 /月（領収書確認済み）
-Codex: Pro利用中・請求額は未確認
-APIへ移した場合: 約{forecast}（実測tokenによる予測）
+Claude $220.00 / 月（領収書確認済み）
+Codex 請求額未確認
 
-[AI費用の内訳] [仕事別token] [戻る]
+[AI費用]
 ```
+
+The detail view shows the exact plan, paid amount, billing period, receipt evidence, Codex amount unknown, and
+`API換算 まだ計算していません`. A token-to-API forecast is a later TODO and is never fabricated here.
 
 Failed payments, raw errors, IDs, and technical traces are not posted. If self-healing succeeds, the report uses the
 validated receipt and may add one plain-language line saying the source was recovered.
