@@ -384,3 +384,33 @@ test("operations persist only safe Doorkeeper discovery aggregate counts", async
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
 });
+
+test("operations persist only safe Eventbrite discovery aggregate counts", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-eventbrite-discovery-"));
+  const valid = { discovered_count: 100, within_window_count: 12, eligible_count: 8, calendar_free_count: 2, selected_count: 1 };
+  try {
+    const operations = createMinimalProductionOperations({
+      stateDir, wakeId: "wake-20260811-eventbrite-discovery", telegramTarget: "private-target",
+      now: () => new Date("2026-08-11T08:30:00.000Z"), async sendMessage() { return { messageId: 7001 }; },
+    });
+    assert.equal(typeof operations.recordEventbriteDiscoveryAudit, "function");
+    await operations.recordEventbriteDiscoveryAudit(valid);
+    const file = path.join(stateDir, "eventbrite-discovery-audits.jsonl");
+    const lines = fs.readFileSync(file, "utf8").trim().split("\n");
+    const row = JSON.parse(lines[0]);
+    assert.equal(lines.length, 1);
+    assert.deepEqual(Object.keys(row).sort(), ["calendar_free_count", "discovered_count", "eligible_count", "recorded_at", "schema_version", "selected_count", "wake_id", "within_window_count"]);
+    assert.deepEqual(row, { schema_version: 1, wake_id: "wake-20260811-eventbrite-discovery", ...valid, recorded_at: "2026-08-11T08:30:00.000Z" });
+    assert.equal(row.schema_version, 1);
+    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    assert.doesNotMatch(JSON.stringify(row), /https?:\/\/|private-target|attendee|email|title/i);
+
+    const { selected_count: _selectedCount, ...missingKey } = valid;
+    for (const input of [
+      { ...valid, calendar_free_count: 9 }, { ...valid, private_url: "https://private.example/fixture" }, missingKey,
+      { ...valid, selected_count: 0.5 }, { ...valid, discovered_count: -1 }, { ...valid, discovered_count: 501 },
+      { ...valid, selected_count: "1" }, [], null,
+    ]) await assert.rejects(() => operations.recordEventbriteDiscoveryAudit(input));
+    assert.equal(fs.readFileSync(file, "utf8").trim().split("\n").length, 1);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
