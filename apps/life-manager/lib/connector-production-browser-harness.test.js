@@ -2097,13 +2097,13 @@ test("Eventbrite attendee inspector exposes a read-only final Register control a
   assert.equal(resolved, 0); assert.equal(operated, 0); assert.equal(primary.dataset.lmConnectorControl, undefined);
 });
 
-test("Eventbrite checked marketing input exposes an exact label opt-out control", async () => {
+test("Eventbrite checked marketing input exposes a fixed opt-out control without a DOM label", async () => {
   const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
   const field = (name, type = "text") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value: "complete" });
   const marketing = makeEventbriteTicketElement({ tagName: "INPUT", type: "checkbox", name: "organizationMarketingOptIn", id: "org-opt-in", required: false, checked: true });
-  const label = makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Organization updates", getAttribute(name) { return name === "for" ? "org-opt-in" : null; } });
+  const eventbriteMarketing = makeEventbriteTicketElement({ tagName: "INPUT", type: "checkbox", name: "ebMarketingOptIn", id: "eb-opt-in", required: false, checked: true });
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
-  const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, label, primary];
+  const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, eventbriteMarketing, primary];
   const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } };
   const page = { url() { return candidate.canonical_url; }, frames() { return [frame]; }, locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; } };
   assert.deepEqual(await inspectPageControls({ provider: "eventbrite", page, event_id: "1901", canonical_url: candidate.canonical_url }), [
@@ -2111,9 +2111,11 @@ test("Eventbrite checked marketing input exposes an exact label opt-out control"
     { control: "eventbrite_attendee_last_name_1901", kind: "input", label: "Last name", required: true, completed: true, submittable: false },
     { control: "eventbrite_attendee_email_1901", kind: "input", label: "Email", required: true, completed: true, submittable: false },
     { control: "eventbrite_attendee_confirm_email_1901", kind: "input", label: "Confirm email", required: true, completed: true, submittable: false },
-    { control: "eventbrite_marketing_opt_out_organization_1901", kind: "checkbox", label: "Organization updates", required: true, completed: false, submittable: false },
+    { control: "eventbrite_marketing_opt_out_organization_1901", kind: "checkbox", label: "Organizer marketing opt-out", required: true, completed: false, submittable: false },
+    { control: "eventbrite_marketing_opt_out_eventbrite_1901", kind: "checkbox", label: "Eventbrite marketing opt-out", required: true, completed: false, submittable: false },
   ]);
   assert.equal(marketing.dataset.lmConnectorControl, "eventbrite_marketing_opt_out_organization_1901");
+  assert.equal(eventbriteMarketing.dataset.lmConnectorControl, "eventbrite_marketing_opt_out_eventbrite_1901");
 });
 
 test("Eventbrite marketing opt-out clicks the verified input once without resolving a value", async () => {
@@ -2181,7 +2183,6 @@ test("Eventbrite marketing opt-out and final paths fail closed for DOM and actio
   for (const [name, mutate, expectedOpt, expectedFinal] of [
     ["unchecked", () => { marketing.checked = false; }, false, true], ["checked2", () => { const eb = makeEventbriteTicketElement({ tagName: "INPUT", type: "checkbox", name: "ebMarketingOptIn", id: "eb-opt-in", required: false, checked: true }); const ebLabel = makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Event updates", getAttribute(key) { return key === "for" ? "eb-opt-in" : null; } }); elements.push(eb, ebLabel); }, true, false],
     ["duplicate", () => { elements.push({ ...marketing }); }, false, false], ["raw-id-other-tag", () => { elements.push(makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", id: "org-opt-in" })); }, false, false], ["wrong-tag", () => { marketing.tagName = "DIV"; }, false, false], ["wrong-type", () => { marketing.type = "text"; }, false, false], ["required", () => { marketing.required = true; }, false, false], ["hidden", () => { marketing.hidden = true; }, false, false], ["detached", () => { marketing.isConnected = false; }, false, false], ["disabled", () => { marketing.disabled = true; }, false, false],
-    ["missing-label", () => { elements = elements.filter((element) => element !== label); }, false, false], ["duplicate-label", () => { elements.push(makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Duplicate", getAttribute(key) { return key === "for" ? "org-opt-in" : null; } })); }, false, false], ["hidden-label", () => { label.hidden = true; }, false, false], ["wrong-for", () => { labelFor = "wrong-id"; }, false, false],
   ]) {
     reset(); mutate(); const controls = await inspect(); assert.equal(controls.some((control) => control.control === optToken), expectedOpt, name); assert.equal(controls.some((control) => control.control === finalToken), expectedFinal, name);
   }
