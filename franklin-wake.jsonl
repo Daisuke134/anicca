@@ -25411,3 +25411,10 @@
 {"ts":1786418024,"wake_id":"00MSO361JJ203BEACDD1D44917","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid API marketplace earn USDC for data queries [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates su"}
 {"ts":1786418150,"wake_id":"00MSO38QKG74F1622326704014","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786418277,"wake_id":"00MSO3BGWD45D1D6A79E034EE3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786418427,"wake_id":"00MSO3EOBHB7E99DCA52BB4B61","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786418620,"wake_id":"00MSO3ITGJBEBE6ECB91204ADF","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786418750,"wake_id":"00MSO3LLE2EEA13339283C4C19","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786418877,"wake_id":"00MSO3OBVV6E351925CD774D00","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786419007,"wake_id":"00MSO3R3XW4E307B7EC4824250","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786419136,"wake_id":"00MSO3TV7R1CE2C6477D9B45BB","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana gig platform paid data annotation microtasks USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates "}
+{"ts":1786419264,"wake_id":"00MSO3WMH38EE664E034A84AC9","kind":"narrate","sleep_s":120,"model":"auto"}
