@@ -495,6 +495,98 @@ test("official production factory default Harness uses the Eventbrite workflow f
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
 
+test("production provider router routes TECH PLAY through every closed path without private cache metadata", async () => {
+  const calls = [], page = Object.freeze({ page_id: "owned-page-techplay" });
+  const calendar = Object.freeze([{ kind: "timed", start_at: "2026-08-11T10:00:00.000Z", end_at: "2026-08-11T11:00:00.000Z" }]);
+  const candidate = Object.freeze({ provider: "techplay", event_ref: "techplay-event://event/999190", canonical_url: "https://techplay.jp/event/999190", ticket_id: "98036", attendee_name: "Private Name", attendee_email: "private@example.test" });
+  const workflow = {
+    async discoverCandidates(input) { calls.push(["discover", input]); return [candidate]; },
+    async runDirectAction(input) { calls.push(["direct", input]); return { status: "failed", safe_reason: "techplay_direct_requires_harness" }; },
+    async readProviderState(input) { calls.push(["readback", input]); return { status: "registered" }; },
+  };
+  const actionCache = { async replay(input) { calls.push(["cache", input]); return { status: "cache_miss" }; }, saveVerifiedRepair(input) { calls.push(["save", input]); return { status: "saved" }; } };
+  let performed;
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow, techplayWorkflow: workflow, actionCache,
+    browserHarness: { async runFallback(input) { calls.push(["fallback", input]); return { status: "failed" }; } },
+    async performAction(input) { performed = input; return { status: "success" }; }, now: () => new Date("2026-08-11T08:30:00.000Z"),
+  });
+
+  assert.deepEqual(await router.discoverCandidates("techplay", calendar, page), [candidate]);
+  assert.deepEqual(await router.runCachedAction({ provider: "techplay", candidate, page }), { status: "cache_miss" });
+  assert.deepEqual(await router.runDirectAction({ provider: "techplay", candidate, page }), { status: "failed", safe_reason: "techplay_direct_requires_harness" });
+  assert.deepEqual(await router.runAgentFallback({ provider: "techplay", candidate, page, pageWebsocket: "ws://page", maxSteps: 1, expectedState: "registered_or_pending" }), { status: "failed" });
+  assert.deepEqual(await router.readProviderState({ provider: "techplay", candidate, page }), { status: "registered" });
+  assert.deepEqual(await router.saveRepairedActions({ provider: "techplay", candidate, page, providerState: { status: "registered" }, repairedActions: [{ purpose: "submit", method: "ax_click", control: "register" }] }), { status: "saved" });
+  assert.throws(() => router.discoverCandidates("unknown", calendar, page));
+
+  const replay = calls.find(([name]) => name === "cache")[1];
+  assert.deepEqual(Object.keys(replay).sort(), ["expectedEffect", "page", "performAction", "provider", "readExpectedState", "workflowVersion", "pageState"].sort());
+  assert.deepEqual({ provider: replay.provider, version: replay.workflowVersion, pageState: replay.pageState, effect: replay.expectedEffect, page: replay.page }, { provider: "techplay", version: "techplay_registration_v1", pageState: "registration_page_v1", effect: "registered_or_pending", page });
+  await replay.performAction({ purpose: "fill", method: "ax_fill", control: "field" }); assert.equal(performed.provider, "techplay");
+  assert.deepEqual(await replay.readExpectedState({ page }), { status: "registered" });
+  const saved = calls.find(([name]) => name === "save")[1];
+  assert.deepEqual(Object.keys(saved).sort(), ["actions", "expectedEffect", "observedAt", "pageState", "provider", "providerState", "workflowVersion"].sort());
+  assert.deepEqual({ provider: saved.provider, version: saved.workflowVersion, pageState: saved.pageState, effect: saved.expectedEffect }, { provider: "techplay", version: "techplay_registration_v1", pageState: "registration_page_v1", effect: "registered_or_pending" });
+  assert.doesNotMatch(JSON.stringify({ replay, saved }), /Private Name|private@example\.test/);
+});
+
+test("official production factory injects TECH PLAY on the supplied page without opening a browser rail", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-techplay-"));
+  const page = Object.freeze({ page_id: "injected-techplay-page" }); const calendar = Object.freeze([]);
+  const candidate = Object.freeze({ provider: "techplay", event_ref: "techplay-event://event/999190", canonical_url: "https://techplay.jp/event/999190", ticket_id: "98036" });
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  let discoveryInput; const railCalls = []; const techplayWorkflow = { ...emptyWorkflow, async discoverCandidates(input) { discoveryInput = input; return [candidate]; } };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-techplay-1", calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence", calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } },
+      browserRail: { open() { railCalls.push("open"); }, navigate() { railCalls.push("navigate"); }, close() { railCalls.push("close"); } },
+      lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow, techplayWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} }, browserHarness: { async runFallback() {}, async performAction() {} }, evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} },
+    });
+    assert.deepEqual(await dependencies.discoverCandidates("techplay", calendar, page), [candidate]);
+    assert.equal(discoveryInput.page, page); assert.equal(discoveryInput.calendar, calendar); assert.deepEqual(railCalls, []);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("official production factory wires the default TECH PLAY audit callback", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-techplay-audit-")); const audits = []; let current = "";
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  const page = { url() { return current; }, async goto(url) { current = url; }, async evaluate() { return []; } };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-techplay-audit-1", calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence", calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } },
+      browserRail: { open() {}, navigate() {}, close() {} }, lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} }, evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {}, async recordTechPlayDiscoveryAudit(value) { audits.push(value); } },
+      now: () => new Date("2026-08-10T08:30:00.000Z"),
+    });
+    assert.deepEqual(await dependencies.discoverCandidates("techplay", [], page), []);
+    assert.deepEqual(audits, [{ discovered_count: 0, within_window_count: 0, eligible_count: 0, calendar_free_count: 0, selected_count: 0 }]);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("official production factory default Harness reaches injected TECH PLAY registered readback for the exact final action with proposer zero", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-techplay-default-harness-")); const candidate = Object.freeze({ provider: "techplay", event_ref: "techplay-event://event/999190", canonical_url: "https://techplay.jp/event/999190", ticket_id: "98036" });
+  const final = { tagName: "BUTTON", type: "button", id: "confirm-final", innerText: "申し込みを確定する", textContent: "申し込みを確定する", disabled: false, hidden: false, isConnected: true, style: {}, dataset: {}, parentElement: null, ownerDocument: { defaultView: { getComputedStyle() { return {}; } } }, getAttribute(name) { return name === "id" ? this.id : name === "aria-disabled" || name === "aria-enabled" || name === "aria-hidden" ? null : ""; }, hasAttribute(name) { return name === "hidden" && this.hidden; }, getBoundingClientRect() { return { width: 120, height: 32 }; } };
+  let clicks = 0; let readbacks = 0; let proposerCalls = 0;
+  const handle = { async evaluate(callback, context) { return callback(final, context); }, async click() { clicks += 1; } };
+  const page = { url() { return "https://techplay.jp/event/join/999190/confirm"; }, locator(selector) { if (String(selector).startsWith("[data-lm-connector-control=")) return { async count() { return 1; }, async elementHandles() { return [handle]; } }; return { async evaluateAll(callback, context) { return callback([final], context); } }; } };
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  const techplayWorkflow = { ...emptyWorkflow, async readProviderState(input) { readbacks += 1; assert.equal(input.page, page); assert.equal(input.candidate, candidate); return { status: "registered", receipt_id: "techplay-1" }; } };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-techplay-default-harness-1", calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target", lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } }, browserRail: { open() {}, navigate() {}, close() {} }, lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow, techplayWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} }, evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} }, proposeAction: async () => { proposerCalls += 1; throw new Error("TECH PLAY final must not use proposer"); }, resolveValue: async () => null,
+    });
+    const result = await dependencies.runAgentFallback({ provider: "techplay", candidate, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TECHPLAYFACTORY1", maxSteps: 15, expectedState: "registered_or_pending" });
+    assert.deepEqual(result, { status: "completed", provider_state: { status: "registered", receipt_id: "techplay-1" }, repaired_actions: [{ purpose: "submit", method: "ax_click", control: "techplay_final_999190" }] });
+    assert.equal(readbacks, 1); assert.equal(clicks, 1); assert.equal(proposerCalls, 0);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
 test("official production factory routes an injected Doorkeeper workflow without opening a browser rail", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-doorkeeper-"));
   const page = Object.freeze({ page_id: "injected-doorkeeper-page" }), calendar = Object.freeze([]);
