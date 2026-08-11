@@ -7904,3 +7904,9 @@ LunaがHarness/test exact 2 filesへparent-only resolverをTDD追加し、code c
 fresh reviewはnormalized lookupによるkey/option driftとmalformed getterのprivate-bearing error伝播をImportant 2件反証し、同じLunaがexact lookup/equalityと全profile accessのfail-closed回帰へ修正した。exact equality guard除去mutationはnamed negativeを`true !== null`でFAILさせ、復元後はFull Harness 122/122＋TECH PLAY workflow 16/16、合計138/138、両file syntax、diff checkがPASS。最終re-reviewはCritical/Important/Minor 0で`ship`。production +40 / test +106がsoft targetを46 LOC超えるが、追加分はreviewで実証した漏洩・誤回答回帰を同じ2-file境界内に固定する最小差分で、新module/routingは0。
 
 既存private form SSOTへ実フォームで確認済みのcareer・所属・職種exact 3 keysを非表示で追記し、mode 0600と既存DOBを保持した。実private identity＋form profileを使うread-only resolver auditは6/6 non-null、private value出力0。DOM操作、final click/readback、workflow factory/router/native order、evidence、Calendar、schedule/live stateは変更0。次active sliceはTECH PLAY exact input operation。Item19実bundleは未完。
+
+### O1B-25進捗456（Item 19F-D6 / TECH PLAY exact input operation plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-input-operation-19f.md`はHarness/test exact 2 files。validated inspectorが全DOM契約通過後だけscalar/radio/opt-out/reviewへ一意tokenをephemeral bindingし、same join URL＋candidate event/ticketをaction前後に再検査する。scalarは`ax_fill`、private answerとexact一致するradioだけ`ax_check`、既定ON opt-outだけ`ax_uncheck`。TECH PLAY inputでは親processが一意controlを決定し、modelにprivate値やradio選択を推測させない。
+
+production約45〜75 LOC、test約90〜150 LOC。review/final CTA、final-effect/readback success、factory/router/native order、evidence、Calendar、Telegram、schedule/live applicationは変更0。ship後のlive E2Eもreview/final click 0でinput completionとcleanupだけを実測する。Item19実bundleは未完。
