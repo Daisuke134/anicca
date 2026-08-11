@@ -7467,7 +7467,13 @@ fresh Sol reviewはSHIP、Critical/Important 0。Sol独立15/15、87/87、syntax
 
 終了後process 0、lock absent、target-ledger/current CDP intersection 0、既存page 2維持、Doorkeeper audit mode 0600、4 labels unloaded、Git clean/upstream 0/0。Doorkeeperは本線discovery・eligibility・Calendar conflict safe skipまでlive実証済みだが、非衝突候補がないため実`applied_bundle`とproduction supported表示は未完のまま保持する。次はItem19順序のEventbriteを同じone-provider-at-a-time contractで追加し、Doorkeeperは将来の非衝突wakeでacceptanceを閉じる。
 
-### Active remaining TODO SSOT（進捗390。これ以外の残TODO一覧は履歴）
+### O1B-25進捗391（Item 19E / Eventbrite discovery・eligibility grounded plan）
+
+Item19の次provider Eventbriteを公式Tokyo listing/detailで実測した。`/d/japan--tokyo/free--events/`は現行responseで`data-testid="search-event"` card 20件を持ち、exact event anchorはnumeric `data-event-id`、Tokyo location、paid status、tracking query付き`www.eventbrite.com/e/...` URLを公開する。同じevent linkが反復されるためquery/hash除去とevent ID dedupeが必要。detail JSON-LDは`SocialEvent`、Offline/Online attendance、`AggregateOffer.lowPrice/highPrice`、compact `InStock`を使い得る。public registration controlはexact `Get tickets`。zero-price JSON-LDでも本文にdoor priceがある実例を確認したため、body money markerを独立gateにする。GitHub code search 3件はこのidentity/free/body-price/Calendar/privacy contractを満たす再利用実装0。
+
+Ponytailで初回を新規workflow/test 2 files、production 220〜300 LOC、test 220〜320 LOCへ限定した。`.com` exact canonical、14日Tokyo対面、`Event|SocialEvent`、zero `Offer|AggregateOffer`、InStock、visible exact control、unsafe/money否定、Calendar、5-count audit、strict readback、zero-click direct safe failureだけをTDD実装する。shared production router、Harness checkout、evidence、native provider orderは次slice。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-discovery-19e.md`がexecutor SSOT。implementation中official wake 0、4 labels UNLOADED。Item19 Eventbrite/Doorkeeper/Meetupと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗391。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
