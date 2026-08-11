@@ -312,6 +312,7 @@ async function inspectPageControls(input = {}) {
   const eventbriteEventId = eventbriteUrl && (eventbriteUrl[1] || eventbriteUrl[2]);
   if (provider === "eventbrite" && (!eventbriteEventId || eventbriteEventId !== eventId)) return Object.freeze([]);
   const observed = await locator.evaluateAll((elements, context) => {
+    if (context && context.provider === "eventbrite" && Array.isArray(elements) && elements.length > 100) return [];
     const visibleElements = elements.slice(0, 100);
     const connpassJoin = Boolean(context && context.connpassJoin === true);
     const kindOf = (element) => {
