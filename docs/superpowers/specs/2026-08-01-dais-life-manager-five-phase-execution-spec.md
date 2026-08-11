@@ -7614,3 +7614,9 @@ LunaがHarness production/testの2 filesだけをSuperpowers TDDで変更し、�
 実CloakBrowser acceptanceではproduction Harness自身がtop ticket action exact1、attendee 4 fields exact4、organization marketing opt-out exact1を実行し、final `Register` read-only control exact1・submittable=trueを確認した。結果は`ticket_clicks=1 / field_actions=4 / opt_out_actions=1 / final_readonly_count=1 / completion_marker_count=0 / final_clicks=0`。private値は出力0、外部registration/Calendar/evidence/Telegram effect 0。owned Eventbrite pageはcleanupされ、完了後CDPのEventbrite page 0（unrelated pages 14は不変対象外）、4 schedule labelsは全てUNLOADED。
 
 次active sliceはticket click後30秒timeout＋遅延attendee遷移を`effect_unknown`として確定し、retryを禁止する。続いてfinal Registerをexact1回だけ実行し、official readbackでregistered/pendingを確定する。factory/runFallback/native provider order/evidence/Telegram bundleはfinal readback acceptance後まで未接続。Item19 Eventbriteと実`applied_bundle`は未完。
+
+### O1B-25進捗411（Item 19E-D4c3 / Eventbrite ticket effect-unknown ship）
+
+LunaがHarness production/test exact 2 filesをSuperpowers TDD変更し、commit `6048dc947`をpushした。REDはticket `Register`操作success後もcardが残り続けるfixtureで、operate exact1なのにactualが通常`failed`となりretry禁止情報を失う不具合を再現。GREENは`waitForEventbriteTicketStep` trueを従来の`success`、falseだけを`failed / safe_reason=effect_unknown`へ固定した。paid/duplicate/disabled/page/frame/eid drift等のpre-operation failureはoperate 0・通常failedのまま。effect-unknown pathはoperate exact1でoperationへ戻る経路0、final attendee Register/readback/factory/native/Calendar/evidence/Telegram変更0。
+
+fresh Sol reviewはSHIP、Critical/Important 0。Sol独立検証はHarness 93/93、Eventbrite 15/15、minimal production 17/17、operations 11/11、adapter 4/4、review統合143/143、syntax/diff/exact 2-file scope PASS。4 schedule labelsはUNLOADED。次active sliceはfinal attendee `Register`をsame original controlへbindしてexact1回だけ操作し、既存Eventbrite `readProviderState`でregistered/pending相当のofficial effectを確定する。timeout/unavailableはeffect-unknownで再送禁止。Item19 Eventbriteと実`applied_bundle`は未完。
