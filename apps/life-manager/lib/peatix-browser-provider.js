@@ -5,6 +5,7 @@ const ID = /^[1-9][0-9]*$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const KANA = /^[\u30A1-\u30FA\u30FC]+$/u;
 const STEP = /^\/sales\/event\/([1-9][0-9]*)\/(tickets|form|confirm)\/?$/;
+const CONFIRMED = /^\/sales\/event\/([1-9][0-9]*)\/confirmed$/;
 const TICKET = /^\/event\/([1-9][0-9]*)\/ticket$/;
 const TEXT = "チケットを申し込む";
 const VERIFIED = Symbol("peatixVerifiedCandidate");
@@ -38,11 +39,24 @@ function stepUrl(href, id, step) {
   return u.protocol === "https:" && u.hostname === "peatix.com" && !u.port && !u.username && !u.password
     && !u.search && !u.hash && !!m && m[1] === id && m[2] === step;
 }
+function confirmedUrl(href, id) {
+  let u; try { u = new URL(href); } catch { return false; }
+  const m = CONFIRMED.exec(u.pathname);
+  return u.protocol === "https:" && u.hostname === "peatix.com" && !u.port && !u.username && !u.password
+    && !u.search && !u.hash && !!m && m[1] === id;
+}
 async function waitForStep(page, id, step) {
   if (!page || typeof page.waitForURL !== "function") return false;
   try {
     await page.waitForURL((url) => stepUrl(String(url), id, step), { waitUntil: "domcontentloaded", timeout: 30_000 });
     return stepUrl(pageHref(page), id, step);
+  } catch { return false; }
+}
+async function waitForConfirmed(page, id) {
+  if (!page || typeof page.waitForURL !== "function") return false;
+  try {
+    await page.waitForURL((url) => confirmedUrl(String(url), id), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    return confirmedUrl(pageHref(page), id);
   } catch { return false; }
 }
 function eventPageUrl(href, id) { let u; try { u = new URL(href); } catch { return false; } const m = /^\/event\/([1-9][0-9]*)\/?$/.exec(u.pathname); return u.protocol === "https:" && u.hostname === "peatix.com" && !u.port && !u.username && !u.password && !u.search && !u.hash && !!m && m[1] === id; }
@@ -179,7 +193,11 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
       try { return { valid: Boolean($(form).valid()) }; } catch { return { valid: false }; }
     }, { mode: "confirm_validation" });
     if (!validation || validation.valid !== true) return out("unavailable", "confirm_validation_failed");
-    const final = await control(page, "#confirm-button"); if (!final || typeof final.click !== "function") return out("unavailable", "confirm_control_unavailable"); clicked = true; await final.click();
+    const final = await control(page, "#confirm-button"); if (!final || typeof final.click !== "function") return out("unavailable", "confirm_control_unavailable");
+    const confirmedNavigation = waitForConfirmed(page, c.id); clicked = true; await final.click();
+    if (!await confirmedNavigation) return out("unavailable", "readback_unavailable");
+    const canonical = `https://peatix.com/event/${c.id}`;
+    if (typeof page.goto !== "function" || !await page.goto(canonical, { waitUntil: "domcontentloaded", timeout: 30_000 }).then(() => true, () => false) || !eventPageUrl(pageHref(page), c.id)) return out("unavailable", "readback_unavailable");
     const after = await readPeatixRegistrationStateOnPage(page, c); return after.status === "registered" || after.status === "absent" ? after : out("unavailable", "readback_unavailable");
   } catch { return out("unavailable", clicked ? "readback_unavailable" : "browser_action_failed"); }
 }
