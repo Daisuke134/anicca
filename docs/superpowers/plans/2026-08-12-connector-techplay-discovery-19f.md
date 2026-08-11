@@ -33,9 +33,9 @@
 - Create: `apps/life-manager/lib/connector-techplay-workflow.js`
 - Create: `apps/life-manager/lib/connector-techplay-workflow.test.js`
 
-- [ ] Write failing tests for happy discovery, exact-coverage ordering, identity rejection, paid/external/online/closed/full/ambiguous/explicit school-age-only row skipping, timed Calendar conflict, aggregate audit, bounded dedup, and stage errors. Verify direct action fails safely and readback stays unavailable.
-- [ ] Run `node --test apps/life-manager/lib/connector-techplay-workflow.test.js`; RED must be caused by the missing workflow/factory.
-- [ ] Export `createTechPlayDiscoveryWorkflow(options)` with only the minimum default RSS/detail readers and normalization described above.
-- [ ] Run focused tests, adjacent Eventbrite/Doorkeeper tests, `node --check`, and `git diff --check`.
-- [ ] Temporarily remove one canonical raw-equality or unique-free-ticket guard, prove its named negative test fails, restore it, and rerun GREEN.
-- [ ] Self-review and report RED/GREEN counts, mutation result, LOC, exact scope, and concerns without commit/push. Sol owns review, SSOT, commit, and push.
+- [x] Write failing tests for happy discovery, exact-coverage ordering, identity rejection, paid/external/online/closed/full/ambiguous/explicit school-age-only row skipping, timed Calendar conflict, aggregate audit, bounded dedup, and stage errors. Verify direct action fails safely and readback stays unavailable.
+- [x] Run `node --test apps/life-manager/lib/connector-techplay-workflow.test.js`; RED must be caused by the missing workflow/factory.
+- [x] Export `createTechPlayDiscoveryWorkflow(options)` with only the minimum default RSS/detail readers and normalization described above.
+- [x] Run focused tests, adjacent Eventbrite/Doorkeeper tests, `node --check`, and `git diff --check`.
+- [x] Temporarily remove one canonical raw-equality or unique-free-ticket guard, prove its named negative test fails, restore it, and rerun GREEN.
+- [x] Self-review and report RED/GREEN counts, mutation result, LOC, exact scope, and concerns without commit/push. Sol owns review, SSOT, commit, and push.
