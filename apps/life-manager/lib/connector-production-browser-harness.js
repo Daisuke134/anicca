@@ -144,8 +144,8 @@ async function inspectEventbriteTicketFrame(frame, eventId) {
       const prices = descendants(card).filter((element) => testIdOf(element) === "ticket-price__price");
       const quantity = quantityCandidates.filter((element) => visibleOf(element) && textOf(element) === "1");
       const enabledOf = (element) => element.disabled !== true && String((element.getAttribute && element.getAttribute("aria-disabled")) || "").toLowerCase() !== "true";
-      const increase = increaseCandidates.filter((element) => visibleOf(element) && String(element.tagName || "").toLowerCase() === "button" && String(element.type || "").toLowerCase() === "button" && enabledOf(element));
-      const decrease = decreaseCandidates.filter((element) => visibleOf(element) && String(element.tagName || "").toLowerCase() === "button" && String(element.type || "").toLowerCase() === "button");
+      const increase = increaseCandidates.filter((element) => visibleOf(element) && String(element.tagName || "").toLowerCase() === "button" && enabledOf(element));
+      const decrease = decreaseCandidates.filter((element) => visibleOf(element) && String(element.tagName || "").toLowerCase() === "button");
       const paid = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:jpy|yen|円)\b|\bcash\b|\bpaid\b|\bdoor\s*(?:fee|price)\b|\bat\s+the\s+door\b|\bminimum\s+purchase\b|\bone\s+drink\s+minimum\b|\bpurchase\s+required\b|会場払い|当日払い|有料)/i.test(cardText);
       const free = prices.length === 1 && visibleOf(prices[0]) && textOf(prices[0]) === "Free";
       const valid = stepperCandidates.length === 1 && stepper.length === 1 && quantityCandidates.length === 1 && quantity.length === 1
