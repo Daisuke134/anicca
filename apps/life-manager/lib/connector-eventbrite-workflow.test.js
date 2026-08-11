@@ -114,6 +114,20 @@ test("Eventbrite requires an exact Offer or AggregateOffer type for zero-price o
   assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), []);
 });
 
+test("Eventbrite rejects foreign Offer suffixes and supported-plus-foreign mixed type arrays", async () => {
+  const cases = [
+    ["352", "https://evil.example/Offer"],
+    ["353", ["Offer", "https://evil.example/Offer"]],
+  ];
+  const rows = cases.map(([id]) => ({ href: binding(id).canonical_url, event_id: id }));
+  const details = Object.fromEntries(cases.map(([id, type]) => [
+    binding(id).canonical_url,
+    detail(id, { event: { offers: { "@type": type, price: 0, availability: "InStock", url: binding(id).canonical_url } } }),
+  ]));
+  const { workflow } = workflowFor(rows, details);
+  assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), []);
+});
+
 test("Eventbrite fails closed for online, outside-Tokyo, invalid-window, paid, unsafe, body-price, and duplicate-control details", async () => {
   const cases = [
     ["online", { event: { eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode" } }],
