@@ -400,7 +400,6 @@ function createDoorkeeperScriptFirstWorkflow(options = {}) {
       const bindings = [];
       const seen = new Set();
       let observedCount = 0;
-      let normalizedCount = 0;
       let windowCount = 0;
       let lastMaxDay = null;
       for (let pageNumber = 1; pageNumber <= LIST_PAGE_LIMIT; pageNumber += 1) {
@@ -416,7 +415,6 @@ function createDoorkeeperScriptFirstWorkflow(options = {}) {
           const binding = canonicalBinding(row);
           if (!binding || seen.has(binding.event_ref)) continue;
           seen.add(binding.event_ref);
-          normalizedCount += 1;
           if (!day || day < window.start_day || day >= window.end_day
             || String(row.venue_url || "") !== TOKYO_VENUE_URL) continue;
           windowCount += 1;
@@ -491,17 +489,18 @@ function createDoorkeeperScriptFirstWorkflow(options = {}) {
         || view.canonical_links.length > 1) return Object.freeze({ status: "unavailable" });
       const linkIsExact = visibleLinks.length === 1 && visibleLinks[0].href === selected.canonical_url;
       const body = view.body_text;
+      const visibleControlText = view.controls.filter((control) => control.visible).map((control) => control.text).join(" ");
+      const visibleControlUnsafe = READBACK_UNSAFE_MARKER.test(visibleControlText);
       const hiddenCompletionMarker = view.controls.some((control) => !control.visible && completionCount(control.text) > 0);
       if (hiddenCompletionMarker) return Object.freeze({ status: "unavailable" });
-      if (linkIsExact && completionCount(body) === 1 && !READBACK_UNSAFE_MARKER.test(body)
-        && !READBACK_UNSAFE_MARKER.test(view.controls.filter((control) => control.visible).map((control) => control.text).join(" "))) {
+      if (linkIsExact && completionCount(body) === 1 && !READBACK_UNSAFE_MARKER.test(body) && !visibleControlUnsafe) {
         return Object.freeze({ status: "registered" });
       }
       const submitControls = view.controls.filter((control) => control.text === "申し込む");
       const visibleLinksSafe = visibleLinks.length === 0
         || (visibleLinks.length === 1 && visibleLinks[0].href === selected.canonical_url);
       if (visibleLinksSafe && submitControls.length === 1 && submitControls[0].visible && completionCount(body) === 0
-        && !READBACK_UNSAFE_MARKER.test(body)) return Object.freeze({ status: "absent" });
+        && !READBACK_UNSAFE_MARKER.test(body) && !visibleControlUnsafe) return Object.freeze({ status: "absent" });
       return Object.freeze({ status: "unavailable" });
     },
   });

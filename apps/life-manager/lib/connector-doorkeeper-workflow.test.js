@@ -369,6 +369,21 @@ test("parent readback rejects Doorkeeper unavailable status text even with a vis
   }
 });
 
+test("parent readback fails closed when an unsafe marker is visible in controls", async () => {
+  const candidate = { ...binding("905"), provider: "doorkeeper" };
+  for (const marker of ["中止", "延期", "受付終了"]) {
+    const workflow = createDoorkeeperScriptFirstWorkflow({
+      readRegistrationView: async () => ({
+        page_url: candidate.canonical_url,
+        canonical_links: [],
+        controls: [{ text: "申し込む", visible: true }, { text: marker, visible: true }],
+        body_text: "",
+      }),
+    });
+    assert.deepEqual(await workflow.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" }, marker);
+  }
+});
+
 test("Doorkeeper direct action is a stable safe failure and never submits", async () => {
   const candidate = {
     ...binding("999"),
