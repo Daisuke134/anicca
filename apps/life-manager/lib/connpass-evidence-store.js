@@ -132,4 +132,13 @@ function createDoorkeeperEvidenceStore(options = {}) {
   });
 }
 
-module.exports = { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore };
+function createEventbriteEvidenceStore(options = {}) {
+  return createBrowserProviderEvidenceStore({
+    ...options, provider: "eventbrite",
+    eventRef: /^eventbrite-event:\/\/event\/[1-9][0-9]*$/,
+    receiptRef: /^provider-receipt:\/\/eventbrite\/([0-9a-f]{64})$/,
+    collisionMessage: "Eventbrite evidence collision",
+  });
+}
+
+module.exports = { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore, createEventbriteEvidenceStore };
