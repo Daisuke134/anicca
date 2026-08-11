@@ -27,7 +27,7 @@
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
 
-- [ ] **Step 1: Write RED behavior tests**
+- [x] **Step 1: Write RED behavior tests**
 
   With injected controls (not default DOM), prove:
 
@@ -37,7 +37,7 @@
   4. an ambiguous thrown/failed click still uses readback and never clicks a second time;
   5. Luma/Connpass/Peatix/Meetup tests remain unchanged.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
   ```bash
   cd apps/life-manager
@@ -46,11 +46,11 @@
 
   Expected: new Doorkeeper tests fail because provider/workflow/final latch are absent; existing tests stay green.
 
-- [ ] **Step 3: Implement the minimal provider/latch**
+- [x] **Step 3: Implement the minimal provider/latch**
 
   Add exact Doorkeeper constants/helpers, provider set entry, optional workflow validation/registry, and a Doorkeeper branch in the existing final-effect wait. Reuse `readStateWithinDeadline` and `settleFinalEffect`. Do not touch `inspectPageControls` selector or generic link behavior in this slice.
 
-- [ ] **Step 4: Run GREEN and adjacent checks**
+- [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
   cd apps/life-manager
@@ -60,7 +60,7 @@
   git diff --check
   ```
 
-- [ ] **Step 5: Self-review and commit**
+- [x] **Step 5: Self-review and commit**
 
   Verify exact 2-file ownership, submit max1, exact identity/control, bounded unknown effect, no default DOM/factory/native/live changes. Commit without amend and push.
 
@@ -69,3 +69,10 @@
 - Ponytail: existing final-effect latch and adapter are reused; no new service/state/cache.
 - Scope: provider safety core only. Modal DOM discovery and factory reachability are explicit later slices.
 - Safety: native may list Doorkeeper, but factory still does not inject its workflow into Harness and no official wake runs in this slice.
+
+## Result
+
+- Luna added four Doorkeeper cases after the 55-test baseline; initial RED was 55 pass / 4 fail. Initial GREEN was 59/59 with adjacent 33/33.
+- Fresh Sol review found two Important gaps: non-final `pending` could complete, and URL rejection evidence was incomplete. Same Luna reproduced the state bug at RED 60/61, mapped every non-`registered` Doorkeeper state to unavailable, and added candidate/current URL action-zero matrix. Final focused result is 61/61; adjacent remains 33/33.
+- Final fresh Sol re-review returned spec PASS / quality SHIP with no findings. Independent Sol verification repeated 61/61 and 33/33 plus syntax, diff, exact ownership, and four-label UNLOADED checks.
+- Reviewed commits `bc85bf986` and `8617db14e` are pushed and fast-forwarded into `feature/connector-native-completion`. The larger test delta is the bounded identity/ambiguity matrix; no default DOM selector, modal trigger, factory, native, or live behavior changed.

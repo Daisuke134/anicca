@@ -7395,7 +7395,13 @@ fresh Sol reviewはspec PASS / quality SHIP、指摘0。Sol独立8/8、55/55、e
 
 Harness wiringをPonytailでB4a provider/final-effect core、B4b default DOM modal trigger/visibility、B4c factory injectionへ分割した。先頭plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-harness-core-19d.md`はHarness production/test 2 filesだけ。exact Doorkeeper ref/current canonical、single submittable exact`申し込む`buttonをclick前検証し、既存30秒parent readback latchで`registered`だけを成功、未確認を`effect_unknown`、Submit max1にする。default selector/link、factory、native、liveは変更せずofficial wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗377。これ以外の残TODO一覧は履歴）
+### O1B-25進捗378（Item 19D-B4a / Doorkeeper Harness final-effect ship）
+
+LunaがHarness production/testの2 filesだけをTDD変更した。baseline 55/55へDoorkeeper 4 testsを追加しRED 55 pass/4 fail、initial GREEN 59/59、隣接33/33。exact positive ref、lowercase group canonical candidate/current URL完全一致、single exact`申し込む`submittable button、30秒parent readback、Submit max1を既存latchへ追加した。click success/throw/failure後もreadbackし、`registered`だけ成功、未確認は`effect_unknown`。
+
+fresh Sol初回reviewはImportant 2件。非final fill後の`pending`が共通adapterでcompletedになり得たためRED 60/61を再現し、Doorkeeperはregistered以外をunavailableへ正規化した。candidate/current双方のquery、fragment、credentials、port、www、uppercase groupもtable-drivenで全action 0を固定。最終61/61、隣接33/33、fresh re-review spec PASS / quality SHIP、指摘0。Sol独立61/61、33/33、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommits `bc85bf986`,`8617db14e`をstableへfast-forwardしpushした。default DOM modal triggerとfactory injectionは未実装のためofficial wake 0。次はB4b default DOM。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗378。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
