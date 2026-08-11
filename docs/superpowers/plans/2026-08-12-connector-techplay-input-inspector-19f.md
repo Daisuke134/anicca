@@ -36,10 +36,10 @@
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
 
-- [ ] Add failing real-DOM-shaped tests for empty/partially/fully completed input, seven default opt-outs, and exact ticket binding.
-- [ ] Add negative tests for wrong URL/event/ticket, duplicate ticket/CTA/ID/name, unknown checked checkbox, missing required marker/label, hidden/disabled/opacity/ancestor-hidden/zero-size controls, too many nodes, private-value non-exposure, and page drift.
-- [ ] Run the focused named tests; RED must be caused by TECH PLAY inspector absence.
-- [ ] Implement only exact binding and observation projection using existing visibility/safe-control patterns.
-- [ ] Run full Browser Harness tests, adjacent TECH PLAY workflow tests, syntax checks, and `git diff --check`.
-- [ ] Temporarily remove exact candidate ticket binding, prove its named negative test fails, restore it, and rerun GREEN.
-- [ ] Self-review and report RED/GREEN counts, mutation result, LOC, exact scope, and concerns without commit/push. Sol owns fresh review, SSOT, commit, and push.
+- [x] Add failing real-DOM-shaped tests for empty/partially/fully completed input, seven default opt-outs, and exact ticket binding.
+- [x] Add negative tests for wrong URL/event/ticket, duplicate ticket/CTA/ID/name, unknown checked checkbox, missing required marker/label, hidden/disabled/opacity/ancestor-hidden/zero-size controls, too many nodes, private-value non-exposure, and page drift.
+- [x] Run the focused named tests; RED must be caused by TECH PLAY inspector absence.
+- [x] Implement only exact binding and observation projection using existing visibility/safe-control patterns.
+- [x] Run full Browser Harness tests, adjacent TECH PLAY workflow tests, syntax checks, and `git diff --check`.
+- [x] Temporarily remove exact candidate ticket binding, prove its named negative test fails, restore it, and rerun GREEN.
+- [x] Self-review and report RED/GREEN counts, mutation result, LOC, exact scope, and concerns without commit/push. Sol owns fresh review, SSOT, commit, and push.

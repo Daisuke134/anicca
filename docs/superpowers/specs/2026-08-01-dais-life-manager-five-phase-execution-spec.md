@@ -7872,3 +7872,15 @@ LunaがTECH PLAY workflow/testのexact 2 filesをTDD変更し、code commit `f91
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-input-inspector-19f.md`はproduction Browser Harness/testのexact 2 files。初回Lunaが大きいHarness境界の読込段階で差分0のまま停止したため、code前にscopeをinput pageだけへ縮小した。exact input URL、same event/ticket、dynamic required question groups、known default-on opt-outs、review CTAをbounded privacy-safe controlsへ投影するread-only slice。confirm final CTAは次slice。production約70〜100 LOC、test約110〜170 LOC。
 
 value resolver、private profile更新、click/fill、final-effect readback配線、workflow factory/router/native order、evidence、Calendar、live stateは変更0。review/push後にaction operationを別sliceで追加する。Item19実bundleは未完。
+
+### O1B-25進捗451（Item 19F-D3 / TECH PLAY exact input inspector ship）
+
+Lunaがproduction Browser Harness/testのexact 2 filesをTDD変更し、code commit `c5e96420d`をpushした。初回REDは新規1件だけFAIL・既存98 GREEN。実DOM照合でCTA type submit、career/職種radio group 3/33へ修正。fresh reviewはbaseline GREENが隠すticket未選択、option欠落、tag/type偽装、checkbox drift、global ID衝突、privacy未証明などを反証し2回`fix-first`。同じLunaが各反証を独立fixtureへ戻し、最終re-reviewはCritical/Important/Minor 0で`ship`。
+
+最終production +96 / test +157、Full Harness 110/110、TECH PLAY workflow 16/16、combined 126/126、syntax、diff、exact2-file scope PASS。ticket value guard除去mutationはwrong-ticket negativeを非emptyへ誤受理してFAIL、復元後GREEN。実authenticated join `999190`は49 safe controls（radio37/input4/checkbox7/button1）、pending47、review submittable false、private leak 0。一時tabは他sessionの同時pageをownershipで区別し最終4へ復元、click/fill 0。次active sliceはconfirm final CTA inspector。Item19実bundleは未完。
+
+### O1B-25進捗452（Item 19F-D4 / TECH PLAY confirm inspector plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-confirm-inspector-19f.md`は同じHarness/testのexact 2 files。exact same-event confirm URLで一意のvisible enabled `BUTTON type=button` `申し込みを確定する`だけをsafe final controlへ投影する。production約20〜40 LOC、test約60〜100 LOC。
+
+final click、private resolver、input operation、effect polling、workflow factory/router/native order、evidence、Calendar、schedule/live stateは変更0。review/push後にprivate values＋operationを別sliceで閉じる。Item19実bundleは未完。
