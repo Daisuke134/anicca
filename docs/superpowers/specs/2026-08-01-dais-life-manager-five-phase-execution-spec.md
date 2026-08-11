@@ -8010,3 +8010,9 @@ REDはcanonical acceptance 1 fail。GREENはHTTP、host/case、credentials、por
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-applied-bundle-19f.md`はevidence chain/test exact 2 files。TECH PLAY exact event/receipt refs、same-ID canonical parser、shipped evidence store、registered-only stateをprovider mapへ追加し、Doorkeeper/Eventbrite同様にowned canonical parent pageのfull-page PNGを置換・再navigationなしで取得する。その後は既存receipt/artifact validation→Calendar create/readback→Telegram message/photo→checkpoint→`applied_bundle`→reuseを変更せず使う。production約24〜45 LOC、test約80〜135 LOC。
 
 Node SHA-256公式docsと英語・日本語bundle検索、既存Eventbrite/Doorkeeper implementationを照合し、新schema/queue/serviceは不要と判断。factory、native order、launchd、実外部作用は変更0。Item19実bundleは未完。
+
+### O1B-25進捗472（Item 19F-D13 / TECH PLAY applied evidence bundle ship）
+
+Lunaがevidence chain/test exact 2 filesをSuperpowers TDD実装し、code commit `ed907d3a8`をpushした。TECH PLAY exact event/receipt refs、same-ID canonical parser、shipped store injection、registered-only provider mapを追加。owned pageがcanonical parent URLと一致するときだけfull-page PNGを1回取得し、`setContent`/`goto`/`evaluate`/receipt renderingは0。receipt/artifactの厳密readback後だけ既存Calendar→Telegram message/photo→checkpoint→bundle→reuseへ進む。
+
+REDはprovider未配線で1 fail。GREENはcreated→reused bundle、duplicate external effect 0、receipt/artifact-before-Calendar、exact Calendar canonical、Telegram receipts、event/canonical/page drift、pending/absent、wrong receipt/artifact/tamper fail-closedを証明した。no-render branch mutationはnamed testをFAILさせ、復元後evidence 39/39＋adjacent 103/103、両syntax、diff check PASS。fresh Sol reviewは主要5 guardsのmutationも再確認しCritical/Important 0で`ship`。generic bundle schema、factory、native order、launchd、実外部作用は変更0。Item19実bundleは未完。
