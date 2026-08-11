@@ -7644,3 +7644,13 @@ factory 18/18、Harness 96/96、Eventbrite workflow 19/19、合計133/133、synt
 ### O1B-25進捗415（Item 19E-D5b / Eventbrite fallback dispatch plan）
 
 Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-fallback-dispatch-19e.md`はHarness production/test exact 2 files。既存`runFallback` workflow mapへ`eventbrite`を1項目追加する。production約1 LOC、test約70〜130 LOC。successはEventbrite workflow readbackで`completed`、ticket/final `effect_unknown`はmutation exact1・second proposal/operation 0で即停止することをTDDする。factory/native/runner/evidence/Calendar/Telegram/schedule変更0、official wake 0。D5bをfresh review・pushで閉じるまでD5cへ進まない。
+
+### O1B-25進捗416（Item 19E-D5b / Eventbrite fallback dispatch ship）
+
+LunaがHarness production/test exact 2 filesだけをSuperpowers TDD変更した。REDは`runFallback({provider:"eventbrite"})`がworkflow dispatch前に`Connector production Browser Harness invalid`でrejectする欠陥を再現。GREEN commit `413d6ec9f`は既存workflow mapへ`eventbrite: eventbriteWorkflow`を1項目追加した。success fixtureはproposal/operation/click/Eventbrite readback各exact1、Luma readback 0、`completed / registered`とbounded repaired actionを返す。effect-unknown fixtureはproposal/operation/click exact1、repaired action 0、second proposal/operation/click 0で`failed / effect_unknown`停止。
+
+Harness 98/98、Eventbrite workflow 19/19、adapter 4/4、minimal production 18/18、合計139/139、fresh reviewer追加検証147/147、syntax、diff、exact2-file scope PASS。fresh Sol review SHIP、Critical/Important 0。remote push完了。次の一件はD5c native provider order。Item19 Eventbrite `applied_bundle`とscheduleは未完。
+
+### O1B-25進捗417（Item 19E-D5c / Eventbrite native provider order plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-native-order-19e.md`はnative-pass production/test exact 2 files。frozen provider orderをexact `Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite`へ末尾1項目拡張する。production 1 LOC、test 3 LOC。failure 3、wake 600000ms、agent steps 10、private identity factory-only境界は不変。implementation/review中official wake 0、4 labels UNLOADED。D5cをTDD・fresh review・pushで閉じた後だけ実production wakeへ進む。
