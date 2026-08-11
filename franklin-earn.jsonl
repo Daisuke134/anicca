@@ -4225,3 +4225,4 @@
 {"ts":1786466766,"source":"cook","task":"explore: Solana microtask platform paying USDC for completed tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSOW6LGJF34744F4E4A84746"}
 {"ts":1786468083,"source":"cook","task":"explore: Solana microtask platform paying USDC for completed tasks API","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSOWYTKN66EA19415708482F"}
 {"ts":1786469519,"source":"cook","task":"explore: Solana API marketplace paying USDC for API calls microtasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSOXTLLS77E81E6A66D94391"}
+{"ts":1786471272,"source":"cook","task":"explore: Solana paid data oracle gigs USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSOYV4A7CDDFF3EE5CE641A0"}
