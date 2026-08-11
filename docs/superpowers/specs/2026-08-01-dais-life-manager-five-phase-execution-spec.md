@@ -7277,7 +7277,15 @@ same-event `5101994`はpre-submit swipe-ticket probeをprovider direct 412msで`
 
 このwakeはcreated bundleで正しく停止したためMeetup discoveryは次wakeへ継続する。次の一件はSSOT commit/push後のschedule-unloaded official second wake exact 1回。Peatix bundle reuseでprovider registration click 0を維持して同じowned railのMeetup auditへ到達し、既存Meetup account authの次exact境界を観測する。Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗357。これ以外の残TODO一覧は履歴）
+### O1B-25進捗358（Item 19M-D0f / second wakeが別Peatix既登録bundleを回収）
+
+pushed HEAD `657f9aec1`、4 labels unloaded、process/active lease 0、page 1、baseline action/report/delivery/Peatix audit/Meetup audit/bundle `910/118/130/34/0/7`からofficial second wakeをexact 1回実行した。wake `wake-49def955964d4b75ef5f0c43`はexit 0、action `910→934`、report `118→119`、delivery `130→131`、Peatix audit `34→35`、bundle `7→8`、Meetup audit 0。terminal `applied_bundle / applied_bundle`、failure count 0、positive every-wake Telegram ID `11435`。
+
+same-event `5101994`のexisting bundleをreadback/reuse後、Peatixは別candidate `5110502`の実`registered` stateを回収し、provider receipt、privacy-safe PNG、exact Calendar readback、Telegram message/photo positive IDs `11433/11434`、mode 0600 bundle `8cba1543…`を新規保存した。Browser Harness actionは0。1 wakeにつき新created bundle 1件で停止する既存contractによりMeetup discoveryはまだ0であり、故障扱いにしない。process/active lease 0、page 1、4 labels unloaded、Git clean/upstreamでcleanupした。
+
+次の一件はSSOT commit/push後のschedule-unloaded official continuation wake exact 1回。Peatixの既存bundleをSubmitなしで順次reuseし、新しいregistered evidenceがあれば同じ安全単位でbundle化する。Peatix eligible exhaustion後に同じowned railでMeetup auditへ到達するまで継続する。Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗358。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
