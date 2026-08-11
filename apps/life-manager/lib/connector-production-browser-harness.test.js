@@ -2016,3 +2016,51 @@ test("Eventbrite attendee inspector exposes only the exact required fields after
   assert.equal(operated, 0);
   assert.equal(resolved, 0);
 });
+
+test("Eventbrite attendee fill binds the selected field to the same checkout child frame", async () => {
+  const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
+  const field = (name, type = "text") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value: "" });
+  const first = field("buyer.1-first_name"); const last = field("buyer.1-last_name"); const email = field("buyer.1-email", "email"); const confirm = field("buyer.confirmEmailAddress", "email");
+  const marketing = field("marketing_opt_in", "checkbox"); marketing.required = false;
+  const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
+  let elements = [first, last, email, confirm, marketing, primary]; let fillCalls = 0; let resolved = 0; let operateCalls = 0; let locatorCount = 1; let applyFill = true;
+  let pageHref = candidate.canonical_url; let frameHref = "https://www.eventbrite.com/checkout-external?eid=1901"; let pageFrames;
+  const frame = { url() { return frameHref; }, parentFrame() { return {}; }, locator(selector) {
+    const token = /^\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1];
+    if (token) return { async count() { return locatorCount; }, async fill(value) { fillCalls += 1; if (applyFill) elements.find((element) => element.dataset.lmConnectorControl === token).value = value; } };
+    return { async evaluateAll(callback, context) { return callback(elements, context); } };
+  } };
+  const replacementFrame = { url() { return frameHref; }, parentFrame() { return {}; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } };
+  pageFrames = [frame];
+  const page = { url() { return pageHref; }, frames() { return pageFrames; }, locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; } };
+  const action = { purpose: "fill", method: "ax_fill", control: "eventbrite_attendee_first_name_1901" };
+  let mutateAfterResolve = null; let resolvedValue = "GivenFixture";
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("readback must not run"); } },
+    async inspectControls(input) { return inspectPageControls(input); },
+    async proposeAction() { return { control: action.control }; },
+    async operateControl(input) { operateCalls += 1; assert.equal(input.page, page); assert.equal(input.frame, frame); return operatePageControl(input); },
+    async resolveValue(input) { resolved += 1; assert.equal(input.control.control, action.control); mutateAfterResolve?.(); return resolvedValue; },
+  });
+  assert.deepEqual(await harness.performAction({ provider: "eventbrite", candidate, page, action }), { status: "success" });
+  assert.equal(resolved, 1); assert.equal(operateCalls, 1); assert.equal(fillCalls, 1); assert.equal(first.value, "GivenFixture"); assert.equal(first.dataset.lmConnectorControl, action.control);
+
+  const reset = () => { first.value = ""; elements = [first, last, email, confirm, marketing, primary]; pageHref = candidate.canonical_url; frameHref = "https://www.eventbrite.com/checkout-external?eid=1901"; pageFrames = [frame]; fillCalls = 0; operateCalls = 0; resolved = 0; locatorCount = 1; applyFill = true; mutateAfterResolve = null; resolvedValue = "GivenFixture"; };
+  for (const [name, badAction, mutate, expectedResolve, expectedOperate] of [
+    ["wrong-action", { purpose: "submit", method: "ax_click", control: action.control }, null, 0, 0],
+    ["missing-value", action, () => { resolvedValue = ""; }, 1, 0],
+    ["page-drift", action, () => { pageHref = "https://www.eventbrite.com/e/tokyo-free-event-tickets-1902"; }, 1, 0],
+    ["frame-drift", action, () => { pageFrames = [replacementFrame]; }, 1, 0],
+    ["eid-drift", action, () => { frameHref = "https://www.eventbrite.com/checkout-external?eid=1902"; }, 1, 0],
+    ["dom-drift", action, () => { elements = [...elements, field("buyer.1-first_name")]; }, 1, 0],
+    ["locator-zero", action, () => { locatorCount = 0; }, 1, 1],
+    ["locator-duplicate", action, () => { locatorCount = 2; }, 1, 1],
+    ["postcondition", action, () => { applyFill = false; }, 1, 1],
+  ]) {
+    reset(); mutateAfterResolve = mutate;
+    const result = await harness.performAction({ provider: "eventbrite", candidate, page, action: badAction });
+    assert.deepEqual(result, { status: "failed" }, name);
+    assert.equal(resolved, expectedResolve, `${name}-resolve`); assert.equal(operateCalls, expectedOperate, `${name}-operate`);
+    assert.equal(fillCalls, expectedOperate === 1 && name === "postcondition" ? 1 : 0, `${name}-fill`);
+  }
+});

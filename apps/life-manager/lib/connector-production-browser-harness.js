@@ -28,6 +28,8 @@ const EVENTBRITE_EVENT_REF = /^eventbrite-event:\/\/event\/([1-9][0-9]*)$/;
 const EVENTBRITE_EVENT_URL = /^https:\/\/www\.eventbrite\.com\/e\/(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)-tickets-([1-9][0-9]*)|([1-9][0-9]*))$/i;
 const EVENTBRITE_TRIGGER_CONTROL = /^eventbrite_checkout_([1-9][0-9]*)$/;
 const EVENTBRITE_TICKET_REGISTER_CONTROL = /^eventbrite_ticket_register_([1-9][0-9]*)$/;
+const EVENTBRITE_ATTENDEE_CONTROL = /^eventbrite_attendee_(first_name|last_name|email|confirm_email)_([1-9][0-9]*)$/;
+const EVENTBRITE_ATTENDEE_LABELS = Object.freeze({ first_name: "First name", last_name: "Last name", email: "Email", confirm_email: "Confirm email" });
 const EVENTBRITE_CTA_LABELS = new Set(["Get tickets", "Reserve a spot"]);
 const EVENTBRITE_FRAME_TIMEOUT_MS = 30_000;
 const EVENTBRITE_FRAME_STABILITY_MS = 500;
@@ -208,6 +210,8 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
       if (required.length !== 4 || candidates.some((items) => items.length !== 1 || !required.includes(items[0]))) return [];
       const buyerIndexes = candidates.slice(0, 3).map(([element]) => /^buyer\.([0-9]+)-/.exec(nameOf(element))?.[1]);
       if (new Set(buyerIndexes).size !== 1) return [];
+      if (candidates.some(([element]) => !element || !element.dataset)) return [];
+      candidates.forEach(([element], index) => { element.dataset.lmConnectorControl = `eventbrite_attendee_${fields[index].key}_${id}`; });
       const completedOf = (element) => Boolean(String(element && element.value || "").trim());
       return fields.map((field, index) => ({
         control: `eventbrite_attendee_${field.key}_${id}`,
@@ -257,6 +261,27 @@ function isEventbriteTicketRegister({ provider, page, candidate, control, contro
   const semantic = Array.isArray(controls) ? controls.filter((item) => item && item.kind === "button" && item.label === "Register"
     && item.required === false && item.completed === false && item.submittable === true && EVENTBRITE_TICKET_REGISTER_CONTROL.test(String(item.control || ""))) : [];
   return Boolean(match && match[1] === binding.eventId && href === binding.canonicalUrl && semantic.length === 1 && semantic[0].control === control.control);
+}
+function eventbriteAttendeeControlMeaning(control) {
+  const match = EVENTBRITE_ATTENDEE_CONTROL.exec(String(control && control.control || ""));
+  return Boolean(control && match && EVENTBRITE_ATTENDEE_LABELS[match[1]] === control.label && control.kind === "input" && control.required === true && control.submittable === false);
+}
+function eventbriteAttendeeControlsForEvent(controls, eventId) {
+  return Array.isArray(controls) ? controls.filter((control) => eventbriteAttendeeControlMeaning(control) && EVENTBRITE_ATTENDEE_CONTROL.exec(String(control.control))[2] === String(eventId)) : [];
+}
+function isEventbriteAttendeeObservation(controls, eventId) {
+  const matching = eventbriteAttendeeControlsForEvent(controls, eventId);
+  return Array.isArray(controls) && controls.length === 4 && matching.length === 4 && new Set(matching.map((control) => control.control)).size === 4;
+}
+function isEventbriteAttendeeFill({ provider, page, candidate, control, controls = [] } = {}) {
+  if (provider !== "eventbrite" || !eventbriteAttendeeControlMeaning(control) || control.completed !== false) return false;
+  const binding = candidateEventbriteBinding(candidate);
+  let href = "";
+  try { href = String(typeof page?.url === "function" ? page.url() : ""); } catch { return false; }
+  if (!binding || href !== binding.canonicalUrl) return false;
+  const match = EVENTBRITE_ATTENDEE_CONTROL.exec(control.control);
+  const matching = eventbriteAttendeeControlsForEvent(controls, binding.eventId);
+  return Boolean(match && match[2] === binding.eventId && isEventbriteAttendeeObservation(controls, binding.eventId) && matching.some((item) => item.control === control.control));
 }
 async function waitForEventbriteTicketStep(page, eventId, canonicalUrl) {
   const deadline = Date.now() + EVENTBRITE_FRAME_TIMEOUT_MS;
@@ -878,15 +903,17 @@ function createProductionBrowserHarness(options = {}) {
     const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     const connpassJoin = isConnpassJoin(provider, href);
     const values = await inspectControls({ page, provider, event_id: eventId || undefined, canonical_url: eventbriteBinding?.canonicalUrl, connpass_join: connpassJoin });
-    if (!Array.isArray(values) || values.length < 1 || values.length > 100) invalid();
+    if (!Array.isArray(values) || values.length > 100 || (values.length < 1 && provider !== "eventbrite")) invalid();
     const controls = values.map(safeControl);
     if (new Set(controls.map((item) => item.control)).size !== controls.length) invalid();
+    const eventbriteAttendeeObservation = provider === "eventbrite" && isEventbriteAttendeeObservation(controls, eventId);
+    const eventbriteFrame = eventbriteAttendeeObservation ? eventbriteTicketFrame(page, eventId, eventbriteBinding.canonicalUrl) : null;
     const eventbriteTicket = provider === "eventbrite" && controls.some((item) => EVENTBRITE_TICKET_REGISTER_CONTROL.test(item.control));
     const observation = Object.freeze({
       state: eventbriteTicket ? "eventbrite_ticket_step" : connpassJoin ? "connpass_join" : "registration_page",
       controls: Object.freeze(controls),
     });
-    registry.set(page, { provider, eventId, observation });
+    registry.set(page, { provider, eventId, observation, ...(eventbriteAttendeeObservation ? { frame: eventbriteFrame } : {}) });
     return observation;
   }
 
@@ -907,12 +934,16 @@ function createProductionBrowserHarness(options = {}) {
     const control = observation.controls.find((item) => item.control === input.action.control);
     if (!control) return Object.freeze({ status: "failed" });
     if (provider !== "eventbrite" && EVENTBRITE_TRIGGER_CONTROL.test(control.control)) return Object.freeze({ status: "failed" });
+    if (provider !== "eventbrite" && EVENTBRITE_ATTENDEE_CONTROL.test(control.control)) return Object.freeze({ status: "failed" });
     const doorkeeperModalTrigger = isDoorkeeperModalTrigger({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
     const eventbriteTrigger = isEventbriteCheckoutTrigger({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
     const eventbriteTicket = isEventbriteTicketRegister({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
+    const eventbriteAttendee = isEventbriteAttendeeFill({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
+    const attendeeFrame = eventbriteAttendee ? registry.get(input.page)?.frame : null;
     const ticketFrame = eventbriteTicket ? eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) : null;
-    if (provider === "eventbrite" && !eventbriteTrigger && !eventbriteTicket) return Object.freeze({ status: "failed" });
+    if (provider === "eventbrite" && !eventbriteTrigger && !eventbriteTicket && !eventbriteAttendee) return Object.freeze({ status: "failed" });
     if (eventbriteTicket && !ticketFrame) return Object.freeze({ status: "failed" });
+    if (eventbriteAttendee && !attendeeFrame) return Object.freeze({ status: "failed" });
     const pendingRequiredAnswer = observation.controls.some((item) => ACTIONABLE_KINDS.has(item.kind) && item.required && !item.completed);
     if (control.kind === "button" && pendingRequiredAnswer) return Object.freeze({ status: "failed" });
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
@@ -920,6 +951,7 @@ function createProductionBrowserHarness(options = {}) {
     if (doorkeeperModalTrigger && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
     if (eventbriteTrigger && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
     if (eventbriteTicket && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
+    if (eventbriteAttendee && (input.action.purpose !== "fill" || input.action.method !== "ax_fill")) return Object.freeze({ status: "failed" });
     if (provider === "connpass" && state === "connpass_join" && control.kind === "button" && control.label !== CONNPASS_FINAL_LABEL) return Object.freeze({ status: "failed" });
     if (provider === "doorkeeper" && control.kind === "button" && control.label !== DOORKEEPER_FINAL_LABEL) return Object.freeze({ status: "failed" });
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
@@ -931,6 +963,13 @@ function createProductionBrowserHarness(options = {}) {
         || (typeof value === "string" && (!value.trim() || value.length > 2_000))
         || (Array.isArray(value) && (value.length < 1 || value.length > 3))
       ) return Object.freeze({ status: "failed" });
+    }
+    if (eventbriteAttendee) {
+      if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== attendeeFrame) return Object.freeze({ status: "failed" });
+      const refreshed = await inspectEventbriteAttendeeFrame(attendeeFrame, eventbriteBinding.eventId);
+      const selected = Array.isArray(refreshed) ? refreshed.find((item) => item.control === control.control) : null;
+      if (!isEventbriteAttendeeObservation(refreshed, eventbriteBinding.eventId) || !selected || selected.completed !== false) return Object.freeze({ status: "failed" });
+      if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== attendeeFrame) return Object.freeze({ status: "failed" });
     }
     const navigationWait = startPeatixConfirmWait(input.page, provider, control);
     if (navigationWait && navigationWait.unavailable) return Object.freeze({ status: "failed" });
@@ -957,7 +996,7 @@ function createProductionBrowserHarness(options = {}) {
     try {
       result = await operateControl({
         page: input.page,
-        ...(ticketFrame ? { frame: ticketFrame } : {}),
+        ...((attendeeFrame || ticketFrame) ? { frame: attendeeFrame || ticketFrame } : {}),
         control,
         action,
         value,
@@ -969,6 +1008,15 @@ function createProductionBrowserHarness(options = {}) {
     if (!result || result.status !== "success") {
       if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
       return Object.freeze({ status: "failed" });
+    }
+    if (eventbriteAttendee) {
+      const currentFrame = eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl);
+      if (currentFrame !== attendeeFrame) return Object.freeze({ status: "failed" });
+      const refreshed = await inspectEventbriteAttendeeFrame(attendeeFrame, eventbriteBinding.eventId);
+      const selected = Array.isArray(refreshed) ? refreshed.find((item) => item.control === control.control) : null;
+      if (!isEventbriteAttendeeObservation(refreshed, eventbriteBinding.eventId) || !selected || selected.completed !== true) return Object.freeze({ status: "failed" });
+      if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== attendeeFrame) return Object.freeze({ status: "failed" });
+      return Object.freeze({ status: "success" });
     }
     if (eventbriteTicket) return Object.freeze({ status: await waitForEventbriteTicketStep(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) ? "success" : "failed" });
     if (eventbriteTrigger) return Object.freeze({ status: await waitForEventbriteCheckoutFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) ? "success" : "failed" });
