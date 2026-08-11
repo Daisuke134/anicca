@@ -10,6 +10,7 @@ const {
   createConnpassEvidenceStore,
   createMeetupEvidenceStore,
   createDoorkeeperEvidenceStore,
+  createEventbriteEvidenceStore,
 } = require("./connpass-evidence-store.js");
 
 test("atomically stores and reads one Connpass PNG receipt without identity data", async (t) => {
@@ -164,4 +165,54 @@ test("Doorkeeper wrapper rejects wrong event identity and receipt tuple tamperin
   const receipt = JSON.parse(fs.readFileSync(file, "utf8"));
   fs.writeFileSync(file, `${JSON.stringify({ ...receipt, event_ref: "doorkeeper-event://event/102" })}\n`);
   await assert.rejects(store.readExternalReceipt("doorkeeper-test", refs.external_receipt_ref));
+});
+
+test("Eventbrite wrapper stores exact event receipt and private immutable artifacts", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "eventbrite-evidence-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const png = Buffer.alloc(5_000, 0x67);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png);
+  const store = createEventbriteEvidenceStore({ dataDir: directory });
+  const refs = await store.record({
+    tenantId: "eventbrite-test", eventRef: "eventbrite-event://event/1997468673573",
+    observedAt: "2026-08-12T01:02:03.000Z", screenshot: png,
+  });
+  assert.match(refs.external_receipt_ref, /^provider-receipt:\/\/eventbrite\/[0-9a-f]{64}$/);
+  const receipt = await store.readExternalReceipt("eventbrite-test", refs.external_receipt_ref);
+  assert.deepEqual(receipt, {
+    kind: "provider_response", provider_id: refs.external_receipt_ref.split("/").at(-1),
+    observed_at: "2026-08-12T01:02:03.000Z", event_ref: "eventbrite-event://event/1997468673573",
+    artifact_sha256: refs.artifact_ref.split("/").at(-1),
+  });
+  const root = path.join(directory, "tenants", "eventbrite-test", "outbound", "eventbrite");
+  const artifactSha = refs.artifact_ref.split("/").at(-1);
+  const files = [
+    path.join(root, "provider-receipts", `${refs.external_receipt_ref.split("/").at(-1)}.json`),
+    path.join(root, "artifacts", `${artifactSha}.json`),
+    path.join(directory, "objects", "sha256", artifactSha),
+  ];
+  for (const file of files) assert.equal(fs.statSync(file).mode & 0o777, 0o600, file);
+  assert.deepEqual(await store.readArtifact("eventbrite-test", refs.artifact_ref), png);
+  assert.equal(JSON.stringify(refs).includes("eventbrite-test"), false);
+});
+
+test("Eventbrite wrapper rejects wrong event identity and receipt tuple tampering", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "eventbrite-evidence-hardening-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const png = Buffer.alloc(5_000, 0x68);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png);
+  const store = createEventbriteEvidenceStore({ dataDir: directory });
+  await assert.rejects(store.record({
+    tenantId: "eventbrite-test", eventRef: "eventbrite-event://event/0",
+    observedAt: "2026-08-12T01:02:03.000Z", screenshot: png,
+  }));
+  const refs = await store.record({
+    tenantId: "eventbrite-test", eventRef: "eventbrite-event://event/1997468673573",
+    observedAt: "2026-08-12T01:02:03.000Z", screenshot: png,
+  });
+  const providerId = refs.external_receipt_ref.split("/").at(-1);
+  const file = path.join(directory, "tenants", "eventbrite-test", "outbound", "eventbrite", "provider-receipts", `${providerId}.json`);
+  const receipt = JSON.parse(fs.readFileSync(file, "utf8"));
+  fs.writeFileSync(file, `${JSON.stringify({ ...receipt, event_ref: "eventbrite-event://event/2" })}\n`);
+  await assert.rejects(store.readExternalReceipt("eventbrite-test", refs.external_receipt_ref));
 });
