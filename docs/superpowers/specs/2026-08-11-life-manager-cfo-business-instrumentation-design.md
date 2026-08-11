@@ -42,9 +42,9 @@ Only the first unchecked item is active.
   - [x] **2b.1a** Normalize finalized TaskMarket/uGig external settlements already stored in `lm_agent_earnings`.
   - [x] **2b.1b** Read the canonical Life Manager Stripe Payment Link and normalize paid Checkout receipts; a paid
         Checkout balance is not bank-landed cash.
-  - [ ] **2b.1c** Reconcile Stripe refunds/disputes/fees/payout state, then compose revenue coverage with existing
-        direct-cost, provider-usage, subscription, human-cost, and capital coverage. Unknown stays null; shared
-        subscription cost waits for `CFO-2a3b` allocation.
+  - [ ] **2b.1c** Compose one closed Life Manager monthly coverage fact from the existing revenue, direct-cost,
+        local-usage, and shared-subscription evidence. With no paid Stripe receipt, reversal/payout work is not
+        applicable; the first future paid receipt changes coverage to partial and blocks profit until reconciliation.
 - [ ] **CFO-2b.2 — Anicca iOS**: Apple/RevenueCat receipts, payout state, attributed API cost.
 - [ ] **CFO-2b.3 — Writer Agent**: publisher receipts and its measured runtime cost.
 - [ ] **CFO-2b.4 — Affiliate Agent**: network commission receipts and runtime cost.
@@ -65,6 +65,11 @@ Only the first unchecked item is active.
   empty receipt list, not a fabricated zero-money receipt.
 - Existing Life Manager cost and token evidence is real but incomplete. Confirmed Anthropic subscription cash cost
   is shared until the versioned allocation gate closes; it is not silently charged 100% to Life Manager.
+- The current Tokyo month contains 20,408 `lm_api_cost` rows with a locally-estimated USD subtotal of `0.04064343`.
+  The two durable local-usage chains contain 33 Life Manager-attributed events and 50,448,879 reported tokens for
+  that period. Both chains also report missing usage, runner-identity collisions, and unattributed usage, so the
+  token count is an observed subtotal, never a complete cost. The live provider-usage table is absent from the
+  queried deployment (HTTP 404), so provider/API spend remains incomplete.
 
 ## 5. CFO-2b.1a exact contract
 
@@ -203,3 +208,68 @@ Current real acceptance: 54 active Payment Links fit one page; the canonical Lif
   https://docs.stripe.com/api/balance_transactions/object
 - Stripe payout reconciliation: bank payout reconciliation is a separate evidence step.
   https://docs.stripe.com/payouts/reconciliation?locale=ja-JP
+
+## 10. CFO-2b.1c contract — closed monthly business coverage fact
+
+Add one pure `composeLifeManagerBusinessCoverage(input)` function to the existing earning module. It accepts only
+the already-sanitized monthly observations below; it performs no I/O, conversion, pricing, allocation, or logging.
+
+```mermaid
+flowchart LR
+    REV[Registered revenue channels] --> FACT[Life Manager monthly fact]
+    API[API-cost ledger] --> FACT
+    TOK[Local token ledgers] --> FACT
+    SUB[Confirmed shared subscription] --> FACT
+    FACT -->|any incomplete source| NULL[Profit + ROI = null]
+    FACT -->|future paid Stripe receipt| RECON[Require reversal + payout reconciliation]
+```
+
+The exact input has seven keys:
+
+```json
+{
+  "period_start": "2026-07-31T15:00:00.000Z",
+  "period_end": "2026-08-31T15:00:00.000Z",
+  "earning_ledger": { "status": "covered", "receipt_count": 0 },
+  "stripe": "<closed collectLifeManagerStripeReceipts result>",
+  "direct_api_cost": { "status": "partial", "event_count": 20408, "estimated_usd": "0.04064343" },
+  "token_usage": { "status": "partial", "event_count": 33, "total_tokens": 50448879, "coverage_exceptions": ["missing_usage", "runner_identity_collision", "unattributed_usage"] },
+  "shared_subscription": { "status": "confirmed_shared_unallocated", "amount_minor": "22000", "currency": "USD" }
+}
+```
+
+Rules:
+
+- Period bounds are canonical UTC for midnight on the first day of consecutive Tokyo calendar months; arbitrary or
+  partial intervals fail closed. Counts and tokens are non-negative safe integers. `estimated_usd` is a canonical
+  non-negative decimal string; confirmed shared `amount_minor` is a canonical positive integer string. Neither is
+  recomputed.
+- Revenue coverage means only the registered Stripe, TaskMarket, and uGig channels were read successfully. The fact
+  reports only receipts whose canonical timestamp falls inside the half-open monthly period; older/newer Stripe
+  receipts remain valid provider evidence but are excluded from this month's count. It does not infer revenue from
+  list price, active subscriptions, or unpaid sessions.
+- When the combined receipt count is zero, reversal and landed-cash coverage are
+  `not_applicable_no_receipts`. When only finalized TaskMarket/uGig receipts exist, Stripe reversal is
+  `not_applicable_no_stripe_receipts` and landed cash is `confirmed_agent_wallet`. When Stripe has any paid receipt
+  and still reports reversal coverage `unknown`, the business fact is partial and includes
+  `stripe_reversal_unknown`; landed cash stays partial and profit/ROI stay null. This is the enduring fail-closed
+  upgrade trigger for a later real reversal/payout adapter.
+- Direct API cost stays `locally_estimated`; local token usage stays a reported subtotal when any source exception is
+  present. The confirmed `$220` Anthropic receipt is visible only as shared observed spend; allocated business amount
+  remains null until `CFO-2a3b` closes. Human cost and capital remain null/unknown.
+- Output is closed and recursively frozen. It contains no receipt/provider ID, prompt, model output, wallet, account,
+  customer, email, raw row, or secret. Invalid input throws only
+  `cfo_life_manager_earning_invalid:business_coverage`.
+
+The current real result must therefore say: registered revenue receipt count `0`; API-cost subtotal
+`$0.04064343` partial; token subtotal `50,448,879` partial; shared subscription `$220` unallocated; human cost,
+capital, profit, and ROI unknown/null. It must not say Life Manager profit is zero.
+
+### CFO-2b.1c acceptance
+
+- [ ] One exact current-month fixture returns the closed frozen fact and preserves every unknown as null/partial.
+- [ ] One compact regression proves the separate on-chain-only and paid-Stripe branches, proves unresolved Stripe
+      reversal cannot enable profit, and makes malformed/secret-bearing input return only the fixed redacted error.
+- [ ] Focused, CFO, and full tests pass; exact scope is the existing two files with at most 100 gross additions.
+- [ ] A read-only real E2E recomputes the measured counts from source ledgers, feeds the composer, and prints only the
+      closed fact summary; it performs no database, Stripe, launchd, Telegram, or local-state write.
