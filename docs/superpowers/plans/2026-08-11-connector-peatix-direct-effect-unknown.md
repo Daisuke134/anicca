@@ -39,3 +39,5 @@ GREEN:
 - changed JS syntax、`git diff --check`
 - fresh Sol review Critical 0 / Important 0
 - push後に4 labels unloadedのofficial foreground wake exact 1回。direct ambiguous時Harness 0か、Peatix readback/evidence回復後Meetup audit到達を確認する。
+
+実装結果: Luna REDはfocused runner 36/37で、新規Peatix fixtureだけが旧runnerのHarness fallback→`providers_exhausted`となる故障を再現した。GREEN commits `898950bb9`とreview fix `be75bc8f3`はrunner/test 2 filesだけ。productionはexact `provider === "peatix" && safe_reason === "peatix_readback_unavailable"`を既存`finish("circuit_open", "effect_unknown")`へ接続する4 LOC。初回fresh reviewはreason-only判定がnon-Peatix spoofも停止するImportant 1を発見し、非Peatix同reasonは従来fallbackへ進むRED 37/38→GREEN 38/38で閉じた。Luna adjacent 128/128、Sol独立expanded 166/166、syntax/diff check PASS。workflow 1 failureは既知の日付依存、native testの`jsqr`欠落はMeetup worktree依存未展開でproduction stable runnerはlive完走済み。fresh Sol re-reviewはCritical 0 / Important 0で`ship`。実装/review中のbrowser/provider/Calendar/evidence/Telegram/state/schedule作用0。
