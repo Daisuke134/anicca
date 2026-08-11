@@ -7896,3 +7896,11 @@ LunaがHarness/test exact 2 filesへconfirm projectionをTDD追加し、code com
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-private-values-19f.md`はHarness/test exact 2 files。既存private identityから日本語氏名/email、mode-0600 form SSOTからDOB・所属・career・職種をexact mappingし、年齢をAsia/Tokyo当日計算するparent-only resolverを追加する。production約25〜45 LOC、test約70〜110 LOC。
 
 DOM操作、proposer、final click/readback、workflow factory/router/native order、evidence、Calendar、schedule/live stateは変更0。resolver ship後にprivate form stateをexact answersへ更新し、input operationを別sliceで閉じる。Item19実bundleは未完。
+
+### O1B-25進捗455（Item 19F-D5 / TECH PLAY private value resolver ship）
+
+LunaがHarness/test exact 2 filesへparent-only resolverをTDD追加し、code commit `c7fe75b66`をpushした。日本語氏名・email・所属はexact scalar、career・職種はexact own-property question＋public option完全一致だけをboolean true、年齢は一致するvalid DOBからAsia/Tokyo当日で18〜100の10進stringとして解決する。ticket/opt-out/review/final、unknown・state欠落・trim/case driftはprivate reader前に拒否し、private getter/Proxy例外はmessageを外へ出さずnullへ閉じる。
+
+fresh reviewはnormalized lookupによるkey/option driftとmalformed getterのprivate-bearing error伝播をImportant 2件反証し、同じLunaがexact lookup/equalityと全profile accessのfail-closed回帰へ修正した。exact equality guard除去mutationはnamed negativeを`true !== null`でFAILさせ、復元後はFull Harness 122/122＋TECH PLAY workflow 16/16、合計138/138、両file syntax、diff checkがPASS。最終re-reviewはCritical/Important/Minor 0で`ship`。production +40 / test +106がsoft targetを46 LOC超えるが、追加分はreviewで実証した漏洩・誤回答回帰を同じ2-file境界内に固定する最小差分で、新module/routingは0。
+
+既存private form SSOTへ実フォームで確認済みのcareer・所属・職種exact 3 keysを非表示で追記し、mode 0600と既存DOBを保持した。実private identity＋form profileを使うread-only resolver auditは6/6 non-null、private value出力0。DOM操作、final click/readback、workflow factory/router/native order、evidence、Calendar、schedule/live stateは変更0。次active sliceはTECH PLAY exact input operation。Item19実bundleは未完。

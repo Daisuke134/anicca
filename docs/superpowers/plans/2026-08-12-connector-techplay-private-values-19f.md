@@ -28,8 +28,8 @@
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
 
-- [ ] Add RED tests for all four scalar mappings, two exact radio choices, wrong/cross question, malformed controls, DOB and clock boundaries, private-reader nonaccess on rejection, and no private output in inspection/runner paths.
-- [ ] Implement the minimum provider-specific resolver before the generic provider-neutral branch.
-- [ ] Run full Browser Harness and TECH PLAY workflow tests, syntax checks, and `git diff --check`.
-- [ ] Temporarily remove exact radio question binding or DOB equality guard, prove its named negative fails, restore it, and rerun GREEN.
-- [ ] Self-review and report evidence without commit/push. Sol owns fresh review, SSOT, commit, and push.
+- [x] Add RED tests for all four scalar mappings, two exact radio choices, wrong/cross question, malformed controls, DOB and clock boundaries, private-reader nonaccess on rejection, and no private output in inspection/runner paths.
+- [x] Implement the minimum provider-specific resolver before the generic provider-neutral branch.
+- [x] Run full Browser Harness and TECH PLAY workflow tests, syntax checks, and `git diff --check`.
+- [x] Temporarily remove exact radio question binding or DOB equality guard, prove its named negative fails, restore it, and rerun GREEN.
+- [x] Self-review and report evidence without commit/push. Sol owns fresh review, SSOT, commit, and push.
