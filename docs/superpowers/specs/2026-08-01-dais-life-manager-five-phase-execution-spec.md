@@ -8004,3 +8004,9 @@ Google Calendar Events insert公式docs、英語canonical source URL、日本語
 LunaがCalendar gog transport/test exact 2 filesをSuperpowers TDD実装し、code commit `1f6b57857`をpushした。production +7 LOCでexact `https://techplay.jp/event/<positive ID>`のみをfixed source title `TECH PLAY`へ写し、既存共通経路が同じURLをdescription/source URLとprivate idempotency propertyへ渡す。
 
 REDはcanonical acceptance 1 fail。GREENはHTTP、host/case、credentials、port、zero/non-numeric ID、query、fragment、trailing slash、list/search、実形`/event/join/<id>`・`/confirm`をinjected runner実行前に拒否した。raw-equality mutationはreject testのcalls 0→3でFAILし、復元後focused 2/2、既存provider込みtransport 29/29、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0、Ponytail最小差分で`ship`。applied-bundle chain、native order、launchd、実Calendar mutation/applicationは未実行。Item19実bundleは未完。
+
+### O1B-25進捗471（Item 19F-D13 / TECH PLAY applied evidence bundle plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-applied-bundle-19f.md`はevidence chain/test exact 2 files。TECH PLAY exact event/receipt refs、same-ID canonical parser、shipped evidence store、registered-only stateをprovider mapへ追加し、Doorkeeper/Eventbrite同様にowned canonical parent pageのfull-page PNGを置換・再navigationなしで取得する。その後は既存receipt/artifact validation→Calendar create/readback→Telegram message/photo→checkpoint→`applied_bundle`→reuseを変更せず使う。production約24〜45 LOC、test約80〜135 LOC。
+
+Node SHA-256公式docsと英語・日本語bundle検索、既存Eventbrite/Doorkeeper implementationを照合し、新schema/queue/serviceは不要と判断。factory、native order、launchd、実外部作用は変更0。Item19実bundleは未完。
