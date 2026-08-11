@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3c.1/2 complete; CFO-2a3c.3 hourly publication is the first unfinished slice |
+| Status | ACTIVE — CFO-2a3c.1/2/3a complete; CFO-2a3c.3b hourly wiring and live delivery is first unfinished |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains the only scheduler |
 | First source | Official Anthropic receipt email through the existing authenticated `gog` transport |
@@ -94,9 +94,11 @@ failure is retried by the existing next hourly run; the last validated immutable
 - [ ] **CFO-2a3c.3 — Hourly aggregate and Telegram.** Reuse the one hourly launchd loop; publish actual subscription
       total and coverage separately from API-equivalent forecast. Run a real authenticated no-send E2E, then one real
       hourly Telegram delivery and verify its receipt.
-  - [ ] **CFO-2a3c.3a — Telegram snapshot UX.** Add an optional exact `aiCost` fact to the existing JSONB report,
+  - [x] **CFO-2a3c.3a — Telegram snapshot UX.** Add an optional exact `aiCost` fact to the existing JSONB report,
         summary, callback view, and buttons while keeping old snapshots valid. Plan:
-        `docs/superpowers/plans/2026-08-11-life-manager-cfo-subscription-telegram-ux.md`.
+        `docs/superpowers/plans/2026-08-11-life-manager-cfo-subscription-telegram-ux.md`. Shipped as `cf90d6ec7`:
+        focused 23/23, CFO 331/331, full suite exit 0, fresh Sol review ship, and a read-only real snapshot plus the
+        authenticated local receipt rendered the confirmed amount/unknown OpenAI state without private evidence.
   - [ ] **CFO-2a3c.3b — Hourly wiring and live delivery.** Capture/reuse the confirmed local receipt, attach the exact
         `aiCost` fact before snapshot append, then trigger the existing launchd and verify one real Telegram receipt.
 - [ ] **CFO-2a3c.4 — OpenAI confirmed amount.** Ingest only an official OpenAI receipt or authenticated billing
