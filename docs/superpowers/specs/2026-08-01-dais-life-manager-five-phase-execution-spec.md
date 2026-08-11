@@ -7295,7 +7295,13 @@ Peatixの既存bundleを順次reuse後、既登録event `5086816`のprovider rec
 
 pushed HEAD `d4f91fe96`からofficial continuation wake `wake-7e03669ef85da279af67d9d4`をexact 1回実行した。4 labels unloaded、process/active lease 0、page 1を維持し、action `960→991`、report `120→121`、delivery `132→133`、Peatix audit `36→37`、bundle `9→10`、Meetup audit 0。Peatix既登録event `5104187`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11444/11445`、new bundle `16ae1e9c…`を回収した。Browser Harness 0、terminal `applied_bundle`、failure 0、every-wake Telegram ID `11446`。cleanup後もprocess/lease 0、page 1、4 labels unloaded。次wakeも同じ1-bundle-per-wake contractでPeatix backlogを消化しMeetup到達まで継続する。Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗360。これ以外の残TODO一覧は履歴）
+### O1B-25進捗361（Item 19M-D0i / candidate navigation timeoutのreport欠落を確定）
+
+pushed HEAD `927ebf892`、4 labels unloaded、process/active lease 0、Connector開始前CDP page 4、Git clean/upstreamからofficial continuation wake `wake-8f883c25e400a12b505e4b23`をexact 1回実行した。Calendar、Luma、Connpass、Peatix discoveryは成功し、Peatix audit `37→38`、action `991→1002`。candidate navigation/readback後、次candidate navigationが30,029msでfailedとなり、期限前raw errorがrunner外へescapeした。exit 2、report/delivery/bundle/Meetup audit delta 0、provider registration/Calendar/evidence/Telegram effect 0。成功扱いにしない。
+
+cleanup後process/active lease 0。current CDP page 4は全てopenerなしのCoconala既存pageで、Connector target/orphanではないためclose 0。故障はcandidate navigationの期限前throwだけがlocal safe-failure境界を持たず、outer catchが意図どおりraw rethrowすること。plan `2026-08-11-connector-candidate-navigation-report-19m.md`はrunner/test 2 filesだけで、failed candidateをreadback/Submit 0のまま`candidate_navigation_failed`として加算し次へ継続、3回でexisting circuit/report/cleanupへ収束させる。deadline crossingは`wake_deadline`を維持する。Item19 Meetupは未完、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗361。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
