@@ -122,7 +122,7 @@ test("Eventbrite accepts hydrated Reserve a spot for eligibility and absent read
   );
   assert.equal((await workflow.discoverCandidates({ page: {}, calendar: [] })).length, 1);
   const absent = createEventbriteScriptFirstWorkflow({
-    readRegistrationView: async () => ({ page_url: row.canonical_url, canonical_links: [], controls: [{ text: "Reserve a spot", visible: true }], body_text: "" }),
+    readRegistrationView: async () => ({ page_url: row.canonical_url, canonical_links: [{ href: row.canonical_url, visible: true }], controls: [{ text: "Reserve a spot", visible: true }], body_text: "" }),
   });
   assert.deepEqual(await absent.readProviderState({ page: pageAt(row.canonical_url), candidate: { ...row, provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" } }), { status: "absent" });
 });
@@ -297,9 +297,14 @@ test("Eventbrite parent readback is strict and fail-closed", async () => {
   assert.deepEqual(await registered.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "registered" });
 
   const absent = createEventbriteScriptFirstWorkflow({
-    readRegistrationView: async () => ({ page_url: candidate.canonical_url, canonical_links: [], controls: [{ text: "Get tickets", visible: true }], body_text: "" }),
+    readRegistrationView: async () => ({ page_url: candidate.canonical_url, canonical_links: [{ href: candidate.canonical_url, visible: true }], controls: [{ text: "Get tickets", visible: true }], body_text: "" }),
   });
   assert.deepEqual(await absent.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "absent" });
+
+  const missingCanonical = createEventbriteScriptFirstWorkflow({
+    readRegistrationView: async () => ({ page_url: candidate.canonical_url, canonical_links: [], controls: [{ text: "Get tickets", visible: true }], body_text: "" }),
+  });
+  assert.deepEqual(await missingCanonical.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" });
 
   const explicitAuth = createEventbriteScriptFirstWorkflow({
     readRegistrationView: async () => ({ page_url: candidate.canonical_url, canonical_links: [], controls: [{ text: "Get tickets", visible: true }], body_text: "", auth_required: true }),
