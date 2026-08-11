@@ -33,6 +33,8 @@ function completeSnapshot() {
   };
 }
 
+function aiCostSnapshot() { const snapshot = completeSnapshot(); snapshot.aiCost = { provider: "anthropic", plan: "max_20x", amount: "220.00", currency: "USD", billingPeriodStart: "2026-07-20", billingPeriodEnd: "2026-08-20", evidenceStatus: "provider_receipt", unavailableProviders: ["openai"] }; return snapshot; }
+
 function partialSnapshot() {
   const snapshot = completeSnapshot();
   snapshot.state = "partial";
@@ -79,6 +81,8 @@ function assertInvalid(input, reason) {
     new RegExp(`^Error: cfo_telegram_invalid:${reason}$`),
   );
 }
+
+function assertInvalidAiCost(mutator, name) { const snapshot = aiCostSnapshot(); mutator(snapshot.aiCost); const own = () => Reflect.ownKeys(snapshot.aiCost).map((key) => [key, Object.getOwnPropertyDescriptor(snapshot.aiCost, key)]); const before = own(), proto = Object.getPrototypeOf(snapshot.aiCost); let logs = 0; const originalError = console.error; console.error = () => { logs += 1; }; try { assert.throws(() => renderCfoTelegram({ locale: "ja", view: "summary", snapshot }), /^Error: cfo_telegram_invalid:invalid_ai_cost$/, name); } finally { console.error = originalError; } assert.deepEqual(own(), before, name); assert.equal(Object.getPrototypeOf(snapshot.aiCost), proto, name); assert.equal(logs, 0, name); }
 
 test("complete Japanese summary answers amount, change, freshness, and action", () => {
   const result = renderCfoTelegram({ locale: "ja", view: "summary", snapshot: completeSnapshot() });
@@ -150,6 +154,23 @@ test("English summary uses the same facts without technical language", () => {
   assert.match(text, /Confirmed assets\s+JPY 420,000/);
   assert.match(text, /Nothing right now/);
 });
+
+test("AI cost summary/detail is safe and old snapshots stay byte-identical", () => {
+  const snapshot = aiCostSnapshot(); snapshot.sources[0].accountNumber = "4111 1111 1111 1111"; snapshot.rawPayload = { recordId: "receipt-id", url: "https://private.example/receipt" };
+  const ja = renderCfoTelegram({ locale: "ja", view: "summary", snapshot }), en = renderCfoTelegram({ locale: "en", view: "summary", snapshot }), detail = renderCfoTelegram({ locale: "ja", view: "ai_cost", snapshot });
+  assert.match(ja.text, /AI費用\nClaude \$220\.00 \/ 月（領収書確認済み）\nCodex 請求額未確認/); assert.match(en.text, /AI costs\nClaude \$220\.00 \/ month \(receipt confirmed\)\nCodex amount not confirmed/);
+  assert.equal(detail.text, "AI費用\nClaude Max 20x\n支払 $220.00\n期間 2026-07-20〜2026-08-20\n根拠 領収書確認済み\nCodex 請求額未確認\nAPI換算 まだ計算していません"); assert.ok(ja.extra.reply_markup.inline_keyboard.flat().some((button) => button.callback_data === "cfo:ai_cost:20260808:1")); assert.deepEqual(detail.extra.reply_markup.inline_keyboard, [[{ text: "概要に戻る", callback_data: "cfo:summary:20260808:1" }]]); assert.doesNotMatch(JSON.stringify([ja, detail]), /receipt-id|https?:\/\/|4111|recordId|rawPayload|sha256|\/Users\//i);
+  assert.deepEqual(renderCfoTelegram({ locale: "ja", view: "summary", snapshot: completeSnapshot() }), { text: "💰 今日のお金\n\n確認できた資産\t¥420,000\n確認できた負債\t¥30,000\n差し引き\t¥390,000\n前回から\t+¥1,200\n\n✅ Moneytree（三菱UFJ銀行） 2026-08-08T06:02:00+09:00更新\n今すること：ありません", extra: { reply_markup: { inline_keyboard: [[{ text: "口座を見る", callback_data: "cfo:accounts:20260808:1" }], [{ text: "正確さを見る", callback_data: "cfo:accuracy:20260808:1" }]] } } });
+  assert.throws(() => renderCfoTelegram({ locale: "ja", view: "ai_cost", snapshot: completeSnapshot() }), /^Error: cfo_telegram_invalid:invalid_ai_cost$/);
+});
+
+test("AI cost strict shape rejects unsafe facts before sanitization", () => {
+  const cases = [["extra", (ai) => { ai.extra = "private"; }], ["amount", (ai) => { ai.amount = "0.00"; }], ["literals", (ai) => { ai.provider = "openai"; ai.plan = "max_5x"; ai.currency = "JPY"; ai.evidenceStatus = "raw"; }], ["date", (ai) => { ai.billingPeriodStart = "2026-02-30"; }], ["reverse", (ai) => { ai.billingPeriodEnd = "2026-07-20"; }], ["array value", (ai) => { ai.unavailableProviders = ["anthropic"]; }], ["sparse", (ai) => { const value = []; value.length = 1; ai.unavailableProviders = value; }], ["array extra/symbol", (ai) => { const value = ["openai"]; value.extra = true; value[Symbol("x")] = true; ai.unavailableProviders = value; }], ["array accessor/proto", (ai) => { Object.defineProperty(ai.unavailableProviders, "0", { get: () => "openai", enumerable: true }); Object.setPrototypeOf(ai.unavailableProviders, {}); }], ["object symbol", (ai) => { ai[Symbol("x")] = true; }], ["object accessor/proto", (ai) => { Object.defineProperty(ai, "amount", { get: () => "220.00", enumerable: true }); Object.setPrototypeOf(ai, null); }]];
+  for (const [name, mutator] of cases) assertInvalidAiCost(mutator, name);
+  const snapshot = aiCostSnapshot(); let reads = 0; Object.defineProperty(snapshot, "aiCost", { get: () => { reads += 1; return aiCostSnapshot().aiCost; }, enumerable: true }); assert.throws(() => renderCfoTelegram({ locale: "ja", view: "summary", snapshot }), /^Error: cfo_telegram_invalid:invalid_ai_cost$/); assert.equal(reads, 0);
+});
+
+test("AI cost coexists with action-required reconnect text and button", () => { const snapshot = actionRequiredSnapshot(); snapshot.aiCost = aiCostSnapshot().aiCost; const result = renderCfoTelegram({ locale: "ja", view: "summary", snapshot }); assert.match(result.text, /Moneytreeの接続を1回だけ更新してください/); assert.match(result.text, /AI費用\nClaude \$220\.00 \/ 月（領収書確認済み）\nCodex 請求額未確認/); assert.ok(result.extra.reply_markup.inline_keyboard.flat().some((button) => button.callback_data === "cfo:ai_cost:20260808:1")); });
 
 test("amount totals accept only safe integers or null", () => {
   for (const value of ["420000", Number.NaN, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
@@ -366,10 +387,11 @@ function callbackOptions({ rows = [{ report_payload: callbackSnapshot() }], fetc
   };
 }
 
-test("exact CFO callback reads one owner/date/revision snapshot, edits once, and answers once", async () => {
+test("exact CFO callback reads one persisted AI-cost snapshot, edits once, and answers once", async () => {
   const calls = [];
-  const result = await handleCfoTelegramCallback(callbackInput(), callbackOptions({ calls }));
-  assert.deepEqual(result, { status: "edited", view: "accounts", reportingDate: "2026-08-10", revision: 1 });
+  const persisted = { ...callbackSnapshot(), aiCost: aiCostSnapshot().aiCost };
+  const result = await handleCfoTelegramCallback(callbackInput({ data: "cfo:ai_cost:20260810:1" }), callbackOptions({ rows: [{ report_payload: persisted }], calls }));
+  assert.deepEqual(result, { status: "edited", view: "ai_cost", reportingDate: "2026-08-10", revision: 1 });
   assert.equal(Object.isFrozen(result), true);
   const fetchCall = calls.find(([kind]) => kind === "fetch");
   assert.ok(fetchCall);
@@ -383,8 +405,8 @@ test("exact CFO callback reads one owner/date/revision snapshot, edits once, and
   assert.equal(answers.length, 1);
   assert.deepEqual(edits[0][2], {
     chat_id: "100", message_id: 900, parse_mode: "HTML",
-    text: renderCfoTelegram({ locale: "ja", view: "accounts", snapshot: callbackSnapshot() }).text,
-    reply_markup: renderCfoTelegram({ locale: "ja", view: "accounts", snapshot: callbackSnapshot() }).extra.reply_markup,
+    text: renderCfoTelegram({ locale: "ja", view: "ai_cost", snapshot: persisted }).text,
+    reply_markup: renderCfoTelegram({ locale: "ja", view: "ai_cost", snapshot: persisted }).extra.reply_markup,
   });
   assert.deepEqual(answers[0][2], { callback_query_id: "callback-1" });
   assert.equal(calls.filter(([method]) => method === "sendMessage").length, 0);

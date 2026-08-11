@@ -4,7 +4,7 @@ const { CFO_STRINGS } = require("./i18n.js");
 const { tgCall } = require("./telegram.js");
 
 const STATES = new Set(["complete", "partial", "recovered", "action_required"]);
-const VIEWS = new Set(["summary", "accounts", "accuracy", "why"]);
+const VIEWS = new Set(["summary", "accounts", "accuracy", "why", "ai_cost"]);
 const STATUSES = new Set(["fresh", "stale", "unavailable"]);
 const EVIDENCE = Object.freeze({
   provider_billed: { ja: "確定", en: "Confirmed" },
@@ -12,23 +12,26 @@ const EVIDENCE = Object.freeze({
   locally_estimated: { ja: "推定", en: "Estimated" },
   unavailable: { ja: "不明", en: "Unknown" },
 });
-const ROOT_KEYS = new Set(["schemaVersion", "reportingDate", "revision", "state", "currency", "totals", "sources", "excluded", "repair", "action"]);
+const ROOT_KEYS = new Set(["schemaVersion", "reportingDate", "revision", "state", "currency", "totals", "sources", "excluded", "repair", "action", "aiCost"]);
+const AI_COST_KEYS = ["provider", "plan", "amount", "currency", "billingPeriodStart", "billingPeriodEnd", "evidenceStatus", "unavailableProviders"];
 const TOTAL_KEYS = new Set(["assetsMinor", "liabilitiesMinor", "netWorthMinor", "changeMinor"]);
 const SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "amountMinor", "verificationStatus"]);
 const EXCLUDED_KEYS = new Set(["label", "reason"]);
 const REPAIR_KEYS = new Set(["sourceLabel", "freshReread", "reconciled"]);
 const ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel", "nextRetryAt"]); const ACTION_LABELS = Object.freeze({ reconsent: "接続後に自動再確認", provider_outage: "30分後に自動再確認" }); const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 const BUTTONS = Object.freeze({
-  summary: [["accounts", "口座を見る", "View accounts"], ["accuracy", "正確さを見る", "View accuracy"]],
+  summary: [["accounts", "口座を見る", "View accounts"], ["accuracy", "正確さを見る", "View accuracy"], ["ai_cost", "AI費用", "AI costs"]],
   accounts: [["summary", "概要に戻る", "Back to summary"], ["accuracy", "正確さを見る", "View accuracy"]],
   accuracy: [["summary", "概要に戻る", "Back to summary"], ["why", "なぜこの金額？", "Why this amount?"]],
   why: [["summary", "概要に戻る", "Back to summary"]],
+  ai_cost: [["summary", "概要に戻る", "Back to summary"]],
 });
-const CALLBACK = /^cfo:(summary|accounts|accuracy|why):(\d{8}):([1-9]\d*)$/;
+const CALLBACK = /^cfo:(summary|accounts|accuracy|why|ai_cost):(\d{8}):([1-9]\d*)$/;
 const RETRY_TOAST = "読み込めませんでした。もう一度お試しください";
 
 function fail(reason) { throw new Error(`cfo_telegram_invalid:${reason}`); }
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
+function validateAiCost(snapshot) { try { if (snapshot === null || (typeof snapshot !== "object" && typeof snapshot !== "function")) return; if (!Reflect.ownKeys(snapshot).includes("aiCost")) return; const root = Object.getOwnPropertyDescriptor(snapshot, "aiCost"); if (!root || !("value" in root)) throw Error(); const value = root.value, keys = Reflect.ownKeys(value); if (Object.getPrototypeOf(value) !== Object.prototype || keys.length !== AI_COST_KEYS.length || keys.some((key) => !AI_COST_KEYS.includes(key))) throw Error(); for (const key of keys) if (!("value" in Object.getOwnPropertyDescriptor(value, key))) throw Error(); if (value.provider !== "anthropic" || value.plan !== "max_20x" || value.amount !== "220.00" || value.currency !== "USD" || value.evidenceStatus !== "provider_receipt") throw Error(); date(value.billingPeriodStart); date(value.billingPeriodEnd); if (!(Date.parse(`${value.billingPeriodEnd}T00:00:00Z`) > Date.parse(`${value.billingPeriodStart}T00:00:00Z`))) throw Error(); const unavailable = Object.getOwnPropertyDescriptor(value, "unavailableProviders").value, arrayKeys = Reflect.ownKeys(unavailable); if (!Array.isArray(unavailable) || Object.getPrototypeOf(unavailable) !== Array.prototype || arrayKeys.length !== 2 || arrayKeys.some((key) => key !== "0" && key !== "length")) throw Error(); for (const key of arrayKeys) if (!("value" in Object.getOwnPropertyDescriptor(unavailable, key))) throw Error(); if (Object.getOwnPropertyDescriptor(unavailable, "length").value !== 1 || Object.getOwnPropertyDescriptor(unavailable, "0").value !== "openai") throw Error(); } catch { fail("invalid_ai_cost"); } }
 function sanitize(snapshot) {
   if (!plain(snapshot)) return snapshot;
   const strip = (value) => Object.fromEntries(Object.entries(value).filter(([key]) => !/account|raw|credential|token|secret|password|cookie|oauth/i.test(key)));
@@ -62,7 +65,7 @@ function formatChange(locale, value) {
   return `${value >= 0 ? "+" : "-"}${formatAmount(locale, Math.abs(value))}`;
 }
 function validateSnapshot(snapshot) {
-  exact(snapshot, ROOT_KEYS, [...ROOT_KEYS]);
+  exact(snapshot, ROOT_KEYS, [...ROOT_KEYS].filter((key) => key !== "aiCost"));
   if (snapshot.schemaVersion !== 1) fail("invalid_schema_version");
   date(snapshot.reportingDate);
   if (!Number.isSafeInteger(snapshot.revision) || snapshot.revision < 1) fail("invalid_revision");
@@ -170,16 +173,21 @@ async function handleCfoTelegramCallback(input, options = {}) {
     return closedFailure();
   }
 }
+function aiCostText(locale, value, detail = false) { if (!detail) return locale === "ja" ? `AI費用\nClaude $${value.amount} / 月（領収書確認済み）\nCodex 請求額未確認` : `AI costs\nClaude $${value.amount} / month (receipt confirmed)\nCodex amount not confirmed`; return locale === "ja" ? `AI費用\nClaude Max 20x\n支払 $${value.amount}\n期間 ${value.billingPeriodStart}〜${value.billingPeriodEnd}\n根拠 領収書確認済み\nCodex 請求額未確認\nAPI換算 まだ計算していません` : `AI costs\nClaude Max 20x\nPaid $${value.amount}\nPeriod ${value.billingPeriodStart}–${value.billingPeriodEnd}\nEvidence receipt confirmed\nCodex amount not confirmed\nAPI equivalent not calculated yet`; }
 function extra(locale, snapshot, view) {
-  return { reply_markup: { inline_keyboard: BUTTONS[view].map(([next, ja, en]) => [{ text: locale === "ja" ? ja : en, callback_data: callbackData({ view: next, reportingDate: snapshot.reportingDate, revision: snapshot.revision }) }]) } };
+  return { reply_markup: { inline_keyboard: BUTTONS[view].filter(([next]) => next !== "ai_cost" || Object.prototype.hasOwnProperty.call(snapshot, "aiCost")).map(([next, ja, en]) => [{ text: locale === "ja" ? ja : en, callback_data: callbackData({ view: next, reportingDate: snapshot.reportingDate, revision: snapshot.revision }) }]) } };
 }
 function renderCfoTelegram({ locale, view, snapshot }) {
+  validateAiCost(snapshot);
   if (!CFO_STRINGS[locale]) fail("unsupported_locale");
   if (!VIEWS.has(view)) fail("unsupported_view");
   snapshot = sanitize(snapshot);
   validateSnapshot(snapshot);
   const strings = CFO_STRINGS[locale];
-  if (snapshot.state === "action_required" && view === "summary") return { text: `${strings.actionTitle}\n\n${strings.actionBody}\n${strings.actionRetry}`, extra: extra(locale, snapshot, view) };
+  const hasAiCost = Object.prototype.hasOwnProperty.call(snapshot, "aiCost");
+  if (view === "ai_cost") { if (!hasAiCost) fail("invalid_ai_cost"); return { text: aiCostText(locale, snapshot.aiCost, true), extra: extra(locale, snapshot, view) }; }
+  const ai = hasAiCost ? aiCostText(locale, snapshot.aiCost) : "";
+  if (snapshot.state === "action_required" && view === "summary") return { text: `${strings.actionTitle}\n\n${strings.actionBody}${ai ? `\n\n${ai}` : ""}\n${strings.actionRetry}`, extra: extra(locale, snapshot, view) };
   const freshness = locale === "ja" ? { fresh: "最新", stale: "古い", unavailable: "不明" } : { fresh: "Fresh", stale: "Stale", unavailable: "Unknown" };
   const marks = locale === "ja" ? { colon: "：", open: "（", close: "）", join: "、" } : { colon: ": ", open: " (", close: ")", join: ", " };
   const safeLabel = (value) => escapeHtml(String(value).replace(/\d[\d -]{2,}\d/g, "••••"));
@@ -193,7 +201,7 @@ function renderCfoTelegram({ locale, view, snapshot }) {
   const accounts = snapshot.sources.map((source) => `${safeLabel(source.label)}\t${formatAmount(locale, source.amountMinor)}${marks.open}${freshness[source.status]}${marks.close}`).join("\n");
   const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}`).join("\n");
   const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}${marks.colon}${excluded}`;
-  const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}\n${strings.noAction}`
+  const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}${ai ? `\n${ai}` : ""}\n${strings.noAction}`
     : view === "accounts" ? `${title}\n\n${accounts}\n${snapshot.state === "action_required" ? strings.actionBody : strings.noAction}`
       : view === "accuracy" ? `${title}\n\n${evidence}\n${strings.excluded}${marks.colon}${excluded}` : `${title}\n\n${why}`;
   return { text, extra: extra(locale, snapshot, view) };
