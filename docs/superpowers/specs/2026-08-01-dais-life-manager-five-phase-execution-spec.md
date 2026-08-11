@@ -7319,7 +7319,11 @@ cleanup後process 0、Connector ledger targetとcurrent CDP pagesの交差0、4 
 
 pushed HEAD `d1466d7a3`からofficial continuation wake `wake-ad059ed57b669d7bb18edc1e`をexact 1回実行した。exit 0、action `1035→1068`、report `122→123`、delivery `134→135`、Peatix audit `39→40`、bundle `11→12`、Meetup audit 0。Peatix既登録event `5123894`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11467/11469`、new bundle `cd9a01f9…`を回収した。terminal `applied_bundle`、failure 0、every-wake Telegram ID `11470`。cleanup後process 0、Connector ledger targetとCDP pageの交差0。次wakeも同じcontractでbacklog exhaustionからMeetup到達まで継続する。Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗364。これ以外の残TODO一覧は履歴）
+### O1B-25進捗365（Item 19M-D0k / Peatix evidence backlog continuation）
+
+pushed HEAD `baad99d47`からofficial continuation wake `wake-0f40af62c3f097c6e52ea1d6`をexact 1回実行した。exit 0、action `1068→1106`、report `123→124`、delivery `135→136`、Peatix audit `40→41`、bundle `12→13`、Meetup audit 0。Peatix既登録event `5129151`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11476/11477`、new bundle `3c8820c2…`を回収した。terminal `applied_bundle`、failure 0、every-wake ID `11478`。cleanup後process 0、Connector ledger target/CDP交差0。次wakeもbacklog exhaustionからMeetup到達まで継続する。Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗365。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
