@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — `CFO-2b.1c` is the only active slice |
+| Status | ACTIVE — Life Manager complete; `CFO-2b.2` Anicca iOS is the only active slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local `apps/life-call`; existing ledgers and provider APIs only |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -38,11 +38,11 @@ flowchart LR
 
 Only the first unchecked item is active.
 
-- [ ] **CFO-2b.1 — Life Manager**
+- [x] **CFO-2b.1 — Life Manager**
   - [x] **2b.1a** Normalize finalized TaskMarket/uGig external settlements already stored in `lm_agent_earnings`.
   - [x] **2b.1b** Read the canonical Life Manager Stripe Payment Link and normalize paid Checkout receipts; a paid
         Checkout balance is not bank-landed cash.
-  - [ ] **2b.1c** Compose one closed Life Manager monthly coverage fact from the existing revenue, direct-cost,
+  - [x] **2b.1c** Compose one closed Life Manager monthly coverage fact from the existing revenue, direct-cost,
         local-usage, and shared-subscription evidence. With no paid Stripe receipt, reversal/payout work is not
         applicable; the first future paid receipt changes coverage to partial and blocks profit until reconciliation.
 - [ ] **CFO-2b.2 — Anicca iOS**: Apple/RevenueCat receipts, payout state, attributed API cost.
@@ -65,7 +65,8 @@ Only the first unchecked item is active.
   empty receipt list, not a fabricated zero-money receipt.
 - Existing Life Manager cost and token evidence is real but incomplete. Confirmed Anthropic subscription cash cost
   is shared until the versioned allocation gate closes; it is not silently charged 100% to Life Manager.
-- The current Tokyo month contains 20,408 `lm_api_cost` rows with a locally-estimated USD subtotal of `0.04064343`.
+- The latest completion read of the current Tokyo month contains 20,421 `lm_api_cost` rows with a locally-estimated
+  USD subtotal of `0.04064343`.
   The two durable local-usage chains contain 33 Life Manager-attributed events and 50,448,879 reported tokens for
   that period. Both chains also report missing usage, runner-identity collisions, and unattributed usage, so the
   token count is an observed subtotal, never a complete cost. The live provider-usage table is absent from the
@@ -267,9 +268,24 @@ capital, profit, and ROI unknown/null. It must not say Life Manager profit is ze
 
 ### CFO-2b.1c acceptance
 
-- [ ] One exact current-month fixture returns the closed frozen fact and preserves every unknown as null/partial.
-- [ ] One compact regression proves the separate on-chain-only and paid-Stripe branches, proves unresolved Stripe
+- [x] One exact current-month fixture returns the closed frozen fact and preserves every unknown as null/partial.
+- [x] One compact regression proves the separate on-chain-only and paid-Stripe branches, proves unresolved Stripe
       reversal cannot enable profit, and makes malformed/secret-bearing input return only the fixed redacted error.
-- [ ] Focused, CFO, and full tests pass; exact scope is the existing two files with at most 100 gross additions.
-- [ ] A read-only real E2E recomputes the measured counts from source ledgers, feeds the composer, and prints only the
+- [x] Focused, CFO, and full tests pass; exact scope is the existing two files with at most 100 gross additions.
+- [x] A read-only real E2E recomputes the measured counts from source ledgers, feeds the composer, and prints only the
       closed fact summary; it performs no database, Stripe, launchd, Telegram, or local-state write.
+
+### CFO-2b.1c completion evidence
+
+- Code commits `7426ef747` and `53c656330` add the composer and its review fixes in the existing two files with 32
+  gross additions from base. No dependency, schema, scheduler, provider, persistence, or Telegram path changed.
+- TDD observed the missing-function RED, then focused 8/8, CFO 341/341, full `npm test`, syntax, diff, and exact scope
+  gates passed. Fix-round RED proved combined safe counts could overflow before the aggregate guard was added.
+- Fresh Sol review found and closed fixed-error remapping and false period-test defects. Scoped re-review is `ship`:
+  hostile shapes return only `business_coverage`, primitive periods reach the month validator, invalid Stripe status
+  fails, and combined receipt count overflow fails closed.
+- Real read-only E2E observed zero registered revenue receipts, 20,421 locally-estimated API-cost rows totaling
+  `$0.04064343`, 33 Life Manager-attributed local-usage events totaling 50,448,879 reported tokens, an absent live
+  provider-usage table, and the confirmed shared `$220` subscription. The resulting fact is partial; human cost,
+  capital, allocated subscription, profit, and ROI remain null. No raw/provider/customer/account identifier escaped.
+- No database, Stripe, launchd, Telegram, or local-state write occurred. The next active registry unit is Anicca iOS.
