@@ -7911,10 +7911,10 @@ Plan `docs/superpowers/plans/2026-08-12-connector-techplay-input-operation-19f.m
 
 production約45〜75 LOC、test約90〜150 LOC。review/final CTA、final-effect/readback success、factory/router/native order、evidence、Calendar、Telegram、schedule/live applicationは変更0。ship後のlive E2Eもreview/final click 0でinput completionとcleanupだけを実測する。Item19実bundleは未完。
 
-### O1B-25進捗457（Item 19F-D6 / TECH PLAY live opt-out companion repair plan）
+### O1B-25進捗457（Item 19F-D6 / TECH PLAY live transient hydration repair plan）
 
 Luna実装commit `75975b32b`はvalidated DOM後binding、parent deterministic 13 input actions、same join URL＋candidate event/ticketのpre/post reinspection、local CDP websocket/maxSteps contractを追加した。setter set-then-throw cleanupをSolが反証して修復後、Harness 128/128＋TECH PLAY workflow 16/16、合計144/144、syntax、diff、unique-radio mutationがPASSし、fresh re-reviewはCritical/Important/Minor 0で`ship`。
 
-しかしauthenticated実DOM E2Eは6 answer actions成功後、最初のopt-outでrole buttonがexact `aria-checked=false`になったにもかかわらずpost-inspection 0 controlsとなり`agent_action_failed`。review/final click 0、private projection leak 0、owned pageは4→5→4へcleanupした。公開属性の前後差分で、最初のtoggle後にTECH PLAYがid/nameなし・`aria-hidden=true`のnative checkbox 7件をhydration追加し、各inputがknown role-checkbox buttonの直後の一意sibling、`checked`とbutton `aria-checked`がexact一致することを実測した。現Inspectorの旧「known ID付きhidden companion」契約が実DOMと不一致である。
+しかしauthenticated実DOM E2Eはaction後のimmediate post-inspectionが0 controlsとなり`agent_action_failed`。run差により6 answer後または最初のscalar後に再現したが、いずれも意図したDOM値自体は変化し、review/final click 0、private projection leak 0、owned pageは4→5→4へcleanupした。guard番号付き実関数診断と前後countで、stable DOMはselector 65 nodes / safe controls 49、mutation直後だけ88件のauxiliary `INPUT type=text`が加わり153 nodesとなって150 boundを超え、短時間後65へ戻ることを確定した。role空のhidden native checkbox 7件はstable Inspectorが既に49 controlsで受理し、原因ではない。
 
-Plan `docs/superpowers/plans/2026-08-12-connector-techplay-optout-companion-repair-19f.md`は同じHarness/test exact 2 files。この一意1:1 companion構造だけを許可し、partial/extra/visible/identity/state driftを拒否する。review/final、factory/router/native order、evidence、Calendar、scheduleは変更0。修復後に同じ実E2Eを再実行する。Item19実bundleは未完。
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-optout-companion-repair-19f.md`は同じHarness/test exact 2 files。150-node Inspector contractは緩めず、operation成功後だけsame join URL＋candidateへのbounded reinspectionでstable 49-control postconditionを待つ。mutation再実行、oversized observation受理、model callは0。never-stable/page drift/wrong postconditionは失敗を維持する。review/final、factory/router/native order、evidence、Calendar、scheduleは変更0。修復後に同じ実E2Eを再実行する。Item19実bundleは未完。
