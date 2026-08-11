@@ -40,6 +40,8 @@ const EVENTBRITE_CTA_LABELS = new Set(["Get tickets", "Reserve a spot"]);
 const TECHPLAY_EVENT_REF = /^techplay-event:\/\/event\/([1-9][0-9]*)$/;
 const TECHPLAY_EVENT_URL = /^https:\/\/techplay\.jp\/event\/([1-9][0-9]*)$/;
 const TECHPLAY_JOIN_URL = /^https:\/\/techplay\.jp\/event\/join\/([1-9][0-9]*)$/;
+const TECHPLAY_CONFIRM_URL = /^https:\/\/techplay\.jp\/event\/join\/([1-9][0-9]*)\/confirm$/;
+const TECHPLAY_REVIEW_LABEL = "同意して内容を確認する";
 const TECHPLAY_ANSWER_NAME = /^enqueteAnswers\[([1-9][0-9]*)\]$/;
 const TECHPLAY_OPT_OUT_ID = /^(?:area_[1-9][0-9]*|tag_[1-9][0-9]*|organizer_[1-9][0-9]*|icon_published|use_as_preset)$/;
 const TECHPLAY_QUESTIONS = new Set(["氏名", "メールアドレス", "年齢", "キャリア状況", "所属企業（学校）名", "職種"]);
@@ -548,7 +550,18 @@ function isDoorkeeperFinalSubmit({ provider, page, candidate, control, controls 
   return matching.length === 1 && matching[0].control === control.control;
 }
 
-function startPeatixConfirmWait(page, provider, control) {
+function startPeatixConfirmWait(page, provider, control, candidate, controls = []) {
+  if (provider === "techplay") {
+    const binding = candidateTechPlayBinding(candidate); const token = `techplay_review_${binding?.eventId || ""}`;
+    const review = binding && control && control.kind === "button" && control.label === TECHPLAY_REVIEW_LABEL
+      && control.required === false && control.completed === false && control.submittable === true && control.control === token;
+    const matching = Array.isArray(controls) ? controls.filter((item) => item && item.control === token && item.kind === "button"
+      && item.label === TECHPLAY_REVIEW_LABEL && item.required === false && item.completed === false && item.submittable === true) : [];
+    let href = ""; try { href = String(typeof page?.url === "function" ? page.url() : ""); } catch {}
+    if (!review || matching.length !== 1 || href !== `${binding.canonicalUrl.replace("/event/", "/event/join/")}` || typeof page?.waitForURL !== "function") return { unavailable: true, promise: Promise.resolve(false) };
+    let wait; try { wait = page.waitForURL((url) => { const match = TECHPLAY_CONFIRM_URL.exec(String(url || "")); return Boolean(match && match[1] === binding.eventId); }, { waitUntil: "domcontentloaded", timeout: 30_000 }); } catch { return { unavailable: true, promise: Promise.resolve(false) }; }
+    return { promise: Promise.resolve(wait).then(() => { try { const match = TECHPLAY_CONFIRM_URL.exec(String(typeof page.url === "function" ? page.url() : "")); return Boolean(match && match[1] === binding.eventId); } catch { return false; } }, () => false) };
+  }
   if (
     provider !== "peatix" || !control || control.kind !== "button" || control.submittable !== true
     || control.label !== PEATIX_FORM_SUBMIT_LABEL
@@ -1093,11 +1106,20 @@ async function operatePageControl(input = {}) {
     const scalar = /^techplay_answer_[1-9][0-9]*$/.test(token) && input.control.kind === "input" && input.action.purpose === "fill" && input.action.method === "ax_fill";
     const radio = /^techplay_answer_[1-9][0-9]*_[1-9][0-9]*$/.test(token) && input.control.kind === "radio" && input.action.purpose === "fill" && input.action.method === "ax_check";
     const optout = /^techplay_optout_(?:area_[1-9][0-9]*|tag_[1-9][0-9]*|organizer_[1-9][0-9]*|icon_published|use_as_preset)$/.test(token) && input.control.kind === "checkbox" && input.action.purpose === "fill" && input.action.method === "ax_uncheck";
-    if (!binding || href !== `${binding.canonicalUrl.replace("/event/", "/event/join/")}` || input.control.required !== true || input.control.completed !== false || input.control.submittable !== false || (!scalar && !radio && !optout)) return Object.freeze({ status: "failed" });
+    const review = binding && /^techplay_review_[1-9][0-9]*$/.test(token) && token === `techplay_review_${binding.eventId}`
+      && input.control.kind === "button" && input.control.label === TECHPLAY_REVIEW_LABEL
+      && input.control.required === false && input.control.completed === false && input.control.submittable === true
+      && input.action.purpose === "submit" && input.action.method === "ax_click";
+    if (!binding || href !== `${binding.canonicalUrl.replace("/event/", "/event/join/")}` || (!review && (input.control.required !== true || input.control.completed !== false || input.control.submittable !== false || (!scalar && !radio && !optout)))) return Object.freeze({ status: "failed" });
     let locator; try { locator = target.locator(`[data-lm-connector-control="${token}"]`); } catch { return Object.freeze({ status: "failed" }); }
     try {
       if (!locator || typeof locator.count !== "function" || await locator.count() !== 1) return Object.freeze({ status: "failed" });
-      if (scalar) { if (typeof input.value !== "string" || typeof locator.fill !== "function") return Object.freeze({ status: "failed" }); await locator.fill(input.value); }
+      if (review) {
+        let currentHref = ""; try { currentHref = String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return Object.freeze({ status: "failed" }); }
+        if (currentHref !== `${binding.canonicalUrl.replace("/event/", "/event/join/")}`) return Object.freeze({ status: "failed" });
+        if (typeof locator.click !== "function") return Object.freeze({ status: "failed" });
+        try { await locator.click(); } catch { return Object.freeze({ status: "failed", attempted: true }); }
+      } else if (scalar) { if (typeof input.value !== "string" || typeof locator.fill !== "function") return Object.freeze({ status: "failed" }); await locator.fill(input.value); }
       else if (radio) { if (typeof locator.check !== "function") return Object.freeze({ status: "failed" }); await locator.check(); }
       else if (typeof locator.press === "function") await locator.press("Space");
       else if (typeof locator.click === "function") await locator.click();
@@ -1425,7 +1447,9 @@ function createProductionBrowserHarness(options = {}) {
     if (!PROVIDERS.has(provider)) invalid();
     if (provider === "techplay") {
       const binding = candidateTechPlayBinding(input.candidate);
-      return binding ? performTechPlayInputAction(input, binding) : Object.freeze({ status: "failed" });
+      if (!binding) return Object.freeze({ status: "failed" });
+      return /^techplay_review_[1-9][0-9]*$/.test(String(input.action.control || ""))
+        ? performTechPlayReviewAction(input, binding) : performTechPlayInputAction(input, binding);
     }
     const doorkeeperBinding = provider === "doorkeeper" ? candidateDoorkeeperBinding(input.candidate) : null;
     if (provider === "doorkeeper" && !doorkeeperBinding) return Object.freeze({ status: "failed" });
@@ -1592,6 +1616,37 @@ function createProductionBrowserHarness(options = {}) {
     return optout ? Object.freeze({ purpose: "fill", method: "ax_uncheck", control: optout.control }) : null;
   }
 
+  async function performTechPlayReviewAction(input, binding) {
+    const action = input.action || {}; const token = `techplay_review_${binding.eventId}`;
+    if (action.purpose !== "submit" || action.method !== "ax_click" || action.control !== token) return Object.freeze({ status: "failed" });
+    let observation; try { observation = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed" }); }
+    const rebound = candidateTechPlayBinding(input.candidate); if (!rebound || rebound.eventId !== binding.eventId || rebound.canonicalUrl !== binding.canonicalUrl || rebound.ticketId !== binding.ticketId) return Object.freeze({ status: "failed" });
+    const review = observation.controls.find((control) => control.control === token);
+    const pending = observation.controls.some((control) => /^(?:techplay_ticket_|techplay_answer_|techplay_optout_)/.test(control.control) && control.completed !== true);
+    const reviews = observation.controls.filter((control) => control.control === token && control.kind === "button" && control.label === TECHPLAY_REVIEW_LABEL && control.required === false && control.completed === false && control.submittable === true);
+    if (!review || pending || reviews.length !== 1) return Object.freeze({ status: "failed" });
+    const navigationWait = startPeatixConfirmWait(input.page, "techplay", review, input.candidate, observation.controls);
+    if (!navigationWait || navigationWait.unavailable) return Object.freeze({ status: "failed" });
+    const beforeClick = candidateTechPlayBinding(input.candidate); if (!beforeClick || beforeClick.eventId !== binding.eventId || beforeClick.canonicalUrl !== binding.canonicalUrl || beforeClick.ticketId !== binding.ticketId) return Object.freeze({ status: "failed" });
+    let result; try { result = await operateControl({ page: input.page, provider: "techplay", candidate: input.candidate, control: review, action }); } catch { result = null; }
+    if (!result || (result.status !== "success" && result.attempted !== true)) return Object.freeze({ status: "failed" });
+    if (!(await navigationWait.promise)) return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" });
+    const confirmUrl = `https://techplay.jp/event/join/${binding.eventId}/confirm`;
+    const sameBinding = (candidateBinding) => Boolean(candidateBinding && candidateBinding.eventId === binding.eventId && candidateBinding.canonicalUrl === binding.canonicalUrl && candidateBinding.ticketId === binding.ticketId);
+    for (let attempt = 0; attempt < TECHPLAY_POSTCHECK_ATTEMPTS; attempt += 1) {
+      let href = ""; try { href = String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" }); }
+      if (href !== confirmUrl || !sameBinding(candidateTechPlayBinding(input.candidate))) return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" });
+      let confirm; try { confirm = await observed(input.page, "techplay", input.candidate, true); } catch { return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" }); }
+      let afterHref = ""; try { afterHref = String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" }); }
+      if (afterHref !== confirmUrl || !sameBinding(candidateTechPlayBinding(input.candidate))) return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" });
+      const final = confirm.controls.filter((control) => control.control === `techplay_final_${binding.eventId}` && control.kind === "button" && control.label === "申し込みを確定する" && control.required === false && control.completed === false && control.submittable === true);
+      if (final.length === 1 && confirm.controls.length === 1) return Object.freeze({ status: "success" });
+      if (confirm.controls.length !== 0) return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" });
+      if (attempt + 1 < TECHPLAY_POSTCHECK_ATTEMPTS) { try { await sleep(TECHPLAY_POSTCHECK_INTERVAL_MS); } catch { return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" }); } }
+    }
+    return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" });
+  }
+
   async function runTechPlayInputFallback(input) {
     const binding = candidateTechPlayBinding(input.candidate); const maxSteps = Number(input.maxSteps);
     if (!binding || !PAGE_WEBSOCKET.test(String(input.pageWebsocket || "")) || !input.page || typeof input.page !== "object" || input.expectedState !== "registered_or_pending" || input.maxSteps == null || !Number.isInteger(maxSteps) || maxSteps < 1 || maxSteps > 20) invalid();
@@ -1599,10 +1654,18 @@ function createProductionBrowserHarness(options = {}) {
     for (let step = 0; step < maxSteps; step += 1) {
       let observation; try { observation = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([...repaired]) }); }
       if (!observation || !observation.controls.length) return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([...repaired]) });
+      if (observation.controls.length === 1 && observation.controls[0].control === `techplay_final_${binding.eventId}`) return Object.freeze({ status: "failed", safe_reason: "final_blocked", repaired_actions: Object.freeze([...repaired]) });
       const action = await selectTechPlayInputAction(observation, input.page, input.candidate);
       if (!action) {
         const complete = observation.controls.every((control) => !/^techplay_(?:answer|optout)_/.test(control.control) || control.completed === true);
-        return Object.freeze({ status: "failed", safe_reason: complete ? "review_blocked" : "agent_action_failed", repaired_actions: Object.freeze([...repaired]) });
+        if (!complete) return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([...repaired]) });
+        const review = observation.controls.find((control) => control.control === `techplay_review_${binding.eventId}`);
+        if (!review) return Object.freeze({ status: "failed", safe_reason: "review_blocked", repaired_actions: Object.freeze([...repaired]) });
+        const reviewAction = { purpose: "submit", method: "ax_click", control: review.control };
+        const reviewResult = await performTechPlayReviewAction({ ...input, action: reviewAction }, binding);
+        if (!reviewResult || reviewResult.status !== "success") return Object.freeze({ status: "failed", safe_reason: reviewResult?.safe_reason === "effect_unknown" ? "effect_unknown" : "review_blocked", repaired_actions: Object.freeze(reviewResult?.attempted === true ? [...repaired, reviewAction] : [...repaired]) });
+        repaired.push(reviewAction);
+        return Object.freeze({ status: "failed", safe_reason: "final_blocked", repaired_actions: Object.freeze([...repaired]) });
       }
       const result = await performTechPlayInputAction({ ...input, action }, binding);
       if (!result || result.status !== "success") return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([...repaired]) });
