@@ -352,6 +352,22 @@ test("Eventbrite default parent readback ignores related event anchors and benig
   assert.deepEqual(await workflow.readProviderState({ page, candidate }), { status: "absent" });
 });
 
+test("Eventbrite default parent readback rejects a missing canonical rel", async () => {
+  const candidate = { ...binding("807"), provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" };
+  const control = { innerText: "Reserve a spot", offsetWidth: 120, offsetHeight: 32 };
+  const page = { url() { return candidate.canonical_url; }, async evaluate(callback) {
+    const previous = global.document;
+    global.document = { body: { innerText: "Welcome. Log in or sign in; auth is benign copy." }, querySelectorAll(selector) {
+      if (selector === "link[rel='canonical']") return [];
+      if (selector === '[data-testid="conversion-bar-checkout-button"]') return [control];
+      return [];
+    } };
+    try { return await callback(); } finally { if (previous === undefined) delete global.document; else global.document = previous; }
+  } };
+  const workflow = createEventbriteScriptFirstWorkflow();
+  assert.deepEqual(await workflow.readProviderState({ page, candidate }), { status: "unavailable" });
+});
+
 test("Eventbrite default listing reader uses exactly one owned page and exact card selectors", async () => {
   const first = binding("901");
   const calls = [];
