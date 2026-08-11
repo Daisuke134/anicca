@@ -97,13 +97,18 @@ flowchart TB
 
     subgraph APPLY["3. 申込はscript-first"]
         NAV["candidate URLへsame-page navigate"]
-        PRE["parent pre-submit readback"]
-        LADDER["action ladder<br/>verified cache → direct workflow → bounded model fallback"]
+        PRE{"official parent / child-frame pre-readbackが<br/>already registered / pending?"}
+        CACHE["verified action cache"]
+        DIRECT["provider script-first action"]
         MODEL["fallbackはunknown UI時だけ<br/>最大10 step<br/>Codex gpt-5.6-terra"]
         POST{"official parent / child-frame readbackが<br/>registered / pending?"}
-        GATE -->|Yes| NAV --> PRE --> LADDER
-        LADDER -.必要時.-> MODEL --> POST
-        LADDER --> POST
+        GATE -->|Yes| NAV --> PRE
+        PRE -->|Yes| SUPPORT
+        PRE -->|No| CACHE
+        CACHE -->|registered / pending| SUPPORT
+        CACHE -->|not completed| DIRECT
+        DIRECT -->|completed| POST
+        DIRECT -->|not completed| MODEL --> POST
         POST -->|No| FAIL["failure count +1<br/>次候補へ継続"]
         FAIL --> NEXT
     end
@@ -123,7 +128,7 @@ flowchart TB
 
     subgraph FINISH["5. 必ず片付けて報告"]
         EXHAUST["全候補終了<br/>completed_no_effect / providers_exhausted"]
-        CIRCUIT["3連続failure または10分<br/>circuit_open"]
+        CIRCUIT["circuit_open<br/>3連続failure / 10分 / effect_unknown<br/>evidence failureは即停止"]
         REPORT["wake reportをdurable保存<br/>Telegram provider IDを確認"]
         CLOSE["owned targetをrelease / close<br/>lockをexact ownerだけrelease"]
         NEXT -->|残りなし| EXHAUST --> REPORT

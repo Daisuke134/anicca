@@ -139,8 +139,10 @@ flowchart LR
     NAV --> PRE{"Official parent / child-frame readback<br/>already registered?"}
     PRE -->|Yes| SUPPORT
     PRE -->|No| CACHE["Verified action cache"]
-    CACHE --> DIRECT["Provider script-first action"]
-    DIRECT --> HARNESS["Bounded Browser Harness<br/>observe → propose → operate"]
+    CACHE -->|registered / pending| SUPPORT
+    CACHE -->|not completed| DIRECT["Provider script-first action"]
+    DIRECT -->|completed| POST
+    DIRECT -->|not completed| HARNESS["Bounded Browser Harness<br/>observe → propose → operate"]
     HARNESS --> POST{"Official parent / child-frame readback<br/>registered or pending?"}
     POST -->|No / safe failure| NEXT
     POST -->|Yes| SUPPORT
@@ -157,7 +159,7 @@ flowchart LR
     SUPPORT -->|No| EVIDPENDING["Acceptance pending<br/>no applied_bundle claim"]
 
     NEXT -->|All exhausted| NOEFFECT["completed_no_effect<br/>external write 0"]
-    HARNESS -->|effect unknown| CIRCUIT["circuit_open<br/>never repeat the mutation"]
+    HARNESS -->|effect unknown| CIRCUIT["circuit_open<br/>effect unknown · evidence failure · safety threshold"]
     EVIDPENDING --> CIRCUIT
     BUNDLE --> REPORT["Durable wake report"]
     NOEFFECT --> REPORT
