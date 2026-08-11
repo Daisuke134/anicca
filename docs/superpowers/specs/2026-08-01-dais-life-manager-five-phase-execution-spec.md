@@ -7860,3 +7860,15 @@ TECH PLAY公式email accountを作成・確認し、passwordはmacOS Keychain se
 authenticated公式input `https://techplay.jp/event/join/999190`は選択済みfree ticket `98036`、required organizer questions 6件（氏名、email、年齢、career、所属、職種）、CTA exact `同意して内容を確認する`。既定ONは東京area、event tags 3、organizer、profile icon公開、input preset保存の計7項目。private SSOTの事実を一時入力し7項目を全OFFにしてcontent confirmへ進むと、exact `https://techplay.jp/event/join/999190/confirm`、final CTA exact `申し込みを確定する` 1件を確認した。final clickは0、一時tabは各回4→4でcleanupした。
 
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-parent-readback-19f.md`は既存TECH PLAY workflow/testのexact 2 files。canonical eventのsame event ID＋exactly-one same ticket ID＋`is_joined === true`だけを`registered`、same current native-open ticketのfalseだけを`absent`にする。join/confirm page、redirect、identity/ticket ambiguity、malformed/closed state、page driftは`unavailable`。production約45〜75 LOC、test約70〜110 LOC。Browser controls/private values/final click/routing/evidence/Calendar/live stateは次slice。Item19実bundleは未完。
+
+### O1B-25進捗449（Item 19F-D2 / TECH PLAY exact parent readback ship）
+
+LunaがTECH PLAY workflow/testのexact 2 filesをTDD変更し、code commit `f910a4eeb`をpushした。初回REDは14件中13 pass / 1 failで現stubのregistered常時unavailableを捕捉。GREEN後、fresh reviewが募集開始前でも`absent`になるImportant 1件を反証したためshipを止め、同じLunaがstrict factory clock、event end、既存`recruitmentOpen`をreadbackへ追加した。default bounded reader経由のregistered/absentとstatus-only privacyも直接固定した。
+
+最終focused 16/16、Eventbrite 21/21、Doorkeeper 15/15、combined 52/52、両file syntax、diff、exact2-file scope PASS。ticket-ID guard除去mutationはnamed wrong-ticket caseをregisteredへ誤判定して1 fail、復元後GREEN。fresh re-reviewはCritical/Important/Minor 0で`ship`。実authenticated canonical `999190` / ticket `98036` readbackは`absent`、owned tab 4→4、external write 0。次active sliceはTECH PLAY input/confirm inspector。Item19実bundleは未完。
+
+### O1B-25進捗450（Item 19F-D3 / TECH PLAY input・confirm inspector plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-input-inspector-19f.md`はproduction Browser Harness/testのexact 2 files。exact input/confirm URL、same event/ticket、dynamic required question groups、known default-on opt-outs、review/final CTAをbounded privacy-safe controlsへ投影するだけのread-only slice。production約70〜100 LOC、test約110〜170 LOC。
+
+value resolver、private profile更新、click/fill、final-effect readback配線、workflow factory/router/native order、evidence、Calendar、live stateは変更0。review/push後にaction operationを別sliceで追加する。Item19実bundleは未完。
