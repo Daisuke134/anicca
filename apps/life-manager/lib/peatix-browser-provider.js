@@ -52,6 +52,17 @@ async function waitForStep(page, id, step) {
     return stepUrl(pageHref(page), id, step);
   } catch { return false; }
 }
+async function waitForFormOrConfirm(page, id) {
+  if (!page || typeof page.waitForURL !== "function") return null;
+  try {
+    await page.waitForURL((url) => {
+      const href = String(url);
+      return stepUrl(href, id, "form") || stepUrl(href, id, "confirm");
+    }, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    const href = pageHref(page);
+    return stepUrl(href, id, "form") ? "form" : stepUrl(href, id, "confirm") ? "confirm" : null;
+  } catch { return null; }
+}
 async function waitForConfirmed(page, id) {
   if (!page || typeof page.waitForURL !== "function") return false;
   try {
@@ -155,8 +166,10 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
     const base = `https://peatix.com/sales/event/${c.id}`;
     if (typeof page.goto !== "function" || !await page.goto(`${base}/tickets`, { waitUntil: "domcontentloaded", timeout: 30000 }).then(() => true, () => false) || !stepUrl(pageHref(page), c.id, "tickets")) return out("unavailable", "tickets_navigation_failed");
     const ticket = await control(page, `input[name=number_of_tickets_${c.ticket}]`); if (!ticket || typeof ticket.fill !== "function") return out("unavailable", "ticket_control_unavailable"); await ticket.fill("1");
-    const next = await control(page, "#next-button"); if (!next || typeof next.click !== "function") return out("unavailable", "next_control_unavailable"); if (typeof page.waitForURL !== "function") return out("unavailable", "form_navigation_failed"); const formNavigation = waitForStep(page, c.id, "form"); await next.click();
-    if (!await formNavigation) return out("unavailable", "form_navigation_failed");
+    const next = await control(page, "#next-button"); if (!next || typeof next.click !== "function") return out("unavailable", "next_control_unavailable"); if (typeof page.waitForURL !== "function") return out("unavailable", "form_navigation_failed"); const nextNavigation = waitForFormOrConfirm(page, c.id); await next.click();
+    const nextStep = await nextNavigation;
+    if (!nextStep) return out("unavailable", "form_navigation_failed");
+    if (nextStep === "form") {
     const form = await evaluate(page, () => {
       const norm = (x) => String(x || "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
       const label = (n) => norm(n.getAttribute("aria-label") || (n.labels && n.labels[0] && n.labels[0].textContent) || n.getAttribute("data-label"));
@@ -179,6 +192,7 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
     if (privacy.length === 1) { const consent = await control(page, privacy[0].selector); if (!consent || typeof consent.check !== "function") return out("unavailable", "privacy_control_unavailable"); if (typeof consent.isChecked !== "function" || !await consent.isChecked()) await consent.check(); }
     const formSubmit = await control(page, "#form-submit-button"); if (!formSubmit || typeof formSubmit.click !== "function") return out("unavailable", "form_submit_unavailable"); if (typeof page.waitForURL !== "function") return out("unavailable", "confirm_navigation_failed"); const confirmNavigation = waitForStep(page, c.id, "confirm"); await formSubmit.click();
     if (!await confirmNavigation) { const confirmUrl = pageHref(page); const u = (() => { try { return new URL(confirmUrl); } catch { return null; } })(); const match = u && STEP.exec(u.pathname); return out("unavailable", match && match[2] === "confirm" && match[1] !== c.id ? "confirm_event_mismatch" : "confirm_navigation_failed"); }
+    }
     const confirm = await evaluate(page, () => { const b = document.querySelector("#confirm-button"); return { text: b && String(b.innerText || b.value || "").replace(/\s+/g, " ").trim(), visible: !!(b && !b.hidden) }; }, { mode: "confirm", event_id: c.id });
     if (!confirm || confirm.text !== TEXT || confirm.visible !== true) return out("unavailable", "confirm_control_unavailable");
     const family = await inspectControl(page, '#confirm-form [name="lastname_edit"]'); const given = await inspectControl(page, '#confirm-form [name="firstname_edit"]');
