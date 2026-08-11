@@ -201,6 +201,7 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
       const nameOf = (element) => String((element && element.getAttribute && element.getAttribute("name")) || (element && element.name) || "");
       const requiredOf = (element) => element.required === true || element.hasAttribute?.("required") || String(element.getAttribute?.("aria-required") || "").toLowerCase() === "true";
       const enabledOf = (element) => element.disabled !== true && !element.hasAttribute?.("disabled") && String(element.getAttribute?.("aria-disabled") || "").toLowerCase() !== "true";
+      const textOf = (element) => String(element && (element.innerText || element.textContent || "")).replace(/\s+/g, " ").trim();
       const fields = [{ key: "first_name", label: "First name", pattern: /^buyer\.N-first_name$/, type: "text" }, { key: "last_name", label: "Last name", pattern: /^buyer\.N-last_name$/, type: "text" }, { key: "email", label: "Email", pattern: /^buyer\.N-email$/, type: "email" }, { key: "confirm_email", label: "Confirm email", pattern: /^buyer\.confirmEmailAddress$/, type: "email" }];
       const candidates = fields.map((field) => elements.filter((element) => tagOf(element) === "input" && field.pattern.test(nameOf(element)) && typeOf(element) === field.type));
       const required = elements.filter((element) => {
@@ -211,7 +212,7 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
       if (candidates.some(([element]) => !element || !element.dataset)) return [];
       candidates.forEach(([element], index) => { element.dataset.lmConnectorControl = `eventbrite_attendee_${fields[index].key}_${id}`; });
       const completedOf = (element) => Boolean(String(element && element.value || "").trim());
-      return fields.map((field, index) => ({
+      const controls = fields.map((field, index) => ({
         control: `eventbrite_attendee_${field.key}_${id}`,
         kind: "input",
         label: field.label,
@@ -219,6 +220,17 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
         completed: completedOf(candidates[index][0]),
         submittable: false,
       }));
+      if (!controls.every((control) => control.completed === true)) return controls;
+      const marketingNames = new Set(["organizationMarketingOptIn", "ebMarketingOptIn"]);
+      const marketing = elements.filter((element) => marketingNames.has(nameOf(element)));
+      const marketingUnique = new Set(marketing.map((element) => nameOf(element))).size === marketing.length;
+      const marketingValid = marketingUnique && marketing.every((element) => tagOf(element) === "input" && typeOf(element) === "checkbox" && visibleOf(element) && enabledOf(element) && !requiredOf(element) && element.checked !== true && !element.hasAttribute?.("checked"));
+      const primaryCandidates = elements.filter((element) => String((element.getAttribute && element.getAttribute("data-testid")) || (element.dataset && element.dataset.testid) || "") === "eds-modal__primary-button");
+      const primary = primaryCandidates.length === 1 ? primaryCandidates[0] : null;
+      const primaryValid = Boolean(primary && tagOf(primary) === "button" && typeOf(primary) === "button" && visibleOf(primary) && enabledOf(primary) && textOf(primary) === "Register");
+      if (!marketingValid || !primaryValid) return controls;
+      controls.push({ control: `eventbrite_attendee_register_${id}`, kind: "button", label: "Register", required: false, completed: false, submittable: true });
+      return controls;
     }, { eventId });
   } catch { return null; }
 }

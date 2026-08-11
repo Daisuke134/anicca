@@ -2041,6 +2041,54 @@ test("Eventbrite attendee inspector accepts the live literal N attendee field na
   }
 });
 
+test("Eventbrite attendee inspector exposes a read-only final Register control after exact4 completion", async () => {
+  const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
+  const field = (name, type = "text") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value: "complete" });
+  const first = field("buyer.N-first_name"); const last = field("buyer.N-last_name"); const email = field("buyer.N-email", "email"); const confirm = field("buyer.confirmEmailAddress", "email");
+  let primaryTestId = "eds-modal__primary-button";
+  const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register", getAttribute(name) {
+    if (name === "data-testid") return primaryTestId;
+    if (name === "aria-label") return "Register";
+    return null;
+  } });
+  const marketing = makeEventbriteTicketElement({ tagName: "INPUT", type: "checkbox", name: "organizationMarketingOptIn", required: false, checked: false });
+  const base = [first, last, email, confirm, primary, marketing]; let elements = [...base];
+  const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } };
+  const page = { url() { return candidate.canonical_url; }, frames() { return [frame]; }, locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; } };
+  const inspect = () => inspectPageControls({ provider: "eventbrite", page, event_id: "1901", canonical_url: candidate.canonical_url });
+  assert.deepEqual(await inspect(), [
+    { control: "eventbrite_attendee_first_name_1901", kind: "input", label: "First name", required: true, completed: true, submittable: false },
+    { control: "eventbrite_attendee_last_name_1901", kind: "input", label: "Last name", required: true, completed: true, submittable: false },
+    { control: "eventbrite_attendee_email_1901", kind: "input", label: "Email", required: true, completed: true, submittable: false },
+    { control: "eventbrite_attendee_confirm_email_1901", kind: "input", label: "Confirm email", required: true, completed: true, submittable: false },
+    { control: "eventbrite_attendee_register_1901", kind: "button", label: "Register", required: false, completed: false, submittable: true },
+  ]);
+  assert.equal(primary.dataset.lmConnectorControl, undefined);
+  const reset = () => { first.value = "complete"; last.value = "complete"; email.value = "complete"; confirm.value = "complete"; primaryTestId = "eds-modal__primary-button"; primary.tagName = "BUTTON"; primary.type = "button"; primary.innerText = "Register"; primary.textContent = "Register"; primary.hidden = false; primary.isConnected = true; primary.disabled = false; marketing.checked = false; marketing.required = false; marketing.hidden = false; marketing.isConnected = true; marketing.disabled = false; elements = [...base]; };
+  for (const [name, mutate] of [
+    ["incomplete", () => { first.value = ""; }],
+    ["primary-duplicate", () => { elements = [...base, makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" })]; }],
+    ["primary-wrong-testid", () => { primaryTestId = "other"; }], ["primary-wrong-tag", () => { primary.tagName = "DIV"; }], ["primary-wrong-type", () => { primary.type = "submit"; }],
+    ["primary-wrong-label", () => { primary.innerText = "Continue"; primary.textContent = "Continue"; }], ["primary-hidden", () => { primary.hidden = true; }], ["primary-detached", () => { primary.isConnected = false; }], ["primary-disabled", () => { primary.disabled = true; }],
+    ["marketing-checked", () => { marketing.checked = true; }], ["marketing-required", () => { marketing.required = true; }], ["marketing-hidden", () => { marketing.hidden = true; }], ["marketing-disabled", () => { marketing.disabled = true; }],
+    ["marketing-duplicate", () => { elements = [...base, makeEventbriteTicketElement({ tagName: "INPUT", type: "checkbox", name: "organizationMarketingOptIn", required: false, checked: false })]; }],
+  ]) {
+    reset(); mutate(); assert.equal((await inspect()).some((control) => control.control === "eventbrite_attendee_register_1901"), false, name);
+  }
+  reset(); elements = [...base, ...Array.from({ length: 96 }, (_, index) => makeEventbriteTicketElement({ tagName: "INPUT", type: "text", name: `extra-${index}` }))];
+  assert.deepEqual(await inspect(), [], "over-101");
+  reset(); let resolved = 0; let operated = 0;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("final readback must not run"); } },
+    async inspectControls(input) { return inspectPageControls(input); },
+    async proposeAction() { return { control: "eventbrite_attendee_register_1901" }; },
+    async operateControl() { operated += 1; return { status: "success" }; },
+    async resolveValue() { resolved += 1; return "unexpected"; },
+  });
+  assert.deepEqual(await harness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "submit", method: "ax_click", control: "eventbrite_attendee_register_1901" } }), { status: "failed" });
+  assert.equal(resolved, 0); assert.equal(operated, 0); assert.equal(primary.dataset.lmConnectorControl, undefined);
+});
+
 test("Eventbrite attendee fill binds the selected field to the same checkout child frame", async () => {
   const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
   const field = (name, type = "text") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value: "" });
