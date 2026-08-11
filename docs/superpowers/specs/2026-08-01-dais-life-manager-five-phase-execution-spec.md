@@ -7765,4 +7765,10 @@ LunaがCalendar gog adapter/testのexact 2 filesだけをSuperpowers TDD変更�
 
 拒否tableは未知providerの既存fail-closedでも通るため、raw equalityだけを一時除去するreversible mutationを実行した。uppercase raw host、explicit default port `:443`、fragmentの3件が`gog run`へ誤到達してnegative testが24/25、calls=3で失敗することを確認後、guardを復元した。Sol独立でfocused＋adjacent 58/58、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality APPROVED、Critical/Important/Minor 0、追加boundary probe 8/8で`ship`。
 
-Luma/Peatix/Connpass/Meetup、Calendar receipt/idempotency/readback、browser、minimal evidence、native、schedule、live state、external effectは変更0。次active sliceはpushed/clean preflight後のofficial foreground wake exact 1回。Item19 Doorkeeper実bundleはcurrent non-conflict candidateの有無を含め未完。
+Luma/Peatix/Connpass/Meetup、Calendar receipt/idempotency/readback、browser、minimal evidence、native、schedule、live state、external effectは変更0。次active sliceはpushed/clean preflight後、既存daily ownerをkickstartするofficial wake exact 1回。Item19 Doorkeeper実bundleはcurrent non-conflict candidateの有無を含め未完。
+
+### O1B-25進捗436（Item 19D-E4 / Doorkeeper official live acceptance plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-live-acceptance-19d.md`はcode変更0。pushed/clean HEAD `4032eea1e`、upstream 0/0、Native daily label loaded・not running・runs 0、legacy 3 labels unloaded、process 0、lock absent、CDP pages 4。baselineはbundle 13、report 132、report delivery 144、action 1448、provider audits Luma/Connpass/Peatix/Meetup/Doorkeeper/Eventbrite `133/56/49/4/5/2`。
+
+既存daily owner exact 1を`launchctl kickstart`で一度だけ発火し、同じofficial `skills/connector/run.sh`を最大12分watchする。manual provider/browser action、second executor、second wake、schedule変更は0。Doorkeeper Calendar-free candidateがあればregistered readback→provider receipt/artifact→Calendar create/readback→PNG→positive Telegram message/photo→Doorkeeper `applied_bundle`を要求する。再びCalendar-free 0ならtruthful audit、Doorkeeper external write 0、Eventbrite continuation、positive every-wake delivery、exact cleanupだけを受入し、成功を偽装しない。
