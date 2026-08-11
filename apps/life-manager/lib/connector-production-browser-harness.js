@@ -59,12 +59,16 @@ function candidateEventbriteBinding(candidate) {
   return ref && eventId && ref[1] === eventId
     ? Object.freeze({ eventId: ref[1], canonicalUrl: String(candidate.canonical_url) }) : null;
 }
-function isEventbriteTriggerSemantic(control) {
-  const token = EVENTBRITE_TRIGGER_CONTROL.exec(String(control && control.control || ""));
+function isEventbriteTriggerMeaning(control) {
   return Boolean(
-    token && control && control.kind === "button" && EVENTBRITE_CTA_LABELS.has(control.label)
+    control && control.kind === "button" && typeof control.label === "string" && control.label.trim()
     && control.required === false && control.completed === false && control.submittable === true
   );
+}
+function isEventbriteTriggerSemantic(control) {
+  return isEventbriteTriggerMeaning(control)
+    && EVENTBRITE_TRIGGER_CONTROL.test(String(control.control || ""))
+    && EVENTBRITE_CTA_LABELS.has(control.label);
 }
 function isEventbriteCheckoutTrigger({ provider, page, candidate, control, controls = [] } = {}) {
   if (provider !== "eventbrite" || !isEventbriteTriggerSemantic(control)) return false;
@@ -73,27 +77,40 @@ function isEventbriteCheckoutTrigger({ provider, page, candidate, control, contr
   let href = "";
   try { href = String(typeof page?.url === "function" ? page.url() : ""); } catch { href = ""; }
   if (href !== binding.canonicalUrl) return false;
-  const matching = Array.isArray(controls) ? controls.filter(isEventbriteTriggerSemantic) : [];
+  const matching = Array.isArray(controls) ? controls.filter(isEventbriteTriggerMeaning) : [];
   return matching.length === 1 && matching[0].control === control.control;
 }
-function eventbriteFrameMatches(frame, eventId) {
+function eventbriteFrameUrl(frame) {
   let href = "";
-  try { href = String(frame && typeof frame.url === "function" ? frame.url() : ""); } catch { return false; }
+  try { href = String(frame && typeof frame.url === "function" ? frame.url() : ""); } catch { return null; }
   try {
     const url = new URL(href);
-    const eventIds = url.searchParams.getAll("eid");
-    return url.protocol === "https:" && url.hostname === "www.eventbrite.com" && !url.port && !url.username && !url.password
-      && url.pathname === "/checkout-external" && eventIds.length === 1 && eventIds[0] === String(eventId) && !url.hash;
-  } catch { return false; }
+    if (url.protocol !== "https:" || url.hostname !== "www.eventbrite.com" || url.port || url.username || url.password || url.pathname !== "/checkout-external" || url.hash) return null;
+    return Object.freeze({ href, url });
+  } catch { return null; }
+}
+function eventbriteFrameMatches(frame, eventId) {
+  const parsed = eventbriteFrameUrl(frame);
+  if (!parsed) return false;
+  const eventIds = parsed.url.searchParams.getAll("eid");
+  return eventIds.length === 1 && eventIds[0] === String(eventId);
 }
 async function waitForEventbriteCheckoutFrame(page, eventId) {
   if (!page || typeof page.frames !== "function") return false;
   const deadline = Date.now() + EVENTBRITE_FRAME_TIMEOUT_MS;
+  let stableSignature = null;
   while (Date.now() <= deadline) {
     let frames = [];
     try { frames = page.frames(); } catch { frames = []; }
-    const matching = Array.isArray(frames) ? frames.filter((frame) => eventbriteFrameMatches(frame, eventId)) : [];
-    if (matching.length === 1) return true;
+    const official = Array.isArray(frames) ? frames.map((frame) => ({ frame, parsed: eventbriteFrameUrl(frame) })).filter(({ parsed }) => parsed) : [];
+    const matching = official.filter(({ frame }) => eventbriteFrameMatches(frame, eventId));
+    if (official.length === 1 && matching.length === 1) {
+      const signature = official[0].parsed.href;
+      if (stableSignature === signature) return true;
+      stableSignature = signature;
+    } else {
+      stableSignature = null;
+    }
     const remaining = deadline - Date.now();
     if (remaining <= 0) break;
     await new Promise((resolve) => setTimeout(resolve, Math.min(FINAL_EFFECT_POLL_MS, remaining)));
@@ -369,16 +386,18 @@ async function inspectPageControls(input = {}) {
     if (context && context.provider === "eventbrite") {
       if (!context.eventId || !context.canonicalUrl || String(context.href || "") !== String(context.canonicalUrl)) return [];
       const testIdOf = (element) => String((element.getAttribute && element.getAttribute("data-testid")) || (element.dataset && element.dataset.testid) || "");
-      const eventbriteCta = visibleElements.filter((element) => {
+      const visibleEventbriteCtas = visibleElements.filter((element) => testIdOf(element) === "conversion-bar-checkout-button" && visibleOf(element));
+      if (visibleEventbriteCtas.length !== 1) return [];
+      const [element] = visibleEventbriteCtas;
+      const eventbriteCta = [element].filter((element) => {
         const tag = String(element.tagName || "").toLowerCase();
         const type = String(element.type || "").toLowerCase();
         const ariaDisabled = String((element.getAttribute && element.getAttribute("aria-disabled")) || "").toLowerCase() === "true";
         return tag === "button" && type === "button" && testIdOf(element) === "conversion-bar-checkout-button"
           && new Set(["Get tickets", "Reserve a spot"]).has(String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim())
-          && element.disabled !== true && !ariaDisabled && visibleOf(element);
+          && element.disabled !== true && !ariaDisabled;
       });
       if (eventbriteCta.length !== 1) return [];
-      const element = eventbriteCta[0];
       const control = `eventbrite_checkout_${context.eventId}`;
       if (element.dataset) element.dataset.lmConnectorControl = control;
       return [{ control, kind: "button", label: String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim(), required: false, completed: false, submittable: true }];
