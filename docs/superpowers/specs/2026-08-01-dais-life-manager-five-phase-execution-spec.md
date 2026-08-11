@@ -7385,7 +7385,13 @@ fresh Sol reviewはspec PASS / quality SHIP、Critical/Important 0。単調各�
 
 次active B3 plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-native-order-19d.md`はnative-pass production/testの2 filesだけ。review済みfactory/router/workflow/auditをofficial bounded wakeから到達可能にするため、frozen provider順をexact `Luma → Connpass → Peatix → Meetup → Doorkeeper`へ一行拡張する。failure 3、wake 10分、agent step 10、private profile境界は不変。Harness allowlistはB4まで凍結し、このslice中のofficial wakeは0、4 labels UNLOADEDを維持する。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗375。これ以外の残TODO一覧は履歴）
+### O1B-25進捗376（Item 19D-B3 / Doorkeeper native order ship）
+
+Lunaがnative-pass production/test 2 filesだけをTDD変更した。3つのexact-order assertionを先に五providerへ変え、REDは5/8で旧4-provider差分だけ3 FAIL。`DEFAULT_PROVIDERS`末尾へ`doorkeeper`を一項目追加しGREEN 8/8、production+runner 55/55、syntax、diffがPASS。exact順はLuma→Connpass→Peatix→Meetup→Doorkeeper、budgets 3 failures/600000ms/10 stepsとprivate profile factory-only境界は不変。official wake、browser、provider、Calendar、Telegram作用0。
+
+fresh Sol reviewはspec PASS / quality SHIP、指摘0。Sol独立8/8、55/55、exact order/budgets、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommit `75d48f2e3`をstableへfast-forwardしpushした。次の一件はB4 Browser HarnessでDoorkeeperのvisible exact申込link→modal required fields→single submit→parent readbackをboundedに扱う2-file slice。B4 review完了までofficial wakeは起動しない。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗376。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
