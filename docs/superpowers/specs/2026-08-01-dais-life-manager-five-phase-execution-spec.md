@@ -7752,3 +7752,9 @@ Lunaが`connector-minimal-evidence.js`とmatching testのexact 2 filesだけをS
 GREEN commit `4f30d50c4`はreview済みDoorkeeper storeをprovider mapへ配線し、`doorkeeper-event://event/<positive ID>`、exact lowercase group host、同一event ID、`registered` state、current page URL exactを要求する。現在ページをnavigate・置換・receipt renderせずfull-page PNG化し、初回provider receipt/artifactを永続storeから再読取してからだけ既存Calendar→Telegram→`applied_bundle` pipelineへ進む。created後のexact rerunは同じbundleをreusedし、screenshot/Calendar/Telegram重複作用0。
 
 Sol独立でfocused 33/33、adjacent evidence 39/39、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality APPROVED、Critical/Important/Minor 0で`ship`。Calendar gog transport、discovery/action/readback、Harness、native、schedule、live state、external effectは0。次active sliceはDoorkeeper canonical URLをCalendar gog transportへ追加する。Item19 Doorkeeper実bundleは未完。
+
+### O1B-25進捗434（Item 19D-E3 / Doorkeeper Calendar transport plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-calendar-transport-19d.md`はCalendar gog adapter/testのexact 2 files。既存`connectorCanonicalUrl`へexact `https://<lowercase-group>.doorkeeper.jp/events/<positive ID>`と固定`sourceTitle=Doorkeeper`を追加し、同じURLをdescription/source-urlへ渡す。production約8〜15 LOC、test約35〜60 LOC。
+
+HTTP、uppercase raw host、`www`、root/nested host、credentials、explicit port、query、fragment、trailing slash、zero/nonnumeric ID、extra/search pathは`gog`実行前にfail closed。Luma/Peatix/Connpass/Meetup、Calendar receipt/idempotency/readback、browser、evidence、native、schedule、live stateは変更0。TDD・fresh review・push後だけofficial foreground wakeへ進む。Item19 Doorkeeper実bundleは未完。
