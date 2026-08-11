@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3c.1/2/3a complete; CFO-2a3c.3b hourly wiring and live delivery is first unfinished |
+| Status | LIVE — CFO-2a3c.1/2/3 complete; conditional OpenAI amount waits for an official receipt |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains the only scheduler |
 | First source | Official Anthropic receipt email through the existing authenticated `gog` transport |
@@ -91,7 +91,7 @@ failure is retried by the existing next hourly run; the last validated immutable
 - [x] **CFO-2a3c.2 — Exact parser and immutable local record.** Parse only the observed successful receipt layout,
       verify arithmetic/period/plan, append a private `0600` hash-addressed record, and prove rerun dedupe. Plan:
       `docs/superpowers/plans/2026-08-11-life-manager-cfo-anthropic-receipt-local-capture.md`.
-- [ ] **CFO-2a3c.3 — Hourly aggregate and Telegram.** Reuse the one hourly launchd loop; publish actual subscription
+- [x] **CFO-2a3c.3 — Hourly aggregate and Telegram.** Reuse the one hourly launchd loop; publish actual subscription
       total and coverage separately from API-equivalent forecast. Run a real authenticated no-send E2E, then one real
       hourly Telegram delivery and verify its receipt.
   - [x] **CFO-2a3c.3a — Telegram snapshot UX.** Add an optional exact `aiCost` fact to the existing JSONB report,
@@ -99,11 +99,14 @@ failure is retried by the existing next hourly run; the last validated immutable
         `docs/superpowers/plans/2026-08-11-life-manager-cfo-subscription-telegram-ux.md`. Shipped as `cf90d6ec7`:
         focused 23/23, CFO 331/331, full suite exit 0, fresh Sol review ship, and a read-only real snapshot plus the
         authenticated local receipt rendered the confirmed amount/unknown OpenAI state without private evidence.
-  - [ ] **CFO-2a3c.3b — Hourly wiring and live delivery.** Capture/reuse the confirmed local receipt, attach the exact
+  - [x] **CFO-2a3c.3b — Hourly wiring and live delivery.** Capture/reuse the confirmed local receipt, attach the exact
         `aiCost` fact before snapshot append, then trigger the existing launchd and verify one real Telegram receipt.
-        Plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-subscription-hourly-live.md`.
+        Plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-subscription-hourly-live.md`. Shipped as `7dc6d34b0`:
+        focused 14/14, CFO 333/333, full suite exit 0, fresh Sol review ship, real no-send source E2E all true, and live
+        launchd run 7 appended revision 8 and recorded Telegram message ID 631 with exact private-free `aiCost`.
 - [ ] **CFO-2a3c.4 — OpenAI confirmed amount.** Ingest only an official OpenAI receipt or authenticated billing
-      statement when one becomes accessible. Until then retain the signed active-plan evidence with amount unknown.
+      statement when one becomes accessible. This is `BLOCKED_EXTERNAL`, not a runtime failure: no official amount is
+      currently accessible. Until then retain the signed active-plan evidence with amount unknown and never use list price.
 
 ## 7. UI/UX contract
 
@@ -147,3 +150,16 @@ validated receipt and may add one plain-language line saying the source was reco
   exact Max 20x period/current fixed amounts/USD, `0600` file, all directories `0700`, recursively frozen receipts,
   and no private token in record/path. The same email's official invoice PDF independently matched USD and paid total;
   both isolated state and PDF were deleted. Only booleans/counts were printed. Code commit: `1e94ea4e2`.
+
+## 10. CFO-2a3c.3 completion evidence
+
+- CFO-2a3c.3a extended only the existing Telegram renderer/test: 43 gross additions, old snapshots byte-identical,
+  confirmed Claude amount and Codex-unknown summary/detail/button, persisted callback, focused 23/23, CFO 331/331,
+  full suite exit 0, and fresh Sol review `ship`. Code commit: `cf90d6ec7`.
+- CFO-2a3c.3b extended only the existing hourly script/test: 65 gross additions, dynamic authenticated period,
+  current/prior-date carry-forward within the active period, caller-override rejection, `aiCost`-aware dedupe, exact
+  initial report RPC, focused 14/14, CFO 333/333, full suite exit 0, and fresh Sol review `ship`.
+- The authenticated no-send E2E used the real Gmail receipt and real Moneytree/MUFG read and returned only all-true
+  safety booleans. The real existing launchd job then advanced runs 6→7 and snapshot revision 7→8, exited 0, persisted
+  the exact eight-key `aiCost`, created exactly one claim/receipt, and received provider message ID 631. Stdout stayed
+  one redacted JSON line; no receipt state path, amount/hash/email/credential leaked to stderr. Code commit: `7dc6d34b0`.

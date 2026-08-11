@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a3c.3a Telegram UX complete; CFO-2a3c.3b hourly wiring/live delivery is active |
+| Status | M2 ACTIVE — CFO-2a3c live hourly subscription report complete; CFO-2a3b is external-gated, CFO-2b is next actionable |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a3c.3b: wire the confirmed receipt into the existing hourly snapshot and deliver it live** |
+| First unfinished item | **CFO-2a3b needs Google reauthentication; first actionable item is CFO-2b business-loop receipts** |
 
 ## 1. Overview — What and Why
 
@@ -976,10 +976,11 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       contract is complete. Real Cost Table acquisition remains blocked only by one-time Google Cloud Console
       reauthentication; no fabricated CSV is accepted. Child SSOT:
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-provider-allocation-design.md` at commit `46f185327`.
-- [ ] **CFO-2a3c** Reconcile actual Codex/Claude subscription receipts separately from the versioned
+- [x] **CFO-2a3c** Reconcile actual Codex/Claude subscription receipts separately from the versioned
       `api_equivalent_forecast`; after API migration reconcile actual provider billing exports. Official Anthropic
       Gmail receipts are the first confirmed source; Codex is active but its amount remains unknown until an official
-      receipt is accessible. Child SSOT:
+      receipt is accessible. The existing hourly launchd now persists revisioned `aiCost` and delivered the real
+      Telegram report as provider message ID 631. Child SSOT:
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-subscription-receipts-design.md`.
 - [ ] **CFO-2b** Instrument each existing earning loop in registry order: revenue receipt, landed cash, direct
       cost, tokens, API USD, human USD, capital employed, and evidence.
