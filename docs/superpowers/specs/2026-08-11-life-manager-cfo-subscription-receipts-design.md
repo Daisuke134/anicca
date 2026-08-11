@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3c.1 is the first unfinished slice |
+| Status | ACTIVE — CFO-2a3c.1 complete; CFO-2a3c.2 is the first unfinished slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains the only scheduler |
 | First source | Official Anthropic receipt email through the existing authenticated `gog` transport |
@@ -81,7 +81,7 @@ failure is retried by the existing next hourly run; the last validated immutable
 
 ## 6. Ordered TODO
 
-- [ ] **CFO-2a3c.1 — Anthropic Gmail source.** Extend the existing `gog` transport with one read-only method that
+- [x] **CFO-2a3c.1 — Anthropic Gmail source.** Extend the existing `gog` transport with one read-only method that
       selects the newest valid successful Anthropic receipt, requires Google-authenticated DKIM and DMARC pass for
       `mail.anthropic.com`, and returns one frozen memory-only evidence object. No parsing, persistence, scheduler, or
       Telegram change. Plan:
@@ -107,3 +107,16 @@ APIへ移した場合: 約{forecast}（実測tokenによる予測）
 
 Failed payments, raw errors, IDs, and technical traces are not posted. If self-healing succeeds, the report uses the
 validated receipt and may add one plain-language line saying the source was recovered.
+
+## 8. CFO-2a3c.1 completion evidence
+
+- Luna changed exactly the two planned existing files with 59 gross additions: 26 production and 33 test LOC. RED
+  failed only because the method was absent; focused GREEN passed 6/6.
+- After restoring lockfile dependencies with `npm ci`, Luna and Sol independently verified focused 6/6, CFO 326/326,
+  full `npm test` exit 0, both syntax checks, `git diff --check`, and the 2-file/60-line scope gate.
+- A fresh Sol reviewer returned `ship`: exact read-only search/raw/get calls, one `mx.google.com`
+  Authentication-Results header, exact-domain DKIM and DMARC pass, frozen three-key output, fail-closed errors, no
+  logs, no persistence, and no new dependency.
+- Sol's real authenticated Gmail E2E printed only safe booleans and proved the source, exact keys, frozen/nonempty
+  evidence, and the already-observed Max-plan arithmetic layout. It printed no body, amount, Gmail ID, receipt/invoice
+  number, email, payment method, or URL. Code commit: `75aab96f9` on `feature/cfo-4d1-finalize-sol`.
