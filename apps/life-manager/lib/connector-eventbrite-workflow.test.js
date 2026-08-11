@@ -127,6 +127,15 @@ test("Eventbrite accepts hydrated Reserve a spot for eligibility and absent read
   assert.deepEqual(await absent.readProviderState({ page: pageAt(row.canonical_url), candidate: { ...row, provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" } }), { status: "absent" });
 });
 
+test("Eventbrite rejects mixed visible exact and fuzzy checkout controls", async () => {
+  const row = binding("355");
+  const controls = [{ text: "Reserve a spot", visible: true }, { text: "Reserve a spot now", visible: true }];
+  const { workflow } = workflowFor([{ href: row.canonical_url, event_id: "355" }], { [row.canonical_url]: detail("355", { controls }) });
+  assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), []);
+  const readback = createEventbriteScriptFirstWorkflow({ readRegistrationView: async () => ({ page_url: row.canonical_url, canonical_links: [], controls, body_text: "" }) });
+  assert.deepEqual(await readback.readProviderState({ page: pageAt(row.canonical_url), candidate: { ...row, provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" } }), { status: "unavailable" });
+});
+
 test("Eventbrite rejects foreign Offer suffixes and supported-plus-foreign mixed type arrays", async () => {
   const cases = [
     ["352", "https://evil.example/Offer"],
