@@ -437,6 +437,50 @@ test("official production factory routes an injected Doorkeeper workflow without
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
 
+test("official production factory default Harness reaches injected Doorkeeper parent readback", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-doorkeeper-default-harness-"));
+  const candidate = Object.freeze({ provider: "doorkeeper", event_ref: "doorkeeper-event://event/1003", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1003" });
+  const railCalls = []; let clicks = 0; let readbacks = 0;
+  const element = {
+    tagName: "A", href: "#new_registration_modal", innerText: "申し込む", textContent: "申し込む",
+    dataset: {}, hidden: false, isConnected: true, style: {}, parentElement: null,
+    ownerDocument: { defaultView: { getComputedStyle() { return {}; } } },
+    getAttribute(name) { return name === "href" ? this.href : null; },
+    hasAttribute() { return false; },
+    getBoundingClientRect() { return { width: 120, height: 32 }; },
+  };
+  const page = {
+    url() { return candidate.canonical_url; },
+    locator(selector) {
+      if (selector.startsWith("input, textarea")) return { async evaluateAll(callback, context) { return callback([element], context); } };
+      return { async count() { return 1; }, async click() { clicks += 1; } };
+    },
+  };
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  const doorkeeperWorkflow = {
+    ...emptyWorkflow,
+    async readProviderState(input) { readbacks += 1; assert.equal(input.page, page); assert.equal(input.candidate, candidate); return { status: "registered" }; },
+  };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-doorkeeper-default-harness-1",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } },
+      browserRail: { open() { railCalls.push("open"); }, navigate() { railCalls.push("navigate"); }, close() { railCalls.push("close"); } },
+      lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow, peatixWorkflow: emptyWorkflow, meetupWorkflow: emptyWorkflow,
+      doorkeeperWorkflow, proposeAction: async () => ({ control: "control_1" }), resolveValue: async () => null,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} }, evidenceChain: { async completeEvidence() {} },
+      operations: { async reportWake() {}, async recordAction() {} },
+    });
+    const result = await dependencies.runAgentFallback({ provider: "doorkeeper", candidate, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/DOORKEEPERFACTORY1", maxSteps: 1, expectedState: "registered_or_pending" });
+    assert.equal(result.status, "completed");
+    assert.equal(readbacks, 1);
+    assert.equal(clicks, 1);
+    assert.deepEqual(railCalls, []);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
 test("production calendar reader uses gog for exactly fourteen Tokyo calendar days", async () => {
   const calls = [];
   const calendar = Object.freeze({ kind: "gog", ready: () => true });
