@@ -7588,3 +7588,7 @@ stable統合後Harness/Eventbrite workflow/minimal production/operations/registr
 ### O1B-25進捗406（Item 19E-D4b1 / Eventbrite attendee inspector ship）
 
 LunaがHarness production/test 2 filesだけをTDD実装し、commits `9f194e691`、`600fc311f`、`c5c39a55c`。ticket card visible 0後、same-event official child frame内の実測4必須inputsだけをevent-bound control tokenとして公開し、value本文は返さずcompleted booleanだけを返す。fresh reviewでhidden/disabled duplicateをactive filter前に消す反例を再現し、raw semantic candidate exact1をactive判定より先に要求した。unknown required、wrong tag/type/name、hidden/detached/disabled/optional duplicate、101+はall controls 0。marketing checkboxとprimary buttonは非公開、Eventbrite field performActionはresolve/operate 0を維持。final review SHIP、Critical/Important 0。stable統合後major suites 108/108、syntax、diff check、clean remote equality PASS。private resolve/fill/final/readback/factory/native/evidenceは未完。
+
+### O1B-25進捗407（Item 19E-D4b2a / Eventbrite attendee private-value ship）
+
+LunaがHarness production/test 2 files、29 insertionsだけをTDD実装し、commit `aadb62cb3`。`provider=eventbrite`かつsafe required incomplete input＋case-sensitive exact labelsだけを受理し、`First name`→`given_name`、`Last name`→`family_name`、`Email` / `Confirm email`→同一`email`を既存frozen attendee profileから変換なしで返す。wrong/case/fuzzy/completed/kind/missing/非trim/overlengthはnull、generic provider resolverは不変。private値のlog/error/observation追加0。fresh Sol review SHIP、Critical/Important 0。stable統合後Harness/native/minimal production 104/104、syntax、diff check、clean remote equality PASS。same-frame fill/final/readback/factory/native/evidenceは未完。
