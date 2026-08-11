@@ -20,12 +20,12 @@
 
 ## Contract
 
-- [ ] RED: router rejects `techplay`, factory cannot install the workflow, and default Browser Harness cannot receive TECH PLAY registered readback.
-- [ ] Import `createTechPlayDiscoveryWorkflow` and add exact cache identity `techplay_registration_v1`.
-- [ ] Accept optional TECH PLAY workflow only with `discoverCandidates`, `runDirectAction`, and `readProviderState`; unknown providers remain rejected.
-- [ ] Route discovery, cache replay, direct action, fallback, readback, and repaired-action save through the same TECH PLAY workflow and private-free cache metadata.
-- [ ] The default factory creates TECH PLAY with `now` and `operations.recordTechPlayDiscoveryAudit`, then passes the same instance to Browser Harness and router.
-- [ ] Default Harness final action accepts only the injected workflow's registered readback; external proposer remains unused for the deterministic TECH PLAY final control.
-- [ ] Existing private form profile wiring is reused; no TECH PLAY-specific credential/profile field is added.
-- [ ] Run focused/full production tests, Harness and TECH PLAY workflow adjacent tests, syntax, diff check, mutation proof, and fresh Sol review.
-- [ ] Do not change audit implementation, evidence, Calendar, native order, launchd, or perform a real application.
+- [x] RED: router rejects `techplay`, factory cannot install the workflow, and default Browser Harness cannot receive TECH PLAY registered readback.
+- [x] Import `createTechPlayDiscoveryWorkflow` and add exact cache identity `techplay_registration_v1`.
+- [x] Accept optional TECH PLAY workflow only with `discoverCandidates`, `runDirectAction`, and `readProviderState`; unknown providers remain rejected.
+- [x] Route discovery, cache replay, direct action, fallback, readback, and repaired-action save through the same TECH PLAY workflow and private-free cache metadata.
+- [x] The default factory creates TECH PLAY with `now` and `operations.recordTechPlayDiscoveryAudit`, then passes the same instance to Browser Harness and router.
+- [x] Default Harness final action accepts only the injected workflow's registered readback; external proposer remains unused for the deterministic TECH PLAY final control.
+- [x] Existing private form profile wiring is reused; no TECH PLAY-specific credential/profile field is added.
+- [x] Run focused/full production tests, Harness and TECH PLAY workflow adjacent tests, syntax, diff check, mutation proof, and fresh Sol review.
+- [x] Do not change audit implementation, evidence, Calendar, native order, launchd, or perform a real application.
