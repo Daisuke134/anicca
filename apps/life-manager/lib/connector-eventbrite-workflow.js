@@ -167,7 +167,8 @@ function normalizeDetail(binding, raw) {
   });
   return Object.freeze({ candidate, eligible: offline(event) && locationIsTokyo(event)
     && freeOffers(event, binding.canonical_url)
-    && controls.filter((control) => control.visible && isTicketControl(control.text)).length === 1
+    && controls.filter((control) => control.visible).length === 1
+    && controls.some((control) => control.visible && isTicketControl(control.text))
     && !BLOCKED_MARKER.test(text) && !MONEY_MARKER.test(text) });
 }
 function calendarIntervals(calendar) {
@@ -311,7 +312,7 @@ function createEventbriteScriptFirstWorkflow(options = {}) {
       if (exactLink && completionCount(view.body_text) === 1 && !controlCompletion) return Object.freeze({ status: "registered" });
       const tickets = controls.filter((control) => isTicketControl(control.text));
       const linksSafe = view.canonical_links.length === 0 || (view.canonical_links.length === 1 && exactLink);
-      if (linksSafe && tickets.length === 1 && completionCount(view.body_text) === 0 && !controlCompletion) return Object.freeze({ status: "absent" });
+      if (linksSafe && controls.length === 1 && tickets.length === 1 && completionCount(view.body_text) === 0 && !controlCompletion) return Object.freeze({ status: "absent" });
       return Object.freeze({ status: "unavailable" });
     },
   });
