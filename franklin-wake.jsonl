@@ -25517,3 +25517,10 @@
 {"ts":1786432008,"wake_id":"00MSOBHRJQAE216CA2C6594C4A","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786432139,"wake_id":"00MSOBKKE21A501CC2D8684125","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786432268,"wake_id":"00MSOBNCHL57FBA0C0722A44C2","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786432398,"wake_id":"00MSOBQ4FR1C201646FEFD479A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786432529,"wake_id":"00MSOBSXG64A3862A947584FE4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786432658,"wake_id":"00MSOBVPFKEF9E72710B55408D","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana liquidity mining USDC reward programs [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for"}
+{"ts":1786432790,"wake_id":"00MSOBYJCI4DB9898BFC754F41","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786432920,"wake_id":"00MSOC1BLS3EEEB2F2EB80424F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786433071,"wake_id":"00MSOC4JPZC4C8BC6B5CFB42AC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786433201,"wake_id":"00MSOC7C9D2F65637A34B542E4","kind":"narrate","sleep_s":120,"model":"auto"}
