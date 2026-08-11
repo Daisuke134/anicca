@@ -7664,3 +7664,13 @@ runner 41/41、minimal production 18/18、contract 1/1、Harness 98/98、Eventbr
 ### O1B-25進捗419（Item 19E-D6 / Eventbrite official live acceptance plan）
 
 Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-live-acceptance-19e.md`はcode変更0。pushed/clean/upstream、4 labels UNLOADED、Connector process 0、lock absent、current target intersection 0をpreconditionに、official `skills/connector/run.sh`を660秒hard timeout付きforegroundでexact 1回だけ実行する。baselineはbundle 13、report 129、delivery 141、action 1322、Eventbrite audit 0、unrelated CDP pages 4。plist load、launchctl、manual provider/browser action、second wakeは0。既登録Eventbrite候補ならfinal Submit 0のpre-readback reuseからCalendar/evidence/Telegram `applied_bundle`、候補なし/conflictならdurable audit＋external write 0＋positive reportを受入する。終了後process/lock/owned target 0、unrelated pages不変、4 labels UNLOADEDを必須とする。
+
+### O1B-25進捗420（Item 19E-D6 / first official live wakeがnon-consecutive failure累積でEventbrite前にsafe stop）
+
+Pushed HEAD `122d3bbf9`、4 labels UNLOADED、process 0、lock idle、Git clean/upstream 0/0、current CDP page 4、Connector ledger intersection 0からofficial `skills/connector/run.sh`を660秒hard timeout付きforegroundでexact 1回だけ実行した。wake `wake-52bdd8157305ec034d927a85`は約93秒、action `1322→1360`、Luma audit `130→131`、Peatix audit `46→47`、report `129→130`、delivery `141→142`、bundle `13→13`、Eventbrite audit 0。terminalは`circuit_open / provider_discovery_failed / consecutive_failure_count 3`、positive Telegram provider ID `12089`、CLI exit 1。final Eventbrite Submit、new Calendar/evidence bundle、duplicate external effectは0。
+
+action historyはLuma discovery success、Connpass discovery failure、Peatix discovery success、複数candidateのregistered readback/bundle reuseを含む一方、runner local counterがsuccessで一度も0へ戻らないことをコード照合した。離れた失敗total 3が「3連続」と誤分類され、Meetup/Doorkeeper/Eventbrite前でcircuitが開いた。終了後process 0、lock idle、owned target intersection 0、CDP `5→4`、unrelated pages 4、4 labels UNLOADED、Git clean/upstream。safe stop/report/cleanupは正しいがEventbrite live acceptanceは未達。
+
+### O1B-25進捗421（Item 15/19E / consecutive failure reset plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-consecutive-failure-reset.md`はrunner production/test exact 2 files。verified provider discovery成功時とverified registered bundle reuse時だけ`consecutiveFailures=0`へ戻す。候補内の個別navigate/readback/action successではresetせず、同一provider三候補failureと三provider discovery failureの既存circuit contractは維持する。production約2〜4 LOC、test約45〜80 LOC。new state/retry/wake/schedule作用0。TDD・fresh review・push完了後にofficial wake exact 1回だけ再実行する。
