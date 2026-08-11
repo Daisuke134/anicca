@@ -108,7 +108,11 @@ flowchart TB
         CACHE -->|registered / pending| SUPPORT
         CACHE -->|not completed| DIRECT
         DIRECT -->|completed| POST
-        DIRECT -->|not completed| MODEL --> POST
+        DIRECT -->|effect_unknown| CIRCUIT
+        DIRECT -->|safe not completed| MODEL
+        MODEL -->|completed| POST
+        MODEL -->|safe failure| FAIL
+        MODEL -->|effect_unknown| CIRCUIT
         POST -->|No| FAIL["failure count +1<br/>次候補へ継続"]
         FAIL --> NEXT
     end
