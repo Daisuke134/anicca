@@ -837,3 +837,112 @@ test("Doorkeeper identity, registered state, and current page URL fail closed be
     } finally { fixture.cleanup(); }
   }
 });
+
+function eventbriteCandidate(extra = {}) {
+  return { provider: "eventbrite", event_ref: "eventbrite-event://event/1997468673573", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573", title: "Eventbrite Community Event", starts_at: "2026-08-13T10:00:00.000Z", ends_at: "2026-08-13T11:00:00.000Z", venue_name: "Tokyo", ...extra };
+}
+
+function eventbriteFixture(options = {}) {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-eventbrite-evidence-")); const candidate = eventbriteCandidate(options.candidate);
+  const png = options.png || Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 21)]); const pngSha = createHash("sha256").update(png).digest("hex");
+  const calls = []; const calendarReceipt = { id: "google-eventbrite-1", htmlLink: "https://www.google.com/calendar/event?eid=eventbrite-one" }; let calendarReads = 0; let recordedAt;
+  const calendar = options.calendar || {
+    async findConnectorEvents(input) { calls.push(["calendar-read", input]); return calendarReads++ === 0 ? [] : [calendarReceipt]; },
+    async createConnectorEvent(input) { calls.push(["calendar-create", input]); return calendarReceipt; },
+  };
+  const evidenceStore = options.evidenceStore || {
+    async record(input) {
+      calls.push(["evidence-record", input]);
+      recordedAt = input.observedAt;
+      const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${pngSha}`).digest("hex");
+      return { external_receipt_ref: `provider-receipt://eventbrite/${receiptId}`, artifact_ref: `object://sha256/${pngSha}` };
+    },
+    async readExternalReceipt(tenant, ref) {
+      calls.push(["evidence-read-receipt", tenant, ref]);
+      return { kind: "provider_response", provider_id: ref.split("/").at(-1), observed_at: recordedAt, event_ref: candidate.event_ref, artifact_sha256: pngSha };
+    },
+    async readArtifact(tenant, ref) { calls.push(["evidence-read-artifact", tenant, ref]); return png; },
+  };
+  const chain = createMinimalEvidenceChain({
+    stateDir, tenantId: "eventbrite-test", calendar, calendarId: "primary", telegramTarget: "test-target",
+    eventbriteEvidenceStore: evidenceStore, now: () => new Date("2026-08-12T08:30:00.000Z"),
+    sendMessage: options.sendMessage || (async (message, telegram) => { calls.push(["telegram-message", message, telegram]); return { messageId: 9701 }; }),
+    sendPhoto: options.sendPhoto || (async (bytes, telegram) => { calls.push(["telegram-photo", bytes, telegram]); return { messageId: 9702 }; }),
+  });
+  const pageUrl = { value: options.pageUrl || candidate.canonical_url };
+  const page = {
+    async setContent() { calls.push(["set-content"]); throw new Error("Eventbrite page replacement forbidden"); },
+    async goto() { calls.push(["goto"]); throw new Error("Eventbrite evidence navigation forbidden"); },
+    async evaluate() { calls.push(["evaluate"]); throw new Error("Eventbrite receipt render forbidden"); },
+    url() { calls.push(["url"]); return pageUrl.value; },
+    async screenshot(input) { calls.push(["screenshot", input]); return png; },
+  };
+  return { stateDir, candidate, png, pngSha, calls, chain, page, pageUrl, evidenceStore, cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
+}
+
+function assertEventbriteNoDownstream(fixture, label) {
+  for (const name of ["screenshot", "evidence-record", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) {
+    assert.equal(fixture.calls.filter(([callName]) => callName === name).length, 0, `${label}:${name}`);
+  }
+}
+
+test("Eventbrite slug path captures the registered parent page, reads evidence, and reuses the exact applied bundle", async () => {
+  const fixture = eventbriteFixture();
+  try {
+    const input = { provider: "eventbrite", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } };
+    const first = await fixture.chain.completeEvidence(input);
+    assert.equal(first.provider, "eventbrite");
+    assert.equal(first.completion_disposition, "created");
+    assert.match(first.provider_receipt_ref, /^provider-receipt:\/\/eventbrite\/[0-9a-f]{64}$/);
+    assert.deepEqual(fixture.calls.find(([name]) => name === "screenshot")[1], { type: "png", fullPage: true });
+    assert.equal(fixture.calls.filter(([name]) => ["set-content", "goto", "evaluate"].includes(name)).length, 0);
+    const receiptRead = fixture.calls.findIndex(([name]) => name === "evidence-read-receipt"); const artifactRead = fixture.calls.findIndex(([name]) => name === "evidence-read-artifact");
+    const firstCalendarRead = fixture.calls.findIndex(([name]) => name === "calendar-read");
+    assert.ok(receiptRead >= 0 && artifactRead > receiptRead && firstCalendarRead > artifactRead);
+    const effects = new Map(["screenshot", "evidence-record", "calendar-create", "telegram-message", "telegram-photo"].map((name) => [name, fixture.calls.filter(([entry]) => entry === name).length]));
+    const second = await fixture.chain.completeEvidence(input);
+    assert.equal(second.completion_disposition, "reused");
+    assert.equal(second.bundle_id, first.bundle_id);
+    for (const [name, count] of effects) assert.equal(fixture.calls.filter(([entry]) => entry === name).length, count, name);
+  } finally { fixture.cleanup(); }
+});
+
+test("Eventbrite direct-ID path is accepted with the same registered-page evidence contract", async () => {
+  const fixture = eventbriteFixture({ candidate: { event_ref: "eventbrite-event://event/1997468673574", canonical_url: "https://www.eventbrite.com/e/1997468673574" } });
+  try {
+    const bundle = await fixture.chain.completeEvidence({ provider: "eventbrite", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } });
+    assert.equal(bundle.completion_disposition, "created");
+    assert.equal(fixture.calls.find(([name]) => name === "calendar-create")[1].canonicalUrl, fixture.candidate.canonical_url);
+    assert.equal(fixture.calls.filter(([name]) => ["set-content", "goto", "evaluate"].includes(name)).length, 0);
+  } finally { fixture.cleanup(); }
+});
+
+test("Eventbrite identity, exact registered state, and current page URL fail closed before downstream effects", async () => {
+  const invalidUrls = [
+    "http://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://user:pass@www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://www.eventbrite.com:443/e/tokyo-free-event-tickets-1997468673573",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573/",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573?source=test",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573#details",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573/extra",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673574",
+  ];
+  const cases = invalidUrls.map((canonical_url) => ({ candidate: { canonical_url } }));
+  cases.push(
+    { candidate: { event_ref: "eventbrite-event://event/0" } },
+    { candidate: { event_ref: "eventbrite-event://event/1997468673574" } }, { status: "pending" }, { status: "absent" },
+    { candidate: { canonical_url: "https://WWW.eventbrite.com/e/tokyo-free-event-tickets-1997468673573" }, pageUrl: "https://WWW.eventbrite.com/e/tokyo-free-event-tickets-1997468673573" },
+    { pageUrl: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673574" },
+    { pageUrl: "about:blank" },
+  );
+  for (const value of cases) {
+    const fixture = eventbriteFixture(value);
+    try {
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "eventbrite", candidate: fixture.candidate, page: fixture.page, providerState: { status: value.status || "registered" } }));
+      assertEventbriteNoDownstream(fixture, value.pageUrl || value.candidate?.canonical_url || value.status || value.candidate?.event_ref);
+    } finally { fixture.cleanup(); }
+  }
+});
