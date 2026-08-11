@@ -7499,7 +7499,13 @@ Lunaがoperations production/test 2 filesだけをTDD変更した。`recordEvent
 
 次active sliceはEventbrite public `Get tickets`からcheckoutを開き、無料ticket選択・必要identity・最終Submit・parent readbackを一作用ずつ行うBrowser Harness contract。実DOMをread-only測定してから最小TDD planを切る。native order/live wakeはまだ変更0、4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗396。これ以外の残TODO一覧は履歴）
+### O1B-25進捗397（Item 19E-D0 / Eventbrite hydrated CTA repair plan）
+
+official Eventbrite detail 3件を`:9222`のisolated diagnostic pageでread-only比較した。各pageはhydration後にexact `data-testid="conversion-bar-checkout-button"` 1件、visible/enabled 1件、labelは全て`Reserve a spot`。download済みSSR HTMLは`Get tickets`なので、現行exact label判定は評価timingでeligible/absentが変わる。offline/online双方で同variant。診断clickではsame top page内の`/checkout-external` frame、visible input 1、`Register` 1、`Close` 1、hCaptcha framesを観測したがfinal Submit 0。全diagnostic pageを閉じbaseline page 2、Connector ledger/current page intersection 0へ戻した。
+
+Ponytailでworkflow/test 2 files、production 1〜4 LOC、test 4〜15 LOCへ限定し、exact `Get tickets|Reserve a spot`の一意visible predicateをeligibility/absent readbackで共有する。fuzzy label/checkout/Harness/native変更0。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-hydrated-cta-19e.md`がexecutor SSOT。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗397。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
