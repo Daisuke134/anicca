@@ -20,10 +20,10 @@
 
 ## Contract
 
-- [ ] RED: operations do not expose `recordTechPlayDiscoveryAudit` and no TECH PLAY audit file is written.
-- [ ] Add exact private file `techplay-discovery-audits.jsonl`.
-- [ ] Add `recordTechPlayDiscoveryAudit` as a thin wrapper over `safeDoorkeeperDiscoveryAudit` and the existing append helper.
-- [ ] Persist only schema version, wake ID, five aggregate counts, and recorded timestamp; file mode remains `0600`.
-- [ ] Reject missing/extra/private keys, non-integers, bounds violations, and monotonic-count violations without appending a second row.
-- [ ] Run focused/full operations tests, syntax, diff check, mutation proof, and fresh Sol review.
-- [ ] Do not change factory/router, browser Harness, evidence, Calendar, native order, launchd, or perform any external side effect.
+- [x] RED: operations do not expose `recordTechPlayDiscoveryAudit` and no TECH PLAY audit file is written.
+- [x] Add exact private file `techplay-discovery-audits.jsonl`.
+- [x] Add `recordTechPlayDiscoveryAudit` as a thin wrapper over `safeDoorkeeperDiscoveryAudit` and the existing append helper.
+- [x] Persist only schema version, wake ID, five aggregate counts, and recorded timestamp; file mode remains `0600`.
+- [x] Reject missing/extra/private keys, non-integers, bounds violations, and monotonic-count violations without appending a second row.
+- [x] Run focused/full operations tests, syntax, diff check, mutation proof, and fresh Sol review.
+- [x] Do not change factory/router, browser Harness, evidence, Calendar, native order, launchd, or perform any external side effect.
