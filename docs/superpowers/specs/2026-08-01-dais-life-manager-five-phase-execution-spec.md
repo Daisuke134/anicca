@@ -7780,3 +7780,9 @@ Pushed/clean HEAD `63bf21451`、Native daily label loaded・not running・runs 0
 Doorkeeper durable auditはexact `discovered/within/eligible/calendar-free/selected = 100/12/4/0/0`で前wakeと同じ。4 eligibleは実Calendar conflictにより安全に全skipされ、Doorkeeper provider/Calendar/evidence/Telegram external write 0。Eventbrite audit `188/0/0/0/0`まで正常継続し、成功やbundleを偽装していない。new evidence delivery/photo receipt 0、new applied bundle 0。終了後Native label not running・runs 1、legacy 3 labels unloaded、process 0、lock absent、CDP pages 4、owned target intersection 0、Git clean/upstream 0/0。
 
 Doorkeeper evidence store→minimal evidence chain→Calendar transport→official production reach/cleanupは受入済み。Item19 Doorkeeper実`applied_bundle`だけはcurrent Calendar-free candidate 0のためpendingであり、安全gateは緩めない。NO PASSIVE WAITINGにより次active sliceはEventbrite evidence adapterを同じstore→chain→Calendar順で閉じる。
+
+### O1B-25進捗438（Item 19E-E1 / Eventbrite evidence store plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-evidence-store-19e.md`は既存browser-provider evidence store production/testのexact 2 files。private generic storeを変更せず、`eventbrite-event://event/<positive integer>`と`provider-receipt://eventbrite/<64 hex>`をmode-0600 immutable receipt/artifactへ束縛するwrapper/exportだけをTDD追加する。production約8〜12 LOC、test約40〜70 LOC。
+
+Eventbrite minimal evidence chain、Calendar transport、browser/action/readback、native order、launchd、schedule、live stateは変更0。store review/push後にだけEventbrite evidence-chain配線へ進む。Item19 Eventbrite実`applied_bundle`は未完。
