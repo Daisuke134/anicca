@@ -7291,7 +7291,11 @@ pushed HEAD `da2f4f093`、4 labels unloaded、process/active lease 0、page 1、
 
 Peatixの既存bundleを順次reuse後、既登録event `5086816`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11440/11441`、new bundle `001f7c59…`を回収した。Browser Harness 0。新created bundle exact 1で停止するcontractを維持し、process/active lease 0、page 1、4 labels unloaded、Git clean/upstreamでcleanupした。次の一件は同じofficial continuation wakeをexact 1回ずつ続け、Peatix evidence backlogを重複作用なしで消化してMeetup auditへ到達すること。Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗359。これ以外の残TODO一覧は履歴）
+### O1B-25進捗360（Item 19M-D0h / fourth continuation wakeがPeatix evidence backlogを回収）
+
+pushed HEAD `d4f91fe96`からofficial continuation wake `wake-7e03669ef85da279af67d9d4`をexact 1回実行した。4 labels unloaded、process/active lease 0、page 1を維持し、action `960→991`、report `120→121`、delivery `132→133`、Peatix audit `36→37`、bundle `9→10`、Meetup audit 0。Peatix既登録event `5104187`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11444/11445`、new bundle `16ae1e9c…`を回収した。Browser Harness 0、terminal `applied_bundle`、failure 0、every-wake Telegram ID `11446`。cleanup後もprocess/lease 0、page 1、4 labels unloaded。次wakeも同じ1-bundle-per-wake contractでPeatix backlogを消化しMeetup到達まで継続する。Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗360。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
