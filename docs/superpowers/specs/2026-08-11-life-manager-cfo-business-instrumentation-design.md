@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — Life Manager complete; `CFO-2b.2` Anicca iOS is the only active slice |
+| Status | ACTIVE — Anicca RevenueCat gross receipts complete; `CFO-2b.2b` Apple Finance is the only active slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local `apps/life-call`; existing ledgers and provider APIs only |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -46,7 +46,7 @@ Only the first unchecked item is active.
         local-usage, and shared-subscription evidence. With no paid Stripe receipt, reversal/payout work is not
         applicable; the first future paid receipt changes coverage to partial and blocks profit until reconciliation.
 - [ ] **CFO-2b.2 — Anicca iOS**: Apple/RevenueCat receipts, payout state, attributed API cost.
-  - [ ] **2b.2a** Normalize positive production App Store purchase/renewal events already stored by the RevenueCat
+  - [x] **2b.2a** Normalize positive production App Store purchase/renewal events already stored by the RevenueCat
         webhook into privacy-safe provider-reported gross receipts.
   - [ ] **2b.2b** Read Apple Finance Detail as the authoritative settled Partner Share source and reconcile the
         RevenueCat receipt set without turning an unavailable fiscal period into zero.
@@ -344,12 +344,27 @@ later read-only Railway collector will produce: `provider_event_id`, `event_type
 
 ### CFO-2b.2a acceptance
 
-- [ ] Exact positive JPY initial-purchase and GBP renewal fixtures return the documented closed receipt shape.
-- [ ] Exact zero-price trial, sandbox, test-store, non-revenue, and wrong-product fixtures return `null` and never
+- [x] Exact positive JPY initial-purchase and GBP renewal fixtures return the documented closed receipt shape.
+- [x] Exact zero-price trial, sandbox, test-store, non-revenue, and wrong-product fixtures return `null` and never
       become revenue.
-- [ ] One compact hostile/money regression proves malformed price/time/identity/shape returns only the fixed error;
+- [x] One compact hostile/money regression proves malformed price/time/identity/shape returns only the fixed error;
       no provider, customer, transaction, subscriber, prompt, or secret value appears in output or error.
-- [ ] Inputs remain unchanged; nested amount and result are frozen; identical provider IDs dedupe to the identical
+- [x] Inputs remain unchanged; nested amount and result are frozen; identical provider IDs dedupe to the identical
       opaque source ID.
-- [ ] Focused, CFO, and full tests pass. Scope is one new production module, one new test, and the existing CFO test
+- [x] Focused, CFO, and full tests pass. Scope is one new production module, one new test, and the existing CFO test
       registration, with at most 100 gross additions. No database, API, launchd, Telegram, or state write occurs.
+
+### CFO-2b.2a completion evidence
+
+- Code commit `98f46bb71` adds the one pure boundary and its durable CFO test registration in exactly three files
+  with 64 gross additions and no dependency, database, API, scheduler, state, or Telegram change.
+- TDD observed the expected missing-module RED. After the one review fix, focused 3/3, CFO 344/344, full `npm test`,
+  syntax, diff, and scope gates pass. Fresh Sol review is `ship`; the fix rejects transparent JavaScript Proxies at
+  the ordinary-object boundary instead of accepting a hostile wrapper.
+- Real Railway `BEGIN READ ONLY` E2E projected only the eight allowed fields from 54 production App Store
+  purchase/renewal rows and passed every row through the committed normalizer. It returned 21 positive gross
+  receipts and ignored 33 zero-price observations: initial JPY 4 / 5,100; renewal JPY 14 / 22,100; renewal GBP 2 /
+  34.98; renewal USD 1 / 39.99. Opaque IDs were unique, the privacy check passed, and no raw provider/customer/
+  transaction/subscriber value was printed or persisted.
+- Every receipt still says provider gross only. Apple payout is unavailable; cash and refund coverage are unknown;
+  no whole-business revenue, profit, ROI, or bank-landed claim is enabled. The next active item is CFO-2b.2b.
