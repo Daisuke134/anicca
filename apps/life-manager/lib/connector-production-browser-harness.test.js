@@ -2972,3 +2972,109 @@ test("TECH PLAY confirm regression rejects residual registration controls, dupli
   const page = { url() { return current; }, locator() { return { async evaluateAll(callback, context) { current = "https://techplay.jp/event/join/999191/confirm"; return callback(drift.elements, context); } }; } };
   assert.deepEqual(await inspectTechPlayConfirmFixture(drift, drift.candidate, drift.elements, page), [], "page-drift");
 });
+
+function makeTechPlayPrivateResolverFixture(options = {}) {
+  const reads = { identity: 0, form: 0 };
+  const identity = { name_kanji: "NameFixture", email: "email.fixture@example.test" };
+  const form = { form_answers: {
+    "生年月日": "2002-08-12", "Date of Birth": "2002-08-12",
+    "所属企業（学校）名": "CompanyFixture", "キャリア状況": "社会人", "職種": "EngineerFixture",
+  } };
+  return {
+    reads,
+    form,
+    resolver: createPrivateValueResolver({
+      readPeatixProfile: async () => { reads.identity += 1; return identity; },
+      readFormProfile: async () => { reads.form += 1; return form; },
+      now: options.now || (() => new Date("2026-08-12T00:00:00.000Z")),
+    }),
+  };
+}
+
+function techPlayAnswerControl(overrides = {}) {
+  return { kind: "input", label: "氏名", required: true, completed: false, submittable: false, control: "techplay_answer_1", ...overrides };
+}
+
+test("TECH PLAY private resolver maps scalar identity, age, and company answers", async () => {
+  const fixture = makeTechPlayPrivateResolverFixture();
+  assert.equal(await fixture.resolver({ provider: "techplay", control: techPlayAnswerControl() }), "NameFixture");
+  assert.equal(await fixture.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: "メールアドレス", control: "techplay_answer_2" }) }), "email.fixture@example.test");
+  assert.equal(await fixture.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: "年齢", control: "techplay_answer_3" }) }), "24");
+  assert.equal(await fixture.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: "所属企業（学校）名", control: "techplay_answer_4" }) }), "CompanyFixture");
+  assert.deepEqual(fixture.reads, { identity: 2, form: 2 });
+});
+
+test("TECH PLAY private resolver maps only the exact radio question and option", async () => {
+  const fixture = makeTechPlayPrivateResolverFixture();
+  const control = (question, label, id = "5") => ({ kind: "radio", question, label, required: true, completed: false, submittable: false, control: `techplay_answer_${id}_1` });
+  assert.equal(await fixture.resolver({ provider: "techplay", control: control("キャリア状況", "社会人") }), true);
+  assert.equal(await fixture.resolver({ provider: "techplay", control: control("職種", "EngineerFixture", "6") }), true);
+  assert.equal(await fixture.resolver({ provider: "techplay", control: control("キャリア状況", "学生") }), null);
+  assert.equal(await fixture.resolver({ provider: "techplay", control: control("職種", "社会人", "7") }), null);
+});
+
+test("TECH PLAY private resolver requires exact keys, questions, and option labels", async () => {
+  const paddedKey = makeTechPlayPrivateResolverFixture(); delete paddedKey.form.form_answers["職種"]; paddedKey.form.form_answers[" 職種 "] = "EngineerFixture";
+  const radio = (question, label) => ({ kind: "radio", question, label, required: true, completed: false, submittable: false, control: "techplay_answer_6_1" });
+  assert.equal(await paddedKey.resolver({ provider: "techplay", control: radio("職種", "EngineerFixture") }), null);
+  const caseLabel = makeTechPlayPrivateResolverFixture(); assert.equal(await caseLabel.resolver({ provider: "techplay", control: radio("職種", "engineerfixture") }), null);
+  const paddedQuestion = makeTechPlayPrivateResolverFixture(); assert.equal(await paddedQuestion.resolver({ provider: "techplay", control: radio(" 職種 ", "EngineerFixture") }), null);
+  const paddedScalar = makeTechPlayPrivateResolverFixture(); assert.equal(await paddedScalar.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: " 所属企業（学校）名 " }) }), null);
+});
+
+test("TECH PLAY private resolver rejects malformed or non-answer controls without private reads", async () => {
+  for (const control of [
+    null, {}, techPlayAnswerControl({ kind: "button" }), techPlayAnswerControl({ required: false }), techPlayAnswerControl({ completed: undefined }),
+    techPlayAnswerControl({ completed: true }), techPlayAnswerControl({ submittable: true }),
+    techPlayAnswerControl({ control: "techplay_ticket_1" }), techPlayAnswerControl({ control: "techplay_optout_1" }),
+    techPlayAnswerControl({ control: "techplay_final_999190", label: "申し込みを確定する" }),
+    techPlayAnswerControl({ label: "未登録の質問" }),
+  ]) {
+    const fixture = makeTechPlayPrivateResolverFixture();
+    assert.equal(await fixture.resolver({ provider: "techplay", control }), null);
+    assert.deepEqual(fixture.reads, { identity: 0, form: 0 });
+  }
+});
+
+test("TECH PLAY private resolver fails closed for throwing private profile getters", async () => {
+  const identity = {}; Object.defineProperty(identity, "name_kanji", { get() { throw new Error("PRIVATE_IDENTITY_LEAK"); } });
+  const form = {}; Object.defineProperty(form, "form_answers", { get() { throw new Error("PRIVATE_FORM_LEAK"); } });
+  const resolver = createPrivateValueResolver({ readPeatixProfile: async () => identity, readFormProfile: async () => form, now: () => new Date("2026-08-12T00:00:00.000Z") });
+  const scalar = (label) => techPlayAnswerControl({ label });
+  const radio = { kind: "radio", question: "職種", label: "EngineerFixture", required: true, completed: false, submittable: false, control: "techplay_answer_6_1" };
+  for (const control of [scalar("氏名"), scalar("年齢"), scalar("所属企業（学校）名"), radio]) assert.equal(await resolver({ provider: "techplay", control }), null);
+});
+
+test("TECH PLAY private resolver enforces exact DOBs, Tokyo age boundaries, and safe values", async () => {
+  const birthday = makeTechPlayPrivateResolverFixture();
+  assert.equal(await birthday.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: "年齢" }) }), "24");
+  for (const [now, expected] of [[() => new Date("2026-08-11T14:00:00.000Z"), "23"], [() => new Date("2026-08-11T15:00:00.000Z"), "24"], [() => new Date("2026-08-12T00:00:00.000Z"), "24"]]) {
+    const fixture = makeTechPlayPrivateResolverFixture({ now });
+    assert.equal(await fixture.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: "年齢" }) }), expected);
+  }
+  for (const mutate of [
+    (answers) => { answers["Date of Birth"] = "2002-08-13"; },
+    (answers) => { answers["生年月日"] = "2002-02-30"; answers["Date of Birth"] = "2002-02-30"; },
+    (answers) => { delete answers["生年月日"]; delete answers["Date of Birth"]; },
+  ]) {
+    const fixture = makeTechPlayPrivateResolverFixture(); mutate(fixture.form.form_answers);
+    assert.equal(await fixture.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: "年齢" }) }), null);
+  }
+  const throwing = makeTechPlayPrivateResolverFixture({ now: () => { throw new Error("clock"); } });
+  assert.equal(await throwing.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: "年齢" }) }), null);
+  const invalidClock = makeTechPlayPrivateResolverFixture({ now: () => new Date("invalid") });
+  assert.equal(await invalidClock.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: "年齢" }) }), null);
+  const unsafe = makeTechPlayPrivateResolverFixture(); unsafe.form.form_answers["所属企業（学校）名"] = " bad\nvalue ";
+  assert.equal(await unsafe.resolver({ provider: "techplay", control: techPlayAnswerControl({ label: "所属企業（学校）名" }) }), null);
+});
+
+test("TECH PLAY private values stay out of the bounded runner prompt", async () => {
+  let request;
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) {
+    request = input; return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: "techplay_answer_1" } };
+  } });
+  await proposer({ provider: "luma", target_id: "TECHPLAY1", expected_state: "registered_or_pending", step: 1, observation: {
+    state: "registration_page", controls: [{ ...techPlayAnswerControl(), value: "NameFixture", currentValue: "email.fixture@example.test" }],
+  } });
+  assert.doesNotMatch(JSON.stringify(request), /NameFixture|email\.fixture@example\.test|2002-08-12|CompanyFixture/);
+});
