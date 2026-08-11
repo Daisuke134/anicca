@@ -42,8 +42,9 @@ Only the first unchecked item is active.
   - [x] **2b.1a** Normalize finalized TaskMarket/uGig external settlements already stored in `lm_agent_earnings`.
   - [ ] **2b.1b** Read the canonical Life Manager Stripe Payment Link and normalize paid Checkout receipts; a paid
         Checkout balance is not bank-landed cash.
-  - [ ] **2b.1c** Compose revenue coverage with existing direct-cost, provider-usage, subscription, human-cost, and
-        capital coverage. Unknown stays null; shared subscription cost waits for `CFO-2a3b` allocation.
+  - [ ] **2b.1c** Reconcile Stripe refunds/disputes/fees/payout state, then compose revenue coverage with existing
+        direct-cost, provider-usage, subscription, human-cost, and capital coverage. Unknown stays null; shared
+        subscription cost waits for `CFO-2a3b` allocation.
 - [ ] **CFO-2b.2 — Anicca iOS**: Apple/RevenueCat receipts, payout state, attributed API cost.
 - [ ] **CFO-2b.3 — Writer Agent**: publisher receipts and its measured runtime cost.
 - [ ] **CFO-2b.4 — Affiliate Agent**: network commission receipts and runtime cost.
@@ -119,7 +120,70 @@ unknown input field never leave this boundary. Invalid input throws only
   manufacturing a zero-value revenue receipt.
 - No database, provider, local-state, launchd, Telegram, or external-system write occurred.
 
-## 8. Source decisions
+## 8. CFO-2b.1b contract — Stripe paid Checkout receipts
+
+Extend the existing Life Manager earning module with one read-only
+`collectLifeManagerStripeReceipts({ stripeKey, paymentLinkUrl, fetchImpl })` source. It paginates Stripe Payment Links,
+matches exactly the canonical `https://buy.stripe.com/<slug>` URL, then paginates only that link's Checkout Sessions.
+It performs no write, retry, clock read, environment read, log, or customer-data persistence.
+
+```mermaid
+flowchart LR
+    REG[Canonical LM link] --> LINKS[Stripe Payment Links]
+    LINKS --> SESS[Checkout Sessions]
+    SESS -->|paid + positive| REV[Revenue receipt]
+    SESS -->|unpaid/no payment| IGN[No revenue receipt]
+    REV --> BAL[Confirmed in Stripe balance]
+    BAL -. separate later evidence .-> BANK[MUFG landed cash]
+```
+
+The closed collection result is:
+
+```json
+{
+  "schema_version": 1,
+  "financial_unit_id": "life_manager_saas",
+  "channel_id": "stripe_life_manager",
+  "status": "covered",
+  "receipt_count": 1,
+  "zero_value_paid_count": 0,
+  "reversal_coverage_status": "unknown",
+  "receipts": [{
+    "source_event_id": "stripe_checkout:<opaque session id>",
+    "occurred_at": "2026-08-11T01:02:03.000Z",
+    "amount": { "minor": "2000", "currency": "USD" },
+    "recognition_status": "gross_inflow_unreconciled",
+    "landed_cash_status": "confirmed_stripe_balance",
+    "bank_landed_status": "unknown",
+    "evidence_status": "provider_reported"
+  }],
+  "evidence_status": "provider_reported"
+}
+```
+
+Rules:
+
+- Only `payment_status=paid`, `status=complete`, live-mode sessions for the matched Payment Link are gross external
+  payment receipts. They are not net revenue or contribution profit before reversal reconciliation.
+- Decision order is fixed. Every session first requires a valid opaque ID, the matched link ID, live mode, and known
+  Checkout/payment status. Only `payment_status=paid` then requires `status=complete`, valid creation time, a
+  non-negative safe-integer `amount_total`, and lowercase ISO-3 currency. A paid zero-value trial increments
+  `zero_value_paid_count` and never becomes revenue. `unpaid` and `no_payment_required` create no receipt and may have
+  null amount/currency; the collector does not reject those valid ignorable shapes.
+- Currency is provider lowercase ISO-3 and becomes uppercase. Session creation seconds become canonical UTC.
+- Duplicate session IDs, conflicting link IDs, malformed pages, pagination beyond 100 pages, network/JSON failures,
+  unsafe money, or invalid required fields fail closed with fixed redacted errors and no retry.
+- Customer, email, address, phone, client reference, payment intent, URL, metadata, and raw provider objects are never
+  copied to output or errors. Receipts sort deterministically by time then opaque source-event ID and are frozen.
+- `confirmed_stripe_balance` is not MUFG arrival. `bank_landed_status` remains `unknown` until a payout and bank receipt
+  are reconciled in a later slice. Refunds, disputes, fees, net, and payout state are deferred to 2b.1c rather than
+  inferred. Until then `reversal_coverage_status=unknown` and every receipt is `gross_inflow_unreconciled`; CFO-2b.1b
+  alone cannot enable a business revenue total, profit, ROI, or allocation decision.
+
+Current real acceptance: 54 active Payment Links fit one page; the canonical Life Manager link has six sessions, all
+`unpaid`, so the correct result is `status=covered`, `receipt_count=0`, and no whole-business zero-revenue claim.
+
+## 9. Source decisions
 
 - Stripe Checkout Session object: `payment_status=paid` means funds are available in the Stripe account, not the
   owner's bank. https://docs.stripe.com/api/checkout/sessions/object
