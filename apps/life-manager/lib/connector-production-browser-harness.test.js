@@ -1329,15 +1329,35 @@ function makeDoorkeeperForm(id = "new_event_registration") {
   return { id, getAttribute(name) { return name === "id" ? id : null; } };
 }
 
-async function inspectDoorkeeperDom(elements, { provider = "doorkeeper", href = "https://techgym.doorkeeper.jp/events/198719", event_id = "198719" } = {}) {
+async function inspectDoorkeeperDom(elements, { provider = "doorkeeper", href = "https://techgym.doorkeeper.jp/events/198719", event_id = "198719", selectElements } = {}) {
   let selector = "";
   const page = {
     url() { return href; },
-    locator(value) { selector = value; return { async evaluateAll(callback, context) { return callback(elements, context); } }; },
+    locator(value) {
+      selector = value;
+      return { async evaluateAll(callback, context) {
+        if (typeof selectElements === "function") return callback(selectElements(value, elements), context);
+        const selected = value.includes('a[href="#new_registration_modal"]') ? elements : elements.filter((element) => !(String(element.tagName || "").toLowerCase() === "a" && element.href === "#new_registration_modal"));
+        return callback(selected, context);
+      } };
+    },
   };
   const controls = await inspectPageControls({ page, provider, event_id });
   return { controls, selector };
 }
+
+test("non-Doorkeeper inspection keeps the old selector and ordinary controls", async () => {
+  const ordinary = makeDoorkeeperElement({ tagName: "BUTTON", innerText: "Register" });
+  const doorkeeperAnchor = makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "申し込む" });
+  const { controls, selector } = await inspectDoorkeeperDom([doorkeeperAnchor, ordinary], {
+    provider: "luma", href: "https://example.test/register", event_id: "",
+    selectElements: (value) => value.includes('a[href="#new_registration_modal"]') ? [doorkeeperAnchor, ordinary] : [ordinary],
+  });
+  assert.equal(selector, "input, textarea, select, button, a[role=button], a#confirm-button");
+  assert.deepEqual(controls.map(({ kind, label, submittable }) => ({ kind, label, submittable })), [{ kind: "button", label: "Register", submittable: false }]);
+  const doorkeeper = await inspectDoorkeeperDom([doorkeeperAnchor], { provider: "doorkeeper" });
+  assert.equal(doorkeeper.selector, "input, textarea, select, button, a[role=button], a#confirm-button, a[href=\"#new_registration_modal\"]");
+});
 
 test("Doorkeeper DOM inspector exposes only the exact visible trigger while modal is closed", async () => {
   const form = makeDoorkeeperForm();
@@ -1409,7 +1429,7 @@ test("Doorkeeper submit fails closed for duplicate, wrong-form, hidden, and ambi
   };
   const cases = [
     ["duplicate-submit", (form) => [makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form })]],
-    ["wrong-form", () => [makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form: makeDoorkeeperForm("cookie_form") })]],
+    ["wrong-form", () => [], { form: makeDoorkeeperForm("cookie_form") }],
     ["hidden-submit", () => [], { hidden: true }],
     ["unlabeled-required-answer", (form) => [makeDoorkeeperElement({ type: "text", required: true, form, value: "secret" })]],
     ["ambiguous-required-answer", (form) => [makeDoorkeeperElement({ type: "text", required: true, form, value: "Jane Doe", labels: [{ innerText: "Email" }] })]],
@@ -1418,5 +1438,35 @@ test("Doorkeeper submit fails closed for duplicate, wrong-form, hidden, and ambi
     const { controls } = await inspectDoorkeeperDom(makeCase(extra, submitOverrides));
     assert.equal(controls.some((control) => control.submittable === true), false, name);
     assert.doesNotMatch(JSON.stringify(controls), /private@example\.com|event_registration\[email\]|secret|Jane Doe/);
+  }
+});
+
+function makeDoorkeeperAncestor(overrides = {}) {
+  const ancestor = { hidden: false, ariaHidden: false, style: {}, computedStyle: null, rect: { width: 120, height: 32 }, parentElement: null, ...overrides };
+  ancestor.getAttribute = (name) => name === "hidden" ? (ancestor.hidden ? "" : null) : name === "aria-hidden" ? (ancestor.ariaHidden ? "true" : null) : null;
+  ancestor.hasAttribute = (name) => name === "hidden" && ancestor.hidden === true;
+  ancestor.getBoundingClientRect = () => ancestor.rect;
+  return ancestor;
+}
+
+test("Doorkeeper inspector rejects all controls hidden by literal ancestors", async () => {
+  const variants = [
+    ["hidden-attribute", { hidden: true }],
+    ["aria-hidden", { ariaHidden: true }],
+    ["ancestor-style", { style: { display: "none" } }],
+    ["computed-style", { computedStyle: { visibility: "hidden" } }],
+    ["ancestor-zero-box", { rect: { width: 0, height: 0 } }],
+  ];
+  for (const [name, overrides] of variants) {
+    const form = makeDoorkeeperForm();
+    const ancestor = makeDoorkeeperAncestor(overrides);
+    const ownerDocument = { defaultView: { getComputedStyle(element) { return element.computedStyle || element.style || {}; } } };
+    const elements = [
+      makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "申し込む", parentElement: ancestor, ownerDocument }),
+      makeDoorkeeperElement({ type: "email", id: "event_registration_email", name: "event_registration[email]", required: true, form, value: "private@example.com", parentElement: ancestor, ownerDocument }),
+      makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form, parentElement: ancestor, ownerDocument }),
+    ];
+    const { controls } = await inspectDoorkeeperDom(elements);
+    assert.deepEqual(controls, [], name);
   }
 });
