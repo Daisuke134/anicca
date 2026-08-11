@@ -7505,7 +7505,13 @@ official Eventbrite detail 3件を`:9222`のisolated diagnostic pageでread-only
 
 Ponytailでworkflow/test 2 files、production 1〜4 LOC、test 4〜15 LOCへ限定し、exact `Get tickets|Reserve a spot`の一意visible predicateをeligibility/absent readbackで共有する。fuzzy label/checkout/Harness/native変更0。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-hydrated-cta-19e.md`がexecutor SSOT。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗397。これ以外の残TODO一覧は履歴）
+### O1B-25進捗398（Item 19E-D0 / Eventbrite hydrated CTA repair ship）
+
+LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Reserve a spot` detail/readbackはRED 0/1。exact `Get tickets|Reserve a spot` predicate共有でGREEN後、fresh reviewがexact CTA 1 + fuzzy CTA 1でも通るImportantを反証した。Lunaがmixed visible controlをRED固定し、visible checkout control総数exact 1かつ唯一labelがliteral predicate一致をeligibility/readback双方へ適用した。最終Eventbrite 13/13、stable production/operations/Doorkeeper/Meetup合計68/68。production net +1、test +22。final scoped review SHIP、Critical/Important 0、syntax/diff/2-file scope/remote equality PASS。review済み`d397ff052`をstableへfast-forwardした。
+
+post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗398。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
