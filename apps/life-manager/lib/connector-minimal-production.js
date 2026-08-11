@@ -319,6 +319,7 @@ function createMinimalProductionDependencies(options = {}) {
     peatixWorkflow,
     meetupWorkflow,
     doorkeeperWorkflow,
+    eventbriteWorkflow,
     inspectControls: inspectPageControls,
     proposeAction,
     operateControl: operatePageControl,
