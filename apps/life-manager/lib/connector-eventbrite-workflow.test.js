@@ -114,6 +114,19 @@ test("Eventbrite requires an exact Offer or AggregateOffer type for zero-price o
   assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), []);
 });
 
+test("Eventbrite accepts hydrated Reserve a spot for eligibility and absent readback", async () => {
+  const row = binding("354");
+  const { workflow } = workflowFor(
+    [{ href: row.canonical_url, event_id: "354" }],
+    { [row.canonical_url]: detail("354", { controls: [{ text: "Reserve a spot", visible: true }] }) },
+  );
+  assert.equal((await workflow.discoverCandidates({ page: {}, calendar: [] })).length, 1);
+  const absent = createEventbriteScriptFirstWorkflow({
+    readRegistrationView: async () => ({ page_url: row.canonical_url, canonical_links: [], controls: [{ text: "Reserve a spot", visible: true }], body_text: "" }),
+  });
+  assert.deepEqual(await absent.readProviderState({ page: pageAt(row.canonical_url), candidate: { ...row, provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" } }), { status: "absent" });
+});
+
 test("Eventbrite rejects foreign Offer suffixes and supported-plus-foreign mixed type arrays", async () => {
   const cases = [
     ["352", "https://evil.example/Offer"],

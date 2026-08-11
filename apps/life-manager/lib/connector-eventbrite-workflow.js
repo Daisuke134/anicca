@@ -112,6 +112,7 @@ function controlsOf(raw) {
     ? { text: control.trim(), visible: true }
     : { text: String(control && (control.text ?? control.label ?? control.innerText) || "").trim(), visible: control && control.visible === true }));
 }
+function isTicketControl(text) { return text === "Get tickets" || text === "Reserve a spot"; }
 function bodyText(raw, event) {
   return [raw && (raw.body_text ?? raw.bodyText), raw && raw.description, event && event.description]
     .filter((value) => value != null && String(value).trim()).map(String).join(" ");
@@ -166,7 +167,7 @@ function normalizeDetail(binding, raw) {
   });
   return Object.freeze({ candidate, eligible: offline(event) && locationIsTokyo(event)
     && freeOffers(event, binding.canonical_url)
-    && controls.filter((control) => control.visible && control.text === "Get tickets").length === 1
+    && controls.filter((control) => control.visible && isTicketControl(control.text)).length === 1
     && !BLOCKED_MARKER.test(text) && !MONEY_MARKER.test(text) });
 }
 function calendarIntervals(calendar) {
@@ -308,7 +309,7 @@ function createEventbriteScriptFirstWorkflow(options = {}) {
       const exactLink = visibleLinks.length === 1 && visibleLinks[0].href === selected.canonical_url && view.canonical_links.length === 1;
       const controlCompletion = allControls.some((control) => completionCount(control.text));
       if (exactLink && completionCount(view.body_text) === 1 && !controlCompletion) return Object.freeze({ status: "registered" });
-      const tickets = controls.filter((control) => control.text === "Get tickets");
+      const tickets = controls.filter((control) => isTicketControl(control.text));
       const linksSafe = view.canonical_links.length === 0 || (view.canonical_links.length === 1 && exactLink);
       if (linksSafe && tickets.length === 1 && completionCount(view.body_text) === 0 && !controlCompletion) return Object.freeze({ status: "absent" });
       return Object.freeze({ status: "unavailable" });
