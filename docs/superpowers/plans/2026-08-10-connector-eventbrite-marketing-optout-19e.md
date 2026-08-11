@@ -42,6 +42,11 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 4. GREEN後、focused Harness、adapter単体E2E、Eventbrite/minimal-production/native adjacent、syntax、`git diff --check`、3-file ownership、4 labels unloadedを確認する。
 5. fresh Sol reviewでCritical/Important 0を得てからstableへ統合する。
 
+## Trust boundary / live acceptance
+
+- Exact official `https://www.eventbrite.com/checkout-external?eid=<same-event>` first-party UI semanticsを信頼する。DOM ambiguity、identity drift、lazy-locator race、hidden/disabled/duplicate control、async controlled reversionは防御対象。公式Eventbrite自身がmarketing checkboxのevent handlerから意図的にregistration fetch/submitを起こす悪意は脅威モデル外。これはtop CTA/ticket actionも同じfirst-party codeを信頼する既存境界であり、browser parentから任意first-party JavaScript effectを完全遮断しない。
+- コードreview後、実official checkoutでknown checked inputをexact1回OFFにし、500ms安定、final `Register` read-only exact1、registered/completion readback 0、final click 0、Calendar/evidence/Telegram effect 0を確認する。このlive proofがない限りD4c2を完了扱いにしない。
+
 ## Deferred
 
 final Register click-once、registered/pending readback、ticket-step effect-unknown reconciliation、factory/runFallback/native provider order、実`applied_bundle`、evidence/Telegram、schedule load。
