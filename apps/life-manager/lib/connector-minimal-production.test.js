@@ -381,6 +381,62 @@ test("official production factory routes Meetup after Peatix on the same page", 
   }
 });
 
+test("production provider router routes Doorkeeper through every action path without private cache metadata", async () => {
+  const calls = [], page = Object.freeze({ page_id: "owned-page-doorkeeper" });
+  const calendar = Object.freeze([{ kind: "timed", start_at: "2026-08-11T10:00:00.000Z", end_at: "2026-08-11T11:00:00.000Z" }]);
+  const candidate = Object.freeze({ provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001", attendee_name: "Private Name", attendee_email: "private@example.test" });
+  const workflow = {
+    async discoverCandidates(input) { calls.push(["discover", input]); return [candidate]; },
+    async runDirectAction(input) { calls.push(["direct", input]); return { status: "failed", safe_reason: "doorkeeper_direct_requires_harness" }; },
+    async readProviderState(input) { calls.push(["readback", input]); return { status: "registered" }; },
+  };
+  const actionCache = { async replay(input) { calls.push(["cache", input]); return { status: "cache_miss" }; }, saveVerifiedRepair(input) { calls.push(["save", input]); return { status: "saved" }; } };
+  let performed;
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow, doorkeeperWorkflow: workflow, actionCache,
+    browserHarness: { async runFallback(input) { calls.push(["fallback", input]); return { status: "failed" }; } },
+    async performAction(input) { performed = input; return { status: "success" }; },
+    now: () => new Date("2026-08-11T08:30:00.000Z"),
+  });
+
+  assert.deepEqual(await router.discoverCandidates("doorkeeper", calendar, page), [candidate]);
+  assert.deepEqual(await router.runCachedAction({ provider: "doorkeeper", candidate, page }), { status: "cache_miss" });
+  assert.deepEqual(await router.runDirectAction({ provider: "doorkeeper", candidate, page }), { status: "failed", safe_reason: "doorkeeper_direct_requires_harness" });
+  assert.deepEqual(await router.runAgentFallback({ provider: "doorkeeper", candidate, page, pageWebsocket: "ws://page", maxSteps: 1, expectedState: "registered_or_pending" }), { status: "failed" });
+  assert.deepEqual(await router.readProviderState({ provider: "doorkeeper", candidate, page }), { status: "registered" });
+  assert.deepEqual(await router.saveRepairedActions({ provider: "doorkeeper", candidate, page, providerState: { status: "registered" }, repairedActions: [{ purpose: "submit", method: "ax_click", control: "register" }] }), { status: "saved" });
+
+  const replay = calls.find(([name]) => name === "cache")[1];
+  assert.deepEqual(Object.keys(replay).sort(), ["expectedEffect", "page", "performAction", "provider", "readExpectedState", "workflowVersion", "pageState"].sort());
+  assert.deepEqual({ provider: replay.provider, version: replay.workflowVersion, pageState: replay.pageState, effect: replay.expectedEffect, page: replay.page }, { provider: "doorkeeper", version: "doorkeeper_registration_v1", pageState: "registration_page_v1", effect: "registered_or_pending", page });
+  await replay.performAction({ purpose: "fill", method: "ax_fill", control: "field" }); assert.equal(performed.provider, "doorkeeper");
+  assert.deepEqual(await replay.readExpectedState({ page }), { status: "registered" });
+  assert.deepEqual({ discoverPage: calls.find(([name]) => name === "discover")[1].page, discoverCalendar: calls.find(([name]) => name === "discover")[1].calendar, directPage: calls.find(([name]) => name === "direct")[1].page, readbackPage: calls.find(([name]) => name === "readback")[1].page, fallbackPage: calls.find(([name]) => name === "fallback")[1].page, fallbackCandidate: calls.find(([name]) => name === "fallback")[1].candidate }, { discoverPage: page, discoverCalendar: calendar, directPage: page, readbackPage: page, fallbackPage: page, fallbackCandidate: candidate });
+  const saved = calls.find(([name]) => name === "save")[1];
+  assert.deepEqual(Object.keys(saved).sort(), ["actions", "expectedEffect", "observedAt", "pageState", "provider", "providerState", "workflowVersion"].sort());
+  assert.deepEqual({ provider: saved.provider, version: saved.workflowVersion, pageState: saved.pageState, effect: saved.expectedEffect }, { provider: "doorkeeper", version: "doorkeeper_registration_v1", pageState: "registration_page_v1", effect: "registered_or_pending" });
+  assert.doesNotMatch(JSON.stringify({ replay, saved }), /Private Name|private@example\.test/);
+});
+
+test("official production factory routes an injected Doorkeeper workflow without opening a browser rail", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-doorkeeper-"));
+  const page = Object.freeze({ page_id: "injected-doorkeeper-page" }), calendar = Object.freeze([]);
+  const candidate = Object.freeze({ provider: "doorkeeper", event_ref: "doorkeeper-event://event/1002", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1002" });
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  let discoveryInput; const doorkeeperWorkflow = { ...emptyWorkflow, async discoverCandidates(input) { discoveryInput = input; return [candidate]; } }; const railCalls = [];
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-doorkeeper-1", calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence", calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } },
+      browserRail: { open() { railCalls.push("open"); }, navigate() { railCalls.push("navigate"); }, close() { railCalls.push("close"); } },
+      lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow, peatixWorkflow: emptyWorkflow, meetupWorkflow: emptyWorkflow, doorkeeperWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} }, browserHarness: { async runFallback() {}, async performAction() {} }, evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} },
+    });
+    assert.deepEqual(await dependencies.discoverCandidates("doorkeeper", calendar, page), [candidate]);
+    assert.equal(discoveryInput.page, page); assert.equal(discoveryInput.calendar, calendar); assert.deepEqual(railCalls, []);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
 test("production calendar reader uses gog for exactly fourteen Tokyo calendar days", async () => {
   const calls = [];
   const calendar = Object.freeze({ kind: "gog", ready: () => true });
