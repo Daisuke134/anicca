@@ -7489,7 +7489,11 @@ Lunaがminimal production router/factoryとfocused testの2 filesだけをTDD変
 
 Native `DEFAULT_PROVIDERS`、default Browser Harness、audit persistence、evidenceは差分0なので、partial Eventbriteがofficial wakeへ入る経路はまだ0。次active sliceはprivacy-safe Eventbrite discovery auditをoperationsへ永続化し、その後Harness registration controlを別sliceで接続する。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗394。これ以外の残TODO一覧は履歴）
+### O1B-25進捗395（Item 19E-C / Eventbrite privacy-safe audit plan）
+
+Eventbrite workflowの5-count auditをappend-only stateへ保存するsliceをoperations production/test 2 files、production 3〜6 LOC、test 30〜55 LOCへ限定した。Doorkeeperとexact同型のkeys/inequalitiesなので既存safe validatorを直接再利用し、`eventbrite-discovery-audits.jsonl`、writer、frozen operations exportだけを追加する。新registry/validator/schemaは作らない。mode 0600、extra/private fieldとinvalid countはappend 0。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-audit-19e.md`がexecutor SSOT。native order/live wake変更0、4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗395。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
