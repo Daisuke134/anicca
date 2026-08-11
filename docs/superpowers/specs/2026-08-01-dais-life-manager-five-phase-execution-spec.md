@@ -7834,3 +7834,11 @@ Pushed/clean HEAD `205fa0c8e`から既存Native daily ownerをexact 1回kickstar
 Eventbrite durable auditはexact `discovered/within/eligible/calendar-free/selected = 188/0/0/0/0`。current 14日window内eligible候補0のためEventbrite action/Calendar/evidence/Telegram external write 0、new receipt/photo delivery 0、new bundle 0で安全に終了し、成功を偽装していない。Doorkeeper audit `100/12/4/0/0`までのprovider continuationも維持した。
 
 終了後Native label not running・runs 2、legacy 3 labels unloaded、process 0、lock absent、CDP pages 4、owned target intersection 0、Git clean/upstream 0/0。Eventbrite action/readback→evidence store→minimal chain→Calendar transport→official production reach/cleanupは受入済み。Item19 Eventbrite実bundleだけはcurrent eligible candidate 0でpending。次active sliceは発見済み次providerを確定し、一providerだけ追加する。
+
+### O1B-25進捗446（Item 19F-D1 / 次provider TECH PLAY選定・discovery plan）
+
+次providerをTECH PLAYに確定した。公式event index <https://techplay.jp/event> は「開催予定463件/開催中27件/全490件」とcurrent supplyを公開し、canonical detailを`https://techplay.jp/event/<positive ID>`へ束縛する。公式RSS <https://rss.techplay.jp/event/w3c-rss-format/rss.xml> は「点在している技術勉強会、セミナー情報をまとめて掲載」と説明し、実測でcurrent canonical detail 50件を返した。EventRegistはpublic discoveryが弱く、こくちーずプロは反復occurrence identityと有料/noisy supplyの追加境界が必要なため、先頭providerには採らない。
+
+2026-08-12のRSS 50件をpublic detail payloadと照合した実測は14日window内24件、東京現地8件。そのうちTECH PLAY内のnative action、fee 0、空席、open表示を同じevent/ticket identityに持つ候補は4件（`999211 / 999190 / 999180 / 999179`）。共有CDPはTECH PLAY匿名、read-only一時tabはbefore/afterとも4 pagesでcleanupし、button click・login・external writeは0。GitHub code searchでは公式RSS consumerを複数確認したが、Connectorのidentity/free/Calendar/action-safety contractを満たす再利用workflowは0だった。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-discovery-19f.md`は新規TECH PLAY workflow/testのexact 2 files。公式RSS最大50→canonical detail→native/offline/Tokyo/14日/open/exactly-one-free-ticket→Calendarのread-only discoveryとaggregate auditだけをTDD追加する。production約160〜220 LOC、test約180〜260 LOC。100 LOC soft targetを超えるため、action/readback、routing/Harness/native order、evidence、Calendar transport、launchd/live stateは次sliceへ分離した。このsliceの外部作用は0で、Item19 TECH PLAY実bundleは未完。
