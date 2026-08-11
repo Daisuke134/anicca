@@ -143,10 +143,9 @@ function freeOffers(event, canonicalUrl) {
   return offers.every((offer) => {
     if (String(offer.url || "").trim() !== canonicalUrl || !IN_STOCK.has(String(offer.availability || ""))) return false;
     const types = Array.isArray(offer["@type"]) ? offer["@type"] : [offer["@type"]];
-    const allowed = (type) => type === "Offer" || type === "AggregateOffer"
-      || String(type || "").endsWith("/Offer") || String(type || "").endsWith("/AggregateOffer");
+    const allowed = (type) => /^(?:(?:https?:\/\/schema\.org\/)?(?:Aggregate)?Offer)$/.test(String(type || ""));
     if (!types.length || !types.every(allowed)) return false;
-    const aggregate = types.some((type) => type === "AggregateOffer" || String(type || "").endsWith("/AggregateOffer"));
+    const aggregate = types.some((type) => /^(?:(?:https?:\/\/schema\.org\/)?AggregateOffer)$/.test(String(type || "")));
     return aggregate ? numericZero(offer.lowPrice) && numericZero(offer.highPrice) : numericZero(offer.price);
   });
 }
