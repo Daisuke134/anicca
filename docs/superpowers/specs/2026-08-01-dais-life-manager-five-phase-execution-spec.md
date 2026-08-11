@@ -7674,3 +7674,13 @@ action historyはLuma discovery success、Connpass discovery failure、Peatix di
 ### O1B-25進捗421（Item 15/19E / consecutive failure reset plan）
 
 Plan `docs/superpowers/plans/2026-08-12-connector-consecutive-failure-reset.md`はrunner production/test exact 2 files。verified registered bundleが`completion_disposition=reused`を返した時だけ`consecutiveFailures=0`へ戻す。provider discovery成功はcandidate outcome成功ではないためresetせず、候補内の個別navigate/readback/action successもresetしない。cross-providerを含む三candidate/discovery outcome failureの既存circuit contractは維持する。production約1〜2 LOC、test約25〜55 LOC。new state/retry/wake/schedule作用0。TDD・fresh review・push完了後にofficial wake exact 1回だけ再実行する。
+
+### O1B-25進捗422（Item 15/19E / verified reused bundle failure reset ship）
+
+初期案のprovider discovery success resetは既存accepted cross-provider three-failure tests 5件を壊すことをRED後に実測し棄却した。plan/SSOTを先に`19858fa13`で縮小更新。Lunaがrunner production/test exact 2 filesだけをTDD変更し、verified registered bundleが`completion_disposition=reused`を返すbranchでだけ`consecutiveFailures=0`へ戻す1 LOCを追加した。REDはfailed candidate→registered reused bundle→later failuresの歴史total 3を誤ってcircuit-openしrunner 41/42。GREEN commit `37940015d`はrunner 42/42、既存cross-provider三失敗contractを無変更で維持する。
+
+minimal production 18/18、Harness 98/98、operations 11/11、evidence 31/31、Sol combined 200/200、syntax、diff、exact2-file scope PASS。fresh Sol review SHIP、Critical/Important 0。remote push完了。provider order、budgets、effect_unknown、deadline、report schema、live state変更0。
+
+### O1B-25進捗423（Item 19E-D6 / repaired official live wake preflight）
+
+修復後baselineはbundle 13、report 130、delivery 142、action 1360、Luma/Connpass/Peatix/Meetup/Doorkeeper/Eventbrite audits `131/54/47/4/3/0`、CDP unrelated pages 4。pushed/clean/upstream 0/0、process 0、lock idle、target intersection 0、4 labels UNLOADED。既存live planに従いofficial foreground `skills/connector/run.sh`をexact 1回だけ再実行する。manual provider/browser action、second concurrent executor、schedule loadは0。Eventbrite auditまたはfinal Submit 0のregistered reuse `applied_bundle`、positive report、exact cleanupを受入条件とする。
