@@ -7431,7 +7431,11 @@ Lunaがminimal-production production/test 2 filesだけをTDD変更した。brow
 
 fresh Sol reviewはSHIP、Critical/Important 0。Sol独立factory 15/15、Harness+Doorkeeper workflow 87/87、syntax/diff/ownershipがPASS。実装branchが却下済みpath-change mergeを親に含んだためbranch mergeはせず、stableで当該mergeと誤記docsを明示revertし、review済み実装commitだけを`4f77b43fd`としてcherry-pickした。official wake/browser/provider/Calendar/Telegram作用0、4 labels UNLOADED。次はschedule unloadedのままofficial bounded wakeでDoorkeeper discovery/auditと安全なlive pathを実測する。Item19 Doorkeeperのproduction supported表示と実`applied_bundle`は未完。
 
-### Active remaining TODO SSOT（進捗384。これ以外の残TODO一覧は履歴）
+### O1B-25進捗385（Item 19D-B4d / concurrent stable safety reconciliation plan）
+
+stable B4c配線はfactory 15/15で成立する一方、並行integration commit `587c03f7a`がreview済みDoorkeeper public-trigger fresh-observation/latchと2 regressionを削除し、Harnessが74件から72件へ後退したことをSolが実測した。4 labels UNLOADED、official wake 0のまま、次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-stable-reconciliation-19d.md`で削除されたreview済み2-file diffだけをTDD復元する。まずtestのみ戻してstale observationによる2回目click REDを再現し、その後Doorkeeper限定のaction直前再観測＋page/canonical成功latchを戻す。B4c minimal-production、provider/live/stateは変更0。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗385。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
