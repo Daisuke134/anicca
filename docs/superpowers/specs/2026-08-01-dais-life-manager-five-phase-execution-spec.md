@@ -7437,7 +7437,13 @@ fresh Sol reviewはSHIP、Critical/Important 0。Sol独立factory 15/15、Harnes
 
 safe auditはLuma `31/31/16/9/0`、Connpass `6/6/6/4/1`、Peatix `100/100/87/59/9`、Meetup `2/0/0/0/0`、Doorkeeper `0/0/0/0/0`。action historyのsubmit表示8件は`provider_cache` 4と`provider_direct` 4だがcandidate attempt増分0、applied bundle 12→12、Calendar/evidence write 0で、既存bundle readback/reuseのみ。Doorkeeper auditは初回1行をmode 0600で保存した。終了後process 0、lock absent、owned target intersection 0、既存page 2維持、4 labels unloaded、Git clean。Doorkeeperの本線到達とsafe audit persistenceは実証したが、候補0のため実`applied_bundle`とproduction supported表示は未完。次はDoorkeeper discovery 0を実サイトと比較し、parser/source故障ならTDD修復、実在0ならItem19を未完のまま次provider候補を探索する。
 
-### Active remaining TODO SSOT（進捗385。これ以外の残TODO一覧は履歴）
+### O1B-25進捗386（Item 19D / Doorkeeper listing DOM repair plan）
+
+公式3 URLを独立取得した。Doorkeeper東京eventsは「東京のイベント情報一覧」とcanonical event link 50件、東京prefectureは9件、global eventsは50件を返すため、進捗385の`discovered_count 0`は実在0ではない。raw HTMLでは各eventが`.global-event.events-list`で、その子が`.events-list-items-wrap`。productionは最初の`.events-list-items-wrap`を全体rootと誤認し、その子の`.events-list-item, li`を探すため常にrows 0になる。GitHub code search 3件は再利用可能な同DOM parser 0。
+
+次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-listing-dom-19d.md`はDoorkeeper workflow production/test 2 filesだけ。現行DOM fixtureをREDにし、exact `.global-event.events-list` rootsへ一箇所修正する。title/date/Tokyo venue、pagination、detail/eligibility/Calendar/audit/Harness/factory/nativeは不変。implementation中official wake 0、4 labels UNLOADED。Item19 Doorkeeperと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗386。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
