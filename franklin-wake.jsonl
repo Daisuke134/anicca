@@ -25773,3 +25773,12 @@
 {"ts":1786464817,"wake_id":"00MSOV0ZAX8C84CA1824764F96","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana pay-per-use API marketplace where developers pay USDC for calls [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wak"}
 {"ts":1786464947,"wake_id":"00MSOV3RWE90E27530E7984F2E","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786465078,"wake_id":"00MSOV6KCT07D257A749414F3C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786465210,"wake_id":"00MSOV9E5I0780DBAFC3C24832","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786465282,"wake_id":"00MSOVAXSJ30DFE9C7A3C84025","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786465416,"wake_id":"00MSOVDT75D81B553DE3BF418B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786465575,"wake_id":"00MSOVH8144B9EDE5AC1824AE2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786465735,"wake_id":"00MSOVKNPKED2A951B36BB4118","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786465806,"wake_id":"00MSOVM661CA38AE8EB3AB48F4","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786465876,"wake_id":"00MSOVNO6E5217E3DAAF2741E0","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786465944,"wake_id":"00MSOVP4URF0EAA76AAAD34184","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786466078,"wake_id":"00MSOVS09SAFB79F8D9BAF466B","kind":"narrate","sleep_s":120,"model":"auto"}
