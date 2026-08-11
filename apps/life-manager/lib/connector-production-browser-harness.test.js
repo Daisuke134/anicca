@@ -1583,3 +1583,29 @@ test("Doorkeeper default proposer chooses exact trigger, Email, and final submit
   assert.equal(agentCalls, 2);
   assert.equal(await proposer({ ...base, step: 1, observation: { state: "registration_page", controls: [{ control: "help_link", kind: "link", label: "Help", required: false, completed: false, submittable: false }] } }), null);
 });
+
+test("Doorkeeper semantic trigger duplicates fail closed even when the duplicate token is invalid", async () => {
+  const candidate = { provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001" };
+  const trigger = { control: "doorkeeper_trigger", kind: "link", label: "申し込む", required: false, completed: false, submittable: false };
+  const duplicate = { ...trigger, control: "doorkeeper_invalid" };
+  let agentCalls = 0;
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner() {
+    agentCalls += 1;
+    return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: trigger.control } };
+  } });
+  const observation = { state: "registration_page", controls: [trigger, duplicate] };
+  assert.equal(await proposer({ provider: "doorkeeper", target_id: "DOORKEEPERDUPLICATE1", expected_state: "registered_or_pending", step: 1, observation }), null);
+  assert.equal(agentCalls, 0);
+  let operated = 0;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    doorkeeperWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    async inspectControls() { return observation.controls; },
+    async proposeAction() { return { control: trigger.control }; },
+    async operateControl() { operated += 1; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  const result = await harness.performAction({ provider: "doorkeeper", candidate, page: { url() { return candidate.canonical_url; } }, action: { purpose: "submit", method: "ax_click", control: trigger.control } });
+  assert.deepEqual(result, { status: "failed" });
+  assert.equal(operated, 0);
+});

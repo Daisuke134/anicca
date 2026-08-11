@@ -50,12 +50,14 @@ function candidateDoorkeeperEventId(candidate) { return candidateDoorkeeperBindi
 function isConnpassJoin(provider, href) {
   return provider === "connpass" && CONNPASS_JOIN_URL.test(String(href || ""));
 }
-function isDoorkeeperTriggerControl(control) {
+function isDoorkeeperTriggerSemantic(control) {
   return Boolean(
     control && control.kind === "link" && control.label === DOORKEEPER_FINAL_LABEL
     && control.required === false && control.completed === false && control.submittable === false
-    && DOORKEEPER_TRIGGER_CONTROL.test(String(control.control || ""))
   );
+}
+function isDoorkeeperTriggerControl(control) {
+  return isDoorkeeperTriggerSemantic(control) && DOORKEEPER_TRIGGER_CONTROL.test(String(control.control || ""));
 }
 function isDoorkeeperModalTrigger({ provider, page, candidate, control, controls = [] } = {}) {
   if (provider !== "doorkeeper" || !isDoorkeeperTriggerControl(control)) return false;
@@ -65,7 +67,7 @@ function isDoorkeeperModalTrigger({ provider, page, candidate, control, controls
   try { href = String(typeof page?.url === "function" ? page.url() : ""); } catch { href = ""; }
   if (href !== binding.canonicalUrl) return false;
   const matching = Array.isArray(controls)
-    ? controls.filter(isDoorkeeperTriggerControl)
+    ? controls.filter(isDoorkeeperTriggerSemantic)
     : [];
   return matching.length === 1 && matching[0].control === control.control;
 }
@@ -463,7 +465,8 @@ function nativeDoorkeeperTrigger(provider, controls) {
   if (controls.some((control) => ACTIONABLE_KINDS.has(control.kind) && control.required && !control.completed)) return null;
   if (controls.some((control) => control.kind === "button" && control.submittable === true)) return null;
   const triggers = controls.filter(isDoorkeeperTriggerControl);
-  return triggers.length === 1 ? triggers[0].control : null;
+  const semanticTriggers = controls.filter(isDoorkeeperTriggerSemantic);
+  return triggers.length === 1 && semanticTriggers.length === 1 ? triggers[0].control : null;
 }
 
 async function safeProfile(read) { try { const value = await read(); return value && typeof value === "object" && !Array.isArray(value) ? value : null; } catch { return null; } } function answerFor(profile, label) { const answers = profile && profile.form_answers; const value = answers && typeof answers === "object" && !Array.isArray(answers) ? Object.entries(answers).find(([key]) => normalizedLabel(key) === label)?.[1] : null; return typeof value === "string" || Array.isArray(value) ? value : null; }
