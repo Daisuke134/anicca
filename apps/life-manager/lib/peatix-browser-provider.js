@@ -70,6 +70,21 @@ async function waitForConfirmed(page, id) {
     return confirmedUrl(pageHref(page), id);
   } catch { return false; }
 }
+async function readTicketProof(page, c) {
+  const canonical = `https://peatix.com/event/${c.id}`;
+  const ticket = `${canonical}/ticket`;
+  if (!page || typeof page.goto !== "function" || !eventPageUrl(pageHref(page), c.id)) return "unavailable";
+  const moved = await page.goto(ticket, { waitUntil: "domcontentloaded", timeout: 30_000 }).then(() => true, () => false);
+  if (!moved) return "unavailable";
+  if (!ticketPageUrl(pageHref(page), c.id)) {
+    const restored = await page.goto(canonical, { waitUntil: "domcontentloaded", timeout: 30_000 }).then(() => true, () => false);
+    return restored && eventPageUrl(pageHref(page), c.id) ? "unproven" : "unavailable";
+  }
+  const observed = await readPeatixRegistrationStateOnPage(page, c);
+  if (observed.status === "registered") return "registered";
+  const restored = await page.goto(canonical, { waitUntil: "domcontentloaded", timeout: 30_000 }).then(() => true, () => false);
+  return restored && eventPageUrl(pageHref(page), c.id) ? "unproven" : "unavailable";
+}
 function eventPageUrl(href, id) { let u; try { u = new URL(href); } catch { return false; } const m = /^\/event\/([1-9][0-9]*)\/?$/.exec(u.pathname); return u.protocol === "https:" && u.hostname === "peatix.com" && !u.port && !u.username && !u.password && !u.search && !u.hash && !!m && m[1] === id; }
 function ticketPageUrl(href, id) { let u; try { u = new URL(href); } catch { return false; } const m = TICKET.exec(u.pathname); return u.protocol === "https:" && u.hostname === "peatix.com" && !u.port && !u.username && !u.password && !u.search && !u.hash && !!m && m[1] === id; }
 async function canonicalStart(page, id) { if (!eventPageUrl(pageHref(page), id)) return false; const x = await evaluate(page, () => ({ auth: /\/(?:login|signin|signup)(?:\/|$)/i.test(location.pathname), markers: document.querySelectorAll('[data-registration-status="registered"],[data-registration-complete="true"],#registration-complete,[data-peatix-registration="registered"]').length }), { mode: "canonical", event_id: id }); return !!x && x.auth !== true && (x.markers === 0 || (Array.isArray(x.markers) && x.markers.length === 0)); }
@@ -139,8 +154,15 @@ async function readPeatixRegistrationStateOnPage(page, raw) {
     const bodies = ticketPage && !auth ? [...document.querySelectorAll("body.webticket")] : [];
     const sections = ticketPage && !auth ? [...document.querySelectorAll("section.ticket")] : [];
     const qrImages = ticketPage && !auth ? [...document.querySelectorAll("#qr-code img.js-qrcode-image")] : [];
+    const ticketCovers = ticketPage && !auth ? [...document.querySelectorAll(".ticket_cover")] : [];
+    const ticketEvents = ticketPage && !auth ? [...document.querySelectorAll(".ticket_event")] : [];
+    const ticketEventNames = ticketPage && !auth ? [...document.querySelectorAll(".ticket_event-name")] : [];
+    const ticketSummaries = ticketPage && !auth ? [...document.querySelectorAll(".ticket_summary")] : [];
     const ticketShell = bodies.length === 1 && sections.length === 1 && qrImages.length === 1 && bodies.every(visible) && sections.every(visible) && qrImages.every(visible);
-    return { href: String(location.href || ""), auth, checkout, markers, canonical_ticket_link_count: canonicalTicketLinkCount, canonical_ticket_link_total: canonicalTicketLinkTotal, competing_ticket_link_count: competingTicketLinkCount, ticket_shell: ticketShell };
+    const swipeShell = bodies.length === 1 && sections.length === 1
+      && [ticketCovers, ticketEvents, ticketEventNames, ticketSummaries].every((nodes) => nodes.length === 1 && nodes.every(visible))
+      && bodies.every(visible) && sections.every(visible);
+    return { href: String(location.href || ""), auth, checkout, markers, canonical_ticket_link_count: canonicalTicketLinkCount, canonical_ticket_link_total: canonicalTicketLinkTotal, competing_ticket_link_count: competingTicketLinkCount, ticket_shell: ticketShell, swipe_shell: swipeShell };
   }, { mode: "readback", event_id: c.id, ticket_id: c.ticket });
   if (!observed) return out("unavailable", "readback_unavailable");
   if (observed.status === "registered") return String(observed.event_id) === c.id && String(observed.ticket_id) === c.ticket ? out("registered") : out("unavailable", "readback_unavailable");
@@ -148,7 +170,7 @@ async function readPeatixRegistrationStateOnPage(page, raw) {
   if (observed.auth === true) return out("unavailable", "readback_unavailable");
   if (!Array.isArray(observed.markers)) return out("unavailable", "readback_unavailable");
   if (observed.markers.length === 0 && observed.checkout === false
-    && observed.ticket_shell === true && ticketPageUrl(observed.href, c.id)) return out("registered");
+    && (observed.ticket_shell === true || observed.swipe_shell === true) && ticketPageUrl(observed.href, c.id)) return out("registered");
   if (observed.markers.length === 0 && observed.checkout === false
     && observed.canonical_ticket_link_count === 1 && observed.canonical_ticket_link_total === 1
     && observed.competing_ticket_link_count === 0 && eventPageUrl(observed.href, c.id)) return out("registered");
@@ -162,7 +184,16 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
   const c = candidate(rawCandidate); const p = profile(rawProfile); if (!c || !p || !page) return out("unavailable", "invalid_input");
   let clicked = false;
   try {
-    const before = await readPeatixRegistrationStateOnPage(page, c); if (before.status === "registered") return before; if (before.status !== "absent" && !await canonicalStart(page, c.id)) return before;
+    const before = await readPeatixRegistrationStateOnPage(page, c);
+    if (before.status === "registered") return before;
+    if (before.status !== "absent") {
+      if (!await canonicalStart(page, c.id)) return before;
+      if (eventPageUrl(pageHref(page), c.id)) {
+        const ticketProof = await readTicketProof(page, c);
+        if (ticketProof === "registered") return out("registered");
+        if (ticketProof === "unavailable") return out("unavailable", "readback_unavailable");
+      }
+    }
     const base = `https://peatix.com/sales/event/${c.id}`;
     if (typeof page.goto !== "function" || !await page.goto(`${base}/tickets`, { waitUntil: "domcontentloaded", timeout: 30000 }).then(() => true, () => false) || !stepUrl(pageHref(page), c.id, "tickets")) return out("unavailable", "tickets_navigation_failed");
     const ticket = await control(page, `input[name=number_of_tickets_${c.ticket}]`); if (!ticket || typeof ticket.fill !== "function") return out("unavailable", "ticket_control_unavailable"); await ticket.fill("1");
@@ -212,7 +243,13 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
     if (!await confirmedNavigation) return out("unavailable", "readback_unavailable");
     const canonical = `https://peatix.com/event/${c.id}`;
     if (typeof page.goto !== "function" || !await page.goto(canonical, { waitUntil: "domcontentloaded", timeout: 30_000 }).then(() => true, () => false) || !eventPageUrl(pageHref(page), c.id)) return out("unavailable", "readback_unavailable");
-    const after = await readPeatixRegistrationStateOnPage(page, c); return after.status === "registered" || after.status === "absent" ? after : out("unavailable", "readback_unavailable");
+    let after = await readPeatixRegistrationStateOnPage(page, c);
+    if (after.status !== "registered" && after.status !== "absent") {
+      const ticketProof = await readTicketProof(page, c);
+      if (ticketProof === "registered") return out("registered");
+      if (ticketProof === "unavailable") return out("unavailable", "readback_unavailable");
+    }
+    return after.status === "registered" || after.status === "absent" ? after : out("unavailable", "readback_unavailable");
   } catch { return out("unavailable", clicked ? "readback_unavailable" : "browser_action_failed"); }
 }
 
