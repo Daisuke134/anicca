@@ -13,11 +13,11 @@ const OFFLINE_MODE = "https://schema.org/OfflineEventAttendanceMode";
 const IN_STOCK = "https://schema.org/InStock";
 const UNAVAILABLE_MARKER = /(?:中止|延期|受付終了|満席|キャンセル待ち|wait\s*list|waitlist|sold\s*out|cancel(?:led|ed)?|\bfull\b)/i;
 const MONEY_MARKER = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:円|jpy|yen)|有料|参加費\s*(?:あり|必要)|料金\s*(?:あり|必要)|会場払い|payment\s+required)/i;
-const READBACK_UNSAFE_MARKER = /(?:支払い|決済|payment|pay(?:ment)?|credit\s*card|クレジット|wait\s*list|waitlist|キャンセル待ち|満席|エラー|\berror\b|\bfailed\b|失敗)/i;
+const READBACK_UNSAFE_MARKER = /(?:中止|延期|受付終了|支払い|決済|payment|pay(?:ment)?|credit\s*card|クレジット|wait\s*list|waitlist|キャンセル待ち|満席|エラー|\berror\b|\bfailed\b|失敗)/i;
 const SAFE_CODES = new Set([
   "DOORKEEPER_LISTING_NAVIGATION_FAILED", "DOORKEEPER_LISTING_READ_FAILED",
   "DOORKEEPER_LISTING_RESULT_CONTRACT_FAILED", "DOORKEEPER_DISCOVERY_PAGE_LIMIT_FAILED",
-  "DOORKEEPER_DETAIL_READ_FAILED", "DOORKEEPER_DETAIL_IDENTITY_MISMATCH_FAILED",
+  "DOORKEEPER_DETAIL_NAVIGATION_FAILED", "DOORKEEPER_DETAIL_READ_FAILED", "DOORKEEPER_DETAIL_IDENTITY_MISMATCH_FAILED",
   "DOORKEEPER_CALENDAR_CONFLICT_CHECK_FAILED", "DOORKEEPER_REGISTRATION_READ_FAILED",
 ]);
 
@@ -34,6 +34,21 @@ function stageError(code) {
 function preserveSafe(error, fallback) {
   const code = String(error && error.code || "");
   return stageError(SAFE_CODES.has(code) ? code : fallback);
+}
+
+function actualNavigationUrl(page, response) {
+  try {
+    if (page && typeof page.url === "function") return String(page.url());
+  } catch { return ""; }
+  try {
+    if (response && typeof response.url === "function") return String(response.url());
+    if (response && typeof response.url === "string") return response.url;
+  } catch { return ""; }
+  return "";
+}
+
+function assertNavigationUrl(page, response, expected, code) {
+  if (actualNavigationUrl(page, response) !== expected) throw stageError(code);
 }
 
 function localParts(value) {
@@ -259,9 +274,11 @@ function defaultCalendarFree(candidate, calendar) {
 async function defaultReadListingPage(page, pageNumber) {
   if (!page || typeof page.goto !== "function" || typeof page.evaluate !== "function") invalid();
   const url = pageNumber === 1 ? LIST_URL : `${LIST_URL}?page=${pageNumber}`;
+  let response;
   try {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
   } catch { throw stageError("DOORKEEPER_LISTING_NAVIGATION_FAILED"); }
+  assertNavigationUrl(page, response, url, "DOORKEEPER_LISTING_NAVIGATION_FAILED");
   let payload;
   try {
     payload = await page.evaluate(() => {
@@ -300,8 +317,12 @@ async function defaultReadListingPage(page, pageNumber) {
 
 async function defaultReadEventDetail(page, canonicalUrl) {
   if (!page || typeof page.goto !== "function" || typeof page.evaluate !== "function") invalid();
+  let response;
   try {
-    await page.goto(canonicalUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    response = await page.goto(canonicalUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  } catch { throw stageError("DOORKEEPER_DETAIL_NAVIGATION_FAILED"); }
+  assertNavigationUrl(page, response, canonicalUrl, "DOORKEEPER_DETAIL_NAVIGATION_FAILED");
+  try {
     return await page.evaluate(() => {
       const jsonld = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => {
         try { return [JSON.parse(script.textContent || "")]; } catch { return []; }
@@ -430,12 +451,13 @@ function createDoorkeeperScriptFirstWorkflow(options = {}) {
         const covered = calendarIntervals(calendar).some((busy) => exactCoverage(candidate, busy));
         (covered ? exactCovered : unprocessed).push(candidate);
       }
+      const selectedCount = exactCovered.length + unprocessed.length;
       await onDiscoveryAudit(Object.freeze({
-        observed_count: observedCount,
-        normalized_count: normalizedCount,
-        window_count: windowCount,
-        free_open_count: freeOpenCount,
-        calendar_free_count: exactCovered.length + unprocessed.length,
+        discovered_count: observedCount,
+        within_window_count: windowCount,
+        eligible_count: freeOpenCount,
+        calendar_free_count: selectedCount,
+        selected_count: selectedCount,
       }));
       return Object.freeze([...exactCovered, ...unprocessed]);
     },

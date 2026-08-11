@@ -66,6 +66,60 @@ function pageAt(url) {
   return { url: () => url };
 }
 
+function defaultDomPage({ redirectListing = false, redirectDetail = false } = {}) {
+  const row = binding("1001");
+  let currentUrl = "";
+  let phase = "";
+  let evaluateCalls = 0;
+  const titleAnchor = { href: row.canonical_url };
+  const venueAnchor = { href: "https://www.doorkeeper.jp/prefectures/tokyo" };
+  const dateNode = { textContent: "2026年8月11日", innerText: "2026年8月11日" };
+  const listingItem = {
+    querySelector(selector) {
+      if (selector.includes("/events/")) return titleAnchor;
+      if (selector === "a[href]") return titleAnchor;
+      if (selector === ".events-list-item-time-date") return dateNode;
+      if (selector.includes("/prefectures/")) return venueAnchor;
+      return null;
+    },
+    querySelectorAll() { return [titleAnchor, venueAnchor]; },
+  };
+  const listingRoot = { querySelectorAll() { return [listingItem]; } };
+  const script = { textContent: JSON.stringify(detail("1001").jsonld) };
+  const control = { innerText: "申し込む", textContent: "申し込む", value: "", offsetWidth: 10, offsetHeight: 10 };
+  const listingDocument = {
+    querySelector(selector) { return selector === ".events-list-items-wrap" ? listingRoot : null; },
+    querySelectorAll() { return []; },
+  };
+  const detailDocument = {
+    querySelector() { return null; },
+    querySelectorAll(selector) {
+      if (selector === 'script[type="application/ld+json"]') return [script];
+      if (selector === "a,button,input[type='submit']") return [control];
+      return [];
+    },
+    body: { innerText: "Tokyo Free Event 1001" },
+  };
+  return {
+    async goto(url) {
+      phase = url.includes("/prefectures/tokyo/events") ? "listing" : "detail";
+      currentUrl = (phase === "listing" && redirectListing) || (phase === "detail" && redirectDetail)
+        ? "https://redirected.example.invalid/other" : url;
+    },
+    url() { return currentUrl; },
+    async evaluate(callback) {
+      evaluateCalls += 1;
+      const previousDocument = global.document;
+      global.document = phase === "listing" ? listingDocument : detailDocument;
+      try { return callback(); } finally {
+        if (previousDocument === undefined) delete global.document;
+        else global.document = previousDocument;
+      }
+    },
+    evaluateCalls() { return evaluateCalls; },
+  };
+}
+
 const eligibleJsonLd = {
   "@type": "Event",
   name: "Tokyo Free Event",
@@ -140,6 +194,44 @@ test("Doorkeeper rejects a mismatched JSON-LD identity", async () => {
   );
 });
 
+test("default listing and detail readers observe the owned page DOM after exact navigation", async () => {
+  const page = defaultDomPage();
+  const workflow = createDoorkeeperScriptFirstWorkflow({ now: () => new Date(NOW) });
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+  assert.deepEqual(result.map(({ event_ref, canonical_url, title }) => ({ event_ref, canonical_url, title })), [{
+    event_ref: "doorkeeper-event://event/1001",
+    canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001",
+    title: "Tokyo Free Event 1001",
+  }]);
+  assert.equal(page.evaluateCalls(), 2);
+});
+
+test("default listing reader fails before DOM acceptance when navigation redirects", async () => {
+  const page = defaultDomPage({ redirectListing: true });
+  const workflow = createDoorkeeperScriptFirstWorkflow({ now: () => new Date(NOW) });
+  await assert.rejects(
+    workflow.discoverCandidates({ page, calendar: [] }),
+    (error) => error && error.code === "DOORKEEPER_LISTING_NAVIGATION_FAILED",
+  );
+  assert.equal(page.evaluateCalls(), 0);
+});
+
+test("default detail reader fails before JSON-LD acceptance when navigation redirects", async () => {
+  const page = defaultDomPage({ redirectDetail: true });
+  const workflow = createDoorkeeperScriptFirstWorkflow({
+    now: () => new Date(NOW),
+    readListingPage: async () => ({
+      rows: [{ canonical_url: binding("1001").canonical_url, day: "2026-08-11", venue_url: "https://www.doorkeeper.jp/prefectures/tokyo" }],
+      has_next: false,
+    }),
+  });
+  await assert.rejects(
+    workflow.discoverCandidates({ page, calendar: [] }),
+    (error) => error && error.code === "DOORKEEPER_DETAIL_NAVIGATION_FAILED",
+  );
+  assert.equal(page.evaluateCalls(), 0);
+});
+
 test("Doorkeeper applies strict detail eligibility gates", async () => {
   const cases = [
     ["online", { jsonld: { eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode" } }, false],
@@ -196,8 +288,8 @@ test("Doorkeeper keeps the five-count audit contract without private fields", as
     isCalendarFree: async (candidate) => candidate.event_ref.endsWith("701"),
   });
   await workflow.discoverCandidates({ page: {}, calendar: [] });
-  assert.deepEqual(audits, [{ observed_count: 4, normalized_count: 4, window_count: 3, free_open_count: 3, calendar_free_count: 1 }]);
-  assert.deepEqual(Object.keys(audits[0]).sort(), ["calendar_free_count", "free_open_count", "normalized_count", "observed_count", "window_count"]);
+  assert.deepEqual(audits, [{ discovered_count: 4, within_window_count: 3, eligible_count: 3, calendar_free_count: 1, selected_count: 1 }]);
+  assert.deepEqual(Object.keys(audits[0]).sort(), ["calendar_free_count", "discovered_count", "eligible_count", "selected_count", "within_window_count"]);
   assert.equal(JSON.stringify(audits).includes("doorkeeper.jp"), false);
   assert.equal(JSON.stringify(audits).includes("Tokyo Free Event"), false);
 });
@@ -259,6 +351,21 @@ test("parent readback returns unavailable for ambiguous or unsafe views", async 
   for (const view of views) {
     const workflow = createDoorkeeperScriptFirstWorkflow({ readRegistrationView: async () => view });
     assert.deepEqual(await workflow.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" });
+  }
+});
+
+test("parent readback rejects Doorkeeper unavailable status text even with a visible submit control", async () => {
+  const candidate = { ...binding("904"), provider: "doorkeeper" };
+  for (const marker of ["中止", "延期", "受付終了"]) {
+    const workflow = createDoorkeeperScriptFirstWorkflow({
+      readRegistrationView: async () => ({
+        page_url: candidate.canonical_url,
+        canonical_links: [],
+        controls: [{ text: "申し込む", visible: true }],
+        body_text: marker,
+      }),
+    });
+    assert.deepEqual(await workflow.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" }, marker);
   }
 });
 
