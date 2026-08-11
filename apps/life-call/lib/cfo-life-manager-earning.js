@@ -50,4 +50,45 @@ function normalizeLifeManagerEarningReceipt(input) {
   }
 }
 
-module.exports = { normalizeLifeManagerEarningReceipt };
+async function collectLifeManagerStripeReceipts(options) {
+  try {
+    data(options);
+    const { stripeKey, paymentLinkUrl, fetchImpl } = options;
+    if (Reflect.ownKeys(options).sort().join(",") !== "fetchImpl,paymentLinkUrl,stripeKey" || typeof stripeKey !== "string" || !/^sk_live_[A-Za-z0-9]+$/.test(stripeKey) || typeof paymentLinkUrl !== "string" || !/^https:\/\/buy\.stripe\.com\/[^/?#]+$/.test(paymentLinkUrl) || typeof fetchImpl !== "function") fail("stripe_options");
+    const seen = new Set();
+    async function list(path, query) {
+      const out = [];
+      let cursor;
+      for (let page = 0; page < 100; page++) {
+        const url = new URL(`https://api.stripe.com/v1/${path}`);
+        url.searchParams.set("limit", "100"); if (query) for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v); if (cursor) url.searchParams.set("starting_after", cursor);
+        let response, body;
+        try { response = await fetchImpl(url.toString(), { method: "GET", headers: { Authorization: `Bearer ${stripeKey}` } }); body = await response.json(); } catch { fail("stripe_network"); }
+        if (!response || !response.ok || !plain(body) || !Array.isArray(body.data) || typeof body.has_more !== "boolean") fail("stripe_response");
+        for (const item of body.data) { if (!plain(item) || typeof item.id !== "string" || !/^[A-Za-z0-9_]+$/.test(item.id) || seen.has(`${path}:${item.id}`)) fail("stripe_item"); seen.add(`${path}:${item.id}`); out.push(item); }
+        if (!body.has_more) return out;
+        const last = body.data[body.data.length - 1]; if (!last || typeof last.id !== "string" || !last.id) fail("stripe_pagination"); cursor = last.id;
+      }
+      fail("stripe_pagination");
+    }
+    const paymentLinks = await list("payment_links");
+    const matching = paymentLinks.filter(link => link.url === paymentLinkUrl && link.livemode === true && link.active === true);
+    if (matching.length !== 1) fail("stripe_canonical_link");
+    const linkId = matching[0].id;
+    const sessions = await list("checkout/sessions", { payment_link: linkId });
+    const receipts = []; let zero = 0;
+    for (const session of sessions) {
+      if (!["paid", "unpaid", "no_payment_required"].includes(session.payment_status) || !["complete", "open", "expired"].includes(session.status)) fail("stripe_status");
+      if (session.payment_link !== linkId || session.livemode !== true) fail("stripe_session_link");
+      if (session.payment_status !== "paid") continue;
+      if (session.status !== "complete" || !Number.isInteger(session.created) || session.created < 0 || !Number.isSafeInteger(session.amount_total) || session.amount_total < 0 || typeof session.currency !== "string" || !/^[a-z]{3}$/.test(session.currency)) fail("stripe_paid");
+      if (session.amount_total === 0) { zero++; continue; }
+      receipts.push(Object.freeze({ source_event_id: `stripe_checkout:${session.id}`, occurred_at: new Date(session.created * 1000).toISOString(), amount: Object.freeze({ minor: String(session.amount_total), currency: session.currency.toUpperCase() }), recognition_status: "gross_inflow_unreconciled", landed_cash_status: "confirmed_stripe_balance", bank_landed_status: "unknown", evidence_status: "provider_reported" }));
+    }
+    receipts.sort((a, b) => a.occurred_at.localeCompare(b.occurred_at) || a.source_event_id.localeCompare(b.source_event_id));
+    const result = { schema_version: 1, financial_unit_id: "life_manager_saas", channel_id: "stripe_life_manager", status: "covered", receipt_count: receipts.length, zero_value_paid_count: zero, reversal_coverage_status: "unknown", receipts: Object.freeze(receipts), evidence_status: "provider_reported" };
+    return Object.freeze(result);
+  } catch (error) { if (INTERNAL.has(error)) throw error; fail("stripe_invalid_input"); }
+}
+
+module.exports = { normalizeLifeManagerEarningReceipt, collectLifeManagerStripeReceipts };
