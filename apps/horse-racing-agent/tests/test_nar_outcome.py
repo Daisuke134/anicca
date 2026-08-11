@@ -10,6 +10,7 @@ import pytest
 
 from horse_racing_agent.nar_materialize import nar_race_id, nar_runner_id
 from horse_racing_agent.nar_outcome import (
+    _is_accepted_real_provenance,
     materialize_nar_win_outcomes,
     redacted_summary,
 )
@@ -28,6 +29,21 @@ SOURCE_URL = (
     "https://www.keiba.go.jp/KeibaWeb/DataDownload/"
     "RaceDataDownload?type=monthly&k_year=2026&k_month=8"
 )
+
+
+@pytest.mark.parametrize(
+    ("captured_at", "source_sha256", "accepted"),
+    [
+        ("2026-08-10T10:37:13+09:00", "ca512328b477054738f0a926710c3c5c16b1e25d9f7e4ffaf7f9cfc9604c2149", True),
+        ("2026-08-11T14:11:02+09:00", "9252f89fde027a918eb2fb98c1a815c6d7b2a41ca27201551ed36f38c8b252ce", True),
+        ("2026-08-11T14:11:02+09:00", "9252f89fde027a918eb2fb98c1a815c6d7b2a41ca27201551ed36f38c8b252cf", False),
+        ("2026-08-11T14:11:01+09:00", "9252f89fde027a918eb2fb98c1a815c6d7b2a41ca27201551ed36f38c8b252ce", False),
+    ],
+)
+def test_real_provenance_requires_an_exact_accepted_tuple(
+    captured_at: str, source_sha256: str, accepted: bool
+):
+    assert _is_accepted_real_provenance(SOURCE_URL, source_sha256, captured_at) is accepted
 
 
 def _csv_bytes(headers: list[str], rows: list[dict[str, str]]) -> bytes:

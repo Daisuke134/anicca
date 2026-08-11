@@ -27,8 +27,12 @@ _REAL_SOURCE_URL = (
 )
 _REAL_SHA256 = "ca512328b477054738f0a926710c3c5c16b1e25d9f7e4ffaf7f9cfc9604c2149"
 _REAL_CAPTURED_AT = "2026-08-10T10:37:13+09:00"
-_REAL_PROVENANCE = frozenset({(_REAL_SOURCE_URL, _REAL_SHA256, _REAL_CAPTURED_AT)})
+_REAL_PROVENANCE = frozenset({(_REAL_SOURCE_URL, _REAL_SHA256, _REAL_CAPTURED_AT), (_REAL_SOURCE_URL, "9252f89fde027a918eb2fb98c1a815c6d7b2a41ca27201551ed36f38c8b252ce", "2026-08-11T14:11:02+09:00")})
 _ASCII_DIGITS = re.compile(r"[0-9]+\Z")
+
+
+def _is_accepted_real_provenance(source_url: str, source_sha256: str, captured_at: str) -> bool:
+    return (source_url, source_sha256, captured_at) in _REAL_PROVENANCE
 
 
 def _fail(message: str) -> None:
@@ -190,11 +194,9 @@ def materialize_nar_win_outcomes(
         _fail("expected archive hash is invalid")
     archive_sha256 = expected_sha256.casefold()
     captured_iso = captured.isoformat()
-    if evidence_class == "REAL_PUBLIC_WEB_RECORD" and (
-        source_url,
-        archive_sha256,
-        captured_iso,
-    ) not in _REAL_PROVENANCE:
+    if evidence_class == "REAL_PUBLIC_WEB_RECORD" and not _is_accepted_real_provenance(
+        source_url, archive_sha256, captured_iso
+    ):
         _fail("real provenance is not accepted")
 
     parsed = _read_archive(path, archive_sha256, {"horse", "payback"})
