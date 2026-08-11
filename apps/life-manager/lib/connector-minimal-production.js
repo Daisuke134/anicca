@@ -306,6 +306,7 @@ function createMinimalProductionDependencies(options = {}) {
     connpassWorkflow,
     peatixWorkflow,
     meetupWorkflow,
+    doorkeeperWorkflow,
     inspectControls: inspectPageControls,
     proposeAction,
     operateControl: operatePageControl,
