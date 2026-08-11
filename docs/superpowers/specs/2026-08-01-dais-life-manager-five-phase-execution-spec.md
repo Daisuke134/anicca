@@ -7261,7 +7261,15 @@ LunaへPeatix browser provider production/testの既存2 filesだけを所有さ
 
 pre-submitはexisting canonicalStartのsame-event/markerなしを通った時だけticketをread-only probeし、registeredならfinal click 0、proof不成立ならcanonical exact restore後にexisting flowへ進む。wrong marker/auth/malformedはprobe 0。post-confirm canonical unavailableもticket proof registeredだけを成功にする。Luna focused 29/29、runner/production/evidence/Harness adjacent 136/136、Sol独立expanded 165/165、syntax/diff checkがPASS。workflow 1 failureは既知の日付依存。fresh Sol reviewはCritical 0 / Important 0で`ship`。review済みcommitをstable scheduled worktreeへfast-forwardしremoteへpushした。implementation/test/review中のbrowser、provider、Calendar、evidence、Telegram、state、launchd、schedule作用0。Item19 Meetupは未完。次はofficial wake exact 1回でsame-event swipe ticket pre-readback、Submit/Harness 0、evidence bundle、Meetup audit到達または次exact safe boundaryをlive検証する。
 
-### Active remaining TODO SSOT（進捗355。これ以外の残TODO一覧は履歴）
+### O1B-25進捗356（Item 19M-D0e live wake / Peatix partial evidence recovery境界）
+
+pushed HEAD `4d8ee7fd8`、4 labels unloaded、process/active lease 0、page 1、baseline action/report/delivery/Peatix audit/bundle `872/116/128/32/6`からofficial foreground wakeをexact 1回実行した。wake `wake-90b09e9c1a0f9e5c2fb5b340`はLuma、Connpass、Peatix discoveryを成功し、action `872→891`、report `116→117`、delivery `128→129`、Peatix audit `32→33`、positive every-wake Telegram ID `11424`。bundle 6、Meetup audit 0。
+
+Peatix candidate `5101994`はpre-submit swipe-ticket probeをprovider direct 373msで`registered`と再読取し、final click、Browser Harness、次candidate Submitをすべて0にした。続くevidence chainはimmutable provider receipt、16,738-byte privacy-safe PNG、SHA-256一致artifact、evidence checkpoint、exact Calendar create/readback、positive Telegram message ID `11422`までdurable保存した。Telegram photo deliveryだけがcheckpoint作成前に失敗し、runnerはcontractどおりfailure count 1の`circuit_open / evidence_completion_failed`を一回報告してcleanupした。photo checkpointとapplied bundleは0。
+
+初期診断の「evidence開始前失敗」はstate実測で棄却した。既存Item 12 partial recoveryがこのexact境界を既に覆い、次wakeはprovider receipt、PNG、Calendar、message checkpointを検証・再利用してphotoとbundleだけを補完する。新code、test、schema、retry、provider actionは追加しない。次の一件はschedule-unloaded official recovery wake exact 1回でSubmit/Harness 0、Telegram photo positive ID、新Peatix `applied_bundle`、同wake Meetup audit到達または次exact safe boundaryを確認する。Item19 Meetupは未完、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗356。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
