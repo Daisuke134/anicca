@@ -194,11 +194,20 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       }
       for (const selected of candidates) {
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
+        let navigationTaskThrew = false;
+        let navigationTaskError;
         try {
-          await action("navigate", "browser_rail", () => (
-            deps.browserRail.navigate(owned, selected.canonical_url)
-          ));
-        } catch {
+          await action("navigate", "browser_rail", async () => {
+            try {
+              return await deps.browserRail.navigate(owned, selected.canonical_url);
+            } catch (error) {
+              navigationTaskThrew = true;
+              navigationTaskError = error;
+              throw error;
+            }
+          });
+        } catch (error) {
+          if (!navigationTaskThrew || !Object.is(error, navigationTaskError)) throw error;
           if (deadlineReached()) return finish("circuit_open", "wake_deadline");
           consecutiveFailures += 1;
           lastSafeReason = "candidate_navigation_failed";
