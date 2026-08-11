@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — `CFO-2b.1a` is the only active slice |
+| Status | ACTIVE — `CFO-2b.1b` is the only active slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local `apps/life-call`; existing ledgers and provider APIs only |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -39,7 +39,7 @@ flowchart LR
 Only the first unchecked item is active.
 
 - [ ] **CFO-2b.1 — Life Manager**
-  - [ ] **2b.1a** Normalize finalized TaskMarket/uGig external settlements already stored in `lm_agent_earnings`.
+  - [x] **2b.1a** Normalize finalized TaskMarket/uGig external settlements already stored in `lm_agent_earnings`.
   - [ ] **2b.1b** Read the canonical Life Manager Stripe Payment Link and normalize paid Checkout receipts; a paid
         Checkout balance is not bank-landed cash.
   - [ ] **2b.1c** Compose revenue coverage with existing direct-cost, provider-usage, subscription, human-cost, and
@@ -99,16 +99,27 @@ unknown input field never leave this boundary. Invalid input throws only
 
 ## 6. Acceptance for 2b.1a
 
-- [ ] Exact TaskMarket and uGig fixtures map to the two canonical Life Manager channels.
-- [ ] A compact money-truth regression covers another business source, non-external/non-finalized settlement,
+- [x] Exact TaskMarket and uGig fixtures map to the two canonical Life Manager channels.
+- [x] A compact money-truth regression covers another business source, non-external/non-finalized settlement,
       zero/unsafe/ambiguous amount, and malformed identity. All fail closed without leakage; privacy-sensitive and
       unknown source fields are accepted only as input evidence and are stripped from the closed result.
-- [ ] Inputs are unchanged; output and nested amount are frozen and contain only the nine documented keys.
-- [ ] The real read-only filtered ledger query succeeds and returns the observed empty list without claiming whole-
+- [x] Inputs are unchanged; output and nested amount are frozen and contain only the nine documented keys.
+- [x] The real read-only filtered ledger query succeeds and returns the observed empty list without claiming whole-
       business revenue zero.
-- [ ] Focused, CFO, and full tests pass; scope is at most three files and 100 additions; commit and push succeed.
+- [x] Focused, CFO, and full tests pass; scope is at most three files and 100 additions; commit and push succeed.
 
-## 7. Source decisions
+## 7. CFO-2b.1a completion evidence
+
+- Code commit `58ba18903` implements the exact privacy-safe receipt boundary in three files with 85 gross additions.
+- Focused 4/4, CFO 337/337, and the full `apps/life-call` suite pass; syntax and `git diff --check` pass.
+- Fresh Sol review is `ship` after two real prefix-spoof privacy regressions were fixed with an internal `WeakSet`
+  origin tag. Direct and nested hostile Proxy failures now return only the fixed `invalid_input` error.
+- Real read-only PostgREST E2E returned HTTP 200, zero matching TaskMarket/uGig source rows, zero normalized receipts,
+  `whole_business_zero_claimed=false`, and no private field escape. This proves the current channel observation without
+  manufacturing a zero-value revenue receipt.
+- No database, provider, local-state, launchd, Telegram, or external-system write occurred.
+
+## 8. Source decisions
 
 - Stripe Checkout Session object: `payment_status=paid` means funds are available in the Stripe account, not the
   owner's bank. https://docs.stripe.com/api/checkout/sessions/object
