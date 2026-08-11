@@ -7401,7 +7401,11 @@ LunaがHarness production/testの2 filesだけをTDD変更した。baseline 55/5
 
 fresh Sol初回reviewはImportant 2件。非final fill後の`pending`が共通adapterでcompletedになり得たためRED 60/61を再現し、Doorkeeperはregistered以外をunavailableへ正規化した。candidate/current双方のquery、fragment、credentials、port、www、uppercase groupもtable-drivenで全action 0を固定。最終61/61、隣接33/33、fresh re-review spec PASS / quality SHIP、指摘0。Sol独立61/61、33/33、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommits `bc85bf986`,`8617db14e`をstableへfast-forwardしpushした。default DOM modal triggerとfactory injectionは未実装のためofficial wake 0。次はB4b default DOM。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗378。これ以外の残TODO一覧は履歴）
+### O1B-25進捗379（Item 19D-B4b1 / Doorkeeper measured DOM inspection plan）
+
+shared `:9222`の新規診断target一枚だけで実Doorkeeper detailを再測定し、exact visible trigger `a[href=#new_registration_modal]` 1、modal closed時hidden required email+submit、open後same form内visible email+submitを確認した。fill/submit 0、診断target close後absent。次plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-dom-inspection-19d.md`はHarness production/test 2 filesだけ。exact selector/page/event/visibility/formを使い、closedはtriggerだけ、open後はpublic label Emailとsingle submittable submitだけへ正規化する。一般link selector、click、factory、liveは変更0。official wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗379。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
