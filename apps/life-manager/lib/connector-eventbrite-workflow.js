@@ -9,7 +9,8 @@ const OFFLINE_MODE = new Set(["https://schema.org/OfflineEventAttendanceMode", "
 const IN_STOCK = new Set(["InStock", "https://schema.org/InStock", "http://schema.org/InStock"]);
 const BLOCKED_MARKER = /(?:sold[ -]?out|wait[ -]?list|waitlist|cancel(?:led|ed|lation)?|registration closed|event closed|error|failed|受付終了|キャンセル|満席|満員|売り切れ|販売終了|エラー)/i;
 const MONEY_MARKER = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:(?:jpy|yen)\b|円)|door\s*(?:price|fee)|at\s+the\s+door|participation\s+fee|admission\s+fee|entry\s+fee|payment\s+required|paid\s+at\s+door|参加費|入場料|会場払い|当日払い|有料|支払い(?:が)?(?:必要|必須))/i;
-const EXPLICIT_FREE_MARKER = /(?:参加費無料|入場無料|\bfree\s+admission\b|\bno\s+participation\s+fee\b)/gi;
+const EXPLICIT_FREE_MARKER = /(?:参加費(?:\s*は)?\s*(?:[:：]\s*)?無料|入場\s*無料)(?![ぁ-んァ-ヶ一-龯々ー])|\bfree\s+admission\b(?!\s+[A-Za-z0-9])|\bno\s+participation\s+fee\b(?!\s+[A-Za-z0-9])/gi;
+const NEGATIVE_PURCHASE_MARKER = /\b(?:no\s+minimum\s+purchase|no\s+purchase\s+required)\b/gi;
 const MINIMUM_PURCHASE_MARKER = /(?:\bone\s+drink\s+minimum\b|\bminimum\s+purchase\b|\bpurchase\s+required\b|ワンドリンク必須)/i;
 const READBACK_UNSAFE = /(?:auth|log\s*in|sign\s*in|payment|pay(?:ment)?|credit\s*card|checkout|error|failed|sold[ -]?out|wait[ -]?list|waitlist|cancel(?:led|ed)?|受付終了|キャンセル|満席|エラー|支払い)/i;
 const COMPLETION_MARKER = /(?:registration\s+(?:is\s+)?(?:complete|completed|confirmed)|order\s+confirmed|ticket(?:s)?\s+confirmed|you(?:'re| are)\s+going|登録完了|申し込みが完了しました)/gi;
@@ -161,8 +162,11 @@ function normalizeDetail(binding, raw) {
   const title = String(event.name || "").trim();
   if (!title || !Number.isFinite(starts) || !Number.isFinite(ends) || starts >= ends) return null;
   const controls = controlsOf(raw);
-  const text = `${bodyText(raw, event)} ${controls.map((control) => control.text).join(" ")}`.replace(/\s+/g, " ").trim();
-  const paidText = text.replace(EXPLICIT_FREE_MARKER, " ");
+  const detailText = bodyText(raw, event).replace(/\s+/g, " ").trim();
+  const controlText = controls.map((control) => control.text).join(" ").replace(/\s+/g, " ").trim();
+  const text = `${detailText} ${controlText}`.replace(/\s+/g, " ").trim();
+  const paidDetailText = detailText.replace(NEGATIVE_PURCHASE_MARKER, " ").replace(EXPLICIT_FREE_MARKER, " ");
+  const paidText = `${paidDetailText} ${controlText}`.replace(/\s+/g, " ").trim();
   const candidate = Object.freeze({
     provider: "eventbrite", event_ref: binding.event_ref, canonical_url: binding.canonical_url, title,
     starts_at: new Date(starts).toISOString(), ends_at: new Date(ends).toISOString(),
