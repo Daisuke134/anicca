@@ -20,10 +20,10 @@
 
 ## Contract
 
-- [ ] RED: official native wake omits TECH PLAY and supplies `maxAgentSteps:10`.
-- [ ] Exact frozen order is `luma → connpass → peatix → meetup → doorkeeper → eventbrite → techplay`.
-- [ ] Official native input supplies exactly `maxAgentSteps:15`.
-- [ ] Keep `maxConsecutiveFailures:3`, `maxWakeMs:600000`, no provider cursor, and private-free wake input unchanged.
-- [ ] Runner default, production factory, evidence, schedule/plist, CLI, and exit codes remain unchanged.
-- [ ] Run focused/full native tests plus production/runner/Harness adjacency, syntax, diff check, mutation proof, and fresh Sol review.
-- [ ] Do not load/kickstart launchd or perform external effects in this slice.
+- [x] RED: official native wake omits TECH PLAY and supplies `maxAgentSteps:10`.
+- [x] Exact frozen order is `luma → connpass → peatix → meetup → doorkeeper → eventbrite → techplay`.
+- [x] Official native input supplies exactly `maxAgentSteps:15`.
+- [x] Keep `maxConsecutiveFailures:3`, `maxWakeMs:600000`, no provider cursor, and private-free wake input unchanged.
+- [x] Runner default, production factory, evidence, schedule/plist, CLI, and exit codes remain unchanged.
+- [x] Run focused/full native tests plus production/runner/Harness adjacency, syntax, diff check, mutation proof, and fresh Sol review.
+- [x] Do not load/kickstart launchd or perform external effects in this slice.

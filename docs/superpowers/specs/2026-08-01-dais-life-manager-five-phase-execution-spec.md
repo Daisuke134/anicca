@@ -8022,3 +8022,9 @@ REDはprovider未配線で1 fail。GREENはcreated→reused bundle、duplicate e
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-native-reachability-19f.md`はnative pass/test exact 2 files。frozen provider order末尾へ`techplay`を追加し、official native inputの`maxAgentSteps`を10→15にするexact 2 LOC production change。runner default、failure cap 3、wake timeout 600000、cursorなし、private-free boundary、CLI/exit、launchd plistは維持する。
 
 Node process公式docs、英語max-step/provider-order、日本語provider順検索と既存native boundaryを照合し、新registry/runtime変更は不要と判断。実launchd wake/applicationは次slice。Item19実bundleは未完。
+
+### O1B-25進捗474（Item 19F-D14 / TECH PLAY native reachability ship）
+
+Lunaがnative pass/test exact 2 filesをSuperpowers TDD実装し、code commit `ce8848715`をpushした。frozen provider順は`luma → connpass → peatix → meetup → doorkeeper → eventbrite → techplay`、official native inputはexact `maxAgentSteps:15`。failure cap 3、wake 600000ms、cursorなし、private-free input、runner default 10、CLI/exit、plistは不変。
+
+REDはprovider/orderとstep budgetでfocused 3 fail、GREEN 10/10。provider削除mutationは3 fail、15→14 mutationは1 fail。復元後production/runner/Harness adjacency 211/211、両syntax、diff check PASS。fresh Sol reviewは広域既存3 failuresが変更file非依存であることをHEAD comparisonまで実測し、Critical/Important 0、Ponytail `Lean already. Ship.`。次は既存launchd ownerのofficial wakeで実application→registered readback→Calendar→evidence→Telegram→cleanupを一回閉じる。Item19実bundleは未完。
