@@ -7884,3 +7884,15 @@ Lunaがproduction Browser Harness/testのexact 2 filesをTDD変更し、code com
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-confirm-inspector-19f.md`は同じHarness/testのexact 2 files。exact same-event confirm URLで一意のvisible enabled `BUTTON type=button` `申し込みを確定する`だけをsafe final controlへ投影する。production約20〜40 LOC、test約60〜100 LOC。
 
 final click、private resolver、input operation、effect polling、workflow factory/router/native order、evidence、Calendar、schedule/live stateは変更0。review/push後にprivate values＋operationを別sliceで閉じる。Item19実bundleは未完。
+
+### O1B-25進捗453（Item 19F-D4 / TECH PLAY exact confirm inspector ship）
+
+LunaがHarness/test exact 2 filesへconfirm projectionをTDD追加し、code commit `ecc3b27aa`をpushした。exact same-event `/event/join/<ID>/confirm`、一意visible enabled `BUTTON type=button` `申し込みを確定する`、150-node/global-ID/visibility/page-drift/residual-registration-controlを検証する。header search/menuはfinalのnearest main外として無視し、main内は既知`内容を修正する`以外のinput/textarea/select/buttonを拒否する。
+
+最終Full Harness 115/115、TECH PLAY workflow 16/16、combined 131/131、syntax、diff、exact2-file scope PASS。event-ID guard除去mutationはwrong-eventで`techplay_final_999191`を誤公開してFAIL、復元後GREEN。実confirmはprivate SSOT入力＋career/job選択＋7 opt-out解除＋review CTAだけで到達し、safe final control 1件、private leak 0、final click 0、owned page cleanup。fresh review Critical/Important/Minor 0で`ship`。次active sliceはparent-only private value resolver。Item19実bundleは未完。
+
+### O1B-25進捗454（Item 19F-D5 / TECH PLAY private value resolver plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-private-values-19f.md`はHarness/test exact 2 files。既存private identityから日本語氏名/email、mode-0600 form SSOTからDOB・所属・career・職種をexact mappingし、年齢をAsia/Tokyo当日計算するparent-only resolverを追加する。production約25〜45 LOC、test約70〜110 LOC。
+
+DOM操作、proposer、final click/readback、workflow factory/router/native order、evidence、Calendar、schedule/live stateは変更0。resolver ship後にprivate form stateをexact answersへ更新し、input operationを別sliceで閉じる。Item19実bundleは未完。

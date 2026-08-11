@@ -33,9 +33,9 @@
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
 
-- [ ] Add RED tests for exact confirm success and wrong URL/event, duplicate/wrong-type/hidden/disabled/ancestor-hidden/opacity/zero-size final, residual answer/ticket/checkbox, duplicate ID, page drift, 151 nodes, and privacy-safe output.
-- [ ] Implement the minimum confirm projection reusing the shipped TECH PLAY visibility logic.
-- [ ] Run full Browser Harness and TECH PLAY workflow tests, syntax checks, and `git diff --check`.
-- [ ] Temporarily remove exact confirm event-ID binding, prove its named negative fails, restore it, and rerun GREEN.
-- [ ] Live inspect one owned temporary confirm page without final click; prove one safe control and page cleanup.
-- [ ] Self-review and report evidence without commit/push. Sol owns fresh review, SSOT, commit, and push.
+- [x] Add RED tests for exact confirm success and wrong URL/event, duplicate/wrong-type/hidden/disabled/ancestor-hidden/opacity/zero-size final, residual answer/ticket/checkbox, duplicate ID, page drift, 151 nodes, and privacy-safe output.
+- [x] Implement the minimum confirm projection reusing the shipped TECH PLAY visibility logic.
+- [x] Run full Browser Harness and TECH PLAY workflow tests, syntax checks, and `git diff --check`.
+- [x] Temporarily remove exact confirm event-ID binding, prove its named negative fails, restore it, and rerun GREEN.
+- [x] Live inspect one owned temporary confirm page without final click; prove one safe control and page cleanup.
+- [x] Self-review and report evidence without commit/push. Sol owns fresh review, SSOT, commit, and push.
