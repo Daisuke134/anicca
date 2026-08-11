@@ -7956,3 +7956,9 @@ LunaがHarness/testのexact 2 filesをSuperpowers TDD実装し、code commit `81
 成功は既存TECH PLAY parent readbackの`registered`だけ。pending/absent/unavailable/malformed/reject/timeoutは各1 attempt後`effect_unknown`で再click 0。click throwもregistered証明時だけ成功する。full pathは13 inputs＋review＋final＝15 private-free actions、external proposer 0、review click 1、final click 1。`maxSteps=14`はfinal click 0の`final_blocked`を維持した。
 
 RED、maxSteps guard・post-wait binding guard・count-time binding guardのmutation proof、Harness 147/147、TECH PLAY workflow 16/16、両syntax、diff checkがPASS。fresh Sol reviewは初回にcount await中のCritical driftを反証し、修復後re-reviewはCritical/Important 0で`ship`。実final applicationは未実行で、factory/router、audit、Calendar、evidence、native order、official launchd acceptance、schedule safetyは次slice以降。Item19実bundleは未完。
+
+### O1B-25進捗463（Item 19F-D9 / TECH PLAY discovery audit plan）
+
+次active sliceはproduction factoryの前提となるTECH PLAY discovery audit persistence。Plan `docs/superpowers/plans/2026-08-12-connector-techplay-discovery-audit-19f.md`はoperations/test exact 2 files、production約4〜8 LOC、test約25〜45 LOC。既存`safeDoorkeeperDiscoveryAudit`、JSONL append、private directory、`0600` contractをそのまま再利用し、`techplay-discovery-audits.jsonl`とthin recorderだけを追加する。
+
+Node公式`fs.appendFileSync`と英語・日本語のGitHub code searchを照合し、新package/logger/DBは不要と判断。factory/router、Harness、evidence、Calendar、native order、launchd、実applicationは変更0。Item19実bundleは未完。
