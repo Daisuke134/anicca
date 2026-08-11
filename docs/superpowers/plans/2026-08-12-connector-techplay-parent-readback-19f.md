@@ -33,9 +33,9 @@
 - Modify: `apps/life-manager/lib/connector-techplay-workflow.js`
 - Modify: `apps/life-manager/lib/connector-techplay-workflow.test.js`
 
-- [ ] Add failing tests for exact registered, exact absent, join/confirm not-success, wrong ticket/event/current/response URL, duplicate tickets, malformed `is_joined`, closed/hidden action, navigation/read failures, and pre/post page drift.
-- [ ] Run focused tests and record RED caused only by the current readback stub.
-- [ ] Implement the minimum readback using the existing bounded safe projection and exact candidate validation.
-- [ ] Run focused plus adjacent Eventbrite/Doorkeeper tests, both-file syntax checks, and `git diff --check`.
-- [ ] Temporarily remove the exact ticket-ID guard, prove its named negative test fails, restore it, and rerun GREEN.
-- [ ] Self-review and report RED/GREEN counts, mutation result, LOC, exact scope, and concerns without commit/push. Sol owns fresh review, SSOT, commit, and push.
+- [x] Add failing tests for exact registered, exact absent, join/confirm not-success, wrong ticket/event/current/response URL, duplicate tickets, malformed `is_joined`, closed/hidden action, navigation/read failures, and pre/post page drift.
+- [x] Run focused tests and record RED caused only by the current readback stub.
+- [x] Implement the minimum readback using the existing bounded safe projection and exact candidate validation.
+- [x] Run focused plus adjacent Eventbrite/Doorkeeper tests, both-file syntax checks, and `git diff --check`.
+- [x] Temporarily remove the exact ticket-ID guard, prove its named negative test fails, restore it, and rerun GREEN.
+- [x] Self-review and report RED/GREEN counts, mutation result, LOC, exact scope, and concerns without commit/push. Sol owns fresh review, SSOT, commit, and push.
