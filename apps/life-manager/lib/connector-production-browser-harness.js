@@ -749,6 +749,22 @@ function inspectTechPlayInput(elements, context = {}) {
   ];
 }
 
+function inspectTechPlayConfirm(elements, context = {}) {
+  if (!Array.isArray(elements) || elements.length > 150) return [];
+  const eventUrl = /^https:\/\/techplay\.jp\/event\/([1-9][0-9]*)$/; const confirmUrl = /^https:\/\/techplay\.jp\/event\/join\/([1-9][0-9]*)\/confirm$/; const answerName = /^enqueteAnswers\[/;
+  const eventId = String(context.eventId || ""); const page = confirmUrl.exec(String(context.href || "")); const candidate = eventUrl.exec(String(context.canonicalUrl || ""));
+  if (!page || !candidate || page[1] !== eventId || candidate[1] !== eventId || !/^[1-9][0-9]*$/.test(String(context.ticketId || ""))) return [];
+  const tag = (element) => String(element && element.tagName || "").toLowerCase(); const type = (element) => String(element && element.type || "").toLowerCase(); const attr = (element, name) => String(element && typeof element.getAttribute === "function" ? element.getAttribute(name) || "" : element && element[name] || ""); const text = (element) => String(element && (element.innerText || element.textContent) || "").replace(/\s+/g, " ").trim();
+  const visible = (element) => { const view = element && element.ownerDocument && element.ownerDocument.defaultView; let current = element; const hidden = (style) => Boolean(style && [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase())) || String(style && style.opacity || "") === "0"); while (current) { if (current.hidden === true || current.isConnected === false || attr(current, "aria-hidden").toLowerCase() === "true" || hidden(current.style)) return false; let computed = null; try { computed = view && typeof view.getComputedStyle === "function" ? view.getComputedStyle(current) : null; } catch { computed = null; } if (hidden(computed)) return false; if (current !== element && typeof current.getBoundingClientRect === "function") { let rect; try { rect = current.getBoundingClientRect(); } catch { rect = null; } if (!rect || Number(rect.width) <= 0 || Number(rect.height) <= 0) return false; } current = current.parentElement || null; } let rect; try { rect = element && typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null; } catch { rect = null; } return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0); };
+  const ids = new Set(); for (const element of elements) { const id = attr(element, "id") || String(element.id || ""); if (id && ids.has(id)) return []; if (id) ids.add(id); }
+  if (elements.some((element) => answerName.test(attr(element, "name") || element.name || "") || (tag(element) === "input" && type(element) === "radio") || attr(element, "role").toLowerCase() === "checkbox" || (tag(element) === "input" && type(element) === "checkbox" && visible(element)))) return [];
+  const finals = elements.filter((element) => text(element) === "申し込みを確定する");
+  if (finals.length !== 1 || tag(finals[0]) !== "button" || type(finals[0]) !== "button" || !visible(finals[0]) || finals[0].disabled === true || attr(finals[0], "aria-disabled").toLowerCase() === "true" || attr(finals[0], "aria-enabled").toLowerCase() === "false") return [];
+  let region = finals[0]; while (region && tag(region) !== "main") region = region.parentElement; const inRegion = (element) => { if (!region) return true; let current = element; while (current) { if (current === region) return true; current = current.parentElement || null; } return false; };
+  if (elements.some((element) => element !== finals[0] && visible(element) && inRegion(element) && (["input", "textarea", "select"].includes(tag(element)) || (tag(element) === "button" && text(element) !== "内容を修正する")))) return [];
+  return [{ control: `techplay_final_${eventId}`, kind: "button", label: "申し込みを確定する", required: false, completed: false, submittable: true }];
+}
+
 async function inspectPageControls(input = {}) {
   const page = input.page;
   if (!page || typeof page.locator !== "function") invalid();
@@ -771,7 +787,8 @@ async function inspectPageControls(input = {}) {
     const canonicalUrl = binding?.canonicalUrl || String(input.canonical_url || input.candidate_url || "");
     const ticketId = binding?.ticketId || String(input.ticket_id || input.candidate_ticket_id || "");
     if ((input.event_id != null && String(input.event_id) !== eventId) || (input.canonical_url != null && String(input.canonical_url) !== canonicalUrl) || (input.ticket_id != null && String(input.ticket_id) !== ticketId)) return Object.freeze([]);
-    const observed = await locator.evaluateAll(inspectTechPlayInput, { href, eventId, canonicalUrl, ticketId });
+    const confirm = /^https:\/\/techplay\.jp\/event\/join\/[1-9][0-9]*\/confirm$/.test(href);
+    const observed = await locator.evaluateAll(confirm ? inspectTechPlayConfirm : inspectTechPlayInput, { href, eventId, canonicalUrl, ticketId });
     const afterHref = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     return href === afterHref && Array.isArray(observed) ? Object.freeze(observed.map(safeControl)) : Object.freeze([]);
   }
