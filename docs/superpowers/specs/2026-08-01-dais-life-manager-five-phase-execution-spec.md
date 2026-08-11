@@ -7309,7 +7309,13 @@ fresh Sol reviewはcatchが`action()`内の`recordAction` errorも誤変換す�
 
 Luna runner 41/41、operations 8/8、production 12/12、evidence 31/31、Meetup 12/12、Harness 55/55。Sol独立combined 159/159、syntax、diff check、clean/upstream PASS。Peatix 22/23の1件は変更外の既知date-sensitive fixture。fresh Sol re-reviewはCritical 0 / Important 0で`ship`。review済み2 commitsをstable branchへfast-forwardしremoteへpushした。実装/test/review中のbrowser/provider/Calendar/evidence/Telegram/state/schedule作用0。次の一件は4 labels unloadedのofficial wake exact 1回でpositive every-wake reportまたはPeatix/Meetup safe continuation、process/lease/target cleanupをlive受入する。Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗362。これ以外の残TODO一覧は履歴）
+### O1B-25進捗363（Item 19M-D0i / candidate navigation repair live acceptance）
+
+pushed HEAD `6485da221`、4 labels unloaded、process 0、CDP page 1、Connector ledger target交差0、Git clean/upstreamからofficial live acceptance wake `wake-d1a34863460886359e2347ae`をexact 1回実行した。exit 0、action `1002→1035`、report `121→122`、delivery `133→134`、Peatix audit `38→39`、bundle `10→11`、Meetup audit 0。candidate navigationは全て成功し、別既登録Peatix event `5117607`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11463/11464`、new bundle `323c881d…`を回収した。terminal `applied_bundle`、failure 0、positive every-wake Telegram ID `11465`。
+
+cleanup後process 0、Connector ledger targetとcurrent CDP pagesの交差0、4 labels unloaded、Git clean/upstream。current CDP page 2の追加分はConnector ledger外でclose 0。navigation repairはsafe continuation、positive report、bundle completion、target cleanupのlive acceptanceを満たす。Meetup auditはnew bundle exact 1で停止する既存contractにより0。次の一件はofficial continuation wakeをexact 1回ずつ続け、Peatix evidence backlog exhaustion後にMeetup auditへ到達すること。Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗363。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
