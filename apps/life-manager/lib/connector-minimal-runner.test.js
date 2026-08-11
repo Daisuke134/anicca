@@ -611,6 +611,54 @@ test("candidate navigation crossing the deadline stops before provider readback 
   assert.equal(state.calls.filter(([name]) => name === "readback").length, 0); assert.equal(state.calls.filter(([name]) => ["cache", "direct", "agent"].includes(name)).length, 0);
 });
 
+test("before-deadline candidate navigation failure records once and continues to the next candidate", async () => {
+  let state;
+  state = fixture({
+    async discoverCandidates() { return [candidate("luma", "one"), candidate("luma", "two")]; },
+    async readProviderState({ candidate: selected }) {
+      state.calls.push(["readback", selected.event_ref]);
+      return Object.freeze({ status: selected.event_ref.endsWith("/two") ? "registered" : "absent" });
+    },
+    async completeEvidence() { return Object.freeze({ status: "applied_bundle", bundle_id: "bundle-two", completion_disposition: "created" }); },
+  });
+  const navigate = state.dependencies.browserRail.navigate;
+  state.dependencies.browserRail.navigate = async (owned, url) => {
+    if (url.endsWith("/one")) throw new Error("raw candidate navigation");
+    return navigate(owned, url);
+  };
+
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-navigation-next", providers: ["luma"] }, state.dependencies);
+  assert.deepEqual(result, { status: "applied_bundle", bundle_id: "bundle-two", telegram_provider_id: "9001" });
+  assert.deepEqual(state.calls.filter(([name]) => name === "readback").map(([, eventRef]) => eventRef), ["luma-event://event/two"]);
+  const history = state.calls.filter(([name]) => name === "history").map(([, row]) => row);
+  assert.equal(history.filter((row) => row.purpose === "navigate" && row.result === "failed").length, 1);
+  assert.doesNotMatch(JSON.stringify(history), /raw candidate navigation|luma\.example\.test\/one/);
+});
+
+test("three before-deadline candidate navigation failures open one safe circuit without a fourth candidate", async () => {
+  let state;
+  state = fixture({
+    async discoverCandidates() { return [candidate("luma", "one"), candidate("luma", "two"), candidate("luma", "three"), candidate("luma", "four")]; },
+  });
+  const navigate = state.dependencies.browserRail.navigate;
+  state.dependencies.browserRail.navigate = async (owned, url) => {
+    if (url !== "about:blank") throw new Error("raw navigation error");
+    return navigate(owned, url);
+  };
+  state.dependencies.reportWake = async (report) => {
+    state.calls.push(["report", report.status, report.safe_reason, report.consecutive_failure_count]);
+    return Object.freeze({ telegram_provider_id: "9001" });
+  };
+
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-navigation-circuit", providers: ["luma"], maxConsecutiveFailures: 3 }, state.dependencies);
+  assert.deepEqual(result, { status: "circuit_open", safe_reason: "candidate_navigation_failed", telegram_provider_id: "9001" });
+  assert.equal(state.calls.filter(([name, row]) => name === "history" && row.purpose === "navigate" && row.result === "failed").length, 3);
+  assert.equal(state.calls.filter(([name]) => ["readback", "cache", "direct", "agent", "evidence"].includes(name)).length, 0);
+  assert.deepEqual(state.calls.filter(([name]) => name === "report"), [["report", "circuit_open", "candidate_navigation_failed", 3]]);
+  assert.doesNotMatch(JSON.stringify(state.calls.filter(([name]) => ["history", "report"].includes(name))), /raw navigation error|luma\.example\.test/);
+  assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+});
+
 test("deadline-crossing uncaught boundary errors report once and clean up owned pages", async (t) => {
   const cases = [
     ["calendar", (state) => { state.dependencies.readCalendarGaps = async () => { state.advance(600_001); throw new Error("calendar raw"); }; }, 0],
