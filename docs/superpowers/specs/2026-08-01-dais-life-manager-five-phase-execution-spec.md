@@ -7391,7 +7391,11 @@ Lunaがnative-pass production/test 2 filesだけをTDD変更した。3つのexac
 
 fresh Sol reviewはspec PASS / quality SHIP、指摘0。Sol独立8/8、55/55、exact order/budgets、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommit `75d48f2e3`をstableへfast-forwardしpushした。次の一件はB4 Browser HarnessでDoorkeeperのvisible exact申込link→modal required fields→single submit→parent readbackをboundedに扱う2-file slice。B4 review完了までofficial wakeは起動しない。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗376。これ以外の残TODO一覧は履歴）
+### O1B-25進捗377（Item 19D-B4a / Doorkeeper Harness final-effect plan）
+
+Harness wiringをPonytailでB4a provider/final-effect core、B4b default DOM modal trigger/visibility、B4c factory injectionへ分割した。先頭plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-harness-core-19d.md`はHarness production/test 2 filesだけ。exact Doorkeeper ref/current canonical、single submittable exact`申し込む`buttonをclick前検証し、既存30秒parent readback latchで`registered`だけを成功、未確認を`effect_unknown`、Submit max1にする。default selector/link、factory、native、liveは変更せずofficial wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗377。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
