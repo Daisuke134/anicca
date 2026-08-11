@@ -92,7 +92,7 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 7C2 | HRA-3C win-market materializer | **complete** | commits `fb0038409` + `e8abb094c` + `72d152356`; actual 7/76 |
 | 7D1 | HRA-3C official win outcome parser | **complete** | commit `0b5177452`; actual 321 outcomes/322 payouts |
 | 7D2a | HRA-3D reject caller-declared settlement | **complete** | commit `8d344a97f`; production guard 2 LOC, full 148 PASS |
-| 7D2b | HRA-3C current-day settlement capture | **ACTIVE** on 2026-08-11 monthly publication | target 7 race IDs, one monthly fetch after overnight publication |
+| 7D2b | HRA-3C current-day settlement capture | **ACTIVE B1** | monthly acquisition PASS target 7/7; exact REAL provenance allowlist next |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3C/3D actual gate | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
@@ -468,7 +468,7 @@ Completion evidence: commit `0b5177452`; TDD RED was the expected missing-helper
 
 ## Task 7D2: HRA-3C current-day settlement capture
 
-**State:** ACTIVE. The unverified-manifest path is closed and the 2026-08-10 targets have finished; actual capture now uses the first overnight monthly publication.
+**State:** ACTIVE B1. The unverified-manifest path is closed and the 2026-08-10 targets have exact official settlements; the newly observed monthly tuple is not yet accepted for REAL parsing.
 
 ### Task 7D2a: reject caller-declared settlement
 
@@ -485,6 +485,8 @@ Completion evidence: commit `8d344a97f`; RED failed with expected `DID NOT RAISE
 Source decision: NAR's official data manual states for the daily file, `更新頻度: 約2分ごとに更新されます。` and `含まれる内容: 当日開催のレース情報や、当日開催のオッズ情報`; for the monthly file, `更新頻度: 1日1回、毎日夜間（午前2時頃）に更新されます。` Source: https://www.keiba.go.jp/pdf/manual/data_pdf_manual.pdf. Therefore the monthly archive is the smallest official route that can still prove yesterday's seven settlements; no scheduler, new parser, or fallback service is added.
 
 Pre-acquisition verification at 2026-08-10T13:26+09:00 is PASS without a network request: the private NAR directory is mode 700 with all 20 existing files mode 600; exact SHA discovery finds one immutable morning race ZIP and one immutable morning odds ZIP; the installed curl exposes all five required transport flags; and the existing accepted REAL materializer reproducibly returns 7 records, 7 unique opaque race IDs, and 76 runners. Luna must reconstruct the target set from those exact two SHA-matched archives rather than a filename or committed ID list. The restored worktree baseline on 2026-08-11 is 148/148 PASS. No scheduler, service, dependency, stored target-ID file, or second acquisition route is needed.
+
+Phase A completion evidence: Luna performed exactly one monthly request at `2026-08-11T14:11:02+09:00`; URL `https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=monthly&k_year=2026&k_month=8`, SHA-256 `9252f89fde027a918eb2fb98c1a815c6d7b2a41ca27201551ed36f38c8b252ce`, 464036 bytes, HTTP 200, `application/zip`, ZIP validation PASS. Non-promoting parse returned 367 settled win outcomes / 368 payout items and exact target coverage 7/7 with zero unmatched. Sol independently reproduced all counts, positive target payouts, unique archive match, mode 600, and current REAL rejection. The acquisition window added exactly three private artifacts and no tracked change.
 
 **Phase B1 — accepted provenance; files 2, production target under 20 LOC:** only after Sol observes the exact new monthly URL/SHA/captured-at tuple may Luna modify `nar_outcome.py` and `test_nar_outcome.py`. Add only that exact tuple to the existing `_REAL_PROVENANCE` trust boundary; do not add wildcard/date-prefix acceptance, a registry service, config loader, or dependency. Keep arbitrary REAL tuples rejected. The required RED is the actual private monthly parser call failing with `real provenance is not accepted`; GREEN is that same actual call returning official settled `WinOutcome` objects. The committed regression exercises the same provenance predicate used by `materialize_nar_win_outcomes` with the exact redacted tuple and proves a one-character hash/captured-at mutation remains rejected; the private raw ZIP itself stays outside Git. Run focused tests, full suite, compileall, and the actual private E2E.
 
