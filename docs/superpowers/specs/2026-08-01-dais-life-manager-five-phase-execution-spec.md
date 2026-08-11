@@ -7473,7 +7473,13 @@ Item19の次provider Eventbriteを公式Tokyo listing/detailで実測した。`/
 
 Ponytailで初回を新規workflow/test 2 files、production 220〜300 LOC、test 220〜320 LOCへ限定した。`.com` exact canonical、14日Tokyo対面、`Event|SocialEvent`、zero `Offer|AggregateOffer`、InStock、visible exact control、unsafe/money否定、Calendar、5-count audit、strict readback、zero-click direct safe failureだけをTDD実装する。shared production router、Harness checkout、evidence、native provider orderは次slice。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-discovery-19e.md`がexecutor SSOT。implementation中official wake 0、4 labels UNLOADED。Item19 Eventbrite/Doorkeeper/Meetupと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗391。これ以外の残TODO一覧は履歴）
+### O1B-25進捗392（Item 19E-A / Eventbrite discovery・eligibility ship）
+
+LunaがEventbrite provider-local workflow/test 2 filesだけをSuperpowers TDD実装した。初期REDはmodule-not-found、初期GREEN 8/8。fresh reviewは`1,000円`未検出、unsupported zero-price offer type、hidden completion marker ambiguityのImportant 3件を反証し、Lunaが各RED 3件から修復した。第二reviewはforeign-domain `/Offer` suffixのImportant 1件を再現し、compact `Offer|AggregateOffer`またはexact `http(s)://schema.org/`だけへ限定、foreign/mixed type regressionを追加した。最終focused 11/11、Doorkeeper/Meetup adjacent 27/27、stable minimal production込み53/53、syntax/diff/2-file scope/remote equalityがPASS。production 319 LOC。final scoped reviewはSHIP、Critical/Important 0。
+
+review済みimplementation `3930c1688`をstable Connector branchへfast-forwardした。exact `.com` canonical/dedupe、Event/SocialEvent、zero Offer/AggregateOffer、InStock、body money否定、Tokyo offline 14日窓、Calendar、five-count privacy、strict readback、zero-click direct safe failureがcode-levelで完了。shared router、Harness checkout、audit persistence、native provider order、official wakeは未変更・未実行。次active sliceはproduction router/factoryへEventbrite workflowをclosed injectionする。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗392。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
