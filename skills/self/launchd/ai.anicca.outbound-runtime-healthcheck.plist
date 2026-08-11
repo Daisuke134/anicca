@@ -2,6 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>ai.anicca.outbound-runtime-healthcheck</string>
+  <key>Disabled</key><true/>
   <key>ProgramArguments</key><array><string>/bin/bash</string><string>__REPO_ROOT__/skills/self/outbound-runtime-healthcheck.sh</string></array>
   <key>EnvironmentVariables</key><dict>
     <key>LM_OUTBOUND_WORKER_HEALTH_URL</key><string>http://127.0.0.1:18790/health</string>

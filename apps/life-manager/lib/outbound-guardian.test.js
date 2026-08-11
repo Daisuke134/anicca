@@ -226,24 +226,50 @@ test("Telegramがmessage IDを返さなければincidentを保存せず成功扱
   assert.equal(incidentStore.value(), null);
 });
 
-test("launchd installerは宛先必須で、renderへhealth・宛先・workerを固定する", () => {
+test("退役済みhealthcheckは外部runtimeやself-fixを起動しない", () => {
+  const repoRoot = path.resolve(__dirname, "../../..");
+  const healthcheck = path.join(repoRoot, "skills/self/outbound-runtime-healthcheck.sh");
+  const root = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "retired-healthcheck-"));
+  const fakeBin = path.join(root, "bin");
+  const calls = path.join(root, "calls");
+  fs.mkdirSync(fakeBin);
+  for (const command of ["node", "docker", "colima"]) {
+    const fake = path.join(fakeBin, command);
+    fs.writeFileSync(fake, `#!/bin/sh\nprintf '%s\\n' ${JSON.stringify(command)} >> ${JSON.stringify(calls)}\nexit 99\n`, { mode: 0o700 });
+  }
+  const result = spawnSync("/bin/bash", [healthcheck], {
+    env: {
+      ...process.env,
+      HOME: root,
+      LIFE_MANAGER_REPO: repoRoot,
+      PATH: `${fakeBin}:/usr/bin:/bin`,
+    },
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(fs.existsSync(calls), false, "retired healthcheck invoked a runtime command");
+});
+
+test("retired guardian code has no Colima start or local deploy fallback", () => {
+  const repoRoot = path.resolve(__dirname, "../../..");
+  const guardian = fs.readFileSync(path.join(repoRoot, "apps/life-manager/lib/outbound-guardian.js"), "utf8");
+  assert.doesNotMatch(guardian, /\bcolima\s+start\b/i);
+  assert.doesNotMatch(guardian, /deploy-connector-runtime\.sh/);
+});
+
+test("退役済みhealthcheck installerはlegacy launchdを再登録しない", () => {
   const repoRoot = path.resolve(__dirname, "../../..");
   const installer = path.join(repoRoot, "skills/self/install-outbound-runtime-healthcheck-launchd.sh");
-  const missing = spawnSync(installer, ["--render"], { encoding: "utf8" });
-  assert.notEqual(missing.status, 0);
-  assert.match(String(missing.stderr), /telegram-target/);
-
-  const rendered = spawnSync(installer, [
-    "--render",
-    "--telegram-target", "123456789",
-    "--worker-container", "life-manager-local-worker-1",
-  ], { encoding: "utf8" });
-  assert.equal(rendered.status, 0, rendered.stderr);
-  assert.match(rendered.stdout, /LM_OUTBOUND_TELEGRAM_TARGET/);
-  assert.match(rendered.stdout, /123456789/);
-  assert.match(rendered.stdout, /LM_OUTBOUND_WORKER_CONTAINER/);
-  assert.match(rendered.stdout, /life-manager-local-worker-1/);
-  assert.match(rendered.stdout, /http:\/\/127\.0\.0\.1:18790\/health/);
+  const root = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "retired-installer-"));
+  const result = spawnSync("/bin/bash", [installer,
+    "--render", "--telegram-target", "123456789",
+  ], {
+    env: { ...process.env, HOME: root, LIFE_MANAGER_REPO: repoRoot },
+    encoding: "utf8",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(String(result.stderr), /retired|退役/i);
+  assert.equal(fs.existsSync(path.join(root, "Library/LaunchAgents/ai.anicca.outbound-runtime-healthcheck.plist")), false);
 });
 
 test("Connector compose overlayは応募とcoverage能力をhost bridge付きで追加できる", () => {
