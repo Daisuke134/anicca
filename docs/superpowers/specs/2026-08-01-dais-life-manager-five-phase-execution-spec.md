@@ -7592,3 +7592,9 @@ LunaがHarness production/test 2 filesだけをTDD実装し、commits `9f194e691
 ### O1B-25進捗407（Item 19E-D4b2a / Eventbrite attendee private-value ship）
 
 LunaがHarness production/test 2 files、29 insertionsだけをTDD実装し、commit `aadb62cb3`。`provider=eventbrite`かつsafe required incomplete input＋case-sensitive exact labelsだけを受理し、`First name`→`given_name`、`Last name`→`family_name`、`Email` / `Confirm email`→同一`email`を既存frozen attendee profileから変換なしで返す。wrong/case/fuzzy/completed/kind/missing/非trim/overlengthはnull、generic provider resolverは不変。private値のlog/error/observation追加0。fresh Sol review SHIP、Critical/Important 0。stable統合後Harness/native/minimal production 104/104、syntax、diff check、clean remote equality PASS。same-frame fill/final/readback/factory/native/evidenceは未完。
+
+### O1B-25進捗408（Item 19E-D4b2b / Eventbrite attendee fill ship・live fail-closed）
+
+LunaがHarness production/test 2 filesだけをTDD実装し、commits `b4b250a9b`、`a6a0a6de5`。event-bound exact4 controlsの1 fieldをsame child frameでfillし、private resolve後にDOM exact4＋parent canonical＋official child exact1/eid＋same Frameを再検査、locator count1 fill1、post completed=trueを要求する。wrong/completed/missing/DOM・page・frame・eid drift、locator0/2、postcondition falseはfailed、final effect 0。初回fresh review SHIP後のlive E2Eで、実DOM literal `buyer.N-*`に対し未実測numeric patternがcontrols 0となる反例を発見。同じLunaへliteral N REDを戻し、numeric/case/fuzzyをrejectした。final review SHIP、Critical/Important 0。stable統合後major suites 121/121、syntax、diff check、clean remote equality PASS。
+
+修復後live再試行は実Calendar conflict 0、top CTA 1回success、ticket control exact1を観測したが、ticket Register click後official checkout frameが消えpostcondition failed。field resolve/operate 0、final Register 0でfail closedした。同一候補の連打を止め、diagnostic page cleanup後CDP baseline 2、4 schedule labels unloaded。Item19はfresh checkoutでの4-field live acceptance、final control/click/readback/factory/native/evidenceが未完。
