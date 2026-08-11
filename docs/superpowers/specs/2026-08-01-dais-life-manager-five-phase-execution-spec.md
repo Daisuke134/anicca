@@ -7852,3 +7852,11 @@ Lunaが新規TECH PLAY workflow/testのexact 2 filesだけをSuperpowers TDD実�
 Sol独立でfocused＋Eventbrite/Doorkeeper adjacent 47/47、両file syntax、diff、exact2-file scope PASS。unique-free-ticket guardを一時緩和するとnamed unsafe testが999189を誤選択して1 fail、復元後GREEN。fresh Sol reviewはspec/correctness/security/privacy PASS、Critical/Important/Minor 0で`ship`。
 
 実共有CDP＋公式RSS 50件＋各canonical detail＋実Google Calendar busy 45区間のread-only E2Eは約21秒で`discovered/within/eligible/calendar-free/selected = 50/22/3/3/3`。明示school-age-only `999211`を除外し、順序はClaude Code対面無料`999190`（ticket `98036`）→Python対面無料`999180`（`98030`）→`999179`（`98029`）。TECH PLAY owned pageはclose後0、current page inventoryにTECH PLAY origin 0。absolute page countは並行sessionのunrelated Buyma page追加で4→5だが、そのpageは非所有として保持した。次active sliceはTECH PLAY official parent action/readback contract。Item19実bundleは未完。
+
+### O1B-25進捗448（Item 19F-D2 / TECH PLAY authenticated form・parent readback plan）
+
+TECH PLAY公式email accountを作成・確認し、passwordはmacOS Keychain service `anicca.connector.techplay`だけへ保存した。共有CDPでlogin済み。Google OAuth passkey challengeは外部application effect前に中止し、event applicationは0。認証はConnectorのsetupでありlive application acceptanceには数えない。
+
+authenticated公式input `https://techplay.jp/event/join/999190`は選択済みfree ticket `98036`、required organizer questions 6件（氏名、email、年齢、career、所属、職種）、CTA exact `同意して内容を確認する`。既定ONは東京area、event tags 3、organizer、profile icon公開、input preset保存の計7項目。private SSOTの事実を一時入力し7項目を全OFFにしてcontent confirmへ進むと、exact `https://techplay.jp/event/join/999190/confirm`、final CTA exact `申し込みを確定する` 1件を確認した。final clickは0、一時tabは各回4→4でcleanupした。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-parent-readback-19f.md`は既存TECH PLAY workflow/testのexact 2 files。canonical eventのsame event ID＋exactly-one same ticket ID＋`is_joined === true`だけを`registered`、same current native-open ticketのfalseだけを`absent`にする。join/confirm page、redirect、identity/ticket ambiguity、malformed/closed state、page driftは`unavailable`。production約45〜75 LOC、test約70〜110 LOC。Browser controls/private values/final click/routing/evidence/Calendar/live stateは次slice。Item19実bundleは未完。
