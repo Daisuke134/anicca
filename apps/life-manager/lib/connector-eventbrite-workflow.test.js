@@ -368,6 +368,72 @@ test("Eventbrite default parent readback rejects a missing canonical rel", async
   assert.deepEqual(await workflow.readProviderState({ page, candidate }), { status: "unavailable" });
 });
 
+test("Eventbrite parent readback accepts completion on the direct official checkout child only", async () => {
+  const candidate = { ...binding("1997468673573"), provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" };
+  const canonical = { tagName: "LINK", href: candidate.canonical_url, getAttribute(name) { return name === "rel" ? "canonical" : name === "href" ? this.href : null; } };
+  const control = { innerText: "Reserve a spot", offsetWidth: 120, offsetHeight: 32 };
+  const nested = (url) => ({ url() { return url; }, async evaluate() { throw new Error("nested frame must not be read"); } });
+  const checkout = { url() { return `https://www.eventbrite.com/checkout-external?eid=1997468673573`; }, childFrames() { return [nested(this.url()), nested(this.url())]; }, async evaluate(callback) {
+    const previous = global.document;
+    global.document = { body: { innerText: "Thanks for your order! YOU'RE GOING TO Tokyo" }, querySelectorAll(selector) { return selector === "button" ? [] : []; } };
+    try { return await callback(); } finally { if (previous === undefined) delete global.document; else global.document = previous; }
+  } };
+  const mainFrame = { childFrames() { return [checkout]; } };
+  const page = { url() { return candidate.canonical_url; }, mainFrame() { return mainFrame; }, async evaluate(callback) {
+    const previous = global.document;
+    global.document = { body: { innerText: "" }, querySelectorAll(selector) {
+      if (selector === "link[rel='canonical']") return [canonical];
+      if (selector === '[data-testid="conversion-bar-checkout-button"]') return [control];
+      return [];
+    } };
+    try { return await callback(); } finally { if (previous === undefined) delete global.document; else global.document = previous; }
+  } };
+  const workflow = createEventbriteScriptFirstWorkflow();
+  assert.deepEqual(await workflow.readProviderState({ page, candidate }), { status: "registered" });
+});
+
+test("Eventbrite direct checkout readback rejects ambiguous, nested, and partial completion", async () => {
+  const candidate = { ...binding("1997468673574"), provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" };
+  const canonical = { href: candidate.canonical_url, getAttribute(name) { return name === "rel" ? "canonical" : this.href; } };
+  const control = { innerText: "Reserve a spot", offsetWidth: 120, offsetHeight: 32 };
+  const frame = ({ eid = "1997468673574", body = "", register = 0, nested = [], error = false, host = "www.eventbrite.com" } = {}) => ({
+    url() { return `https://${host}/checkout-external?eid=${eid}`; },
+    childFrames() { return nested; },
+    async evaluate(callback) {
+      if (error) throw new Error("checkout evaluate failed");
+      const previous = global.document;
+      global.document = { body: { innerText: body }, querySelectorAll(selector) {
+        return selector === "button" ? Array.from({ length: register }, () => ({ innerText: "Register" })) : [];
+      } };
+      try { return await callback(); } finally { if (previous === undefined) delete global.document; else global.document = previous; }
+    },
+  });
+  const pageFor = (children) => ({ url() { return candidate.canonical_url; }, mainFrame() { return { childFrames() { return children; } }; }, async evaluate(callback) {
+    const previous = global.document;
+    global.document = { body: { innerText: "" }, querySelectorAll(selector) {
+      if (selector === "link[rel='canonical']") return [canonical];
+      if (selector === '[data-testid="conversion-bar-checkout-button"]') return [control];
+      return [];
+    } };
+    try { return await callback(); } finally { if (previous === undefined) delete global.document; else global.document = previous; }
+  } });
+  const complete = "Thanks for your order! YOU'RE GOING TO Tokyo";
+  const cases = [
+    ["wrong-eid", [frame({ eid: "1997468673575", body: complete })], "unavailable"],
+    ["duplicate", [frame({ body: complete }), frame({ body: complete })], "unavailable"],
+    ["nested-only", [frame({ nested: [frame({ body: complete })] })], "absent"],
+    ["thanks-only", [frame({ body: "Thanks for your order!" })], "absent"],
+    ["going-only", [frame({ body: "YOU'RE GOING TO Tokyo" })], "absent"],
+    ["register-residual", [frame({ body: complete, register: 1 })], "absent"],
+    ["evaluate-error", [frame({ error: true })], "unavailable"],
+    ["wrong-host", [frame({ body: complete, host: "evil.example" })], "unavailable"],
+  ];
+  const workflow = createEventbriteScriptFirstWorkflow();
+  for (const [name, children, status] of cases) {
+    assert.deepEqual(await workflow.readProviderState({ page: pageFor(children), candidate }), { status }, name);
+  }
+});
+
 test("Eventbrite default listing reader uses exactly one owned page and exact card selectors", async () => {
   const first = binding("901");
   const calls = [];
