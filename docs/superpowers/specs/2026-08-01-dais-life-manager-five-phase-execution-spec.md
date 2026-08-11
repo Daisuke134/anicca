@@ -7744,3 +7744,11 @@ Doorkeeper store testは実mode-0600 receipt/artifact/object、deterministic rec
 Plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-evidence-chain-19d.md`は`connector-minimal-evidence.js`とmatching testのexact 2 files。review済みDoorkeeper storeをprovider mapへ追加し、exact event refと`https://<lowercase-group>.doorkeeper.jp/events/<same ID>`を束縛する。registered current pageを置換・navigate・receipt renderせずfull-page PNG化し、初回provider receipt/artifact readback後だけ既存Calendar/Telegram/checkpoint/bundle pipelineへ進む。production約25〜40 LOC、test約65〜95 LOC。
 
 Calendar gog transport、discovery/action/readback、Harness、native、schedule、live stateは変更0。このsliceはinjected Calendar/Telegramで`created→reused`とinvalid identity/state/current URLのdownstream effect 0をTDD固定する。review/push後にDoorkeeper Calendar transportを別sliceで追加し、official wakeはその後だけ実行する。Item19 Doorkeeper実bundleは未完。
+
+### O1B-25進捗433（Item 19D-E2 / Doorkeeper minimal evidence chain ship）
+
+Lunaが`connector-minimal-evidence.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは33件中32 pass / 1 failで、新しいDoorkeeper正常系が未登録providerとして失敗した。拒否を期待するfail-closed testは未登録providerでも通るため、Doorkeeper canonical guardだけを一時的に除去するreversible mutationを追加実測し、uppercase host fixtureが`Missing expected rejection`で失敗することを確認後、guardを復元した。
+
+GREEN commit `4f30d50c4`はreview済みDoorkeeper storeをprovider mapへ配線し、`doorkeeper-event://event/<positive ID>`、exact lowercase group host、同一event ID、`registered` state、current page URL exactを要求する。現在ページをnavigate・置換・receipt renderせずfull-page PNG化し、初回provider receipt/artifactを永続storeから再読取してからだけ既存Calendar→Telegram→`applied_bundle` pipelineへ進む。created後のexact rerunは同じbundleをreusedし、screenshot/Calendar/Telegram重複作用0。
+
+Sol独立でfocused 33/33、adjacent evidence 39/39、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality APPROVED、Critical/Important/Minor 0で`ship`。Calendar gog transport、discovery/action/readback、Harness、native、schedule、live state、external effectは0。次active sliceはDoorkeeper canonical URLをCalendar gog transportへ追加する。Item19 Doorkeeper実bundleは未完。
