@@ -1609,3 +1609,112 @@ test("Doorkeeper semantic trigger duplicates fail closed even when the duplicate
   assert.deepEqual(result, { status: "failed" });
   assert.equal(operated, 0);
 });
+
+function makeEventbriteCta(overrides = {}) {
+  const element = {
+    tagName: "BUTTON",
+    type: "button",
+    innerText: "Get tickets",
+    disabled: false,
+    hidden: false,
+    isConnected: true,
+    style: {},
+    dataset: {},
+    ownerDocument: { defaultView: { getComputedStyle() { return {}; } } },
+    parentElement: null,
+    getAttribute(name) { return name === "data-testid" ? "conversion-bar-checkout-button" : null; },
+    hasAttribute(name) { return name === "hidden" && this.hidden === true; },
+    getBoundingClientRect() { return this.rect || { width: 120, height: 32 }; },
+    ...overrides,
+  };
+  return element;
+}
+
+test("Eventbrite inspector binds the unique visible top CTA to the exact candidate page", async () => {
+  const candidate = {
+    provider: "eventbrite",
+    event_ref: "eventbrite-event://event/1901",
+    canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901",
+  };
+  const inspect = async (elements, href = candidate.canonical_url, eventId = "1901", canonicalUrl = candidate.canonical_url) => inspectPageControls({
+    provider: "eventbrite",
+    event_id: eventId,
+    canonical_url: canonicalUrl,
+    page: { url() { return href; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } },
+  });
+  const valid = await inspect([makeEventbriteCta(), makeEventbriteCta({ tagName: "BUTTON", innerText: "Reserve a spot" })]);
+  assert.deepEqual(valid, []);
+  const single = await inspect([makeEventbriteCta()]);
+  assert.equal(single.length, 1);
+  assert.deepEqual({ kind: single[0].kind, label: single[0].label, submittable: single[0].submittable }, { kind: "button", label: "Get tickets", submittable: true });
+  for (const [name, element, href, id, url] of [
+    ["fuzzy-label", makeEventbriteCta({ innerText: "Get tickets now" })],
+    ["hidden", makeEventbriteCta({ hidden: true })],
+    ["disabled", makeEventbriteCta({ disabled: true })],
+    ["wrong-tag", makeEventbriteCta({ tagName: "A" })],
+    ["wrong-type", makeEventbriteCta({ type: "submit" })],
+    ["wrong-event", makeEventbriteCta(), candidate.canonical_url, "1902", candidate.canonical_url],
+    ["wrong-page", makeEventbriteCta(), "https://www.eventbrite.com/e/other-tickets-1901"],
+    ["query-page", makeEventbriteCta(), `${candidate.canonical_url}?aff=1`],
+  ]) {
+    assert.deepEqual(await inspect([element], href, id, url), [], name);
+  }
+});
+
+test("Eventbrite CTA action clicks once and succeeds only on the exact checkout frame", async () => {
+  const candidate = {
+    provider: "eventbrite",
+    event_ref: "eventbrite-event://event/1901",
+    canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901",
+  };
+  const trigger = { control: "eventbrite_checkout_1901", kind: "button", label: "Get tickets", required: false, completed: false, submittable: true };
+  const run = async ({ frameUrls, action = { purpose: "submit", method: "ax_click", control: trigger.control }, controls = [trigger], provider = "eventbrite", candidateValue = candidate } = {}) => {
+    let operated = 0; let resolved = 0; let reads = 0;
+    const page = {
+      url() { return candidate.canonical_url; },
+      frames() { reads += 1; return (frameUrls || []).map((href) => ({ url() { return href; } })); },
+    };
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      async inspectControls() { return controls; },
+      async proposeAction() { return action; },
+      async operateControl() { operated += 1; return { status: "success" }; },
+      async resolveValue() { resolved += 1; return "private-value"; },
+    });
+    mock.timers.enable({ apis: ["Date", "setTimeout"] });
+    try {
+      const resultPromise = harness.performAction({ provider, candidate: candidateValue, page, action });
+      for (let attempt = 0; attempt < 100 && reads === 0; attempt += 1) await Promise.resolve();
+      mock.timers.tick(30_001);
+      const result = await resultPromise;
+      return { result, operated, resolved };
+    } finally {
+      mock.timers.reset();
+    }
+  };
+  const success = await run({ frameUrls: ["https://www.eventbrite.com/checkout-external?eid=1901"] });
+  assert.deepEqual(success.result, { status: "success" });
+  assert.equal(success.operated, 1);
+  assert.equal(success.resolved, 0);
+  for (const [name, frameUrls] of [
+    ["missing", []],
+    ["wrong-origin", ["https://evil.example/checkout-external?eid=1901"]],
+    ["wrong-path", ["https://www.eventbrite.com/checkout?eid=1901"]],
+    ["wrong-event", ["https://www.eventbrite.com/checkout-external?eid=1902"]],
+    ["duplicate", ["https://www.eventbrite.com/checkout-external?eid=1901", "https://www.eventbrite.com/checkout-external?eid=1901"]],
+  ]) {
+    const { result, operated } = await run({ frameUrls });
+    assert.deepEqual(result, { status: "failed" }, name);
+    assert.equal(operated, 1, name);
+  }
+  for (const [name, action, provider, candidateValue, controls] of [
+    ["wrong-action", { purpose: "fill", method: "ax_fill", control: trigger.control }],
+    ["wrong-token", { purpose: "submit", method: "ax_click", control: "other_button" }],
+    ["duplicate-semantic", { purpose: "submit", method: "ax_click", control: trigger.control }, "eventbrite", candidate, [trigger, { ...trigger, control: "eventbrite_checkout_1902" }]],
+    ["wrong-provider", { purpose: "submit", method: "ax_click", control: trigger.control }, "luma"],
+  ]) {
+    const { result, operated } = await run({ frameUrls: ["https://www.eventbrite.com/checkout-external?eid=1901"], action, provider, candidateValue, controls });
+    assert.deepEqual(result, { status: "failed" }, name);
+    assert.equal(operated, 0, name);
+  }
+});
