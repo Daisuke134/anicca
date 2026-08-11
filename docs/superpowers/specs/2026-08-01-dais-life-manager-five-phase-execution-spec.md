@@ -7455,7 +7455,13 @@ fresh Sol reviewはSHIP、Critical/Important 0。Sol独立15/15、87/87、syntax
 
 公式detail 3件を比較すると各pageはvisible modal trigger `申し込む` 1とhidden final submit `申し込む` 1を持つ。先頭2件のJSON-LDはOffline/InStock/price 0 JPY/exact URL。detail readerはvisibilityを保存するが`normalizeDetail`はhiddenを含む同label全2件を数えてtotal 1を要求するため、valid eventも全てrejectする。次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-visible-trigger-19d.md`はworkflow production/test 2 filesだけ。visible exact controlだけを一意性判定へ使う。Harness/modal/final Submitは不変、implementation中official wake 0、4 labels UNLOADED。Item19 Doorkeeperと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗388。これ以外の残TODO一覧は履歴）
+### O1B-25進捗389（Item 19D / Doorkeeper visible eligibility ship）
+
+LunaがDoorkeeper workflow production/test 2 filesだけをTDD変更した。visible trigger 1 + hidden final submit 1の現行DOM fixtureでRED 14/15。exact label controlsをvisibilityで先にfilterするproduction 1 predicateによりGREEN 15/15、Harness+Doorkeeper adjacent 87/87。duplicate visible、hidden-only、unavailable/payment/JSON-LD/Calendar、後段modal/final Submitは不変。
+
+fresh Sol reviewはSHIP、Critical/Important 0。Sol独立15/15、87/87、syntax/diff/ownership/remote equality、4 labels UNLOADEDがPASS。review済み`fdbd624c7`をstableへfast-forwardした。次はofficial foreground wake exact 1回でeligible count、external registration/bundleまたは次のexact boundaryを実測する。Item19 Doorkeeperと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗389。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
