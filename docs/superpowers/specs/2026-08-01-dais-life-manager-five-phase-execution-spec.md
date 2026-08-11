@@ -7371,7 +7371,11 @@ Lunaが`connector-minimal-production.js`とmatching testの2 filesだけをTDD�
 
 fresh Sol reviewはspec PASS / quality SHIP、指摘0。Sol独立14/14、56/56、syntax/diff/ownership、4 labels exact UNLOADEDがPASS。review済みcommit `a774eaa41`をstableへfast-forwardしpushした。native provider order、Harness allowlist、audit persistenceは未変更なのでofficial wakeはまだDoorkeeperへ到達せず外部作用0。次の一件はB2 Doorkeeper five-count auditのmode 0600 durable persistence。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗372。これ以外の残TODO一覧は履歴）
+### O1B-25進捗373（Item 19D-B2 / Doorkeeper durable audit plan）
+
+次active slice B2 plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-audit-19d.md`はoperations production/testの2 filesだけ。Doorkeeper workflowのexact新5キー`discovered / within_window / eligible / calendar_free / selected`をinteger 0〜500かつ単調減少で検証し、schema/wake/timeとaggregate countだけを`doorkeeper-discovery-audits.jsonl`へmode 0600 appendする。URL、event、title、profile、ticket、auth、private Calendar dataは保存0、invalid inputはappend 0。既存4providerの旧5キーvalidator/filesは変更しない。native/Harness/schedule/live作用0。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗373。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
