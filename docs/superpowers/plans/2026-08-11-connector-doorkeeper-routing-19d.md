@@ -31,7 +31,7 @@
 - Modify: `apps/life-manager/lib/connector-minimal-production.js`
 - Modify: `apps/life-manager/lib/connector-minimal-production.test.js`
 
-- [ ] **Step 1: Write RED routing tests**
+- [x] **Step 1: Write RED routing tests**
 
   Add observable tests proving:
 
@@ -41,7 +41,7 @@
   4. candidate/private fixture values are not copied into cache metadata beyond the existing router contract.
   5. official factory uses an injected Doorkeeper workflow and passes it to the router without creating a browser/session/target/page.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
   ```bash
   cd apps/life-manager
@@ -50,7 +50,7 @@
 
   Expected: new Doorkeeper cases fail because provider selection/factory wiring is absent. Existing cases stay green.
 
-- [ ] **Step 3: Implement the minimal route**
+- [x] **Step 3: Implement the minimal route**
 
   In `connector-minimal-production.js` only:
 
@@ -61,7 +61,7 @@
   - factory-create the workflow with `now` and `operations.recordDoorkeeperDiscoveryAudit || (() => {})`;
   - pass it to `createProductionProviderRouter` only. Do not pass it into Browser Harness in this slice.
 
-- [ ] **Step 4: Run GREEN and focused adjacent checks**
+- [x] **Step 4: Run GREEN and focused adjacent checks**
 
   ```bash
   cd apps/life-manager
@@ -71,7 +71,7 @@
   git diff --check
   ```
 
-- [ ] **Step 5: Self-review and commit**
+- [x] **Step 5: Self-review and commit**
 
   Verify exact 2-file ownership, no Harness/native/operations/schedule changes, no external writes, and no provider behavior regression. Commit without amending prior commits.
 
@@ -80,3 +80,10 @@
 - Ponytail: one existing map/factory seam is reused; no abstraction or dependency is added.
 - Scope: 2 files, expected total delta under 80 LOC. Native reachability and form action remain explicitly deferred.
 - Safety: this slice cannot run Doorkeeper in an official wake because native order remains unchanged; it only makes the reviewed workflow selectable at the production dependency boundary.
+
+## Result
+
+- Luna observed RED 12/14 with only the two new Doorkeeper cases failing, then produced GREEN 14/14. Doorkeeper workflow plus minimal runner remained 56/56 PASS.
+- Production delta is +19/-3 and test delta +56 in the exact two owned files. No Harness, native, operations, schedule, browser/live state, dependency, DB, cache schema, Calendar, Telegram, or provider state changed.
+- Fresh Sol review returned spec PASS / quality SHIP with no findings. Independent Sol verification repeated 14/14 and 56/56 PASS plus syntax, diff, exact ownership, and four-label UNLOADED checks.
+- Reviewed commit `a774eaa41` is pushed and fast-forwarded into `feature/connector-native-completion`. Native order still excludes Doorkeeper, so this slice creates no official-wake reachability or external effect.
