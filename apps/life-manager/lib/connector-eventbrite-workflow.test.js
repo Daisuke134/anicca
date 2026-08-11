@@ -127,6 +127,26 @@ test("Eventbrite accepts hydrated Reserve a spot for eligibility and absent read
   assert.deepEqual(await absent.readProviderState({ page: pageAt(row.canonical_url), candidate: { ...row, provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" } }), { status: "absent" });
 });
 
+test("Eventbrite accepts explicit free phrases and rejects conditional purchase language", async () => {
+  const freePhrases = ["参加費無料", "入場無料", "free admission", "no participation fee"];
+  for (const [index, phrase] of freePhrases.entries()) {
+    const id = String(360 + index); const row = binding(id);
+    const { workflow } = workflowFor([{ href: row.canonical_url, event_id: id }], { [row.canonical_url]: detail(id, { body_text: `Tokyo event: ${phrase}` }) });
+    assert.equal((await workflow.discoverCandidates({ page: {}, calendar: [] })).length, 1, phrase);
+  }
+  const purchaseMarkers = ["one drink minimum", "minimum purchase", "purchase required", "ワンドリンク必須"];
+  for (const [index, marker] of purchaseMarkers.entries()) {
+    const id = String(370 + index); const row = binding(id);
+    const { workflow } = workflowFor([{ href: row.canonical_url, event_id: id }], { [row.canonical_url]: detail(id, { body_text: `Free admission. ${marker}` }) });
+    assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), [], marker);
+  }
+  for (const [index, marker] of ["参加費 1,000円", "admission fee ¥1,500", "paid at door"].entries()) {
+    const id = String(380 + index); const row = binding(id);
+    const { workflow } = workflowFor([{ href: row.canonical_url, event_id: id }], { [row.canonical_url]: detail(id, { body_text: `Free admission. ${marker}` }) });
+    assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), [], marker);
+  }
+});
+
 test("Eventbrite rejects mixed visible exact and fuzzy checkout controls", async () => {
   const row = binding("355");
   const controls = [{ text: "Reserve a spot", visible: true }, { text: "Reserve a spot now", visible: true }];
