@@ -25892,3 +25892,11 @@
 {"ts":1786480185,"wake_id":"00MSP46D9E88247849F51F4366","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786480372,"wake_id":"00MSP4ADO6D0A4AB9B32EB4B6E","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786480500,"wake_id":"00MSP4D41I372D681DB78E4516","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786480631,"wake_id":"00MSP4FXOJ9E6A41F84A7F4628","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786480759,"wake_id":"00MSP4INSQ379851C2FDD54957","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786480886,"wake_id":"00MSP4LDT04EEAE1399A2248D3","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786480953,"wake_id":"00MSP4MTYI6E5ECFA1F0DC4045","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786481083,"wake_id":"00MSP4PMD76A33B8E23F424A2F","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786481211,"wake_id":"00MSP4SCPJB6A6ACE86914441B","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana high APY yield farming low minimum deposit [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surface"}
+{"ts":1786481339,"wake_id":"00MSP4V3V7E7E4CFDA16BE45A4","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786481439,"wake_id":"00MSP4X8U7D2A25BC167E94837","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
