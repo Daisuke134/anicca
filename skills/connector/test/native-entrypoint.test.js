@@ -13,10 +13,10 @@ const VALID_KANA = Object.freeze({ family: "サクラ", given: "テスト" });
 const VALID_NAME_JA = "桜 太郎";
 const BASE_ENV = Object.freeze({ GOG_ACCOUNT: "private@example.com", DAIS_LEGAL_NAME_ROMAJI: "Dais Example", GOG_KEYRING_PASSWORD: "private-keyring", LM_CONNECTOR_TELEGRAM_TARGET: "private-target" });
 
-function writeKanaProfile(home, value = VALID_KANA, mode = 0o600, nameJa) {
+function writeKanaProfile(home, value = VALID_KANA, mode = 0o600, nameJa, identity = { name: BASE_ENV.DAIS_LEGAL_NAME_ROMAJI, preferred_name: "Dais" }) {
   const file = path.join(home, ".config", "anicca", "job-search", "profile.json");
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
-  const candidate = { name_kana: value, name_ja: arguments.length < 4 ? VALID_NAME_JA : nameJa };
+  const candidate = { name_kana: value, name_ja: arguments.length < 4 ? VALID_NAME_JA : nameJa, ...identity };
   const raw = typeof value === "string" ? value : JSON.stringify({ candidate });
   fs.writeFileSync(file, `${raw}\n`, { mode });
   fs.chmodSync(file, mode);
@@ -103,7 +103,7 @@ test("native Peatix profile is frozen at the factory boundary and invalid identi
     writeKanaProfile(directory);
     const result = await runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-profile-owner-123456", env: baseEnv, createDependencies(input) { factoryInput = input; return Object.freeze({ boundary: "production" }); }, async runWake(input) { wakeInputs.push(input); return { status: "completed_no_effect" }; } });
     assert.deepEqual(result, { status: "completed_no_effect" });
-    assert.deepEqual(factoryInput.peatixAttendeeProfile, { name: "Dais Example", email: "private@example.com", family_name_kana: VALID_KANA.family, given_name_kana: VALID_KANA.given, name_kanji: VALID_NAME_JA, name_hiragana: "さくら てすと", accept_organizer_privacy: true });
+    assert.deepEqual(factoryInput.peatixAttendeeProfile, { name: "Dais Example", email: "private@example.com", given_name: "Dais", family_name: "Example", family_name_kana: VALID_KANA.family, given_name_kana: VALID_KANA.given, name_kanji: VALID_NAME_JA, name_hiragana: "さくら てすと", accept_organizer_privacy: true });
     assert.equal(Object.isFrozen(factoryInput), true);
     assert.equal(Object.isFrozen(factoryInput.peatixAttendeeProfile), true);
     assert.deepEqual(wakeInputs[0].providers, ["luma", "connpass", "peatix", "meetup", "doorkeeper"]);
@@ -115,6 +115,37 @@ test("native Peatix profile is frozen at the factory boundary and invalid identi
       assert.equal(called, false);
     }
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("native Eventbrite attendee identity preserves the matching private name token case", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-eventbrite-identity-")); let profile; let wakeInput;
+  try {
+    writeKanaProfile(directory, VALID_KANA, 0o600, VALID_NAME_JA, { name: "Dais Example", preferred_name: "dAiS" });
+    await runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-eventbrite-identity-123456", env: { ...BASE_ENV, HOME: directory }, createDependencies(input) { profile = input.peatixAttendeeProfile; return {}; }, async runWake(input) { wakeInput = input; return { status: "completed_no_effect" }; } });
+    assert.deepEqual({ given_name: profile.given_name, family_name: profile.family_name }, { given_name: "Dais", family_name: "Example" });
+    assert.equal(profile.name, BASE_ENV.DAIS_LEGAL_NAME_ROMAJI);
+    assert.equal("given_name" in wakeInput, false);
+    assert.equal("family_name" in wakeInput, false);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("native Eventbrite attendee identity fails closed for mismatch and ambiguous preferred names", async () => {
+  for (const [name, identity] of [
+    ["legal-mismatch", { name: "Other Person", preferred_name: "Other" }],
+    ["preferred-missing", { name: "Dais Example" }],
+    ["preferred-nonmatching", { name: "Dais Example", preferred_name: "Other" }],
+    ["preferred-ambiguous", { name: "Dais Example", preferred_name: "Dais Example" }],
+    ["name-one-token", { name: "Dais", preferred_name: "Dais" }],
+    ["name-control-padding", { name: "\nDais Example", preferred_name: "Dais" }],
+    ["preferred-control-padding", { name: "Dais Example", preferred_name: "Dais\n" }],
+  ]) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-eventbrite-identity-invalid-")); let factoryCalls = 0; let wakeCalls = 0;
+    try {
+      writeKanaProfile(directory, VALID_KANA, 0o600, VALID_NAME_JA, identity);
+      await assert.rejects(runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-eventbrite-identity-invalid-123456", env: { ...BASE_ENV, HOME: directory }, createDependencies() { factoryCalls += 1; return {}; }, async runWake() { wakeCalls += 1; return { status: "unexpected" }; } }), /Connector minimal pass unavailable/, name);
+      assert.equal(factoryCalls, 0, name); assert.equal(wakeCalls, 0, name);
+    } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+  }
 });
 
 test("native config resolves the existing Telegram owner without an inline shell parser", async () => {

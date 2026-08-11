@@ -63,6 +63,22 @@ function readKanaIdentity(env) {
   } catch { unavailable(); }
   const nameKana = profile && typeof profile === "object" && !Array.isArray(profile)
     ? profile.candidate?.name_kana : null;
+  const rawNameRomaji = profile?.candidate?.name;
+  const rawPreferredName = profile?.candidate?.preferred_name;
+  if (typeof rawNameRomaji !== "string" || typeof rawPreferredName !== "string") unavailable();
+  if (/[\x00-\x1f\x7f-\x9f]/.test(rawNameRomaji) || /[\x00-\x1f\x7f-\x9f]/.test(rawPreferredName)) unavailable();
+  const nameRomaji = requiredText(rawNameRomaji);
+  const preferredName = requiredText(rawPreferredName);
+  if (nameRomaji.length > 200 || preferredName.length > 200) unavailable();
+  const nameTokens = nameRomaji.split(/\s+/u);
+  const preferredTokens = preferredName.split(/\s+/u);
+  const legalName = requiredText(env.DAIS_LEGAL_NAME_ROMAJI);
+  if (nameTokens.length !== 2 || preferredTokens.length !== 1 || nameRomaji !== legalName) unavailable();
+  const preferredMatches = nameTokens.filter((token) => token.toLowerCase() === preferredName.toLowerCase());
+  if (preferredMatches.length !== 1) unavailable();
+  const givenIndex = nameTokens.findIndex((token) => token.toLowerCase() === preferredName.toLowerCase());
+  const givenName = nameTokens[givenIndex];
+  const familyName = nameTokens[1 - givenIndex];
   if (!nameKana || typeof nameKana !== "object" || Array.isArray(nameKana)
     || Object.keys(nameKana).length !== 2 || !Object.hasOwn(nameKana, "family") || !Object.hasOwn(nameKana, "given")) unavailable();
   const rawNameJa = profile?.candidate?.name_ja;
@@ -74,7 +90,7 @@ function readKanaIdentity(env) {
     return value;
   };
   const family = part(nameKana.family); const given = part(nameKana.given);
-  return Object.freeze({ family, given, name_kanji: nameJa, name_hiragana: `${toHiragana(family)} ${toHiragana(given)}` });
+  return Object.freeze({ family, given, name_kanji: nameJa, name_hiragana: `${toHiragana(family)} ${toHiragana(given)}`, given_name: givenName, family_name: familyName });
 }
 
 function resolvedTelegramTarget(env) {
@@ -105,7 +121,7 @@ function productionConfig(options, stateDir, ownerToken) {
   const attendeeName = requiredText(env.DAIS_LEGAL_NAME_ROMAJI);
   const kanaIdentity = readKanaIdentity(env);
   if (attendeeName.length > 200) unavailable();
-  const peatixAttendeeProfile = Object.freeze({ name: attendeeName, email: attendeeEmail, family_name_kana: kanaIdentity.family, given_name_kana: kanaIdentity.given, name_kanji: kanaIdentity.name_kanji, name_hiragana: kanaIdentity.name_hiragana, accept_organizer_privacy: true });
+  const peatixAttendeeProfile = Object.freeze({ name: attendeeName, email: attendeeEmail, given_name: kanaIdentity.given_name, family_name: kanaIdentity.family_name, family_name_kana: kanaIdentity.family, given_name_kana: kanaIdentity.given, name_kanji: kanaIdentity.name_kanji, name_hiragana: kanaIdentity.name_hiragana, accept_organizer_privacy: true });
   return Object.freeze({
     repoRoot: absoluteDirectory(options.repoRoot),
     stateDir,
