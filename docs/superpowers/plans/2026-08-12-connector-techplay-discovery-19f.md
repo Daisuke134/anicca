@@ -21,7 +21,7 @@
 - Production target about 160–220 LOC; test target about 180–260 LOC. The provider boundary exceeds the 100 LOC soft target, so action, readback, evidence, Calendar transport, router, harness, native order, and launchd changes are explicitly removed.
 - Strict TDD: tests first, focused RED caused by the missing workflow, then minimum GREEN implementation.
 - Exact identity: `techplay-event://event/<positive integer>` and `https://techplay.jp/event/<same ID>` only. Reject query, fragment, trailing slash, credentials, port, uppercase raw host, alternate/subdomain hosts, mismatched payload ID/current URL, duplicate IDs, and more than 50 RSS rows.
-- Eligibility requires native TECH PLAY action (`event_url` null in event and button state), `offline_only`, Tokyo in address/place, valid increasing start/end inside `[today 00:00 JST, day+14 00:00 JST)`, open visible `apply` state, not ended, and exactly one available free ticket with positive ticket ID/capacity, finite nonnegative entered count, `entrance_fee === 0`, `is_full === false`, `is_joined === false`, and no Stripe payment.
+- Eligibility requires native TECH PLAY action (`event_url` null in event and button state), `offline_only`, Tokyo in address/place, valid increasing start/end inside `[today 00:00 JST, day+14 00:00 JST)`, open visible `apply` state, not ended, no explicit elementary/junior-high/high-school-only audience marker in title/description, and exactly one available free ticket with positive ticket ID/capacity, finite nonnegative entered count, `entrance_fee === 0`, `is_full === false`, `is_joined === false`, and no Stripe payment.
 - If recruitment start/end exists, `now` must be within the half-open interval. Paid, mixed/online, external-link, closed/full/joined, malformed, or ambiguous multi-free-ticket detail is skipped. Identity mismatch and transport/contract failures throw provider-specific safe errors.
 - Preserve existing Calendar rules: timed overlap blocks unless its `connector_idempotency` equals SHA-256 of the same canonical URL.
 - Audit only aggregate counts: `discovered_count`, `within_window_count`, `eligible_count`, `calendar_free_count`, `selected_count`. No title, URL, ticket ID, identity, body, or profile.
@@ -33,7 +33,7 @@
 - Create: `apps/life-manager/lib/connector-techplay-workflow.js`
 - Create: `apps/life-manager/lib/connector-techplay-workflow.test.js`
 
-- [ ] Write failing tests for happy discovery, exact-coverage ordering, identity rejection, unsafe-row skipping, timed Calendar conflict, aggregate audit, bounded dedup, and stage errors. Verify direct action fails safely and readback stays unavailable.
+- [ ] Write failing tests for happy discovery, exact-coverage ordering, identity rejection, paid/external/online/closed/full/ambiguous/explicit school-age-only row skipping, timed Calendar conflict, aggregate audit, bounded dedup, and stage errors. Verify direct action fails safely and readback stays unavailable.
 - [ ] Run `node --test apps/life-manager/lib/connector-techplay-workflow.test.js`; RED must be caused by the missing workflow/factory.
 - [ ] Export `createTechPlayDiscoveryWorkflow(options)` with only the minimum default RSS/detail readers and normalization described above.
 - [ ] Run focused tests, adjacent Eventbrite/Doorkeeper tests, `node --check`, and `git diff --check`.
