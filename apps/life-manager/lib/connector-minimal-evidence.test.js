@@ -946,3 +946,98 @@ test("Eventbrite identity, exact registered state, and current page URL fail clo
     } finally { fixture.cleanup(); }
   }
 });
+
+function techplayCandidate(extra = {}) {
+  return {
+    provider: "techplay", event_ref: "techplay-event://event/999190",
+    canonical_url: "https://techplay.jp/event/999190", title: "TECH PLAY Community Event",
+    starts_at: "2026-08-13T10:00:00.000Z", ends_at: "2026-08-13T11:00:00.000Z", venue_name: "Tokyo", ...extra,
+  };
+}
+
+function techplayFixture(options = {}) {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-techplay-evidence-"));
+  const candidate = techplayCandidate(options.candidate); const png = options.png || Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 22)]);
+  const pngSha = createHash("sha256").update(png).digest("hex"); const calls = []; const calendarReceipt = { id: "google-techplay-1", htmlLink: "https://www.google.com/calendar/event?eid=techplay-one" }; let calendarReads = 0; let recordedAt;
+  const calendar = options.calendar || {
+    async findConnectorEvents(input) { calls.push(["calendar-read", input]); return calendarReads++ === 0 ? [] : [calendarReceipt]; },
+    async createConnectorEvent(input) { calls.push(["calendar-create", input]); return calendarReceipt; },
+  };
+  const evidenceStore = options.evidenceStore || {
+    async record(input) { calls.push(["evidence-record", input]); assert.equal(input.screenshot, png); recordedAt = input.observedAt; const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${pngSha}`).digest("hex"); return { external_receipt_ref: `provider-receipt://techplay/${receiptId}`, artifact_ref: `object://sha256/${pngSha}` }; },
+    async readExternalReceipt(tenant, ref) { calls.push(["evidence-read-receipt", tenant, ref]); return { kind: "provider_response", provider_id: ref.split("/").at(-1), observed_at: recordedAt, event_ref: candidate.event_ref, artifact_sha256: pngSha }; },
+    async readArtifact(tenant, ref) { calls.push(["evidence-read-artifact", tenant, ref]); return png; },
+  };
+  const chain = createMinimalEvidenceChain({
+    stateDir, tenantId: "techplay-test", calendar, calendarId: "primary", telegramTarget: "test-target", techplayEvidenceStore: evidenceStore,
+    now: () => new Date("2026-08-12T08:30:00.000Z"),
+    sendMessage: options.sendMessage || (async (message, telegram) => { calls.push(["telegram-message", message, telegram]); return { messageId: 9801 }; }),
+    sendPhoto: options.sendPhoto || (async (bytes, telegram) => { calls.push(["telegram-photo", bytes, telegram]); return { messageId: 9802 }; }),
+  });
+  const pageUrl = { value: options.pageUrl || candidate.canonical_url };
+  const page = {
+    async setContent() { calls.push(["set-content"]); throw new Error("TECH PLAY page replacement forbidden"); },
+    async goto() { calls.push(["goto"]); throw new Error("TECH PLAY evidence navigation forbidden"); },
+    async evaluate() { calls.push(["evaluate"]); throw new Error("TECH PLAY receipt render forbidden"); },
+    url() { calls.push(["url"]); return pageUrl.value; },
+    async screenshot(input) { calls.push(["screenshot", input]); return png; },
+  };
+  return { stateDir, candidate, png, pngSha, calls, chain, page, pageUrl, evidenceStore, cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
+}
+
+function assertTechPlayNoDownstream(fixture, label) {
+  for (const name of ["screenshot", "evidence-record", "evidence-read-receipt", "evidence-read-artifact", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) {
+    assert.equal(fixture.calls.filter(([callName]) => callName === name).length, 0, `${label}:${name}`);
+  }
+}
+
+test("TECH PLAY registered parent captures one evidence bundle, reads it before Calendar, and reuses without duplicate effects", async () => {
+  const fixture = techplayFixture();
+  try {
+    const input = { provider: "techplay", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } };
+    const first = await fixture.chain.completeEvidence(input);
+    assert.equal(first.provider, "techplay"); assert.equal(first.completion_disposition, "created");
+    assert.match(first.event_ref, /^techplay-event:\/\/event\/[1-9][0-9]*$/); assert.match(first.provider_receipt_ref, /^provider-receipt:\/\/techplay\/[0-9a-f]{64}$/);
+    assert.equal(fixture.calls.filter(([name]) => name === "screenshot").length, 1); assert.deepEqual(fixture.calls.find(([name]) => name === "screenshot")[1], { type: "png", fullPage: true });
+    assert.equal(fixture.calls.filter(([name]) => ["set-content", "goto", "evaluate"].includes(name)).length, 0);
+    const receiptRead = fixture.calls.findIndex(([name]) => name === "evidence-read-receipt"); const artifactRead = fixture.calls.findIndex(([name]) => name === "evidence-read-artifact"); const calendarRead = fixture.calls.findIndex(([name]) => name === "calendar-read");
+    assert.ok(receiptRead >= 0 && artifactRead > receiptRead && calendarRead > artifactRead);
+    assert.equal(fixture.calls.find(([name]) => name === "calendar-create")[1].canonicalUrl, fixture.candidate.canonical_url);
+    assert.equal(fixture.calls.filter(([name]) => name === "telegram-message").length, 1); assert.equal(fixture.calls.filter(([name]) => name === "telegram-photo").length, 1);
+    assert.match(fixture.calls.find(([name]) => name === "telegram-message")[1], /provider: techplay/);
+    assert.equal(fixture.calls.find(([name]) => name === "telegram-photo")[2].caption, "Connector::: techplay / TECH PLAY Community Event / registered");
+    assert.equal(fixture.calls.filter(([name]) => name === "evidence-read-receipt").length, 1);
+    assert.equal(fixture.calls.filter(([name]) => name === "evidence-read-artifact").length, 1);
+    const counts = new Map(["screenshot", "evidence-record", "calendar-create", "telegram-message", "telegram-photo"].map((name) => [name, fixture.calls.filter(([entry]) => entry === name).length]));
+    const second = await fixture.chain.completeEvidence(input);
+    assert.equal(second.completion_disposition, "reused"); assert.equal(second.bundle_id, first.bundle_id);
+    for (const [name, count] of counts) assert.equal(fixture.calls.filter(([entry]) => entry === name).length, count, name);
+  } finally { fixture.cleanup(); }
+});
+
+test("TECH PLAY event, canonical/page identity, and registered-only state reject before every downstream effect", async () => {
+  const cases = [
+    { candidate: { event_ref: "techplay-event://event/0" } }, { candidate: { event_ref: "techplay-event://event/999191" } },
+    { candidate: { canonical_url: "https://techplay.jp/event/999191" } }, { candidate: { canonical_url: "https://techplay.jp/event/999190/" } },
+    { candidate: { canonical_url: "http://techplay.jp/event/999190" } }, { candidate: { canonical_url: "https://www.techplay.jp/event/999190" } },
+    { candidate: { canonical_url: "https://techplay.jp/event/999190?source=test" } }, { status: "pending" }, { status: "absent" },
+    { pageUrl: "https://techplay.jp/event/999191" }, { pageUrl: "https://techplay.jp/event/999190/" }, { pageUrl: "about:blank" },
+  ];
+  for (const value of cases) {
+    const fixture = techplayFixture(value);
+    try { await assert.rejects(fixture.chain.completeEvidence({ provider: "techplay", candidate: fixture.candidate, page: fixture.page, providerState: { status: value.status || "registered" } })); assertTechPlayNoDownstream(fixture, value.pageUrl || value.status || value.candidate?.event_ref || value.candidate?.canonical_url); }
+    finally { fixture.cleanup(); }
+  }
+});
+
+test("TECH PLAY wrong receipt or tampered artifact fails before Calendar and delivery", async () => {
+  for (const corruption of ["receipt", "artifact"]) {
+    const fixture = techplayFixture();
+    try {
+      if (corruption === "receipt") fixture.evidenceStore.readExternalReceipt = async () => ({ kind: "provider_response", provider_id: "f".repeat(64), observed_at: "2026-08-12T08:30:00.000Z", event_ref: fixture.candidate.event_ref, artifact_sha256: fixture.pngSha });
+      else fixture.evidenceStore.readArtifact = async () => Buffer.concat([fixture.png, Buffer.from("tamper")]);
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "techplay", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+      assert.equal(fixture.calls.filter(([name]) => ["calendar-read", "calendar-create", "telegram-message", "telegram-photo"].includes(name)).length, 0, corruption);
+    } finally { fixture.cleanup(); }
+  }
+});
