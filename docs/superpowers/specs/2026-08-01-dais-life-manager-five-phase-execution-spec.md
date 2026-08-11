@@ -7684,3 +7684,13 @@ minimal production 18/18、Harness 98/98、operations 11/11、evidence 31/31、S
 ### O1B-25進捗423（Item 19E-D6 / repaired official live wake preflight）
 
 修復後baselineはbundle 13、report 130、delivery 142、action 1360、Luma/Connpass/Peatix/Meetup/Doorkeeper/Eventbrite audits `131/54/47/4/3/0`、CDP unrelated pages 4。pushed/clean/upstream 0/0、process 0、lock idle、target intersection 0、4 labels UNLOADED。既存live planに従いofficial foreground `skills/connector/run.sh`をexact 1回だけ再実行する。manual provider/browser action、second concurrent executor、schedule loadは0。Eventbrite auditまたはfinal Submit 0のregistered reuse `applied_bundle`、positive report、exact cleanupを受入条件とする。
+
+### O1B-25進捗424（Item 19E-D6 / repaired wakeがEventbrite到達・page1-only discovery gap確定）
+
+Pushed HEAD `c2539e78b`、4 labels UNLOADED、process 0、lock idle、Git clean/upstream 0/0、CDP page 4からofficial foreground wakeをexact 1回実行した。wake `wake-8fb25d522faf88565a7316b0`は約120秒、action `1360→1404`、Luma/Connpass/Peatix/Doorkeeper/Eventbrite audits `131→132 / 54→55 / 47→48 / 3→4 / 0→1`、Meetup 4。report `130→131`、delivery `142→143`、bundle `13→13`。terminal `completed_no_effect / provider_discovery_failed / consecutive_failure_count 2`、positive Telegram ID `12107`、CLI exit 1。failure resetにより前wakeのfalse circuitを越え、DoorkeeperとEventbriteへproduction到達した。
+
+Eventbrite durable auditはexact `discovered/within/eligible/calendar-free/selected = 80/0/0/0/0`。default readerをコード追跡するとbase listing URLを1回だけ読む。isolated shared-browser read-only実測はexact `?page=1/2/3`でcards `80/80/28`、既登録event `1997468673573`出現数 `0/0/4`、全final URL exact。diagnostic pageはcloseしregistration/Calendar/evidence effect 0、Connector ledger intersection 0。page3の実候補をproductionが探索しないことが次の先頭故障。
+
+### O1B-25進捗425（Item 19E-D6a / Eventbrite bounded pagination plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-pagination-19e.md`はEventbrite workflow production/test exact 2 files。supplied owned pageでbase、`?page=2`、`?page=3`をexact順に読み、各goto後URL exactと既存card selector/row contractを要求して全rowsを連結する。page4、新page/context/browser、pagination clickは0。途中navigation/read errorはpartial rowsを返さずexisting safe listing failure。production約15〜30 LOC、test約35〜70 LOC。detail/free/Tokyo/window/Calendar/readback/action変更0。TDD・fresh review・push後にofficial wake exact 1回で既登録page3 candidateを受け入れる。
