@@ -25403,3 +25403,11 @@
 {"ts":1786416963,"wake_id":"00MSO2JAXAFAD8806C68E14A9C","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786417110,"wake_id":"00MSO2MGCIB2C9DDF146A14756","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786417254,"wake_id":"00MSO2PJ6WEDD12D96B5E840F4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786417413,"wake_id":"00MSO2SXRU4A8D807E80FF4F05","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786417483,"wake_id":"00MSO2UG1A460028ABAA044D31","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786417552,"wake_id":"00MSO2VWZZC40FFBA1402E4E45","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786417701,"wake_id":"00MSO2Z41N5C3168C5B8D44F86","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786417895,"wake_id":"00MSO33A37650264438B344ADC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786418024,"wake_id":"00MSO361JJ203BEACDD1D44917","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid API marketplace earn USDC for data queries [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates su"}
+{"ts":1786418150,"wake_id":"00MSO38QKG74F1622326704014","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786418277,"wake_id":"00MSO3BGWD45D1D6A79E034EE3","kind":"narrate","sleep_s":120,"model":"auto"}
