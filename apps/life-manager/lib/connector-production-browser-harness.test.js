@@ -1565,3 +1565,21 @@ test("Doorkeeper modal trigger rejects wrong provider, identity, label, duplicat
     assert.deepEqual(result, { status: "failed" }, name); assert.equal(operated, 0, name);
   }
 });
+
+test("Doorkeeper default proposer chooses exact trigger, Email, and final submit without generic links", async () => {
+  const trigger = { control: "doorkeeper_trigger", kind: "link", label: "申し込む", required: false, completed: false, submittable: false };
+  const email = { control: "event_email", kind: "input", label: "Email", required: true, completed: false, submittable: false };
+  const completedEmail = { ...email, completed: true };
+  const submit = { control: "doorkeeper_submit", kind: "button", label: "申し込む", required: false, completed: false, submittable: true };
+  let agentCalls = 0;
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) {
+    agentCalls += 1;
+    return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: input.schema.properties.control.enum[0] } };
+  } });
+  const base = { provider: "doorkeeper", target_id: "DOORKEEPERDEFAULT1", expected_state: "registered_or_pending" };
+  assert.deepEqual(await proposer({ ...base, step: 1, observation: { state: "registration_page", controls: [trigger] } }), { control: "doorkeeper_trigger" });
+  assert.deepEqual(await proposer({ ...base, step: 2, observation: { state: "registration_page", controls: [trigger, email] } }), { control: "event_email" });
+  assert.deepEqual(await proposer({ ...base, step: 3, observation: { state: "registration_page", controls: [trigger, completedEmail, submit] } }), { control: "doorkeeper_submit" });
+  assert.equal(agentCalls, 2);
+  assert.equal(await proposer({ ...base, step: 1, observation: { state: "registration_page", controls: [{ control: "help_link", kind: "link", label: "Help", required: false, completed: false, submittable: false }] } }), null);
+});
