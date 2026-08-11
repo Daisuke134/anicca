@@ -29,6 +29,7 @@ const EVENTBRITE_EVENT_URL = /^https:\/\/www\.eventbrite\.com\/e\/(?:(?:[a-z0-9]
 const EVENTBRITE_TRIGGER_CONTROL = /^eventbrite_checkout_([1-9][0-9]*)$/;
 const EVENTBRITE_TICKET_REGISTER_CONTROL = /^eventbrite_ticket_register_([1-9][0-9]*)$/;
 const EVENTBRITE_ATTENDEE_CONTROL = /^eventbrite_attendee_(first_name|last_name|email|confirm_email)_([1-9][0-9]*)$/;
+const EVENTBRITE_MARKETING_CONTROL = /^eventbrite_marketing_opt_out_(organization|eventbrite)_([1-9][0-9]*)$/;
 const EVENTBRITE_ATTENDEE_LABELS = Object.freeze({ first_name: "First name", last_name: "Last name", email: "Email", confirm_email: "Confirm email" });
 const EVENTBRITE_CTA_LABELS = new Set(["Get tickets", "Reserve a spot"]);
 const EVENTBRITE_FRAME_TIMEOUT_MS = 30_000;
@@ -181,7 +182,7 @@ async function inspectEventbriteTicketFrame(frame, eventId) {
 async function inspectEventbriteAttendeeFrame(frame, eventId) {
   if (!frame || typeof frame.locator !== "function") return null;
   let locator;
-  try { locator = frame.locator("input, textarea, select, button, [data-testid]"); } catch { return null; }
+  try { locator = frame.locator("input, textarea, select, button, label, [data-testid]"); } catch { return null; }
   if (!locator || typeof locator.evaluateAll !== "function") return null;
   try {
     return await locator.evaluateAll((elements, { eventId: id }) => {
@@ -221,14 +222,35 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
         submittable: false,
       }));
       if (!controls.every((control) => control.completed === true)) return controls;
-      const marketingNames = new Set(["organizationMarketingOptIn", "ebMarketingOptIn"]);
-      const marketing = elements.filter((element) => marketingNames.has(nameOf(element)));
-      const marketingUnique = new Set(marketing.map((element) => nameOf(element))).size === marketing.length;
-      const marketingValid = marketingUnique && marketing.every((element) => tagOf(element) === "input" && typeOf(element) === "checkbox" && visibleOf(element) && enabledOf(element) && !requiredOf(element) && element.checked !== true && !element.hasAttribute?.("checked"));
+      const idOf = (element) => String((element && element.getAttribute && element.getAttribute("id")) || (element && element.id) || "");
+      const forOf = (element) => String((element && element.getAttribute && element.getAttribute("for")) || (element && element.htmlFor) || "");
+      const marketingSpecs = [{ key: "organization", name: "organizationMarketingOptIn" }, { key: "eventbrite", name: "ebMarketingOptIn" }];
+      const checkedMarketing = [];
+      let marketingValid = true;
+      for (const spec of marketingSpecs) {
+        const matches = elements.filter((element) => nameOf(element) === spec.name);
+        if (matches.length > 1) marketingValid = false;
+        for (const input of matches) {
+          if (tagOf(input) !== "input" || typeOf(input) !== "checkbox" || !visibleOf(input) || !enabledOf(input) || requiredOf(input)) marketingValid = false;
+          if (input.checked === true) {
+            const id = idOf(input);
+            const labels = elements.filter((element) => tagOf(element) === "label" && forOf(element) === id);
+            const visibleLabels = labels.filter(visibleOf);
+            if (!id || elements.filter((element) => tagOf(element) === "input" && idOf(element) === id).length !== 1 || labels.length !== 1 || visibleLabels.length !== 1 || !textOf(visibleLabels[0]) || !visibleLabels[0].dataset) marketingValid = false;
+            else checkedMarketing.push({ key: spec.key, label: visibleLabels[0] });
+          }
+        }
+      }
       const primaryCandidates = elements.filter((element) => String((element.getAttribute && element.getAttribute("data-testid")) || (element.dataset && element.dataset.testid) || "") === "eds-modal__primary-button");
       const primary = primaryCandidates.length === 1 ? primaryCandidates[0] : null;
       const primaryValid = Boolean(primary && tagOf(primary) === "button" && typeOf(primary) === "button" && visibleOf(primary) && enabledOf(primary) && textOf(primary) === "Register");
-      if (!marketingValid || !primaryValid) return controls;
+      if (!marketingValid) return controls;
+      for (const item of checkedMarketing) {
+        item.label.dataset.lmConnectorControl = `eventbrite_marketing_opt_out_${item.key}_${id}`;
+        controls.push({ control: `eventbrite_marketing_opt_out_${item.key}_${id}`, kind: "checkbox", label: textOf(item.label), required: true, completed: false, submittable: false });
+      }
+      if (checkedMarketing.length > 0) return controls;
+      if (!primaryValid) return controls;
       controls.push({ control: `eventbrite_attendee_register_${id}`, kind: "button", label: "Register", required: false, completed: false, submittable: true });
       return controls;
     }, { eventId });
@@ -279,9 +301,16 @@ function eventbriteAttendeeControlMeaning(control) {
 function eventbriteAttendeeControlsForEvent(controls, eventId) {
   return Array.isArray(controls) ? controls.filter((control) => eventbriteAttendeeControlMeaning(control) && EVENTBRITE_ATTENDEE_CONTROL.exec(String(control.control))[2] === String(eventId)) : [];
 }
+function eventbriteMarketingControlMeaning(control) {
+  return Boolean(control && EVENTBRITE_MARKETING_CONTROL.test(String(control.control || "")) && control.kind === "checkbox" && typeof control.label === "string" && control.label.trim() && control.required === true && control.completed === false && control.submittable === false);
+}
+function eventbriteMarketingControlsForEvent(controls, eventId) {
+  return Array.isArray(controls) ? controls.filter((control) => eventbriteMarketingControlMeaning(control) && EVENTBRITE_MARKETING_CONTROL.exec(String(control.control))[2] === String(eventId)) : [];
+}
 function isEventbriteAttendeeObservation(controls, eventId) {
-  const matching = eventbriteAttendeeControlsForEvent(controls, eventId);
-  return Array.isArray(controls) && controls.length === 4 && matching.length === 4 && new Set(matching.map((control) => control.control)).size === 4;
+  const matching = eventbriteAttendeeControlsForEvent(controls, eventId); const marketing = eventbriteMarketingControlsForEvent(controls, eventId);
+  return Array.isArray(controls) && matching.length === 4 && new Set(matching.map((control) => control.control)).size === 4
+    && matching.length + marketing.length === controls.length && new Set(marketing.map((control) => control.control)).size === marketing.length;
 }
 function isEventbriteAttendeeFill({ provider, page, candidate, control, controls = [] } = {}) {
   if (provider !== "eventbrite" || !eventbriteAttendeeControlMeaning(control) || control.completed !== false) return false;
@@ -292,6 +321,30 @@ function isEventbriteAttendeeFill({ provider, page, candidate, control, controls
   const match = EVENTBRITE_ATTENDEE_CONTROL.exec(control.control);
   const matching = eventbriteAttendeeControlsForEvent(controls, binding.eventId);
   return Boolean(match && match[2] === binding.eventId && isEventbriteAttendeeObservation(controls, binding.eventId) && matching.some((item) => item.control === control.control));
+}
+function isEventbriteMarketingOptOut({ provider, page, candidate, control, controls = [] } = {}) {
+  if (provider !== "eventbrite" || !eventbriteMarketingControlMeaning(control) || control.completed !== false) return false;
+  const binding = candidateEventbriteBinding(candidate);
+  let href = "";
+  try { href = String(typeof page?.url === "function" ? page.url() : ""); } catch { return false; }
+  if (!binding || href !== binding.canonicalUrl) return false;
+  const match = EVENTBRITE_MARKETING_CONTROL.exec(control.control);
+  const matching = eventbriteMarketingControlsForEvent(controls, binding.eventId);
+  return Boolean(match && match[2] === binding.eventId && isEventbriteAttendeeObservation(controls, binding.eventId) && matching.some((item) => item.control === control.control));
+}
+async function eventbriteMarketingInputChecked(frame, key, expected) {
+  const names = { organization: "organizationMarketingOptIn", eventbrite: "ebMarketingOptIn" };
+  const name = names[key];
+  if (!name || !frame || typeof frame.locator !== "function") return false;
+  let locator;
+  try { locator = frame.locator("input"); } catch { return false; }
+  if (!locator || typeof locator.evaluateAll !== "function") return false;
+  try {
+    return await locator.evaluateAll((elements, { target, checked }) => {
+      const matches = Array.isArray(elements) ? elements.filter((element) => String(element && element.tagName || "").toLowerCase() === "input" && String(element && element.type || "").toLowerCase() === "checkbox" && String((element && element.getAttribute && element.getAttribute("name")) || (element && element.name) || "") === target) : [];
+      return matches.length === 1 && matches[0].checked === checked;
+    }, { target: name, checked: expected }) === true;
+  } catch { return false; }
 }
 async function waitForEventbriteTicketStep(page, eventId, canonicalUrl) {
   const deadline = Date.now() + EVENTBRITE_FRAME_TIMEOUT_MS;
@@ -470,7 +523,10 @@ function safeControl(input) {
   return Object.freeze({ control, kind, label, required: input.required, completed, submittable, ...(question ? { question } : {}) });
 }
 
-function actionForControl(control) { const action = ACTIONS[control.kind]; return action ? Object.freeze({ purpose: action[0], method: action[1], control: control.control }) : null; }
+function actionForControl(control) {
+  if (eventbriteMarketingControlMeaning(control)) return Object.freeze({ purpose: "fill", method: "ax_uncheck", control: control.control });
+  const action = ACTIONS[control.kind]; return action ? Object.freeze({ purpose: action[0], method: action[1], control: control.control }) : null;
+}
 
 async function inspectPageControls(input = {}) {
   const page = input.page;
@@ -715,6 +771,10 @@ async function operatePageControl(input = {}) {
       if (typeof locator.check !== "function") return Object.freeze({ status: "failed" });
       await locator.check();
       break;
+    case "ax_uncheck":
+      if (typeof locator.click !== "function") return Object.freeze({ status: "failed" });
+      await locator.click();
+      break;
     case "ax_select":
       if (typeof locator.selectOption !== "function") return Object.freeze({ status: "failed" });
       await locator.selectOption(input.value);
@@ -945,15 +1005,18 @@ function createProductionBrowserHarness(options = {}) {
     if (!control) return Object.freeze({ status: "failed" });
     if (provider !== "eventbrite" && EVENTBRITE_TRIGGER_CONTROL.test(control.control)) return Object.freeze({ status: "failed" });
     if (provider !== "eventbrite" && EVENTBRITE_ATTENDEE_CONTROL.test(control.control)) return Object.freeze({ status: "failed" });
+    if (provider !== "eventbrite" && EVENTBRITE_MARKETING_CONTROL.test(control.control)) return Object.freeze({ status: "failed" });
     const doorkeeperModalTrigger = isDoorkeeperModalTrigger({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
     const eventbriteTrigger = isEventbriteCheckoutTrigger({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
     const eventbriteTicket = isEventbriteTicketRegister({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
     const eventbriteAttendee = isEventbriteAttendeeFill({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
-    const attendeeFrame = eventbriteAttendee ? registry.get(input.page)?.frame : null;
+    const eventbriteMarketing = isEventbriteMarketingOptOut({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
+    const eventbriteMarketingMatch = eventbriteMarketing ? EVENTBRITE_MARKETING_CONTROL.exec(control.control) : null;
+    const attendeeFrame = eventbriteAttendee || eventbriteMarketing ? registry.get(input.page)?.frame : null;
     const ticketFrame = eventbriteTicket ? eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) : null;
-    if (provider === "eventbrite" && !eventbriteTrigger && !eventbriteTicket && !eventbriteAttendee) return Object.freeze({ status: "failed" });
+    if (provider === "eventbrite" && !eventbriteTrigger && !eventbriteTicket && !eventbriteAttendee && !eventbriteMarketing) return Object.freeze({ status: "failed" });
     if (eventbriteTicket && !ticketFrame) return Object.freeze({ status: "failed" });
-    if (eventbriteAttendee && !attendeeFrame) return Object.freeze({ status: "failed" });
+    if ((eventbriteAttendee || eventbriteMarketing) && !attendeeFrame) return Object.freeze({ status: "failed" });
     const pendingRequiredAnswer = observation.controls.some((item) => ACTIONABLE_KINDS.has(item.kind) && item.required && !item.completed);
     if (control.kind === "button" && pendingRequiredAnswer) return Object.freeze({ status: "failed" });
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
@@ -962,6 +1025,7 @@ function createProductionBrowserHarness(options = {}) {
     if (eventbriteTrigger && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
     if (eventbriteTicket && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
     if (eventbriteAttendee && (input.action.purpose !== "fill" || input.action.method !== "ax_fill")) return Object.freeze({ status: "failed" });
+    if (eventbriteMarketing && (input.action.purpose !== "fill" || input.action.method !== "ax_uncheck")) return Object.freeze({ status: "failed" });
     if (provider === "connpass" && state === "connpass_join" && control.kind === "button" && control.label !== CONNPASS_FINAL_LABEL) return Object.freeze({ status: "failed" });
     if (provider === "doorkeeper" && control.kind === "button" && control.label !== DOORKEEPER_FINAL_LABEL) return Object.freeze({ status: "failed" });
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
@@ -979,6 +1043,13 @@ function createProductionBrowserHarness(options = {}) {
       const refreshed = await inspectEventbriteAttendeeFrame(attendeeFrame, eventbriteBinding.eventId);
       const selected = Array.isArray(refreshed) ? refreshed.find((item) => item.control === control.control) : null;
       if (!isEventbriteAttendeeObservation(refreshed, eventbriteBinding.eventId) || !selected || selected.completed !== false) return Object.freeze({ status: "failed" });
+      if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== attendeeFrame) return Object.freeze({ status: "failed" });
+    }
+    if (eventbriteMarketing) {
+      if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== attendeeFrame) return Object.freeze({ status: "failed" });
+      const refreshed = await inspectEventbriteAttendeeFrame(attendeeFrame, eventbriteBinding.eventId);
+      const selected = Array.isArray(refreshed) ? refreshed.find((item) => item.control === control.control) : null;
+      if (!isEventbriteAttendeeObservation(refreshed, eventbriteBinding.eventId) || !selected || selected.completed !== false || !await eventbriteMarketingInputChecked(attendeeFrame, eventbriteMarketingMatch[1], true)) return Object.freeze({ status: "failed" });
       if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== attendeeFrame) return Object.freeze({ status: "failed" });
     }
     const navigationWait = startPeatixConfirmWait(input.page, provider, control);
@@ -1025,6 +1096,16 @@ function createProductionBrowserHarness(options = {}) {
       const refreshed = await inspectEventbriteAttendeeFrame(attendeeFrame, eventbriteBinding.eventId);
       const selected = Array.isArray(refreshed) ? refreshed.find((item) => item.control === control.control) : null;
       if (!isEventbriteAttendeeObservation(refreshed, eventbriteBinding.eventId) || !selected || selected.completed !== true) return Object.freeze({ status: "failed" });
+      if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== attendeeFrame) return Object.freeze({ status: "failed" });
+      return Object.freeze({ status: "success" });
+    }
+    if (eventbriteMarketing) {
+      const currentFrame = eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl);
+      if (currentFrame !== attendeeFrame) return Object.freeze({ status: "failed" });
+      const refreshed = await inspectEventbriteAttendeeFrame(attendeeFrame, eventbriteBinding.eventId);
+      const selected = Array.isArray(refreshed) ? refreshed.find((item) => item.control === control.control) : null;
+      const frameControls = Array.isArray(refreshed) ? refreshed.filter((item) => item.control !== `eventbrite_attendee_register_${eventbriteBinding.eventId}`) : null;
+      if (!isEventbriteAttendeeObservation(frameControls, eventbriteBinding.eventId) || selected || !await eventbriteMarketingInputChecked(attendeeFrame, eventbriteMarketingMatch[1], false)) return Object.freeze({ status: "failed" });
       if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== attendeeFrame) return Object.freeze({ status: "failed" });
       return Object.freeze({ status: "success" });
     }
