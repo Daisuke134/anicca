@@ -42,3 +42,5 @@ GREEN:
 - syntax、`git diff --check`
 - fresh Sol review Critical 0 / Important 0
 - push後official wake exact 1回。registered candidateのpre-readback/evidence bundleまたはdirect-to-confirm→bundle、Meetup audit到達、Submit重複0を確認する。
+
+実装結果: Luna REDはfocused provider 23/24で、billing→8ms same-event confirmの新規fixtureだけが旧form-only waitの`form_navigation_failed`を再現した。GREEN commit `967ff73c3`はprovider/test 2 filesだけで、Next後のstrict same-event `form|confirm`をbounded waitし、form時だけ既存attendee block、confirm時はcommon confirm/Kana/validation/final/confirmed/canonical readbackへ合流する。billing停留、wrong event、auth、query/hash、credential/port、unrelatedはfinal 0。Luna focused 24/24・adjacent 158/158、Sol独立expanded 160/160、syntax/diff check PASS。workflow 1 failureは既知の日付依存。fresh Sol reviewはCritical 0 / Important 0で`ship`。実装/review中のbrowser/provider/Calendar/evidence/Telegram/state/schedule作用0。

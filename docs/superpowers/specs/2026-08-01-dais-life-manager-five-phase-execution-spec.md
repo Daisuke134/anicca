@@ -7241,7 +7241,13 @@ action差分はprovider direct 30,857ms後にもBrowser Harness 33,983msが1件�
 
 external click 0のtemporary owned pageで`/billing`をread-only測定するとsame-event `/confirm`へ遷移し、required field 0、confirm control exact 1、form-submit 0。targetをexact cleanupしbaseline page 1へ戻した。plan `2026-08-11-connector-peatix-direct-confirm-transition.md`を追加し、Peatix provider/test 2 filesだけでNext後のstrict same-event `form|confirm`をbounded waitする。confirm直行時はform blockを省略し、既存confirm identity/Kana/validation/final/confirmed/canonical readbackへ合流する。scheduleはunloaded、Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗352。これ以外の残TODO一覧は履歴）
+### O1B-25進捗353（Item 19M-D0d / direct-to-confirm ship）
+
+LunaへPeatix browser provider production/testの既存2 filesだけを所有させ、Next後にattendee formを省略してconfirmへ直行する実variantをSuperpowers TDDで修復した。REDはfocused 23/24で、same-event billing transient→8ms後same-event confirmの新規fixtureだけが旧form-only waitで`form_navigation_failed`になることを再現した。GREEN commit `967ff73c3`はNext click前からstrict same-event `form|confirm`を30秒bounded waitし、form時だけ既存attendee fill/form-submit、confirm時はそのblockを0にしてcommon confirm identity/Kana/validation/final/confirmed/canonical readbackへ合流する。billing停留、wrong event、auth、query/hash、credential/port、unrelatedはfinal click 0。
+
+Luna focused 24/24、minimal runner/production/evidence、Harness adjacent 136/136、Sol独立expanded 160/160、syntax/diff checkがPASS。workflow 1 failureは既知の日付依存。fresh Sol reviewはCritical 0 / Important 0で`ship`。review済みcommitをstable scheduled worktreeへfast-forwardしremoteへpushした。implementation/test/review中のbrowser、provider、Calendar、evidence、Telegram、state、launchd、schedule作用0。Item19 Meetupは未完。次はofficial wake exact 1回で、既登録Peatixのpre-readback/evidence bundleまたはdirect-to-confirm completion、同wake Meetup audit到達、duplicate Submit 0を検証する。
+
+### Active remaining TODO SSOT（進捗353。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
