@@ -7359,7 +7359,13 @@ Lunaがplan `2026-08-11-connector-doorkeeper-discovery-19d.md`に従い、Doorke
 
 Sol独立検証はfocused 15/15、syntax、diff check、exact 2-file ownershipがPASS。隣接Meetup/Peatix/Connpassは48/49で、唯一のPeatix date-sensitive fixtureは変更前base `cbfabd5bd`でも同じFAILを再現した。review済み3 commits `f6c7e3eb4`、`d0078f05c`、`fee320763`をstable `feature/connector-native-completion`へfast-forwardしremoteへpushした。4 Connector labelsはexact全UNLOADED、process 0。Doorkeeperはpublic discovery、strict JSON-LD eligibility、Calendar ordering、privacy-safe five-count audit callback、parent readbackまで完了したが、production router/Harness/native/audit persistence/live registrationは未接続。次の一件はこの既存workflowをproduction railへ最小配線するsliceであり、Item19 Doorkeeper checkboxとscheduleは未完のまま。
 
-### Active remaining TODO SSOT（進捗370。これ以外の残TODO一覧は履歴）
+### O1B-25進捗371（Item 19D-B1 / Doorkeeper production routing plan）
+
+Doorkeeper production wiringをPonytailで4つの閉じたsliceへ分割した。順序はB1 router/factory、B2 privacy-safe audit persistence、B3 native provider order、B4 Browser Harnessのmodal/form action。新agent/service/API/DB/queueを作らず、各sliceは既存seamのcopy-tweakとproduction/test 2 filesだけにする。
+
+先頭plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-routing-19d.md`は`connector-minimal-production.js`とmatching testだけをLuna ownershipとする。exact provider `doorkeeper`、workflow version `doorkeeper_registration_v1`、same page/Calendar、cache/direct/fallback/readbackを既存router mapへ追加し、factoryはreview済み`createDoorkeeperScriptFirstWorkflow`を生成する。audit methodは後続B2までoptional no-op、native orderとHarness allowlistは後続まで凍結するため、このslice単独のofficial wake reachabilityと外部作用は0。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗371。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
