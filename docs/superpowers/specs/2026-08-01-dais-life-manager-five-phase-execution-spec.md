@@ -7694,3 +7694,13 @@ Eventbrite durable auditはexact `discovered/within/eligible/calendar-free/selec
 ### O1B-25進捗425（Item 19E-D6a / Eventbrite bounded pagination plan）
 
 Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-pagination-19e.md`はEventbrite workflow production/test exact 2 files。supplied owned pageでbase、`?page=2`、`?page=3`をexact順に読み、各goto後URL exactと既存card selector/row contractを要求して全rowsを連結する。page4、新page/context/browser、pagination clickは0。途中navigation/read errorはpartial rowsを返さずexisting safe listing failure。production約15〜30 LOC、test約35〜70 LOC。detail/free/Tokyo/window/Calendar/readback/action変更0。TDD・fresh review・push後にofficial wake exact 1回で既登録page3 candidateを受け入れる。
+
+### O1B-25進捗426（Item 19E-D6a / Eventbrite bounded pagination ship）
+
+LunaがEventbrite workflow production/test exact 2 filesだけをSuperpowers TDD変更した。REDはcurrent readerがpage1だけを読み、3-page expectationとpage2 read failure rejectionの2件を失敗して19/21。GREEN commit `25b3fd3e7`はsame supplied pageでexact `[LIST_URL, LIST_URL?page=2, LIST_URL?page=3]`を順にgotoし、各final URL exactと既存selector/row shapeを検査、全3 pages成功後だけrowsを返す。URL drift/evaluate errorはpartial rows/detail reads 0でexisting safe listing codeへfail closed。page4、新page/context/browser、link clickは0。
+
+Eventbrite 21/21、minimal production 18/18、Harness 98/98、operations 11/11、Sol combined 148/148、syntax、diff、exact2-file scope PASS。fresh Sol review SHIP、Critical/Important 0。production +19 LOC、test +58 LOC、remote push完了。detail/free/Tokyo/window/Calendar/readback/action変更0。
+
+### O1B-25進捗427（Item 19E-D6 / paginated official live wake preflight）
+
+最新baselineはbundle 13、report 131、delivery 143、action 1404、Luma/Connpass/Peatix/Meetup/Doorkeeper/Eventbrite audits `132/55/48/4/4/1`、current unrelated CDP pages 5。pushed/clean/upstream、process 0、lock idle、target intersection 0、4 labels UNLOADED。official foreground `skills/connector/run.sh`をexact 1回実行し、page3既登録candidate `1997468673573`のpre-readback `registered`、final Submit 0、Calendar/evidence/Telegram `applied_bundle`またはexact safe blocker、positive report、cleanupを受け入れる。
