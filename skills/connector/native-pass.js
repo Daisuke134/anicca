@@ -14,7 +14,7 @@ const { runMinimalConnectorWake } = require(
 );
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
 
-const DEFAULT_PROVIDERS = Object.freeze(["luma", "connpass", "peatix", "meetup", "doorkeeper"]);
+const DEFAULT_PROVIDERS = Object.freeze(["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite"]);
 
 function unavailable() {
   throw new Error("Connector minimal pass unavailable");
