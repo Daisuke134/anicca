@@ -418,6 +418,64 @@ test("production provider router routes Doorkeeper through every action path wit
   assert.doesNotMatch(JSON.stringify({ replay, saved }), /Private Name|private@example\.test/);
 });
 
+test("production provider router routes Eventbrite through every closed path on one page without private cache metadata", async () => {
+  const calls = [], page = Object.freeze({ page_id: "owned-page-eventbrite" });
+  const calendar = Object.freeze([{ kind: "timed", start_at: "2026-08-11T10:00:00.000Z", end_at: "2026-08-11T11:00:00.000Z" }]);
+  const candidate = Object.freeze({ provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-tickets-1901", attendee_name: "Private Name", attendee_email: "private@example.test" });
+  const workflow = {
+    async discoverCandidates(input) { calls.push(["discover", input]); return [candidate]; },
+    async runDirectAction(input) { calls.push(["direct", input]); return { status: "failed", safe_reason: "eventbrite_direct_requires_harness" }; },
+    async readProviderState(input) { calls.push(["readback", input]); return { status: "registered" }; },
+  };
+  const actionCache = {
+    async replay(input) { calls.push(["cache", input]); return { status: "cache_miss" }; },
+    saveVerifiedRepair(input) { calls.push(["save", input]); return { status: "saved" }; },
+  };
+  const browserHarness = { async runFallback(input) { calls.push(["fallback", input]); return { status: "failed" }; } };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow, eventbriteWorkflow: workflow, actionCache, browserHarness,
+    async performAction() { return { status: "success" }; }, now: () => new Date("2026-08-11T08:30:00.000Z"),
+  });
+
+  assert.deepEqual(await router.discoverCandidates("eventbrite", calendar, page), [candidate]);
+  assert.deepEqual(await router.runCachedAction({ provider: "eventbrite", candidate, page }), { status: "cache_miss" });
+  assert.deepEqual(await router.runDirectAction({ provider: "eventbrite", candidate, page }), { status: "failed", safe_reason: "eventbrite_direct_requires_harness" });
+  assert.deepEqual(await router.runAgentFallback({ provider: "eventbrite", candidate, page, pageWebsocket: "ws://page", maxSteps: 1, expectedState: "registered_or_pending" }), { status: "failed" });
+  assert.deepEqual(await router.readProviderState({ provider: "eventbrite", candidate, page }), { status: "registered" });
+  assert.deepEqual(await router.saveRepairedActions({ provider: "eventbrite", candidate, page, providerState: { status: "registered" }, repairedActions: [{ purpose: "submit", method: "ax_click", control: "register" }] }), { status: "saved" });
+
+  const cached = calls.find(([name]) => name === "cache")[1];
+  assert.deepEqual({ provider: cached.provider, version: cached.workflowVersion, page: cached.page }, { provider: "eventbrite", version: "eventbrite_registration_v1", page });
+  assert.doesNotMatch(JSON.stringify(cached), /Private Name|private@example\.test/);
+  assert.equal(calls.find(([name]) => name === "discover")[1].page, page);
+  assert.equal(calls.find(([name]) => name === "discover")[1].calendar, calendar);
+  assert.equal(calls.find(([name]) => name === "fallback")[1].candidate, candidate);
+  const saved = calls.find(([name]) => name === "save")[1];
+  assert.deepEqual({ provider: saved.provider, version: saved.workflowVersion, pageState: saved.pageState }, { provider: "eventbrite", version: "eventbrite_registration_v1", pageState: "registration_page_v1" });
+  assert.doesNotMatch(JSON.stringify(saved), /Private Name|private@example\.test/);
+});
+
+test("official production factory injects Eventbrite on the supplied page without opening a browser rail", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-eventbrite-"));
+  const page = Object.freeze({ page_id: "injected-eventbrite-page" });
+  const calendar = Object.freeze([]);
+  const candidate = Object.freeze({ provider: "eventbrite", event_ref: "eventbrite-event://event/1902", canonical_url: "https://www.eventbrite.com/e/tokyo-free-tickets-1902" });
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  let discoveryInput; const railCalls = [];
+  const eventbriteWorkflow = { ...emptyWorkflow, async discoverCandidates(input) { discoveryInput = input; return [candidate]; } };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-eventbrite-1", calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence", calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } },
+      browserRail: { open() { railCalls.push("open"); }, navigate() { railCalls.push("navigate"); }, close() { railCalls.push("close"); } },
+      lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow, peatixWorkflow: emptyWorkflow, meetupWorkflow: emptyWorkflow, doorkeeperWorkflow: emptyWorkflow, eventbriteWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} }, browserHarness: { async runFallback() {}, async performAction() {} }, evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} },
+    });
+    assert.deepEqual(await dependencies.discoverCandidates("eventbrite", calendar, page), [candidate]);
+    assert.equal(discoveryInput.page, page); assert.equal(discoveryInput.calendar, calendar); assert.deepEqual(railCalls, []);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
 test("official production factory routes an injected Doorkeeper workflow without opening a browser rail", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-doorkeeper-"));
   const page = Object.freeze({ page_id: "injected-doorkeeper-page" }), calendar = Object.freeze([]);
