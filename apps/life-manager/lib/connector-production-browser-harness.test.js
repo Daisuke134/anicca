@@ -1794,29 +1794,39 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
   const stepper = makeEventbriteTicketElement({ testId: "eds-stepper", children: [decrease, quantity, increase] });
   const price = makeEventbriteTicketElement({ testId: "ticket-price__price", innerText: "Free" });
   const card = makeEventbriteTicketElement({ testId: "ticket-display-card-content-full-size", innerText: "General Admission", children: [stepper, price] });
-  const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
+  let primaryTestId = "eds-modal__primary-button";
+  const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register", getAttribute(name) {
+    if (name === "data-testid") return primaryTestId;
+    if (name === "aria-label") return "Register";
+    return null;
+  } });
   let ticketVisible = true; let operated = 0; let operatedFrame; let frameExtras = [];
   let frameInspectReads = 0; let mutationMode = "";
+  let pageHref = candidate.canonical_url; let frameHref = "https://www.eventbrite.com/checkout-external?eid=1901"; let pageFrames;
   const frameElements = () => {
     frameInspectReads += 1;
     if (mutationMode && frameInspectReads === 2) {
       if (mutationMode === "paid") card.innerText = "General Admission Free 1,000円";
       if (mutationMode === "duplicate") frameExtras = [makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: primary.dataset.testid, innerText: "Register" })];
       if (mutationMode === "disabled") primary.disabled = true;
+      if (mutationMode === "drift-page") pageHref = "https://www.eventbrite.com/e/tokyo-free-event-tickets-1902";
+      if (mutationMode === "drift-frame") pageFrames = [frame, frame];
+      if (mutationMode === "drift-eid") frameHref = "https://www.eventbrite.com/checkout-external?eid=1902";
     }
     return ticketVisible ? [card, stepper, quantity, increase, decrease, price, primary, ...frameExtras] : [primary];
   };
   const frame = {
-    url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; },
+    url() { return frameHref; },
     parentFrame() { return {}; },
     locator() { return { async evaluateAll(callback, context) { return callback(frameElements(), context); } }; },
   };
+  pageFrames = [frame];
   const page = {
-    url() { return candidate.canonical_url; },
-    frames() { return [frame]; },
+    url() { return pageHref; },
+    frames() { return pageFrames; },
     locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; },
   };
-  for (const marker of ["$10", "1,000円", "1000 円", "cash", "paid", "door fee", "minimum purchase", "会場払い", "当日払い", "有料"]) {
+  for (const marker of ["$10", "JPY 1,000", "USD 10", "1,000円", "1000 円", "1,000 JPY", "10 USD", "cash", "paid", "door fee", "minimum purchase", "会場払い", "当日払い", "有料"]) {
     card.innerText = `General Admission Free ${marker}`;
     assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], marker);
   }
@@ -1848,6 +1858,9 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
   assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], "computed-opacity-zero");
   primary.ownerDocument = ownerDocument;
   card.innerText = "General Admission Free";
+  primaryTestId = "EDS-MODAL__PRIMARY-BUTTON";
+  assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], "case-sensitive-primary-testid");
+  primaryTestId = "eds-modal__primary-button";
   primary.disabled = true;
   assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], "disabled-primary");
   primary.disabled = false;
@@ -1879,6 +1892,9 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
   frameExtras = [];
   const controls = await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url });
   assert.deepEqual(controls, [{ control: "eventbrite_ticket_register_1901", kind: "button", label: "Register", required: false, completed: false, submittable: true }]);
+  card.innerText = "General Admission Free — USD tickets only";
+  assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), controls, "currency-code-without-amount-is-not-paid");
+  card.innerText = "General Admission Free";
   const harness = createProductionBrowserHarness({
     lumaWorkflow: { async readProviderState() { throw new Error("readback must not run"); } },
     async inspectControls(input) { return inspectPageControls(input); },
@@ -1896,12 +1912,15 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
   assert.equal(operated, 1);
   assert.equal(operatedFrame, frame);
 
-  for (const mutation of ["paid", "duplicate", "disabled"]) {
+  for (const mutation of ["paid", "duplicate", "disabled", "drift-page", "drift-frame", "drift-eid"]) {
     ticketVisible = true;
     card.innerText = "General Admission Free";
     primary.disabled = false;
     frameExtras = [];
     frameInspectReads = 0;
+    pageHref = candidate.canonical_url;
+    frameHref = "https://www.eventbrite.com/checkout-external?eid=1901";
+    pageFrames = [frame];
     mutationMode = mutation;
     let mutationOperated = 0;
     const mutationHarness = createProductionBrowserHarness({
