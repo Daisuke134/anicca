@@ -7269,7 +7269,15 @@ Peatix candidate `5101994`はpre-submit swipe-ticket probeをprovider direct 373
 
 初期診断の「evidence開始前失敗」はstate実測で棄却した。既存Item 12 partial recoveryがこのexact境界を既に覆い、次wakeはprovider receipt、PNG、Calendar、message checkpointを検証・再利用してphotoとbundleだけを補完する。新code、test、schema、retry、provider actionは追加しない。次の一件はschedule-unloaded official recovery wake exact 1回でSubmit/Harness 0、Telegram photo positive ID、新Peatix `applied_bundle`、同wake Meetup audit到達または次exact safe boundaryを確認する。Item19 Meetupは未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗356。これ以外の残TODO一覧は履歴）
+### O1B-25進捗357（Item 19M-D0e / Peatix partial evidence live recovery成功）
+
+pushed HEAD `2b995f27e`、4 labels unloaded、process/active lease 0、page 1、baseline action/report/delivery/Peatix audit/Meetup audit/bundle `891/117/129/33/0/6`からofficial recovery wakeをexact 1回実行した。wake `wake-32bd9e6c2fc4cb6d5ae16f11`はexit 0、action `891→910`、report `117→118`、delivery `129→130`、Peatix audit `33→34`、bundle `6→7`、Meetup audit 0。terminalは`applied_bundle / applied_bundle`、failure count 0、positive every-wake Telegram ID `11431`。
+
+same-event `5101994`はpre-submit swipe-ticket probeをprovider direct 412msで`registered`と再読取し、Browser Harness 0、final registration click 0。既存provider receipt、16,738-byte PNG、Calendar readback、Telegram message ID `11422`を再利用し、不足していたTelegram photoだけpositive ID `11430`で補完した。新bundle `006c9804…`はmode 0600、exact schema、provider `peatix`、status `registered`、same Calendar ID、message/photo IDs、artifact SHAを同一lineageへ保存し、artifact再計算SHAがexact一致した。process/active lease 0、page 1、4 labels unloaded、Git clean/upstreamでcleanupした。
+
+このwakeはcreated bundleで正しく停止したためMeetup discoveryは次wakeへ継続する。次の一件はSSOT commit/push後のschedule-unloaded official second wake exact 1回。Peatix bundle reuseでprovider registration click 0を維持して同じowned railのMeetup auditへ到達し、既存Meetup account authの次exact境界を観測する。Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗357。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
