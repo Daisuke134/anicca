@@ -7673,4 +7673,4 @@ action historyはLuma discovery success、Connpass discovery failure、Peatix di
 
 ### O1B-25進捗421（Item 15/19E / consecutive failure reset plan）
 
-Plan `docs/superpowers/plans/2026-08-12-connector-consecutive-failure-reset.md`はrunner production/test exact 2 files。verified provider discovery成功時とverified registered bundle reuse時だけ`consecutiveFailures=0`へ戻す。候補内の個別navigate/readback/action successではresetせず、同一provider三候補failureと三provider discovery failureの既存circuit contractは維持する。production約2〜4 LOC、test約45〜80 LOC。new state/retry/wake/schedule作用0。TDD・fresh review・push完了後にofficial wake exact 1回だけ再実行する。
+Plan `docs/superpowers/plans/2026-08-12-connector-consecutive-failure-reset.md`はrunner production/test exact 2 files。verified registered bundleが`completion_disposition=reused`を返した時だけ`consecutiveFailures=0`へ戻す。provider discovery成功はcandidate outcome成功ではないためresetせず、候補内の個別navigate/readback/action successもresetしない。cross-providerを含む三candidate/discovery outcome failureの既存circuit contractは維持する。production約1〜2 LOC、test約25〜55 LOC。new state/retry/wake/schedule作用0。TDD・fresh review・push完了後にofficial wake exact 1回だけ再実行する。
