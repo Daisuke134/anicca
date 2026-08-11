@@ -256,6 +256,7 @@ test("Doorkeeper applies strict detail eligibility gates", async () => {
     ["paid-body", { body_text: "1,000円 会場払い" }, false],
     ["missing-submit", { controls: [] }, false],
     ["duplicate-submit", { controls: [{ text: "申し込む", visible: true }, { text: "申し込む", visible: true }] }, false],
+    ["visible-trigger-hidden-final-submit", { controls: [{ text: "申し込む", visible: true }, { text: "申し込む", visible: false }] }, true],
     ["hidden-submit", { controls: [{ text: "申し込む", visible: false }] }, false],
     ["cancelled", { body_text: "受付終了" }, false],
   ];
