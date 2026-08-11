@@ -1152,3 +1152,98 @@ test("Connpass final click fails bounded when provider readback never settles", 
     mock.timers.reset();
   }
 });
+
+test("Doorkeeper final submit requires exact identity and registered readback", async () => {
+  const candidate = { provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001" };
+  let registered = false; let clicks = 0; let reads = 0;
+  const page = { url() { return candidate.canonical_url; } };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    doorkeeperWorkflow: { async readProviderState() { reads += 1; return registered ? (reads === 1 ? { status: "pending" } : { status: "registered" }) : { status: "absent" }; } },
+    async inspectControls() { return [{ control: "doorkeeper_submit", kind: "button", label: "申し込む", required: false, submittable: true }]; },
+    async proposeAction() { return { purpose: "submit", method: "ax_click", control: "doorkeeper_submit" }; },
+    async operateControl() { clicks += 1; registered = true; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  const result = await harness.runFallback({ provider: "doorkeeper", candidate, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/DOORKEEPER1", maxSteps: 2, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "completed");
+  assert.equal(result.provider_state.status, "registered");
+  assert.equal(clicks, 1);
+  assert.ok(reads >= 1);
+});
+
+test("Doorkeeper final submit fails closed for identity, control, duplicate, and workflow variants", async () => {
+  const candidate = { provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001" };
+  const button = { control: "doorkeeper_submit", kind: "button", label: "申し込む", required: false, submittable: true };
+  const variants = [
+    ["wrong-ref", { candidate: { ...candidate, event_ref: "doorkeeper-event://event/1002" } }],
+    ["wrong-url", { href: "https://other.doorkeeper.jp/events/1001" }],
+    ["duplicate", { controls: [button, { ...button, control: "doorkeeper_submit_two" }] }],
+    ["non-button", { controls: [{ ...button, kind: "link", submittable: false }] }],
+    ["non-submittable", { controls: [{ ...button, submittable: false }] }],
+    ["wrong-label", { controls: [{ ...button, label: "申込む" }] }],
+    ["missing-workflow", { workflow: false }],
+  ];
+  for (const [name, variant] of variants) {
+    let operated = 0;
+    const config = { ...variant, controls: variant.controls || [button] };
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      ...(config.workflow === false ? {} : { doorkeeperWorkflow: { async readProviderState() { return { status: "registered" }; } } }),
+      async inspectControls() { return config.controls; },
+      async proposeAction() { return { purpose: "submit", method: "ax_click", control: config.controls[0].control }; },
+      async operateControl() { operated += 1; return { status: "success" }; },
+      async resolveValue() { return null; },
+    });
+    const result = await harness.performAction({ provider: "doorkeeper", candidate: config.candidate || candidate, page: { url() { return config.href || candidate.canonical_url; } }, action: { purpose: "submit", method: "ax_click", control: config.controls[0].control } });
+    assert.deepEqual(result, { status: "failed" }, name);
+    assert.equal(operated, 0, name);
+  }
+});
+
+test("Doorkeeper final readback is bounded when it never settles", async () => {
+  mock.timers.enable({ apis: ["Date", "setTimeout"] });
+  try {
+    let readStarted = false; let clicks = 0; let settled = false;
+    const candidate = { provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001" };
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      doorkeeperWorkflow: { async readProviderState() { readStarted = true; return new Promise(() => {}); } },
+      async inspectControls() { return [{ control: "doorkeeper_submit", kind: "button", label: "申し込む", required: false, submittable: true }]; },
+      async proposeAction() { return { purpose: "submit", method: "ax_click", control: "doorkeeper_submit" }; },
+      async operateControl() { clicks += 1; return { status: "success" }; },
+      async resolveValue() { return null; },
+    });
+    const resultPromise = harness.runFallback({ provider: "doorkeeper", candidate, page: { url() { return candidate.canonical_url; } }, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/DOORKEEPERNEVER1", maxSteps: 2, expectedState: "registered_or_pending" });
+    for (let attempt = 0; attempt < 100 && !readStarted; attempt += 1) await Promise.resolve();
+    assert.equal(readStarted, true);
+    resultPromise.then(() => { settled = true; });
+    mock.timers.tick(30_001);
+    for (let attempt = 0; attempt < 20 && !settled; attempt += 1) await Promise.resolve();
+    const result = await resultPromise;
+    assert.equal(result.status, "failed");
+    assert.equal(result.safe_reason, "effect_unknown");
+    assert.equal(clicks, 1);
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test("Doorkeeper ambiguous click still uses readback and never clicks twice", async () => {
+  const candidate = { provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001" };
+  for (const outcome of ["throw", "failed"]) {
+    let registered = false; let clicks = 0;
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      doorkeeperWorkflow: { async readProviderState() { return registered ? { status: "registered" } : { status: "absent" }; } },
+      async inspectControls() { return [{ control: "doorkeeper_submit", kind: "button", label: "申し込む", required: false, submittable: true }]; },
+      async proposeAction() { return { purpose: "submit", method: "ax_click", control: "doorkeeper_submit" }; },
+      async operateControl() { clicks += 1; registered = true; if (outcome === "throw") throw new Error("ambiguous click"); return { status: "failed" }; },
+      async resolveValue() { return null; },
+    });
+    const result = await harness.runFallback({ provider: "doorkeeper", candidate, page: { url() { return candidate.canonical_url; } }, pageWebsocket: `ws://127.0.0.1:9222/devtools/page/DOORKEEPER-${outcome}`, maxSteps: 2, expectedState: "registered_or_pending" });
+    assert.equal(result.status, "completed", outcome);
+    assert.equal(result.provider_state.status, "registered", outcome);
+    assert.equal(clicks, 1, outcome);
+  }
+});

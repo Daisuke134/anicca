@@ -11,7 +11,7 @@ const FILL = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check"]);
 const ACTIONS = { input: ["fill", "ax_fill"], textarea: ["fill", "ax_fill"], select: ["fill", "ax_select"], checkbox: ["fill", "ax_check"], radio: ["fill", "ax_check"], button: ["submit", "ax_click"], link: ["submit", "ax_click"] };
 const ACTIONABLE_KINDS = new Set(["input", "textarea", "select", "checkbox", "radio"]);
 const MUTATING_METHODS = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check", "ax_click", "coordinate_click", "keyboard_submit"]);
-const PROVIDERS = new Set(["luma", "connpass", "peatix", "meetup"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシー確認|主催者のプライバシーポリシーに同意する)$/ };
+const PROVIDERS = new Set(["luma", "connpass", "peatix", "meetup", "doorkeeper"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシー確認|主催者のプライバシーポリシーに同意する)$/ };
 const PEATIX_FORM_SUBMIT_LABEL = "確認画面へ進む";
 const PEATIX_CONFIRM_LABEL = "チケットを申し込む";
 const PEATIX_FORM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/form$/;
@@ -20,6 +20,9 @@ const CONNPASS_FINAL_LABEL = "申し込みを確定する";
 const CONNPASS_REFERRAL_QUESTION = "このイベントは何を見て知りましたか？";
 const CONNPASS_ONLINE_LABEL = /^オンライン視聴枠（YouTube） 無料(?: 参加者数 \d+人)?$/i;
 const CONNPASS_JOIN_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/([1-9][0-9]*)\/join\/$/;
+const DOORKEEPER_FINAL_LABEL = "申し込む";
+const DOORKEEPER_EVENT_REF = /^doorkeeper-event:\/\/event\/([1-9][0-9]*)$/;
+const DOORKEEPER_EVENT_URL = /^https:\/\/([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.doorkeeper\.jp\/events\/([1-9][0-9]*)$/;
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
 const FINAL_EFFECT_POLL_MS = 25;
 
@@ -36,6 +39,13 @@ function candidateMeetupEventId(candidate) {
   return match ? match[1] : "";
 }
 function candidateConnpassEventId(candidate) { const match = /^connpass-event:\/\/event\/([1-9][0-9]*)$/.exec(String(candidate && candidate.event_ref || "")); return match ? match[1] : ""; }
+function candidateDoorkeeperBinding(candidate) {
+  const ref = DOORKEEPER_EVENT_REF.exec(String(candidate && candidate.event_ref || ""));
+  const url = DOORKEEPER_EVENT_URL.exec(String(candidate && candidate.canonical_url || ""));
+  return ref && url && url[1] !== "www" && ref[1] === url[2]
+    ? Object.freeze({ eventId: ref[1], canonicalUrl: String(candidate.canonical_url) }) : null;
+}
+function candidateDoorkeeperEventId(candidate) { return candidateDoorkeeperBinding(candidate)?.eventId || ""; }
 function isConnpassJoin(provider, href) {
   return provider === "connpass" && CONNPASS_JOIN_URL.test(String(href || ""));
 }
@@ -92,23 +102,29 @@ function readStateWithinDeadline(page, candidate, readProviderState, deadline) {
   });
 }
 
-function startFinalEffectWait(page, provider, control, candidate, readProviderState, controls = []) {
+function startFinalEffectWait(page, provider, control, candidate, readProviderState, controls = [], acceptedStatuses) {
   if (!control || control.kind !== "button" || control.submittable !== true) return null;
   const peatixFinal = provider === "peatix" && control.label === PEATIX_CONFIRM_LABEL;
   const connpassFinal = provider === "connpass" && control.label === CONNPASS_FINAL_LABEL;
-  if (!peatixFinal && !connpassFinal) return null;
+  const doorkeeperFinal = provider === "doorkeeper" && control.label === DOORKEEPER_FINAL_LABEL;
+  if (!peatixFinal && !connpassFinal && !doorkeeperFinal) return null;
   let href = "";
   try { href = String(typeof page.url === "function" ? page.url() : ""); } catch { href = ""; }
   if (peatixFinal) {
     const eventId = candidatePeatixEventId(candidate);
     const confirmMatch = PEATIX_CONFIRM_URL.exec(href);
     if (!eventId || !confirmMatch || confirmMatch[1] !== eventId || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
-  } else {
+  } else if (connpassFinal) {
     const eventId = candidateConnpassEventId(candidate);
     const joinMatch = CONNPASS_JOIN_URL.exec(href);
     const matchingControls = Array.isArray(controls) ? controls.filter((item) => item && item.kind === "button" && item.submittable === true && item.label === CONNPASS_FINAL_LABEL) : [];
     if (!eventId || !joinMatch || joinMatch[1] !== eventId || matchingControls.length !== 1 || matchingControls[0].control !== control.control || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
+  } else {
+    const binding = candidateDoorkeeperBinding(candidate);
+    const matchingControls = Array.isArray(controls) ? controls.filter((item) => item && item.kind === "button" && item.submittable === true && item.label === DOORKEEPER_FINAL_LABEL) : [];
+    if (!binding || href !== binding.canonicalUrl || matchingControls.length !== 1 || matchingControls[0].control !== control.control || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
   }
+  const statuses = Array.isArray(acceptedStatuses) && acceptedStatuses.length ? acceptedStatuses : ["registered", "pending"];
   let releaseClick;
   let cancelled = false;
   const clickStarted = new Promise((resolve) => { releaseClick = resolve; });
@@ -118,7 +134,7 @@ function startFinalEffectWait(page, provider, control, candidate, readProviderSt
     while (!cancelled) {
       const readback = await readStateWithinDeadline(page, candidate, readProviderState, deadline);
       if (readback.expired) return { status: "unknown" };
-      if (readback.state && ["registered", "pending"].includes(readback.state.status)) {
+      if (readback.state && statuses.includes(readback.state.status)) {
         return { status: readback.state.status, providerState: readback.state };
       }
       const remaining = deadline - Date.now();
@@ -130,10 +146,11 @@ function startFinalEffectWait(page, provider, control, candidate, readProviderSt
   return { markClicked: releaseClick, cancel() { cancelled = true; releaseClick(); }, promise };
 }
 
-async function settleFinalEffect(wait) {
+async function settleFinalEffect(wait, acceptedStatuses) {
   let settled = null;
   try { settled = await wait.promise; } catch { settled = null; }
-  if (!settled || !["registered", "pending"].includes(settled.status)) {
+  const statuses = Array.isArray(acceptedStatuses) && acceptedStatuses.length ? acceptedStatuses : ["registered", "pending"];
+  if (!settled || !statuses.includes(settled.status)) {
     return Object.freeze({ status: "failed", safe_reason: "effect_unknown" });
   }
   const providerState = settled.providerState && typeof settled.providerState === "object" && !Array.isArray(settled.providerState)
@@ -463,6 +480,7 @@ function createProductionBrowserHarness(options = {}) {
   const connpassWorkflow = options.connpassWorkflow;
   const peatixWorkflow = options.peatixWorkflow;
   const meetupWorkflow = options.meetupWorkflow;
+  const doorkeeperWorkflow = options.doorkeeperWorkflow;
   const inspectControls = options.inspectControls;
   const proposeAction = options.proposeAction;
   const operateControl = options.operateControl;
@@ -472,13 +490,14 @@ function createProductionBrowserHarness(options = {}) {
     || (connpassWorkflow != null && typeof connpassWorkflow.readProviderState !== "function")
     || (peatixWorkflow != null && typeof peatixWorkflow.readProviderState !== "function")
     || (meetupWorkflow != null && typeof meetupWorkflow.readProviderState !== "function")
+    || (doorkeeperWorkflow != null && typeof doorkeeperWorkflow.readProviderState !== "function")
     || typeof inspectControls !== "function" || typeof proposeAction !== "function"
     || typeof operateControl !== "function" || typeof resolveValue !== "function"
   ) invalid();
   const registry = new WeakMap();
 
   async function observed(page, provider, candidate = null) {
-    const eventId = candidatePeatixEventId(candidate) || candidateMeetupEventId(candidate);
+    const eventId = candidatePeatixEventId(candidate) || candidateMeetupEventId(candidate) || candidateDoorkeeperEventId(candidate);
     const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     const connpassJoin = isConnpassJoin(provider, href);
     const values = await inspectControls({ page, provider, event_id: eventId || undefined, connpass_join: connpassJoin });
@@ -497,7 +516,9 @@ function createProductionBrowserHarness(options = {}) {
     if (!input.page || !input.action || !CONTROL.test(String(input.action.control || ""))) invalid();
     const provider = input.provider == null ? "luma" : String(input.provider);
     if (!PROVIDERS.has(provider)) invalid();
-    const eventId = candidatePeatixEventId(input.candidate) || candidateMeetupEventId(input.candidate) || String(input.event_id || "");
+    const doorkeeperBinding = provider === "doorkeeper" ? candidateDoorkeeperBinding(input.candidate) : null;
+    if (provider === "doorkeeper" && !doorkeeperBinding) return Object.freeze({ status: "failed" });
+    const eventId = candidatePeatixEventId(input.candidate) || candidateMeetupEventId(input.candidate) || candidateDoorkeeperEventId(input.candidate) || String(input.event_id || "");
     const cached = registry.get(input.page);
     const observation = cached && cached.provider === provider && cached.eventId === eventId ? cached.observation : await observed(input.page, provider, input.candidate);
     const currentHref = (() => { try { return String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } })();
@@ -509,6 +530,7 @@ function createProductionBrowserHarness(options = {}) {
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
     if (control.kind === "link" || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
     if (provider === "connpass" && state === "connpass_join" && control.kind === "button" && control.label !== CONNPASS_FINAL_LABEL) return Object.freeze({ status: "failed" });
+    if (provider === "doorkeeper" && (control.kind !== "button" || control.label !== DOORKEEPER_FINAL_LABEL)) return Object.freeze({ status: "failed" });
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
     let value = null;
     if (FILL.has(action.method)) {
@@ -521,14 +543,17 @@ function createProductionBrowserHarness(options = {}) {
     }
     const navigationWait = startPeatixConfirmWait(input.page, provider, control);
     if (navigationWait && navigationWait.unavailable) return Object.freeze({ status: "failed" });
+    const finalEffectStatuses = provider === "doorkeeper" ? ["registered"] : undefined;
     const finalEffectWait = startFinalEffectWait(
       input.page,
       provider,
       control,
       input.candidate,
       provider === "connpass" && connpassWorkflow ? connpassWorkflow.readProviderState
-        : provider === "peatix" && peatixWorkflow ? peatixWorkflow.readProviderState : null,
+        : provider === "peatix" && peatixWorkflow ? peatixWorkflow.readProviderState
+          : provider === "doorkeeper" && doorkeeperWorkflow ? doorkeeperWorkflow.readProviderState : null,
       observation.controls,
+      finalEffectStatuses,
     );
     if (finalEffectWait && finalEffectWait.unavailable) return Object.freeze({ status: "failed" });
     if (finalEffectWait) finalEffectWait.markClicked();
@@ -541,24 +566,28 @@ function createProductionBrowserHarness(options = {}) {
         value,
       });
     } catch {
-      if (finalEffectWait) return settleFinalEffect(finalEffectWait);
+      if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
       return Object.freeze({ status: "failed" });
     }
     if (!result || result.status !== "success") {
-      if (finalEffectWait) return settleFinalEffect(finalEffectWait);
+      if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
       return Object.freeze({ status: "failed" });
     }
     if (navigationWait && !(await navigationWait.promise)) return Object.freeze({ status: "failed" });
-    if (finalEffectWait) return settleFinalEffect(finalEffectWait);
+    if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
     return Object.freeze({ status: "success" });
   }
 
   async function runFallback(input = {}) {
     if (!PROVIDERS.has(input.provider) || !input.candidate) invalid();
-    const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow, meetup: meetupWorkflow }[input.provider];
-    if (!workflow || typeof workflow.readProviderState !== "function") invalid();
+    const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow, meetup: meetupWorkflow, doorkeeper: doorkeeperWorkflow }[input.provider];
+    if (!workflow || typeof workflow.readProviderState !== "function") {
+      if (input.provider === "doorkeeper") return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([]) });
+      invalid();
+    }
     const seenMutations = new Set();
     let connpassSubmitAttempted = false;
+    let doorkeeperSubmitAttempted = false;
     let ambiguousEffect = false;
     let finalEffectProviderState = null;
     const adapter = createBrowserHarnessAdapter({
@@ -572,6 +601,13 @@ function createProductionBrowserHarness(options = {}) {
             return Object.freeze({ status: "failed", safe_reason: "effect_unknown" });
           }
           connpassSubmitAttempted = true;
+        }
+        if (input.provider === "doorkeeper" && selected.purpose === "submit") {
+          if (doorkeeperSubmitAttempted) {
+            ambiguousEffect = true;
+            return Object.freeze({ status: "failed", safe_reason: "effect_unknown" });
+          }
+          doorkeeperSubmitAttempted = true;
         }
         if (signature && seenMutations.has(signature)) return Object.freeze({ status: "failed" });
         const result = await performAction({ ...action, provider: input.provider, candidate: input.candidate });
