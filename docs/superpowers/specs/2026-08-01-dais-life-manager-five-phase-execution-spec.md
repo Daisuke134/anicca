@@ -7980,3 +7980,9 @@ Node CommonJS公式docs、英語provider-router、 日本語dependency-injection
 Lunaがproduction factory/test exact 2 filesをSuperpowers TDD実装し、code commit `cfbf7455a`をpushした。既存explicit branchesへ`createTechPlayDiscoveryWorkflow`、cache identity `techplay_registration_v1`、optional 3-method validation、router six operationsを追加し、default factoryは同一TECH PLAY workflowをaudit callback付きでBrowser Harnessとrouterへ注入する。private profile追加、新registry/framework/packageは0で、unknown provider fail-closedを維持した。
 
 REDはTECH PLAY未配線でfocused 4 fail。GREENはrouter 6経路＋private-free cache metadata、injected discovery/no rail、default audit callback、default Harness exact final＋registered readback＋proposer 0を証明した。cache version mutationでnamed router testがFAILし、復元後production 22/22、Harness 147/147、TECH PLAY workflow 16/16、adapter 4/4、operations 12/12、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0で`ship`。evidence、Calendar、native order、launchd、実applicationは未実行。Item19実bundleは未完。
+
+### O1B-25進捗467（Item 19F-D11 / TECH PLAY immutable evidence store plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-evidence-store-19f.md`はgeneric browser evidence store/test exact 2 files。既存`createBrowserProviderEvidenceStore`へprovider `techplay`、exact positive event ref、exact 64 lowercase hex receipt ref、provider collision messageだけを渡すthin wrapperに限定する。production約8〜12 LOC、test約35〜60 LOC。
+
+Node公式atomic file API、英語immutable provider receipt、日本語tamper-evident SHA-256の3検索と既存Eventbrite/Doorkeeper wrapperを照合し、generic store変更や新packageは不要と判断。factory、Calendar、applied-bundle chain、native order、launchd、実applicationは変更0。Item19実bundleは未完。
