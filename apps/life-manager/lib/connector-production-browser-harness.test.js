@@ -1805,10 +1805,10 @@ function makeEventbriteTicketElement({ tagName = "DIV", type = "", testId = "", 
   return element;
 }
 
-function makeEventbriteMarketingHandle(element, uncheck) {
+function makeEventbriteMarketingHandle(element, press) {
   return {
     async evaluate(callback, context) { return callback(element, context); },
-    async uncheck(options) { return uncheck(options); },
+    async press(key) { return press(key); },
   };
 }
 
@@ -2175,30 +2175,30 @@ test("Eventbrite marketing actions require the exact fixed semantic label", asyn
 
     const marketing = makeEventbriteTicketElement({ tagName: "INPUT", type: "checkbox", name: token.includes("_eventbrite_") ? "ebMarketingOptIn" : "organizationMarketingOptIn", id: "org-opt-in", required: false, checked: true });
     marketing.dataset.lmConnectorControl = token;
-    let unchecks = 0;
+    let presses = 0;
     const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
       const exact = /^input\[data-lm-connector-control="([^"]+)"\]\[name="([^"]+)"\]$/.exec(selector);
       if (!exact) return { async count() { return 0; } };
-      return { async elementHandles() { return [makeEventbriteMarketingHandle(marketing, () => { unchecks += 1; marketing.checked = false; })]; }, async count() { return exact[1] === token ? 1 : 0; } };
+      return { async elementHandles() { return [makeEventbriteMarketingHandle(marketing, (key) => { assert.equal(key, "Space"); presses += 1; marketing.checked = false; })]; }, async count() { return exact[1] === token ? 1 : 0; } };
     } };
     const direct = await operatePageControl({ page: { url() { return candidate.canonical_url; } }, frame, control: { control: token, kind: "checkbox", label, required: true, completed: false, submittable: false }, action: { purpose: "fill", method: "ax_uncheck", control: token } });
-    assert.equal(direct.status, "failed", `${label}-direct`); assert.equal(unchecks, 0, `${label}-uncheck`);
+    assert.equal(direct.status, "failed", `${label}-direct`); assert.equal(presses, 0, `${label}-press`);
   }
 });
 
-test("Eventbrite marketing opt-out clicks the verified input once without resolving a value", async () => {
+test("Eventbrite marketing opt-out presses Space on the verified input once without resolving a value", async () => {
   const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
   const field = (name, type = "text") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value: "complete" });
   const marketing = makeEventbriteTicketElement({ tagName: "INPUT", type: "checkbox", name: "ebMarketingOptIn", id: "eb-opt-in", required: false, checked: true, hasAttribute(name) { return name === "checked"; } });
   const label = makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Event updates", getAttribute(name) { return name === "for" ? "eb-opt-in" : null; } });
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, label, primary];
-  let inputClicks = 0; let labelClicks = 0; let registerClicks = 0; let operateCalls = 0; let resolveCalls = 0;
-  marketing.click = () => { inputClicks += 1; marketing.checked = false; };
+  let presses = 0; let labelClicks = 0; let registerClicks = 0; let operateCalls = 0; let resolveCalls = 0;
+  marketing.click = () => { presses += 1; marketing.checked = false; };
   const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
     const exact = /^input\[data-lm-connector-control="([^"]+)"\]\[name="([^"]+)"\]$/.exec(selector);
     if (exact) {
-      const handle = makeEventbriteMarketingHandle(marketing, (options) => { assert.deepEqual(options, { force: true }); inputClicks += 1; marketing.checked = false; });
+      const handle = makeEventbriteMarketingHandle(marketing, (key) => { assert.equal(key, "Space"); presses += 1; marketing.checked = false; });
       return { async elementHandles() { return [handle]; }, async count() { return exact[1] === "eventbrite_marketing_opt_out_eventbrite_1901" && exact[2] === "ebMarketingOptIn" ? 1 : 0; } };
     }
     const token = /^\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; const labelToken = /^label\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; const compoundToken = /^label\[data-lm-connector-control="([^"]+)"\]\[for="([^"]+)"\]$/.exec(selector)?.[1];
@@ -2214,7 +2214,7 @@ test("Eventbrite marketing opt-out clicks the verified input once without resolv
     async resolveValue() { resolveCalls += 1; return "unexpected"; },
   });
   assert.deepEqual(await harness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "fill", method: "ax_uncheck", control: "eventbrite_marketing_opt_out_eventbrite_1901" } }), { status: "success" });
-  assert.equal(inputClicks, 1); assert.equal(labelClicks, 0); assert.equal(registerClicks, 0); assert.equal(operateCalls, 1); assert.equal(resolveCalls, 0); assert.equal(marketing.checked, false); assert.equal(primary.dataset.lmConnectorControl, undefined);
+  assert.equal(presses, 1); assert.equal(labelClicks, 0); assert.equal(registerClicks, 0); assert.equal(operateCalls, 1); assert.equal(resolveCalls, 0); assert.equal(marketing.checked, false); assert.equal(primary.dataset.lmConnectorControl, undefined);
 });
 
 test("Eventbrite marketing opt-out and final paths fail closed for DOM and action variants", async () => {
@@ -2226,9 +2226,9 @@ test("Eventbrite marketing opt-out and final paths fail closed for DOM and actio
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   const base = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, label, primary];
   const optToken = "eventbrite_marketing_opt_out_organization_1901"; const finalToken = "eventbrite_attendee_register_1901"; let elements = [...base];
-  let mode = ""; let frameReads = 0; let pageFrameReads = 0; let pageHref = candidate.canonical_url; let frameHref = "https://www.eventbrite.com/checkout-external?eid=1901"; let pageFrames; let locatorCount = 1; let clicks = 0; let inputClicks = 0; let operates = 0; let resolves = 0;
+  let mode = ""; let frameReads = 0; let pageFrameReads = 0; let pageHref = candidate.canonical_url; let frameHref = "https://www.eventbrite.com/checkout-external?eid=1901"; let pageFrames; let locatorCount = 1; let clicks = 0; let presses = 0; let operates = 0; let resolves = 0;
   marketing.click = () => {
-    inputClicks += 1;
+    presses += 1;
     if (mode === "click-error") throw new Error("click failed");
     if (mode === "hidden-postcondition") { marketing.hidden = true; return; }
     if (mode !== "postcondition") marketing.checked = false;
@@ -2237,7 +2237,8 @@ test("Eventbrite marketing opt-out and final paths fail closed for DOM and actio
   const frame = { url() { return frameHref; }, parentFrame() { return {}; }, locator(selector) {
     const exact = /^input\[data-lm-connector-control="([^"]+)"\]\[name="([^"]+)"\]$/.exec(selector);
     if (exact) {
-      const handle = makeEventbriteMarketingHandle(marketing, (options) => { assert.deepEqual(options, { force: true }); inputClicks += 1; if (mode === "click-error") throw new Error("uncheck failed"); if (mode === "hidden-postcondition") { marketing.hidden = true; return; } if (mode !== "postcondition") marketing.checked = false; });
+      const handle = makeEventbriteMarketingHandle(marketing, (key) => { assert.equal(key, "Space"); presses += 1; if (mode === "press-error") throw new Error("press failed"); if (mode === "hidden-postcondition") { marketing.hidden = true; return; } if (mode !== "postcondition") marketing.checked = false; });
+      if (mode === "missing-press") delete handle.press;
       return { async elementHandles() { return [handle]; }, async count() { return exact[1] === optToken && exact[2] === "organizationMarketingOptIn" ? locatorCount : 0; } };
     }
     const token = /^\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; const labelToken = /^label\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; const compoundToken = /^label\[data-lm-connector-control="([^"]+)"\]\[for="([^"]+)"\]$/.exec(selector)?.[1];
@@ -2247,7 +2248,7 @@ test("Eventbrite marketing opt-out and final paths fail closed for DOM and actio
   pageFrames = [frame];
   const page = { url() { return pageHref; }, frames() { pageFrameReads += 1; if (pageFrameReads === 3 && mode === "page-drift") pageHref = "https://www.eventbrite.com/e/tokyo-free-event-tickets-1902"; if (pageFrameReads === 3 && mode === "eid-drift") frameHref = "https://www.eventbrite.com/checkout-external?eid=1902"; if (pageFrameReads === 3 && mode === "frame-drift") return [replacementFrame]; return pageFrames; }, locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; } };
   const inspect = () => inspectPageControls({ provider: "eventbrite", page, event_id: "1901", canonical_url: candidate.canonical_url });
-  const reset = () => { elements = [...base]; marketing.tagName = "INPUT"; marketing.type = "checkbox"; marketing.checked = true; marketing.required = false; marketing.hidden = false; marketing.isConnected = true; marketing.disabled = false; labelFor = "org-opt-in"; label.hidden = false; label.isConnected = true; primary.dataset.lmConnectorControl = undefined; pageHref = candidate.canonical_url; frameHref = "https://www.eventbrite.com/checkout-external?eid=1901"; pageFrames = [frame]; pageFrameReads = 0; frameReads = 0; locatorCount = 1; clicks = 0; inputClicks = 0; operates = 0; resolves = 0; mode = ""; };
+  const reset = () => { elements = [...base]; marketing.tagName = "INPUT"; marketing.type = "checkbox"; marketing.checked = true; marketing.required = false; marketing.hidden = false; marketing.isConnected = true; marketing.disabled = false; labelFor = "org-opt-in"; label.hidden = false; label.isConnected = true; primary.dataset.lmConnectorControl = undefined; pageHref = candidate.canonical_url; frameHref = "https://www.eventbrite.com/checkout-external?eid=1901"; pageFrames = [frame]; pageFrameReads = 0; frameReads = 0; locatorCount = 1; clicks = 0; presses = 0; operates = 0; resolves = 0; mode = ""; };
   for (const [name, mutate, expectedOpt, expectedFinal] of [
     ["unchecked", () => { marketing.checked = false; }, false, true], ["checked2", () => { const eb = makeEventbriteTicketElement({ tagName: "INPUT", type: "checkbox", name: "ebMarketingOptIn", id: "eb-opt-in", required: false, checked: true }); const ebLabel = makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Event updates", getAttribute(key) { return key === "for" ? "eb-opt-in" : null; } }); elements.push(eb, ebLabel); }, true, false],
     ["duplicate", () => { elements.push({ ...marketing }); }, false, false], ["raw-id-other-tag", () => { elements.push(makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", id: "org-opt-in" })); }, false, false], ["wrong-tag", () => { marketing.tagName = "DIV"; }, false, false], ["wrong-type", () => { marketing.type = "text"; }, false, false], ["required", () => { marketing.required = true; }, false, false], ["hidden", () => { marketing.hidden = true; }, false, false], ["detached", () => { marketing.isConnected = false; }, false, false], ["disabled", () => { marketing.disabled = true; }, false, false],
@@ -2256,11 +2257,11 @@ test("Eventbrite marketing opt-out and final paths fail closed for DOM and actio
   }
   reset(); elements = [...base, ...Array.from({ length: 94 }, (_, index) => makeEventbriteTicketElement({ tagName: "INPUT", type: "text", name: `extra-${index}` }))]; assert.deepEqual(await inspect(), [], "over-101");
   const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { throw new Error("marketing readback must not run"); } }, async inspectControls(input) { return inspectPageControls(input); }, async proposeAction() { return { control: optToken }; }, async operateControl(input) { operates += 1; return operatePageControl(input); }, async resolveValue() { resolves += 1; return "unexpected"; } });
-  for (const [name, action, mutate, expectedOperate, expectedClicks, expectedInputClicks] of [
-    ["wrong-action", { purpose: "fill", method: "ax_click", control: optToken }, null, 0, 0, 0], ["page-drift", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "page-drift"; }, 0, 0, 0], ["frame-drift", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "frame-drift"; }, 0, 0, 0], ["eid-drift", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "eid-drift"; }, 0, 0, 0], ["dom-drift", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "dom-drift"; }, 0, 0, 0], ["locator0", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { locatorCount = 0; mode = "locator0"; }, 1, 0, 0], ["locator2", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { locatorCount = 2; mode = "locator2"; }, 1, 0, 0], ["click-error", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "click-error"; }, 1, 0, 1], ["postcondition", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "postcondition"; }, 1, 0, 1], ["hidden-postcondition", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "hidden-postcondition"; }, 1, 0, 1],
+  for (const [name, action, mutate, expectedOperate, expectedClicks, expectedPresses] of [
+    ["wrong-action", { purpose: "fill", method: "ax_click", control: optToken }, null, 0, 0, 0], ["page-drift", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "page-drift"; }, 0, 0, 0], ["frame-drift", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "frame-drift"; }, 0, 0, 0], ["eid-drift", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "eid-drift"; }, 0, 0, 0], ["dom-drift", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "dom-drift"; }, 0, 0, 0], ["locator0", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { locatorCount = 0; mode = "locator0"; }, 1, 0, 0], ["locator2", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { locatorCount = 2; mode = "locator2"; }, 1, 0, 0], ["missing-press", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "missing-press"; }, 1, 0, 0], ["press-error", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "press-error"; }, 1, 0, 1], ["postcondition", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "postcondition"; }, 1, 0, 1], ["hidden-postcondition", { purpose: "fill", method: "ax_uncheck", control: optToken }, () => { mode = "hidden-postcondition"; }, 1, 0, 1],
     ["final-action", { purpose: "submit", method: "ax_click", control: finalToken }, () => { marketing.checked = false; }, 0, 0, 0],
   ]) {
-    reset(); mutate?.(); const result = await harness.performAction({ provider: "eventbrite", candidate, page, action }); assert.deepEqual(result, { status: "failed" }, name); assert.equal(operates, expectedOperate, `${name}-operate`); assert.equal(clicks, expectedClicks, `${name}-label`); assert.equal(inputClicks, expectedInputClicks, `${name}-input`); assert.equal(resolves, 0, `${name}-resolve`);
+    reset(); mutate?.(); const result = await harness.performAction({ provider: "eventbrite", candidate, page, action }); assert.deepEqual(result, { status: "failed" }, name); assert.equal(operates, expectedOperate, `${name}-operate`); assert.equal(clicks, expectedClicks, `${name}-label`); assert.equal(presses, expectedPresses, `${name}-press`); assert.equal(resolves, 0, `${name}-resolve`);
   }
 });
 
@@ -2271,14 +2272,14 @@ test("Eventbrite marketing token swap cannot activate the Register button", asyn
   const label = makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Organization updates", getAttribute(name) { return name === "for" ? "org-opt-in" : null; } });
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, label, primary];
-  const optToken = "eventbrite_marketing_opt_out_organization_1901"; let registerClicks = 0; let inputClicks = 0; let labelClicks = 0; let operateCalls = 0;
-  marketing.click = () => { inputClicks += 1; marketing.checked = false; };
+  const optToken = "eventbrite_marketing_opt_out_organization_1901"; let registerClicks = 0; let presses = 0; let labelClicks = 0; let operateCalls = 0;
+  marketing.click = () => { presses += 1; marketing.checked = false; };
   const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
     const exact = /^input\[data-lm-connector-control="([^"]+)"\]\[name="([^"]+)"\]$/.exec(selector);
     if (exact) {
       marketing.dataset.lmConnectorControl = undefined;
       primary.dataset.lmConnectorControl = optToken;
-      const handle = makeEventbriteMarketingHandle(marketing, () => { inputClicks += 1; marketing.checked = false; });
+      const handle = makeEventbriteMarketingHandle(marketing, (key) => { assert.equal(key, "Space"); presses += 1; marketing.checked = false; });
       return { async elementHandles() { return [handle]; }, async count() { return 0; } };
     }
     const token = /^\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; const labelToken = /^label\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; const compoundToken = /^label\[data-lm-connector-control="([^"]+)"\]\[for="([^"]+)"\]$/.exec(selector)?.[1];
@@ -2297,7 +2298,7 @@ test("Eventbrite marketing token swap cannot activate the Register button", asyn
     async operateControl(input) { operateCalls += 1; return operatePageControl(input); }, async resolveValue() { throw new Error("resolver must not run"); },
   });
   assert.deepEqual(await harness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "fill", method: "ax_uncheck", control: optToken } }), { status: "failed" });
-  assert.equal(operateCalls, 1); assert.equal(inputClicks, 0); assert.equal(labelClicks, 0); assert.equal(registerClicks, 0);
+  assert.equal(operateCalls, 1); assert.equal(presses, 0); assert.equal(labelClicks, 0); assert.equal(registerClicks, 0);
 });
 
 test("Eventbrite marketing final locator fails closed for label and input drift", async () => {
@@ -2308,8 +2309,8 @@ test("Eventbrite marketing final locator fails closed for label and input drift"
   const registerLabel = makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Register copy", getAttribute(name) { return name === "for" ? "register" : null; } });
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, label, registerLabel, primary];
-  const optToken = "eventbrite_marketing_opt_out_organization_1901"; let mode = ""; let clicks = 0; let inputClicks = 0; let registerClicks = 0;
-  marketing.click = () => { inputClicks += 1; marketing.checked = false; };
+  const optToken = "eventbrite_marketing_opt_out_organization_1901"; let mode = ""; let clicks = 0; let presses = 0; let registerClicks = 0;
+  marketing.click = () => { presses += 1; marketing.checked = false; };
   const mutateDrift = () => {
     if (mode === "label-swap") { marketing.dataset.lmConnectorControl = undefined; label.dataset.lmConnectorControl = undefined; registerLabel.dataset.lmConnectorControl = optToken; }
     if (mode === "checked-drift") { marketing.checked = false; }
@@ -2321,7 +2322,7 @@ test("Eventbrite marketing final locator fails closed for label and input drift"
   const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
     const exact = /^input\[data-lm-connector-control="([^"]+)"\]\[name="([^"]+)"\]$/.exec(selector);
     if (exact) {
-      const handle = makeEventbriteMarketingHandle(marketing, (options) => { assert.deepEqual(options, { force: true }); inputClicks += 1; marketing.checked = false; });
+      const handle = makeEventbriteMarketingHandle(marketing, (key) => { assert.equal(key, "Space"); presses += 1; marketing.checked = false; });
       return { async elementHandles() { return [handle]; }, async count() { if (mode) mutateDrift(); return exact[1] === optToken && exact[2] === "organizationMarketingOptIn" && !mode ? 1 : 0; } };
     }
     const token = /^\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; const labelToken = /^label\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; const compoundToken = /^label\[data-lm-connector-control="([^"]+)"\]\[for="([^"]+)"\]$/.exec(selector)?.[1]; const labelFor = /^label\[for="([^"]+)"\]$/.exec(selector)?.[1];
@@ -2337,11 +2338,11 @@ test("Eventbrite marketing final locator fails closed for label and input drift"
     async inspectControls(input) { return inspectPageControls(input); }, async proposeAction() { return { control: optToken }; },
     async operateControl(input) { return operatePageControl(input); }, async resolveValue() { throw new Error("resolver must not run"); },
   });
-  const reset = () => { marketing.type = "checkbox"; marketing.checked = true; marketing.hidden = false; marketing.disabled = false; marketing.required = false; label.dataset.lmConnectorControl = undefined; registerLabel.dataset.lmConnectorControl = undefined; mode = ""; clicks = 0; inputClicks = 0; registerClicks = 0; };
+  const reset = () => { marketing.type = "checkbox"; marketing.checked = true; marketing.hidden = false; marketing.disabled = false; marketing.required = false; label.dataset.lmConnectorControl = undefined; registerLabel.dataset.lmConnectorControl = undefined; mode = ""; clicks = 0; presses = 0; registerClicks = 0; };
   for (const name of ["label-swap", "checked-drift", "hidden-drift", "disabled-drift", "required-drift", "type-drift"]) {
     reset(); mode = name;
     const result = await harness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "fill", method: "ax_uncheck", control: optToken } });
-    assert.deepEqual(result, { status: "failed" }, name); assert.equal(clicks, 0, `${name}-label`); assert.equal(inputClicks, 0, `${name}-input`); assert.equal(registerClicks, 0, `${name}-register`); if (name === "checked-drift") assert.equal(marketing.checked, false, `${name}-state`);
+    assert.deepEqual(result, { status: "failed" }, name); assert.equal(clicks, 0, `${name}-label`); assert.equal(presses, 0, `${name}-press`); assert.equal(registerClicks, 0, `${name}-register`); if (name === "checked-drift") assert.equal(marketing.checked, false, `${name}-state`);
   }
 });
 
@@ -2355,8 +2356,8 @@ test("Eventbrite marketing click-time identity rewire cannot redirect the exact 
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", id: "register", testId: "eds-modal__primary-button", innerText: "Register" });
   const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, label, registerLabel, primary];
   const optToken = "eventbrite_marketing_opt_out_organization_1901";
-  let mode = ""; let inputClicks = 0; let labelClicks = 0; let registerClicks = 0;
-  marketing.click = () => { inputClicks += 1; marketing.checked = false; };
+  let mode = ""; let presses = 0; let labelClicks = 0; let registerClicks = 0;
+  marketing.click = () => { presses += 1; marketing.checked = false; };
   const mutateClickTimeRewire = () => {
     label.dataset.lmConnectorControl = undefined;
     labelFor = "register";
@@ -2369,7 +2370,7 @@ test("Eventbrite marketing click-time identity rewire cannot redirect the exact 
   const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
     const exact = /^input\[data-lm-connector-control="([^"]+)"\]\[name="([^"]+)"\]$/.exec(selector);
     if (exact) {
-      const handle = makeEventbriteMarketingHandle(marketing, (options) => { assert.deepEqual(options, { force: true }); inputClicks += 1; marketing.checked = false; });
+      const handle = makeEventbriteMarketingHandle(marketing, (key) => { assert.equal(key, "Space"); presses += 1; marketing.checked = false; });
       return { async elementHandles() { return [handle]; }, async count() { return exact[1] === optToken && exact[2] === "organizationMarketingOptIn" ? 1 : 0; } };
     }
     const labelToken = /^label\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; const compoundToken = /^label\[data-lm-connector-control="([^"]+)"\]\[for="([^"]+)"\]$/.exec(selector)?.[1];
@@ -2384,7 +2385,7 @@ test("Eventbrite marketing click-time identity rewire cannot redirect the exact 
   });
   mode = "click-time-rewire";
   assert.deepEqual(await harness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "fill", method: "ax_uncheck", control: optToken } }), { status: "success" });
-  assert.equal(inputClicks, 1); assert.equal(labelClicks, 0); assert.equal(registerClicks, 0); assert.equal(marketing.checked, false);
+  assert.equal(presses, 1); assert.equal(labelClicks, 0); assert.equal(registerClicks, 0); assert.equal(marketing.checked, false);
   assert.equal(marketing.id, "org-opt-in"); assert.equal(labelFor, "org-opt-in"); assert.equal(registerLabel.dataset.lmConnectorControl, undefined); assert.equal(primary.id, "register");
 });
 
@@ -2395,13 +2396,13 @@ test("Eventbrite marketing opt-out never reads a page-owned input click accessor
   const label = makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Organization updates", getAttribute(name) { return name === "for" ? "org-opt-in" : null; } });
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, label, primary];
-  let getterReads = 0; let inputUnchecks = 0; let registerClicks = 0;
+  let getterReads = 0; let presses = 0; let registerClicks = 0;
   Object.defineProperty(marketing, "click", { configurable: true, get() { getterReads += 1; registerClicks += 1; return () => { marketing.checked = false; }; } });
   const token = "eventbrite_marketing_opt_out_organization_1901";
   const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
     const exact = /^input\[data-lm-connector-control="([^"]+)"\]\[name="([^"]+)"\]$/.exec(selector);
     if (exact) {
-      const handle = makeEventbriteMarketingHandle(marketing, (options) => { assert.deepEqual(options, { force: true }); inputUnchecks += 1; marketing.checked = false; });
+      const handle = makeEventbriteMarketingHandle(marketing, (key) => { assert.equal(key, "Space"); presses += 1; marketing.checked = false; });
       return { async elementHandles() { return [handle]; }, async count() { return exact[1] === token && exact[2] === "organizationMarketingOptIn" ? 1 : 0; } };
     }
     return { async evaluateAll(callback, context) { return callback(elements, context); } };
@@ -2413,7 +2414,7 @@ test("Eventbrite marketing opt-out never reads a page-owned input click accessor
     async operateControl(input) { return operatePageControl(input); }, async resolveValue() { throw new Error("resolver must not run"); },
   });
   assert.deepEqual(await harness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "fill", method: "ax_uncheck", control: token } }), { status: "success" });
-  assert.equal(getterReads, 0); assert.equal(inputUnchecks, 1); assert.equal(registerClicks, 0); assert.equal(marketing.checked, false);
+  assert.equal(getterReads, 0); assert.equal(presses, 1); assert.equal(registerClicks, 0); assert.equal(marketing.checked, false);
 });
 
 test("Eventbrite marketing opt-out fails when the input reverts during the stability window", async () => {
@@ -2423,13 +2424,13 @@ test("Eventbrite marketing opt-out fails when the input reverts during the stabi
   const label = makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Organization updates", getAttribute(name) { return name === "for" ? "org-opt-in" : null; } });
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, label, primary];
-  const token = "eventbrite_marketing_opt_out_organization_1901"; let inputUnchecks = 0; let reverts = 0;
+  const token = "eventbrite_marketing_opt_out_organization_1901"; let presses = 0; let reverts = 0;
   const revert = () => { reverts += 1; marketing.checked = true; };
-  marketing.click = () => { inputUnchecks += 1; marketing.checked = false; setTimeout(revert, 10); };
+  marketing.click = () => { presses += 1; marketing.checked = false; setTimeout(revert, 10); };
   const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
     const exact = /^input\[data-lm-connector-control="([^"]+)"\]\[name="([^"]+)"\]$/.exec(selector);
     if (exact) {
-      const handle = makeEventbriteMarketingHandle(marketing, (options) => { assert.deepEqual(options, { force: true }); inputUnchecks += 1; marketing.checked = false; setTimeout(revert, 10); });
+      const handle = makeEventbriteMarketingHandle(marketing, (key) => { assert.equal(key, "Space"); presses += 1; marketing.checked = false; setTimeout(revert, 10); });
       return { async elementHandles() { return [handle]; }, async count() { return exact[1] === token && exact[2] === "organizationMarketingOptIn" ? 1 : 0; } };
     }
     return { async evaluateAll(callback, context) { return callback(elements, context); } };
@@ -2448,7 +2449,7 @@ test("Eventbrite marketing opt-out fails when the input reverts during the stabi
     for (let attempt = 0; attempt < 100 && !settled; attempt += 1) { await Promise.resolve(); mock.timers.tick(25); }
     assert.deepEqual(await resultPromise, { status: "failed" });
   } finally { mock.timers.reset(); }
-  assert.equal(inputUnchecks, 1); assert.equal(reverts, 1); assert.equal(marketing.checked, true);
+  assert.equal(presses, 1); assert.equal(reverts, 1); assert.equal(marketing.checked, true);
 });
 
 test("Eventbrite marketing opt-out pins the original input before a count-time decoy swap", async () => {
@@ -2460,10 +2461,10 @@ test("Eventbrite marketing opt-out pins the original input before a count-time d
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, decoy, label, primary];
   const token = "eventbrite_marketing_opt_out_organization_1901";
-  let swapped = false; let decoyUnchecks = 0; let registerClicks = 0;
+  let swapped = false; let decoyPresses = 0; let registerClicks = 0;
   const originalHandle = {
     async evaluate(callback, context) { return callback(marketing, context); },
-    async uncheck(options) { assert.deepEqual(options, { force: true }); marketing.checked = false; },
+    async press(key) { assert.equal(key, "Space"); marketing.checked = false; },
   };
   const swapToDecoy = () => {
     if (swapped) return;
@@ -2477,7 +2478,7 @@ test("Eventbrite marketing opt-out pins the original input before a count-time d
     if (exact) return {
       async elementHandles() { return [originalHandle]; },
       async count() { swapToDecoy(); return exact[1] === token && exact[2] === "organizationMarketingOptIn" ? 1 : 0; },
-      async uncheck(options) { assert.deepEqual(options, { force: true }); decoyUnchecks += 1; registerClicks += 1; decoy.checked = false; marketing.checked = false; },
+      async press(key) { assert.equal(key, "Space"); decoyPresses += 1; registerClicks += 1; decoy.checked = false; marketing.checked = false; },
     };
     const controlToken = /^\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1];
     if (controlToken) return { async count() { return elements.filter((element) => element.dataset?.lmConnectorControl === controlToken).length; } };
@@ -2490,7 +2491,7 @@ test("Eventbrite marketing opt-out pins the original input before a count-time d
     async operateControl(input) { return operatePageControl(input); }, async resolveValue() { throw new Error("resolver must not run"); },
   });
   assert.deepEqual(await harness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "fill", method: "ax_uncheck", control: token } }), { status: "failed" });
-  assert.equal(decoyUnchecks, 0); assert.equal(registerClicks, 0); assert.equal(marketing.checked, true); assert.equal(decoy.checked, true);
+  assert.equal(decoyPresses, 0); assert.equal(registerClicks, 0); assert.equal(marketing.checked, true); assert.equal(decoy.checked, true);
 });
 
 test("Eventbrite marketing opt-out rejects a hidden original input after the uncheck", async () => {
@@ -2500,17 +2501,17 @@ test("Eventbrite marketing opt-out rejects a hidden original input after the unc
   const label = makeEventbriteTicketElement({ tagName: "LABEL", innerText: "Organization updates", getAttribute(name) { return name === "for" ? "org-opt-in" : null; } });
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   const elements = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email"), marketing, label, primary];
-  const token = "eventbrite_marketing_opt_out_organization_1901"; let inputUnchecks = 0;
+  const token = "eventbrite_marketing_opt_out_organization_1901"; let presses = 0;
   const originalHandle = {
     async evaluate(callback, context) { return callback(marketing, context); },
-    async uncheck(options) { assert.deepEqual(options, { force: true }); inputUnchecks += 1; marketing.checked = false; marketing.hidden = true; },
+    async press(key) { assert.equal(key, "Space"); presses += 1; marketing.checked = false; marketing.hidden = true; },
   };
   const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
     const exact = /^input\[data-lm-connector-control="([^"]+)"\]\[name="([^"]+)"\]$/.exec(selector);
     if (exact) return {
       async elementHandles() { return [originalHandle]; },
       async count() { return exact[1] === token && exact[2] === "organizationMarketingOptIn" ? 1 : 0; },
-      async uncheck(options) { assert.deepEqual(options, { force: true }); inputUnchecks += 1; marketing.checked = false; marketing.hidden = true; },
+      async press(key) { assert.equal(key, "Space"); presses += 1; marketing.checked = false; marketing.hidden = true; },
     };
     return { async evaluateAll(callback, context) { return callback(elements, context); } };
   } };
@@ -2528,7 +2529,7 @@ test("Eventbrite marketing opt-out rejects a hidden original input after the unc
     for (let attempt = 0; attempt < 100 && !settled; attempt += 1) { await Promise.resolve(); mock.timers.tick(25); }
     assert.deepEqual(await resultPromise, { status: "failed" });
   } finally { mock.timers.reset(); }
-  assert.equal(inputUnchecks, 1); assert.equal(marketing.checked, false); assert.equal(marketing.hidden, true);
+  assert.equal(presses, 1); assert.equal(marketing.checked, false); assert.equal(marketing.hidden, true);
 });
 
 test("Eventbrite adapter forwards fill ax_uncheck exactly once", async () => {
