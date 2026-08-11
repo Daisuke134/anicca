@@ -7542,3 +7542,9 @@ post-integration read-only production-workflow diagnosticではhydrated official
 完成後のuser-facing Telegram UXは毎wake一通以上とする。成功時はevent/provider/date/status、Calendar readback、証拠画像を送る。
 承認待ちは`pending`、候補なしは探索providerとexternal write 0、circuit-openは停止stage、safe reason、duplicate effect 0、次daily wakeでの再開を送る。
 Telegram通知そのものはapplication evidenceではなく、provider readback、Calendar readback、PNG SHA、positive delivery IDsを束ねた`applied_bundle`だけを成功の正本にする。
+
+### O1B-25進捗399（Item 19E-D1 / Eventbrite checkout-frame trigger plan）
+
+Eventbrite hydrated DOMをshared CloakBrowserのexact diagnostic pageでread-only再計測した。canonical detailのvisible/enabled top CTAは`button[type=button][data-testid=conversion-bar-checkout-button]` exact 1、label `Reserve a spot`。click後は公式originの`/checkout-external` frame exact 1が出現し、query keysに`eid`を持ちcandidate event IDとexact一致した。frame内はlanguage select、3組のticket stepper、`Register` primary、`Close`を観測したが、Register click 0、外部registration/Calendar/evidence/Telegram effect 0。diagnostic pageはexact cleanupし、元のunrelated page 2、Connector ledger/current-page intersection 0へ復帰した。
+
+Ponytailにより全checkout実装を棄却し、先頭sliceをcanonical CTA openとsame-event checkout-frame確認だけへ縮小した。plan `docs/superpowers/plans/2026-08-10-connector-eventbrite-checkout-frame-19e.md`はproduction Harness/testの2 files、production約60–90 LOC、test約90–130 LOC。Eventbrite exact candidate/current URL、一意visible CTA、専用`submit/ax_click`、bounded frame origin/path/`eid`確認をTDDし、ticket stepper/Register/attendee/final Submit/readbackは操作0で次sliceへ残す。Item19 Eventbriteと実bundleは未完、scheduleはunloaded。
