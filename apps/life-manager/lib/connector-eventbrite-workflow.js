@@ -249,6 +249,53 @@ function normalizedView(value) {
   };
 }
 function completionCount(value) { return String(value || "").match(COMPLETION_MARKER)?.length || 0; }
+const EVENTBRITE_CHECKOUT_FRAME_LIMIT = 16;
+function eventbriteCheckoutFrameIdentity(frame, eventId) {
+  if (!frame || typeof frame.url !== "function") return { checkout: true, valid: false };
+  let href;
+  try { href = String(frame.url()).trim(); } catch { return { checkout: true, valid: false }; }
+  let url;
+  try { url = new URL(href); } catch { return { checkout: true, valid: false }; }
+  if (url.pathname !== "/checkout-external") return { checkout: false, valid: false };
+  const ids = url.searchParams.getAll("eid");
+  const authority = /^[a-z][a-z\d+.-]*:\/\/([^/?#]*)/i.exec(href)?.[1] || "";
+  const hostPart = authority.slice(authority.lastIndexOf("@") + 1);
+  const valid = url.protocol === "https:" && url.hostname.toLowerCase() === "www.eventbrite.com"
+    && !url.port && !url.username && !url.password && !url.hash && !hostPart.includes(":")
+    && ids.length === 1 && ids[0] === String(eventId);
+  return { checkout: true, valid };
+}
+async function readEventbriteDirectCheckoutCompletion(page, eventId) {
+  if (!page || typeof page.mainFrame !== "function") return { status: "none" };
+  let mainFrame;
+  try { mainFrame = page.mainFrame(); } catch { return { status: "unavailable" }; }
+  if (!mainFrame || typeof mainFrame.childFrames !== "function") return { status: "none" };
+  let children;
+  try { children = mainFrame.childFrames(); } catch { return { status: "unavailable" }; }
+  if (!Array.isArray(children) || children.length > EVENTBRITE_CHECKOUT_FRAME_LIMIT) return { status: "unavailable" };
+  const checkoutFrames = children.map((frame) => ({ frame, identity: eventbriteCheckoutFrameIdentity(frame, eventId) }))
+    .filter(({ identity }) => identity.checkout);
+  if (checkoutFrames.length === 0) return { status: "none" };
+  if (checkoutFrames.length !== 1 || checkoutFrames[0].identity.valid !== true) return { status: "unavailable" };
+  const frame = checkoutFrames[0].frame;
+  if (typeof frame.evaluate !== "function") return { status: "unavailable" };
+  let markers;
+  try {
+    markers = await frame.evaluate(() => {
+      const text = String(document.body ? document.body.innerText || "" : "");
+      const count = (marker) => text.split(marker).length - 1;
+      const buttons = [...document.querySelectorAll("button")];
+      const register = buttons.filter((button) => String(button.innerText || button.textContent || "")
+        .replace(/\s+/g, " ").trim() === "Register").length;
+      return { thanks: count("Thanks for your order!"), going: count("YOU'RE GOING TO"), register };
+    });
+  } catch { return { status: "unavailable" }; }
+  if (!markers || typeof markers !== "object" || Array.isArray(markers)
+    || !Number.isInteger(markers.thanks) || !Number.isInteger(markers.going) || !Number.isInteger(markers.register)
+    || markers.thanks < 0 || markers.going < 0 || markers.register < 0) return { status: "unavailable" };
+  return markers.thanks === 1 && markers.going === 1 && markers.register === 0
+    ? { status: "complete" } : { status: "incomplete" };
+}
 function createEventbriteScriptFirstWorkflow(options = {}) {
   const now = options.now || (() => new Date());
   const readListingBindings = options.readListingBindings || options.readFindBindings || defaultReadListingBindings;
@@ -316,6 +363,11 @@ function createEventbriteScriptFirstWorkflow(options = {}) {
       if (view.auth_required || view.waitlist || READBACK_UNSAFE.test(text)) return Object.freeze({ status: "unavailable" });
       const exactLink = visibleLinks.length === 1 && visibleLinks[0].href === selected.canonical_url && view.canonical_links.length === 1;
       const controlCompletion = allControls.some((control) => completionCount(control.text));
+      const eventId = String(selected.event_ref).split("/").pop();
+      const checkout = await readEventbriteDirectCheckoutCompletion(page, eventId);
+      if (checkout.status === "unavailable") return Object.freeze({ status: "unavailable" });
+      if (checkout.status === "complete") return Object.freeze({ status: exactLink ? "registered" : "unavailable" });
+      if (checkout.status === "incomplete" && completionCount(view.body_text) !== 0) return Object.freeze({ status: "unavailable" });
       if (exactLink && completionCount(view.body_text) === 1 && !controlCompletion) return Object.freeze({ status: "registered" });
       const tickets = controls.filter((control) => isTicketControl(control.text));
       if (exactLink && controls.length === 1 && tickets.length === 1 && completionCount(view.body_text) === 0 && !controlCompletion) return Object.freeze({ status: "absent" });
