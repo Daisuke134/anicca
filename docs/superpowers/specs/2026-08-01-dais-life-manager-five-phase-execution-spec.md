@@ -7758,3 +7758,11 @@ Sol独立でfocused 33/33、adjacent evidence 39/39、syntax、diff、exact2-fil
 Plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-calendar-transport-19d.md`はCalendar gog adapter/testのexact 2 files。既存`connectorCanonicalUrl`へexact `https://<lowercase-group>.doorkeeper.jp/events/<positive ID>`と固定`sourceTitle=Doorkeeper`を追加し、同じURLをdescription/source-urlへ渡す。production約8〜15 LOC、test約35〜60 LOC。
 
 HTTP、uppercase raw host、`www`、root/nested host、credentials、explicit port、query、fragment、trailing slash、zero/nonnumeric ID、extra/search pathは`gog`実行前にfail closed。Luma/Peatix/Connpass/Meetup、Calendar receipt/idempotency/readback、browser、evidence、native、schedule、live stateは変更0。TDD・fresh review・push後だけofficial foreground wakeへ進む。Item19 Doorkeeper実bundleは未完。
+
+### O1B-25進捗435（Item 19D-E3 / Doorkeeper Calendar transport ship）
+
+LunaがCalendar gog adapter/testのexact 2 filesだけをSuperpowers TDD変更した。REDは25件中24 pass / 1 failで、新しいexact Doorkeeper正常系だけが既存Peatix fallbackで拒否された。GREEN commit `0c2dddfad`はMeetup後・Peatix前へ7 LOCのstrict branchを追加し、lowercase one-group host、group 1〜63文字、`www`除外、positive numeric event ID、raw/canonical URL exact equalityを要求する。accepted argvはexact description/source-url、single `sourceTitle=Doorkeeper`、既存private idempotency propertyを保持する。
+
+拒否tableは未知providerの既存fail-closedでも通るため、raw equalityだけを一時除去するreversible mutationを実行した。uppercase raw host、explicit default port `:443`、fragmentの3件が`gog run`へ誤到達してnegative testが24/25、calls=3で失敗することを確認後、guardを復元した。Sol独立でfocused＋adjacent 58/58、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality APPROVED、Critical/Important/Minor 0、追加boundary probe 8/8で`ship`。
+
+Luma/Peatix/Connpass/Meetup、Calendar receipt/idempotency/readback、browser、minimal evidence、native、schedule、live state、external effectは変更0。次active sliceはpushed/clean preflight後のofficial foreground wake exact 1回。Item19 Doorkeeper実bundleはcurrent non-conflict candidateの有無を含め未完。
