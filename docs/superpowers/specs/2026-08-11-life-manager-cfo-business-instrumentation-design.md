@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — `CFO-2b.1b` is the only active slice |
+| Status | ACTIVE — `CFO-2b.1c` is the only active slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local `apps/life-call`; existing ledgers and provider APIs only |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -40,7 +40,7 @@ Only the first unchecked item is active.
 
 - [ ] **CFO-2b.1 — Life Manager**
   - [x] **2b.1a** Normalize finalized TaskMarket/uGig external settlements already stored in `lm_agent_earnings`.
-  - [ ] **2b.1b** Read the canonical Life Manager Stripe Payment Link and normalize paid Checkout receipts; a paid
+  - [x] **2b.1b** Read the canonical Life Manager Stripe Payment Link and normalize paid Checkout receipts; a paid
         Checkout balance is not bank-landed cash.
   - [ ] **2b.1c** Reconcile Stripe refunds/disputes/fees/payout state, then compose revenue coverage with existing
         direct-cost, provider-usage, subscription, human-cost, and capital coverage. Unknown stays null; shared
@@ -182,6 +182,18 @@ Rules:
 
 Current real acceptance: 54 active Payment Links fit one page; the canonical Life Manager link has six sessions, all
 `unpaid`, so the correct result is `status=covered`, `receipt_count=0`, and no whole-business zero-revenue claim.
+
+### CFO-2b.1b completion evidence
+
+- Code commit `4ba765dff` adds the paginated read-only Stripe collector in the existing two files with 62 gross
+  additions and no dependency, database, scheduler, state, or Telegram change.
+- Focused 6/6, CFO 339/339, and the full `apps/life-call` suite pass; syntax, diff, exact two-file scope, and the
+  100-line gate pass. Fresh Sol review is `ship` with no Critical/Important finding.
+- Real live-key read-only E2E made two GETs: one Payment Links page and one canonical Sessions page. It observed six
+  `unpaid` sessions, returned `status=covered`, zero gross receipts, zero paid-zero observations, reversal coverage
+  `unknown`, and no forbidden field escape. No ID, amount, URL, customer, email, or raw provider object was printed.
+- The result cannot enable revenue, profit, ROI, or capital advice: every future paid receipt is explicitly gross and
+  unreconciled until 2b.1c reads refunds/disputes/fees/payout evidence.
 
 ## 9. Source decisions
 
