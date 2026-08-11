@@ -194,9 +194,17 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       }
       for (const selected of candidates) {
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
-        await action("navigate", "browser_rail", () => (
-          deps.browserRail.navigate(owned, selected.canonical_url)
-        ));
+        try {
+          await action("navigate", "browser_rail", () => (
+            deps.browserRail.navigate(owned, selected.canonical_url)
+          ));
+        } catch {
+          if (deadlineReached()) return finish("circuit_open", "wake_deadline");
+          consecutiveFailures += 1;
+          lastSafeReason = "candidate_navigation_failed";
+          if (consecutiveFailures >= settings.maxConsecutiveFailures) return finish("circuit_open", lastSafeReason);
+          continue;
+        }
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
 
         let operation;
