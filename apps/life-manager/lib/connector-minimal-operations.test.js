@@ -292,3 +292,36 @@ test("operations persist only safe Peatix discovery aggregate counts", async () 
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
 });
+
+test("operations persist only safe Meetup discovery aggregate counts", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-meetup-discovery-"));
+  try {
+    const operations = createMinimalProductionOperations({
+      stateDir, wakeId: "wake-20260811-meetup-discovery", telegramTarget: "private-target",
+      now: () => new Date("2026-08-11T08:30:00.000Z"), async sendMessage() { return { messageId: 7001 }; },
+    });
+    await operations.recordMeetupDiscoveryAudit({
+      observed_count: 48, normalized_count: 47, window_count: 14, free_open_count: 12, calendar_free_count: 0,
+    });
+    await assert.rejects(() => operations.recordMeetupDiscoveryAudit({
+      observed_count: 48, normalized_count: 49, window_count: 14, free_open_count: 12, calendar_free_count: 0,
+    }));
+
+    const file = path.join(stateDir, "meetup-discovery-audits.jsonl");
+    const lines = fs.readFileSync(file, "utf8").trim().split("\n");
+    const row = JSON.parse(lines[0]);
+    assert.equal(lines.length, 1);
+    assert.deepEqual(Object.keys(row).sort(), [
+      "calendar_free_count", "free_open_count", "normalized_count", "observed_count",
+      "recorded_at", "schema_version", "wake_id", "window_count",
+    ]);
+    assert.equal(row.schema_version, 1);
+    assert.equal(row.wake_id, "wake-20260811-meetup-discovery");
+    assert.deepEqual([row.observed_count, row.normalized_count, row.window_count, row.free_open_count, row.calendar_free_count], [48, 47, 14, 12, 0]);
+    assert.equal(row.recorded_at, "2026-08-11T08:30:00.000Z");
+    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    assert.doesNotMatch(JSON.stringify(row), /https?:\/\/|event|title|profile|ticket|auth|private|attendee/i);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
