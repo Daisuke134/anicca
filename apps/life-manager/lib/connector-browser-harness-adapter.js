@@ -5,7 +5,7 @@ const PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
 const ALLOWED = new Map([
   ["observe", new Set(["ax_inspect", "dom_inspect", "parent_readback"])],
-  ["fill", new Set(["ax_fill", "dom_fill", "ax_check", "ax_select"])],
+  ["fill", new Set(["ax_fill", "dom_fill", "ax_check", "ax_select", "ax_uncheck"])],
   ["submit", new Set(["ax_click", "coordinate_click", "keyboard_submit"])],
   ["readback", new Set(["parent_readback", "ax_inspect", "dom_inspect"])],
 ]);
