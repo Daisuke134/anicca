@@ -176,6 +176,51 @@ async function inspectEventbriteTicketFrame(frame, eventId) {
     }, { eventId });
   } catch { return null; }
 }
+async function inspectEventbriteAttendeeFrame(frame, eventId) {
+  if (!frame || typeof frame.locator !== "function") return null;
+  let locator;
+  try { locator = frame.locator("input, textarea, select, button, [data-testid]"); } catch { return null; }
+  if (!locator || typeof locator.evaluateAll !== "function") return null;
+  try {
+    return await locator.evaluateAll((elements, { eventId: id }) => {
+      if (!Array.isArray(elements) || elements.length > 100) return [];
+      const hidden = (style) => Boolean(style && [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase())) || String(style.opacity ?? "") === "0");
+      const visibleOf = (element) => {
+        const view = element?.ownerDocument?.defaultView;
+        for (let current = element; current; current = current.parentElement || null) {
+          let computed = null; try { computed = view?.getComputedStyle?.(current); } catch { /* fail closed below */ }
+          if (current.hidden === true || current.isConnected === false || (typeof current.hasAttribute === "function" && current.hasAttribute("hidden")) || String(current.getAttribute?.("aria-hidden") || "").toLowerCase() === "true" || hidden(current.style) || hidden(computed)) return false;
+        }
+        let rect; try { rect = element?.getBoundingClientRect?.(); } catch { return false; }
+        return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0);
+      };
+      const tagOf = (element) => String(element && element.tagName || "").toLowerCase();
+      const typeOf = (element) => String(element && element.type || "").toLowerCase();
+      const nameOf = (element) => String((element && element.getAttribute && element.getAttribute("name")) || (element && element.name) || "");
+      const requiredOf = (element) => element.required === true || element.hasAttribute?.("required") || String(element.getAttribute?.("aria-required") || "").toLowerCase() === "true";
+      const enabledOf = (element) => element.disabled !== true && !element.hasAttribute?.("disabled") && String(element.getAttribute?.("aria-disabled") || "").toLowerCase() !== "true";
+      const required = elements.filter((element) => {
+        const tag = tagOf(element); const type = typeOf(element);
+        return ["input", "select", "textarea"].includes(tag) && (tag !== "input" || type !== "hidden") && visibleOf(element) && enabledOf(element) && requiredOf(element);
+      });
+      if (required.length !== 4) return [];
+      const fields = [{ key: "first_name", label: "First name", pattern: /^buyer\.([0-9]+)-first_name$/, type: "text" }, { key: "last_name", label: "Last name", pattern: /^buyer\.([0-9]+)-last_name$/, type: "text" }, { key: "email", label: "Email", pattern: /^buyer\.([0-9]+)-email$/, type: "email" }, { key: "confirm_email", label: "Confirm email", pattern: /^buyer\.confirmEmailAddress$/, type: "email" }];
+      const matches = fields.map((field) => required.filter((element) => tagOf(element) === "input" && field.pattern.test(nameOf(element)) && typeOf(element) === field.type));
+      if (matches.some((items) => items.length !== 1)) return [];
+      const buyerIndexes = matches.slice(0, 3).map(([element]) => /^buyer\.([0-9]+)-/.exec(nameOf(element))?.[1]);
+      if (new Set(buyerIndexes).size !== 1) return [];
+      const completedOf = (element) => Boolean(String(element && element.value || "").trim());
+      return fields.map((field, index) => ({
+        control: `eventbrite_attendee_${field.key}_${id}`,
+        kind: "input",
+        label: field.label,
+        required: true,
+        completed: completedOf(matches[index][0]),
+        submittable: false,
+      }));
+    }, { eventId });
+  } catch { return null; }
+}
 async function waitForEventbriteCheckoutFrame(page, eventId, canonicalUrl) {
   if (!page || typeof page.frames !== "function" || !canonicalUrl) return false;
   const deadline = Date.now() + EVENTBRITE_FRAME_TIMEOUT_MS;
@@ -417,8 +462,12 @@ async function inspectPageControls(input = {}) {
     if (official.length > 0) {
       if (href !== canonicalUrl || official.length !== 1 || matching.length !== 1) return Object.freeze([]);
       const ticket = await inspectEventbriteTicketFrame(matching[0].frame, eventId);
-      if (!ticket || !ticket.control) return Object.freeze([]);
-      return Object.freeze([{ control: ticket.control, kind: "button", label: "Register", required: false, completed: false, submittable: true }]);
+      if (!ticket) return Object.freeze([]);
+      if (ticket.control) return Object.freeze([{ control: ticket.control, kind: "button", label: "Register", required: false, completed: false, submittable: true }]);
+      if (ticket.cardCount !== 0) return Object.freeze([]);
+      const attendee = await inspectEventbriteAttendeeFrame(matching[0].frame, eventId);
+      if (!Array.isArray(attendee)) return Object.freeze([]);
+      return Object.freeze(attendee.map(safeControl));
     }
   }
   const observed = await locator.evaluateAll((elements, context) => {
