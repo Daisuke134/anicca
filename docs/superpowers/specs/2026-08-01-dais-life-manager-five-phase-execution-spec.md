@@ -7247,7 +7247,15 @@ LunaへPeatix browser provider production/testの既存2 filesだけを所有さ
 
 Luna focused 24/24、minimal runner/production/evidence、Harness adjacent 136/136、Sol独立expanded 160/160、syntax/diff checkがPASS。workflow 1 failureは既知の日付依存。fresh Sol reviewはCritical 0 / Important 0で`ship`。review済みcommitをstable scheduled worktreeへfast-forwardしremoteへpushした。implementation/test/review中のbrowser、provider、Calendar、evidence、Telegram、state、launchd、schedule作用0。Item19 Meetupは未完。次はofficial wake exact 1回で、既登録Peatixのpre-readback/evidence bundleまたはdirect-to-confirm completion、同wake Meetup audit到達、duplicate Submit 0を検証する。
 
-### Active remaining TODO SSOT（進捗353。これ以外の残TODO一覧は履歴）
+### O1B-25進捗354（Item 19M-D0e live wake / swipe-ticket readback blocker確定）
+
+pushed HEAD `2795acbd7`、4 labels unloaded、process/active lease 0、page 1、baseline action/report/delivery/Peatix audit/bundle `854/115/127/31/6`からofficial foreground wakeをexact 1回実行した。wake `wake-97558353b86abced2440ac33`はLuma、Connpass、Peatix discoveryを成功し、action 854→872、report 115→116、delivery 127→128、Peatix audit 31→32、positive Telegram ID `11411`。bundle 6、Meetup audit 0。
+
+新direct-to-confirm pathはcandidate `5101994`を4,417msで`/tickets → /billing → /confirm → /confirmed → canonical`まで完走し、Browser Harness 0をlive実証した。canonical readbackだけが`unavailable`となり、D0c guardどおりfailure count 1の`circuit_open / effect_unknown`、次candidate/evidence 0で停止。process/active lease 0、owned page cleanup、Git clean/upstreamを確認した。
+
+external click 0のread-only測定でcanonicalはticket link/marker/checkout各0。exact `/event/5101994/ticket`はauth redirectなし、`body.webticket`と`section.ticket`各1だが旧QR image 0。現行swipe ticketはvisible `.ticket_cover`、`.ticket_event`、`.ticket_event-name`、`.ticket_summary`が各exact 1。旧readerがQR型だけをticket shellとするため実registeredを認識できず、次wakeで再Submitし得る。plan `2026-08-11-connector-peatix-swipe-ticket-readback.md`を追加し、provider/test 2 filesだけでQR OR swipe shell proofとcanonical→ticket read-only probe/restoreをpre-submit/post-confirmへ接続する。private ticket text/valueは読取・保存0。scheduleはunloaded、Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗354。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
