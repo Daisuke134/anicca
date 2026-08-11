@@ -58,7 +58,7 @@ Connectorの進行中正本はbranch `feature/connector-native-completion`のwor
 | agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerを最大10 step使う。click成功だけをcompletionにせずofficial parent/child readbackを必須化 | `applied_bundle` evidence chainはLuma/Connpass/Peatix/Meetup。Doorkeeper/Eventbrite evidence adaptersはItem19のlive bundle gateとして未完 |
 | latest official wake | `wake-e289aa2e9963209e6996f099`: 6-provider順を完走し`completed_no_effect / provider_discovery_failed / 2`、Telegram provider ID `12117`。Eventbrite audit `188/0/0/0/0` | 3-page paginationはlive受入済み。現在の14日窓にEventbrite eligible candidate 0のためexternal write 0が正しい |
 | lifecycle / lock | Native labelだけが09:00 dailyでloaded、runs 0 / not running。healthcheck・Healer・bridgeはunloaded。process 0、lock idle、owned target intersection 0 | single production owner 1 / schedule 1。次の実行主体はlaunchd Native labelだけ |
-| TODO境界 | Items1〜18は完了。Item19はPeatixのみbundle完了、Meetup/Doorkeeper/Eventbriteは明示blocker付きpending。Items20〜23未完 | 完了判定は最新Active TODOの19〜23で行う |
+| TODO境界 | Items1〜18とItem22は完了。Item19はPeatixのみbundle完了、Meetup/Doorkeeper/Eventbriteは明示blocker付きpending。Items20/21/23は未完 | 完了判定は最新Active TODOの19〜23で行う |
 
 #### Connector architecture — 現行productionと未完境界
 
@@ -72,8 +72,8 @@ flowchart TB
     USER["Dais<br/>通常surfaceはTelegramだけ"]
 
     subgraph TRIGGER["1. 起動とsingle owner"]
-        FG["現在: bounded foreground wake<br/>scheduleはunloaded"]
-        DAILY["Item17後: launchdで一日一回<br/>未load"]:::future
+        FG["supervised bounded foreground wake"]
+        DAILY["現在: launchdで一日一回 09:00<br/>Native only loaded / runs 0"]
         ENTRY["official entrypoint<br/>skills/connector/run.sh"]
         LOCK{"single-instance lockを取得?"}
         HEART["owner token + heartbeat"]
@@ -100,7 +100,7 @@ flowchart TB
         PRE["parent pre-submit readback"]
         LADDER["action ladder<br/>verified cache → direct workflow → bounded model fallback"]
         MODEL["fallbackはunknown UI時だけ<br/>最大10 step<br/>Codex gpt-5.6-terra"]
-        POST{"parent readbackが<br/>registered / pending?"}
+        POST{"official parent / child-frame readbackが<br/>registered / pending?"}
         GATE -->|Yes| NAV --> PRE --> LADDER
         LADDER -.必要時.-> MODEL --> POST
         LADDER --> POST
@@ -111,14 +111,14 @@ flowchart TB
     subgraph PROVE["4. agentの自己申告ではなく外部証拠で確定"]
         SUPPORT{"minimal evidence chainが<br/>providerを受理?"}
         LUMA["evidence対応<br/>Luma / Connpass / Peatix / Meetup"]
-        CONNPASS["action/readback対応・bundle未完<br/>Doorkeeper / Eventbrite"]:::pending
+        EVIDPENDING["acceptance pending<br/>Doorkeeper / Eventbrite evidence adapter未完"]:::pending
         PNG["provider page full-page PNG<br/>SHA-256 + provider receipt"]
         GCAL["Google Calendar冪等write<br/>独立readbackで1件を確認"]
         TG["Telegram message + photo<br/>positive provider IDs"]
         BUNDLE["durable applied_bundle<br/>同一lineage"]
         POST -->|Yes| SUPPORT
         SUPPORT -->|evidence対応provider| LUMA --> PNG --> GCAL --> TG --> BUNDLE
-        SUPPORT -->|bundle未完provider| CONNPASS
+        SUPPORT -->|bundle未完provider| EVIDPENDING --> CIRCUIT
     end
 
     subgraph FINISH["5. 必ず片付けて報告"]
@@ -130,7 +130,6 @@ flowchart TB
         FAIL -->|閾値到達| CIRCUIT --> REPORT
         BUNDLE --> REPORT
         REPORT --> CLOSE --> USER
-        CONNPASS --> CLOSE
     end
 
     subgraph EXPAND["6. live acceptance後だけ拡張"]
@@ -138,7 +137,7 @@ flowchart TB
         UNKNOWN["Item20<br/>unknown / next provider contract"]:::future
         MORE --> UNKNOWN
     end
-    DAILY -.Items19/20.-> MORE
+    DAILY -.Items19/20 acceptance後.-> MORE
 
     classDef future fill:#f3f4f6,stroke:#9ca3af,color:#4b5563,stroke-dasharray:5 5;
     classDef pending fill:#fff7ed,stroke:#ea580c,color:#9a3412;
@@ -7511,7 +7510,7 @@ LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Rese
 
 post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗398。これ以外の残TODO一覧は履歴）
+### Active remaining TODO SSOT（進捗429。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
