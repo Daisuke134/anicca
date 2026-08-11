@@ -1449,7 +1449,7 @@ function makeDoorkeeperAncestor(overrides = {}) {
   return ancestor;
 }
 
-test("Doorkeeper inspector rejects all controls hidden by literal ancestors", async () => {
+test("Doorkeeper ancestor visibility is scoped to exactly one target control", async () => {
   const variants = [
     ["hidden-attribute", { hidden: true }],
     ["aria-hidden", { ariaHidden: true }],
@@ -1458,15 +1458,35 @@ test("Doorkeeper inspector rejects all controls hidden by literal ancestors", as
     ["ancestor-zero-box", { rect: { width: 0, height: 0 } }],
   ];
   for (const [name, overrides] of variants) {
-    const form = makeDoorkeeperForm();
-    const ancestor = makeDoorkeeperAncestor(overrides);
-    const ownerDocument = { defaultView: { getComputedStyle(element) { return element.computedStyle || element.style || {}; } } };
-    const elements = [
-      makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "申し込む", parentElement: ancestor, ownerDocument }),
-      makeDoorkeeperElement({ type: "email", id: "event_registration_email", name: "event_registration[email]", required: true, form, value: "private@example.com", parentElement: ancestor, ownerDocument }),
-      makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form, parentElement: ancestor, ownerDocument }),
-    ];
-    const { controls } = await inspectDoorkeeperDom(elements);
-    assert.deepEqual(controls, [], name);
+    for (const target of ["trigger", "email", "submit"]) {
+      const form = makeDoorkeeperForm();
+      const ancestor = makeDoorkeeperAncestor(overrides);
+      const ownerDocument = { defaultView: { getComputedStyle(element) { return element.computedStyle || element.style || {}; } } };
+      const controls = [
+        ["trigger", makeDoorkeeperElement({ tagName: "A", href: "#new_registration_modal", innerText: "申し込む" })],
+        ["email", makeDoorkeeperElement({ type: "email", id: "event_registration_email", name: "event_registration[email]", required: true, form, value: "private@example.com" })],
+        ["submit", makeDoorkeeperElement({ type: "submit", name: "commit", value: "申し込む", form })],
+      ].map(([kind, element]) => kind === target ? Object.assign(element, { parentElement: ancestor, ownerDocument }) : element);
+      const { controls: observed } = await inspectDoorkeeperDom(controls);
+      const trigger = observed.find((control) => control.kind === "link" && control.label === "申し込む");
+      const email = observed.find((control) => control.label === "Email");
+      const submittable = observed.filter((control) => control.submittable === true);
+      if (target === "trigger") {
+        assert.equal(trigger, undefined, `${name}/${target}`);
+      } else if (target === "email") {
+        assert.ok(trigger, `${name}/${target}`);
+        assert.equal(email, undefined, `${name}/${target}`);
+        assert.deepEqual(observed.map(({ kind, label, submittable }) => ({ kind, label, submittable })), [
+          { kind: "link", label: "申し込む", submittable: false },
+          { kind: "button", label: "申し込む", submittable: false },
+        ], `${name}/${target}`);
+        assert.equal(submittable.length, 0, `${name}/${target}`);
+      } else {
+        assert.ok(trigger, `${name}/${target}`);
+        assert.deepEqual(email && { kind: email.kind, label: email.label, completed: email.completed, submittable: email.submittable }, { kind: "input", label: "Email", completed: true, submittable: false }, `${name}/${target}`);
+        assert.equal(submittable.length, 0, `${name}/${target}`);
+        assert.equal(observed.some((control) => control.kind === "button"), false, `${name}/${target}`);
+      }
+    }
   }
 });
