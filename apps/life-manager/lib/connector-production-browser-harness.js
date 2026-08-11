@@ -1157,6 +1157,44 @@ function nativeDoorkeeperTrigger(provider, controls) {
 async function safeProfile(read) { try { const value = await read(); return value && typeof value === "object" && !Array.isArray(value) ? value : null; } catch { return null; } } function answerFor(profile, label) { const answers = profile && profile.form_answers; const value = answers && typeof answers === "object" && !Array.isArray(answers) ? Object.entries(answers).find(([key]) => normalizedLabel(key) === label)?.[1] : null; return typeof value === "string" || Array.isArray(value) ? value : null; }
 function approvedOption(profile, question, label) { const answers = profile && profile.form_answers; const exactQuestion = normalizedLabel(question); if (!exactQuestion) return false; const value = answers && typeof answers === "object" && !Array.isArray(answers) && Object.entries(answers).find(([key]) => normalizedLabel(key) === exactQuestion)?.[1]; return typeof value === "string" ? normalizedLabel(value) === label : Array.isArray(value) && value.some((item) => typeof item === "string" && normalizedLabel(item) === label); }
 
+function techPlayPrivateString(value) { return typeof value === "string" && value.length > 0 && value.length <= 2_000 && value === value.trim() && !/[\x00-\x1f\x7f]/.test(value) ? value : null; }
+function techPlayExactAnswer(profile, key) { try { const answers = profile && profile.form_answers; return answers && typeof answers === "object" && !Array.isArray(answers) && Object.prototype.hasOwnProperty.call(answers, key) ? answers[key] : null; } catch { return null; } }
+function techPlayPrivateAge(profile, now) {
+  try {
+    const answers = profile && profile.form_answers; if (!answers || typeof answers !== "object" || Array.isArray(answers)) return null;
+    const keys = ["生年月日", "Date of Birth"].filter((key) => Object.prototype.hasOwnProperty.call(answers, key)); const values = keys.map((key) => answers[key]);
+    if (!values.length || values.some((value) => typeof value !== "string" || value !== values[0])) return null;
+    const dob = values[0]; if (!/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/.test(dob)) return null;
+    const birth = new Date(`${dob}T00:00:00.000Z`); if (!Number.isFinite(birth.getTime()) || birth.toISOString().slice(0, 10) !== dob || typeof now !== "function") return null;
+    let current; try { current = now(); } catch { return null; }
+    if (!(current instanceof Date) || !Number.isFinite(current.getTime())) return null;
+    let parts; try { parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(current).filter(({ type }) => type !== "literal").map(({ type, value }) => [type, value])); } catch { return null; }
+    if (!/^\d{4}$/.test(parts.year || "") || !/^\d{2}$/.test(parts.month || "") || !/^\d{2}$/.test(parts.day || "")) return null;
+    let age = Number(parts.year) - Number(dob.slice(0, 4)); if (`${parts.month}-${parts.day}` < dob.slice(5)) age -= 1;
+    return age >= 18 && age <= 100 ? String(age) : null;
+  } catch { return null; }
+}
+async function resolveTechPlayPrivateValue(input, readPeatixProfile, readFormProfile, now) {
+  try {
+    if (!input || typeof input !== "object" || Array.isArray(input) || !input.control || typeof input.control !== "object" || Array.isArray(input.control)) return null;
+    if (input.control.required !== true || input.control.completed !== false || input.control.submittable !== false) return null;
+    let control; try { control = safeControl(input && input.control); } catch { return null; }
+    if (!control || control.required !== true || control.completed !== false || control.submittable !== false || !["input", "radio"].includes(control.kind)) return null;
+    const label = input.control.label; const question = input.control.question;
+    if (control.kind === "radio") {
+      if (!/^techplay_answer_[1-9][0-9]*_[1-9][0-9]*$/.test(control.control) || !["キャリア状況", "職種"].includes(question) || typeof label !== "string") return null;
+      const profile = await safeProfile(readFormProfile); const expected = techPlayExactAnswer(profile, question);
+      return techPlayPrivateString(expected) && expected === label ? true : null;
+    }
+    if (!/^techplay_answer_[1-9][0-9]*$/.test(control.control)) return null;
+    const identityKey = label === "氏名" ? "name_kanji" : label === "メールアドレス" ? "email" : null;
+    if (identityKey) { const profile = await safeProfile(readPeatixProfile); try { return techPlayPrivateString(profile && profile[identityKey]); } catch { return null; } }
+    if (!["年齢", "所属企業（学校）名"].includes(label)) return null;
+    const profile = await safeProfile(readFormProfile); if (label === "年齢") return techPlayPrivateAge(profile, now);
+    return techPlayPrivateString(techPlayExactAnswer(profile, "所属企業（学校）名"));
+  } catch { return null; }
+}
+
 function createLumaPrivateValueResolver(options = {}) {
   const readProfile = options.readProfile;
   if (typeof readProfile !== "function") invalid();
@@ -1178,8 +1216,10 @@ function createLumaPrivateValueResolver(options = {}) {
 function createPrivateValueResolver(options = {}) {
   const readPeatixProfile = options.readPeatixProfile || (() => null);
   const readFormProfile = options.readFormProfile || (() => null);
+  const now = Object.prototype.hasOwnProperty.call(options, "now") ? options.now : () => new Date();
   if (typeof readPeatixProfile !== "function" || typeof readFormProfile !== "function") invalid();
   return async function resolveValue(input = {}) {
+    if (input && input.provider === "techplay") return resolveTechPlayPrivateValue(input, readPeatixProfile, readFormProfile, now);
     const control = safeControl(input.control); const label = normalizedLabel(control.label); const question = normalizedLabel(control.question);
     if (input.provider === "eventbrite") {
       if (control.kind !== "input" || control.required !== true || control.completed !== false || control.submittable !== false) return null;
