@@ -138,6 +138,8 @@ test("native Eventbrite attendee identity fails closed for mismatch and ambiguou
     ["name-one-token", { name: "Dais", preferred_name: "Dais" }],
     ["name-control-padding", { name: "\nDais Example", preferred_name: "Dais" }],
     ["preferred-control-padding", { name: "Dais Example", preferred_name: "Dais\n" }],
+    ["name-overlength-padding", { name: `Dais Example${" ".repeat(201)}`, preferred_name: "Dais" }],
+    ["preferred-overlength-padding", { name: "Dais Example", preferred_name: `Dais${" ".repeat(201)}` }],
   ]) {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-eventbrite-identity-invalid-")); let factoryCalls = 0; let wakeCalls = 0;
     try {

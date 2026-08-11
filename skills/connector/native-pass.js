@@ -69,7 +69,7 @@ function readKanaIdentity(env) {
   if (/[\x00-\x1f\x7f-\x9f]/.test(rawNameRomaji) || /[\x00-\x1f\x7f-\x9f]/.test(rawPreferredName)) unavailable();
   const nameRomaji = requiredText(rawNameRomaji);
   const preferredName = requiredText(rawPreferredName);
-  if (nameRomaji.length > 200 || preferredName.length > 200) unavailable();
+  if (rawNameRomaji.length > 200 || rawPreferredName.length > 200 || nameRomaji.length > 200 || preferredName.length > 200) unavailable();
   const nameTokens = nameRomaji.split(/\s+/u);
   const preferredTokens = preferredName.split(/\s+/u);
   const legalName = requiredText(env.DAIS_LEGAL_NAME_ROMAJI);
