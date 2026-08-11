@@ -116,6 +116,32 @@ function makeGogMail({ bin, account, keyring, run, execFileSyncImpl = execFileSy
         return Object.freeze({ bytes: result.bytes, cached: result.cached });
       } catch { return null; }
     },
+    async readLatestAnthropicSubscriptionReceipt() {
+      if (!acct) return null;
+      try {
+        const query = 'from:(mail.anthropic.com) subject:"Your receipt from Anthropic, PBC" newer_than:400d';
+        const d = JSON.parse(await exec(["gmail", "messages", "search", query, "-j", "--max=10", "--gmail-no-send"]));
+        const hits = Array.isArray(d.messages) ? d.messages : Array.isArray(d.threads) ? d.threads : Array.isArray(d) ? d : [];
+        const valid = hits.filter((h) => {
+          const id = String(h && h.id || ""), from = String(h && h.from || ""), date = String(h && h.date || ""), addresses = from.match(/[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9-]+(?:\.[A-Z0-9-]+)+/ig) || [];
+          return /^[a-f0-9]+$/i.test(id) && addresses.length === 1 && addresses[0].toLowerCase().endsWith("@mail.anthropic.com") &&
+            /^Your receipt from Anthropic, PBC #\d{4}-\d{4}-\d{4}$/.test(String(h && h.subject || "")) &&
+            /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(date) && parseReceiptInterval(date);
+        }).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+        const hit = valid[0]; if (!hit) return null;
+        const raw = JSON.parse(await exec(["gmail", "raw", hit.id, "-j", "--gmail-no-send"]));
+        const headers = raw && raw.payload && Array.isArray(raw.payload.headers) ? raw.payload.headers : [];
+        const auth = headers.filter((h) => /^authentication-results$/i.test(String(h && h.name || "")));
+        if (auth.length !== 1 || typeof auth[0].value !== "string" || !/^mx\.google\.com;/i.test(auth[0].value)) return null;
+        const clauses = auth[0].value.split(";").map((c) => c.trim().toLowerCase());
+        if (!clauses.some((c) => /(^|\s)dkim=pass(?:\s|$)/.test(c) && (/(^|\s)header\.i=@mail\.anthropic\.com(?:\s|$)/.test(c) || /(^|\s)header\.d=mail\.anthropic\.com(?:\s|$)/.test(c))) ||
+            !clauses.some((c) => /(^|\s)dmarc=pass(?:\s|$)/.test(c) && /(^|\s)header\.from=mail\.anthropic\.com(?:\s|$)/.test(c))) return null;
+        const m = JSON.parse(await exec(["gmail", "get", hit.id, "-j", "--format=full", "--sanitize-content", "--gmail-no-send"]));
+        if (!m || typeof m !== "object" || Array.isArray(m) || typeof m.body !== "string" || !m.body || m.body.length > 20000 ||
+            !m.headers || m.headers.from !== hit.from || m.headers.subject !== hit.subject) return null;
+        return Object.freeze({ source: "anthropic_subscription_receipt_gmail", receivedAtLocal: hit.date, body: m.body });
+      } catch { return null; }
+    },
     async findReceipt({ nonce, afterMs }) {
       if (!acct || !/^[a-f0-9]{16,64}$/i.test(String(nonce || ""))) return null;
       try {
