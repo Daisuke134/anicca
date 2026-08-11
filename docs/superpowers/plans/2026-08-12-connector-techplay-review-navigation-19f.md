@@ -15,12 +15,12 @@
 
 ## Contract
 
-- [ ] RED proves completed input page currently stops at `review_blocked` and never reaches confirm.
-- [ ] Select review only when it is the unique exact `BUTTON type=submit`, token/event binding matches, `required:false`, `completed:false`, `submittable:true`, and every answer/opt-out is completed.
-- [ ] Before clicking, re-inspect the same candidate join page and rebind the exact review control. Reject wrong method/purpose/token/kind/label/state, pending inputs, duplicate/missing locator, page/event/ticket drift, and inspect/locator/click setup failures.
-- [ ] Arm a maximum 30-second exact URL wait before the one click. Accept only `https://techplay.jp/event/join/<sameEventId>/confirm` with no query/fragment. Click throw is successful only if the exact navigation wait still proves confirm; otherwise fail.
-- [ ] After navigation, poll the shipped confirm inspector read-only within the existing 20-attempt/475 ms budget and require exactly one `techplay_final_<sameEventId>` control. Every attempt retains the exact same-event confirm URL and event/canonical/ticket binding. Empty transient observations may retry; no review/input mutation or proposer retry. No final click, provider effect readback, Calendar, evidence, factory/router/native order, or schedule change.
-- [ ] TECH PLAY fallback performs 13 deterministic inputs + one review action, calls external proposer 0, returns `final_blocked`, and emits private-free 14-action history.
-- [ ] Add negative tests for navigation timeout/reject/wrong event/query/fragment, page drift, transient-empty then stable confirm, never-stable confirm, residual form controls on confirm, and final control drift. Review mutation occurs at most once.
-- [ ] Run Harness + TECH PLAY workflow, syntax, diff check, navigation-guard mutation proof, fresh Sol review.
-- [ ] Authenticated live E2E reaches exact confirm, exposes one safe final control, final click 0, private scalar projection leak 0, and closes only the owned page.
+- [x] RED proves completed input page currently stops at `review_blocked` and never reaches confirm.
+- [x] Select review only when it is the unique exact `BUTTON type=submit`, token/event binding matches, `required:false`, `completed:false`, `submittable:true`, and every answer/opt-out is completed.
+- [x] Before clicking, re-inspect the same candidate join page and rebind the exact review control. Reject wrong method/purpose/token/kind/label/state, pending inputs, duplicate/missing locator, page/event/ticket drift, and inspect/locator/click setup failures.
+- [x] Arm a maximum 30-second exact URL wait before the one click. Accept only `https://techplay.jp/event/join/<sameEventId>/confirm` with no query/fragment. Click throw is successful only if the exact navigation wait still proves confirm; otherwise fail.
+- [x] After navigation, poll the shipped confirm inspector read-only within the existing 20-attempt/475 ms budget and require exactly one `techplay_final_<sameEventId>` control. Every attempt retains the exact same-event confirm URL and event/canonical/ticket binding. Empty transient observations may retry; no review/input mutation or proposer retry. No final click, provider effect readback, Calendar, evidence, factory/router/native order, or schedule change.
+- [x] TECH PLAY fallback performs 13 deterministic inputs + one review action, calls external proposer 0, returns `final_blocked`, and emits private-free 14-action history.
+- [x] Add negative tests for navigation timeout/reject/wrong event/query/fragment, page drift, transient-empty then stable confirm, never-stable confirm, residual form controls on confirm, and final control drift. Review mutation occurs at most once.
+- [x] Run Harness + TECH PLAY workflow, syntax, diff check, navigation-guard mutation proof, fresh Sol review.
+- [x] Authenticated live E2E reaches exact confirm, exposes one safe final control, final click 0, private scalar projection leak 0, and closes only the owned page.
