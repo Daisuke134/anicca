@@ -7419,7 +7419,7 @@ fresh Sol初回reviewのImportant 3件に対し、非Doorkeeper selectorをbyte-
 
 LunaがHarness production/testの2 filesだけをTDD変更した。exact Doorkeeper triggerはprovider/candidate/current canonical、link、exact label、flags、strict control identityへ束縛し、modal-trigger mutation signature/latchをfinal form-submitから分離した。same trigger再選択はDOM click 0のままEmail fillとfinal Submit max1へ進む。default proposerもexact triggerだけを選び、generic linkは候補外。正規triggerと同じ意味のwrong-token linkが併存する場合は、選択identityはstrictのままtoken非依存のsemantic duplicate全件を数えてfail closedする。
 
-fresh Sol初回reviewはdefault proposer omissionをImportantとして検出し、RED後`2229bb9b6`で修復。fresh re-reviewはstrict tokenだけを数えるambiguity退行を検出し、RED後`1b35d4a2f`で修復。最終fresh reviewはSHIP、Critical/Important 0。却下済みpath-change実験`bc043cb2c`は`cd82201dd`で明示revertし、最終treeはreview済み`1b35d4a2f`とbyte-identical。Sol独立Harness 72/72、隣接33/33、syntax/diff、remote equality、clean status、却下symbol/test不在がPASS。official wake/browser/provider/Calendar/Telegram作用0。次はB4c production factory injection。Item19 Doorkeeper、scheduleは未完。
+review/self-reviewでdefault proposer omissionとtoken非依存semantic duplicateを検出し、RED後`2229bb9b6`、`1b35d4a2f`で修復。続くfresh Sol reviewはcached observation＋run-local latchでpublic `performAction`が同page/canonical triggerを2回clickできるImportantを再現した。LunaはDoorkeeperだけaction直前に再観測し、page＋exact canonical URL単位の成功latchを`bc043cb2c`で追加。mutation確認用revert `cd82201dd`が一時pushされたため、通常再適用`51656fd5b`で最終状態へ戻した。scoped fresh Sol re-reviewは全finding ADDRESSED、新規breakage 0、SHIP。Sol独立Harness 74/74、隣接33/33、syntax/diff、remote equality、clean status、exact 2 files、4 labels UNLOADEDがPASS。merge `82c36e14d`でstableへ統合。official wake/browser/provider/Calendar/Telegram作用0。次はB4c production factory injection。Item19 Doorkeeper、scheduleは未完。
 
 ### O1B-25進捗383（Item 19D-B4c / Doorkeeper factory injection plan）
 
