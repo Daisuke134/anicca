@@ -13,11 +13,11 @@
 
 ## Contract
 
-- [ ] RED action fixture makes the first post-inspection return zero controls from an oversized transient DOM, then returns the exact stable 49 controls without another mutation.
-- [ ] After an operation reports success, poll only the same page/candidate inspector for a short injected interval. Success still requires the exact token/kind/label/question and `completed:true` on the same join URL.
-- [ ] Bound polling by injected clock/sleep or fixed small constants. Never raise the 150-node inspector limit, accept an oversized observation, repeat the DOM mutation, or call the external model proposer.
-- [ ] Zero controls that never stabilize, page/candidate drift, inspector throw, timeout, and stable wrong postcondition remain failed.
-- [ ] Keep the role-empty hidden native companions covered as ignored non-actionable elements; do not add an invented role or broaden checkbox actionability.
-- [ ] Do not expose label text, value, form data, or private answers.
-- [ ] Re-run Harness + TECH PLAY workflow, syntax, diff check, mutation proof, fresh Sol review.
-- [ ] Repeat authenticated live E2E: six answers + seven opt-outs completed, review submittable, review/final click 0, private projection leak 0, owned page cleanup.
+- [x] RED action fixture makes the first post-inspection return zero controls from an oversized transient DOM, then returns the exact stable 49 controls without another mutation.
+- [x] After an operation reports success, poll only the same page/candidate inspector for a short injected interval. Success still requires the exact token/kind/label/question and `completed:true` on the same join URL.
+- [x] Bound polling by injected clock/sleep or fixed small constants. Never raise the 150-node inspector limit, accept an oversized observation, repeat the DOM mutation, or call the external model proposer.
+- [x] Zero controls that never stabilize, page/candidate drift, inspector throw, timeout, and stable wrong postcondition remain failed.
+- [x] Keep the role-empty hidden native companions covered as ignored non-actionable elements; do not add an invented role or broaden checkbox actionability.
+- [x] Do not expose label text, value, form data, or private answers.
+- [x] Re-run Harness + TECH PLAY workflow, syntax, diff check, mutation proof, fresh Sol review.
+- [x] Repeat authenticated live E2E: six answers + seven opt-outs completed, review submittable, review/final click 0, private projection leak 0, owned page cleanup.
