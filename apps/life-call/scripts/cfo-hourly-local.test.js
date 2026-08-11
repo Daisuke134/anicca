@@ -21,6 +21,10 @@ const ENV = {
   LM_UID_SECRET: "fixture-lm-uid-secret-that-is-at-least-32-bytes",
   LM_TELEGRAM_BOT_TOKEN: "telegram-token-fixture",
 };
+const ANTHROPIC_RECEIPT = Object.freeze({ schema_version: "lm_subscription_receipt_v1", provider: "anthropic", plan: "max_20x", billing_period_start: "2026-08-10", billing_period_end: "2026-09-10", subtotal: "200.00", tax: "20.00", total: "220.00", currency: "USD", paid_date: "2026-08-10", source_hash: `sha256:${"c".repeat(64)}`, evidence_status: "provider_receipt" });
+const AI_COST = Object.freeze({ provider: "anthropic", plan: "max_20x", amount: "220.00", currency: "USD", billingPeriodStart: "2026-08-10", billingPeriodEnd: "2026-09-10", evidenceStatus: "provider_receipt", unavailableProviders: ["openai"] });
+function anthropicCapture(status = "appended", confirmed = ANTHROPIC_RECEIPT, recordId = confirmed.source_hash) { return { status, record_id: recordId, confirmed }; }
+function snapshotWithAi(ref, aiCost = AI_COST) { const row = snapshotRow(ref, 100); row.report_payload = { ...row.report_payload, aiCost }; return row; }
 
 function moneytreeRead(amountMinor, observedAt = CLOCK.toISOString()) {
   const source = {
@@ -116,10 +120,10 @@ test("changed facts append N+1 and deliver that exact revision", async () => {
   }));
   assert.deepEqual(result, { status: "sent", reportingDate: DATE, revision: 2, appended: true, delivered: true, recovered: false });
   assert.deepEqual(calls, { revision: 0, deliver: 1 });
-  assert.equal(requests.length, 2);
+  assert.equal(requests.length, 3);
   assert.match(requests[0].url, /\/rest\/v1\/lm_cfo_daily_snapshots\?/);
-  assert.match(requests[1].url, /\/rest\/v1\/rpc\/lm_append_cfo_daily_snapshot_revision$/);
-  const payload = JSON.parse(requests[1].init.body);
+  assert.match(requests[2].url, /\/rest\/v1\/rpc\/lm_append_cfo_daily_snapshot_revision$/);
+  const payload = JSON.parse(requests[2].init.body);
   assert.deepEqual(Object.keys(payload).sort(), ["p_report_payload", "p_run_id", "p_source_bundle", "p_supersedes_revision", "p_uid", "p_reporting_date", "p_revision"].sort());
   assert.deepEqual({ uid: payload.p_uid, date: payload.p_reporting_date, run: payload.p_run_id, revision: payload.p_revision, supersedes: payload.p_supersedes_revision }, { uid: UID, date: DATE, run: RUN, revision: 2, supersedes: 1 });
   assert.equal(payload.p_report_payload.totals.assetsMinor, 125); assert.equal(payload.p_report_payload.revision, 2); assert.equal(payload.p_source_bundle.source.accounts[0].balanceMinor, 125);
@@ -159,7 +163,7 @@ test("recovery sends only the recovered report", async () => {
   }));
   assert.equal(reads, 2);
   assert.equal(delivered.length, 1);
-  assert.equal(delivered[0].state, "partial");
+  assert.equal(delivered[0].state, "recovered");
   assert.equal(delivered[0].totals.assetsMinor, 321);
   assert.deepEqual(result, { status: "sent", reportingDate: DATE, revision: 1, appended: true, delivered: true, recovered: true });
 });
@@ -186,13 +190,36 @@ test("hourly main isolates usage failures and preserves finance", async () => {
 });
 
 test("hourly main publishes exact provider counts after usage and before finance", async () => {
-  const calls = [], output = [], capture = [], confirmed = { schema_version: 1, provider: "google_cloud", billing_period: "202607", scope: { kind: "billing_account", ref: "sha256:" + "a".repeat(64) }, amount: { value: "1100", currency: "JPY" }, source: "provider_invoice_pdf", source_document_ref: "sha256:" + "b".repeat(64), observed_at: CLOCK.toISOString(), evidence_status: "provider_billed" };
-  const result = await main({ ...baseOptions({ env: { ...ENV, LIFE_MANAGER_STATE_HOME: "/tmp/cfo-hourly-state", GOG_ACCOUNT: "cfo@example.com" }, now: () => { calls.push("clock"); return CLOCK; }, runLocalAgentUsageCollection: async () => calls.push("usage"), makeGogMail: () => ({ findLatestGoogleCloudInvoice: async () => null }), captureLatestGoogleCloudInvoice: async input => { calls.push("billing"); capture.push(input); return { status: "appended", record_id: "sha256:" + "b".repeat(64), confirmed }; }, readMoneytreeViaCodex: async () => { calls.push("finance"); return moneytreeRead(100); }, deliverCfoTelegram: async input => { assert.equal("providerBilling" in input, false); assert.doesNotMatch(JSON.stringify(input), /1100|sha256:|cfo@example/); return { status: "sent" }; } }), stdout: line => output.push(line) });
-  assert.deepEqual(calls, ["usage", "clock", "billing", "finance"]); assert.equal(capture.length, 1); assert.deepEqual(Object.keys(capture[0]).sort(), ["mail", "observedAt", "stateRoot"]); assert.equal(capture[0].stateRoot, "/tmp/cfo-hourly-state"); assert.equal(capture[0].observedAt, CLOCK.toISOString());
+  const calls = [], output = [], capture = [], anthropic = [], confirmed = { schema_version: 1, provider: "google_cloud", billing_period: "202607", scope: { kind: "billing_account", ref: "sha256:" + "a".repeat(64) }, amount: { value: "1100", currency: "JPY" }, source: "provider_invoice_pdf", source_document_ref: "sha256:" + "b".repeat(64), observed_at: CLOCK.toISOString(), evidence_status: "provider_billed" };
+  const result = await main({ ...baseOptions({ env: { ...ENV, LIFE_MANAGER_STATE_HOME: "/tmp/cfo-hourly-state", GOG_ACCOUNT: "cfo@example.com" }, now: () => { calls.push("clock"); return CLOCK; }, aiCost: { ...AI_COST, amount: "HOSTILE" }, runLocalAgentUsageCollection: async () => calls.push("usage"), makeGogMail: () => ({ findLatestGoogleCloudInvoice: async () => null }), captureLatestGoogleCloudInvoice: async input => { calls.push("billing"); capture.push(input); return { status: "appended", record_id: "sha256:" + "b".repeat(64), confirmed }; }, captureLatestAnthropicSubscriptionReceipt: async input => { calls.push("anthropic"); anthropic.push(input); return anthropicCapture(); }, readMoneytreeViaCodex: async () => { calls.push("finance"); return moneytreeRead(100); }, appendCfoDailySnapshot: async input => { assert.deepEqual(input.moneytreeRead.source, moneytreeRead(100).source); assert.deepEqual(input.report.aiCost, AI_COST); assert.equal("aiCost" in input.moneytreeRead, false); return { public_ref: REF1, reporting_date: DATE, run_id: RUN, revision: 1, created_at: CLOCK.toISOString() }; }, deliverCfoTelegram: async input => { assert.equal("providerBilling" in input, false); assert.deepEqual(input.snapshot.aiCost, AI_COST); assert.doesNotMatch(JSON.stringify(input), /1100|sha256:|cfo@example/); return { status: "sent" }; } }), stdout: line => output.push(line) });
+  assert.deepEqual(calls, ["usage", "clock", "billing", "anthropic", "finance"]); assert.equal(capture.length, 1); assert.deepEqual(Object.keys(capture[0]).sort(), ["mail", "observedAt", "stateRoot"]); assert.equal(capture[0].stateRoot, "/tmp/cfo-hourly-state"); assert.equal(capture[0].observedAt, CLOCK.toISOString()); assert.deepEqual(Object.keys(anthropic[0]).sort(), ["mail", "observedAt", "stateRoot"]); assert.deepEqual(anthropicCapture().confirmed, ANTHROPIC_RECEIPT); assert.equal(anthropicCapture().record_id, ANTHROPIC_RECEIPT.source_hash);
   assert.deepEqual(result.providerBilling, { status: "confirmed_unresolved", confirmedCount: 1, unresolvedCount: 1, unavailableCount: 0 }); assert.equal(Object.isFrozen(result.providerBilling), true); assert.deepEqual(Object.keys(result.providerBilling).sort(), ["confirmedCount", "status", "unavailableCount", "unresolvedCount"]); assert.deepEqual(JSON.parse(output[0]), { ...result.summary, providerBilling: result.providerBilling }); assert.doesNotMatch(output[0], /1100|sha256:|cfo@example/);
 });
 
 test("hourly main isolates absent, thrown, and malformed provider billing", async () => {
   const cases = [["absent", {}], ["thrown", { GOG_ACCOUNT: "cfo@example.com", captureLatestGoogleCloudInvoice: async () => { throw new Error("HOSTILE_PROVIDER_SECRET"); } }], ["invalid", { GOG_ACCOUNT: "cfo@example.com", captureLatestGoogleCloudInvoice: async () => ({ status: "appended", record_id: "sha256:" + "a".repeat(64), confirmed: { provider: "google_cloud", billing_period: "202613", scope: { kind: "wrong", ref: "sha256:" + "b".repeat(64) }, amount: { value: "999999", currency: "JPY" }, source: "provider_invoice_pdf", source_document_ref: "sha256:" + "a".repeat(64), observed_at: "HOSTILE_TIMESTAMP", evidence_status: "provider_billed", extra: "HOSTILE_EXTRA" } }) }]];
   for (const [name, extra] of cases) { const output = [], delivered = []; const result = await main({ ...baseOptions({ env: { ...ENV, ...extra }, readMoneytreeViaCodex: async () => moneytreeRead(100), deliverCfoTelegram: async input => { delivered.push(input); return { status: "sent" }; }, stdout: line => output.push(line) }), ...extra }); assert.equal(result.exitCode, 0, name); assert.deepEqual(result.summary, { status: "sent", reportingDate: DATE, revision: 1, appended: true, delivered: true, recovered: false }, name); assert.deepEqual(result.providerBilling, { status: "unavailable", confirmedCount: 0, unresolvedCount: 0, unavailableCount: 1 }, name); assert.deepEqual(JSON.parse(output[0]), { ...result.summary, providerBilling: result.providerBilling }); assert.equal(delivered.length, 1); assert.doesNotMatch(output[0] + JSON.stringify(delivered), /HOSTILE|999999|HOSTILE_ID/); }
+});
+
+test("ai cost wins, carries through the first next date, and expires", async () => {
+  let appended;
+  const changed = await runHourlyCfo(baseOptions({ aiCost: AI_COST, latestSnapshot: async () => snapshotRow(REF1, 100), appendCfoDailySnapshotRevision: async input => { appended = input; return { public_ref: REF2, reporting_date: DATE, run_id: RUN, revision: 2, supersedes_revision: 1, created_at: CLOCK.toISOString() }; } }));
+  assert.equal(changed.revision, 2); assert.deepEqual(appended.report.aiCost, AI_COST);
+  let carry;
+  const next = new Date("2026-08-11T03:04:05.000Z"), prior = snapshotWithAi(REF1);
+  const carried = await runHourlyCfo(baseOptions({ now: () => next, aiCost: null, latestSnapshot: async () => null, latestAiCost: async () => prior, resolveCfoDailyRun: async () => ({ reporting_date: "2026-08-11", run_id: RUN }), readMoneytreeViaCodex: async () => moneytreeRead(100, next.toISOString()), appendCfoDailySnapshot: async input => { carry = input; return { public_ref: REF2, reporting_date: "2026-08-11", run_id: RUN, revision: 1, created_at: next.toISOString() }; } }));
+  assert.equal(carried.revision, 1); assert.deepEqual(carry.report.aiCost, AI_COST);
+  const expired = { ...AI_COST, billingPeriodStart: "2026-07-01", billingPeriodEnd: "2026-08-01" };
+  const omitted = await runHourlyCfo(baseOptions({ now: () => next, aiCost: null, latestSnapshot: async () => null, latestAiCost: async () => snapshotWithAi(REF1, expired), resolveCfoDailyRun: async () => ({ reporting_date: "2026-08-11", run_id: RUN }), readMoneytreeViaCodex: async () => moneytreeRead(100, next.toISOString()), appendCfoDailySnapshot: async input => { assert.equal("aiCost" in input.report, false); return { public_ref: REF2, reporting_date: "2026-08-11", run_id: RUN, revision: 1, created_at: next.toISOString() }; } }));
+  assert.equal(omitted.revision, 1);
+});
+
+test("default initial append preserves exact report/source and rejects hostile capture", async () => {
+  const requests = [], delivered = [], output = [];
+  const result = await runHourlyCfo(baseOptions({ aiCost: AI_COST, latestSnapshot: undefined, appendCfoDailySnapshot: undefined, fetchImpl: async (url, init) => { requests.push({ url, init }); return init.method === "GET" ? { ok: true, status: 200, json: async () => [] } : { ok: true, status: 200, json: async () => ({ public_ref: REF1, reporting_date: DATE, run_id: RUN, revision: 1, created_at: CLOCK.toISOString(), supersedes_revision: null }) }; }, deliverCfoTelegram: async input => { delivered.push(input); return { status: "sent" }; } }));
+  assert.equal(result.revision, 1); const payload = JSON.parse(requests.at(-1).init.body); assert.deepEqual(Object.keys(payload).sort(), ["p_report_payload", "p_reporting_date", "p_run_id", "p_source_bundle", "p_uid"].sort()); assert.deepEqual(payload.p_report_payload.aiCost, AI_COST); assert.equal("aiCost" in payload.p_source_bundle, false); assert.deepEqual(delivered[0].snapshot, payload.p_report_payload);
+  for (const bad of [() => { throw new Error("HOSTILE"); }, () => anthropicCapture("failed"), () => anthropicCapture("appended", { ...ANTHROPIC_RECEIPT, total: "221.00" }), () => anthropicCapture("appended", { ...ANTHROPIC_RECEIPT, extra: "HOSTILE" }), () => anthropicCapture("appended", { ...ANTHROPIC_RECEIPT, paid_date: "2026-08-09" }), () => anthropicCapture("appended", ANTHROPIC_RECEIPT, "sha256:" + "d".repeat(64))]) {
+    const seen = [], output = []; const result = await main({ ...baseOptions({ env: { ...ENV, GOG_ACCOUNT: "cfo@example.com" }, latestSnapshot: async () => snapshotWithAi(REF1), makeGogMail: () => ({ findLatestGoogleCloudInvoice: async () => null }), captureLatestGoogleCloudInvoice: async () => null, captureLatestAnthropicSubscriptionReceipt: bad, aiCost: { ...AI_COST, amount: "HOSTILE" }, deliverCfoTelegram: async input => { seen.push(input); return { status: "sent" }; }, stdout: line => output.push(line) }) });
+    assert.equal(result.exitCode, 0); assert.deepEqual(seen[0].snapshot.aiCost, AI_COST); assert.doesNotMatch(JSON.stringify({ result, output, seen }), /HOSTILE|sha256:|cfo@example/);
+  }
 });
