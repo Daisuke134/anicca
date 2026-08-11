@@ -491,6 +491,31 @@ test("Peatix direct readback-unavailable stops before Harness or another candida
   assert.deepEqual(state.calls.filter(([name]) => name === "report"), [["report", "circuit_open", "effect_unknown", 1]]);
 });
 
+test("non-Peatix readback-unavailable remains eligible for the existing Harness fallback", async () => {
+  const state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return [candidate("luma", "one")];
+    },
+    async runDirectAction({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["direct", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "failed", safe_reason: "peatix_readback_unavailable" });
+    },
+    async runAgentFallback({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["agent", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "failed", safe_reason: "agent_action_unavailable" });
+    },
+  });
+
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-luma-effect", providers: ["luma"] }, state.dependencies);
+  assert.deepEqual(result, { status: "completed_no_effect", safe_reason: "providers_exhausted", telegram_provider_id: "9001" });
+  assert.equal(state.calls.filter(([name]) => name === "direct").length, 1);
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 1);
+  assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+});
+
 test("malformed direct safe reason becomes generic and does not reach the circuit report", async () => {
   const state = fixture({
     async runDirectAction() { return Object.freeze({ status: "failed", safe_reason: "https://peatix.com/event/private" }); },
