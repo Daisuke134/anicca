@@ -7449,7 +7449,13 @@ LunaがDoorkeeper workflow production/test 2 filesだけをTDD変更した。現
 
 fresh Sol reviewはSHIP、Critical/Important 0。Sol独立15/15、87/87、syntax/diff/ownership/remote equality、4 labels UNLOADEDがPASS。review済み`0faf0c6fe`をstableへfast-forwardした。次は同じofficial foreground wakeをexact 1回実行し、Doorkeeper discovered count >0または次のexact safe boundary、external effect、cleanup、Telegram receiptを実測する。Item19 Doorkeeperと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗387。これ以外の残TODO一覧は履歴）
+### O1B-25進捗388（Item 19D / Doorkeeper detail eligibility live audit and repair plan）
+
+4 labels unloadedのままofficial foreground wakeをexact 1回実行した。wake `wake-ca4b16f40b59b247ba2eb6a3`は`completed_no_effect / existing_bundles_reused / failures 0`、Telegram provider ID `11624`。Doorkeeper auditは修復前`0/0/0/0/0`から`discovered 100 / within_window 12 / eligible 0 / calendar_free 0 / selected 0`へ改善した。candidate attempt増分0、bundle 12→12、stdout/stderr 0、終了後process 0、lock absent。
+
+公式detail 3件を比較すると各pageはvisible modal trigger `申し込む` 1とhidden final submit `申し込む` 1を持つ。先頭2件のJSON-LDはOffline/InStock/price 0 JPY/exact URL。detail readerはvisibilityを保存するが`normalizeDetail`はhiddenを含む同label全2件を数えてtotal 1を要求するため、valid eventも全てrejectする。次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-visible-trigger-19d.md`はworkflow production/test 2 filesだけ。visible exact controlだけを一意性判定へ使う。Harness/modal/final Submitは不変、implementation中official wake 0、4 labels UNLOADED。Item19 Doorkeeperと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗388。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
