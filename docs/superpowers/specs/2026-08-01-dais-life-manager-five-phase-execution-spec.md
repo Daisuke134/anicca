@@ -7415,7 +7415,13 @@ fresh Sol初回reviewのImportant 3件に対し、非Doorkeeper selectorをbyte-
 
 次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-modal-activation-19d.md`はHarness production/test 2 filesだけ。review済みdefault inspectorのexact unique modal triggerだけをDoorkeeperでparent-authorized `ax_click`にし、modal-trigger mutation signatureをfinal form-submitから分離する。同page trigger再clickはDOM action 0、required Email fill後のfinal submitはB4a max1/registered-only latchを維持。arbitrary link/identity/duplicateはaction 0。factory/native/liveは変更せずofficial wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗381。これ以外の残TODO一覧は履歴）
+### O1B-25進捗382（Item 19D-B4b2 / Doorkeeper modal activation ship）
+
+LunaがHarness production/testの2 filesだけをTDD変更した。exact Doorkeeper triggerはprovider/candidate/current canonical、link、exact label、flags、strict control identityへ束縛し、modal-trigger mutation signature/latchをfinal form-submitから分離した。same trigger再選択はDOM click 0のままEmail fillとfinal Submit max1へ進む。default proposerもexact triggerだけを選び、generic linkは候補外。正規triggerと同じ意味のwrong-token linkが併存する場合は、選択identityはstrictのままtoken非依存のsemantic duplicate全件を数えてfail closedする。
+
+fresh Sol初回reviewはdefault proposer omissionをImportantとして検出し、RED後`2229bb9b6`で修復。fresh re-reviewはstrict tokenだけを数えるambiguity退行を検出し、RED後`1b35d4a2f`で修復。最終fresh reviewはSHIP、Critical/Important 0。却下済みpath-change実験`bc043cb2c`は`cd82201dd`で明示revertし、最終treeはreview済み`1b35d4a2f`とbyte-identical。Sol独立Harness 72/72、隣接33/33、syntax/diff、remote equality、clean status、却下symbol/test不在がPASS。official wake/browser/provider/Calendar/Telegram作用0。次はB4c production factory injection。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗382。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
