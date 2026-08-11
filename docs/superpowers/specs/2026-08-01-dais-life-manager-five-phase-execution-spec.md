@@ -7219,7 +7219,15 @@ LunaへPeatix browser provider production/testの既存2 filesだけを所有さ
 
 Luna focused 22/22、production Harness 55/55、minimal runner 36/36、minimal production 12/12、Sol独立expanded 125/125、syntax、diff checkがPASS。fresh Sol reviewはCritical 0 / Important 0で`ship`。別workflow 1 failureは未変更の日付依存testで単独再現し新規回帰0。review済みcommitをstable scheduled worktreeへfast-forwardし、両remote branchへpushした。implementation/test/review中のbrowser、provider Submit、Calendar、evidence、Telegram、state、launchd、schedule外部作用0。Item19 Meetupは未完。次は4 labels unloaded、process/lock 0、clean/upstreamからofficial foreground wakeをexact 1回実行し、実登録済みPeatixのpre-readback/evidence回復とMeetup audit到達または次のexact safe boundaryを観測する。
 
-### Active remaining TODO SSOT（進捗349。これ以外の残TODO一覧は履歴）
+### O1B-25進捗350（Item 19M-D0c live wake / direct effect-unknown blocker確定）
+
+pushed HEAD `818ad151b`、4 labels unloaded、process 0、active target lease 0、`:9222` page 1、bundle/action/report/delivery/audit baseline `6/816/113/125`からofficial foreground wakeをexact 1回実行した。wake `wake-995f1e9d54b9a832392ffa63`はLuma、Connpass、Peatix discoveryを成功し、action 816→835、report 113→114、delivery 125→126、positive Telegram ID `11394`。Peatix audit 29→30、bundle 6→6、Meetup audit 0。
+
+Peatix candidateはcache 1ms、provider direct 31,219msの後に`peatix_readback_unavailable`となったが、existing runnerはdirect failureを通常fallback可能と扱いBrowser Harnessを34,041ms実行した。Harnessが`effect_unknown`を返し、wakeはfailure count 1の`circuit_open / effect_unknown`で安全停止。process 0、active lease 0、owned page cleanup、Git clean/upstreamを確認した。D0bはconfirmed settlementを越えた場合を正しくreadbackするが、confirmedなしのfinal click済みambiguous effectをouter fallbackから止める契約が未接続だった。
+
+Ponytailで新provider statusやworkflow変更を棄却し、plan `2026-08-11-connector-peatix-direct-effect-unknown.md`を追加した。既にrunnerへ届くexact `peatix_readback_unavailable`を既存agent `effect_unknown` terminal contractへ接続するrunner/test 2-file TDDだけを行う。direct exact 1後はHarness 0、次candidate 0、evidence 0、cleanup/report exact 1を必須とする。scheduleはunloaded、Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗350。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
