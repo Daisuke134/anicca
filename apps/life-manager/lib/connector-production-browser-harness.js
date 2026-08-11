@@ -261,11 +261,22 @@ async function inspectPageControls(input = {}) {
     const doorkeeperHrefOf = (element) => String((element.getAttribute && element.getAttribute("href")) || element.href || "");
     const doorkeeperTextOf = (element) => String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim();
     const doorkeeperTriggerOf = (element) => String(element.tagName || "").toLowerCase() === "a" && doorkeeperHrefOf(element) === "#new_registration_modal" && doorkeeperTextOf(element) === "申し込む";
-    const doorkeeperVisibleElements = visibleElements.filter(visibleOf);
-    const hasDoorkeeperTrigger = doorkeeperVisibleElements.some(doorkeeperTriggerOf);
+    const doorkeeperVisibleOf = (element) => {
+      if (!visibleOf(element)) return false;
+      let ancestor = element.parentElement || null;
+      while (ancestor) {
+        if (typeof ancestor.getBoundingClientRect === "function") {
+          let rect;
+          try { rect = ancestor.getBoundingClientRect(); } catch { return false; }
+          if (!rect || Number(rect.width) <= 0 || Number(rect.height) <= 0) return false;
+        }
+        ancestor = ancestor.parentElement || null;
+      }
+      return true;
+    };
+    const doorkeeperVisibleElements = visibleElements.filter(doorkeeperVisibleOf);
     const doorkeeperPageMatch = /^https:\/\/([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.doorkeeper\.jp\/events\/([1-9][0-9]*)$/.exec(String(context && context.href || ""));
     const knownDoorkeeperPage = Boolean(context && context.provider === "doorkeeper" && context.eventId && doorkeeperPageMatch && doorkeeperPageMatch[1] !== "www" && doorkeeperPageMatch[2] === String(context.eventId));
-    if (hasDoorkeeperTrigger && context && context.provider !== "doorkeeper") return [];
     if (context && context.provider === "doorkeeper") {
       if (!knownDoorkeeperPage) return [];
       const idOf = (element) => String(element.id || (element.getAttribute && element.getAttribute("id")) || "");
