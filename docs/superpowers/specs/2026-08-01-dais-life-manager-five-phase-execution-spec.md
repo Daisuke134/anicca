@@ -7461,7 +7461,13 @@ LunaがDoorkeeper workflow production/test 2 filesだけをTDD変更した。vis
 
 fresh Sol reviewはSHIP、Critical/Important 0。Sol独立15/15、87/87、syntax/diff/ownership/remote equality、4 labels UNLOADEDがPASS。review済み`fdbd624c7`をstableへfast-forwardした。次はofficial foreground wake exact 1回でeligible count、external registration/bundleまたは次のexact boundaryを実測する。Item19 Doorkeeperと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗389。これ以外の残TODO一覧は履歴）
+### O1B-25進捗390（Item 19D / Doorkeeper eligible live audit）
+
+4 labels unloadedのままofficial foreground wakeをexact 1回実行した。wake `wake-8a72c3d2835045b75a326d67`は`completed_no_effect / existing_bundles_reused / failures 0`、Telegram provider ID `11630`。Doorkeeper auditは`discovered 100 / within_window 12 / eligible 4 / calendar_free 0 / selected 0`となり、visible eligibility修復で4件が無料・受付中・東京対面まで通過した。4件すべてが実Google Calendar busy intervalと競合し、candidate attempt増分0、applied bundle 12→12、external registration/Calendar/PNG増分0。
+
+終了後process 0、lock absent、target-ledger/current CDP intersection 0、既存page 2維持、Doorkeeper audit mode 0600、4 labels unloaded、Git clean/upstream 0/0。Doorkeeperは本線discovery・eligibility・Calendar conflict safe skipまでlive実証済みだが、非衝突候補がないため実`applied_bundle`とproduction supported表示は未完のまま保持する。次はItem19順序のEventbriteを同じone-provider-at-a-time contractで追加し、Doorkeeperは将来の非衝突wakeでacceptanceを閉じる。
+
+### Active remaining TODO SSOT（進捗390。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
