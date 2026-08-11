@@ -123,4 +123,13 @@ function createMeetupEvidenceStore(options = {}) {
   });
 }
 
-module.exports = { createConnpassEvidenceStore, createMeetupEvidenceStore };
+function createDoorkeeperEvidenceStore(options = {}) {
+  return createBrowserProviderEvidenceStore({
+    ...options, provider: "doorkeeper",
+    eventRef: /^doorkeeper-event:\/\/event\/[1-9][0-9]*$/,
+    receiptRef: /^provider-receipt:\/\/doorkeeper\/([0-9a-f]{64})$/,
+    collisionMessage: "Doorkeeper evidence collision",
+  });
+}
+
+module.exports = { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore };
