@@ -21,6 +21,7 @@ const CONNPASS_REFERRAL_QUESTION = "このイベントは何を見て知りま�
 const CONNPASS_ONLINE_LABEL = /^オンライン視聴枠（YouTube） 無料(?: 参加者数 \d+人)?$/i;
 const CONNPASS_JOIN_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/([1-9][0-9]*)\/join\/$/;
 const DOORKEEPER_FINAL_LABEL = "申し込む";
+const DOORKEEPER_TRIGGER_CONTROL = /^(?:control_[1-9][0-9]*|(?:doorkeeper_)?(?:modal_)?trigger(?:_[a-z0-9]+)?)$/;
 const DOORKEEPER_EVENT_REF = /^doorkeeper-event:\/\/event\/([1-9][0-9]*)$/;
 const DOORKEEPER_EVENT_URL = /^https:\/\/([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.doorkeeper\.jp\/events\/([1-9][0-9]*)$/;
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
@@ -48,6 +49,35 @@ function candidateDoorkeeperBinding(candidate) {
 function candidateDoorkeeperEventId(candidate) { return candidateDoorkeeperBinding(candidate)?.eventId || ""; }
 function isConnpassJoin(provider, href) {
   return provider === "connpass" && CONNPASS_JOIN_URL.test(String(href || ""));
+}
+function isDoorkeeperModalTrigger({ provider, page, candidate, control, controls = [] } = {}) {
+  if (
+    provider !== "doorkeeper" || !control || control.kind !== "link"
+    || control.label !== DOORKEEPER_FINAL_LABEL || control.required !== false
+    || control.completed !== false || control.submittable !== false
+    || !DOORKEEPER_TRIGGER_CONTROL.test(String(control.control || ""))
+  ) return false;
+  const binding = candidateDoorkeeperBinding(candidate);
+  if (!binding) return false;
+  let href = "";
+  try { href = String(typeof page?.url === "function" ? page.url() : ""); } catch { href = ""; }
+  if (href !== binding.canonicalUrl) return false;
+  const matching = Array.isArray(controls)
+    ? controls.filter((item) => item && item.kind === "link" && item.label === DOORKEEPER_FINAL_LABEL && item.required === false && item.completed === false && item.submittable === false)
+    : [];
+  return matching.length === 1 && matching[0].control === control.control;
+}
+function isDoorkeeperFinalSubmit({ provider, page, candidate, control, controls = [] } = {}) {
+  if (provider !== "doorkeeper" || !control || control.kind !== "button" || control.submittable !== true || control.label !== DOORKEEPER_FINAL_LABEL) return false;
+  const binding = candidateDoorkeeperBinding(candidate);
+  if (!binding) return false;
+  let href = "";
+  try { href = String(typeof page?.url === "function" ? page.url() : ""); } catch { href = ""; }
+  if (href !== binding.canonicalUrl) return false;
+  const matching = Array.isArray(controls)
+    ? controls.filter((item) => item && item.kind === "button" && item.submittable === true && item.label === DOORKEEPER_FINAL_LABEL)
+    : [];
+  return matching.length === 1 && matching[0].control === control.control;
 }
 
 function startPeatixConfirmWait(page, provider, control) {
@@ -120,9 +150,7 @@ function startFinalEffectWait(page, provider, control, candidate, readProviderSt
     const matchingControls = Array.isArray(controls) ? controls.filter((item) => item && item.kind === "button" && item.submittable === true && item.label === CONNPASS_FINAL_LABEL) : [];
     if (!eventId || !joinMatch || joinMatch[1] !== eventId || matchingControls.length !== 1 || matchingControls[0].control !== control.control || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
   } else {
-    const binding = candidateDoorkeeperBinding(candidate);
-    const matchingControls = Array.isArray(controls) ? controls.filter((item) => item && item.kind === "button" && item.submittable === true && item.label === DOORKEEPER_FINAL_LABEL) : [];
-    if (!binding || href !== binding.canonicalUrl || matchingControls.length !== 1 || matchingControls[0].control !== control.control || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
+    if (!isDoorkeeperFinalSubmit({ provider, page, candidate, control, controls }) || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
   }
   const statuses = Array.isArray(acceptedStatuses) && acceptedStatuses.length ? acceptedStatuses : ["registered", "pending"];
   let releaseClick;
@@ -585,10 +613,12 @@ function createProductionBrowserHarness(options = {}) {
     const state = observation.state === "connpass_join" && isConnpassJoin(provider, currentHref) ? "connpass_join" : observation.state === "connpass_join" ? "registration_page" : observation.state;
     const control = observation.controls.find((item) => item.control === input.action.control);
     if (!control) return Object.freeze({ status: "failed" });
+    const doorkeeperModalTrigger = isDoorkeeperModalTrigger({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
     const pendingRequiredAnswer = observation.controls.some((item) => ACTIONABLE_KINDS.has(item.kind) && item.required && !item.completed);
     if (control.kind === "button" && pendingRequiredAnswer) return Object.freeze({ status: "failed" });
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
-    if (control.kind === "link" || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
+    if ((control.kind === "link" && !doorkeeperModalTrigger) || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
+    if (doorkeeperModalTrigger && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
     if (provider === "connpass" && state === "connpass_join" && control.kind === "button" && control.label !== CONNPASS_FINAL_LABEL) return Object.freeze({ status: "failed" });
     if (provider === "doorkeeper" && control.kind === "button" && control.label !== DOORKEEPER_FINAL_LABEL) return Object.freeze({ status: "failed" });
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
@@ -648,13 +678,24 @@ function createProductionBrowserHarness(options = {}) {
     const seenMutations = new Set();
     let connpassSubmitAttempted = false;
     let doorkeeperSubmitAttempted = false;
+    let doorkeeperTriggerAttempted = false;
     let ambiguousEffect = false;
     let finalEffectProviderState = null;
     const adapter = createBrowserHarnessAdapter({
       observePage: ({ page }) => observed(page, input.provider, input.candidate),
       async proposeAction(input) { const proposal = await proposeAction(input); const token = String(proposal && typeof proposal === "object" ? proposal.control || "" : ""); const control = input.observation.controls.find((item) => item.control === token); return CONTROL.test(token) && control ? actionForControl(control) : null; },
       async performAction(action) {
-        const selected = action.action || action; const effect = ["ax_click", "coordinate_click", "keyboard_submit"].includes(selected.method) ? "activate" : ["ax_fill", "dom_fill"].includes(selected.method) ? "fill" : selected.method; const signature = MUTATING_METHODS.has(selected.method) ? selected.purpose === "submit" ? `${safePageState(action.page)}:submit:form-submit` : `${safePageState(action.page)}:${selected.purpose}:${effect}:${selected.control}` : null;
+        const selected = action.action || action;
+        const cached = registry.get(action.page);
+        const selectedControl = cached && cached.provider === input.provider ? cached.observation.controls.find((item) => item.control === selected.control) : null;
+        const doorkeeperTrigger = isDoorkeeperModalTrigger({ provider: input.provider, page: action.page, candidate: input.candidate, control: selectedControl, controls: cached?.observation.controls });
+        const doorkeeperFinal = isDoorkeeperFinalSubmit({ provider: input.provider, page: action.page, candidate: input.candidate, control: selectedControl, controls: cached?.observation.controls });
+        const effect = ["ax_click", "coordinate_click", "keyboard_submit"].includes(selected.method) ? "activate" : ["ax_fill", "dom_fill"].includes(selected.method) ? "fill" : selected.method;
+        const signature = MUTATING_METHODS.has(selected.method)
+          ? doorkeeperTrigger ? `${safePageState(action.page)}:doorkeeper:modal-trigger`
+            : selected.purpose === "submit" ? `${safePageState(action.page)}:submit:form-submit` : `${safePageState(action.page)}:${selected.purpose}:${effect}:${selected.control}`
+          : null;
+        if (doorkeeperTrigger && doorkeeperTriggerAttempted) return Object.freeze({ status: "success" });
         if (input.provider === "connpass" && selected.purpose === "submit") {
           if (connpassSubmitAttempted) {
             ambiguousEffect = true;
@@ -662,7 +703,7 @@ function createProductionBrowserHarness(options = {}) {
           }
           connpassSubmitAttempted = true;
         }
-        if (input.provider === "doorkeeper" && selected.purpose === "submit") {
+        if (input.provider === "doorkeeper" && doorkeeperFinal) {
           if (doorkeeperSubmitAttempted) {
             ambiguousEffect = true;
             return Object.freeze({ status: "failed", safe_reason: "effect_unknown" });
@@ -675,7 +716,10 @@ function createProductionBrowserHarness(options = {}) {
         if (result && result.status === "success" && result.provider_state && ["registered", "pending"].includes(result.provider_state.status)) {
           finalEffectProviderState = result.provider_state;
         }
-        if (signature && result && result.status === "success") seenMutations.add(signature);
+        if (signature && result && result.status === "success") {
+          if (doorkeeperTrigger) doorkeeperTriggerAttempted = true;
+          else seenMutations.add(signature);
+        }
         return result;
       },
       async readExpectedState({ page }) {
