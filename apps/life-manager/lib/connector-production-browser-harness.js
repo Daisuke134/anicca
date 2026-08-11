@@ -530,7 +530,7 @@ function createProductionBrowserHarness(options = {}) {
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
     if (control.kind === "link" || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
     if (provider === "connpass" && state === "connpass_join" && control.kind === "button" && control.label !== CONNPASS_FINAL_LABEL) return Object.freeze({ status: "failed" });
-    if (provider === "doorkeeper" && (control.kind !== "button" || control.label !== DOORKEEPER_FINAL_LABEL)) return Object.freeze({ status: "failed" });
+    if (provider === "doorkeeper" && control.kind === "button" && control.label !== DOORKEEPER_FINAL_LABEL) return Object.freeze({ status: "failed" });
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
     let value = null;
     if (FILL.has(action.method)) {
@@ -623,6 +623,10 @@ function createProductionBrowserHarness(options = {}) {
           page,
           candidate: input.candidate,
         });
+        if (input.provider === "doorkeeper") {
+          return state && typeof state === "object" && !Array.isArray(state) && state.status === "registered"
+            ? state : Object.freeze({ status: "unavailable" });
+        }
         return input.provider === "meetup" && (!state || state.status !== "registered")
           ? Object.freeze({ status: "unavailable" }) : state;
       },

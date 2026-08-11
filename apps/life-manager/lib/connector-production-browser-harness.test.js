@@ -1201,6 +1201,63 @@ test("Doorkeeper final submit fails closed for identity, control, duplicate, and
   }
 });
 
+test("Doorkeeper does not complete a required fill from pending readback", async () => {
+  const candidate = { provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001" };
+  let completed = false; let fills = 0; let submits = 0;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    doorkeeperWorkflow: { async readProviderState() { return { status: "pending" }; } },
+    async inspectControls() { return [
+      { control: "name_field", kind: "input", label: "Name", required: true, completed },
+      { control: "doorkeeper_submit", kind: "button", label: "申し込む", required: false, submittable: true },
+    ]; },
+    async proposeAction({ observation }) { return { control: observation.controls.find((control) => control.kind === "input" && !control.completed)?.control || "doorkeeper_submit" }; },
+    async operateControl({ control }) { if (control.kind === "input") { fills += 1; completed = true; } else submits += 1; return { status: "success" }; },
+    async resolveValue() { return "attendee"; },
+  });
+  const result = await harness.runFallback({ provider: "doorkeeper", candidate, page: { url() { return candidate.canonical_url; } }, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/DOORKEEPERPENDING1", maxSteps: 1, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "failed");
+  assert.equal(result.safe_reason, "agent_step_limit");
+  assert.equal(fills, 1);
+  assert.equal(submits, 0);
+});
+
+test("Doorkeeper rejects URL identity variants before any action", async () => {
+  const base = { provider: "doorkeeper", event_ref: "doorkeeper-event://event/1001", canonical_url: "https://tokyo-builders.doorkeeper.jp/events/1001" };
+  const invalidCanonical = [
+    ["query", "https://tokyo-builders.doorkeeper.jp/events/1001?x=1"],
+    ["fragment", "https://tokyo-builders.doorkeeper.jp/events/1001#final"],
+    ["credentials", "https://user:pass@tokyo-builders.doorkeeper.jp/events/1001"],
+    ["port", "https://tokyo-builders.doorkeeper.jp:443/events/1001"],
+    ["www", "https://www.doorkeeper.jp/events/1001"],
+    ["uppercase-group", "https://Tokyo-builders.doorkeeper.jp/events/1001"],
+  ];
+  const invalidCurrent = [
+    ["query", "https://tokyo-builders.doorkeeper.jp/events/1001?x=1"],
+    ["fragment", "https://tokyo-builders.doorkeeper.jp/events/1001#final"],
+    ["credentials", "https://user:pass@tokyo-builders.doorkeeper.jp/events/1001"],
+    ["port", "https://tokyo-builders.doorkeeper.jp:443/events/1001"],
+    ["www", "https://www.doorkeeper.jp/events/1001"],
+    ["uppercase-group", "https://Tokyo-builders.doorkeeper.jp/events/1001"],
+  ];
+  const assertRejected = async (name, candidate, href) => {
+    let operated = 0;
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      doorkeeperWorkflow: { async readProviderState() { return { status: "registered" }; } },
+      async inspectControls() { return [{ control: "doorkeeper_submit", kind: "button", label: "申し込む", required: false, submittable: true }]; },
+      async proposeAction() { return { control: "doorkeeper_submit" }; },
+      async operateControl() { operated += 1; return { status: "success" }; },
+      async resolveValue() { return null; },
+    });
+    const result = await harness.performAction({ provider: "doorkeeper", candidate, page: { url() { return href; } }, action: { purpose: "submit", method: "ax_click", control: "doorkeeper_submit" } });
+    assert.deepEqual(result, { status: "failed" }, name);
+    assert.equal(operated, 0, name);
+  };
+  for (const [name, canonical_url] of invalidCanonical) await assertRejected(`candidate-${name}`, { ...base, canonical_url }, base.canonical_url);
+  for (const [name, href] of invalidCurrent) await assertRejected(`current-${name}`, base, href);
+});
+
 test("Doorkeeper final readback is bounded when it never settles", async () => {
   mock.timers.enable({ apis: ["Date", "setTimeout"] });
   try {
