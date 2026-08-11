@@ -785,6 +785,48 @@ test("reused evidence skips Submit and continues the same owned page to a later 
   assert.equal(state.calls.filter(([name]) => name === "report").length, 1);
 });
 
+test("verified reused bundle resets candidate failures", async () => {
+  let state;
+  state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return [candidate("luma", "failed-one"), candidate("luma", "reused"), candidate("luma", "failed-two"), candidate("luma", "failed-three")];
+    },
+    async readProviderState({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["readback", selected.event_ref, suppliedPage.page_id]);
+      return selected.event_ref.endsWith("/reused")
+        ? Object.freeze({ status: "registered", provider_receipt_id: "existing-receipt" })
+        : Object.freeze({ status: "absent" });
+    },
+    async completeEvidence({ candidate: selected }) {
+      state.calls.push(["evidence", selected.event_ref]);
+      return Object.freeze({ status: "applied_bundle", bundle_id: "reused-bundle", completion_disposition: "reused" });
+    },
+  });
+
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-candidate-reset",
+    providers: ["luma"],
+    maxConsecutiveFailures: 3,
+  }, state.dependencies);
+
+  assert.deepEqual(result, {
+    status: "completed_no_effect",
+    safe_reason: "existing_bundles_reused",
+    telegram_provider_id: "9001",
+  });
+  assert.deepEqual(state.calls.filter(([name]) => name === "evidence").map(([, eventRef]) => eventRef), [
+    "luma-event://event/reused",
+  ]);
+  assert.deepEqual(state.calls.filter(([name]) => name === "readback").map(([, eventRef]) => eventRef), [
+    "luma-event://event/failed-one", "luma-event://event/reused", "luma-event://event/failed-two", "luma-event://event/failed-three",
+  ]);
+  assert.equal(state.calls.filter(([name]) => name === "direct").length, 3);
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 3);
+  assert.equal(state.calls.filter(([name]) => name === "report").length, 1);
+});
+
 test("evidence completion error becomes one bounded terminal report without retry or Submit", async () => {
   let evidenceCalls = 0;
   const state = fixture({

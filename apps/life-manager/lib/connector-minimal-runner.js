@@ -348,6 +348,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           }
           if (bundle.completion_disposition === "reused") {
             reusedBundleObserved = true;
+            consecutiveFailures = 0;
             continue;
           }
           return finish("applied_bundle", "applied_bundle", bundle);
