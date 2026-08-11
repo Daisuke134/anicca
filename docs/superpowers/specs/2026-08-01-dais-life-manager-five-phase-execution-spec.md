@@ -7798,3 +7798,11 @@ Eventbrite store testは実mode-0600 receipt/artifact/object、deterministic rec
 Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-evidence-chain-19e.md`は`connector-minimal-evidence.js`とmatching testのexact 2 files。review済みEventbrite storeをprovider mapへ追加し、exact event refと現行workflowのcanonical 2 path（`/e/<slug>-tickets-<same ID>`または`/e/<same ID>`）を束縛する。registered親pageを置換・navigate・receipt renderせずfull-page PNG化し、初回provider receipt/artifact readback後だけ既存Calendar/Telegram/checkpoint/bundle pipelineへ進む。production約28〜45 LOC、test約75〜110 LOC。
 
 Calendar gog transport、Eventbrite discovery/action/child-frame readback、Harness、native、schedule、live stateは変更0。injected Calendar/Telegramでcreated→reused、両canonical path、invalid identity/state/current URLのdownstream effect 0をTDD固定する。review/push後にEventbrite Calendar transportを別sliceで追加する。Item19 Eventbrite実bundleは未完。
+
+### O1B-25進捗441（Item 19E-E2 / Eventbrite minimal evidence chain ship）
+
+Lunaが`connector-minimal-evidence.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは既存34件GREEN、新Eventbrite slug/direct-ID正常系2件だけprovider未接続でFAIL。GREEN commit `d21e11c75`はreview済みstore、exact event/receipt refs、現行workflowと同じ2 canonical path、registered-only provider mapを配線した。親current page URL exactを要求し、navigate・置換・receipt renderなしのfull-page PNGを保存、初回receipt/artifactをdurable storeから再読取してからだけ既存Calendar→Telegram→bundleへ進む。
+
+初期negative tableのuppercase candidateはdefault lowercase page mismatchでも拒否できcanonical guard欠落をmaskしたため、candidateとpageUrlを同じuppercase raw hostにする恒久回帰caseへ修復した。`value !== expected`だけを一時除去するとnamed testが`Missing expected rejection`でFAILしdownstream到達を検知、guard復元後focused 36/36、adjacent store込み44/44、default reviewed store isolated smoke、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality PASS、Critical/Important/Minor 0で`ship`。
+
+Calendar transport、Eventbrite action/child-frame readback、Harness、native、schedule、live state、external effectは0。次active sliceはEventbrite canonical URLをCalendar gog transportへ追加する。Item19 Eventbrite実bundleは未完。
