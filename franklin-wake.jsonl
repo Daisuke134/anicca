@@ -25863,3 +25863,11 @@
 {"ts":1786476660,"wake_id":"00MSP22T4FF7C02A5FF8AE4F3E","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1786476728,"wake_id":"00MSP24A2F95848AE992334445","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1786476797,"wake_id":"00MSP25QQG838C687B2E934B04","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786476867,"wake_id":"00MSP2798J78BDAEEA191A4809","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786476996,"wake_id":"00MSP2A0S217D0978627364DEE","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786477064,"wake_id":"00MSP2BH0V04F3A9E4B05B488B","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana low capital micro earning opportunities API paid routes [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candi"}
+{"ts":1786477193,"wake_id":"00MSP2E89287E706B8557C49D9","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786477318,"wake_id":"00MSP2GXDWFC103F1F234B4D81","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786477446,"wake_id":"00MSP2JNM92F51414104424451","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786477513,"wake_id":"00MSP2L3PG5E4544662C6A4D54","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana micro-earning platforms paid USDC API tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfac"}
+{"ts":1786477644,"wake_id":"00MSP2NWG0C35556194FCB4BA4","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
