@@ -74,7 +74,7 @@ function defaultDomPage({ redirectListing = false, redirectDetail = false } = {}
   const titleAnchor = { href: row.canonical_url };
   const venueAnchor = { href: "https://www.doorkeeper.jp/prefectures/tokyo" };
   const dateNode = { textContent: "2026年8月11日", innerText: "2026年8月11日" };
-  const listingItem = {
+  const listingItemsWrap = {
     querySelector(selector) {
       if (selector.includes("/events/")) return titleAnchor;
       if (selector === "a[href]") return titleAnchor;
@@ -82,14 +82,24 @@ function defaultDomPage({ redirectListing = false, redirectDetail = false } = {}
       if (selector.includes("/prefectures/")) return venueAnchor;
       return null;
     },
-    querySelectorAll() { return [titleAnchor, venueAnchor]; },
+    querySelectorAll(selector) { return selector === ".events-list-item, li" ? [] : [titleAnchor, venueAnchor]; },
   };
-  const listingRoot = { querySelectorAll() { return [listingItem]; } };
+  const listingRoot = {
+    querySelector(selector) {
+      if (selector === ".events-list-items-wrap") return listingItemsWrap;
+      return listingItemsWrap.querySelector(selector);
+    },
+    querySelectorAll(selector) {
+      if (selector === ".events-list-items-wrap") return [listingItemsWrap];
+      if (selector === ".events-list-item, li") return [];
+      return listingItemsWrap.querySelectorAll(selector);
+    },
+  };
   const script = { textContent: JSON.stringify(detail("1001").jsonld) };
   const control = { innerText: "申し込む", textContent: "申し込む", value: "", offsetWidth: 10, offsetHeight: 10 };
   const listingDocument = {
-    querySelector(selector) { return selector === ".events-list-items-wrap" ? listingRoot : null; },
-    querySelectorAll() { return []; },
+    querySelector(selector) { return selector === ".events-list-items-wrap" ? listingItemsWrap : null; },
+    querySelectorAll(selector) { return selector === ".global-event.events-list" ? [listingRoot] : []; },
   };
   const detailDocument = {
     querySelector() { return null; },

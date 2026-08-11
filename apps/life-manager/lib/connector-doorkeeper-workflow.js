@@ -282,9 +282,8 @@ async function defaultReadListingPage(page, pageNumber) {
   let payload;
   try {
     payload = await page.evaluate(() => {
-      const root = document.querySelector(".events-list-items-wrap");
-      const items = root ? [...root.querySelectorAll(".events-list-item, li")]
-        .filter((item) => item.querySelector("a[href]")) : [];
+      const items = [...document.querySelectorAll(".global-event.events-list")]
+        .filter((item) => item.querySelector("a[href]"));
       const rows = items.map((item) => {
         const titleAnchor = item.querySelector("a[href*='/events/']") || item.querySelector("a[href]");
         const dateNode = item.querySelector(".events-list-item-time-date");
