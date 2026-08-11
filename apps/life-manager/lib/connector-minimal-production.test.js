@@ -476,6 +476,25 @@ test("official production factory injects Eventbrite on the supplied page withou
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
 
+test("official production factory default Harness uses the Eventbrite workflow for final readback", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-eventbrite-default-harness-"));
+  const candidate = Object.freeze({ provider: "eventbrite", event_ref: "eventbrite-event://event/1903", canonical_url: "https://www.eventbrite.com/e/tokyo-free-tickets-1903" });
+  const element = ({ tagName = "INPUT", type = "text", name = "", value = "complete", testId = "", text = "" } = {}) => ({ tagName, type, name, value, required: tagName === "INPUT", disabled: false, hidden: false, isConnected: true, innerText: text, textContent: text, dataset: testId ? { testid: testId } : {}, style: {}, parentElement: null, ownerDocument: { defaultView: { getComputedStyle() { return {}; } } }, getAttribute(key) { return key === "data-testid" ? testId : key === "name" ? name : null; }, hasAttribute() { return false; }, getBoundingClientRect() { return { width: 120, height: 32 }; } });
+  const fields = [element({ name: "buyer.N-first_name" }), element({ name: "buyer.N-last_name" }), element({ name: "buyer.N-email", type: "email" }), element({ name: "buyer.confirmEmailAddress", type: "email" })];
+  const primary = element({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", text: "Register" }); const elements = [...fields, primary]; let readbacks = 0;
+  const handle = { async evaluate(callback, context) { return callback(primary, context); }, async click() {} };
+  const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1903"; }, parentFrame() { return {}; }, locator(selector) { if (String(selector).includes("data-lm-connector-control") && String(selector).includes("eds-modal__primary-button")) return { async count() { return 1; }, async elementHandles() { return [handle]; } }; return { async count() { return 0; }, async evaluateAll(callback, context) { return callback(elements, context); } }; } };
+  const page = { url() { return candidate.canonical_url; }, frames() { return [frame]; }, locator() { return { async evaluateAll() { return []; } }; } };
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  const eventbriteWorkflow = { ...emptyWorkflow, async readProviderState(input) { readbacks += 1; assert.equal(input.page, page); assert.equal(input.candidate, candidate); return { status: "registered" }; } };
+  const actionCache = { async replay({ page: ownedPage, performAction }) { const result = await performAction({ page: ownedPage, candidate, action: { purpose: "submit", method: "ax_click", control: "eventbrite_attendee_register_1903" } }); assert.deepEqual(result, { status: "success", provider_state: { status: "registered" } }); return { status: "completed" }; }, saveVerifiedRepair() {} };
+  try {
+    const dependencies = createMinimalProductionDependencies({ repoRoot: "/private/repo", stateDir, wakeId: "wake-production-eventbrite-default-harness-1", calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target", lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence", calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } }, browserRail: { open() {}, navigate() {}, close() {} }, lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow, peatixWorkflow: emptyWorkflow, meetupWorkflow: emptyWorkflow, doorkeeperWorkflow: emptyWorkflow, eventbriteWorkflow, actionCache, evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} } });
+    assert.deepEqual(await dependencies.runCachedAction({ provider: "eventbrite", candidate, page }), { status: "completed" });
+    assert.equal(readbacks, 1);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
 test("official production factory routes an injected Doorkeeper workflow without opening a browser rail", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-doorkeeper-"));
   const page = Object.freeze({ page_id: "injected-doorkeeper-page" }), calendar = Object.freeze([]);
