@@ -1941,3 +1941,51 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
     mutationMode = "";
   }
 });
+
+test("Eventbrite attendee inspector exposes only the exact required fields after the ticket card is gone", async () => {
+  const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
+  const field = (name, type = "text", value = "") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value });
+  const first = field("buyer.1-first_name", "text", " Given ");
+  const last = field("buyer.1-last_name");
+  const email = field("buyer.1-email", "email", "person@example.test");
+  const confirm = field("buyer.confirmEmailAddress", "email");
+  const marketing = field("marketing_opt_in", "checkbox"); marketing.required = false;
+  const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
+  const base = [first, last, email, confirm, marketing, primary];
+  let frameElements = base;
+  const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator() { return { async evaluateAll(callback, context) { return callback(frameElements, context); } }; } };
+  const page = { url() { return candidate.canonical_url; }, frames() { return [frame]; }, locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; } };
+  const inspect = () => inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url });
+  const expected = [{ control: "eventbrite_attendee_first_name_1901", kind: "input", label: "First name", required: true, completed: true, submittable: false }, { control: "eventbrite_attendee_last_name_1901", kind: "input", label: "Last name", required: true, completed: false, submittable: false }, { control: "eventbrite_attendee_email_1901", kind: "input", label: "Email", required: true, completed: true, submittable: false }, { control: "eventbrite_attendee_confirm_email_1901", kind: "input", label: "Confirm email", required: true, completed: false, submittable: false }];
+  assert.deepEqual(await inspect(), expected);
+  assert.doesNotMatch(JSON.stringify(await inspect()), /Given|person@example\.test|buyer\.1/);
+  for (const [name, extra] of [
+    ["ticket-card-remains", makeEventbriteTicketElement({ testId: "ticket-display-card-content-full-size" })],
+    ["unknown-required", makeEventbriteTicketElement({ tagName: "SELECT", name: "unknown", required: true })],
+    ["duplicate", field("buyer.1-first_name")],
+    ["wrong-type", { ...first, type: "email" }],
+    ["wrong-tag", { ...first, tagName: "SELECT" }],
+    ["wrong-name", { ...first, name: "buyer.1-middle_name" }],
+    ["hidden", { ...first, hidden: true }],
+    ["disabled", { ...first, disabled: true }],
+  ]) {
+    frameElements = ["duplicate", "ticket-card-remains", "unknown-required"].includes(name) ? [...base, extra] : [extra, last, email, confirm, marketing, primary];
+    assert.deepEqual(await inspect(), [], name);
+  }
+  frameElements = [...base, ...Array.from({ length: 95 }, (_, index) => field(`unknown.${index}`))];
+  assert.deepEqual(await inspect(), [], "over-100-controls");
+  frameElements = base; const originalLocator = frame.locator;
+  frame.locator = () => { throw new Error("fixture locator failure"); };
+  assert.deepEqual(await inspect(), [], "locator-error");
+  frame.locator = originalLocator; let operated = 0; let resolved = 0;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    async inspectControls(input) { return inspectPageControls(input); },
+    async proposeAction() { return { control: expected[0].control }; },
+    async operateControl() { operated += 1; return { status: "success" }; },
+    async resolveValue() { resolved += 1; return "private"; },
+  });
+  assert.deepEqual(await harness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "fill", method: "ax_fill", control: expected[0].control } }), { status: "failed" });
+  assert.equal(operated, 0);
+  assert.equal(resolved, 0);
+});
