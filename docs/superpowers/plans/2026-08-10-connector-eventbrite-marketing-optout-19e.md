@@ -30,14 +30,14 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 
 1. click直前にtokenをmarketing labelからprimary Registerへ移す反例で、postcondition failedでもfinal click 1が発生した。`ax_uncheck` operation境界はtoken count1だけでなく、exact label tag/for、known input name/id/type/optional/visible/enabled/checked、raw identity exact1を再拘束してからclickする。
 2. marketing input idの一意性はinput集合だけでなくinspection対象全elementsでraw exact1を要求する。同じidのbutton/inputはcontrol 0。
-3. dedicated `ax_uncheck`はBrowser Harness adapterのfill allowlistとHarness mutation dedupeへ追加する。`runFallback` E2Eを既存Harness test内に置き、agent proposalからlabel click exact1、次step/final click0を確認する。adapter test file、新抽象化、別methodへの意味的偽装は追加しない。
+3. dedicated `ax_uncheck`はBrowser Harness adapterのfill allowlistとHarness mutation dedupeへ追加する。Eventbrite providerはまだHarness workflow mapへ未統合なので、adapter単体E2Eを既存Harness test内に置き、proposalした`fill/ax_uncheck`がperformへexact1回届くことを確認する。Eventbrite full `runFallback`、workflow injection/dedupe E2Eはfactory/native統合sliceへdeferする。adapter test file、新抽象化、別methodへの意味的偽装は追加しない。
 
 ## TDD / verification
 
 1. RED: checked organizer marketing input＋可視exact labelからopt-out controlを期待し、現行fields onlyを確認する。
 2. checked2件のone-at-a-time、unchecked no-control＋final-visible、duplicate/wrong/hidden/disabled/required input、missing/duplicate/hidden/wrong-for labelをtable regressionにする。
 3. action RED: exact label click1、resolver0、post uncheckedを期待する。wrong action、page/frame/eid/DOM drift、locator0/2、click error、postcondition false、final token action0を回帰化する。
-4. GREEN後、focused Harness、adapter経由`runFallback`、Eventbrite/minimal-production/native adjacent、syntax、`git diff --check`、3-file ownership、4 labels unloadedを確認する。
+4. GREEN後、focused Harness、adapter単体E2E、Eventbrite/minimal-production/native adjacent、syntax、`git diff --check`、3-file ownership、4 labels unloadedを確認する。
 5. fresh Sol reviewでCritical/Important 0を得てからstableへ統合する。
 
 ## Deferred
