@@ -459,6 +459,38 @@ test("valid direct safe reason survives failed fallback and opens the circuit wi
   ]);
 });
 
+test("Peatix direct readback-unavailable stops before Harness or another candidate", async () => {
+  const state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return [candidate("peatix", "one")];
+    },
+    async runDirectAction({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["direct", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "failed", safe_reason: "peatix_readback_unavailable" });
+    },
+    async runAgentFallback({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["agent", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "failed", safe_reason: "agent_action_unavailable" });
+    },
+    async reportWake(report) {
+      state.calls.push(["report", report.status, report.safe_reason, report.consecutive_failure_count]);
+      return Object.freeze({ telegram_provider_id: "9001" });
+    },
+  });
+
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-peatix-effect", providers: ["peatix"] }, state.dependencies);
+  assert.deepEqual(result, { status: "circuit_open", safe_reason: "effect_unknown", telegram_provider_id: "9001" });
+  assert.equal(state.calls.filter(([name]) => name === "direct").length, 1);
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
+  assert.equal(state.calls.filter(([name]) => name === "navigate").length, 1);
+  assert.equal(state.calls.filter(([name]) => name === "evidence").length, 0);
+  assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+  assert.deepEqual(state.calls.filter(([name]) => name === "report"), [["report", "circuit_open", "effect_unknown", 1]]);
+});
+
 test("malformed direct safe reason becomes generic and does not reach the circuit report", async () => {
   const state = fixture({
     async runDirectAction() { return Object.freeze({ status: "failed", safe_reason: "https://peatix.com/event/private" }); },
