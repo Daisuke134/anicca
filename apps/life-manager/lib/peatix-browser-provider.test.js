@@ -17,7 +17,7 @@ function fixture(options = {}) {
   const familySelector = '#confirm-form [name="lastname_edit"]'; const givenSelector = '#confirm-form [name="firstname_edit"]';
   const confirmControls = options.confirmControls || { [familySelector]: { count: 1, visible: true }, [givenSelector]: { count: 1, visible: true } };
   const formSelectors = new Set(["#name", "#email", "#privacy", "#form-submit-button", ...(options.formSelectors || [])]);
-  const href = () => state === "tickets" ? "https://peatix.com/sales/event/5075819/tickets" : state === "form" ? `https://peatix.com/sales/event/${options.formEvent || "5075819"}/form` : state === "confirm" ? (options.confirmUrl || `https://peatix.com/sales/event/${options.confirmEvent || "5075819"}/confirm`) : state === "complete" ? "https://peatix.com/sales/event/5075819/complete" : state === "ambiguous" ? "https://peatix.com/sales/event/5075819/unknown" : state === "auth" ? "https://peatix.com/login" : state === "canonical" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : "https://peatix.com/event/9999999";
+  const href = () => state === "tickets" ? "https://peatix.com/sales/event/5075819/tickets" : state === "form" ? `https://peatix.com/sales/event/${options.formEvent || "5075819"}/form` : state === "confirm" ? (options.confirmUrl || `https://peatix.com/sales/event/${options.confirmEvent || "5075819"}/confirm`) : state === "pending-confirm" ? (options.pendingConfirmedUrl || "https://peatix.com/sales/event/5075819/confirm") : state === "confirmed" ? (options.confirmedUrl || "https://peatix.com/sales/event/5075819/confirmed") : state === "complete" ? "https://peatix.com/sales/event/5075819/complete" : state === "ambiguous" ? "https://peatix.com/sales/event/5075819/unknown" : state === "auth" ? "https://peatix.com/login" : state === "canonical" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : state === "canonical-registered" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : "https://peatix.com/event/9999999";
   const count = (s) => { if (state === "form" && /#[^\\[]*[\[\]]/.test(s)) throw new Error("invalid selector"); if (state === "confirm" && Object.hasOwn(confirmControls, s)) return confirmControls[s].count; return state === "tickets" && s === "input[name=number_of_tickets_6536845]" ? 1 : state === "tickets" && s === "#next-button" ? 1 : state === "form" && formSelectors.has(s) ? 1 : state === "confirm" && s === "#confirm-button" ? 1 : 0; };
   const navigate = (next) => options.asyncNavigation ? setTimeout(() => { state = next; }, 0) : (state = next);
   const locator = (selector) => {
@@ -34,14 +34,30 @@ function fixture(options = {}) {
       fill: async (value) => calls.push(["fill", selector, value]),
       check: async () => { calls.push(["check", selector]); checked.add(selector); },
       isChecked: async () => checked.has(selector),
-      click: async () => { calls.push(["click", selector]); if (selector === "#next-button") navigate("form"); else if (selector === "#form-submit-button") navigate("confirm"); else if (selector === "#confirm-button") { finals += 1; state = options.complete === false ? "ambiguous" : "complete"; } },
+      click: async () => {
+        calls.push(["click", selector]);
+        if (selector === "#next-button") navigate("form");
+        else if (selector === "#form-submit-button") navigate("confirm");
+        else if (selector === "#confirm-button") {
+          finals += 1;
+          if (options.settlement === false) state = options.complete === false ? "ambiguous" : "complete";
+          else if (options.settlement === "missing") state = "pending-confirm";
+          else {
+            state = "pending-confirm";
+            setTimeout(() => { state = "confirmed"; }, Number(options.confirmedDelayMs) || 0);
+          }
+        }
+      },
     };
     if (kana.isEditableMissing === true) delete result.isEditable;
     return result;
   };
   const page = {
     url: href,
-    async goto(url) { calls.push(["goto", url]); state = /\/tickets$/.test(url) ? "tickets" : /\/form$/.test(url) ? "form" : "confirm"; },
+    async goto(url) {
+      calls.push(["goto", url]);
+      state = /\/tickets$/.test(url) ? "tickets" : /\/form$/.test(url) ? "form" : /^https:\/\/peatix\.com\/event\/5075819$/.test(url) ? "canonical-registered" : "confirm";
+    },
     async waitForURL(predicate, waitOptions = {}) {
       calls.push(["wait-for-url", waitOptions]); const deadline = Date.now() + Math.min(Number(waitOptions.timeout) || 30_000, 50);
       while (Date.now() < deadline) { if (predicate(new URL(href()))) return; await new Promise((resolve) => setTimeout(resolve, 1)); }
@@ -76,7 +92,9 @@ function fixture(options = {}) {
       if (payload.mode === "form") return { fields };
       if (payload.mode === "confirm_validation") { if (options.confirmValidationThrows) throw new Error("validator failed"); return options.confirmValidationMissing ? {} : { valid: options.confirmValid !== false }; }
       if (payload.mode === "confirm") return { text: options.confirmText || "チケットを申し込む", visible: true };
+      if (state === "confirmed" || state === "pending-confirm") return { href: href(), markers: [], checkout: false };
       if (state === "complete") return { href: href(), markers: options.marker === false ? [] : [{ event_id: "5075819", ticket_id: "6536845" }], checkout: false };
+      if (state === "canonical-registered") return { href: href(), markers: options.complete === false ? [] : [{ event_id: "5075819", ticket_id: "6536845" }], checkout: false };
       if (state === "auth") return { href: href(), auth: true, markers: [], checkout: false };
       if (state === "cross") return { href: "https://peatix.com/sales/event/9999999/complete", markers: [{ event_id: "9999999", ticket_id: "6536845" }], checkout: false };
       if (state === "canonical" && options.markerEvent) return { href: href(), markers: [{ event_id: options.markerEvent, ticket_id: "6536845" }], checkout: false };
@@ -149,6 +167,45 @@ test("hidden exact Kana pair with invalid jQuery validation fails before final c
   assert.equal(f.finalCount(), 0);
 });
 
+test("delayed exact confirmed settlement navigates canonical and reads registered once", async () => {
+  const f = fixture({ confirmedDelayMs: 8 });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
+  assert.equal(f.finalCount(), 1);
+  assert.deepEqual(f.calls.filter(([name]) => name === "goto"), [
+    ["goto", "https://peatix.com/sales/event/5075819/tickets"],
+    ["goto", "https://peatix.com/event/5075819"],
+  ]);
+  assert.equal(f.calls.filter(([name, selector]) => name === "click" && selector === "#confirm-button").length, 1);
+});
+
+test("Peatix confirmed settlement rejects malformed or missing same-event URLs without retry", async () => {
+  for (const confirmedUrl of [
+    "https://peatix.com/sales/event/9999999/confirmed",
+    "https://peatix.com/login",
+    "https://peatix.com/sales/event/5075819/confirmed?x=1",
+    "https://peatix.com/sales/event/5075819/confirmed#x",
+    "https://user:pass@peatix.com/sales/event/5075819/confirmed",
+    "https://peatix.com:444/sales/event/5075819/confirmed",
+    "https://peatix.com/event/5075819",
+  ]) {
+    const f = fixture({ confirmedUrl });
+    assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "unavailable", reason: "readback_unavailable" }, confirmedUrl);
+    assert.equal(f.finalCount(), 1, confirmedUrl);
+    assert.equal(f.calls.filter(([name]) => name === "goto").length, 1, confirmedUrl);
+  }
+  const missing = fixture({ settlement: "missing" });
+  assert.deepEqual(await submitPeatixOnPage(missing.page, candidate(), profile()), { status: "unavailable", reason: "readback_unavailable" });
+  assert.equal(missing.finalCount(), 1);
+  assert.equal(missing.calls.filter(([name]) => name === "goto").length, 1);
+  const confirmedOnly = fixture({ complete: false });
+  assert.deepEqual(await submitPeatixOnPage(confirmedOnly.page, candidate(), profile()), { status: "unavailable", reason: "readback_unavailable" });
+  assert.equal(confirmedOnly.finalCount(), 1);
+  assert.deepEqual(confirmedOnly.calls.filter(([name]) => name === "goto"), [
+    ["goto", "https://peatix.com/sales/event/5075819/tickets"],
+    ["goto", "https://peatix.com/event/5075819"],
+  ]);
+});
+
 test("visible Kana controls require enabled, editable, boolean editable probes before final click", async () => {
   const family = '#confirm-form [name="lastname_edit"]'; const given = '#confirm-form [name="firstname_edit"]';
   for (const invalid of [
@@ -168,7 +225,7 @@ test("asynchronous ticket and form navigation waits for exact same-event URLs", 
   const f = fixture({ asyncNavigation: true });
   assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
   assert.deepEqual(f.calls.filter(([name]) => name === "wait-for-url").map(([, options]) => options), [
-    { waitUntil: "domcontentloaded", timeout: 30_000 }, { waitUntil: "domcontentloaded", timeout: 30_000 },
+    { waitUntil: "domcontentloaded", timeout: 30_000 }, { waitUntil: "domcontentloaded", timeout: 30_000 }, { waitUntil: "domcontentloaded", timeout: 30_000 },
   ]);
 });
 
