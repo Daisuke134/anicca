@@ -7634,3 +7634,13 @@ Lunaがchild completion readbackをworkflow/test 2 filesだけでTDD実装し、
 ### O1B-25進捗413（Item 19E-D5a / Eventbrite production factory injection plan）
 
 Ponytail fullでproduction接続をD5a factory injection、D5b fallback dispatch、D5c native provider orderの3 sliceへ分割した。先頭plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-factory-injection-19e.md`はminimal production factory/testの2 filesだけ。既にfactoryが生成する`eventbriteWorkflow`をdefault Browser Harness constructionへ1参照渡す。production約1 LOC、test約20〜40 LOC。新agent/service/state/browser railを作らず、fallback map、native order、official wake、external effectは0。D5aをTDD・fresh review・pushで閉じるまで後続sliceへ進まない。Item19 Eventbrite `applied_bundle`とscheduleは未完。
+
+### O1B-25進捗414（Item 19E-D5a / Eventbrite production factory injection ship）
+
+Lunaがminimal production factory/test exact 2 filesだけをSuperpowers TDD変更した。REDはdefault factory-created Harnessのsafe mocked final actionが`failed`、Eventbrite readback 0となり、factoryが生成済みworkflowをHarnessへ渡していない欠陥を再現。GREEN commit `05b1b37e3`はHarness constructionへ`eventbriteWorkflow`を1行渡し、同じfixtureが`success / registered`、Eventbrite readback exact1となった。runFallback map、native order、live state変更0。
+
+factory 18/18、Harness 96/96、Eventbrite workflow 19/19、合計133/133、syntax、diff、exact 2-file scope PASS。fresh Sol review SHIP、Critical/Important 0。remote push完了。次の一件はD5b exact Eventbrite fallback dispatch。Item19 Eventbrite `applied_bundle`とscheduleは未完。
+
+### O1B-25進捗415（Item 19E-D5b / Eventbrite fallback dispatch plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-fallback-dispatch-19e.md`はHarness production/test exact 2 files。既存`runFallback` workflow mapへ`eventbrite`を1項目追加する。production約1 LOC、test約70〜130 LOC。successはEventbrite workflow readbackで`completed`、ticket/final `effect_unknown`はmutation exact1・second proposal/operation 0で即停止することをTDDする。factory/native/runner/evidence/Calendar/Telegram/schedule変更0、official wake 0。D5bをfresh review・pushで閉じるまでD5cへ進まない。
