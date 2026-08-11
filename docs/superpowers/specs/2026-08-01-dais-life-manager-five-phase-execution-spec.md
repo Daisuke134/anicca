@@ -7421,7 +7421,11 @@ LunaがHarness production/testの2 filesだけをTDD変更した。exact Doorkee
 
 fresh Sol初回reviewはdefault proposer omissionをImportantとして検出し、RED後`2229bb9b6`で修復。fresh re-reviewはstrict tokenだけを数えるambiguity退行を検出し、RED後`1b35d4a2f`で修復。最終fresh reviewはSHIP、Critical/Important 0。却下済みpath-change実験`bc043cb2c`は`cd82201dd`で明示revertし、最終treeはreview済み`1b35d4a2f`とbyte-identical。Sol独立Harness 72/72、隣接33/33、syntax/diff、remote equality、clean status、却下symbol/test不在がPASS。official wake/browser/provider/Calendar/Telegram作用0。次はB4c production factory injection。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗382。これ以外の残TODO一覧は履歴）
+### O1B-25進捗383（Item 19D-B4c / Doorkeeper factory injection plan）
+
+Ponytail実測で、official factoryはDoorkeeper workflowを生成しprovider routerへ渡す一方、default `createProductionBrowserHarness`には渡していない一行欠落を確認した。次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-factory-injection-19d.md`はminimal-production production/testの2 filesだけ。default factory-created Harnessが既存Doorkeeper workflowのparent readbackへ到達するREDを先に置き、既存参照を一引数で接続する。新workflow/rail/session/target/abstract layerは0、official wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗383。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
