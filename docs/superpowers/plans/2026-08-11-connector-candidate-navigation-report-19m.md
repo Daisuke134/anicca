@@ -45,3 +45,10 @@ Soft target: 2 files; production +10–18 LOC; tests +35–55 LOC.
 - Focused runner RED/GREEN, then runner + operations + production + evidence + Peatix/Meetup router/Harness adjacent suites.
 - `node --check`, `git diff --check`, fresh Sol correctness review.
 - Sol fast-forwards reviewed code, updates SSOT, pushes both branches, then runs one schedule-unloaded official wake. Acceptance is positive every-wake report on repeated navigation failure or safe continuation to Peatix/Meetup, with process/lease cleanup and no Connector orphan target.
+
+## Result
+
+- Luna RED reproduced the live defect at runner 38/40: two before-deadline candidate navigation errors escaped raw. GREEN commit `6885c7f64` reached 40/40 with a candidate-local safe continuation/circuit.
+- Fresh Sol review found Important 1: the catch also converted `recordAction` failures. Luna fix RED was 40/41; commit `900c04c3f` captures the exact navigation task thrown value and converts only `Object.is` identity matches. Audit failures retain the prior raw rejection and no report.
+- Luna adjacent operations/production/evidence/Meetup/Harness passed. Sol independently ran the combined set at 159/159, syntax and diff checks passed. The unchanged Peatix workflow remains 22/23 only for the known date-sensitive fixture.
+- Fresh Sol re-review returned `ship`, Critical 0 / Important 0. The reviewed commits are fast-forwarded and pushed on the stable branch. Live acceptance remains one schedule-unloaded official wake.
