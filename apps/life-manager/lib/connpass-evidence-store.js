@@ -141,4 +141,13 @@ function createEventbriteEvidenceStore(options = {}) {
   });
 }
 
-module.exports = { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore, createEventbriteEvidenceStore };
+function createTechPlayEvidenceStore(options = {}) {
+  return createBrowserProviderEvidenceStore({
+    ...options, provider: "techplay",
+    eventRef: /^techplay-event:\/\/event\/[1-9][0-9]*$/,
+    receiptRef: /^provider-receipt:\/\/techplay\/([0-9a-f]{64})$/,
+    collisionMessage: "Tech Play evidence collision",
+  });
+}
+
+module.exports = { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore, createEventbriteEvidenceStore, createTechPlayEvidenceStore };

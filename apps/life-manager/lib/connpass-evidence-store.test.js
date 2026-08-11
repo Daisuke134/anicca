@@ -11,6 +11,7 @@ const {
   createMeetupEvidenceStore,
   createDoorkeeperEvidenceStore,
   createEventbriteEvidenceStore,
+  createTechPlayEvidenceStore,
 } = require("./connpass-evidence-store.js");
 
 test("atomically stores and reads one Connpass PNG receipt without identity data", async (t) => {
@@ -215,4 +216,52 @@ test("Eventbrite wrapper rejects wrong event identity and receipt tuple tamperin
   const receipt = JSON.parse(fs.readFileSync(file, "utf8"));
   fs.writeFileSync(file, `${JSON.stringify({ ...receipt, event_ref: "eventbrite-event://event/2" })}\n`);
   await assert.rejects(store.readExternalReceipt("eventbrite-test", refs.external_receipt_ref));
+});
+
+test("TECH PLAY wrapper stores exact event receipt and private immutable artifacts", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "techplay-evidence-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const png = Buffer.alloc(5_000, 0x69);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png);
+  const store = createTechPlayEvidenceStore({ dataDir: directory });
+  const refs = await store.record({
+    tenantId: "techplay-test", eventRef: "techplay-event://event/999190",
+    observedAt: "2026-08-12T01:02:03.000Z", screenshot: png,
+  });
+  assert.match(refs.external_receipt_ref, /^provider-receipt:\/\/techplay\/[0-9a-f]{64}$/);
+  const receipt = await store.readExternalReceipt("techplay-test", refs.external_receipt_ref);
+  assert.deepEqual(receipt, {
+    kind: "provider_response", provider_id: refs.external_receipt_ref.split("/").at(-1),
+    observed_at: "2026-08-12T01:02:03.000Z", event_ref: "techplay-event://event/999190",
+    artifact_sha256: refs.artifact_ref.split("/").at(-1),
+  });
+  const root = path.join(directory, "tenants", "techplay-test", "outbound", "techplay");
+  const artifactSha = refs.artifact_ref.split("/").at(-1);
+  const files = [path.join(root, "provider-receipts", `${refs.external_receipt_ref.split("/").at(-1)}.json`), path.join(root, "artifacts", `${artifactSha}.json`), path.join(directory, "objects", "sha256", artifactSha)];
+  for (const file of files) assert.equal(fs.statSync(file).mode & 0o777, 0o600, file);
+  assert.deepEqual(await store.readArtifact("techplay-test", refs.artifact_ref), png);
+  assert.equal(JSON.stringify(refs).includes("techplay-test"), false);
+});
+
+test("TECH PLAY wrapper rejects invalid refs, collisions, and receipt or artifact tampering", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "techplay-evidence-hardening-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const png = Buffer.alloc(5_000, 0x6a); Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png);
+  const store = createTechPlayEvidenceStore({ dataDir: directory });
+  const input = { tenantId: "techplay-test", eventRef: "techplay-event://event/999190", observedAt: "2026-08-12T01:02:03.000Z", screenshot: png };
+  await assert.rejects(store.record({ ...input, eventRef: "techplay-event://event/0" }));
+  const refs = await store.record(input);
+  const providerId = refs.external_receipt_ref.split("/").at(-1); const artifactSha = refs.artifact_ref.split("/").at(-1);
+  await assert.rejects(store.readExternalReceipt("techplay-test", "provider-receipt://techplay/not-a-hash"));
+  await assert.rejects(store.readExternalReceipt("techplay-test", `provider-receipt://eventbrite/${providerId}`));
+  const root = path.join(directory, "tenants", "techplay-test", "outbound", "techplay");
+  const receiptFile = path.join(root, "provider-receipts", `${providerId}.json`); const markerFile = path.join(root, "artifacts", `${artifactSha}.json`); const objectFile = path.join(directory, "objects", "sha256", artifactSha);
+  const receipt = JSON.parse(fs.readFileSync(receiptFile, "utf8")); const marker = JSON.parse(fs.readFileSync(markerFile, "utf8"));
+  fs.writeFileSync(receiptFile, `${JSON.stringify({ ...receipt, event_ref: "techplay-event://event/999191" })}\n`);
+  await assert.rejects(store.readExternalReceipt("techplay-test", refs.external_receipt_ref)); fs.writeFileSync(receiptFile, `${JSON.stringify(receipt)}\n`);
+  fs.writeFileSync(markerFile, `${JSON.stringify({ sha256: "a".repeat(64) })}\n`);
+  await assert.rejects(store.readArtifact("techplay-test", refs.artifact_ref)); fs.writeFileSync(markerFile, `${JSON.stringify(marker)}\n`);
+  fs.writeFileSync(objectFile, Buffer.concat([png, Buffer.from("tamper")]));
+  await assert.rejects(store.readArtifact("techplay-test", refs.artifact_ref));
+  await assert.rejects(store.record(input), /Tech Play evidence collision/);
 });
