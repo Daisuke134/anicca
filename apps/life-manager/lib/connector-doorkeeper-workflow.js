@@ -228,7 +228,7 @@ function normalizeDetail(binding, raw) {
   const controls = controlsOf(raw);
   const text = bodyText(raw, event);
   const unavailable = UNAVAILABLE_MARKER.test(text) || controls.some((control) => UNAVAILABLE_MARKER.test(control.text));
-  const submitControls = controls.filter((control) => control.text === "申し込む");
+  const submitControls = controls.filter((control) => control.text === "申し込む" && control.visible);
   const candidate = Object.freeze({
     provider: "doorkeeper",
     event_ref: binding.event_ref,
