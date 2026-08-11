@@ -1788,14 +1788,15 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
     event_ref: "eventbrite-event://event/1901",
     canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901",
   };
-  const increase = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "ticket-increase", ariaLabel: "Increase quantity" });
-  const decrease = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "ticket-decrease", ariaLabel: "Decrease quantity", disabled: true });
-  const quantity = makeEventbriteTicketElement({ testId: "ticket-quantity", innerText: "1" });
-  const stepper = makeEventbriteTicketElement({ testId: "ticket-quantity-selector", children: [decrease, quantity, increase] });
-  const card = makeEventbriteTicketElement({ testId: "ticket-card", innerText: "General Admission Free", children: [stepper] });
+  const increase = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-stepper-increase-button", ariaLabel: "Increase quantity" });
+  const decrease = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-stepper-decrease-button", ariaLabel: "Decrease quantity", disabled: true });
+  const quantity = makeEventbriteTicketElement({ testId: "eds-stepper-quantity", innerText: "1" });
+  const stepper = makeEventbriteTicketElement({ testId: "eds-stepper", children: [decrease, quantity, increase] });
+  const price = makeEventbriteTicketElement({ testId: "ticket-price__price", innerText: "Free" });
+  const card = makeEventbriteTicketElement({ testId: "ticket-display-card-content-full-size", innerText: "General Admission", children: [stepper, price] });
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
-  let ticketVisible = true; let operated = 0; let operatedFrame;
-  const frameElements = () => ticketVisible ? [card, stepper, quantity, increase, decrease, primary] : [primary];
+  let ticketVisible = true; let operated = 0; let operatedFrame; let frameExtras = [];
+  const frameElements = () => ticketVisible ? [card, stepper, quantity, increase, decrease, price, primary, ...frameExtras] : [primary];
   const frame = {
     url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; },
     parentFrame() { return {}; },
@@ -1814,6 +1815,32 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
   primary.disabled = true;
   assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], "disabled-primary");
   primary.disabled = false;
+  for (const [index, duplicate] of [
+    makeEventbriteTicketElement({ testId: card.dataset.testid, innerText: "Duplicate card" }),
+    makeEventbriteTicketElement({ testId: stepper.dataset.testid }),
+    makeEventbriteTicketElement({ testId: quantity.dataset.testid, innerText: "1" }),
+    makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: increase.dataset.testid, ariaLabel: "Increase quantity" }),
+    makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: decrease.dataset.testid, ariaLabel: "Decrease quantity", disabled: true }),
+    makeEventbriteTicketElement({ testId: price.dataset.testid, innerText: "Free" }),
+    makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: primary.dataset.testid, innerText: "Register" }),
+  ].entries()) {
+    frameExtras = [duplicate];
+    if (index === 1 || index === 5) { card.children.push(duplicate); duplicate.parentElement = card; }
+    if (index >= 2 && index <= 4) { stepper.children.push(duplicate); duplicate.parentElement = stepper; }
+    assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], `same-testid-duplicate-${index}-${duplicate.dataset.testid}`);
+    if (index === 1 || index === 5) card.children.pop();
+    if (index >= 2 && index <= 4) stepper.children.pop();
+  }
+  frameExtras = [];
+  for (const duplicate of [
+    makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: primary.dataset.testid, innerText: "Register now" }),
+    makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: primary.dataset.testid, innerText: "Register", hidden: true }),
+    makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: primary.dataset.testid, innerText: "Register", disabled: true }),
+  ]) {
+    frameExtras = [duplicate];
+    assert.deepEqual(await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url }), [], "primary-candidate-duplicate");
+  }
+  frameExtras = [];
   const controls = await inspectPageControls({ page, provider: "eventbrite", event_id: "1901", canonical_url: candidate.canonical_url });
   assert.deepEqual(controls, [{ control: "eventbrite_ticket_register_1901", kind: "button", label: "Register", required: false, completed: false, submittable: true }]);
   const harness = createProductionBrowserHarness({

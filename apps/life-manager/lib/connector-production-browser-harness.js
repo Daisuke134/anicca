@@ -123,26 +123,34 @@ async function inspectEventbriteTicketFrame(frame, eventId) {
       if (!Array.isArray(elements) || elements.length > 100) return { cardCount: -1, control: null };
       const testIdOf = (element) => String((element.getAttribute && element.getAttribute("data-testid")) || (element.dataset && element.dataset.testid) || "").toLowerCase();
       const textOf = (element) => String(element && (element.innerText || element.textContent || element.value) || "").replace(/\s+/g, " ").trim();
-      const labelOf = (element) => `${String((element.getAttribute && element.getAttribute("aria-label")) || "")} ${testIdOf(element)} ${textOf(element)}`.toLowerCase();
       const visibleOf = (element) => { let current = element; while (current) { if (current.hidden === true || current.isConnected === false || String((current.getAttribute && current.getAttribute("aria-hidden")) || "").toLowerCase() === "true") return false; current = current.parentElement || null; } const rect = element && typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null; return Boolean(element && (!rect || (Number(rect.width) > 0 && Number(rect.height) > 0))); };
       const descendants = (element) => [element, ...(typeof element.querySelectorAll === "function" ? [...element.querySelectorAll("*")] : [])];
-      const cards = elements.filter((element) => /(?:^|[-_])ticket[-_]card$/.test(testIdOf(element)) && visibleOf(element));
-      const primary = elements.filter((element) => {
+      const cardCandidates = elements.filter((element) => testIdOf(element) === "ticket-display-card-content-full-size");
+      const cards = cardCandidates.filter(visibleOf);
+      const primaryCandidates = elements.filter((element) => testIdOf(element) === "eds-modal__primary-button");
+      const primary = primaryCandidates.filter((element) => {
         const tag = String(element.tagName || "").toLowerCase(); const type = String(element.type || "").toLowerCase();
         return visibleOf(element) && element.disabled !== true && String((element.getAttribute && element.getAttribute("aria-disabled")) || "").toLowerCase() !== "true"
-          && tag === "button" && type === "button" && testIdOf(element) === "eds-modal__primary-button" && textOf(element) === "Register";
+          && tag === "button" && type === "button" && textOf(element) === "Register";
       });
-      if (cards.length !== 1 || primary.length !== 1) return { cardCount: cards.length, control: null };
+      if (cardCandidates.length !== 1 || cards.length !== 1 || primaryCandidates.length !== 1 || primary.length !== 1) return { cardCount: cards.length, control: null };
       const card = cards[0]; const cardText = textOf(card);
-      const stepper = descendants(card).filter((element) => /(?:stepper|quantity[-_]selector|ticket[-_]quantity[-_]selector|eds[-_]quantity(?:[-_]selector)?)/.test(testIdOf(element)));
-      const parts = stepper.length === 1 ? descendants(stepper[0]).filter(visibleOf) : [];
-      const quantity = parts.filter((element) => /(?:quantity|count|value)/.test(testIdOf(element)) && textOf(element) === "1");
+      const stepperCandidates = descendants(card).filter((element) => testIdOf(element) === "eds-stepper");
+      const stepper = stepperCandidates.filter(visibleOf);
+      const parts = stepper.length === 1 ? descendants(stepper[0]) : [];
+      const quantityCandidates = parts.filter((element) => testIdOf(element) === "eds-stepper-quantity");
+      const increaseCandidates = parts.filter((element) => testIdOf(element) === "eds-stepper-increase-button");
+      const decreaseCandidates = parts.filter((element) => testIdOf(element) === "eds-stepper-decrease-button");
+      const prices = descendants(card).filter((element) => testIdOf(element) === "ticket-price__price");
+      const quantity = quantityCandidates.filter((element) => visibleOf(element) && textOf(element) === "1");
       const enabledOf = (element) => element.disabled !== true && String((element.getAttribute && element.getAttribute("aria-disabled")) || "").toLowerCase() !== "true";
-      const increase = parts.filter((element) => String(element.tagName || "").toLowerCase() === "button" && enabledOf(element) && /(?:increase|increment|add)/.test(labelOf(element)));
-      const decrease = parts.filter((element) => String(element.tagName || "").toLowerCase() === "button" && /(?:decrease|decrement|remove)/.test(labelOf(element)));
+      const increase = increaseCandidates.filter((element) => visibleOf(element) && String(element.tagName || "").toLowerCase() === "button" && String(element.type || "").toLowerCase() === "button" && enabledOf(element));
+      const decrease = decreaseCandidates.filter((element) => visibleOf(element) && String(element.tagName || "").toLowerCase() === "button" && String(element.type || "").toLowerCase() === "button");
       const paid = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:jpy|yen|円)\b|\bcash\b|\bpaid\b|\bdoor\s*(?:fee|price)\b|\bat\s+the\s+door\b|\bminimum\s+purchase\b|\bone\s+drink\s+minimum\b|\bpurchase\s+required\b|会場払い|当日払い|有料)/i.test(cardText);
-      const free = /(?:^|[^A-Za-z])Free(?:$|[^A-Za-z])/.test(cardText);
-      const valid = stepper.length === 1 && quantity.length === 1 && increase.length === 1 && decrease.length === 1 && !enabledOf(decrease[0]) && free && !paid;
+      const free = prices.length === 1 && visibleOf(prices[0]) && textOf(prices[0]) === "Free";
+      const valid = stepperCandidates.length === 1 && stepper.length === 1 && quantityCandidates.length === 1 && quantity.length === 1
+        && increaseCandidates.length === 1 && increase.length === 1 && decreaseCandidates.length === 1 && decrease.length === 1
+        && prices.length === 1 && free && decrease[0].disabled === true && !paid;
       if (valid && primary[0].dataset) primary[0].dataset.lmConnectorControl = `eventbrite_ticket_register_${context.eventId}`;
       return { cardCount: cards.length, control: valid ? `eventbrite_ticket_register_${context.eventId}` : null };
     }, { eventId });
