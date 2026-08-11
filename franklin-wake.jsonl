@@ -25553,3 +25553,10 @@
 {"ts":1786436735,"wake_id":"00MSOEB2URC64F76F33BFE442E","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786436863,"wake_id":"00MSOEDTXO372F4F969C26465F","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana microtask platform paid gig api [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the m"}
 {"ts":1786436991,"wake_id":"00MSOEGKJ07793369799174E3F","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786437124,"wake_id":"00MSOEJFDG484581AA93624C0F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786437252,"wake_id":"00MSOEM5WD8EF051A970594539","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786437382,"wake_id":"00MSOEOYMR8D19FD06810B40B9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786437514,"wake_id":"00MSOERSA089A6845BA11447DE","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786437675,"wake_id":"00MSOEV871A901069FBFD74251","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786437802,"wake_id":"00MSOEXYHLCD8D031FDD74423F","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786437930,"wake_id":"00MSOF0PCAD858AC61A33A44AF","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
