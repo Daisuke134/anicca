@@ -170,6 +170,18 @@ test("Eventbrite bounds free clauses and preserves negative purchase statements"
     assert.equal((await workflow.discoverCandidates({ page: {}, calendar: [] })).length, 1, phrase);
   }
 
+  const boundedNegativePurchase = [
+    "No minimum purchase waiver is available.",
+    "No purchase required waiver is available.",
+  ];
+  for (const [index, phrase] of boundedNegativePurchase.entries()) {
+    const id = String(420 + index); const row = binding(id);
+    const { workflow } = workflowFor([{ href: row.canonical_url, event_id: id }], {
+      [row.canonical_url]: detail(id, { body_text: `Tokyo event: Free admission. ${phrase}` }),
+    });
+    assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), [], phrase);
+  }
+
   for (const [index, phrase] of ["参加費は無料", "参加費：無料"].entries()) {
     const id = String(410 + index); const row = binding(id);
     const { workflow } = workflowFor([{ href: row.canonical_url, event_id: id }], {
