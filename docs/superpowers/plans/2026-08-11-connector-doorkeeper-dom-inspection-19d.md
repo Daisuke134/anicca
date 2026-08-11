@@ -37,7 +37,7 @@
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
 
-- [ ] **Step 1: Write RED inspector tests**
+- [x] **Step 1: Write RED inspector tests**
 
   Use literal fake DOM nodes matching the measured attributes and visibility. Prove:
 
@@ -48,18 +48,18 @@
   5. duplicate submit, wrong form, hidden submit, unlabeled/ambiguous required answer expose no submittable submit;
   6. output contains no raw email/name/value/private fixture.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
   ```bash
   cd apps/life-manager
   node --test lib/connector-production-browser-harness.test.js
   ```
 
-- [ ] **Step 3: Implement the minimal Doorkeeper inspector branch**
+- [x] **Step 3: Implement the minimal Doorkeeper inspector branch**
 
   Extend only selector and in-page normalization. Reuse `visibleOf`, `requiredOf`, `completedOf`, form binding, and submit count. Add exact known-page/trigger/email predicates; do not implement link clicks.
 
-- [ ] **Step 4: Run GREEN and adjacent checks**
+- [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
   cd apps/life-manager
@@ -69,7 +69,7 @@
   git diff --check
   ```
 
-- [ ] **Step 5: Self-review and commit**
+- [x] **Step 5: Self-review and commit**
 
   Verify exact 2-file ownership, observation-only, no generic selector expansion, hidden/private output 0, existing providers unchanged. Commit without amend and push.
 
@@ -78,3 +78,10 @@
 - Ponytail: measured DOM and existing inspector primitives only; no new browser/service/state abstraction.
 - Scope: DOM observation only. Activation and factory reachability remain later slices.
 - Safety: no click/fill/submit or live wake is introduced.
+
+## Result
+
+- Luna added four measured-DOM tests after the 61-test baseline; RED was 61/65 and initial GREEN 65/65. Adjacent remained 33/33.
+- Fresh Sol review found three Important evidence/compatibility gaps. Round 1 made the selector provider-specific, preserved the exact non-Doorkeeper selector, isolated wrong-form from duplicate submit, and covered ancestor visibility. Round 2 split trigger/email/submit ancestor cases so no trigger early-return masks field/submit behavior.
+- Final focused result is 67/67; adjacent is 33/33. Final fresh Sol re-review returned spec PASS / quality SHIP with no findings. Independent Sol verification repeated all results plus syntax, diff, exact ownership, and four-label UNLOADED checks.
+- Reviewed commits `f52333fbd`, `7a072341d`, and test-only `7221adf94` are pushed and fast-forwarded into `feature/connector-native-completion`. The bounded identity/visibility matrix accounts for the larger test delta. No link activation, fill, submit, factory, native, or live behavior changed.

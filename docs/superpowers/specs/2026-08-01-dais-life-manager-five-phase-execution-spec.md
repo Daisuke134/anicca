@@ -7405,7 +7405,13 @@ fresh Sol初回reviewはImportant 2件。非final fill後の`pending`が共通ad
 
 shared `:9222`の新規診断target一枚だけで実Doorkeeper detailを再測定し、exact visible trigger `a[href=#new_registration_modal]` 1、modal closed時hidden required email+submit、open後same form内visible email+submitを確認した。fill/submit 0、診断target close後absent。次plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-dom-inspection-19d.md`はHarness production/test 2 filesだけ。exact selector/page/event/visibility/formを使い、closedはtriggerだけ、open後はpublic label Emailとsingle submittable submitだけへ正規化する。一般link selector、click、factory、liveは変更0。official wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗379。これ以外の残TODO一覧は履歴）
+### O1B-25進捗380（Item 19D-B4b1 / Doorkeeper measured DOM inspection ship）
+
+LunaがHarness production/test 2 filesだけをTDD変更した。61-test baselineへ実測DOM4 testsを追加しRED 61/65、initial GREEN 65/65、隣接33/33。Doorkeeper時だけexact modal anchor selectorを追加し、lowercase non-www canonical/event一致、visible unique trigger、hidden modal omission、exact required email→public`Email`、same exact formのsingle submitをemail complete後だけsubmittableへ正規化した。raw field名/value/private output 0、click/fill/submit 0。
+
+fresh Sol初回reviewのImportant 3件に対し、非Doorkeeper selectorをbyte-equivalent維持して既存control不変、sole primary wrong-form submit、ancestor hidden/aria/inline/computed/zero-boxを追加。再reviewでtriggerを同時に隠すmaskingを指摘され、trigger/email/submitを一対象ずつ独立させた。最終67/67、隣接33/33、fresh re-review spec PASS / quality SHIP、指摘0。Sol独立67/67、33/33、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommits `f52333fbd`,`7a072341d`,`7221adf94`をstableへfast-forwardしpushした。次はB4b2 exact modal trigger activationとmutation signature分離。factory/liveは未接続、Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗380。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
