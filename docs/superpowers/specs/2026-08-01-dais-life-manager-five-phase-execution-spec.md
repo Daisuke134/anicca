@@ -7375,7 +7375,13 @@ fresh Sol reviewはspec PASS / quality SHIP、指摘0。Sol独立14/14、56/56�
 
 次active slice B2 plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-audit-19d.md`はoperations production/testの2 filesだけ。Doorkeeper workflowのexact新5キー`discovered / within_window / eligible / calendar_free / selected`をinteger 0〜500かつ単調減少で検証し、schema/wake/timeとaggregate countだけを`doorkeeper-discovery-audits.jsonl`へmode 0600 appendする。URL、event、title、profile、ticket、auth、private Calendar dataは保存0、invalid inputはappend 0。既存4providerの旧5キーvalidator/filesは変更しない。native/Harness/schedule/live作用0。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗373。これ以外の残TODO一覧は履歴）
+### O1B-25進捗374（Item 19D-B2 / Doorkeeper durable audit ship）
+
+Lunaがoperations production/testの2 filesだけをTDD変更した。REDは既存9件GREEN、新1件がmethod未定義でFAIL。GREENはoperations 10/10、production+Doorkeeper workflow 29/29、syntax、diffがPASS。separate validatorはexact新5キー、integer 0〜500、`selected <= calendar_free <= eligible <= within_window <= discovered`を要求し、schema/wake/exact time/countsだけを`doorkeeper-discovery-audits.jsonl`へmode 0600 appendする。invalid matrixはline count 1のまま、URL/private field 0。既存4provider validator/files変更0。
+
+fresh Sol reviewはspec PASS / quality SHIP、Critical/Important 0。単調各境界の個別testはoptional Minorで、全4条件のproduction検証と非単調rejectは成立。Sol独立10/10、29/29、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommit `c7269d886`をstableへfast-forwardしpushした。次の一件はB3 native provider orderへDoorkeeperをMeetup後に追加する2-file slice。HarnessはB4まで未接続、Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗374。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
