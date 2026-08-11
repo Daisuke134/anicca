@@ -7343,7 +7343,17 @@ pushed HEAD `3bc80b94e`、4 labels unloaded、process 0、Meetup audit baseline 
 
 cleanup後process 0、Connector ledger target/CDP交差0、Git clean/upstream。Meetup discovery/audit/safe Calendar skipはlive受入完了。唯一strict candidateが実Calendar conflictのためMeetup applied bundleは外部non-conflict候補待ちで未完だが、安全条件を緩めない。NO PASSIVE WAITINGにより次の実装itemはDoorkeeper providerへ進み、各wakeでMeetup候補再探索を継続する。Item19 Meetup `[pending: no non-conflict candidate]`、Doorkeeper未着手、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗368。これ以外の残TODO一覧は履歴）
+### O1B-25進捗369（Item 19D-A / Doorkeeper grounded discovery plan）
+
+Ponytail fullでexisting provider workflow/router/Harness/native/evidence/Calendar seamsとDoorkeeper実サイトをread-only追跡した。repoにはdaily-driver host allowlist、tab owner、legacy provider registryのDoorkeeper名だけがあり、official minimal workflow/router/native/evidenceへの実装は0。Doorkeeper専用agent/API client/DB/queue/schedulerは作らず、既存same-page workflow interfaceとCalendar gateを再利用する。
+
+公式参加者helpはaccountなしemail申込、無料eventの必要事項入力後の`申し込む`、完了pageとticket mailを定義する。公式APIはpublic event fieldsを持つがalphaかつPublic API Access token必須なのでactive runtimeには追加しない。実東京一覧はpage 1が50 rowsで08-11〜08-19、page 2が50 rowsで08-19〜08-26。14日窓のexact東京会場rowは12。detail JSON-LDはexact canonical、start/end、OfflineEventAttendanceMode、東京住所、Offer price/currency/availabilityを持ち、visible exact`申し込む`も実測した。有料detailは同UIで`1,000円 会場払い`を持つため、price zero/JPY/InStock/all-offers exactをfail-closedで要求する。
+
+実Calendar read-only比較は`observed/normalized/window/free-open/calendar-free = 100/100/12/8/0`。無料受付中8件すべてが実予定と重複し、Doorkeeperの現在external write 0は故障ではなくsafe skip。Firecrawl searchはInvalid tokenで3 query失敗したため停止せず、crwl公式本体/API/help、Google英日検索、gh code search、shared CloakBrowser実DOMへ切替えた。registration再利用可能OSSは旧widget以外0。
+
+plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-discovery-19d.md`はnew workflow/test 2 filesだけ、production約220〜320 LOC、test約260〜360 LOC。ordered listing pagination→canonical/Tokyo/window prefilter→detail JSON-LD free/open gate→Calendar→five-count audit→parent readbackをTDD実装する。direct submitはstable safe failureでexisting Harnessの後続sliceへ残す。Item19 Meetupは`[pending: no non-conflict candidate]`、Doorkeeperはdiscovery未実装、Eventbrite未着手、4 schedule labelsはunloaded。
+
+### Active remaining TODO SSOT（進捗369。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
