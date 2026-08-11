@@ -142,8 +142,10 @@ flowchart LR
     CACHE -->|registered / pending| SUPPORT
     CACHE -->|not completed| DIRECT["Provider script-first action"]
     DIRECT -->|completed| POST
-    DIRECT -->|not completed| HARNESS["Bounded Browser Harness<br/>observe → propose → operate"]
-    HARNESS --> POST{"Official parent / child-frame readback<br/>registered or pending?"}
+    DIRECT -->|effect unknown| CIRCUIT
+    DIRECT -->|safe not completed| HARNESS["Bounded Browser Harness<br/>observe → propose → operate"]
+    HARNESS -->|completed| POST{"Official parent / child-frame readback<br/>registered or pending?"}
+    HARNESS -->|safe failure| NEXT
     POST -->|No / safe failure| NEXT
     POST -->|Yes| SUPPORT
 
