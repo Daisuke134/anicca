@@ -28,3 +28,9 @@
 ## Live completion gate
 
 After reviewed integration, run one official foreground wake with schedule unloaded. Doorkeeper `discovered_count` must be greater than zero or a new safe failure must identify the next exact boundary; process/lock/target cleanup and Telegram positive receipt remain mandatory.
+
+## Result
+
+Luna changed only the Doorkeeper workflow and its focused test. The current-DOM fixture produced RED `14/15` with actual `[]`; selecting exact `.global-event.events-list` roots produced GREEN `15/15`, while minimal production + Harness remained `87/87`.
+
+Fresh Sol review returned SHIP with Critical/Important 0. Sol independently repeated focused `15/15`, adjacent `87/87`, syntax, diff, ownership, remote equality, and four-label unloaded checks. Reviewed commit `0faf0c6fe` was fast-forwarded into stable. No live wake or external effect occurred during implementation.

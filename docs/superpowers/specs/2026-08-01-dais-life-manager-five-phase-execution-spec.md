@@ -7443,7 +7443,13 @@ safe auditはLuma `31/31/16/9/0`、Connpass `6/6/6/4/1`、Peatix `100/100/87/59/
 
 次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-listing-dom-19d.md`はDoorkeeper workflow production/test 2 filesだけ。現行DOM fixtureをREDにし、exact `.global-event.events-list` rootsへ一箇所修正する。title/date/Tokyo venue、pagination、detail/eligibility/Calendar/audit/Harness/factory/nativeは不変。implementation中official wake 0、4 labels UNLOADED。Item19 Doorkeeperと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗386。これ以外の残TODO一覧は履歴）
+### O1B-25進捗387（Item 19D / Doorkeeper listing DOM repair ship）
+
+LunaがDoorkeeper workflow production/test 2 filesだけをTDD変更した。現行DOM fixtureでREDは14/15、actual `[]`。productionはexact `.global-event.events-list` rootsを列挙し、既存title/date/Tokyo venue抽出を再利用してGREEN 15/15、minimal production+Harness 87/87。broad `li`/arbitrary anchor fallback、新抽象化、pagination/detail/eligibility/Calendar/audit/Harness/factory/native変更0。
+
+fresh Sol reviewはSHIP、Critical/Important 0。Sol独立15/15、87/87、syntax/diff/ownership/remote equality、4 labels UNLOADEDがPASS。review済み`0faf0c6fe`をstableへfast-forwardした。次は同じofficial foreground wakeをexact 1回実行し、Doorkeeper discovered count >0または次のexact safe boundary、external effect、cleanup、Telegram receiptを実測する。Item19 Doorkeeperと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗387。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
