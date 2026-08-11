@@ -7792,3 +7792,9 @@ Eventbrite minimal evidence chain、Calendar transport、browser/action/readback
 Lunaが`connpass-evidence-store.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは既存6件GREEN、新Eventbrite 2件だけ`createEventbriteEvidenceStore is not a function`でFAIL。GREEN commit `b9b7b691c`はprivate generic storeを変更せず、exact Eventbrite event/receipt namespaceとcollision messageを持つwrapper/exportだけを追加した。production +10/-1、test +51。
 
 Eventbrite store testは実mode-0600 receipt/artifact/object、deterministic receipt tuple、tenant非露出、invalid event ID、stored receipt tuple tamper rejectionを固定する。Sol独立でstore＋evidence 41/41、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality PASS、Critical/Important/Minor 0で`ship`。browser、Calendar、Telegram、Connector state、launchd、external effectは0。次active sliceはEventbriteをminimal evidence chainへ配線する。Item19 Eventbrite実bundleは未完。
+
+### O1B-25進捗440（Item 19E-E2 / Eventbrite minimal evidence chain plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-evidence-chain-19e.md`は`connector-minimal-evidence.js`とmatching testのexact 2 files。review済みEventbrite storeをprovider mapへ追加し、exact event refと現行workflowのcanonical 2 path（`/e/<slug>-tickets-<same ID>`または`/e/<same ID>`）を束縛する。registered親pageを置換・navigate・receipt renderせずfull-page PNG化し、初回provider receipt/artifact readback後だけ既存Calendar/Telegram/checkpoint/bundle pipelineへ進む。production約28〜45 LOC、test約75〜110 LOC。
+
+Calendar gog transport、Eventbrite discovery/action/child-frame readback、Harness、native、schedule、live stateは変更0。injected Calendar/Telegramでcreated→reused、両canonical path、invalid identity/state/current URLのdownstream effect 0をTDD固定する。review/push後にEventbrite Calendar transportを別sliceで追加する。Item19 Eventbrite実bundleは未完。
