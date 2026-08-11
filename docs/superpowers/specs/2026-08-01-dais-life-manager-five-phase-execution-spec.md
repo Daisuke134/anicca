@@ -7233,7 +7233,15 @@ Lunaへexisting minimal runner production/testの2 filesだけを所有させ、
 
 fresh Sol reviewはreason-only guardがnon-Peatix spoofも停止するImportant 1を発見。fix commit `be75bc8f3`は`provider === "peatix"`を同時に必須化し、非Peatix同reasonが従来fallbackへ進むRED 37/38→GREEN 38/38を追加した。Luna minimal production/evidence/operations、Peatix provider、Harness adjacent 128/128、Sol独立expanded 166/166、syntax/diff checkがPASS。workflow 1 failureは既知の日付依存。fresh re-reviewはCritical 0 / Important 0で`ship`。review済みcommitsをstable scheduled worktreeへfast-forwardしremoteへpushした。implementation/test/review中のbrowser、provider、Calendar、evidence、Telegram、state、launchd、schedule作用0。Item19 Meetupは未完。次は4 labels unloadedのofficial foreground wake exact 1回でPeatix ambiguous時Harness 0またはPeatix evidence回復後Meetup audit到達をlive検証する。
 
-### Active remaining TODO SSOT（進捗351。これ以外の残TODO一覧は履歴）
+### O1B-25進捗352（Item 19M-D0d live wake / direct-to-confirm variant確定）
+
+pushed HEAD `5c5a97925`、4 labels unloaded、process/active lease 0、`:9222` page 1、baseline action/report/delivery/Peatix audit/bundle `835/114/126/30/6`からofficial foreground wakeをexact 1回実行した。wake `wake-145a8e4a4f58e9239f113b3f`はLuma、Connpass、Peatix discoveryを成功し、action 835→854、report 114→115、delivery 126→127、Peatix audit 30→31、positive Telegram ID `11404`。bundle 6、Meetup audit 0。
+
+action差分はprovider direct 30,857ms後にもBrowser Harness 33,983msが1件あり、terminalはfailure count 1の`circuit_open / effect_unknown`。historyでcandidate `5101994`は`/tickets → /billing → /confirm`が1秒以内、Harness action後に`/confirmed`へ遷移していた。D0c guardのlive対象`peatix_readback_unavailable`ではなく、directがNext後に`form`だけを待って`peatix_form_navigation_failed`となる別variantだった。process/active lease 0、owned page cleanup、Git clean/upstreamを確認した。
+
+external click 0のtemporary owned pageで`/billing`をread-only測定するとsame-event `/confirm`へ遷移し、required field 0、confirm control exact 1、form-submit 0。targetをexact cleanupしbaseline page 1へ戻した。plan `2026-08-11-connector-peatix-direct-confirm-transition.md`を追加し、Peatix provider/test 2 filesだけでNext後のstrict same-event `form|confirm`をbounded waitする。confirm直行時はform blockを省略し、既存confirm identity/Kana/validation/final/confirmed/canonical readbackへ合流する。scheduleはunloaded、Item19 Meetupは未完。
+
+### Active remaining TODO SSOT（進捗352。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
