@@ -29,3 +29,9 @@
 - Factory-created default Harness reaches Doorkeeper parent readback.
 - No browser rail call or external effect occurs.
 - Focused and adjacent tests pass; fresh Sol review returns SHIP.
+
+## Result
+
+Luna added one production line passing the factory-created `doorkeeperWorkflow` into the default `createProductionBrowserHarness`, plus one production-equivalent regression test that leaves `browserHarness` uninjected. RED observed `failed` with Doorkeeper readback/click 0; GREEN observes completed, workflow parent readback 1, safe click 1, and browser rail 0.
+
+Fresh Sol review returned SHIP with Critical/Important 0. Sol independently verified factory `15/15`, Harness + Doorkeeper workflow `87/87`, syntax, diff, two-file scope, and unloaded live boundary. Because the implementation branch inherited an unrelated rejected merge, Sol integrated only the reviewed implementation commit by cherry-pick as `4f77b43fd`; the rejected merge and its documentation were separately reverted on stable before integration.
