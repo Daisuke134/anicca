@@ -7255,7 +7255,13 @@ pushed HEAD `2795acbd7`、4 labels unloaded、process/active lease 0、page 1、
 
 external click 0のread-only測定でcanonicalはticket link/marker/checkout各0。exact `/event/5101994/ticket`はauth redirectなし、`body.webticket`と`section.ticket`各1だが旧QR image 0。現行swipe ticketはvisible `.ticket_cover`、`.ticket_event`、`.ticket_event-name`、`.ticket_summary`が各exact 1。旧readerがQR型だけをticket shellとするため実registeredを認識できず、次wakeで再Submitし得る。plan `2026-08-11-connector-peatix-swipe-ticket-readback.md`を追加し、provider/test 2 filesだけでQR OR swipe shell proofとcanonical→ticket read-only probe/restoreをpre-submit/post-confirmへ接続する。private ticket text/valueは読取・保存0。scheduleはunloaded、Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗354。これ以外の残TODO一覧は履歴）
+### O1B-25進捗355（Item 19M-D0e / swipe-ticket readback ship）
+
+LunaへPeatix browser provider production/testの既存2 filesだけを所有させ、QR型でないswipe ticketのsame-event readbackとpre/post ticket probeをSuperpowers TDDで実装した。REDはfocused 25/29で、swipe shell未認識、pre-submit既登録回収なし、unproven probeのcanonical restoreなし、post-confirm登録回収なしを再現した。GREEN commit `f05fb785d`はexact ticket URL、`body.webticket`、`section.ticket`、visible exact `.ticket_cover/.ticket_event/.ticket_event-name/.ticket_summary`各1をQR shellと並ぶboolean proofにする。ticket text、confirmation number、ticket/private valueは読取・保存・log 0。
+
+pre-submitはexisting canonicalStartのsame-event/markerなしを通った時だけticketをread-only probeし、registeredならfinal click 0、proof不成立ならcanonical exact restore後にexisting flowへ進む。wrong marker/auth/malformedはprobe 0。post-confirm canonical unavailableもticket proof registeredだけを成功にする。Luna focused 29/29、runner/production/evidence/Harness adjacent 136/136、Sol独立expanded 165/165、syntax/diff checkがPASS。workflow 1 failureは既知の日付依存。fresh Sol reviewはCritical 0 / Important 0で`ship`。review済みcommitをstable scheduled worktreeへfast-forwardしremoteへpushした。implementation/test/review中のbrowser、provider、Calendar、evidence、Telegram、state、launchd、schedule作用0。Item19 Meetupは未完。次はofficial wake exact 1回でsame-event swipe ticket pre-readback、Submit/Harness 0、evidence bundle、Meetup audit到達または次exact safe boundaryをlive検証する。
+
+### Active remaining TODO SSOT（進捗355。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

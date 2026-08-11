@@ -43,3 +43,5 @@ GREEN:
 - syntax、`git diff --check`
 - fresh Sol review Critical 0 / Important 0
 - push後official wake exact 1回でsame-event pre-readback registered、provider Submit/Harness 0、evidence bundle、Meetup audit到達または次exact safe boundaryを確認する。
+
+実装結果: Luna REDはfocused provider 25/29で、swipe shell未認識、pre-submit ticket回収なし、unproven canonical restoreなし、post-confirm ticket回収なしの4 failureを再現した。GREEN commit `f05fb785d`はprovider/test 2 filesだけで、QR OR exact visible swipe shell proofとcanonical→ticket read-only probe/restoreをpre/postへ接続した。wrong marker/auth/malformedはprobe 0、registeredならSubmit 0、unprovenならcanonical exact restore、新event flowを維持。private text/value/confirmation number読取・保存0。Luna focused 29/29・adjacent 136/136、Sol独立expanded 165/165、syntax/diff check PASS。workflow 1 failureは既知の日付依存。fresh Sol reviewはCritical 0 / Important 0で`ship`。実装/review中のbrowser/provider/Calendar/evidence/Telegram/state/schedule作用0。
