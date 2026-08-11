@@ -29,6 +29,7 @@ const EVENTBRITE_EVENT_URL = /^https:\/\/www\.eventbrite\.com\/e\/(?:(?:[a-z0-9]
 const EVENTBRITE_TRIGGER_CONTROL = /^eventbrite_checkout_([1-9][0-9]*)$/;
 const EVENTBRITE_CTA_LABELS = new Set(["Get tickets", "Reserve a spot"]);
 const EVENTBRITE_FRAME_TIMEOUT_MS = 30_000;
+const EVENTBRITE_FRAME_STABILITY_MS = 500;
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
 const FINAL_EFFECT_POLL_MS = 25;
 
@@ -95,21 +96,32 @@ function eventbriteFrameMatches(frame, eventId) {
   const eventIds = parsed.url.searchParams.getAll("eid");
   return eventIds.length === 1 && eventIds[0] === String(eventId);
 }
-async function waitForEventbriteCheckoutFrame(page, eventId) {
-  if (!page || typeof page.frames !== "function") return false;
+function eventbriteChildFrame(frame) {
+  try { return typeof frame?.parentFrame === "function" && frame.parentFrame() !== null; } catch { return false; }
+}
+async function waitForEventbriteCheckoutFrame(page, eventId, canonicalUrl) {
+  if (!page || typeof page.frames !== "function" || !canonicalUrl) return false;
   const deadline = Date.now() + EVENTBRITE_FRAME_TIMEOUT_MS;
   let stableSignature = null;
+  let stableSince = null;
   while (Date.now() <= deadline) {
+    let pageHref = "";
+    try { pageHref = String(typeof page.url === "function" ? page.url() : ""); } catch { return false; }
+    if (pageHref !== String(canonicalUrl)) return false;
     let frames = [];
     try { frames = page.frames(); } catch { frames = []; }
-    const official = Array.isArray(frames) ? frames.map((frame) => ({ frame, parsed: eventbriteFrameUrl(frame) })).filter(({ parsed }) => parsed) : [];
+    const official = Array.isArray(frames)
+      ? frames.map((frame) => ({ frame, parsed: eventbriteFrameUrl(frame) })).filter(({ frame, parsed }) => parsed && eventbriteChildFrame(frame)) : [];
     const matching = official.filter(({ frame }) => eventbriteFrameMatches(frame, eventId));
     if (official.length === 1 && matching.length === 1) {
       const signature = official[0].parsed.href;
-      if (stableSignature === signature) return true;
-      stableSignature = signature;
+      if (stableSignature !== signature) {
+        stableSignature = signature;
+        stableSince = Date.now();
+      } else if (stableSince != null && Date.now() - stableSince >= EVENTBRITE_FRAME_STABILITY_MS) return true;
     } else {
       stableSignature = null;
+      stableSince = null;
     }
     const remaining = deadline - Date.now();
     if (remaining <= 0) break;
@@ -779,7 +791,7 @@ function createProductionBrowserHarness(options = {}) {
       if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
       return Object.freeze({ status: "failed" });
     }
-    if (eventbriteTrigger) return Object.freeze({ status: await waitForEventbriteCheckoutFrame(input.page, eventbriteBinding.eventId) ? "success" : "failed" });
+    if (eventbriteTrigger) return Object.freeze({ status: await waitForEventbriteCheckoutFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) ? "success" : "failed" });
     if (navigationWait && !(await navigationWait.promise)) return Object.freeze({ status: "failed" });
     if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
     return Object.freeze({ status: "success" });

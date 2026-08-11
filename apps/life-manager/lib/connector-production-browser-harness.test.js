@@ -1674,14 +1674,20 @@ test("Eventbrite CTA action clicks once and succeeds only on the exact checkout 
     canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901",
   };
   const trigger = { control: "eventbrite_checkout_1901", kind: "button", label: "Get tickets", required: false, completed: false, submittable: true };
-  const run = async ({ frameUrls, action = { purpose: "submit", method: "ax_click", control: trigger.control }, controls = [trigger], provider = "eventbrite", candidateValue = candidate } = {}) => {
-    let operated = 0; let resolved = 0; let reads = 0;
+  const run = async ({ frameUrls, pageUrls, action = { purpose: "submit", method: "ax_click", control: trigger.control }, controls = [trigger], provider = "eventbrite", candidateValue = candidate } = {}) => {
+    let operated = 0; let resolved = 0; let reads = 0; let pageReads = 0;
     const page = {
-      url() { return candidate.canonical_url; },
+      url() {
+        pageReads += 1;
+        return typeof pageUrls === "function" ? pageUrls(pageReads) : pageUrls || candidate.canonical_url;
+      },
       frames() {
         reads += 1;
         const urls = typeof frameUrls === "function" ? frameUrls(reads) : frameUrls || [];
-        return urls.map((href) => ({ url() { return href; } }));
+        return urls.map((entry) => {
+          const frame = typeof entry === "string" ? { href: entry } : entry;
+          return { url() { return frame.href; }, parentFrame() { return frame.main === true ? null : {}; } };
+        });
       },
     };
     const harness = createProductionBrowserHarness({
@@ -1710,6 +1716,15 @@ test("Eventbrite CTA action clicks once and succeeds only on the exact checkout 
   assert.deepEqual(success.result, { status: "success" });
   assert.equal(success.operated, 1);
   assert.equal(success.resolved, 0);
+  const mainOnly = await run({ frameUrls: [{ href: "https://www.eventbrite.com/checkout-external?eid=1901", main: true }] });
+  assert.deepEqual(mainOnly.result, { status: "failed" }, "main-frame-only");
+  assert.equal(mainOnly.operated, 1);
+  const parentNavigated = await run({
+    frameUrls: ["https://www.eventbrite.com/checkout-external?eid=1901"],
+    pageUrls: (poll) => poll <= 3 ? candidate.canonical_url : "https://www.eventbrite.com/checkout-external?eid=1901",
+  });
+  assert.deepEqual(parentNavigated.result, { status: "failed" }, "parent-navigation");
+  assert.equal(parentNavigated.operated, 1);
   for (const [name, frameUrls] of [
     ["missing", []],
     ["wrong-origin", ["https://evil.example/checkout-external?eid=1901"]],
@@ -1727,6 +1742,11 @@ test("Eventbrite CTA action clicks once and succeeds only on the exact checkout 
     : ["https://www.eventbrite.com/checkout-external?eid=1901", "https://www.eventbrite.com/checkout-external?eid=1901"] });
   assert.deepEqual(unstable.result, { status: "failed" }, "frame-count-grew-after-first-poll");
   assert.equal(unstable.operated, 1);
+  const lateDuplicate = await run({ frameUrls: (poll) => poll <= 2
+    ? ["https://www.eventbrite.com/checkout-external?eid=1901"]
+    : ["https://www.eventbrite.com/checkout-external?eid=1901", "https://www.eventbrite.com/checkout-external?eid=1901"] });
+  assert.deepEqual(lateDuplicate.result, { status: "failed" }, "frame-count-grew-after-second-poll");
+  assert.equal(lateDuplicate.operated, 1);
   for (const [name, action, provider, candidateValue, controls] of [
     ["wrong-action", { purpose: "fill", method: "ax_fill", control: trigger.control }],
     ["wrong-token", { purpose: "submit", method: "ax_click", control: "other_button" }],
