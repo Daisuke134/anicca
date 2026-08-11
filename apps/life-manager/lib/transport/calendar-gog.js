@@ -73,6 +73,13 @@ function connectorCanonicalUrl(value) {
     if (raw !== expected || url !== expected) connectorInvalid();
     return Object.freeze({ url: expected, sourceTitle: "Doorkeeper" });
   }
+  const eventbriteMatch = host === "www.eventbrite.com"
+    && /^\/e\/(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)-tickets-[1-9][0-9]*|[1-9][0-9]*)$/i.exec(parsed.pathname);
+  if (eventbriteMatch) {
+    const expected = `https://www.eventbrite.com${parsed.pathname}`;
+    if (raw !== expected || url !== expected) connectorInvalid();
+    return Object.freeze({ url: expected, sourceTitle: "Eventbrite" });
+  }
   const match = host === "peatix.com" && /^\/event\/([1-9][0-9]*)$/.exec(parsed.pathname);
   const expected = match ? `https://peatix.com/event/${match[1]}` : "";
   if (!expected || raw !== expected || url !== expected) connectorInvalid();

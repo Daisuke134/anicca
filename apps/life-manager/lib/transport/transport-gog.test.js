@@ -261,6 +261,63 @@ test("connector calendar rejects every non-canonical Doorkeeper identity before 
   assert.equal(calls, 0);
 });
 
+test("connector calendar accepts exact Eventbrite slug and direct-ID identities with fixed Eventbrite source title", async () => {
+  const canonicalUrls = [
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://www.eventbrite.com/e/1997468673574",
+  ];
+  const { run, calls } = recorder(JSON.stringify({ id: "eventbrite-created", htmlLink: "https://calendar.google.com/calendar/event?eid=eventbrite-created" }));
+  const cal = makeGogCalendar({ account: ACCT, run });
+
+  for (const canonicalUrl of canonicalUrls) {
+    const result = await cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "e".repeat(64), title: "Injected title",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    });
+    assert.deepEqual(result, { id: "eventbrite-created", htmlLink: "https://calendar.google.com/calendar/event?eid=eventbrite-created" });
+  }
+
+  assert.equal(calls.length, canonicalUrls.length);
+  for (const [index, canonicalUrl] of canonicalUrls.entries()) {
+    assert.ok(calls[index].includes(`--description=${canonicalUrl}`));
+    assert.ok(calls[index].includes(`--source-url=${canonicalUrl}`));
+    assert.deepEqual(calls[index].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Eventbrite"]);
+    assert.deepEqual(calls[index].filter((arg) => String(arg).startsWith("--private-prop=lm_connector_event=")), [`--private-prop=lm_connector_event=${"e".repeat(64)}`]);
+  }
+});
+
+test("connector calendar rejects every non-canonical Eventbrite identity before gog run", async () => {
+  const variants = [
+    "http://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://events.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://WWW.EVENTBRITE.COM/e/tokyo-free-event-tickets-1997468673573",
+    "https://user:pass@www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://www.eventbrite.com:443/e/tokyo-free-event-tickets-1997468673573",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573?utm_source=test",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573#details",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573/",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-0",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-not-a-number",
+    "https://www.eventbrite.com/e/tokyo-free-event-1997468673573",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573/tickets",
+    "https://www.eventbrite.com/d/japan--tokyo/free--events/",
+    "https://www.eventbrite.com/directory/",
+    "https://www.eventbrite.com/e/search?q=tokyo",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "f".repeat(64), title: "x",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
 test("connector calendar methods reject malformed IDs, URLs, times, and ambiguous provider receipts", async () => {
   let calls = 0;
   const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
