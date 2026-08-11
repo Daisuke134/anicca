@@ -16,6 +16,7 @@ const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js"
 const { createConnpassScriptFirstWorkflow } = require("./connector-connpass-workflow.js");
 const { createPeatixDiscoveryWorkflow } = require("./connector-peatix-workflow.js");
 const { createMeetupScriptFirstWorkflow } = require("./connector-meetup-workflow.js");
+const { createDoorkeeperScriptFirstWorkflow } = require("./connector-doorkeeper-workflow.js");
 const { readLumaFormProfile } = require("./luma-form-profile.js");
 const {
   createBoundedActionProposer,
@@ -37,6 +38,7 @@ const LUMA_WORKFLOW_VERSION = "luma_registration_v1";
 const CONNPASS_WORKFLOW_VERSION = "connpass_registration_v1";
 const PEATIX_WORKFLOW_VERSION = "peatix_registration_v1";
 const MEETUP_WORKFLOW_VERSION = "meetup_registration_v1";
+const DOORKEEPER_WORKFLOW_VERSION = "doorkeeper_registration_v1";
 const LUMA_PAGE_STATE = "registration_page_v1";
 const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
 
@@ -129,6 +131,7 @@ function createProductionProviderRouter(options = {}) {
   const connpassWorkflow = options.connpassWorkflow;
   const peatixWorkflow = options.peatixWorkflow;
   const meetupWorkflow = options.meetupWorkflow;
+  const doorkeeperWorkflow = options.doorkeeperWorkflow;
   const actionCache = options.actionCache;
   const browserHarness = options.browserHarness;
   const performAction = options.performAction;
@@ -146,6 +149,9 @@ function createProductionProviderRouter(options = {}) {
     || (meetupWorkflow != null && (typeof meetupWorkflow.discoverCandidates !== "function"
       || typeof meetupWorkflow.runDirectAction !== "function"
       || typeof meetupWorkflow.readProviderState !== "function"))
+    || (doorkeeperWorkflow != null && (typeof doorkeeperWorkflow.discoverCandidates !== "function"
+      || typeof doorkeeperWorkflow.runDirectAction !== "function"
+      || typeof doorkeeperWorkflow.readProviderState !== "function"))
     || !actionCache || typeof actionCache.replay !== "function"
     || typeof actionCache.saveVerifiedRepair !== "function"
     || !browserHarness || typeof browserHarness.runFallback !== "function"
@@ -153,17 +159,19 @@ function createProductionProviderRouter(options = {}) {
   ) invalid();
 
   function selected(input) {
-    if (!input || !["luma", "connpass", "peatix", "meetup"].includes(input.provider)) invalid();
+    if (!input || !["luma", "connpass", "peatix", "meetup", "doorkeeper"].includes(input.provider)) invalid();
     const workflow = input.provider === "luma" ? lumaWorkflow
       : input.provider === "connpass" ? connpassWorkflow
-        : input.provider === "peatix" ? peatixWorkflow : meetupWorkflow;
+        : input.provider === "peatix" ? peatixWorkflow
+          : input.provider === "meetup" ? meetupWorkflow : doorkeeperWorkflow;
     if (!workflow) invalid();
     return Object.freeze({
       input,
       workflow,
       workflowVersion: input.provider === "luma" ? LUMA_WORKFLOW_VERSION
         : input.provider === "connpass" ? CONNPASS_WORKFLOW_VERSION
-          : input.provider === "peatix" ? PEATIX_WORKFLOW_VERSION : MEETUP_WORKFLOW_VERSION,
+          : input.provider === "peatix" ? PEATIX_WORKFLOW_VERSION
+            : input.provider === "meetup" ? MEETUP_WORKFLOW_VERSION : DOORKEEPER_WORKFLOW_VERSION,
     });
   }
 
@@ -278,6 +286,10 @@ function createMinimalProductionDependencies(options = {}) {
     now,
     onDiscoveryAudit: operations.recordMeetupDiscoveryAudit || (() => {}),
   });
+  const doorkeeperWorkflow = options.doorkeeperWorkflow || createDoorkeeperScriptFirstWorkflow({
+    now,
+    onDiscoveryAudit: operations.recordDoorkeeperDiscoveryAudit || (() => {}),
+  });
   const actionCache = options.actionCache || createConnectorActionCache({
     path: path.join(stateDir, "action-cache.json"),
   });
@@ -304,6 +316,7 @@ function createMinimalProductionDependencies(options = {}) {
     connpassWorkflow,
     peatixWorkflow,
     meetupWorkflow,
+    doorkeeperWorkflow,
     actionCache,
     browserHarness,
     performAction: browserHarness.performAction,
