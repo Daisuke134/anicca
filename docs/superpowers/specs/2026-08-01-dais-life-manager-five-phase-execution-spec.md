@@ -7786,3 +7786,9 @@ Doorkeeper evidence store→minimal evidence chain→Calendar transport→offici
 Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-evidence-store-19e.md`は既存browser-provider evidence store production/testのexact 2 files。private generic storeを変更せず、`eventbrite-event://event/<positive integer>`と`provider-receipt://eventbrite/<64 hex>`をmode-0600 immutable receipt/artifactへ束縛するwrapper/exportだけをTDD追加する。production約8〜12 LOC、test約40〜70 LOC。
 
 Eventbrite minimal evidence chain、Calendar transport、browser/action/readback、native order、launchd、schedule、live stateは変更0。store review/push後にだけEventbrite evidence-chain配線へ進む。Item19 Eventbrite実`applied_bundle`は未完。
+
+### O1B-25進捗439（Item 19E-E1 / Eventbrite evidence store ship）
+
+Lunaが`connpass-evidence-store.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは既存6件GREEN、新Eventbrite 2件だけ`createEventbriteEvidenceStore is not a function`でFAIL。GREEN commit `b9b7b691c`はprivate generic storeを変更せず、exact Eventbrite event/receipt namespaceとcollision messageを持つwrapper/exportだけを追加した。production +10/-1、test +51。
+
+Eventbrite store testは実mode-0600 receipt/artifact/object、deterministic receipt tuple、tenant非露出、invalid event ID、stored receipt tuple tamper rejectionを固定する。Sol独立でstore＋evidence 41/41、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality PASS、Critical/Important/Minor 0で`ship`。browser、Calendar、Telegram、Connector state、launchd、external effectは0。次active sliceはEventbriteをminimal evidence chainへ配線する。Item19 Eventbrite実bundleは未完。
