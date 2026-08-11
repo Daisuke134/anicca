@@ -1239,7 +1239,10 @@ function createProductionBrowserHarness(options = {}) {
       const operation = result[EVENTBRITE_MARKETING_OPERATION];
       return Object.freeze({ status: await waitForEventbriteMarketingOptOut(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl, attendeeFrame, operation) ? "success" : "failed" });
     }
-    if (eventbriteTicket) return Object.freeze({ status: await waitForEventbriteTicketStep(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) ? "success" : "failed" });
+    if (eventbriteTicket) {
+      const settled = await waitForEventbriteTicketStep(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl);
+      return Object.freeze(settled ? { status: "success" } : { status: "failed", safe_reason: "effect_unknown" });
+    }
     if (eventbriteTrigger) return Object.freeze({ status: await waitForEventbriteCheckoutFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) ? "success" : "failed" });
     if (navigationWait && !(await navigationWait.promise)) return Object.freeze({ status: "failed" });
     if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
