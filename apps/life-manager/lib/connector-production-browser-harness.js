@@ -953,6 +953,7 @@ async function operateEventbriteFinal(target, token, page, { eventId, canonicalU
   const rebound = await readEventbriteMarketingHandle(handle, { token });
   if (!validEventbriteFinalHandleState(rebound, { token, testId })) return null;
   if (typeof handle.click !== "function") return null;
+  if (eventId && canonicalUrl && eventbriteTicketFrame(page, eventId, canonicalUrl) !== target) return null;
   try { await handle.click(); } catch { return { attempted: true }; }
   return Object.freeze({ page, frame: target, handle, eventId: EVENTBRITE_ATTENDEE_REGISTER_CONTROL.exec(token)[1], token, testId });
 }
