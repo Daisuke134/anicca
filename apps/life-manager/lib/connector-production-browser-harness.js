@@ -1356,7 +1356,7 @@ function createProductionBrowserHarness(options = {}) {
 
   async function runFallback(input = {}) {
     if (!PROVIDERS.has(input.provider) || !input.candidate) invalid();
-    const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow, meetup: meetupWorkflow, doorkeeper: doorkeeperWorkflow }[input.provider];
+    const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow, meetup: meetupWorkflow, doorkeeper: doorkeeperWorkflow, eventbrite: eventbriteWorkflow }[input.provider];
     if (!workflow || typeof workflow.readProviderState !== "function") {
       if (input.provider === "doorkeeper") return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([]) });
       invalid();
