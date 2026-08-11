@@ -977,7 +977,10 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       reauthentication; no fabricated CSV is accepted. Child SSOT:
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-provider-allocation-design.md` at commit `46f185327`.
 - [ ] **CFO-2a3c** Reconcile actual Codex/Claude subscription receipts separately from the versioned
-      `api_equivalent_forecast`; after API migration reconcile actual provider billing exports.
+      `api_equivalent_forecast`; after API migration reconcile actual provider billing exports. Official Anthropic
+      Gmail receipts are the first confirmed source; Codex is active but its amount remains unknown until an official
+      receipt is accessible. Child SSOT:
+      `docs/superpowers/specs/2026-08-11-life-manager-cfo-subscription-receipts-design.md`.
 - [ ] **CFO-2b** Instrument each existing earning loop in registry order: revenue receipt, landed cash, direct
       cost, tokens, API USD, human USD, capital employed, and evidence.
 - [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
