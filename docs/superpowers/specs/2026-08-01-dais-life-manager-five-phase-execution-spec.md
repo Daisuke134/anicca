@@ -7493,7 +7493,13 @@ Native `DEFAULT_PROVIDERS`、default Browser Harness、audit persistence、evide
 
 Eventbrite workflowの5-count auditをappend-only stateへ保存するsliceをoperations production/test 2 files、production 3〜6 LOC、test 30〜55 LOCへ限定した。Doorkeeperとexact同型のkeys/inequalitiesなので既存safe validatorを直接再利用し、`eventbrite-discovery-audits.jsonl`、writer、frozen operations exportだけを追加する。新registry/validator/schemaは作らない。mode 0600、extra/private fieldとinvalid countはappend 0。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-audit-19e.md`がexecutor SSOT。native order/live wake変更0、4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗395。これ以外の残TODO一覧は履歴）
+### O1B-25進捗396（Item 19E-C / Eventbrite privacy-safe audit ship）
+
+Lunaがoperations production/test 2 filesだけをTDD変更した。`recordEventbriteDiscoveryAudit`未実装でRED 0/1。既存exact five-key validatorを再利用し、Eventbrite JSONL path/method/frozen exportをproduction +6 LOCで追加してGREEN operations 11/11、minimal production 17/17、Eventbrite 11/11、Doorkeeper/Meetup 27/27。test +30 LOC。fresh Sol reviewはSHIP、Critical/Important 0。Sol stable独立検証は合計66/66、syntax/diff/2-file scope/mode0600/invalid append0/remote equality PASS。review済み`b8fd256d3`をstableへfast-forwardした。
+
+次active sliceはEventbrite public `Get tickets`からcheckoutを開き、無料ticket選択・必要identity・最終Submit・parent readbackを一作用ずつ行うBrowser Harness contract。実DOMをread-only測定してから最小TDD planを切る。native order/live wakeはまだ変更0、4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗396。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
