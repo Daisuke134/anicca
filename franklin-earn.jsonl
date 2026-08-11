@@ -4188,3 +4188,5 @@
 {"ts":1786413556,"source":"cook","task":"explore: Solana microtask marketplace earn USDC for on-chain data validation tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSO0I1V54915BBFAD9DC40FD"}
 {"ts":1786418028,"source":"cook","task":"explore: Solana paid API marketplace earn USDC for data queries","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSO361JJ203BEACDD1D44917"}
 {"ts":1786419143,"source":"cook","task":"explore: Solana gig platform paid data annotation microtasks USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSO3TV7R1CE2C6477D9B45BB"}
+{"ts":1786419405,"source":"cook","task":"explore: Solana microtask platform pay USDC for data labeling","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSO3ZGC8052330D7016C49A5"}
+{"ts":1786420226,"source":"cook","task":"explore: Solana paid data oracle API earn USDC per request","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSO4H3R4602A1B6436994065"}
