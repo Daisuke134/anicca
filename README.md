@@ -136,24 +136,29 @@ flowchart LR
 
     RAIL --> PROVIDERS
     GATE -->|Yes| NAV["Navigate on the same page"]
-    NAV --> PRE{"Provider readback<br/>already registered?"}
-    PRE -->|Yes| PROVE
+    NAV --> PRE{"Official parent / child-frame readback<br/>already registered?"}
+    PRE -->|Yes| SUPPORT
     PRE -->|No| CACHE["Verified action cache"]
     CACHE --> DIRECT["Provider script-first action"]
     DIRECT --> HARNESS["Bounded Browser Harness<br/>observe → propose → operate"]
-    HARNESS --> POST{"Official readback<br/>registered or pending?"}
+    HARNESS --> POST{"Official parent / child-frame readback<br/>registered or pending?"}
     POST -->|No / safe failure| NEXT
-    POST -->|Yes| PROVE
+    POST -->|Yes| SUPPORT
 
     subgraph EVIDENCE["External proof — agent self-report is insufficient"]
+        SUPPORT{"Evidence adapter<br/>available?"}
         PROVE["Provider receipt / state"] --> GCAL["Idempotent Calendar write<br/>plus independent readback"]
         GCAL --> PNG["Privacy-safe screenshot<br/>and SHA-256"]
         PNG --> TG["Telegram message + photo<br/>positive provider IDs"]
         TG --> BUNDLE["Durable applied_bundle"]
     end
 
+    SUPPORT -->|Yes| PROVE
+    SUPPORT -->|No| EVIDPENDING["Acceptance pending<br/>no applied_bundle claim"]
+
     NEXT -->|All exhausted| NOEFFECT["completed_no_effect<br/>external write 0"]
     HARNESS -->|effect unknown| CIRCUIT["circuit_open<br/>never repeat the mutation"]
+    EVIDPENDING --> CIRCUIT
     BUNDLE --> REPORT["Durable wake report"]
     NOEFFECT --> REPORT
     CIRCUIT --> REPORT
@@ -168,9 +173,12 @@ stateDiagram-v2
     Discovered --> Registered: official pre-readback
     Absent --> Registered: one verified final effect
     Absent --> EffectUnknown: mutation happened, readback not proven
-    Registered --> AppliedBundle: provider + Calendar + artifact + Telegram verified
+    Registered --> EvidenceSupport
+    EvidenceSupport --> AppliedBundle: adapter + provider + Calendar + artifact + Telegram verified
+    EvidenceSupport --> AcceptancePending: adapter or live bundle unavailable
     Skipped --> ReportedNoEffect
     EffectUnknown --> CircuitOpen
+    AcceptancePending --> CircuitOpen
     AppliedBundle --> Cleaned
     ReportedNoEffect --> Cleaned
     CircuitOpen --> Cleaned
