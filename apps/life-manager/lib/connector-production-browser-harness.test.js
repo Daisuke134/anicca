@@ -3092,7 +3092,12 @@ function makeTechPlayOperationFixture(options = {}) {
       const token = tokenOf(selector);
       const matches = token ? () => fixture.elements.filter((element) => element.dataset?.lmConnectorControl === token) : () => [];
       return {
-        async evaluateAll(callback, context) { return callback(fixture.elements, context); },
+        async evaluateAll(callback, context) {
+          options.inspectCalls = (options.inspectCalls || 0) + 1;
+          if (Array.isArray(options.inspectThrowCalls) && options.inspectThrowCalls.includes(options.inspectCalls)) throw new Error("synthetic inspector failure");
+          const transient = Array.isArray(options.transientInspectCalls) && options.transientInspectCalls.includes(options.inspectCalls);
+          return callback(transient ? [...fixture.elements, ...(options.transientNodes || [])] : fixture.elements, context);
+        },
         async count() { return options.locatorCount == null ? matches().length : options.locatorCount; },
         async fill(value) { const target = matches()[0]; if (target && options.apply !== false) target.value = value; },
         async check() { const target = matches()[0]; if (target && options.apply !== false) target.checked = true; },
@@ -3112,6 +3117,7 @@ function makeTechPlayOperationHarness(fixture, options = {}) {
     proposeAction: async () => { options.proposeCalls = (options.proposeCalls || 0) + 1; throw new Error("TECH PLAY proposer must not run"); },
     operateControl: async (input) => { options.operateCalls = (options.operateCalls || 0) + 1; return operatePageControl(input); },
     resolveValue: options.resolveValue || resolverFixture.resolver,
+    sleep: options.sleep || (async () => {}),
   });
   return { harness, resolverFixture };
 }
@@ -3140,6 +3146,43 @@ test("TECH PLAY parent operation fills scalar, checks the unique approved radio,
   const optout = makeTechPlayOperationFixture(); const optoutHarness = makeTechPlayOperationHarness(optout, {});
   assert.deepEqual(await optoutHarness.harness.performAction({ provider: "techplay", candidate: optout.candidate, page: optout.page, action: { purpose: "fill", method: "ax_uncheck", control: "techplay_optout_area_1" } }), { status: "success" });
   assert.equal(optout.optouts[0].ariaChecked, false);
+});
+
+test("TECH PLAY operation waits for transient oversized post-inspection to stabilize", async () => {
+  const options = { transientInspectCalls: [3], transientNodes: Array.from({ length: 104 }, (_, index) => makeTechPlayElement({ type: "text", id: `aux_${index}`, hidden: true })) };
+  const resolverFixture = makeTechPlayPrivateResolverFixture(); options.resolveValue = async (input) => { options.resolveCalls = (options.resolveCalls || 0) + 1; return resolverFixture.resolver(input); }; options.sleep = async () => { options.sleepCalls = (options.sleepCalls || 0) + 1; };
+  const fixture = makeTechPlayOperationFixture(options); const { harness } = makeTechPlayOperationHarness(fixture, options);
+  const result = await harness.performAction({ provider: "techplay", candidate: fixture.candidate, page: fixture.page, action: { purpose: "fill", method: "ax_fill", control: "techplay_answer_1" } });
+  assert.deepEqual(result, { status: "success" });
+  assert.equal(fixture.answers[0].value, "NameFixture", "value"); assert.equal(options.inspectCalls, 4, "inspectCalls"); assert.equal(options.sleepCalls, 1, "sleepCalls"); assert.equal(options.operateCalls, 1, "operateCalls"); assert.equal(options.resolveCalls, 1, "resolveCalls"); assert.equal(options.proposeCalls || 0, 0, "proposeCalls");
+});
+
+test("TECH PLAY postcondition polling fails bounded on never-stable, drift, throw, and wrong completion", async () => {
+  const auxiliary = Array.from({ length: 104 }, (_, index) => makeTechPlayElement({ type: "text", id: `aux_${index}`, hidden: true }));
+  for (const [name, configure, expectedSleep] of [
+    ["never-stable", (options) => { options.transientInspectCalls = Array.from({ length: 20 }, (_, index) => index + 3); }, 19],
+    ["inspector-throw", (options) => { options.inspectThrowCalls = [3]; }, 0],
+    ["wrong-completed", (options) => { options.apply = false; }, 19],
+  ]) {
+    const options = { transientNodes: auxiliary, sleep: async () => { options.sleepCalls = (options.sleepCalls || 0) + 1; } }; configure(options);
+    const resolverFixture = makeTechPlayPrivateResolverFixture(); options.resolveValue = async (input) => { options.resolveCalls = (options.resolveCalls || 0) + 1; return resolverFixture.resolver(input); };
+    const fixture = makeTechPlayOperationFixture(options); const { harness } = makeTechPlayOperationHarness(fixture, options);
+    const result = await harness.performAction({ provider: "techplay", candidate: fixture.candidate, page: fixture.page, action: { purpose: "fill", method: "ax_fill", control: "techplay_answer_1" } });
+    assert.equal(result.status, "failed", name); assert.equal(options.sleepCalls || 0, expectedSleep, `${name}-sleep`); assert.equal(options.operateCalls, 1, `${name}-operate`); assert.equal(options.resolveCalls, 1, `${name}-resolve`); assert.equal(options.proposeCalls || 0, 0, `${name}-proposer`);
+  }
+  for (const [name, drift] of [["page-drift", (fixture) => fixture.setHref("https://techplay.jp/event/join/999191")], ["candidate-drift", (fixture) => { fixture.candidate.ticket_id = "98037"; }]]) {
+    let fixture; const options = { transientInspectCalls: [3], transientNodes: auxiliary, sleep: async () => { options.sleepCalls = (options.sleepCalls || 0) + 1; drift(fixture); } };
+    const resolverFixture = makeTechPlayPrivateResolverFixture(); options.resolveValue = async (input) => { options.resolveCalls = (options.resolveCalls || 0) + 1; return resolverFixture.resolver(input); };
+    fixture = makeTechPlayOperationFixture(options); const { harness } = makeTechPlayOperationHarness(fixture, options);
+    const result = await harness.performAction({ provider: "techplay", candidate: fixture.candidate, page: fixture.page, action: { purpose: "fill", method: "ax_fill", control: "techplay_answer_1" } });
+    assert.equal(result.status, "failed", name); assert.equal(options.sleepCalls, 1, `${name}-sleep`); assert.equal(options.operateCalls, 1, `${name}-operate`); assert.equal(options.resolveCalls, 1, `${name}-resolve`); assert.equal(options.proposeCalls || 0, 0, `${name}-proposer`);
+  }
+});
+
+test("TECH PLAY harness rejects an invalid injected postcondition sleep", () => {
+  assert.throws(() => createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() {} }, inspectControls() {}, proposeAction() {}, operateControl() {}, resolveValue() {}, sleep: "not-a-function",
+  }), /Connector production Browser Harness invalid/);
 });
 
 test("TECH PLAY parent operation rejects radio ambiguity, drift, failed postcondition, and review/final clicks", async () => {

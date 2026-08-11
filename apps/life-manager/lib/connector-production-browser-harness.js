@@ -7,6 +7,8 @@ const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
 const PAGE_WEBSOCKET = /^ws:\/\/127\.0\.0\.1:9222\/devtools\/page\/[A-Za-z0-9._-]{3,128}$/;
+const TECHPLAY_POSTCHECK_ATTEMPTS = 20;
+const TECHPLAY_POSTCHECK_INTERVAL_MS = 25;
 const KINDS = new Set(["input", "textarea", "select", "checkbox", "radio", "button", "link"]);
 const FILL = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check"]);
 const ACTIONS = { input: ["fill", "ax_fill"], textarea: ["fill", "ax_fill"], select: ["fill", "ax_select"], checkbox: ["fill", "ax_check"], radio: ["fill", "ax_check"], button: ["submit", "ax_click"], link: ["submit", "ax_click"] };
@@ -1350,6 +1352,7 @@ function createProductionBrowserHarness(options = {}) {
   const proposeAction = options.proposeAction;
   const operateControl = options.operateControl;
   const resolveValue = options.resolveValue;
+  const sleep = typeof options.sleep === "function" ? options.sleep : (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
   if (
     !lumaWorkflow || typeof lumaWorkflow.readProviderState !== "function"
     || (connpassWorkflow != null && typeof connpassWorkflow.readProviderState !== "function")
@@ -1359,17 +1362,18 @@ function createProductionBrowserHarness(options = {}) {
     || (eventbriteWorkflow != null && typeof eventbriteWorkflow.readProviderState !== "function")
     || typeof inspectControls !== "function" || typeof proposeAction !== "function"
     || typeof operateControl !== "function" || typeof resolveValue !== "function"
+    || (options.sleep != null && typeof options.sleep !== "function")
   ) invalid();
   const registry = new WeakMap();
 
-  async function observed(page, provider, candidate = null) {
+  async function observed(page, provider, candidate = null, allowEmpty = false) {
     const eventbriteBinding = provider === "eventbrite" ? candidateEventbriteBinding(candidate) : null;
     const techplayBinding = provider === "techplay" ? candidateTechPlayBinding(candidate) : null;
     const eventId = candidatePeatixEventId(candidate) || candidateMeetupEventId(candidate) || candidateDoorkeeperEventId(candidate) || eventbriteBinding?.eventId || techplayBinding?.eventId || "";
     const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     const connpassJoin = isConnpassJoin(provider, href);
     const values = await inspectControls({ page, provider, candidate: provider === "techplay" ? candidate : undefined, event_id: eventId || undefined, canonical_url: eventbriteBinding?.canonicalUrl || techplayBinding?.canonicalUrl, ticket_id: techplayBinding?.ticketId, connpass_join: connpassJoin });
-    if (!Array.isArray(values) || values.length > 100 || (values.length < 1 && provider !== "eventbrite")) invalid();
+    if (!Array.isArray(values) || values.length > 100 || (values.length < 1 && provider !== "eventbrite" && !allowEmpty)) invalid();
     const controls = values.map(safeControl);
     if (new Set(controls.map((item) => item.control)).size !== controls.length) invalid();
     const eventbriteAttendeeObservation = provider === "eventbrite" && isEventbriteAttendeeObservation(controls, eventId);
@@ -1387,8 +1391,8 @@ function createProductionBrowserHarness(options = {}) {
   async function performTechPlayInputAction(input, binding) {
     const token = String(input.action && input.action.control || ""); const scalar = /^techplay_answer_[1-9][0-9]*$/.test(token); const radio = /^techplay_answer_[1-9][0-9]*_[1-9][0-9]*$/.test(token); const optout = /^techplay_optout_(?:area_[1-9][0-9]*|tag_[1-9][0-9]*|organizer_[1-9][0-9]*|icon_published|use_as_preset)$/.test(token);
     const action = input.action || {}; if (!binding || action.purpose !== "fill" || (!scalar && !radio && !optout) || (scalar && action.method !== "ax_fill") || (radio && action.method !== "ax_check") || (optout && action.method !== "ax_uncheck")) return Object.freeze({ status: "failed" });
-    const joinUrl = `${binding.canonicalUrl.replace("/event/", "/event/join/")}`; const readHref = () => { try { return String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } };
-    if (readHref() !== joinUrl) return Object.freeze({ status: "failed" });
+    const joinUrl = `${binding.canonicalUrl.replace("/event/", "/event/join/")}`; const readHref = () => { try { return String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } }; const bindingMatches = () => { const current = candidateTechPlayBinding(input.candidate); return Boolean(current && current.eventId === binding.eventId && current.canonicalUrl === binding.canonicalUrl && current.ticketId === binding.ticketId); };
+    if (!bindingMatches() || readHref() !== joinUrl) return Object.freeze({ status: "failed" });
     let before; try { before = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed" }); }
     const selected = before.controls.find((control) => control.control === token);
     if (!selected || selected.required !== true || selected.completed !== false || selected.submittable !== false || (scalar && selected.kind !== "input") || (radio && selected.kind !== "radio") || (optout && selected.kind !== "checkbox")) return Object.freeze({ status: "failed" });
@@ -1399,15 +1403,20 @@ function createProductionBrowserHarness(options = {}) {
       for (const control of group) { let result = null; try { result = await resolveValue({ provider: "techplay", page: input.page, candidate: input.candidate, control, action, state: "registration_page" }); } catch { return Object.freeze({ status: "failed" }); } if (result === true) approved.push(control); }
       if (approved.length !== 1 || approved[0].control !== token) return Object.freeze({ status: "failed" });
     }
-    if (readHref() !== joinUrl) return Object.freeze({ status: "failed" });
+    if (!bindingMatches() || readHref() !== joinUrl) return Object.freeze({ status: "failed" });
     let current; try { current = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed" }); }
     const rebound = current.controls.find((control) => control.control === token);
     if (!rebound || rebound.kind !== selected.kind || rebound.label !== selected.label || rebound.question !== selected.question || rebound.required !== true || rebound.completed !== false || rebound.submittable !== false) return Object.freeze({ status: "failed" });
     let result; try { result = await operateControl({ page: input.page, provider: "techplay", candidate: input.candidate, control: rebound, action, value }); } catch { return Object.freeze({ status: "failed" }); }
-    if (!result || result.status !== "success" || readHref() !== joinUrl) return Object.freeze({ status: "failed" });
-    let after; try { after = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed" }); }
-    const completed = after.controls.find((control) => control.control === token);
-    return completed && completed.kind === rebound.kind && completed.label === rebound.label && completed.question === rebound.question && completed.required === true && completed.completed === true && completed.submittable === false ? Object.freeze({ status: "success" }) : Object.freeze({ status: "failed" });
+    if (!result || result.status !== "success" || !bindingMatches() || readHref() !== joinUrl) return Object.freeze({ status: "failed" });
+    const completed = (observation) => { const control = observation?.controls?.find((item) => item.control === token); return Boolean(control && control.kind === rebound.kind && control.label === rebound.label && control.question === rebound.question && control.required === true && control.completed === true && control.submittable === false); };
+    for (let attempt = 0; attempt < TECHPLAY_POSTCHECK_ATTEMPTS; attempt += 1) {
+      if (!bindingMatches() || readHref() !== joinUrl) return Object.freeze({ status: "failed" });
+      let after; try { after = await observed(input.page, "techplay", input.candidate, true); } catch { return Object.freeze({ status: "failed" }); }
+      if (completed(after)) return Object.freeze({ status: "success" });
+      if (attempt + 1 < TECHPLAY_POSTCHECK_ATTEMPTS) { try { await sleep(TECHPLAY_POSTCHECK_INTERVAL_MS); } catch { return Object.freeze({ status: "failed" }); } }
+    }
+    return Object.freeze({ status: "failed" });
   }
 
   async function performAction(input = {}) {
