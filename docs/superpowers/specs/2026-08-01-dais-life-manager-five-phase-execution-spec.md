@@ -7806,3 +7806,9 @@ Lunaが`connector-minimal-evidence.js`とmatching testのexact 2 filesだけをS
 初期negative tableのuppercase candidateはdefault lowercase page mismatchでも拒否できcanonical guard欠落をmaskしたため、candidateとpageUrlを同じuppercase raw hostにする恒久回帰caseへ修復した。`value !== expected`だけを一時除去するとnamed testが`Missing expected rejection`でFAILしdownstream到達を検知、guard復元後focused 36/36、adjacent store込み44/44、default reviewed store isolated smoke、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality PASS、Critical/Important/Minor 0で`ship`。
 
 Calendar transport、Eventbrite action/child-frame readback、Harness、native、schedule、live state、external effectは0。次active sliceはEventbrite canonical URLをCalendar gog transportへ追加する。Item19 Eventbrite実bundleは未完。
+
+### O1B-25進捗442（Item 19E-E3 / Eventbrite Calendar transport plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-calendar-transport-19e.md`はCalendar gog adapter/testのexact 2 files。現行Eventbrite workflowのcanonical 2 pathを既存`connectorCanonicalUrl`へ追加し、exact description/source-urlと固定`sourceTitle=Eventbrite`を既存idempotent Calendar createへ渡す。production約8〜16 LOC、test約45〜75 LOC。
+
+HTTP、non-www/wrong/subdomain host、uppercase raw host、credentials、explicit port、query、fragment、trailing slash、zero/nonnumeric ID、invalid/extra/listing/search pathは`gog`前にfail closed。既存5 providers、Calendar receipt/idempotency/readback、Eventbrite workflow/Harness、evidence、native、schedule、live stateは変更0。TDD・fresh review・push後だけofficial wakeへ進む。Item19 Eventbrite実bundleは未完。
