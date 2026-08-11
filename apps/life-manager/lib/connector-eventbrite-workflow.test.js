@@ -301,6 +301,11 @@ test("Eventbrite parent readback is strict and fail-closed", async () => {
   });
   assert.deepEqual(await absent.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "absent" });
 
+  const explicitAuth = createEventbriteScriptFirstWorkflow({
+    readRegistrationView: async () => ({ page_url: candidate.canonical_url, canonical_links: [], controls: [{ text: "Get tickets", visible: true }], body_text: "", auth_required: true }),
+  });
+  assert.deepEqual(await explicitAuth.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" });
+
   const hiddenCompletion = createEventbriteScriptFirstWorkflow({
     readRegistrationView: async () => ({
       page_url: candidate.canonical_url,
@@ -321,6 +326,25 @@ test("Eventbrite parent readback is strict and fail-closed", async () => {
     const workflow = createEventbriteScriptFirstWorkflow({ readRegistrationView: async () => view });
     assert.deepEqual(await workflow.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" });
   }
+});
+
+test("Eventbrite default parent readback ignores related event anchors and benign login copy", async () => {
+  const candidate = { ...binding("803"), provider: "eventbrite", title: "Free", starts_at: "2026-08-20T09:00:00Z", ends_at: "2026-08-20T10:00:00Z" };
+  const canonical = { tagName: "LINK", href: candidate.canonical_url, getAttribute(name) { return name === "rel" ? "canonical" : name === "href" ? this.href : null; } };
+  const anchors = [candidate.canonical_url, binding("804").canonical_url, binding("805").canonical_url, binding("806").canonical_url].map((href) => ({ tagName: "A", href, offsetWidth: 120, offsetHeight: 24, getAttribute(name) { return name === "href" ? this.href : null; } }));
+  const control = { innerText: "Reserve a spot", offsetWidth: 120, offsetHeight: 32 };
+  const page = { url() { return candidate.canonical_url; }, async evaluate(callback) {
+    const previous = global.document;
+    global.document = { body: { innerText: "Welcome. Log in or sign in to continue; auth is handled by the host." }, querySelectorAll(selector) {
+      if (selector === "link[rel='canonical']") return [canonical];
+      if (selector === "a[href],link[rel='canonical']") return [canonical, ...anchors];
+      if (selector === '[data-testid="conversion-bar-checkout-button"]') return [control];
+      return [];
+    } };
+    try { return await callback(); } finally { if (previous === undefined) delete global.document; else global.document = previous; }
+  } };
+  const workflow = createEventbriteScriptFirstWorkflow();
+  assert.deepEqual(await workflow.readProviderState({ page, candidate }), { status: "absent" });
 });
 
 test("Eventbrite default listing reader uses exactly one owned page and exact card selectors", async () => {

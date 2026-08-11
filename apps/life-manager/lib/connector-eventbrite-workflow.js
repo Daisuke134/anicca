@@ -12,7 +12,7 @@ const MONEY_MARKER = /(?:[$€£¥￥]\s*\d|\b\d[\d,]*(?:\.\d+)?\s*(?:(?:jpy|yen
 const EXPLICIT_FREE_MARKER = /(?:参加費(?:\s*は)?\s*(?:[:：]\s*)?無料|入場\s*無料)(?![ぁ-んァ-ヶ一-龯々ー])|\bfree\s+admission\b(?!\s+[A-Za-z0-9])|\bno\s+participation\s+fee\b(?!\s+[A-Za-z0-9])/gi;
 const NEGATIVE_PURCHASE_MARKER = /\b(?:no\s+minimum\s+purchase|no\s+purchase\s+required)\b(?!\s+[A-Za-z0-9])/gi;
 const MINIMUM_PURCHASE_MARKER = /(?:\bone\s+drink\s+minimum\b|\bminimum\s+purchase\b|\bpurchase\s+required\b|ワンドリンク必須)/i;
-const READBACK_UNSAFE = /(?:auth|log\s*in|sign\s*in|payment|pay(?:ment)?|credit\s*card|checkout|error|failed|sold[ -]?out|wait[ -]?list|waitlist|cancel(?:led|ed)?|受付終了|キャンセル|満席|エラー|支払い)/i;
+const READBACK_UNSAFE = /(?:payment|pay(?:ment)?|credit\s*card|checkout|error|failed|sold[ -]?out|wait[ -]?list|waitlist|cancel(?:led|ed)?|受付終了|キャンセル|満席|エラー|支払い)/i;
 const COMPLETION_MARKER = /(?:registration\s+(?:is\s+)?(?:complete|completed|confirmed)|order\s+confirmed|ticket(?:s)?\s+confirmed|you(?:'re| are)\s+going|登録完了|申し込みが完了しました)/gi;
 const SAFE_CODES = new Set("EVENTBRITE_LISTING_NAVIGATION_FAILED EVENTBRITE_LISTING_READ_FAILED EVENTBRITE_LISTING_RESULT_CONTRACT_FAILED EVENTBRITE_DETAIL_NAVIGATION_FAILED EVENTBRITE_DETAIL_READ_FAILED EVENTBRITE_DETAIL_IDENTITY_MISMATCH_FAILED EVENTBRITE_CALENDAR_CONFLICT_CHECK_FAILED EVENTBRITE_REGISTRATION_READ_FAILED".split(" "));
 function invalid() { throw new Error("Eventbrite workflow invalid"); }
@@ -232,7 +232,7 @@ async function defaultReadRegistrationView(page) {
   try { pageUrl = typeof page.url === "function" ? String(page.url()) : ""; } catch { return null; }
   try {
     const view = await page.evaluate(() => ({
-      canonical_links: [...document.querySelectorAll("a[href],link[rel='canonical']")].map((node) => ({ href: String(node.href || node.getAttribute("href") || ""), visible: node.tagName.toLowerCase() === "link" || Boolean(node.offsetWidth || node.offsetHeight) })).filter((link) => /https:\/\/www\.eventbrite\.com\/e\//i.test(link.href)),
+      canonical_links: [...document.querySelectorAll("link[rel='canonical']")].map((node) => ({ href: String(node.href || node.getAttribute("href") || ""), visible: true })),
       controls: [...document.querySelectorAll('[data-testid="conversion-bar-checkout-button"]')].map((node) => ({ text: String(node.innerText || node.textContent || "").trim(), visible: Boolean(node.offsetWidth || node.offsetHeight) })),
       body_text: document.body ? document.body.innerText : "",
     }));
