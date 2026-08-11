@@ -1653,6 +1653,9 @@ test("Eventbrite inspector binds the unique visible top CTA to the exact candida
   const single = await inspect([makeEventbriteCta()]);
   assert.equal(single.length, 1);
   assert.deepEqual({ kind: single[0].kind, label: single[0].label, submittable: single[0].submittable }, { kind: "button", label: "Get tickets", submittable: true });
+  const overflow = [makeEventbriteCta(), ...Array.from({ length: 99 }, () => makeEventbriteCta({ hidden: true })), makeEventbriteCta()];
+  assert.equal(overflow.length, 101);
+  assert.deepEqual(await inspect(overflow), [], "eventbrite-overflow-duplicate");
   for (const [name, element, href, id, url] of [
     ["fuzzy-label", makeEventbriteCta({ innerText: "Get tickets now" })],
     ["hidden", makeEventbriteCta({ hidden: true })],
