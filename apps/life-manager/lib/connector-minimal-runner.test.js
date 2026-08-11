@@ -635,6 +635,32 @@ test("before-deadline candidate navigation failure records once and continues to
   assert.doesNotMatch(JSON.stringify(history), /raw candidate navigation|luma\.example\.test\/one/);
 });
 
+test("candidate navigation audit failure keeps its original rejection instead of opening a candidate circuit", async () => {
+  let state;
+  state = fixture();
+  const raw = new Error("navigation audit raw");
+  const recordAction = state.dependencies.recordAction;
+  let injected = false;
+  state.dependencies.recordAction = async (row) => {
+    if (!injected && row.purpose === "navigate" && row.method === "browser_rail" && row.result === "success") {
+      injected = true;
+      throw raw;
+    }
+    return recordAction(row);
+  };
+
+  await assert.rejects(
+    runMinimalConnectorWake({ ownerToken: "owner-token-connector-navigation-audit", providers: ["luma"] }, state.dependencies),
+    (error) => error === raw,
+  );
+  assert.equal(state.calls.filter(([name]) => name === "readback").length, 0);
+  assert.equal(state.calls.filter(([name]) => name === "report").length, 0);
+  assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+  const history = state.calls.filter(([name]) => name === "history").map(([, row]) => row);
+  assert.equal(history.filter((row) => row.purpose === "navigate" && row.result === "failed").length, 1);
+  assert.doesNotMatch(JSON.stringify(history), /navigation audit raw|luma\.example\.test/);
+});
+
 test("three before-deadline candidate navigation failures open one safe circuit without a fourth candidate", async () => {
   let state;
   state = fixture({
