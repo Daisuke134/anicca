@@ -7227,7 +7227,13 @@ Peatix candidateはcache 1ms、provider direct 31,219msの後に`peatix_readback
 
 Ponytailで新provider statusやworkflow変更を棄却し、plan `2026-08-11-connector-peatix-direct-effect-unknown.md`を追加した。既にrunnerへ届くexact `peatix_readback_unavailable`を既存agent `effect_unknown` terminal contractへ接続するrunner/test 2-file TDDだけを行う。direct exact 1後はHarness 0、次candidate 0、evidence 0、cleanup/report exact 1を必須とする。scheduleはunloaded、Item19 Meetupは未完。
 
-### Active remaining TODO SSOT（進捗350。これ以外の残TODO一覧は履歴）
+### O1B-25進捗351（Item 19M-D0c / direct effect-unknown stop ship）
+
+Lunaへexisting minimal runner production/testの2 filesだけを所有させ、Peatix direct final effect不明後のouter fallbackをSuperpowers TDDで停止した。REDはfocused 36/37で、single Peatix candidateのdirect `failed / peatix_readback_unavailable`後に旧runnerがHarnessへ進み`providers_exhausted`となる故障を再現した。GREEN commit `898950bb9`はexact reasonを既存`circuit_open / effect_unknown` contractへ接続し、direct 1、Harness 0、次candidate 0、evidence 0、cleanup/report 1、failure count 1を固定した。
+
+fresh Sol reviewはreason-only guardがnon-Peatix spoofも停止するImportant 1を発見。fix commit `be75bc8f3`は`provider === "peatix"`を同時に必須化し、非Peatix同reasonが従来fallbackへ進むRED 37/38→GREEN 38/38を追加した。Luna minimal production/evidence/operations、Peatix provider、Harness adjacent 128/128、Sol独立expanded 166/166、syntax/diff checkがPASS。workflow 1 failureは既知の日付依存。fresh re-reviewはCritical 0 / Important 0で`ship`。review済みcommitsをstable scheduled worktreeへfast-forwardしremoteへpushした。implementation/test/review中のbrowser、provider、Calendar、evidence、Telegram、state、launchd、schedule作用0。Item19 Meetupは未完。次は4 labels unloadedのofficial foreground wake exact 1回でPeatix ambiguous時Harness 0またはPeatix evidence回復後Meetup audit到達をlive検証する。
+
+### Active remaining TODO SSOT（進捗351。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
