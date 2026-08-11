@@ -7926,3 +7926,9 @@ Repair commit `84873e7f6`はInspectorの150-node上限を維持したまま、TE
 REDはpost-inspect call 3だけ104 auxiliary nodesを加え153 nodes→0 controls、その次をstable49にして旧実装FAIL。postcondition guard弱体化mutationはwrong-completedをsuccessへ誤判定してnamed test FAIL、復元後Harness 131/131＋TECH PLAY workflow 16/16、合計147/147、syntax、diffがPASS。fresh reviewは必須finding 0で`ship`。repair差分はHarness +18/-9、test +44/-1のexact 2 files。
 
 authenticated実E2E再実行はparent deterministic actions 13、external proposer 0、safe controls 49、answer controls 40全完了、opt-out 7全OFF、review CTA submittable、join URL維持、review/final click 0。scalar private（氏名/email/DOB/所属）のprojection leak 0。career/職種は公開radio labelsなのでprivacy対象外と明示した。owned pageは4→5→4へcleanup。次active sliceはreview CTA navigation＋confirm final action/effect readback。Item19実bundleは未完。
+
+### O1B-25進捗459（Item 19F-D7 / TECH PLAY review navigation plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-review-navigation-19f.md`はHarness/test exact 2 files。全input完了後に一意の`techplay_review_<eventId>`だけを親processが選び、same candidate join pageを再検査してからexact confirm URL waitを先にarmし、一回だけclickする。navigation後は既存confirm inspectorの一意`techplay_final_<eventId>`を必須にする。
+
+production約30〜55 LOC、test約65〜105 LOC。external proposer/private値/final click/effect readback、factory/router/native order、evidence、Calendar、scheduleは変更0。ship後live E2Eはconfirm到達とfinal safe control 1件、final click 0まで。Item19実bundleは未完。
