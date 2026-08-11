@@ -14,13 +14,13 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 
 1. parent canonical、official child exact1/eid、required attendee fields exact4 completedの既存contractを維持する。
 2. marketing inputはcase-sensitive exact name `organizationMarketingOptIn`または`ebMarketingOptIn`だけを対象にする。各name raw countは0または1。duplicate、wrong tag/type、required、hidden/detached/disabledはfail closed。
-3. checked inputはnon-empty unique `id`と、same frame内のexact `label[for=<id>]` raw/visible count1を要求する。対応labelへだけ`eventbrite_marketing_opt_out_<organization|eventbrite>_<eventId>`をbindする。
+3. live official checkoutではknown input 2件に対応する`label[for=<id>]`が0件で、label依存は実DOMと不一致だった。checked inputはnon-empty `id`、inspection対象全elementsでid raw exact1、known name/type/optional/visible/enabled/checkedを要求し、input自身へ`eventbrite_marketing_opt_out_<organization|eventbrite>_<eventId>`をbindする。control labelはprivate値を含まない固定`Organizer marketing opt-out` / `Eventbrite marketing opt-out`を使う。
 4. checked対象だけをkind checkbox、required true、completed false、submittable falseとして公開する。unchecked対象は操作controlを公開しない。
 5. checked対象が1件以上ならfinal Register controlは公開しない。全対象がuncheckedかつ既存primary contractが成立したときだけfinal Registerをread-only公開する。
 
 ## Exact action contract
 
-1. marketing tokenだけを`purpose=fill / method=ax_uncheck`へ写像する。generic checkboxの`ax_check`は不変。
+1. marketing tokenだけを`purpose=fill / method=ax_uncheck`へ写像する。generic checkboxの`ax_check`は不変。marketing identity/actionはlabel DOMへ依存しない。
 2. private value resolverは呼ばない。same parent canonical、same official child exact1/eid、same Frame、selected input/label exact1、checked=trueを操作直前に再検査する。
 3. observerは可視label/forを含むidentity確認後、operation tokenをknown input自身へbindする。`operatePageControl`は`input[data-lm-connector-control=token][name=knownName]` exact1からstable `ElementHandle`とoriginal idを一度だけ取得し、そのsame handleのtag/name/id/type/optional/visible/enabled/checked/connectedを確認後、handleへPlaywright `uncheck({ force: true })`をexact1回だけ行う。lazy locator再解決、page-owned getter/method、label click、coordinate、DOM property assignmentは0。
 4. 操作後にsame canonical/frame/eidとsame original handle/idで、tag/name/id/type/optional/visible/enabled/connected/uncheckedを500ms連続して確認した場合だけsuccess。marketing invalid/hiddenをabsentと同一視しない。page/frame/eid/element identity drift、locator0/2、action error、async controlled reversion、postcondition falseはfailed。
@@ -45,7 +45,7 @@ Eventbrite attendee exact4 fieldsの入力後、既定ONになり得る既知mar
 ## Trust boundary / live acceptance
 
 - Exact official `https://www.eventbrite.com/checkout-external?eid=<same-event>` first-party UI semanticsを信頼する。DOM ambiguity、identity drift、lazy-locator race、hidden/disabled/duplicate control、async controlled reversionは防御対象。公式Eventbrite自身がmarketing checkboxのevent handlerから意図的にregistration fetch/submitを起こす悪意は脅威モデル外。これはtop CTA/ticket actionも同じfirst-party codeを信頼する既存境界であり、browser parentから任意first-party JavaScript effectを完全遮断しない。
-- コードreview後、実official checkoutでknown checked inputをexact1回OFFにし、500ms安定、final `Register` read-only exact1、registered/completion readback 0、final click 0、Calendar/evidence/Telegram effect 0を確認する。このlive proofがない限りD4c2を完了扱いにしない。
+- コードreview後、実official checkoutでknown checked inputをexact1回OFFにし、500ms安定、final `Register` read-only exact1、registered/completion readback 0、final click 0、Calendar/evidence/Telegram effect 0を確認する。live観測contractはmarketing 2、checked 1、visible/enabled 2、required 0、label-for 0、primary exact/visible/enabled/Register 1。このlive proofがない限りD4c2を完了扱いにしない。
 
 ## Deferred
 
