@@ -25439,3 +25439,11 @@
 {"ts":1786421792,"wake_id":"00MSO5ET373FE1D10126CE4677","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana no-capital microtask gig USDC pay per completion without upfront deposit [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded ex"}
 {"ts":1786421921,"wake_id":"00MSO5HK74179494A7B2154FDA","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786422082,"wake_id":"00MSO5L0UQB72145AD6C704427","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786422212,"wake_id":"00MSO5NSZS645F2B782FEE4ED4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786422344,"wake_id":"00MSO5QN71FE4F94AAF1F54730","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786422413,"wake_id":"00MSO5S3Z24DA63D7D9D444E1C","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786422539,"wake_id":"00MSO5UTFPB8F7ECF56B604C41","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786422668,"wake_id":"00MSO5XKI390585C4ADCFC4598","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786422798,"wake_id":"00MSO60CXIB14FF46743334222","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786422925,"wake_id":"00MSO633DKC2A496A105924092","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786423054,"wake_id":"00MSO65UPM5B2BB78D33B54A3F","kind":"narrate","sleep_s":120,"model":"auto"}
