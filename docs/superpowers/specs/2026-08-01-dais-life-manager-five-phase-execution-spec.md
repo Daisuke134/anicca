@@ -7732,3 +7732,9 @@ Live受入とREADME/SSOT同期をpushed HEAD `471b0e357`で完了後、installed
 Current worktreeは`feature/connector-native-completion`、HEAD/remote `37ddf1d85e22`、dirty 0、ahead/behind 0/0。Native daily labelだけloaded・not running・runs 0、他3 labels unloaded、process 0、lock absent。最新durable wakeは`wake-e289aa2e9963209e6996f099`のままで、Doorkeeper実`applied_bundle`は未完。
 
 PonytailでDoorkeeper evidence adapterを2 sliceへ分割する。先頭plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-evidence-store-19d.md`は既存provider-neutral evidence store production/test exact 2 filesだけを変更し、`doorkeeper-event://event/<positive integer>`と`provider-receipt://doorkeeper/<64 hex>`をmode-0600 immutable receipt/artifactへ束縛するwrapperをTDD追加する。production約8〜12 LOC、test約40〜70 LOC。minimal evidence chain、Calendar transport、Telegram、browser、native order、launchd、live state変更0。store review/push後にだけevidence-chain配線へ進む。Item19 Doorkeeperは実bundleまで未完。
+
+### O1B-25進捗431（Item 19D-E1 / Doorkeeper evidence store ship）
+
+Lunaが`connpass-evidence-store.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは既存4件GREEN、新Doorkeeper 2件だけ`createDoorkeeperEvidenceStore is not a function`でFAIL。GREEN commit `81e26e153`は既存private `createBrowserProviderEvidenceStore`を変更せず、exact Doorkeeper event/receipt namespaceとcollision messageを持つwrapper/exportだけを追加した。production +10/-1、test +55/-1。
+
+Doorkeeper store testは実mode-0600 receipt/artifact/object、deterministic receipt tuple、tenant非露出、invalid event ID、tampered receipt rejectionを固定する。Sol独立でevidence関連37/37、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality APPROVED、Critical/Important/Minor 0で`ship`。browser、Calendar、Telegram、Connector state、launchd、external effectは0。次active sliceはDoorkeeperをminimal evidence chainへ配線し、current registered pageのfull-page PNG→provider receipt→Calendar→Telegram→`applied_bundle` contractをTDDする。Item19 Doorkeeper実bundleは未完。
