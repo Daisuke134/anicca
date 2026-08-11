@@ -25,11 +25,11 @@
 - Modify: `skills/connector/native-pass.js`
 - Modify: `skills/connector/test/native-entrypoint.test.js`
 
-- [ ] **Step 1: Write RED assertions**
+- [x] **Step 1: Write RED assertions**
 
   Update the existing observable native-pass tests to require exact five-provider order both for injected dependencies and production factory boundary. Preserve assertions that private profile values do not enter wake input.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
   ```bash
   cd apps/life-manager
@@ -38,11 +38,11 @@
 
   Expected: only exact provider-order assertions fail because Doorkeeper is absent.
 
-- [ ] **Step 3: Implement one-line provider append**
+- [x] **Step 3: Implement one-line provider append**
 
   Append exact string `doorkeeper` after `meetup` in `DEFAULT_PROVIDERS`. Do not change any other production symbol.
 
-- [ ] **Step 4: Run GREEN and adjacent checks**
+- [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
   cd apps/life-manager
@@ -52,7 +52,7 @@
   git diff --check
   ```
 
-- [ ] **Step 5: Self-review and commit**
+- [x] **Step 5: Self-review and commit**
 
   Verify exact 2-file ownership, exact order, unchanged safety budgets/private boundary, and no live/schedule effects. Commit without amending and push the task branch.
 
@@ -61,3 +61,10 @@
 - Ponytail: one existing frozen array and existing assertions only; no new abstraction.
 - Scope: 2 files, production 1 LOC.
 - Safety: schedule remains unloaded and Harness B4 is still pending, so no official wake is executed until the next slice is reviewed.
+
+## Result
+
+- Luna changed the three observable exact-order assertions first: RED was 5/8 with only old four-provider order mismatches. Appending one `doorkeeper` element produced GREEN 8/8; production plus runner stayed 55/55 PASS.
+- Production behavior changed by one provider-array element only. Budgets `3 / 600000 / 10` and the factory-only private profile boundary remain unchanged.
+- Fresh Sol review returned spec PASS / quality SHIP with no findings. Independent Sol verification repeated 8/8 and 55/55 plus exact order/budgets, syntax, diff, ownership, and four-label UNLOADED checks.
+- Reviewed commit `75d48f2e3` is pushed and fast-forwarded into `feature/connector-native-completion`. No official wake ran; Harness support remains the next slice.
