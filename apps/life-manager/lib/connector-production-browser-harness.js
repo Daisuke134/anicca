@@ -10,7 +10,7 @@ const KINDS = new Set(["input", "textarea", "select", "checkbox", "radio", "butt
 const FILL = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check"]);
 const ACTIONS = { input: ["fill", "ax_fill"], textarea: ["fill", "ax_fill"], select: ["fill", "ax_select"], checkbox: ["fill", "ax_check"], radio: ["fill", "ax_check"], button: ["submit", "ax_click"], link: ["submit", "ax_click"] };
 const ACTIONABLE_KINDS = new Set(["input", "textarea", "select", "checkbox", "radio"]);
-const MUTATING_METHODS = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check", "ax_click", "coordinate_click", "keyboard_submit"]);
+const MUTATING_METHODS = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check", "ax_uncheck", "ax_click", "coordinate_click", "keyboard_submit"]);
 const PROVIDERS = new Set(["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシーポリシーに同意する)$/ };
 const PEATIX_FORM_SUBMIT_LABEL = "確認画面へ進む";
 const PEATIX_CONFIRM_LABEL = "チケットを申し込む";
@@ -236,7 +236,7 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
             const id = idOf(input);
             const labels = elements.filter((element) => tagOf(element) === "label" && forOf(element) === id);
             const visibleLabels = labels.filter(visibleOf);
-            if (!id || elements.filter((element) => tagOf(element) === "input" && idOf(element) === id).length !== 1 || labels.length !== 1 || visibleLabels.length !== 1 || !textOf(visibleLabels[0]) || !visibleLabels[0].dataset) marketingValid = false;
+            if (!id || elements.filter((element) => idOf(element) === id).length !== 1 || labels.length !== 1 || visibleLabels.length !== 1 || !textOf(visibleLabels[0]) || !visibleLabels[0].dataset) marketingValid = false;
             else checkedMarketing.push({ key: spec.key, label: visibleLabels[0] });
           }
         }
@@ -752,6 +752,32 @@ async function inspectPageControls(input = {}) {
   return Object.freeze(observed.map(safeControl));
 }
 
+async function validateEventbriteMarketingOperation(target, token) {
+  const match = EVENTBRITE_MARKETING_CONTROL.exec(String(token || ""));
+  if (!match || !target || typeof target.locator !== "function") return false;
+  const controls = await inspectEventbriteAttendeeFrame(target, match[2]);
+  const selected = Array.isArray(controls) ? controls.find((item) => item.control === token) : null;
+  if (!isEventbriteAttendeeObservation(controls, match[2]) || !selected || selected.completed !== false) return false;
+  let locator;
+  try { locator = target.locator("input, textarea, select, button, label, [data-testid]"); } catch { return false; }
+  if (!locator || typeof locator.evaluateAll !== "function") return false;
+  try {
+    return await locator.evaluateAll((elements, { control, key }) => {
+      if (!Array.isArray(elements)) return false;
+      const tagOf = (element) => String(element && element.tagName || "").toLowerCase();
+      const idOf = (element) => String((element && element.getAttribute && element.getAttribute("id")) || (element && element.id) || "");
+      const forOf = (element) => String((element && element.getAttribute && element.getAttribute("for")) || (element && element.htmlFor) || "");
+      const name = key === "organization" ? "organizationMarketingOptIn" : "ebMarketingOptIn";
+      const marked = elements.filter((element) => String(element && element.dataset && element.dataset.lmConnectorControl || "") === control);
+      if (marked.length !== 1 || tagOf(marked[0]) !== "label") return false;
+      const id = forOf(marked[0]);
+      const labels = elements.filter((element) => tagOf(element) === "label" && forOf(element) === id);
+      const inputs = elements.filter((element) => tagOf(element) === "input" && String((element && element.getAttribute && element.getAttribute("name")) || (element && element.name) || "") === name);
+      return Boolean(id && labels.length === 1 && labels[0] === marked[0] && inputs.length === 1 && idOf(inputs[0]) === id && elements.filter((element) => idOf(element) === id).length === 1);
+    }, { control: token, key: match[1] }) === true;
+  } catch { return false; }
+}
+
 async function operatePageControl(input = {}) {
   const target = input.frame || input.page;
   if (!input.page || !target || typeof target.locator !== "function" || !input.control || !input.action) invalid();
@@ -772,8 +798,11 @@ async function operatePageControl(input = {}) {
       await locator.check();
       break;
     case "ax_uncheck":
-      if (typeof locator.click !== "function") return Object.freeze({ status: "failed" });
-      await locator.click();
+      if (!(await validateEventbriteMarketingOperation(target, token))) return Object.freeze({ status: "failed" });
+      let labelLocator;
+      try { labelLocator = target.locator(`label[data-lm-connector-control="${token}"]`); } catch { return Object.freeze({ status: "failed" }); }
+      if (!labelLocator || typeof labelLocator.count !== "function" || await labelLocator.count() !== 1 || typeof labelLocator.click !== "function") return Object.freeze({ status: "failed" });
+      await labelLocator.click();
       break;
     case "ax_select":
       if (typeof locator.selectOption !== "function") return Object.freeze({ status: "failed" });
