@@ -7365,7 +7365,13 @@ Doorkeeper production wiringをPonytailで4つの閉じたsliceへ分割した�
 
 先頭plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-routing-19d.md`は`connector-minimal-production.js`とmatching testだけをLuna ownershipとする。exact provider `doorkeeper`、workflow version `doorkeeper_registration_v1`、same page/Calendar、cache/direct/fallback/readbackを既存router mapへ追加し、factoryはreview済み`createDoorkeeperScriptFirstWorkflow`を生成する。audit methodは後続B2までoptional no-op、native orderとHarness allowlistは後続まで凍結するため、このslice単独のofficial wake reachabilityと外部作用は0。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗371。これ以外の残TODO一覧は履歴）
+### O1B-25進捗372（Item 19D-B1 / Doorkeeper production routing ship）
+
+Lunaが`connector-minimal-production.js`とmatching testの2 filesだけをTDD変更した。REDは既存12件GREEN、新Doorkeeper 2件だけ`Connector minimal production unavailable`でFAIL。GREENはfactory/router 14/14、Doorkeeper workflow+minimal runner 56/56、syntax、diff checkがPASS。exact `doorkeeper`をunknown providerへfallbackしない明示mapに追加し、workflow version `doorkeeper_registration_v1`、same page/Calendar、cache/direct/fallback/readback/save contractを既存境界で再利用した。factoryはreview済みworkflowを`now`とoptional audit no-opで生成しrouterだけへ渡す。production +19/-3、test +56、private cache metadata追加0、browser rail open 0。
+
+fresh Sol reviewはspec PASS / quality SHIP、指摘0。Sol独立14/14、56/56、syntax/diff/ownership、4 labels exact UNLOADEDがPASS。review済みcommit `a774eaa41`をstableへfast-forwardしpushした。native provider order、Harness allowlist、audit persistenceは未変更なのでofficial wakeはまだDoorkeeperへ到達せず外部作用0。次の一件はB2 Doorkeeper five-count auditのmode 0600 durable persistence。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗372。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
