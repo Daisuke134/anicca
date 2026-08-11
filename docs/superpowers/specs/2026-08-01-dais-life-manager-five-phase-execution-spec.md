@@ -7812,3 +7812,11 @@ Calendar transport、Eventbrite action/child-frame readback、Harness、native�
 Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-calendar-transport-19e.md`はCalendar gog adapter/testのexact 2 files。現行Eventbrite workflowのcanonical 2 pathを既存`connectorCanonicalUrl`へ追加し、exact description/source-urlと固定`sourceTitle=Eventbrite`を既存idempotent Calendar createへ渡す。production約8〜16 LOC、test約45〜75 LOC。
 
 HTTP、non-www/wrong/subdomain host、uppercase raw host、credentials、explicit port、query、fragment、trailing slash、zero/nonnumeric ID、invalid/extra/listing/search pathは`gog`前にfail closed。既存5 providers、Calendar receipt/idempotency/readback、Eventbrite workflow/Harness、evidence、native、schedule、live stateは変更0。TDD・fresh review・push後だけofficial wakeへ進む。Item19 Eventbrite実bundleは未完。
+
+### O1B-25進捗443（Item 19E-E3 / Eventbrite Calendar transport ship）
+
+LunaがCalendar gog adapter/testのexact 2 filesだけをSuperpowers TDD変更した。REDは27件中26 pass / 1 failで、新しいEventbrite accepted testだけが既存Peatix fallbackで拒否された。GREEN commit `c3f5f9d79`はDoorkeeper後・Peatix前へ7 LOCのEventbrite branchを追加し、現行workflowと同じslug/direct-ID path grammar、exact `www.eventbrite.com`、raw/canonical equality、固定`sourceTitle=Eventbrite`を要求する。accepted 2形式はexact description/source-url、single source title、既存private idempotency propertyを保持する。
+
+raw equalityだけを一時除去するとnamed rejection testがcalls=3でFAILし、uppercase raw host、explicit default port `:443`、fragmentが`gog run`へ誤到達することを確認後、guardを復元した。Sol独立でfocused＋adjacent 63/63、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec/security/quality PASS、Critical/Important/Minor 0で`ship`。
+
+既存5 providers、Calendar receipt/idempotency/readback、Eventbrite workflow/Harness、minimal evidence、native、schedule、live state、external effectは0。次active sliceはpushed/clean preflight後、既存daily ownerをkickstartするofficial wake exact 1回。Item19 Eventbrite実bundleはcurrent eligible candidateの有無を含め未完。
