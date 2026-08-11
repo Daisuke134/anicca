@@ -7425,7 +7425,13 @@ fresh Sol初回reviewはdefault proposer omissionをImportantとして検出し�
 
 Ponytail実測で、official factoryはDoorkeeper workflowを生成しprovider routerへ渡す一方、default `createProductionBrowserHarness`には渡していない一行欠落を確認した。次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-factory-injection-19d.md`はminimal-production production/testの2 filesだけ。default factory-created Harnessが既存Doorkeeper workflowのparent readbackへ到達するREDを先に置き、既存参照を一引数で接続する。新workflow/rail/session/target/abstract layerは0、official wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗383。これ以外の残TODO一覧は履歴）
+### O1B-25進捗384（Item 19D-B4c / Doorkeeper factory injection ship）
+
+Lunaがminimal-production production/test 2 filesだけをTDD変更した。browserHarnessを注入しないofficial factory testはREDで`failed`、Doorkeeper parent readback 0、click 0を再現。既にfactoryが生成する`doorkeeperWorkflow`をdefault `createProductionBrowserHarness`へ一引数で渡し、GREENはcompleted、readback 1、safe click 1、browser rail 0。新workflow/rail/session/target/abstraction 0、他provider配線と順序は不変。
+
+fresh Sol reviewはSHIP、Critical/Important 0。Sol独立factory 15/15、Harness+Doorkeeper workflow 87/87、syntax/diff/ownershipがPASS。実装branchが却下済みpath-change mergeを親に含んだためbranch mergeはせず、stableで当該mergeと誤記docsを明示revertし、review済み実装commitだけを`4f77b43fd`としてcherry-pickした。official wake/browser/provider/Calendar/Telegram作用0、4 labels UNLOADED。次はschedule unloadedのままofficial bounded wakeでDoorkeeper discovery/auditと安全なlive pathを実測する。Item19 Doorkeeperのproduction supported表示と実`applied_bundle`は未完。
+
+### Active remaining TODO SSOT（進捗384。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
