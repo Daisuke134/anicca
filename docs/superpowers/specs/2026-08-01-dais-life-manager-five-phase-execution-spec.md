@@ -7932,3 +7932,13 @@ authenticated実E2E再実行はparent deterministic actions 13、external propos
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-review-navigation-19f.md`はHarness/test exact 2 files。全input完了後に一意の`techplay_review_<eventId>`だけを親processが選び、same candidate join pageを再検査してからexact confirm URL waitを先にarmし、一回だけclickする。navigation後は既存confirm inspectorの一意`techplay_final_<eventId>`を必須にする。
 
 production約30〜55 LOC、test約65〜105 LOC。external proposer/private値/final click/effect readback、factory/router/native order、evidence、Calendar、scheduleは変更0。ship後live E2Eはconfirm到達とfinal safe control 1件、final click 0まで。Item19実bundleは未完。
+
+### O1B-25進捗460（Item 19F-D7 / TECH PLAY exact review navigation live ship）
+
+Plan修復commit `aa98f53ed`、code commit `34fff7b14`をpushした。LunaはHarness/test exact 2 filesだけをSuperpowers TDD変更した。初回REDはcompleted inputが`review_blocked`/13 actionsで停止。GREENはparent deterministic 13 inputs後、一意のexact review CTAをsame join page・event/canonical/ticket bindingへ再固定し、30秒`domcontentloaded` exact same-event confirm URL waitをclick前にarmして1回だけ押す。pre-click failureはhistory 13、attempt済みで効果未証明は`effect_unknown`/history 14とし、reviewを再試行しない。final CTAは観測だけでclick 0。
+
+fresh Sol reviewは、再inspection中のticket driftと、confirm証明後の余分なloopで`maxSteps=14`がstep limitになるImportant 2件を反証した。同じLunaがevent/canonical/ticket全3要素をclick直前まで再比較し、exact final証明後はhistory 14で即`final_blocked`を返すよう修復。ticket driftはclick 0/history 13、positiveは`maxSteps=14`/confirm inspect 1回へ固定し、re-reviewはCritical/Important 0で`ship`。
+
+初回authenticated実E2EはURL wait自体がtimeout 30000・`domcontentloaded`でexact confirmへresolveしたが、直後のconfirm Inspectorだけhydration前で0 controlsとなり`effect_unknown`。直後の外部inspectionはexact final 1件だったため成功を偽装せず、既存postcheck budgetを再利用するplanへ更新した。修復はempty observationだけ最大20 attempts・19 sleeps×25ms＝475ms read-only retryし、各attempt前後のexact confirm URLとevent/canonical/ticket bindingを再検証する。never-stable/inspect throw/URL・ticket driftは即またはbounded `effect_unknown`、review/input/proposer mutation retryは0。pollを1 attemptへ弱体化するとtransient testと19-sleep境界がFAILし、復元後GREEN。fresh re-reviewはspec/quality PASS、Ponytail `Lean already. Ship.`。
+
+Sol独立でHarness 137/137＋TECH PLAY workflow 16/16、合計153/153、両file syntax、diff check PASS。最終authenticated実E2Eは`final_blocked`、13 input＋reviewのprivate-free history 14、external proposer 0、operate 14、review click 1、final click 0、exact `https://techplay.jp/event/join/999190/confirm`、safe final control exact 1、scalar private projection leak 0。owned pageは4→5→4、既存4 pagesを全保持した。application、provider readback、Calendar、evidence、factory/router/native order、schedule変更は0。次active sliceはfinal CTA one-shot＋registered effect readback。Item19実bundleは未完。
