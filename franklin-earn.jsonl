@@ -4221,3 +4221,4 @@
 {"ts":1786460022,"source":"cook","task":"explore: Solana microtask bounty platform pay USDC no upfront cost","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSOS61ZM7716F06869E74055"}
 {"ts":1786460713,"source":"cook","task":"explore: Solana low minimum yield farming USDC micro deposit","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSOSKTJ2A94F4A3EE3064CC5"}
 {"ts":1786462883,"source":"cook","task":"explore: Solana microtask platform pay USDC no upfront capital","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSOTVAQOB76BAA66DB41482D"}
+{"ts":1786464826,"source":"cook","task":"explore: Solana pay-per-use API marketplace where developers pay USDC for calls","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSOV0ZAX8C84CA1824764F96"}
