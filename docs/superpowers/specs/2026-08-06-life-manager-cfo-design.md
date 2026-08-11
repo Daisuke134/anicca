@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a3c.1 authenticated receipt source complete; CFO-2a3c.2 parser/store is active |
+| Status | M2 ACTIVE — CFO-2a3c.1/2 confirmed receipt capture complete; CFO-2a3c.3 hourly publication is active |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a3c.2: parse the confirmed Anthropic receipt and append one private immutable record** |
+| First unfinished item | **CFO-2a3c.3: publish confirmed subscription spend through the existing hourly CFO report** |
 
 ## 1. Overview — What and Why
 

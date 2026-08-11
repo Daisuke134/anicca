@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3c.1 complete; CFO-2a3c.2 is the first unfinished slice |
+| Status | ACTIVE — CFO-2a3c.1/2 complete; CFO-2a3c.3 hourly publication is the first unfinished slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains the only scheduler |
 | First source | Official Anthropic receipt email through the existing authenticated `gog` transport |
@@ -88,7 +88,7 @@ failure is retried by the existing next hourly run; the last validated immutable
       `mail.anthropic.com`, and returns one frozen memory-only evidence object. No parsing, persistence, scheduler, or
       Telegram change. Plan:
       `docs/superpowers/plans/2026-08-11-life-manager-cfo-anthropic-receipt-source.md`.
-- [ ] **CFO-2a3c.2 — Exact parser and immutable local record.** Parse only the observed successful receipt layout,
+- [x] **CFO-2a3c.2 — Exact parser and immutable local record.** Parse only the observed successful receipt layout,
       verify arithmetic/period/plan, append a private `0600` hash-addressed record, and prove rerun dedupe. Plan:
       `docs/superpowers/plans/2026-08-11-life-manager-cfo-anthropic-receipt-local-capture.md`.
 - [ ] **CFO-2a3c.3 — Hourly aggregate and Telegram.** Reuse the one hourly launchd loop; publish actual subscription
@@ -123,3 +123,17 @@ validated receipt and may add one plain-language line saying the source was reco
 - Sol's real authenticated Gmail E2E printed only safe booleans and proved the source, exact keys, frozen/nonempty
   evidence, and the already-observed Max-plan arithmetic layout. It printed no body, amount, Gmail ID, receipt/invoice
   number, email, payment method, or URL. Code commit: `75aab96f9` on `feature/cfo-4d1-finalize-sol`.
+
+## 9. CFO-2a3c.2 completion evidence
+
+- Luna implemented exactly the two new source/test files plus the existing package registration in 51 gross added
+  lines. RED failed only because the module was absent. Final focused tests passed 2/2, CFO passed 328/328, full
+  `npm test` exited 0, syntax/diff/scope gates passed, and Sol independently repeated the gates.
+- Controller verification replaced a newline-only synthetic parser with the actual one-line sanitized Gmail layout,
+  fixed the alternate-price fixture, and required exact frozen evidence. A fresh Sol reviewer then found and the same
+  Luna fixed three material issues: external prefix-shaped errors could leak, month-end rollover could accept a wrong
+  period, and reversed labels could pass. Final re-review returned `ship`.
+- Sol's real authenticated isolated E2E captured twice and proved `appended` then `existing`, one byte-identical record,
+  exact Max 20x period/current fixed amounts/USD, `0600` file, all directories `0700`, recursively frozen receipts,
+  and no private token in record/path. The same email's official invoice PDF independently matched USD and paid total;
+  both isolated state and PDF were deleted. Only booleans/counts were printed. Code commit: `1e94ea4e2`.
