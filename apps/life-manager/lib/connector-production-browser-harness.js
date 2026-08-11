@@ -938,10 +938,8 @@ async function operateEventbriteFinal(target, token, page, { eventId, canonicalU
   let locator;
   try { locator = target.locator(`button[data-lm-connector-control="${token}"][data-testid="${testId}"]`); } catch { return null; }
   if (!locator || (typeof locator.elementHandles !== "function" && typeof locator.elementHandle !== "function") || typeof locator.count !== "function") return null;
-  let handles; let count;
+  let handles;
   try {
-    count = await locator.count();
-    if (count !== 1) return null;
     if (typeof locator.elementHandles === "function") handles = await locator.elementHandles();
     else { const handle = await locator.elementHandle(); handles = handle ? [handle] : []; }
   } catch { return null; }
