@@ -149,6 +149,7 @@ function createMinimalProductionOperations(options = {}) {
   const discoveryAuditFile = path.join(stateDir, "luma-discovery-audits.jsonl");
   const connpassDiscoveryAuditFile = path.join(stateDir, "connpass-discovery-audits.jsonl");
   const peatixDiscoveryAuditFile = path.join(stateDir, "peatix-discovery-audits.jsonl");
+  const meetupDiscoveryAuditFile = path.join(stateDir, "meetup-discovery-audits.jsonl");
 
   async function recordAction(input) {
     const action = safeAction(input);
@@ -165,6 +166,10 @@ function createMinimalProductionOperations(options = {}) {
 
   async function recordPeatixDiscoveryAudit(input) {
     append(peatixDiscoveryAuditFile, safeDiscoveryAudit(input, wakeId, exactInstant(now())));
+  }
+
+  async function recordMeetupDiscoveryAudit(input) {
+    append(meetupDiscoveryAuditFile, safeDiscoveryAudit(input, wakeId, exactInstant(now())));
   }
 
   async function reportWake(input) {
@@ -219,7 +224,8 @@ function createMinimalProductionOperations(options = {}) {
   }
 
   return Object.freeze({
-    recordAction, recordDiscoveryAudit, recordConnpassDiscoveryAudit, recordPeatixDiscoveryAudit, reportWake,
+    recordAction, recordDiscoveryAudit, recordConnpassDiscoveryAudit, recordPeatixDiscoveryAudit,
+    recordMeetupDiscoveryAudit, reportWake,
   });
 }
 
