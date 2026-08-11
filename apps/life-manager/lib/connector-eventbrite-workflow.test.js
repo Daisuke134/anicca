@@ -307,7 +307,7 @@ test("Eventbrite parent readback is strict and fail-closed", async () => {
   assert.deepEqual(await missingCanonical.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" });
 
   const explicitAuth = createEventbriteScriptFirstWorkflow({
-    readRegistrationView: async () => ({ page_url: candidate.canonical_url, canonical_links: [], controls: [{ text: "Get tickets", visible: true }], body_text: "", auth_required: true }),
+    readRegistrationView: async () => ({ page_url: candidate.canonical_url, canonical_links: [{ href: candidate.canonical_url, visible: true }], controls: [{ text: "Get tickets", visible: true }], body_text: "", auth_required: true }),
   });
   assert.deepEqual(await explicitAuth.readProviderState({ page: pageAt(candidate.canonical_url), candidate }), { status: "unavailable" });
 
