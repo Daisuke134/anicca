@@ -57,7 +57,7 @@ Connectorの進行中正本はbranch `feature/connector-native-completion`のwor
 | acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
 | agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerを最大10 step使う。click成功だけをcompletionにせずofficial parent/child readbackを必須化 | `applied_bundle` evidence chainはLuma/Connpass/Peatix/Meetup。Doorkeeper/Eventbrite evidence adaptersはItem19のlive bundle gateとして未完 |
 | latest official wake | `wake-e289aa2e9963209e6996f099`: 6-provider順を完走し`completed_no_effect / provider_discovery_failed / 2`、Telegram provider ID `12117`。Eventbrite audit `188/0/0/0/0` | 3-page paginationはlive受入済み。現在の14日窓にEventbrite eligible candidate 0のためexternal write 0が正しい |
-| lifecycle / lock | official wake終了後process 0、lock idle、owned target intersection 0、unrelated browser pagesを維持 | Native daily scheduleの最終loadとlegacy labels unloaded確認をItem22で閉じる |
+| lifecycle / lock | Native labelだけが09:00 dailyでloaded、runs 0 / not running。healthcheck・Healer・bridgeはunloaded。process 0、lock idle、owned target intersection 0 | single production owner 1 / schedule 1。次の実行主体はlaunchd Native labelだけ |
 | TODO境界 | Items1〜18は完了。Item19はPeatixのみbundle完了、Meetup/Doorkeeper/Eventbriteは明示blocker付きpending。Items20〜23未完 | 完了判定は最新Active TODOの19〜23で行う |
 
 #### Connector architecture — 現行productionと未完境界
@@ -7536,7 +7536,7 @@ post-integration read-only production-workflow diagnosticではhydrated official
 19. [ ] **providerを一つずつ拡張する。** Peatix [x] → Meetup [pending: Calendar非衝突候補0] → Doorkeeper [pending: Calendar非衝突候補0 + evidence adapter] → Eventbrite [pending: eligible候補0 + evidence adapter] → 発見済み次provider [ ] の順に、未知browser flow、parent readback、Calendar、PNG、Telegram、idempotencyを個別にlive実証する。各providerは実`applied_bundle`を得るまでproduction supportedと表示しない。Peatix証拠: 進捗291。Meetup/Doorkeeper/Eventbriteはproduction railとprivacy-safe live auditまで受入済みだがbundle未完。
 20. [ ] **unknown-provider discovery contractを閉じる。** 事前domain skillのないevent site一件で、same-page Browser Harness fallbackが登録可能性を判断し、許可された無料申込を完遂するかsafe failureで次providerへ進むことを実証する。成功時は新provider skill/cacheを保存し、次run agent call 0を確認する。
 21. [ ] **restartとdurable continuationを実証する。** 各external-effect境界でprocess restartし、既存provider registration、Calendar、evidence、Telegram receiptをreadbackして重複作用0で継続する。append-only historyと既存receiptを変更・削除しない。
-22. [ ] **最終production cleanupを行う。** legacy runner、legacy bridge、Healer、healthcheck、重複plist/schedule/process consumerをcall pathで再確認し、production owner 1、schedule 1、browser session/target各1、Gig変更0を実測する。recoverable Git patch以外でcodeを削除しない。
+22. [x] **最終production cleanupを行う。** legacy runner、legacy bridge、Healer、healthcheck、重複plist/schedule/process consumerをcall pathで再確認し、production owner 1、schedule 1、browser session/target各1、Gig変更0を実測する。recoverable Git patch以外でcodeを削除しない。証拠: 進捗429。
 23. [ ] **canonical merge gateを閉じる。** Production scheduled wakeの実bundleまたはidempotent continuation、positive Telegram IDs、no-duplicate proof、clean git status、remote pushを確認後だけcanonical branchへmergeする。merge後の次wakeも同じacceptanceで観測する。
 
 完成後のuser-facing Telegram UXは毎wake一通以上とする。成功時はevent/provider/date/status、Calendar readback、証拠画像を送る。
@@ -7712,3 +7712,9 @@ Pushed HEAD `39b53e563`からofficial foreground wake `wake-e289aa2e9963209e6996
 Eventbrite auditはpagination修復前`80/0/0/0/0`からexact `188/0/0/0/0`へ増え、3-page production探索をlive実証した。既登録event `1997468673573`のpage3 anchorは現在Eventbrite自身の`data-event-paid-status=paid` exact4で、detailは`SocialEvent`、2026-08-14 00:00–02:00 JST、official CTA exact1だがminimum-purchase safety gate対象。無料判定を緩めて既登録effectをproduction bundleへ偽装しない。Eventbriteはdiscovery/action/readback/native live auditまで完了、実`applied_bundle`はcurrent eligible candidate 0とevidence adapter未接続によりpending。
 
 Root `README.md`へConnectorのtrigger→6-provider discovery→deterministic gate→click-once action→official readback→Calendar/PNG/Telegram bundle→cleanupを示すMermaid flow、effect state transition、provider acceptance表を追加した。SSOT冒頭のprovider順、latest wake、evidence境界、lifecycle、TODO境界、architecture図を現行6-provider stateへ更新し、旧Luma/Connpass-only・3-provider記述を撤回した。
+
+### O1B-25進捗429（Item 22 / single daily production owner cleanup完了）
+
+Live受入とREADME/SSOT同期をpushed HEAD `471b0e357`で完了後、installed mode-0600 native plistだけを`gui/501`へbootstrapした。exact label `ai.anicca.life-manager-connector-native`はloaded、state `not running`、active count 0、runs 0、last exit never、calendar trigger exact `Hour=9 / Minute=0`、program/working directoryはcurrent Connector worktreeのofficial `skills/connector/run.sh`。RunAtLoad、KeepAlive、StartInterval、second kickは0。
+
+`ai.anicca.life-manager-connector-native-healthcheck`、`ai.anicca.life-manager-connector-healer-shadow`、`ai.anicca.life-manager-connector-host-bridge`はexact全UNLOADED。Connector process 0、lock idle、current CDP pageと9件のlegacy target-ledger historyのintersection 0、Git clean/upstream 0/0、Gig code/state変更0。旧plist filesは削除せずunloaded inventoryとして保持し、実行consumerはNative daily owner exact1。Item22を完了する。
