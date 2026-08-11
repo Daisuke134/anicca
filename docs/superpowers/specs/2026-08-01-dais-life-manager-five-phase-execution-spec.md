@@ -7411,7 +7411,11 @@ LunaがHarness production/test 2 filesだけをTDD変更した。61-test baselin
 
 fresh Sol初回reviewのImportant 3件に対し、非Doorkeeper selectorをbyte-equivalent維持して既存control不変、sole primary wrong-form submit、ancestor hidden/aria/inline/computed/zero-boxを追加。再reviewでtriggerを同時に隠すmaskingを指摘され、trigger/email/submitを一対象ずつ独立させた。最終67/67、隣接33/33、fresh re-review spec PASS / quality SHIP、指摘0。Sol独立67/67、33/33、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommits `f52333fbd`,`7a072341d`,`7221adf94`をstableへfast-forwardしpushした。次はB4b2 exact modal trigger activationとmutation signature分離。factory/liveは未接続、Item19 Doorkeeper、scheduleは未完。
 
-### Active remaining TODO SSOT（進捗380。これ以外の残TODO一覧は履歴）
+### O1B-25進捗381（Item 19D-B4b2 / Doorkeeper modal activation plan）
+
+次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-modal-activation-19d.md`はHarness production/test 2 filesだけ。review済みdefault inspectorのexact unique modal triggerだけをDoorkeeperでparent-authorized `ax_click`にし、modal-trigger mutation signatureをfinal form-submitから分離する。同page trigger再clickはDOM action 0、required Email fill後のfinal submitはB4a max1/registered-only latchを維持。arbitrary link/identity/duplicateはaction 0。factory/native/liveは変更せずofficial wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
+
+### Active remaining TODO SSOT（進捗381。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
