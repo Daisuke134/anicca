@@ -7948,3 +7948,11 @@ Sol独立でHarness 137/137＋TECH PLAY workflow 16/16、合計153/153、両file
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-final-effect-19f.md`はHarness/test exact 2 files。既存final-effect latchと既存TECH PLAY workflow `readProviderState`だけを再利用し、exact confirmの一意`techplay_final_<eventId>`を最大1回clickする。成功はsame canonical event・same sole ticket・`is_joined === true`から得る`registered`だけ。pending/absent/unavailable/malformed/reject/timeoutは成功にせず、attempt済みならhistoryへfinal actionを1件だけ残して`effect_unknown`、再click 0。
 
 full deterministic pathは13 inputs＋review＋final＝15 actions、external proposer 0。`maxSteps=14`は現行`final_blocked`を保持し、15以上だけfinal actionへ進める。production約35〜65 LOC、test約75〜130 LOC。Calendar/evidence/factory/router/native order/report/scheduleは次slice。このsliceで実final applicationは行わず、全配線後に既存launchd ownerをexact 1回wakeしてapplication→registered readback→Calendar→evidence→Telegramを同じbundleで閉じる。Item19実bundleは未完。
+
+### O1B-25進捗462（Item 19F-D8 / TECH PLAY final action＋registered readback ship）
+
+LunaがHarness/testのexact 2 filesをSuperpowers TDD実装し、code commit `818f387f0`をpushした。exact confirmの一意final CTAだけを元element handleへ固定し、effect waitをclick前にarmする。`locator.count()`後にもsame confirm URL、event/canonical/ticket binding、同一handleのconnected/visible/label/type/enabled/token/idを再検証してから最大1回clickする。count中のticket差し替えとlocator retargetはclick 0・final history 0でfail closedする。
+
+成功は既存TECH PLAY parent readbackの`registered`だけ。pending/absent/unavailable/malformed/reject/timeoutは各1 attempt後`effect_unknown`で再click 0。click throwもregistered証明時だけ成功する。full pathは13 inputs＋review＋final＝15 private-free actions、external proposer 0、review click 1、final click 1。`maxSteps=14`はfinal click 0の`final_blocked`を維持した。
+
+RED、maxSteps guard・post-wait binding guard・count-time binding guardのmutation proof、Harness 147/147、TECH PLAY workflow 16/16、両syntax、diff checkがPASS。fresh Sol reviewは初回にcount await中のCritical driftを反証し、修復後re-reviewはCritical/Important 0で`ship`。実final applicationは未実行で、factory/router、audit、Calendar、evidence、native order、official launchd acceptance、schedule safetyは次slice以降。Item19実bundleは未完。

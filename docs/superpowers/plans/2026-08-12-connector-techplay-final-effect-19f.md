@@ -20,13 +20,12 @@
 
 ## Contract
 
-- [ ] RED: exact confirm currently stops at `final_blocked`; no final operation or TECH PLAY readback runs.
-- [ ] `createProductionBrowserHarness` accepts optional `techplayWorkflow` only when it exposes `readProviderState`.
-- [ ] Select only one exact final control: same event token, `button`, label `申し込みを確定する`, `required:false`, `completed:false`, `submittable:true`, exact same-event confirm URL, and exact event/canonical/ticket binding before and immediately before click.
-- [ ] Arm the existing 30-second final-effect latch before one exact final click. Accept only parent readback `{status:"registered"}`; `pending`, `absent`, `unavailable`, malformed, rejection, or timeout never count as success.
-- [ ] A click throw may succeed only when registered readback proves the effect. Any attempted-but-unproven final effect returns `effect_unknown`, records the final action once, and never retries. Pre-click rejection records no final action.
-- [ ] Full deterministic path is 13 inputs + review + final = 15 private-free actions, external proposer 0, final click 1, and a successful provider state `registered`. `maxSteps=14` retains the previously accepted `final_blocked` boundary.
-- [ ] Add negative tests for wrong/missing workflow, method/purpose/token/label/state, duplicate/missing locator, page/event/ticket drift, readback pending/absent/unavailable/malformed/reject/timeout, and click throw with registered versus unknown effect.
-- [ ] Run Harness + TECH PLAY workflow, syntax, diff check, final one-shot mutation proof, and fresh Sol review.
-- [ ] Do not perform a real final application in this slice. The real side effect is reserved for the existing launchd owner after TECH PLAY Calendar/evidence/native/report wiring is complete, so registration cannot be orphaned from its operational bundle.
-
+- [x] RED: exact confirm currently stops at `final_blocked`; no final operation or TECH PLAY readback runs.
+- [x] `createProductionBrowserHarness` accepts optional `techplayWorkflow` only when it exposes `readProviderState`.
+- [x] Select only one exact final control: same event token, `button`, label `申し込みを確定する`, `required:false`, `completed:false`, `submittable:true`, exact same-event confirm URL, and exact event/canonical/ticket binding before and immediately before click.
+- [x] Arm the existing 30-second final-effect latch before one exact final click. Accept only parent readback `{status:"registered"}`; `pending`, `absent`, `unavailable`, malformed, rejection, or timeout never count as success.
+- [x] A click throw may succeed only when registered readback proves the effect. Any attempted-but-unproven final effect returns `effect_unknown`, records the final action once, and never retries. Pre-click rejection records no final action.
+- [x] Full deterministic path is 13 inputs + review + final = 15 private-free actions, external proposer 0, final click 1, and a successful provider state `registered`. `maxSteps=14` retains the previously accepted `final_blocked` boundary.
+- [x] Add negative tests for wrong/missing workflow, method/purpose/token/label/state, duplicate/missing locator, page/event/ticket drift, readback pending/absent/unavailable/malformed/reject/timeout, and click throw with registered versus unknown effect.
+- [x] Run Harness + TECH PLAY workflow, syntax, diff check, final one-shot mutation proof, and fresh Sol review.
+- [x] Do not perform a real final application in this slice. The real side effect is reserved for the existing launchd owner after TECH PLAY Calendar/evidence/native/report wiring is complete, so registration cannot be orphaned from its operational bundle.
