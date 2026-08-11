@@ -7353,7 +7353,13 @@ Ponytail fullでexisting provider workflow/router/Harness/native/evidence/Calend
 
 plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-discovery-19d.md`はnew workflow/test 2 filesだけ、production約220〜320 LOC、test約260〜360 LOC。ordered listing pagination→canonical/Tokyo/window prefilter→detail JSON-LD free/open gate→Calendar→five-count audit→parent readbackをTDD実装する。direct submitはstable safe failureでexisting Harnessの後続sliceへ残す。Item19 Meetupは`[pending: no non-conflict candidate]`、Doorkeeperはdiscovery未実装、Eventbrite未着手、4 schedule labelsはunloaded。
 
-### Active remaining TODO SSOT（進捗369。これ以外の残TODO一覧は履歴）
+### O1B-25進捗370（Item 19D-A / Doorkeeper discovery workflow ship）
+
+Lunaがplan `2026-08-11-connector-doorkeeper-discovery-19d.md`に従い、Doorkeeper workflow本体と専用testの2 filesだけをTDD実装した。初回REDはmodule不在、初回GREENはfocused 10/10。fresh Sol reviewのImportant 3件に対し、監査をexact `discovered_count / within_window_count / eligible_count / calendar_free_count / selected_count`へ修正し、default listing/detail readerの`goto()`後実URL完全一致を必須化し、readbackの`中止 / 延期 / 受付終了`を本文と可視controlの両経路でfail closedにした。回帰は4件RED→14/14 GREEN、残control経路は1件RED→最終15/15 GREEN。最終fresh Sol verdictはspec PASS / quality SHIP、指摘0。
+
+Sol独立検証はfocused 15/15、syntax、diff check、exact 2-file ownershipがPASS。隣接Meetup/Peatix/Connpassは48/49で、唯一のPeatix date-sensitive fixtureは変更前base `cbfabd5bd`でも同じFAILを再現した。review済み3 commits `f6c7e3eb4`、`d0078f05c`、`fee320763`をstable `feature/connector-native-completion`へfast-forwardしremoteへpushした。4 Connector labelsはexact全UNLOADED、process 0。Doorkeeperはpublic discovery、strict JSON-LD eligibility、Calendar ordering、privacy-safe five-count audit callback、parent readbackまで完了したが、production router/Harness/native/audit persistence/live registrationは未接続。次の一件はこの既存workflowをproduction railへ最小配線するsliceであり、Item19 Doorkeeper checkboxとscheduleは未完のまま。
+
+### Active remaining TODO SSOT（進捗370。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

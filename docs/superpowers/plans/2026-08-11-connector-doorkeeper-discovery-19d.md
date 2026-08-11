@@ -17,7 +17,7 @@
 - canonical URLはexact `https://<lowercase-ascii-group>.doorkeeper.jp/events/<positive-id>`。query、fragment、credential、port、`www`、wrong pathを拒否する。
 - Doorkeeper APIはalphaかつPublic API Access token必須なので追加しない。公開browser DOM/JSON-LDだけを使う。
 - credential、cookie、email、氏名、raw form value、private Calendar titleはcode/test/auditへ保存しない。
-- auditはexact `observed_count`, `normalized_count`, `window_count`, `free_open_count`, `calendar_free_count`だけをcallbackへ渡す。
+- auditはexact `discovered_count`, `within_window_count`, `eligible_count`, `calendar_free_count`, `selected_count`だけをcallbackへ渡す。
 - direct actionは外部作用0のstable safe failureにする。production router/Harness/native/evidence/Calendar transport/operations/scheduleはこのtaskで変更しない。
 
 ## Grounded Contract
@@ -53,7 +53,7 @@
 - `readRegistrationView(page, candidate)` returns `{ page_url, canonical_links: [{ href, visible }], controls: [{ text, visible }], body_text }`
 - Candidate shape: `{ provider: "doorkeeper", event_ref: "doorkeeper-event://event/<id>", canonical_url, title, starts_at, ends_at, registration_status: "available", ticket_price_status: "free", ticket_price_minor: 0 }`
 
-- [ ] **Step 1: Write the failing canonical/listing test**
+- [x] **Step 1: Write the failing canonical/listing test**
 
   Add a test that imports the missing module and drives two listing pages through injected readers. The literal fixtures must prove ordered dedup, exact URL acceptance, page stop after the first page whose maximum day reaches the exclusive window end, and rejection of malformed origins/paths.
 
@@ -132,7 +132,7 @@
   });
   ```
 
-- [ ] **Step 2: Run RED and verify the expected failure**
+- [x] **Step 2: Run RED and verify the expected failure**
 
   Run:
 
@@ -143,7 +143,7 @@
 
   Expected: FAIL because `connector-doorkeeper-workflow.js` does not exist. A syntax error or unrelated failure does not count as RED.
 
-- [ ] **Step 3: Add failing eligibility, audit, Calendar, and readback tests**
+- [x] **Step 3: Add failing eligibility, audit, Calendar, and readback tests**
 
   Use hand-authored literal JSON-LD; do not derive expected values with production helpers.
 
@@ -177,11 +177,11 @@
   7. parent readback returns `registered` only when one exact candidate canonical link and one completion marker (`申し込みが完了しました` or `Your registration is complete`) coexist, with no payment/waitlist/error marker. Wrong event, duplicate marker/link, hidden marker, or ambiguous URL returns `unavailable`.
   8. direct action returns `{ status: "failed", safe_reason: "doorkeeper_direct_requires_harness" }` and invokes no submit dependency.
 
-- [ ] **Step 4: Re-run RED and confirm behavior failures**
+- [x] **Step 4: Re-run RED and confirm behavior failures**
 
   Run the same focused command. Expected: tests load after a temporary export shell exists, but fail on missing discovery/readback behavior. Do not add production behavior before observing these failures.
 
-- [ ] **Step 5: Implement the minimal workflow**
+- [x] **Step 5: Implement the minimal workflow**
 
   Use only stdlib and the existing schedule helper.
 
@@ -220,7 +220,7 @@
 
   Parent readback must compare candidate identity before returning `registered` or `absent`; all ambiguous states return `unavailable`.
 
-- [ ] **Step 6: Run GREEN and adjacent regression tests**
+- [x] **Step 6: Run GREEN and adjacent regression tests**
 
   Run:
 
@@ -233,7 +233,7 @@
 
   Expected: all tests PASS, zero warnings, zero external writes.
 
-- [ ] **Step 7: Self-review against the spec**
+- [x] **Step 7: Self-review against the spec**
 
   Verify:
 
@@ -243,7 +243,7 @@
   - no private values in fixtures/output;
   - `git diff --check` is clean.
 
-- [ ] **Step 8: Commit the reviewed task**
+- [x] **Step 8: Commit the reviewed task**
 
   ```bash
   git add apps/life-manager/lib/connector-doorkeeper-workflow.js apps/life-manager/lib/connector-doorkeeper-workflow.test.js
@@ -256,3 +256,11 @@
 - Placeholder scan: prohibited placeholder markers and unspecified error-handling steps are absent.
 - Type consistency: workflow method names and candidate fields match `createProductionProviderRouter` and `runMinimalConnectorWake` contracts already used by Luma/Connpass/Peatix/Meetup.
 - Ponytail result: existing runner, browser rail, Calendar logic, SHA identity rule, and workflow interface are reused; only the provider-specific parser/state reader is new.
+
+## Result
+
+- Luna implemented the workflow and observable tests in the two owned files only. Initial RED was `MODULE_NOT_FOUND`; final focused verification is 15/15 PASS.
+- Fresh Sol review first found three Important contract gaps. Two bounded remediation rounds corrected the exact five-key audit, post-navigation URL identity checks, and unsafe-marker handling in both body and visible controls. Final verdict is spec PASS / code quality SHIP with no findings.
+- Independent Sol verification reproduced focused 15/15 PASS, syntax PASS, `git diff --check` PASS, and exact two-file ownership. Adjacent suites are 48/49 because the same date-sensitive Peatix fixture fails on the unchanged base commit.
+- Reviewed commits `f6c7e3eb4`, `d0078f05c`, and `fee320763` are pushed and fast-forwarded into `feature/connector-native-completion` at `fee320763`.
+- This slice intentionally does not route Doorkeeper into production and does not submit. Production router/Harness/native/audit persistence and official live acceptance remain the next slice. All four Connector launchd labels remain unloaded.
