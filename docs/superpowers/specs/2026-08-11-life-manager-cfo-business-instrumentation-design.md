@@ -46,6 +46,12 @@ Only the first unchecked item is active.
         local-usage, and shared-subscription evidence. With no paid Stripe receipt, reversal/payout work is not
         applicable; the first future paid receipt changes coverage to partial and blocks profit until reconciliation.
 - [ ] **CFO-2b.2 — Anicca iOS**: Apple/RevenueCat receipts, payout state, attributed API cost.
+  - [ ] **2b.2a** Normalize positive production App Store purchase/renewal events already stored by the RevenueCat
+        webhook into privacy-safe provider-reported gross receipts.
+  - [ ] **2b.2b** Read Apple Finance Detail as the authoritative settled Partner Share source and reconcile the
+        RevenueCat receipt set without turning an unavailable fiscal period into zero.
+  - [ ] **2b.2c** Compose the Anicca iOS business fact from reconciled revenue, payout coverage, attributed local
+        token usage, and the still-missing production API-cost coverage.
 - [ ] **CFO-2b.3 — Writer Agent**: publisher receipts and its measured runtime cost.
 - [ ] **CFO-2b.4 — Affiliate Agent**: network commission receipts and runtime cost.
 - [ ] **CFO-2b.5 — Gig Work**: marketplace/client receipts; never import `~/gig/earnings.jsonl` without receipt proof.
@@ -289,3 +295,61 @@ capital, profit, and ROI unknown/null. It must not say Life Manager profit is ze
   provider-usage table, and the confirmed shared `$220` subscription. The resulting fact is partial; human cost,
   capital, allocated subscription, profit, and ROI remain null. No raw/provider/customer/account identifier escaped.
 - No database, Stripe, launchd, Telegram, or local-state write occurred. The next active registry unit is Anicca iOS.
+
+## 11. CFO-2b.2 measured truth and order
+
+The production Railway `subscription_events` table contains 518 RevenueCat webhook rows. The stored top-level
+`type` is unusable (`[object Object]`) because the producer reads the standard nested webhook envelope incorrectly,
+but the unchanged raw `payload.event` remains recoverable. A read-only aggregate of that nested object observed 37
+`INITIAL_PURCHASE` and 17 `RENEWAL` production App Store events. Positive provider prices total JPY 5,100 on initial
+events and JPY 22,100, GBP 34.98, and USD 39.99 on renewals; zero-price trial observations are not revenue.
+
+RevenueCat documents `price_in_purchased_currency` as provider purchase-currency price that may be unknown, zero for
+free trials, or negative for refunds. It is therefore gross provider evidence, not Apple settled proceeds or bank
+cash. Source: RevenueCat, https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields.
+
+Apple Finance Detail is the later settlement authority because it exposes settlement dates and Partner Share. The
+downloaded fiscal reports through the period ending 2026-08-01 contain no Anicca row. That is confirmed zero only for
+those completed reports; it does not prove the current incomplete period or bank deposit is zero. The enduring order
+is therefore:
+
+```mermaid
+flowchart LR
+    RC[RevenueCat production purchase] --> GROSS[Provider gross receipt]
+    GROSS --> APPLE[Apple Finance Partner Share]
+    APPLE --> PAYOUT[Apple payout]
+    PAYOUT --> BANK[MUFG landed cash]
+    GROSS -. never skips reconciliation .-> UNKNOWN[Profit stays unknown]
+```
+
+### CFO-2b.2a exact contract
+
+Add one pure `normalizeAniccaIosRevenueCatEvent(row)` boundary. It accepts exactly the safe eight-field projection a
+later read-only Railway collector will produce: `provider_event_id`, `event_type`, `environment`, `store`,
+`product_id`, `price_decimal`, `currency`, and `purchased_at_ms`. It never accepts or returns the raw webhook payload.
+
+- Only `PRODUCTION` + `APP_STORE` + Anicca product IDs beginning `ai.anicca.app.ios.` + `INITIAL_PURCHASE` or
+  `RENEWAL` are eligible. Known non-revenue/sandbox/test/wrong-product observations return `null`.
+- `price_decimal` is a canonical non-negative decimal string from the JSONB text projection. `0`/`0.0` returns
+  `null`; positive values require uppercase ISO-3 currency and become a gross receipt without conversion. Negative,
+  exponent, numeric, NaN, unsafe time, malformed identity, accessor, proxy, extra/missing key, or secret-shaped
+  hostile input fails closed.
+- `purchased_at_ms` is a canonical positive safe-integer string and becomes canonical UTC. The raw provider event ID
+  is hashed to a domain-prefixed 24-hex `source_event_id`; it never leaves the boundary.
+- The exact recursively frozen result contains only schema/unit/source/channel, opaque source ID, UTC time, receipt
+  kind, `{decimal,currency}`, and the fixed statuses `provider_reported_gross`, cash `unknown`, Apple payout
+  `unavailable`, refund coverage `unknown`, and evidence `provider_reported`.
+- Invalid input throws only `cfo_anicca_ios_earning_invalid:invalid_input`. The function performs no I/O, logging,
+  environment read, clock read, conversion, estimation, aggregation, or persistence.
+
+### CFO-2b.2a acceptance
+
+- [ ] Exact positive JPY initial-purchase and GBP renewal fixtures return the documented closed receipt shape.
+- [ ] Exact zero-price trial, sandbox, test-store, non-revenue, and wrong-product fixtures return `null` and never
+      become revenue.
+- [ ] One compact hostile/money regression proves malformed price/time/identity/shape returns only the fixed error;
+      no provider, customer, transaction, subscriber, prompt, or secret value appears in output or error.
+- [ ] Inputs remain unchanged; nested amount and result are frozen; identical provider IDs dedupe to the identical
+      opaque source ID.
+- [ ] Focused, CFO, and full tests pass. Scope is one new production module, one new test, and the existing CFO test
+      registration, with at most 100 gross additions. No database, API, launchd, Telegram, or state write occurs.
