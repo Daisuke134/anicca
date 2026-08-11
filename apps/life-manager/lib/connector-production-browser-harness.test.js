@@ -2750,3 +2750,160 @@ test("Eventbrite attendee fill binds the selected field to the same checkout chi
     assert.equal(fillCalls, expectedOperate === 1 && name === "postcondition" ? 1 : 0, `${name}-fill`);
   }
 });
+
+function makeTechPlayElement(overrides = {}) {
+  const element = {
+    tagName: "INPUT", type: "text", name: "", id: "", value: "", checked: false, disabled: false,
+    hidden: false, isConnected: true, style: {}, rect: { width: 120, height: 32 }, parentElement: null,
+    labels: [], innerText: "", textContent: "", dataset: {}, ownerDocument: { defaultView: { getComputedStyle: (node) => node.style || {} } },
+    getAttribute(name) { return name === "role" ? this.role || null : name === "aria-checked" ? (this.ariaChecked == null ? null : String(this.ariaChecked)) : name === "aria-hidden" ? (this.ariaHidden ? "true" : null) : this[name] || null; },
+    hasAttribute(name) { return name === "hidden" && this.hidden === true; },
+    getBoundingClientRect() { return this.rect; },
+    closest() { return null; },
+  };
+  return Object.assign(element, overrides);
+}
+
+function makeTechPlayInputFixture() {
+  const candidate = { provider: "techplay", event_ref: "techplay-event://event/999190", canonical_url: "https://techplay.jp/event/999190", ticket_id: "98036" };
+  const questions = ["氏名", "メールアドレス", "年齢", "所属企業（学校）名"];
+  const answers = questions.map((label, index) => makeTechPlayElement({ type: index === 2 ? "number" : "text", name: `enqueteAnswers[${index + 1}]`, labels: [{ innerText: `${label} *` }], value: "private@example.com" }));
+  answers.forEach((answer) => { answer.value = ""; });
+  const radioGroup = (question, id, labels) => labels.map((value, index) => makeTechPlayElement({ type: "radio", name: `enqueteAnswers[${id}]`, id: `enqueteAnswers_${id}_${index}`, value: `${id}-${index}`, labels: [{ innerText: value }], parentElement: makeTechPlayElement({ tagName: "DIV", innerText: `${question}* ${labels.join(" ")}`, parentElement: null }) }));
+  const radioAnswers = [...radioGroup("キャリア状況", 5, ["社会人", "学生", "その他"]), ...radioGroup("職種", 6, Array.from({ length: 33 }, (_, index) => `職種${index + 1}`))];
+  const ticket = makeTechPlayElement({ type: "radio", name: "ticket", value: candidate.ticket_id, checked: true, labels: [{ innerText: "無料チケット" }] });
+  const optoutIds = ["area_1", "tag_2", "organizer_3", "area_4", "tag_5", "icon_published", "use_as_preset"];
+  const optouts = optoutIds.map((id) => makeTechPlayElement({ tagName: "BUTTON", type: "button", id, role: "checkbox", ariaChecked: true, innerText: "通知を受け取る" }));
+  const review = makeTechPlayElement({ tagName: "BUTTON", type: "submit", innerText: "同意して内容を確認する" });
+  const elements = [ticket, ...answers, ...radioAnswers, ...optouts, review];
+  const page = { url() { return "https://techplay.jp/event/join/999190"; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } };
+  return { candidate, answers, radioAnswers, ticket, optouts, elements, page };
+}
+
+function inspectTechPlayFixture(fixture, candidate = fixture.candidate, elements = fixture.elements, pageOverride = null) {
+  const page = pageOverride || { url: fixture.page.url, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } };
+  return inspectPageControls({ page, provider: "techplay", candidate, event_id: candidate.event_ref?.split("/").pop(), candidate_url: candidate.canonical_url, ticket_id: candidate.ticket_id });
+}
+
+test("TECH PLAY input inspector binds candidate ticket, required answers, and seven opt-outs without private values", async () => {
+  const fixture = makeTechPlayInputFixture();
+  const inspect = (candidate = fixture.candidate, elements = fixture.elements) => inspectTechPlayFixture(fixture, candidate, elements);
+  let controls = await inspect();
+  assert.equal(controls.length, 1 + fixture.answers.length + fixture.radioAnswers.length + fixture.optouts.length + 1);
+  assert.equal(controls.filter((control) => control.required && control.completed === false).length, fixture.answers.length + fixture.radioAnswers.length + fixture.optouts.length);
+  assert.equal(controls.find((control) => control.label === "同意して内容を確認する").submittable, false);
+  assert.doesNotMatch(JSON.stringify(controls), /private@example\.com|98036|enqueteAnswers\[/);
+
+  fixture.answers.slice(0, 3).forEach((answer) => { answer.value = "filled"; });
+  fixture.optouts[0].ariaChecked = false;
+  controls = await inspect();
+  assert.equal(controls.find((control) => control.label === "同意して内容を確認する").submittable, false);
+  fixture.answers.forEach((answer) => { answer.value = "filled"; });
+  fixture.radioAnswers[0].checked = true;
+  fixture.radioAnswers[3].checked = true;
+  fixture.optouts.forEach((optout) => { optout.ariaChecked = false; });
+  controls = await inspect();
+  assert.equal(controls.find((control) => control.label === "同意して内容を確認する").submittable, true);
+  for (const [name, candidate, elements] of [
+    ["wrong-ticket", { ...fixture.candidate, ticket_id: "98037" }, fixture.elements],
+    ["wrong-event", { ...fixture.candidate, event_ref: "techplay-event://event/999191" }, fixture.elements],
+    ["duplicate-ticket", fixture.candidate, [...fixture.elements, makeTechPlayElement({ type: "radio", name: "ticket", value: "98036", checked: false, labels: [{ innerText: "無料チケット" }] })]],
+    ["unknown-checked-optout", fixture.candidate, [...fixture.elements, makeTechPlayElement({ tagName: "BUTTON", type: "button", id: "unknown_optout", role: "checkbox", ariaChecked: true, innerText: "Unknown" })]],
+    ["ambiguous-career", fixture.candidate, fixture.elements.map((element) => element.id === "enqueteAnswers_5_1" ? { ...element, checked: true } : element)],
+    ["hidden-required-answer", fixture.candidate, fixture.elements.map((element, index) => index === 1 ? { ...element, hidden: true } : element)],
+  ]) {
+    assert.deepEqual(await inspect(candidate, elements), [], name);
+  }
+});
+
+test("TECH PLAY regression requires a checked candidate ticket radio", async () => {
+  const fixture = makeTechPlayInputFixture(); fixture.ticket.checked = false;
+  assert.deepEqual(await inspectTechPlayFixture(fixture), []);
+});
+
+test("TECH PLAY regression requires exact career and職種 radio option cardinality and labels", async () => {
+  for (const [name, mutate] of [
+    ["missing-career-option", (fixture) => { fixture.elements = fixture.elements.filter((element) => element.id !== "enqueteAnswers_5_2"); }],
+    ["extra-career-option", (fixture) => { const source = fixture.radioAnswers[0]; fixture.elements = [...fixture.elements, { ...source, id: "enqueteAnswers_5_extra", value: "5-extra", labels: [{ innerText: "インターン" }] }]; }],
+    ["missing-job-option", (fixture) => { fixture.elements = fixture.elements.filter((element) => element.id !== "enqueteAnswers_6_32"); }],
+    ["duplicate-career-label", (fixture) => { const source = fixture.radioAnswers[0]; fixture.elements = fixture.elements.map((element) => element.id === "enqueteAnswers_5_2" ? { ...element, labels: [{ innerText: "社会人" }] } : element); }],
+  ]) {
+    const fixture = makeTechPlayInputFixture(); mutate(fixture);
+    assert.deepEqual(await inspectTechPlayFixture(fixture, fixture.candidate, fixture.elements), [], name);
+  }
+});
+
+test("TECH PLAY regression accepts only visible button role-checkbox controls and ignores hidden companions", async () => {
+  const hiddenCompanion = makeTechPlayElement({ type: "checkbox", hidden: true });
+  const accepted = makeTechPlayInputFixture(); accepted.elements = [...accepted.elements, hiddenCompanion];
+  assert.ok((await inspectTechPlayFixture(accepted, accepted.candidate, accepted.elements)).length > 0);
+  for (const [name, extra] of [
+    ["visible-div-role-checkbox", makeTechPlayElement({ tagName: "DIV", role: "checkbox", id: "area_99", ariaChecked: true, innerText: "Area" })],
+    ["visible-native-safe-family-unchecked", makeTechPlayElement({ type: "checkbox", id: "area_99", checked: false })],
+  ]) {
+    const fixture = makeTechPlayInputFixture(); fixture.elements = [...fixture.elements, extra];
+    assert.deepEqual(await inspectTechPlayFixture(fixture, fixture.candidate, fixture.elements), [], name);
+  }
+});
+
+test("TECH PLAY regression requires input radio answer options", async () => {
+  const fixture = makeTechPlayInputFixture(); fixture.elements = fixture.elements.map((element) => element.id === "enqueteAnswers_5_1" ? { ...element, tagName: "BUTTON" } : element);
+  assert.deepEqual(await inspectTechPlayFixture(fixture, fixture.candidate, fixture.elements), []);
+});
+
+test("TECH PLAY regression requires input radio ticket", async () => {
+  const fixture = makeTechPlayInputFixture(); fixture.ticket.tagName = "BUTTON";
+  assert.deepEqual(await inspectTechPlayFixture(fixture), []);
+});
+
+test("TECH PLAY regression requires one exact visible submit CTA type", async () => {
+  const fixture = makeTechPlayInputFixture(); fixture.elements = fixture.elements.map((element) => element.innerText === "同意して内容を確認する" ? { ...element, type: "button" } : element);
+  assert.deepEqual(await inspectTechPlayFixture(fixture, fixture.candidate, fixture.elements), []);
+});
+
+test("TECH PLAY regression rejects duplicate exact CTA with wrong button type", async () => {
+  const fixture = makeTechPlayInputFixture(); fixture.elements = [...fixture.elements, { ...fixture.elements.find((element) => element.innerText === "同意して内容を確認する"), id: "review-decoy", type: "button" }];
+  assert.deepEqual(await inspectTechPlayFixture(fixture, fixture.candidate, fixture.elements), []);
+});
+
+test("TECH PLAY regression enforces scalar question tag and type contracts", async () => {
+  for (const [name, index, overrides] of [
+    ["name-number", 0, { type: "number" }], ["email-email", 1, { type: "email" }],
+    ["age-button", 2, { tagName: "BUTTON", type: "button" }], ["company-textarea", 3, { tagName: "TEXTAREA", type: "" }],
+  ]) {
+    const fixture = makeTechPlayInputFixture(); fixture.answers[index] = Object.assign(fixture.answers[index], overrides);
+    assert.deepEqual(await inspectTechPlayFixture(fixture), [], name);
+  }
+});
+
+test("TECH PLAY regression rejects global DOM id collisions across answer and opt-out families", async () => {
+  const fixture = makeTechPlayInputFixture(); fixture.answers[0].id = "area_1";
+  assert.deepEqual(await inspectTechPlayFixture(fixture), []);
+});
+
+test("TECH PLAY regression keeps actual scalar values out of the public projection", async () => {
+  const fixture = makeTechPlayInputFixture(); fixture.answers.forEach((answer, index) => { answer.value = index === 1 ? "private@example.com" : "1987"; });
+  const controls = await inspectTechPlayFixture(fixture);
+  assert.ok(controls.length > 0); assert.doesNotMatch(JSON.stringify(controls), /private@example\.com|1987/);
+});
+
+test("TECH PLAY regression rejects duplicate review, answer name, answer id, hidden ancestor, opacity, zero-size, page drift, and oversized DOM", async () => {
+  const base = makeTechPlayInputFixture();
+  const duplicateReview = { ...base.elements.find((element) => element.innerText === "同意して内容を確認する"), id: "review-2" };
+  const duplicateName = { ...base.answers[0], id: "answer-duplicate" };
+  const duplicateId = { ...base.radioAnswers[0], name: "enqueteAnswers[7]", id: base.radioAnswers[1].id, labels: [{ innerText: "別職種" }], parentElement: base.radioAnswers[0].parentElement };
+  const hiddenAncestor = makeTechPlayElement({ style: {}, parentElement: makeTechPlayElement({ style: { display: "none" } }) });
+  const cases = [
+    ["duplicate-review", [...base.elements, duplicateReview]], ["duplicate-answer-name", [...base.elements, duplicateName]], ["duplicate-answer-id", [...base.elements, duplicateId]],
+    ["ancestor-hidden", base.elements.map((element, index) => index === 1 ? { ...element, parentElement: hiddenAncestor.parentElement } : element)],
+    ["opacity-zero", base.elements.map((element, index) => index === 1 ? { ...element, style: { opacity: "0" } } : element)],
+    ["zero-size", base.elements.map((element, index) => index === 1 ? { ...element, rect: { width: 0, height: 0 } } : element)],
+    ["oversized", [...base.elements, ...Array.from({ length: 102 }, () => makeTechPlayElement({ hidden: true }))]],
+  ];
+  for (const [name, elements] of cases) {
+    const fixture = makeTechPlayInputFixture(); assert.deepEqual(await inspectTechPlayFixture(fixture, fixture.candidate, elements), [], name);
+  }
+  const drift = makeTechPlayInputFixture(); let current = "https://techplay.jp/event/join/999190";
+  const page = { url() { return current; }, locator() { return { async evaluateAll(callback, context) { current = "https://techplay.jp/event/join/999191"; return callback(drift.elements, context); } }; } };
+  assert.deepEqual(await inspectTechPlayFixture(drift, drift.candidate, drift.elements, page), [], "page-drift");
+});

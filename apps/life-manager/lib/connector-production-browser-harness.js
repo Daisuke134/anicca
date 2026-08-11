@@ -34,6 +34,12 @@ const EVENTBRITE_MARKETING_CONTROL = /^eventbrite_marketing_opt_out_(organizatio
 const EVENTBRITE_MARKETING_LABELS = Object.freeze({ organization: "Organizer marketing opt-out", eventbrite: "Eventbrite marketing opt-out" });
 const EVENTBRITE_ATTENDEE_LABELS = Object.freeze({ first_name: "First name", last_name: "Last name", email: "Email", confirm_email: "Confirm email" });
 const EVENTBRITE_CTA_LABELS = new Set(["Get tickets", "Reserve a spot"]);
+const TECHPLAY_EVENT_REF = /^techplay-event:\/\/event\/([1-9][0-9]*)$/;
+const TECHPLAY_EVENT_URL = /^https:\/\/techplay\.jp\/event\/([1-9][0-9]*)$/;
+const TECHPLAY_JOIN_URL = /^https:\/\/techplay\.jp\/event\/join\/([1-9][0-9]*)$/;
+const TECHPLAY_ANSWER_NAME = /^enqueteAnswers\[([1-9][0-9]*)\]$/;
+const TECHPLAY_OPT_OUT_ID = /^(?:area_[1-9][0-9]*|tag_[1-9][0-9]*|organizer_[1-9][0-9]*|icon_published|use_as_preset)$/;
+const TECHPLAY_QUESTIONS = new Set(["氏名", "メールアドレス", "年齢", "キャリア状況", "所属企業（学校）名", "職種"]);
 const EVENTBRITE_ACTIONABLE_ELEMENT_LIMIT = 100;
 const EVENTBRITE_ID_SCAN_LIMIT = 256;
 const EVENTBRITE_FRAME_TIMEOUT_MS = 30_000;
@@ -70,6 +76,12 @@ function candidateEventbriteBinding(candidate) {
   const eventId = url && (url[1] || url[2]);
   return ref && eventId && ref[1] === eventId
     ? Object.freeze({ eventId: ref[1], canonicalUrl: String(candidate.canonical_url) }) : null;
+}
+function candidateTechPlayBinding(candidate) {
+  if (!candidate || typeof candidate !== "object" || candidate.provider !== "techplay" || typeof candidate.ticket_id !== "string") return null;
+  const ref = TECHPLAY_EVENT_REF.exec(String(candidate.event_ref || "")); const url = TECHPLAY_EVENT_URL.exec(String(candidate.canonical_url || ""));
+  return ref && url && ref[1] === url[1] && /^[1-9][0-9]*$/.test(candidate.ticket_id)
+    ? Object.freeze({ eventId: ref[1], canonicalUrl: String(candidate.canonical_url), ticketId: candidate.ticket_id }) : null;
 }
 function isEventbriteTriggerMeaning(control) {
   return Boolean(
@@ -666,12 +678,85 @@ function actionForControl(control) {
   const action = ACTIONS[control.kind]; return action ? Object.freeze({ purpose: action[0], method: action[1], control: control.control }) : null;
 }
 
+function inspectTechPlayInput(elements, context = {}) {
+  if (!Array.isArray(elements) || elements.length > 150) return [];
+  const TECHPLAY_EVENT_URL = /^https:\/\/techplay\.jp\/event\/([1-9][0-9]*)$/; const TECHPLAY_JOIN_URL = /^https:\/\/techplay\.jp\/event\/join\/([1-9][0-9]*)$/;
+  const TECHPLAY_ANSWER_NAME = /^enqueteAnswers\[([1-9][0-9]*)\]$/; const TECHPLAY_OPT_OUT_ID = /^(?:area_[1-9][0-9]*|tag_[1-9][0-9]*|organizer_[1-9][0-9]*|icon_published|use_as_preset)$/;
+  const TECHPLAY_QUESTIONS = new Set(["氏名", "メールアドレス", "年齢", "キャリア状況", "所属企業（学校）名", "職種"]); const TECHPLAY_RADIO_COUNTS = { "キャリア状況": 3, "職種": 33 }; const TECHPLAY_SCALAR_TYPES = { "氏名": "text", "メールアドレス": "text", "年齢": "number", "所属企業（学校）名": "text" };
+  const eventId = String(context.eventId || ""); const ticketId = String(context.ticketId || "");
+  const page = TECHPLAY_JOIN_URL.exec(String(context.href || "")); const candidate = TECHPLAY_EVENT_URL.exec(String(context.canonicalUrl || ""));
+  if (!page || !candidate || page[1] !== eventId || candidate[1] !== eventId || !/^[1-9][0-9]*$/.test(ticketId)) return [];
+  const tag = (element) => String(element && element.tagName || "").toLowerCase();
+  const type = (element) => String(element && element.type || "").toLowerCase();
+  const attr = (element, name) => String(element && typeof element.getAttribute === "function" ? element.getAttribute(name) || "" : element && element[name] || "");
+  const text = (element) => String(element && (element.innerText || element.textContent) || "").replace(/\s+/g, " ").trim();
+  const visible = (element) => {
+    const view = element && element.ownerDocument && element.ownerDocument.defaultView; let current = element;
+    const hiddenStyle = (style) => Boolean(style && [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase())) || String(style && style.opacity || "") === "0");
+    while (current) {
+      if (current.hidden === true || current.isConnected === false || attr(current, "aria-hidden").toLowerCase() === "true" || hiddenStyle(current.style)) return false;
+      let computed = null; try { computed = view && typeof view.getComputedStyle === "function" ? view.getComputedStyle(current) : null; } catch { computed = null; }
+      if (hiddenStyle(computed)) return false;
+      if (current !== element && typeof current.getBoundingClientRect === "function") { let ancestorRect; try { ancestorRect = current.getBoundingClientRect(); } catch { ancestorRect = null; } if (!ancestorRect || Number(ancestorRect.width) <= 0 || Number(ancestorRect.height) <= 0) return false; }
+      current = current.parentElement || null;
+    }
+    let rect; try { rect = element && typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null; } catch { rect = null; }
+    return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0);
+  };
+  const label = (element) => [...(element.labels || [])].map((item) => text(item)).concat(attr(element, "aria-label")).map((value) => value.trim()).find(Boolean) || "";
+  const groupQuestion = (element) => { let current = element.parentElement || null; while (current) { const value = text(current); const matches = [...TECHPLAY_QUESTIONS].filter((question) => value.includes(`${question}*`) || value.includes(`${question} *`)); if (matches.length === 1) return matches[0]; current = current.parentElement || null; } return ""; };
+  const seenDomIds = new Set();
+  for (const element of elements) { const id = attr(element, "id") || String(element.id || ""); const hiddenCompanion = !visible(element) && tag(element) === "input" && type(element) === "checkbox" && TECHPLAY_OPT_OUT_ID.test(id); if (id && !hiddenCompanion && seenDomIds.has(id)) return []; if (id && !hiddenCompanion) seenDomIds.add(id); }
+  const answerElements = elements.filter((element) => /^enqueteAnswers\[/.test(attr(element, "name") || element.name || ""));
+  const groups = new Map(); const seenAnswerIds = new Set();
+  for (const element of answerElements) {
+    const name = attr(element, "name") || String(element.name || ""); const match = TECHPLAY_ANSWER_NAME.exec(name); const radio = type(element) === "radio"; const raw = label(element);
+    const question = radio ? groupQuestion(element) : raw.replace(/\s*\*\s*/g, " ").replace(/\s+/g, " ").trim();
+    const id = String(element.id || attr(element, "id") || ""); const group = groups.get(name);
+    if (!match || (id && seenAnswerIds.has(id)) || !TECHPLAY_QUESTIONS.has(question) || (radio && tag(element) !== "input") || (!radio && (tag(element) !== "input" || type(element) !== TECHPLAY_SCALAR_TYPES[question])) || (!radio && !raw.includes("*")) || (!radio && group) || !raw && radio || element.disabled === true || !visible(element)) return [];
+    if (id) seenAnswerIds.add(id);
+    if (group && group.question !== question) return [];
+    (group || groups.set(name, { id: match[1], question, radio, elements: [], labels: new Set() }).get(name)).elements.push(element);
+    if (radio && (group?.labels.has(raw) || !raw)) return [];
+    if (radio) groups.get(name).labels.add(raw);
+  }
+  const answers = [];
+  for (const group of groups.values()) {
+    const selected = group.radio ? group.elements.filter((element) => element.checked === true).length : 0;
+    if (group.radio && selected > 1) return [];
+    answers.push({ ...group, completed: group.radio ? selected === 1 : Boolean(String(group.elements[0].value || "").trim()) });
+  }
+  if (answers.length !== TECHPLAY_QUESTIONS.size || new Set(answers.map(({ question }) => question)).size !== TECHPLAY_QUESTIONS.size || answers.some(({ radio, question, elements: groupElements }) => radio && groupElements.length !== TECHPLAY_RADIO_COUNTS[question])) return [];
+  const radios = elements.filter((element) => type(element) === "radio" && !TECHPLAY_ANSWER_NAME.test(attr(element, "name") || element.name || ""));
+  if (radios.length !== 1 || tag(radios[0]) !== "input" || !visible(radios[0]) || radios[0].disabled === true || radios[0].checked !== true || String(radios[0].value || "") !== ticketId) return [];
+  const checkboxes = elements.filter((element) => attr(element, "role").toLowerCase() === "checkbox"); const optouts = []; const seenIds = new Set();
+  for (const element of checkboxes) {
+    const id = attr(element, "id") || String(element.id || "");
+    if (!visible(element)) { if (tag(element) === "input" && type(element) === "checkbox" && TECHPLAY_OPT_OUT_ID.test(id)) continue; return []; }
+    if (tag(element) !== "button" || !TECHPLAY_OPT_OUT_ID.test(id) || seenIds.has(id) || element.disabled === true) return [];
+    const checked = attr(element, "aria-checked").toLowerCase(); if (!["true", "false"].includes(checked)) return [];
+    seenIds.add(id); optouts.push({ id, completed: checked === "false" });
+  }
+  if (elements.some((element) => tag(element) === "input" && type(element) === "checkbox" && visible(element))) return [];
+  const reviews = elements.filter((element) => visible(element) && text(element) === "同意して内容を確認する");
+  if (reviews.length !== 1 || tag(reviews[0]) !== "button" || type(reviews[0]) !== "submit" || reviews[0].disabled === true || attr(reviews[0], "aria-disabled").toLowerCase() === "true") return [];
+  const ticketCompleted = radios[0].checked === true; const complete = ticketCompleted && answers.every(({ completed }) => completed) && optouts.every(({ completed }) => completed);
+  return [
+    { control: `techplay_ticket_${eventId}`, kind: "radio", label: "無料チケット", required: true, completed: ticketCompleted, submittable: false },
+    ...answers.flatMap(({ elements: groupElements, question, id, radio, completed }) => radio ? groupElements.map((element, index) => ({ control: `techplay_answer_${id}_${index + 1}`, kind: "radio", label: label(element), required: true, completed, submittable: false, question })) : [{ control: `techplay_answer_${id}`, kind: tag(groupElements[0]) === "textarea" ? "textarea" : tag(groupElements[0]) === "select" ? "select" : "input", label: question, required: true, completed, submittable: false }]),
+    ...optouts.map(({ id, completed }) => ({ control: `techplay_optout_${id}`, kind: "checkbox", label: "通知設定", required: true, completed, submittable: false })),
+    { control: `techplay_review_${eventId}`, kind: "button", label: "同意して内容を確認する", required: false, completed: false, submittable: complete },
+  ];
+}
+
 async function inspectPageControls(input = {}) {
   const page = input.page;
   if (!page || typeof page.locator !== "function") invalid();
   const provider = String(input.provider || "");
   const selector = provider === "eventbrite"
     ? '[data-testid="conversion-bar-checkout-button"]'
+    : provider === "techplay"
+    ? "input, textarea, select, button, [role=checkbox]"
     : provider === "doorkeeper"
     ? "input, textarea, select, button, a[role=button], a#confirm-button, a[href=\"#new_registration_modal\"]"
     : "input, textarea, select, button, a[role=button], a#confirm-button";
@@ -679,6 +764,17 @@ async function inspectPageControls(input = {}) {
   try { locator = page.locator(selector); } catch { locator = null; }
   if (!locator || typeof locator.evaluateAll !== "function") invalid();
   const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
+  if (provider === "techplay") {
+    const binding = input.candidate == null ? null : candidateTechPlayBinding(input.candidate);
+    if (input.candidate != null && !binding) return Object.freeze([]);
+    const eventId = binding?.eventId || String(input.event_id || "");
+    const canonicalUrl = binding?.canonicalUrl || String(input.canonical_url || input.candidate_url || "");
+    const ticketId = binding?.ticketId || String(input.ticket_id || input.candidate_ticket_id || "");
+    if ((input.event_id != null && String(input.event_id) !== eventId) || (input.canonical_url != null && String(input.canonical_url) !== canonicalUrl) || (input.ticket_id != null && String(input.ticket_id) !== ticketId)) return Object.freeze([]);
+    const observed = await locator.evaluateAll(inspectTechPlayInput, { href, eventId, canonicalUrl, ticketId });
+    const afterHref = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
+    return href === afterHref && Array.isArray(observed) ? Object.freeze(observed.map(safeControl)) : Object.freeze([]);
+  }
   const eventId = String(input.event_id || "");
   const canonicalUrl = String(input.canonical_url || input.candidate_url || "");
   const connpassJoin = isConnpassJoin(provider, href);
