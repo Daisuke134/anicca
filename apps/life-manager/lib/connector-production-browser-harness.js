@@ -597,7 +597,6 @@ function createProductionBrowserHarness(options = {}) {
     || typeof operateControl !== "function" || typeof resolveValue !== "function"
   ) invalid();
   const registry = new WeakMap();
-  const doorkeeperTriggerLatches = new WeakMap();
 
   async function observed(page, provider, candidate = null) {
     const eventId = candidatePeatixEventId(candidate) || candidateMeetupEventId(candidate) || candidateDoorkeeperEventId(candidate);
@@ -623,9 +622,7 @@ function createProductionBrowserHarness(options = {}) {
     if (provider === "doorkeeper" && !doorkeeperBinding) return Object.freeze({ status: "failed" });
     const eventId = candidatePeatixEventId(input.candidate) || candidateMeetupEventId(input.candidate) || candidateDoorkeeperEventId(input.candidate) || String(input.event_id || "");
     const cached = registry.get(input.page);
-    const observation = provider === "doorkeeper"
-      ? await observed(input.page, provider, input.candidate)
-      : cached && cached.provider === provider && cached.eventId === eventId ? cached.observation : await observed(input.page, provider, input.candidate);
+    const observation = cached && cached.provider === provider && cached.eventId === eventId ? cached.observation : await observed(input.page, provider, input.candidate);
     const currentHref = (() => { try { return String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } })();
     const state = observation.state === "connpass_join" && isConnpassJoin(provider, currentHref) ? "connpass_join" : observation.state === "connpass_join" ? "registration_page" : observation.state;
     const control = observation.controls.find((item) => item.control === input.action.control);
@@ -636,7 +633,6 @@ function createProductionBrowserHarness(options = {}) {
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
     if ((control.kind === "link" && !doorkeeperModalTrigger) || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
     if (doorkeeperModalTrigger && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
-    if (doorkeeperModalTrigger && doorkeeperTriggerLatches.get(input.page)?.has(doorkeeperBinding.canonicalUrl)) return Object.freeze({ status: "success" });
     if (provider === "connpass" && state === "connpass_join" && control.kind === "button" && control.label !== CONNPASS_FINAL_LABEL) return Object.freeze({ status: "failed" });
     if (provider === "doorkeeper" && control.kind === "button" && control.label !== DOORKEEPER_FINAL_LABEL) return Object.freeze({ status: "failed" });
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
@@ -683,11 +679,6 @@ function createProductionBrowserHarness(options = {}) {
     }
     if (navigationWait && !(await navigationWait.promise)) return Object.freeze({ status: "failed" });
     if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
-    if (doorkeeperModalTrigger) {
-      let paths = doorkeeperTriggerLatches.get(input.page);
-      if (!paths) { paths = new Set(); doorkeeperTriggerLatches.set(input.page, paths); }
-      paths.add(doorkeeperBinding.canonicalUrl);
-    }
     return Object.freeze({ status: "success" });
   }
 
