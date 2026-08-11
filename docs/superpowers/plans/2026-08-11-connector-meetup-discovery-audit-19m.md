@@ -50,3 +50,4 @@ Soft target: 2 files; production +4–8 LOC; tests +30–45 LOC.
 - Luna and Sol independently ran operations/production/Meetup/runner/evidence/Harness at 160/160 PASS. Syntax, diff, clean/upstream checks passed.
 - Fresh Sol review returned `ship`, Critical 0 / Important 0. It confirmed the existing production hook consumes the method, invalid counts append nothing, file mode is 0600, persisted keys are aggregate-only, and other providers/report/action are unchanged.
 - Reviewed code is fast-forwarded and pushed on the stable branch. Live acceptance remains one schedule-unloaded official wake.
+- Official wake `wake-1cf5b5ef7ea3d42a3e4f78c4` persisted the exact `14/12/12/1/0` Meetup row, mode 0600, in the same lineage as positive every-wake Telegram ID `11496`. Candidate/effect/bundle deltas were zero because the only strict candidate has a real Calendar conflict. Process and Connector target intersection returned to zero. Live audit acceptance passes.

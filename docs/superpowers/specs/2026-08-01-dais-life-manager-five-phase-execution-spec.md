@@ -7337,7 +7337,13 @@ Lunaへoperations production/testの2 filesだけを所有させSuperpowers TDD�
 
 Luna/ Sol独立operations 9/9、production 12/12、Meetup 12/12、runner 41/41、evidence 31/31、Harness 55/55、combined 160/160 PASS。syntax、diff、clean/upstream PASS。fresh Sol reviewはCritical 0 / Important 0で`ship`。既存production factoryが同methodをMeetup workflowへ注入済みで追加配線0、他provider/report/action変更0。review済みcommitをstableへfast-forwardしpushした。次の一件はschedule-unloaded official wake exact 1回でMeetup audit `14/12/12/1/0`相当のdurable row、positive every-wake report、target cleanupをlive受入する。Item19 Meetup bundleは候補Calendar conflictのため未完。
 
-### Active remaining TODO SSOT（進捗367。これ以外の残TODO一覧は履歴）
+### O1B-25進捗368（Item 19M-D1 / Meetup discovery audit live acceptance）
+
+pushed HEAD `3bc80b94e`、4 labels unloaded、process 0、Meetup audit baseline 0、Connector ledger target交差0からofficial wake `wake-1cf5b5ef7ea3d42a3e4f78c4`をexact 1回実行した。Peatix audit `42→43`、既存10 bundlesをreuse後、same owned railでMeetup discoveryを26,115ms実行。durable Meetup audit `0→1`はexact `observed/normalized/window/free-open/calendar-free = 14/12/12/1/0`、mode 0600、schema/wake/timeとaggregate counts以外0。terminal `completed_no_effect / existing_bundles_reused`、failure 1、report `125→126`、delivery `137→138`、positive Telegram ID `11496`、bundle 13、新規registration/Calendar/evidence effect 0。
+
+cleanup後process 0、Connector ledger target/CDP交差0、Git clean/upstream。Meetup discovery/audit/safe Calendar skipはlive受入完了。唯一strict candidateが実Calendar conflictのためMeetup applied bundleは外部non-conflict候補待ちで未完だが、安全条件を緩めない。NO PASSIVE WAITINGにより次の実装itemはDoorkeeper providerへ進み、各wakeでMeetup候補再探索を継続する。Item19 Meetup `[pending: no non-conflict candidate]`、Doorkeeper未着手、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗368。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
