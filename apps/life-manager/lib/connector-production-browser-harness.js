@@ -236,8 +236,8 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
             const id = idOf(input);
             const labels = elements.filter((element) => tagOf(element) === "label" && forOf(element) === id);
             const visibleLabels = labels.filter(visibleOf);
-            if (!id || elements.filter((element) => idOf(element) === id).length !== 1 || labels.length !== 1 || visibleLabels.length !== 1 || !textOf(visibleLabels[0]) || !visibleLabels[0].dataset) marketingValid = false;
-            else checkedMarketing.push({ key: spec.key, label: visibleLabels[0] });
+            if (!id || elements.filter((element) => idOf(element) === id).length !== 1 || labels.length !== 1 || visibleLabels.length !== 1 || !textOf(visibleLabels[0]) || !input.dataset) marketingValid = false;
+            else checkedMarketing.push({ key: spec.key, input, label: visibleLabels[0] });
           }
         }
       }
@@ -246,7 +246,7 @@ async function inspectEventbriteAttendeeFrame(frame, eventId) {
       const primaryValid = Boolean(primary && tagOf(primary) === "button" && typeOf(primary) === "button" && visibleOf(primary) && enabledOf(primary) && textOf(primary) === "Register");
       if (!marketingValid) return controls;
       for (const item of checkedMarketing) {
-        item.label.dataset.lmConnectorControl = `eventbrite_marketing_opt_out_${item.key}_${id}`;
+        item.input.dataset.lmConnectorControl = `eventbrite_marketing_opt_out_${item.key}_${id}`;
         controls.push({ control: `eventbrite_marketing_opt_out_${item.key}_${id}`, kind: "checkbox", label: textOf(item.label), required: true, completed: false, submittable: false });
       }
       if (checkedMarketing.length > 0) return controls;
@@ -345,6 +345,25 @@ async function eventbriteMarketingInputChecked(frame, key, expected) {
       return matches.length === 1 && matches[0].checked === checked;
     }, { target: name, checked: expected }) === true;
   } catch { return false; }
+}
+async function waitForEventbriteMarketingOptOut(page, eventId, canonicalUrl, frame, token, key) {
+  if (!page || !frame || !canonicalUrl || !token || !key) return false;
+  const deadline = Date.now() + EVENTBRITE_FRAME_STABILITY_MS + FINAL_EFFECT_POLL_MS;
+  let stableSince = null;
+  while (Date.now() <= deadline) {
+    if (eventbriteTicketFrame(page, eventId, canonicalUrl) !== frame) return false;
+    const refreshed = await inspectEventbriteAttendeeFrame(frame, eventId);
+    const selected = Array.isArray(refreshed) ? refreshed.find((item) => item.control === token) : null;
+    const frameControls = Array.isArray(refreshed) ? refreshed.filter((item) => item.control !== `eventbrite_attendee_register_${eventId}`) : null;
+    const stable = isEventbriteAttendeeObservation(frameControls, eventId) && !selected && await eventbriteMarketingInputChecked(frame, key, false);
+    if (!stable) stableSince = null;
+    else if (stableSince == null) stableSince = Date.now();
+    else if (Date.now() - stableSince >= EVENTBRITE_FRAME_STABILITY_MS) return true;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(FINAL_EFFECT_POLL_MS, remaining)));
+  }
+  return false;
 }
 async function waitForEventbriteTicketStep(page, eventId, canonicalUrl) {
   const deadline = Date.now() + EVENTBRITE_FRAME_TIMEOUT_MS;
@@ -752,46 +771,21 @@ async function inspectPageControls(input = {}) {
   return Object.freeze(observed.map(safeControl));
 }
 
-async function operateEventbriteMarketingAtomic(target, token) {
+function eventbriteMarketingInputName(key) {
+  return key === "organization" ? "organizationMarketingOptIn" : key === "eventbrite" ? "ebMarketingOptIn" : "";
+}
+
+async function operateEventbriteMarketing(target, token) {
   const match = EVENTBRITE_MARKETING_CONTROL.exec(String(token || ""));
   if (!match || !target || typeof target.locator !== "function") return false;
+  const name = eventbriteMarketingInputName(match[1]);
+  if (!name) return false;
   let locator;
-  try { locator = target.locator("*"); } catch { return false; }
-  if (!locator || typeof locator.evaluateAll !== "function") return false;
+  try { locator = target.locator(`input[data-lm-connector-control="${token}"][name="${name}"]`); } catch { return false; }
+  if (!locator || typeof locator.count !== "function" || await locator.count() !== 1 || typeof locator.uncheck !== "function") return false;
   try {
-    const result = await locator.evaluateAll((elements, { control, key }) => {
-      if (!Array.isArray(elements)) return null;
-      const tagOf = (element) => String(element && element.tagName || "").toLowerCase();
-      const idOf = (element) => String((element && element.getAttribute && element.getAttribute("id")) || (element && element.id) || "");
-      const forOf = (element) => String((element && element.getAttribute && element.getAttribute("for")) || (element && element.htmlFor) || "");
-      const nameOf = (element) => String((element && element.getAttribute && element.getAttribute("name")) || (element && element.name) || "");
-      const typeOf = (element) => String(element && element.type || "").toLowerCase();
-      const requiredOf = (element) => element.required === true || element.hasAttribute?.("required") || String(element.getAttribute?.("aria-required") || "").toLowerCase() === "true";
-      const enabledOf = (element) => element.disabled !== true && !element.hasAttribute?.("disabled") && String(element.getAttribute?.("aria-disabled") || "").toLowerCase() !== "true";
-      const textOf = (element) => String(element && (element.innerText || element.textContent || "")).replace(/\s+/g, " ").trim();
-      const hidden = (style) => Boolean(style && [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase())) || String(style.opacity ?? "") === "0");
-      const visibleOf = (element) => {
-        const view = element?.ownerDocument?.defaultView;
-        for (let current = element; current; current = current.parentElement || null) {
-          let computed = null; try { computed = view?.getComputedStyle?.(current); } catch { return false; }
-          if (current.hidden === true || current.isConnected === false || current.hasAttribute?.("hidden") || String(current.getAttribute?.("aria-hidden") || "").toLowerCase() === "true" || hidden(current.style) || hidden(computed)) return false;
-        }
-        let rect; try { rect = element?.getBoundingClientRect?.(); } catch { return false; }
-        return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0);
-      };
-      const name = key === "organization" ? "organizationMarketingOptIn" : "ebMarketingOptIn";
-      const inputs = elements.filter((element) => tagOf(element) === "input" && nameOf(element) === name);
-      if (inputs.length !== 1) return null;
-      const input = inputs[0]; const id = idOf(input);
-      if (!id || typeOf(input) !== "checkbox" || requiredOf(input) || !visibleOf(input) || !enabledOf(input) || input.checked !== true || elements.filter((element) => idOf(element) === id).length !== 1) return null;
-      const labels = elements.filter((element) => tagOf(element) === "label" && forOf(element) === id);
-      const visibleLabels = labels.filter(visibleOf);
-      const marked = elements.filter((element) => String(element && element.dataset && element.dataset.lmConnectorControl || "") === control);
-      if (labels.length !== 1 || visibleLabels.length !== 1 || !textOf(visibleLabels[0]) || marked.length !== 1 || marked[0] !== visibleLabels[0] || typeof input.click !== "function") return null;
-      input.click();
-      return { status: "success", clicked: true };
-    }, { control: token, key: match[1], atomic: true });
-    return Boolean(result && result.status === "success" && result.clicked === true);
+    await locator.uncheck({ force: true });
+    return true;
   } catch { return false; }
 }
 
@@ -800,7 +794,7 @@ async function operatePageControl(input = {}) {
   if (!input.page || !target || typeof target.locator !== "function" || !input.control || !input.action) invalid();
   const token = String(input.control.control || "");
   if (!CONTROL.test(token) || input.action.control !== token) invalid();
-  if (input.action.method === "ax_uncheck") return Object.freeze({ status: await operateEventbriteMarketingAtomic(target, token) ? "success" : "failed" });
+  if (input.action.method === "ax_uncheck") return Object.freeze({ status: await operateEventbriteMarketing(target, token) ? "success" : "failed" });
   const locator = target.locator(`[data-lm-connector-control="${token}"]`);
   if (!locator || typeof locator.count !== "function" || await locator.count() !== 1) {
     return Object.freeze({ status: "failed" });
@@ -1140,14 +1134,7 @@ function createProductionBrowserHarness(options = {}) {
       return Object.freeze({ status: "success" });
     }
     if (eventbriteMarketing) {
-      const currentFrame = eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl);
-      if (currentFrame !== attendeeFrame) return Object.freeze({ status: "failed" });
-      const refreshed = await inspectEventbriteAttendeeFrame(attendeeFrame, eventbriteBinding.eventId);
-      const selected = Array.isArray(refreshed) ? refreshed.find((item) => item.control === control.control) : null;
-      const frameControls = Array.isArray(refreshed) ? refreshed.filter((item) => item.control !== `eventbrite_attendee_register_${eventbriteBinding.eventId}`) : null;
-      if (!isEventbriteAttendeeObservation(frameControls, eventbriteBinding.eventId) || selected || !await eventbriteMarketingInputChecked(attendeeFrame, eventbriteMarketingMatch[1], false)) return Object.freeze({ status: "failed" });
-      if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== attendeeFrame) return Object.freeze({ status: "failed" });
-      return Object.freeze({ status: "success" });
+      return Object.freeze({ status: await waitForEventbriteMarketingOptOut(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl, attendeeFrame, control.control, eventbriteMarketingMatch[1]) ? "success" : "failed" });
     }
     if (eventbriteTicket) return Object.freeze({ status: await waitForEventbriteTicketStep(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) ? "success" : "failed" });
     if (eventbriteTrigger) return Object.freeze({ status: await waitForEventbriteCheckoutFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) ? "success" : "failed" });
