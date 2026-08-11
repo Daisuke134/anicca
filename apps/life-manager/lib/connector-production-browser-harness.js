@@ -880,9 +880,9 @@ async function operateEventbriteMarketing(target, token, page) {
   if (count !== 1) return null;
   const rebound = await readEventbriteMarketingHandle(handle, { token, name, id: initial.id, checked: true });
   if (!rebound || !validEventbriteMarketingHandleState(rebound, { token, name, id: initial.id, checked: true })) return null;
-  if (typeof handle.uncheck !== "function") return null;
+  if (typeof handle.press !== "function") return null;
   try {
-    await handle.uncheck({ force: true });
+    await handle.press("Space");
     return Object.freeze({ page, frame: target, handle, eventId: match[2], token, name, id: initial.id });
   } catch { return null; }
 }
