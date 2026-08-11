@@ -94,6 +94,11 @@ failure is retried by the existing next hourly run; the last validated immutable
 - [ ] **CFO-2a3c.3 — Hourly aggregate and Telegram.** Reuse the one hourly launchd loop; publish actual subscription
       total and coverage separately from API-equivalent forecast. Run a real authenticated no-send E2E, then one real
       hourly Telegram delivery and verify its receipt.
+  - [ ] **CFO-2a3c.3a — Telegram snapshot UX.** Add an optional exact `aiCost` fact to the existing JSONB report,
+        summary, callback view, and buttons while keeping old snapshots valid. Plan:
+        `docs/superpowers/plans/2026-08-11-life-manager-cfo-subscription-telegram-ux.md`.
+  - [ ] **CFO-2a3c.3b — Hourly wiring and live delivery.** Capture/reuse the confirmed local receipt, attach the exact
+        `aiCost` fact before snapshot append, then trigger the existing launchd and verify one real Telegram receipt.
 - [ ] **CFO-2a3c.4 — OpenAI confirmed amount.** Ingest only an official OpenAI receipt or authenticated billing
       statement when one becomes accessible. Until then retain the signed active-plan evidence with amount unknown.
 
