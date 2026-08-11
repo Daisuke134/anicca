@@ -983,7 +983,8 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       Telegram report as provider message ID 631. Child SSOT:
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-subscription-receipts-design.md`.
 - [ ] **CFO-2b** Instrument each existing earning loop in registry order: revenue receipt, landed cash, direct
-      cost, tokens, API USD, human USD, capital employed, and evidence.
+      cost, tokens, API USD, human USD, capital employed, and evidence. Ordered child SSOT:
+      `docs/superpowers/specs/2026-08-11-life-manager-cfo-business-instrumentation-design.md`.
 - [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
       raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.

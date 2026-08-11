@@ -1,0 +1,118 @@
+# Life Manager CFO-2b — Business Instrumentation
+
+| Field | Value |
+|---|---|
+| Status | ACTIVE — `CFO-2b.1a` is the only active slice |
+| Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
+| Runtime | Local `apps/life-call`; existing ledgers and provider APIs only |
+| Role split | Sol specifies/verifies; Luna implements production code/tests |
+
+## 1. Goal
+
+Instrument every financial unit in registry order without turning missing evidence into zero. Each unit eventually
+produces the same business fact: revenue receipts, landed cash, direct cost, token usage, API cost, human cost,
+capital employed, and coverage. `CFO-2c` reconciles those facts; only then may `CFO-2d` publish profit or ROI.
+
+## 2. Ponytail decision
+
+Reuse the existing registry, `lm_agent_earnings`, Stripe, provider-billing, and usage ledgers. Do not add a database,
+generic accounting framework, dashboard, or Telegram business screen in CFO-2b. Each slice changes at most three
+files and targets at most 100 added lines. A slice that exceeds either bound is split before Luna starts.
+
+```mermaid
+flowchart LR
+    R[Registry order] --> B[One business]
+    B --> REV[Revenue receipts]
+    B --> CASH[Landed cash]
+    B --> COST[Direct/API/human cost]
+    B --> CAP[Capital employed]
+    REV --> FACT[Closed business fact]
+    CASH --> FACT
+    COST --> FACT
+    CAP --> FACT
+    FACT --> REC[CFO-2c reconcile]
+    REC --> UI[CFO-2d profit + Telegram]
+```
+
+## 3. Ordered work
+
+Only the first unchecked item is active.
+
+- [ ] **CFO-2b.1 — Life Manager**
+  - [ ] **2b.1a** Normalize finalized TaskMarket/uGig external settlements already stored in `lm_agent_earnings`.
+  - [ ] **2b.1b** Read the canonical Life Manager Stripe Payment Link and normalize paid Checkout receipts; a paid
+        Checkout balance is not bank-landed cash.
+  - [ ] **2b.1c** Compose revenue coverage with existing direct-cost, provider-usage, subscription, human-cost, and
+        capital coverage. Unknown stays null; shared subscription cost waits for `CFO-2a3b` allocation.
+- [ ] **CFO-2b.2 — Anicca iOS**: Apple/RevenueCat receipts, payout state, attributed API cost.
+- [ ] **CFO-2b.3 — Writer Agent**: publisher receipts and its measured runtime cost.
+- [ ] **CFO-2b.4 — Affiliate Agent**: network commission receipts and runtime cost.
+- [ ] **CFO-2b.5 — Gig Work**: marketplace/client receipts; never import `~/gig/earnings.jsonl` without receipt proof.
+- [ ] **CFO-2b.6 — x402 Services**: finalized external on-chain sales; self-transfers are excluded.
+- [ ] **CFO-2b.7 — Employment Income**: payroll/bank receipt, kept as personal income rather than business revenue.
+- [ ] **CFO-2b.8 — Capafy Marketplace**: landed sales receipts and costs.
+- [ ] **CFO-2b.9 — Proprietary Investing**: realized reconciled P&L only; deposits/internal moves are excluded.
+
+## 4. Current measured truth
+
+- The canonical Life Manager Stripe link resolves to six Checkout Sessions and zero paid sessions. This is a
+  confirmed zero only for that channel and observation, not a claim that the whole business earned zero.
+- The live append-only `lm_agent_earnings` table contains two rows: one `x402_sale` external income and one
+  `polymarket_cycle` realized loss. Neither belongs to Life Manager.
+- Life Manager's canonical ledger producers use `source=taskmarket_work` and `source=ugig_work`. Both write only
+  after an external finalized on-chain receipt. No matching live row exists now, so 2b.1a's real E2E must return an
+  empty receipt list, not a fabricated zero-money receipt.
+- Existing Life Manager cost and token evidence is real but incomplete. Confirmed Anthropic subscription cash cost
+  is shared until the versioned allocation gate closes; it is not silently charged 100% to Life Manager.
+
+## 5. CFO-2b.1a exact contract
+
+`normalizeLifeManagerEarningReceipt(row)` accepts one plain `lm_agent_earnings` row only when all of these are true:
+
+- `kind=financial_external_income`;
+- `source` is exactly `taskmarket_work` or `ugig_work`;
+- `public_ref` is a UUID, `occurred_at` is a valid timestamp, and `tx_hash` is a supported non-empty chain receipt;
+- `currency=USD`, `amount_atomic` is either the producers' canonical positive decimal string or a positive safe
+  integer returned by a JSON database client, `amount_decimals` is an integer from 0 through 6, and `amount_minor`
+  is null. Numeric input above JavaScript's safe-integer boundary fails closed; it is never rounded;
+- `meta.finalized=true` and `meta.external=true`.
+
+It returns exactly:
+
+```json
+{
+  "schema_version": 1,
+  "financial_unit_id": "life_manager_saas",
+  "source_ledger": "lm_agent_earnings",
+  "source_event_id": "lm_agent_earnings:<public_ref>",
+  "channel_id": "taskmarket_life_manager",
+  "occurred_at": "2026-08-11T01:02:03.000Z",
+  "amount": { "atomic": "2500000", "decimals": 6, "currency": "USD" },
+  "landed_cash_status": "confirmed_agent_wallet",
+  "evidence_status": "onchain_finalized_external_settlement"
+}
+```
+
+`ugig_work` maps only to `ugig_life_manager`. Wallet, transaction hash, entry key, metadata, payer, prompt, and any
+unknown input field never leave this boundary. Invalid input throws only
+`cfo_life_manager_earning_invalid:<fixed_reason>`. The function is pure, freezes its output, and does no I/O.
+
+## 6. Acceptance for 2b.1a
+
+- [ ] Exact TaskMarket and uGig fixtures map to the two canonical Life Manager channels.
+- [ ] A compact money-truth regression covers another business source, non-external/non-finalized settlement,
+      zero/unsafe/ambiguous amount, and malformed identity. All fail closed without leakage; privacy-sensitive and
+      unknown source fields are accepted only as input evidence and are stripped from the closed result.
+- [ ] Inputs are unchanged; output and nested amount are frozen and contain only the nine documented keys.
+- [ ] The real read-only filtered ledger query succeeds and returns the observed empty list without claiming whole-
+      business revenue zero.
+- [ ] Focused, CFO, and full tests pass; scope is at most three files and 100 additions; commit and push succeed.
+
+## 7. Source decisions
+
+- Stripe Checkout Session object: `payment_status=paid` means funds are available in the Stripe account, not the
+  owner's bank. https://docs.stripe.com/api/checkout/sessions/object
+- Stripe Balance Transaction object: amount, fee, and net represent movement through the Stripe balance.
+  https://docs.stripe.com/api/balance_transactions/object
+- Stripe payout reconciliation: bank payout reconciliation is a separate evidence step.
+  https://docs.stripe.com/payouts/reconciliation?locale=ja-JP
