@@ -1942,6 +1942,25 @@ test("Eventbrite inspector exposes the exact free ticket Register control from t
   assert.equal(operated, 1);
   assert.equal(operatedFrame, frame);
 
+  ticketVisible = true;
+  frameInspectReads = 0;
+  let timeoutOperated = 0;
+  const timeoutHarness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("readback must not run"); } },
+    async inspectControls(input) { return inspectPageControls(input); },
+    async proposeAction() { return { control: controls[0].control }; },
+    async operateControl(input) { timeoutOperated += 1; assert.equal(input.frame, frame); return { status: "success" }; },
+    async resolveValue() { throw new Error("private value must not resolve"); },
+  });
+  mock.timers.enable({ apis: ["Date", "setTimeout"] });
+  try {
+    const timeoutPromise = timeoutHarness.performAction({ provider: "eventbrite", candidate, page, action: { purpose: "submit", method: "ax_click", control: controls[0].control } });
+    let settled = false; timeoutPromise.then(() => { settled = true; });
+    for (let attempt = 0; attempt < 1_300 && !settled; attempt += 1) { await Promise.resolve(); mock.timers.tick(25); }
+    assert.deepEqual(await timeoutPromise, { status: "failed", safe_reason: "effect_unknown" });
+  } finally { mock.timers.reset(); }
+  assert.equal(timeoutOperated, 1);
+
   for (const mutation of ["paid", "duplicate", "disabled", "drift-page", "drift-frame", "drift-eid"]) {
     ticketVisible = true;
     card.innerText = "General Admission Free";
