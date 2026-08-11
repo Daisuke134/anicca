@@ -2907,3 +2907,68 @@ test("TECH PLAY regression rejects duplicate review, answer name, answer id, hid
   const page = { url() { return current; }, locator() { return { async evaluateAll(callback, context) { current = "https://techplay.jp/event/join/999191"; return callback(drift.elements, context); } }; } };
   assert.deepEqual(await inspectTechPlayFixture(drift, drift.candidate, drift.elements, page), [], "page-drift");
 });
+
+function makeTechPlayConfirmFixture() {
+  const candidate = { provider: "techplay", event_ref: "techplay-event://event/999190", canonical_url: "https://techplay.jp/event/999190", ticket_id: "98036" };
+  const final = makeTechPlayElement({ tagName: "BUTTON", type: "button", id: "confirm-final", innerText: "申し込みを確定する" });
+  const elements = [final];
+  const page = { url() { return "https://techplay.jp/event/join/999190/confirm"; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } };
+  return { candidate, final, elements, page };
+}
+
+function inspectTechPlayConfirmFixture(fixture, candidate = fixture.candidate, elements = fixture.elements, pageOverride = null) {
+  const page = pageOverride || { url: fixture.page.url, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } };
+  return inspectPageControls({ page, provider: "techplay", candidate, event_id: candidate.event_ref?.split("/").pop(), candidate_url: candidate.canonical_url, ticket_id: candidate.ticket_id });
+}
+
+test("TECH PLAY confirm inspector exposes only the exact same-event final control", async () => {
+  const fixture = makeTechPlayConfirmFixture();
+  assert.deepEqual(await inspectTechPlayConfirmFixture(fixture), [{ control: "techplay_final_999190", kind: "button", label: "申し込みを確定する", required: false, completed: false, submittable: true }]);
+  assert.doesNotMatch(JSON.stringify(await inspectTechPlayConfirmFixture(fixture, fixture.candidate, [...fixture.elements, makeTechPlayElement({ tagName: "INPUT", type: "text", name: "email", id: "private", value: "private@example.com", hidden: true })])), /private@example\.com|98036|999190\/confirm/);
+});
+
+test("TECH PLAY confirm regression rejects wrong URL/event and every final-control drift", async () => {
+  for (const [name, mutate] of [
+    ["input-page", (fixture) => { fixture.page = { url() { return "https://techplay.jp/event/join/999190"; } }; }],
+    ["duplicate-final", (fixture) => { fixture.elements = [...fixture.elements, { ...fixture.final, id: "confirm-decoy" }]; }],
+    ["wrong-type", (fixture) => { fixture.final.type = "submit"; }],
+    ["hidden-final", (fixture) => { fixture.final.hidden = true; }],
+    ["disabled-final", (fixture) => { fixture.final.disabled = true; }],
+    ["ancestor-hidden-final", (fixture) => { fixture.final.parentElement = makeTechPlayElement({ style: { display: "none" } }); }],
+    ["opacity-zero-final", (fixture) => { fixture.final.style = { opacity: "0" }; }],
+    ["zero-size-final", (fixture) => { fixture.final.rect = { width: 0, height: 0 }; }],
+  ]) {
+    const fixture = makeTechPlayConfirmFixture(); mutate(fixture);
+    assert.deepEqual(await inspectTechPlayConfirmFixture(fixture), [], name);
+  }
+});
+
+test("TECH PLAY confirm regression rejects a different event binding", async () => {
+  const fixture = makeTechPlayConfirmFixture(); fixture.candidate = { ...fixture.candidate, event_ref: "techplay-event://event/999191", canonical_url: "https://techplay.jp/event/999191" };
+  assert.deepEqual(await inspectTechPlayConfirmFixture(fixture), []);
+});
+
+test("TECH PLAY confirm regression rejects a visible input inside the registration main region", async () => {
+  const fixture = makeTechPlayConfirmFixture(); const region = makeTechPlayElement({ tagName: "MAIN" }); fixture.final.parentElement = region;
+  fixture.elements = [fixture.final, makeTechPlayElement({ type: "text", name: "summary", id: "summary", parentElement: region })];
+  assert.deepEqual(await inspectTechPlayConfirmFixture(fixture, fixture.candidate, fixture.elements), []);
+});
+
+test("TECH PLAY confirm regression rejects residual registration controls, duplicate IDs, page drift, and oversized DOM", async () => {
+  for (const [name, extra] of [
+    ["answer", makeTechPlayElement({ type: "text", name: "enqueteAnswers[1]", id: "answer", hidden: true })],
+    ["ticket", makeTechPlayElement({ type: "radio", name: "ticket", id: "ticket", hidden: true })],
+    ["role-checkbox", makeTechPlayElement({ tagName: "BUTTON", type: "button", role: "checkbox", id: "area_1", innerText: "通知" })],
+    ["native-checkbox", makeTechPlayElement({ type: "checkbox", id: "native", checked: false })],
+    ["duplicate-id", makeTechPlayElement({ type: "text", id: "confirm-final", hidden: true })],
+    ["extra-action", makeTechPlayElement({ tagName: "BUTTON", type: "button", id: "back", innerText: "戻る" })],
+  ]) {
+    const fixture = makeTechPlayConfirmFixture(); fixture.elements = [...fixture.elements, extra];
+    assert.deepEqual(await inspectTechPlayConfirmFixture(fixture, fixture.candidate, fixture.elements), [], name);
+  }
+  const oversized = makeTechPlayConfirmFixture(); oversized.elements = [oversized.final, ...Array.from({ length: 150 }, () => makeTechPlayElement({ hidden: true }))];
+  assert.deepEqual(await inspectTechPlayConfirmFixture(oversized, oversized.candidate, oversized.elements), [], "oversized");
+  const drift = makeTechPlayConfirmFixture(); let current = "https://techplay.jp/event/join/999190/confirm";
+  const page = { url() { return current; }, locator() { return { async evaluateAll(callback, context) { current = "https://techplay.jp/event/join/999191/confirm"; return callback(drift.elements, context); } }; } };
+  assert.deepEqual(await inspectTechPlayConfirmFixture(drift, drift.candidate, drift.elements, page), [], "page-drift");
+});
