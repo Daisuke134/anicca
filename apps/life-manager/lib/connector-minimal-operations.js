@@ -122,6 +122,27 @@ function safeDiscoveryAudit(input, wakeId, recordedAt) {
   });
 }
 
+function safeDoorkeeperDiscoveryAudit(input, wakeId, recordedAt) {
+  const keys = [
+    "calendar_free_count", "discovered_count", "eligible_count", "selected_count", "within_window_count",
+  ];
+  if (
+    !input || typeof input !== "object" || Array.isArray(input)
+    || Object.keys(input).sort().join(",") !== keys.join(",")
+    || keys.some((key) => !Number.isInteger(input[key]) || input[key] < 0 || input[key] > 500)
+    || input.selected_count > input.calendar_free_count
+    || input.calendar_free_count > input.eligible_count
+    || input.eligible_count > input.within_window_count
+    || input.within_window_count > input.discovered_count
+  ) invalid();
+  return Object.freeze({
+    schema_version: 1,
+    wake_id: wakeId,
+    ...input,
+    recorded_at: recordedAt,
+  });
+}
+
 function reportMessage(row) {
   const label = row.status === "applied_bundle" ? "申込と証拠保存が完了"
     : row.status === "circuit_open" ? "安全停止" : "今回の新規申込なし";
@@ -150,6 +171,7 @@ function createMinimalProductionOperations(options = {}) {
   const connpassDiscoveryAuditFile = path.join(stateDir, "connpass-discovery-audits.jsonl");
   const peatixDiscoveryAuditFile = path.join(stateDir, "peatix-discovery-audits.jsonl");
   const meetupDiscoveryAuditFile = path.join(stateDir, "meetup-discovery-audits.jsonl");
+  const doorkeeperDiscoveryAuditFile = path.join(stateDir, "doorkeeper-discovery-audits.jsonl");
 
   async function recordAction(input) {
     const action = safeAction(input);
@@ -170,6 +192,10 @@ function createMinimalProductionOperations(options = {}) {
 
   async function recordMeetupDiscoveryAudit(input) {
     append(meetupDiscoveryAuditFile, safeDiscoveryAudit(input, wakeId, exactInstant(now())));
+  }
+
+  async function recordDoorkeeperDiscoveryAudit(input) {
+    append(doorkeeperDiscoveryAuditFile, safeDoorkeeperDiscoveryAudit(input, wakeId, exactInstant(now())));
   }
 
   async function reportWake(input) {
@@ -225,7 +251,7 @@ function createMinimalProductionOperations(options = {}) {
 
   return Object.freeze({
     recordAction, recordDiscoveryAudit, recordConnpassDiscoveryAudit, recordPeatixDiscoveryAudit,
-    recordMeetupDiscoveryAudit, reportWake,
+    recordMeetupDiscoveryAudit, recordDoorkeeperDiscoveryAudit, reportWake,
   });
 }
 
