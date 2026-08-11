@@ -752,30 +752,46 @@ async function inspectPageControls(input = {}) {
   return Object.freeze(observed.map(safeControl));
 }
 
-async function validateEventbriteMarketingOperation(target, token, expected = null) {
+async function operateEventbriteMarketingAtomic(target, token) {
   const match = EVENTBRITE_MARKETING_CONTROL.exec(String(token || ""));
   if (!match || !target || typeof target.locator !== "function") return false;
-  const controls = await inspectEventbriteAttendeeFrame(target, match[2]);
-  const selected = Array.isArray(controls) ? controls.find((item) => item.control === token) : null;
-  if (!isEventbriteAttendeeObservation(controls, match[2]) || !selected || selected.completed !== false) return false;
   let locator;
-  try { locator = target.locator("input, textarea, select, button, label, [data-testid]"); } catch { return false; }
+  try { locator = target.locator("*"); } catch { return false; }
   if (!locator || typeof locator.evaluateAll !== "function") return false;
   try {
-    const identity = await locator.evaluateAll((elements, { control, key, expectedId }) => {
+    const result = await locator.evaluateAll((elements, { control, key }) => {
       if (!Array.isArray(elements)) return null;
       const tagOf = (element) => String(element && element.tagName || "").toLowerCase();
       const idOf = (element) => String((element && element.getAttribute && element.getAttribute("id")) || (element && element.id) || "");
       const forOf = (element) => String((element && element.getAttribute && element.getAttribute("for")) || (element && element.htmlFor) || "");
+      const nameOf = (element) => String((element && element.getAttribute && element.getAttribute("name")) || (element && element.name) || "");
+      const typeOf = (element) => String(element && element.type || "").toLowerCase();
+      const requiredOf = (element) => element.required === true || element.hasAttribute?.("required") || String(element.getAttribute?.("aria-required") || "").toLowerCase() === "true";
+      const enabledOf = (element) => element.disabled !== true && !element.hasAttribute?.("disabled") && String(element.getAttribute?.("aria-disabled") || "").toLowerCase() !== "true";
+      const textOf = (element) => String(element && (element.innerText || element.textContent || "")).replace(/\s+/g, " ").trim();
+      const hidden = (style) => Boolean(style && [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase())) || String(style.opacity ?? "") === "0");
+      const visibleOf = (element) => {
+        const view = element?.ownerDocument?.defaultView;
+        for (let current = element; current; current = current.parentElement || null) {
+          let computed = null; try { computed = view?.getComputedStyle?.(current); } catch { return false; }
+          if (current.hidden === true || current.isConnected === false || current.hasAttribute?.("hidden") || String(current.getAttribute?.("aria-hidden") || "").toLowerCase() === "true" || hidden(current.style) || hidden(computed)) return false;
+        }
+        let rect; try { rect = element?.getBoundingClientRect?.(); } catch { return false; }
+        return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0);
+      };
       const name = key === "organization" ? "organizationMarketingOptIn" : "ebMarketingOptIn";
-      const marked = elements.filter((element) => String(element && element.dataset && element.dataset.lmConnectorControl || "") === control);
-      if (marked.length !== 1 || tagOf(marked[0]) !== "label") return null;
-      const id = forOf(marked[0]);
+      const inputs = elements.filter((element) => tagOf(element) === "input" && nameOf(element) === name);
+      if (inputs.length !== 1) return null;
+      const input = inputs[0]; const id = idOf(input);
+      if (!id || typeOf(input) !== "checkbox" || requiredOf(input) || !visibleOf(input) || !enabledOf(input) || input.checked !== true || elements.filter((element) => idOf(element) === id).length !== 1) return null;
       const labels = elements.filter((element) => tagOf(element) === "label" && forOf(element) === id);
-      const inputs = elements.filter((element) => tagOf(element) === "input" && String((element && element.getAttribute && element.getAttribute("name")) || (element && element.name) || "") === name);
-      return id && (!expectedId || id === expectedId) && labels.length === 1 && labels[0] === marked[0] && inputs.length === 1 && idOf(inputs[0]) === id && elements.filter((element) => idOf(element) === id).length === 1 ? { id } : null;
-    }, { control: token, key: match[1], expectedId: expected?.id || "" });
-    return identity && typeof identity.id === "string" ? Object.freeze({ key: match[1], id: identity.id }) : null;
+      const visibleLabels = labels.filter(visibleOf);
+      const marked = elements.filter((element) => String(element && element.dataset && element.dataset.lmConnectorControl || "") === control);
+      if (labels.length !== 1 || visibleLabels.length !== 1 || !textOf(visibleLabels[0]) || marked.length !== 1 || marked[0] !== visibleLabels[0] || typeof input.click !== "function") return null;
+      input.click();
+      return { status: "success", clicked: true };
+    }, { control: token, key: match[1], atomic: true });
+    return Boolean(result && result.status === "success" && result.clicked === true);
   } catch { return false; }
 }
 
@@ -784,6 +800,7 @@ async function operatePageControl(input = {}) {
   if (!input.page || !target || typeof target.locator !== "function" || !input.control || !input.action) invalid();
   const token = String(input.control.control || "");
   if (!CONTROL.test(token) || input.action.control !== token) invalid();
+  if (input.action.method === "ax_uncheck") return Object.freeze({ status: await operateEventbriteMarketingAtomic(target, token) ? "success" : "failed" });
   const locator = target.locator(`[data-lm-connector-control="${token}"]`);
   if (!locator || typeof locator.count !== "function" || await locator.count() !== 1) {
     return Object.freeze({ status: "failed" });
@@ -797,15 +814,6 @@ async function operatePageControl(input = {}) {
     case "ax_check":
       if (typeof locator.check !== "function") return Object.freeze({ status: "failed" });
       await locator.check();
-      break;
-    case "ax_uncheck":
-      const identity = await validateEventbriteMarketingOperation(target, token);
-      if (!identity) return Object.freeze({ status: "failed" });
-      let labelLocator;
-      try { labelLocator = target.locator(`label[data-lm-connector-control="${token}"][for=${JSON.stringify(identity.id)}]`); } catch { return Object.freeze({ status: "failed" }); }
-      if (!labelLocator || typeof labelLocator.count !== "function" || await labelLocator.count() !== 1 || typeof labelLocator.click !== "function") return Object.freeze({ status: "failed" });
-      if (!(await validateEventbriteMarketingOperation(target, token, identity))) return Object.freeze({ status: "failed" });
-      await labelLocator.click();
       break;
     case "ax_select":
       if (typeof locator.selectOption !== "function") return Object.freeze({ status: "failed" });
