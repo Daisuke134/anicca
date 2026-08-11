@@ -308,10 +308,13 @@ RevenueCat documents `price_in_purchased_currency` as provider purchase-currency
 free trials, or negative for refunds. It is therefore gross provider evidence, not Apple settled proceeds or bank
 cash. Source: RevenueCat, https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields.
 
-Apple Finance Detail is the later settlement authority because it exposes settlement dates and Partner Share. The
-downloaded fiscal reports through the period ending 2026-08-01 contain no Anicca row. That is confirmed zero only for
-those completed reports; it does not prove the current incomplete period or bank deposit is zero. The enduring order
-is therefore:
+Apple Finance Detail is the later settlement authority because it exposes settlement dates and signed Extended
+Partner Share. An initial app-ID-only filter was wrong because subscription rows use their own App Store Connect
+Apple IDs. The exact live subscription allowlist finds real Anicca rows in every downloaded completed report:
+fiscal 2026-07 has 12 rows and net Partner Share JPY 7,326, GBP -14.50, USD 28; fiscal 2026-08 has 3 rows / JPY 9,472;
+fiscal 2026-09 has 2 rows / JPY 1,184; fiscal 2026-10 has 1 row / JPY 425. The GBP net includes one signed return.
+These are Apple report amounts, not proof of payout or MUFG deposit, and they do not prove the current incomplete
+period. The enduring order is therefore:
 
 ```mermaid
 flowchart LR
