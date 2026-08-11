@@ -25652,3 +25652,10 @@
 {"ts":1786449640,"wake_id":"00MSOLZODDC3DE0AEE27C140F6","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786449768,"wake_id":"00MSOM2FOG08EDCEE03AA14FCD","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786449900,"wake_id":"00MSOM59158AA934D61C604F1A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786450035,"wake_id":"00MSOM85J6A3F7A4F0823B4F3A","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana microtask platform paying USDC for AI data labeling [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidate"}
+{"ts":1786450168,"wake_id":"00MSOMAZZSF85EAF09A6C34E2C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786450330,"wake_id":"00MSOMEGRPFCFE7E5A500648A4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786450459,"wake_id":"00MSOMH8UN5A693F777449442E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786450589,"wake_id":"00MSOMK0ZJ762D6848DF6E4337","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786450718,"wake_id":"00MSOMMS4R120C5EEC5C0E4969","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786450847,"wake_id":"00MSOMPJP714A2928EB15B43C1","kind":"narrate","sleep_s":120,"model":"auto"}
