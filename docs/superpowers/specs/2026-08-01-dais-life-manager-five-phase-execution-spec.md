@@ -7431,7 +7431,13 @@ Lunaがminimal-production production/test 2 filesだけをTDD変更した。brow
 
 fresh Sol reviewはSHIP、Critical/Important 0。Sol独立factory 15/15、Harness+Doorkeeper workflow 87/87、syntax/diff/ownershipがPASS。実装branchが却下済みpath-change mergeを親に含んだためbranch mergeはせず、stableで当該mergeと誤記docsを明示revertし、review済み実装commitだけを`4f77b43fd`としてcherry-pickした。official wake/browser/provider/Calendar/Telegram作用0、4 labels UNLOADED。次はschedule unloadedのままofficial bounded wakeでDoorkeeper discovery/auditと安全なlive pathを実測する。Item19 Doorkeeperのproduction supported表示と実`applied_bundle`は未完。
 
-### Active remaining TODO SSOT（進捗384。これ以外の残TODO一覧は履歴）
+### O1B-25進捗385（Item 19D / Doorkeeper first official safe wake audit）
+
+4 labels unloaded、Connector process 0、lock absent、Git clean/upstream 0/0、`:9222`既存page 2、target-ledgerとのintersection 0から、official `skills/connector/run.sh`を660秒hard timeout付きforegroundでexact 1回実行した。wake `wake-fb5b7ed37e176464d8f6502a`はCalendar 2,590ms、Luma/Connpass/Peatix/Meetup/Doorkeeper discoveryを同じowned pageで順に完走し、`completed_no_effect / existing_bundles_reused / consecutive_failure_count 0`、Telegram provider ID `11616`で終了した。CLI exit 1は`applied_bundle`以外の既定、stdout/stderr 0 byte。
+
+safe auditはLuma `31/31/16/9/0`、Connpass `6/6/6/4/1`、Peatix `100/100/87/59/9`、Meetup `2/0/0/0/0`、Doorkeeper `0/0/0/0/0`。action historyのsubmit表示8件は`provider_cache` 4と`provider_direct` 4だがcandidate attempt増分0、applied bundle 12→12、Calendar/evidence write 0で、既存bundle readback/reuseのみ。Doorkeeper auditは初回1行をmode 0600で保存した。終了後process 0、lock absent、owned target intersection 0、既存page 2維持、4 labels unloaded、Git clean。Doorkeeperの本線到達とsafe audit persistenceは実証したが、候補0のため実`applied_bundle`とproduction supported表示は未完。次はDoorkeeper discovery 0を実サイトと比較し、parser/source故障ならTDD修復、実在0ならItem19を未完のまま次provider候補を探索する。
+
+### Active remaining TODO SSOT（進捗385。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
