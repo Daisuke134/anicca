@@ -7483,7 +7483,13 @@ review済みimplementation `3930c1688`をstable Connector branchへfast-forward�
 
 review済みEventbrite workflowをproductionへ接続する次sliceをPonytailでshared 2 files、production 15〜30 LOC、test 45〜90 LOCへ限定した。既存Doorkeeper optional workflow patternを再利用し、Eventbrite version、routerのdiscovery/cache/direct/injected-fallback/readback/save-repair、factory default/injected workflowだけをTDD配線する。operations audit persistence、default Browser Harness、native `DEFAULT_PROVIDERS`、evidence、live wakeは変更0。これによりpartial providerがofficial wakeへ入らないclosed wiringを維持する。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-production-router-19e.md`がexecutor SSOT。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗393。これ以外の残TODO一覧は履歴）
+### O1B-25進捗394（Item 19E-B / Eventbrite closed production router ship）
+
+Lunaがminimal production router/factoryとfocused testの2 filesだけをTDD変更した。新規2 testsは未配線でRED 0/2。Eventbrite workflow import/version、optional validation、discovery/cache/direct/injected fallback/readback/save-repair route、default/injected factoryを+19 production LOCで配線しGREEN production 17/17、Eventbrite 11/11、Doorkeeper/Meetup 27/27。test +58 LOC。fresh Sol reviewはSHIP、Critical/Important 0。Sol stable独立検証はnative entrypoint込み63/63、syntax/diff/2-file scope/remote equality PASS。review済み`0ecd49b70`をstableへfast-forwardした。
+
+Native `DEFAULT_PROVIDERS`、default Browser Harness、audit persistence、evidenceは差分0なので、partial Eventbriteがofficial wakeへ入る経路はまだ0。次active sliceはprivacy-safe Eventbrite discovery auditをoperationsへ永続化し、その後Harness registration controlを別sliceで接続する。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗394。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
