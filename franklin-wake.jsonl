@@ -25955,3 +25955,13 @@
 {"ts":1786488766,"wake_id":"00MSP9AA24D9A11E813AB24E51","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1786488864,"wake_id":"00MSP9CE6E97C34E4DD1714881","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1786488963,"wake_id":"00MSP9EI46F9DC99F06C464C3F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786489125,"wake_id":"00MSP9HZPL4EC8F1D801AD43A5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786489318,"wake_id":"00MSP9M41WE53C66735D9347C4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786489449,"wake_id":"00MSP9OX8X35E75566CE2C46FC","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786489547,"wake_id":"00MSP9R0RU30F7EB1B27AE475A","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786489614,"wake_id":"00MSP9SH16AB59827320644365","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786489682,"wake_id":"00MSP9TX1W5F37BCBE65054D09","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786489809,"wake_id":"00MSP9WMSS2AE73CD663914C2C","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786489877,"wake_id":"00MSP9Y3I4760A8DF726074B0C","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786489945,"wake_id":"00MSP9ZK2UCFC10CDB5E3B4C55","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786490013,"wake_id":"00MSPA10EBB6A1D78F28B2410F","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana token launch fee earn API opportunity [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for"}
