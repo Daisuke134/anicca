@@ -199,20 +199,25 @@ function assertPageUrl(page, expected, code) {
 }
 async function defaultReadListingBindings(page) {
   if (!page || typeof page.goto !== "function" || typeof page.evaluate !== "function") invalid();
-  try { await page.goto(LIST_URL, { waitUntil: "domcontentloaded", timeout: 30_000 }); assertPageUrl(page, LIST_URL, "EVENTBRITE_LISTING_NAVIGATION_FAILED"); }
-  catch (error) { if (error && error.code) throw error; throw stageError("EVENTBRITE_LISTING_NAVIGATION_FAILED"); }
-  try {
-    const rows = await page.evaluate(() => [...document.querySelectorAll('[data-testid="search-event"]')].flatMap((root) => (
-      [...root.querySelectorAll("a.event-card-link[data-event-id][href]")].map((anchor) => ({
-        href: String(anchor.href || anchor.getAttribute("href") || ""),
-        event_id: String(anchor.getAttribute("data-event-id") || (anchor.dataset && anchor.dataset.eventId) || ""),
-        location: String(anchor.getAttribute("data-event-location") || (anchor.dataset && anchor.dataset.eventLocation) || ""),
-        paid_status: String(anchor.getAttribute("data-event-paid-status") || (anchor.dataset && anchor.dataset.eventPaidStatus) || ""),
-      }))
-    )));
-    if (!Array.isArray(rows)) throw new Error("listing contract");
-    return rows;
-  } catch { throw stageError("EVENTBRITE_LISTING_READ_FAILED"); }
+  const listingUrls = [LIST_URL, `${LIST_URL}?page=2`, `${LIST_URL}?page=3`];
+  const rows = [];
+  for (const listingUrl of listingUrls) {
+    try { await page.goto(listingUrl, { waitUntil: "domcontentloaded", timeout: 30_000 }); assertPageUrl(page, listingUrl, "EVENTBRITE_LISTING_NAVIGATION_FAILED"); }
+    catch (error) { if (error && error.code) throw error; throw stageError("EVENTBRITE_LISTING_NAVIGATION_FAILED"); }
+    try {
+      const pageRows = await page.evaluate(() => [...document.querySelectorAll('[data-testid="search-event"]')].flatMap((root) => (
+        [...root.querySelectorAll("a.event-card-link[data-event-id][href]")].map((anchor) => ({
+          href: String(anchor.href || anchor.getAttribute("href") || ""),
+          event_id: String(anchor.getAttribute("data-event-id") || (anchor.dataset && anchor.dataset.eventId) || ""),
+          location: String(anchor.getAttribute("data-event-location") || (anchor.dataset && anchor.dataset.eventLocation) || ""),
+          paid_status: String(anchor.getAttribute("data-event-paid-status") || (anchor.dataset && anchor.dataset.eventPaidStatus) || ""),
+        }))
+      )));
+      if (!Array.isArray(pageRows)) throw new Error("listing contract");
+      rows.push(...pageRows);
+    } catch { throw stageError("EVENTBRITE_LISTING_READ_FAILED"); }
+  }
+  return rows;
 }
 async function defaultReadEventDetail(page, canonicalUrl) {
   if (!page || typeof page.goto !== "function" || typeof page.evaluate !== "function") invalid();

@@ -439,17 +439,20 @@ test("Eventbrite direct checkout readback rejects ambiguous, nested, and partial
   }
 });
 
-test("Eventbrite default listing reader uses exactly one owned page and exact card selectors", async () => {
-  const first = binding("901");
+test("Eventbrite default listing reader uses one owned page and exact card selectors across three pages", async () => {
+  const rows = [binding("901"), binding("902"), binding("903")];
+  const listingUrls = [LIST_URL, `${LIST_URL}?page=2`, `${LIST_URL}?page=3`];
   const calls = [];
-  const anchor = {
-    href: `${first.canonical_url}?aff=foo`, dataset: { eventId: "901", eventLocation: "Tokyo", eventPaidStatus: "free" },
-    getAttribute(name) { return name === "data-event-id" ? "901" : name === "href" ? this.href : null; },
-  };
+  let currentUrl = LIST_URL;
   const page = {
-    async goto(url) { calls.push(["goto", url]); },
-    url() { return LIST_URL; },
+    async goto(url) { calls.push(["goto", url]); currentUrl = url; },
+    url() { return currentUrl; },
     async evaluate(callback) {
+      const row = rows[listingUrls.indexOf(currentUrl)];
+      const anchor = {
+        href: `${row.canonical_url}?aff=foo`, dataset: { eventId: row.event_ref.split("/").pop(), eventLocation: "Tokyo", eventPaidStatus: "free" },
+        getAttribute(name) { return name === "data-event-id" ? this.dataset.eventId : name === "href" ? this.href : null; },
+      };
       const old = global.document;
       global.document = { querySelectorAll(selector) {
         assert.equal(selector, '[data-testid="search-event"]');
@@ -458,8 +461,53 @@ test("Eventbrite default listing reader uses exactly one owned page and exact ca
       try { return callback(); } finally { if (old === undefined) delete global.document; else global.document = old; }
     },
   };
-  const workflow = createEventbriteScriptFirstWorkflow({ now: () => NOW, readEventDetail: async () => detail("901") });
+  const workflow = createEventbriteScriptFirstWorkflow({
+    now: () => NOW,
+    readEventDetail: async (_page, canonicalUrl) => detail(canonicalUrl.match(/-(\d+)$/)[1]),
+  });
   const result = await workflow.discoverCandidates({ page, calendar: [] });
-  assert.equal(result.length, 1);
+  assert.deepEqual(result.map((row) => row.event_ref), rows.map((row) => row.event_ref));
+  assert.deepEqual(calls, listingUrls.map((url) => ["goto", url]));
+});
+
+test("Eventbrite default listing reader fails closed on exact URL drift", async () => {
+  const calls = [];
+  let currentUrl = LIST_URL;
+  const page = {
+    async goto(url) { calls.push(["goto", url]); currentUrl = `${url}?drift=1`; },
+    url() { return currentUrl; },
+    async evaluate() { throw new Error("evaluate must not run after URL drift"); },
+  };
+  const workflow = createEventbriteScriptFirstWorkflow({ now: () => NOW });
+  await assert.rejects(
+    workflow.discoverCandidates({ page, calendar: [] }),
+    (error) => error && error.code === "EVENTBRITE_LISTING_NAVIGATION_FAILED",
+  );
   assert.deepEqual(calls, [["goto", LIST_URL]]);
+});
+
+test("Eventbrite default listing reader rejects page read failure without partial rows", async () => {
+  const calls = [];
+  let currentUrl = LIST_URL;
+  let evaluateCount = 0;
+  const page = {
+    async goto(url) { calls.push(["goto", url]); currentUrl = url; },
+    url() { return currentUrl; },
+    async evaluate() {
+      evaluateCount += 1;
+      if (evaluateCount === 1) return [{ href: binding("904").canonical_url, event_id: "904" }];
+      throw new Error("page two read failed");
+    },
+  };
+  let detailReads = 0;
+  const workflow = createEventbriteScriptFirstWorkflow({
+    now: () => NOW,
+    readEventDetail: async () => { detailReads += 1; return detail("904"); },
+  });
+  await assert.rejects(
+    workflow.discoverCandidates({ page, calendar: [] }),
+    (error) => error && error.code === "EVENTBRITE_LISTING_READ_FAILED",
+  );
+  assert.deepEqual(calls, [["goto", LIST_URL], ["goto", `${LIST_URL}?page=2`]]);
+  assert.equal(detailReads, 0);
 });
