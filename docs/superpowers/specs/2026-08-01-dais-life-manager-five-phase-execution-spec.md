@@ -8028,3 +8028,9 @@ Node process公式docs、英語max-step/provider-order、日本語provider順検
 Lunaがnative pass/test exact 2 filesをSuperpowers TDD実装し、code commit `ce8848715`をpushした。frozen provider順は`luma → connpass → peatix → meetup → doorkeeper → eventbrite → techplay`、official native inputはexact `maxAgentSteps:15`。failure cap 3、wake 600000ms、cursorなし、private-free input、runner default 10、CLI/exit、plistは不変。
 
 REDはprovider/orderとstep budgetでfocused 3 fail、GREEN 10/10。provider削除mutationは3 fail、15→14 mutationは1 fail。復元後production/runner/Harness adjacency 211/211、両syntax、diff check PASS。fresh Sol reviewは広域既存3 failuresが変更file非依存であることをHEAD comparisonまで実測し、Critical/Important 0、Ponytail `Lean already. Ship.`。次は既存launchd ownerのofficial wakeで実application→registered readback→Calendar→evidence→Telegram→cleanupを一回閉じる。Item19実bundleは未完。
+
+### O1B-25進捗475（Item 19F-D15 / official launchd acceptance plan・実state修正）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-official-acceptance-19f.md`を作成。read-only preflightで`gui/501/ai.anicca.life-manager-connector-native`はunloadedではなくdaily 09:00 trigger付きでloaded、active 0、runs 2、last exit 1、exact worktree直結、owner lockなしと実測した。共有CDPのpre-existing page targetsはexact 4。旧「schedule unloaded」記述は現stateと矛盾するため、この実測を正本にする。
+
+既存labelを`-k`なしでexact 1回kickstartし、new wake ID、TECH PLAY `applied_bundle`、registered、final action 1、Calendar exact canonical 1、receipt/PNG、Telegram message/photo、bundle/checkpoint、page 4→5→4、lock cleanupを独立readbackする。failure/effect unknown時はdaily scheduleを先にunloadしてから修復する。手動executor・plist reinstall・既存page closeはしない。Item19実bundleは未完。
