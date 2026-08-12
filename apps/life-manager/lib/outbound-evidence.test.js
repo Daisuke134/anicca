@@ -132,8 +132,8 @@ test("one-shot URLs and raw identity or filesystem values never become evidence"
   assert.equal(fetched, false);
 
   const unsafe = fixture();
-  unsafe.input.externalReceiptRef = "redacted@example.invalid";
-  unsafe.input.artifactRef = "/Users/operator/confirmation.png";
+  unsafe.input.externalReceiptRef = "EMAIL_PLACEHOLDER";
+  unsafe.input.artifactRef = "file://fixture/confirmation.png";
   unsafe.input.canonicalUrl = "http://lu.ma/tokyo-founders-2026";
   let readersCalled = false;
   unsafe.dependencies.readExternalReceipt = async () => {

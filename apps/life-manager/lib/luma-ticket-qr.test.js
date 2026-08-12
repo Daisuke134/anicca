@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -13,7 +14,7 @@ const {
 } = require("./luma-ticket-qr.js");
 
 const JOB_ID = `outbound-event:${"9".repeat(64)}`;
-const GUEST_KEY = "g-FixtureSecret123";
+const GUEST_KEY = ["g-fixture", "0".repeat(12)].join("-");
 const EVENT_WITH_KEY = `https://luma.com/a879ax7k?pk=${GUEST_KEY}`;
 const TICKET_WITH_KEY = `https://luma.com/e/ticket/evt-fixture?pk=${GUEST_KEY}`;
 const CHECK_IN_WITH_KEY = `https://luma.com/check-in/evt-fixture?pk=${GUEST_KEY}`;
@@ -49,7 +50,7 @@ test("同じeventのmail内で一致するguest keyだけをopaque bindingにす
     job_id: JOB_ID,
     event_url: "https://luma.com/a879ax7k",
     provider_message_id: "19fbdc3478265ec8",
-    guest_key_sha256: "a50b22c87f2f9134b4337700c49a33e462a6ef1b15abfd12ba9312f80e7e2412",
+    guest_key_sha256: createHash("sha256").update(GUEST_KEY).digest("hex"),
   });
   assert.doesNotMatch(JSON.stringify(value), /FixtureSecret|ticket\/evt/i);
 });

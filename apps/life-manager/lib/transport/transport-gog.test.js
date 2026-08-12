@@ -80,6 +80,7 @@ test("connector calendar lookup and create use one private idempotency property 
   assert.deepEqual(calls[1].slice(0, 4), ["calendar", "create", "primary", "-j"]);
   assert.ok(calls[1].includes(`--private-prop=lm_connector_event=${"a".repeat(64)}`));
   assert.ok(calls[1].includes("--source-url=https://luma.com/founder-night"));
+  assert.deepEqual(calls[1].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Luma"]);
   assert.ok(calls[1].includes("--no-input"));
 });
 
@@ -101,6 +102,257 @@ test("connector calendar accepts the www.google.com event URL returned by gog 0.
     id: "created-by-gog",
     htmlLink: "https://www.google.com/calendar/event?eid=created-by-gog",
   });
+});
+
+test("connector calendar accepts strict Peatix identity with a fixed source title", async () => {
+  const { run, calls } = recorder(JSON.stringify({ id: "peatix-created", htmlLink: "https://calendar.google.com/calendar/event?eid=peatix-created" }));
+  const result = await makeGogCalendar({ account: ACCT, run }).createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "c".repeat(64), title: "Injected title",
+    startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+    location: "Shibuya", canonicalUrl: "https://peatix.com/event/5075819",
+  });
+  assert.deepEqual(result, { id: "peatix-created", htmlLink: "https://calendar.google.com/calendar/event?eid=peatix-created" });
+  assert.ok(calls[0].includes("--source-url=https://peatix.com/event/5075819"));
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Peatix"]);
+  assert.equal(calls[0].some((arg) => String(arg).includes("Injected title")), true);
+});
+
+test("connector calendar rejects every non-canonical Peatix identity before gog run", async () => {
+  const variants = [
+    "https://www.peatix.com/event/5075819", "https://events.peatix.com/event/5075819",
+    "https://peatix.com:444/event/5075819", "https://peatix.com/event/5075819/",
+    "https://peatix.com/event/5075819?utm_source=test", "https://peatix.com/event/5075819#details",
+    "https://user:pass@peatix.com/event/5075819", "https://peatix.com/event/not-a-number",
+    "https://peatix.com/event/0", "https://peatix.com/event/5075819/ticket",
+    "https://peatix.com/sales/event/5075819", "https://peatix.com/search?q=5075819",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "d".repeat(64), title: "x",
+      startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+      location: "x", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
+test("connector calendar accepts exact TECH PLAY event identity with fixed source title", async () => {
+  const canonicalUrl = "https://techplay.jp/event/2045782";
+  const { run, calls } = recorder(JSON.stringify({ id: "techplay-created", htmlLink: "https://calendar.google.com/calendar/event?eid=techplay-created" }));
+  const result = await makeGogCalendar({ account: ACCT, run }).createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "a".repeat(64), title: "Injected title",
+    startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+    location: "Tokyo", canonicalUrl,
+  });
+  assert.deepEqual(result, { id: "techplay-created", htmlLink: "https://calendar.google.com/calendar/event?eid=techplay-created" });
+  assert.ok(calls[0].includes(`--description=${canonicalUrl}`));
+  assert.ok(calls[0].includes(`--source-url=${canonicalUrl}`));
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=TECH PLAY"]);
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--private-prop=lm_connector_event=")), [`--private-prop=lm_connector_event=${"a".repeat(64)}`]);
+});
+
+test("connector calendar rejects every non-canonical TECH PLAY identity before gog run", async () => {
+  const variants = [
+    "http://techplay.jp/event/2045782", "https://www.techplay.jp/event/2045782", "https://TECHPLAY.JP/event/2045782",
+    "https://user:pass@techplay.jp/event/2045782", "https://techplay.jp:443/event/2045782",
+    "https://techplay.jp/event/0", "https://techplay.jp/event/not-a-number", "https://techplay.jp/event/2045782?utm_source=test",
+    "https://techplay.jp/event/2045782#details", "https://techplay.jp/event/2045782/", "https://techplay.jp/event/2045782/join",
+    "https://techplay.jp/event/join/2045782", "https://techplay.jp/event/join/2045782/confirm",
+    "https://techplay.jp/event/2045782/confirm", "https://techplay.jp/event/2045782/list", "https://techplay.jp/event/2045782/search",
+    "https://techplay.jp/join/complete", "https://techplay.jp/confirm", "https://techplay.jp/list", "https://techplay.jp/search?q=2045782",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "b".repeat(64), title: "x",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
+test("connector calendar accepts exact Connpass root and one-subdomain identities", async () => {
+  const canonicalUrls = ["https://connpass.com/event/400028/", "https://tokyo-builders.connpass.com/event/400028/"];
+  const { run, calls } = recorder((args) => JSON.stringify({ id: `connpass-created-${calls.length}`, htmlLink: "https://calendar.google.com/calendar/event?eid=connpass-created" }));
+  const cal = makeGogCalendar({ account: ACCT, run });
+
+  for (const canonicalUrl of canonicalUrls) {
+    await cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "e".repeat(64), title: "Injected title",
+      startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+      location: "Shibuya", canonicalUrl,
+    });
+  }
+
+  assert.equal(calls.length, canonicalUrls.length);
+  for (const [index, canonicalUrl] of canonicalUrls.entries()) {
+    assert.ok(calls[index].includes(`--private-prop=lm_connector_event=${"e".repeat(64)}`));
+    assert.ok(calls[index].includes(`--description=${canonicalUrl}`) && calls[index].includes(`--source-url=${canonicalUrl}`));
+    assert.deepEqual(calls[index].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Connpass"]);
+  }
+});
+
+test("connector calendar rejects every non-canonical Connpass identity before gog run", async () => {
+  const variants = [
+    "http://connpass.com/event/400028/", "https://east.tokyo-builders.connpass.com/event/400028/",
+    "https://connpass.example.com/event/400028/", "https://connpass.com:444/event/400028/",
+    "https://-bad.connpass.com/event/1/", "https://bad-.connpass.com/event/1/", `https://${"a".repeat(64)}.connpass.com/event/1/`,
+    "https://connpass.com/event/400028", "https://connpass.com/event/400028//",
+    "https://connpass.com/event/400028/?utm_source=test", "https://connpass.com/event/400028/#details",
+    "https://user:pass@connpass.com/event/400028/", "https://connpass.com/event/EVENT/400028/",
+    "https://connpass.com/event/not-a-number/", "https://connpass.com/event/0/",
+    "https://connpass.com/event/400028/ticket/", "https://connpass.com/event/400028/join/complete",
+    "https://connpass.com/join/complete", "https://connpass.com/search?q=400028",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "f".repeat(64), title: "x",
+      startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+      location: "x", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
+test("connector calendar accepts exact Meetup identity with fixed Meetup source title", async () => {
+  const { run, calls } = recorder(JSON.stringify({ id: "meetup-created", htmlLink: "https://calendar.google.com/calendar/event?eid=meetup-created" }));
+  const result = await makeGogCalendar({ account: ACCT, run }).createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "a".repeat(64), title: "Injected title",
+    startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+    location: "Tokyo", canonicalUrl: "https://www.meetup.com/tokyo-builders/events/101/",
+  });
+  assert.deepEqual(result, { id: "meetup-created", htmlLink: "https://calendar.google.com/calendar/event?eid=meetup-created" });
+  assert.ok(calls[0].includes("--source-url=https://www.meetup.com/tokyo-builders/events/101/"));
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Meetup"]);
+});
+
+test("connector calendar rejects every non-canonical Meetup identity before gog run", async () => {
+  const variants = [
+    "https://meetup.com/tokyo-builders/events/101/", "http://www.meetup.com/tokyo-builders/events/101/",
+    "https://www.meetup.com/Tokyo-builders/events/101/", "https://www.meetup.com/tokyo_builders/events/101/",
+    "https://www.meetup.com/tokyo-builders/events/101", "https://www.meetup.com/tokyo-builders/events/101/?source=test",
+    "https://www.meetup.com/tokyo-builders/events/101/#details", "https://user:pass@www.meetup.com/tokyo-builders/events/101/",
+    "https://www.meetup.com:443/tokyo-builders/events/101/", "https://www.meetup.com/ja-JP/tokyo-builders/events/101/",
+    "https://www.meetup.example/tokyo-builders/events/101/",
+    "https://www.meetup.com/tokyo-builders/events/0/", "https://www.meetup.com/tokyo-builders/events/not-a-number/",
+    "https://www.meetup.com/tokyo-builders/events/101/details/",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "b".repeat(64), title: "x",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
+test("connector calendar accepts exact Doorkeeper identity with fixed Doorkeeper source title", async () => {
+  const { run, calls } = recorder(JSON.stringify({ id: "doorkeeper-created", htmlLink: "https://calendar.google.com/calendar/event?eid=doorkeeper-created" }));
+  const result = await makeGogCalendar({ account: ACCT, run }).createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "c".repeat(64), title: "Injected title",
+    startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+    location: "Tokyo", canonicalUrl: "https://tokyo-builders.doorkeeper.jp/events/101",
+  });
+  assert.deepEqual(result, { id: "doorkeeper-created", htmlLink: "https://calendar.google.com/calendar/event?eid=doorkeeper-created" });
+  assert.ok(calls[0].includes("--description=https://tokyo-builders.doorkeeper.jp/events/101"));
+  assert.ok(calls[0].includes("--source-url=https://tokyo-builders.doorkeeper.jp/events/101"));
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Doorkeeper"]);
+  assert.ok(calls[0].includes(`--private-prop=lm_connector_event=${"c".repeat(64)}`));
+});
+
+test("connector calendar rejects every non-canonical Doorkeeper identity before gog run", async () => {
+  const variants = [
+    "http://tokyo-builders.doorkeeper.jp/events/101",
+    "https://Tokyo-builders.doorkeeper.jp/events/101",
+    "https://www.doorkeeper.jp/events/101",
+    "https://doorkeeper.jp/events/101",
+    "https://east.tokyo-builders.doorkeeper.jp/events/101",
+    "https://tokyo-builders.doorkeeper.jp:443/events/101",
+    "https://user:pass@tokyo-builders.doorkeeper.jp/events/101",
+    "https://tokyo-builders.doorkeeper.jp/events/101/",
+    "https://tokyo-builders.doorkeeper.jp/events/101?x=1",
+    "https://tokyo-builders.doorkeeper.jp/events/101#details",
+    "https://tokyo-builders.doorkeeper.jp/events/0",
+    "https://tokyo-builders.doorkeeper.jp/events/not-a-number",
+    "https://tokyo-builders.doorkeeper.jp/events/101/tickets",
+    "https://tokyo-builders.doorkeeper.jp/events",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "d".repeat(64), title: "x",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
+test("connector calendar accepts exact Eventbrite slug and direct-ID identities with fixed Eventbrite source title", async () => {
+  const canonicalUrls = [
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://www.eventbrite.com/e/1997468673574",
+  ];
+  const { run, calls } = recorder(JSON.stringify({ id: "eventbrite-created", htmlLink: "https://calendar.google.com/calendar/event?eid=eventbrite-created" }));
+  const cal = makeGogCalendar({ account: ACCT, run });
+
+  for (const canonicalUrl of canonicalUrls) {
+    const result = await cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "e".repeat(64), title: "Injected title",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    });
+    assert.deepEqual(result, { id: "eventbrite-created", htmlLink: "https://calendar.google.com/calendar/event?eid=eventbrite-created" });
+  }
+
+  assert.equal(calls.length, canonicalUrls.length);
+  for (const [index, canonicalUrl] of canonicalUrls.entries()) {
+    assert.ok(calls[index].includes(`--description=${canonicalUrl}`));
+    assert.ok(calls[index].includes(`--source-url=${canonicalUrl}`));
+    assert.deepEqual(calls[index].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Eventbrite"]);
+    assert.deepEqual(calls[index].filter((arg) => String(arg).startsWith("--private-prop=lm_connector_event=")), [`--private-prop=lm_connector_event=${"e".repeat(64)}`]);
+  }
+});
+
+test("connector calendar rejects every non-canonical Eventbrite identity before gog run", async () => {
+  const variants = [
+    "http://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://events.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://WWW.EVENTBRITE.COM/e/tokyo-free-event-tickets-1997468673573",
+    "https://user:pass@www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573",
+    "https://www.eventbrite.com:443/e/tokyo-free-event-tickets-1997468673573",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573?utm_source=test",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573#details",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573/",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-0",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-not-a-number",
+    "https://www.eventbrite.com/e/tokyo-free-event-1997468673573",
+    "https://www.eventbrite.com/e/tokyo-free-event-tickets-1997468673573/tickets",
+    "https://www.eventbrite.com/d/japan--tokyo/free--events/",
+    "https://www.eventbrite.com/directory/",
+    "https://www.eventbrite.com/e/search?q=tokyo",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "f".repeat(64), title: "x",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
 });
 
 test("connector calendar methods reject malformed IDs, URLs, times, and ambiguous provider receipts", async () => {

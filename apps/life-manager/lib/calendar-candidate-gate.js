@@ -7,6 +7,7 @@ const {
   isVerifiedGoogleCalendarBusyInventory,
   privateGoogleCalendarBusyContext,
 } = require("./google-calendar-busy-inventory.js");
+const { isVerifiedEventSourceHandoff } = require("./event-source-handoff.js");
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const VERIFIED = new WeakSet();
@@ -107,21 +108,8 @@ async function routeDuration(routeMinutes, input) {
   return Number.isFinite(value) && value >= 0 && value <= 24 * 60 ? value : null;
 }
 
-async function evaluateCalendarCandidateGate(input = {}) {
-  const dateInventory = input.dateInventory;
-  const busyInventory = input.busyInventory;
-  const date = String(input.date == null ? "" : input.date).trim();
-  if (
-    !isVerifiedLumaDateInventory(dateInventory)
-    || !isVerifiedGoogleCalendarBusyInventory(busyInventory)
-    || !DATE.test(date)
-    || dateInventory.timezone !== busyInventory.time_zone
-    || typeof input.routeMinutes !== "function"
-  ) invalid();
-  const day = dateInventory.days.find((candidate) => candidate.date === date);
-  if (!day || day.inventory_status !== "complete") invalid();
-  const home = safeLocation(input.homeLocation);
-  const evaluated = await mapWithConcurrency(day.events, 4, async (event) => {
+async function evaluateEvents(events, busyInventory, home, routeMinutes) {
+  return mapWithConcurrency(events, 4, async (event) => {
     const direct = directConflicts(event, busyInventory);
     if (direct.length > 0) {
       return Object.freeze({ kind: "candidate", candidate: Object.freeze({
@@ -134,15 +122,15 @@ async function evaluateCalendarCandidateGate(input = {}) {
         conflict_event_refs: Object.freeze(direct.map((busy) => busy.event_ref)),
       }) });
     }
-    const venue = safeLocation(event.venue_address || event.venue_name);
+    const venue = safeLocation(event.venue_address || event.address || event.venue_name);
     const origin = adjacentLocation(event, busyInventory, "inbound", home);
     const destination = adjacentLocation(event, busyInventory, "outbound", home);
-    const inbound = await routeDuration(input.routeMinutes, {
+    const inbound = await routeDuration(routeMinutes, {
       direction: "inbound", from: origin, to: venue,
       event_ref: event.event_ref, anchor_at: event.starts_at,
     });
     if (inbound === null) return Object.freeze({ kind: "recovery", event_ref: event.event_ref });
-    const outbound = await routeDuration(input.routeMinutes, {
+    const outbound = await routeDuration(routeMinutes, {
       direction: "outbound", from: venue, to: destination,
       event_ref: event.event_ref, anchor_at: event.ends_at,
     });
@@ -163,6 +151,23 @@ async function evaluateCalendarCandidateGate(input = {}) {
       conflict_event_refs: Object.freeze(conflicts.map((busy) => busy.event_ref)),
     }) });
   });
+}
+
+async function evaluateCalendarCandidateGate(input = {}) {
+  const dateInventory = input.dateInventory;
+  const busyInventory = input.busyInventory;
+  const date = String(input.date == null ? "" : input.date).trim();
+  if (
+    !isVerifiedLumaDateInventory(dateInventory)
+    || !isVerifiedGoogleCalendarBusyInventory(busyInventory)
+    || !DATE.test(date)
+    || dateInventory.timezone !== busyInventory.time_zone
+    || typeof input.routeMinutes !== "function"
+  ) invalid();
+  const day = dateInventory.days.find((candidate) => candidate.date === date);
+  if (!day || day.inventory_status !== "complete") invalid();
+  const home = safeLocation(input.homeLocation);
+  const evaluated = await evaluateEvents(day.events, busyInventory, home, input.routeMinutes);
   const recovery = evaluated.find((row) => row.kind === "recovery");
   if (recovery) return finish({
     date,
@@ -182,6 +187,32 @@ async function evaluateCalendarCandidateGate(input = {}) {
     reason: null,
     failed_event_ref: null,
     candidates: Object.freeze(candidates),
+  });
+}
+
+async function evaluateConnpassCalendarCandidateGate(input = {}) {
+  const handoff = input.handoff;
+  const busyInventory = input.busyInventory;
+  if (
+    !isVerifiedEventSourceHandoff(handoff)
+    || handoff.status !== "advisory_candidates_found"
+    || !isVerifiedGoogleCalendarBusyInventory(busyInventory)
+    || handoff.coverage_credit_count !== 0
+    || typeof input.routeMinutes !== "function"
+  ) invalid();
+  const evaluated = await evaluateEvents(
+    handoff.advisory_candidates, busyInventory, safeLocation(input.homeLocation), input.routeMinutes,
+  );
+  const recovery = evaluated.find((row) => row.kind === "recovery");
+  if (recovery) return finish({
+    date: handoff.date, busy_inventory_id: busyInventory.busy_inventory_id,
+    inventory_snapshot_id: handoff.handoff_id, status: "recovery_required",
+    reason: "route_unavailable", failed_event_ref: recovery.event_ref, candidates: Object.freeze([]),
+  });
+  return finish({
+    date: handoff.date, busy_inventory_id: busyInventory.busy_inventory_id,
+    inventory_snapshot_id: handoff.handoff_id, status: "evaluated", reason: null,
+    failed_event_ref: null, candidates: Object.freeze(evaluated.map((row) => row.candidate)),
   });
 }
 
@@ -214,9 +245,27 @@ function calendarEligibleLumaCandidates(dateInventory, gate) {
   return Object.freeze(selected);
 }
 
+function calendarEligibleConnpassCandidates(handoff, gate) {
+  if (
+    !isVerifiedEventSourceHandoff(handoff)
+    || !isVerifiedCalendarCandidateGate(gate)
+    || gate.status !== "evaluated"
+    || gate.inventory_snapshot_id !== handoff.handoff_id
+    || gate.candidates.length !== handoff.advisory_candidates.length
+  ) invalid();
+  const events = new Map(handoff.advisory_candidates.map((event) => [event.event_ref, event]));
+  return Object.freeze(gate.candidates.filter((row) => row.eligible).map((row) => {
+    const event = events.get(row.event_ref);
+    if (!event) invalid();
+    return event;
+  }));
+}
+
 module.exports = {
+  calendarEligibleConnpassCandidates,
   calendarEligibleLumaCandidates,
   evaluateCalendarCandidateGate,
+  evaluateConnpassCalendarCandidateGate,
   isVerifiedCalendarCandidateGate,
   mapWithConcurrency,
 };

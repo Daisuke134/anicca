@@ -19,11 +19,12 @@ const EVENT_START_ISO = "2026-08-05T14:00:00+09:00";
 const EVENT_START_MS = Date.parse(EVENT_START_ISO);
 const TRAVEL_MIN = 35; // + the 5-min buffer resolveDeparture adds → departure = start − 40 min
 const DEPARTURE_MS = EVENT_START_MS - 40 * MINUTE;
+const TEST_PHONE = "+99900000000";
 
 const USER = {
   uid: "catchup-user",
   name: "Catchup User",
-  phone: "+810000000000",
+  phone: TEST_PHONE,
   home_address: "東京都渋谷区",
   call_language: "ja",
   daily_automation_enabled: true,

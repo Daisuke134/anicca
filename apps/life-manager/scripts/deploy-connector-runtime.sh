@@ -7,11 +7,40 @@ TOKEN_FILE="${LM_CONNECTOR_BRIDGE_TOKEN_FILE:-${HOME}/.local/state/life-manager/
 ENV_FILE="${LM_CONNECTOR_ENV_FILE:-${HOME}/.openclaw/.env}"
 DOCKER_BIN="${LM_DOCKER_BIN:-docker}"
 NODE_BIN="${LM_NODE_BIN:-/opt/homebrew/bin/node}"
+IDENTITY_PROFILE="${LM_CONNECTOR_IDENTITY_PROFILE_PATH:-${HOME}/.config/anicca/job-search/profile.json}"
+FORM_PROFILE_DIR="${LM_LUMA_FORM_PROFILE_DIR:-${HOME}/.local/state/life-manager/private}"
+FORM_PROFILE_FILE="${LM_LUMA_FORM_PROFILE_HOST_PATH:-${FORM_PROFILE_DIR}/connector-luma-form-profile.json}"
 
 if [[ ! -f "$TOKEN_FILE" || "$(stat -f '%Lp' "$TOKEN_FILE")" != "600" || ! -f "$ENV_FILE" ]]; then
   echo "Connector runtime unavailable" >&2
   exit 1
 fi
+
+if [[ ! -f "$FORM_PROFILE_FILE" ]]; then
+  if [[ ! -f "$IDENTITY_PROFILE" ]]; then
+    echo "Connector runtime unavailable" >&2
+    exit 1
+  fi
+  mkdir -p "$FORM_PROFILE_DIR"
+  chmod 700 "$FORM_PROFILE_DIR"
+  "$NODE_BIN" -e '
+const fs = require("node:fs");
+const source = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+const phone = String(source && source.candidate && source.candidate.phone || "").trim();
+if (!phone || phone.length > 64 || /[\x00-\x1f\x7f]/.test(phone)) process.exit(1);
+fs.writeFileSync(process.argv[2], `${JSON.stringify({
+  schema_version: 1,
+  phone,
+  form_answers: {},
+  consents: { code_of_conduct_and_media_release: false },
+})}\n`, { flag: "wx", mode: 0o600 });
+' "$IDENTITY_PROFILE" "$FORM_PROFILE_FILE"
+fi
+chmod 600 "$FORM_PROFILE_FILE"
+"$NODE_BIN" -e '
+require(process.argv[1]).readLumaFormProfile({ path: process.argv[2] });
+' "$REPO_ROOT/apps/life-manager/lib/luma-form-profile.js" "$FORM_PROFILE_FILE"
+export LM_LUMA_FORM_PROFILE_HOST_PATH="$FORM_PROFILE_FILE"
 
 set -a
 # shellcheck disable=SC1090

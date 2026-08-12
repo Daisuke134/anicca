@@ -98,3 +98,22 @@ test("fails generically without leaking a malformed message or code", async () =
     return true;
   });
 });
+
+test("polls until a freshly delivered Luma code becomes visible", async () => {
+  let searches = 0;
+  let sleeps = 0;
+  const reader = createGogLumaCodeReader({
+    attempts: 3,
+    sleep: async () => { sleeps += 1; },
+    async run(args) {
+      if (args[1] === "messages") {
+        searches += 1;
+        return JSON.stringify(searches < 3 ? [] : [{ id: "valid" }]);
+      }
+      return JSON.stringify(message());
+    },
+  });
+  assert.equal(await reader({ afterMs: 1_722_500_000_000, account: "dais@example.test" }), "123456");
+  assert.equal(searches, 3);
+  assert.equal(sleeps, 2);
+});

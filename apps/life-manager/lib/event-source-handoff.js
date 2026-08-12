@@ -135,6 +135,58 @@ function handoff(core) {
   return verified(HANDOFFS, { handoff_id: `event-source-handoff:${digest}`, ...core });
 }
 
+function buildConnpassBrowserHandoff(input = {}) {
+  const date = String(input.date == null ? "" : input.date);
+  const candidates = input.candidates;
+  const browserPageCount = Number(input.browserPageCount);
+  if (
+    !validDate(date) || !Array.isArray(candidates)
+    || !Number.isSafeInteger(browserPageCount) || browserPageCount < 1
+  ) invalid();
+  const normalized = candidates.map((event) => {
+    if (!event || typeof event !== "object" || Array.isArray(event)) invalid();
+    const match = /^connpass-event:\/\/event\/([1-9][0-9]*)$/.exec(String(event.event_ref || ""));
+    if (!match) invalid();
+    const canonicalUrl = canonicalEventUrl(event.canonical_url);
+    if (
+      !canonicalUrl || !CONNPASS_HOST.test(new URL(canonicalUrl).hostname)
+      || !new URL(canonicalUrl).pathname.match(new RegExp(`^/event/${match[1]}/?$`))
+    ) invalid();
+    const startsAt = safeText(event.starts_at, 64, true);
+    const endsAt = safeText(event.ends_at, 64, true);
+    if (
+      !Number.isFinite(Date.parse(startsAt)) || !Number.isFinite(Date.parse(endsAt))
+      || Date.parse(endsAt) <= Date.parse(startsAt)
+    ) invalid();
+    return Object.freeze({
+      provider: "connpass",
+      event_ref: event.event_ref,
+      canonical_url: canonicalUrl,
+      title: safeText(event.title, 500, true),
+      summary: safeText(event.summary, 2_000),
+      description: safeText(event.description, 100_000),
+      starts_at: new Date(Date.parse(startsAt)).toISOString(),
+      ends_at: new Date(Date.parse(endsAt)).toISOString(),
+      venue_name: safeText(event.venue_name, 1_000),
+      address: safeText(event.address, 1_000),
+      source_mode: "cloakbrowser_daily_driver",
+      registration_allowed: true,
+      coverage_credit: false,
+    });
+  });
+  if (new Set(normalized.map((event) => event.event_ref)).size !== normalized.length) invalid();
+  return handoff({
+    date,
+    status: normalized.length === 0 ? "authorized_source_empty" : "advisory_candidates_found",
+    coverage_status: "open",
+    advisory_candidates: Object.freeze(normalized),
+    coverage_credit_count: 0,
+    network_call_count: 0,
+    browser_page_count: browserPageCount,
+    next_actions: Object.freeze(["continue_provider_cursor"]),
+  });
+}
+
 async function executeEventSourceHandoff(input = {}) {
   const plan = input.plan;
   if (!plan || typeof plan !== "object" || !PLANS.has(plan)) invalid();
@@ -206,6 +258,7 @@ function isVerifiedEventSourceHandoff(value) {
 }
 
 module.exports = {
+  buildConnpassBrowserHandoff,
   createEventSourceCapabilities,
   executeEventSourceHandoff,
   isVerifiedEventSourceCapabilities,

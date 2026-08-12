@@ -1,323 +1,238 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
-const { runNativePass } = require("../native-pass.js");
-const {
-  acquireLock,
-  heartbeat,
-  readHealth,
-  releaseLock,
-} = require("../lib/native-state.js");
+const { nativeExitCode, runNativePass } = require("../native-pass.js");
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
-const HEALTHCHECK = path.join(REPO_ROOT, "skills/connector/healthcheck.sh");
-const RENDERER = path.join(REPO_ROOT, "skills/connector/render-launchd.sh");
+const VALID_KANA = Object.freeze({ family: "サクラ", given: "テスト" });
+const VALID_NAME_JA = "桜 太郎";
+const BASE_ENV = Object.freeze({ GOG_ACCOUNT: "private@example.com", DAIS_LEGAL_NAME_ROMAJI: "Dais Example", GOG_KEYRING_PASSWORD: "private-keyring", LM_CONNECTOR_TELEGRAM_TARGET: "private-target" });
 
-const OWNER_TOKEN = "native-pass-test-owner-123456";
-
-function temporaryDirectory() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-entrypoint-"));
+function writeKanaProfile(home, value = VALID_KANA, mode = 0o600, nameJa, identity = { name: BASE_ENV.DAIS_LEGAL_NAME_ROMAJI, preferred_name: "Dais" }) {
+  const file = path.join(home, ".config", "anicca", "job-search", "profile.json");
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  const candidate = { name_kana: value, name_ja: arguments.length < 4 ? VALID_NAME_JA : nameJa, ...identity };
+  const raw = typeof value === "string" ? value : JSON.stringify({ candidate });
+  fs.writeFileSync(file, `${raw}\n`, { mode });
+  fs.chmodSync(file, mode);
 }
+test("official foreground entrypoint is directly executable", () => {
+  const mode = fs.statSync(path.join(REPO_ROOT, "skills", "connector", "run.sh")).mode;
+  assert.notEqual(mode & 0o111, 0);
+});
 
-test("native-pass invokes the direct runtime and keeps open coverage as a continuation", async () => {
-  const directory = temporaryDirectory();
-  const stateDir = path.join(directory, "state");
+test("native terminal exit treats only healthy statuses as success", () => {
+  for (const [result, expected] of [
+    [{ status: "applied_bundle" }, 0],
+    [{ status: "completed_no_effect" }, 0],
+    [{ status: "circuit_open" }, 1],
+    [{ status: "malformed" }, 1],
+    [undefined, 1],
+    [null, 1],
+    [[], 1],
+  ]) assert.equal(nativeExitCode(result), expected);
+});
+
+test("official native pass forwards only the bounded minimal wake contract", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-minimal-"));
   const observed = [];
   try {
     const result = await runNativePass({
       repoRoot: REPO_ROOT,
-      stateDir,
-      ownerToken: OWNER_TOKEN,
-      config: {
-        tenantId: "dais-local",
-        timeZone: "Asia/Tokyo",
-        now: "2026-08-02T01:00:00.000Z",
-        evidenceDir: path.join(directory, "evidence"),
-        calendarAccount: "dais@example.test",
-      },
-      runRuntime: async (input) => {
-        observed.push(input);
-        return {
-          status: "incomplete",
-          coverage: { counts: { open: 21 } },
-          continuation: { status: "continue" },
-        };
+      stateDir: path.join(directory, "state"),
+      ownerToken: "native-pass-minimal-owner-123456",
+      dependencies: Object.freeze({ boundary: "fixture" }),
+      async runWake(input, dependencies) {
+        observed.push({ input, dependencies });
+        return Object.freeze({ status: "circuit_open", safe_reason: "fixture" });
       },
     });
 
-    assert.equal(result.exitCode, 1);
+    assert.deepEqual(result, { status: "circuit_open", safe_reason: "fixture" });
     assert.equal(observed.length, 1);
-    assert.equal(observed[0].config.tenantId, "dais-local");
-    assert.deepEqual(JSON.parse(fs.readFileSync(
-      path.join(stateDir, "continuation.json"), "utf8",
-    )), {
-      reason: "runtime_incomplete",
-      status: "pending",
-    });
+    assert.deepEqual(observed[0].input.providers, ["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay", "kokuchpro"]);
+    assert.equal(observed[0].input.maxConsecutiveFailures, 3);
+    assert.equal(observed[0].input.maxWakeMs, 600_000);
+    assert.equal(observed[0].input.maxAgentSteps, 15);
+    assert.deepEqual(observed[0].dependencies, { boundary: "fixture" });
+    assert.equal(fs.existsSync(path.join(directory, "state", "provider-cursor.json")), false);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
 
-test("native-pass ignores CONNECTOR_NATIVE_WORKER_BIN and still invokes the direct runtime", async () => {
-  const directory = temporaryDirectory();
-  const stateDir = path.join(directory, "state");
-  const ignoredWorker = path.join(directory, "ignored-worker");
-  fs.writeFileSync(ignoredWorker, "this file must never be executed\n", { mode: 0o600 });
+test("official native pass builds the production dependency boundary from allowlisted config", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-minimal-"));
   const observed = [];
   try {
+    writeKanaProfile(directory);
     const result = await runNativePass({
       repoRoot: REPO_ROOT,
-      stateDir,
-      ownerToken: OWNER_TOKEN,
-      env: { CONNECTOR_NATIVE_WORKER_BIN: ignoredWorker },
-      config: {
-        tenantId: "dais-local",
-        timeZone: "Asia/Tokyo",
-        now: "2026-08-02T01:00:00.000Z",
-        evidenceDir: path.join(directory, "evidence"),
-        calendarAccount: "dais@example.test",
+      stateDir: path.join(directory, "state"),
+      ownerToken: "native-pass-minimal-owner-123456",
+      env: {
+        HOME: directory,
+        GOG_ACCOUNT: "private@example.com",
+        DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
+        GOG_KEYRING_PASSWORD: "private-keyring",
+        LM_CONNECTOR_TELEGRAM_TARGET: "private-target",
+        LM_CONNECTOR_TENANT_ID: "dais-local",
+        LM_CONNECTOR_CALENDAR_ID: "primary",
       },
-      runRuntime: async () => {
-        observed.push(true);
-        return {
-          status: "incomplete",
-          coverage: { counts: { open: 21 } },
-          continuation: { status: "continue" },
-        };
+      createDependencies(input) {
+        observed.push(["factory", input]);
+        return Object.freeze({ boundary: "production" });
+      },
+      async runWake(input, dependencies) {
+        observed.push(["wake", input, dependencies]);
+        return Object.freeze({ status: "completed_no_effect", safe_reason: "providers_exhausted" });
       },
     });
-
-    assert.equal(result.exitCode, 1);
-    assert.deepEqual(observed, [true]);
+    assert.deepEqual(result, { status: "completed_no_effect", safe_reason: "providers_exhausted" });
+    assert.equal(observed[0][0], "factory");
+    assert.equal(observed[0][1].calendarAccount, "private@example.com");
+    assert.equal(observed[0][1].gogKeyring, "private-keyring");
+    assert.equal(observed[0][1].telegramTarget, "private-target");
+    assert.match(observed[0][1].wakeId, /^wake-[0-9a-f]{24}$/);
+    assert.equal(observed[0][1].wakeId.includes("native-pass-minimal-owner"), false);
+    assert.deepEqual(observed[1][1].providers, ["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay", "kokuchpro"]);
+    assert.deepEqual(observed[1][2], { boundary: "production" });
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
 
-test("native-pass exits zero only for verified open-zero coverage", async () => {
-  const directory = temporaryDirectory();
-  const stateDir = path.join(directory, "state");
+test("native Peatix profile is frozen at the factory boundary and invalid identity never reaches it", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-profile-"));
+  const baseEnv = { ...BASE_ENV, HOME: directory };
+  let factoryInput; const wakeInputs = [];
   try {
-    const result = await runNativePass({
+    writeKanaProfile(directory);
+    const result = await runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-profile-owner-123456", env: baseEnv, createDependencies(input) { factoryInput = input; return Object.freeze({ boundary: "production" }); }, async runWake(input) { wakeInputs.push(input); return { status: "completed_no_effect" }; } });
+    assert.deepEqual(result, { status: "completed_no_effect" });
+    assert.deepEqual(factoryInput.peatixAttendeeProfile, { name: "Dais Example", email: "private@example.com", given_name: "Dais", family_name: "Example", family_name_kana: VALID_KANA.family, given_name_kana: VALID_KANA.given, name_kanji: VALID_NAME_JA, name_hiragana: "さくら てすと", accept_organizer_privacy: true });
+    assert.equal(Object.isFrozen(factoryInput), true);
+    assert.equal(Object.isFrozen(factoryInput.peatixAttendeeProfile), true);
+    assert.deepEqual(wakeInputs[0].providers, ["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay", "kokuchpro"]);
+    assert.equal("peatixAttendeeProfile" in wakeInputs[0], false);
+    assert.doesNotMatch(JSON.stringify(wakeInputs[0]), /Dais Example|private@example\.com|family_name_kana|given_name_kana|name_kanji|name_hiragana|桜 太郎|さくら てすと|サクラ|テスト/);
+    for (const override of [{ DAIS_LEGAL_NAME_ROMAJI: "" }, { DAIS_LEGAL_NAME_ROMAJI: "x".repeat(201) }, { GOG_ACCOUNT: "not-an-email" }]) {
+      let called = false;
+      await assert.rejects(runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "invalid-state"), ownerToken: "native-pass-invalid-owner-123456", env: { ...baseEnv, ...override }, createDependencies() { called = true; return {}; }, async runWake() { return { status: "unexpected" }; } }), /Connector minimal pass unavailable/);
+      assert.equal(called, false);
+    }
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("native Eventbrite attendee identity preserves the matching private name token case", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-eventbrite-identity-")); let profile; let wakeInput;
+  try {
+    writeKanaProfile(directory, VALID_KANA, 0o600, VALID_NAME_JA, { name: "Dais Example", preferred_name: "dAiS" });
+    await runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-eventbrite-identity-123456", env: { ...BASE_ENV, HOME: directory }, createDependencies(input) { profile = input.peatixAttendeeProfile; return {}; }, async runWake(input) { wakeInput = input; return { status: "completed_no_effect" }; } });
+    assert.deepEqual({ given_name: profile.given_name, family_name: profile.family_name }, { given_name: "Dais", family_name: "Example" });
+    assert.equal(profile.name, BASE_ENV.DAIS_LEGAL_NAME_ROMAJI);
+    assert.equal("given_name" in wakeInput, false);
+    assert.equal("family_name" in wakeInput, false);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("native Eventbrite attendee identity fails closed for mismatch and ambiguous preferred names", async () => {
+  for (const [name, identity] of [
+    ["legal-mismatch", { name: "Other Person", preferred_name: "Other" }],
+    ["preferred-missing", { name: "Dais Example" }],
+    ["preferred-nonmatching", { name: "Dais Example", preferred_name: "Other" }],
+    ["preferred-ambiguous", { name: "Dais Example", preferred_name: "Dais Example" }],
+    ["name-one-token", { name: "Dais", preferred_name: "Dais" }],
+    ["name-control-padding", { name: "\nDais Example", preferred_name: "Dais" }],
+    ["preferred-control-padding", { name: "Dais Example", preferred_name: "Dais\n" }],
+    ["name-overlength-padding", { name: `Dais Example${" ".repeat(201)}`, preferred_name: "Dais" }],
+    ["preferred-overlength-padding", { name: "Dais Example", preferred_name: `Dais${" ".repeat(201)}` }],
+  ]) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-eventbrite-identity-invalid-")); let factoryCalls = 0; let wakeCalls = 0;
+    try {
+      writeKanaProfile(directory, VALID_KANA, 0o600, VALID_NAME_JA, identity);
+      await assert.rejects(runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-eventbrite-identity-invalid-123456", env: { ...BASE_ENV, HOME: directory }, createDependencies() { factoryCalls += 1; return {}; }, async runWake() { wakeCalls += 1; return { status: "unexpected" }; } }), /Connector minimal pass unavailable/, name);
+      assert.equal(factoryCalls, 0, name); assert.equal(wakeCalls, 0, name);
+    } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("native config resolves the existing Telegram owner without an inline shell parser", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-owner-"));
+  const ownerFile = path.join(directory, ".openclaw", "credentials", "telegram-default-allowFrom.json");
+  fs.mkdirSync(path.dirname(ownerFile), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(ownerFile, `${JSON.stringify({ allowFrom: ["123456789"] })}\n`, { mode: 0o600 });
+  writeKanaProfile(directory);
+  let factoryInput;
+  try {
+    await runNativePass({
       repoRoot: REPO_ROOT,
-      stateDir,
-      ownerToken: OWNER_TOKEN,
-      config: {
-        tenantId: "dais-local",
-        timeZone: "Asia/Tokyo",
-        now: "2026-08-02T01:00:00.000Z",
-        evidenceDir: path.join(directory, "evidence"),
-        calendarAccount: "dais@example.test",
-      },
-      runRuntime: async () => ({
-        status: "complete",
-        coverage: { counts: { open: 0 } },
-        continuation: { status: "complete" },
-      }),
-    });
-
-    assert.deepEqual(result, { exitCode: 0, status: "complete" });
-    assert.equal(fs.existsSync(path.join(stateDir, "continuation.json")), false);
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true });
-  }
-});
-
-test("rendered native templates contain only canonical launch paths", () => {
-  const directory = temporaryDirectory();
-  try {
-    const outputDir = path.join(directory, "rendered");
-    const result = spawnSync("bash", [
-      RENDERER,
-      "--output-dir", outputDir,
-      "--repo-root", REPO_ROOT,
-      "--life-manager-home", path.join(directory, "life-manager-home"),
-    ], { encoding: "utf8", env: { ...process.env, HOME: directory } });
-
-    assert.equal(result.status, 0, result.stderr);
-    const nativePass = fs.readFileSync(
-      path.join(outputDir, "ai.anicca.life-manager-connector-native.plist"),
-      "utf8",
-    );
-    const healthcheck = fs.readFileSync(
-      path.join(outputDir, "ai.anicca.life-manager-connector-native-healthcheck.plist"),
-      "utf8",
-    );
-    assert.match(nativePass, /\/Users\/anicca\/Projects\/life-manager-main\/skills\/connector\/run\.sh/);
-    assert.match(healthcheck, /\/Users\/anicca\/Projects\/life-manager-main\/skills\/connector\/healthcheck\.sh/);
-    assert.doesNotMatch(`${nativePass}\n${healthcheck}`, /docker|host\.docker\.internal|connector-host-bridge|profitable-claude/i);
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true });
-  }
-});
-
-test("renderer rejects the live LaunchAgents directory after path normalization", () => {
-  const directory = temporaryDirectory();
-  try {
-    const liveOutput = `${path.join(directory, "Library", "LaunchAgents")}/`;
-    const result = spawnSync("bash", [
-      RENDERER,
-      "--output-dir", liveOutput,
-      "--repo-root", REPO_ROOT,
-      "--life-manager-home", path.join(directory, "life-manager-home"),
-    ], { encoding: "utf8", env: { ...process.env, HOME: directory } });
-
-    assert.equal(result.status, 2, result.stderr);
-    assert.equal(fs.existsSync(liveOutput), false);
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true });
-  }
-});
-
-test("healthcheck rejects a stale heartbeat without a recovery command", () => {
-  const directory = temporaryDirectory();
-  const stateDir = path.join(directory, "state");
-  try {
-    const gog = path.join(directory, "gog");
-    const probe = path.join(directory, "healthy-browser-probe");
-    const probeCount = path.join(directory, "probe-count");
-    fs.writeFileSync(gog, "#!/usr/bin/env bash\nexit 0\n", { mode: 0o700 });
-    fs.writeFileSync(probe, [
-      "#!/usr/bin/env bash",
-      "set -eu",
-      `printf '1\\n' >> ${JSON.stringify(probeCount)}`,
-      "exit 0",
-    ].join("\n"), { mode: 0o700 });
-    assert.deepEqual(acquireLock({
-      stateDir,
-      token: "health-owner-token-123456",
-      pid: process.pid,
-      now: "2026-08-02T00:00:00.000Z",
-      staleMs: 60_000,
-    }), { status: "acquired" });
-    assert.deepEqual(heartbeat({
-      stateDir,
-      token: "health-owner-token-123456",
-      stage: "worker_started",
-      now: "2026-08-02T00:00:00.000Z",
-    }), { status: "updated" });
-    assert.deepEqual(releaseLock({ stateDir, token: "health-owner-token-123456" }), { status: "released" });
-
-    const result = spawnSync("bash", [HEALTHCHECK], {
-      encoding: "utf8",
+      stateDir: path.join(directory, "state"),
+      ownerToken: "native-pass-minimal-owner-123456",
       env: {
-        ...process.env,
         HOME: directory,
-        LM_CONNECTOR_STATE_DIR: stateDir,
-        LM_CONNECTOR_HEARTBEAT_STALE_MS: "1",
-        GOG_BIN: gog,
-        CONNECTOR_NATIVE_HEALTH_PROBE_BIN: probe,
+        GOG_ACCOUNT: "private@example.com",
+        DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
+        GOG_KEYRING_PASSWORD: "private-keyring",
       },
+      createDependencies(input) {
+        factoryInput = input;
+        return Object.freeze({ boundary: "production" });
+      },
+      async runWake() { return { status: "completed_no_effect" }; },
     });
-    assert.equal(result.status, 1, result.stderr);
-    assert.equal(fs.existsSync(probeCount), false);
-    assert.equal(fs.readFileSync(HEALTHCHECK, "utf8").includes("launchctl"), false);
+    assert.equal(factoryInput.telegramTarget, "123456789");
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
 
-test("healthcheck reports healthy only after fresh state and read-only dependencies succeed", () => {
-  const directory = temporaryDirectory();
-  const stateDir = path.join(directory, "state");
-  try {
-    const gog = path.join(directory, "gog");
-    const probe = path.join(directory, "healthy-browser-probe");
-    const probeCount = path.join(directory, "probe-count");
-    fs.writeFileSync(gog, "#!/usr/bin/env bash\nexit 0\n", { mode: 0o700 });
-    fs.writeFileSync(probe, [
-      "#!/usr/bin/env bash",
-      "set -eu",
-      `printf '1\\n' >> ${JSON.stringify(probeCount)}`,
-      "exit 0",
-    ].join("\n"), { mode: 0o700 });
-    const token = "fresh-health-owner-token-123456";
-    const now = new Date().toISOString();
-    assert.deepEqual(acquireLock({
-      stateDir,
-      token,
-      pid: process.pid,
-      now,
-      staleMs: 60_000,
-    }), { status: "acquired" });
-    assert.deepEqual(heartbeat({
-      stateDir,
-      token,
-      stage: "worker_finished",
-      now,
-    }), { status: "updated" });
-    assert.deepEqual(releaseLock({ stateDir, token }), { status: "released" });
-
-    const result = spawnSync("bash", [HEALTHCHECK], {
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        HOME: directory,
-        LM_CONNECTOR_STATE_DIR: stateDir,
-        LM_CONNECTOR_HEARTBEAT_STALE_MS: "60000",
-        GOG_BIN: gog,
-        CONNECTOR_NATIVE_HEALTH_PROBE_BIN: probe,
-      },
-    });
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(fs.readFileSync(probeCount, "utf8"), "1\n");
-    assert.equal(result.stdout, '{"status":"healthy"}\n');
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true });
+test("native Kana identity fails closed before dependency or wake creation", async () => {
+  const invalidCases = [
+    ["missing file"], ["permissive mode", VALID_KANA, 0o644], ["invalid JSON", "{"],
+    ["missing family", { given: VALID_KANA.given }], ["missing given", { family: VALID_KANA.family }],
+    ["empty value", { family: "", given: VALID_KANA.given }], ["Hiragana", { family: "さくら", given: VALID_KANA.given }],
+    ["Kanji", { family: "桜", given: VALID_KANA.given }], ["Latin", { family: "Sakura", given: VALID_KANA.given }],
+    ["digit", { family: "サク1", given: VALID_KANA.given }], ["punctuation", { family: "サク!", given: VALID_KANA.given }],
+    ["control", { family: "サク\nラ", given: VALID_KANA.given }], ["outside-katakana-range", { family: "ヷ", given: VALID_KANA.given }], ["overlength", { family: "サ".repeat(101), given: VALID_KANA.given }],
+  ];
+  for (const [name, value, mode] of invalidCases) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-kana-invalid-")); let factoryCalls = 0; let wakeCalls = 0;
+    try {
+      if (value !== undefined) writeKanaProfile(directory, value, mode);
+      await assert.rejects(runNativePass({
+        repoRoot: REPO_ROOT,
+        stateDir: path.join(directory, "state"),
+        ownerToken: "native-pass-kana-invalid-owner-123456",
+        env: { ...BASE_ENV, HOME: directory },
+        createDependencies() { factoryCalls += 1; return {}; },
+        async runWake() { wakeCalls += 1; return { status: "unexpected" }; },
+      }), /Connector minimal pass unavailable/, name);
+      assert.equal(factoryCalls, 0, name); assert.equal(wakeCalls, 0, name);
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
   }
 });
 
-test("healthcheck restores the Homebrew PATH under a launchd-like minimal environment", () => {
-  const directory = temporaryDirectory();
-  const stateDir = path.join(directory, "state");
-  try {
-    const probe = path.join(directory, "healthy-browser-probe");
-    const probeCount = path.join(directory, "probe-count");
-    fs.writeFileSync(probe, [
-      "#!/usr/bin/env bash",
-      "set -eu",
-      `printf '1\\n' >> ${JSON.stringify(probeCount)}`,
-      "exit 0",
-    ].join("\n"), { mode: 0o700 });
-    const token = "launchd-path-owner-token-123456";
-    const now = new Date().toISOString();
-    assert.deepEqual(acquireLock({
-      stateDir,
-      token,
-      pid: process.pid,
-      now,
-      staleMs: 60_000,
-    }), { status: "acquired" });
-    assert.deepEqual(heartbeat({
-      stateDir,
-      token,
-      stage: "worker_finished",
-      now,
-    }), { status: "updated" });
-    assert.deepEqual(releaseLock({ stateDir, token }), { status: "released" });
-
-    const result = spawnSync("/bin/bash", [HEALTHCHECK], {
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        HOME: directory,
-        PATH: "/usr/bin:/bin",
-        LM_CONNECTOR_STATE_DIR: stateDir,
-        LM_CONNECTOR_HEARTBEAT_STALE_MS: "60000",
-        CONNECTOR_NATIVE_HEALTH_PROBE_BIN: probe,
-      },
-    });
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(fs.readFileSync(probeCount, "utf8"), "1\n");
-    assert.equal(result.stdout, '{"status":"healthy"}\n');
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true });
+test("native Japanese identity is required, bounded, and control-free", async () => {
+  const invalidCases = [["missing", undefined], ["empty", ""], ["whitespace", "   "], ["padded", " 桜 太郎"], ["overlength", "桜".repeat(201)], ["control", "桜\n太郎"], ["c1-control", "桜\u0080太郎"], ["non-string", { family: "桜", given: "太郎" }]];
+  for (const [name, nameJa] of invalidCases) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-name-ja-invalid-")); let factoryCalls = 0; let wakeCalls = 0;
+    try {
+      writeKanaProfile(directory, VALID_KANA, 0o600, nameJa);
+      await assert.rejects(runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-name-ja-invalid-owner-123456", env: { ...BASE_ENV, HOME: directory }, createDependencies() { factoryCalls += 1; return {}; }, async runWake() { wakeCalls += 1; return { status: "unexpected" }; } }), /Connector minimal pass unavailable/, name);
+      assert.equal(factoryCalls, 0, name); assert.equal(wakeCalls, 0, name);
+    } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   }
+});
+
+test("native Japanese identity preserves the Katakana long-vowel mark", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-name-ja-long-vowel-")); let profile;
+  try { writeKanaProfile(directory, { family: "サー", given: "テスト" }, 0o600, "佐藤 太郎"); await runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-name-ja-long-vowel-123456", env: { ...BASE_ENV, HOME: directory }, createDependencies(input) { profile = input.peatixAttendeeProfile; return {}; }, async runWake() { return { status: "completed_no_effect" }; } }); assert.equal(profile.name_hiragana, "さー てすと"); } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });

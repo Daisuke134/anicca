@@ -3,7 +3,7 @@
 status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
-updated: 2026-08-05 JST
+updated: 2026-08-12 JST
 scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号資産、法定通貨投資・NISA
 active_execution_surface: LOCAL_ONLY_UNTIL_ORDER_5_COMPLETE
 
@@ -29,7 +29,7 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 
 | organ / loop | 内部作業ではなく要求する現実成果 |
 |---|---|
-| Connector | rolling 21日を見て、空いている各日に東京の対面eventを入れ、二重予約せず人と会う |
+| Connector | 複数の東京event site（現行: Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY）を14日窓で探索し、無料・Calendar非衝突候補へ実申込して人と会う |
 | LT | 登壇応募、登壇、Life Manager demo、参加者との接点 |
 | Fundraising | 実提出、返信、面談、採択、資金とpeer group |
 | Job Hunter | 実応募、返信、面接、offer、給与改善 |
@@ -37,25 +37,123 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 
 「no action」が安全上正しい場面はある。たとえばrisk条件を満たさないcrypto取引は実行しない。
 その場合も、何もせず閉じるのではなく、停止理由、次の観測、改善案、次回判断時刻という現実の
-次行動を残す。Connectorではno-eventを正常終了にせず、実参加予約までloopを継続する。
+次行動を残す。Connectorでは現行14日窓の設定済みproviderを尽くした`completed_no_effect`も未完了の
+観測結果として報告し、Items 10B〜23のacceptanceが揃うまでloopを継続する。
 
-### 0.2 現在地と残りの一本道（2026-08-05 JST）
+### 0.2 現在地と残りの一本道
 
-正本実装は`/Users/operator/Projects/life-manager-main`の`main`である。`O1A-01〜06`と
-`O1B-01〜24`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
-全candidateを21日へ投影し、好みで候補を捨てず、本文・主催者・参加者・場所・時間からgoalと
-serendipityを根拠付き評価するところまで完成した。2026-08-02に最後に証拠化されたcoverageは
-`open=18 / covered_existing=0 / covered_new=1 / unavailable=2`である。これは現在時刻のcoverageではなく
-履歴証拠である。8月15日の実Luma登録は確認mailとGoogle Calendarを伴う`covered_new`、8月2日・3日は
-実Calendar blocker付き`unavailable`だった。現在値はnative passが実Calendarとproviderを再読取して
-新しいsnapshotを保存するまでunknownとし、古い18日を現在値として報告しない。
+Connectorの進行中正本はbranch `feature/connector-native-completion`のworktree
+`/Users/operator/Projects/life-manager-main/.worktrees/connector-native-completion`である。canonical mergeが完了するまで
+`main`を現在実装の正本とみなさない。`O1A-01〜06`と`O1B-01〜24`は実装・実測・証拠化・push済み。
+過去の21日coverage証拠（2026-08-02の`open=18 / covered_existing=0 / covered_new=1 / unavailable=2`を含む）は履歴であり、
+現行runnerの14日acceptance窓・現在値・完了条件ではない。現在値はnative passが実Calendarとproviderを再読取して保存するsnapshotだけを採用する。
 
-native local runtimeはlock、heartbeat、healthcheck、CloakBrowserの共有page、Luma inventory、全Calendarの
-read-only取得、21日coverage continuationまで`main`へpush済みである。一方、ローカルworking treeには
-登録receipt → Calendar同期 → coverage再構築 → Telegram送信を直列化するTask 5 write pipelineがあり、
-focused testは36/36 PASSしたが、未commit・未pushでdefault native runtimeからも未接続である。
-native launchdとhealthcheckは未登録、native state directoryも未生成である。したがってConnectorは
-「部品実装が進んだ」状態であり、「ユーザーが何も管理せず結果だけ受け取る常駐agent」は未完成である。
+現在の実装状態（2026-08-12 JST、branchはcleanかつremote-synced）:
+
+| 観測 | 現在の事実 | target / 境界 |
+|---|---|---|
+| branch / owner | `feature/connector-native-completion` のworktreeが実装SSOT | canonical mergeはItem23まで保留 |
+| production providers | `skills/connector/native-pass.js` の順序はLuma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY | 7 providerすべてを同じowned pageでproduction探索する。未知/次siteはItem20 |
+| acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
+| agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerをprovider別step上限内で使う。click成功だけをcompletionにせずofficial parent/child readbackを必須化 | `applied_bundle` evidence adaptersは現行7 providerへ配線済み。実bundleはLuma/Connpass/Peatixに存在し、他4 providerは非衝突候補待ち |
+| latest official wake | `wake-44eb04e69ececde08a73a2d1`: 7-provider順を完走し`completed_no_effect / existing_bundles_reused`、Telegram ID `12782`、heartbeat `worker_finished`、launchd exit 0 | Doorkeeper `100/12/4/0/0`、Eventbrite `184/0/0/0/0`、TECH PLAY `50/22/3/0/0`。新規外部作用0、bundle `13→13` |
+| lifecycle / lock | Native labelだけが09:00 dailyでloaded、runs 1 / not running / last exit 0。healthcheck・Healer・bridgeはunloaded。process 0、lockなし、owned target intersection 0 | single production owner 1 / schedule 1。次の実行主体はlaunchd Native labelだけ |
+| TODO境界 | Items1〜18とItem22は完了。Item19はPeatixのみbundle完了、他4 providerはCalendar非衝突候補待ちのconditional pending。NO PASSIVE WAITINGによりItems20→21を進め、その後Item23 | 完了判定は最新Active TODOの19〜23で行う |
+
+#### Connector architecture — 現行productionと未完境界
+
+実線は現在official entrypointから到達する経路、灰色はacceptance後にだけ有効化する経路である。
+ConnectorはLuma専用agentではなく、同じowned browser pageでproviderを順番に尽くすevent application agentである。
+ただし「providerを探索できる」と「実申込の証拠bundleを完成できる」は別contractであり、後者をlive実証するまで
+production supportedと表示しない。
+
+```mermaid
+flowchart TB
+    USER["Dais<br/>通常surfaceはTelegramだけ"]
+
+    subgraph TRIGGER["1. 起動とsingle owner"]
+        FG["supervised bounded foreground wake"]
+        DAILY["現在: launchdで一日一回 09:00<br/>Native only loaded / runs 0"]
+        ENTRY["official entrypoint<br/>skills/connector/run.sh"]
+        LOCK{"single-instance lockを取得?"}
+        HEART["owner token + heartbeat"]
+        FG --> ENTRY
+        DAILY --> ENTRY
+        ENTRY --> LOCK
+        LOCK -->|Yes| HEART
+        LOCK -->|busy| BUSY["exit 75<br/>二重runを作らない"]
+    end
+
+    subgraph OBSERVE["2. 現実を読む"]
+        CAL["全Google Calendar<br/>今日を含む14日busy inventory"]
+        TARGET["CloakBrowser :9222<br/>session 1 / owned target 1 / page 1"]
+        PROVIDERS["ordered provider loop<br/>Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY"]
+        DISCOVER["同じpageで候補をdiscover"]
+        GATE{"無料・受付中・14日内<br/>Calendar非衝突?"}
+        HEART --> CAL --> TARGET --> PROVIDERS --> DISCOVER --> GATE
+        GATE -->|No| NEXT["次候補 / 次provider"]
+        NEXT --> PROVIDERS
+    end
+
+    subgraph APPLY["3. 申込はscript-first"]
+        NAV["candidate URLへsame-page navigate"]
+        PRE{"official parent / child-frame pre-readbackが<br/>already registered / pending?"}
+        CACHE["verified action cache"]
+        DIRECT["provider script-first action"]
+        MODEL["fallbackはunknown UI時だけ<br/>最大10 step<br/>Codex gpt-5.6-terra"]
+        POST{"official parent / child-frame readbackが<br/>registered / pending?"}
+        GATE -->|Yes| NAV --> PRE
+        PRE -->|Yes| SUPPORT
+        PRE -->|No| CACHE
+        CACHE -->|registered / pending| SUPPORT
+        CACHE -->|not completed| DIRECT
+        DIRECT -->|completed| POST
+        DIRECT -->|effect_unknown| CIRCUIT
+        DIRECT -->|safe not completed| MODEL
+        MODEL -->|completed| POST
+        MODEL -->|safe failure| FAIL
+        MODEL -->|effect_unknown| CIRCUIT
+        POST -->|No| FAIL["failure count +1<br/>次候補へ継続"]
+        FAIL --> NEXT
+    end
+
+    subgraph PROVE["4. agentの自己申告ではなく外部証拠で確定"]
+        SUPPORT{"minimal evidence chainが<br/>providerを受理?"}
+        LUMA["evidence対応<br/>Luma / Connpass / Peatix / Meetup"]
+        EVIDPENDING["acceptance pending<br/>Doorkeeper / Eventbrite evidence adapter未完"]:::pending
+        PNG["provider page full-page PNG<br/>SHA-256 + provider receipt"]
+        GCAL["Google Calendar冪等write<br/>独立readbackで1件を確認"]
+        TG["Telegram message + photo<br/>positive provider IDs"]
+        BUNDLE["durable applied_bundle<br/>同一lineage"]
+        POST -->|Yes| SUPPORT
+        SUPPORT -->|evidence対応provider| LUMA --> PNG --> GCAL --> TG --> BUNDLE
+        SUPPORT -->|bundle未完provider| EVIDPENDING --> CIRCUIT
+    end
+
+    subgraph FINISH["5. 必ず片付けて報告"]
+        EXHAUST["全候補終了<br/>completed_no_effect / providers_exhausted"]
+        CIRCUIT["circuit_open<br/>3連続failure / 10分 / effect_unknown<br/>evidence failureは即停止"]
+        REPORT["wake reportをdurable保存<br/>Telegram provider IDを確認"]
+        CLOSE["owned targetをrelease / close<br/>lockをexact ownerだけrelease"]
+        NEXT -->|残りなし| EXHAUST --> REPORT
+        FAIL -->|閾値到達| CIRCUIT --> REPORT
+        BUNDLE --> REPORT
+        REPORT --> CLOSE --> USER
+    end
+
+    subgraph EXPAND["6. live acceptance後だけ拡張"]
+        MORE["Item19<br/>Meetup / Doorkeeper / Eventbrite live bundle"]:::future
+        UNKNOWN["Item20<br/>unknown / next provider contract"]:::future
+        MORE --> UNKNOWN
+    end
+    DAILY -.Items19/20 acceptance後.-> MORE
+
+    classDef future fill:#f3f4f6,stroke:#9ca3af,color:#4b5563,stroke-dasharray:5 5;
+    classDef pending fill:#fff7ed,stroke:#ea580c,color:#9a3412;
+```
+
+現行の`providers_exhausted`は、上図の設定済み6 providerをそのwakeで尽くしたという意味だけであり、
+東京または世界中のevent siteを検索し終えたという意味ではない。provider追加はItem19、未知siteの自動取り込みはItem20で閉じる。
 
 `O1C-00 Life Manager startup context正本化`は2026-08-02に実装・監査・pushまで完了した。
 現在の実装優先は、保持していたConnectorの再開位置`O1B-25`である。残作業は、途中へ別trackを混ぜず
@@ -64,7 +162,7 @@ native launchdとhealthcheckは未登録、native state directoryも未生成で
 ```text
 完了: O1B-20〜24 source handoff、候補継続、Calendar・移動時間・支出gate
 完了: O1C-00 Life Manager startup context正本化（旧Anicca product提出防止）
-いま: O1B-25/26 native read→Luna判断→実登録→receipt→Calendar→Telegramを一つのloopとして完成
+いま: O1B-25/26 native read→決定論的gate→script-first実登録→unknown UIだけbounded model fallback→parent readback→receipt→Calendar→Telegramを一つのloopとして完成
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -96,28 +194,30 @@ flowchart TD
 
     subgraph LOCAL["Mac mini上で継続実行 — 通常は見えない"]
         CAL["全Calendarの空きと移動時間を確認"]
-        DISCOVER["Luma / 許可済みevent sourceを探索"]
-        LUNA["Luna workerが興味・目標・serendipityを判断"]
+        DISCOVER["現行: Luma → Connpassを探索"]
         GATE{"重複・時間・移動・予算gateを通過?"}
-        APPLY["参加登録"]
+        APPLY["cache / provider workflowで参加登録"]
+        MODEL["unknown UI時だけbounded model action<br/>現行はLuma・最大10 step"]
         RECEIPT{"provider receiptを検証できた?"}
         VERIFY["確認mail・guest binding・ticket / QRを検証"]
         SYNC["Google Calendarへ冪等登録しreadback"]
-        COVERAGE["rolling 21日coverageを再計算"]
-        NEXT{"open = 0?"}
+        COVERAGE["現行14日窓の候補・申込状態を再計算"]
+        NEXT{"設定済みprovider / 日の処理が残る?"}
 
-        CAL --> DISCOVER --> LUNA --> GATE
+        CAL --> DISCOVER --> GATE
         GATE -->|No| DISCOVER
-        GATE -->|Yes| APPLY --> RECEIPT
+        GATE -->|Yes| APPLY
+        APPLY -->|通常| RECEIPT
+        APPLY -->|unknown UI| MODEL --> RECEIPT
         RECEIPT -->|結果不明| RECON["reconciliationへ保存し二重申込みを防止"]
         RECON --> RECEIPT
         RECEIPT -->|Yes| VERIFY --> SYNC --> COVERAGE --> NEXT
-        NEXT -->|No| CAL
+        NEXT -->|Yes| CAL
     end
 
     subgraph TELEGRAM["Daisが見るもの"]
         BOOKED["予約完了: event・日時・場所・理由・Calendar・ticket"]
-        DAILY["短い日次brief: 新規予約・今後の予定・残open日"]
+        DAILY["短い日次brief: 新規予約・今後の予定・残りの候補/日"]
         ACTION["本人操作が不可避な時だけ1アクションを依頼"]
         CONTROL["返信で停止・興味修正・予算変更"]
     end
@@ -125,34 +225,43 @@ flowchart TD
     U --> ON
     ACK --> CAL
     COVERAGE --> BOOKED --> U
-    NEXT --> DAILY --> U
+    NEXT -->|No| DAILY --> U
     APPLY -->|OAuth等が必要| ACTION --> U
     U --> CONTROL --> PROFILE
 ```
 
 Telegramの予約完了messageは、少なくともevent名、日時、場所、選定理由、event URL、Calendar URL、
-ticketまたはQR、現在の21日coverage countsを含む。receiptが検証できない登録、Calendar readbackが無い登録、
-Telegram provider message IDが無い送信を成功として表示しない。日次briefは内部stageやstack traceを見せず、
-成立した現実結果、未処理日数、次にsystemが行うことだけを伝える。
+ticket/QRまたは同等provider receipt、現在の14日状態countsを含む。receiptが検証できない登録、Calendar readbackが無い登録、
+Telegram provider message IDが無い送信を成功として表示しない。全wakeは`applied / continuing / recovering`を必ず報告し、週次rollupも
+成功0件を含め必ず報告する。報告は内部stack traceを見せず、成立した現実結果、安全なfailure class、未処理日数、次の自動actionを伝える。
+旧rolling-21 coverageは履歴および長期目標として保持するが、現行14日runnerのuser-facing acceptanceまたはgateではない。Peatix、Meetup、Doorkeeper、Eventbriteおよび未知/次サイトは、Item19/20完了後のtargetとしてのみ表示する。
 
 #### 0.2.2 Connectorの残TODO — 実行順SSOT
 
-以下はcheckboxの古い完了表示より優先する。各項目は前項のverified outputを入力にするため、順序を入れ替えない。
+実行順の唯一の正本は、このspec内の最新 `### Active remaining TODO SSOT` とする。見出し内の進捗番号が最大のものだけが有効で、
+それ以前のTODO、チェックリスト、実行順、図は全て履歴であり、未完項目を復活させる根拠にしない。
+この節、Order checkbox、過去の進捗文に異なる「次TODO」が残っていても実行順には使用しない。
 
-1. **Task 5を正本化する**: 未commitのnative write pipelineとTelegram copyをreviewし、focused testを再実行してcommit/pushする。
-2. **Luna判断境界を接続する**: verified inventoryとprofileをLuna bounded workerへ渡し、候補と根拠だけを受け取る。LLMにreceipt成功判定をさせない。
-3. **default native runtimeへwrite pipelineを接続する**: 明示的に選択された候補だけを、登録→receipt→Calendar→coverage→Telegramの順で処理する。
-4. **Task 6を実装する**: Gmail確認message、guest binding、ticket / QR captureを検証し、Telegram artifactへ接続する。
-5. **event source contractを閉じる**: Lumaをprimaryとする。`Compass`がliteralな別providerならadapter未実装としてsource/auth/apply/receiptを追加する。Daisが`connpass`を指した場合は承認済み公式APIだけをfallback接続する。
-6. **無料Luma一件でnative実E2Eを通す**: 実探索、Luna選定、実登録、provider receipt、確認mail、ticket / QR、Calendar write/readback、Telegram message IDを一つのlineageで証拠化する。
-7. **native launchdをlocalへinstallする**: canonical templateをrenderし、native workerとhealthcheckをloadしてheartbeat、state、logをreadbackする。
-8. **restart/idempotencyを実証する**: concurrent lock、stale recovery、登録直後crash、Telegram retry、unknown effect reconciliationで二重申込みが起きないことを実状態で確認する。
-9. **rolling 21日loopを完了させる**: 各passで次のopen日を処理し、`open=0`まで継続する。各実登録と日次briefをTelegramへ送る。
-10. **O1B-25/26を閉じる**: fresh tests、実service receipt、Calendar readback、Telegram message ID、launchd連続稼働、commit/pushが揃った時だけ完了にする。
+最新の実測状態（2026-08-10 JST、進捗226のofficial wake後）: `wake-44d1f986c595554429c6ea29` は
+`completed_no_effect / providers_exhausted / consecutive_failure_count 0`で終了し、Telegram provider message IDは`10332`だった。
+現行設定済みproviderはLumaとConnpassだけで、Lumaは`observed 30 / normalized 30 / window 16 / free_open 4 / calendar_free 0`、
+Connpassは`observed 6 / normalized 6 / window 6 / free_open 0 / calendar_free 0`。新規Submit、Calendar write、candidate attempt、
+applied bundleの増分は0。audit fileはmode `0600`、run終了時lock absent、Native・healthcheck・Healerの3 labelは全てunloadedである。
+installed Native plistにlegacy `StartInterval=300`は残るがunloadedであり、Item17のsingle daily scheduleはItems10〜16 acceptance後までloadしない。
 
-Connectorのdoneは「一件予約できた」ではない。`open=0`であり、各日が`covered_existing`、
-`covered_new`、または実Calendar blocker付き`unavailable`のいずれかとして証拠化され、Daisがagentを
-手動管理せずTelegramで結果を理解できる状態である。
+**Executor boundary:** 実event discovery、form入力、Submit、provider readback、Calendar、screenshot、Telegramを行う主体はofficial Connector
+launchd entrypointである。現在はConnector labelがunloadedのためbounded foreground kickstartでacceptanceを実行し、Item17完了後だけsingle daily scheduleが同entrypointを起動する。
+対話中のCodex、臨時script、手動browser操作が代わりに申し込んだ結果をConnectorのlive acceptanceへ数えない。Codexの仕事は先頭の実故障をTDDで直し、
+commit/pushし、official entrypointをboundedに呼び出して観測し、loop自身の外部証拠で完了判定することである。
+各fresh open dateの現行provider passは`Luma → Connpass`の順だけを使う。`providers_exhausted`はこの設定済み2 providerを
+尽くしたことだけを表し、東京/世界の全event siteを検索した意味ではない。Peatix → Meetup → Doorkeeper → EventbriteはItem19で一つずつ
+追加し、未知/次サイトはItem20のunknown-provider contractで扱う。crash/restart時も、現行providerのexact境界から再開し、
+未設定providerへ暗黙に進めない。
+
+Connectorの現行completion gateは、最新TODOのItem 10BおよびItems 11〜23で定義する。Item 10Bは14日窓のLuma/Connpass live E2E、
+Items 11〜16は同一lineageの証拠、recovery、idempotency、circuit/self-heal、Item17〜18はsingle daily scheduleと初回scheduled wake、
+Item19〜20はprovider拡張、Items21〜23はrestart、cleanup、canonical mergeを閉じる。旧`open=0`/rolling-21 fill-every-dayは
+履歴・長期目標であり、現行runtimeの終了条件やsafe no-effect判定ではない。
 
 各checkboxの完了条件は「codeを書いた」ではない。fresh test、実serviceでのreadbackまたは
 許可された実action、receipt/ledger、Telegramで人間が理解できる報告、commit、pushが揃った時だけ
@@ -431,7 +540,7 @@ local完成gateの後だけ:
 
 | 項目 | 実測 | Daisが今渡すもの |
 |---|---|---|
-| Google Calendar / Gmail | `gog` OAuthで`redacted@example.invalid`のcalendar、gmail scopeが有効 | 追加credentialなし |
+| Google Calendar / Gmail | `gog` OAuthで`<REDACTED_EMAIL>`のcalendar、gmail scopeが有効 | 追加credentialなし |
 | CloakBrowser daily-driver | `:9222`が応答中。Lumaの現在loginは未確認 | 追加browserなし。agentが同profileと既存Google認証でloginを復旧 |
 | Telegram | Life Manager / OpenClawのtoken設定あり | 追加tokenなし |
 | 応募identity | 氏名、かな、romaji、電話、Google loginの環境設定あり | 秘密値をchatへ再送しない |
@@ -453,7 +562,7 @@ AI登壇枠だけを対象にし、候補0件をexit 0で終了する。Luma dis
 | [browser-use](https://github.com/browser-use/browser-use) | agent向けブラウザ操作基盤。2026-08-01実測で約10.7万stars、MIT | 調査比較だけ。現在のtrackへ導入しない |
 | [Steel Browser](https://github.com/steel-dev/steel-browser) | self-host可能なagent browser API。約7.4千stars、Apache-2.0 | 調査比較だけ。daily-driverの代替として導入しない |
 | [Luma API](https://docs.luma.com/reference/getting-started-with-your-api) | 公式APIは主催者自身のevent/guest管理用で、calendar単位keyとLuma Plusが必要 | 参加者RSVPは既存daily-driverを使う |
-| [connpass API v2](https://connpass.com/about/api/v2/) | API key必須、1秒1request。公式API外の自動アクセスは禁止 | API key取得までconnpass自動操作を止め、Lumaを先に完成させる |
+| [connpass参加者ガイド](https://help.connpass.com/participants/search-for-events.html) | calendar/explore/event pageからイベントを探せる | Connector専用CloakBrowser `:9222`のparent-owned targetだけでdiscover/apply/readbackする。APIは使わない |
 | [YC創業者動画](https://www.ycombinator.com/video/) | 1分、創業者だけ、全創業者、原稿朗読ではなく要点で話す | 58秒の既存候補を実画面で検証して使用する |
 
 ### 4.2 求人応募
@@ -504,7 +613,7 @@ AI登壇枠だけを対象にし、候補0件をexit 0で終了する。Luma dis
 | `ai.anicca.connector-fill-gaps` | 毎朝07:50。CloakBrowser `:9222`と`gog`を使うが、多数のbounded agentがtimeout | schedulerは残し、1日1巨大fan-outをdurable queueへ分解 |
 | `connector_daily_report.sh` | Telegram日報を持つが、送信responseのparseが壊れる | Telegram adapterの戻り値contractを直し、delivery receiptをledger化 |
 | `anicca-meetup-talk-applier` | discover、AI Tinkerers応募、Calendar登録、state JSONが存在 | pitchとplatform知識をevents packへ移植。別loopとしては退役 |
-| `connpass-lt-discover.py` | LT枠を分類できるが、証跡不足のためsubmit直前で停止 | API keyまたは確認mailを含むE1/E2/E3経路ができるまで送信禁止 |
+| `connpass-lt-discover.py` | 旧経路。現在のruntimeから到達禁止 | parent-owned browser discovery、submit、readback、E1/E2/E3をnative runtimeで行う |
 | `apply-to-yc` | 20 text fields、動画、validationまで到達。deprecated | 画面知識だけ`apply-to-funder`へ移植。二重submitしない |
 | `apply-to-funder` | JSON form specとguardrailがある。YC/JSTはdry-run止まり | funders packの入力adapterとして残し、stateは共通ledgerへ移す |
 | `apply-anywhere` | YC、ANRI、Coral、Solo Founders等の過去receiptを記録 | ATS/form routing知識を共通ACTへ移植。未実装shell骨格を正本にしない |
@@ -698,12 +807,12 @@ Luma認証を復旧し、実イベント一件の登録をverified receiptまで
 
 O1B-04開始: 専用plan
 `docs/superpowers/plans/2026-08-01-connector-o1b04-live-luma-registration.md`を追加した。既存
-`redacted@example.invalid`の`gog` OAuthはGmail/Calendarともread可能で、過去Luma sign-in code mailも
+`<REDACTED_EMAIL>`の`gog` OAuthはGmail/Calendarともread可能で、過去Luma sign-in code mailも
 実在する。新しいcodeは同じ`:9222` pageから要求し、request後に届いた新着mailだけを自動照合する。
 code値、mail本文、cookie、tokenは正本やlogへ残さない。
 
 O1B-04進捗1: 既存CloakBrowser daily-driverの共有context 1つだけを使い、
-`redacted@example.invalid`へ新しいLuma sign-in codeを要求した。最初のpollは英語件名に限定したため、
+`<REDACTED_EMAIL>`へ新しいLuma sign-in codeを要求した。最初のpollは英語件名に限定したため、
 実際に届いた日本語件名を見落とした。検索を`support@luma.com`送信元と今回要求の直近時刻へ修正し、
 直近15分の今回要求分だけを同じOTP pageへ入力した。code値は保存・spec記載・最終出力していない。
 認証後readbackは`https://luma.com/home`、auth inputなし、共有context 1、既存browser維持。
@@ -890,40 +999,10 @@ owner-only archiveとSHA-256 manifestありになった。初回のarchive順序
 run 26、last exit 0、workerはrunning/healthyで`outbound.event.apply`を保持する。events pack live read-onlyも
 認証済み、inventory終端7 rounds、35候補で成功した。outbound 110件、runtime 33件、旧inventory 22件が成功。
 実測証拠: `docs/evidence/outbound/2026-08-01-o1b10-live-legacy-retirement.json`。
-次は固定順序どおりO1B-11で、connpassの現行公式API提供・申請経路を確認し、key取得まで自動アクセスを禁止する。
-
-O1B-11開始: 専用plan
-`docs/superpowers/plans/2026-08-01-connector-o1b11-connpass-api-application.md`を追加した。2026-08-01の
-connpass公式help、v2 reference、利用規約を再調査した。v2は全endpointでAPI key必須。referenceは1秒1requestだが、
-2026-08-01に実画面で確認した個人申請formはさらに厳しく5秒1request以下を要求するため、実装は5秒間隔に固定する。
-個人・コミュニティは無料審査制でkey 1本、審査約5営業日、個人申請は非商用同意必須である。企業利用は
-月額297,000円または年額3,564,000円。v2には参加申込みendpointがなく、events/groups/users等のGETだけである。
-さらに公式API以外の自動crawler/scraper等は規約で禁止される。よって個人keyはDais本人のローカル・非商用・
-read-only event discoveryだけに使い、Life Manager Webへ転用しない。connpass browser自動申込みは行わず、
-Lumaを実予約sourceとしてcoverageを埋める。key受領まではconnpassへの全自動network accessをcodeで0にする。
-
-O1B-11進捗1（RED）: key欠落時network 0、公式`/api/v2/events/` GETと`X-API-Key`だけ、任意URL・POST・
-不正query拒否、公式申請formの厳しい方へ合わせた5秒間隔の直列化、HTTP/schema failure時のsecret非反射を固定するtestを追加した。
-production clientはまだ存在しないためmodule不存在でREDになる。実runtime auditでは旧launchd 2本は退役済みだが、
-stale OpenClaw jobs fileに`connpass-lt-apply-daily`と`anicca-booking-daily`がenabledで残り、正本
-`anicca-booking`にもFirecrawl/ブラウザconnpass経路が残ることを確認した。これらもkey申請前に無効化する。
-
-O1B-11進捗2: 公式v2 GETだけを許すfail-closed clientを実装した。key欠落時network 0、固定endpoint、
-`X-API-Key`、query schema、5秒間隔、secret非反射をtestで固定した。stale OpenClaw jobsは
-`anicca-meetup-discover-daily`、`anicca-meetup-apply-tokyo-weekly`、`connpass-lt-apply-daily`、
-`anicca-booking-daily`の固定4本だけをdisabledへ変更し、自己防衛用`anicca-cron-auto-disable`はenabledのまま
-保持した。旧`anicca-booking`はretired tombstoneへ置換し、runnerはcredential読取・network接続より前にexit 78、
-旧proposerからconnpass URLを削除した。focused 7件とoutbound 117件が成功した。key審査中もConnectorは止めず、
-認証済みLumaだけで21日coverageを埋める。
-
-完了: `O1B-11`。既存の本人設定から申請者名、connpass username、Gmail accountを取得し、raw値を
-specや証拠へ保存せず、公式個人・コミュニティ向けAPI利用申請formへ送信した。用途はDais本人の
-ローカルPCだけ、個人・非商用、1日1回のbatch、東京で今後21日以内のevent、最大30日非公開保存、
-第三者利用なし、リアルタイム呼出しなし、connpass参加申込みなしと明記した。送信後に公式Google Formの
-`formResponse`遷移を確認した。審査目安は約5営業日。key受領まではclientがnetwork 0でfail closedし、
-ConnectorはLumaで継続する。実測証拠:
-`docs/evidence/outbound/2026-08-01-o1b11-connpass-api-application.json`。次は固定順序どおりO1B-12で、
-一般参加eventとLT/CFP/demo登壇応募を別entity・別状態機械として実装する。
+O1B-11（履歴のみ、active runtimeへ適用禁止）: 過去にConnpass API利用を調査・申請しread-only clientを作ったが、
+進捗145のDais直接指示でtransport全体を永久にsupersedeした。API key、API client、API pagination、API responseは
+active discovery、registration、coverage、availability判断に使わない。履歴planとcommitは意思決定根拠ではなく監査記録だけである。
+唯一の現行置換はConnector専用CloakBrowser `:9222`のparent-owned browser discovery→submit→readbackである。
 
 O1B-12開始: 専用plan
 `docs/superpowers/plans/2026-08-01-connector-o1b12-separate-participation-entities.md`を追加した。
@@ -1290,7 +1369,7 @@ Life Manager Core
                  WorkerRuntime
        bounded task / heartbeat / cancel / timeout
                        |
-       CloakBrowser / gog / provider official API
+       CloakBrowser / gog / provider browser pages
                        |
         verified receipt -> local ledger -> Telegram
 ```
@@ -1315,6 +1394,18 @@ Life Manager Core
 
 ### 5.2 Order 1B — イベント
 
+このcheckbox群はmilestone履歴であり、現在の実行順には使わない。現在の順序と完了条件は最新の`Active remaining TODO SSOT`だけを使う。
+
+**Multi-source non-negotiable invariant:** ConnectorはLuma agentではなくevent application agentである。
+Lumaは現行productionで最初のproviderだが、検索・申込scopeをLumaへ限定する設計にはしない。現行runtimeのacceptance窓は14日で、
+無料・Calendar非衝突候補を対象に設定済みproviderを順に探索する。一providerの候補枯渇、満席、required form、selector drift、
+auth failure、provider障害をpass全体の終了条件にせず、同日次候補、設定済み次provider、次日へ進む。
+現在のproduction provider順は`Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY`（`DEFAULT_PROVIDERS`のexact値）。
+未知/次サイトはItem20のunknown-provider contractで追加するtargetである。各providerは
+`discovery / registration / effect_readback / screenshot_evidence`のlive proofが揃った能力だけを使用し、探索URLだけでは
+登録成功やcoverage達成に数えない。新providerは同じregistry contractへ追加し、特定site名をruntime coreへhardcodeしない。
+旧rolling 21日coverageと全6 providerの順序はこの節の履歴・長期目標として保持するが、現在のruntime/gateとは区別する。
+
 - [x] O1B-01 偽物の成功判定を削除
 - [x] O1B-02 event URLの2不具合を修正
 - [x] O1B-03 既存CloakBrowser daily-driverを使うLuma discover + RSVP adapterを完成
@@ -1325,7 +1416,7 @@ Life Manager Core
 - [x] O1B-08 agentが本文からLT/CFP/demoを判断する実Gemini evalを8/8で通す
 - [x] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [x] O1B-10 重複旧実装を退役
-- [x] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
+- [x] O1B-11 connpass API key申請履歴。進捗145でactive runtimeへのAPI使用を撤回しbrowser-onlyへ置換
 - [x] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [x] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [x] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
@@ -1334,16 +1425,18 @@ Life Manager Core
 - [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
-- [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
-- [x] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
-- [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
+- [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。旧Connpass API coreは履歴のみでactive runtimeから到達禁止
+- [ ] O1B-20A Connpass browser-only discovery・registration・effect readback・screenshot proofを完成し、live evidence後にregistration capabilityを有効化
+- [ ] O1B-20B Peatix、Meetup、Doorkeeper、Eventbriteを同じcapability registryへ追加し、Luma-only fallbackを除去
+- [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
+- [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [x] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25A Connectorの日常実行ownerをLife Manager localに一本化し、並行するlegacy実行経路を停止
-- [ ] O1B-25B canonical repoのLife Manager `skills/`へConnector capability、worker contract、native bootを置く
-- [ ] O1B-25C `launchd`→Life Manager local control planeからConnectorを起動し、single-instance lock、heartbeat、healthcheck、self-healを接続
-- [ ] O1B-25D 既存CloakBrowser daily-driverを所有権付きで直接使い、他agentのtab/contextを触らない
-- [ ] O1B-25E `gog`でGoogle Calendar全calendarを読み、21日coverageと二重予約防止をnative実行
+- [x] O1B-25B canonical repoのLife Manager `skills/`へConnector capability、worker contract、native bootを置く
+- [x] O1B-25C `launchd`→Life Manager local control planeからConnectorを起動し、single-instance lock、heartbeat、healthcheck、self-healを接続
+- [x] O1B-25D 既存CloakBrowser daily-driverを所有権付きで直接使い、他agentのtab/contextを触らない
+- [x] O1B-25E `gog`でGoogle Calendar全calendarを読み、21日coverageと二重予約防止をnative実行
 - [ ] O1B-25F Luma探索→実登録→確認mail/QR→Calendarをnative一巡で実証
 - [ ] O1B-25G 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
 - [ ] O1B-25H local一巡の実receipt保存後にlegacy worker、bridge、重複scheduleを退役
@@ -1353,13 +1446,13 @@ Native Connector acceptance test list（この順で実測）:
 - [ ] NT-C01 `launchd`がcanonical `life-manager-main`内のnative bootだけを起動し、legacy checkoutを参照しない
 - [ ] NT-C02 同時起動してもsingle-instance lockにより一巡だけがCloakBrowserを操作する
 - [ ] NT-C03 Connector所有tab/contextだけを開閉し、Gig・Job Hunter・他agentのtab/contextを変更しない
-- [ ] NT-C04 `gog`で全Google Calendarを読み、既存予定と移動時間に重なる候補を申込まない
+- [x] NT-C04 `gog`で全Google Calendarを読み、既存予定と移動時間に重なる候補を申込まない
 - [ ] NT-C05 rolling 21日の最初のopen日から候補を探し、満席・受付終了なら同日次候補へ進む
 - [ ] NT-C06 実Luma登録、確認mail、QR、Calendar eventが同一canonical eventとして照合される
-- [ ] NT-C07 Calendar再実行で同一eventを重複作成しない
+- [x] NT-C07 Calendar再実行で同一eventを重複作成しない
 - [ ] NT-C08 一候補・一sourceの失敗でpassを終了せず、21日のopenが0になるまで次候補・次日へ進む
 - [ ] NT-C09 Telegramがevent名、日時、場所、選定理由、Luma直接link、Calendar直接link、21日進捗を人間の言葉で送る
-- [ ] NT-C10 Telegramに`runner`、job ID、内部error codeだけの説明を出さない
+- [x] NT-C10 Telegramに`runner`、job ID、内部error codeだけの説明を出さない
 - [ ] NT-C11 Mac再起動後にlaunchdが自動復帰し、heartbeat/healthcheck/self-healが機能する
 - [ ] NT-C12 local一巡のreceipt保存後だけlegacy Connectorを停止し、次回もlocal経路だけで成功する
 
@@ -1458,7 +1551,7 @@ runで、description、organizer、住所を正規化し、attendee 0を`partici
 174/174成功。証拠: `docs/evidence/outbound/2026-08-02-o1b19-live-grounded-serendipity.json`。
 次は固定順序どおり`O1B-20`で、Lumaで実参加を確保できない日だけ許諾済みsourceへ継続する。
 
-O1B-20開始（2026-08-02）: connpass keyは未配備で、提出日以後の公式API返信mail 0件、credential-like
+O1B-20開始（履歴 / 進捗145でsuperseded）: connpass keyは未配備で、提出日以後の公式API返信mail 0件、credential-like
 value 0件。公式v2はkey必須のGET discoveryだけに使い、API外access、browser申込み、coverage creditを
 禁止する。MeetupはPro OAuth審査、Eventbriteは第三者eventのparticipant registration endpointを確認
 できないためactive sourceへ追加しない。verified Luma exhaustion後、keyありならconnpass公式GET、keyなし
@@ -2118,7 +2211,1458 @@ fresh reviewerは`ship`。ただしcoverageはまだread-onlyの新規21日snaps
 receipt確認、Calendar write/sync、Telegram送信は実行しない。したがってO1B-25B〜Gは未完了のまま、次は同じnative runtimeへ
 既存の登録・receipt・Calendar・Telegram write境界を順番に接続する。
 
-完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
+O1B-25進捗42（native実write一巡 / 2件目申請済み・Telegram未完）: `ai.anicca.life-manager-connector-native`を
+Mac miniのlaunchdへ登録し、5分間隔のbounded passとして実稼働させた。停止していた原因を、期限切れLuma session、
+React formへ伝わらないemail入力、Gmail code到着遅延、認証後navigation未待機、Codex Luna structured-output schema、
+競合日の後続日探索停止、native write dependency未配線、E3 URL readback未配線、Google Calendar実`htmlLink`形式の拒否へ
+順番に限定し、各sliceをRED→GREEN、commit、push、launchd kickstart、実readbackで閉じた。1件目
+`luma-event://event/c32o6i8l`（Builders Weekend）はLumaで「参加確定！」、Google Calendar event
+`ivg56l78ftmn2dilndfm3qqchs`を実readbackした。loop自身が次に`luma-event://event/u12izq9i`（8/13皇居ラン）へ申込み、
+Luma実画面は「承認待ち」である。これはhost承認型eventの正常な申請済み状態だが、providerが確定済みだけを成功扱いして
+unknown effectへ落としていたため、承認待ちも外部申請receiptを作れるreadback markerへ追加した。残TODOの順序は、
+2件目E1/E2/E3 receipt完成、Calendar同期、各eventのTelegram positive message ID保存、coverage/registration stateの
+次wakeへの永続化、2件を別日として再選択しない実証、full regression、DEBUG解除である。完了条件はまだ未達とする。
+
+O1B-25進捗43（2件目のreceipt・Calendar・Telegram実証）: host承認型Luma eventの実画面で「承認待ち」を
+申請済みreadback markerとして扱い、submit直後だけでなく次wakeのdetail再読でも既存申請へ復元するよう修復した。
+provider/detail focused testは18/18 GREEN。launchd Connector loopを`1c23c152e`でkickstartし、loop自身が
+`luma-event://event/u12izq9i`のE1/E2/E3 receiptを検証、Google Calendar event
+`0aalros12br3epht1a5p00o5m8`を作成し、Telegram message ID `7372`をpositive receiptとして保存した。
+Lumaは「承認待ち」、Calendarは2026-08-13 19:30〜21:00の「8/13(木)19:30 皇居ラン」として実readbackした。
+1件目もLuma参加確定とCalendar eventを実readback済みだが、単一`last-result.json`が後続wakeで上書きされ、
+1件目Telegram IDをdurable stateから再取得できない。Telegram providerのread actionも非対応だったためIDを推測しない。
+重複報告を防ぐためnative launchdを一時bootoutした。次TODOはappend-only receipt historyとcoverage stateを実装し、
+1件目を含む過去成功を保持、同一event再選択を防止してからlaunchdを再bootstrapすることである。
+
+O1B-25進捗44（delivery receipt append-only化）: 最新結果だけを置換する`last-result.json`とは別に、
+positive Telegram IDとCalendar evidenceを持つ成功だけを`delivery-receipts.jsonl`へ追記するstate境界を追加した。
+同じTelegram provider IDは再wakeでも一行にdedupeし、壊れたJSONLや1MB超過はfail closedとする。
+focused testは修正前にhistory欠落を示し、実装後2/2 GREEN。次は既存`last-result`のID `7372`をhistoryへ自動移行し、
+historyから21日coverageの`covered_new`日を復元する。
+
+O1B-25進捗45（既存last-resultの自動migration）: native passは新runtimeを起動する前に旧`last-result.json`を読み、
+positive Telegram ID・event ref・Calendar evidenceが揃う成功をappend-only historyへdedupe移行する。
+手作業でIDをstateへ書かず、既存ID `7372`を次の本物のlaunchd wakeが移行する契約とした。focused 3/3 GREEN。
+次はhistory entryへevent dateとcoverage evidence refsを保持し、rolling coverageの`resolvedDays`として次wakeへ戻す。
+
+O1B-25進捗46（delivery historyからrolling coverage復元）: native passは1MB以下・100件以下・exact fieldの
+`delivery-receipts.jsonl`だけをruntimeへ渡す。runtimeは各event_refのLuma detailをshared daily-driverで再読し、実starts_atから
+Asia/Tokyoの日付を確定、Calendar evidenceを持つ日を`covered_new`としてcoverageへ復元してから21日inventoryを取得する。
+日付の手書き、Telegram IDだけによるcoverage、provider本文のstate保存は行わない。runtime 5/5、native lifecycle 16/16 GREEN。
+absolute canonical main pathを固定してworktree renderを誤拒否していたtestも、指定`REPO_ROOT`を検証する契約へ修正した。
+次はlive wakeでhistory ID `7372`から`covered_new=1 / open=20`を実測し、同eventを再選択しないことを確認する。
+
+O1B-25進捗47（反復3件目の実配送 / coverage counts可観測化）: 通常scheduleのlaunchd loopは人手の登録・送信なしで
+3件目`luma-event://event/a206zjkz`を処理し、Calendar evidence
+`calendar-evidence://google/event/4ce58f5cb5160cf529ae036a0bd6df632302297e4f5e8c98b0f9ba2fbf8ef4c6`と
+Telegram message ID `7376`をappend-only historyへ保存した。historyは2件目ID `7372`と3件目ID `7376`の2行を保持する。
+次wakeのcoverage復元を外から検証できるよう、last-resultへopen / covered_existing / covered_new / unavailableの
+整数countsだけを追加した。focused 3/3 GREEN。live完了条件は次runで`covered_new >= 2`を観測すること。
+
+O1B-25進捗48（live coverage復元と重複防止を実証）: 最新commit `7a0ebaff1`でnative launchdをkickstartし、
+append-only historyの2件をLuma detailで再照合した。実last-resultは`open=19 / covered_new=2 /
+covered_existing=0 / unavailable=0`であり、ID `7372`と`7376`のeventを再選択せず次候補
+`luma-event://event/l5iu5frr`へ進んだ。これでhistory→Luma日付readback→rolling coverage→inventoryのlive一巡を実証した。
+次候補は`unknown_external_effect`で止まったため、次sliceは実画面の状態をreadbackして既知状態へ分類する。
+
+O1B-25進捗49（承認制eventの参加リクエスト認識 RED→GREEN）: `luma-event://event/l5iu5frr`
+（Reading Rhythm vol.2）の実画面をreadbackし、2026-08-22 19:00開始の無料枠は完売、20:00開始の無料承認制枠には
+押下可能な`参加リクエスト`が表示されていることを確認した。従来は`Request to Join`系の操作語を
+`approval_required`として非実行に分類し、providerも日本語ボタンを探索しなかったため、申請可能なeventが
+`unknown_external_effect`で停止していた。操作語`Request to Join` / `参加リクエスト` / `参加をリクエスト` /
+`承認をリクエスト`を`available`へ変更し、情報表示`approval required` / `承認が必要`は非実行状態として分離した。
+browser providerも同じ日英操作語をsubmit対象にした。focused testは18/18 GREEN、diff checkもGREEN。
+次はこのcommitをnative launchdへ反映し、loop自身によるLuma申請済みreadback、Calendar evidence、Telegram provider IDを実証する。
+
+O1B-25進捗50（承認制dialogの二段目confirm RED→GREEN）: commit `7d510870a`をnative launchdへ反映した実runは
+Lunaが`luma-event://event/l5iu5frr`をpreference/goalとも`moderate`として選択したが、再び
+`unknown_external_effect`で停止し、Calendar/Telegramは未実行だった。read-only DOM実測で初期CTAはexact
+`BUTTON: 参加リクエスト`と確認した。初期押下後に開く承認制ticket dialogの確定操作も同じ`参加リクエスト`だが、
+二段目confirm matcherだけが旧`参加登録/Register/Submit/Confirm RSVP`に限定されていた。dialog confirmの
+日本語承認リクエストを失敗させるRED testを追加し、初期CTAと同じ日英操作語をconfirmにも許可した。
+focused provider/detail testは19/19 GREEN、diff checkもGREEN。次はcommit/push後に同じnative loopをkickstartし、
+Luma申請済みreadback、Calendar evidence、Telegram provider IDまで一巡を再実証する。
+
+O1B-25進捗51（必須form不足を既知skipへ分類 / 同日次候補継続 RED→GREEN）: commit `365dd9c1c`の実runも
+`luma-event://event/l5iu5frr`で外部receiptを作らず停止した。初期CTAだけを開く可逆UI診断で、Luma formは
+role=`dialog`を持たず、必須質問として生年月日、性別、Instagram、発見経路、招待者、支払・規約同意等を要求していた。
+private profile SSOTには氏名・生年月日はあるが他の個人回答はなく、loopが推測して送信してはならない。
+従来はroleなしformを検査せず、初期CTA click後という理由だけでunknown external effectへ分類していた。
+page scopeでもrequired inputsを検査し、confirm前の空欄は`LUMA_FORM_INPUT_REQUIRED / unknownEffect=false`へ変更した。
+さらにnative runtimeはこのexact known failureだけを同日ランキングの次候補へskipし、unknown effectや他failureは従来どおり停止する。
+provider/detail/runtime focused testは26/26 GREEN、diff checkもGREEN。次はnative launchd実runで、このeventを未送信skipし、
+次候補のLuma receipt、Calendar evidence、Telegram provider IDへ進むことを実証する。
+
+O1B-25進捗52（live write error codeのdurable可観測化）: commit `a7c2bb24d`の5回目native runは
+新しいstateを保存したが、`last-result`のbounded projectionがwrite `error_code`を破棄していたため、
+known form failureとpost-click unverifiedを外から区別できなかった。英大文字・数字・underscore等だけの最大100文字codeを
+allowlistし、message、DOM、form回答、secretを保存せず`last-result.write.error_code`へ保持する。
+native entrypoint testはREDで欠落を再現し、実装後17/17 GREEN、diff checkもGREEN。次のlive runでexact codeを取得し、
+`LUMA_FORM_INPUT_REQUIRED`なら同日次候補継続、別codeならその停止点を次sliceで修復する。
+
+O1B-25進捗53（auth-aware driverのprovider分類保持 RED→GREEN）: commit `3365f03dc`の6回目live runで
+exact code `LUMA_PAGE_TARGET_FAILED`を取得した。providerがconfirm前の不足を`unknownEffect=false`で返しても、
+auth-aware daily-driverがtarget taskの全例外を一律`LUMA_PAGE_TARGET_FAILED`へ包み、native write pipelineにはunknownとして届いていた。
+provider private message/DOM/form値は従来どおり破棄しつつ、allowlist済みerror codeとboolean `unknownEffect`だけを
+sanitized `Luma page unavailable` errorへ保持するcontract testをREDで追加した。auth/provider/runtime focused testは
+26/26 GREEN、diff checkもGREEN。次のnative runでは`LUMA_FORM_INPUT_REQUIRED`がruntimeへ届き、同日次候補へ継続する。
+
+O1B-25進捗54（known form failureのlive分類実証 / 次open日継続が残存）: commit `ca61ab1f2`の7回目native runは
+`luma-event://event/l5iu5frr`を外部送信せず、`status=incomplete / outcome=application_failed /
+error_code=LUMA_FORM_INPUT_REQUIRED`としてdurable stateへ保存した。Calendar eventとTelegram provider IDは空であり、
+未検証の申請成功として扱っていない。これでunknown effect誤分類は解消した。一方、この日のspend sequenceにはranked candidateが
+1件だけだったため、same-day retryは発火せずpassが終了した。次の最優先sliceは、あるopen日の全候補がknown
+`LUMA_FORM_INPUT_REQUIRED`で尽きた場合に、同じbounded pass内で次のopen日へLuna→spend→writeを継続すること。
+この状態遷移のlive proof後に、次eventのLuma receipt、Calendar evidence、Telegram provider IDを要求する。
+
+O1B-25進捗55（現slice全回帰）: `npm run test:outbound`をfresh実行し、pretest 12/12、outbound 287/287がGREEN。
+承認制CTA、roleなし必須form、auth-aware error分類、same-day known failure skipを含む既存Connector境界に回帰はない。
+ただしテストGREENは次open日継続の未実装を完了扱いにしない。次sliceは進捗54の状態遷移だけをRED→GREEN→live proofで閉じる。
+
+O1B-25進捗56（2026-08-06 live再監査 / TODO順序更新）: native launchdは5分間隔で継続し、累計73 run。
+最新stateは`open=19 / covered_new=2 / covered_existing=0 / unavailable=0`、最新候補は
+`luma-event://event/7gy3rv6t`、結果は`application_failed / LUMA_RSVP_UNAVAILABLE`で、Calendar/Telegram effectは0。
+append-only delivery historyにはpositive Telegram ID `7372`と`7376`の2件だけが残る。したがって「loop停止」ではなく、
+候補失敗後の次候補・次日継続と失敗候補のdurable suppressionが未完了で、同じ失敗を繰り返している状態である。
+
+O1B-25進捗57（task delivery停止のcode-level root cause / 2026-08-06）: live stateを再監査するとlaunchdは累計78 runで、
+heartbeatとcontinuationは更新され続けている。停止しているのはschedulerではなく**delivery state machineの前進**である。
+最新候補`luma-event://event/7gy3rv6t`は`LUMA_RSVP_UNAVAILABLE`、coverageは`covered_new=2 / open=19`のまま。
+原因は次の三つが同時にあるためである。
+
+1. `connector-native-runtime.js`は候補を持つ最初のopen日を選ぶと日ループを`break`し、その日のwrite後に次のopen日へ戻らない。
+2. write loopが次候補へ進むknown no-effectは`LUMA_FORM_INPUT_REQUIRED`一種類だけで、`LUMA_RSVP_UNAVAILABLE`、満席、受付終了等は即終了する。
+3. `native-pass.js`のappend-only stateはCalendarとpositive Telegram IDを持つ成功だけを保存し、known no-effect候補を保存しない。
+   そのため次wakeは同じ候補を再び未処理として選ぶ。
+
+修正は個別errorの追加ではなく、`candidate_attempt`を`verified_success / known_no_effect / unknown_effect / recovery_required`
+へ正規化し、成功履歴とは別のappend-only attempt historyを持つ。`known_no_effect`は同日次候補、同日枯渇は次open日へ進み、
+`unknown_effect`だけが同一eventの再照合前に別writeを禁止する。1 passの件数・時間上限で終了してもcursorを保存し、次wakeは
+最後の未完位置から再開する。これをtask delivery修復のP0とする。
+
+O1B-25進捗58（登録完了画面をhard evidence化）: `covered_new`とTelegram completion cardの必須証拠へ、
+submit後のLuma公式pageがDais本人の登録済み状態を表示しているfull-page PNGを追加する。画像はevent ref、canonical URL、
+取得時刻、artifact SHA-256、Calendar event ID、Telegram photo/document message IDと同一lineageへ保存する。単なるevent詳細page、
+submit直前page、成功文言の転記、古い画像、別eventの画像は証拠にしない。登録後pageを取得できない場合は登録自体を捏造せず
+`evidence_pending`、外部効果も不明なら`unknown_effect`としてreconciliationへ渡す。Telegramは画像そのものと短い結果cardを送り、
+画像送信のpositive provider IDをreadbackできるまでuser-visible deliveryを完了扱いにしない。
+
+O1B-25進捗59（P0-1 candidate outcome 4分類 / RED→GREEN）: 個別error文字列をruntimeで直接分岐する前に、
+write結果を`verified_success / known_no_effect / unknown_effect / recovery_required`へ変換する独立contractを追加した。
+table-driven testは実装前にmodule不在でexit 1を確認し、実装後はfocused 2/2、既存native runtime/write/RSVP境界29/29、
+`npm run test:outbound`のpretest 12/12・outbound 289/289がfresh GREEN。未知またはmalformedな結果は推測せず拒否する。
+このsliceは分類contractだけであり、runtime利用、満席/受付終了の正規化、attempt永続化、次候補/次日継続は未完のままP0順序で続ける。
+
+O1B-25進捗60（P0-2 known no-effect正規化 / RED→GREEN）: Luma detail/providerは満席・受付終了・waitlist等を
+submit前の`unavailable`として判定し、adapterは副作用なしの`LUMA_RSVP_UNAVAILABLE`へ変換済みだったが、runtimeは
+`LUMA_FORM_INPUT_REQUIRED`だけを次候補継続条件にしていた。最初の候補が`LUMA_RSVP_UNAVAILABLE`でも同日の二件目を
+実行するtestを追加し、修正前は一件目で停止してRED、runtimeを4分類contractの`known_no_effect`判定へ接続してGREENにした。
+focused 9/9、`npm run test:outbound`はpretest 12/12・outbound 289/289。attempt履歴未実装のため、次wakeでの再選択抑止はまだ未完。
+
+O1B-25進捗61（P0-3 candidate attempt append-only state / RED→GREEN）: 同一passで複数候補を試してもruntimeが
+最後の`write`しか返さず、native-passもpositive delivery receipt以外を保存しないdata lossを修正した。runtimeは各write直後に
+`event_ref / outcome / safe_reason / observed_at / retry_after`だけのbounded projectionを作り、native-passはschema検証した最大100件を
+owner-only `candidate-attempts.jsonl`へ一括appendする。実装前はruntime側が`undefined`、state側が`ENOENT`でRED。実装後は
+runtime/classification 9/9、native entrypoint 18/18、pretest 12/12、outbound 289/289がfresh GREEN。次のP0-4でこの履歴を
+次wakeのinventory/ranking suppressionへ接続するまでは、保存はされても再選択防止にはまだ使われない。
+
+O1B-25進捗62（P0-3 existing launchd live proof）: commit `d5aa72917`をpush後、別executorを起こさず既存
+`ai.anicca.life-manager-connector-native`をkickstartした。run countは85→86、終了後last exit 1（coverage未完）で、実stateに
+mode 0600の`candidate-attempts.jsonl`が生成された。保存行は実候補`luma-event://event/7gy3rv6t`、
+`outcome=known_no_effect`、`safe_reason=LUMA_RSVP_UNAVAILABLE`、`observed_at=2026-08-06T00:37:48.523Z`、
+`retry_after=null`であり、秘密・page本文・個人情報を含まない。これでP0-3のlive write/readbackを完了し、次はP0-4で
+この行を次wakeの候補除外へ使う。
+
+O1B-25進捗63（P0-4 terminal known failure suppression / RED→GREEN）: live historyには同じ
+`luma-event://event/7gy3rv6t`の`known_no_effect`が`00:37:48Z`と`00:44:59Z`に二重記録され、保存だけでは
+次wakeの再選択を止めないことを再現した。native-passが最大10,000件のvalidated attempt historyを次runtimeへ戻し、runtimeは
+eventごとの最新observationを採用して、`known_no_effect`かつ`retry_after=null`または未来の候補をverified spend sequenceの
+active write rankingから除外する。retry_after到来後、または後続の非terminal observationがあるeventは再検査可能である。
+実装前はsuppression module不存在、runtime再write、config history欠落の三つでRED。実装後はsuppression/runtime 10/10、
+native 19/19、pretest 12/12、outbound 299/299がfresh GREEN。次は既存launchdを二回観測し、同じeventの行数が増えないことを実証する。
+
+O1B-25進捗64（P0-4 two-wake live suppression proof）: commit `d3960a987`をpushし、既存launchdだけを
+run 88・89として二回kickstartした。run 88後、`7gy3rv6t`は2→2で増えず、別候補`l5iu5frr`へ進んだ。run 89後も
+`7gy3rv6t`は2、`l5iu5frr`は1のまま増えず、さらに別候補`s3nt5a2y`へ進んだ。両runともcoverage未完のためlast exit 1だが、
+append-only historyのbefore/afterによりterminal known failureを再writeせず候補空間を前進したことを実証した。次はP0-5で、
+現在run内に同日候補がすべてknown no-effectになった場合も同じpassで次open日へ戻る。
+
+O1B-25進捗65（P0-5 same-pass next-open-date continuation / RED→GREEN）: runtimeは最初に候補を持つ日を
+`selected`へ入れてday loopを抜け、その外側でwriteしていたため、当日の全候補がknown no-effectでも次open日へ戻れなかった。
+二日fixtureで「8月5日の候補が`LUMA_RSVP_UNAVAILABLE`、8月6日の候補がverified success」を作り、修正前は一日目の失敗を
+最終結果として返すREDを確認した。write loopをverified day loop内へ移し、known no-effectで当日が尽きた時だけ次日へ継続し、
+success・unknown effect・recovery requiredではpassを停止する。focused 13/13、native 19/19、pretest 12/12、outbound 300/300が
+fresh GREEN。次に既存launchd一回の中で複数日/候補へ進むlive historyをreadbackする。
+
+O1B-25進捗66（P0-5 first live attempt / upstream gate failure）: commit `7b319c598`後の既存launchd run 90は
+約3分で終了したが、attempt historyは4→4、continuationは`connector_native_calendar_gate_failed`だった。したがって同一passの
+次日writeをlive実証したとは扱わない。これはP0-5の二日fixture GREENと矛盾せず、実環境では後続日のCalendar/route gate failureが
+pass全体を例外終了させ、途中attemptとcursorを返せないP0-6のdurability gapを示す。外部境界の一時失敗かを既存loopで一度だけ
+再試行し、再発時は結果を捏造せずP0-6を先に実装する。
+
+O1B-25進捗67（P0-5 live retry / normal forward progress）: 既存launchd run 91を一度だけ再試行するとCalendar gate failureは
+再発せず、`continuation=runtime_incomplete`として正常終了した。attempt historyは4→5へ増え、既知4候補を再writeせず新候補
+`thirdspace-thirdweeks-gradations`を処理した。このrunでwrite可能だった未抑止候補は一件だけだったため、複数日の二件writeという
+live fixtureは成立しておらず、その証拠を創作しない。P0-5の二日integration testは13/13 suite内で直接write順を検証し、liveは
+実候補空間での正常前進を補足証拠とする。次はP0-6でpass budget/cursorをdurableにする。
+
+O1B-25進捗68（P0-6 pass budget / durable cursor RED→GREEN）: 一回のnative passが候補を無制限に処理せず、既定3件の
+`passCandidateBudget`へ達した時に`status=resume_after / date / event_ref / observed_at`だけのbounded cursorを返すcontractを追加した。
+次wakeは同じ日付のcursor eventより後ろから再開し、後続候補を処理し終えたらcursorをnullへ戻す。native-passはowner-only mode 0600の
+`cursor.json`へ保存し、次wakeのruntime configへforwardし、完了時に固定pathだけを削除する。実装前はruntime cursorが`undefined`、
+native stateは`ENOENT`でRED。実装後はfocused runtime 1/1・native 1/1、関連runtime 14/14、native entrypoint 20/20、
+pretest 12/12、outbound 301/301がfresh GREEN。次に既存launchdを実発火し、実候補がbudgetへ達する場合はcursor生成→次wake再開→消去を
+readbackする。実候補が3件未満ならcursorを捏造せず、そのlive制約を記録してP0-7へ進む。
+
+O1B-25進捗69（P0-6 existing launchd live readback）: push済みcommit `ad64caaeb`を参照する既存launchdの通常schedule
+run 92を、別executorや強制停止なしで最後まで監視した。runは自然にlast exit 1で終了し、attempt historyは5→5、`cursor.json`は
+不存在、continuationは`connector_native_calendar_gate_failed`だった。すなわち実環境では候補writeが既定budget 3件へ達する前に
+upstream Calendar gateで停止し、cursor生成条件自体が成立しなかった。これをcursor生成のlive成功とは扱わず、RED→GREEN integration
+contractをP0-6の直接証拠とする。次はP0-7で既存の`unknown_effect`停止を次wakeのreadback reconciliationへ接続する。
+
+O1B-25進捗70（P0-7 unknown-effect reconciliation gate / RED→GREEN）: attempt historyの`unknown_effect`は保存されても
+active suppressionが`known_no_effect`しか扱わず、次wakeの通常writeへ戻り、effect fenceが`absent`を読むと同じ呼出しで再submitする
+gapがあった。最新attemptをeventごとに検証取得し、unknown eventだけwrite前にLuma `inspectRegistration`を独立実行するgateを追加した。
+`unknown/login_required`は新しいunknown observationをappendしてwrite 0回、`absent/unavailable`は
+`LUMA_RECONCILED_ABSENT`と`retry_after=observed_at`をappendして同wakeのwrite 0回、`registered`だけ既存のreceipt verification chainへ進む。
+実装前はfocused testが`CONNECTOR_NATIVE_WRITE_FAILED`でRED、実装後は三状態integration 1/1、関連runtime/suppression 15/15、
+native 20/20、pretest 12/12、outbound 302/302がfresh GREEN。これでreadbackがpresent/absentを確定する前の再submitを禁止した。
+
+O1B-25進捗71（P0-8 registered-page PNG lineage durability / GREEN）: Luma providerは登録済みcontrolをreadbackした同じpageから
+`screenshot({type:"png", fullPage:true})`を取得し、tenant-scoped evidence storeがPNG signature、5KB以上、SHA-256 immutable objectを
+検証済みだった。一方、verifierから最終native stateへ画像の取得時刻とSHAが伝播せず、Calendar eventとのlineageをreadbackできなかった。
+verified outbound receiptへE1の`observed_at`とE2の`sha256`を追加し、write resultのregistration receiptへsafe projectionした。native-passは
+canonical Luma URL、exact instant、`object://sha256/<hash>`と同一hashを再検証し、event ref、artifact ref/SHA、取得時刻、Calendar event refを
+同じmode 0600 `last-result.json.write`へ保存する。focused evidence/provider/write 30/30、durable lineage 1/1、native 21/21、
+pretest 12/12、outbound 302/302がfresh GREEN。実eventの画像そのもののreadbackとTelegram画像送信はP0-9/10で実証する。
+
+O1B-25進捗72（P0-9 result card + registered-page photo implementation / RED→GREEN、live未実証）: Connector deliveryは
+OpenClawで本文cardを一通送るだけで、verified PNG bytesをdeliveryへ渡さず、画像message IDもstateへ残さなかった。新規登録時は
+tenant-scoped artifact readerからPNGを再取得してreceipt SHAと照合し、本文cardと登録済みpage画像を別々に送る。両方のpositive IDと
+同一artifact SHAが揃わない限り成功receiptを拒否する。OpenClaw media transportはmode 0600の一時PNGを`--media`へ渡し、送信後に
+固定temp directoryを削除する。native resultと新規delivery receiptはcard ID、photo ID、artifact SHAを保存する。既存の実成功2件は
+card IDを保持したまま、native loop自身がtenant-owned artifactを一wake一件だけ画像backfillし、append-only
+`photo-delivery-receipts.jsonl`へ記録する。REDはphoto send 0回、pipeline evidence欠落、native photo ID欠落、backfill 0回を個別に確認。
+GREENはfocused 3/3、Telegram/write 47/47、native 22/22、outbound 307/307。次にpush済みcodeを既存launchdで実発火し、実画像の
+positive IDとSHAをreadbackするまではP0-9を完了扱いにしない。
+
+O1B-25進捗73（P0-9 first launchd backfill / bounded diagnosis）: commit `5bee07e53`をpush後、既存launchdの通常run 99を
+自然終了まで待ち、新codeをrun 100としてkickstartした。run 100は約5秒でlast exit 1、photo receiptなし、continuation
+`runtime_failed`で終了したため画像送信成功とは扱わない。実PNG pathを同じOpenClaw `--media --dry-run`へ渡すとpayload生成は成功し、
+実進捗messageのactual JSONもtop-level positive `messageId=7590`だったため、media path全般とreceipt JSON shapeは原因から除外した。
+backfill transport失敗とpositive receipt欠落をそれぞれ`connector_native_photo_send_failed` / `photo_receipt_failed`へ安全分類するtestは
+実装前`runtime_failed`でRED、実装後2/2 GREEN。次runでraw provider errorを保存せず、真の失敗境界をreadbackする。
+
+O1B-25進捗74（P0-9 run 101 photo transport failure / full-page document対策）: commit `7b8870f83`後のrun 101は
+`connector_native_photo_send_failed`をreadbackし、送信境界へ限定した。同じ実PNGをstate内pathとsystem temp pathの双方から
+OpenClaw `--media --dry-run`へ渡すとpayload生成は成功したため、path/root拒否を除外した。残るfull-page PNGの縦長寸法に対し、OpenClawの
+Telegram用`--force-document`を使って画像圧縮・photo寸法制限を避け、原寸PNG bytes/SHAを保つ。transport testはflag欠落でRED、追加後GREEN。
+次runで本物のloop送信とpositive document message IDを検証する。
+
+O1B-25進捗75（P0-9 run 102 failure / OpenClaw allowed media root真因）: commit `fd73bd845`後のrun 102も
+`connector_native_photo_send_failed`で終了し、寸法仮説を否定した。loopと同じsystem temp copyをactual OpenClaw CLIへ一度だけ診断送信すると、
+message IDなしで`Local media path is not under an allowed directory`を再現した。OpenClaw本体の`local-media-access`と`local-roots`実装を
+読むと、dry-runはactual security checkを実行せず、既定許可rootはOpenClaw preferred temp、config `media`、state `media`等に限定される。
+senderをowner-owned mode 0700 `~/.openclaw/media/connector-telegram-photo-*`へ変更し、PNGは0600、送信後は作成したsubdirectoryだけを削除する。
+testはsystem temp pathでRED、allowed rootへ変更後GREEN。次runでactual loop deliveryを再検証する。
+
+O1B-25進捗76（P0-9 existing launchd actual photo delivery / LIVE GREEN）: commit `1333cea53`後の既存launchd run 103は、
+runtime探索前のself-healとして実成功`luma-event://event/u12izq9i`のtenant-owned登録済みPNGをTelegramへ送った。
+append-only mode 0600 `photo-delivery-receipts.jsonl`は既存result card ID `7372`、新しい画像document ID `7594`、artifact SHA
+`22860e1b9fbd44a1f0b2730785f0074c12f582080fe41333632e2210e7b144e2`、exact observed_atを保存し、evidence objectのfresh
+`shasum -a 256`と完全一致した。これは手動診断送信ではなくlaunchd loop生成receiptである。fresh native 23/23、pretest 12/12、
+outbound 307/307もGREEN。これでP0-9を完了し、次は新規実eventの同一attemptで全chainを通すP0-10へ進む。
+
+O1B-25進捗77（P0-10 mail/QR chain runtime wiring / RED→GREEN、live未実証）: `luma-confirmation-mail.js`、
+`luma-ticket-qr.js`、`connector-ticket-telegram.js`は個別実装・testが存在したが、native runtimeから一度も呼ばれず、登録後は
+registered-page PNG→Calendar→coverage Telegramへ直行していた。write pipelineを、verified RSVP後にGmail confirmationをpollし、
+同じregistration interval・Luma sender・本人宛・event title/URLを検証してimmutable receiptへ保存し、mail内の同一guest keyから
+opaque bindingを生成、認証済みdaily-driverで公式QRを開きdecoded payloadを照合、tenant-owned objectへ保存する順序へ変更した。
+Calendar sync後は公式QRをevent/title/time/venue/Calendar URL付きTelegram documentとして送りpositive provider IDを必須化し、
+その後だけ従来のcoverage card + registered-page PNGを送る。native runtimeは実`gog gmail` reader、confirmation store、ticket store、
+auth-aware QR captureを結線し、native-passはconfirmation receipt ref、ticket receipt/artifact ref、ticket Telegram IDをmode 0600
+`last-result.json`へfail-closed投影する。REDはchain未実行、Gmail reader不存在、pack QR method不存在、runtime依存欠落、native投影欠落を
+個別再現。GREENはmail/QR/write/runtime関連62/62、native 23/23、pretest 12/12、outbound 311/311。P0-10 checkboxはまだ未完であり、次はpush済みcodeを既存launchdで
+実発火し、新規実eventの同一attemptで全receiptとTelegram message IDをreadbackする。
+
+O1B-25進捗78（P0-10 run 105 / optional gog path regression RED→GREEN）: commit `83b9eb4c7`後の既存launchd run 105は
+新attemptを作らず`connector_native_profile_failed`で自然終了した。秘密を出さない環境capability差分ではLuma email/name、keyring、Maps、
+homeは存在し、`GOG_BIN`だけ未設定だった。既存Gmail login readerとCalendar adapterは未指定時にHomebrew標準pathへfallbackするが、追加した
+confirmation reader結線だけが`requiredText(undefined)`で停止していた。実環境同等のbin未指定fixtureは修正前runtime 6件RED、readerへ
+optional pathをそのまま渡して既存fallbackを使う修正後runtime 11/11 GREEN。run 105のattempt/delivery receiptは増えておらず、成功とは扱わない。
+次はfull outbound再検証・push後のrun 106で同じ実loopを再実行する。
+
+O1B-25進捗79（P0-10 run 106 / upstream Calendar gate failure）: commit `bb2db3990`後の既存launchd run 106は
+profile初期化を越えて約4分で自然終了し、`connector_native_calendar_gate_failed`をreadbackした。attempt history、delivery receipts、
+last-result writeはrun前から増えず、Gmail/QR chainへ入る新規登録候補が確定する前に停止したためP0-10成功とは扱わない。同じupstream gateは
+過去run 90→91で一時失敗後に回復している。コードはfull outbound 311/311 GREENなので、外部境界失敗の既定どおり既存loopを一度だけ再試行し、
+再発時はP0-10の実event E2Eを未完のまま、Calendar gateのbounded診断を次sliceにする。
+
+O1B-25進捗80（P0-10 run 107 / repeated Calendar contract failure）: 既存launchd run 107も約4分で
+`connector_native_calendar_gate_failed`となり、attempt/delivery/photo receiptはrun 106から不変だった。route provider不通は
+`calendar-candidate-gate`内で`status=recovery_required / reason=route_unavailable`へ正規化される設計なので、二回連続の例外は単純なMaps停止ではなく、
+date inventory / busy inventory / event location / private busy contextのいずれかの入力contract破損である。現runtimeはこれらを一つのstageへ
+潰しており、秘密を漏らさず原因を区別できない。P0-10は未完のまま維持し、次sliceはCalendar gate invalidをbounded substageへ分離し、
+実入力のreference-only fixtureでREDを固定してから修正する。根拠のない再kickstartはしない。
+
+O1B-25進捗81（P0-10 Calendar gate bounded diagnostics / RED→GREEN）: runtimeはCalendar gate内の例外本文を全て
+`CONNECTOR_NATIVE_CALENDAR_GATE_FAILED`へ潰しており、入力contract不正と実行境界故障を区別できなかった。既知の
+`Calendar candidate gate invalid`だけを`CONNECTOR_NATIVE_CALENDAR_GATE_INPUT_FAILED`、それ以外を
+`CONNECTOR_NATIVE_CALENDAR_GATE_EXECUTION_FAILED`へ写し、raw messageをstateへ保存しないcontractを追加した。native-passのallowlistも
+この二stageだけを受理する。実装前はruntime helper不存在、native continuation=`runtime_failed`で個別RED、実装後runtime 12/12、native 24/24
+GREEN。次はfull outbound・push後に既存launchdを一度だけ発火し、実故障の境界をreadbackする。
+
+O1B-25進捗82（P0-10 run 111 / malformed gate result hypothesis RED→GREEN）: push済み診断codeでrun 111を自然終了まで観測したが、
+continuationは新しいINPUT/EXECUTIONではなく旧`connector_native_calendar_gate_failed`のまま12:21 JSTに更新され、heartbeatも同時刻に
+`worker_failed`へ進んだ。したがって「gate内部がthrowする」仮説は否定され、throwせず候補配列のない値を返した後のruntime検証だけが
+残る。malformed返却専用`CONNECTOR_NATIVE_CALENDAR_GATE_RESULT_FAILED`を追加し、raw valueを保存しない。実装前はhelperがEXECUTION、
+native continuationがruntime_failedでRED、実装後runtime 13/13、native 24/24 GREEN。次runでRESULTを確認したら、返却値生成元を
+reference-only実fixtureへ固定して修正する。
+
+O1B-25進捗83（P0-10 run 112 root cause確定 / zero writable candidate RED→GREEN）: run 112も12:28 JSTに
+旧`connector_native_calendar_gate_failed`を更新したため、throw/malformed result仮説をともに否定した。data flowを最後まで追うと、各日のgateが
+正常でもeligible候補が0件、またはeligible候補が既知失敗suppressionで全件除外されると`selected=false`のままday loopを終え、runtimeが
+これを例外化し、最後に設定されたgeneric Calendar stageを誤って保存していた。本人住所を表示しない実Google Maps route probeは
+`available / 27 minutes`で成功し、route outageも否定した。zero eligible fixtureは修正前にlive同様
+`CONNECTOR_NATIVE_CALENDAR_GATE_FAILED`でRED。`selected=false`を正常な`status=incomplete / continuation=continue / write=null`として返す
+最小修正後runtime 14/14 GREEN。応募可能候補がないwakeは失敗通知を作らず、次のinventory refreshへ進む。
+
+O1B-25進捗84（P0-10 run 113 live root-fix verification）: commit `681bf16e1`後の既存launchd run 113は自然終了し、
+continuationが`runtime_incomplete`、mode 0600 last-resultが`write=null / open=19 / covered_new=2`へ更新された。旧generic Calendar failureは
+再発せず、zero writable candidateを正常continuationとして扱うroot fixをlive確認した。P0-10の新規実event full chainはwritable候補が現れるまで
+未完のまま維持し、receiptを創作しない。
+
+O1B-25進捗85（P0-11 next-wake reselection proof / LIVE GREEN）: run 113後のappend-only stateはcandidate attempts 5行、delivery receipts
+2行、photo delivery receipts 2行のまま、candidate file mtimeは10:08 JST、delivery file mtimeは00:06 JSTでrun 113より前から不変だった。
+成功event `u12izq9i` / `a206zjkz`は各delivery一件、既知失敗event 4件にも新しいattemptは追加されず、last-resultはwrite=nullだった。
+これで次wakeが成功eventをcoverage restorationで、terminal known failureをactive suppressionで再選択しないことをlive実証した。
+
+O1B-25進捗86（P0-13 non-destructive health readback）: run 113後に実`healthcheck.sh`をread-only実行し、
+`{"status":"healthy"}`、healthcheck launchd run 877、last exit 0、interval 60秒を確認した。Connector本体はinterval 300秒で、
+coverage継続中のexit 1を`runtime_incomplete`としてdurable stateへ残す一方、fresh heartbeatとCDP/gog dependencyが正常ならhealthcheckはhealthyになる。
+Mac再起動後の自動復帰、stale heartbeat self-heal、launchd再loadはまだ未実証なのでP0-13 checkboxは未完のまま維持する。
+
+O1B-25進捗87（schedule-owned run 114 / autonomous continuation）: run 113終了から300秒後、手動kickstartなしで既存launchdが
+run 114を自動起動した。自然終了後は`runtime_incomplete / write=null / open=19 / covered_new=2 / unavailable=0`で、偽Calendar failureは
+再発しなかった。新しいwritable eventがないためmail/QR/Calendar/Telegram receiptは生成されず、P0-10を完了扱いしない。loop ownerは
+launchd interval 300秒で次inventory refreshを継続する。
+
+O1B-25進捗88（schedule-owned runs 115–121 / current truth）: 既存launchdは手動executorなしでrun 121まで300秒間隔のwakeを継続した。
+最新stateは`runtime_incomplete / write=null / open=19 / covered_new=2 / unavailable=0`、candidate attempts 5行、delivery receipts 2行、
+photo delivery receipts 2行である。run 114以降に新しいwritable eventは現れず、確認mail・公式QR・Calendar・Telegram画像の新receiptは増えていない。
+したがってloopは稼働中だがP0-10/P0-12は未完であり、完了を捏造しない。次のwritable eventが出たwakeでのみP0-10 full-chain E2Eを閉じる。
+
+O1B-25進捗89（「eventなし」誤診断の訂正 / selection telemetry RED→GREEN）: 実CloakBrowser/Gmail identityを使うread-only
+Connector entrypointでLumaを再計測すると、6 inventory roundsで33件を発見・33件をinspectし、21日内のscheduled in-personは27件、
+候補あり13日、候補なし8日だった。したがって「新規eventがない」という以前の説明は誤りで、正しくはruntimeが`write=null`だけを保存し、
+Calendar/Luna/spend/suppressionのどこで27件が0件になったか観測できなかった。runtimeへ本文・event名・個人情報を持たない7整数のselection telemetry
+（inventory、Calendar gate、eligible、Luna ranked、spend ordered、unsuppressed、write attempts）を追加し、native-passが厳密schema/単調関係を検証して
+mode 0600 last-resultへ保存する。実装前はruntime selection undefined、native投影欠落で個別RED、実装後runtime 14/14、native 24/24 GREEN。
+次のlive runで真のdrop gateを特定し、そのgateを修正して実応募へ進める。
+
+O1B-25進捗90（run 123 selection drop gate / LIVE ROOT CAUSE）: commit `aeff7126b`後の既存launchd run 123は、
+`inventory=28 / calendar gate=24 / calendar eligible=6 / Luna ranked=6 / spend ordered=4 / unsuppressed=0 / write attempts=0`を
+mode 0600 last-resultへ保存した。event探索・Calendar・Luna・無料spend policyまでは候補を残しており、最後のactive suppressionが応募可能4件を
+全て除外している。candidate historyのterminal理由には`LUMA_FORM_INPUT_REQUIRED`が2件あり、現providerはrequired fieldが空なら回答せずknown
+failureへ落とし、suppressionはretry_afterなしで永久除外する。したがってtask deliveryが止まる直接原因は「event不足」ではなく
+「custom RSVP formへ回答する能力がなく、その失敗を永久suppressionすること」である。次sliceはフォームschemaを安全に読み、verified profileと
+公開event evidenceだけから回答し、入力readback後にsubmitできるcontractをTDDで追加する。
+
+O1B-25進捗91（自己修復loopの実配線監査 / ROOT CAUSE）: launchd readbackではConnector本体は累計125 run・直近exit 1、
+DEV producer `ai.anicca.life-manager-dev`は累計4 run・直近exit 1、self-build consumerは累計4 run・直近exit 1で、
+self-build ledgerも2026-07-30の4日目から増えていない。既存self-build consumerは、既に作られた`lm:type:self-heal` PRを
+guardへ渡すだけである。producerはproduction DBのfeedback/error intakeからGitHub issueを作るが、Connectorの
+`candidate-attempts.jsonl`、selection telemetry、browser evidenceを読まない。このためConnector自身が
+`LUMA_FORM_INPUT_REQUIRED`を観測してもincident→issue→修正PR→guard→再配備→実event再検証へ配送されず、
+観測と修復が分断されている。task delivery停止の第一優先修正は、required-formだけを人間が直すことではなく、
+この実故障を最初のfixtureとしてConnectorのclosed-loop self-healing経路を接続することである。
+
+Connector self-healingの受入contract:
+
+```mermaid
+flowchart TD
+    A[Connector launchd] --> B[Observer: DOM・trace・receipt]
+    B --> C{実effectを検証できた?}
+    C -- Yes --> D[PNG・Calendar・Telegram ID]
+    D --> E[成功receiptでincident close]
+    C -- No --> F[privacy-safe incident + replay fixture]
+    F --> G[Terra fixer: 原因仮説を1つ選ぶ]
+    G --> H[隔離worktree: RED test]
+    H --> I[最小fix + focused/full GREEN]
+    I --> J[Self-build guard: policy・permission・rollback]
+    J --> K[隔離browser canaryで元fixture再実行]
+    K --> L{外部成功oracleを満たした?}
+    L -- No --> M[同fingerprintのrevisionをappend]
+    M --> G
+    L -- Yes --> N[merge・再配備]
+    N --> O[元eventまたは同型live eventをloopが再実行]
+    O --> C
+```
+
+運用上Daisと対話中のCodexはこのloopのworkerでも常時監視者でもない。Observerは各browser action、現在URL、control label、
+validation error、network/consoleの安全な分類、screenshot hash、provider readbackを同一run/event/capability versionへbindする。
+raw page本文、cookie、OTP、電話、email、回答値はincidentへ入れない。FixerはTerraだけを使い、一revisionにつき原因仮説一つ、
+RED一つ、最小fix一つに限定する。PR作成、test GREEN、mergeのいずれもincident完了ではない。完了oracleは、元failureが消え、
+実providerでsubmit後の登録済みmarker、full-page PNG、Calendar readback、Telegram positive message IDが同一event lineageに揃うことだけである。
+
+`incident_fingerprint + capability_version + revision`をappend-only SSOTにする。canary失敗は同fingerprintへ新revisionを追加し、
+`attempted`で永久除外しない。最大3 revision/24時間、各revision 15分、同じtest failureまたは同じcanary failureが3回続いた場合だけ
+`blocked`へ遷移し、次wakeまでbackoffする。通常failure、retry、修復途中をTelegramへ連投せずdurable ledgerへ保存し、成功または
+hard-safety blockerだけを一通送る。資金移動、権限拡大、secret/allowlist変更、guard自身の変更、外部規約同意の新規拡大は
+self-fix対象外で、既存hard safetyを維持する。
+
+O1B-25進捗92（応募0回とmulti-source未接続の再監査）: existing launchd run 131中の最新durable stateは
+`inventory=28 / calendar gate=24 / eligible=6 / Luna ranked=6 / spend ordered=4 / unsuppressed=0 / write attempts=0`である。
+したがってConnectorはLumaへ到達してevent pageを開いているが、4候補すべてをwrite前のsuppressionで除外しており、Apply controlを
+押す関数へ一度も到達していない。candidate historyには`LUMA_FORM_INPUT_REQUIRED` 2件、`LUMA_RSVP_UNAVAILABLE` 3件が
+`retry_after=null`で残り、現suppression contractでは永久除外になる。画面上の「開く、読む、閉じる」はdiscovery/inspectionであり、
+応募動作ではない。直接修正は、required formのschema読取・verified回答・入力readback・submitを実装し、そのcapability versionが上がった時に
+同理由の旧suppressionを再評価することである。
+
+multi-sourceについて、`connector-events-pack.js`にはLuma exhaustion後のConnpass handoff部品があるが、native runtimeは
+`luma-event://`だけを受理し`handoffEventSource`を呼ばない。旧Connpass capabilityも`official_api_discovery_only / registration_allowed=false /
+coverage_credit=false`であり、Peatix、Meetup、Doorkeeper、Eventbriteの稼働adapterは存在しない。従って現loopは実質Luma-onlyである。
+正しい完成形はsource registryが各siteのdiscovery、authenticated registration、effect readback、screenshot evidence能力を宣言し、
+一つのsourceで日付を埋められなければ次sourceへ進むことである。単にURLを見つけただけ、read-only API候補を得ただけではcoverage creditを与えない。
+
+外部根拠:
+
+- Luma Help Center, https://help.luma.com/p/collect-registration-questions — “we collect name and email for all guests, you can collect more information”。required custom questionsを通常flowとして扱う。
+- connpass API v2（履歴 / 進捗145で撤回）: active runtimeはAPIを使わず、Connector専用CloakBrowser `:9222`へ固定する。
+- Meetup GraphQL API, https://www.meetup.com/api/general/ — API accessはMeetup Proの提供能力として記載される。契約・権限を実測するまでbrowser/API registration capabilityを宣言しない。
+
+O1B-25進捗93（Luma-only禁止を主要求へ昇格）: multi-sourceを後半TODOだけに置くと、runtime実装者が前半の旧「Luma中心」記述を
+正本と誤認できるため、§5.2のnon-negotiable invariantと§10.1Aの日次UXを更新した。ConnectorのidentityはLuma agentではなく
+event application agentであり、`open`日が残る限りLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteをcapability gate付きで
+継続する。一候補・一providerの失敗をpass終了条件にしない。この時点の旧Connpass API discovery coreは進捗145でactive runtimeから撤回し、
+browser registration/readback/screenshotのlive proof前はregistration capabilityを有効化しない。この差をO1B-20/20A/20Bへ分離した。
+
+O1B-25進捗94（P0-10A self-heal incident envelope / RED→GREEN、live readback待ち）: existing launchd run 132を
+schedule待ちせず実行中から自然終了まで観測し、`inventory=28 / spend ordered=4 / unsuppressed=0 / write attempts=0 / write=null`を
+再確認した。これはpage inspectionだけでApplyを押していない実測証拠である。native-passへ、同selectionかつdurable historyに
+`LUMA_FORM_INPUT_REQUIRED / retry_after=null`がある場合だけ、`schema version / sha256 fingerprint / component /
+incident class / safe reason / observed_at / 7整数selection`のclosed envelopeをmode 0600 `self-heal-incidents.jsonl`へappendする処理を追加した。
+event ref、event名、page本文、個人情報、secretは保存せず、同fingerprintを二回実行しても一行だけにdedupeする。実装前はfile ENOENTで
+focused RED、実装後native 25/25、outbound 314/314 GREEN。次はcommit/push後の本物のlaunchd wakeで一行をreadbackし、その一行を
+`lm:type:self-heal` issue intakeへ配送するP0-10Bへ進む。
+
+O1B-25進捗95（P0-10A existing launchd LIVE GREEN / 画面・state照合）: push済みcommit `bab93b34e`を参照する
+既存launchd run 133をkickstartし、別executorを起こさず自然終了まで観測した。実画面/CDPではevent pageを順に開閉した後
+`about:blank`だけが残り、browser telemetryは`page.goto→page.close`を反復し、Apply clickは0回だった。終了後last-resultは
+`inventory=28 / calendar eligible=6 / spend ordered=4 / unsuppressed=0 / write attempts=0 / write=null`、launchd exit 1である。
+同runはmode 0600 `self-heal-incidents.jsonl`へ一行を生成し、closed fieldsはschema version、sha256 fingerprint、component、
+`apply_blocked_by_suppression`、`LUMA_FORM_INPUT_REQUIRED`、observed_at、7整数selectionだけだった。これで「pageを見たが応募していない」
+故障をConnector自身がprivacy-safeに検出・永続化するP0-10Aをlive完了した。登録、Calendar、Telegram screenshot receiptは増えておらず、
+応募成功とは扱わない。次の一件はP0-10Bのincident→self-heal issue deliveryである。
+
+O1B-25進捗96（P0-10B incident→self-heal issue / RED→GREEN、launchd receipt待ち）: pending incident一件だけを読み、
+既存`createGhIssueClient`の`lm:type:self-heal` labelとHTML marker dedupeを使ってprivacy-safe GitHub issueへ配送し、provider issue URLを
+mode 0600 `self-heal-issue-receipts.jsonl`へ一度だけ保存する処理をnative-passへ追加した。本文はsafe reason、7整数selection、
+RED test・最小fix・実Apply/submit/readback/screenshotのacceptanceだけで、event ref、event名、page本文、identity、cookie、secretを含まない。
+実装前はissue create 0でRED、実装後native 26/26、outbound 314/314 GREEN。最初のfocused runでは既存incident-only testがdefault clientへ
+fall throughし、実run 133 fingerprintに対するGitHub issue `#1409`を作成した。issueは正しい本物incident inputだがtest isolation違反なので、
+同testへfake clientを注入し、再実行ではnetwork送信なしで26/26 GREENを確認した。次はcommit/push後の既存launchd wakeがmarkerで
+issue #1409を再利用し、local issue receiptを一行保存することをlive readbackしてP0-10Bを閉じる。
+
+O1B-25進捗97（P0-10B existing launchd LIVE GREEN）: push済みcommit `33798f72e`後、schedule-owned existing launchd
+run 134を別executorなしで自然終了まで観測した。GitHub検索では同incident title/markerのissueは一件だけで、run終了後に
+mode 0600 `self-heal-issue-receipts.jsonl`が一行生成された。receiptはrun 133 incidentと同じsha256 fingerprint、
+`https://github.com/Daisuke134/life-manager/issues/1409`、observed_atだけを持つ。これでincident検出→dedupe issue→provider URL receiptを
+実loopで完了した。run 134自体の応募は依然Apply 0 / write nullであり、次はP0-11でproducerを復旧し、issue #1409を
+RED test→required-form fix→PRへ変換する。
+
+O1B-25進捗98（P0-11 producer実行とwrapper root fix / GREEN、再live検証待ち）: legacy dev stateをcopy-only migrationし、
+520 filesのcopy/verifyと`done.jsonl` byte一致を確認後、既存launchd `ai.anicca.life-manager-dev`をkickstartした。producer run 6は
+issue #1409を隔離worktreeへ渡し、実coding agentがcommit `ee94c69f6`とPR #1410を作成した。しかし外側daily wrapperは
+`invalid_machine_result`でexit 1だった。実測根因は二つで、worktree内testが親の`LIFE_MANAGER_REPO`を継承してprimary checkoutを参照したこと、
+PR URLとmachine result保存後に未設定`LM_DEV_TELEGRAM_TARGET`のparameter expansionがshellを終了させたことである。これを固定するRED testを
+追加し、test gate直前で`LIFE_MANAGER_REPO`をunset、Telegram target不在時は既に保存した`pr_open`を壊さずskipする最小修正で
+focused 3/3、daily loop 13/13 GREENを確認した。PR #1410自体は`LUMA_FORM_INPUT_REQUIRED`のeffect分類を変えるだけで、required formの
+schema読取、入力、Submit、登録済みreadback、screenshotを実装していないため受入不可・未mergeである。次はこのproducer修正をpushし、
+既存launchdのexit 0/machine resultをlive確認した後、insufficient PRを再修正cycleへ戻す。
+
+O1B-25進捗99（全executor Terra統一 / RED→GREEN）: agent runnerの実configを監査すると、browser/tool/applicationは
+`gpt-5.6-terra`だった一方、self-heal producerが使う`high-value-agent`とrepeatable/diagnostic/marketingは
+`gpt-5.6-luna`、escalationはSolが第一候補だった。全ての実行可能task classがCodex `gpt-5.6-terra`一候補だけを持つ
+contract testを追加し、変更前5 subcase RED、config統一後runner全12/12 GREENを確認した。既存producer run 7は修正版mainを使い
+exit 0まで完了したためwrapper root fixはlive GREEN。次はCloakBrowserでLuma一件のhuman-equivalent golden traceを取得し、
+その実DOM/form/submit/readback/screenshotをrequired-form adapterとself-heal canaryの正本にする。
+
+O1B-25進捗100（human-equivalent golden trace / LIVE GREEN、loop移植待ち）: CloakBrowser daily-driverの実sessionで
+Luma候補を操作した。`thirdspace-thirdweeks-gradations`は電話、Instagram handle、推薦文に加え、HTML `required`へ現れない
+custom multi-selectとapp-level required checkboxを要求し、Instagram sessionもsuspendedだったため虚偽handleを入れず中止した。
+次に無料networking event `https://luma.com/vzpwpjg4`（YOKOHAMA CONNÉCT #44）をワンクリック登録し、Luma画面の
+「参加予定」をreadback、full-page PNG SHA-256 `e951d9a3a9708b24f1066417916d089c1c2d75e63f956b01b3422655e7e3a61c`を保存した。
+主催者本文がLumaだけでは不十分と明記したため公式GatherUsへhandoffし、trusted Gmail senderのOTP、newsletter opt-out、
+10-step profile（既知値のみ、未知属性はskip）を完了した。公式画面の「登録をキャンセル」「準備完了」をreadbackし、PNG SHA-256
+`616dd5e543382003f7975999838d2aea557089507dc54c900b67a7c30209adf4`を保存した。Google Calendar event
+`lurekf4ek87ejr13lei3r46p14`をAPI readbackし、Telegram text `7718`、Luma画像 `7720`、公式画像 `7721`を実送信した。
+これはgolden traceでありloop成功とは数えない。次sliceは質問label/control型を読むform adapter、profile answer policy、trusted OTP、
+cross-site completion marker、二枚のscreenshot/Calendar/Telegram receiptを同じevent lineageでloopへ移植する。
+
+O1B-25進捗101（Luma custom form schema / RED→GREEN）: golden traceの標準required inputだけでなく、HTML `required`を
+持たないcustom multi-selectとapp-level required checkboxを同じclosed schemaへ正規化する`luma-registration-form`を追加した。
+出力はfield key、正規化label、control kind、required、bounded optionsだけで、入力値・電話・email・回答本文を保持しない。
+unlabeled、duplicate key、secret-shaped label/key、50件超をfail-closedにする。module不存在RED後、focused 2/2、既存provider込み
+11/11 GREEN。次はこのschemaとprivate profileを受け、既知fieldだけを回答し、Instagram等の未解決required fieldでは虚偽入力せず
+候補継続を返すprofile answer policyを実装する。
+
+O1B-25進捗102（profile-backed answer policy / RED→GREEN）: form schemaに対し、profileのfield key完全一致、label完全一致、
+許可済みphone mapping、明示済みCode of Conduct/Media Release consentだけを回答へ変換するpolicyを追加した。multi-selectは
+実画面で観測したoptionから最大3件だけ、checkboxは明示trueだけを許可する。Instagram handle等の未解決required fieldは
+`candidate_not_actionable / LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE`を返し、`N/A`や架空handleを作らない。form外option、duplicate、
+token/password等のsecret-shaped回答をfail-closedにする。module不存在RED後、schema/provider回帰込み14/14 GREEN。次はこのplanを
+実DOMへ適用するbounded fill executorと、未知field時に同passの次候補へ進むruntime状態遷移を接続する。
+
+O1B-25進捗103（bounded form fill executor / RED→GREEN、submit配線待ち）: `ready` answer planだけを受け、exact field keyが
+一件だけ存在することを確認してtext/phoneの`fill`、explicit consentの`check`、観測option完全一致のmulti-select clickを行う
+executorを追加した。各操作後にinput value、checked、aria-pressedをreadbackできなければ成功にしない。non-ready plan、missing/ambiguous
+control、未知control kindは外部effect前にfail-closed。module不存在RED後、schema/policy/provider回帰込み16/16 GREEN。
+次はlive DOM schema readerとprivate profile loaderを合成し、confirm click前にplan→fill→readbackを必須化する。
+
+O1B-25進捗104（self-healing revision contract / TODO順序正本化）: self-healing完成条件を「issue/PRを作る」から、Observerの
+privacy-safe replay fixtureをTerra fixerがRED→最小fix→GREENへ変換し、self-build guardと隔離browser canaryを通し、再配備後の
+Connector自身が同型live eventで登録済みmarker、PNG、Calendar、Telegram positive IDを揃えることへ更新した。
+`incident_fingerprint + capability_version + revision`をappend-only SSOTとし、canary failureはdoneにせず次revisionへ戻す。
+上限は3 revision/24時間・各15分、同一failure 3回だけblocked/backoff。残TODOを11D submit配線→12 capability再評価→13 Observer
+trace→14 revision-aware Terra producer→15 consumer/canary→16 live replay→17 cross-site OTP→18 lineage receiptの依存順へ並べ直した。
+
+O1B-25進捗105（11D form submit stack / RED→GREEN、private loader実配線待ち）: live DOMをdialog scopeだけでclosed schemaへ読み、
+trusted private profileを引数なしreaderから取得し、answer plan→bounded fill→effect readbackをconfirm click前に必須化した。
+初回reviewでLocator scope内からdocument全体を列挙する不具合を検出し、dialog外controlを除外するRED test後にscope root基準へ修正した。
+focused 21/21、native runtime 14/14 GREEN。さらに`LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE`をknown-no-effectへ分類し、
+同じpassで次のranked candidateへ進むruntime testと、Events Packがtrusted readerだけをproviderへ渡すcomposition testをRED→GREENにした。
+残る11Dはworkerがmode 0600 private profileを実際に読むloaderとdeploy wiringであり、値をrepo・log・receiptへ保存しない。
+
+O1B-25進捗106（11D private profile loader / RED→GREEN、deploy seed待ち）: workerのdurable data root配下
+`private/connector-luma-form-profile.json`だけをsubmit時に遅延読込するloaderを追加した。fileはmode 0600・16KB以下・closed schema、
+回答はbounded scalar/最大3件array/明示consentだけを許可し、extra key、secret-shaped value、object回答をfail-closedにする。
+provider readerは引数なしで、page/candidate/DOMをprivate loaderへ渡さない。module不存在とworker reader未配線をREDで確認後、
+profile/provider/policy 16/16、worker 28/28 GREEN。残る11Dはprivate volumeへの実seed、worker再配備、live submit readbackである。
+
+O1B-25進捗107（11D private seed/deploy wiring / RED→GREEN、live再配備待ち）: deploy entrypointがowner-only identity profileから
+phoneだけを初回seedし、空のform answersと未同意consentを持つmode 0600 private fileを生成する。既存private fileは上書きせず、
+strict loaderで検証してからread-only bind mountでworkerのdurable private pathへ渡す。token、identity、回答値はstdout/stderrへ出さない。
+deploy test 2/2とmerged compose configがGREEN。次はfeature buildをlocal workerへ再配備し、実container内のmode/loader readback後に
+既存Connector loopをwakeしてlive registration chainを確認する。
+
+O1B-25進捗108（Terra judgment acceptance root fix / LIVE RED→GREEN）: feature worker再配備後の既存launchd run 148は、
+agent runnerが`gpt-5.6-terra`でpreference judgmentをsuccessにした直後、`connector_native_luna_failed`でresult生成前に終了した。
+根因は全executorをTerra一候補へ統一した後もConnector judgment wrapperが`gpt-5.6-luna`だけをsuccessとしていたこと。
+Terra resultを受理するcontractへ更新し、変更前3 failure RED、変更後judgment/native 18/18、agent-runner 12/12 GREEN。
+次は既存launchdを再wakeし、judgment後のwrite attemptと実provider submit/readbackを確認する。
+
+O1B-25進捗109（12A capability-aware suppression / RED→GREEN）: run 149はTerra preference/goal judgmentを全日程で通過したが、
+旧`LUMA_FORM_INPUT_REQUIRED` attemptが4候補をterminal suppressionし、`unsuppressed=0 / write attempts=0`で終了した。
+form capability versionが旧attemptと異なる時だけsuppressionを解除し、同versionで一度再試行した後は再び抑制するcontractを追加した。
+legacy→v1解除、v1再抑制、v1→v2解除のRED後、suppression/native 17/17 GREEN。次はversionをruntime configと新attemptへ保存し、
+legacy JSONLを値欠落のまま安全にmigrationして実runでApplyへ進める12Bである。
+
+O1B-25進捗110（12B capability version persistence / RED→GREEN、live再評価待ち）: native configを
+`luma-form-submit-v1`へ固定し、suppression入力と新しいcandidate attempt全件へ同versionを渡すようにした。既存JSONLの
+versionなし5-key行と新6-key行を両方closed schemaで読めるため、過去stateを削除・書換せずappend-only migrationできる。
+旧form failureがv1で一度再試行され、その結果がv1 attemptとして保存されるruntime RED後、runtime/suppression 17/17、
+native entrypoint 26/26 GREEN。次は既存launchd runで`unsuppressed>0 / write attempts>0`と実provider resultを確認する。
+
+O1B-25進捗111（native private profile + pre-confirm outcome closure / LIVE RED→GREEN）: run 150は旧form suppressionを解除して
+write境界へ到達したが、host-native packにprivate readerが渡らず、candidate-local pre-confirm errorをoutcome classifierが拒否したため
+`connector_native_write_failed`でbounded result前に終了した。native runtimeにもmode 0600 loaderの引数なしreaderを接続し、
+control/schema/plan/fill/confirm unavailableをknown-no-effectとして同pass継続するclosed mappingを追加した。
+lazy reader REDと5 error分類RED後、provider/runtime/profile 35/35、native entrypoint 26/26 GREEN。次の既存runで
+versioned attempt、次候補継続、登録済みreadbackのいずれまで到達するかを確認する。
+
+O1B-25進捗112（browser ownership再監査 / Connector専用railへ収束、live E2E未達）: golden traceの実session logを再読すると、
+成功時の操作主体は`apps/life-manager`に導入済みの`playwright-core`であり、`chromium.connectOverCDP("http://127.0.0.1:9222")`
+から既存CloakBrowser daily-driverを直接操作していた。Gigの成功B0/B1 laneは別の専用CloakBrowser `:9223`、profile、lock、vaultを
+所有し、`browser-foundation`と`cdp_default_tab.py`がtarget IDとtab専用WebSocketを先に確定するため、agentがbrowser discovery、
+window選択、module探索を即興しない。Connector run 164〜169はこのownership railを持たず、raw DOM mutation、desktop-wide
+`Cmd-Tab/cliclick`、未導入`require('playwright')`へ逸れた。run 169は外部submit前に停止し、最新commit `9dc56bd98`は正しい
+`playwright-core` pathを固定したがlive未実証である。
+
+ConnectorはGigの稼働資産を一切変更・参照依存しない。`profitable-claude/skills/gig-work`、Gig launchd、`:9223`、
+`gig-daily-driver` profile、Gig state/lock/vaultはDO NOT TOUCHである。Connector repository内にConnector専用tab-owner railを実装し、
+`:9222`上のtarget ID、page WebSocket、owner token、baseline targetsをprivate receiptとしてTerraへ渡す。Terraは受け取った一tabだけを
+同一turnで観測→入力→submit→明示的完了markerまで操作し、browser/package/tab探索、別browser起動、desktop座標操作をしてはならない。
+候補attempt履歴はtelemetryであり除外gateにしない。生年月日`2002-01-30`はmode 0600 private profileへseed済みだが、全agentの
+個人情報SSOT統合は未完了である。
+
+O1B-25進捗113（16A Connector tab-owner rail / RED→GREEN、runtime配線は16B）: Connector repository内へ
+`connector-tab-owner.js`を追加した。`:9222`以外を拒否し、baseline targetを除外した後にcanonical Luma URLへ一致する
+page targetが正確に一つだけの場合に限り、owner token、target ID、page WebSocket、baseline targetsを含むschema v1 receiptを
+mode 0600でatomic保存する。Chrome内部pageや他site targetは候補外とし、同一event tabが複数なら曖昧な所有権として停止する。
+新規contractと既存daily-driverのfocused testは8/8 GREEN。次はこのreceiptを親loopからTerraへ渡し、Terraの接続先を
+所有tab一つへ限定する16Bである。live submitはまだ成立していない。
+
+O1B-25進捗114（16B owned-tab Terra wiring / focused GREEN、live E2Eは16C）: daily-driverはpage作成前に`:9222`の
+baseline target IDsを取得し、遷移後に16Aの一意receiptを生成してproviderへ渡す。providerはreceiptをagentic registration境界へ
+そのまま渡し、receipt欠落・別port・target/WebSocket不一致ではTerraを起動しない。Terraは`gpt-5.6-terra`のbrowser laneで、
+browser endpointへ接続後、各pageの`Target.getTargetInfo`を使ってreceiptのtarget IDと一致する一pageだけを選び、他pageの内容を
+探索しない。focused ownership/provider/pack testは36/36 GREEN。既存runtime suiteの47/48で残る1件は、進捗112で廃止済みの
+candidate budget cursorを期待する旧testであり、今回のownership変更による失敗ではない。次はprivate profile SSOT統合後、
+Connector launchd自身でlive submit/readbackを行う。現時点では外部submit成功を主張しない。
+
+O1B-25進捗115（private user-profile SSOT direct read / GREEN）: native-passはTerra実行時の本人情報を、電話番号だけの
+派生Luma profileではなくmode 0600の`~/.config/anicca/job-search/profile.json`から必要時に直接読む。readerはcandidate rootを必須にし、
+256 KiB、深さ、配列数、制御文字、secret-bearing keyをbounded validationし、再帰freezeした値だけを一回のregistration actionへ渡す。
+決定論form executor用の既存最小profileは別境界として維持する。実SSOTは値を表示せずcandidate 23 fields、facts 23件を読めることを確認し、
+関連44/45 GREEN。唯一のfailureは廃止済みcandidate budget cursorを期待する旧testである。次は最新launchdをkickstartし、loop主体の
+live Luma submitと親readbackを実証する16Cである。
+
+O1B-25進捗116（live run 170 / reconciliation continuation fix）: commit `6276dd8a6`の既存launchdをkickstartし、
+CloakBrowser `:9222`、mode 0600 tab-owner receipt、本人SSOT direct readerが実runへ到達した。runはinventory 27、Calendar候補20、
+eligible 5、spend ordered 3を得たが、write attemptは1で登録0だった。原因は旧`unknown_effect`を親readbackで`absent`へ確定した直後に
+`break judgmentLoop`し、再submitも次候補も行わない制御フローである。`absent`は同じcandidateを即retry、`unavailable`は次candidate、
+`unknown/login_required`だけpass停止へ変更した。候補budgetは停止gateにならない現contractへ旧testを更新し、ownership/profile/provider/
+native/launchd focused testは65/65 GREEN。次runでTerra child起動、実submit、親readbackを確認するまで16Cは未完了である。
+
+O1B-25進捗117（Dream Killer control removal batch 1）: Connector native runtimeでreconciliation readbackが`login_required`、
+`unknown`、`unavailable`になっても`break judgmentLoop`せず、そのcandidateをtelemetryへ記録して次candidateへ進む。
+write outcomeも`verified_success`だけを現在runの成功境界とし、`known_no_effect`、`unknown_effect`、`recovery_required`は次candidateへ
+継続する。legacy candidate sequenceも`adapter_failure`、`login_required`、`transport_unavailable`、`unknown_effect`、未知statusが
+sequence全体を終了する権限を廃止し、各candidateをskip ledgerへ残して全件試行後に`next_provider_required`を返す。
+focused runtime/candidate testsは19/19 GREEN。次は既存launchdをlive実行し、候補間継続とTerra submitを実測する。
+
+O1B-25進捗118（browser transaction continuity OSS調査 / spec only、実装なし）: live run 171のTerraはowned targetへ正しく到達し、
+registration form、textbox、checkbox、multi-selectを観測したが、各actionを別々のinline Node processで実行し、毎回
+旧Terra executorは`chromium.connectOverCDP()`→page再探索→`browser.close()`を繰り返した。このためoverlayとform stateを何度も失い、同じ入力を
+再試行した。Luma selector不足ではなくbrowser session lifecycleが根因である。
+
+採用案はMicrosoft公式OSS `microsoft/playwright-mcp`をConnector専用の長寿命browser tool sessionとして使うことである。
+同READMEはMCPをpersistent state、rich introspection、iterative reasoning、long-running autonomous workflow向けと明記し、
+`--cdp-endpoint`、`--shared-browser-context`、action/navigation/settle timeout、output directoryを提供する。
+Playwright公式APIは`connectOverCDP()`が既存Chromiumへ接続しdefault contextを返す一方、CDP接続はPlaywright protocolより
+low fidelityであり、`browser.close()`はconnected browserから切断してBrowser objectをdisposeすると明記する。したがってTerraへ
+raw shellを許す構成を廃止し、親loopが一度だけMCP sessionを`:9222`へ接続、16A receiptのowned targetをcurrent pageへ固定、
+Terraは同一MCP sessionのaccessibility snapshot、click、fill、check、select、screenshotだけで一transactionを完了し、親readback後に
+MCP clientだけをdetachする。外部CloakBrowser、context、owned pageをTerraにcloseさせない。
+
+比較したOSS:
+
+- `microsoft/playwright-mcp`（採用）: Codexがstdio MCPをnative登録でき、長寿命session、CDP endpoint、shared context、snapshot、
+  monitoring/outputを一体で提供する。Source: https://github.com/microsoft/playwright-mcp
+- `microsoft/playwright-cli`（fallback）: named sessionはCLI call間でcookie/storageを保持し、`attach --cdp=<url>`と外部browserを残す
+  `detach`を提供する。ただしCLI commandを多数生成する現在の癖を残しやすいため第一選択にしない。
+  Source: https://github.com/microsoft/playwright-cli
+- `browser-use/browser-use`（不採用）: `BrowserSession(BrowserProfile(cdp_url=...))`で既存browserへ接続し、一つのAgent runを維持できるが、
+  現在のTerra/Codex runnerを別agent frameworkへ置換する範囲が大きい。Source: https://github.com/browser-use/browser-use
+- `browserbase/stagehand`（不採用）: `act()`/`agent.execute()`、action caching、self-healingは有用だが、別SDK/agent runtimeと
+  Browserbase中心の依存を増やす。Source: https://github.com/browserbase/stagehand
+
+16B補正TODO: (a) Connector専用Playwright MCP sidecarをper-candidateで起動し`:9222`へ一回だけattach、(b) owner receiptのtarget IDを
+MCP current pageへbindして他tab toolをTerraへ公開しない、(c) agent-runnerのTerra turnへbrowser MCPだけを注入しshell browser codeを
+禁止、(d) form openからsubmit/readback/screenshotまで同じsession IDをtrace、(e) parentがreadback後にMCPをdetach、
+(f) action途中のMCP crashは同candidate stateを再読込し、次candidate/providerを止めない。live E2Eはこの移行後に再実行する。
+
+O1B-25進捗119（CloakBrowser本体 + successful Gig rail差分監査 / 進捗118を訂正）: ConnectorはCloakBrowserを使っていないのではない。
+実runは既存CloakBrowser `:9222`へPlaywright CDPで接続し、CloakBrowser page上のLuma formまで到達している。CloakBrowser公式は
+Playwright/Puppeteer drop-in stealth Chromiumで、persistent contextとhumanized actionabilityを提供する。今回のform継続失敗はbrowser
+engineではなくConnector harnessの所有権と実行lifecycleである。Source: https://github.com/CloakHQ/CloakBrowser
+
+成功中Gigの実codeは、親が`Target.createTarget`でdefault authenticated contextへ専用tabを作り、`target_ownership.claim_target()`で
+ownerをdurable ledgerへ記録し、`target_id`と直接の`ws://.../devtools/page/<target>`を返す。別経路ではtaskごとのbrowser context、
+token、generation、heartbeat、renderer liveness probe、operation lockを持ち、agentにはそのpage WebSocket一つだけを渡す。
+agentはcontextをreleaseせず、親がagent終了後に同じtargetをreadbackしてcleanupする。Gigはbrowser endpointへ再接続して全pageを
+毎command探索する構成ではない。
+
+Connectorは親がPlaywright `context.newPage()`を作る一方、Terraへbrowser endpointとtarget receiptを文章で渡し、Terra自身が毎actionで
+inline Nodeを生成して`connectOverCDP()`、全page列挙、target再探索、`browser.close()`を繰り返す。つまりCloakBrowser binaryは同じでも、
+成功Gigのpage-scoped ownership rail、operation lock、one-session transaction、parent-owned cleanupをコピーしていなかった。
+
+進捗118の「Playwright MCPを第一選択」は撤回する。既にあるPlaywright CLI/MCPの追加は根因修正ではない。第一選択はGigの汎用browser
+foundation patternをConnector repositoryへcopy+tweakすることとする。ただしGigのcode/state/profile/launchd/`:9223`はread-onlyで、
+Connectorは自分の`:9222`、owner namespace、ledger、lock、evidenceを持つ。
+
+16B再補正TODO: (a) 親がCDP `Target.createTarget`でLuma event tabを作る、(b) Connector専用owner ledgerへtargetをclaim、
+(c) 親が同じPlaywright pageでform schemaを観測し、Terraへsanitized schema・未解決の通常質問・private profileだけを一turn渡す、
+(d) browser endpoint、page WebSocket、owner receipt、tab一覧、inline Node、`browser.close()`、context/page releaseをTerraから除外、
+(e) Terraの回答をclosed schemaで検証してから親が同じpageでopen form→全field→submit→markerまで実行、
+(f)親が同じtargetで独立readback・screenshot後にtargetをclose/release、(g)renderer livenessとstale-owner GCをConnector自身が持つ。
+
+O1B-25進捗120（Superpowers型closed-loop self-healingを全loop共通基盤へ昇格 / 実装順序確定）: run 174の実stateを
+read-only再監査した。Connector launchdは累計174 run、直近exit 1、healthcheckは直近exit 0、`:9222`は応答中である。
+run 174はTerraが実Luma formをsubmitし、親loopが`pending approval` markerと登録page PNGを独立readbackした一方、
+confirmation mail / QR取得で`ticket_evidence_failed`となり、現pipelineの順序上CalendarとTelegramへ到達しなかった。
+したがって「外部submit不能」はすでに真ではないが、Gig型page ownershipを持たず、Terraがinline Nodeごとに
+`connectOverCDP()`、全page探索、`browser.close()`を反復するtransaction lifecycleと、登録成功後のoptional evidence failureが
+task delivery全体を止める状態機械が未修復である。
+
+Daisの明示判断により、機能開発の順序を次へ固定する。まずGig資産を変更せずConnector専用`:9222` railでsingle-page transactionを
+成立させる。その一件を閉じた直後はprovider追加より先に、今回の二つの実故障を最初のreplay fixtureとして共通Observer / Fixer /
+Canary / Promotion基盤を完成させる。FixerはCodex/Terra runnerからSuperpowersの`systematic-debugging`、
+`test-driven-development`、`verification-before-completion`を必須工程として使う。issue作成、PR作成、test GREEN、merge、restartの
+いずれもhealedではない。同じfailure classの実taskをproduction loop自身が再実行し、task固有のexternal receipt oracleを満たした時だけ
+`healed`へ遷移する。
+
+共通self-healing contractはbrowser専用にしない。各loop adapterは`observe / classify / expect / reconcile /
+buildReplayFixture / runCanary / verifyExternalEffect / rollback`を実装し、共通control planeは
+`incident_fingerprint + capability_version + revision`、修正budget、protected path、permission、canary、promotion、rollbackを所有する。
+Connectorのexternal oracleはprovider marker、Calendar ID/readback、登録page PNG SHA、Telegram card/photo positive IDである。
+Gigはmarketplace official historyのexact request ID、mailはprovider message ID、paymentはprovider receipt、on-chain effectはtransaction
+signatureを使う。process livenessやagent自己申告をbusiness successへ昇格しない。
+
+Observer envelopeにはrun/task/event、loop、capability/version、stage、safe action class、URL class、control class、期待effect、
+観測effect、target owner/generation、screenshot SHA、provider readback、code commitだけを保存する。raw page本文、cookie、OTP、token、
+email、電話、profile、form回答、raw promptは保存しない。修復は一revisionにつき原因仮説一つ、RED一つ、最小fix一つ、15分以内、
+最大3 revision/24時間とし、historical replay→focused/full test→隔離browser canary→one bounded live effect→external receiptの順で昇格する。
+同じtest/canary failureが3回続いた時だけbackoffし、単なる`attempted`で永久除外しない。
+
+O1B-25進捗121（16B再補正 Task 1 durable target lease / RED→GREEN）: Connector repository内へ
+`connector-target-lease.js`を追加した。Connector専用mode 0600 atomic ledger、target単位owner token/generation fence、heartbeat、
+renderer probe、exact fenced release、heartbeat期限切れtargetだけのstale GCを持ち、`:9222`以外のpage WebSocket、credential-bearing
+Luma URL、別owner、stale fenceを拒否する。`connector-tab-owner`は注入されたleaseのdurable claimが成功するまでownership receiptを
+発行しない。production runtimeからのlease生成・`Target.createTarget`・親cleanup配線は次のTask 2であり、まだlive ownership成功を
+主張しない。TDDはmodule不在RED、lease未接続REDを実測後、focused ownership/provider関連28/28、pretest 12/12、Connector/outbound
+320/320がfresh GREEN、失敗0件である。
+
+O1B-25進捗122（16B再補正 Task 2 parent-created target lifecycle / RED→GREEN）: Connector専用
+`connector-browser-target-controller.js`を追加し、親が既存CloakBrowser `:9222`のdefault authenticated contextへ
+`Target.createTarget`を一回だけ実行し、返されたtarget IDとPlaywright pageをboundedに一致確認する。daily-driverのproduction railは
+そのexact targetをdurable leaseへclaimし、renderer probe、navigation前heartbeat、親task/readback後heartbeatを行い、finallyで
+owner token/generationが一致するtargetだけを親がclose/releaseする。production runtimeはConnector evidence directory内の
+`target-leases.json`を渡すため、旧`context.newPage()` receipt-only branchを使わない。Terra側はまだendpointを受け取りinline Nodeと
+反復`connectOverCDP()`を行うため、single-page agent capabilityとlive effectはTask 3まで未完である。controller/lease/owner/driver/
+agent receipt/runtime/provider focused 48/48、pretest 12/12、ownership testsを常設登録したConnector/outbound 335/335がfresh GREEN、
+失敗0件である。
+
+O1B-25進捗123（16B再補正 Task 3 model-only decision / parent-owned effect RED→GREEN）: Gigの実codeを再照合すると、
+成功境界はagentへpage操作を委譲することではなく、modelが判断だけを返し、親codeが同一owned target上でbrowser effect、
+readback、evidence、cleanupを完結する構造だった。Connectorもこの境界へ変更した。Terraにはsanitized form schema、未解決の
+required普通質問、private profileだけを一回渡し、endpoint、page WebSocket、target/owner receipt、tab inventory、Playwright bootstrap、
+`connectOverCDP()`、`browser.close()`を一切渡さない。Terraの回答は未知key、重複、不完全、観測option外、secret-shaped値を拒否し、
+親owned pageだけがreal locator fill/check/select、final submit、provider marker readback、PNG取得を行う。focused testは旧境界で2件RED、
+修正後17/17 GREEN、pretest 12/12、Connector/outbound 336/336 GREEN、失敗0件である。これはcode/test完了であり、最新commitを使った
+既存Connector launchdの実submit、親marker、PNG、Calendar、Telegram receiptはまだ未実証なので16C/16Dは未完のまま維持する。
+
+O1B-25進捗124（Task 3 schedule-owned run 178 / ownership GREEN・新規submit未到達）: commit `dcd552c3b`を参照する
+既存Connector launchdがschedule自身でrun 178を開始したため、重複kickstartせず自然終了まで観測した。runは4候補を処理し、
+2件を`LUMA_RSVP_UNAVAILABLE / known_no_effect`、2件を`TICKET_EVIDENCE_FAILED_FAILED / recovery_required`としてappendした。
+後者2件では親provider readbackに基づく新しいPNG object/provider receiptが生成されたが、candidate-attempt 35→39に対して
+Calendar delivery receipt 2→2、Telegram photo receipt 2→2で増分0だった。Connector target lease ledgerは終了時targets 0で、
+親cleanupは成立した。新規form submitを必要とするcandidateへ到達しておらず、Terra form-decision turnも実行されていないため、
+このrunを16Cのcorrected live submit acceptanceとは扱わない。Calendar、Telegram、full lineageも未成立なので16Dも未完である。
+
+O1B-25進捗125（verified registration core deliveryとoptional ticket enrichment分離 / RED→GREEN）: run 178で再現した
+`registration verified + PNG generated → confirmation/QR failure → Calendar/Telegram未到達`を回帰testにした。旧pipelineは
+verified provider receiptの直後にconfirmation mailとticket QRを必須化し、失敗時にCalendar前でreturnしていた。修正後は
+provider marker/PNG receiptをcore effect oracleとしてCalendar、coverage、登録page Telegram card/photoを継続し、mail/QR/ticket photoは
+verified artifactが得られた時だけ追加送信するbest-effort enrichmentとした。ticket evidenceまたはticket Telegram failureはbounded
+`unavailable` statusとして返すが、登録済みeventをapplication failureへ戻さない。Calendar receipt、coverage rebuild、Telegram positive
+card/photo IDの既存fail-closed gateは変更していない。回帰testは旧codeで1件RED、修正後focused 21/21、pretest 12/12、
+Connector/outbound 337/337 GREEN、失敗0件。この時点のlive未実証記録は履歴であり、現在状態は進捗145以降とactive TODO SSOTを参照する。
+
+O1B-25進捗126（optional ticket分離のexisting launchd LIVE GREEN / 16D full lineage成立）: commit `84fa453f1`後、
+idleだった既存Connector launchdだけをrun 179として一度kickstartし、自然終了まで観測した。candidate attemptは39→41、
+Calendar/coverage delivery receiptは2→3へ増えた。`luma-event://event/thirdspace-thirdweeks-gradations`は親provider readbackで
+`verified_success / open_coverage`となり、同一write resultへprovider markerにboundしたfull-page PNG SHA
+`8d1713988bc4e3760253e23c1905fc7ea0f68307c7d5ab7122499c9feda754ed`、Google Calendar evidence ref、Telegram card positive ID
+`7864`、登録page photo positive ID `7865`が揃った。target lease ledgerは終了時targets 0である。これでticket enrichment failureが
+core Calendar/Telegram deliveryを止めないことと16Dの4証拠lineageをlive完了した。ただしagentic-registration evidenceは生成されず、
+既登録effectの親readbackだったため、corrected railで新規form submitを行う16Cは未完のまま維持する。
+
+O1B-25進捗127（16C run 180 / 新規submit可能候補なし）: 16Cだけを次のactive itemとして既存Connector launchdを
+run 180で一度wakeした。fresh inventory 27件、Calendar gate対象21件、eligible 4件、Luna ranked 4件、zero-yen spend policy後2件を
+同じpassでattemptしたが、2件とも親provider readbackで`LUMA_RSVP_UNAVAILABLE / known_no_effect`だった。Terra childと
+agentic-registration evidenceは生成されず、candidate attemptは41→43、delivery receiptは3→3である。これはbrowser rail failureではなく、
+現inventoryに新規submit可能なfree候補が無いことを示す。corrected railの実form submit証拠は存在しないため16Cを完了扱いせず、
+次のschedule wakeでも全ranked candidateを再評価する。16C成立前にObserver/Fixer実装へ順序を飛ばさない。
+
+O1B-25進捗128（Calendar-gap-first・multi-source必達へ順序変更）: Daisの明示判断により、イベントの好み・テーマ・
+goal alignmentは除外gateではなく順位情報だけにする。Google Calendarの空き、往復移動、現地参加可能性、provider受付状態、
+既存の支出上限を満たす候補は、弱いfitでも応募対象に残す。「anything」は無制限課金、時間衝突、満席、online-only、
+利用規約違反まで許可する意味ではない。Lumaでsubmit可能候補が無ければ同じpassでConnpass→Peatix→Meetup→Doorkeeper→
+Eventbriteへ進み、各providerの全候補が尽きるまで一候補・一providerの失敗で終了しない。完了条件はagent自己申告ではなく、
+providerの登録済み/承認待ちmarker、参加用QRまたはprovider ticket/receipt、Calendar ID/readback、登録page PNG SHA、
+Telegram card/photo positive IDを同一event lineageへ揃えることとする。
+
+この判断により、旧「Luma corrected railのlive submit後にObserver」という順序を変更する。最初に共通source registryと
+provider handoff state machineを作り、Connpassを最初の代替providerとしてdiscovery→authenticated registration→effect readback→
+screenshot/QR evidenceまでlive promotionする。その後、Lumaを含む全provider横断で最初の実登録を必達し、初めてObserver/Fixerへ進む。
+
+O1B-25進捗129（multi-source Task 1 closed provider registry / RED→GREEN）: `event-provider-registry.js`を追加し、
+provider順をLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteへ固定した。各providerはexactly
+`discovery / registration / effect_readback / screenshot_evidence / ticket_or_qr`を宣言し、各能力は`active / advisory_only / blocked`
+とbounded safe reasonだけを持つ。Lumaは既存live proofにより全能力active、この時点のConnpass API-only状態は進捗145でsupersededされ、
+advisory、残りproviderはadapter live proofまでblockedである。registryはimmutable・content-addressed・in-process provenanceで、
+credential、browser endpoint、個人情報を持たない。Connpass promotionはprovider marker、PNG SHA ref、admission ticket/QR相当ref、
+Calendar evidence ref、Telegram card/photo positive IDの全てが揃わなければ拒否する。module不在RED後、focused 3/3、pretest 12/12、
+常設登録後のConnector/outbound 340/340 GREEN、失敗0件。次はTask 2でdurable provider cursorとsame-pass handoffをnative runtimeへ接続する。
+
+O1B-25進捗130（multi-source Task 2A durable provider cursor / RED→GREEN）: `event-provider-cursor.js`を追加した。
+cursorはexactly `schema_version / registry_id / date / provider / candidate_index / generation / observed_at`だけを持ち、event名、URL、
+本文、identity、profileを保存しない。`known_no_effect`は同providerの次candidate、`provider_exhausted`は固定順の次providerへforward-onlyに
+進み、`unknown_effect`、末尾providerからの黙ったwrap、registry drift、stale/forged cursorを拒否する。mode 0600のatomic JSON storeは
+一時fileをfsync後renameし、完全なcursorだけを再読出しする。module不在RED後、registry込みfocused 6/6、pretest 12/12、
+常設登録後のConnector/outbound 343/343 GREEN、失敗0件。これはcursor contract/storeだけであり、native runtimeのsame-pass handoffは
+Task 2Bとして未完である。
+
+O1B-25進捗131（multi-source Task 2B1 same-pass runtime transition / RED→GREEN）: native runtimeへTask 2Aの
+verified registry/cursorを接続した。`known_no_effect`はcandidate indexを進め、Luma候補枯渇は同じpassの返却cursorをConnpassへ進める。
+既存のunknown-effect親readbackが`unknown`の間はcursorを一切進めず、再submitもしない。返却cursorはprovider/date/index/generation/timeと
+registry IDだけで、event名、URL、page本文、identityを持たない。外部のdurable workflow設計も、Temporalが「complete, ordered log」を保持して
+停止前の状態へ戻すこと（https://docs.temporal.io/workflows）、AWS Step Functionsがstate errorを`catch errors, retry failed states`で扱うこと
+（https://docs.aws.amazon.com/step-functions/latest/dg/concepts-error-handling.html）、Azure Durable Functionsが「状態、チェックポイント、再試行、復旧を管理」
+すること（https://learn.microsoft.com/ja-jp/azure/azure-functions/durable/durable-functions-overview）を公式原文で再確認した。既存15件PASSかつ
+新assertだけFAILのRED後、focused 16/16、pretest 12/12、outbound 344/344 GREEN、失敗0件。Connpass network discoveryはまだ実行せず、
+次はTask 2B2で`provider-cursor.json`をnative-passへatomic persistenceする。
+
+O1B-25進捗132（multi-source Task 2B2 native-pass persistence / RED→GREEN）: production native-passを旧Luma-only
+`cursor.json`の独自validator/direct writeからTask 2Aのregistry-bound atomic storeへ切り替えた。first wakeは最初のopen dateからLuma cursorを
+生成し、mode 0600 `provider-cursor.json`をtemp fsync→renameで保存する。次wakeは同一registry IDのcursorだけをruntimeへ渡す。
+旧`cursor.json`は新cursorまたは明示nullのdurable recordが成功した後にだけ削除し、途中失敗で両方を失わない。event ref、page text、URL、
+identityはprovider cursorへ保存しない。provider file不在RED後、native-entrypoint 26/26、runtime 16/16、pretest 12/12、outbound 344/344 GREEN、
+失敗0件。Task 2のcursor contract・runtime transition・wake間persistenceは完了した。この次手記録は履歴で、進捗145によりbrowser discoveryへ置換した。
+native runtimeのConnpass cursor branchへ接続する。実network call、browser、registration、Calendar、Telegramはまだ実行していない。
+
+O1B-25進捗133（履歴 / 進捗145でsuperseded: Connpass official API runtime handoff）: Connpass provider cursorを
+native runtimeへ接続した。resumed Connpass cursorだけでなく、Lumaが同じpassで枯渇してConnpassへ遷移した場合も、その場で既存packの
+exhaustive official-v2 handoffを呼ぶ。API keyは`LM_CONNECTOR_CONNPASS_API_KEY`からprocess内configへ渡すだけでresult/cursor/stateへ保存しない。
+key不在はnetwork call 0の`waiting_for_authorized_source`、API unavailable/emptyもcoverageをopenに保つ。発見候補は
+`registration_allowed=false / coverage_credit=false`のadvisoryであり、registration、Calendar write、Telegramを呼ばない。公式API v2は
+「すべてのAPIエンドポイントでは、APIキーによる認証が必須」「1秒間に1リクエストまで」、非API crawling/scrapingは禁止と明記する
+（https://connpass.com/about/api/v2/）。公式helpも「APIキーをリクエストヘッダーに設定」「適切な間隔をあけてアクセス」とする
+（https://help.connpass.com/api/）。既存16件PASSかつhandoff未呼出しのRED後、runtime 17/17、native-entrypoint 26/26、pretest 12/12、
+outbound 345/345 GREEN、失敗0件。次はTask 3BでConnpass候補をLuma provenanceへ偽装せず、共通Calendar/移動gateへ通す。
+
+O1B-25進捗134（multi-source Task 3B provider-neutral Calendar/travel gate / RED→GREEN）: 既存Luma Calendar gateの
+候補評価を一つの共有evaluatorへ抽出し、verified Connpass handoffを直接受けるgateを追加した。Luma inventoryへ偽装せず、同じ
+direct timed conflict、all-day conflict、直前/直後location、inbound/outbound route、5分buffer付きexpanded windowを適用する。
+gate receiptにはopaque Calendar event refだけを残し、home、venue、隣接予定locationを出力しない。eligible候補だけをread-only Connpass
+adapter境界へ残し、eligible 0では同じdateのprovider cursorをPeatixへ進める。discoveryだけではcoverage credit、registration、Calendar write、
+Telegramを発生させない。既存5件PASSかつConnpass evaluator未実装のRED後、Calendar focused 6/6、runtime 17/17、pretest 12/12、
+outbound 346/346 GREEN、失敗0件。これでTask 3 official discovery + Calendar/travel gateは完了。次はTask 4 Connpass authenticated
+registration adapterを、親owned Connector target、effect readback、PNG、admission receipt、Calendar、Telegramの順で実装・live promotionする。
+
+O1B-25進捗135（direct site authorization + Task 4A provider-neutral parent browser rail / RED→GREEN）: Daisは
+Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteの各siteからConnectorによるbrowser registrationの個別許可を取得済みと明示した。
+この直接許可をwrite permissionの正本とし、公開generic documentだけからapproved account actionを禁止と推論して停止しない。
+Calendar/移動gate、支出上限、固定host allowlist、親effect readback、外部evidenceは引き続き必須である。
+
+既存Connector browser railを`withEventPage(provider,url)`へ一般化した。固定provider-host対応だけが
+`createTarget → claimExact → probe → heartbeat → goto → parent task/readback → release`へ入り、既存`withLumaPage`は同じ関数の互換wrapperである。
+Connpass subdomainを含むapproved hostはConnector専用`:9222`のdefault contextに親owned targetを一つ作る。provider mismatch、任意origin、URL内credential、
+`:9223`は拒否し、Gigのcode/state/profile/browserへ触れない。既存12件PASSかつ新Connpass rail不在のRED後、ownership focused 22/22、
+pretest 12/12、outbound 348/348 GREEN、失敗0件。次はTask 4B Connpass page adapterでlogin/readback、form、submit、marker、PNGを閉じる。
+
+O1B-25進捗136（Task 4B1 Connpass parent readback/submit adapter / RED→GREEN）: `connpass-browser-provider.js`を追加した。
+adapterは`dailyDriver.withEventPage("connpass", canonical_url)`だけを使い、親owned pageの観測を
+`absent / login_required / registered / pending / unavailable / unknown`へ閉じる。登録済み・抽選/承認待ちmarkerは親が独立readbackし、
+その後だけfull-page PNGを撮り、event ref・observed timeとevidence storeへbindする。approved registration controlはexact accessible nameだけを
+一度clickする。login/unavailable/control不在などclick前失敗はknown no-effect、click後marker不明はunknown effectとして再submitを禁止する。
+page text、cookie、session、identityをresultへ返さない。module不在RED後、focused 3/3、pretest 12/12、常設outbound suite 348/348 GREEN、
+失敗0件。これはadapter単体であり外部submitはまだ行っていない。次はTask 4B2でCalendar-eligible Connpass candidateをcommon write/evidence
+pipelineへ接続し、Task 4B3でConnector自身の実browser submitとpromotionを行う。
+
+O1B-25進捗137（Task 4B2A common verified provider event inventory / RED→GREEN）: `event-provider-date-inventory.js`を
+追加した。verified Connpass handoffとrolling coverageのopen date、Calendar-eligible candidateのin-process identityを全て照合し、
+event ref、canonical URL、start/end、venue、source handoff IDをimmutable/content-addressed inventoryへ投影する。API key、page text、identity、
+browser stateは含めない。runtimeはeligible候補が1件以上の時だけこのinventoryを生成し、0件なら次providerへ進む。Calendar syncと
+native write pipelineのinventory gateは、verified Luma inventoryまたはこのverified provider inventoryだけを受ける。ConnpassをLuma refへ
+偽装しない。module不在RED後、inventory/runtime/Calendar/write focused 46/46、pretest 12/12、常設outbound suite 348/348 GREEN、失敗0件。
+次はTask 4B2BでConnpass deterministic job、effect key、execution/reconciliation、provider screenshot evidence storeを追加する。
+
+O1B-25進捗138（Task 4B2B Connpass job + evidence receipt / RED→GREEN）: `connpass-rsvp-adapter.js`と
+`connpass-evidence-store.js`を追加した。job ID/effect keyはtenant、Connpass event ID、canonical subdomain URL、start time、identity refから
+deterministicに生成し、canonical URLをimmutable `canonical_url_ref`として保持する。adapterはparent provider inspectを先に行い、absentだけを
+一度submitする。unknown/login/unavailableを区別し、unknownでは再submitせずreconcileへ戻す。registered proofはConnpass専用mode-0600
+immutable storeのprovider receiptとPNG objectをE1/E2へ、canonical URL HEAD 200をE3へ通し、verifier-produced outbound receiptだけを返す。
+Luma event ref、Luma job、Luma evidence directoryを使わない。両module不在RED後、focused 4/4、pretest 12/12、常設outbound suite
+348/348 GREEN、失敗0件。次はTask 4B2Cでruntimeのeligible candidateをこのprovider/job/storeとcommon write pipelineへ接続する。
+
+O1B-25進捗139（Task 4B2Cの実装slice固定）: runtime配線の前に、既存write pipeline、coverage evidence、bounded result、
+candidate-attempt、Telegram lineageに残るLuma固有contractをprovider-neutralへするTask 4B2C1を置く。verified Connpass inventoryを
+Luma goal decisionへ偽装せず受け入れ、既存Luma検証を維持することを完了条件とする。その後Task 4B2C2でConnpass provider/job/storeを
+runtimeへ接続し、known no-effectは次候補/providerへ進み、unknown effectはreadback reconciliation前に再submitしない。複数の独立境界を
+一変更に混ぜず、各sliceをRED→GREEN→full suite→commit/pushで閉じる。
+
+O1B-25進捗140（no-terminal-failure UX contract）: Connectorの成功outcomeを`applied_bundle`一つにする。
+候補0、provider障害、login切れ、form未対応、満席、closed、timeout、browser crash、unknown effect、Calendar/Telegram一時障害は
+内部のattempt/incident/recovery stateであり、ユーザーへ「申込めなかった」を最終結果として送って終了してはならない。ただし全wakeは
+成功・継続・故障の状態をTelegramへ必ず報告し、報告後も申込み処理を停止しない。同一runでは
+次候補→次provider→次open日→次探索windowへ進み、runの時間境界を越える時はexact cursor、effect fence、owner generation、retry timeを
+durableに保存して次wakeが継続する。unknown effectはprovider readbackでpresent/absentを確定するまで再submitしない。外部siteが成功を
+返した後も、親readback、Calendar create/readback、registration PNG、ticket/QRまたは同等provider receipt、Telegram card/photoのpositive
+message IDが同一event lineageに揃うまで成功ではない。Calendarに参加可能なgapがない場合は既存予定へ衝突する登録を作らず、探索windowを先へ延長して最初のopen gapを
+処理する。この契約が保証するのは「故障で諦めるterminal pathが存在しないこと」と「成功まで安全に継続すること」であり、第三者siteの
+可用性を偽装したfalse successではない。
+
+`applied_bundle` acceptance criteria:
+
+1. provider親readbackが`registered`または`pending_approval`を証明する。
+2. canonical event URL、event ref、start/end、provider receipt、PNG SHA-256が一致する。
+3. Google Calendar event IDをcreateまたはidempotent existing readbackで取得する。
+4. ticket/QRがproviderから提供される時は保存し、提供されない時はproviderが返す同等admission receiptを保存する。
+5. Telegram card IDとphoto IDがともにpositiveで、Calendar event IDと同じlineageを参照する。
+6. 上記未達時は`applied_bundle`を生成せず、候補/provider継続またはdurable recoveryへ遷移する。
+
+進捗140時点の残TODO（履歴のみ。現在の実行順には使わず、最新のActive remaining TODO SSOTだけを使う）:
+
+1. Task 4B2C1を閉じる: verified Connpass inventoryをLuma goalへ偽装せず、write、coverage、bounded result、attempt、Telegramの全contractが受理する。完了条件はfocused、pretest、constant outbound suiteが全緑でcommit/push済み。
+2. Task 4B2C2を閉じる: runtimeがConnpass provider/job/evidence storeを生成し、Calendar-eligible候補をcommon write pipelineへ渡す。完了条件はknown no-effectで次候補/providerへ進み、unknownでreconcileし、runtime testが実call順を証明する。
+3. Connpass live submitを行う: 既存Connector launchdと`:9222`だけで実eventへ申込み、親readbackを得る。完了条件はprovider receipt、PNG SHA、Calendar ID/readback、Telegram card/photo IDが一lineageに揃うこと。
+4. Connpassをpromotionする: step 3のlive proofをsource registryへ入力する。完了条件は`registration_allowed=true`が完全な外部proofでのみ成立し、clone/incomplete proofが拒否されること。
+5. every-wake Telegram reportingを実装する: 各wakeは`applied / continuing / recovering`のclosed status、試行件数、safe failure class、現在cursor、次の自動行動を含むprivacy-safe reportを生成する。完了条件は全終了pathでreport recordが1件作られ、positive message ID取得までdurable outboxから消えず、送信後も未完了cursorが継続すること。
+6. exhaustive continuationを閉じる: candidate→provider→date→window cursorを一つのforward-only state machineにする。完了条件は候補0、満席、closed、form failure、provider down、browser crashの各fixtureがsuccessまたは次cursorへ遷移し、terminal failureへ遷移しないこと。
+7. Peatixを追加する: official discovery、parent-owned submit/readback、evidence、isolated live proof、promotionを順に行う。完了条件はstep 3と同じ`applied_bundle`。
+8. Meetupをstep 7と同じgateで追加する。完了条件は実`applied_bundle`。
+9. Doorkeeperをstep 7と同じgateで追加する。完了条件は実`applied_bundle`。
+10. Eventbriteをstep 7と同じgateで追加する。完了条件は実`applied_bundle`。
+11. provider横断live acceptanceを行う: 一providerを意図的にknown-no-effectへし、同一runが次providerで登録を成立させる。完了条件はhandoff traceと実`applied_bundle`が同一run IDにあること。
+12. post-registration recoveryを閉じる: Calendar、PNG、ticket、Telegramの各境界で中断し、次wakeがproviderへ再submitせず不足artifactだけを補完する。完了条件は各fault-injectionで外部登録1回、最終bundle1個。
+13. Observer trace packを実装する: safe action class、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorをprivacy-safeに記録する。完了条件は全failure classがdedupe可能incidentとreplay fixtureを生成すること。
+14. Superpowers Fixerを復旧する: incidentごとにsystematic-debugging→一仮説→実RED→最小GREEN→verification evidenceを生成する。完了条件は同一revisionの重複fixなし、上限3 revision/24時間、全変更がcommit/pushされること。
+15. guarded consumer/canaryを復旧する: historical replay→focused/full test→protected-path/permission→rollback→isolated browser canary→one bounded live effectを通す。完了条件は外部oracle成功だけがmerge/redeployされ、失敗revisionが自動rollbackされること。
+16. production self-healを実証する: 既知fixture一件をproductionと同型の隔離環境で再現し、Observer→Fixer→consumer→canary→再実行を通す。完了条件は再実行の`applied_bundle`でincidentが`healed`になること。
+17. Observer SDKを他loopへadapter展開する。Gigはread-onlyのまま別repo sliceとし、mail、Calendar、payment、収益loopへ順に導入する。完了条件は各loop固有external oracleでhealed判定すること。
+18. rolling coverageを閉じる: 今日から20日後の`open=0`まで反復し、gapがなければ次windowへ延長する。完了条件は各日が実証拠付き`covered_existing / covered_new / unavailable`で、少なくとも一件の新規`applied_bundle`があること。
+19. restart acceptanceを行う: Mac再起動後にConnector、Observer、producer、consumer、CloakBrowser、heartbeat、idempotency、stale-owner GCを実測する。完了条件は手動介入なしで未完cursorが再開し、新規または既存bundleを正しくreadbackすること。
+20. canonical branchへmergeし、legacy bridge、Docker worker、重複scheduleを退役する。完了条件はcanonical commitで単一scheduleだけが稼働し、次wakeの実`applied_bundle`またはidempotent no-duplicate readbackがあること。
+
+O1B-25進捗141（Task 4B2C1 provider-neutral downstream contracts / RED→GREEN）: verified Connpass inventoryが
+Luma goal decisionなしでcommon write chainへ入るfocused REDを追加し、従来の`goalDecision.ranked_events`強制参照で失敗することを確認した。
+write context、registration coverage evidence、coverage TelegramをLumaまたはin-process verified provider inventoryへ拡張し、Connpassの
+選定理由はCalendar gap適合というboundedな事実だけを使う。Luma inventoryでは従来どおりverified goalとranked eventを必須にする。
+focused 22/22、pretest 21/21、常設outbound suite 349/349 GREEN、失敗0件。次はTask 4B2C2でruntimeがConnpass
+provider/job/evidence storeを生成し、eligible候補をこのwrite chainへ接続する。
+
+O1B-25進捗142（every-wake Telegramは絶対運用invariant）: 「成功時だけTelegram」を撤回する。Connectorの全wakeは、外部申込みの
+成否に関係なく一件のstatus reportをdurable outboxへappendし、Telegram providerのpositive message IDをreadbackするまでdeliveredにしない。
+`applied` reportはprovider/Calendar/screenshot/ticket lineageを示す。`continuing` reportは候補/provider/date/window cursor、試行件数、次の
+自動actionを示す。`recovering` reportはsecret・PII・raw logを含まないfailure class、effect uncertainty、retry時刻、self-heal incident refを
+示す。Telegram transport failure自体もreport lossを許さず、次wakeが古い未配信outboxを先に再送してから当該wake reportを送る。各wakeは
+report enqueueなしで終了してはならず、enqueue後の申込みcontinuationも止めてはならない。完了条件はprocess exit、browser crash、provider
+timeout、Calendar failure、Telegram failureを含むfault-injectionで、wake IDごとのreport recordが欠落0、重複delivery0、復旧後positive
+message IDありとなること。
+
+週次Telegramも別の必須deliveryとする。Calendar週境界ごとに一件、wake数、attempt数、provider別handoff、実登録、Calendar反映、
+screenshot/ticket証拠、open coverage、未配信outbox、incident、self-heal revisionと次週の自動actionを集約する。登録0件や全provider障害でも
+週次reportを省略せず、`continuing`または`recovering`として送る。週次reportは`week_start + tenant + report_kind`でidempotentにし、positive
+message ID取得までdurable outboxから消さない。完了条件はsuccess週、登録0週、process停止を跨ぐ週、Telegram停止週のfault-injectionすべてで
+週次record欠落0、重複delivery0、transport復旧後positive message IDありとなること。
+
+O1B-25進捗143（Task 4B2C2 Connpass runtime execution wiring / RED→GREEN）: 既存Connpass cursor testを
+verified-empty Luma inventoryへ変更し、旧runtimeが`CONNECTOR_NATIVE_PROFILE_FAILED`でConnpass前に停止するREDを確認した。Luma候補0でも
+provider cursorがConnpass以降ならprofileを保持してhandoffを続行し、Connpass専用evidence store、`:9222` parent-owned browser provider、
+deterministic job builder、RSVP executorをcommon write pipelineへ注入する。cursor index以降のeligible候補を順番に試し、verified successで停止、
+known-no-effectで次候補を経てPeatixへhandoff、unknown/recoveryではcursorを進めず再submitを防ぐ。Connpass event refとbounded known failure
+codesもcandidate outcome contractへ追加した。focused 41/41、pretest 21/21、常設outbound suite 349/349 GREEN、失敗0件。次はTask 4B3で
+既存Connector launchdと`:9222`を使う実Connpass registrationを行い、parent readback、PNG、Calendar、Telegramを一lineageで実証する。
+
+O1B-25進捗144（Calendar eligible 0のprovider-stop gate除去 / RED→GREEN）: live state run 189はLuma inventory 27件、
+Calendar eligible 0件、write 0件、provider cursor Luma固定で停止していた。provider cursor付きtestへ全Luma候補eligible=falseを入力し、
+`luma !== connpass`のREDを確認した。Luma calendar gateのeligibleが0件ならLumaを`provider_exhausted`として同じrunでConnpass handoffへ
+進める。provider registryなしの従来単独runtimeはincomplete continuationを維持する。focused runtime 17/17、常設outbound suite
+349/349 GREEN、失敗0件。次は最新commitを向く既存launchdをwakeし、実Connpass applied bundleを検証する。
+
+O1B-25進捗145（Dais直接指示: Connpass APIを使用せずbrowser-onlyへ変更）: Connpass API key、公式API client、API paginationを
+active runtime pathに使用しない。Connector専用CloakBrowser `:9222`のparent-owned targetでConnpass calendar/explore pageを読み、公開event
+cardをexhaustiveに収集し、同じdaily driverでevent page→submit→parent readback→screenshotへ進む。discovery targetとregistration targetは
+Connector owner ledger、liveness、cleanupに従い、Gig `:9223`、Gig state、別browser profileを使用しない。旧API module/testは履歴互換として
+残してもactive runtimeから到達不能にし、source registryのConnpass transportは`cloakbrowser_daily_driver`とする。完了条件はAPI keyなし・
+network API call 0でverified browser inventoryを作り、Calendar gate後の実eventでapplied bundleが成立すること。
+
+O1B-25進捗146（Codex harness調査とbrowser discovery配線）: commit `f74a5870b`でactive runtimeの
+`handoffEventSource`、Connpass API key、API response依存を除去し、Connector-owned `:9222`のcalendar pageから対象日のofficial event URLを読み、
+各event pageの公開structured detailをverified handoffへ投影するbrowser discoveryを配線した。既存launchd run 197を実行したが、heartbeatは
+`worker_failed`、last exit 1で、実申込、Calendar、PNG、Telegramの新規外部証拠は0件である。したがってbrowser配線はcode-completeでもlive未完了で、
+Task 2は閉じない。
+
+O1B-25進捗147（Dais直接指示: main session待機を除去し、Observer→Healerを先行）: Connectorのlive runはlaunchd自身に
+継続させ、Codex main sessionはrun完了待ちのdurable ownerにならない。進捗146の「実`applied_bundle`後にObserver」という順序を撤回し、
+最初に既存incident intakeをprivacy-safe Observer envelopeへ拡張し、次にexternal-submit権限0のHealerをisolated worktreeでshadow稼働する。
+Connector Actorのbrowser discovery/applyは同時に継続し、Observer/Healerの完成を理由に止めない。production promotionは従来どおり
+historical replay、focused/full test、permission check、rollback、isolated browser canary、one bounded live effectを全て通過するまで禁止する。
+ローカルDais版はChatGPT subscriptionでログイン済みCodex CLI認証をtrusted Mac mini上のSDK/`codex exec`が再利用する。公式Codexは
+local SDK threadのstart/resume、`codex exec --json`のthread/turn/item/error JSONL、skills/worktree付きScheduled tasksを提供する。
+世界向けlocal版は各user自身のChatGPT/Codex認証を使い、managed cloud版はtenant別API/service credentialを使う。Daisのsubscription/authを
+共有backendへ流用しない。Source: https://learn.chatgpt.com/docs/auth 、https://learn.chatgpt.com/docs/codex-sdk 、
+https://learn.chatgpt.com/docs/non-interactive-mode 、https://learn.chatgpt.com/docs/automations 。
+
+O1B-25進捗148（privacy-safe Observer foundation GREEN）: `skills/connector/lib/observer-envelope.js`を追加し、normal completion、
+tool failure、timeout、process crashを同じschemaへ正規化した。envelopeはwake/run、stage、safe action、expected/observed effect、owner generation、
+provider readback、screenshot SHA、code commit、cursor、stable fingerprintだけを許可し、URL、email、Bearer値を拒否する。正常wakeは全件replayへ、
+failureはstable fingerprintでdedupeしたreplayとincidentへmode 0600で保存する。native-passの正常/例外pathとrun.sh親のsignal-exit pathへ配線し、
+Observer/native focused test 33/33 GREEN、失敗0件。実行中run 200は旧process imageのため新Observerを含まず、次wakeのlive traceは未実証である。
+したがってObserver foundation code/testは完了だが、Codex JSONL thread/turn/item adapterはCodex-native Actor移行時、live trace readbackは次wakeで閉じる。
+
+O1B-25進捗149（run 200確定結果と実行順SSOT統合）: 既存Connector launchd run 200は自然終了し、state=`not running`、last exit 1、
+heartbeat=`worker_failed`、continuation=`runtime_incomplete`だった。bounded resultはopen 18、inventory 27、Calendar gate 0、eligible 0、
+write attempt 0、write nullで、Connpass cursorは2026-08-07 / candidate 0 / generation 2から前進しなかった。candidate attempt、Calendar delivery、
+photo deliveryにも増分はなく、実申込、Calendar追加、PNG、Telegramの新規外部証拠は0件である。run 200はObserver導入前のprocess imageだったため、
+Observer replay/incidentも0件である。次の実行順は、Observer foundation完了→Healer shadow→guarded canary→Codex Actor/JSONL adapter→
+every-wake/weekly Telegram→bounded browser discovery→forward-only continuation→loop自身のlive submit→production self-healの順とする。
+Telegram outboxが未完成のまま次のlive wakeを意図的に起動しない。Gig、`:9223`、Gig/CloakBrowser stateは全工程でread-onlyを維持する。
+
+#### Codex-native Connector Actor / Healer contract
+
+> **履歴のみ / 進捗169で失効:** 以下のHealer-first contract、acceptance、test matrix、execution stepsは実装経緯を残すための履歴であり、
+> 現在の設計・順序・完了条件には使わない。現在の正本は進捗169のExternal sources、Core 6、Active remaining TODOだけである。
+
+**Overview:** 現在のConnectorは独自Node runtimeがTerraへ限定promptを渡すため、TerraはCodex CLIと同じshell、skills、MCP、継続thread、
+JSONL observabilityを持たない。Observer foundationの次にHealerとCodex Actorをshadow稼働し、every-wake Telegram outboxがGREENになった後で
+live task deliveryを再開し、常設agentをCodex SDK/CLI harnessへ移す。
+同じ`gpt-5.6-terra`へConnector専用toolsを与える。目的はCodex対話sessionを永久ownerにせず、Mac mini上のConnector自身が毎日実行・観測・修復すること。
+
+**Authentication and distribution boundary:** local single-user Mac miniは保存済みCodex CLI authenticationをtrusted runnerで再利用できる。
+subscription契約だけで能力は生えず、同じAGENTS、skills、MCP、CloakBrowser tool、Calendar、Telegram permissionが必要である。世界向けlocal版は
+各userが自分のCodex/ChatGPT authenticationとbrowser/Calendarを所有する。Daisのauthを他userへ共有しない。cloud版はAPI keyまたはservice credentialを
+tenantごとに管理し、一人のsubscriptionをmulti-user backendとして流用しない。公式根拠:
+https://learn.chatgpt.com/docs/non-interactive-mode 、https://learn.chatgpt.com/docs/codex-sdk 、
+https://learn.chatgpt.com/docs/mcp-server 、https://learn.chatgpt.com/docs/customization/overview 。
+
+**As-Is → To-Be:** `launchd → custom Node runtime → bounded Terra prompt`を、
+`launchd → Codex SDK persistent thread (Terra) → Connector skill + :9222 browser tool + Calendar + Telegram → structured applied_bundle`へ置換する。
+normal Actorはrepo codeを変更せずevent discovery/applyだけを行う。Healerは外部申込権限を持たないisolated worktreeでincident replay、Superpowers、
+test、修正、commit/pushを行い、guarded canary通過後だけrevisionをActorへ配備する。
+
+**Acceptance criteria:**
+
+1. launchdが非対話Codex threadを起動し、model readbackが`gpt-5.6-terra`、thread IDがwake間でresumeされる。
+2. ActorはConnector `:9222`、Calendar、Telegram、owner-only stateだけを使い、Gig `:9223`、別profile、repo sourceを変更しない。
+3. Codex JSONLの`thread/turn/item/command/MCP/file-change/error/usage`をObserverがprivacy-safe traceへ変換する。
+4. 正常runはLuma-first provider cursorから実`applied_bundle`を作り、未知UIはincidentへ変換して次candidate/providerまたはHealerへ進む。
+5. Healerのrevisionはhistorical replay、focused/full test、permission check、rollback、isolated browser canaryを通るまでproductionへ入らない。
+6. local user、別local user、cloud tenant間でauth、browser、Calendar、Telegram、state、thread IDが混ざらない。
+
+**Test matrix:**
+
+| # | To-Be | Test name | Cover |
+|---|---|---|---|
+| 1 | non-interactive Terra thread/resume | `connector-codex-actor.test.js` | OK: 二wakeが同thread IDで前進し、stale threadはbounded replacementされる |
+| 2 | Actor tool boundary | `connector-codex-permissions.test.js` | OK: `:9223`、別profile、repo edit、unknown MCPを拒否し、`:9222` applyだけが通る |
+| 3 | structured observability | `observer-envelope.test.js` / `connector-codex-observer.test.js` | OK: success、tool failure、timeout、compaction、process crashが同じincident schemaへ入る |
+| 4 | Actor/Healer separation | `connector-healer-policy.test.js` | OK: Actor code editとHealer external submitが双方拒否される |
+| 5 | guarded promotion | `connector-healer-canary.test.js` | OK: replay、test、permission、rollback、canaryの一つでも欠ければpromotionを拒否する |
+| 6 | every-wake Telegram | `connector-wake-outbox.test.js` | OK: 全exit pathでrecord欠落0、positive ID前の削除0、delivery重複0 |
+| 7 | multi-user isolation | `connector-tenant-isolation.test.js` | OK: two-tenant fixtureと二つのlocal auth/profileでcross-read/write 0 |
+| 8 | restart | `connector-restart-acceptance.test.js` | OK: Mac再起動後にthread/state/outbox/cursorを復元し、二重申込0 |
+
+**Boundaries:** iPhone等のmobile deviceはcontrol/status UIとcredential handoffを提供し、初期版のfull Codex harnessは各userのMacまたはmanaged cloud runnerで動かす。
+Codex subscription quota、API usage、browser/site制約は消えない。Actorへunrestricted code self-modificationと外部submitを同時に与えない。
+
+**Execution steps:** privacy-safe Observer envelope/replay → isolated Superpowers Healer shadow → guarded consumer/canary → shadow self-heal E2E →
+Codex Actor/JSONL shadow → every-wake/weekly Telegram completion → bounded browser discovery → forward-only continuation → Actor production切替 →
+既存Connector launchdのLuma-first live submit/evidence → 次wake idempotency → production self-heal → fallback provider → rolling coverage →
+multi-user/restart → public claim acceptance → canonical mergeの順を固定する。各sliceはfocused test、full relevant suite、spec更新、commit、pushで
+閉じてから次へ進む。live E2Eは既存Connector launchdだけを主体とし、main sessionはeventを手動submitしない。
+
+**E2E judgment:**
+
+| Item | Value |
+|---|---|
+| UI変更 | あり（CloakBrowser上のprovider form操作と登録完了readback） |
+| 結論 | Maestro: 不要。macOS CloakBrowser CDP、provider marker、Calendar readback、PNG SHA、Telegram positive message IDの実E2Eを必須とする |
+
+O1B-25進捗150（event registration OSS監査とpublic claim gate / spec only、実装・live effectなし）:
+2026-08-06にGitHub repository/code searchと公開Webを英語・日本語で監査した。Browser Use、Stagehand、Playwright CLI/MCP、
+OpenAI computer useにはagentic browser action、form操作、persistent session、self-healingの再利用可能な基盤がある。一方、公開範囲では
+`event discovery → Calendar conflict gate → Luma/Connpass等へのbrowser submit → parent readback → ticket/QR/PNG → Calendar write/readback
+→ Telegram evidence → wake間continuation`を一製品として閉じるOSSは確認できなかった。Luma webhook/APIとZapier連携は主催者側または
+登録後同期、Calendar assistant研究は予定作成、Browser Useのapply例は汎用form実行であり、Connectorの完成形とは異なる。
+
+この不在確認を「世界に存在しない証明」にしない。public copyは、実証前は「公開OSSでは同一のend-to-end systemを確認できなかった」とだけ述べる。
+`world's first`の無限定断言は禁止する。少なくともLumaとConnpassの各providerで、常設Connector自身による新規submit、providerの
+registered/pending parent readback、Calendar ID/readback、PNG SHA、ticket/QRまたは同等receipt、Telegram card/photo positive message IDを
+同一event lineageへ揃え、cross-provider continuation、restart continuation、公開再現手順を実証した後だけ、日付・調査範囲・機能範囲を付けて
+`To our knowledge, the first open-source/local-first autonomous connection agent ...`と表現できる。private systemや未公開agentの存在可能性を
+留保する。現在は新規live submit証拠0件なので、このclaim gateは未達である。
+
+実装は完全一致OSSを探し続けて停止せず、Stagehand/Browser Use/Playwrightの公開patternとworking Gigのread-only実測patternをcopy+tweakする。
+親が単一target、operation lock、liveness、cleanup、external oracleを所有し、ActorはConnector専用tool/skill経由でそのtargetだけを操作する。
+provider別に固定するのはdiscovery capability、required form schema、success oracle、evidence extractionだけとし、汎用browser action、Observer、
+retry、cursor、Calendar、Telegramを重複実装しない。Connpass旧実装の`キャンセル`文字列一致は登録成功oracleとして永久に再利用しない。
+
+Sources: https://github.com/browserbase/stagehand 、https://github.com/browser-use/browser-use 、
+https://github.com/browser-use/browser-use/blob/main/examples/use-cases/apply_to_job.py 、https://github.com/microsoft/playwright-cli 、
+https://github.com/microsoft/playwright-mcp 、https://developers.openai.com/api/docs/guides/tools-computer-use 、
+https://help.luma.com/p/webhooks 、https://docs.luma.com/reference/post_v1-events-create 、
+https://zapier.com/apps/eventbrite/integrations/luma/255718389/add-new-eventbrite-attendees-to-luma-as-calendar-persons 、
+https://help.connpass.com/organizers/event-admin.html 。
+
+O1B-25進捗151（Dais直接指示: task delivery firstへ再順序化 / spec only、実装・live effectなし）:
+進捗149の「Healerを先に完成してからlive task delivery」を撤回する。Connectorが本来の仕事をできることを先に証明するため、Observer foundationの次は
+Every-wake Telegramの最低限の安全網、bounded browser discovery、forward-only continuation、既存Connector launchd自身のkickstartとLuma-first
+live submit、同一lineage evidence、次wake idempotencyまでをP0 task-delivery sliceとして閉じる。その後にweekly rollupと本格的な
+Healer/consumer/Codex-native migrationへ進む。kickstartは独立TODOとして明記し、main sessionの手動申込を成功証拠にしない。
+
+O1B-25進捗152（Dais直接指示: Terra self-observing/self-healing foundation first）:
+進捗151のtask-delivery-first順序を撤回する。main sessionがprovider故障を一件ずつ直し続ける運用を避けるため、privacy-safe Observerの次に
+Superpowers Healer、guarded consumer/canary、shadow self-heal E2E、Codex-native Terra Actorを完成させる。その後、Every-wake Telegram、
+browser continuation、常設loop自身のlive submitへ進む。Healerは外部申込権限0、Actorはproduction code変更権限0を維持し、同じagentへ
+unrestricted self-modificationとexternal submitを同時に与えない。明白な修正でもfocused RED→GREENはproject guardrailとして最小限だけ行い、
+不要なtest abstractionや広いfixture追加は行わない。
+
+中断前のEvery-wake outbox foundationはcommit `0026c1a4e`でappend-only outbox、positive-ID delivery ledger、native complete/incomplete/failure、
+run.sh process-crash経路まで実装し、native/Observer/state focused suiteをexit 0で確認した。ただし送信失敗→次wake先行再送→重複0のacceptanceが
+未完なので、Every-wake TODOは未完のままHealer/Actor後に再開する。外部Telegram送信、launchd kickstart、event submitはこの進捗では0件。
+
+O1B-25進捗153（Codex-native Healer shadow foundation / RED→GREEN）:
+privacy-safe `observer-incidents.jsonl`の最初の未処理fingerprintを一件だけclaimし、fingerprint由来branchとisolated worktreeを作り、
+`codex exec --json --model gpt-5.6-terra --sandbox workspace-write -C <worktree> -`へSuperpowers systematic-debugging、単一仮説、focused RED、
+最小GREEN、fresh verification、commit/pushを指示するHealer foundationを追加した。Codex childへ継承する環境はPATH/HOME/CODEX_HOME等の
+実行最小集合だけとし、Connector Telegram target、Gmail/Calendar keyring、Maps key、browser/profile credentialを渡さない。
+promptでもexternal event submit、browser、Calendar、Gmail、Telegram、payment、launchd、production deploy/mergeを禁止する。
+同一fingerprintはrevision ledger存在時に二重起動しない。focused test 1/1 GREEN。
+
+この進捗ではHealer TODOは未完である。残りは24時間3 revision capの境界、Codex JSONL failure/timeout、worktree/branch衝突、実commit/push readback、
+常設shadow runner配線、secret/PII scanを閉じること。production merge/deploy、launchd変更、外部申込、Calendar、Telegram、browser effectは0件。
+
+O1B-25進捗154（Healer failure ledgerと24時間revision cap / RED→GREEN）:
+Codex childがnonzeroまたは`thread.started`なしで終了した時に例外だけで消える経路を、privacy-safe`revision_failed` ledgerへ変更した。
+isolated worktree作成失敗も`worktree_failed`として記録し、同一failureの無限再起動を防ぐ。成功・失敗を合わせ、直近24時間に3 revisionが
+存在する場合は4回目をCodex起動前に`revision_cap`で停止する。focused Healer test 2/2 GREEN。残りはtimeoutの明示分類、branch/worktree
+衝突回復、実commit/push readback、常設shadow runner、secret/PII scanであり、Healer TODOは引き続きin progress。
+
+O1B-25進捗155（Healer shadow runner render-only配線 / RED→GREEN）:
+`healer-shadow-cli.js`とbounded shell entrypointを追加し、既存render-only launchd rendererから
+`ai.anicca.life-manager-connector-healer-shadow`を15分間隔・5分throttleで生成する。runnerはConnector owner-only stateと隔離worktree rootだけを
+Healerへ渡し、自身ではinstall、load、kickstart、merge、deploy、browser、Calendar、Telegram、event submitを行わない。rendererは従来どおり
+live `~/Library/LaunchAgents`出力を拒否する。rendered contract focused 2/2、Healer focused 2/2 GREEN、shell syntax GREEN、空incident CLIは
+`status=duplicate`、rendered plistは`plutil OK`。live launchd登録・Terra実起動・外部effectは0件。
+
+Healer TODOはまだin progressである。次はCodex timeout分類、branch/worktree衝突回復、Terraが作ったcommit/pushのremote readback、privacy scanを閉じ、
+その後にこのrendered shadow scheduleを安全にinstallして一件のprivacy-safe fixture incidentで実測する。
+
+O1B-25進捗156（Healer revision commit/push parent readback / RED→GREEN）:
+Codex childの終了や自己申告だけで`revision_created`にする経路を撤回した。親Healerがisolated worktreeの`HEAD`を40桁commitとして読み、
+incidentのbase commitから前進していること、`git status --porcelain`が空であること、`git ls-remote --heads origin <branch>`が同じcommit SHAを
+返すことを独立検証する。dirty worktree、base据え置き、remote欠落・不一致は`revision_failed`としてledgerへ残しpromotion候補にしない。
+Healer focused 2/2 GREEN。外部申込、Calendar、Telegram、browser、live launchd effectは0件。
+
+O1B-25進捗157（Healer Codex bounded timeout / RED→GREEN）:
+Codex childへ既定45分のwall-clock timeoutと`SIGTERM`を設定し、`ETIMEDOUT`またはtimeout signalを通常failureと分離して
+`revision_timeout`としてprivacy-safe ledgerへ保存する。timeout revisionも直近24時間3 revision capへ含め、例外だけでledgerが欠落する経路を
+閉じた。Healer focused 3/3 GREEN。外部申込、Calendar、Telegram、browser、live launchd effectは0件。
+
+O1B-25進捗158（Healer orphan branch/worktree collision recovery / RED→GREEN）:
+前回crashで同じfingerprint/revisionのbranchまたはworktree登録が残った場合だけ、親Healerが`-recovery1`の新branch・新pathで一度だけ再試行する。
+認証、base commit、repository等の非collision Git failureは再試行せず`worktree_failed`へ記録する。既存pathの削除・上書きは行わない。
+Healer focused 4/4 GREEN。外部申込、Calendar、Telegram、browser、live launchd effectは0件。
+
+O1B-25進捗159（Healer secret/PII parent scan / RED→GREEN）:
+成功候補revisionへrepo既存の`gitleaks 8.30.1`と`scripts/security/pii_shape_scan.py`を親Healerから必須実行する。gitleaksはincidentの
+base commitからcandidate HEADまでのcommit範囲を`.gitleaks.toml`・redaction付きで検査し、PII scannerは既存allowlistでisolated worktreeを
+検査する。どちらかがnonzeroならremote commitが存在しても`revision_failed`でpromotion候補にしない。Healer focused 4/4 GREEN。
+今回変更2ファイルはgitleaks no leaks、PII shape scan clean。repo全体gitleaksの既存16件は今回差分外のfixture/evidenceであり、値は表示していない。
+外部申込、Calendar、Telegram、browser、live launchd effectは0件。
+
+O1B-25進捗160（live Observer incidentのunknown base commit解決 / RED→GREEN）:
+実owner stateのprivacy-safe incident一件を読み、`code_commit=unknown`のためそのままではisolated worktree作成が必ず失敗すると確認した。
+literal `unknown`の場合だけ親Healerがcanonical checkoutの`git rev-parse HEAD`を読み、40桁SHAをbase commitとしてworktree、prompt、gitleaks範囲、
+HEAD前進判定へ一貫して使用する。任意の不正ref、曖昧refにはfallbackしない。Healer focused 5/5 GREEN。live incident 1、revision 0、
+Healer launchd未登録。外部申込、Calendar、Telegram、browser effectは0件。
+
+O1B-25進捗161（Healer launchd実登録run 1 / PATH blocker RED→GREEN）:
+rendered `ai.anicca.life-manager-connector-healer-shadow`を実`~/Library/LaunchAgents`へmode 0600で登録し、launchctl bootstrap/kickstartした。
+run 1はlaunchd既定PATHが`/usr/bin:/bin:/usr/sbin:/sbin`のみでNode/Codexを解決できずlast exit 2、revision 0、stdout/stderr 0 bytesで終了した。
+incidentは未消費、外部effectは0件。Healer shellへConnector native runnerと同じHomebrewを含むcanonical PATHを追加し、renderer focused 1/1、
+shell syntax GREEN。次は最新commitでlive labelをreloadし同じprivacy-safe incidentを再実行する。
+
+O1B-25進捗162（Healer launchd run 2 / parent rejectionとisolated dependency fix）:
+PATH修正後にlive Healer labelをbootout/bootstrapし、run 2をkickstartした。launchd→Healer CLI→実Terra
+`codex exec --json --model gpt-5.6-terra`→fingerprint由来isolated worktreeへ人間なしで到達した。TerraはHealer PATHへ`$HOME/.local/bin`を
+足す仮説で2ファイルを変更したが、commit 0、remote branch 0、worktree dirtyだったため親は`revision_failed`として正しく拒否した。
+実Codexは既に`/opt/homebrew/bin/codex`から起動済みであり、この仮説を根因として採用しない。
+
+commit前停止の実根因はisolated worktreeに`apps/life-manager/node_modules`がなく、native testが`jsqr` module missingで起動不能だったこと。
+新しいnetwork installを行わず、canonical checkoutの実directory・非symlinkを親が検証し、worktreeへ同一targetのdirectory symlinkを作るdependency
+preparationを追加した。既存別targetや通常fileは拒否する。Healer focused 5/5 GREEN。run 2の外部申込、Calendar、Telegram、browser、merge、deployは0件。
+
+O1B-25進捗163（Healer launchd run 3 / parent-owned commit/pushへ修正）:
+実fixture incidentをbase commit `69b31169c9be6ec65cc3eb0499f71b560da39523`からrun 3で処理し、launchd→Healer→実Terra→isolated
+worktreeで、Terraがfocused testを通す正しいfixture修正を作るところまで人間なしで到達した。しかしCodex `workspace-write`はlinked worktree外の
+canonical `.git/worktrees/*` metadataを書けないため、Terra自身のcommit/pushは成立せず、親はdirty worktree・base HEAD・remote branch 0を
+`revision_failed`として拒否した。したがって「Terraへrepo全体の`.git`書込権限を広げる」は採用しない。
+
+Healer contractを、Terraはisolated worktree内で診断→RED→最小GREEN→fresh verificationだけを行い、親Healerが変更検出後に依存symlinkだけを
+厳密除外して`git add`→commit→pushする形へ変更した。依存symlinkはcanonical `apps/life-manager/node_modules`への実target一致を検証できる場合だけ
+clean判定から除外し、他のuntracked/dirty pathは拒否する。失敗fingerprintは成功まで最大3 revision内で再試行し、成功済みfingerprintはdedupeする。
+Healer focused 6/6 GREEN。run 3の外部申込、Calendar、Telegram、browser、merge、deployは0件。この時点の「次はHealer再実行」は
+進捗164のDais直接指示で撤回され、現在の次作業には使わない。
+
+O1B-25進捗164（Dais直接指示: 最小task-delivery-firstへ再順序化）:
+Healer、guarded consumer、persistent Actor migrationを最初の実申込より先に完成させる順序を撤回する。最初の目的は常設Connectorが毎日browserで
+実eventへ申込み、親readback、Calendar、PNG、Telegramまでを同一lineageで完成することである。既に動作実績があるGig/OpenClaw型を最小再利用し、
+親がCloakBrowser `:9222`の一つのtarget、operation lock、liveness、cleanup、readbackを所有し、Actorにはその直接page WebSocketと一件の操作だけを
+渡す。Actorによるbrowser全体への再接続、全page走査、新browser/profile起動、`browser.close()`を禁止する。モデル変更をroot fixにせずTerraを維持する。
+
+実行は一つのbounded E2E runnerに集約し、Calendar gap→Luma候補→page claim→fill/click/submit→parent readback→Calendar→PNG→Telegramを順に行う。
+一候補が失敗したら同じrunで次Luma候補、Lumaが尽きたらConnpass、さらに次providerへ進む。main sessionは故障診断とbrowser-assisted復旧を行って
+成功操作をrunnerへ固定してよいが、main sessionの手動申込だけをproduction成功証拠にしない。修正後に常設Connector launchd自身が同じE2Eを再実行し、
+実`applied_bundle`を作ることをacceptanceとする。Self-healingはこのlive task-delivery成立後、実際に観測した故障だけを対象に最小追加する。
+
+O1B-25進捗165（既存parent-owned browser lifecycleの再実測）:
+最新実コードを再読し、`connector-browser-target-controller.js`が`:9222`へ`Target.createTarget`した一targetをpage WebSocketへ固定し、
+`connector-target-lease.js`がowner token/generation、probe、heartbeat、release、stale cleanupを所有し、`cloakbrowser-daily-driver.js`が
+`claimExact`後の同じpageでnavigate→task→parent cleanupを行うことを確認した。Actorへendpoint全体を渡す経路やActor自身の`browser.close()`は
+このproduction railに存在しない。4 moduleの構文はGREEN、`:9222/json/version`はbrowserとWebSocket endpointを返した。browser/profile/Gig
+`:9223`の変更、event submit、Calendar、PNG、Telegramは0件。Step 3は新規再実装せず既存実装で完了し、次はこのrailへbounded E2E runnerを直結する。
+
+O1B-25進捗166（既存bounded E2E runnerの再実測）:
+`skills/connector/native-pass.js`が唯一の常設runnerとして`connector-native-runtime.js`を呼び、Calendar gapと候補順を決め、LumaまたはConnpassの
+providerを同じparent-owned daily-driverへ渡し、submit/readback後に`connector-native-write-pipeline.js`がCalendar sync、full-page PNG、ticket/QR、
+Telegram message/photo positive receiptを同じevent lineageへ保存する接続を確認した。一時inline Nodeや別E2E scriptを追加せず、この既存runnerを正本にする。
+runner/runtime/write pipeline/Luma providerの構文はGREEN。外部effectは0件。Step 4を完了し、次は既存Connector launchd自身のLuma-first live E2Eである。
+
+O1B-25進捗167（live run 215 / Connpass discovery terminal停止の最小修正）:
+既存Connector launchd run 215を自然終了まで観測した。前回stateのConnpass cursorからbrowser discoveryへ入り、約5分後に
+`connector_native_provider_discovery_failed`、write attempt 0、last-result更新0、exit 1で終了した。新規申込、Calendar、PNG、delivery receiptは0件。
+every-wake recovery Telegramはpositive message ID `8084`を保存した。provider discovery failureをloop全体のterminal errorにせず、browser-only
+Connpass候補0のhandoffへ正規化して`provider_exhausted`で次日Lumaへcursorを進める最小修正を行った。runtime構文とdiff checkはGREEN。次はpush済み
+codeで常設launchdを再実行し、Luma候補の実write attemptとparent readbackを確認する。Step 5はlive submit未達のためin progressのまま維持する。
+
+O1B-25進捗168（live run 216 / Connpass handoff validation failure boundary）:
+push済みrun 216も約4分で同じ`connector_native_provider_discovery_failed`、write attempt 0、last-result更新0、exit 1となった。したがって例外は
+discovery call内部ではなく、その後のhandoff検証区間にある。recovery Telegram positive message ID `8088`は保存済み。Connpass discovery開始から
+write開始直前までを一つのbounded boundaryにし、その区間の失敗だけを`provider_exhausted`として次日Lumaへ進める。write開始後はfailure codeが
+変わるため握り潰さず、unknown effect readbackを維持する。構文とdiff checkはGREEN。新規申込、Calendar、PNG、delivery receiptは0件。
+
+O1B-25進捗169（外部browser-agent best practice調査 / minimal runner設計確定）:
+Browser Use、Stagehandの公式docsとOSS実装を外部クロールし、反復browser業務の主経路は毎回のfull agent explorationではなく、最初の成功runを
+決定的scriptへ固定し、通常はcache/replay、想定外UIだけbounded agent fallbackで修復する構造だと確認した。現在のConnectorはこの逆で、
+`native-pass.js`→21日coverage→大量discovery→ranking/gates→provider cursorを毎wake再実行し、Submit前に失敗する。進捗165/166で確認した
+browser/write部品の存在は維持するが、それらを包む旧orchestrationをproduction runnerとして再利用する判断は撤回する。
+
+#### External sources and adopted decisions
+
+1. Browser Use README: https://github.com/browser-use/browser-use
+   - 核心の引用: “one-off tasks through an agent → CLI. Repeatable automation in code → Python library.”
+   - 決定: 日次Connectorの主経路は決定的code。LLM agentは探索・未知form・修復だけに限定する。
+2. Browser Use Scripts: https://docs.browser-use.com/cloud/agent/scripts
+   - 核心の引用: “Scripts turn a successful browser run into a reusable workspace asset.”
+   - 決定: 最初のLuma成功操作をversioned workflow scriptとして保存し、後続wakeはscript-firstで実行する。
+3. Stagehand Deterministic Agent: https://docs.stagehand.dev/v3/best-practices/deterministic-agent
+   - 核心の引用: “convert agent-discovered workflows into fast, deterministic scripts”
+   - 決定: agentが成功したaction列をcache/replayし、site変更時だけcacheを修復する。
+4. Stagehand Agent Fallbacks: https://docs.stagehand.dev/v3/best-practices/agent-fallbacks
+   - 核心の引用: “Use an agent fallback as a failsafe when a one step action unexpectedly becomes a multi-step flow.”
+   - 決定: direct actionを先に試し、失敗時だけ最大10 stepのagent fallbackを同じpage/sessionで実行する。
+5. Stagehand Prompting Best Practices: https://docs.stagehand.dev/v3/best-practices/prompting-best-practices
+   - 核心の引用: “Use `act()` for single actions on web pages. Each action should be focused and clear.”
+   - 決定: navigate、observe、fill、submit、readbackを別actionにし、agentへ複数作用を一文で委任しない。
+6. Browser Use Sessions: https://docs.browser-use.com/cloud/agent/sessions
+   - 核心の引用: “A session holds the agent’s conversation and can reuse its live browser.”
+   - 決定: 一wakeは一つのConnector-owned session/pageを最後まで再利用し、候補ごとのtarget churnを禁止する。
+7. Stagehand History: https://docs.stagehand.dev/v3/best-practices/history
+   - 核心の引用: “The history API captures every Stagehand operation for debugging, auditing, and workflow analysis.”
+   - 決定: actionごとにmethod、timestamp、safe input、result、durationをappend-only記録する。raw prompt、credential、cookieは記録しない。
+8. Browser Use OSS agent settings: https://github.com/browser-use/browser-use/blob/main/browser_use/agent/views.py
+   - 核心の引用: “max_failures: int = 5” / “step_timeout: int = 180”
+   - 決定: Connectorはより小さく、候補ごとagent fallback最大10 step、連続failure 3回、wake全体10分でcircuit-openにする。
+9. Stagehand self-heal integration: https://github.com/browserbase/stagehand/blob/main/packages/core/tests/integration/agent-cache-self-heal.spec.ts
+   - 核心の引用: “Second run should replay from cache, self-heal, and update the file.”
+   - 決定: self-healはcodebase全体の自動改変ではなく、失敗したcached action/selectorだけを同じfixtureで修復し、成功後にcacheを更新する。
+
+#### 1. Overview
+
+旧Connector loopをproduction pathから削除し、既に存在する`:9222` ownership、Luma submit/readback、Calendar、PNG、Telegram部品を一つの
+minimal script-first runnerへ直結する。目的は一wakeで一件の実`applied_bundle`を完成することであり、21日coverageやHealer完成ではない。
+
+#### 2. Acceptance criteria
+
+1. Connector native本体、healthcheck、Healer、旧bridgeはcleanup中unloadedで、自動wake 0。
+2. production entrypointは一つだけで、旧`native-pass.js`/`connector-native-runtime.js` orchestrationを呼ばない。
+3. 一wakeのbrowser session 1、owned target 1。候補切替は同じpageのnavigateで行い、候補ごとのcreate/close 0。
+4. Lumaから開始し、無料、受付中、Calendar非衝突の最初の候補へdirect actionsでfill→Submitする。
+5. direct action失敗時だけ同じpageでagent fallbackを最大10 step実行し、成功action列をprovider/workflow version付きcacheへ保存する。
+6. agentの`success`文字列を完了証拠にせず、親readbackが`registered`または`pending`を観測する。
+7. provider receipt、Calendar ID/readback、PNG SHA、Telegram message/photo positive IDを同じ`applied_bundle`へ保存する。
+8. 一候補failureは次候補へ進み、Luma枯渇時はConnpassへ進む。連続failure 3回または10分でcircuit-openし、tab churnを停止してTelegram報告する。
+9. foreground live E2Eで実bundleを作るまでlaunchdをloadしない。load後の次wakeで同一event再submit 0。
+10. self-healは失敗したcached actionだけを修復する。repo-wide autonomous code edit、automatic merge/deployは初期production pathに存在しない。
+
+#### 3. As-Is / To-Be
+
+```mermaid
+flowchart LR
+  subgraph ASIS[As-Is: 削除]
+    A1[5分wake] --> A2[21日coverage]
+    A2 --> A3[大量tab discovery]
+    A3 --> A4[ranking・gates]
+    A4 --> A5[provider cursor]
+    A5 --> A6[Submit 0 / retry]
+  end
+  subgraph TOBE[To-Be: script-first]
+    B1[1 daily wake] --> B2[1 session・1 page]
+    B2 --> B3[direct cached actions]
+    B3 -->|UI changed| B4[bounded agent fallback]
+    B4 --> B5[cache repair]
+    B3 --> B6[parent readback]
+    B5 --> B6
+    B6 --> B7[Calendar・PNG・Telegram]
+  end
+```
+
+#### 4. Verification matrix
+
+| # | To-Be | Verification | Cover |
+|---:|---|---|---|
+| 1 | 単一entrypoint | loaded Connector labelとprocess treeが各1 | OK |
+| 2 | 単一session/page | action historyのsession ID 1、target ID 1 | OK |
+| 3 | script-first | 正常fixtureでagent call 0、cached action replay成功 | OK |
+| 4 | bounded fallback | selector変更fixtureでdirect failure→agent最大10 step→cache更新 | OK |
+| 5 | circuit breaker | 連続failure 3で停止、追加target 0、Telegram positive ID | OK |
+| 6 | live submit | 実Luma parent readback=`registered/pending` | OK |
+| 7 | applied bundle | provider/Calendar/PNG/Telegramの同一lineage | OK |
+| 8 | idempotency | 次wakeの同一event Submit 0 | OK |
+
+| Item | Value |
+|---|---|
+| UI変更 | 外部Luma/Connpass UIをbrowserで操作。Anicca app UI変更なし |
+| 結論 | Maestro不要。実CloakBrowser foreground E2Eとparent readbackが必要 |
+
+#### 5. Boundaries
+
+- Gig code/state/profile/launchd/`:9223`はread-only。
+- CloakBrowser profile、credential、cookie、registration receipt、Calendar/Telegram evidence、append-only stateを削除しない。
+- 旧orchestration fileは`rg`で他consumer 0を確認してからGit patchで削除し、broad `rm`を使わない。
+- 有料event、CAPTCHA、決済、未知consentを初期minimal runnerで自動作用しない。無料の別候補へ進む。
+- 21日coverage、multi-user cloud、repo-wide Healer、public claimは最初のlive bundleの前提にしない。
+
+#### 6. Execution steps
+
+1. Connector関連launchd/processを全停止し、旧bridge/Healerを含むloaded owner 0を確認する。
+2. 現production call graphを`keep / direct-reuse / delete`へ分類し、state/evidence consumerを分離する。
+3. 旧entrypoint、coverage/ranking/gate/cursor/Healer production wiringを削除する。
+4. 一session・一pageのminimal runnerを作り、direct action→parent readback→downstream evidenceを接続する。
+5. selector-change時だけbounded agent fallbackを実行し、成功action cacheとsafe historyを保存する。
+6. foregroundでLuma live E2Eを実行し、失敗を同じrunで修正・再実行する。
+7. 実`applied_bundle`後だけ単一daily launchdをloadする。
+8. 次wakeの重複0とTelegram positive receiptを確認する。
+9. Luma failure→Connpass continuationを同じsessionでlive実証する。
+10. 実故障から得たcache repairだけをself-healingとして昇格する。
+
+### Historical remaining TODO snapshot（進捗169、superseded。履歴のみ）
+
+1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
+2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
+3. [in progress] 旧Connector production orchestrationを削除し、minimal script-first runnerへ置換する。完了条件: Connector関連loaded owner 0でcleanupし、旧coverage/ranking/gate/cursor/Healer wiringをentrypointから除去し、一session・一page・direct action・bounded agent fallbackだけを残す。
+4. Foreground Luma live E2Eを閉じる。完了条件: minimal runnerが無料・Calendar非衝突eventへ実Submitし、親が`registered`または`pending`をreadbackする。失敗時は同じpage/sessionで最大10 step fallbackし、成功action cacheを保存する。
+5. 同じLuma eventの`applied_bundle`を完成する。完了条件: provider receipt、ticket/QRまたは同等receipt、full-page PNG SHA、Calendar ID/readback、Telegram card/photo positive message IDが同一lineageに存在する。
+6. 次wake idempotencyを実証する。完了条件: 同一eventへの再submit 0、未処理candidateから継続、every-wake Telegram positive message IDを確認する。
+7. Luma失敗時のConnpass browser-only fallbackをlive実証する。完了条件: 同じsession/pageが次providerへ進み、Connpassの実`applied_bundle`を作る。
+8. Circuit breakerとdaily schedule acceptanceを閉じる。完了条件: failure 3または10分でtarget churnを停止し、実bundle後だけ単一daily launchdをload、二重owner・二重申込・Telegram無報告が各0。
+9. Cached action self-healを実証する。完了条件: selector変更fixtureでdirect replay失敗→bounded agent fallback成功→cache更新→次run agent call 0。repo-wide automatic edit/merge/deploy 0。
+10. Post-registration recoveryを閉じる。完了条件: Calendar、PNG、ticket、Telegram各境界の中断後、providerへ再submitせず不足artifactだけを補完し、外部登録1回・bundle1個。
+11. Peatix、Meetup、Doorkeeper、Eventbriteを一providerずつ同じscript-first contractで追加する。各providerの完了条件は実`applied_bundle`。
+12. Restart、multi-user isolation、public claim gate、canonical mergeを順に閉じる。Gigはread-onlyを維持し、legacy runner/bridge/Healer/重複schedule 0を最終確認する。
+
+当時の「現在と完成形」スナップショット（進捗169時点。現行状態ではない）:
+
+```mermaid
+flowchart TD
+  subgraph NOW[進捗169時点の現在（履歴）]
+    N1[Native・healthcheck unloaded] --> N2[Healer・bridge cleanup待ち]
+    N2 --> N3[旧orchestration残存]
+    N3 --> N4[新規登録 0]
+  end
+  subgraph NEXT[当時の次順（履歴）]
+    S1[全Connector owner停止] --> S2[旧orchestration削除]
+    S2 --> S3[Minimal script-first runner]
+    S3 --> S4[Foreground Luma live submit]
+    S4 --> S5[applied bundle]
+    S5 --> S6[Daily launchd]
+  end
+  subgraph TARGET[当時想定の完成形（履歴）]
+    T1[1 session・1 page] --> T2[Cached direct actions]
+    T2 --> T3[Submit→親readback]
+    T3 --> T4[Calendar・PNG・Telegram]
+    T2 -->|UI changed| T5[Agent fallback 最大10 step]
+    T5 --> T6[Action cache修復]
+    T6 --> T3
+    T5 -->|failure 3| T7[Circuit open・報告]
+  end
+  NOW --> NEXT --> TARGET
+```
+
+旧P0チェックリスト（履歴のみ。現在の実行順SSOTではない）:
+
+**P0 — task deliveryを前進させる（最優先）**
+
+1. [x] candidate outcomeの4分類contractとtable-driven testを追加する。focused 2/2、outbound 289/289。
+2. [x] `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了を`known_no_effect`へ正規化する。focused 9/9、outbound 289/289。
+3. [x] append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。runtime 9/9、native 18/18、outbound 289/289。
+4. [x] candidate attempt履歴をappend-only telemetryとして保持するが、active write rankingから候補を除外する停止gateには使わない。過去failureを含むranked candidateは全件attemptableにする。
+5. [x] 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。focused 13/13、native 19/19、outbound 300/300。
+6. [x] candidate budgetによる途中終了を廃止し、`known_no_effect`では同じpass内の次候補・次open日へ進む。process crash用cursorは外部effect境界の復旧にだけ使う。
+7. [x] unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。関連15/15、native 20/20、outbound 302/302。
+8. [x] submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。focused 30/30、native 21/21、outbound 302/302。
+9. [x] Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。run 103、card `7372`、photo `7594`、native 23/23、outbound 307/307。
+10A. [x] Connectorのcandidate outcomeとselection telemetryから、本文・個人情報・secretを含まないdedupe可能なincident envelopeを生成し、mode 0600 local ledgerへ永続化する。native 25/25、outbound 314/314。
+10B. [x] incident envelopeを`lm:type:self-heal` issue intakeへdedupe付きで配送し、provider issue URLをdurable receiptとして保存する。issue #1409、run 134、mode 0600 receipt一行。
+11A. [x] Luma formを標準required input、custom multi-select、app-level required checkboxを含むclosed schemaへ正規化する。focused 2/2、provider回帰込み11/11。
+11B. [x] verified profileの完全一致回答と明示consentだけをanswer planへ変換し、未知required fieldで虚偽入力せず次候補へ進める。回帰込み14/14。
+11C. [x] exact controlだけをfill/check/selectし、各effectをreadbackするbounded executorを追加する。回帰込み16/16。
+11D. [x] live DOM schema reader→private profile loader→answer plan→fill readbackを`submitLumaOnPage`のconfirm click前へ接続し、未知fieldでは同passの次候補へ継続する。
+12. [x] attempt/suppressionへ`capability_version`を追加し、旧form failureを新versionで一度だけ再評価する。同versionの無限retryは禁止する。run 151で`luma-form-submit-v1`再評価を実測済み。
+13. Observer trace packを実装する。run/task/event/capability versionへsafe action class、URL class、control class、expected/observed effect、owner generation、screenshot SHA、provider readback、code commitをbindし、PII/secretなしのreplay fixtureをincidentへ添付する。
+14. [pause] self-fix producerはsingle-page submit transactionのlive acceptanceまで停止する。成立後はSuperpowers `systematic-debugging`→`test-driven-development`→`verification-before-completion`を強制し、一revision一仮説・一RED・一最小fixとして再開する。
+15. self-build consumerをrevision-awareに復旧する。historical replay、protected-path、permission、focused/full test、rollback、隔離CloakBrowser canary、one bounded live effect、external receiptを順に通過したrevisionだけをmerge・再配備する。canary failureは同incidentの次revisionへ戻し、live receiptだけで`healed`にする。
+16A. [x] Connector専用tab-owner railをrepository内へ実装する。`:9222`の既存CloakBrowser default contextから一tabだけをowner token付きで取得し、target ID、page WebSocket、baseline targetsをmode 0600 receiptへ保存する。Gigのcode/state/profile/portへ依存しない。focused 8/8 GREEN。runtimeからの利用は16Bで閉じる。
+16B. [x] Terraをbrowser executorからform-answer decisionへ縮小する。親が観測したsanitized schemaと未解決質問だけを一turnで判断させ、endpoint、page WebSocket、target/owner receipt、browser/package/tab探索、inline Node、`connectOverCDP()`、`browser.close()`を渡さない。親owned pageだけがuser-facing action、submit、readback、screenshot、cleanupを行う。focused 17/17、pretest 12/12、outbound 336/336 GREEN。live effectは16Cで実証する。
+16C. Connector launchd自身を最新commitでwakeし、Lumaまたはpromotion済み代替providerの実eventでform入力→final submit→登録済みまたは承認待ちmarkerを親loopが独立readbackする。Luma候補枯渇時は同じpassで次providerへ進み、agentのJSON自己申告だけを成功にしない。
+16D. [x] 同じevent lineageへfull-page PNG SHA-256、Google Calendar event ID/readback、Telegram card/photo positive message IDを保存する。run 179でPNG SHA、Calendar evidence ref、card `7864`、photo `7865`をlive readbackした。
+17. golden traceで確認したtrusted Gmail OTPとLuma→主催公式site handoffをprovider capabilityとして実装し、Lumaだけでは本登録にならないeventを公式readbackまで完了する。
+18. Lumaと公式siteの二枚のscreenshot、Calendar event ID、Telegram message IDを一つのevent lineage receiptへ保存し、loop主体のlive E2Eを実証する。
+19. source registry contractを追加し、各providerの`discovery / registration / effect_readback / screenshot_evidence` capabilityをclosed schemaで宣言する。
+20. [superseded] 旧Connpass API探索。進捗145によりactive runtimeから撤回し、browser-only discoveryへ置換。
+21. Connpassの認証済みbrowser registration adapter、登録済みreadback、screenshot evidenceをTDD/E2Eで追加し、初めて`registration_allowed=true`へpromotionする。
+22. Peatix、Meetup、Doorkeeper、Eventbriteを同じregistryへ一siteずつ追加する。各siteは実account/session、利用規約に沿う探索経路、submit、readback、screenshotのlive proofが揃うまでadvisory-onlyとする。
+23. dateごとにLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteの順でhandoffし、一sourceの候補枯渇・満席・未対応formでpass全体を終了しない。
+24. [x] 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。run 113、attempt 5行・delivery 2行不変、write=null。
+25. `open=0`まで反復し、21日統合Telegram briefingを送る。
+26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
+27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
+
+### 旧P0順序（進捗128の履歴のみ。現在の正本ではない）
+
+1. [x] Gigの成功browser-foundation patternをConnector側へcopy+tweakする。親が`:9222` default contextにtargetを作成・claimし、Terraはsanitized formの回答判断だけを一turn返す。親だけが同一targetでreal action、submit、readback、screenshot、close/releaseを行い、inline Node、全page探索、反復`connectOverCDP()`、Terra側`browser.close()`を廃止する（16B再補正、進捗121〜123）。
+2. [x] source registry contractを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence / ticket_or_qr`能力でclosed schema宣言する（19、進捗129）。
+3. [x] native runtimeへprovider cursorとhandoff state machineを接続する。Task 2A contract、Task 2B1 runtime transition、Task 2B2 native-pass atomic persistenceを完了。あるproviderの候補0、満席、未対応form、known no-effectで同じpassを終えず、次候補→次providerへ進む（23、進捗130〜132）。
+4. [superseded] 旧Connpass API discovery記録。現在は進捗145のbrowser-only contractへ置換済み。
+5. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつ同じcontractへ追加し、各siteのlive submit/readback/evidence後だけregistrationを有効化する（22）。
+6. promotion済みproviderを横断する既存Connector launchd runで、Calendar gapを持つ実eventへform入力→submit→親marker readbackを成立させる。Lumaに限定せず最初の実登録まで候補/providerを継続する（16C）。
+7. 同一event lineageへprovider marker、ticket/QRまたは同等receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDを揃える（16D、17、18）。
+8. `repeated_connect_over_cdp`、`registration_verified_then_ticket_evidence_failed`、`provider_exhausted_then_handoff`をprivacy-safe replay fixtureにし、共通Observer SDK/envelope、expectation state machine、incident fingerprintを実装する（13）。
+9. Superpowers型Fixer producerをrevision-awareに復旧する。各incidentで`systematic-debugging`による単一仮説、TDDの実RED→最小GREEN、fresh verification evidenceを必須にする（14）。
+10. guarded consumerと隔離canaryを復旧する。historical replay→focused/full test→protected-path/permission→rollback→isolated browser canary→one bounded live effect→external receiptを順に通す（15）。
+11. Connector production loopが同じfailure classを再実行し、task固有external oracleを揃えた時だけincidentを`healed`にする。
+12. Observer SDKをGig、mail、Calendar、payment、もう一つの収益loopへadapter方式で展開する。Gigのcode/state/profile/launchd/`:9223`はread-onlyのまま、導入はGig所有repo側の独立sliceで行う。
+13. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
+14. Mac再起動後のConnector、Observer、producer、consumer、CloakBrowser、heartbeat、healthcheck、idempotency、stale-owner GCを実機検証する（26）。
+15. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
+
+### Browser E2E判定
+
+| Item | Value |
+|---|---|
+| UI変更 | あり（外部Luma/各providerの実UIを操作） |
+| 結論 | Maestro: 不要。macOS CloakBrowser CDPの実E2E、provider readback、PNG、Calendar、Telegram receiptを必須とする |
+| Gig境界 | DO NOT TOUCH。Gig repository、launchd、`:9223`、profile、state、lock、vaultをConnector E2Eへ使用しない |
+
+**P1 — Connectorをconnection-to-cash agentにする（local）**
+
+26. `registered→attended→connected→followed_up→meeting→opportunity→won→cash_received`のforward-only lifecycleを追加する。
+27. event前Telegramへ、目的、会うべき人物像、30秒Life Manager説明、event固有QR/landing linkを送る。公開情報にない参加者名は創作しない。
+28. event固有link、名刺/連絡先交換、inbound message、次回Calendarからconsentあるconnectionだけをeventへ紐付ける。
+29. connectionごとに役割を`potential_user / customer / partner / employer / investor / collaborator`として証拠付き分類する。
+30. 交換済み連絡先またはinbound相手だけへ、会話文脈付きfollow-upを実行し、無差別送信を禁止する。
+31. reply→meeting→opportunityをGmail/Calendarから追跡し、停滞時に次のsafe actionを自動実行する。
+32. payment、invoice、payroll/contract receiptをopportunityへ結び、cash receivedだけをConnector実収益とする。
+33. Telegramへ週次funnelと「どのevent→誰との接点→何の機会→いくら受領」を直接link付きで送る。
+34. 30日local canaryでevent別の登録、参加、connection、meeting、won、cash、costを実測する。
+35. Connector起点の月間実収益が$10Kへ届くまで、conversionが最も弱い一段だけを毎週改善する。
+
+**P2 — 同じcoreをLife Manager Webへ移す**
+
+36. localのidentity、policy、browser、Calendar、Gmail、Telegram、ledgerをtenant interfaceへ分離する。
+37. cloud scheduler/worker、tenant別OAuth/secret/browser isolation、idempotency、rate limitを実装する。
+38. Web panelへConnector funnel、connection graph、opportunity、cash attribution、証拠を投影する。
+39. 別user一人でonboarding→event登録→connection→follow-up→paid outcomeを実証する。
+40. Stripe subscriptionのactive paid、new/expansion/contraction/churn MRRをConnector実収益とは別ledgerで測る。
+41. local Connectorのconnection-to-cash能力とWeb subscription MRRを両方維持し、合算時も内訳を失わない。
+
+完了条件: 少なくともLumaとConnpassの実登録を含み、各providerでsubmit後の登録済みpage PNG、確認mailまたはprovider receipt、
+ticket/QR（提供時）、Calendar、Telegram画像message IDが同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
 - `covered_existing`: 既に参加確定した東京の対面eventがあるため、重複予約しない。
@@ -2144,7 +3688,8 @@ free intervalへ参加できるeventを探す。`unavailable`は、候補event�
   → free intervalと前後移動時間に収まる最上位候補へ申込
   → 満席・失敗・確認なしなら同じ日の次候補へ即時進む
   → Lumaを十分に探索しても確保できない時は別の許諾済み予約sourceへ進む
-  → connpass key受領後は公式APIを候補発見にだけ使い、予約はしない
+  → ConnpassはConnector専用CloakBrowserで候補発見し、同じparent-owned railで登録・readbackする
+  → Connpassで確保できなければPeatix→Meetup→Doorkeeper→Eventbriteへ同じcapability gateで進む
   → 東京・対面・時間非衝突・自動支出policy内を確認
   → 完了画面または確認mailを取得
   → Calendar、QR、Telegramを作成
@@ -2169,12 +3714,15 @@ Connector Lead（21日coverageと応募完了を所有）
   ├─ Registration Tool   CloakBrowser :9222で申込、完了画面・mail・QRを取得
   ├─ Confirmation Tool   gog Gmailで確認mail、承認、cancelを照合
   ├─ Routes Tool         前後予定と移動時間を使い、申込可能か計算
-  └─ Application Ledger  discovered→attempted→confirmed→calendar_addedを記録
+  ├─ Connection Tool     event固有link・交換済み連絡先・reply・次回meetingを紐付け
+  ├─ Follow-up Tool      consentあるconnectionだけを会話文脈付きで追跡
+  └─ Connector Ledger    discovered→registered→attended→connected→meeting→won→cash_receivedを記録
 ```
 
 Calendar/Routesの時刻計算、dedup、状態遷移、証拠照合はdeterministicに行う。どのeventへ応募するかは
-agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ戻さない。現地参加、参加者への連絡、
-返信、follow-up、次回面談はこのConnectorのscopeへ含めない。
+agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ戻さない。現地で人と会うこと自体はDaisが行うが、
+参加準備、event固有の接点取得、交換済み連絡先/inbound相手へのfollow-up、返信、次回面談、opportunity、cash attributionは
+Connectorのscopeとする。公開参加者情報からの無差別連絡、contact情報の推測、同意のないmarketing送信はscope外とする。
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
@@ -2473,6 +4021,70 @@ specialist agentの合議、多数決、CFO Leadの指示のいずれも、deter
 最初はDais一人のローカル運用で、支出削減、応募、収入、投資、Telegram UXを実証する。
 その後、同じcoreをLife Manager Webアプリへ統合し、有料userの継続売上をMRRとして積み上げる。
 
+### 8.1 Connector単体がlocalで月$10,000へ寄与するloop
+
+最初の目標はWeb subscription MRRではない。DaisのMacで動くConnectorがeventを通じて作ったconnectionから、
+**実際に受領したUSD 10,000/月の帰属可能収益**を作ることである。保証値ではなく、cash receiptまで到達した検証目標である。
+
+Connector実収益へ含める:
+
+- eventで出会った人が購入したLife Manager/pilot/consultingの実入金
+- event connectionから生じたcontract、partnership、referralの実入金
+- event connectionが直接生んだ新しいjob/contractの月次手取り増分
+
+含めない:
+
+- 登録数、参加数、名刺数、返信、meeting、proposal、口約束
+- 資金調達額、含み益、元本移動、未回収invoice
+- eventとのsource pathを証明できない売上や給与
+
+月$10Kは単一商品価格ではなく、次のcash ledger式で測る。
+
+```text
+Connector attributable cash
+  = Life Manager / pilot cash received
+  + consulting / contract cash received
+  + partnership / referral cash received
+  + verified monthly job or contract income uplift
+  - event fee / travel / follow-up / delivery cost
+```
+
+たとえば`paid pilot $4K + consulting/contract $4K + verified income uplift $2K = $10K`は一つの検証可能な構成であり、
+forecastではない。各項目はevent、connection、opportunity、payment/payroll receiptまで同じlineageを持つ場合だけ計上する。
+
+```mermaid
+flowchart LR
+    D[Discover useful event] --> R[Register and Calendar]
+    R --> P[Pre-event goal・pitch・QR]
+    P --> A[Attend and meet people]
+    A --> C[Consent-based connection captured]
+    C --> F[Contextual follow-up]
+    F --> M[Meeting]
+    M --> O[Opportunity]
+    O --> W[Won]
+    W --> X[Cash received]
+    X --> L[Connector attribution ledger]
+    L --> T[Telegram: result・cash・next action]
+    L --> Q{Monthly $10K?}
+    Q -- No --> B[Improve weakest funnel stage]
+    B --> D
+    Q -- Yes --> S[Prove repeatability locally]
+    S --> WEB[Merge same core into Life Manager Web]
+```
+
+Connectorは登録数を最大化しない。`cash_received / attended`とnet cashを改善する。最初はsampleが小さいため、eventを
+connectionのverified first touchとして保存し、cashまでのpathを全件表示する。複数touchpointがある時はConnector単独売上と断定せず、
+`connector_assisted`として分離する。localでこのloopを成立させた後、同じlifecycle、policy、receipt、Telegram templateを
+Life Manager Webへ移す。Web subscription MRRはその後の別収益streamである。
+
+根拠:
+
+- ソース: [OpenAI Orchestration and handoffs](https://developers.openai.com/api/docs/guides/agents/orchestration) / 核心の引用: 「A manager should stay in control and call specialists as bounded capabilities」
+- ソース: [Telegram Bot API](https://core.telegram.org/bots/api#sendmessage) / 核心の引用: 「On success, the sent Message is returned」
+- ソース: [HubSpot lifecycle stages](https://knowledge.hubspot.com/records/use-lifecycle-stages) / 核心の引用: 「Lifecycle stages are used to track how contacts or companies move forward in your process」
+- ソース: [Google Analytics attribution](https://support.google.com/analytics/answer/10596866) / 核心の引用: 「Attribution is the act of assigning credit for important user actions to different ads, clicks, and factors along the user's path」
+- ソース: [Stripe Subscription analytics](https://docs.stripe.com/billing/subscriptions/analytics) / 核心の引用: 「新規登録、アップグレード、ダウングレード、再有効化、解約を含む各顧客のすべての MRR の推移」
+
 ## 9. 完成時の全体図
 
 ```text
@@ -2754,10 +4366,10 @@ Connectorは一日一回の検索cronではなく、21日間の空きを継続�
 | 時刻 / trigger | 裏側で行うこと | Daisへ届くもの |
 |---|---|---|
 | 00:05 | 日付を一日進め、今日〜20日後の全Calendar、cancel、変更を再照合 | 通常は無通知 |
-| 00:15〜06:00 | `open`日を日付順にLuma中心で探索・申込・mail/QR/Calendar照合。失敗候補は捨てて次へ進む | 通常は無通知 |
+| 00:15〜06:00 | `open`日を日付順に全許可providerで探索・申込・receipt/Calendar照合。一候補・一providerの失敗では止まらない | 通常は無通知 |
 | 06:30 | 21日coverage、既存予約、今回の新規予約、未処理の空きを集計 | 朝のConnector briefingを一通 |
 | 新規予約成立時 | そのrunで成立した複数eventをまとめて保存 | 3週間の空きを何件埋めたかを一通。eventとCalendarの直接link付き |
-| 09:00 | 夜間に届いたLumaの確認、承認、cancel mailを再照合 | 状態が変わったeventだけ通知 |
+| 09:00 | 夜間に届いた各providerの確認、承認、cancel receiptを再照合 | 状態が変わったeventだけ通知 |
 | 12:00 | 残っている`open`日と、朝以降に公開されたeventを再探索 | 新規予約成立時だけ通知 |
 | 18:00 | cancelや予定変更で再び空いた日を検知し、同日の別候補へ申込 | 置換予約が成立した時だけ通知 |
 | 23:45 | 未確認申込と未処理の空きを次runへ再投入 | 正常時は無通知。翌日も同じ状態から継続 |
@@ -2861,9 +4473,10 @@ Connectorは一日一回の検索cronではなく、21日間の空きを継続�
 [申込内容を見る]({{application_detail_url}})
 ```
 
-一候補の証拠が不足した場合は、通常Telegramへ失敗報告を送らない。未確認候補をCalendarへ
-登録せず、同じ日の次候補へ進む。account lock、予期しない課金、identity不一致のようにDaisの
-資産・accountへ影響する例外だけを即時警告し、Connector本体は安全な別候補で継続する。
+一候補の証拠が不足した場合も、そのwakeのTelegram報告を省略しない。未確認候補をCalendarへ登録せず、
+privacy-safeなfailure class、現在cursor、次の自動actionを`continuing`または`recovering`としてdurable outboxへ記録し、
+同じ日の次候補へ進む。account lock、予期しない課金、identity不一致は同じ必須報告に高severityを付ける。
+Telegram transport自体が故障してもpositive message IDを得るまでoutboxから削除せず、Connector本体は安全な別候補で継続する。
 
 LT・登壇応募:
 
@@ -3102,9 +4715,72 @@ NISA利用額: ¥{{nisa_used}}
 [元データを見る]({{source_detail_url}})
 ```
 
+### 10.12 ユーザーが実際に体験するTelegram UX
+
+Daisはagentを起動・選択・監視しない。Life Manager managerが裏でspecialistを呼び、Daisには次の3種類だけを送る。
+
+1. 朝: 今日の予定、残高、重要な変化、agentが今日行うことを一通。
+2. 日中: 実登録・実応募・面談・入金・異常だけをcompletion cardとして送る。通常retryは送らない。
+3. 月末: MRR、収入、支出、agent別純効果、目標gap、翌月の一手を一通。
+
+```mermaid
+sequenceDiagram
+    participant U as Dais
+    participant T as Telegram
+    participant LM as Life Manager
+    participant A as Specialist agents
+    participant X as External services
+    participant L as Verified ledger
+
+    LM->>A: goal・policy・予算付きでbounded task
+    A->>X: 探索・応募・登録・同期
+    X-->>A: confirmation・Calendar・payment receipt
+    A->>L: 検証済み結果だけ記録
+    L-->>LM: current state・MRR・next action
+    LM->>T: 人間向けの一通 + 直接link
+    T-->>U: 朝brief / 完了card / 月次締め
+    alt 通常
+        U-->>T: 何もしなくてよい
+    else policy外の不可逆操作
+        T->>U: 理由・金額・確認画面を提示
+        U-->>T: 承認または拒否
+    end
+```
+
+Telegramを開いた後に起こること:
+
+- `[イベントを見る]`でLuma公式page、`[Calendar]`で実予定、`[証拠を見る]`で認証済み詳細へ直接移動する。
+- completion cardには、Connectorがsubmit後に取得した「登録済み」と読めるLuma公式page画像を直接添付する。DaisはTelegram内だけで登録状態を視認できる。
+- 画像にはevent名、登録済み状態、取得時刻をcaptionで示す。画像のmessage ID、artifact hash、event refが一致しなければ完了扱いにしない。
+- 返信しなくてもloopは次のopen日、応募、reply追跡、財務更新へ進む。
+- Telegram送信成功はpositive `message_id`を保存できた時だけ。表示文面だけを成功証拠にしない。
+- 人間を呼ぶのはpolicy外の送金・売買等だけで、通常の無料event登録や既定範囲の行動には承認を要求しない。
+
 ## 11. 最終利用体験
 
 ### 11.0 全実装後の一枚図
+
+```mermaid
+flowchart TB
+    U[Dais: Telegramだけを見る] <--> M[Life Manager manager]
+    M --> C[Connector: event・人脈]
+    M --> F[Fundraising: capital・面談]
+    M --> J[Job Hunter: offer・給与]
+    M --> CFO[CFO: cash・cost・allocation]
+    CFO --> CR[Crypto: capped realized P&L]
+    CFO --> FI[Fiat/NISA: long-term return]
+    C --> R[External receipts]
+    F --> R
+    J --> R
+    CFO --> R
+    CR --> R
+    FI --> R
+    R --> L[Unified verified ledger]
+    L --> M
+    L --> W[Web: detail・history・evidence]
+    M --> T[Telegram: next action・result・exception]
+    T --> U
+```
 
 ```text
                          Life Manager
@@ -3421,13 +5097,25 @@ local完成後
 これらの寄与を同じledgerで計測し、月間1,000万円へのgapを毎月更新する。accelerator採択、
 投資利益、unicorn、billionaireは目標であって保証値ではない。
 
+### 15.9 Codex executor の共通 browser capability
+
+全 Codex agent は native `browser_use`、external browser、full CDP、computer use、in-app browser を利用可能にする。これは Connector 固有の例外ではなく、同じ agent runner を使う全 task class の共通 provider capabilityである。browser taskは既存CloakBrowser daily-driver sessionを直接観測・操作し、site固有selectorや都度生成するPlaywright/CDP scriptを主経路にしない。外部作用の完了はagentの自己申告ではなく、親loopが完了画面・receipt・Calendar readback・Telegram media message IDを独立検証して確定する。
+
+2026-08-06実測: 旧OpenClaw ConnectorはCamofoxのaccessibility snapshotと汎用`click/type/press/screenshot`をagentへ直接渡してLuma/Connpassを操作していた。現行Codex runnerはprovider共通設定で`browser_use`、`browser_use_external`、`browser_use_full_cdp_access`、`computer_use`、`in_app_browser`を明示的にdisableし、Terraへshellだけを渡していた。その結果、run 164ではTerraがPlaywright module pathを誤り、実画面の登録完了markerではなく自分の宣言文を`observed_marker`として返した。根本修正は全Codex agentから上記disableを除去し、native browserを共通能力として宣言する。
+
+run 165でnative computer pathを実測すると、Terraは全画面`screencapture`、`Cmd-Tab`、`cliclick`座標操作へ逸れ、CloakBrowserではなくCodex画面を操作した。Connectorのproduction browser contractは、Playwrightを別browserとして起動するのではなく、既存CloakBrowser daily-driver `:9222`へ`connectOverCDP()`するcontrollerとしてだけ使う。desktop-wide操作、新browser/profile、DOM mutationは禁止し、同じevent tabをuser-facing role/label、auto-wait、実fill/click/check/selectOption/pressで最後まで操作する。private profileにはDaisの正しい生年月日をmode 0600で保持し、通常の未知主観質問はprofileまたはtruthful general purposeで回答して継続する。
+
+候補attempt履歴は観測telemetryであり、申込停止gateではない。過去`known_no_effect`や期限付きretryを理由にranked candidateを除外せず、全候補をattemptableに保つ。一候補の`known_no_effect`やcandidate budget到達でpassを終了せず、同じrunで次候補へ進む。`unknown_effect`は同じURLを再送信する前にprovider readbackで登録有無を確定する。
+
+run 169ではTerraがCloakBrowser接続前に未導入の`require('playwright')`を選び、`MODULE_NOT_FOUND`になった。production executorはrepo rootの既存`apps/life-manager/node_modules/playwright-core`を絶対解決して読み、package探索を行わず直ちに`:9222`へ接続する。
+
 ## 16. 実装前に残る不確実性
 
 | # | 不確実性 | 解消方法 / gate |
 |---:|---|---|
 | U01 | CloakBrowser `:9222`のlogin sessionがLuma/YC/SPCでfreshか | 各siteをread-onlyで開き、login identityとcookie expiryを記録 |
 | U02 | 直近Connector runner成功が実登録を意味するか | result JSON、完了画面、mail、ledgerを照合。runner successだけでは登録扱い禁止 |
-| U03 | connpassで規約準拠のdiscover/submitと証跡取得が可能か | API key取得、利用規約、確認mailを実測。不可ならorganizer CFPだけを対象 |
+| U03 | connpass browser-only discover/submitと証跡取得が可能か | `:9222` parent-owned discovery、実submit、readback、Calendar、Telegramを一lineageで実測 |
 | U04 | LT応募と一般参加登録をどう区別するか | `attendance_application`と`talk_proposal`を別entity・別receiptにする |
 | U05 | YC既存draftがFall 2026へ安全に移行できるか | current home画面、batch、application ID、submit前previewを実測 |
 | U06 | YC動画・demo・tractionが現在の真実か | application-kit、dashboard、動画実体、production URLを提出当日に照合 |
@@ -3466,3 +5154,3081 @@ local完成後
 3. 推測でdoneにしない。外部receiptまたは再現可能な実測を要求する。
 4. 他trackの作業をこの文書へ追加しない。
 5. 新しい候補部品を発見したら、URL、license、実測日、採用判断を§4へ記録する。
+
+## O1B-25進捗170（汎用Autonomous Connector / Browser Harness採用境界）
+
+進捗169のscript-first判断を維持しつつ、対象をLuma専用automationに限定しない。Lumaは最初に探索するmain providerであり、
+Connectorの本体は、既知providerでは検証済みaction cacheを決定的に再生し、未知providerまたはUI変更時には同じConnector-owned
+browser session/page上でbounded browser agentが画面を観察して申込を完遂するprovider-neutral autonomous runnerである。
+初回にagentが成功した操作はversion付きprovider/domain workflowとして保存し、次wakeからagentなしで再生する。cached actionが壊れた場合は、
+失敗した一操作だけをagentが発見し直し、親readbackで期待状態を確認してからcacheを更新する。
+
+### External source and adopted Browser Harness decision
+
+1. Browser Use Browser Harness: https://github.com/browser-use/browser-harness
+   - 核心の引用: “Connect an LLM directly to your real browser with a thin, editable CDP harness.”
+   - 採用: 未知provider、未知ordinary field、iframe/dialog/dropdown/shadow DOM、UI変更時のbounded fallback engineとして使う。
+2. Browser Use Browser Harness: https://github.com/browser-use/browser-harness
+   - 核心の引用: “The harness improves itself every run.”
+   - 採用: 学習先をConnector専用のprovider domain skill、browser helper、versioned action cacheに限定する。repo-wide editは禁止する。
+3. Browser Use Browser Harness SKILL: https://github.com/browser-use/browser-harness/blob/main/SKILL.md
+   - 核心の引用: “Prefer to find elements with the accessibility tree, not screenshots.”
+   - 採用: AX treeを第一観察経路、targeted DOMを第二経路、layout/画像判断だけscreenshot、特殊UIだけ座標/CDP操作にする。
+4. Browserbase Stagehand: https://github.com/browserbase/stagehand
+   - 核心の引用: “use AI when you want to navigate unfamiliar pages, and use code when you know exactly what you want to do.”
+   - 採用: 正常wakeはscript/cache-first、未知または破損時だけagentを呼ぶ。
+5. Browserbase Stagehand: https://github.com/browserbase/stagehand
+   - 核心の引用: “auto-caching combined with self-healing remembers previous actions, runs without LLM inference, and knows when to involve AI whenever the website changes.”
+   - 採用: repair後はagentなしrerunを必須にし、成功したreplacement actionだけを昇格する。
+
+### Final production behavior
+
+```mermaid
+flowchart TD
+  W[Daily wake] --> C[Google Calendar busy/readback]
+  C --> L[Luma候補を同一pageで探索]
+  L --> G{無料・受付中・非衝突}
+  G -->|no| N[次候補]
+  N --> L
+  G -->|yes| R[Cached/direct action]
+  R -->|成功| P[Parent provider readback]
+  R -->|未知UI・破損| A[Browser Harness fallback 最大10 step]
+  A -->|操作発見| V[期待page stateを親が検証]
+  V --> U[壊れたactionだけcache更新]
+  U --> R
+  A -->|candidate failure| N
+  N -->|Luma exhausted| CP[Connpass]
+  CP --> PX[Peatix・Meetup・Doorkeeper・Eventbrite・次provider]
+  P -->|registered/pending| GC[Calendar insert + readback]
+  GC --> E[Provider receipt・PNG SHA]
+  E --> T[Telegram message/photo positive ID]
+  T --> B[Durable applied_bundle]
+```
+
+未知providerには事前scriptを要求しない。browser agentは現在pageのAX tree、DOM、視覚状態を観察し、navigate、observe、fill、submit、readbackを
+一作用ずつ実行してよい。ただし、成功判定、browser lifecycle、target ownership、外部証拠、再送防止は常にparent codeが所有する。
+agentの自己申告、exit 0、Telegram failure reportを登録成功に数えない。
+
+Browser Harnessはそのまま無制限に常駐させず、Connector adapterの内側に置く。
+
+- `BU_CDP_URL`/`BU_CDP_WS`相当の接続先はConnector所有`:9222`のclaimed page/targetだけ。Gig `:9223`は永久read-only。
+- 一wakeはsession ID 1、target ID 1、page 1。候補/provider切替は同じpageのnavigateで行う。
+- browser agentは新browser/profile、全page走査、任意tab作成、`browser.close()`、desktop-wide操作を行わない。
+- agentが永続更新できるのはConnector専用provider domain skill、browser helper、versioned action cacheだけ。
+- credential、cookie、private profile値、raw prompt、contact情報をaction history/cacheへ保存しない。
+- CAPTCHA、MFA、決済、有料event、未知consent、虚偽回答は自動突破しない。その候補をsafe failureとして次へ進める。
+- 一candidate failureでwakeを終了しない。Luma候補を継続し、枯渇後はConnpass、次にconfigured providerへ進む。
+- 連続failure 3回またはwake 10分でcircuit-openし、追加操作/target churnを止め、durable stage/action historyとTelegram recovery receiptを保存する。
+
+### O1B-25進捗171（Item 1 / 物理停止状態の再実測）
+
+branch `feature/connector-native-completion`、commit `9204f2e65`、remoteとのahead/behind 0、dirty file 0を確認した。
+`launchctl print`の実測では`ai.anicca.life-manager-connector-native`と
+`ai.anicca.life-manager-connector-native-healthcheck`はdomainに存在せずstatus 113、Native/healthcheck process 0である。
+`ai.anicca.life-manager-connector-healer-shadow`はloaded、`state = not running`、runs 8、last exit 0で、Healer process 0である。
+`ai.anicca.life-manager-connector-host-bridge`はloaded、`state = running`、PID 853、runs 1である。Item 2のconsumer/ownership
+証明前なのでHealerとbridgeは変更していない。
+
+CloakBrowser `127.0.0.1:9222`はChromium PID 69767がlistenし、`/json/version`はChrome 145とbrowser WebSocketの存在を返した。
+Gig `127.0.0.1:9223`はChromium PID 74198がlistenすることだけをread-only確認し、接続、target列挙、profile/state/lock/vault/code変更は0である。
+Connector safe evidenceの最新mtimeは`evidence/target-leases.json`と`evidence/tab-owner.json`の
+`2026-08-07T01:26:54+0900`で、heartbeatは`2026-08-07T01:23:32+0900`、wake delivery ledgerは
+`2026-08-07T01:22:15+0900`である。内容、credential、cookie、private profile、raw logは出力・変更していない。
+Item 1を完了し、Native scheduling disabledを維持したままItem 2へ進む。
+
+### O1B-25進捗172（Item 2 / Connector owner境界確定とlegacy owner unload）
+
+installed plist、launchd process path、repo call path、listener/client、Gig launchd/codeをread-onlyで照合した。
+Healer shadowはworktreeの`skills/connector/healer-shadow.sh`→`healer-shadow-cli.js`→`lib/healer-shadow.js`だけを起動する
+Connector専用ownerである。Host bridgeはcanonical Life Managerの`connector-host-bridge-boot.sh`→
+`connector-host-bridge-server.js`→`connector-host-bridge.js`を起動し、旧Docker workerだけが
+`LM_CONNECTOR_BRIDGE_URL`/`LM_CONNECTOR_BRIDGE_TOKEN`名を持つ旧Connector runtime railである。port 18793はPID 853のlistenerだけで
+established client 0だった。Gig launchdは`profitable-claude/.../gig-work`を起動し、Gig codeにHealer、host bridge、port 18793、
+Connector tokenの参照は0である。
+
+このowner証明後に`ai.anicca.life-manager-connector-healer-shadow`と
+`ai.anicca.life-manager-connector-host-bridge`を`launchctl bootout`した。両labelはstatus 113、Connector関連process 0、port 18793
+listener 0になった。Native/healthcheckもstatus 113を維持し、全Connector launchd ownerは0である。Connector CloakBrowser `:9222`は
+PID 69767、Gig `:9223`はPID 74198のlistenerを維持した。Gigへのwrite、restart、target操作は0である。
+installed plistはmode 0600のまま保存し、Connector native/host-bridge state directory、token、profile、cookie、receipt、evidence、logを
+削除・変更していない。Item 2を完了し、次はItem 3のexact inventoryを作る。
+
+### O1B-25進捗173（Item 3 / exact keep・direct-reuse・delete inventory）
+
+`.codegraph/` markerはあるがCLIがindex不存在を返したためindexを作らず、production entrypoint `skills/connector/run.sh`から
+`rg`、CommonJS `require`、`module.exports`、launchd plist/boot pathを追った。分類は次のとおり。`delete`はstate/evidenceの削除ではなく、
+Item 5でofficial production call pathからGit patchで除去する対象である。他track/eval consumerがあるmoduleはfileを削除せずConnector production
+importだけを切る。
+
+#### Keep inventory（そのまま保護する責務）
+
+| File | Symbol / responsibility | Exact decision |
+|---|---|---|
+| `skills/connector/run.sh` | env load、absolute state dir、single process lock、heartbeat、crash envelope | official shell entrypointとして保持。ただし`native-pass.js`の旧orchestration呼出先をminimal runnerへ置換する |
+| `skills/connector/lib/load-connector-env.js` | `loadConnectorEnv` / bounded env load | keep |
+| `skills/connector/lib/native-state.js` | `acquireLock`、`heartbeat`、`readHealth`、`recordContinuation`、`releaseLock` | keep。lock/append-only continuationを新runnerから使う |
+| `skills/connector/lib/observer-envelope.js` | `buildObservation`、`appendObservation` | keep。safe action history/circuit reportへ使い、raw prompt/PIIを追加しない |
+| `skills/connector/lib/wake-report-outbox.js` | `enqueueWakeReport`、`deliverPendingWakeReports`、`recordProcessCrash` | keep。every-wake Telegram rail |
+| `apps/life-manager/lib/connector-browser-target-controller.js` | `CONNECTOR_CDP_ENDPOINT`、`createConnectorBrowserTargetController` | keep。`:9222` target create/find/closeをparentだけが所有する |
+| `apps/life-manager/lib/connector-target-lease.js` | `createConnectorTargetLease` | keep。owner token/generation/fence/heartbeat/release |
+| existing Connector state/evidence trees | registration receipt、Calendar evidence、Telegram delivery、PNG/object、ticket、idempotency、observer/attempt ledgers | immutable/append-only keep。削除・移動・truncate禁止 |
+
+#### Direct-reuse inventory（新minimal runnerへ直接つなぐ部品）
+
+| File | Symbol / responsibility | Exact decision |
+|---|---|---|
+| `apps/life-manager/lib/connector-tab-owner.js` | `createConnectorTabOwner` | ownership receipt/fencingをreuse。ただし候補ごとのclaim/createは禁止 |
+| `apps/life-manager/lib/cloakbrowser-daily-driver.js` | `DAILY_DRIVER_CDP`、`connectorEventUrl`、`resolvedDailyDriverEndpoint` | endpoint/url validationをreuse。現`withEventPage`の候補ごと`newPage()/close()`はreuseせず、一wake一page lifecycleへ置換 |
+| `apps/life-manager/lib/luma-browser-provider.js` | `createLumaBrowserProvider`、`submitLumaOnPage`、`readSavedLumaPaymentMethodOnPage` | Luma direct fill/submit/parent proofをreuse。paid pathは初期runnerで無効 |
+| `apps/life-manager/lib/luma-registration-form.js` | `readLumaRegistrationForm`、`normalizeLumaRegistrationForm` | reuse |
+| `apps/life-manager/lib/luma-form-answer-policy.js` | `buildLumaFormAnswerPlan` | verified profileとtruthful answerだけreuse |
+| `apps/life-manager/lib/luma-form-fill.js` | `fillLumaRegistrationForm` | exact control fill/check/select readbackをreuse |
+| `apps/life-manager/lib/connpass-browser-provider.js` | `createConnpassBrowserProvider`、`readConnpassRegistrationStateOnPage`、`submitConnpassOnPage` | Luma exhausted後のsame-page fallbackとしてreuse |
+| `apps/life-manager/lib/connpass-rsvp-adapter.js` | `buildConnpassEventApplicationJob`、`executeConnpassRsvpJob` | provider job/receipt contractをreuse。旧coverage loop adapterはproductionで使わない |
+| `apps/life-manager/lib/google-calendar-busy-inventory.js` | `inspectGoogleCalendarBusyInventory`、`isVerifiedGoogleCalendarBusyInventory`、`privateGoogleCalendarBusyContext` | pre-submit conflict checkへreuse |
+| `apps/life-manager/lib/transport/calendar-gog.js` | `makeGogCalendar` | Calendar list/create/get readbackへreuse |
+| `apps/life-manager/lib/connector-calendar-sync.js` | `syncVerifiedRegistrationToGoogleCalendar`、`isVerifiedConnectorCalendarSync` | provider success後だけreuse |
+| `apps/life-manager/lib/luma-evidence-store.js` | `createLumaEvidenceStore` | full-page PNG/object SHA/provider receipt storageをreuse |
+| `apps/life-manager/lib/connpass-evidence-store.js` | `createConnpassEvidenceStore` | Connpass PNG/object SHA/provider receipt storageをreuse |
+| `apps/life-manager/lib/luma-ticket-qr.js` | `captureOfficialLumaTicketQr`、`createLumaGuestBinding`、`createLumaTicketQrStore`、`decodeQrPng` | ticket/QR capture/readbackをreuse |
+| `apps/life-manager/lib/connector-ticket-telegram.js` | `buildConnectorTicketCaption`、`deliverConnectorTicket`、`sendOpenClawMedia` | Telegram photo delivery/positive IDをreuse |
+| `apps/life-manager/lib/outbound-guardian.js` | `notifyOpenClawPhoto`、`parseOpenClawMessageId` | bounded Telegram media send/receipt parsingだけreuse。Docker recovery/guardianは使わない |
+| `apps/life-manager/lib/connector-candidate-outcome.js` | `classifyConnectorCandidateOutcome`、`isVerifiedConnectorCandidateOutcome` | safe next-candidate分類へreuse。suppression gateへ接続しない |
+| `apps/life-manager/lib/canonical-event-url.js` | `canonicalEventUrl`、`connpassEventUrlsFromText` | provider-neutral identity/idempotencyへreuse |
+| `apps/life-manager/lib/event-provider-registry.js` | `createEventProviderRegistry`、`isVerifiedEventProviderRegistry`、`promoteEventProvider` | configured provider capability schemaだけreuse。durable cursorは接続しない |
+
+`apps/life-manager/lib/connector-native-write-pipeline.js`の`runNativeConnectorWrite`はCalendar、PNG、ticket、Telegramを実装済みだが、
+rolling coverage、goal serendipity、coverage assembler/Telegramを入力contractへ埋め込んでいるため関数丸ごとのdirect reuse対象外とする。
+上表の下位componentを新しいprovider-neutral evidence chainへ直接接続する。
+
+#### Delete/retire inventory（official production pathから除去）
+
+| File / wiring | Symbol / path | Consumer proof and action |
+|---|---|---|
+| `skills/connector/native-pass.js` | 現`runNativePass`、provider cursor load/store、coverage result bounding、legacy photo backfill、self-heal issue delivery | production consumerは`run.sh`一つ、他はtest。official file pathをminimal runnerへrewriteし、必要なreceipt validationだけ新bundle moduleへ移す |
+| `apps/life-manager/lib/connector-native-runtime.js` | `runNativeConnectorPass`、`calendarGateFailureCode` | non-test production consumerは現`native-pass.js`だけ。production import 0にする |
+| `apps/life-manager/lib/connector-events-pack.js` | `createConnectorEventsPack`の21日inventory/spend/goal/coverage composition | old runtime/legacy runtime services用。minimal runnerからimportしない |
+| `apps/life-manager/lib/rolling-event-coverage.js`、`rolling-event-coverage-store.js`、`connector-coverage-*` | `buildRollingEventCoverage`、continuation、assembler、coverage Telegram/refresh | eval/legacy runtime consumerがあるためfileは即削除せず、Connector production pathから全import 0にする |
+| `apps/life-manager/lib/event-preference-ranking.js` | preference ranking | production selectionから除去 |
+| `apps/life-manager/lib/event-goal-serendipity.js` | goal/serendipity judgment | production selectionから除去 |
+| `apps/life-manager/lib/event-spend-policy.js` | `planDateSpend`を含むfree-event前ordering | free-event production selectionから除去。有料作用は初期runner全体で禁止 |
+| `apps/life-manager/lib/connector-candidate-suppression.js` | `latestCandidateAttempts`、`activeSuppressedEventRefs` | telemetryは保持するがstop/filter gateとしてのproduction importを除去 |
+| `apps/life-manager/lib/event-provider-cursor.js` | `createEventProviderCursorStore`、`createEventProviderCursor`、`advanceEventProviderCursor` | non-test Connector consumerは現`native-pass.js`/runtime。durable provider cursorを新runnerへ持ち込まない |
+| `apps/life-manager/lib/connector-agentic-registration.js` | `runConnectorAgenticRegistration` | old runtimeだけがconsumer。Browser Harness bounded same-page adapterへ置換 |
+| `apps/life-manager/lib/connector-native-write-pipeline.js` | `runNativeConnectorWrite`のcoverage-coupled composition | old runtimeだけがproduction consumer。下位evidence componentへ置換後import 0にする |
+| `apps/life-manager/lib/connector-coverage-runtime-services.js`、`connector-host-bridge.js`、`scripts/connector-host-bridge-*` | Docker/host bridge client/server/install path | legacy Docker runtimeだけ。official Connector production pathとlaunchdからretire。token/stateは削除しない |
+| `skills/connector/healer-shadow.sh`、`healer-shadow-cli.js`、`lib/healer-shadow.js` | repo-wide Healer execution | launchdは進捗172でunloaded。production render/install/importを0にする。history/test consumer確認後までfileは保持 |
+| `skills/connector/healthcheck.sh` | legacy minute healthcheck/retry owner | launchdはunloaded。daily runnerに別ownerを作らず、production renderから除去 |
+| `skills/connector/render-launchd.sh` | native + healthcheck + Healerの3 plist render | single daily Connector plistだけをrenderするようItem 17で置換 |
+| `apps/life-manager/launchd/ai.anicca.life-manager-connector-native.plist.template` | `StartInterval=300` | daily CalendarIntervalのsingle labelへ置換。foreground acceptance前はload禁止 |
+| `apps/life-manager/launchd/ai.anicca.life-manager-connector-native-healthcheck.plist.template`、`ai.anicca.life-manager-connector-healer-shadow.plist.template`、`ai.anicca.life-manager-connector-host-bridge.plist.template` | duplicate healthcheck/Healer/bridge owners | production render/install wiringから除去。installed plist/stateはfinal cleanup gateまで保存 |
+
+Deletion boundaryを再確認した結果、削除禁止対象はCloakBrowser profile/auth、Connector/Gig lock、credential/token、private profile、cookie、
+registration receipt、Calendar evidence、Telegram receipt、PNG/object、ticket/QR、observer/attempt/continuation JSONLである。Item 3ではcode/stateを削除せず、
+inventoryとconsumer proofだけを追加した。次はItem 4でこのinventoryに対するfocused production contractをREDにする。
+
+### O1B-25進捗174（Item 4 / minimal production contract RED）
+
+`apps/life-manager/lib/connector-minimal-runner.test.js`を追加し、新production APIを
+`runMinimalConnectorWake(input, dependencies)`に固定した。実browser外部作用はfake boundaryの外へ置き、runnerの実behaviorとして次を要求する。
+
+1. Luma候補からConnpass候補までopen 1、session ID 1、target ID 1、page ID 1、close 1でnavigateする。
+2. direct action failure時だけ同じpageを渡し、agent fallbackへbrowser objectを渡さず`maxSteps = 10`にする。
+3. provider successはparent `readProviderState`の`registered/pending`後だけevidence chainへ進む。
+4. 連続failure 3回で4回目のnavigateを行わずcircuit-openとTelegram wake reportを返す。
+5. wake 600,000ms超過時はagentを追加実行せず、navigate 1で停止してwake reportを返す。
+
+focused REDを実行し、production moduleがまだ存在しないため`MODULE_NOT_FOUND: ./connector-minimal-runner.js`でfail 1となった。
+これはItem 5/6の実装がないことを検出する期待したREDで、syntax checkはGREENである。
+
+`skills/connector/test/minimal-production-contract.test.js`も追加し、実`render-launchd.sh`を隔離temp dirで実行して出力を検査する。
+期待はConnector plist 1個、`StartCalendarInterval` 1個、`StartInterval`/healthcheck/Healer/host bridge/`:9223` 0である。
+focused REDでは実出力がnative、healthcheck、Healerの3 plistだったためfail 1となり、旧duplicate owner wiringを正しく検出した。
+Item 4はRED contract固定として完了し、Item 5で旧production orchestrationを除去してからItem 6でGREENへ進める。
+
+### O1B-25進捗175（Item 5 / 旧production orchestration除去）
+
+inventoryに従いGit patchでofficial production pathを縮小した。`skills/connector/native-pass.js`の旧717行を、
+`runMinimalConnectorWake`へowner token、state dir、provider順`luma→connpass`、failure上限3、wake上限600,000ms、agent上限10だけを渡す
+thin adapterへ置換した。`connector-native-runtime.js`、provider cursor、coverage、ranking、serendipity、spend、suppression、self-heal issue、
+Docker/host bridgeのofficial importは0になった。old runtime moduleと他track/eval consumerは削除していない。
+
+`skills/connector/test/native-entrypoint.test.js`の旧orchestration behavior 1,138行を退役し、official adapterがbounded minimal contractだけを
+forwardし`provider-cursor.json`を作らないbehavior testへ置換した。`apps/life-manager/lib/connector-minimal-runner.js`はItem 6用の明示的RED
+skeletonとして追加し、まだ外部作用を持たない。
+
+`skills/connector/render-launchd.sh`はnative plist一個だけをrenderし、healthcheck/Healer sidecarを生成しない。
+native plist templateは`StartInterval=300`を除去し、daily `StartCalendarInterval` 09:00 localへ変更した。これはrender contractだけで、
+live install/loadは行っていない。Native、healthcheck、Healer、host bridgeのlaunchctl statusは全て113を維持する。
+
+focused adapter/renderer testsは3/3 GREEN、syntax check 2/2 GREEN、official old-import scan 0、`git diff --check` GREENである。
+minimal runner behavior testsは実装skeletonの`Connector minimal runner not implemented`により期待どおり4/4 REDを維持する。
+state、profile、auth、token、cookie、receipt、Calendar/Telegram evidence、PNG、append-only ledgerの変更・削除は0。Item 5を完了し、
+Item 6でprovider-neutral coreを実装して4 REDをGREENにする。
+
+### O1B-25進捗176（Item 6 / provider-neutral minimal runner core GREEN）
+
+TDD REDへ`every recorded action contains only the safe audit fields`を追加し、未実装skeletonでfocused 5/5 REDを確認後、
+`apps/life-manager/lib/connector-minimal-runner.js`へ`runMinimalConnectorWake(input, dependencies)`を実装した。
+
+coreはCalendar gapsを一回観測し、`browserRail.open()`を一回だけ実行する。ordered provider/candidate loopは同じowned
+`session_id`、`target_id`、`page`を`browserRail.navigate()`へ渡し続け、終了時だけ`finally`で`browserRail.close()`を一回実行する。
+Luma candidateを順番に処理し、枯渇後は同じpageでConnpassへ進む。direct actionが`completed`でない時だけ同じpageを
+`runAgentFallback`へ渡し、browser objectは渡さず`maxSteps=10`にする。agent/direct resultは成功証拠にせず、parent
+`readProviderState`が`registered`または`pending`を返した時だけ`completeEvidence`へ進む。
+
+連続candidate failure 3回では4回目のnavigate前に`consecutive_failure_limit`、wake elapsed 600,000ms以上では追加agent前に
+`wake_deadline`でcircuit-openする。全terminal pathは`reportWake`のpositive Telegram provider IDを要求する。
+browser action auditは`purpose`（navigate/observe/fill/submit/readback）、safe `method`、ISO `timestamp`、success/failed `result`、
+非負`duration_ms`だけを`recordAction`へ渡し、owner token、URL、private value、raw promptを含めない。
+
+focused minimal coreは5/5 GREEN。official adapter/rendererを含むfocused suiteは8/8 GREEN。これはdependency fixtureによるcore contract証明であり、
+実browser、provider Submit、Calendar、PNG、Telegram外部作用は0である。Item 6を完了し、Item 7でConnector-owned pageだけを実操作できる
+Browser Harness bounded adapterを接続する。
+
+### O1B-25進捗177（Item 7 / Browser Harness page-scoped bounded adapter）
+
+local `browser-harness --version`は0.1.0、doctorはlatest 0.1.8 available、Chrome/daemon alive、active connection 0を返した。
+公式mainの`src/browser_harness/daemon.py`を再読し、`BU_CDP_WS`はbrowser-level WebSocketへ接続後、`Target.getTargets`で全pageを列挙し、
+最初のpageへattachし、pageがなければ`Target.createTarget`、条件によりinspect tabを`Target.closeTarget`することを確認した。
+したがって公式CLIをConnector `:9222` browser endpointへそのまま接続すると、一owned target境界に違反する。local package update、daemon接続、
+profile変更は行わず、Browser HarnessのAX-first→targeted DOM→coordinate fallbackとfocused action contractをpage-scoped adapterとして採用した。
+
+TDD REDで`apps/life-manager/lib/connector-browser-harness-adapter.test.js`を追加し、module不存在によるREDを確認後、
+`createBrowserHarnessAdapter`を実装した。adapterはexact
+`ws://127.0.0.1:9222/devtools/page/<claimed-target-id>`だけを受理し、browser endpoint、Gig `:9223`、credential-bearing URL、malformed
+page endpointを同期拒否する。agent proposalは`observe/fill/submit/readback`とallowlisted AX/DOM/coordinate method、一つのsafe controlだけに閉じる。
+`browser_close`、`target_create`、`target_close`、`new_tab`はperform前に`unsafe_agent_action`へする。
+
+fallbackは毎stepでsanitized page observation→一focused proposal→parent perform→parent expected-state readbackを行い、最大10 stepで止まる。
+成功条件はagent proseではなく`readExpectedState`の`registered/pending`だけで、成功したsafe action列だけを`repaired_actions`として返す。
+core側もowned target IDとpage WebSocketの完全一致を検証し、同じ`page`と`pageWebsocket`だけをadapterへ渡すようRED→GREEN更新した。
+
+adapter/core focused testsは9/9 GREEN。ownership/controller/lease、official adapter/rendererを含む関連suiteは後続fresh verificationで確認する。
+実`:9222`接続、target操作、Submit、Calendar、PNG、Telegram作用は0。Item 7を完了し、Item 8で既存Luma direct workflowとproduction
+dependency boundaryを接続する。
+
+### O1B-25進捗178（Item 8 / Luma script-first workflow）
+
+TDD REDで`apps/life-manager/lib/connector-luma-workflow.test.js`を追加し、module不存在を確認後、
+`createLumaScriptFirstWorkflow`を実装した。default discoveryはowned pageをLuma Tokyoへnavigateし、既存
+`collectLumaInventory`、`readLumaTimelineSnapshot`、`advanceLumaTimeline`でvirtualized timelineのendを証明する。発見したevent detailも
+同じpageのnavigateと既存`readRawLumaEventDetail`/`normalizeLumaEventDetail`で読むため、target create/closeは0である。
+
+selectionはproviderの発見順をそのまま保ち、`event_status=scheduled`、`rsvp_status=available/approval_required`、
+`ticket_price_status=free`、`ticket_price_minor=0`、Calendar direct conflict 0の候補だけを返す。subjective ranking、goal/serendipity、
+spend ordering、past attempt/suppression gate、21日coverageは入力にも停止条件にも存在しない。
+
+direct actionは既存`submitLumaOnPage`へverified profile readerを渡し、`agenticRegister`はundefinedに固定する。既知formは
+reader→truthful answer policy→exact fill→Submitで進み、`registered` resultだけを`completed`へする。unknown required profile/schema/fill/control/
+confirm/browser actionはprovider textを保存せず`direct_action_requires_fallback`へ正規化し、Item 7のsame-page adapterへ渡せる。
+parent readbackは`registered`、`pending`、`absent`、`unavailable`だけへclosed normalizationし、agent resultを成功判定に使わない。
+
+workflow focused 4/4、既存Luma discovery/detail/form/provider回帰を含む43/43 GREEN、syntax/diff check GREEN。
+実browser target、Submit、Calendar、PNG、Telegram作用は0。Item 8を完了し、Item 9で成功actionをversioned cacheへ保存・replayする。
+
+### O1B-25進捗179（Item 9 / versioned provider action cache）
+
+TDD REDで`apps/life-manager/lib/connector-action-cache.test.js`を追加しmodule不存在を確認後、
+`createConnectorActionCache({ path })`を実装した。cache keyはprovider、workflow version、page state、expected effect
+`registered_or_pending`の完全一致で、entryはsafe `purpose/method/control` action列、updated timestamp、content hash IDだけを持つ。
+fileはatomic renameとmode 0600、parentはmode 0700で作る。provider state/receipt、URL、owner token、credential、cookie、private form value、
+raw promptはschemaに存在せず、email/空白/raw text/browser lifecycle methodをvalidationで拒否する。
+
+`saveVerifiedRepair`はparent stateが`registered/pending`の時だけ最大10 actionを保存し、同じprovider/workflow/page state entryだけを置換して
+他provider/versionを維持する。`replay`はcached actionを順番にperformし、agentを呼ばず、全action後のparent readbackが
+`registered/pending`の時だけ`completed`を返す。action failure/readback failure/cache missは外部成功を主張しない。
+
+minimal coreもTDDでcache-firstへ更新した。candidate navigate後に`runCachedAction`を先に実行し、verified cache hitではdirect/agent call 0で
+evidence chainへ進む。cache miss/failureだけdirect→bounded fallbackへ進む。fallback actionは同じpageでparent readback成功後にだけ
+`saveRepairedActions`へ渡し、保存成功後にevidence chainへ進む。cache/core focusedは10/10 GREEN。
+
+実state cache、browser、Submit、Calendar、PNG、Telegram作用は0。Item 9を完了し、次はItem 10。ただしforeground live E2Eの前に、
+official native adapterへ実browser rail、Calendar、Luma workflow、cache、fallback、evidence/report dependenciesを組み立てるproduction compositionを
+Item 10の最初のTDD sliceとして閉じる。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗180（Item 10A-1 / pre-submit parent readback refactor）
+
+Refactor Guardでminimal runnerと既存test coverageを確認し、登録済みpageを再訪した時の事前readbackだけが未固定と判定した。
+先にbehavior testを追加し、現行実装が`applied_bundle`ではなくcandidate failure/circuit-openへ進むREDを確認した。
+
+`runMinimalConnectorWake`はcandidate URLへnavigateした直後、cache/direct/agentより前にparent
+`readProviderState({ phase: "pre_submit" })`を実行する。`registered`または`pending`ならSubmit系を一切呼ばず既存のevidence chainへ進み、
+`absent/unavailable`だけ従来のcache→direct→bounded fallbackへ進む。外部action後のreadbackは`phase: "post_submit"`として区別した。
+これによりlive E2E途中でevidence chainが失敗しても、次runがproviderへ重複Submitせず不足evidenceを回収できる。
+
+minimal runner、action cache、Luma workflow、official adapter/rendererのfocused suiteは18/18 GREEN。追加contractは既登録時に
+readback 1、cache 0、direct Submit 0、agent 0を確認した。実browser、Submit、Calendar、PNG、Telegram作用は0。
+Item 10は未完で、次はItem 10A-2 production dependency compositionをTDDで構築する。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗181（Item 10A-2a / production browser rail）
+
+production compositionの最初の危険境界として`createProductionBrowserRail`のcontractをREDで固定し、module不存在を確認後に実装した。
+railはPlaywright CDPを`http://127.0.0.1:9222`へ一回だけ接続し、parent controllerが`Target.createTarget`で一targetを作る。
+そのexact targetをLuma discovery URLでdurable leaseへclaimし、probe/heartbeat後に同じPlaywright pageをwake全体へ返す。
+
+candidate navigationは同じpageの`goto`だけを使い、前後でfence heartbeatを更新する。正常closeはownerのexact-target releaseだけで、
+browser-level `close()`は呼ばない。claim前に失敗した場合だけparent controllerが自分で作ったtarget IDをexact closeする。
+lease ledgerとtab-owner receiptは既存private evidence pathを再利用し、Gig `:9223`、profile、auth、cookie、credentialへ触れない。
+
+production rail、target controller、target lease、tab ownerのfocused suiteは14/14 GREEN。契約上connect 1、target create 1、claim 1、
+same-page goto 1、release 1、browser close 0を確認した。実`:9222`接続とexternal writeは0。Item 10は未完で、次はLuma/Calendar/cache/fallbackを
+official native adapterへ組み立てる残りのproduction dependenciesをTDDで接続する。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗182（Item 10A-2b / Calendar conflict contract補正）
+
+production dependency routerの配線前監査で、minimal runnerの`readCalendarGaps` contractはbusy interval配列を要求する一方、
+Luma default conflict filterは`{ busy_intervals: [...] }` objectだけを読んでいたことを確認した。このままcompositionがverified inventoryから
+interval配列を渡すと、全予定を空扱いして衝突eventを候補に残す。
+
+実配線と同じbusy interval配列を渡すbehavior testを追加し、conflicting candidateが残るREDを確認した後、
+`defaultCalendarFree`を配列とverified inventory objectの両contractへ対応させた。overlap条件はevent start < busy endかつevent end > busy startを維持する。
+Luma workflow、minimal core、Google Calendar inventoryのfocused suiteは15/15 GREENで、conflicting candidate 0、non-conflicting candidate 1を確認した。
+
+実Calendar read、browser、Submit、PNG、Telegram作用は0。Item 10は未完で、次はこのbusy interval配列を実Google Calendar inventoryから生成し、
+Luma/cache/fallbackへ渡すproduction dependency routerをTDDで接続する。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗183（14日探索窓 / Browser Harness・Sol・multi-agent運用判断）
+
+Daisの明示判断により、production candidate探索窓は**今日を含む14日間**へ固定する。旧21日coverageは復活させず、
+14日を全件埋めるcoverage completionもSubmit前提にしない。一wakeは14日内のCalendar非衝突候補を探し、実申込可能な最初の候補へ進む。
+AI/cryptoはhard filterではなく、同日・同時間帯に複数の無料・受付中・非衝突候補がある場合だけのstable tie-breakとする。
+AI/crypto以外の候補を抑止せず、「何かに参加する」を「好みの候補がないので何にも参加しない」より優先する。
+
+Browser Harness、Sol、Healer、multi-agentのproduction運用は次へ固定する。
+
+1. daily wakeの通常経路はcached/direct actionだけで、LLM call 0を標準とする。
+2. cache/direct actionが現在pageで失敗した時だけBrowser Harness fallbackを同じsession/pageで最大10 step起動する。
+3. fallback成功後はparent readbackが`registered/pending`を確認し、replacement actionだけversioned cacheへ保存する。次runはagentなしで再生する。
+4. 高価なSolを常時loop、候補探索、通常form入力へ使わない。安価なbounded browser modelで解けず、ordinary UI変更の修復価値が高い場合だけ
+   escalation候補にできるが、同一wakeの10 step/10分/circuit上限を超えない。
+5. repo-wide Healerはdaily Connectorの前提・sidecar・自動retry ownerにしない。正常workflowとlive bundle完成後、再現可能なcode defectだけを
+   isolated repair taskへ渡す将来boundaryとし、browser apply、merge、deploy権限を同じagentへ集約しない。
+6. Connector本体はsingle parent orchestratorを維持する。Calendar→同一page navigation→Submit→readback→evidenceは順序依存であり、
+   複数agentの同時browser操作を禁止する。multi-agentは将来、複数providerのread-only discovery/researchなど独立・並列・高価値の作業にだけ使い、
+   parentが候補を統合後、一つのActorだけがexternal writeを行う。
+
+一次資料:
+
+- Stagehand Agent Fallbacks: https://docs.stagehand.dev/v3/best-practices/agent-fallbacks — direct action失敗時にだけagent fallbackを使い、例も`maxSteps: 10`。
+- Stagehand Deterministic Agent Scripts: https://docs.stagehand.dev/v3/best-practices/deterministic-agent — 初回agent workflowをcacheし、以後LLM inferenceなしで再生する。
+- Browser Use Deterministic rerun: https://docs.browser-use.com/cloud/agent/cache-script — 初回agent実行後、同じtaskをcached scriptでLLM cost 0再実行する。
+- OpenAI Practical Guide to Building Agents: https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/ —
+  single-agentへtoolsを段階追加して複雑性を抑え、tool overlapや複雑な分岐が限界になった時にmulti-agentを検討する。
+- Anthropic Multi-agent Research System: https://www.anthropic.com/engineering/multi-agent-research-system —
+  multi-agentは独立方向を並列探索するbreadth-first taskに強い一方、token消費が大きく、依存が多く共有contextが必要なtaskには不向き。
+
+この進捗はarchitecture/spec判断であり、実browser、Calendar、Submit、PNG、Telegram作用は0。Item 10は未完で、次は14日Calendar inventoryと
+single-parent Luma/cache/fallbackをproduction dependency routerへ接続する。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗184（Item 10の実行順明確化）
+
+Item 10の本文を、live E2E直前に残るproduction dependency配線を含む二段階へ補正した。10Aは14日Google Calendar inventory、
+single owned browser rail、Luma、action cache、bounded Browser Harness fallback、parent readback、evidence/report dependencyをofficial
+entrypointへ接続する。10Bはscheduling disabledのforeground processで実Luma Submitと`registered/pending` readbackを行う。
+10Aをunit testだけでItem 10完了にせず、10Bの実provider readbackまで同じItemのacceptanceとする。
+
+この進捗はTODO順序の明確化だけで、実browser、Calendar、Submit、PNG、Telegram作用は0。次の一件はItem 10A。
+
+### O1B-25進捗185（Item 10A-1 / gog 14日Calendar production reader）
+
+TDD REDで`createProductionCalendarReader` contractを追加し、production export不存在を確認後に実装した。readerは既存
+`makeGogCalendar`へgog binary、Google account、keyringを渡し、Asia/Tokyoの本日00:00をinclusive start、14日後00:00をexclusive endとして
+`inspectGoogleCalendarBusyInventory`を実行する。これにより対象日は今日を含む14日間で、旧21日coverage依存はない。
+
+verified Google Calendar inventory以外を拒否し、minimal runner/Lumaへはprivate event title、location、calendar ID、account、keyringではなく、
+参照化済み`busy_intervals`だけを返す。gog未認証、Calendar列挙失敗、event列挙失敗、未検証inventoryは空Calendarとして継続せずfail-closedにする。
+
+production Calendar reader、browser rail、Google Calendar inventory、Luma workflow、minimal coreのfocused suiteは17/17 GREEN。
+固定clock `2026-08-07T08:30:00.000Z`ではrangeが`2026-08-06T15:00:00.000Z`以上、
+`2026-08-20T15:00:00.000Z`未満となることを確認した。これはAsia/Tokyoの8月7日から8月20日までの14 local daysである。
+
+実gog、Google Calendar read、browser、Submit、PNG、Telegram作用は0。Item 10は未完で、次はItem 10A-2としてLuma、action cache、
+bounded Browser Harness、evidence/reportをofficial entrypointへ組成する。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗186（Item 10A-2a / Luma provider action router）
+
+TDD REDで`createProductionProviderRouter` contractを追加し、production export不存在を確認後に実装した。routerは同一owned pageを
+Luma discovery、versioned action cache replay、既存direct Submit、bounded Browser Harness fallback、parent provider readbackへ渡す。
+cache keyはprovider `luma`、workflow `luma_registration_v1`、page state `registration_page_v1`、expected effect
+`registered_or_pending`へ固定した。
+
+cache replayはagentを呼ばず、replay後にLuma parent readbackを行う。direct failure時のfallbackはowned page、exact `:9222` page WebSocket、
+最大10 step、expected stateだけをBrowser Harness adapterへ渡す。fallback actionsはparent stateが`registered/pending`の時だけ既存private
+action cacheへ保存され、observed timestamp以外のprovider text、form value、credential、cookie、raw promptを追加しない。
+
+provider order上のConnpassは維持するが、Item 14のlive実証前に未検証actionを成功扱いしないため、このrouter sliceではcandidate 0を返す。
+Luma/cache/Browser Harness/core/production focused suiteは23/23 GREEN。
+
+実gog、Google Calendar read、browser、Submit、PNG、Telegram作用は0。Item 10は未完で、次はItem 10A-2bとしてevidence、Telegram wake report、
+safe append-only action historyをofficial entrypointへ組成する。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗187（Item 10A-2b-1 / minimal operations outbox）
+
+旧`wake-report-outbox`は21日coverageのopen count/cursor schemaへ結合しているためproduction minimal pathへ再接続せず、TDD REDで
+`createMinimalProductionOperations` contractを追加して新しいsmall boundaryを実装した。
+
+`recordAction`はcoreから受けたpurpose、safe method、timestamp、success/failed result、durationとsafe wake IDだけを
+`action-history.jsonl`へappend-only、mode 0600で保存する。URL、provider text、form value、Telegram target、credential、cookie、raw promptは
+schemaに存在せず、予期しないfieldを拒否する。
+
+`reportWake`は`applied_bundle`、`completed_no_effect`、`circuit_open`をcurrent wake reportとして送信前にdurable outboxへ保存し、
+Telegram positive message IDをparent parserが確認した後だけdelivery receiptを追記する。同じwakeの重複callは再送0。一時send failureはreportを
+削除・成功扱いせず、次wakeが過去pending reportから順に再送して各positive IDを保存する。本文先頭は`Connector:::`で送信元を明示する。
+
+minimal operations focused suiteは2/2 GREEN。private state directoryと全JSONLはmode 0700/0600、Telegram target persistence 0を確認した。
+実Telegram、browser、Calendar、Submit、PNG作用は0。Item 10は未完で、次はこのoperations boundaryとminimal evidence chainをofficial
+production dependenciesへ接続する。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗188（Item 10A-2b-2 / minimal applied bundle evidence chain）
+
+TDD REDで`createMinimalEvidenceChain` contractを追加し、module不存在を確認後に実装した。入口はparent readback済みのLuma
+`registered/pending`だけで、agent result、prose、process exit codeを成功条件にしない。
+
+chainは同じowned pageからfull-page PNGを一回取得し、既存`createLumaEvidenceStore`へimmutable objectとprovider receiptを保存する。
+parentがPNG SHA-256とreturned object refのhash一致を確認する。Google Calendarはcanonical event URL hashをidempotency keyとしてgog adapterの
+`findConnectorEvents`を先に実行し、0件だけcreate、続いて別の`findConnectorEvents`でexact event ID/URLを独立readbackする。
+
+Calendar readback成功後にTelegram messageとregistered-page photoを送り、両方のpositive provider IDをparent parserで確認する。
+provider receipt ref、artifact ref/SHA、Calendar event ID/URL/readback time、Telegram message/photo IDsを一つのcontent-addressed、immutable、
+mode 0600 `applied_bundle`へ保存する。Telegram target、credential、cookie、form value、raw promptはbundle schemaへ入れない。
+
+minimal evidenceと既存Luma evidence storeのfocused suiteは3/3 GREEN。fixture上でscreenshot 1、Calendar pre-read 1、create 1、
+independent post-read 1、Telegram message 1、photo 1、bundle 1を確認した。
+
+実browser、gog、Calendar write、Submit、PNG、Telegram作用は0。Item 10/11は未完で、次はCalendar reader、browser rail、provider router、
+operations、evidence chainを一つのofficial production dependency factoryへ組成し、native entrypointをforeground実行可能にする。
+scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗189（Item 10A-2c-1 / production Browser Harness parent boundary）
+
+TDD REDで`createProductionBrowserHarness` contractを追加し、module不存在を確認後に実装した。各fallback stepは同一owned pageを一回観察し、
+sanitized control token、kind、public label、required flagだけをaction proposerへ渡す。page/browser object、profile value、credential、cookieはmodel入力に渡さない。
+
+modelはpurpose/method/controlの一作用だけを提案し、parentが観察registryからexact controlを解決する。fill/selectの実値はparent `resolveValue`だけが
+private profileから取得し、model proposalやcache actionには保存しない。click/check/submitを含む実操作もparent `operateControl`だけが実行する。
+各step後の成功判定はLuma workflowのparent `readProviderState`だけで、`registered/pending`まで最大10 step。cache replayも同じparent
+`performAction`を使い、registryがない時だけpageを再観察する。
+
+production harness、bounded adapter、action cacheのfocused suiteは9/9 GREEN。fixture上で2操作、page observation 2、parent operation 2、
+parent readback 2、model入力private value 0を確認した。
+
+実model、browser、Calendar、Submit、PNG、Telegram作用は0。Item 10は未完で、次は実DOM/AX observer/performer、private profile resolver、
+bounded local agent proposerをこのparent boundaryへ接続する。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗190（Item 10A-2c-2 / real page adapter and bounded Terra proposer）
+
+実page adapterとして`inspectPageControls`、`operatePageControl`、`createLumaPrivateValueResolver`をTDDで追加した。observerは同じowned pageの
+visible/enabled input、textarea、select、checkbox、radio、button、button-role linkを最大100件読み、public labelとstable per-page control tokenだけを返す。
+現在値やpage HTML全体はmodel observationへ入れない。
+
+parent performerはtokenに対応するexact locator一件だけをfill/check/select/click/Enterし、browser lifecycle、navigation、new tabを持たない。
+fill/select valueはprivate Luma form profileのphoneまたはexact form answer labelからparentが解決し、model/cache/historyへ保存しない。
+
+`createBoundedActionProposer`はfallback step時だけ既存local agent runnerを`browser-lane-agent`、Terra、30秒timeoutで呼び、sanitized controlsから
+purpose/method/control一件だけをstructured outputで返す。page WebSocket、browser object、private valueをprompt/requestへ渡さず、Solは使わない。
+provider routerもfallbackへexact candidate identityを渡すようRED→GREEN補正し、step後のreadbackが対象eventを確認できるようにした。
+
+production provider/router/harness、bounded adapter、cacheのfocused suiteは14/14 GREEN。実model、browser、Calendar、Submit、PNG、Telegram作用は0。
+Item 10は未完で、次はCalendar reader、browser rail、Luma workflow、action cache、Browser Harness、operations、evidenceを一つのofficial
+production dependency factoryへ組成し、native CLIのmissing dependency failureを除去する。scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗191（Item 10A-2d / official production dependency factory and native entrypoint）
+
+TDD REDで`createMinimalProductionDependencies` contractを追加し、14日gog Calendar reader、single browser rail、Luma workflow、private action cache、
+production Browser Harness、provider router、minimal operations、minimal evidence chainを一wakeで一度だけ組成するfactoryを実装した。
+minimal runnerへ返すのはrequired 12 functionsとbrowser railだけで、旧coverage/ranking/gate/cursor/Healer dependencyは0。
+
+`skills/connector/native-pass.js`はmissing dependency rejectionを除去し、allowlisted shared env/process envからgog account/keyring、Telegram target、
+tenant、Calendar ID、既存private Luma form profile pathを読み、official factoryをdefaultで構築する。Telegram targetがenvにない場合は既存private
+`telegram-default-allowFrom.json`をNode parentがmode/shape検証して読む。owner tokenそのものはwake IDへ保存せずSHA-256 prefixへする。
+
+`native-state.js`へ専用owner token commandを追加し、`run.sh`からinline Node token生成とinline Telegram JSON parserを削除した。
+旧`connector-events-pack.js`存在checkもminimal production module checkへ置換した。official shell/native import scanでevents-pack、old runtime、coverage、
+ranking、serendipity、provider cursor参照0、inline `$NODE_BIN -e` 0を確認した。
+
+factory/core/native/state focused suiteは19/19 GREEN、shell syntax GREEN。実gog、model、browser、Calendar write、Submit、PNG、Telegram作用は0。
+Item 10は未完で、次はsignal/process crash時だけ残る旧coverage wake outbox呼出しをminimal crash reporterへ置換し、foreground preflightを行う。
+scheduleは引き続きunloadedを維持する。
+
+### O1B-25進捗192（Item 10A complete / minimal process crash report）
+
+TDD REDで`reportMinimalCrash` contractを追加し、module不存在を確認後、`skills/connector/minimal-crash-report.js`を実装した。
+signal/process crash時はexisting native configからhashed wake IDとTelegram targetだけを取得し、minimal operationsへ
+`circuit_open / process_crash / consecutive_failure_count=0`を報告する。browser、Calendar、provider Submit、agent、factory本体を再起動しない。
+
+`run.sh`の旧`wake-report-outbox.js process-crash`呼出しをminimal crash reporterへ置換した。official run/native/crash pathの
+old wake outbox、events pack、inline Node参照は0。既存observer envelopeはprivacy-safe crash fingerprint記録として保持し、Healerを起動しない。
+
+crash/native/state/operations focused suiteは11/11 GREEN、shell syntax GREEN。これでItem 10Aのproduction compositionとentrypoint cleanupは完了。
+実gog、model、browser、Calendar write、Submit、PNG、Telegram作用はまだ0。次はItem 10Bの前にphysical foreground preflightとして、
+schedule unloaded、Connector process 0、`:9222` health、Gig `:9223` read-only境界、private config存在だけを再確認し、そのままbounded foreground live E2Eへ進む。
+
+### O1B-25進捗193（Item 10A foreground preflight / Luma 14日候補境界補正）
+
+foreground直前の物理preflightを再実測した。Native、healthcheck、Healer、host bridgeの4 Connector labelはすべてunloaded、
+Connector processは0。Connector-owned Chromium `:9222`はPID 69767、Chrome 145、browser WebSocketありでhealthy。
+Gig `:9223`は別PID 73537のlistenerとしてread-only確認だけを行い、code、launchd、browser、lock、profile、state、vaultへのwriteは0。
+private envとLuma form profileは既存のmode 0600、local agent runnerはmode 0755。preflight時点のbranchは
+`feature/connector-native-completion`、HEAD `babf80985`、remote同期済みだった。scheduleはunloadedを維持する。
+
+同じ監査で、Google Calendar readerは東京時間14日へ制限済みだが、Luma candidate workflowには日付窓filterがなく、14日外の
+無料eventもSubmit候補になり得る不整合を発見した。東京時間 `2026-08-07` の境界testを先に追加し、開始直前と14日後00:00以降の
+candidateも残るREDを確認した。
+
+`createLumaScriptFirstWorkflow`はproduction clockを受け、Asia/Tokyoの今日00:00以上、14日後00:00未満の半開区間で候補をfilterする。
+official production factoryもCalendar readerと同じ`now`をLuma workflowへ渡す。境界では今日00:00と最終日23:59:59を含み、
+直前と14日後00:00を除外した。Luma workflow、production factory、minimal runnerのfocused suiteは17/17 GREEN。
+
+実gog、browser、Submit、Calendar write、PNG、Telegram作用はまだ0。Item 10Aを閉じ、次の一件はschedule disabledのまま
+official foreground runnerをbounded実行するItem 10B。実Luma `registered/pending` parent readbackが得られなければItem 10は完了にしない。
+
+### O1B-25進捗194（Item 10B foreground起動failure / executable contract修復）
+
+schedule unloadedのままofficial `skills/connector/run.sh`を660秒hard timeout付きforeground processとして直接起動したが、
+OSが`Permission denied`で即時exit 126を返した。stdout 0 byte、stderrは起動拒否だけで、browser、gog、provider Submit、Calendar write、
+PNG、Telegram作用は0。原因はtracked file modeが100644で、official entrypointにexecute bitがなかったこと。
+
+entrypointのexecute bitを検査するtestを追加してREDを確認し、`run.sh`をmode 100755へ復元した。native entrypoint suiteは4/4 GREEN。
+Item 10Bは未完で、次の一件は同じbounded foreground commandを再実行し、最初に到達する実境界を観測すること。scheduleはunloadedを維持する。
+
+### O1B-25進捗195（Item 10B foreground wake 1 / providers exhausted）
+
+execute bit修復後、schedule unloadedのままofficial `run.sh`を660秒hard timeout付きで再実行した。Google Calendar busy readは
+2,690msでsuccess、single owned `:9222` pageでLuma provider discoveryは44,529msでsuccess。14日内の最終candidateは0件で、
+Item 14前のConnpass production routerは意図どおり0件のため、wakeは`completed_no_effect / providers_exhausted`で終了した。
+
+外部作用はprovider Submit 0、Calendar write 0、PNG 0、applied bundle 0。every-wake Telegram reportはpositive provider ID `8226`を
+parent receiptへ保存した。owned target leaseは終了時に解放済みで、browser-level closeとschedule loadは0。CLIは現状
+`applied_bundle`以外をexit 1にするためprocess exitは1だが、stderr/stdoutは0、process crash reportは起動していない。
+
+現在のfailureは、Lumaに実際に該当候補がない場合と、detail/date/open/free normalizationで候補を誤除外した場合をsafe historyから
+区別できないこと。Item 10Bは未完。次の一件はprovider text、URL、個人情報を保存せず、observed/detail-valid/window/open/free/conflictの
+件数だけをparentが記録する診断contractをTDDで追加し、同じ実pageで0件の原因を特定すること。
+
+### O1B-25進捗196（Item 10B diagnosis slice 1 / safe Luma eligibility audit）
+
+既存read-only semantic inspectorを一回bounded実行し、Tokyo inventory complete、7 scroll rounds、公開candidate 37件、先頭candidateの
+JSON-LD Event 1件、description/location/organizerとnormalizationが有効であることを確認した。provider本文、title、URL、個人情報は出力・保存せず、
+Submit、Calendar、PNG、Telegram作用は0。この結果から「公開candidate 0」ではなく後段filterで0になったと確定した。
+
+`createLumaScriptFirstWorkflow`へsafe aggregate audit contractを追加した。default discoveryはinventory observed countとnormalized candidateだけを返し、
+workflowは`observed_count / normalized_count / window_count / free_open_count / calendar_free_count`の5整数だけをcallbackへ渡す。
+event identity、title、URL、date、provider text、form valueはaudit schemaに存在しない。Luma workflow suiteは7/7 GREEN。
+
+Item 10Bは未完。次の一件はこのaggregate auditだけをmode 0600 append-only stateへ保存するminimal operations配線をTDDで追加し、
+official foreground wakeで37件がどのfilterで0になるかを実測すること。scheduleはunloadedを維持する。
+
+### O1B-25進捗197（Item 10B diagnosis slice 2 / aggregate audit production persistence）
+
+minimal operationsへ`recordDiscoveryAudit`が存在しないREDを確認後、mode 0600 append-only
+`luma-discovery-audits.jsonl`を追加した。schemaはwake ID、recorded timestamp、`observed / normalized / window / free_open /
+calendar_free`の5整数だけで、各値0..500と`observed >= normalized >= window >= free_open >= calendar_free`をparentが検証する。
+余計なfieldを拒否し、URL、title、provider text、form value、credential、cookie、raw promptは保存できない。
+
+official production factoryはminimal operationsをLuma workflowより先に一度だけ構築し、このaudit callbackをdefault workflowへ渡す。
+minimal operations、production factory、Luma workflow、minimal runnerのfocused suiteは21/21 GREEN。
+
+Item 10Bは未完。次の一件はschedule unloadedのままofficial foreground wakeを再実行し、実aggregate countから0候補のexact filterを特定すること。
+
+### O1B-25進捗198（Item 10B foreground wake 2 / Luma zeroのexact filter確定）
+
+schedule unloadedのまま3回目のofficial foreground wakeを実行した。safe aggregateはobserved 37、normalized 37、14日window 22、
+free/open 3、Calendar free 0。37件すべてのdetail readerは有効で、候補0のexact reasonは3件の無料受付中Luma候補がすべて
+Google Calendar busy intervalとoverlapしたこと。discoveryは37,821ms、Calendar readは2,589msでsuccess。
+
+wakeは`completed_no_effect / providers_exhausted`、provider Submit 0、Calendar write 0、PNG 0、bundle 0。
+every-wake Telegram positive provider ID `8228`を保存し、owned leaseを解放した。schedule load、browser-level close、Gig writeは0。
+
+Item 10Bは未完。次の一件はCalendar title、ID、locationを出さず、busy inventoryがcancelled/transparentを除外し、3候補とのoverlapが
+実blocking intervalであることをread-only確認する。正当な衝突ならLumaへ無理にSubmitせず、同一wakeで次providerへ進むため
+Item 14のConnpass actionをItem 10B blockerとして前倒しする。14日窓は変更しない。
+
+### O1B-25進捗199（Item 10B blocker確認 / Calendar conflictは正当）
+
+gogから同じ東京時間14日rangeをread-only再取得し、title、Calendar ID、event ID、location、attendee identityを出力せずaggregateだけを検査した。
+source event 91件は全件confirmed、transparent 1件、opaqueまたはmissing 90件、timed 90件、all-day 1件。
+self attendee responseはaccepted 1、needsAction 10、self attendeeなし80で、declinedは0。busy inventory実装はcancelledとtransparentを除外し、
+Luma conflict filterはtimedだけを見るため、3件が全除外された原因はcancelled/transparent/declined/all-dayの誤blockingではない。
+
+14日内のLuma free/open candidate 3件は実timed予定と正当に重なる。14日窓を拡張したり重複時間へSubmitしたりしない。
+Item 10Bの新規Luma external successは現在の外部候補状態では成立不能だが、Connector本来の要件どおり同じwakeで次providerへ進む必要がある。
+次の一件はItem 14のConnpass actionをこの環境blocker解消として前倒しし、旧provider cursor/coverage runtimeを復活させず、
+既存Connpass codeをfile/symbol/call path単位で再inventoryすること。scheduleはunloadedを維持する。
+
+### O1B-25進捗200（Item 14前倒し / Connpass exact reuse inventory）
+
+Connpassの現行file/symbol/call pathを再inventoryした。productionへdirect-reuseするのは
+`connpass-browser-discovery.js::{readCalendarBindings,readEventDetail}`、
+`connpass-browser-provider.js::{readConnpassRegistrationStateOnPage,submitConnpassOnPage}`、
+`connpass-evidence-store.js::createConnpassEvidenceStore`。canonical subdomain/event identity contractも維持する。
+
+そのままproductionへ戻さないのは`discoverConnpassDateWithBrowser`。これは日単位calendar pageに加え候補ごとに
+`dailyDriver.withEventPage`を呼ぶため、one wake/one target/same page contractに合わない。`connector-events-pack`、Connpass API capability handoff、
+coverage/date inventory/provider cursor、`buildConnpassEventApplicationJob`、`executeConnpassRsvpJob`の旧runtime job orchestrationもminimal pathへ戻さない。
+
+新規wrapperは`ConnpassScriptFirstWorkflow`一つだけとし、同じowned pageをcalendar→detail→candidate navigationへ再利用する。
+今日を含む14日、Tokyo、無料/受付中/Calendar非衝突だけをprovider orderで返す。direct actionは既存`submitConnpassOnPage`を使い、
+申込後のアンケート/確認画面またはUI変更は同じpageの最大10 step Browser Harnessへ渡す。成功は親
+`readConnpassRegistrationStateOnPage`の`registered/pending`だけ。candidateごとのtarget create/close、旧cursor、coverage、ranking、gateは0。
+
+Item 10B/14は未完。次の一件はこのminimal Connpass workflow contractをTDD REDで固定すること。scheduleはunloadedを維持する。
+
+### O1B-25進捗201（Item 14前倒し / minimal Connpass workflow core）
+
+TDD REDで`connector-connpass-workflow.js` module不存在を確認し、`createConnpassScriptFirstWorkflow`を実装した。
+workflowのproduction-facing APIは`discoverCandidates / runDirectAction / readProviderState`の3操作だけで、Lumaと同じminimal core contractへ揃えた。
+
+discoveryはConnpass event refとgroup subdomainを保持したcanonical URL、開始/終了時刻をparent validationし、Asia/Tokyoの今日00:00以上、
+14日後00:00未満、registration available、price free/0、Google Calendar timed interval非衝突だけをprovider orderで返す。
+direct actionは既存`submitConnpassOnPage`、readbackは既存`readConnpassRegistrationStateOnPage`を同じsupplied owned pageで呼ぶ。
+`registered/pending`以外を成功にせず、target/session create、page close、cursor、coverage、ranking、LLM callは0。
+
+Connpass workflow/provider、Luma workflow、minimal runnerのfocused suiteは19/19 GREEN。実browser、Submit、Calendar write、PNG、Telegram作用は0。
+Item 10B/14は未完。次の一件は`readCalendarBindings`と`readEventDetail`を同じpageで14日分だけ巡回するdefault Connpass discoveryをTDDで実装し、
+price/open stateを公開DOMからfail-closedで正規化すること。scheduleはunloadedを維持する。
+
+### O1B-25進捗202（Item 14前倒し / Connpass detail fail-closed normalization）
+
+公開Connpass calendarの直接curlはHTTP 403で失敗したため、取得不能と一般化せず、既存CloakBrowser readerへ接続するpure normalizationを先に固定した。
+TDD REDで`normalizeConnpassEventDetail`不存在を確認後、canonical group subdomain/event identity、title、開始/終了時刻、venue、controls、
+JSON-LD offersとpublic price labelを正規化する関数を追加した。
+
+registrationは明示申込controlだけ`available`、受付終了/満員だけ`closed`、既登録controlだけ`registered`、それ以外`unknown`。
+priceは明示的な0円offerまたは無料/free labelだけ`free/0`で、それ以外`unknown/null`。未知状態を無料・受付中と推定しない。
+Connpass discovery/workflow/provider focused suiteは6/6 GREEN。実browser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件は`readEventDetail`がoffers、controls、price labelsを公開DOMから返すcontractをREDで追加し、
+同じowned pageのdefault 14日discoveryへ接続すること。scheduleはunloadedを維持する。
+
+### O1B-25進捗203（Item 14前倒し / Connpass real DOM eligibility extraction）
+
+`readEventDetail`のbrowser callbackを最小DOM fixture上で実行するTDD testを追加し、offers未返却のREDを確認した。
+readerはJSON-LD Eventのoffersからprice/priceCurrencyだけ、visible control候補からpublic labelだけ、price/fee/amount/dt/dd nodeから
+無料/free/参加費/円に関係する300文字以下のpublic labelだけを各最大100件抽出する。HTML全体、入力値、cookie、credentialは返さない。
+
+このraw出力を進捗202のfail-closed normalizationへ渡せる。Connpass discovery/workflow/provider focused suiteは7/7 GREEN。
+実CloakBrowser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件は同じowned pageで必要なcalendar monthを最大2回、各event detailを順次`goto`するdefault discoveryをTDDで接続し、
+candidateごとのtarget create/close 0を固定すること。scheduleはunloadedを維持する。
+
+### O1B-25進捗204（Item 14前倒し / one-page 14日Connpass default discovery）
+
+月跨ぎfixtureでdefault discoveryが存在せずworkflow validationに失敗するREDを確認後、同じowned pageだけを使うConnpass discoveryを実装した。
+Asia/Tokyoの今日を含む14 local datesからcalendar monthを一つまたは最大二つ生成し、各month URLへ同じpageでnavigateする。
+14日内のbindingだけをevent refで重複排除した後、同じpageで各canonical detailへ順次navigateし、進捗202/203のfail-closed normalizationを適用する。
+
+month/pageごと、candidateごとのbrowser session/target create/closeは0。旧date loop、coverage、provider cursor、API handoffは参照しない。
+月跨ぎcontractはcalendar navigation 2、detail navigation 2、supplied page identity一つを確認した。Connpass workflow/discovery/providerとminimal runnerの
+focused suiteは15/15 GREEN。実browser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件はofficial production factory/routerへConnpass workflowを接続し、provider-specific cache/readback/direct/fallbackを
+同じpageへroutingするTDD slice。scheduleはunloadedを維持する。
+
+### O1B-25進捗205（Item 14前倒し / provider-neutral production router）
+
+production routerがConnpass discoveryへ常に空配列を返すREDを確認後、Luma/Connpass workflow mapへ置換した。
+providerごとにworkflowだけを選び、cache、performAction、Browser Harness、same owned pageは共有する。Connpass cache keyは
+provider `connpass`、workflow `connpass_registration_v1`、page state `registration_page_v1`、expected effect `registered_or_pending`。
+
+discovery、cache replay後readback、direct action、fallback、parent readback、verified repair saveを選択provider workflowへrouteする。
+未知providerは拒否し、旧cursor/coverage/runtime jobへfallbackしない。production/router/workflow/minimal runner focused suiteは15/15 GREEN。
+実browser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件はofficial factoryでConnpass workflowを一度構築し、production Browser Harnessのexpected-state readbackも
+provider-neutral mapへするTDD slice。scheduleはunloadedを維持する。
+
+### O1B-25進捗206（Item 14前倒し / official Connpass factory and bounded fallback）
+
+production Browser HarnessがConnpass providerを拒否するREDと、official factoryがConnpass workflowをrouterへ渡さずinvalidになるREDを確認した。
+HarnessはLuma/Connpass workflow mapからinput providerのparent readbackだけを選ぶ。観察、agent proposal、parent control operation、private value resolver、
+最大10 step、same page contractは共通で、agentにpage/browser objectやprivate valueを渡さない。
+
+official factoryはConnpass workflowをwakeごとに一度構築し、Browser Harnessとproduction routerの双方へ渡す。
+Connpass fallback fixtureはsame page operation後のConnpass parent `pending`だけでcompletedとなる。factory/router/Harness/workflow/minimal runnerの
+focused suiteは20/20 GREEN。実browser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件はschedule unloadedのままofficial foreground wakeをbounded実行し、Luma conflict後の実Connpass discovery、
+候補/action/readbackの最初の外部境界を観測すること。evidence chainのConnpass一般化前なので、登録後にevidenceで中断してもpre-submit parent readbackで
+重複Submit 0を維持し、その不足artifactだけを次sliceで補完する。
+
+### O1B-25進捗207（foreground Connpass wake / provider failure isolation修復）
+
+schedule unloaded、Connector process 0、`:9222` healthyを再確認後、official foreground wakeを660秒hard timeoutで実行した。
+Calendar read 2,634ms、Luma discovery 47,528msはsuccessし、aggregateは37/37/22/free-open 3/Calendar-free 0。
+続くConnpass provider discoveryは1,085msでfailedし、wakeはexit 2。Submit、Calendar write、PNG、bundleは0。
+
+このrunで、provider discovery例外がwake全体へ漏れ、Telegram every-wake reportも送られないcore contract違反を確認した。
+TDD REDでLuma discovery例外後にConnpassへ進めずthrowすることを再現し、provider単位のfailure isolationを実装した。
+discovery failureはsafe action historyへfailedを残し、consecutive failureを加算して次providerへ継続する。3件でcircuit-open、provider exhausted時も
+`completed_no_effect / provider_discovery_failed`をTelegram報告し、finallyでowned pageをreleaseする。
+
+minimal runner/factory/Harness focused suiteは18/18 GREEN。Item 10B/14は未完。次の一件はConnpass discovery内部の
+calendar navigation/binding read/detail navigation/detail normalizationへsafe error codeを付け、再foreground wakeでexact broken actionを特定すること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗208（Connpass safe stage diagnosis）
+
+Connpass calendar navigationのprivate browser errorがそのまま漏れるREDと、runner reportがgeneric
+`provider_discovery_failed`へ潰れるREDを確認した。default discoveryはcalendar navigation、calendar bindings read、detail navigation、
+detail read/normalizationの4境界をsafe codeへ変換する。元error message、URL、page text、credentialは保存・送信しない。
+
+runnerはallowlist済み4 codeだけをlowercase safe reasonとしてTelegramへ渡し、未知errorはgeneric reasonのままにする。
+Connpass workflow/minimal runner/production focused suiteは18/18 GREEN。実browser action/Submit/Calendar write/PNG作用は0。
+
+Item 10B/14は未完。次の一件はofficial foreground wakeを再実行し、safe stage codeで壊れたConnpass actionを一つに特定して修復すること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗209（Connpass same-event canonical redirect修復）
+
+safe diagnosis wakeはLuma成功後、Connpass discovery 815msでfailedしたが、provider isolationにより
+`completed_no_effect / provider_discovery_failed`をTelegram positive ID `8240`で報告し、owned leaseを解放した。Submit 0。
+終了後のread-only target URLはroot `connpass.com/event/393711/`で、calendarとdetail navigation/readまで到達したことを確認した。
+
+calendar bindingのgroup subdomain URLと、同じevent IDのdetail canonical root URLが異なるfixtureを追加し、旧exact URL一致がinvalidになるREDを確認した。
+両URLはそれぞれHTTPS Connpass allowlistで正規化済みのため、event refが同一ならdetail canonicalを採用する。event ID不一致は引き続き拒否する。
+Connpass workflow/discovery/minimal runner/production focused suiteは21/21 GREEN。
+
+Item 10B/14は未完。次の一件は同じofficial foreground wakeを再実行し、Connpass discovery継続と実candidate/action/readbackを観測すること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗210（Connpass canonical修復後のlive再検証）
+
+commit `84bb86ee5`でsame-event canonical redirect修復後、schedule unloadedのofficial foreground wakeを再実行した。
+Calendar read 2,978ms、Luma discovery 35,849msはsuccess。Connpass discoveryは1,055msでfailedし、
+`completed_no_effect / provider_discovery_failed`をTelegram positive ID `8241`で報告した。Submit、Calendar write、PNG、bundleは0。
+
+canonical host差だけが根因という仮説はliveで反証された。4つのwrapped browser stage codeにも該当しないため、残るfailure locationは
+calendar rows shape/size validation、calendar binding validation、またはdetail event-ref identity mismatchのparent validationに限定された。
+Item 10B/14は未完。次の一件はこの3validationを別safe codeへ分け、再wakeで一つを特定してそのactionだけを修復すること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗211（Connpass detail identity safe diagnosis）
+
+実pageがdetailまで到達後にgeneric parent validationで落ちたため、最有力のdetail event-ref mismatchだけを次の単一仮説とした。
+異なるevent IDへredirectするfixtureがgeneric invalidになるREDと、そのcodeがrunnerでgeneric reasonへ潰れるREDを確認した。
+
+event-ref mismatchは`CONNPASS_DETAIL_IDENTITY_MISMATCH_FAILED`へ変換し、runner allowlistから同じlowercase safe reasonをTelegramへ渡す。
+一致条件自体は緩めず、別eventへのredirectを候補として受け入れない。Connpass workflow/minimal runner/production focused suiteは20/20 GREEN。
+実browser、Submit、Calendar write、PNG作用は0。
+
+Item 10B/14は未完。次の一件はofficial foreground wakeを再実行し、identity mismatch仮説をliveで確認または反証すること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗212（Connpass identity仮説のlive反証）
+
+identity mismatch safe diagnosis後のofficial foreground wakeでもConnpass discoveryは779msでgeneric failureとなった。
+wakeは`completed_no_effect / provider_discovery_failed`、Telegram positive ID `8249`、Submit/Calendar write/PNG/bundle 0。
+終了pageは再びroot `connpass.com/event/393711/`。detail identity mismatch仮説はliveで反証された。
+
+calendar pageを離れてdetailへ到達しているためrows shape/size failureも除外できる。残るgeneric locationは複数binding内の後続binding validation、
+またはdefault discovery後のouter candidate validationに限定された。Item 10B/14は未完。次の一件はこの2境界だけを別safe codeへ分けること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗213（Connpass remaining parent validation diagnosis）
+
+calendar binding invalid fixtureとouter candidate invalid fixtureがどちらもgeneric invalidになるREDを確認した。
+前者を`CONNPASS_CALENDAR_BINDING_VALIDATION_FAILED`、後者を`CONNPASS_CANDIDATE_VALIDATION_FAILED`へ分離し、runner safe reason allowlistへ追加した。
+URL、event title、page text、raw errorは保存・送信せず、validation条件自体も緩めていない。
+
+Connpass workflow/minimal runner/production focused suiteは21/21 GREEN。実browser、Submit、Calendar write、PNG作用は0。
+Item 10B/14は未完。次の一件はofficial foreground wakeで二つのどちらが実failureか確定し、そのvalidationだけを修復すること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗214（runner provider candidate contract diagnosis）
+
+workflow全throw path監査で、workflow成功後のrunner `verifiedCandidates`が未分類境界として残っていることを確認した。
+malformed candidate fixtureがgeneric discovery failureになるRED後、`PROVIDER_CANDIDATE_CONTRACT_FAILED`を追加した。
+provider/canonical URL/event ref contract failureは次providerへ継続し、safe reason `provider_candidate_contract_failed`だけをTelegramへ送る。
+candidate内容、URL、title、raw errorは保存・送信しない。
+
+Connpass workflow/minimal runner/production focused suiteは22/22 GREEN。実browser、Submit、Calendar write、PNG作用は0。
+Item 10B/14は未完。次の一件はofficial foreground wakeでgeneric failureがparent candidate contractかを確認すること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗215（Connpass remaining contract diagnosis complete）
+
+parent candidate contract診断後のlive wakeも865msでgeneric failure、Telegram positive ID `8254`、Submit 0となり、その仮説も反証された。
+全throw pathを行単位で再監査し、未分類runtime contractはcalendar rows shape/size、discovery result shape/size、Calendar conflict checkerに限定した。
+
+3 fixtureがgenericになるRED後、それぞれ`CONNPASS_CALENDAR_ROWS_CONTRACT_FAILED`、
+`CONNPASS_DISCOVERY_RESULT_CONTRACT_FAILED`、`CONNPASS_CALENDAR_CONFLICT_CHECK_FAILED`へ分離し、runner allowlistへ追加した。
+条件は緩めず、raw values/errorは保存・送信しない。Connpass workflow/minimal runner/production focused suiteは23/23 GREEN。
+
+Item 10B/14は未完。次の一件はofficial foreground wakeでexact safe stageを得て、その一箇所だけを修復すること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗216（Connpass calendar noise root cause and fix）
+
+全remaining contract診断後のlive wakeでexact reason `connpass_calendar_rows_contract_failed`を取得した。
+Calendar read 2,636ms、Luma discovery 33,976ms、Connpass failure 947ms。Telegram positive ID `8260`、Submit 0。
+root causeはConnpass calendarのraw event anchorsが500件超で、14日filter前のcapが全体を拒否したこと。
+
+501件の14日外noiseと1件の有効binding fixtureを先に追加し、旧実装がrows contract failureになるREDを確認した。
+raw rowsは最大5,000でfail-closed、先に14日filterとevent-ref dedupeを実行し、その後のeligible bindingsは最大500のままにした。
+無制限化せず、candidate detail churnも14日内最大500に制限する。Connpass workflow/discovery/minimal runner/production focused suiteは26/26 GREEN。
+
+Item 10B/14は未完。次の一件はofficial foreground wakeでConnpass discoveryがroot causeを越え、実candidate/action/readbackへ進むか確認すること。
+scheduleはunloadedを維持する。
+
+### O1B-25進捗217（Connpass detail contractのpublic field分離）
+
+進捗216のcalendar noise修復後、live wakeの最後のsafe failureは`connpass_detail_read_failed`だった。
+このcodeはdetail normalizationの全失敗を一つに潰しており、どのpublic fieldが壊れているか親コードから判別できなかった。
+
+`normalizeConnpassEventDetail`をfield別にfail-closedへ分離した。
+title empty/300超は`CONNPASS_DETAIL_TITLE_INVALID_FAILED`、start不正は`CONNPASS_DETAIL_START_INVALID_FAILED`、
+end不正は`CONNPASS_DETAIL_END_INVALID_FAILED`、`end <= start`は`CONNPASS_DETAIL_RANGE_INVALID_FAILED`とする。
+`connector-connpass-workflow.js`のdetail catchはこの4 codeだけをpreserveし、それ以外のtransport/reader failureだけ`CONNPASS_DETAIL_READ_FAILED`にする。
+`connector-minimal-runner.js`のsafe discovery allowlistへ同4 stageを追加し、every-wake reportで正確なstageが出るようにした。
+
+保存・送信するのはstage code名だけで、fieldの値、DOM、raw JSON-LD、個人情報は保存しない。
+Connpass discovery/workflow/minimal runner/production focused suiteは27/27 GREEN。
+
+Item 10B/14は未完。実registration evidenceは0のままで、Submit 0、Calendar write 0、PNG/applied_bundle 0。
+次の一件はscheduling disabledのままofficial foreground runnerを実行し、新しいexact failure codeを取得すること。scheduleはunloadedを維持する。
+
+### O1B-25進捗218（Connpass detail titleの現行公開DOM修復）
+
+進捗217後のofficial foreground wake `wake-87a44a029ad3077540cf6485`をscheduling disabledのまま実行した。
+Calendar read 2,632ms success、Luma discovery 36,099ms success、Connpass discovery 1,500ms failed。
+exact safe reasonは新codeの`connpass_detail_title_invalid_failed`で、field分離が意図どおり機能した。Submit 0、Calendar write 0。
+
+現行公開DOMをread-onlyで実測した。Connpass detailページは`application/ld+json`を0ブロックしか持たず、
+`<time datetime>`も0で、先頭`<h1>`はsite headerのためtextが空だった。旧実装のtitle源`event.name || h1`は両方nullになる。
+実際のtitleは`h2.event_title`内の`div.current_event_title`にある（実測: `明るい宇宙農村 第31作`）。
+
+壊れている一箇所だけを直し、title源を`event.name || .current_event_title || h1`にした。start/end/rangeとeligibility条件は緩めていない。
+JSON-LD無し・空h1・`.current_event_title`ありのREDを先に確認し、focused suiteは28/28 GREEN。
+
+Item 10B/14は未完。実registration evidenceは0、Submit 0、Calendar write 0、PNG/applied_bundle 0。
+次の一件は同じofficial foreground runnerを再実行し、title通過後の次のexact failure codeを取得すること。scheduleはunloadedを維持する。
+
+### O1B-25進捗219（Connpass detail hCalendar start fallback修復）
+
+現行Connpass detailはJSON-LD `startDate` が存在しない場合があり、既存の `starts_at: null` が親の `CONNPASS_DETAIL_START_INVALID_FAILED` を発生させていた。
+回帰テストを先に追加し、`node --test apps/life-manager/lib/connpass-browser-discovery.test.js` のREDで6件中5件pass・1件fail（hCalendar fallbackの期待値が実際null）を確認した。
+
+`readEventDetail`内に属性ヘルパーを追加し、`starts_at: event.startDate || attr(".dtstart .value-title", "title")` とした。属性値はtrimし、要素または属性が空/欠落ならnullを返す。既存JSON-LD `event.startDate`優先、`normalizeConnpassEventDetail`のfail-closed検証、`dtend`およびその他のworkflowは変更していない。
+GREENは `node --test apps/life-manager/lib/connpass-browser-discovery.test.js apps/life-manager/lib/connector-connpass-workflow.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js` で30/30 pass・0 fail。live E2Eはprimaryによる検証待ちで、実registration evidenceは未取得のまま。
+
+### O1B-25進捗220（Connpass detail hCalendar end fallback修復）
+
+進捗219のstart fallback後に実行されたproduction wake `wake-4b2120875dc0761f8be5e813` は、正確なsafe reason `connpass_detail_end_invalid_failed` で終了した。これはJSON-LD `endDate` 欠落時に親のend validation境界へ到達したことを示す。
+回帰テストを先に追加し、`node --test apps/life-manager/lib/connpass-browser-discovery.test.js` のREDで8件中7件pass・1件fail（hCalendar dtend fallbackの期待値が実際null）を確認した。dtend要素欠落のstarts/ends fixtureと既存テストは通過した。
+
+`readEventDetail`の既存属性ヘルパーを再利用し、`ends_at: event.endDate || attr(".dtend .value-title", "title")` とした。属性値はtrimし、要素または属性が空/欠落ならnullを返す。JSON-LD `event.endDate`優先、`normalizeConnpassEventDetail`とerror code、workflow/runner/action harnessは変更していない。
+GREENは `node --test apps/life-manager/lib/connpass-browser-discovery.test.js apps/life-manager/lib/connector-connpass-workflow.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js` で32/32 pass・0 fail。live end E2Eはprimaryによる検証待ちで、実registration evidenceは未取得のまま。
+
+### O1B-25進捗221（Connpass detail hCalendar start/end production E2E）
+
+parser repairのcode commitはstart `7ae7ea12a`、end `712a90a01`。official launchd run 61（wake `wake-532e937b61455bbd420e4380`）を実行し、Connpass detailのstart/end fallbackを含むproduction discoveryが完走した。
+action historyは`calendar_busy success 3215ms`、Luma `provider_discovery success 37775ms`、Connpass `provider_discovery success 3846ms`。最終reportは`completed_no_effect / providers_exhausted / consecutive_failure_count 0`（`2026-08-09T13:24:25.801Z`）、Telegram deliveryはprovider message ID `10035`（`2026-08-09T13:24:49.576Z`）。
+
+Luma auditはobserved 29、normalized 29、window 14、free_open 2、calendar_free 0で、Calendar競合によりeligible applicationが無かったことを支持する。Connpass candidate countは直接記録されていないため主張しない。`connpass_detail_start_invalid_failed` と `connpass_detail_end_invalid_failed` はこのwakeにいずれも出現せず、両provider discovery actionはsuccessだった。providersがeligible candidateを返さなかったため、submit/navigation/readbackは発生していない。
+
+`native-pass.js`は`applied_bundle`の場合だけ意図的にexit 0するため、`completed_no_effect`でlaunchdのlast exitが1になるのは現在の明示contractであり、新しいexceptionの証拠ではない。current stderrのmtimeはこのrunより前で、このrunによる新規stderr書き込みはない。
+このproduction E2EによりConnpass detail parser bug（start/end fallback）は閉じたが、Item 10B/14と実registration evidence（Submit、Calendar write、PNG、applied_bundle）は未完のまま。より大きいapplication objectiveは完了扱いにしない。
+
+### O1B-25進捗222（orphaned target lease lockの自動回復とproduction再検証）
+
+2026-08-10のpreflightで、3つのConnector launchd plistが削除済みworktreeを参照し、Nativeが`EX_CONFIG`を反復していた。branch `feature/connector-native-completion` のexact HEAD `6456a0f3f6c55eeb8ef33c4bda7ac7810ae26536`へ同じlinked worktree pathを復元し、依存を再構築した。parser focused baselineは32/32 GREEN、Native/healthcheck/Healerはunloaded、CloakBrowser `:9222`はhealthyだった。
+
+最初のofficial wake `wake-55fb5b982b1453dead2c7287` はCalendar read success後、provider discovery actionを作る前にexit 2となった。production evidenceには2026-08-09 22:45:07 JSTから残る0-byte `target-leases.json.lock` があり、対応するConnector processは0だった。`withLedgerLock()`が`wx`の`EEXIST`を永久busyとして扱うため、orphaned legacy lockが全browser rail openを停止していた。
+
+TDD REDはtarget lease 9件中7 pass/2 failで、stale zero-byte lockを回収できず、finallyが置換済みlockを消すことを固定した。修復commit `a435c14ce` はO_EXCL/mode 0600を維持し、schema version、PID、unguessable owner token、acquired timestampをlockへ書く。10分超かつowner PID deadの場合だけ一回回収し、legacy empty/unparseable lockはmtimeでageを判断する。fresh lockとlive PIDは奪わず、releaseはexact owner token一致時だけunlinkする。GREENはtarget lease 9/9、Connpass parser/workflow/minimal runner/productionを含むfocused suite 41/41、diff check 0件。
+
+修復後のofficial launchd run 1、wake `wake-88fce9dad21004d03804283c` はstale lockを自動回収し、Calendar `success 2929ms`、Luma discovery `success 32517ms`、Connpass discovery `success 3849ms`まで完走した。最終reportは`completed_no_effect / providers_exhausted / consecutive_failure_count 0`、Telegram provider message IDは`10298`。lockはrun後absentで、3つのConnector labelは再びunloaded。Submit、Calendar write、candidate attempt、applied bundleの増分は0。
+
+Luma aggregateはobserved 30、normalized 30、14日window 16、free/open 4、calendar-free 0。公式と同じCalendar readerとowned pageによるread-only再測定で、4件すべてが実timed予定と重複した。対象は8月18日Japan-Taiwan Innovation Summit Day 1（conflict 3）、8月19日同Day 2（4）、8月19日偏愛ナイト（1）、8月23日ライフセーバーと海を楽しもう（1）。したがって今回の0申込はparser/browser failureではなく、非衝突候補0による正しいsafe no-effectである。Item 10Bの新規`registered`/`pending` evidenceは外部候補条件が満たされていないため未完のまま維持し、Calendar gateは緩めない。
+
+### O1B-25進捗223（SSOT current-state consistency reconciliation）
+
+2026-08-10 JST、現行実装SSOTを履歴と突合し、現在の14日・無料/Calendar非衝突acceptance、productionのexact 2 provider（Luma → Connpass）、
+Items19/20の将来provider拡張、最新wake `wake-88fce9dad21004d03804283c` / Telegram provider ID `10298`、lock absent、3 label unloadedを一つのcurrent-stateへ統合した。
+旧rolling-21、全6 provider、5分schedule、過去run番号は履歴として残し、現行status・completion gateと分離した。これはdocumentation-onlyのreconciliationであり、runtime/code behaviorの変更はない。
+
+### O1B-25進捗224（Ponytail full / Connector architecture実装照合）
+
+Ponytail `full`でproduction entrypointから`run.sh`、minimal runner、provider router、Browser Harness、evidence chain、wake reportまでを再トレースした。
+別architecture文書は作らず、GitHub上の既存SSOT冒頭へ現行full flowを一枚で統合した。候補gateはagent判断ではなく決定論的であり、
+bounded action proposerの実provider/modelはCodex `gpt-5.6-terra`、現行proposerとminimal `applied_bundle` chainはLuma専用である。
+Connpassはdiscovery/direct action配線済みだが、fallbackとbundleのproduction接続・live acceptanceはItem14の未完境界として明示した。
+runtime、schedule、provider設定、外部stateは変更していない。
+
+### O1B-25進捗225（Item 10B fresh foreground wake / Connpass eligibility audit plan）
+
+Ponytail `full`とSuperpowers systematic debuggingでofficial foreground entrypointをfresh実行した。wake
+`wake-09de6a1e9ab465b938ff29dd`はCalendar `success 2397ms`、Luma discovery `success 30916ms`、
+Connpass discovery `success 3615ms`で、`completed_no_effect / providers_exhausted / consecutive_failure_count 0`、
+Telegram provider ID `10325`だった。Luma aggregateはobserved 30、normalized 30、14日window 16、free/open 4、
+Calendar-free 0で、Submit/Calendar write/applied bundle増分0。lockは終了後absent、3 labelsはunloadedを維持した。
+
+コード故障ではなく現在のLuma外部候補条件がItem 10Bを成立させない一方、Connpassはgate別aggregateを保存しないため、
+成功discovery後の0件理由を証拠から特定できない。候補条件を緩めず、既存Luma auditと同型のprivacy-safe 5-count Connpass auditだけを
+追加する実装planを`docs/superpowers/plans/2026-08-10-connector-connpass-eligibility-audit.md`へ固定した。
+これはItem 10B/14のroot-cause diagnosisであり、いずれのcompletionも前倒ししない。
+
+### O1B-25進捗226（Connpass eligibility audit GREEN / production root cause確定）
+
+Lunaがplan `2026-08-10-connector-connpass-eligibility-audit.md`をTDD実装した。REDはworkflow 9 pass / 1 fail、
+operations 3 / 1、production 6 / 1で、callback・persistence・factory wiringの欠落をそれぞれ再現した。commit `6c99f9abc`は
+Connpass workflowへ既存gate順の5-count callback、operationsへmode `0600` append-only `connpass-discovery-audits.jsonl`、
+production factoryへ内部callback wiringを追加した。Sol fresh regressionは30/30 pass、task review/final reviewはCritical 0・Important 0。
+
+同commitのofficial wake `wake-44d1f986c595554429c6ea29`はLuma `30→30→16→4→0`、Connpass `6→6→6→0→0`を
+同一lineageへ保存し、`completed_no_effect / providers_exhausted / failures 0`、Telegram ID `10332`で完了した。
+Submit/Calendar write/bundle増分0、audit mode `0600`、locks absent、3 labels unloaded。これにより現時点の0申込は、
+LumaではCalendar conflict、Connpassではfree/open 0という外部候補条件であり、discovery code故障ではないと確定した。
+
+**Current execution cursor override:** Calendar gateや無料条件を緩めず、Item 10B/14を未完のまま、Item19先頭のPeatix provider sliceだけを
+10B unblockerとして先行する。Peatixでeligible candidateを得たら同じofficial runnerのSubmit→parent readback→evidence chainへ接続し、
+10B/14のlive acceptanceへ戻る。Meetup以降、schedule、restart、mergeはPeatix slice完了前に開始しない。
+
+### O1B-25進捗227（Peatix public discovery measured contract / TDD plan）
+
+Connector-owned一時targetでPeatixをread-only実測した。東京検索は`a.event-card`からcanonical `/event/<id>`を返し、detail page内の
+`/event/<id>/get_view_data`は`status`、`isOpen`、`isFinished`、Tokyo wall-clock `datetime/datetimeEnd`、`tickets[]`を公開JSONで返す。
+無料券の実測差分は、利用可能例が`price 0 / status 10 / seatsAvailable > 0`、締切済み例が
+`price 0 / status 100 / seatsAvailable 0 / salesEnds経過`だった。従ってキーワード「無料」や`price 0`だけを申込可能性として扱わず、
+event open、ticket status、在庫、sales deadlineを同時gateにする。
+
+Ponytail `full`で範囲を二ファイルのdiscovery-only sliceへ削った。plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-discovery.md`は一つのowned pageでsearch→same-origin public JSONを読み、
+exact identity、14日window、free/open、Calendar conflict、privacy-safe 5-count auditをTDD固定する。Submit、OTP、readback、evidence、
+production router、registry promotion、scheduleは含めない。live read-only auditとfresh reviewが通るまで`DEFAULT_PROVIDERS`は
+`["luma", "connpass"]`を維持し、Peatixをproduction supportedと表示しない。
+
+### O1B-25進捗228（Peatix public discovery GREEN / live gate evidence）
+
+Lunaがplan `2026-08-10-connector-peatix-discovery.md`をTDD実装した。初回REDはmodule不在、初回GREENは6/6だったが、
+fresh Sol reviewとofficial one-target read-only auditがPeatix実payload wrapper、search render false-zero、unique cap順序を反証した。
+同じLunaへ戻したfix `68781d94c`はstrict `json_data.event`、render wait、canonical dedupe後100 unique capを追加した。
+次のlive auditで実名称keyが`event.name`であることと、実empty markerが`.search-results .no-results`であることを測定し、fix
+`c53ae4666`は未計測`title` aliasを除去して、`a.event-card, .search-results .no-results`のbounded waitと真の0件auditを追加した。
+
+最終focusedは7/7、Luma/Connpass/Peatix/runner regressionは33/33、fresh Sol final reviewはCritical 0・Important 0でship。
+同commitのofficial Connector railによる実Calendar付きread-only auditは、owned session/target/page各1でPeatix
+`observed 20 → normalized 20 → 14日window 3 → free/open 1 → Calendar-free 0`を観測した。external write 0、
+candidate 0、終了後lock absent。従ってdiscovery code故障は解消し、現queryの0申込理由は唯一のfree/open候補がCalendar conflictである。
+PeatixはまだSubmit/readback/evidence未実証なのでproduction provider順とregistryを変更せず、次cursorは同じpublic JSON gateを保った
+bounded search coverage拡張で別のCalendar-free候補を探し、その後だけPeatix auth→submit sliceへ進む。
+
+### O1B-25進捗229（Peatix transient false-zero correction / bounded XHR coverage plan）
+
+進捗228後のbounded pagination probeで、Peatixの`.search-results .no-results`は非空検索のXHR完了前にも一時表示されるため、
+DOM union selectorだけでは再び0件を正常扱いし得ると判明した。response完了後の実測はpage 1–5のすべてでpayload 20、DOM cards 20、
+no-results 0であり、事前のpage 1/2 DOM 0は真の空結果ではなかった。従って進捗228のpage-1 live countはそのrunでは正しいが、
+現readerのreadiness contractは全timingで十分ではない。
+
+公式frontend bundleとbrowser responseをread-only実測し、page route `dr=YYYY-MM-DD:YYYY-MM-DD`が公開XHR
+`/search/events?dr=range&dr_from=...&dr_to=...&p=N&size=20`へ変換され、JSON `json_data.events[]`がpositive event IDを返すことを確認した。
+plan `docs/superpowers/plans/2026-08-10-connector-peatix-bounded-coverage.md`はDOM readinessを削除し、responseをnavigation前から待つ。
+今日からday 13、20件×最大5ページ、100 uniqueに限定し、detail/free/open/Calendar gateは変更しない。Submit、production order、registry、
+scheduleは変更せず、このcorrectionのfresh review/live audit完了後にのみPeatix auth/submitへ進む。
+
+### O1B-25進捗230（Peatix bounded XHR coverage GREEN / live eligible candidate）
+
+Lunaがplan `2026-08-10-connector-peatix-bounded-coverage.md`をTDD実装し、Peatix discoveryをDOM readinessから
+navigation前に待機する公開`/search/events` responseへ置き換えた。REDは5/11 pass・6 fail、GREENはfocused 11/11、
+Luma/Connpass/Peatix/provider regression 37/37。fresh Sol reviewはCritical 0・Important 0・Minor 0でshipと判定した。
+実装commitは`df31b2dcb`で、provider順、registry、Submit、scheduleには変更を加えていない。
+
+同commitのofficial Connector railを実Google Calendar inventory付き、owned session/target/page各1、external write 0でread-only実行した。
+実aggregateはPeatix `observed 100 → normalized 100 → 14日window 87 → free/open 61 → Calendar-free 22`。
+search順の最初の候補はevent `5075819`、2026-08-21 19:00–20:30 JST、一般無料券`price 0 / status 10 /
+seatsAvailable 45`で、実Calendar非衝突だった。終了後はPeatix target 0、owner lock absentを確認した。診断用NodeのCDP接続だけが
+target/lease cleanup後もevent loopを保持したため、その診断process自身へCtrl-Cしたが、browser/sessionやproduction processは停止していない。
+
+これによりPeatixのeligible candidate探索は閉じた。一方、account auth、Submit、parent readback、Calendar write、PNG、Telegram、
+`applied_bundle`はまだ0なので、Peatixをproduction supportedへ昇格せず`DEFAULT_PROVIDERS = ["luma", "connpass"]`を維持する。
+次cursorは所有アカウントのauthを確立し、event `5075819`を先頭にPeatix Submit→parent readback→evidence chainを最小sliceで閉じる。
+
+### O1B-25進捗231（Peatix owned account auth / measured checkout boundary）
+
+既存のConnector GmailとCalendar GmailはいずれもPeatix email loginでaccount-not-foundだったため、同じ所有Calendar Gmailで
+Peatix accountを新規作成した。氏名はprivate profileから読み、生成passwordはmacOS Keychain `peatix.com`へ保存し、repo/state/logへ
+private valueを保存していない。signupのreCAPTCHAをその場で通過後、実pageはPeatix user dashboardへ遷移し、logged-in
+`マイチケット`とaccount dashboardをreadbackした。外部event registration、Calendar write、evidence bundleはこのauth工程では0。
+
+同じowned pageでevent `5075819`のcheckoutをfinal Submit直前までread-only測定した。実flowは
+`/sales/event/5075819/tickets`の無料券input `number_of_tickets_6536845`→`#next-button`→`/form`の必須氏名・account email・
+organizer privacy確認→`#form-submit-button`→`/confirm`の唯一の外部申込境界`#confirm-button / チケットを申し込む`。
+最終buttonは押しておらず、Submit 0を維持する。
+
+Ponytail `full`で最初の実装をbrowser provider二ファイルへ限定した。plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-direct-submit-readback.md`は、exact event/ticket identity、explicit privacy consent、
+unknown required field fail-closed、final click at most once、click後のsame-event parent readbackをTDD固定する。login/CAPTCHA、generic form AI、
+production router、evidence、scheduleは含めない。次cursorはLunaによるこのprovider RED→GREENとfresh Sol reviewである。
+
+### O1B-25進捗232（Peatix direct browser provider GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-direct-submit-readback.md`をTDD実装した。初回REDはmodule-not-found、0 pass・1 fail。
+初稿GREEN後のPonytail gateで687 LOCの汎用化を棄却し、実測三画面だけへproduction 97 LOC・test 71 LOCまで縮約した。
+最終focusedは5/5、Peatix/Luma/Connpass/runner regressionは42/42、`node --check`と`git diff --check`もpass。
+最終commitは`80ed90662913d5427c36574d31ec1d064d242990`。
+
+fresh Sol reviewと実canonical-page preflightは、full candidate gateを迂回する簡略object、pathだけのconfirm照合、runnerが渡す
+`/event/<id>`からticketsへ進めない停止、`https://peatix.com:444`をexact originと誤認する4件を発見した。同じLunaがすべて修正し、
+final reviewはCritical 0・Important 0でship。現在のproviderはfull Peatix/free/open/ticket identity、exact HTTPS origin/port/userinfo/query/hash、
+same-event canonical開始、unknown required fieldのpre-submit停止、final click最大1、exact event/ticket markerのpost-click readbackを固定する。
+
+この進捗ではproduction workflow/router/orderへ未接続なので外部Submit、Calendar write、PNG、Telegram bundleは0。
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-workflow-submit.md`は、公開detailのusable free ticket IDをcandidateへ運び、
+既存Peatix workflowからreview済みproviderのdirect action/readbackへdelegateする二ファイルsliceである。
+
+### O1B-25進捗233（Peatix workflow Submit/readback integration GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-workflow-submit.md`をTDD実装した。初回REDは13件中10 pass・3 failで、
+ticket identity欠落、`runDirectAction`未定義、`readProviderState`未定義を検出した。初稿GREEN後のfresh Sol reviewは、
+discovery用の緩いcandidate validationをactionでも再利用したため、closed、paid、cross-event、numeric ticketでも
+private profile/providerへ到達し、注入providerの`registered`を`completed`へ誤昇格できるImportantを発見した。
+
+同じLunaがprofile/provider呼出し前のstrict `actionCandidate`を追加し、Peatix provider、event ref/canonical同一ID、exact HTTPS origin、
+available/free/0、string positive ticket ID、title/time rangeを固定した。無効5種はprofile/submit/readback call 0。
+最終commit `ba2d0c5ce86727b351a518768a6ee3647435ea80`、focused 14/14、Peatix/Luma/Connpass/runner regression 45/45。
+fresh Sol re-reviewはCritical 0・Important 0でshipした。公開detailのsource順で最初のusable free ticket IDをcandidateへ保存し、
+discoveryだけではprivate profileを読まず、direct action時だけin-memory profileをproviderへ渡す。
+
+まだofficial operationsにPeatix aggregate audit sinkがなく、production router/native provider順にも未接続なので、Submit、Calendar write、
+PNG、Telegram bundleは0。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-discovery-audit.md`は既存5-count validatorを再利用し、
+`peatix-discovery-audits.jsonl`へ同一wake lineageのmode 0600 rowだけを追加する最小sliceである。
+
+### O1B-25進捗234（Peatix aggregate discovery audit GREEN / review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-discovery-audit.md`をTDD実装した。REDは4/5 pass・1 failで
+`recordPeatixDiscoveryAudit`未定義を検出し、既存`safeDiscoveryAudit`とappend-only writerを再利用する7 net LOCのproduction差分で閉じた。
+commit `cdf8758bf`、operations/production regression 12/12、`node --check`、`git diff --check` pass。
+fresh Sol reviewは正しい`peatix-discovery-audits.jsonl`、wake ID/timestamp、invalid orderingの非追記、mode 0600、
+保存fieldが5件数とlineageだけでprivate/provider detail 0であることを確認し、Critical 0・Important 0でshipした。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-production-router.md`は既存production factory/routerへPeatix workflow、
+workflow version、audit callback、lazy in-memory attendee profileを接続する。native `DEFAULT_PROVIDERS`はevidence chain完成まで
+`["luma", "connpass"]`を維持するため、この進捗でもSubmit、Calendar write、PNG、Telegram bundleは0。
+
+### O1B-25進捗235（Peatix production factory/router GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-production-router.md`をTDD実装した。REDは9件中7 pass・2 failで、
+Peatixがselected provider外であることを検出した。既存factoryにPeatix workflowを一度だけ生成し、third route、
+`peatix_registration_v1`、aggregate audit callback、direct action時だけ評価するin-memory attendee profileを追加した。
+commit `8c40002fc`、指定production/operations/workflow/provider/runner regression 42/42、`node --check`、`git diff --check` pass。
+
+fresh Sol reviewは同一pageのcache/direct/readback、Peatix audit、profileのdiscovery時0回/direct時1回・出力非漏洩、unknown provider fail-closed、
+既存Luma/Connpass/Browser Harness不変、native `DEFAULT_PROVIDERS`不変を確認し、Critical 0・Important 0でshipした。
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-evidence-store.md`は、exact Peatix event identityとregistered-page PNGだけから
+tenant-scoped immutable provider receipt/artifactを保存する二ファイルsliceである。evidence chain/native order未接続なので外部作用は引き続き0。
+
+### O1B-25進捗236（Peatix evidence store adversarial GREEN / final review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-evidence-store.md`をTDD実装し、初回REDはmodule-not-found、focused GREEN 2/2、
+Luma/Connpass/Peatix store regression 5/5だった。fresh Sol adversarial reviewは初稿に、case-insensitive filesystemでのtenant大小文字横断、
+receipt tuple digest非再計算、構造を持たないsignature-only PNG受理、`exists→rename` TOCTOU、CRC/IDAT未検証を発見した。
+
+同じLunaがcanonical lowercase tenant、request tenant/event/time/artifactからのprovider ID再計算、exact `{sha256}` marker、
+`linkSync` atomic no-replace、全chunk CRC32、IHDR制約、bounded IDAT inflate、exact row length、filter 0–4を実装した。
+最終commit `6aa3e963b`、focused 2/2、3-store 5/5、構文/diff check pass。fresh Sol final reviewはtenant/digest/marker/atomicの
+adversarial tamperをすべて拒否し、実Playwright full-page PNG 1280×2421・63,727 bytesのrecord/read SHA一致を確認、
+Critical 0・Important 0でshipした。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-applied-bundle.md`は既存minimal evidence orchestrationをLuma/Peatixの
+exact identity/storeだけで分岐し、provider receipt、full-page PNG/SHA、Calendar create+readback、Telegram message/photo positive IDsを
+一つのimmutable `applied_bundle`へ束ねる。native order未接続なので、この進捗でも実application external effectは0。
+
+### O1B-25進捗237（Peatix applied bundle GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-applied-bundle.md`をTDD実装した。初回REDは3件中2 pass・1 failで、
+Peatix positiveだけが既存Luma-only gateに拒否された。既存orchestrationをprovider descriptorで最小分岐し、Peatix exact event ref/URL、
+registered-only、review済みPeatix store/receipt、Calendar create+独立readback、full-page PNG/SHA、Telegram message/photo positive IDs、
+immutable provider-specific bundleを接続した。
+
+fresh Sol reviewはLuma photo captionから`Connector:::`が落ちたbyte回帰と、URL parser正規化によりPeatixのdot-segment、`:443`、
+uppercase host、空白等をcanonicalとして受理するImportantを発見した。同じLunaがLuma message/caption完全一致を復元し、Peatix URLを
+primitive raw string `https://peatix.com/event/<same-positive-id>`との厳密比較へ変更した。攻撃8種はscreenshot/store/Calendar/Telegram/bundle
+call各0。最終commit `513a9ff34`、focused 4/4、指定回帰26/26、fresh Sol re-reviewはCritical 0・Important 0でshipした。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-private-identity-loader.md`は既存private envの
+`DAIS_LEGAL_NAME_ROMAJI`一keyだけをConnector closed allowlistへ追加する。native order未接続なのでこの進捗でも外部application effectは0。
+
+### O1B-25進捗238（Connector private attendee loader GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-private-identity-loader.md`をTDD実装し、closed allowlistへ既存private env key
+`DAIS_LEGAL_NAME_ROMAJI`を一つだけ追加した。初稿reviewはparserがNUL/CR/LF以外の埋め込みC0を受理するImportantを発見し、
+同じLunaが全allowlisted値を`[\x00-\x1f\x7f]`でfail-closedへ修正した。最終commit `47554f660`、focused/native 6/6、
+Connector全体23/23。fresh Sol re-reviewは全33 C0/DEL合成値拒否、unknown secret/token除外、実env値の読取/出力/変更0を確認し、
+Critical 0・Important 0でshipした。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-native-foreground.md`はnative configで既存private
+`DAIS_LEGAL_NAME_ROMAJI + GOG_ACCOUNT`からin-memory attendee profileを構築し、official foreground provider順を
+`Luma → Connpass → Peatix`へ変更する。scheduleはunloadedを維持し、このplanの実装testでは外部application effect 0。
+
+### O1B-25進捗239（Peatix native foreground wiring GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-native-foreground.md`をTDD実装し、official foreground provider順を
+`Luma → Connpass → Peatix`へ変更した。既存private envの`DAIS_LEGAL_NAME_ROMAJI + GOG_ACCOUNT`だけから
+凍結attendee profileをin-memory構築し、Peatix dependency factoryへの入力に限定した。private値はwake settings、JSON、
+logへ保存しない。欠落・不正email・不正氏名はdependency factory前にfail-closedする。
+
+初回commit `9e347e013`のfresh Sol reviewはnative氏名上限2,000文字とPeatix provider上限200文字の不一致をImportantとして発見した。
+同じLunaが201文字をfactory前に拒否する回帰を追加し、commit `b1f9de00c`で境界を200文字へ一致させた。re-reviewは200文字で
+factory/wake各1、201文字で各0を実測し、Critical 0・Important 0でshipした。focused 5/5、指定回帰29/29、`node --check`、
+`bash -n`、`git diff --check`は全PASS。schedule/launchd変更と外部application effectは0。
+
+次の一件はschedule unloadedのまま`skills/connector/run.sh`をofficial foreground wakeとして一度だけ実行し、実Peatix候補の
+Submit→parent readback→Calendar→PNG/SHA→Telegram→immutable applied bundleを同一lineageで実測する。post-click ambiguity時は
+再Submitせず、同じregistrationのreadbackと不足artifact recoveryだけを修復する。
+
+### O1B-25進捗240（Peatix official foreground wake / circuit-open diagnosis）
+
+schedule unloadedのままofficial `skills/connector/run.sh`を一度foreground起動した。wake
+`wake-f75b5ddac08c7f35ff9f6a46`のPeatix aggregateは`100 → 100 → 87 → 61 → 21`で、実eligible candidateは存在した。
+先頭3候補はいずれもpre-submit provider readback後にdirect actionがnon-completedとなり、Peatix未対応のBrowser Harness fallbackも
+failed、3連続で`status=circuit_open / safe_reason=consecutive_failure_limit`となった。official runnerはexit 1。
+
+recovery Telegramはpositive provider ID `10466`。新規applied bundle、Calendar write、PNG evidenceは0。runner終了後はConnector process 0、
+lock absent、Connector-owned Peatix page 0で、scheduleはunloadedを維持する。action historyはdirect action内部のsafe reasonを保存しないため、
+現時点ではform/control認識失敗とfinal click後readback ambiguityをdurable evidenceだけで区別できない。再run/再Submitは行わず、次の一件は
+同じowned Peatix accountのdashboard/ticketをread-only測定し、今回の登録有無を先に確定する。登録済みならreceipt/readback recoveryだけ、
+登録0ならfinal Submit直前までのbounded診断で壊れたactionを一つに特定する。
+
+### O1B-25進捗241（Peatix circuit root cause / pre-submit privacy mismatch）
+
+同じCDP `:9222` contextでowned Peatix accountへ再loginした。passwordはKeychainから値非表示で利用し、CAPTCHAなしで成功。
+dashboard `attending_events`の実ticket APIは`count=0`で、wake 240による登録は0と確定した。event `5086816`を診断pageで
+final confirm前まで測定すると、free ticket、required visible name 1、email 1、unknown 0、form submit 1に対し、organizer privacy
+controlは0だった。実direct provider outcomeは`status=unavailable / reason=privacy_control_unavailable`、URLは同eventの`/form`。
+
+したがって3候補共通failureはpost-click ambiguityではなく、Peatix providerがprivacy controlを常に1個要求したpre-submit contract mismatch。
+final confirm、Calendar、Telegram application report、state/repo writeは診断中0。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-optional-privacy-control.md`はprivate profileの明示consent `true`を維持し、
+実formでcontrol 0なら続行、1ならcheck、複数ならfail-closedへ最小TDD修正する。scheduleはunloadedを維持する。
+
+### O1B-25進捗242（Peatix optional privacy control GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-optional-privacy-control.md`をTDD実装した。REDはprivacy control 0の実form fixtureが
+`privacy_control_unavailable`で停止する既存挙動を再現。commit `c0d62283a`はprivate profileの
+`accept_organizer_privacy=true`必須を維持し、control 0なら続行、1ならcheck、2以上ならfinal effect前にfail-closedへ変更した。
+production差分は2行、変更fileはproviderとfocused testの2つだけ。
+
+fresh Sol reviewはname/email、unknown required field、cross-event confirm、ambiguous readback、private値非露出も含めてCritical 0・
+Important 0でshipした。focused 6/6、指定回帰54/54、合成境界13/13、syntax、`git diff --check`は全PASS。
+次の一件はschedule unloaded、dashboard ticket count 0、Peatix auth復旧済みをpreconditionにofficial foreground runnerを再実行し、
+実registrationから同一lineageのapplied bundleまで完走させる。
+
+### O1B-25進捗243（Peatix foreground wake 2 / shared CDP profile recovery）
+
+official foreground wake `wake-86b8bc9ba54736f1ff436f1c`をschedule unloadedのまま実行した。Calendar、Luma、Connpass、Peatix
+discoveryは成功し、Peatix aggregateは`100 → 100 → 87 → 60 → 21`。先頭3候補はdirect non-completed、Peatix未対応の
+Browser Harnessもfailedし、`circuit_open / consecutive_failure_limit`でexit 1。recovery Telegram provider IDは`10478`。
+dashboardの実`attending_events` countは0、新規bundle、Calendar write、PNGは0。lock/page cleanupはPASS。
+
+read-only再診断中に共有CDP `:9222` ownerが起動直後SIGTRAPするprofile固有故障を発現した。empty profileでは同じwrapper/binaryが
+3/3安定する一方、canonical profileはcache 1.2GBとsession restoreを除外してもcrashした。CloakBrowser wrapperを公式最新0.5.6へ
+更新後も旧profileだけ再現したため、旧profileとcacheを削除せずlocal quarantineへ退避し、canonical pathへclean profileを作成した。
+復旧後は18秒4/4 probe、launchd running、runs 1、never exited、single about:blank pageを実測。旧Cookies/History/Local Storageは
+quarantineに保全している。次の一件はKeychainからPeatix authだけを復旧し、dashboard登録0確認後、official条件の先頭3候補を
+final confirmなしで測定してdirect non-completedの次のexact actionを特定する。
+
+### O1B-25進捗244（Peatix first-three form diagnosis / CSS selector root cause）
+
+clean `:9222` profileでPeatix authをKeychainから復旧し、dashboard ticket count 0、Calendar 89 timed / 0 all-dayをread-only確認した。
+official discovery再測定は`100 → 100 → 87 → 60 → 21`。先頭3候補をfinal confirmなしで診断した。
+
+- `5075819 / 6536845`: name 1、email 1、privacy 0、unknown 0。両fieldはid/nameあり・visibleだが、providerが特殊文字を含む
+  DOM idをraw `#${id}`へ直結し、Playwright selector construction error→`control()` null→`required_field_unavailable`。
+- `5099281 / 6515320`: name 1、unknown required 1、privacy 0→`unknown_required_field`。
+- `5104728 / 6525407`: email 1、unknown required 3、privacy 0→`unknown_required_field`。
+
+3件ともauth redirect、confirm到達、final click、registration、Calendar/Telegram/state writeは0。診断pageはcloseし、CDPはsingle
+about:blankを維持。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-css-id-selector.md`は先頭candidateを阻害する
+raw DOM id selectorだけをbrowser-native `CSS.escape`相当へ最小TDD修正する。後続2件のunknown question/Harnessはdeferする。
+
+### O1B-25進捗245（Peatix special DOM ID selector GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-css-id-selector.md`をTDD実装した。REDは`name[0]`/`email[0]`のvalid DOM idで
+raw selectorがrejectされ、focused 7件中6 pass・1 fail、exact result `required_field_unavailable`を再現。commit `20bc57e30`は
+form browser context内のid selector生成一行だけを`#${CSS.escape(n.id)}`へ変更し、空idのname attribute fallbackを維持した。
+
+fresh Sol reviewは角括弧、leading digit、引用符、backslash、空id fallbackを含む合成6 case、focused/workflow 21件、runner 9件を
+全PASSし、Critical 0・Important 0でshipした。重複/不足field、unknown required、cross-event confirm、ambiguous readbackは
+fail-closedを維持し、private出力とscope creepは0。次の一件はschedule unloaded、stable `:9222`、Peatix auth、dashboard count 0を
+preconditionにofficial foreground runnerを再実行し、先頭candidateのregistration→applied bundleを完走させる。
+
+### O1B-25進捗246（Peatix foreground wake 3 / organizer privacy radio root cause）
+
+official wake `wake-25b38794d36ad3e2f2933b51`をschedule unloadedで実行した。Peatix aggregateは
+`100 → 100 → 87 → 60 → 21`。先頭3候補はdirect non-completed、Peatix未対応Harness failedで
+`circuit_open / consecutive_failure_limit`、recovery Telegram provider ID `10515`。新規bundle、Calendar、PNGは0、cleanup PASS。
+dashboard `attending_events` countは0で、3候補とも未登録のためpost-click ambiguityはない。
+
+先頭`5075819 / 6536845`のpatched-equivalent診断はspecial ID escaping後にname/emailを正しくfillし、両fieldのDOM intended-value一致と
+HTML validity PASSを確認した。form submit後も`/form`に残り、公開errorは「必須項目にすべて入力してください。」。未選択controlは
+一択radio「確認し同意する。」で、input自体にrequired属性はないが親は`dl.field.required`。公開promptは主催者のprivacy policyを
+読んだ・確認した旨で、Peatix terms、marketing、data-sharing、event questionではない。final confirm clickとregistrationは0。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-organizer-privacy-radio.md`は既存private profileの
+`accept_organizer_privacy=true`を根拠に、この測定済み一択required privacy radioだけを検出・checkする。generic radioや他同意は
+fail-closedを維持する。
+
+### O1B-25進捗247（Peatix organizer privacy radio GREEN / adversarial review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-organizer-privacy-radio.md`をTDD実装した。REDは実測`dl.field.required`の一択privacy radioを
+checkせずform submitする挙動をfocused 8件中7 pass・1 failで再現。初稿`91b61cc5a`はprivacy prompt/optionを部分一致したため、fresh
+Sol reviewがprivacy+marketing、第三者提供、写真同意、「同意しない」、`I do not agree`までcheck/final effectへ進むImportantを発見した。
+
+同じLunaがadversarial REDを追加し、commit `510d019b4`でpromptを
+`^.+のプライバシーポリシーを読んだ・確認した$`、optionを`確認し同意する。`の正規化後完全一致へ限定した。re-reviewは5攻撃caseが
+全て`needs_fallback`、check 0、final 0、実測positiveだけregistered/check 1/final 1を確認し、Critical 0・Important 0でship。
+focused 9/9、指定回帰46/46、review suite 41/41、syntax、diff checkはPASS。
+
+`connector-native-runtime.test.js`の2件は親commitでも同一で、旧Connpass停止cursorを期待するtest debt。production/native runtime差分は0、
+現行required順`Luma → Connpass → Peatix`とはtest期待だけが不一致で、このprivacy sliceのintegration defectではない。次の一件は
+schedule unloaded、stable CDP、auth、dashboard count 0でofficial foreground runnerを再実行する。
+
+### O1B-25進捗248（Peatix foreground wake 4 / confirm Kana validation root cause）
+
+schedule unloadedでofficial wake `wake-ee7cb6e10d6aac929b40458b`を実行した。Peatix aggregateは
+`100 → 100 → 87 → 59 → 21`。先頭`5075819 / 6536845`はtickets、name/email、測定済みorganizer privacy radio、
+`/confirm`まで到達したが、最終作用後の登録readbackはなく、後続2候補もunknown required fieldで失敗し、3連続
+`circuit_open / consecutive_failure_limit`。recovery Telegram provider IDは`10541`。dashboard count 0、applied bundle、
+Calendar write、PNGは0、lock/page cleanupはPASS。
+
+同eventをregistration 0確認後にroute-abort付きで診断した。`#confirm-button`はvisible/enabled、direct jQuery click handler 1件、
+document ready complete。通常Playwright clickも一回のcancelable/bubbling `MouseEvent`もconfirm POST 0、URL/button/error不変だった。
+handlerを`HTMLFormElement.submit` stub付きで一回だけinstrumentすると、`$.fn.valid()`がfalse、`preventDefault` 1、submit 0。
+invalid fieldは`lastname_edit`と`firstname_edit`だけで、ruleは両方`required,kanaAlphabet`、公開errorは姓・名を全角カタカナで
+入力する要求だった。他controlのvalidityはtrue。wrapperは全復元し、dashboard count 0、診断page closeを確認した。
+
+したがってroot causeはclick方式ではなく、現private attendee profileがPeatix固有の姓・名カナを持たずconfirm formへ入力できないこと。
+既存private application evidenceにはフリガナlabel後の全角Katakana 2 segmentがあり、値を表示せず確認済み。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-kana-identity.md`はそれをmode-0600 private identity SSOTへ移し、
+native frozen profileへだけ渡す。推測transliteration、repo/state/logへの値保存、provider form変更はこのsliceで0。
+
+### O1B-25進捗249（Peatix private Kana identity boundary GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-kana-identity.md`をTDD実装した。REDはfocused 6件中4 pass・2 failで、
+factory profileの姓/名カナ欠落とidentity file欠損時の非fail-closedを再現した。production変更は`native-pass.js` 24行追加・1行変更、
+testは44行追加・3行変更の2 filesだけ。mode-0600 private identity SSOTから`candidate.name_kana.family/given`を読み、regular file、
+bounded size、exact mode、JSON shape、各1〜100文字の全角Katakana+長音を検証する。final path symlink、欠損、緩いmode、invalid JSON、
+empty、Hiragana、Kanji、Latin、digit、punctuation、control、overlengthはdependency/browser作成前にfail-closedする。
+
+既存application answerのlabelを除く2 segmentを値非表示でprivate SSOTへ移した。実fileはmode 0600、regular、family/given key、
+長さ3/4、character class valid。実値はrepo diff、test、wake input、result、Telegramへ0。factory profileだけが
+`family_name_kana/given_name_kana`を持ち、profile/configともfrozen、wake contractは不変。focused 6/6、syntax、diff check、
+実SSOTを使うbrowserなしfactory probeは全PASS。fresh Sol reviewはCritical 0・Important 0で`ship`。
+
+次の一件はPeatix providerがconfirm画面の測定済み`lastname_edit/firstname_edit`だけへprivate Katakana値をfillし、jQuery valid後に
+既存final boundaryを一回だけ実行する別2-file TDD slice。登録成功はclickで推定せず、parent readbackを維持する。
+
+### O1B-25進捗250（Peatix confirm Kana pre-submit proof / exact selector contract）
+
+private SSOT値をmemory内だけで使い、event `5075819 / 6536845`を専用owned pageでconfirmまで再現した。exact confirm POSTは
+route guard済みで、final click、handler、submitを0に固定した。validator field名は`lastname_edit/firstname_edit`だが、実DOM idは
+別の`lastname/firstname`で、推測id selectorは不存在。exact scoped name selectorでfamily/givenをfillするとintended-value equalityは
+true/true、長さ3/4、両rulesは`required,kanaAlphabet`、Peatix `#confirm-form`のjQuery `valid()`はtrue、error listは空になった。
+
+診断中のconfirm POST、registration、Calendar、PNG、Telegram application report、state/repo writeは0。dashboard HTTP 200、
+attending count 0、page closeを確認した。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-confirm-kana-fill.md`はprovider/profileとfocused testの2 filesだけで、
+実測name selectorへのfillとprovider validator trueをfinal clickのpreconditionにする。direct form submit、synthetic click、retry、
+推測selectorは作らず、registered判定は既存parent readbackだけを維持する。
+
+### O1B-25進捗251（Peatix confirm Kana fill GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-confirm-kana-fill.md`をTDD実装した。REDはfocused 10件中8 pass・2 failで、
+exact confirm name fieldの未fillとinvalid Kana profileの非fail-closedを再現した。production差分は16行追加・2行変更、test差分は
+16行追加・5行変更のprovider/test 2 filesだけ。private profile境界で姓/名カナを各1〜100文字の全角Katakana+長音へ限定し、
+exact `#confirm-form [name="lastname_edit"]` / `[name="firstname_edit"]`を各1回fillする。missing、duplicate、hidden、推測id drift、
+validator missing/false/throwはfinal click 0でprivacy-safe failure。Peatix自身のjQuery validationがtrueのときだけ既存final clickへ進む。
+
+成功判定はclick/validationから推定せず、同event/ticketのparent readbackだけを維持する。post-click ambiguousはclick 1でもnon-success、
+retry 0。focused 10/10、provider/workflow/minimal-production/native/renderer integration 40/40、syntax、diff checkはPASS。
+差分はsynthetic test値だけで実identityは0。fresh Sol reviewはCritical 0・Important 0で`ship`。
+
+次の一件はschedule unloaded、dashboard count 0をpreconditionにofficial foreground runnerを一度実行する。post-click ambiguityなら
+再Submitせずdashboard/provider readbackを先に行い、登録済みなら不足evidence recoveryだけ、未登録なら次のexact safe boundaryだけを修復する。
+
+### O1B-25進捗252（Peatix post-Kana official discovery failures / bounded retry plan）
+
+Kana fill ship後、schedule unloadedでofficial foreground wakeを3回観測した。全runでPeatix dashboard attending count 0、対象event/ticket
+marker 0、Peatix Submit/registration/Calendar/PNG/bundle 0。したがって重複外部作用はない。
+
+- `wake-d5ba56cd989efaaa5c0cb514`: Luma discovery成功、Connpass/Peatix discovery失敗。Peatix相当は30,827ms、reportは
+  `completed_no_effect / provider_discovery_failed`を書いたがOpenClaw gateway 10秒timeoutでdelivery 0。report exception後に残ったtargetは
+  owner ledgerとexact ID一致を確認してそのtargetだけcloseし、他browser pageは不触。
+- `wake-c139a5cef8be846e68f14261`: Luma/Connpass discovery成功、Connpass audit `6→6→6→0→0`、Peatix discoveryだけ13,201msで
+  失敗、Peatix audit 0。cleanup PASS、every-wake Telegram provider ID `10607`。
+- `wake-5219f5218de94c69ac3600ab`: Luma/Connpass/Peatix discoveryが331,991ms / 30,021ms / 13,591msで失敗。
+  actionはCalendar+discoveryだけ。最後のreportは古い未配信wake送信中のgateway timeoutでcurrent delivery前に停止、cleanup PASS。
+
+Peatix単独UI searchはHTTP200、exact `/search/events?p=1&size=20` JSON page1/20 rowsを1.7秒。専用同一pageの
+Connpass→Peatix遷移もUI HTTP200、exact JSONを4,298msで取得し、source/parser/response predicateは正常。official 3 failureは
+page1 navigation/readのtransientと確定した。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-page1-discovery-retry.md`は同じowned pageでpage1 transactionだけを一回即時retryする。
+5分retry、新page/target、timeout拡張、detail retry、Submit変更は0。report backlog transportはこのdiscovery slice後に別修復する。
+
+### O1B-25進捗253（Peatix page-1 same-page retry GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-page1-discovery-retry.md`をTDD実装した。REDはworkflow 17件中14 pass・3 failで、
+page1 read/navigation transient回復とbounded final failureの未実装を再現。test helper統合後のproduction差分は20行追加・10行変更、testは
+43行追加の2 filesだけ。既存waiter→goto→response→JSON transactionをprivate helperへ抽出し、page1の
+`PEATIX_SEARCH_NAVIGATION_FAILED` / `PEATIX_SEARCH_READ_FAILED`だけ同じpageで最大2 attemptにした。attemptごとにwaiterを新規作成し、
+row accumulationは成功後だけ。row contract、page2〜5、detail、candidate、Calendarはzero retry、safe code/order/dedup/100 capは不変。
+
+focused 16/16、workflow/minimal-production/minimal-runner/native/renderer integration 41/41、syntax、diff checkはPASS。network、Submit、
+browser/session/target作成、timeout/backoff、schedule変更は0。fresh Sol reviewはCritical 0・Important 0で`ship`。
+次の一件はschedule unloaded、dashboard count 0、owned page/lock absentでofficial foreground wakeを一度実行し、Peatix audit→candidate→
+direct action→parent readbackを観測する。登録済みなら再Submitせずevidence recovery、未登録なら次のexact safe boundaryだけを修復する。
+
+### O1B-25進捗254（current-wake report blocked by older pending / priority plan）
+
+Peatix page1 retryのofficial再実証前に、wake report transportをdurable stateから再監査した。`wake-d5ba...`はreport rowがあるが
+delivery rowがなくpending。`wake-5219...`の`reportWake`はreportsをoldest-firstで走査し、最初の`d5ba...`送信がOpenClaw gateway
+10秒timeoutになったため、current `5219...`を送る前にthrowした。current deliveryは0だが、report rowはappend済みで削除/破損はない。
+
+同じtransportは事前probeでpositive ID `10604`、別wake `c139...`でpositive ID `10607`を返しており、credential/channel故障ではなく
+old pendingとcurrent deliveryの順序結合がroot cause。次plan
+`docs/superpowers/plans/2026-08-10-connector-current-wake-report-priority.md`はcurrentを先に一回送ってpositive IDを確定後、oldest pending
+一件だけをbest-effort recoveryする。current失敗はhard failure、historical失敗はpending維持。JSONL削除/変更、Bot API、gateway restart、
+queue、backoff、browser/discovery/Submit/schedule変更は0。
+
+### O1B-25進捗255（current-wake report priority GREEN / adversarial review ship）
+
+Lunaがplan `2026-08-10-connector-current-wake-report-priority.md`をTDD実装した。初回REDはfocused 6件中4 pass・2 failで、
+historical送信failureのcurrentへの伝播とoldest-firstによるcurrent ID後回しを再現。current reportを先に一回送って実positive IDを保存後、
+oldest pending一件だけをbest-effort送信するよう変更した。current failureはhard、historical failureはreceiptを作らずpending維持、duplicate
+currentは再送0、JSONLはappend-only。
+
+fresh Sol reviewは、実時計duplicateで新しい`created_at`が既存rowと衝突するImportantと、既存delivery rowを未検証で信頼するImportantを
+発見。同じLunaがadversarial REDを追加し、保存済み`created_at`を正本として業務fieldだけ照合、driftはrejectへ修正した。deliveryは
+exact keys、schema 1、safe wake ID、正のnumeric-string provider ID、canonical ISO instantをread時に検証し、malformed schema/ID/type/
+wake/instantはsend 0でfail-closed。re-reviewはCritical 0・Important 0で`ship`。
+
+focused 8/8、operations/runner/production/native/renderer integration 33/33、syntax、diff checkはPASS。productionは44追加・8削除、testは
+85追加・10削除の2 files。100 LOC soft target超過は、外部報告を誤って成功扱いしない実時計duplicateと破損receipt matrixの最小regressionを
+維持するためで、追加service/queue/transportは0。次の一件はschedule unloaded、dashboard count 0でofficial wakeを一度実行し、
+Peatix page1 retry、direct registration/readback、current-first report ID、owned cleanupを同一wakeで確認する。
+
+### O1B-25進捗256（long-wake provider page degradation / same-owned-page reset plan）
+
+`wake-1c35ba934bd42dc1b0ff5c4d`はCalendar成功後、Luma 276,735ms、Connpass 72,912msまで同じowned pageで探索し、
+Peatix page1 retryを2回とも失敗して44,952msで`provider_discovery_failed`になった。Submit、provider action、Calendar write、bundleは0。
+一方、Peatix単独fresh pageはpage1 20 rowsを1.7秒、専用Connpass→Peatix同一pageも4,298msで成功している。source/parserではなく、
+長時間provider遷移後のpage state劣化が現在の最小反証可能root causeである。reportはcurrent-first順序を通ったが、current送信自体が
+OpenClaw gateway 10秒timeoutとなりpositive ID 0。このtransport故障はpage reset後の別sliceで閉じる。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-provider-page-reset.md`は、最初以外の各provider探索直前に既存
+`browserRail.navigate(owned, "about:blank")`を既存action recorder経由で一回だけ行う。同じsession/target/pageを維持し、
+new target/session/tab、retry、timeout拡張、provider-specific分岐、persistent stateは0。reset failureは当該providerのdiscovery failureとして
+既存failure count/circuit/report/cleanupへ流す。変更targetはrunner/test 2 files、production ≤12 LOC、test ≤55 LOC。
+
+### O1B-25進捗257（same-owned-page provider reset GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-provider-page-reset.md`をTDD実装した。REDはfocused 2件とも期待どおりfailし、
+provider間`about:blank`欠落とreset failure後の誤discovery継続を再現。runnerのprovider loopをindexedにし、最初以外のproviderで既存
+`action("navigate", "browser_rail", ...)`から同じ`owned`を`about:blank`へ一回だけnavigateする最小差分を入れた。
+reset failureはfailed actionを記録し、当該provider discoveryを呼ばず、既存failure count/report/finally closeへ流れる。
+
+production +5/-1、test +53/-9の2 filesでsoft target内。new session/target/page、trailing reset、retry、timeout、provider分岐、persistent stateは0。
+runner focused 10/10、production/operations/native/renderer integrationを含むSol再実行34/34、syntax、diff checkはPASS。
+fresh Sol reviewはCritical 0・Important 0で`ship`。次の一件はschedule unloaded、dashboard 0、owned page/lock absentを再確認し、
+official foreground wakeを一度だけ実行してLuma→reset→Connpass→reset→Peatix discovery/direct/readbackとexact cleanupを実測する。
+
+### O1B-25進捗258（page-reset live反証 / stale CDP probes cleanup / Gateway report plan）
+
+schedule unloaded、clean HEAD `4cc2fd6ee5`でofficial `wake-d94d51d12b091af392ae0337`を実行。開始前に再loadedされていた
+legacy Connector host bridge PID 910 / `127.0.0.1:18793`をexact labelだけbootoutし、plist/state/browser/Gig変更0を確認した。
+Calendarは3,200ms成功。同じsession/target/pageでLuma失敗129,578ms→`about:blank` reset成功32,280ms→Connpass失敗101,787ms→
+同reset成功9,109ms→Peatix失敗23,431ms、3連続circuit-open。reset 2回、new target/session 0、Submit/Calendar write/bundle 0。
+page stateだけがroot causeという仮説は反証され、3 providerすべてaudit前に失敗するshared discovery故障が残る。
+
+report rowは`circuit_open/consecutive_failure_limit/3`としてappendされたが、message CLI固定10秒Gateway timeoutでdelivery 0、worker exit 1。
+owned targetはfinally後も残ったためowner ledger完全一致IDだけを手動closeし、lock/process/target absentを再確認した。`:9222`には終了済み
+read-only probeのNode WebSocketが45本残っていた。Connector worktree、parent 1109、無名/既知page列挙probe、`:9222`接続中を全て満たす
+39 PIDだけをSIGTERMしsurvivor 0。browser本体、named service、別cwd、code-mode kernel、user pageは不触。
+
+installed OpenClawの一次実装ではmessage CLIにtimeout optionがなく内部default 10秒。一方、正式Gateway CLIは`--timeout`を持ち、内部と同じ
+method `send`を使える。60秒・caller idempotency keyの一回実送信probeはpositive message ID `10646`を返した。従って先行commitのraw Bot API
+計画は実装前に棄却し、次plan `docs/superpowers/plans/2026-08-10-connector-gateway-report-send.md`でtext reportだけを既存Gateway callへ置換し、
+wake IDをidempotency keyとして渡す。raw token配線、retry、queue、Gateway restart、photo変更は0。
+
+### O1B-25進捗259（bounded Gateway Connector text delivery GREEN / fresh re-review ship）
+
+Lunaがplan `2026-08-10-connector-gateway-report-send.md`をTDD実装した。初回REDは旧message CLI、60秒timeout/params欠落、
+malformed keyのspawn前拒否欠落、current/historical wake ID未伝達を再現。installed/live-proven Gateway `send`専用senderを追加し、numeric target、
+safe idempotency key、message boundをspawn前検証、60秒timeout、top-level positive IDだけを成功とし、stderr/private値をgeneric errorへ封じた。
+
+初回fresh reviewは、global legacy senderを必須key化したことでevidence/coverage/legacy outboxを壊すCriticalと、scope外Guardian incident keyの
+timeout不安定性Importantを発見。同じLunaが再REDし、legacy sender/Guardianを元のまま残して別Gateway senderを追加した。minimal operationsは
+各wake ID、evidenceは既存event URL SHA、coverageは既存snapshot ID、legacy outboxはwake IDをstable keyとして渡す。Guardian incident変更は
+全除去しscope外へ戻した。re-reviewはCritical 0・Important 0で`ship`。
+
+実差分は10 files、production +46/-12、test +126/-4。4-file soft target超過は、全既存Connector text callerのpartial external effectと
+duplicate notificationを防ぐcompatibility回帰を閉じるために必要で、新service/token/raw Bot API/retry/queue/config/photo変更は0。
+focused+runner/production/native/renderer/outboxを含むSol再実行69/69、全syntax、diff checkはPASS。次の一件はclean push後、CDP stale probe
+cleanup後のofficial foreground wakeを一度実行し、provider discovery回復とcurrent report positive IDを同一runで確認する。
+
+### O1B-25進捗260（CDP cleanup recovery / Gateway live proof / Peatix safe-stage plan）
+
+clean HEAD `28b37ad3d`、schedule/legacy bridge/process/lock/owned target absent、CDP Node client 6でofficial
+`wake-906cff42e7602a666f8c91aa`を実行。Calendar 2,641ms、Luma discovery 41,045ms、reset 48ms、Connpass 4,052ms、reset 96ms、
+Peatix 96,422msですべて成功。Peatix aggregateは`100→100→87→59→21`。直前wakeの全provider failureと32秒resetは再現せず、
+Connector worktree由来stale CDP probe 39本のcleanupがshared discovery故障を解消した。
+
+Peatix先頭3候補はpre-readback後、cache miss、direct non-completed、未対応Harness failedとなり3連続circuit-open。current reportは新Gateway
+senderでpositive ID `10661`、old pending一件も`10662`、lock/process/owned target cleanupはPASS。Submit成功、Calendar write、PNG、bundleは0。
+終了後Peatix dashboardを専用read-only targetで監査し、authenticated/dashboard true、event link 0、registration marker 0、exact target cleanup PASS。
+従って3候補のunknown post-click registrationと重複外部作用は0。
+
+browser providerは静的safe `reason`を返すが、Peatix workflowが全て`direct_action_unverified`へ、runnerが3回目を
+`consecutive_failure_limit`へ潰すため現在のrepair actionを一意化できない。次plan
+`docs/superpowers/plans/2026-08-10-connector-direct-safe-reason.md`は既存reason→workflow operation→circuit reportだけをbounded伝播する。
+action history schema、新store、event identity/URL/title、DOM/selector/private値、browser action、retryは0。
+
+### O1B-25進捗261（Peatix direct safe stage GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-direct-safe-reason.md`をTDD実装した。REDはPeatix `unknown_required_field`が
+`direct_action_unverified`、valid/malformed candidate failureが`providers_exhausted`、discovery circuitが`consecutive_failure_limit`へ潰れる
+4契約を再現。browser providerが返す既存静的reason全件だけをallowlistし、valid reasonを`peatix_<reason>`、unknown/URL/private/欠落を
+`direct_action_unverified`へした。runnerはvalid direct reasonをfailed fallbackより優先し、candidate/discovery circuit reportへ最後のexact safe stageを渡す。
+
+差分はworkflow/runner + testsの4 files、production +21、tests +51でsoft target内。action-history exact schema、external effect、browser action、
+retry/store/event identity/URL/title/DOM/selector/private値は0。focused+browser provider+production/nativeを含むSol再実行55/55、syntax、diff checkはPASS。
+fresh Sol reviewはCritical 0・Important 0で`ship`。次の一件はdashboard registration 0、clean HEAD、schedule unloadedでofficial wakeを一度実行し、
+最初の3候補が返すexact safe stageをcurrent Gateway report positive IDとともに取得する。
+
+### O1B-25進捗262（Peatix same-page Browser Harness GREEN / fresh review ship）
+
+plan `docs/superpowers/plans/2026-08-10-connector-peatix-browser-harness.md`をLunaがTDD実装した。最初のREDはPeatix proposer、
+fallback readback route、provider-neutral private resolver、unapproved radio guard、production factory compositionの5契約を再現した。
+primary Sol diff reviewでcross-question option誤適用と実Peatix Kana/privacy control欠落を見つけ、追加RED 2件を再現して修復した。
+fresh Sol reviewはprivacy question欠落許可、汎用surnameのKana誤解釈、Connpass cached replay provider欠落のImportant 3件を反証し、
+同じLunaが追加REDで全件を再現してから修復した。fresh re-reviewはCritical 0・Important 0で`ship`。
+
+production Harnessは既存allowlistへPeatixを追加し、same owned page、最大10 step、parent `registered|pending` readbackを維持する。
+モデルへ渡すのはvalidated providerとsanitized control/questionだけで、page、websocket、candidate identity、private value、dynamic page stateは渡さない。
+入力値は親のin-memory Peatix attendee profileまたは既存mode 0600 form profileのexact answerだけに限定し、radio/checkboxは
+exact question+option、またはexact Peatix privacy question+consentだけを許可する。KanaはKana明示labelまたは`lastname_edit`/`firstname_edit`だけで、
+汎用Last/First/姓/名は拒否する。cached replayもLuma/Connpass/Peatix全てでvalidated provider contextを渡す。
+
+差分はHarness/factoryと各testの4 files、production +54/-17、tests +98。Sol再実行はfocused 20/20、runner adjacent 23/23、
+native contract 7/7、4 file syntax、diff checkが全てPASS。browser、model、Submit、Calendar write、PNG、Telegram、state/private profile write、
+session/target/page作成、schedule変更は0。Item 10B/14/19は未完。次の一件はこのcommitをpush後、schedule unloadedのままofficial foreground
+`skills/connector/run.sh`を一度bounded実行し、Peatix parent readbackまたはexact safe failure、dashboard registration増分、Gateway positive ID、
+lock/process/owned target cleanupを実測する。
+
+### O1B-25進捗263（Peatix Harness live / completed-control blind spot確定）
+
+push済みcommit `7b72dfcc7`、schedule/Native/healthcheck/Healer/legacy bridge unloaded、Connector process/lockなし、`:9222` healthy、
+clean branch/remote一致をpreconditionにofficial `skills/connector/run.sh`を一度だけforeground実行した。
+`wake-db550678c5bda2cf1f3890bb`はCalendar 2,535ms、Luma discovery 42,460ms、same-page reset 78ms、Connpass discovery
+6,020ms、reset 109ms、Peatix discovery 125,495msで全providerを同じowned page上で通過した。
+
+Peatix先頭3候補はpre-readback後、direct actionが2,793/2,424/2,321msでnon-completedとなり、今回初めてproduction Browser Harnessへ到達した。
+候補1は19msでsafe failure。候補2は59,420ms、最大10 step全てでTerraが同じ`control_4`へ`fill/ax_fill`を返し続け、
+候補3も6,622msのstep 1で同じactionを返してnon-completed。Harness observationはcontrolのlabel/requiredだけで、親が値をfillした後も
+「入力済み」を示すbooleanがないため、各stepがモデルには同じ未完画面に見えることを実evidenceで確定した。private値、URL、candidate identityは
+agent request/resultへ0。全作用はfillだけでsubmit/final confirmation clickは0。
+
+runは`circuit_open / peatix_unknown_required_field / consecutive_failure_count 3`、current Gateway Telegram provider ID `10714`、
+historical recovery ID `10715`。専用read-only Peatix auditはHTTP 200、authenticated true、event link 0、registration marker 0。
+監査targetはexact root targetだけcloseし、記録済みowned target absent、target lease 0、lock/process absent、browser healthy、Git cleanを確認した。
+Provider registration、Calendar write、PNG、applied bundle増分は0。Item 10B/14/19は未完。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-harness-progress-observation.md`はHarness/test 2 filesだけで、値を読まず
+input/select/check groupのcompleted booleanだけを観察し、completed fieldを次action enumから除外する。同一targetを候補間で共有しても
+agent evidenceが`fallback-N/step-N`で上書きされないようin-process連番を付ける。次の一件はこのRED→GREEN、fresh review、push後の一回だけの
+official foreground再wakeである。
+
+### O1B-25進捗264（Harness completed-control observation GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-harness-progress-observation.md`を2-file TDD実装した。最初のREDはcompleted未観察、
+completed controlのagent enum残留、actionable 0でagent call、completed fillのDOM到達、same-target evidence path上書きの5件を再現した。
+primary Sol diff reviewで未命名radioの誤group化と同一submit clickの最大10回再作用を見つけ、追加REDで再現。さらにform→confirmで
+DOM index tokenが再利用される正当actionをguardが止める問題をpath-change REDで閉じた。fresh Sol reviewはtrim後radio名の誤group化と
+`ax_click`→`coordinate_click` method-switch bypassのImportant 2件を反証し、同じLunaが追加REDで再現・修復。fresh re-reviewは
+Critical 0・Important 0で`ship`。
+
+default observerはtext/textarea/selectの非空、checkbox checked、non-empty exact raw radio name groupのcheckedを値非表示の
+`completed` booleanへ変換する。空/whitespace-only radio nameはself checkedだけを使う。モデルには全sanitized controlとbooleanだけを渡し、
+completed answer controlをstructured enumから除外する。value、selected value、cookie、URL、candidate identity、private profileは渡さない。
+completed actionはresolver/DOM前に拒否する。
+
+同一targetの各fallbackはin-process sequenceを持ち、agent evidenceを`target-*/fallback-N/step-N`へ分離する。同一fallbackでは
+origin+pathname、control、normalized effectで成功済みmutationをdedupeし、query/hashまたはclick method変更では再許可しない。
+form→confirmのexact path変更後は同tokenを許可し、candidate fallbackごとにguardをresetする。page stateはin-memoryだけで
+model/log/evidence/stateへ保存しない。
+
+差分はHarness/test 2 files、production +27/-8、tests +52。Sol再実行はfocused 28/28、runner adjacent 23/23、native 7/7、
+syntax/diff checkが全てPASS。browser/model/Submit/Calendar/PNG/Telegram/state/private write、session/target/page作成、schedule変更は0。
+Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを一度だけ実行し、Peatix Harnessが
+同一control repetitionを0にして次field/form/confirmまたは新しいexact safe boundaryへ進むことを実測する。
+
+### O1B-25進捗265（Peatix Harness live progress / optional-method boundary確定）
+
+push済みcommit `c12a0fbb8`、schedule/legacy labels unloaded、process/lockなし、clean branch/remote一致、`:9222` healthyを
+preconditionにofficial foreground `skills/connector/run.sh`を一度だけ実行した。`wake-c937e27dea6b55e51327e83e`はCalendar 2,761ms、
+Luma discovery 48,648ms、reset 62ms、Connpass 4,721ms、reset 179ms、Peatix 158,333msでsame owned pageを維持した。
+
+Peatix先頭3候補のdirect actionは22,531/3,086/1,287msでnon-completed。Harnessは63ms safe failure、20,935msで2 step、
+5,604msで1 stepを実行した。前wakeの同じ`control_4`×10は0になり、candidate 2はstep 1 `control_4/fill`からstep 2
+`control_6/check`へ進んだ。candidate 3は別`fallback-2/step-1`へ保存され、evidence上書き0。completed observationとcandidate sequenceを
+live実証した。
+
+停止したstep 2はagentが任意text inputを選び、kind非互換のcheck methodを返したことがroot cause。専用pre-submit診断targetでfinal submit 0のまま
+同formを測定し、control 6はrequired falseの所属組織text inputと確認した。別の既知eligible formの公開required controlは漢字氏名、ひらがな氏名、
+email、phoneの4つで、既存private form profileはphoneのみを持つが値は表示・保存していない。診断targetは各exact ID absentまでcleanupした。
+
+runは`circuit_open / peatix_unknown_required_field / consecutive_failure_count 3`、Gateway Telegram provider ID `10729`。
+read-only auditはHTTP 200、authenticated true、event link 0、registration marker 0。agent作用はfillとDOM前に失敗した非互換checkだけで、
+final submit click、provider registration、Calendar write、PNG、bundle増分0。owned/audit target absent、lock/process absent、browser healthy、Git clean。
+Item 10B/14/19は未完。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-harness-required-control-method.md`はHarness/test 2 filesだけで、
+required incomplete answer controlとbutton/linkだけをagent enumへ残し、agentはcontrolだけ選ぶ。purpose/methodは親がkindから
+input/textarea→fill、select→select、checkbox/radio→check、button/link→clickへ決定する。次の一件はTDD、fresh review、push後の一回だけの
+official foreground wakeである。
+
+### O1B-25進捗266（required-only control / parent-owned method GREEN / fresh review ship）
+
+Lunaがplan `docs/superpowers/plans/2026-08-10-connector-harness-required-control-method.md`を2-file TDD実装した。REDは
+control-only proposerのaction欠落、element/group `required`未継承、optional answerのagent enum残留、agent-supplied methodが各control kindへ
+そのまま到達する4境界を再現した。Ponytail圧縮後、agent JSON schemaと返却値をvalidated `control` tokenだけへ縮小し、
+input/textareaは`fill/ax_fill`、selectは`fill/ax_select`、checkbox/radioは`fill/ax_check`、button/linkは`submit/ax_click`を
+親が観測済みkindから決定する。unknown/missing token、optionalまたはcompleted answer controlはDOM前にfail-closedする。
+
+default observerはelementの`required`、`aria-required=true`、またはnearest既存`fieldset, dl.field, [role=group], .field`の
+class `required` / `aria-required=true`だけをbooleanへ変換する。private value、selected value、URL、candidate identity、profileはagentへ渡さず、
+既存exact question+option approval、completed guard、normalized-effect dedupe、exact path transition、fallback evidence sequence、最大10 step、
+parent `registered|pending` readbackを維持する。
+
+差分はHarness/test 2 files、production +21/-27、tests +41/-10。Luna focused/adjacent 41/41、Sol再実行50/50、syntax、diff checkはPASS。
+native runtime/write 37/39の2失敗は`expected connpass / actual peatix`で、Lunaがclean HEAD archiveでも同一2件を再現した既存provider cursor期待値であり、
+今回の2-file差分由来ではない。fresh Sol reviewはCritical 0・Important 0で`ship`。browser/model/Submit/Calendar/PNG/Telegram/state/private write、
+session/target/page作成、schedule変更は0。Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを
+一度だけ実行し、required fieldの親method、form/confirm進行または次のexact safe boundary、dashboard増分、Gateway positive ID、cleanupを実測する。
+
+### O1B-25進捗267（required-parent method live proof / Japanese full-name boundary）
+
+push済みcommit `2ca1fc8f7`、schedule/Native/healthcheck/Healer/legacy bridge unloaded、process/lockなし、remote一致、`:9222` healthyで
+official foreground `skills/connector/run.sh`を一度実行した。`wake-57b1fcec2b743b251614c7a6`はCalendar 2,939ms、Luma 55,839ms、
+reset 223ms、Connpass 6,353ms、reset 497ms、Peatix 169,440msでsame owned pageを維持した。Lumaはwindow 16、free/open 9、
+calendar-free 0、Connpassは6/6/6/0/0、Peatixは100/100/87/56/18だった。
+
+Peatix先頭3候補はdirect action後、Harnessが162ms failure、15,752msで2 step、5,362msで1 step。agent evidenceはcontrol tokenだけで、
+候補2が`control_4`→`control_6`、候補3が別`fallback-2/step-1`の`control_4`を選択した。前wakeのagent-supplied methodは0で、
+全action methodを親がobserved kindから決める契約をlive実証した。runは`circuit_open / peatix_unknown_required_field / 3`、
+Gateway Telegram provider ID `10746`。final click、provider registration、Calendar write、PNG、applied bundle増分は0。
+
+final submitを持たない専用owned-target診断で同じcalendar-free候補18件の先頭3 formを再測定した。候補1の氏名とexact organizer privacyは
+親resolver可能。候補2は氏名だけ可能で、渋谷との関係、参加動機、発見経路、個人情報同意のsubjective required回答は未登録。
+候補3は電話だけ可能で、exact `お名前（漢字）`と`お名前（ひらがな）`が未解決だった。dashboardはHTTP 200、authenticated、
+event link 0、registration marker 0。production owned targetと診断targetはexact ID absent、lock/process absent、Git/remote一致を確認した。
+
+任意質問を推測して申込む案は棄却し、候補2はsafe skipを維持する。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-japanese-full-name.md`は既存mode-0600 identity SSOTの`candidate.name_ja`と
+validated Katakana family/givenだけから親in-memoryの漢字氏名・ひらがな氏名を作り、上記exact 2 labelsだけを解決する。
+private valueのmodel/log/state出力、profile write、arbitrary answer、browser action、schedule変更は0。Item 10B/14/19は未完。
+
+### O1B-25進捗268（parent-owned Japanese full-name / privacy-safe evidence GREEN）
+
+Lunaがplan `docs/superpowers/plans/2026-08-10-connector-peatix-japanese-full-name.md`をRED→GREEN実装した。初回REDはexact
+`お名前（漢字）`/`お名前（ひらがな）`がnull、in-memory attendee profileの2値欠落、missing/invalid/padded `name_ja`受理を再現。
+既存mode-0600 private SSOTのtrim済み`candidate.name_ja`とvalidated Katakana family/givenだけを読み、親in-memory profileへ
+`name_kanji`/`name_hiragana`を追加し、上記exact 2 labelsだけをresolverへ接続した。agent request、wake input、action history、JSON state、
+error textへprivate値は渡さない。実private SSOTは値非表示のread-only auditでmode 0600、required key/type、trim、length、non-emptyを満たした。
+
+初回fresh reviewはImportant 3件で`rethink`した。`name_ja`がC1制御文字を許すこと、`ヷ..ヺ`を単純変換すると等価Hiraganaにならないこと、
+登録成功pageの生full-page PNGが既存name/emailを含むprivate値をdurable artifact/Telegramへ漏らし得ることを反証した。plan scopeを6 filesへ
+明示改訂・push後、同じLunaが追加REDでevidence DOM replacement欠落とreplacement failure後の副作用継続を再現した。
+
+GREENはC0/DEL/C1を拒否し、Katakanaを`U+30A1..U+30F6`と長音記号だけへ限定する。registered readback後、evidence chainは
+validated provider/status/event_refと静的labelだけのself-contained receiptへ`page.setContent`で元DOMを完全置換してからfull-page PNGを取得する。
+title、URL、original DOM、form/profile value、script、external resourceはreceiptに入れない。置換失敗はscreenshot、evidence store、Calendar、
+Telegram、bundle全て0でfail-closedする。既存PNG SHA、provider receipt、Calendar readback、Telegram IDs、applied bundle順序は維持する。
+
+差分は6 files、production +23/-5、tests +55/-7で改訂soft target内。Luna focused 55/55、Sol再実行privacy/evidence含む64/64、
+Peatix/provider/native隣接63/65。残る2失敗はclean HEADでも同一のlegacy provider cursor期待値で今回差分外。6-file syntax、diff checkはPASS。
+fresh re-reviewはCritical 0・Important 0で`ship`。browser/model/Submit/Calendar/PNG/Telegram/state/private profile write、schedule変更は0。
+Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを一度だけ実行し、candidate 3の
+漢字→ひらがな→電話→form/confirm→parent registered readback、privacy-safe PNG、Calendar/Telegram/applied bundleまたは次exact safe boundaryを実測する。
+
+### O1B-25進捗269（Peatix live navigation timing boundary）
+
+commit `96bd8e36a`をpush済み・Git clean・remote差分0でpreflightし、Native/healthcheck/Healer/host bridgeの4 labelsとscheduleをunloadedのままofficial foreground runnerを1回実行した。共有daily-driver `:9222`はPlaywright persistent ownerが既存JavaScript dialog処理の`Page.handleJavaScriptDialog: No dialog is showing`でSIGTRAPするinfra故障を実測した。同じChromium binary、同じmode-preserving profile、同じ`:9222`をraw Chromiumのtemporary launchd ownerで起動し、同一PID、LISTEN、WebSocketを60秒連続で確認してからrunnerを開始した。`:9223`/`:9226`/`:9227`、cookie、login state、Connector code以外のbrowserには触れていない。このtemporary ownerはConnectorのproduction browser ownership完了証拠にはしない。
+
+wake `wake-d6050c563e395e783ba6b2c7`はCalendar `success 2881ms`、Luma discovery `success 30309ms`、Connpass discovery `success 5178ms`、Peatix discovery `success 41032ms`。Peatix auditはobserved 100、normalized 100、14日window 87、free/open 56、Calendar-free 18で、実申込可能候補が存在した。3候補のprovider directは`987ms`/`707ms`/`367ms`で戻り、fallbackは候補1と18094msで2 step、候補2は49msでfail、候補3は13696msで2 step進んだ。最終reportは`circuit_open / peatix_form_navigation_failed / consecutive_failure_count 3`、Telegram provider ID `10776`。lock/process/owned pageは終了後absent、provider registration、Calendar write、PNG、applied bundleは0。
+
+コード照合で、direct providerは`#next-button`をclick後にnavigationを待たず即時`page.url()`を検査していた。fallback step 1はticket pageの3 controlから`control_12`を選び、step 2はformの11 controlへ増加したため、click自体は遅延完了し、directのURL検査だけが早すぎたことが確定した。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-navigation-wait.md`はPeatix provider/testの2 filesだけで、既存のstrict same-event `stepUrl`とPlaywright `waitForURL`を使い、ticket→formとform→confirmのみを有界待機する。Item 10B/14/19は未完、scheduleはunloadedを維持する。
+
+### O1B-25進捗270（Peatix exact navigation wait GREEN）
+
+Lunaがplan `docs/superpowers/plans/2026-08-10-connector-peatix-navigation-wait.md`をTDD実装した。REDはclick promise開始後にURLが変わる非同期fixtureで旧実装が`form_navigation_failed`になることを再現した。GREENは`#next-button`と`#form-submit-button`の各click前にPlaywright `waitForURL`を開始し、`domcontentloaded`・30秒以内・既存strict `stepUrl`の同一Peatix host/event/expected stepのみを受け入れる。missing wait、wrong event/host/step/query/fragment、timeoutは従来safe reasonでfail-closedし、final click/readback条件は緩めていない。
+
+差分はprovider/testの2 files、production +11/-4、tests +29/-2。Lunaはprovider 13/13、計画adjacent 72/72、Sol独立再実行はexpanded adjacent 75/75、2 file syntax、diff checkが全てPASS。Sol差分監査でwrong-event testのvacuous selector assertionを1件発見し、同じLunaがselector比較へ修正後に全testを再PASSした。fresh Sol reviewはCritical 0・Important 0で`ship`。implementation/test中のbrowser、model、Submit、Calendar、PNG/evidence、Telegram、state/private profile、schedule/launchd変更は0。Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを1回実行し、directがformへ入りHarnessの日本語氏名処理へ進むか、confirm/readback/applied bundleまたは次exact safe boundaryを実測する。
+
+### O1B-25進捗271（Peatix required fields complete / wrong button boundary）
+
+push済みcommit `70fd3acf1`、Git/remote一致、scheduleと4 Connector labels unloaded、lock/process absent、temporary raw Chromium ownerの同一PID・`:9222` healthyをpreconditionにofficial foreground wakeを1回実行した。wake `wake-d3924a29861bd5e0e973d9e3`はCalendar `success 2717ms`、Luma `30593ms`、Connpass `3565ms`、Peatix discovery `57515ms`で全てsuccess。auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/56/18`。Peatix候補1のdirectは旧実測987ms未満から2896msに変わり、form navigation waitをliveで越えた。
+
+候補3のHarnessは`control_4 → control_5 → control_8 → control_11`の4 stepまで進んだ。値を出力しない専用no-submit診断で、最初の3 controlはexact `お名前（漢字）`、`お名前（ひらがな）`、`電話番号`で全てparent resolverが解決可能、3 field fill後の残requiredは0と実測した。その後のmodel enumは`Close`/`Accept all cookies`/`Back`/`Filter`/`Clear`/`Apply`/`Cancel`/`Save preferences`の8 buttonだけで、選ばれた`control_11`は`Accept all cookies`だった。Peatixの実form submitはinput submitのpublic `value`を表示文字に使うが、現行inspectorはanswer値漏洩防止のため全input valueをlabel源から除外し、実submitを欠落させていた。
+
+最終reportは`circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10818`。Provider registration、Calendar write、PNG/bundleは0。dashboardはHTTP/authenticated、registration marker 0。official/diagnostic targetはexact cleanup、lock/process absent、Git clean、既存Coconala pageのみ残した。次plan `docs/superpowers/plans/2026-08-10-connector-harness-form-submit-control.md`はHarness/testの2 filesだけで、未完requiredがあればそれだけ、完了後はform-associated submitだけをagentとparent DOM actionに許す。Item 10B/14/19は未完、scheduleはunloadedを維持する。
+
+### O1B-25進捗272（required-answer form scoped submit control GREEN）
+
+Lunaがplan `docs/superpowers/plans/2026-08-10-connector-harness-form-submit-control.md`をTDD実装した。初回REDはfocused 21/24で、input-submitのpublic `value` label欠落、cookie buttonのagent enum混入、parentの任意button/link実行を再現。初回GREEN 24/24後、fresh Sol reviewはImportant 3件を発見した：cookie/preferences別form submitとgeneric button value、parentの未完required中早期submit、同一pageの別token/reindex重複submit。planを先に改訂・pushし、同じLunaの改訂RED/GREENは24/27から27/27。re-reviewはrequired cookie formが併存するとsubmit formが2つになるImportant 1件を追加発見し、再度plan先行更新後の最終RED/GREENは28/29から29/29。
+
+最終実装は、sanitized controlにboolean `submittable`を追加し、観測内のrequired-answer formがexactly 1つ、そのformのsubmit/image controlもexactly 1つの時だけtrueにする。registrationとcookieの両formにrequiredがある、または同一formにsubmitが複数ある場合は全submit false。`element.value`は`input[type=submit|image]`のpublic labelだけに使い、answer/generic button値はモデルへ出さない。proposerは未完requiredを優先し、parent `performAction`も全observationの未完required中submitとnon-submittable button/linkを独立拒否。重複防止signatureはcontrol tokenではなくexact page pathの`submit:form-submit`作用単位とし、path変化後のみ次submitを許す。
+
+Luna最終focused 29/29、adjacent 80/80、Sol拡張再実行93/93、2 file syntax、diff checkが全てPASS。最終fresh re-reviewはCritical 0・Important 0で`ship`。implementation/test中のbrowser/model/Submit/Calendar/PNG/evidence/Telegram/state/private profile/schedule/launchd作用は0。Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを1回実行し、候補3でrequired 3 field後のexact form submit、confirm/readback/applied bundleまたは次exact safe boundaryを実測する。
+
+### O1B-25進捗273（Peatix JavaScript submit exact DOM diagnosis）
+
+push済みcommit `106d350b7`、Git/remote一致、scheduleと4 Connector labels unloaded、lock/process absent、temporary raw Chromium owner PID `22279`の`:9222` healthyをpreconditionにofficial foreground wakeを実行した。wake `wake-07aceaf5f2c3aeb0f14f1fbf`はCalendar、Luma、Connpass、Peatix discoveryを全てsuccessで完了し、auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/57/19`。候補1のHarnessは`control_4 → control_6`で氏名とprivacy、候補3は`control_4 → control_5 → control_8`で漢字氏名・ひらがな氏名・電話番号をparent-owned resolverだけで完了した。その後はいずれもagent stepを追加せず、最終reportは`circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10850`。Provider registration、Calendar write、PNG/applied bundle増分は0。owned pageはcleanupされ、`:9222`はnewtab 1枚、lock/process absent、Git cleanを確認した。
+
+actual Calendar busy inventoryと同じPeatix discoveryを使うvalue-free/no-submit診断で、先頭3候補をtickets→formまで再測定した。全候補のrequired-answer formはexactly 1つ。実送信controlは全てexactly 1つの`input#form-submit-button[type=button]`、enabled、HTML form associationなしだった。cookie/filter controlsは別IDで、候補2のsubjective required answersは引き続き未解決のためsafe skip対象である。MDNのcontractどおり`input[type=button]`は`value`がpublic labelで、default submit behaviorではなくJavaScript click handlerが作用を持つ。既存Peatix direct providerも同じexact IDを既に使用している。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-known-submit-control.md`はHarness/testの2 filesだけ、production +8〜18 LOC、tests +25〜45 LOCのsoft targetとする。exact Peatix ID、一意性、enabled、required-answer form exactly 1を全て満たすcontrolだけを既存`submittable`へ通し、generic rule、required優先、parent enforcement、same-page duplicate-effect guardは変更しない。Item 10B/14/19は未完、scheduleはunloadedを維持する。
+
+### O1B-25進捗274（known Peatix submit first GREEN / fresh review fix-first）
+
+LunaのTDD初回REDはfocused 30/31で、required completion後も`input#form-submit-button[type=button]`のpublic `value` labelが欠落しsubmit候補0になる一点だけを再現した。初回GREENはfocused 31/31、Luna adjacent 82/82、Sol expanded 103/103、両JS syntax、diff checkが全てPASS。差分はHarness production +5/-2、test +36で、exact ID/count、enabled、required-answer form exactly 1を満たす既知controlへ既存`submittable`を付けた。
+
+fresh Sol reviewはImportant 2件で`fix-first`。第一に、共通inspectorのPeatix特例がprovider/domainへ束縛されず、`provider=luma`でも同DOM IDがsubmit候補になった。第二に、labelを生成できないrequired answerが観測配列から消えると、parentのpending判定が不完全なsubsetだけを見てsubmitを許可した。planを先に改訂し、特例を`provider=peatix`かつstrict `https://peatix.com/sales/event/<id>/form`へ束縛し、registryもprovider一致を要求する。さらにenabled/non-hidden required answerが一つでもsanitized controlへ表現不能なら全submitをfail closedにする。初回diffは未commit、browser/model/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用0。Item 10B/14/19は未完。
+
+### O1B-25進捗275（known Peatix submit final GREEN / ship）
+
+同じLunaがfresh-review amendmentをTDD実装した。改訂REDはfocused 31/34で、wrong provider/host/path、cross-provider same-page registry reuse、unlabeled enabled required answerの3 fail-openを再現。最終GREENはfocused 34/34、Luna adjacent 85/85、Sol expanded 106/106、両JS syntax、diff checkが全てPASS。最終fresh re-reviewはCritical 0・Important 0で`ship`。
+
+最終実装はinspectorへproviderとpage URL contextを渡し、既知Peatix特例を`provider=peatix`かつstrict `https://peatix.com/sales/event/<id>/form`へ限定する。registryはpageだけでなくproviderも束縛し、provider切替時は再観測する。enabled/non-hidden required answerをsanitized label付きcontrolへ一つでも表現できなければ、既知Peatixとgeneric form submitの両方を全てnon-submittableにする。generic form-associated submit/image、required優先、parent enforcement、same-page duplicate-effect guardは維持した。最終差分はHarness production +31/-18、test +75/-1の2 filesのみ。implementation/test中のbrowser/model/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用は0。Item 10B/14/19は未完。次の一件はcommit/push後のclean preflightを通し、schedule unloadedのofficial foreground wakeでexact submit→confirm→parent readback→applied bundleまたは次safe boundaryを実測する。
+
+### O1B-25進捗276（exact form submit live / confirm control boundary）
+
+commit `f8c257bd2`、Git/remote一致、4 Connector labels unloaded、lock/process absent、`:9222` owner PID `22279` healthyをpreconditionにofficial foreground wakeを実行した。wake `wake-a85aefe7a153ce0513e7d7df`はCalendar `2959ms`、Luma discovery `42012ms`、Connpass `6237ms`、Peatix `51959ms`で全てsuccess。auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/56/19`。候補1は氏名/privacyを処理、候補2はsubjective requiredでsafe skip、候補3は`control_4 → control_5 → control_8 → control_9`を選択した。step 4は新しいexact form submitで、Harnessはtransition/readback中にexceptionとなった。最終reportは`circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10868`。Provider registration、Calendar write、PNG/applied bundle増分0。owned page、lock、processはcleanupされ、baseline newtab 1枚、Git cleanを確認した。
+
+no-final-submit診断をactual候補3で実行し、required 3件をparent resolverで完了後、exact form submit clickは`status=success`、errorなし、strict same-event `/sales/event/5104728/confirm`へ遷移した。confirm pageのrequired Kana family/givenと表示名は全てcompleted。最終registration controlはexactly 1つのenabled `a#confirm-button`、public label `チケットを申し込む`、form associationなしで、現行inspectorの`a[role=button]` selectorから欠落していた。最終registration clickは0。diagnostic pageはexact cleanupし、temp scriptも削除した。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-confirm-control.md`はHarness/testの2 filesだけで、strict provider/host/same-event confirm path/tag/ID/exact label/enabled/uniqueの全条件を満たすanchorだけをbutton/submittableへ変換し、form submitはsame-event confirm URL wait後だけsuccessを返す。ordinary link、cookie/filter、未完・unlabeled・competing required、cross-eventはfail closed。Item 10B/14/19は未完、scheduleはunloadedを維持する。
+
+### O1B-25進捗277（Peatix final control first GREEN / fresh review fix-first）
+
+Lunaの初回GREENは、strict Peatix confirm URL・candidate event ID・exact `a#confirm-button`・公開label `チケットを申し込む`・enabled・unique・form非関連・全required answer完了かつ同一form所属を満たすcontrolだけを最終作用へ変換し、form submitの前にsame-event `/confirm` waitを開始するところまで実装した。focused 39/39、planned adjacent 90/90、Sol全Connector回帰は299/302 PASS。残る3件はclean HEADの別展開でも同一再現し、legacy provider cursor期待値2件と必須email未注入fixture 1件で今回差分外だった。
+
+fresh Sol reviewはImportant 2件を実証して`fix-first`。第一に、最終click後の遷移/readback待機がなく、即時readbackは`absent`でfallback failedとなる一方10ms後に実登録になるfixtureを再現した。外側runnerはfallback completed時だけpost-submit readbackするため、この状態で次候補へ進むと重複申込になり得る。第二に、CSS-hiddenのexact `a#confirm-button`がsubmittableとして露出した。planを先に改訂し、最終click前からbounded effect/readback waitを開始してambiguous timeoutでは次候補を許可しないこと、delayed registrationでclick 1回・terminal outcome 1回・次候補作用0を回帰化すること、最終anchorにbrowser-visible条件を追加することを必須にした。初回diffは未commit、browser/model/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用0。Item 10B/14/19は未完。
+
+### O1B-25進捗278（Peatix ambiguous final effect / runner stop ownership）
+
+同じLunaがreview指摘2件をRED化し、`hidden final anchor`と`delayed registration`は2/2 FAILで旧挙動を再現した。Harness側のGREENはCSS/ARIA hidden、display/visibility/content-visibility/opacity、zero-size、detachedを最終controlから除外し、exact final click前から30秒bounded parent readbackを開始して`registered|pending`だけsuccess、timeout/click例外を`failed / effect_unknown`として保持する。focused Harness 41/41、minimal production 10/10、syntax、diff checkはPASSした。
+
+ただし既存minimal runnerはfallbackの`effect_unknown`も通常failedとして次候補へ進めるため、3-file ownershipだけでは重複外部作用を防げない。fake `pending|completed`やunbounded waitは採用しない。plan ownershipをrunner本体/testの2 filesだけ拡張し、exact `effect_unknown`を受けたwakeはfailure countを1回加算して即`circuit_open / effect_unknown`、次候補navigation/direct/Harness作用0とする。その他failureの3-consecutive契約は変更しない。現時点の5-file code/test差分は未commit、live作用0。Item 10B/14/19は未完。
+
+### O1B-25進捗279（Peatix final readback unresolved-promise boundary）
+
+5-file GREENはhidden/detached/CSS/zero-size final controlをfail closedにし、delayed parent `pending`を一度だけ観測してadapter後段でも保持し、runner `effect_unknown`をfailure count 1で即`circuit_open`にした。Luna focusedはHarness 41/41、runner 15/15、minimal production 10/10、Sol独立adjacent 107/107、全Connector 303/306 PASS。残る3件はclean HEAD同一baseline failureで新規FAIL 0。
+
+fresh Sol re-reviewは追加Important 1件を発見した。30秒deadline判定がpoll iteration間だけにあり、単一の`readProviderState()` promiseが未解決ならsettlementとrunnerが無期限停止する。planを先に改訂し、各parent readbackを残りoverall budgetとのraceにし、readback側settle時はtimerをclear、budget expiryはexact `failed / effect_unknown`としてrunner即停止へ渡す。never-resolving readbackでもbounded completion、final click 1、次候補0を決定的回帰にする。現差分は未commit、live作用0。Item 10B/14/19は未完。
+
+### O1B-25進捗280（Peatix final effect settlement final GREEN / ship）
+
+同じLunaが5-file ownership内で最終修正した。strict same-event confirm上のbrowser-visibleなexact `a#confirm-button`だけを最終作用へ許可し、final click前から固定30秒のparent readback settlementを開始する。各readbackはremaining overall budgetとraceし、never-resolving promiseでもboundedに`failed / effect_unknown`へ収束する。`registered|pending`だけをsuccess authorityとしてstashし、adapter直後の再readbackで一時的に`absent`へ戻っても検証済みstateを失わない。timeout/click例外の`effect_unknown`はrunnerがfailure count 1で即`circuit_open / effect_unknown`にし、次候補navigation/direct/Harness作用を行わない。通常failureの3-consecutive契約は維持した。
+
+REDはhidden finalと10ms delayed registrationが2/2 FAIL、追加REDはnever-resolving readbackが旧実装でbounded completion不能、runnerは`effect_unknown`後も次候補へ進むことを再現した。最終GREENはHarness 42/42、runner 15/15、minimal production 10/10、Sol独立expanded adjacent 108/108、全changed JS syntax、diff checkがPASS。全Connectorは304/307 PASSで、残る3件はclean HEADでも同一のlegacy provider cursor期待値2件とrequired-email fixture 1件、新規FAIL 0。fresh Sol re-reviewはCritical 0・Important 0で`ship`。変更は既存Harness/test、minimal runner/test、selector fixtureの5 filesだけで、新module/service/stateは0。implementation/test中のbrowser/model/provider/Calendar/evidence/Telegram/private profile/schedule/launchd作用0。Item 10B/14/19は未完。次の一件はcommit/push後のclean preflightを通し、schedule unloadedのofficial foreground wakeを1回実行してparent `registered|pending`、durable `applied_bundle`、Calendar/PNG/Telegram、exact cleanupまたは次safe boundaryを実測する。
+
+### O1B-25進捗281（Peatix live registration / real ticket readback boundary）
+
+push済みcommit `45614f420`、Git/remote一致、4 Connector labels unloaded、lock/process absent、`:9222` healthyをpreconditionにofficial foreground wakeを1回実行した。wake `wake-877cc479184926f7e70c1d65`はCalendar `3470ms`、Luma `38292ms`、Connpass `4684ms`、Peatix discovery `72844ms`で全てsuccess。auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/55/18`。Peatix候補1はpre-readback、cache、direct `2752ms`の後、Browser Harnessを`35195ms`実行した。
+
+最終reportは`circuit_open / effect_unknown / 1`、Telegram provider ID `10906`。修復どおり次候補navigation/submitは0で、曖昧外部作用後の重複をliveで防いだ。Calendar/PNG/applied bundle増分0、owned target/process/lockはcleanupされた。専用read-only CDP targetでPeatix実dashboardを監査するとauthenticated true、新規`https://peatix.com/event/5075819/ticket`と同一event attendance linkがexactly 1で、実申込成功が確定した。
+
+実success ticket pageはstrict同一event URL、`body.webticket` 1、`section.ticket` 1、`#qr-code img.js-qrcode-image` 1。public ticket IDとlegacy registration markerはDOMにない。canonical event pageは同一event `/ticket` visible link 1、checkout control 0、legacy marker 0。現parent readerはこの実Peatix success shapeを未認識なため30秒settlementが正しく`effect_unknown`へ停止した。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-ticket-readback.md`は既存Peatix provider/testの2 filesだけで、strict同一event canonical ticket linkまたはticket shellをparent `registered`へ変換し、再Submit 0で既存成功をCalendar/PNG/Telegram/applied bundleへ続ける。Item 10B/14/19は実registrationのみ達成、bundle acceptanceは未完、scheduleはunloadedを維持する。
+
+### O1B-25進捗282（Peatix ticket readback first GREEN / malformed observation fix-first）
+
+Lunaの初回GREENはstrict same-event ticket page shellまたはcanonical visible ticket linkをparent `registered`へ追加した。provider 16/16、named adjacent 83/83、Sol独立relevant 107/107、全Connector 307/310 PASSで、残る3件はclean HEAD既知failure、新規FAIL 0。さらに新readerを実canonical event `5075819`へread-only接続し、Submitなしでexact `registered`を返す隔離E2EもPASSした。
+
+fresh Sol reviewはImportant 1件で`do not ship`。malformed DOM observationの`markers: ""`が`length===0`を満たしてticket shell booleanと組み合わさるとregisteredを捏造でき、`markers`欠落はTypeErrorになることを直接再現した。planを先に改訂し、measured success branchの前に`Array.isArray(observed.markers)`を必須化する。string/object/null/missingは全てthrow/submit/evidenceなしのprivacy-safe `unavailable`、valid empty arrayとlegacy exact markerは維持する。初回2-file差分は未commit、live作用0。Item 10B/14/19のbundle acceptanceは未完。
+
+### O1B-25進捗283（Peatix ticket readback final GREEN / ship）
+
+同じLunaがmalformed observationをRED化し、`markers: ""`は旧実装でregistered誤判定、null/欠落は例外になることを再現した。GREENはexplicit status処理後、measured ticket/canonical successとlegacy marker length参照の前に`Array.isArray(observed.markers)`を必須化した。string/object/null/missingは全てthrow/goto/clickなしの`unavailable / readback_unavailable`、valid empty arrayとlegacy exact marker authorityは維持する。
+
+最終provider 17/17、named adjacent 83/83、Sol独立expanded relevant 108/108、2-file syntax、diff checkがPASS。serialized全Connectorは308/311 PASS、残る3件はclean HEAD同一baseline。default concurrencyでHarnessの100ms synthetic navigation fixtureが一度118msとなったが、単独11msとserialized suiteでPASSしproduction timeout 30秒の差分回帰ではない。fresh Sol re-reviewはCritical 0・Important 0で`ship`。実canonical event `5075819`へのread-only隔離E2EもSubmitなしでexact `registered`。最終差分は既存Peatix provider/testの2 filesのみ、実装/test中のbrowser write/model/Calendar/evidence/Telegram/private profile/schedule/launchd作用0。次はcommit/push後、schedule unloadedのofficial wakeでpre-submit registered、Peatix click 0、Calendar/PNG/Telegram/applied bundleを実証する。Item 10B/14/19のbundle acceptanceは未完。
+
+### O1B-25進捗284（Peatix registered no-resubmit live / evidence page boundary）
+
+push済みcommit `aa61ffafb`、Git/remote一致、4 Connector labels unloaded、lock/process absent、`:9222` healthy、bundle/message/photo baselines `2/3/2`でofficial foreground wakeを1回実行した。wake `wake-8acecb7a754670f673321262`はCalendar `3288ms`、Luma `49959ms`、Connpass `7237ms`、Peatix discovery `69752ms`で全てsuccess。auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/55/18`。
+
+Peatix候補1へnavigate後、parent pre-readbackは32msで実登録を認識した。provider cache/direct/Browser Harness/Peatix clickは全て0で、再Submit防止をlive実証した。その直後`completeEvidence`が`Connector minimal pass unavailable`でthrowし、evidence file、Calendar write、Telegram delivery、wake report、bundle増分は0、baseline `2/3/2`を維持した。
+
+専用CDP targetの隔離診断で、registered Peatix page上の`page.setContent`はdefault load、`domcontentloaded`、事前`about:blank` resetの全てで30秒timeoutを再現した。一方、同じowned pageでstrict `about:blank`へ移動後、親固定のescaped receipt HTMLを`document.open/write/close`し、screenshotするとvalid PNG 16,901 bytesを得た。診断のfile/Calendar/Telegram/state writeは0、exact target cleanup済み。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-evidence-page-reset.md`はminimal evidence/testの2 filesだけで、Peatix receipt renderのみこの実測pathへ変え、Lumaと後段evidence/Calendar/Telegram/bundle gateを維持する。Item 10B/14/19のbundle acceptanceは未完、scheduleはunloaded。
+
+### O1B-25進捗285（Peatix evidence page reset / TDD・review完了）
+
+Ponytailで既存owned page、固定escaped receipt、PNG/evidence/Calendar/Telegram/bundle chainを再利用し、新target・renderer・library・retry・state schemaは追加しない境界を維持した。LunaのREDはPeatix `setContent` never-settlesが250ms内に完了せず、reset API欠落がdownstream前にfail closedしないことを再現した。最終実装はminimal evidence/testの2 filesだけで、Peatixのみexact `about:blank` resetとURL readback後、親生成済み`receiptHtml`を`document.open/write/close`し、3組の`dt/dd` skeleton booleanを検証してから既存chainへ戻す。Lumaは従来`setContent`のまま。Luna focused 8/8・adjacent 83/83、Sol独立expanded Peatix/Harness/native-entrypoint 116/116、syntax、diff checkがPASS。fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test中のbrowser/provider/Calendar/evidence/Telegram/profile/state/launchd/schedule作用は0。Item 10B/11/14/19 bundle acceptanceは未完で、次の一件はcommit/push後のclean preflightとschedule-unloaded official wakeによるregistered pre-readback、Peatix click 0、Calendar/PNG/Telegram/applied bundleの実証。
+
+### O1B-25進捗286（Peatix evidence live成功 / Calendar transport境界）
+
+pushed commit `083b7a2cb`のschedule-unloaded official wake `wake-b9c68c36c0ff24c5a9117b52`はCalendar busy 3,087ms、Luma discovery 30,214ms、Connpass 3,482ms、Peatix 57,922ms後、candidate 1を384msでnavigateし、parent pre-readback `registered`を6msで観測した。Provider submit/direct/Harness clickは0でno-resubmitを再実証した。修復済みrendererはPeatix provider receiptとSHA-256 PNG artifactを実保存したが、Calendar event、Telegram message/photo、applied bundleは増分0でexit 2。原因は`transport/calendar-gog.js`のConnector URL gateがLuma hostだけを許可し、source titleも`Luma`固定のため、strict Peatix canonical URLをGoogle Calendar create前に拒否すること。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-calendar-transport.md`はcalendar gog production/testの2 filesだけで、exact `https://peatix.com/event/<positive integer>`と固定`Peatix` source titleを追加し、Lumaと全malformed rejectionを維持する。Item 10B/11/14/19 bundle acceptanceは未完、scheduleはunloaded。
+
+### O1B-25進捗287（Peatix Calendar transport / TDD・review完了）
+
+LunaのREDはfocused transport 18/19で、exact Peatix createだけが`Connector calendar invalid`、www/subdomain/port/trailing slash/query/hash/credentials/nonnumeric/zero/ticket/sales/searchの12 variantsは旧実装でもgog run 0で拒否されることを実測した。最終差分は`transport/calendar-gog.js`とtestの2 filesだけ。Connector URL gateはvalidated `{url, sourceTitle}`を返し、Peatixはraw inputとcanonical outputがともにexact `https://peatix.com/event/<positive integer>`の場合だけ固定`Peatix` source titleで許可する。Lumaは既存hostsと固定`Luma` titleを維持し、idempotency property、gog argv、Calendar receipt readbackは不変。Luna focused 19/19と全named adjacent、Sol独立expanded 135/135、syntax、diff checkがPASS。fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test中のbrowser/provider/Calendar/evidence/Telegram/state/profile/launchd/schedule作用は0。Item 10B/11/14/19 bundle acceptanceは未完で、次の一件はcommit/push後のschedule-unloaded official wakeによるCalendar create/readback、positive Telegram IDs、durable applied bundle、exact cleanupの実証。
+
+### O1B-25進捗288（Calendar create成功 / same-event recovery境界）
+
+`3f398e535`のofficial wake `wake-b6e743b9f56f32f6137b2298`はPeatix registeredをSubmit 0で再観測し、strict Calendar transportを越えてprivate idempotency付きGoogle Calendar eventをexact 1件作成した。bundleは未作成。production-equivalent不足artifact診断は同じmessage idempotency keyでTelegram message positive ID `10946`、privacy-safe receipt PNGでpositive ID `10949`を得たが、official bundle acceptanceには数えない。次official recovery wake `wake-d66a62d5c9221ead4175454b`では作成済みCalendar intervalが元eventをdiscovery conflictとして除外し、後続候補2件へ進んだ後`circuit_open / effect_unknown`で停止、bundle増分0。このlive差分から、残る原因はprovider/Calendar/Telegram能力ではなくsame-event Calendar self-conflictである。実gog readbackは`extendedProperties.private.lm_connector_event`にcanonical URL SHA-256を返す。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-calendar-self-recovery.md`はbusy inventory、Peatix workflow/testの3 filesだけで、このvalid hashとcandidate canonical URL hashがexact一致するoverlapだけを無視し、別予定overlapは維持する。Item 10B/11/12/14/19 bundle acceptanceは未完、scheduleはunloaded。
+
+### O1B-25進捗289（Calendar self-recovery / fresh review fix-first）
+
+Luna REDはfocused workflow 16/19で、valid marker非公開、same-event overlap除外不能、malformed marker非rejectを再現した。初回GREENはfocused 19/19、busy inventory 3/3、Sol独立expanded 122/122、syntax、diff checkがPASSしたが、fresh Sol reviewはImportant 2件で`fix-first`。第一にactive eventのpresent-invalid `extendedProperties`/`private` container（primitive/null/array）がmarker absentとしてverified inventoryへ入る。第二にmarker parseがcancelled/transparent除外より先で、従来なら無視するeventのmalformed markerがinventory全体を停止する。planを先に改訂し、active eventではcontainerのgenuine absenceとpresent-invalidを分離して後者をfail closed、cancelled/transparentはmarker parse前に従来どおり除外する回帰を追加する。現3-file差分は未commit、実装/test中のbrowser/provider/Calendar/evidence/Telegram/state/profile/launchd/schedule作用0。Item 10B/11/12/14/19 bundle acceptanceは未完。
+
+### O1B-25進捗290（Calendar self-recovery / 最終GREEN・re-review）
+
+review指摘をRED 18/20で再現後、active eventの`extendedProperties`と`private`はgenuine absenceだけmarker-freeとして許可し、present-invalid primitive/null/arrayをinventory invalidへ変更した。cancelled/transparentはmarker parse前に除外し、malformed markerを持つexcluded eventも従来どおりbusy inventoryへ影響させない。Peatixはstrict canonical URL SHA-256とexact一致するtimed overlapだけを自己eventとして無視し、別overlap・wrong/absent markerはblockする。最終差分はplanned 3 filesだけ。Luna focused 20/20、busy 3/3、evidence 8/8、minimal production/runner 25/25、provider/Harness 59/59、Sol独立expanded 123/123、syntax、diff checkがPASS。native 2 failuresはclean HEAD同一baseline。fresh Sol re-reviewはCritical 0・Important 0で`ship`。実装/test中のbrowser/provider/Calendar/evidence/Telegram/state/profile/launchd/schedule作用0。Item 10B/11/12/14/19 bundle acceptanceは未完で、次の一件はcommit/push後のofficial recovery wakeでoriginal event registered、Submit 0、Calendar create 0/readback 1、positive Telegram IDs、new durable bundle、exact cleanupを実証する。
+
+### O1B-25進捗291（Peatix same-event recovery / official applied bundle）
+
+pushed commit `ae8837498`のschedule-unloaded official wake `wake-57a417724891bb095e4b864b`は、Luma→Connpass後のPeatix discoveryで作成済みCalendar intervalのexact same-event hashだけを自己衝突から除外し、original `peatix-event://event/5075819`へ戻った。navigate 209ms、parent pre-readback `registered` 17ms、provider cache/direct/Harness Submit actionは全0。Google Calendar private idempotency readbackはevent exact 1でduplicate create 0。immutable applied bundleは2→3へ増え、bundle `applied-bundle:cb4be9afc9d0d55212c84908b7483dfd964ea6b5eefaff7a20c89b180e9759b0`、mode 0600、PNG 16,901 bytes・bundle SHA exact一致・mode 0600、Calendar ID/readback、Telegram message positive ID `10971`、photo positive ID `10973`を同一lineageで保存した。wake reportも`applied_bundle`、delivery positive ID `10975`。exit 0後process/lock 0、active target leaseなし、CDP healthy、Git clean/upstream 0/0。これによりItem 10B、Item 11、Item19のPeatix substageをacceptする。scheduleはItems10〜16完了までunloadedを維持し、次の一件はItem12の各partial boundary recovery fixtureとduplicate Submit 0の証明。
+
+### O1B-25進捗292（Item 12A / ticket・PNG・Calendar recovery plan）
+
+Item 10B/11 acceptance後の次active gateはItem12。live recoveryはSubmit 0、Calendar 1、bundle 1まで閉じたが、途中wakeでreceipt render/provider evidenceとTelegramが再実行され、「不足artifactだけを補完」のfixture契約は未完。Ponytailで既存provider storeの`readExternalReceipt`/`readArtifact`、Calendar private idempotency/readback、mode 0600 atomic stateを再利用し、Item12を2 sliceへ分ける。先頭12A plan `docs/superpowers/plans/2026-08-10-connector-evidence-recovery-12a.md`はminimal evidence production/testの2 filesだけで、provider ticket/PNG成功後とCalendar readback成功後のexact checkpointを追加する。recreated chainは保存済みreceipt/artifactを検証してpage render/screenshot/storeを0、既存Calendarを検証してcreateを0にする。title、venue、attendee、target、ticket ID、canonical URL、raw page/PNG/private valueはcheckpointへ保存しない。Telegram/photo/final bundle recoveryは次12Bまで前倒しせず、Item12 checkboxは未完、scheduleはunloaded。
+
+### O1B-25進捗293（Item 12A Ponytail scope reduction / provider pointer only）
+
+12A初回GREENはfocused 11/11まで到達したが、Calendar stageをcheckpointへ複製するとproduction差分がsoft targetを超え、checkpointだけでCalendar成功を信じるstale authorityも生じる。Ponytailでscopeを削り、Calendar checkpointは作らない。保存するのはprovider receipt/PNGへのmode 0600 exact pointerだけ。recreated chainはprovider store readerでpointer/receipt/artifact/SHAを検証してpage render/screenshot/storeをskipする一方、Calendarは既存private idempotency find/create/independent-readbackを毎回実行する。Calendar create後crashは次runのfindでexisting exact 1を再利用し、create total 1。prior Calendar success後にeventが削除・変化してもlocal pointerだけでTelegram/bundleへ進まない。planを先に改訂し、Lunaへbroad rewriteを戻してpointer branchだけへ圧縮する。現2-file差分は未commit、Item12は未完、scheduleはunloaded。
+
+### O1B-25進捗294（Item 12A / fresh review fix-first）
+
+12A最終初回差分はRED 8/11からGREEN focused 11/11、Sol独立expanded 127/127、production +102/-59、tests +81までscopeを圧縮したが、fresh Sol reviewはImportant 3件で`fix-first`。第一に初回provider `record`結果はref構文/SHAだけで、recovery側に追加したdeterministic provider ID（tenant/event_ref/observed_at/artifact SHA）検証が未適用。第二にcheckpoint `statSync`/`readFileSync`と親directoryがsymlinkを追従し、state root外read/writeを許す。第三にcorrupt testはextra-keyだけで、symlink、forged receipt identity、artifact bytes/SHA、missing receipt、wrong provider/event/URL hashを未固定。planを先に改訂し、初回/recovery共通identity validator、`lstat` path-component拒否、全matrix downstream effect 0を必須化する。現2-file差分は未commit、browser/provider/Calendar/Telegram/bundle/live作用0。Item12は未完、scheduleはunloaded。
+
+### O1B-25進捗295（Item 12A / provider evidence・Calendar recovery完了）
+
+同じLunaが初回provider `record`とrecoveryの両方へtenant/event ref/observedAt/raw artifact SHAのdeterministic receipt identityを適用し、checkpoint fileとstate root配下の全path componentを`lstat`でsymlink拒否した。mode 0600 exact pointerはprovider/event refs、canonical URL hash、receipt/artifact refsとSHA、status、first observed timeだけを保存し、title、venue、attendee、Telegram target、ticket ID、canonical URL、Calendar data、raw PNG/private valueを保存しない。recreated chainはprovider storeのreceiptとraw artifact bytes/signature/SHA/identityを検証し、page render、screenshot、provider recordを0にする一方、Calendarは毎回private idempotency find/create/independent readbackを実行する。create後readback crash fixtureは再起動後に既存exact 1を再利用し、Calendar create total 1。
+
+corruption matrixはinvalid JSON/extra key、wrong provider/event/URL hash、forged/malformed receipt、malformed/mismatched artifact ref、missing receipt、artifact bytes/SHA mismatch、SHA/ref/receiptが内部整合するnon-PNG、file/parent symlinkを固定し、全caseでpage/Calendar/Telegram/bundle作用0。最終2-file差分はproduction +109/-59、test +128/-2。Luna focused/adjacent、Sol独立relevant 43/43、syntax、diff checkがPASS。変更外baselineはPeatix date fixture 19/20、native旧provider期待15/17で同一。fresh Solは初回Important 3件と追加matrix 1件をfix-first後、最終re-review `ship`。12Aは完了したがItem12 checkboxは12BのTelegram message/photo/final bundle recoveryと四境界matrixまで未完。scheduleはunloaded。
+
+### O1B-25進捗296（Item 12B / Telegram・final bundle recovery plan）
+
+次active sliceは12B。現chainはTelegram message/photoのpositive IDをfinal bundleにだけ保存するため、message成功後のphoto failureまたは両方成功後のbundle write failureで、recreated chainが先行deliveryを再送する。Ponytailで新transport/DB/queue/retry/serviceを棄却し、12Aのevent identity、checkpoint root、`immutableJson`、positive ID parser、Calendar independent readbackを再利用する。plan `docs/superpowers/plans/2026-08-11-connector-evidence-recovery-12b.md`はminimal evidence production/testの2 filesだけをLuna ownershipとし、exact immutable message/photo receiptを追加する。checkpointはtarget、message/caption、title、venue、attendee、ticket ID、canonical URL、raw PNG/private valueを保存せず、provider/event/URL hash/receipt/artifact/Calendar identityとpositive delivery IDだけをbindする。recreated chainはprovider evidenceと現在Calendarを毎回検証し、保存済みmessage/photoをskipして不足stageだけを送る。final bundleは最初の成功Calendar timestampと両positive IDからdeterministicに再構成し、既存fileとbyte-identicalなら同一bundleを返す。runnerの次candidate continuationはItem13まで前倒ししない。Item12は四境界fixtureがregistration 1、Calendar 1、bundle 1、Submit 0を満たすまで未完、scheduleはunloaded。
+
+### O1B-25進捗297（Item 12B / fresh review fix-first・runner proof追加）
+
+Luna初回REDはfocused 12/17で新規5件全FAIL、GREEN後は17/17、圧縮後16/16、production +116/-11、test +100。Sol独立expanded 89/89、syntax、diff checkもPASSしたが、fresh Sol reviewはImportant 3件で`fix-first`。第一にphoto receiptはmessage checkpoint SHAだけを照合し、重複保持するmessage provider IDとCalendar timestampのexact一致を要求しないため、photo側だけ改変して再送skip/bundle化できる。第二にcorruption testはmessage中心で、photo固有identity、message欠落、receipt/artifact mismatch、unsafe IDs、parent symlink、bundle symlink/collisionが未固定。第三に四境界testの`records`はprovider evidence保存回数でexternal registration数ではなく、存在しない`provider-submit` labelの0件countはSubmit 0の証明にならない。planを先に3-fileへ改訂し、evidence production/testに加えてrunner test一件だけをLuna ownershipへ追加する。real runnerのparent pre-readback `registered`とreal evidence chainを合成し、cache/direct/Harness Submit pathを実計数してexternal registered state 1、Submit 0、Calendar create 1、bundle 1を固定する。runner production、provider、browser、scheduleは変更しない。bundle `created_at`は既存provider first-observed意味を維持し、stable message timestampは`calendar_readback_at`だけへ使う。現code/test差分は未commit、Item12未完、schedule unloaded。
+
+### O1B-25進捗298（Item 12B・Item 12 / 四境界recovery完了）
+
+同じLunaがphoto receiptのmessage checkpoint SHAに加え、重複保持するpositive message IDとfirst Calendar readback timestampもmessage receiptへexact一致させ、bundle `created_at`をprovider evidence first-observedへ戻した。delivery corruption matrixはmessage側8 case、photo ID/timestamp/SHA/receipt/artifact/unsafe ID、message欠落+photo残存、file symlink、checkpoint parent symlink、bundle directory symlink、immutable collisionを全て通過し、不足Telegram/bundle作用0。message成功→photo失敗のrestartはmessage resend 0、photoだけ補完。photo成功→bundle write失敗のrestartは両Telegram resend 0、bundle exact 1。completed rerunも現在Calendarを独立readback後、同一bundle IDを返しbundle count 1。
+
+新runner integrationはreal `runMinimalConnectorWake`のparent pre-readback `registered`とreal evidence chainを合成し、registered external state Set size 1、provider evidence record 1、Calendar create 1、cache/direct/Harness Submit function call各0、final bundle 1を四境界sequenceで実計数した。runner production変更0。最終差分はevidence production +119/-10、evidence test +106/-1、runner test +28。Luna focused evidence 16/16・runner 16/16とadjacent、Sol独立expanded 90/90、3-file syntax、diff checkがPASS。変更外baseline3件は同一。fresh Sol reviewは初回Important 3件fix後、最終`ship`。これでItem12をacceptする。次はItem13の同一event既登録readback→Submit 0→未処理candidate continuationとevery-wake Telegram positive ID。scheduleはItems13〜16完了までunloaded。
+
+### O1B-25進捗299（Item 13A / existing bundle disposition plan）
+
+Item13は13A exact existing-bundle readback、13B runner continuation、13C official foreground wakeへ分割する。production stateをread-only実測するとmode 0600 exact-schema bundleはLuma 2、Peatix 1で、accepted Peatix bundleはItem12 checkpoint導入前に作成済み。provider receiptのobserved_at/event_ref/artifact SHAはbundle `created_at`/refsと一致する。このまま次wakeを走らせるとcheckpoint不在のためevidence recapture/photo resend後までrunnerが既完了を識別できない。先頭13A plan `docs/superpowers/plans/2026-08-11-connector-idempotent-wake-13a.md`はminimal evidence production/testの2 filesだけ。applied bundle exact schema/file digest、provider/event/status、deterministic provider receipt、raw artifact bytes/signature/SHA、現在Calendar exact 1 ID/URLを全て再検証し、runtime-only `completion_disposition: reused`を返す。新規bundleは`created`。persisted bundle schemaは変更せず、legacy checkpoint migration、runner変更、browser/provider action、Telegram resend、schedule作用は0。Item13は13B/13Cまで未完、schedule unloaded。
+
+### O1B-25進捗300（Item 13A / fresh review fixture fix-first）
+
+Luna 13A初回RED 5/5からGREEN、full evidence 21/21、adjacent 104/107で残る3件はclean HEAD baseline。Sol独立expanded 95/95、syntax、diff checkもPASSしたがfresh Sol reviewはImportant 3件で`fix-first`。第一にsemantic corruptionはfield変更後のdigest/filenameを再構成せずouter digest mismatchで落ちるため、provider/status/receipt/artifact/ID/time個別guard未証明。第二にmultiple fixtureはwrong filename copyで複数matching分岐へ届かず、128 entry boundも実測していない。第三にLuma bundleはunrelated scanだけで、Luma deterministic receipt/artifact/Calendar reuse path未証明。planを先に改訂し、全semantic mutationを自己整合core digest・bundle ID・filenameで作成、同一provider/eventの異なるvalid matching core 2件、valid entries 129件、Luma exact legacy reuseとrender/record/Telegram/Calendar create 0を必須化する。production差分は凍結、test fixtureだけを同じLunaへ戻す。Item13未完、schedule unloaded。
+
+### O1B-25進捗301（Item 13A / existing bundle disposition完了）
+
+Item13A最終実装はapplied-bundlesを最大128 exact entryでscanし、filename/mode/size/exact schema/stable digest/provider/event/status、deterministic provider receipt、raw PNG signature/SHA、positive Telegram IDs、現在Calendar exact ID/URLを再検証する。legacy Luma/Peatix bundleはruntime-only `completion_disposition: reused`を返し、page render/screenshot/provider record/Telegram/Calendar create/bundle mutation全0。新規bundleは`created`、次invocationは同じpersisted bytesの`reused`。matching legacy後のCalendar missing/duplicate/ID-URL mismatchはreplacement createせずfail closed。valid same-event bundle 2件とvalid entries 129件もfail closed、unrelated valid bundleは非match。
+
+fresh review指摘後、semantic mutation 7件はcore digest/bundle ID/filenameを自己整合で再計算し各field guardへ到達、multipleは異なるvalid matching core 2件、boundはfully valid 129件、Lumaもexact deterministic reuseを実証した。review-fix production変更0、最終re-review `ship`。差分はproduction +122/-1、test +37/-8。Luna focused 24/24、Sol独立expanded 98/98、syntax、diff checkがPASS。変更外baseline3件は同一。13Aは完了、Item13 checkboxは13B runner continuationと13C official wakeまで未完。schedule unloaded。
+
+### O1B-25進捗302（Item 13B / reused bundle runner continuation plan）
+
+次active slice 13Bはminimal runner production/testの2 filesだけ。13A evidence chainのruntime `completion_disposition`をexact `created|reused`で必須化し、`created`は従来どおり新規`applied_bundle`でwake終了、`reused`だけはfailure countを増やさず同じsession/target/pageの次candidateへ継続する。pre-submit `registered`だけではreuseを推論せず、exact bundle/provider/artifact/current Calendarを検証したevidence結果だけを権威にする。all reusedで新規bundleなしなら`completed_no_effect / existing_bundles_reused`、provider discovery failureがあればそちらを優先する。every-wake Telegramは既存`reportWake`だけをterminal delivery点とし、runnerとreal `createMinimalProductionOperations` fixtureでwake report 1、mode 0600 positive delivery row 1、duplicate delivery 0を実証する。provider/evidence/operations/browser/schedule production変更0。13C official wakeまでItem13未完、schedule unloaded。
+
+### O1B-25進捗303（Item 13B / fresh review malformed disposition reporting）
+
+Luna RED 17/21からGREEN runner 19/19、operations 8/8、evidence 24/24、Sol独立expanded 109/109、syntax、diff checkがPASS。production差分はrunner +12/-2だけでreused continuation、created terminal、all reused reason、provider discovery failure priorityを実装した。fresh Sol reviewはImportant 1件で`fix-first`。malformed `completion_disposition`は`invalid()`をthrowしてowned page cleanupは行うが`reportWake` 0のため、planのevery terminal wake positive Telegram receiptに反する。planを先に改訂し、malformed evidence resultは`circuit_open / evidence_result_invalid`、malformed dispositionは`circuit_open / evidence_disposition_invalid`として既存`finish`をexact 1回通し、positive ID、report row 1、delivery row 1、cleanup 1、Submit追加0を必須化する。現2-file差分は未commit、Item13未完、schedule unloaded。
+
+### O1B-25進捗304（Item 13B / runner continuation完了）
+
+同じLunaがmalformed result/dispositionのreport 0をRED 18/19で再現し、null/array/stringは`circuit_open / evidence_result_invalid`、missing/unknown/non-string/contradictory disposition/status/idは`circuit_open / evidence_disposition_invalid`として既存`finish`をexact 1回通すGREENへ修正した。real production operations fixtureはpositive Telegram ID、report row 1、delivery row 1、mode 0600、send 1、cleanup 1、cache/direct/Harness Submit 0。通常pathは13A `reused`だけfailure countを増やさず同一session/target/pageの次candidateへ継続し、`created`だけ新規`applied_bundle` terminal。all reusedは`completed_no_effect / existing_bundles_reused`、provider discovery failureは優先維持。
+
+最終差分はrunner production +16/-2、test +116/-3。Luna focused runner 20/20、operations 8/8とadjacent、Sol独立expanded 110/110、syntax、diff checkがPASS。変更外baseline3件は同一。fresh Sol re-reviewは`ship`。13Bは完了、Item13 checkboxは13C official schedule-unloaded foreground wakeのlive reused Peatix、Submit 0 continuation、later candidate handling、positive every-wake Telegram ID、cleanup実証まで未完。schedule unloaded。
+
+### O1B-25進捗305（Item 13C / official second wake preflight）
+
+13C live plan `docs/superpowers/plans/2026-08-11-connector-idempotent-wake-13c-live.md`を作成した。preflightはHEAD `0f55ddf4c`、Git clean/upstream 0/0、Native/healthcheck/Healer shadow/host bridge 4 labels全unloaded、`:9222` raw Chromium healthy。baselineはapplied bundle 3、wake report 99、wake-report delivery 111。official `skills/connector/run.sh`をpushed worktreeからforegroundでexact 1回だけ起動し、plist load、新browser/session、manual provider action、substitute executorは0。既存exact bundleのprovider/Calendar readback後`reused`、同event cache/direct/Harness Submit 0、同じsession/target/pageでlater distinct candidateへnavigation/readback、terminal report 1とpositive Telegram delivery ID、既存bundle/evidence message/photo/Calendar create duplicate 0、process/lock/owned page cleanupをacceptanceとする。新candidateがbundleを作ればdelta exact1、作らなければdelta0とterminal safe reasonを必須化する。Item13はlive acceptanceまで未完、schedule unloaded。
+
+### O1B-25進捗306（Item 13C first official wake / safe failure・Peatix ordering境界）
+
+pushed code `0f55ddf4c`とlive-plan HEAD `a155f96db`のofficial foreground wake `wake-9bb615ee5684f064d329e016`をschedule-unloadedでexact 1回実行した。Calendar 3,099ms、Luma discovery 28,907ms、Connpass 4,145ms、Peatix 61,168ms。auditはLuma `31/31/17/10/1`、Connpass `6/6/6/0/0`、Peatix `100/100/87/59/18`。wakeはPeatixの最初の未処理candidateがcache/direct/Harness後`effect_unknown`となり、consecutive failure 2で安全停止。bundle delta 0、report 99→100、delivery 111→112、positive Telegram provider ID `11062`。process/lock 0、owned page cleanup、CDP newtab 1、4 labels unloaded、Git clean/upstream 0/0。Item13 acceptanceは未達。
+
+原因はPeatix discoveryがCalendar-free 18件をsearch順のまま返し、exact overlapping same-event `connector_idempotency` marker付きのaccepted bundle candidateを先頭化しないこと。既存eventへ到達する前のambiguous candidateがrunnerの正しいeffect-unknown circuitを開いた。2回目wakeは起動していない。Ponytail修復plan `docs/superpowers/plans/2026-08-11-connector-peatix-existing-first-13c.md`はPeatix workflow/testの2 filesだけで、既存strict URL SHA+overlap predicateを再利用し、exact-covered候補群→残候補群のstable partitionを行う。filter/ranking/stop gate、runner/evidence/Calendar/provider action/browser/schedule変更0。Item13未完、schedule unloaded。
+
+### O1B-25進捗307（Item 13C Peatix existing-first / GREEN・review完了）
+
+Luna REDは追加3件中2件で、single exact-coveredが`[A,B,C]`のまま、multiple exactも元search orderのままを再現し、wrong/absent/other/non-overlap controlは既存どおりPASS。GREENはtimed overlap + canonical URL SHA exact一致の一predicateをsame-event conflict exemptionとdiscovery stable partitionの両方へ再利用し、`exactCovered.concat(unprocessed)`を返す。両partition内の相対順序、candidate bytes、candidate count、audit 5 counts、重複0を維持し、wrong/absent/another-event/non-overlap/malformed markerは優先なし、unrelated overlapはblock維持。filter/ranking/state/runner/evidence/Calendar I/O/provider action/browser/schedule変更0。
+
+最終差分はPeatix workflow production +25/-13、test +69。Luna focused追加3件とadjacent、Sol独立新規3件を含むrelevant suiteがPASS。変更外baseline3件は同一。syntax、diff check PASS、fresh Sol reviewはCritical 0・Important 0で`ship`。次はcommit/push後、4 labels unloadedのofficial foreground wakeをexact 1回再実行し、existing Peatix reused、同event Submit 0、later candidate handling、positive Telegram report、cleanupを検証する。Item13未完、schedule unloaded。
+
+### O1B-25進捗308（Item 13C second official wake / reuse成功・evidence report境界）
+
+pushed commit `3e3a9ca94`のofficial foreground wake `wake-b3f05e7a9c4a5afc322e3d2d`をschedule-unloadedでexact 1回実行した。Peatix stable partition後、candidate 1はnavigate 435ms、parent readback 23msの直後にcache/direct/Harness Submit row 0で13A exact bundleを`reused`し、同じsession/target/pageのcandidate 2へnavigate 347ms、readback 10msで継続した。candidate 2のpublic event refは`peatix-event://event/5065833`、pre-readback `registered`でSubmit row 0。provider receipt/PNG checkpoint、Google Calendar exact event/readback、Telegram message checkpoint positive ID `11079`をmode 0600で保存したが、photo deliveryが失敗してbundle delta 0。
+
+`completeEvidence` throwがrunnerのterminal `reportWake`を通らずnative-pass exit 2となり、wake report/delivery delta 0。process/lock 0、owned page cleanup、CDP newtab 1、4 labels unloaded、Git clean/upstream 0/0はPASS。Item13 live reuse/continuation/Submit0は実証したがevery-wake positive reportとfinal later-event bundleが未完。Ponytail plan `docs/superpowers/plans/2026-08-11-connector-evidence-error-report-13c.md`はrunner production/testの2 filesだけで、evidence throwを一度だけ`circuit_open / evidence_completion_failed`へ収束し、failure count +1、positive report/delivery、cleanup、same-wake retry 0を固定する。Item12 checkpointから次official wakeがmessage再送0でphoto/final bundleを補完する。Item13未完、schedule unloaded。
+
+### O1B-25進捗309（Item 13C evidence completion error reporting / GREEN・review完了）
+
+Luna REDは`completeEvidence` throwがrunner外へescapeしterminal report 0となる現行故障を2件で再現した。GREENはそのcall boundaryだけをcatchし、既存bounded failure countを一度だけ増やして既存`finish("circuit_open", "evidence_completion_failed")`へ収束する。同wakeのevidence retry、cache/direct/Harness Submit、raw error保存は0、finallyのowned page cleanupとreal production `reportWake`を維持する。Ponytailでduplicate fixtureを除き、最終scopeはrunner production/testの2 files、production `+13/-7`、test `+59/-10`。provider/evidence/Calendar/Telegram/browser/state schema/schedule production変更0。
+
+Luna serialized focused/adjacentは変更外の日付依存Peatix baseline 1件を除きPASS。Sol独立runner/operations/evidence/production/Harness/entrypoint/contract/outboxは63/63 PASS、syntaxとdiff check PASS。real operations fixtureはwake report 1、delivery 1、mode 0600、positive Telegram ID、send 1、failure count 1、生error非露出を実証した。fresh Sol reviewはCritical 0・Important 0で`ship`。次はcode/specをpush後、4 labels unloadedのままofficial foreground recovery wakeをexact 1回実行し、saved message ID `11079`の再送0、photo checkpoint、final bundle、positive every-wake report/delivery、cleanupを確認する。Item13未完、schedule unloaded。
+
+### O1B-25進捗310（Item 13C recovery wake / live acceptance完了）
+
+pushed repair commit `25d8e423d`のofficial `skills/connector/run.sh`を4 labels unloadedのままexact 1回だけ起動し、wake `wake-21bc904af45627b27b6f0277`がexit 0で完了した。Luma/Connpass/Peatix discovery後、Peatix event `5065833`はparent pre-readback `registered`、cache/direct/Harness Submit action 0。Item12のimmutable message checkpoint SHA/mtimeとpositive ID `11079`を変えず、欠損photoだけをpositive ID `11089`で配送し、final Peatix bundleをexact 1件作成した。bundle 3→4、wake report 100→101、delivery 112→113、terminal `applied_bundle`、failure count 0、positive every-wake report ID `11090`。
+
+独立read-only Calendar検証はcanonical idempotency marker exact 1件でbundle event ID `heomnknrb9a60ibva27716lvs8`と一致。bundle digest/filename、provider receipt identity、PNG SHA/signature、message→photo checkpoint lineage、regular file/no symlink、mode 0600が全PASS。process/lock 0、owned page cleanup、CDP original newtab 1、4 labels exit 113 unloaded、Git clean/upstream 0/0。進捗308の既存Peatix bundle exact reuse、同event Submit 0、same session/target/pageでlater candidate continuationと、このrecovery wakeのevery-wake positive report/final bundleを合わせてItem13 acceptanceを閉じる。scheduleはItems10–16 acceptanceまでunloaded維持。
+
+### O1B-25進捗311（Item 14A / Connpass auth・live candidate・evidence plan）
+
+Ponytail `full`でItem14の現行production境界を再測定した。unauthenticated Connpass detail 6件は全て無料だがstatus `unknown`、うち5件にevent固有high-priority `ログイン・会員登録`があった。所有emailは既存Connpass account登録済みで、official password reset→`:9222` loginを完了し、実event pageでexact `このイベントに申し込む`をreadbackした。account重複作成0、event application Submit 0。macOS Keychain保存はOS対話待ちで完了せず、成功扱いにしない。
+
+認証済みpageと実14日Google Calendar inventoryで再測定すると、無料・受付中・Calendar非衝突candidateはevent `400028` exact 1件。join pageはparticipation radio 2、required bounded radio 1問、optional fields、final `申し込みを確定する` 1で、既存Browser Harnessのbounded form境界に収まる。現行runner/router/Connpass direct/readbackは接続済みだが、minimal evidence chainのprovider descriptorはLuma/Peatixだけなので、今wakeすると実登録後にbundleを完成できない。実申込は起動していない。
+
+plan `docs/superpowers/plans/2026-08-11-connector-connpass-applied-bundle-14a.md`はminimal evidence production/test 2 filesだけ。既存`createConnpassEvidenceStore`、checkpoint、Calendar、Telegram、bundle scannerを再利用し、Connpassだけparent-verified actual pageをfull-page PNG化する。discovery/registration/Harness/runner/Calendar gate/provider order/schedule変更0。人工Luma failure hookはlive acceptanceをsyntheticにするため作らず、Item14のproduct invariantを「Luma external effect 0（bounded known-no-effect / exact reuse / eligible exhaustion）→同じowned pageで実Connpass bundle」と明文化する。現在はLuma free/open 10、Calendar-free 0なのでtruthful exhaustionを使う。Item14未完、schedule unloaded。
+
+### O1B-25進捗312（Item 14A0 / fresh review store tuple-binding fix-first）
+
+Luna REDはConnpass evidence provider descriptor未登録を25 pass / 1 failで再現し、GREENはminimal evidence production/test 2 files、production +30/-3、test +64へ縮約した。Connpass exact candidate/current page URL、actual full-page screenshot、setContent/navigation 0、created→reused、identity/status fail-closedを追加し、Luna focused 27/27 + three stores 5/5、Sol独立expanded 63/63がPASSした。
+
+fresh Sol reviewは`fix-first`。既存`connpass-evidence-store` readerがreceiptの`event_ref/artifact_sha256`を返さず、minimal evidence側のoptional照合を通るため、保存receiptの意味的改変をprovider ID再計算で検出できない。artifact markerのevent refもread contractでは期待eventへbindingできない。4 files/100 LOC超へのscope膨張を避け、evidence diffはreversible stash `item14a-evidence-wiring-frozen`へ退避した。prerequisite plan `docs/superpowers/plans/2026-08-11-connector-connpass-evidence-store-hardening-14a0.md`はConnpass store production/test 2 filesだけで、receipt exact keys + tenant/event/time/artifact provider ID再計算、artifact marker exact `{sha256}` + object bytes digestを固定する。Item14未完、event Submit 0、schedule unloaded。
+
+### O1B-25進捗313（Item 14A0 / Connpass evidence store hardening完了）
+
+Luna REDはvalid receipt readが3 fieldsしか返さないことと、stale provider IDを残したsemantic `event_ref`改ざんが通ることを0/2で再現した。GREENはConnpass store production/test 2 filesだけに限定し、receipt exact 5 keys、tenant/event/observedAt/artifact SHA tupleからのprovider ID再計算、artifact marker exact `{sha256}`、marker/ref/object bytesの同一digest検証を実装した。focused Connpass 2/2、serialized Connpass/Luma/Peatix store regression 6/6、syntax、diff checkがPASS。
+
+fresh Sol reviewはCritical 0・Important 0で`ship`。live Connpass evidenceはまだ0のためmigrationは不要で、Luma/Peatix store production変更0。Item14A wiringはreversible stashの別sliceとして維持し、次に復元してexact Connpass descriptorと下流作用前のcorruption rejectionを閉じる。Item14未完、event Submit 0、schedule unloaded。
+
+### O1B-25進捗314（Item 14A / Connpass minimal evidence wiring完了）
+
+Item14A0 push後にfrozen diffを復元し、Luna REDはConnpass 3-field receipt readerがminimal evidence reuseを通す穴を27 pass / 1 failで再現した。GREENはConnpass descriptorだけにexact 5-field/type gateを追加し、candidate canonical URLとcurrent page exact一致、actual full-page PNG、setContent/goto 0、created→reused、identity/status/receipt/artifact/object bytes corruptionの下流作用前拒否を固定した。Luma/Peatix contract変更0。
+
+最初のfresh reviewはexisting bundle scanがConnpass current URL確認より先にある点を`fix-first`とした。追加REDは作成後のwrong event/query/hash/about:blank pageでもreusedになることを27 pass / 1 failで再現し、GREENはConnpass-only page URL gateをbundle scan前へ移した。最終scopeはproduction/test 2 files、101 insertions/1 deletion。Sol独立minimal evidence + three provider stores 33/33、syntax、diff check PASS、fresh re-reviewは`ship`。次は4 labels unloadedを再確認後、official runner exact 1 wakeで実event `400028`を申込み、同一lineageのConnpass bundleを検証する。Item14未完、event Submit 0、schedule unloaded。
+
+### O1B-25進捗315（Item 14 live wake / canonical evidence recovery plan）
+
+pushed commit `e3663062e`のofficial runnerを4 labels unloaded、process/lock 0、CDP既存page 1、Git clean/upstream 0でexact 1回起動した。wake `wake-546099b19a3ad84aef0742e3`はLuma discovery 61,188msでeligible exhaustion後、同じowned browser railでConnpassへ継続。Connpass auditはobserved/normalized/free-open/calendar-free `6/6/5/1`、event `400028`へnavigateし、pre-readback absent、cache/direct/post-readbackを実行した。Browser Harness action 0。post-readback後のevidenceがthrowし、terminal `circuit_open/evidence_completion_failed`、failure count 1、every-wake Telegram positive ID `11138`でexit。bundle 4、Connpass receipt/checkpoint/artifact/object 0のため、Calendar/evidence Telegram/bundle作用前にfail closedした。process/lock 0、owned page cleanup、CDP original newtab 1、schedule unloadedを維持。
+
+raw exceptionは設計どおり保存しない。Luna read-only診断は、direct actionがevent application link click後にjoin/completion pageからcanonicalへ戻さない一方、Item14A evidenceがstore前にcurrent URL exact一致を要求する境界を最有力原因とした。次slice plan `docs/superpowers/plans/2026-08-11-connector-connpass-canonical-recovery-14b.md`はrunner production/test 2 filesだけ。同じowned pageをcanonicalへexact 1回navigateし、canonical parent readbackを再実行してregistered/pendingならevidence、そうでなければcache/direct/Harness/Submit retry 0でsafe failする。URL gateは弱めない。Item14未完、schedule unloaded。
+
+### O1B-25進捗316（Item 14B / canonical evidence recovery実装完了）
+
+Luna REDはConnpass direct completed後のjoin URLを現行runnerがそのままevidenceへ渡し、`circuit_open/evidence_completion_failed`になることを0/1で再現した。GREENはcompleted operation後のConnpassだけ、同じowned pageをcandidate canonicalへnavigateし、既存action wrapperでcanonical parent readbackを再実行する。registered/pendingだけevidenceへ渡し、navigation/readback/nonregisteredはcache/direct/Harness/Submit retry 0のまま同じsafe terminalへ収束する。session/target/page/cleanup追加0。
+
+最初のfresh reviewはpre-submit already registeredにも不要なrecoveryを実行する点を`fix-first`とした。追加REDはcanonical navigate 2回を2 pass / 1 failで再現し、GREENは`completed operation`がある場合だけに限定。pre-submit registeredはinitial navigate 1、pre-readback 1、cache/direct/Harness/Submit 0、recovery 0、evidence 1、cleanup 1。最終scopeはrunner production/test 2 files、production +13、test +50。Sol独立adjacent 82/82、syntax、diff check PASS、fresh re-reviewは`ship`。次はpushed codeでofficial recovery wake exact 1回を実行し、Submit 0とConnpass bundleを確認する。Item14未完、schedule unloaded。
+
+### O1B-25進捗317（Item 14 recovery wake / join-form false-positive確定）
+
+pushed commit `b471264ec`のofficial runnerを4 labels unloaded、process/lock 0、Git clean/upstream 0でexact 1回起動した。wake `wake-74fc59b0adddc2abc8603791`はLuma eligible exhaustion後、Connpass event `400028`へ継続。pre-readback nonregistered、cache、direct、post-readbackの後、Item14Bのcanonical navigateとcanonical parent readbackを実行した。action historyは11 rowsでBrowser Harness 0。canonical recovery action自体はsuccessだがterminalは`circuit_open/evidence_completion_failed`、failure count 1、every-wake Telegram positive ID `11154`。bundle 4、Connpass receipt/checkpoint/artifact/object 0、process/lock 0、Connector-owned page cleanup。preexisting CDP 3 pagesはConnectorが閉じず、外部ownerによるURL変更だけを観測した。
+
+runnerの唯一の分岐から、canonical parent stateはregistered/pendingではなかったと確定する。したがってevent pageのinitial application link click後にjoin formへ遷移した状態を既存text readbackがfalse-positive registeredとしており、final `申し込みを確定する`は2 wakesとも未実行。plan `docs/superpowers/plans/2026-08-11-connector-connpass-join-handoff-14c.md`はConnpass workflow production/test 2 filesだけ。direct completedはaction結果registered/pendingかつpage URLがcandidate canonical exactの場合だけとし、join/complete/query/hash/wrong/about:blankはsafe direct failureとして既存bounded Browser Harnessへsame-page handoffする。Item14未完、schedule unloaded。
+
+### O1B-25進捗318（Item 14C / Connpass join-form handoff実装完了）
+
+Luna REDはcanonical positiveに加えjoinとexact URL rejection matrixを追加し、現行workflowがjoin/noncanonicalでもcompletedを返すことを1 pass / 2 failで再現した。GREENはsupplied direct action後にowned `page.url()`だけを読み、outcome registered/pendingかつcandidate canonical exactの場合だけcompletedを返す。join/complete/query/hash/wrong-event/about:blank/missing/throwing URLは既存`failed/direct_action_unverified`。guard自身のnavigate/click/credential read 0で、runnerは同じjoin pageを既存bounded Browser Harnessへ渡せる。
+
+最終scopeはConnpass workflow production/test 2 files。Sol独立workflow/provider/runner/production/operations/Harnessは98/98、syntax、diff check PASS。fresh Sol reviewは`ship`。次はpushed codeのofficial wake exact 1回で、Browser Harness handoff、final confirmation Submit最大1、canonical registered/pending、Connpass applied bundleをlive検証する。Item14未完、schedule unloaded。
+
+### O1B-25進捗319（Item 14 live Harness / provider quota blockerとnative known-form plan）
+
+pushed commit `d3b62b0ac`のofficial runnerを4 labels unloaded、process/lock 0、CDP newtab 1、Git clean/upstream 0でexact 1回起動した。wake `wake-928666cc8425d896f6e85ac9`はLuma exhaustion後にConnpass event `400028`へ継続し、pre-readback、cache、direct safe failure、Browser Harnessへ初めてhandoffした。Harness actionは3,317msでsafe failしDOM action/final confirmation Submit 0。その後provider/candidateを継続し、3 consecutive safe failuresで`circuit_open/evidence_completion_failed`、failure count 3、every-wake Telegram positive ID `11168`。bundle 4、Connpass receipt/artifact/checkpoint 0、process/lock 0、owned page cleanup、CDP newtab 1、schedule unloaded。
+
+latest sanitized agent evidenceはHarnessがlocal Codex開始前quotaで2 attemptsとも失敗したことを示す。実可用性probeはClaude direct monthly limit、local Claude proxy 403、DeepSeek credit不足、Gemini 401。OpenClaw free Qwenは応答したがwallet warningをJSON前へ付け、既存strict contractが意図どおり拒否するためvalidatorを弱めない。plan `docs/superpowers/plans/2026-08-11-connector-connpass-native-known-form-14d.md`はHarness production/test 2 filesだけ。既存sanitized observationからfree online viewing、exact Connpass referral、exact `はい、わかりました`、exact final `申し込みを確定する`だけをunique native controlとして選び、parent resolverとfallback-local final Submit one-shotを固定する。未知UIは従来agent fallbackでsafe fail。Item14未完、schedule unloaded。
+
+### O1B-25進捗320（Item 14D / Connpass exact native known-form実装完了）
+
+Luna REDはagent unavailableの既知フォーム、safe resolver、path変更後のsecond Submit latchを0/3で再現し、全radio group同時表示fixtureも0/1でagentへ到達した。GREENは既存Harness内だけにConnpass native selector、同一predicateのparent resolver、fallback-local Submit one-shotを追加した。最初のfresh reviewは無料を保証しないonline別表記と空・未知questionのnative許可をImportant 2件として`fix-first`。Round 1 REDはunqualified online、online/referral空question、unknown acknowledgementがselector/resolverを通ることを再現し、測定済みexact `オンライン参加（無料）`、`参加方法`、exact Connpass referral question、acknowledgement questionsだけへ縮小した。
+
+最終scopeはHarness production/testの2 files、code commits `29ca6141b`と`e047723b5`。Sol独立Harness/adapter/runner/production/workflow/provider/evidenceは127/127、syntax、diff checkがPASS。scoped fresh re-reviewは2 findings addressed、新Critical 0・Important 0で`ship`。private profile read/prompt保存、新provider/model/cache/page/target/session/retry/scheduleは0。read-only preflightは4 labels unloaded、Git clean/upstream 0/0、Connector process/lock 0、`:9222` healthy、基準値bundle/report/delivery/action `4/104/116/674`、Connpass evidence 0。stale `tokyo-builders` hostのevent `400028` join probeはradio 0だったため、次official wakeはcurrent canonical discovery結果だけをtruthとしてexact 1回実行する。Item14未完、schedule unloaded。
+
+### O1B-25進捗321（Item 14 live wake / actual Connpass DOM observation plan）
+
+pushed HEAD `4ee1510e6`、4 labels unloaded、process/lock 0でofficial runnerをexact 1回起動した。wake `wake-382acd76ce42e6a911178743`はLuma `observed/normalized/free-open/calendar-free=32/32/10/0`のeligible exhaustion後、同じowned browser railでConnpassへ継続。Connpass `6/6/5/1`の唯一candidateは同じevent ID `400028`だがcurrent canonical hostは`osaka-driven-dev`。pre-readback、cache、directからjoin pageへ到達し、Harness step 1は4,037msでDOM action 0のままCodex usage limitへfallbackしてsafe failureした。後続Peatix discovery/readbackを継続し、terminal `circuit_open/evidence_completion_failed`、failure count 2、every-wake Telegram positive ID `11210`。bundle/Connpass evidenceは`4/0`、report/delivery/actionは`105/117/691`、process/lock 0、owned page cleanup、4 labels unloaded、Git clean/upstream 0/0。成功扱いにしない。
+
+read-only exact candidate再探索と実DOM probeで、14D fixtureとの差を確定した。safe ticketは`input[name=participation_type]`、label `オンライン視聴枠（YouTube） 無料 ...`だがHTML requiredなし。unsafe siblingは`オンライン登壇枠（Zoom） 無料 ...`。required referralは`.question_list > .question`の`必須 このイベントは何を見て知りましたか？`、option exact `Connpass`。2件の`はい、わかりました。`はspeaker-only optionalで操作不要。現行inspectorは`.question_list`と`participation_type`意味を観測せず、native exact predicateへ届かなかったことが根因。plan `docs/superpowers/plans/2026-08-11-connector-connpass-real-dom-observation-14e.md`はHarness production/test 2 filesだけ。exact Connpass join URLでpublic group/questionを正規化し、safe viewing prefixとexact referralだけをnative化、optional ack native codeを削除する。Item14未完、schedule unloaded。
+
+### O1B-25進捗322（Item 14E / actual Connpass DOM normalization完了）
+
+Ponytailで既存Harnessのinspector、native selector、parent resolver/operator、submit latchだけを再利用し、新module/model/cache/page/session/retry/scheduleは0。initial REDは45/48、初回GREEN後のfresh reviewはexact join provenanceと`.question_list` scopeのImportant 1を発見した。fix round 1は非join safe-looking controlとexact join外generic questionを49/51のREDで固定し、共有exact URL predicate、`connpass_join` observation state、proposer/resolver gate、action直前URL downgrade、exact join group限定を追加。Sol独立7 suiteは85/85。actual current join pageのread-only probeはpublic controls 16、required 9、optional 7、safe viewing選択true、resolver true、agent call 0、write 0で、一時targetはcleanupした。
+
+scoped re-reviewはwhole-regex `/i`がuppercase pathを許可するImportant 1を発見。fix round 2は50/51 RED後にcase-sensitive exact pathとuppercase path負例2件を追加し、最終85/85、syntax、diff check、clean statusがPASS。final fresh reviewはCritical 0・Important 0で`ship`。production/test commits `5a757e6c3`、`1c4084ad2`、`0d1839f7f`、plan commits `21b5b9d2d`、`13e58195d`。private profile read、browser fill/click/Submit、Calendar/evidence/Telegram/state write、schedule作用0。Item14 checkboxは未完のまま、次の一件は4 labels unloaded、clean/upstream、process/lock 0をpreconditionにofficial foreground wakeをexact 1回実行し、same-run Luma no-effect→Connpass native agent 0→canonical readback→applied bundleまたは次exact safe boundaryを実測する。
+
+### O1B-25進捗323（Item 14 live native wake / post-submit false pending plan）
+
+pushed HEAD `164774bdd`、4 labels unloaded、Git clean/upstream 0/0、process/lock 0、`:9222` healthy、baseline bundle/report/delivery/action/Connpass receipt `4/105/117/691/0`でofficial runnerをexact 1回起動した。wake `wake-963fc9da9e4da332ca9801a5`はLuma `32/32/17/10/0`の正しいeligible exhaustion後、同じowned railでConnpass `6/6/6/5/1`のevent `400028`へ継続。cache 0ms、direct 2,259ms、native Harness 324ms、post-submit readback 2ms、canonical navigate/readbackまでaction上はsuccessだったが、terminal `circuit_open/evidence_completion_failed`、bundle/Connpass receipt/artifact delta 0、every-wake Telegram positive ID `11250`、failure count 1。process/lock 0、wake target absent、4 labels unloadedでcleanup。成功扱いにしない。
+
+read-only canonical再検証はexact candidate URLのままprovider state `absent`。join pageはfinal controlだけを表示する一方、readerは`pending`を返した。DOM局所化で`補欠`部分一致は一般の参加者sectionにあるvisible `補欠者`文脈2 nodesだけで、user statusではない。現readerが全bodyをspace-collapse後に`/補欠/`部分一致するため、final click直後に偽pendingを返し、runnerがcanonicalへ早期遷移して申込を永続化しなかったことが根因。plan `docs/superpowers/plans/2026-08-11-connector-connpass-post-submit-readback-14f.md`はprovider/test 2 filesだけ。pendingをexact canonical event pathかつexact visible lineへ限定し、join page `補欠者`をunknownへ戻す。Item14未完、schedule unloaded。
+
+### O1B-25進捗324（Item 14F / post-submit false pending修復完了）
+
+Luna REDはactual join-shaped DOMとcanonical substring-only `補欠者`を4/6で再現し、exact canonical line `補欠`はpendingを維持した。GREENは既存parent reader内だけでraw case-sensitive pathを`/event/<positive integer>/`へ限定し、visible `innerText`を改行単位で正規化したexact lineだけをpending markerとして許可。login、registered、unavailable、absent分岐は不変。差分はprovider/test 2 files、production 6/3、tests 45/0で、新waiter/action/cache/state/moduleは0。Luna combined 91/91、Sol独立91/91、syntax、diff checkがPASS。pushed commit `3feb31310`。
+
+actual current pageのread-only production reader再測定はjoin `unknown`、canonical `absent`、write 0で、一時target cleanup。fresh Sol reviewはCritical 0・Important 0で`ship`、reviewer独立107/107。偽pendingを成功扱いする経路は閉じた。Item14未完、schedule unloaded。次の一件はclean/upstream、4 labels unloaded、process/lock 0、`:9222` healthyを再確認し、official foreground wakeをexact 1回だけ起動する。実effectが成立すればcanonical readback→Connpass receipt/artifact→Calendar→Telegram→applied bundle、未確定なら既存one-submit latchで重複作用0のsafe boundaryを記録する。
+
+### O1B-25進捗325（Item 14 live wake / delayed real effectとsettlement plan）
+
+pushed HEAD `d23fbd3a5`、4 labels unloaded、clean/upstream、process/lock 0、`:9222` healthy、baseline bundle/report/delivery/action/Connpass receipt `4/106/118/703/0`でofficial wakeをexact 1回起動した。wake `wake-f56a23d2571628dbcb718a70`はLuma `25/25/17/10/0`後、同じowned railでConnpass `6/6/6/5/1`へ継続。pre-readback absent、cache 0ms、direct 2,034ms、native Harness 808ms。14Fにより偽pendingは発生せず、final click後の即時readbackをterminalにせず、同event再Submitは0。その後same pageでPeatix `100/100/87/60/13`へ進み、terminal `circuit_open/evidence_completion_failed`、failure count 2、every-wake Telegram positive ID `11265`。bundle/Connpass receipt delta 0、process/lock 0、owned target absent、4 labels unloaded。成功扱いにしない。
+
+wake完了後のread-only exact canonical checkは`registered`へ変化しており、final clickの実外部作用が808msより遅れて成立したことを確認した。問題はSubmit失敗ではなく、Harnessがreal effect settlementを待たずlater providerへ進んだこと。既存Peatix final clickは30秒overall deadline、各readback promise race、click 1、timeout `effect_unknown`を既に持つ。plan `docs/superpowers/plans/2026-08-11-connector-connpass-final-settlement-14g.md`はHarness/test 2 filesだけで、この既存waitをexact Connpass join URL・same event ID・final labelへ束縛して再利用する。次wakeはcanonical pre-readback registeredのためSubmit 0で不足bundleを回収する。Item14未完、schedule unloaded。
+
+### O1B-25進捗326（Item 14G / Connpass final effect bounded settlement完了）
+
+Luna REDはdelayed registration未settle、wrong URL click許可、never-resolving readback未boundedの3件を51/54で再現。GREENは既存Peatix final effect helperをprovider-neutral名へ一般化し、Connpass exact case-sensitive root/one-subdomain join URL、same positive event ID、unique exact submittable `申し込みを確定する`、parent readerをclick前に全検証する。pollはclick前に生成、click開始でreleaseし、registered/pendingの実provider stateだけをadapterへ返す。never-resolving/rejected/timeoutは既存30秒deadline raceから`effect_unknown`となり、adapterとminimal runnerがlater candidate/provider前に停止する。Peatix behaviorとConnpass one-submit latchは維持。
+
+Ponytail trim後の差分はHarness production/test 2 files、production 28/14、tests 69/2。Luna/Sol関連94/94、Harness 54/54、syntax、diff checkがPASS。pushed commit `f5e761557`。fresh Sol reviewはCritical 0・Important 0で`ship`、独立94/94。実装/test中browser/provider/Calendar/evidence/Telegram/state/schedule作用0。Item14未完、schedule unloaded。次の一件はcanonical registeredをpre-readbackしてSubmit 0のままConnpass receipt/artifact、Calendar exact 1、positive Telegram message/photo/report IDs、new applied bundle、cleanupをofficial recovery wake exact 1回で実証する。
+
+### O1B-25進捗327（Item 14 recovery wake / registered candidate filter plan）
+
+pushed HEAD `f986aee1c`、4 labels unloaded、clean/upstream、process/lock 0、`:9222` healthy、baseline bundle/report/delivery/action/Connpass receipt `4/107/119/720/0`でofficial recovery wakeをexact 1回起動した。wake `wake-8073885e011beebea1bfc0da`はLuma no-effect後、Connpass audit `6/6/6/5/1`を保存したがConnpass candidate readback/action 0のままPeatixへ進み、terminal `circuit_open/evidence_completion_failed`、failure count 1、every-wake Telegram positive ID `11281`。bundle/Connpass receipt delta 0、process/lock 0、owned target cleanup、4 labels unloaded。成功扱いにしない。
+
+actual detailのread-only正規化はevent `400028`、`registration_status=registered`、free、exact interval。production Calendar reader＋同じConnpass workflowのisolated read-only再現はbusy intervals 90、audit `6/6/6/4/0`、returned candidates 0。current workflowがwindow後に`registration_status !== available`を除外するため、既登録eventをparent pre-readback/evidenceへ戻せないことが根因。plan `docs/superpowers/plans/2026-08-11-connector-connpass-existing-first-recovery-14h.md`はworkflow/test 2 filesだけ。in-window exact registeredをrecovery partitionとしてavailable eligibleより先に返し、新規申込用Calendar/free-open gateはavailableだけに維持する。Item14未完、schedule unloaded。
+
+### O1B-25進捗328（Item 14H / Connpass existing-first recovery完了）
+
+Luna REDはregistered omission、registeredへのCalendar gate誤適用、audit mismatchを11/14で再現。GREENは既存window gate直後に`registeredExisting` partitionだけを追加し、in-window registeredをavailable candidatesより先にstable returnする。registered recoveryだけがavailable-only price/open/Calendar gateをbypassし、availableの順序・無料・受付中・非衝突条件は不変。`free_open_count`はavailable free/openのみ、`calendar_free_count`はreturned candidate count。差分workflow/test 2 files、production 7/2、tests 50/0。real timed intervalを使うCalendar conflict fixtureをtest-only follow-upで固定した。
+
+Luna/Sol関連144/144、syntax、diff checkがPASS。pushed commits `2a4809974`、`39775a5f6`。actual production Calendar reader＋workflowのread-only再測定はaudit `6/6/6/4/1`、candidate exact 1、event `400028`、status registered、write 0で一時target cleanup。fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test中Submit/browser write/Calendar write/evidence/Telegram/state/schedule作用0。Item14未完、schedule unloaded。次のofficial recovery wake exact 1回はsame-run Luma no-effect→Connpass registered pre-readback→Submit 0→receipt/artifact→Calendar→Telegram→applied bundleをacceptanceとする。
+
+### O1B-25進捗329（Item 14 live wake / Connpass Calendar transport plan）
+
+pushed HEAD `577aa534c`、4 labels unloaded、clean/upstream、process/lock 0、`:9222` healthy、baseline bundle/report/delivery/action/Connpass receipt `4/108/120/732/0`でofficial recovery wakeをexact 1回起動した。wake `wake-78fa52609051935647435ecd`はLuma no-effect後、Connpass existing-first candidateをparent `registered`として回収し、provider cache/direct/Harness Submit actionは全0。immutable provider receipt 1、PNG artifact 1、evidence checkpoint 1を保存したが、Calendar、Telegram event delivery、applied bundleは増分0で`circuit_open/evidence_completion_failed`、failure count 1、every-wake Telegram positive ID `11293`。成功扱いにしない。
+
+checkpointはprovider `connpass`、event ref `connpass-event://event/400028`、status `registered`、provider receipt refとartifact ref/SHA-256を同一lineageで保持する。実コードでは`transport/calendar-gog.js`のConnector canonical URL gateがLumaとPeatixだけを許可し、正規Connpass URLをGoogle Calendar create前に拒否する。次plan `docs/superpowers/plans/2026-08-11-connector-connpass-calendar-transport-14i.md`はCalendar gog production/testの2 filesだけ。rootまたは一段subdomainのexact `https://<host>.connpass.com/event/<positive integer>/`と固定`Connpass` source titleを追加し、Luma/Peatixと全malformed rejectionを維持する。Item14未完、schedule unloaded。
+
+初回Luna GREEN後のfresh Sol reviewはCritical 0 / Important 1で`fix-first`。`-bad.connpass.com`、`bad-.connpass.com`、64文字labelの3 variantsがgog `run`へ到達することを独立再現した。planを先に改訂し、optional subdomainを1〜63文字、ASCII英数字始終、中間hyphenだけの一段DNS labelへ限定する。3 variantsを先にRED化してから同じLunaが最小regexだけを修正する。現code/test差分は未commit、live作用0、Item14未完、schedule unloaded。
+
+### O1B-25進捗330（Item 14I / Connpass Calendar transport完了）
+
+fix REDはfocused 20/21、review指摘3 hostが`run` actual 3 / expected 0。最終GREENはoptional Connpass labelを1〜63文字、ASCII英数字始終、中間hyphenだけへ限定した。root/valid一段subdomain、raw canonical exact、固定`Connpass` source title、private idempotency、Luma/Peatixは維持する。差分はplanned Calendar transport/test 2 files、production +7、tests +45だけ。
+
+Luna transport 21/21、minimal evidence/production/runner 61/61、Connpass workflow/provider 20/20、Harness 58/58、native entrypoint 8/8、canonical helper 4/4、syntax/diff checkがPASS。Sol独立166/166とfocused/canonical 25/25、idempotency/evidence 33/33、adversarial 10/10もPASS。native-runtime 2 failuresはclean HEAD同一cursor baselineで新規failure 0。fresh Sol re-reviewはCritical 0 / Important 0で`ship`。実装/test中browser/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用0。Item14未完、schedule unloaded。次はcommit/push後のofficial recovery wake exact 1回でcheckpoint reuse、Connpass Submit 0、Calendar create/readback 1、positive Telegram message/photo IDs、durable applied bundle、same-run Luma→Connpass lineage、exact cleanupを実証する。
+
+### O1B-25進捗331（Item 14 live Connpass applied bundle acceptance完了）
+
+pushed commit `5d6ca0489`、clean/upstream、4 labels unloaded、process/lock 0、`:9222` healthy、baseline bundle/provider receipt/report/delivery/action `4/24/109/121/738`でofficial wakeをexact 1回起動した。wake `wake-bc2b2f00e4eb1aeb237e6743`はexit 0。同一wake auditでLuma `32/32/17/10/0`、about:blank handoff後Connpass `6/6/6/4/1`。Connpass candidateをparent `registered`でreadbackし、action deltaはcalendar observe、Luma discovery、handoff navigate、Connpass discovery、candidate navigate、readbackの6件だけ。provider cache/direct/Harness Submit actionは全0。
+
+既存provider receipt `099d…`とartifact SHA `10f34…`を再利用し、bundle 4→5。new bundle `applied-bundle:d9f0c88a13319c0c5917af61aef834b195377d412ad4400267a7c3705ef954c1`はmode 0600、provider `connpass`、event ref `connpass-event://event/400028`、status `registered`、Calendar ID `k7mufbmh1045f4phnooc5dbckc`、readback timestamp、Telegram message positive ID `11307`、photo positive ID `11308`を同一lineageに保存した。PNG objectは1,394,431 bytes、mode 0600、recomputed SHA exact一致。外部`gog` read-only再検証は記録Calendar ID exact 1、`confirmed`、html link/intervalあり、64文字private idempotency markerあり。wake reportは`applied_bundle`、failure count 0、positive Telegram ID `11309`。process/lock 0、target lease 0、4 labels unloaded、Git clean/upstream。Item14をacceptする。次の一件はItem15 circuit breaker acceptance。
+
+### O1B-25進捗332（Item 15 / existing-first circuit-breaker acceptance plan）
+
+Ponytail fullで現runner/operations/launchd testsとimmutable live evidenceを照合し、Item15に新production/testが不要と判定した。現runnerは3 consecutive failureと600,000ms deadline、safe five-field action history、terminal report、owned-page cleanupを既に個別回帰化する。operationsはcurrent circuit reportのpositive Telegram ID、current-first recovery、delivery idempotencyを持つ。production rendererはsingle daily plistだけを出し、`StartInterval`/healthcheck/healer/bridge/`:9223`/retry sidecarを禁止する。
+
+live正本はofficial wake `wake-a85aefe7a153ce0513e7d7df`の`circuit_open / peatix_unknown_required_field / 3`、positive Telegram ID `10868`、provider/Calendar/PNG/bundle effect 0、owned page/process/lock cleanup。人工failureを再発生させず、plan `docs/superpowers/plans/2026-08-11-connector-circuit-breaker-15.md`でnamed tests、durable row、5分window、現launchd unloadedを統合検証する。code/test LOC 0、Item15は検証完了まで未完、schedule unloaded。
+
+### O1B-25進捗333（Item 15 / deadline boundary fix-first）
+
+初回統合検証はrunner/operations/launchd 33/33、durable failure3/report/delivery、positive Telegram `10868`、delivery後5分report 0、4 labels unloaded、process/lock 0、single daily/no retry templateを確認した。fresh Sol reviewはCritical 0 / Important 1で`fix-first`。Calendar readが600,001msを消費したfixtureはdeadline後にbrowser targetをopenし、候補0 discoveryが600,001msを消費したfixtureは`completed_no_effect / providers_exhausted`を返すことを独立再現した。10分OR branchとdeadline後target/action 0に反する。
+
+planを先に改訂し、ownershipを既存minimal runner/testの2 filesだけへ限定する。Calendar後open前、open後provider action前、discovery後candidate/次provider前、および次browser/readback/actionを開始し得る長時間境界後にdeadlineを再検査する。in-flight operationのcancel/race、新timer/module/service/retry/scheduleは追加しない。既存bounded dependencyが戻った時点でone terminal `circuit_open / wake_deadline`をreportし、owned cleanup以外の後続作用0を必須にする。Item15未完、schedule unloaded。
+
+### O1B-25進捗334（Item 15 / reject-after-deadline fix-first）
+
+初回fixはRED runner 24/28、GREEN 28/28、minimal stack 73/73。Calendar/open/reset/discovery/navigation/readback/cache/direct/fallback/canonical/save後にdeadline guardを追加し、in-flight race/cancel 0、completeEvidence成功は`applied_bundle`維持。fresh Sol re-reviewはCritical 0 / Important 1で`fix-first`。Calendar、browser open、candidate navigation、pre/post readback、saveRepairedActionsが600,001ms経過後にthrowする独立fixtureではraw rejection、terminal report 0を再現した。owned取得後はcleanup 1だがone `circuit_open / wake_deadline`契約を満たさない。
+
+planを先に改訂し、同じrunner/test ownershipで未捕捉境界のreject-after-deadlineをtable regression化する。最小実装は外側error boundary一箇所。elapsedがdeadline以上なら既存finishでone deadline terminal、deadline未満なら元errorをそのままrethrowする。既存local catch、positive report、finally cleanup、completeEvidence成功、finish自身のerrorは変更しない。Item15未完、schedule unloaded。
+
+### O1B-25進捗335（Item 15 / circuit breaker acceptance完了）
+
+第二REDはCalendar/open/candidate navigation/pre-readback/post-readback/saveRepairedActionsのdeadline-crossing throw 6境界をraw rejectionとして再現し、期限前raw error identityはPASS。最終GREENは既存runner外側にdeadline-aware catch一箇所を追加し、deadline以上だけexisting finishへ収束、期限前は同じerrorをrethrowする。完了済みcompleteEvidenceはdeadlineを跨いでも`applied_bundle`を維持する。差分はplanned runner/test 2 filesだけ、runner +21/-1、tests +72。
+
+Luna runner 36/36、minimal stack 81/81、Sol独立81/81、syntax/diff checkがPASS。final fresh Sol re-reviewはCritical 0 / Important 0で`ship`。独立6境界はone `circuit_open / wake_deadline`、report 1、owned cleanup 1、後続browser/evidence 0。期限前error同一object/report 0、finish Telegram rejection同一error/attempt 1、deadline-crossing completeEvidence successはapplied bundle/report 1/cleanup 1。3-failure、effect_unknown、recoveryも非退行。
+
+live正本 `wake-a85aefe7a153ce0513e7d7df`はexact safe reason、failure count 3、positive Telegram ID `10868`、application artifact 0、cleanup済み。delivery後5分report 0、4 labels unloaded、single daily templateにretry sidecar 0。実装/test中live作用0。Item15をacceptし、scheduleはItem16完了までunloadedを維持する。
+
+### O1B-25進捗336（Item 16 / cached-action self-heal composed plan）
+
+Ponytail fullで現action cache、production provider router、bounded Harness adapter、minimal runnerを追跡した。検証済みfallback actionはparent `registered|pending` readback後だけexact provider/workflow/page-state entryへ保存され、cache replayもparent readback成功時だけcompletedを返す。Item16に新production/service/schema/repo editorは不要。未完はselector-change first wake→cache repair→second wake agent 0を一fixtureで合成するacceptanceだけ。
+
+plan `docs/superpowers/plans/2026-08-11-connector-cached-action-self-heal-16.md`は既存minimal production test 1 fileだけ、test +70〜110 LOC。mode 0600 temp cacheへsingle stale submit actionをseedし、同一owned pageでcached failure→direct failure→real bounded adapter replacement→parent registered→exact one-action replacementを通す。synthetic page stateだけresetしたsecond wakeはreplacement replay→parent registered、direct/Harness/proposer 0。単一action fixtureなので「壊れたactionだけ更新」を捏造せずexactに証明する。production/browser/provider/Calendar/Telegram/live state/launchd/schedule/repo edit/merge/deploy作用0。Item16未完、schedule unloaded。
+
+### O1B-25進捗337（Item 16 / cached-action self-heal acceptance完了）
+
+Lunaはplanned existing minimal production test 1 fileだけへcomposed fixture +98 LOCを追加し、production変更0。初回fixture REDはtest expectation 2件だけを修正し、production API blocker 0。最終fixtureはreal action cache、production provider router、bounded Harness adapter、minimal runnerを直接合成する。first wakeはsingle stale cache replay failure→direct failure→one-step replacement→Harness readback→parent `registered`→real cache saveの順。同一pageだけを使用し、cache exact entryはreplacement 1件、stale 0、mode 0600。
+
+synthetic page stateだけabsentへ戻したsecond wakeはreplacement cache replay→parent registeredでapplied bundleへ進み、direct/fallback/proposer/Harness action増分0、cache bytes不変。両wakeでsynthetic evidence/report/open/close各1、repo edit/merge/deployとlive external作用0。Luna composed 11/11、full 90/90、Sol独立90/90、syntax/diff checkがPASS。native entrypoint 2 failuresはknown cursor baseline。fresh Sol reviewはCritical 0 / Important 0で`ship`、独立focused/adjacent 55/55。Item16をacceptする。次はItem17 single daily production schedule cutover。
+
+### O1B-25進捗338（Item 17 / single daily production schedule plan）
+
+Items10〜16 acceptance後のread-only preflightはclean/upstream HEAD `6abe5acc0`、Native/healthcheck/Healer/bridge 4 labels unloaded、process/lock 0。installed native plistはunloadedだがlegacy `StartInterval=300`、canonical repo templateは09:00 `StartCalendarInterval`で`StartInterval` 0。次plan `docs/superpowers/plans/2026-08-11-connector-single-daily-schedule-17.md`はcode/test変更0、既存rendererとcanonical templateだけを再利用する。
+
+rendererはlive LaunchAgents直書きを拒否するため`mktemp -d`へexact 1 plistをrenderし、plutil、ProgramArguments、WorkingDirectory、09:00 daily、no StartInterval/healthcheck/Healer/bridge/`:9223`を検証後、installed native exact fileだけをmode 0600で置換する。native labelだけbootstrapし、他3 labels unloaded、process/lock 0を確認する。Item17ではkickstartしない。Item18でloaded production ownerを`launchctl kickstart`し、別executorを作らずfirst launchd-owned wakeをwatchする。Item17未完、現時点は4 labels unloaded。
+
+### O1B-25進捗339（Item 17 / single daily production schedule loaded）
+
+pushed HEAD `fab51d60b`、clean/upstream、4 labels unloaded、process/lock 0からcutover。private `mktemp -d`へexisting rendererでexact 1 native plistを生成し、plutilとJSON assertionでlabel、current worktree `run.sh`、WorkingDirectory、09:00 `StartCalendarInterval`、Throttle 60、`StartInterval` 0、healthcheck/Healer/bridge/`:9223` token 0を確認した。installed native exact fileだけをmode 0600で置換し、temporary renderはexact削除。
+
+`launchctl bootstrap`後、native label loaded 1、state `not running`、runs 0、never exited、event trigger Hour 9 / Minute 0。installed lint PASS、mode 0600。native healthcheck、Healer shadow、host bridgeはloaded 0、Connector process/lock 0、Git clean/upstream。Item17をacceptする。次はItem18としてloaded native ownerを`launchctl kickstart`し、別executorを作らずfirst launchd-owned wakeのbundle/continuation、positive Telegram、session/target、cleanup、exitをwatchする。
+
+### O1B-25進捗340（Item 18 / first launchd-owned wake plan）
+
+Item17後のpreflightはnative loaded 1、state not running、runs 0、never exited、09:00 trigger、他3 labels unloaded、process/lock 0、target lease 0、baseline bundle/report/delivery/action `5/110/122/744`。plan `docs/superpowers/plans/2026-08-11-connector-first-scheduled-wake-18.md`はloaded ownerへ`launchctl kickstart` exact 1回だけを実行し、manual `run.sh`/Node/browser executorは起動しない。
+
+launchd runs 0→1、terminal report/delivery positive ID、new bundleまたは既存registered/bundle reuseから未処理candidateへのSubmit 0 continuation、live Connector target lease最大1、final process/lock/lease 0をacceptanceとする。session IDはsafe historyへ意図的に永続化しないため、production session-one contract testとlive target-oneを組み合わせる。他3 labels loaded 0とsingle daily trigger、Git clean/upstreamを維持する。Item18未完。
+
+### O1B-25進捗341（Item 18 / first launchd-owned wake acceptance完了）
+
+baseline bundle/report/delivery/action `5/110/122/744`、native runs 0からloaded labelへ`launchctl kickstart` exact 1回。manual runner/Node/browser executorとsecond kick 0。launchd PID `86408`、runs 1でofficial wake `wake-be80daf280c27a9aab26163c`を実行し、state not running、last exit 0へ復帰した。同一wake auditはLuma `32/32/17/10/0`、Connpass `6/6/6/4/1`、Peatix `100/100/87/59/11`。今回claim targetはexact 1。
+
+action delta 14はobserve/navigate/readbackだけでcache/direct/Harness Submit 0。Luma no-effect→Connpass existing registration/bundle reuse→Peatix existing registrationのmissing photo/final bundleを回収した。bundle 5→6、new `applied-bundle:1fd10f527dd4270e3bfb7ac305dd695d60f2f84c5130ad8374b6cd08f7f50a30`、mode 0600、provider peatix、registered、Telegram既存message `11167` reuse、new photo positive ID `11333`。wake report `applied_bundle`、failure count 0、positive Telegram ID `11334`。
+
+外部gog再検証はCalendar ID exact 1、confirmed、link/private 64-char markerあり。PNG 16,826 bytes、mode 0600、recomputed SHA exact一致。exit後current wake lease 0、CDP current target 0、process/lock 0。ledgerには今回以前のlegacy target records 9件が残るため削除せずItem22 cleanupへ登録する。native loaded 1、runs 1、09:00 daily、他3 labels unloaded、Git clean/upstream。Item18をacceptし、次はItem19 Meetup provider。
+
+### O1B-25進捗342（Item 19M / Meetup provider grounded plan）
+
+Ponytail fullでproduction call pathとshared CloakBrowser `:9222`の実ページを測定した。Meetupはlegacy registry/daily-driver host allowlistに名前だけ存在するが、official minimal runner、provider router、Harness workflow、evidence、Calendar、native provider列には未接続。Tokyo Find pageはevent linkを返し、detailのSchema.org Event JSON-LDはcanonical URL、start/end、offline mode、Place/addressを持つ。shared sessionはMeetup未認証でlogin pageにGoogle/Apple/Facebook/emailがある。
+
+Firecrawl英日3 queryは同一quota不足のため停止せず、CloakBrowser Google検索3 queryとMeetup Help原文3件へ切替えた。公式Finding guideはRSVPでhost groupへ自動加入、attendance guideは登録済みevent pageの`Edit RSVP`、waitlist guideはGoing badgeだけがattendingでwaitlistにはstatus labelがないと定義する。実ページではMeetup UIが`Free`でも本文に現地1,500円、ワンドリンク、gym feeを持つ候補が複数ある。そのためUI Freeだけを採用せず、対面Tokyo JSON-LD＋明示free文言＋金額/mandatory purchase marker 0＋visible Attend＋Calendar非衝突を同時に要求する。strict eligibleの観測候補はIQ Cafe Tokyo event `315756352`、2026-08-20 20:00–21:00 JST、本文`Free Event`/`無料イベント`、金額marker 0。live時点で再読取する。
+
+plan `docs/superpowers/plans/2026-08-10-connector-meetup-provider-19m.md`は、new Meetup workflow一つ、既存closed router/Harness/native allowlist、既存browser-provider evidence storeの実需要二件目parameterization、minimal evidence、gog Calendarのsurgical wiringだけ。Meetup専用agent/service/DB/queue/scheduler、推測direct-submit、provider-wide refactorは追加しない。初回未知flowはexisting bounded Harness、成功条件はexact pageの親`registered` readbackだけ。reviewed code merge時だけdaily labelを一時unloadし、official first wakeの実bundleとofficial second wakeのSubmit 0を確認後にMeetup `[x]`、09:00 single label reload、commit/pushする。現時点でItem19 Meetup未完、production supported表示なし、外部write 0。
+
+### O1B-25進捗343（Item 19M-A / Meetup discovery・parent readback完了）
+
+Lunaはnew Meetup workflow/test 2 filesだけをTDD実装した。初期REDはmodule missing後stub exportで0/8、初期GREEN 9/9。strict `www.meetup.com/<ascii-group>/events/<positive-id>/` identity、ordered dedup、JSON-LD exact identity、scheduled/offline/Tokyo/14日window、明示event/admission/participation-fee free、money/mandatory purchase/waitlist/full/cancel rejection、Calendar exact-marker recovery、five-count audit、親`Edit RSVP|Going` readback、stable direct safe failureを追加した。
+
+fresh Sol初回reviewはCritical 2 / Important 2。実Find anchorのrecommendation queryをdefault readerがraw返却してstrict parserが全拒否、detailはDOMContentLoaded時JSON-LD 1だがAttend 0で約2秒後にAttend 1、一般語`free`誤認、free keywordなしを再現した。Lunaはdefault readerだけverified Meetup anchorのquery/fragmentを除去し、注入入力のstrict rejectionは維持。Find URLをexact `keywords=free`へ変更し、default detail/parent viewへ5秒bounded registration-control waitを追加、一般free語を明示料金無料から分離した。第二RED 8/12→GREEN 12/12。
+
+fresh Sol再reviewはCritical 1 / Important 1。generic `Log in`がreadinessを即成立させることと`not a free event`の否定漏れを再現した。第三RED 9/12→GREEN 12/12で、predicateはvisible RSVP/event terminalだけを許可し、fake pageがlogin-only false→Attend/Going trueを実評価する。英日否定無料を拒否する。最終fresh Sol re-reviewはCritical 0 / Important 0で`ship`。Sol独立focused 12/12、syntax、diff checkもPASS。production/browser/Calendar/Telegram/state/schedule外部作用0。
+
+Meetup auth preflightはshared session未認証、Google OAuth saved session 0、Meetup Keychain existing credential 0、email recovery mail 0。公式email signup入力は全validだがhidden hCaptchaがsubmitを停止することを実frameで確認した。生成credentialはrepo/state/logではなくmacOS Keychainだけへmode外保存し、account/sessionは未作成。CAPTCHAをコードで迂回しない。Item19 Meetupは未完でproduction supported表示なし。scheduleはreview済みConnector branchの09:00 daily label loadedを維持し、new codeは分離worktreeだけ。
+
+### O1B-25進捗344（Item 19M-B / Meetup closed production wiring完了）
+
+Meetup discovery・parent readbackのpushed `823ad0d5b`を既存official production factory/router、bounded Browser Harness、native provider順へ最小配線した。LunaのREDはproduction 11/12、Harness 54/55、native 6/8で、Meetup route/provider/order欠落を再現した。最終差分はplanned 6 filesだけで、workflow version `meetup_registration_v1`、closed provider allowlist、Peatix後のnative順、同じowned pageとMeetup event identityに束縛したcache observationを追加した。Meetup fallbackはexact parent state `registered`だけを成功とし、absent/pending/unavailableを成功へ昇格しない。Luna GREENはproduction 12/12、Harness 55/55、native 8/8、adjacent runner 36/36。Sol独立expanded 123/123、production syntax、diff checkがPASSし、fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test/review中のbrowser/provider/Calendar/evidence/Telegram/profile/state/launchd/schedule作用は0。Item19のMeetup acceptanceは未完で、次の一件はregistered Meetup pageのfull-page PNG、deterministic provider receipt/readback、strict Meetup Calendar URL/source titleをTDDで接続する19M-C。
+
+### O1B-25進捗345（Item 19M-C / Meetup evidence・Calendar transport完了）
+
+Meetupの実登録page evidenceとCalendar境界をexisting minimal chainへ接続した。Luna REDはprovider store 2/4、minimal evidence 28/30、gog Calendar 22/23で、Meetup factory/provider/strict valid URL欠落を再現した。最終差分はplanned 6 filesだけ。既存Connpass store seamをprivate parameterizationし、hard-coded Meetup wrapperはexact `meetup-event://event/<positive>`、`provider-receipt://meetup/<sha256>`、tenant-scoped `outbound/meetup`、mode 0600 atomic object/receipt、deterministic tuple readbackを持つ。evidence chainはexact `https://www.meetup.com/<lowercase-ascii-slug>/events/<same-positive-id>/`、parent `registered`、current page exact一致をdownstream前に要求し、registered pageを`fullPage:true`で直接PNG化する。Meetupではreceipt HTML生成、`setContent`、`goto`、`evaluate`を0にした。初回record直後とrecoveryの双方でreceipt keys/provider ID/event/observed/artifact tupleとPNG SHAを再読し、Calendar create/readback、positive Telegram message/photo、immutable applied bundleへ進む。gog transportは同じstrict URLだけをfixed source title `Meetup`で許可し、malformed variantsはvalid idempotency fixtureでもgog run 0。review前にfalse-positive testと公開generic factoryをfixし、fresh review Important 1の初回readback欠落はRED 30/31→GREEN 31/31で閉じた。Sol独立focused 58/58、expanded 110/110、syntax、diff checkがPASSし、fresh Sol re-reviewはCritical 0・Important 0で`ship`。実装/test/review中のbrowser/provider/Calendar/evidence/Telegram/state/launchd/schedule作用は0。Item19 Meetup live acceptanceは未完で、次の一件はGoogle passkeyによる既存Meetup account authを成立させ、official first/second wakeの実bundleとSubmit 0を証明する19M-D。
+
+### O1B-25進捗346（Item 19M-D0 / official wakeのPeatix hidden Kana blocker確定）
+
+review済みMeetup commits `823ad0d5b`、`83e9d1ba2`、`607c14048`をstable scheduled worktreeへfast-forwardし、remote 0/0を確認した。mutable worktree更新前にsingle 09:00 native labelをunloadし、Native/healthcheck/Healer/bridge全4 labels unloaded、process/lock 0、`:9222` page 1、Git cleanからofficial `skills/connector/run.sh`を660秒hard timeout付きforegroundでexact 1回だけ実行した。wake `wake-c86028333ac947edb19541de`はLuma、Connpass、Peatixの各auditを1件増やし、Peatix三候補で同じ`peatix_kana_control_unavailable`となってcontractどおりfailure count 3でcircuit-openした。wake report 111→112、delivery 123→124、positive Telegram provider ID `11375`、bundle 6→6、Meetup audit 0。終了後process 0、owned active target 0、CDP baseline page 1、Git clean/upstream 0/0。Meetup authより前にPeatixがglobal circuitを開くためItem19 Meetupは未完。
+
+read-only実DOM測定では実三候補のconfirm pageすべてが`#confirm-form`内にexact `lastname_edit`/`firstname_edit`を各1件持つが、保存済みattendee profileの編集用`.field-bundle`が`display:none`で両control 0x0、required falseだった。三件とも既存jQuery form validationはtrue。旧direct providerはvisible-only `control()`で両方をnullにして値欠落と誤分類していた。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-hidden-kana-recovery.md`はPeatix browser provider production/testの2 filesだけ。両exact control visibleなら従来fill、両方hiddenかつform validなら保存済み値を再入力せずconfirm、片側/重複/visibility mismatch/invalidはfail closedとする。scheduleはunloaded。
+
+### O1B-25進捗347（Item 19M-D0 / Peatix hidden Kana recovery GREEN）
+
+Lunaがplan `2026-08-10-connector-peatix-hidden-kana-recovery.md`をPeatix browser provider production/testの2 filesだけでTDD実装した。REDは16/19で、hidden exact pair validが`kana_control_unavailable`、hidden pair invalidも同reason、visible non-editable controlがfinalまで進む3 failureを再現した。初回GREEN後のfresh Sol reviewは、Playwright Locatorが常に`fill()` methodを持つためmethod有無がeditable proofにならないImportant 1を発見。fix round 2はfixtureが常にfillを持つ実semanticsで18/20 REDを再現し、exact single locatorの`isEnabled()`と`isEditable()`が両方boolean trueの場合だけvisible Kana pairをfillする。欠落/throw/nonboolean/disabled/non-editable、zero/one-sided/duplicate/visibility mismatchはfinal click前にfail closed。exact hidden pairはprivate stored valueをread/fill/forceせず既存jQuery validationへ進み、invalidなら`confirm_validation_failed`。Luna/ Sol独立focused+adjacent 123/123、syntax、diff checkがPASS。変更外Peatix workflow 22/23の1 failureはstable clean HEAD同一の日付fixtureで新規回帰0。fresh Sol re-reviewはCritical 0・Important 0で`ship`。implementation/test/review中のbrowser/provider/Calendar/evidence/Telegram/state/launchd/schedule作用0。Item19 Meetupは未完で、次の一件はcommit/push後のofficial schedule-unloaded wakeでPeatix同reason解消とMeetup audit到達をlive検証する。
+
+### O1B-25進捗348（Item 19M-D0 live wake 2 / Peatix confirmed settlement blocker確定）
+
+pushed repair `8ae15d93c`をstable worktreeへfast-forwardし、4 labels unloaded、process 0、`:9222` page 1、Git clean/upstream 0/0、bundle 6からofficial foreground wakeをexact 1回実行した。wake `wake-75c37a34330326e9a35672db`はhidden Kana reasonを越え、Peatix三候補のdirect confirm操作へ進んだが、全てparent readback `peatix_readback_unavailable`となりfailure count 3でcircuit-open。wake report 112→113、delivery 124→125、positive Telegram ID `11384`、bundle 6→6、Meetup audit 0。終了後process/active target 0、CDP baseline page 1、Git clean。
+
+read-only canonical/ticket再測定で候補`5086816`はvisible same-event ticket linkとQR shellを持つ実`registered`、前二候補はticketなし。Browser historyは成功候補だけfinal clickの約2秒後にstrict `/sales/event/5086816/confirmed`へ遷移し、前二候補はconfirmに留まることを示した。旧direct providerはfinal click直後にreadbackし、`confirmed` pathを認識せずeffect済み成功もunavailableへ落としていた。既存planへD0bを追記し、final click後のbounded exact same-event confirmed待機→同じpageのcanonical event navigation→既存parent ticket/marker readbackをTDD追加する。confirmed URL単独は成功証拠にせず、wrong/missing transitionは再Submit 0でfail closed。scheduleはunloaded、Item19 Meetupは未完。
+
+### O1B-25進捗349（Item 19M-D0b / Peatix confirmed settlement ship）
+
+LunaへPeatix browser provider production/testの既存2 filesだけを所有させ、final click後のsettlementをSuperpowers TDDで修復した。REDはfocused 22件中9 failureで、8ms delayed exact same-event `/confirmed`が旧即時readbackでは`readback_unavailable`、malformed/missing confirmedはcanonical readbackなしとなる故障を再現した。GREEN commit `e9f953eac`はstrict same-event confirmedを30秒bounded waitし、exact confirmed後だけ同じowned pageをcanonical event URLへnavigateし、既存parent ticket/marker readbackで実registeredを判定する。confirmed URL単独、wrong event、auth、query/fragment、credential/port、unrelated/missing transitionは成功0、final click再試行0。既登録pre-readback no-opは維持する。
+
+Luna focused 22/22、production Harness 55/55、minimal runner 36/36、minimal production 12/12、Sol独立expanded 125/125、syntax、diff checkがPASS。fresh Sol reviewはCritical 0 / Important 0で`ship`。別workflow 1 failureは未変更の日付依存testで単独再現し新規回帰0。review済みcommitをstable scheduled worktreeへfast-forwardし、両remote branchへpushした。implementation/test/review中のbrowser、provider Submit、Calendar、evidence、Telegram、state、launchd、schedule外部作用0。Item19 Meetupは未完。次は4 labels unloaded、process/lock 0、clean/upstreamからofficial foreground wakeをexact 1回実行し、実登録済みPeatixのpre-readback/evidence回復とMeetup audit到達または次のexact safe boundaryを観測する。
+
+### O1B-25進捗350（Item 19M-D0c live wake / direct effect-unknown blocker確定）
+
+pushed HEAD `818ad151b`、4 labels unloaded、process 0、active target lease 0、`:9222` page 1、bundle/action/report/delivery/audit baseline `6/816/113/125`からofficial foreground wakeをexact 1回実行した。wake `wake-995f1e9d54b9a832392ffa63`はLuma、Connpass、Peatix discoveryを成功し、action 816→835、report 113→114、delivery 125→126、positive Telegram ID `11394`。Peatix audit 29→30、bundle 6→6、Meetup audit 0。
+
+Peatix candidateはcache 1ms、provider direct 31,219msの後に`peatix_readback_unavailable`となったが、existing runnerはdirect failureを通常fallback可能と扱いBrowser Harnessを34,041ms実行した。Harnessが`effect_unknown`を返し、wakeはfailure count 1の`circuit_open / effect_unknown`で安全停止。process 0、active lease 0、owned page cleanup、Git clean/upstreamを確認した。D0bはconfirmed settlementを越えた場合を正しくreadbackするが、confirmedなしのfinal click済みambiguous effectをouter fallbackから止める契約が未接続だった。
+
+Ponytailで新provider statusやworkflow変更を棄却し、plan `2026-08-11-connector-peatix-direct-effect-unknown.md`を追加した。既にrunnerへ届くexact `peatix_readback_unavailable`を既存agent `effect_unknown` terminal contractへ接続するrunner/test 2-file TDDだけを行う。direct exact 1後はHarness 0、次candidate 0、evidence 0、cleanup/report exact 1を必須とする。scheduleはunloaded、Item19 Meetupは未完。
+
+### O1B-25進捗351（Item 19M-D0c / direct effect-unknown stop ship）
+
+Lunaへexisting minimal runner production/testの2 filesだけを所有させ、Peatix direct final effect不明後のouter fallbackをSuperpowers TDDで停止した。REDはfocused 36/37で、single Peatix candidateのdirect `failed / peatix_readback_unavailable`後に旧runnerがHarnessへ進み`providers_exhausted`となる故障を再現した。GREEN commit `898950bb9`はexact reasonを既存`circuit_open / effect_unknown` contractへ接続し、direct 1、Harness 0、次candidate 0、evidence 0、cleanup/report 1、failure count 1を固定した。
+
+fresh Sol reviewはreason-only guardがnon-Peatix spoofも停止するImportant 1を発見。fix commit `be75bc8f3`は`provider === "peatix"`を同時に必須化し、非Peatix同reasonが従来fallbackへ進むRED 37/38→GREEN 38/38を追加した。Luna minimal production/evidence/operations、Peatix provider、Harness adjacent 128/128、Sol独立expanded 166/166、syntax/diff checkがPASS。workflow 1 failureは既知の日付依存。fresh re-reviewはCritical 0 / Important 0で`ship`。review済みcommitsをstable scheduled worktreeへfast-forwardしremoteへpushした。implementation/test/review中のbrowser、provider、Calendar、evidence、Telegram、state、launchd、schedule作用0。Item19 Meetupは未完。次は4 labels unloadedのofficial foreground wake exact 1回でPeatix ambiguous時Harness 0またはPeatix evidence回復後Meetup audit到達をlive検証する。
+
+### O1B-25進捗352（Item 19M-D0d live wake / direct-to-confirm variant確定）
+
+pushed HEAD `5c5a97925`、4 labels unloaded、process/active lease 0、`:9222` page 1、baseline action/report/delivery/Peatix audit/bundle `835/114/126/30/6`からofficial foreground wakeをexact 1回実行した。wake `wake-145a8e4a4f58e9239f113b3f`はLuma、Connpass、Peatix discoveryを成功し、action 835→854、report 114→115、delivery 126→127、Peatix audit 30→31、positive Telegram ID `11404`。bundle 6、Meetup audit 0。
+
+action差分はprovider direct 30,857ms後にもBrowser Harness 33,983msが1件あり、terminalはfailure count 1の`circuit_open / effect_unknown`。historyでcandidate `5101994`は`/tickets → /billing → /confirm`が1秒以内、Harness action後に`/confirmed`へ遷移していた。D0c guardのlive対象`peatix_readback_unavailable`ではなく、directがNext後に`form`だけを待って`peatix_form_navigation_failed`となる別variantだった。process/active lease 0、owned page cleanup、Git clean/upstreamを確認した。
+
+external click 0のtemporary owned pageで`/billing`をread-only測定するとsame-event `/confirm`へ遷移し、required field 0、confirm control exact 1、form-submit 0。targetをexact cleanupしbaseline page 1へ戻した。plan `2026-08-11-connector-peatix-direct-confirm-transition.md`を追加し、Peatix provider/test 2 filesだけでNext後のstrict same-event `form|confirm`をbounded waitする。confirm直行時はform blockを省略し、既存confirm identity/Kana/validation/final/confirmed/canonical readbackへ合流する。scheduleはunloaded、Item19 Meetupは未完。
+
+### O1B-25進捗353（Item 19M-D0d / direct-to-confirm ship）
+
+LunaへPeatix browser provider production/testの既存2 filesだけを所有させ、Next後にattendee formを省略してconfirmへ直行する実variantをSuperpowers TDDで修復した。REDはfocused 23/24で、same-event billing transient→8ms後same-event confirmの新規fixtureだけが旧form-only waitで`form_navigation_failed`になることを再現した。GREEN commit `967ff73c3`はNext click前からstrict same-event `form|confirm`を30秒bounded waitし、form時だけ既存attendee fill/form-submit、confirm時はそのblockを0にしてcommon confirm identity/Kana/validation/final/confirmed/canonical readbackへ合流する。billing停留、wrong event、auth、query/hash、credential/port、unrelatedはfinal click 0。
+
+Luna focused 24/24、minimal runner/production/evidence、Harness adjacent 136/136、Sol独立expanded 160/160、syntax/diff checkがPASS。workflow 1 failureは既知の日付依存。fresh Sol reviewはCritical 0 / Important 0で`ship`。review済みcommitをstable scheduled worktreeへfast-forwardしremoteへpushした。implementation/test/review中のbrowser、provider、Calendar、evidence、Telegram、state、launchd、schedule作用0。Item19 Meetupは未完。次はofficial wake exact 1回で、既登録Peatixのpre-readback/evidence bundleまたはdirect-to-confirm completion、同wake Meetup audit到達、duplicate Submit 0を検証する。
+
+### O1B-25進捗354（Item 19M-D0e live wake / swipe-ticket readback blocker確定）
+
+pushed HEAD `2795acbd7`、4 labels unloaded、process/active lease 0、page 1、baseline action/report/delivery/Peatix audit/bundle `854/115/127/31/6`からofficial foreground wakeをexact 1回実行した。wake `wake-97558353b86abced2440ac33`はLuma、Connpass、Peatix discoveryを成功し、action 854→872、report 115→116、delivery 127→128、Peatix audit 31→32、positive Telegram ID `11411`。bundle 6、Meetup audit 0。
+
+新direct-to-confirm pathはcandidate `5101994`を4,417msで`/tickets → /billing → /confirm → /confirmed → canonical`まで完走し、Browser Harness 0をlive実証した。canonical readbackだけが`unavailable`となり、D0c guardどおりfailure count 1の`circuit_open / effect_unknown`、次candidate/evidence 0で停止。process/active lease 0、owned page cleanup、Git clean/upstreamを確認した。
+
+external click 0のread-only測定でcanonicalはticket link/marker/checkout各0。exact `/event/5101994/ticket`はauth redirectなし、`body.webticket`と`section.ticket`各1だが旧QR image 0。現行swipe ticketはvisible `.ticket_cover`、`.ticket_event`、`.ticket_event-name`、`.ticket_summary`が各exact 1。旧readerがQR型だけをticket shellとするため実registeredを認識できず、次wakeで再Submitし得る。plan `2026-08-11-connector-peatix-swipe-ticket-readback.md`を追加し、provider/test 2 filesだけでQR OR swipe shell proofとcanonical→ticket read-only probe/restoreをpre-submit/post-confirmへ接続する。private ticket text/valueは読取・保存0。scheduleはunloaded、Item19 Meetupは未完。
+
+### O1B-25進捗355（Item 19M-D0e / swipe-ticket readback ship）
+
+LunaへPeatix browser provider production/testの既存2 filesだけを所有させ、QR型でないswipe ticketのsame-event readbackとpre/post ticket probeをSuperpowers TDDで実装した。REDはfocused 25/29で、swipe shell未認識、pre-submit既登録回収なし、unproven probeのcanonical restoreなし、post-confirm登録回収なしを再現した。GREEN commit `f05fb785d`はexact ticket URL、`body.webticket`、`section.ticket`、visible exact `.ticket_cover/.ticket_event/.ticket_event-name/.ticket_summary`各1をQR shellと並ぶboolean proofにする。ticket text、confirmation number、ticket/private valueは読取・保存・log 0。
+
+pre-submitはexisting canonicalStartのsame-event/markerなしを通った時だけticketをread-only probeし、registeredならfinal click 0、proof不成立ならcanonical exact restore後にexisting flowへ進む。wrong marker/auth/malformedはprobe 0。post-confirm canonical unavailableもticket proof registeredだけを成功にする。Luna focused 29/29、runner/production/evidence/Harness adjacent 136/136、Sol独立expanded 165/165、syntax/diff checkがPASS。workflow 1 failureは既知の日付依存。fresh Sol reviewはCritical 0 / Important 0で`ship`。review済みcommitをstable scheduled worktreeへfast-forwardしremoteへpushした。implementation/test/review中のbrowser、provider、Calendar、evidence、Telegram、state、launchd、schedule作用0。Item19 Meetupは未完。次はofficial wake exact 1回でsame-event swipe ticket pre-readback、Submit/Harness 0、evidence bundle、Meetup audit到達または次exact safe boundaryをlive検証する。
+
+### O1B-25進捗356（Item 19M-D0e live wake / Peatix partial evidence recovery境界）
+
+pushed HEAD `4d8ee7fd8`、4 labels unloaded、process/active lease 0、page 1、baseline action/report/delivery/Peatix audit/bundle `872/116/128/32/6`からofficial foreground wakeをexact 1回実行した。wake `wake-90b09e9c1a0f9e5c2fb5b340`はLuma、Connpass、Peatix discoveryを成功し、action `872→891`、report `116→117`、delivery `128→129`、Peatix audit `32→33`、positive every-wake Telegram ID `11424`。bundle 6、Meetup audit 0。
+
+Peatix candidate `5101994`はpre-submit swipe-ticket probeをprovider direct 373msで`registered`と再読取し、final click、Browser Harness、次candidate Submitをすべて0にした。続くevidence chainはimmutable provider receipt、16,738-byte privacy-safe PNG、SHA-256一致artifact、evidence checkpoint、exact Calendar create/readback、positive Telegram message ID `11422`までdurable保存した。Telegram photo deliveryだけがcheckpoint作成前に失敗し、runnerはcontractどおりfailure count 1の`circuit_open / evidence_completion_failed`を一回報告してcleanupした。photo checkpointとapplied bundleは0。
+
+初期診断の「evidence開始前失敗」はstate実測で棄却した。既存Item 12 partial recoveryがこのexact境界を既に覆い、次wakeはprovider receipt、PNG、Calendar、message checkpointを検証・再利用してphotoとbundleだけを補完する。新code、test、schema、retry、provider actionは追加しない。次の一件はschedule-unloaded official recovery wake exact 1回でSubmit/Harness 0、Telegram photo positive ID、新Peatix `applied_bundle`、同wake Meetup audit到達または次exact safe boundaryを確認する。Item19 Meetupは未完、scheduleはunloaded。
+
+### O1B-25進捗357（Item 19M-D0e / Peatix partial evidence live recovery成功）
+
+pushed HEAD `2b995f27e`、4 labels unloaded、process/active lease 0、page 1、baseline action/report/delivery/Peatix audit/Meetup audit/bundle `891/117/129/33/0/6`からofficial recovery wakeをexact 1回実行した。wake `wake-32bd9e6c2fc4cb6d5ae16f11`はexit 0、action `891→910`、report `117→118`、delivery `129→130`、Peatix audit `33→34`、bundle `6→7`、Meetup audit 0。terminalは`applied_bundle / applied_bundle`、failure count 0、positive every-wake Telegram ID `11431`。
+
+same-event `5101994`はpre-submit swipe-ticket probeをprovider direct 412msで`registered`と再読取し、Browser Harness 0、final registration click 0。既存provider receipt、16,738-byte PNG、Calendar readback、Telegram message ID `11422`を再利用し、不足していたTelegram photoだけpositive ID `11430`で補完した。新bundle `006c9804…`はmode 0600、exact schema、provider `peatix`、status `registered`、same Calendar ID、message/photo IDs、artifact SHAを同一lineageへ保存し、artifact再計算SHAがexact一致した。process/active lease 0、page 1、4 labels unloaded、Git clean/upstreamでcleanupした。
+
+このwakeはcreated bundleで正しく停止したためMeetup discoveryは次wakeへ継続する。次の一件はSSOT commit/push後のschedule-unloaded official second wake exact 1回。Peatix bundle reuseでprovider registration click 0を維持して同じowned railのMeetup auditへ到達し、既存Meetup account authの次exact境界を観測する。Item19 Meetupは未完。
+
+### O1B-25進捗358（Item 19M-D0f / second wakeが別Peatix既登録bundleを回収）
+
+pushed HEAD `657f9aec1`、4 labels unloaded、process/active lease 0、page 1、baseline action/report/delivery/Peatix audit/Meetup audit/bundle `910/118/130/34/0/7`からofficial second wakeをexact 1回実行した。wake `wake-49def955964d4b75ef5f0c43`はexit 0、action `910→934`、report `118→119`、delivery `130→131`、Peatix audit `34→35`、bundle `7→8`、Meetup audit 0。terminal `applied_bundle / applied_bundle`、failure count 0、positive every-wake Telegram ID `11435`。
+
+same-event `5101994`のexisting bundleをreadback/reuse後、Peatixは別candidate `5110502`の実`registered` stateを回収し、provider receipt、privacy-safe PNG、exact Calendar readback、Telegram message/photo positive IDs `11433/11434`、mode 0600 bundle `8cba1543…`を新規保存した。Browser Harness actionは0。1 wakeにつき新created bundle 1件で停止する既存contractによりMeetup discoveryはまだ0であり、故障扱いにしない。process/active lease 0、page 1、4 labels unloaded、Git clean/upstreamでcleanupした。
+
+次の一件はSSOT commit/push後のschedule-unloaded official continuation wake exact 1回。Peatixの既存bundleをSubmitなしで順次reuseし、新しいregistered evidenceがあれば同じ安全単位でbundle化する。Peatix eligible exhaustion後に同じowned railでMeetup auditへ到達するまで継続する。Item19 Meetupは未完。
+
+### O1B-25進捗359（Item 19M-D0g / third continuation wakeがPeatix evidence backlogを回収）
+
+pushed HEAD `da2f4f093`、4 labels unloaded、process/active lease 0、page 1、baseline action/report/delivery/Peatix audit/Meetup audit/bundle `934/119/131/35/0/8`からofficial continuation wakeをexact 1回実行した。wake `wake-6c2642ccc53b7fb8f58510fb`はexit 0、action `934→960`、report `119→120`、delivery `131→132`、Peatix audit `35→36`、bundle `8→9`、Meetup audit 0。terminal `applied_bundle`、failure count 0、positive every-wake Telegram ID `11442`。
+
+Peatixの既存bundleを順次reuse後、既登録event `5086816`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11440/11441`、new bundle `001f7c59…`を回収した。Browser Harness 0。新created bundle exact 1で停止するcontractを維持し、process/active lease 0、page 1、4 labels unloaded、Git clean/upstreamでcleanupした。次の一件は同じofficial continuation wakeをexact 1回ずつ続け、Peatix evidence backlogを重複作用なしで消化してMeetup auditへ到達すること。Item19 Meetupは未完。
+
+### O1B-25進捗360（Item 19M-D0h / fourth continuation wakeがPeatix evidence backlogを回収）
+
+pushed HEAD `d4f91fe96`からofficial continuation wake `wake-7e03669ef85da279af67d9d4`をexact 1回実行した。4 labels unloaded、process/active lease 0、page 1を維持し、action `960→991`、report `120→121`、delivery `132→133`、Peatix audit `36→37`、bundle `9→10`、Meetup audit 0。Peatix既登録event `5104187`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11444/11445`、new bundle `16ae1e9c…`を回収した。Browser Harness 0、terminal `applied_bundle`、failure 0、every-wake Telegram ID `11446`。cleanup後もprocess/lease 0、page 1、4 labels unloaded。次wakeも同じ1-bundle-per-wake contractでPeatix backlogを消化しMeetup到達まで継続する。Item19 Meetupは未完。
+
+### O1B-25進捗361（Item 19M-D0i / candidate navigation timeoutのreport欠落を確定）
+
+pushed HEAD `927ebf892`、4 labels unloaded、process/active lease 0、Connector開始前CDP page 4、Git clean/upstreamからofficial continuation wake `wake-8f883c25e400a12b505e4b23`をexact 1回実行した。Calendar、Luma、Connpass、Peatix discoveryは成功し、Peatix audit `37→38`、action `991→1002`。candidate navigation/readback後、次candidate navigationが30,029msでfailedとなり、期限前raw errorがrunner外へescapeした。exit 2、report/delivery/bundle/Meetup audit delta 0、provider registration/Calendar/evidence/Telegram effect 0。成功扱いにしない。
+
+cleanup後process/active lease 0。current CDP page 4は全てopenerなしのCoconala既存pageで、Connector target/orphanではないためclose 0。故障はcandidate navigationの期限前throwだけがlocal safe-failure境界を持たず、outer catchが意図どおりraw rethrowすること。plan `2026-08-11-connector-candidate-navigation-report-19m.md`はrunner/test 2 filesだけで、failed candidateをreadback/Submit 0のまま`candidate_navigation_failed`として加算し次へ継続、3回でexisting circuit/report/cleanupへ収束させる。deadline crossingは`wake_deadline`を維持する。Item19 Meetupは未完、scheduleはunloaded。
+
+### O1B-25進捗362（Item 19M-D0i / candidate navigation safe reporting ship）
+
+Lunaへrunner production/testの2 filesだけを所有させSuperpowers TDDを実行した。初回RED 38/40は期限前candidate navigation raw throwのescapeを再現し、初回GREEN commit `6885c7f64`はnavigation failureを1回加算、failed candidateのreadback/cache/direct/Harness/evidence 0、次candidate継続、3回で`circuit_open / candidate_navigation_failed` report 1、deadline crossingは`wake_deadline`として40/40 PASSにした。
+
+fresh Sol reviewはcatchが`action()`内の`recordAction` errorも誤変換するImportant 1を発見。fix RED 40/41はnavigation成功後のaudit errorがraw rejectせずresolveする欠陥を再現した。fix commit `900c04c3f`はnavigation task内でthrown valueをcaptureし、outer catchはsentinel trueかつ`Object.is` identity exact一致だけをsafe変換する。success audit failureとnavigation failure後のfailed audit failureは従来raw reject、report 0、provider処理0、cleanup 1を維持する。
+
+Luna runner 41/41、operations 8/8、production 12/12、evidence 31/31、Meetup 12/12、Harness 55/55。Sol独立combined 159/159、syntax、diff check、clean/upstream PASS。Peatix 22/23の1件は変更外の既知date-sensitive fixture。fresh Sol re-reviewはCritical 0 / Important 0で`ship`。review済み2 commitsをstable branchへfast-forwardしremoteへpushした。実装/test/review中のbrowser/provider/Calendar/evidence/Telegram/state/schedule作用0。次の一件は4 labels unloadedのofficial wake exact 1回でpositive every-wake reportまたはPeatix/Meetup safe continuation、process/lease/target cleanupをlive受入する。Item19 Meetupは未完。
+
+### O1B-25進捗363（Item 19M-D0i / candidate navigation repair live acceptance）
+
+pushed HEAD `6485da221`、4 labels unloaded、process 0、CDP page 1、Connector ledger target交差0、Git clean/upstreamからofficial live acceptance wake `wake-d1a34863460886359e2347ae`をexact 1回実行した。exit 0、action `1002→1035`、report `121→122`、delivery `133→134`、Peatix audit `38→39`、bundle `10→11`、Meetup audit 0。candidate navigationは全て成功し、別既登録Peatix event `5117607`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11463/11464`、new bundle `323c881d…`を回収した。terminal `applied_bundle`、failure 0、positive every-wake Telegram ID `11465`。
+
+cleanup後process 0、Connector ledger targetとcurrent CDP pagesの交差0、4 labels unloaded、Git clean/upstream。current CDP page 2の追加分はConnector ledger外でclose 0。navigation repairはsafe continuation、positive report、bundle completion、target cleanupのlive acceptanceを満たす。Meetup auditはnew bundle exact 1で停止する既存contractにより0。次の一件はofficial continuation wakeをexact 1回ずつ続け、Peatix evidence backlog exhaustion後にMeetup auditへ到達すること。Item19 Meetupは未完。
+
+### O1B-25進捗364（Item 19M-D0j / Peatix evidence backlog continuation）
+
+pushed HEAD `d1466d7a3`からofficial continuation wake `wake-ad059ed57b669d7bb18edc1e`をexact 1回実行した。exit 0、action `1035→1068`、report `122→123`、delivery `134→135`、Peatix audit `39→40`、bundle `11→12`、Meetup audit 0。Peatix既登録event `5123894`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11467/11469`、new bundle `cd9a01f9…`を回収した。terminal `applied_bundle`、failure 0、every-wake Telegram ID `11470`。cleanup後process 0、Connector ledger targetとCDP pageの交差0。次wakeも同じcontractでbacklog exhaustionからMeetup到達まで継続する。Item19 Meetupは未完。
+
+### O1B-25進捗365（Item 19M-D0k / Peatix evidence backlog continuation）
+
+pushed HEAD `baad99d47`からofficial continuation wake `wake-0f40af62c3f097c6e52ea1d6`をexact 1回実行した。exit 0、action `1068→1106`、report `123→124`、delivery `135→136`、Peatix audit `40→41`、bundle `12→13`、Meetup audit 0。Peatix既登録event `5129151`のprovider receipt、privacy-safe PNG、Calendar readback、Telegram message/photo positive IDs `11476/11477`、new bundle `3c8820c2…`を回収した。terminal `applied_bundle`、failure 0、every-wake ID `11478`。cleanup後process 0、Connector ledger target/CDP交差0。次wakeもbacklog exhaustionからMeetup到達まで継続する。Item19 Meetupは未完。
+
+### O1B-25進捗366（Item 19M-D1 / Meetup discovery到達・Calendar-safe skip・audit欠落を確定）
+
+pushed HEAD `9fc3e88c4`、4 labels unloaded、process 0、CDP page 2、Connector ledger target交差0からofficial continuation wake `wake-698594817b79bbe91ab869a5`をexact 1回実行した。Peatix audit `41→42`で既存10 bundlesをreadback/reuseし、新bundle 0。その後same owned railでMeetup discoveryを48,171ms実行したがcandidate 0。terminal `completed_no_effect / existing_bundles_reused`、failure count 1、report `124→125`、delivery `136→137`、positive Telegram ID `11483`、bundle 13、process 0、Connector target交差0。Peatix evidence backlogはexhaustしMeetup production到達をlive実証した。
+
+isolated exact-target read-only測定でdefault Meetup workflow＋実Calendarは`observed/normalized/window/free-open/calendar-free = 14/12/12/1/0`、candidate 0。唯一のstrict free eventは2026-08-20 20:00–21:00 JSTで、実Calendarの19:30–21:00 timed Connector eventと重複し、安全skipは正しい。Calendarなしでは同eventがcandidate 1。英`free`/`free event`・日`無料`の3-query診断は追加detail readiness failureでwhole discoveryをfail closedしたためproduction拡張を棄却した。
+
+`createMinimalProductionDependencies`は`operations.recordMeetupDiscoveryAudit || noop`を渡すが、production operationsに同methodがなくMeetup auditがdurable保存0。plan `2026-08-11-connector-meetup-discovery-audit-19m.md`はoperations production/test 2 filesだけで、既存safe five-count validatorをMeetup fileへcopy-tweakする。URL/title/event/profile/authは保存0。Item19 Meetup bundle acceptanceは候補なしのため未完、scheduleはunloaded。
+
+### O1B-25進捗367（Item 19M-D1 / Meetup discovery audit persistence ship）
+
+Lunaへoperations production/testの2 filesだけを所有させSuperpowers TDDを実行した。REDは8/9で`recordMeetupDiscoveryAudit is not a function`を再現。GREEN commit `189b57bc8`は既存`safeDiscoveryAudit`、append、wake ID、exact timestampを再利用し、`meetup-discovery-audits.jsonl` writerとfrozen exportだけを追加した。invalid monotonic countsはappend 0、valid rowはschema/wake/five counts/timeのみ、mode 0600、URL/event/title/profile/ticket/auth/private bytes 0。
+
+Luna/ Sol独立operations 9/9、production 12/12、Meetup 12/12、runner 41/41、evidence 31/31、Harness 55/55、combined 160/160 PASS。syntax、diff、clean/upstream PASS。fresh Sol reviewはCritical 0 / Important 0で`ship`。既存production factoryが同methodをMeetup workflowへ注入済みで追加配線0、他provider/report/action変更0。review済みcommitをstableへfast-forwardしpushした。次の一件はschedule-unloaded official wake exact 1回でMeetup audit `14/12/12/1/0`相当のdurable row、positive every-wake report、target cleanupをlive受入する。Item19 Meetup bundleは候補Calendar conflictのため未完。
+
+### O1B-25進捗368（Item 19M-D1 / Meetup discovery audit live acceptance）
+
+pushed HEAD `3bc80b94e`、4 labels unloaded、process 0、Meetup audit baseline 0、Connector ledger target交差0からofficial wake `wake-1cf5b5ef7ea3d42a3e4f78c4`をexact 1回実行した。Peatix audit `42→43`、既存10 bundlesをreuse後、same owned railでMeetup discoveryを26,115ms実行。durable Meetup audit `0→1`はexact `observed/normalized/window/free-open/calendar-free = 14/12/12/1/0`、mode 0600、schema/wake/timeとaggregate counts以外0。terminal `completed_no_effect / existing_bundles_reused`、failure 1、report `125→126`、delivery `137→138`、positive Telegram ID `11496`、bundle 13、新規registration/Calendar/evidence effect 0。
+
+cleanup後process 0、Connector ledger target/CDP交差0、Git clean/upstream。Meetup discovery/audit/safe Calendar skipはlive受入完了。唯一strict candidateが実Calendar conflictのためMeetup applied bundleは外部non-conflict候補待ちで未完だが、安全条件を緩めない。NO PASSIVE WAITINGにより次の実装itemはDoorkeeper providerへ進み、各wakeでMeetup候補再探索を継続する。Item19 Meetup `[pending: no non-conflict candidate]`、Doorkeeper未着手、scheduleはunloaded。
+
+### O1B-25進捗369（Item 19D-A / Doorkeeper grounded discovery plan）
+
+Ponytail fullでexisting provider workflow/router/Harness/native/evidence/Calendar seamsとDoorkeeper実サイトをread-only追跡した。repoにはdaily-driver host allowlist、tab owner、legacy provider registryのDoorkeeper名だけがあり、official minimal workflow/router/native/evidenceへの実装は0。Doorkeeper専用agent/API client/DB/queue/schedulerは作らず、既存same-page workflow interfaceとCalendar gateを再利用する。
+
+公式参加者helpはaccountなしemail申込、無料eventの必要事項入力後の`申し込む`、完了pageとticket mailを定義する。公式APIはpublic event fieldsを持つがalphaかつPublic API Access token必須なのでactive runtimeには追加しない。実東京一覧はpage 1が50 rowsで08-11〜08-19、page 2が50 rowsで08-19〜08-26。14日窓のexact東京会場rowは12。detail JSON-LDはexact canonical、start/end、OfflineEventAttendanceMode、東京住所、Offer price/currency/availabilityを持ち、visible exact`申し込む`も実測した。有料detailは同UIで`1,000円 会場払い`を持つため、price zero/JPY/InStock/all-offers exactをfail-closedで要求する。
+
+実Calendar read-only比較は`observed/normalized/window/free-open/calendar-free = 100/100/12/8/0`。無料受付中8件すべてが実予定と重複し、Doorkeeperの現在external write 0は故障ではなくsafe skip。Firecrawl searchはInvalid tokenで3 query失敗したため停止せず、crwl公式本体/API/help、Google英日検索、gh code search、shared CloakBrowser実DOMへ切替えた。registration再利用可能OSSは旧widget以外0。
+
+plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-discovery-19d.md`はnew workflow/test 2 filesだけ、production約220〜320 LOC、test約260〜360 LOC。ordered listing pagination→canonical/Tokyo/window prefilter→detail JSON-LD free/open gate→Calendar→five-count audit→parent readbackをTDD実装する。direct submitはstable safe failureでexisting Harnessの後続sliceへ残す。Item19 Meetupは`[pending: no non-conflict candidate]`、Doorkeeperはdiscovery未実装、Eventbrite未着手、4 schedule labelsはunloaded。
+
+### O1B-25進捗370（Item 19D-A / Doorkeeper discovery workflow ship）
+
+Lunaがplan `2026-08-11-connector-doorkeeper-discovery-19d.md`に従い、Doorkeeper workflow本体と専用testの2 filesだけをTDD実装した。初回REDはmodule不在、初回GREENはfocused 10/10。fresh Sol reviewのImportant 3件に対し、監査をexact `discovered_count / within_window_count / eligible_count / calendar_free_count / selected_count`へ修正し、default listing/detail readerの`goto()`後実URL完全一致を必須化し、readbackの`中止 / 延期 / 受付終了`を本文と可視controlの両経路でfail closedにした。回帰は4件RED→14/14 GREEN、残control経路は1件RED→最終15/15 GREEN。最終fresh Sol verdictはspec PASS / quality SHIP、指摘0。
+
+Sol独立検証はfocused 15/15、syntax、diff check、exact 2-file ownershipがPASS。隣接Meetup/Peatix/Connpassは48/49で、唯一のPeatix date-sensitive fixtureは変更前base `cbfabd5bd`でも同じFAILを再現した。review済み3 commits `f6c7e3eb4`、`d0078f05c`、`fee320763`をstable `feature/connector-native-completion`へfast-forwardしremoteへpushした。4 Connector labelsはexact全UNLOADED、process 0。Doorkeeperはpublic discovery、strict JSON-LD eligibility、Calendar ordering、privacy-safe five-count audit callback、parent readbackまで完了したが、production router/Harness/native/audit persistence/live registrationは未接続。次の一件はこの既存workflowをproduction railへ最小配線するsliceであり、Item19 Doorkeeper checkboxとscheduleは未完のまま。
+
+### O1B-25進捗371（Item 19D-B1 / Doorkeeper production routing plan）
+
+Doorkeeper production wiringをPonytailで4つの閉じたsliceへ分割した。順序はB1 router/factory、B2 privacy-safe audit persistence、B3 native provider order、B4 Browser Harnessのmodal/form action。新agent/service/API/DB/queueを作らず、各sliceは既存seamのcopy-tweakとproduction/test 2 filesだけにする。
+
+先頭plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-routing-19d.md`は`connector-minimal-production.js`とmatching testだけをLuna ownershipとする。exact provider `doorkeeper`、workflow version `doorkeeper_registration_v1`、same page/Calendar、cache/direct/fallback/readbackを既存router mapへ追加し、factoryはreview済み`createDoorkeeperScriptFirstWorkflow`を生成する。audit methodは後続B2までoptional no-op、native orderとHarness allowlistは後続まで凍結するため、このslice単独のofficial wake reachabilityと外部作用は0。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗372（Item 19D-B1 / Doorkeeper production routing ship）
+
+Lunaが`connector-minimal-production.js`とmatching testの2 filesだけをTDD変更した。REDは既存12件GREEN、新Doorkeeper 2件だけ`Connector minimal production unavailable`でFAIL。GREENはfactory/router 14/14、Doorkeeper workflow+minimal runner 56/56、syntax、diff checkがPASS。exact `doorkeeper`をunknown providerへfallbackしない明示mapに追加し、workflow version `doorkeeper_registration_v1`、same page/Calendar、cache/direct/fallback/readback/save contractを既存境界で再利用した。factoryはreview済みworkflowを`now`とoptional audit no-opで生成しrouterだけへ渡す。production +19/-3、test +56、private cache metadata追加0、browser rail open 0。
+
+fresh Sol reviewはspec PASS / quality SHIP、指摘0。Sol独立14/14、56/56、syntax/diff/ownership、4 labels exact UNLOADEDがPASS。review済みcommit `a774eaa41`をstableへfast-forwardしpushした。native provider order、Harness allowlist、audit persistenceは未変更なのでofficial wakeはまだDoorkeeperへ到達せず外部作用0。次の一件はB2 Doorkeeper five-count auditのmode 0600 durable persistence。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗373（Item 19D-B2 / Doorkeeper durable audit plan）
+
+次active slice B2 plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-audit-19d.md`はoperations production/testの2 filesだけ。Doorkeeper workflowのexact新5キー`discovered / within_window / eligible / calendar_free / selected`をinteger 0〜500かつ単調減少で検証し、schema/wake/timeとaggregate countだけを`doorkeeper-discovery-audits.jsonl`へmode 0600 appendする。URL、event、title、profile、ticket、auth、private Calendar dataは保存0、invalid inputはappend 0。既存4providerの旧5キーvalidator/filesは変更しない。native/Harness/schedule/live作用0。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗374（Item 19D-B2 / Doorkeeper durable audit ship）
+
+Lunaがoperations production/testの2 filesだけをTDD変更した。REDは既存9件GREEN、新1件がmethod未定義でFAIL。GREENはoperations 10/10、production+Doorkeeper workflow 29/29、syntax、diffがPASS。separate validatorはexact新5キー、integer 0〜500、`selected <= calendar_free <= eligible <= within_window <= discovered`を要求し、schema/wake/exact time/countsだけを`doorkeeper-discovery-audits.jsonl`へmode 0600 appendする。invalid matrixはline count 1のまま、URL/private field 0。既存4provider validator/files変更0。
+
+fresh Sol reviewはspec PASS / quality SHIP、Critical/Important 0。単調各境界の個別testはoptional Minorで、全4条件のproduction検証と非単調rejectは成立。Sol独立10/10、29/29、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommit `c7269d886`をstableへfast-forwardしpushした。次の一件はB3 native provider orderへDoorkeeperをMeetup後に追加する2-file slice。HarnessはB4まで未接続、Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗375（Item 19D-B3 / Doorkeeper native order plan）
+
+次active B3 plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-native-order-19d.md`はnative-pass production/testの2 filesだけ。review済みfactory/router/workflow/auditをofficial bounded wakeから到達可能にするため、frozen provider順をexact `Luma → Connpass → Peatix → Meetup → Doorkeeper`へ一行拡張する。failure 3、wake 10分、agent step 10、private profile境界は不変。Harness allowlistはB4まで凍結し、このslice中のofficial wakeは0、4 labels UNLOADEDを維持する。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗376（Item 19D-B3 / Doorkeeper native order ship）
+
+Lunaがnative-pass production/test 2 filesだけをTDD変更した。3つのexact-order assertionを先に五providerへ変え、REDは5/8で旧4-provider差分だけ3 FAIL。`DEFAULT_PROVIDERS`末尾へ`doorkeeper`を一項目追加しGREEN 8/8、production+runner 55/55、syntax、diffがPASS。exact順はLuma→Connpass→Peatix→Meetup→Doorkeeper、budgets 3 failures/600000ms/10 stepsとprivate profile factory-only境界は不変。official wake、browser、provider、Calendar、Telegram作用0。
+
+fresh Sol reviewはspec PASS / quality SHIP、指摘0。Sol独立8/8、55/55、exact order/budgets、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommit `75d48f2e3`をstableへfast-forwardしpushした。次の一件はB4 Browser HarnessでDoorkeeperのvisible exact申込link→modal required fields→single submit→parent readbackをboundedに扱う2-file slice。B4 review完了までofficial wakeは起動しない。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗377（Item 19D-B4a / Doorkeeper Harness final-effect plan）
+
+Harness wiringをPonytailでB4a provider/final-effect core、B4b default DOM modal trigger/visibility、B4c factory injectionへ分割した。先頭plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-harness-core-19d.md`はHarness production/test 2 filesだけ。exact Doorkeeper ref/current canonical、single submittable exact`申し込む`buttonをclick前検証し、既存30秒parent readback latchで`registered`だけを成功、未確認を`effect_unknown`、Submit max1にする。default selector/link、factory、native、liveは変更せずofficial wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗378（Item 19D-B4a / Doorkeeper Harness final-effect ship）
+
+LunaがHarness production/testの2 filesだけをTDD変更した。baseline 55/55へDoorkeeper 4 testsを追加しRED 55 pass/4 fail、initial GREEN 59/59、隣接33/33。exact positive ref、lowercase group canonical candidate/current URL完全一致、single exact`申し込む`submittable button、30秒parent readback、Submit max1を既存latchへ追加した。click success/throw/failure後もreadbackし、`registered`だけ成功、未確認は`effect_unknown`。
+
+fresh Sol初回reviewはImportant 2件。非final fill後の`pending`が共通adapterでcompletedになり得たためRED 60/61を再現し、Doorkeeperはregistered以外をunavailableへ正規化した。candidate/current双方のquery、fragment、credentials、port、www、uppercase groupもtable-drivenで全action 0を固定。最終61/61、隣接33/33、fresh re-review spec PASS / quality SHIP、指摘0。Sol独立61/61、33/33、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommits `bc85bf986`,`8617db14e`をstableへfast-forwardしpushした。default DOM modal triggerとfactory injectionは未実装のためofficial wake 0。次はB4b default DOM。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗379（Item 19D-B4b1 / Doorkeeper measured DOM inspection plan）
+
+shared `:9222`の新規診断target一枚だけで実Doorkeeper detailを再測定し、exact visible trigger `a[href=#new_registration_modal]` 1、modal closed時hidden required email+submit、open後same form内visible email+submitを確認した。fill/submit 0、診断target close後absent。次plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-dom-inspection-19d.md`はHarness production/test 2 filesだけ。exact selector/page/event/visibility/formを使い、closedはtriggerだけ、open後はpublic label Emailとsingle submittable submitだけへ正規化する。一般link selector、click、factory、liveは変更0。official wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗380（Item 19D-B4b1 / Doorkeeper measured DOM inspection ship）
+
+LunaがHarness production/test 2 filesだけをTDD変更した。61-test baselineへ実測DOM4 testsを追加しRED 61/65、initial GREEN 65/65、隣接33/33。Doorkeeper時だけexact modal anchor selectorを追加し、lowercase non-www canonical/event一致、visible unique trigger、hidden modal omission、exact required email→public`Email`、same exact formのsingle submitをemail complete後だけsubmittableへ正規化した。raw field名/value/private output 0、click/fill/submit 0。
+
+fresh Sol初回reviewのImportant 3件に対し、非Doorkeeper selectorをbyte-equivalent維持して既存control不変、sole primary wrong-form submit、ancestor hidden/aria/inline/computed/zero-boxを追加。再reviewでtriggerを同時に隠すmaskingを指摘され、trigger/email/submitを一対象ずつ独立させた。最終67/67、隣接33/33、fresh re-review spec PASS / quality SHIP、指摘0。Sol独立67/67、33/33、syntax/diff/ownership、4 labels UNLOADEDがPASS。review済みcommits `f52333fbd`,`7a072341d`,`7221adf94`をstableへfast-forwardしpushした。次はB4b2 exact modal trigger activationとmutation signature分離。factory/liveは未接続、Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗381（Item 19D-B4b2 / Doorkeeper modal activation plan）
+
+次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-modal-activation-19d.md`はHarness production/test 2 filesだけ。review済みdefault inspectorのexact unique modal triggerだけをDoorkeeperでparent-authorized `ax_click`にし、modal-trigger mutation signatureをfinal form-submitから分離する。同page trigger再clickはDOM action 0、required Email fill後のfinal submitはB4a max1/registered-only latchを維持。arbitrary link/identity/duplicateはaction 0。factory/native/liveは変更せずofficial wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗382（Item 19D-B4b2 / Doorkeeper modal activation ship）
+
+LunaがHarness production/testの2 filesだけをTDD変更した。exact Doorkeeper triggerはprovider/candidate/current canonical、link、exact label、flags、strict control identityへ束縛し、modal-trigger mutation signature/latchをfinal form-submitから分離した。same trigger再選択はDOM click 0のままEmail fillとfinal Submit max1へ進む。default proposerもexact triggerだけを選び、generic linkは候補外。正規triggerと同じ意味のwrong-token linkが併存する場合は、選択identityはstrictのままtoken非依存のsemantic duplicate全件を数えてfail closedする。
+
+fresh Sol初回reviewはdefault proposer omissionをImportantとして検出し、RED後`2229bb9b6`で修復。fresh re-reviewはstrict tokenだけを数えるambiguity退行を検出し、RED後`1b35d4a2f`で修復。最終fresh reviewはSHIP、Critical/Important 0。却下済みpath-change実験`bc043cb2c`は`cd82201dd`で明示revertし、最終treeはreview済み`1b35d4a2f`とbyte-identical。Sol独立Harness 72/72、隣接33/33、syntax/diff、remote equality、clean status、却下symbol/test不在がPASS。official wake/browser/provider/Calendar/Telegram作用0。次はB4c production factory injection。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗383（Item 19D-B4c / Doorkeeper factory injection plan）
+
+Ponytail実測で、official factoryはDoorkeeper workflowを生成しprovider routerへ渡す一方、default `createProductionBrowserHarness`には渡していない一行欠落を確認した。次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-factory-injection-19d.md`はminimal-production production/testの2 filesだけ。default factory-created Harnessが既存Doorkeeper workflowのparent readbackへ到達するREDを先に置き、既存参照を一引数で接続する。新workflow/rail/session/target/abstract layerは0、official wake 0、4 labels UNLOADED。Item19 Doorkeeper、scheduleは未完。
+
+### O1B-25進捗384（Item 19D-B4c / Doorkeeper factory injection ship）
+
+Lunaがminimal-production production/test 2 filesだけをTDD変更した。browserHarnessを注入しないofficial factory testはREDで`failed`、Doorkeeper parent readback 0、click 0を再現。既にfactoryが生成する`doorkeeperWorkflow`をdefault `createProductionBrowserHarness`へ一引数で渡し、GREENはcompleted、readback 1、safe click 1、browser rail 0。新workflow/rail/session/target/abstraction 0、他provider配線と順序は不変。
+
+fresh Sol reviewはSHIP、Critical/Important 0。Sol独立factory 15/15、Harness+Doorkeeper workflow 87/87、syntax/diff/ownershipがPASS。実装branchが却下済みpath-change mergeを親に含んだためbranch mergeはせず、stableで当該mergeと誤記docsを明示revertし、review済み実装commitだけを`4f77b43fd`としてcherry-pickした。official wake/browser/provider/Calendar/Telegram作用0、4 labels UNLOADED。次はschedule unloadedのままofficial bounded wakeでDoorkeeper discovery/auditと安全なlive pathを実測する。Item19 Doorkeeperのproduction supported表示と実`applied_bundle`は未完。
+
+### O1B-25進捗385（Item 19D / Doorkeeper first official safe wake audit）
+
+4 labels unloaded、Connector process 0、lock absent、Git clean/upstream 0/0、`:9222`既存page 2、target-ledgerとのintersection 0から、official `skills/connector/run.sh`を660秒hard timeout付きforegroundでexact 1回実行した。wake `wake-fb5b7ed37e176464d8f6502a`はCalendar 2,590ms、Luma/Connpass/Peatix/Meetup/Doorkeeper discoveryを同じowned pageで順に完走し、`completed_no_effect / existing_bundles_reused / consecutive_failure_count 0`、Telegram provider ID `11616`で終了した。CLI exit 1は`applied_bundle`以外の既定、stdout/stderr 0 byte。
+
+safe auditはLuma `31/31/16/9/0`、Connpass `6/6/6/4/1`、Peatix `100/100/87/59/9`、Meetup `2/0/0/0/0`、Doorkeeper `0/0/0/0/0`。action historyのsubmit表示8件は`provider_cache` 4と`provider_direct` 4だがcandidate attempt増分0、applied bundle 12→12、Calendar/evidence write 0で、既存bundle readback/reuseのみ。Doorkeeper auditは初回1行をmode 0600で保存した。終了後process 0、lock absent、owned target intersection 0、既存page 2維持、4 labels unloaded、Git clean。Doorkeeperの本線到達とsafe audit persistenceは実証したが、候補0のため実`applied_bundle`とproduction supported表示は未完。次はDoorkeeper discovery 0を実サイトと比較し、parser/source故障ならTDD修復、実在0ならItem19を未完のまま次provider候補を探索する。
+
+### O1B-25進捗386（Item 19D / Doorkeeper listing DOM repair plan）
+
+公式3 URLを独立取得した。Doorkeeper東京eventsは「東京のイベント情報一覧」とcanonical event link 50件、東京prefectureは9件、global eventsは50件を返すため、進捗385の`discovered_count 0`は実在0ではない。raw HTMLでは各eventが`.global-event.events-list`で、その子が`.events-list-items-wrap`。productionは最初の`.events-list-items-wrap`を全体rootと誤認し、その子の`.events-list-item, li`を探すため常にrows 0になる。GitHub code search 3件は再利用可能な同DOM parser 0。
+
+次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-listing-dom-19d.md`はDoorkeeper workflow production/test 2 filesだけ。現行DOM fixtureをREDにし、exact `.global-event.events-list` rootsへ一箇所修正する。title/date/Tokyo venue、pagination、detail/eligibility/Calendar/audit/Harness/factory/nativeは不変。implementation中official wake 0、4 labels UNLOADED。Item19 Doorkeeperと実bundleは未完。
+
+### O1B-25進捗387（Item 19D / Doorkeeper listing DOM repair ship）
+
+LunaがDoorkeeper workflow production/test 2 filesだけをTDD変更した。現行DOM fixtureでREDは14/15、actual `[]`。productionはexact `.global-event.events-list` rootsを列挙し、既存title/date/Tokyo venue抽出を再利用してGREEN 15/15、minimal production+Harness 87/87。broad `li`/arbitrary anchor fallback、新抽象化、pagination/detail/eligibility/Calendar/audit/Harness/factory/native変更0。
+
+fresh Sol reviewはSHIP、Critical/Important 0。Sol独立15/15、87/87、syntax/diff/ownership/remote equality、4 labels UNLOADEDがPASS。review済み`0faf0c6fe`をstableへfast-forwardした。次は同じofficial foreground wakeをexact 1回実行し、Doorkeeper discovered count >0または次のexact safe boundary、external effect、cleanup、Telegram receiptを実測する。Item19 Doorkeeperと実bundleは未完。
+
+### O1B-25進捗388（Item 19D / Doorkeeper detail eligibility live audit and repair plan）
+
+4 labels unloadedのままofficial foreground wakeをexact 1回実行した。wake `wake-ca4b16f40b59b247ba2eb6a3`は`completed_no_effect / existing_bundles_reused / failures 0`、Telegram provider ID `11624`。Doorkeeper auditは修復前`0/0/0/0/0`から`discovered 100 / within_window 12 / eligible 0 / calendar_free 0 / selected 0`へ改善した。candidate attempt増分0、bundle 12→12、stdout/stderr 0、終了後process 0、lock absent。
+
+公式detail 3件を比較すると各pageはvisible modal trigger `申し込む` 1とhidden final submit `申し込む` 1を持つ。先頭2件のJSON-LDはOffline/InStock/price 0 JPY/exact URL。detail readerはvisibilityを保存するが`normalizeDetail`はhiddenを含む同label全2件を数えてtotal 1を要求するため、valid eventも全てrejectする。次active plan `docs/superpowers/plans/2026-08-11-connector-doorkeeper-visible-trigger-19d.md`はworkflow production/test 2 filesだけ。visible exact controlだけを一意性判定へ使う。Harness/modal/final Submitは不変、implementation中official wake 0、4 labels UNLOADED。Item19 Doorkeeperと実bundleは未完。
+
+### O1B-25進捗389（Item 19D / Doorkeeper visible eligibility ship）
+
+LunaがDoorkeeper workflow production/test 2 filesだけをTDD変更した。visible trigger 1 + hidden final submit 1の現行DOM fixtureでRED 14/15。exact label controlsをvisibilityで先にfilterするproduction 1 predicateによりGREEN 15/15、Harness+Doorkeeper adjacent 87/87。duplicate visible、hidden-only、unavailable/payment/JSON-LD/Calendar、後段modal/final Submitは不変。
+
+fresh Sol reviewはSHIP、Critical/Important 0。Sol独立15/15、87/87、syntax/diff/ownership/remote equality、4 labels UNLOADEDがPASS。review済み`fdbd624c7`をstableへfast-forwardした。次はofficial foreground wake exact 1回でeligible count、external registration/bundleまたは次のexact boundaryを実測する。Item19 Doorkeeperと実bundleは未完。
+
+### O1B-25進捗390（Item 19D / Doorkeeper eligible live audit）
+
+4 labels unloadedのままofficial foreground wakeをexact 1回実行した。wake `wake-8a72c3d2835045b75a326d67`は`completed_no_effect / existing_bundles_reused / failures 0`、Telegram provider ID `11630`。Doorkeeper auditは`discovered 100 / within_window 12 / eligible 4 / calendar_free 0 / selected 0`となり、visible eligibility修復で4件が無料・受付中・東京対面まで通過した。4件すべてが実Google Calendar busy intervalと競合し、candidate attempt増分0、applied bundle 12→12、external registration/Calendar/PNG増分0。
+
+終了後process 0、lock absent、target-ledger/current CDP intersection 0、既存page 2維持、Doorkeeper audit mode 0600、4 labels unloaded、Git clean/upstream 0/0。Doorkeeperは本線discovery・eligibility・Calendar conflict safe skipまでlive実証済みだが、非衝突候補がないため実`applied_bundle`とproduction supported表示は未完のまま保持する。次はItem19順序のEventbriteを同じone-provider-at-a-time contractで追加し、Doorkeeperは将来の非衝突wakeでacceptanceを閉じる。
+
+### O1B-25進捗391（Item 19E / Eventbrite discovery・eligibility grounded plan）
+
+Item19の次provider Eventbriteを公式Tokyo listing/detailで実測した。`/d/japan--tokyo/free--events/`は現行responseで`data-testid="search-event"` card 20件を持ち、exact event anchorはnumeric `data-event-id`、Tokyo location、paid status、tracking query付き`www.eventbrite.com/e/...` URLを公開する。同じevent linkが反復されるためquery/hash除去とevent ID dedupeが必要。detail JSON-LDは`SocialEvent`、Offline/Online attendance、`AggregateOffer.lowPrice/highPrice`、compact `InStock`を使い得る。public registration controlはexact `Get tickets`。zero-price JSON-LDでも本文にdoor priceがある実例を確認したため、body money markerを独立gateにする。GitHub code search 3件はこのidentity/free/body-price/Calendar/privacy contractを満たす再利用実装0。
+
+Ponytailで初回を新規workflow/test 2 files、production 220〜300 LOC、test 220〜320 LOCへ限定した。`.com` exact canonical、14日Tokyo対面、`Event|SocialEvent`、zero `Offer|AggregateOffer`、InStock、visible exact control、unsafe/money否定、Calendar、5-count audit、strict readback、zero-click direct safe failureだけをTDD実装する。shared production router、Harness checkout、evidence、native provider orderは次slice。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-discovery-19e.md`がexecutor SSOT。implementation中official wake 0、4 labels UNLOADED。Item19 Eventbrite/Doorkeeper/Meetupと実bundleは未完。
+
+### O1B-25進捗392（Item 19E-A / Eventbrite discovery・eligibility ship）
+
+LunaがEventbrite provider-local workflow/test 2 filesだけをSuperpowers TDD実装した。初期REDはmodule-not-found、初期GREEN 8/8。fresh reviewは`1,000円`未検出、unsupported zero-price offer type、hidden completion marker ambiguityのImportant 3件を反証し、Lunaが各RED 3件から修復した。第二reviewはforeign-domain `/Offer` suffixのImportant 1件を再現し、compact `Offer|AggregateOffer`またはexact `http(s)://schema.org/`だけへ限定、foreign/mixed type regressionを追加した。最終focused 11/11、Doorkeeper/Meetup adjacent 27/27、stable minimal production込み53/53、syntax/diff/2-file scope/remote equalityがPASS。production 319 LOC。final scoped reviewはSHIP、Critical/Important 0。
+
+review済みimplementation `3930c1688`をstable Connector branchへfast-forwardした。exact `.com` canonical/dedupe、Event/SocialEvent、zero Offer/AggregateOffer、InStock、body money否定、Tokyo offline 14日窓、Calendar、five-count privacy、strict readback、zero-click direct safe failureがcode-levelで完了。shared router、Harness checkout、audit persistence、native provider order、official wakeは未変更・未実行。次active sliceはproduction router/factoryへEventbrite workflowをclosed injectionする。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### O1B-25進捗393（Item 19E-B / Eventbrite closed production router plan）
+
+review済みEventbrite workflowをproductionへ接続する次sliceをPonytailでshared 2 files、production 15〜30 LOC、test 45〜90 LOCへ限定した。既存Doorkeeper optional workflow patternを再利用し、Eventbrite version、routerのdiscovery/cache/direct/injected-fallback/readback/save-repair、factory default/injected workflowだけをTDD配線する。operations audit persistence、default Browser Harness、native `DEFAULT_PROVIDERS`、evidence、live wakeは変更0。これによりpartial providerがofficial wakeへ入らないclosed wiringを維持する。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-production-router-19e.md`がexecutor SSOT。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### O1B-25進捗394（Item 19E-B / Eventbrite closed production router ship）
+
+Lunaがminimal production router/factoryとfocused testの2 filesだけをTDD変更した。新規2 testsは未配線でRED 0/2。Eventbrite workflow import/version、optional validation、discovery/cache/direct/injected fallback/readback/save-repair route、default/injected factoryを+19 production LOCで配線しGREEN production 17/17、Eventbrite 11/11、Doorkeeper/Meetup 27/27。test +58 LOC。fresh Sol reviewはSHIP、Critical/Important 0。Sol stable独立検証はnative entrypoint込み63/63、syntax/diff/2-file scope/remote equality PASS。review済み`0ecd49b70`をstableへfast-forwardした。
+
+Native `DEFAULT_PROVIDERS`、default Browser Harness、audit persistence、evidenceは差分0なので、partial Eventbriteがofficial wakeへ入る経路はまだ0。次active sliceはprivacy-safe Eventbrite discovery auditをoperationsへ永続化し、その後Harness registration controlを別sliceで接続する。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### O1B-25進捗395（Item 19E-C / Eventbrite privacy-safe audit plan）
+
+Eventbrite workflowの5-count auditをappend-only stateへ保存するsliceをoperations production/test 2 files、production 3〜6 LOC、test 30〜55 LOCへ限定した。Doorkeeperとexact同型のkeys/inequalitiesなので既存safe validatorを直接再利用し、`eventbrite-discovery-audits.jsonl`、writer、frozen operations exportだけを追加する。新registry/validator/schemaは作らない。mode 0600、extra/private fieldとinvalid countはappend 0。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-audit-19e.md`がexecutor SSOT。native order/live wake変更0、4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### O1B-25進捗396（Item 19E-C / Eventbrite privacy-safe audit ship）
+
+Lunaがoperations production/test 2 filesだけをTDD変更した。`recordEventbriteDiscoveryAudit`未実装でRED 0/1。既存exact five-key validatorを再利用し、Eventbrite JSONL path/method/frozen exportをproduction +6 LOCで追加してGREEN operations 11/11、minimal production 17/17、Eventbrite 11/11、Doorkeeper/Meetup 27/27。test +30 LOC。fresh Sol reviewはSHIP、Critical/Important 0。Sol stable独立検証は合計66/66、syntax/diff/2-file scope/mode0600/invalid append0/remote equality PASS。review済み`b8fd256d3`をstableへfast-forwardした。
+
+次active sliceはEventbrite public `Get tickets`からcheckoutを開き、無料ticket選択・必要identity・最終Submit・parent readbackを一作用ずつ行うBrowser Harness contract。実DOMをread-only測定してから最小TDD planを切る。native order/live wakeはまだ変更0、4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### O1B-25進捗397（Item 19E-D0 / Eventbrite hydrated CTA repair plan）
+
+official Eventbrite detail 3件を`:9222`のisolated diagnostic pageでread-only比較した。各pageはhydration後にexact `data-testid="conversion-bar-checkout-button"` 1件、visible/enabled 1件、labelは全て`Reserve a spot`。download済みSSR HTMLは`Get tickets`なので、現行exact label判定は評価timingでeligible/absentが変わる。offline/online双方で同variant。診断clickではsame top page内の`/checkout-external` frame、visible input 1、`Register` 1、`Close` 1、hCaptcha framesを観測したがfinal Submit 0。全diagnostic pageを閉じbaseline page 2、Connector ledger/current page intersection 0へ戻した。
+
+Ponytailでworkflow/test 2 files、production 1〜4 LOC、test 4〜15 LOCへ限定し、exact `Get tickets|Reserve a spot`の一意visible predicateをeligibility/absent readbackで共有する。fuzzy label/checkout/Harness/native変更0。plan `docs/superpowers/plans/2026-08-11-connector-eventbrite-hydrated-cta-19e.md`がexecutor SSOT。4 labels UNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### O1B-25進捗398（Item 19E-D0 / Eventbrite hydrated CTA repair ship）
+
+LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Reserve a spot` detail/readbackはRED 0/1。exact `Get tickets|Reserve a spot` predicate共有でGREEN後、fresh reviewがexact CTA 1 + fuzzy CTA 1でも通るImportantを反証した。Lunaがmixed visible controlをRED固定し、visible checkout control総数exact 1かつ唯一labelがliteral predicate一致をeligibility/readback双方へ適用した。最終Eventbrite 13/13、stable production/operations/Doorkeeper/Meetup合計68/68。production net +1、test +22。final scoped review SHIP、Critical/Important 0、syntax/diff/2-file scope/remote equality PASS。review済み`d397ff052`をstableへfast-forwardした。
+
+post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
+
+### Active remaining TODO SSOT（進捗496。これ以外の残TODO一覧は履歴）
+
+以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
+
+1. [x] **物理停止状態を再確認する。** Git branch/commit/dirty state、Native/healthcheck/Healer/host bridgeのlaunchd state、Connector process、`:9222` health、最新safe evidence timestampをread-onlyで記録する。Native schedulingはforeground live acceptanceまでdisabledを維持する。Gig code/launchd/browser/lock/profile/state/vault/`:9223`へのwriteは0。証拠: 進捗171。
+2. [x] **Connector ownerとGig consumer境界を確定する。** `rg`とcall pathでHealer shadowとhost bridgeのplist、process、port、token consumerを列挙し、Gig consumer 0とConnector ownershipを証明する。証明後だけHealerとConnector-owned legacy bridgeをunloadする。profile、auth、receipt、append-only stateは削除しない。証拠: 進捗172。
+3. [x] **exact keep / direct-reuse / delete inventoryを作る。** production entrypointから全call pathを追い、file名とsymbol名単位で分類してこのspecへ追記する。`keep`は`:9222` target ownership/fencingとdurable evidence、`direct-reuse`はLuma reader/filler/submit/readback、Calendar、PNG、Telegram、receipt/idempotency、`delete`は旧native-pass orchestration、21日coverage、bulk tab discovery、ranking/gates、spend ordering、suppression stop gate、durable provider cursor、Healer-first wiring、5分retry、重複schedule。consumer未確認の削除は禁止する。証拠: 進捗173 inventory tablesとconsumer call path。
+4. [x] **production interfaceとfocused destructive-boundary testsを先に固定する。** 一entrypoint、一session、一target、一page、candidate navigationでcreate/close 0、Gig `:9223` write 0、agent `browser.close()` 0、inline generated Node 0、failure 3/10分circuit-openを失敗する契約testとして追加する。大規模test frameworkは作らない。証拠: 進捗174、focused RED 2件。
+5. [x] **旧production orchestrationをGit patchで除去する。** official Connector entrypointからcoverage/ranking/gate/cursor/Healer/healthcheck/bridge依存を外す。state/evidence/receipt fileは削除しない。broad `rm`は使わない。旧moduleが他trackで必要ならproduction pathからだけ切り離す。証拠: 進捗175、focused 3/3 GREEN、minimal core 4/4 expected RED。
+6. [x] **provider-neutral minimal runner coreを実装する。** Daily wake→Calendar gap→ordered provider/candidate→same-page navigation→direct action→official parent / child-frame readback→downstream evidence→close owned page→exitを一entrypointへ接続する。action historyはpurpose、safe method、timestamp、result、durationだけをappend-only保存する。証拠: 進捗176、focused 8/8 GREEN。
+7. [x] **Browser Harness bounded adapterを接続する。** Connector-owned claimed pageだけを操作対象にし、AX tree→targeted DOM→screenshot/coordinateの順で観察する。navigate/observe/fill/submit/readbackを一作用ずつ実行し、candidateごと最大10 agent step、browser/session/target作成権限なし、永続更新先はprovider skill/helper/cacheだけに制限する。証拠: 進捗177、adapter/core 9/9 GREEN。
+8. [x] **Luma script-first workflowを接続する。** Lumaを必ず最初に探索し、無料・受付中・Calendar非衝突の最初のcandidateへ既存reader/filler/Submitをdirect actionとして適用する。未知ordinary required fieldまたはUI変更だけBrowser Harnessへ渡す。過去attempt/suppressionを申込停止gateにしない。証拠: 進捗178、Luma関連43/43 GREEN。
+9. [x] **versioned provider/action cacheを実装する。** provider、workflow version、page state、safe selector/action、expected effectを保存する。fallback成功時はofficial parent / child-frame readbackがexpected stateを確認後、replacement actionだけ更新する。credential、cookie、private value、raw promptは保存しない。証拠: 進捗179、cache/core 10/10 GREEN。
+10. [x] **production配線後にforeground configured-provider live E2Eを実行する。** 10A [x]: 14日Google Calendar inventory、single owned browser rail、Luma、action cache、bounded Browser Harness fallback、official parent / child-frame readback、evidence/report dependencyをofficial entrypointへ接続済み。10B [x]: scheduling disabledのままbounded foreground runnerを起動し、Lumaを先頭に、候補0なら同一session/pageで次providerへ進み、今日を含む14日内の実際の無料・Calendar非衝突eventへSubmitする。AI/cryptoは同日競合候補のtie-breakだけに使い、一般eventをstop/filterしない。完了条件はofficial parent / child-frame readbackが新規`registered`または`pending`を観測すること。証拠: 進捗283の実registration、進捗291のsame-event no-resubmit acceptance。
+11. [x] **同じregistrationのexternal evidence chainを完成する。** Provider receipt/ticket/QRまたは同等receipt、Calendar event IDと独立readback、registered page full-page PNGとSHA-256、Telegram message positive ID、Telegram photo positive IDを同一lineageのdurable `applied_bundle`へ保存する。不足が一つでもあれば成功扱いにしない。証拠: 進捗291。
+12. [x] **post-registration recoveryを実証する。** Calendar、PNG、ticket、Telegram各境界の中断fixtureから、providerへ再Submitせず不足artifactだけを補完する。完了条件は外部registration 1、Calendar event 1、bundle 1、duplicate Submit 0。証拠: 進捗295、298。
+13. [x] **idempotent second foreground wakeを実証する。** 同じeventを既登録としてreadbackし、Submit 0で未処理candidateへ継続する。every-wake Telegram positive message IDを保存する。証拠: 進捗308、310。
+14. [x] **Luma no-effect→Connpass continuationをlive実証する。** Lumaがexternal effect 0（bounded known-no-effect、exact bundle reuse、またはCalendar gate後eligible exhaustion）の同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。人工failure hookは使わない。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。証拠: 進捗331。
+15. [x] **circuit breakerを実証する。** 3連続safe failureまたは10分でcircuit-openし、その後のbrowser action/target creationが0、exact safe stage/action historyとTelegram recovery positive IDが保存されることを確認する。5分automatic retryは0。証拠: 進捗335。
+16. [x] **cached action self-healを実証する。** selector変更fixtureでdirect replay failure→同じpageのbounded fallback→expected state readback→cache更新→agentなしrerun成功を確認する。更新は壊れたactionだけ、repo-wide edit/merge/deployは0。証拠: 進捗337。
+17. [x] **単一daily production scheduleをrender/loadする。** Items 10–16のacceptance後だけ、official minimal runnerを一日一回起動するConnector labelを一つloadする。Native旧schedule、healthcheck、Healer、bridge、5分retry、重複runnerはloaded 0にする。証拠: 進捗339。
+18. [x] **最初のscheduled wakeを完走観測する。** 実`applied_bundle`または既登録readbackによるSubmit 0 continuation、Telegram every-wake positive ID、session/target各1、owned page cleanup、process exitを確認する。failure時はscheduleを増やさず同じentrypointだけを修復する。証拠: 進捗341。
+19. [ ] **providerを一つずつ拡張する。** Peatix [x] → Meetup [pending: Calendar非衝突候補0] → Doorkeeper [pending: Calendar非衝突候補0; evidence chain/Calendar adapter accepted] → Eventbrite [pending: eligible候補0; evidence chain/Calendar adapter accepted] → TECH PLAY [pending: Calendar非衝突候補0; action/readback/evidence/Calendar adapter and official no-effect wake accepted] の順に、未知browser flow、official parent / child-frame readback、Calendar、PNG、Telegram、idempotencyを個別にlive実証する。各providerは実`applied_bundle`を得るまでproduction supportedと表示しない。Peatix証拠: 進捗291。Meetup/Doorkeeper/Eventbrite/TECH PLAYはproduction rail、privacy-safe live audit、safe cleanupまで受入済みだが、現在の非衝突候補がないproviderの実bundleは未完。TECH PLAYの実測証拠: 進捗475〜478。
+20. [x] **unknown-provider discovery contractを閉じる。** 事前domain skillのないevent site一件で、same-page Browser Harness fallbackが登録可能性を判断し、許可された無料申込を完遂するかsafe failureで次providerへ進むことを実証する。成功時は新provider skill/cacheを保存し、次run agent call 0を確認する。証拠: 進捗479〜496。
+21. [x] **restartとdurable continuationを実証する。** 各external-effect境界でprocess restartし、既存provider registration、Calendar、evidence、Telegram receiptをreadbackして重複作用0で継続する。append-only historyと既存receiptを変更・削除しない。証拠: 進捗501。
+22. [x] **最終production cleanupを行う。** legacy runner、legacy bridge、Healer、healthcheck、重複plist/schedule/process consumerをcall pathで再確認し、production owner 1、schedule 1、browser session/target各1、Gig変更0を実測する。recoverable Git patch以外でcodeを削除しない。証拠: 進捗429。
+23. [ ] **canonical merge gateを閉じる。** Production scheduled wakeの実bundleまたはidempotent continuation、positive Telegram IDs、no-duplicate proof、clean git status、remote pushを確認後だけcanonical branchへmergeする。merge後の次wakeも同じacceptanceで観測する。
+
+完成後のuser-facing Telegram UXは毎wake一通以上とする。成功時はevent/provider/date/status、Calendar readback、証拠画像を送る。
+承認待ちは`pending`、候補なしは探索providerとexternal write 0、circuit-openは停止stage、safe reason、duplicate effect 0、次daily wakeでの再開を送る。
+Telegram通知そのものはapplication evidenceではなく、provider readback、Calendar readback、PNG SHA、positive delivery IDsを束ねた`applied_bundle`だけを成功の正本にする。
+
+### O1B-25進捗399（Item 19E-D1 / Eventbrite checkout-frame trigger plan）
+
+Eventbrite hydrated DOMをshared CloakBrowserのexact diagnostic pageでread-only再計測した。canonical detailのvisible/enabled top CTAは`button[type=button][data-testid=conversion-bar-checkout-button]` exact 1、label `Reserve a spot`。click後は公式originの`/checkout-external` frame exact 1が出現し、query keysに`eid`を持ちcandidate event IDとexact一致した。frame内はlanguage select、3組のticket stepper、`Register` primary、`Close`を観測したが、Register click 0、外部registration/Calendar/evidence/Telegram effect 0。diagnostic pageはexact cleanupし、元のunrelated page 2、Connector ledger/current-page intersection 0へ復帰した。
+
+Ponytailにより全checkout実装を棄却し、先頭sliceをcanonical CTA openとsame-event checkout-frame確認だけへ縮小した。plan `docs/superpowers/plans/2026-08-10-connector-eventbrite-checkout-frame-19e.md`はproduction Harness/testの2 files、production約60–90 LOC、test約90–130 LOC。Eventbrite exact candidate/current URL、一意visible CTA、専用`submit/ax_click`、bounded frame origin/path/`eid`確認をTDDし、ticket stepper/Register/attendee/final Submit/readbackは操作0で次sliceへ残す。Item19 Eventbriteと実bundleは未完、scheduleはunloaded。
+
+### O1B-25進捗400（Item 19E-D1 / Eventbrite stable child checkout-frame trigger ship）
+
+LunaがHarness production/testのexact 2 filesをSuperpowers TDD実装した。初回REDはEventbrite provider/trigger不在を2件で再現。初回GREEN後のfresh Sol reviewsは、visible exact＋fuzzy/disabled/alternate-token ambiguity、exact＋wrong/duplicate frame、main-frame-only誤認、parent URL drift、25ms transient success、101番目duplicate切捨てをImportantとして実測した。同じLunaへ戻し各反例をRED→GREENで閉じ、最終commits `81b1b3ade`、`597dddd91`、`e86e034e8`、`a39c3ba6d`をreviewした。
+
+final contractはcandidate event ref/canonical/current URL exact、visible same-testid CTA総数exact 1、literal `Get tickets|Reserve a spot`、`submit/ax_click`のみ、parent canonical継続、official `/checkout-external` child frame総数exact 1、query `eid` exact 1/candidate一致、500ms連続安定を要求する。Eventbrite locator要素100超は即fail closed、main frame、fuzzy/disabled/injected duplicate、wrong/duplicate eid、late duplicateはoperateまたはsuccess 0。fresh final reviewはSHIP、Critical/Important 0。
+
+stable統合後はHarness/production/Eventbrite/operations/registry 115/115、syntax、diff、exact 2-file scope、remote equality PASS。production net +116は初期soft targetを26 LOC超えたが、増分はreviewで実測したidentity/race/overflow安全境界だけで機能scope追加0。shared CDPの隔離実受入ではproduction exportがhydrated CTA exact 1（`Reserve a spot`）をクリックexact 1、same-eid official child frame exact 1を500ms確認して`success`。ticket mutation/Register/final Submit/private value/readback/Calendar/evidence/Telegram effectは0。diagnostic pageをexact cleanupしbaseline 2、4 schedule labels unloadedを維持した。次active sliceはcheckout frame内ticket selectionとattendee formを実測し、default factory/runFallback injection、final parent readbackを分割TDDする。Item19 Eventbriteと実bundleは未完。
+
+### O1B-25進捗401（Item 19E-D2 / Eventbrite explicit-free marker repair plan）
+
+Google英日3-queryと公式Eventbrite detail 3件をread-only比較し、within-windowの一意ticket候補をproduction workflow＋実Calendar 106 busy intervalsへ通した。auditは`discovered/within/eligible/calendar-free/selected = 1/1/0/0/0`で、Calendar判定前にeligible 0。exact detail再測定ではcanonical/event/offer URL一致、Tokyo address、Offline、zero JPY AggregateOffer/InStock、visible `Reserve a spot` exact 1が全PASSした一方、本文の`参加費無料`から既存`MONEY_MARKER`が`参加費`だけを抽出していた。これは真の無料候補を落とすfalse positive。
+
+別の一意ticket候補は公式本文が`Admission free. One drink minimum.`で、既存markerはminimum purchaseを検出しないfalse negative。Ponytailによりcheckout実装を一旦止め、plan `docs/superpowers/plans/2026-08-10-connector-eventbrite-free-phrase-19e.md`をworkflow/test 2 files、production約15–30 LOC、test約35–60 LOCへ限定した。exact explicit-free phraseだけを除去後、残本文のpaid/minimum-purchase markerをfail closed評価する。ticket/Register/final Submitは0、diagnostic page cleanup後baseline 2、schedule unloaded。Item19 Eventbriteは未完。
+
+### O1B-25進捗402（Item 19E-D2 / Eventbrite free-phrase repair ship・live discovery acceptance）
+
+LunaがEventbrite workflow/testの2 filesだけをTDD修復した。初回REDは`参加費無料`をeligible 0へ誤拒否、初回GREEN後のfresh Sol reviewは`Free admission fee required`、`No participation fee waiver`、`参加費無料化の対象外`の誤通過と、`No minimum purchase`/`No purchase required`の誤拒否を再現した。fix後のre-reviewは否定purchase句＋後続`waiver`の接頭辞除去を再現。同じLunaへREDを戻し、free/negative-purchaseは後続wordなしの完結節だけを除去、bodyとcontrol labelを分離し、残本文へmoney/minimum-purchase markerを適用した。commits `176d11444`、`052ec113c`、`62b87c0bc`、fresh final review SHIP、Critical/Important 0。
+
+stable統合後Eventbrite/Harness/production/operations/registry 117/117、syntax/diff/exact 2-file scope、remote equality PASS。実Eventbrite＋実Google Calendar再測定では、既知候補auditが修復前`1/1/0/0/0`から修復後`1/1/1/0/0`へ改善。公式Tokyo free一覧全体はanchor 80、unique detail 20、raw paid-statusは全`free`、strict audit `discovered/within/eligible/calendar-free/selected = 20/3/1/0/0`。唯一eligible eventは実Calendar conflictのためregistration/CTA/ticket/Register/Calendar/evidence/Telegram effect 0が正しい。隔離page cleanup後baseline 2、4 schedule labels unloaded。Eventbrite Item19 bundleは`[pending: no non-conflict candidate]`だがNO PASSIVE WAITINGによりsafe ticket/action contract実装へ進む。
+
+### O1B-25進捗403（Item 19E-D3 / Eventbrite single-free-ticket step plan）
+
+公式Tokyo free一覧page 2–3もread-onlyでstrict detail＋実Calendar評価した。anchor 108、unique detail 27、within-window 7、eligible 3、Calendar-free 1、selected 1。Calendar-free candidateを実際に発見したためEventbrite Item19は外部候補待ちblockerではない。一方、Calendar-conflictの一意ticket candidateでcheckout stateをmutation 0で再測定し、visible ticket card exact 1、`General Admission / Free`、stepper quantity `1`、increase exact 1 enabled、decrease exact 1 disabled、primary `button[type=button]` label `Register` exact 1を確認した。
+
+Ponytailによりattendee/final submitを同時実装せず、plan `docs/superpowers/plans/2026-08-10-connector-eventbrite-ticket-step-19e.md`をHarness production/test 2 filesへ限定する。same-event child frame、一意free card、quantity 1、一意primaryだけを別tokenで公開し、最初のRegister click後ticket card消失500msを確認する。attendee field/final Register/readback/factory/native order/evidenceは0。diagnostic cleanup後baseline 2、schedule unloaded。Item19 Eventbriteは未完。
+
+### O1B-25進捗404（Item 19E-D3 / Eventbrite ticket-step ship・attendee実DOM acceptance）
+
+LunaがHarness production/test 2 filesだけをTDD実装した。commits `eb6744e4e`、`fd683735a`、`1dbe6d732`、`3295d6383`、`e685f850c`、`f6fd5f8fc`。fresh Sol reviewの反例を同じLunaへ戻し、実testid exact binding、`1,000円`・`JPY 1,000`等のcurrency amount、要素/祖先のinline＋computed visibility、click直前DOM＋canonical/frame/eid再検査をfail closed化した。final reviewはSHIP、Critical/Important 0。計画のsoft targetは超過したが、新規file・抽象化・後続field/final実装は増やさず、レビューで実証された不可視・有料・TOCTOU回帰だけを同じ2 filesへ収録した。
+
+stable統合後Harness/Eventbrite workflow/minimal production/operations/registry 107/107、syntax、diff check、clean remote equality PASS。実Google Calendar再読取でCalendar conflict 0を確認後、実Eventbrite候補でtop CTA 1回、ticket `Register` 1回、final submit 0回を実行し、両action `success`、parent canonical exact、official child frame exact 1、same eid exact 1を実測した。attendee実DOMはvisible controls 10、必須 `buyer.N-first_name` / `buyer.N-last_name` / `buyer.N-email` / `buyer.confirmEmailAddress` の4 fields、任意marketing checkbox 2 fields、primary `eds-modal__primary-button` exact 1。diagnostic targetは全削除し、CDP page baseline 2、target-ledger intersection 0、4 schedule labels unloadedを確認した。Item19 Eventbriteはstructured private identity、attendee fill、final Register、registered readback、factory/native/evidenceが未完。
+
+### O1B-25進捗405（Item 19E-D4a / Eventbrite structured private identity ship）
+
+既存private SSOTはlegal name exact 2 tokens、preferred name exact 1 token matchを実測。Lunaがnative production/test 2 filesだけをTDD実装し、commits `542b2631e`、`551941a3d`。0600 bounded private job profileを一度だけ読み、private legal nameとenv legal nameのexact一致、preferredのcase-insensitive exact 1 matchからpreserve-case `given_name` / `family_name`を既存attendee profileへ追加した。不一致、0/2 preferred match、token数不正、raw/trimmed 200超、C0/C1 controlはdependency/wake作成前にfail closed。private値のlog/error/wake伝播は0。fresh Sol review SHIP、Critical/Important 0。stable統合後native/Harness/minimal production 102/102、syntax、diff check、clean remote equality PASS。Eventbrite field inspection/fill/final/readback/factory/native/evidenceは未完。
+
+### O1B-25進捗406（Item 19E-D4b1 / Eventbrite attendee inspector ship）
+
+LunaがHarness production/test 2 filesだけをTDD実装し、commits `9f194e691`、`600fc311f`、`c5c39a55c`。ticket card visible 0後、same-event official child frame内の実測4必須inputsだけをevent-bound control tokenとして公開し、value本文は返さずcompleted booleanだけを返す。fresh reviewでhidden/disabled duplicateをactive filter前に消す反例を再現し、raw semantic candidate exact1をactive判定より先に要求した。unknown required、wrong tag/type/name、hidden/detached/disabled/optional duplicate、101+はall controls 0。marketing checkboxとprimary buttonは非公開、Eventbrite field performActionはresolve/operate 0を維持。final review SHIP、Critical/Important 0。stable統合後major suites 108/108、syntax、diff check、clean remote equality PASS。private resolve/fill/final/readback/factory/native/evidenceは未完。
+
+### O1B-25進捗407（Item 19E-D4b2a / Eventbrite attendee private-value ship）
+
+LunaがHarness production/test 2 files、29 insertionsだけをTDD実装し、commit `aadb62cb3`。`provider=eventbrite`かつsafe required incomplete input＋case-sensitive exact labelsだけを受理し、`First name`→`given_name`、`Last name`→`family_name`、`Email` / `Confirm email`→同一`email`を既存frozen attendee profileから変換なしで返す。wrong/case/fuzzy/completed/kind/missing/非trim/overlengthはnull、generic provider resolverは不変。private値のlog/error/observation追加0。fresh Sol review SHIP、Critical/Important 0。stable統合後Harness/native/minimal production 104/104、syntax、diff check、clean remote equality PASS。same-frame fill/final/readback/factory/native/evidenceは未完。
+
+### O1B-25進捗408（Item 19E-D4b2b / Eventbrite attendee fill ship・live fail-closed）
+
+LunaがHarness production/test 2 filesだけをTDD実装し、commits `b4b250a9b`、`a6a0a6de5`。event-bound exact4 controlsの1 fieldをsame child frameでfillし、private resolve後にDOM exact4＋parent canonical＋official child exact1/eid＋same Frameを再検査、locator count1 fill1、post completed=trueを要求する。wrong/completed/missing/DOM・page・frame・eid drift、locator0/2、postcondition falseはfailed、final effect 0。初回fresh review SHIP後のlive E2Eで、実DOM literal `buyer.N-*`に対し未実測numeric patternがcontrols 0となる反例を発見。同じLunaへliteral N REDを戻し、numeric/case/fuzzyをrejectした。final review SHIP、Critical/Important 0。stable統合後major suites 121/121、syntax、diff check、clean remote equality PASS。
+
+修復後live再試行は実Calendar conflict 0、top CTA 1回success、ticket control exact1を観測したが、ticket Register click後official checkout frameが消えpostcondition failed。field resolve/operate 0、final Register 0でfail closedした。同一候補の連打を止め、diagnostic page cleanup後CDP baseline 2、4 schedule labels unloaded。Item19はfresh checkoutでの4-field live acceptance、final control/click/readback/factory/native/evidenceが未完。
+
+### O1B-25進捗409（Item 19E-D4c1 / Eventbrite final inspector ship・live opt-out boundary）
+
+LunaがHarness production/test 2 filesだけをTDD変更し、exact4 fieldsが全てcompletedのsame-event frameで、primary raw exact1、`button[type=button]`、visible/enabled、label exact `Register`、既知marketing checkboxがoptional/uncheckedのときだけread-only final controlを公開した。primary DOMへtokenをbindせず、performActionはresolve/operate/final-effect 0のfailedを維持する。fresh Sol reviewはSHIP、Critical/Important 0。stable独立検証はHarness/Eventbrite adjacent 122/122、syntax、diff、clean remote equality PASS。review済みcommit `26ceb0985`をpushした。
+
+実checkoutではhCaptcha後にticket actionの30秒postconditionがfailedを返した後、同じframeが遅れてattendee stepへ進むeffect-unknown境界を観測した。再clickせず、Calendar競合候補をDOM診断専用として4 fieldsをexact1回ずつ入力し、全4 completed、final click 0を確認した。`organizationMarketingOptIn`は既定checked、`ebMarketingOptIn`はuncheckedで、最終controlを公開しないfail-closed判定は正しい。標準`uncheck()`は装飾inputがiframe viewport外のため30秒timeout、external registration/Calendar/evidence/Telegram effect 0。診断pageは自然終了し、既存unrelated pages 2、Connector target intersection 0へ復帰した。
+
+次active plan `docs/superpowers/plans/2026-08-10-connector-eventbrite-marketing-optout-19e.md`は、既知checked inputと一意可視labelを同時検証し、labelへの通常click exact1＋post uncheckedだけをTDDする。DOM property代入、force/coordinate click、unknown checkbox、final Register clickは0。4 labelsはUNLOADED、Item19 Eventbriteと実bundleは未完。
+
+### O1B-25進捗410（Item 19E-D4c2 / Eventbrite marketing opt-out ship・live acceptance）
+
+LunaがHarness production/testの2 filesだけをSuperpowers TDDで変更し、最終production commit `f1d199569`をpushした。公式DOMにlabel associationが存在せず、装飾inputがiframe viewport外で標準`uncheck()`できない実測に合わせ、same-event official child frame内の既知optional marketing inputをoriginal ElementHandleへ固定し、exact `Space` key action 1回だけでchecked→uncheckedへ遷移させる。global duplicate id、input/token/handle/page/frame/eid drift、hidden/disabled/required/unknown、post reversion、101+ actionable controlsは全てfail closed。DOM property代入、force/coordinate/page-owned click、label click、final Register clickは0。official first-party checkbox keyboard semanticsだけをtrust boundaryとし、custom hostile event handlerは対象外。fresh Sol reviewはSHIP、Critical/Important 0。最終Harnessを含む独立suiteは143/143 PASS、syntax/diff/clean remote equality PASS。
+
+実CloakBrowser acceptanceではproduction Harness自身がtop ticket action exact1、attendee 4 fields exact4、organization marketing opt-out exact1を実行し、final `Register` read-only control exact1・submittable=trueを確認した。結果は`ticket_clicks=1 / field_actions=4 / opt_out_actions=1 / final_readonly_count=1 / completion_marker_count=0 / final_clicks=0`。private値は出力0、外部registration/Calendar/evidence/Telegram effect 0。owned Eventbrite pageはcleanupされ、完了後CDPのEventbrite page 0（unrelated pages 14は不変対象外）、4 schedule labelsは全てUNLOADED。
+
+次active sliceはticket click後30秒timeout＋遅延attendee遷移を`effect_unknown`として確定し、retryを禁止する。続いてfinal Registerをexact1回だけ実行し、official readbackでregistered/pendingを確定する。factory/runFallback/native provider order/evidence/Telegram bundleはfinal readback acceptance後まで未接続。Item19 Eventbriteと実`applied_bundle`は未完。
+
+### O1B-25進捗411（Item 19E-D4c3 / Eventbrite ticket effect-unknown ship）
+
+LunaがHarness production/test exact 2 filesをSuperpowers TDD変更し、commit `6048dc947`をpushした。REDはticket `Register`操作success後もcardが残り続けるfixtureで、operate exact1なのにactualが通常`failed`となりretry禁止情報を失う不具合を再現。GREENは`waitForEventbriteTicketStep` trueを従来の`success`、falseだけを`failed / safe_reason=effect_unknown`へ固定した。paid/duplicate/disabled/page/frame/eid drift等のpre-operation failureはoperate 0・通常failedのまま。effect-unknown pathはoperate exact1でoperationへ戻る経路0、final attendee Register/readback/factory/native/Calendar/evidence/Telegram変更0。
+
+fresh Sol reviewはSHIP、Critical/Important 0。Sol独立検証はHarness 93/93、Eventbrite 15/15、minimal production 17/17、operations 11/11、adapter 4/4、review統合143/143、syntax/diff/exact 2-file scope PASS。4 schedule labelsはUNLOADED。次active sliceはfinal attendee `Register`をsame original controlへbindしてexact1回だけ操作し、既存Eventbrite `readProviderState`でregistered/pending相当のofficial effectを確定する。timeout/unavailableはeffect-unknownで再送禁止。Item19 Eventbriteと実`applied_bundle`は未完。
+
+### O1B-25進捗412（Item 19E-D4d / Eventbrite final Register・official child completion readback live acceptance）
+
+Lunaがfinal attendee `Register`をsame original controlへbindし、exact1回だけ操作するHarness contractをTDD実装した。parent canonical、same-event official child frame、exact4 completed fields、marketing unchecked、一意visible/enabled primaryをclick直前に再検査し、final click後はprovider readbackが`registered`だけを成功、未確認は`effect_unknown`として再送禁止にする。parent readbackは正本canonical link exact1と明示stateだけへ縮小し、generic auth/body markerと同event関連anchorの誤判定を除去した。final implementation・parent repairはfresh Sol review SHIP、Critical/Important 0、各commitをpush済み。
+
+実Calendarはbusy 102、candidate `2026-08-14 00:00–02:00 JST`とのconflict 0。保持したexact candidate pageでticket actionは遅延し`effect_unknown`となったため再clickせず、attendee fields exact4、organization marketing opt-out exact1、final attendee `Register` exact1だけを実行した。初回parent-only post-readbackは`absent`だったが、外部作用後に同じfinalを再送せずread-only診断を行い、main frame直下の公式same-eid `/checkout-external` child exact1で`Thanks for your order!` exact1、`YOU'RE GOING TO` exact1、`Register` button 0を確認した。nested child 2はcompletion 0。注文番号、email、本文、private valueは出力・保存0。
+
+Lunaがchild completion readbackをworkflow/test 2 filesだけでTDD実装し、HTTPS、raw authority exact `www.eventbrite.com`、path、single exact eid、port/userinfo（empty `@` / `:@`を含む）、fragment、direct child exact1、frame count 16以下を要求した。nested、duplicate、partial marker、Register残存、evaluate errorはfail closed。commits `b90567ae2`、`72ea17fcc`、`35df3f171`、`52f808cac`。focused 19/19、Harness 96/96、minimal/operations/adapter 32/32、fresh Sol final review SHIP、Critical/Important 0、remote push完了。
+
+同じ保持pageへproduction workflowの`readProviderState`をaction 0で再実行し、`candidate_pages=1 / status=registered / action_count=0`を実測した。完了後はowned pageだけを閉じてtarget 0、unrelated pages `4→4`、保持process 0、一時script 0、Git clean、4 Connector labels exact UNLOADED。Eventbrite provider registrationは実在するが、factory/runFallback/native order、Calendar/evidence/Telegramを束ねる実`applied_bundle`は未完。
+
+### O1B-25進捗413（Item 19E-D5a / Eventbrite production factory injection plan）
+
+Ponytail fullでproduction接続をD5a factory injection、D5b fallback dispatch、D5c native provider orderの3 sliceへ分割した。先頭plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-factory-injection-19e.md`はminimal production factory/testの2 filesだけ。既にfactoryが生成する`eventbriteWorkflow`をdefault Browser Harness constructionへ1参照渡す。production約1 LOC、test約20〜40 LOC。新agent/service/state/browser railを作らず、fallback map、native order、official wake、external effectは0。D5aをTDD・fresh review・pushで閉じるまで後続sliceへ進まない。Item19 Eventbrite `applied_bundle`とscheduleは未完。
+
+### O1B-25進捗414（Item 19E-D5a / Eventbrite production factory injection ship）
+
+Lunaがminimal production factory/test exact 2 filesだけをSuperpowers TDD変更した。REDはdefault factory-created Harnessのsafe mocked final actionが`failed`、Eventbrite readback 0となり、factoryが生成済みworkflowをHarnessへ渡していない欠陥を再現。GREEN commit `05b1b37e3`はHarness constructionへ`eventbriteWorkflow`を1行渡し、同じfixtureが`success / registered`、Eventbrite readback exact1となった。runFallback map、native order、live state変更0。
+
+factory 18/18、Harness 96/96、Eventbrite workflow 19/19、合計133/133、syntax、diff、exact 2-file scope PASS。fresh Sol review SHIP、Critical/Important 0。remote push完了。次の一件はD5b exact Eventbrite fallback dispatch。Item19 Eventbrite `applied_bundle`とscheduleは未完。
+
+### O1B-25進捗415（Item 19E-D5b / Eventbrite fallback dispatch plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-fallback-dispatch-19e.md`はHarness production/test exact 2 files。既存`runFallback` workflow mapへ`eventbrite`を1項目追加する。production約1 LOC、test約70〜130 LOC。successはEventbrite workflow readbackで`completed`、ticket/final `effect_unknown`はmutation exact1・second proposal/operation 0で即停止することをTDDする。factory/native/runner/evidence/Calendar/Telegram/schedule変更0、official wake 0。D5bをfresh review・pushで閉じるまでD5cへ進まない。
+
+### O1B-25進捗416（Item 19E-D5b / Eventbrite fallback dispatch ship）
+
+LunaがHarness production/test exact 2 filesだけをSuperpowers TDD変更した。REDは`runFallback({provider:"eventbrite"})`がworkflow dispatch前に`Connector production Browser Harness invalid`でrejectする欠陥を再現。GREEN commit `413d6ec9f`は既存workflow mapへ`eventbrite: eventbriteWorkflow`を1項目追加した。success fixtureはproposal/operation/click/Eventbrite readback各exact1、Luma readback 0、`completed / registered`とbounded repaired actionを返す。effect-unknown fixtureはproposal/operation/click exact1、repaired action 0、second proposal/operation/click 0で`failed / effect_unknown`停止。
+
+Harness 98/98、Eventbrite workflow 19/19、adapter 4/4、minimal production 18/18、合計139/139、fresh reviewer追加検証147/147、syntax、diff、exact2-file scope PASS。fresh Sol review SHIP、Critical/Important 0。remote push完了。次の一件はD5c native provider order。Item19 Eventbrite `applied_bundle`とscheduleは未完。
+
+### O1B-25進捗417（Item 19E-D5c / Eventbrite native provider order plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-native-order-19e.md`はnative-pass production/test exact 2 files。frozen provider orderをexact `Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite`へ末尾1項目拡張する。production 1 LOC、test 3 LOC。failure 3、wake 600000ms、agent steps 10、private identity factory-only境界は不変。implementation/review中official wake 0、4 labels UNLOADED。D5cをTDD・fresh review・pushで閉じた後だけ実production wakeへ進む。
+
+### O1B-25進捗418（Item 19E-D5c / Eventbrite native provider order ship）
+
+Lunaがnative-pass production/test exact 2 filesだけをSuperpowers TDD変更した。既存exact-order assertions 3件を6-providerへ先に更新し、REDは10件中7 pass / 3 failで旧5-providerとの差分だけを再現。GREEN commit `d21205b1b`はfrozen `DEFAULT_PROVIDERS`末尾へ`eventbrite`を一項目追加しnative 10/10。exact orderはLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbrite。budgets 3/600000/10、private identity factory-only/non-wake境界は不変。
+
+runner 41/41、minimal production 18/18、contract 1/1、Harness 98/98、Eventbrite workflow 19/19、Sol combined 186/186、syntax、diff、exact2-file scope PASS。native-runtime 15/17の2件はbase `bd1ef2e4d`でも同じ`actual peatix / expected connpass`を再現し、native-pass import 0の変更外既知fixture。fresh Sol review SHIP、Critical/Important 0。remote push完了。
+
+### O1B-25進捗419（Item 19E-D6 / Eventbrite official live acceptance plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-live-acceptance-19e.md`はcode変更0。pushed/clean/upstream、4 labels UNLOADED、Connector process 0、lock absent、current target intersection 0をpreconditionに、official `skills/connector/run.sh`を660秒hard timeout付きforegroundでexact 1回だけ実行する。baselineはbundle 13、report 129、delivery 141、action 1322、Eventbrite audit 0、unrelated CDP pages 4。plist load、launchctl、manual provider/browser action、second wakeは0。既登録Eventbrite候補ならfinal Submit 0のpre-readback reuseからCalendar/evidence/Telegram `applied_bundle`、候補なし/conflictならdurable audit＋external write 0＋positive reportを受入する。終了後process/lock/owned target 0、unrelated pages不変、4 labels UNLOADEDを必須とする。
+
+### O1B-25進捗420（Item 19E-D6 / first official live wakeがnon-consecutive failure累積でEventbrite前にsafe stop）
+
+Pushed HEAD `122d3bbf9`、4 labels UNLOADED、process 0、lock idle、Git clean/upstream 0/0、current CDP page 4、Connector ledger intersection 0からofficial `skills/connector/run.sh`を660秒hard timeout付きforegroundでexact 1回だけ実行した。wake `wake-52bdd8157305ec034d927a85`は約93秒、action `1322→1360`、Luma audit `130→131`、Peatix audit `46→47`、report `129→130`、delivery `141→142`、bundle `13→13`、Eventbrite audit 0。terminalは`circuit_open / provider_discovery_failed / consecutive_failure_count 3`、positive Telegram provider ID `12089`、CLI exit 1。final Eventbrite Submit、new Calendar/evidence bundle、duplicate external effectは0。
+
+action historyはLuma discovery success、Connpass discovery failure、Peatix discovery success、複数candidateのregistered readback/bundle reuseを含む一方、runner local counterがsuccessで一度も0へ戻らないことをコード照合した。離れた失敗total 3が「3連続」と誤分類され、Meetup/Doorkeeper/Eventbrite前でcircuitが開いた。終了後process 0、lock idle、owned target intersection 0、CDP `5→4`、unrelated pages 4、4 labels UNLOADED、Git clean/upstream。safe stop/report/cleanupは正しいがEventbrite live acceptanceは未達。
+
+### O1B-25進捗421（Item 15/19E / consecutive failure reset plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-consecutive-failure-reset.md`はrunner production/test exact 2 files。verified registered bundleが`completion_disposition=reused`を返した時だけ`consecutiveFailures=0`へ戻す。provider discovery成功はcandidate outcome成功ではないためresetせず、候補内の個別navigate/readback/action successもresetしない。cross-providerを含む三candidate/discovery outcome failureの既存circuit contractは維持する。production約1〜2 LOC、test約25〜55 LOC。new state/retry/wake/schedule作用0。TDD・fresh review・push完了後にofficial wake exact 1回だけ再実行する。
+
+### O1B-25進捗422（Item 15/19E / verified reused bundle failure reset ship）
+
+初期案のprovider discovery success resetは既存accepted cross-provider three-failure tests 5件を壊すことをRED後に実測し棄却した。plan/SSOTを先に`19858fa13`で縮小更新。Lunaがrunner production/test exact 2 filesだけをTDD変更し、verified registered bundleが`completion_disposition=reused`を返すbranchでだけ`consecutiveFailures=0`へ戻す1 LOCを追加した。REDはfailed candidate→registered reused bundle→later failuresの歴史total 3を誤ってcircuit-openしrunner 41/42。GREEN commit `37940015d`はrunner 42/42、既存cross-provider三失敗contractを無変更で維持する。
+
+minimal production 18/18、Harness 98/98、operations 11/11、evidence 31/31、Sol combined 200/200、syntax、diff、exact2-file scope PASS。fresh Sol review SHIP、Critical/Important 0。remote push完了。provider order、budgets、effect_unknown、deadline、report schema、live state変更0。
+
+### O1B-25進捗423（Item 19E-D6 / repaired official live wake preflight）
+
+修復後baselineはbundle 13、report 130、delivery 142、action 1360、Luma/Connpass/Peatix/Meetup/Doorkeeper/Eventbrite audits `131/54/47/4/3/0`、CDP unrelated pages 4。pushed/clean/upstream 0/0、process 0、lock idle、target intersection 0、4 labels UNLOADED。既存live planに従いofficial foreground `skills/connector/run.sh`をexact 1回だけ再実行する。manual provider/browser action、second concurrent executor、schedule loadは0。Eventbrite auditまたはfinal Submit 0のregistered reuse `applied_bundle`、positive report、exact cleanupを受入条件とする。
+
+### O1B-25進捗424（Item 19E-D6 / repaired wakeがEventbrite到達・page1-only discovery gap確定）
+
+Pushed HEAD `c2539e78b`、4 labels UNLOADED、process 0、lock idle、Git clean/upstream 0/0、CDP page 4からofficial foreground wakeをexact 1回実行した。wake `wake-8fb25d522faf88565a7316b0`は約120秒、action `1360→1404`、Luma/Connpass/Peatix/Doorkeeper/Eventbrite audits `131→132 / 54→55 / 47→48 / 3→4 / 0→1`、Meetup 4。report `130→131`、delivery `142→143`、bundle `13→13`。terminal `completed_no_effect / provider_discovery_failed / consecutive_failure_count 2`、positive Telegram ID `12107`、CLI exit 1。failure resetにより前wakeのfalse circuitを越え、DoorkeeperとEventbriteへproduction到達した。
+
+Eventbrite durable auditはexact `discovered/within/eligible/calendar-free/selected = 80/0/0/0/0`。default readerをコード追跡するとbase listing URLを1回だけ読む。isolated shared-browser read-only実測はexact `?page=1/2/3`でcards `80/80/28`、既登録event `1997468673573`出現数 `0/0/4`、全final URL exact。diagnostic pageはcloseしregistration/Calendar/evidence effect 0、Connector ledger intersection 0。page3の実候補をproductionが探索しないことが次の先頭故障。
+
+### O1B-25進捗425（Item 19E-D6a / Eventbrite bounded pagination plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-pagination-19e.md`はEventbrite workflow production/test exact 2 files。supplied owned pageでbase、`?page=2`、`?page=3`をexact順に読み、各goto後URL exactと既存card selector/row contractを要求して全rowsを連結する。page4、新page/context/browser、pagination clickは0。途中navigation/read errorはpartial rowsを返さずexisting safe listing failure。production約15〜30 LOC、test約35〜70 LOC。detail/free/Tokyo/window/Calendar/readback/action変更0。TDD・fresh review・push後にofficial wake exact 1回で既登録page3 candidateを受け入れる。
+
+### O1B-25進捗426（Item 19E-D6a / Eventbrite bounded pagination ship）
+
+LunaがEventbrite workflow production/test exact 2 filesだけをSuperpowers TDD変更した。REDはcurrent readerがpage1だけを読み、3-page expectationとpage2 read failure rejectionの2件を失敗して19/21。GREEN commit `25b3fd3e7`はsame supplied pageでexact `[LIST_URL, LIST_URL?page=2, LIST_URL?page=3]`を順にgotoし、各final URL exactと既存selector/row shapeを検査、全3 pages成功後だけrowsを返す。URL drift/evaluate errorはpartial rows/detail reads 0でexisting safe listing codeへfail closed。page4、新page/context/browser、link clickは0。
+
+Eventbrite 21/21、minimal production 18/18、Harness 98/98、operations 11/11、Sol combined 148/148、syntax、diff、exact2-file scope PASS。fresh Sol review SHIP、Critical/Important 0。production +19 LOC、test +58 LOC、remote push完了。detail/free/Tokyo/window/Calendar/readback/action変更0。
+
+### O1B-25進捗427（Item 19E-D6 / paginated official live wake preflight）
+
+最新baselineはbundle 13、report 131、delivery 143、action 1404、Luma/Connpass/Peatix/Meetup/Doorkeeper/Eventbrite audits `132/55/48/4/4/1`、current unrelated CDP pages 5。pushed/clean/upstream、process 0、lock idle、target intersection 0、4 labels UNLOADED。official foreground `skills/connector/run.sh`をexact 1回実行し、page3既登録candidate `1997468673573`のpre-readback `registered`、final Submit 0、Calendar/evidence/Telegram `applied_bundle`またはexact safe blocker、positive report、cleanupを受け入れる。
+
+### O1B-25進捗428（Item 19E-D6 / paginated production live acceptance・current eligible 0）
+
+Pushed HEAD `39b53e563`からofficial foreground wake `wake-e289aa2e9963209e6996f099`をexact 1回実行した。action `1404→1448`、Luma/Connpass/Peatix/Doorkeeper/Eventbrite audits `132→133 / 55→56 / 48→49 / 4→5 / 1→2`、Meetup 4。report `131→132`、delivery `143→144`、bundle `13→13`。terminal `completed_no_effect / provider_discovery_failed / 2`、positive Telegram ID `12117`、CLI exit 1。process 0、lock idle、owned target intersection 0、4 labels UNLOADED、unrelated CDP pages 5を維持した。
+
+Eventbrite auditはpagination修復前`80/0/0/0/0`からexact `188/0/0/0/0`へ増え、3-page production探索をlive実証した。既登録event `1997468673573`のpage3 anchorは現在Eventbrite自身の`data-event-paid-status=paid` exact4で、detailは`SocialEvent`、2026-08-14 00:00–02:00 JST、official CTA exact1だがminimum-purchase safety gate対象。無料判定を緩めて既登録effectをproduction bundleへ偽装しない。Eventbriteはdiscovery/action/readback/native live auditまで完了、実`applied_bundle`はcurrent eligible candidate 0とevidence adapter未接続によりpending。
+
+Root `README.md`へConnectorのtrigger→6-provider discovery→deterministic gate→click-once action→official readback→Calendar/PNG/Telegram bundle→cleanupを示すMermaid flow、effect state transition、provider acceptance表を追加した。SSOT冒頭のprovider順、latest wake、evidence境界、lifecycle、TODO境界、architecture図を現行6-provider stateへ更新し、旧Luma/Connpass-only・3-provider記述を撤回した。
+
+### O1B-25進捗429（Item 22 / single daily production owner cleanup完了）
+
+Live受入とREADME/SSOT同期をpushed HEAD `471b0e357`で完了後、installed mode-0600 native plistだけを`gui/501`へbootstrapした。exact label `ai.anicca.life-manager-connector-native`はloaded、state `not running`、active count 0、runs 0、last exit never、calendar trigger exact `Hour=9 / Minute=0`、program/working directoryはcurrent Connector worktreeのofficial `skills/connector/run.sh`。RunAtLoad、KeepAlive、StartInterval、second kickは0。
+
+`ai.anicca.life-manager-connector-native-healthcheck`、`ai.anicca.life-manager-connector-healer-shadow`、`ai.anicca.life-manager-connector-host-bridge`はexact全UNLOADED。Connector process 0、lock idle、current CDP pageと9件のlegacy target-ledger historyのintersection 0、Git clean/upstream 0/0、Gig code/state変更0。旧plist filesは削除せずunloaded inventoryとして保持し、実行consumerはNative daily owner exact1。Item22を完了する。
+
+### O1B-25進捗430（Item 19D-E1 / Doorkeeper evidence store plan）
+
+Current worktreeは`feature/connector-native-completion`、HEAD/remote `37ddf1d85e22`、dirty 0、ahead/behind 0/0。Native daily labelだけloaded・not running・runs 0、他3 labels unloaded、process 0、lock absent。最新durable wakeは`wake-e289aa2e9963209e6996f099`のままで、Doorkeeper実`applied_bundle`は未完。
+
+PonytailでDoorkeeper evidence adapterを2 sliceへ分割する。先頭plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-evidence-store-19d.md`は既存provider-neutral evidence store production/test exact 2 filesだけを変更し、`doorkeeper-event://event/<positive integer>`と`provider-receipt://doorkeeper/<64 hex>`をmode-0600 immutable receipt/artifactへ束縛するwrapperをTDD追加する。production約8〜12 LOC、test約40〜70 LOC。minimal evidence chain、Calendar transport、Telegram、browser、native order、launchd、live state変更0。store review/push後にだけevidence-chain配線へ進む。Item19 Doorkeeperは実bundleまで未完。
+
+### O1B-25進捗431（Item 19D-E1 / Doorkeeper evidence store ship）
+
+Lunaが`connpass-evidence-store.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは既存4件GREEN、新Doorkeeper 2件だけ`createDoorkeeperEvidenceStore is not a function`でFAIL。GREEN commit `81e26e153`は既存private `createBrowserProviderEvidenceStore`を変更せず、exact Doorkeeper event/receipt namespaceとcollision messageを持つwrapper/exportだけを追加した。production +10/-1、test +55/-1。
+
+Doorkeeper store testは実mode-0600 receipt/artifact/object、deterministic receipt tuple、tenant非露出、invalid event ID、tampered receipt rejectionを固定する。Sol独立でevidence関連37/37、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality APPROVED、Critical/Important/Minor 0で`ship`。browser、Calendar、Telegram、Connector state、launchd、external effectは0。次active sliceはDoorkeeperをminimal evidence chainへ配線し、current registered pageのfull-page PNG→provider receipt→Calendar→Telegram→`applied_bundle` contractをTDDする。Item19 Doorkeeper実bundleは未完。
+
+### O1B-25進捗432（Item 19D-E2 / Doorkeeper minimal evidence chain plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-evidence-chain-19d.md`は`connector-minimal-evidence.js`とmatching testのexact 2 files。review済みDoorkeeper storeをprovider mapへ追加し、exact event refと`https://<lowercase-group>.doorkeeper.jp/events/<same ID>`を束縛する。registered current pageを置換・navigate・receipt renderせずfull-page PNG化し、初回provider receipt/artifact readback後だけ既存Calendar/Telegram/checkpoint/bundle pipelineへ進む。production約25〜40 LOC、test約65〜95 LOC。
+
+Calendar gog transport、discovery/action/readback、Harness、native、schedule、live stateは変更0。このsliceはinjected Calendar/Telegramで`created→reused`とinvalid identity/state/current URLのdownstream effect 0をTDD固定する。review/push後にDoorkeeper Calendar transportを別sliceで追加し、official wakeはその後だけ実行する。Item19 Doorkeeper実bundleは未完。
+
+### O1B-25進捗433（Item 19D-E2 / Doorkeeper minimal evidence chain ship）
+
+Lunaが`connector-minimal-evidence.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは33件中32 pass / 1 failで、新しいDoorkeeper正常系が未登録providerとして失敗した。拒否を期待するfail-closed testは未登録providerでも通るため、Doorkeeper canonical guardだけを一時的に除去するreversible mutationを追加実測し、uppercase host fixtureが`Missing expected rejection`で失敗することを確認後、guardを復元した。
+
+GREEN commit `4f30d50c4`はreview済みDoorkeeper storeをprovider mapへ配線し、`doorkeeper-event://event/<positive ID>`、exact lowercase group host、同一event ID、`registered` state、current page URL exactを要求する。現在ページをnavigate・置換・receipt renderせずfull-page PNG化し、初回provider receipt/artifactを永続storeから再読取してからだけ既存Calendar→Telegram→`applied_bundle` pipelineへ進む。created後のexact rerunは同じbundleをreusedし、screenshot/Calendar/Telegram重複作用0。
+
+Sol独立でfocused 33/33、adjacent evidence 39/39、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality APPROVED、Critical/Important/Minor 0で`ship`。Calendar gog transport、discovery/action/readback、Harness、native、schedule、live state、external effectは0。次active sliceはDoorkeeper canonical URLをCalendar gog transportへ追加する。Item19 Doorkeeper実bundleは未完。
+
+### O1B-25進捗434（Item 19D-E3 / Doorkeeper Calendar transport plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-calendar-transport-19d.md`はCalendar gog adapter/testのexact 2 files。既存`connectorCanonicalUrl`へexact `https://<lowercase-group>.doorkeeper.jp/events/<positive ID>`と固定`sourceTitle=Doorkeeper`を追加し、同じURLをdescription/source-urlへ渡す。production約8〜15 LOC、test約35〜60 LOC。
+
+HTTP、uppercase raw host、`www`、root/nested host、credentials、explicit port、query、fragment、trailing slash、zero/nonnumeric ID、extra/search pathは`gog`実行前にfail closed。Luma/Peatix/Connpass/Meetup、Calendar receipt/idempotency/readback、browser、evidence、native、schedule、live stateは変更0。TDD・fresh review・push後だけofficial foreground wakeへ進む。Item19 Doorkeeper実bundleは未完。
+
+### O1B-25進捗435（Item 19D-E3 / Doorkeeper Calendar transport ship）
+
+LunaがCalendar gog adapter/testのexact 2 filesだけをSuperpowers TDD変更した。REDは25件中24 pass / 1 failで、新しいexact Doorkeeper正常系だけが既存Peatix fallbackで拒否された。GREEN commit `0c2dddfad`はMeetup後・Peatix前へ7 LOCのstrict branchを追加し、lowercase one-group host、group 1〜63文字、`www`除外、positive numeric event ID、raw/canonical URL exact equalityを要求する。accepted argvはexact description/source-url、single `sourceTitle=Doorkeeper`、既存private idempotency propertyを保持する。
+
+拒否tableは未知providerの既存fail-closedでも通るため、raw equalityだけを一時除去するreversible mutationを実行した。uppercase raw host、explicit default port `:443`、fragmentの3件が`gog run`へ誤到達してnegative testが24/25、calls=3で失敗することを確認後、guardを復元した。Sol独立でfocused＋adjacent 58/58、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality APPROVED、Critical/Important/Minor 0、追加boundary probe 8/8で`ship`。
+
+Luma/Peatix/Connpass/Meetup、Calendar receipt/idempotency/readback、browser、minimal evidence、native、schedule、live state、external effectは変更0。次active sliceはpushed/clean preflight後、既存daily ownerをkickstartするofficial wake exact 1回。Item19 Doorkeeper実bundleはcurrent non-conflict candidateの有無を含め未完。
+
+### O1B-25進捗436（Item 19D-E4 / Doorkeeper official live acceptance plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-doorkeeper-live-acceptance-19d.md`はcode変更0。pushed/clean HEAD `4032eea1e`、upstream 0/0、Native daily label loaded・not running・runs 0、legacy 3 labels unloaded、process 0、lock absent、CDP pages 4。baselineはbundle 13、report 132、report delivery 144、action 1448、provider audits Luma/Connpass/Peatix/Meetup/Doorkeeper/Eventbrite `133/56/49/4/5/2`。
+
+既存daily owner exact 1を`launchctl kickstart`で一度だけ発火し、同じofficial `skills/connector/run.sh`を最大12分watchする。manual provider/browser action、second executor、second wake、schedule変更は0。Doorkeeper Calendar-free candidateがあればregistered readback→provider receipt/artifact→Calendar create/readback→PNG→positive Telegram message/photo→Doorkeeper `applied_bundle`を要求する。再びCalendar-free 0ならtruthful audit、Doorkeeper external write 0、Eventbrite continuation、positive every-wake delivery、exact cleanupだけを受入し、成功を偽装しない。
+
+### O1B-25進捗437（Item 19D-E4 / Doorkeeper official live no-effect acceptance）
+
+Pushed/clean HEAD `63bf21451`、Native daily label loaded・not running・runs 0、legacy 3 labels unloaded、process 0、lock absent、CDP pages 4から、既存launchd ownerをexact 1回kickstartした。wake `wake-92673cc7fd429b07eec79c43`は約180秒、action `1448→1492`、Luma/Connpass/Peatix/Doorkeeper/Eventbrite audits `133→134 / 56→57 / 49→50 / 5→6 / 2→3`、Meetup 4、report `132→133`、report delivery `144→145`、bundle `13→13`。terminalは`completed_no_effect / provider_discovery_failed / consecutive_failure_count 2`、positive Telegram provider ID `12183`、launchd last exit 1。
+
+Doorkeeper durable auditはexact `discovered/within/eligible/calendar-free/selected = 100/12/4/0/0`で前wakeと同じ。4 eligibleは実Calendar conflictにより安全に全skipされ、Doorkeeper provider/Calendar/evidence/Telegram external write 0。Eventbrite audit `188/0/0/0/0`まで正常継続し、成功やbundleを偽装していない。new evidence delivery/photo receipt 0、new applied bundle 0。終了後Native label not running・runs 1、legacy 3 labels unloaded、process 0、lock absent、CDP pages 4、owned target intersection 0、Git clean/upstream 0/0。
+
+Doorkeeper evidence store→minimal evidence chain→Calendar transport→official production reach/cleanupは受入済み。Item19 Doorkeeper実`applied_bundle`だけはcurrent Calendar-free candidate 0のためpendingであり、安全gateは緩めない。NO PASSIVE WAITINGにより次active sliceはEventbrite evidence adapterを同じstore→chain→Calendar順で閉じる。
+
+### O1B-25進捗438（Item 19E-E1 / Eventbrite evidence store plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-evidence-store-19e.md`は既存browser-provider evidence store production/testのexact 2 files。private generic storeを変更せず、`eventbrite-event://event/<positive integer>`と`provider-receipt://eventbrite/<64 hex>`をmode-0600 immutable receipt/artifactへ束縛するwrapper/exportだけをTDD追加する。production約8〜12 LOC、test約40〜70 LOC。
+
+Eventbrite minimal evidence chain、Calendar transport、browser/action/readback、native order、launchd、schedule、live stateは変更0。store review/push後にだけEventbrite evidence-chain配線へ進む。Item19 Eventbrite実`applied_bundle`は未完。
+
+### O1B-25進捗439（Item 19E-E1 / Eventbrite evidence store ship）
+
+Lunaが`connpass-evidence-store.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは既存6件GREEN、新Eventbrite 2件だけ`createEventbriteEvidenceStore is not a function`でFAIL。GREEN commit `b9b7b691c`はprivate generic storeを変更せず、exact Eventbrite event/receipt namespaceとcollision messageを持つwrapper/exportだけを追加した。production +10/-1、test +51。
+
+Eventbrite store testは実mode-0600 receipt/artifact/object、deterministic receipt tuple、tenant非露出、invalid event ID、stored receipt tuple tamper rejectionを固定する。Sol独立でstore＋evidence 41/41、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality PASS、Critical/Important/Minor 0で`ship`。browser、Calendar、Telegram、Connector state、launchd、external effectは0。次active sliceはEventbriteをminimal evidence chainへ配線する。Item19 Eventbrite実bundleは未完。
+
+### O1B-25進捗440（Item 19E-E2 / Eventbrite minimal evidence chain plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-evidence-chain-19e.md`は`connector-minimal-evidence.js`とmatching testのexact 2 files。review済みEventbrite storeをprovider mapへ追加し、exact event refと現行workflowのcanonical 2 path（`/e/<slug>-tickets-<same ID>`または`/e/<same ID>`）を束縛する。registered親pageを置換・navigate・receipt renderせずfull-page PNG化し、初回provider receipt/artifact readback後だけ既存Calendar/Telegram/checkpoint/bundle pipelineへ進む。production約28〜45 LOC、test約75〜110 LOC。
+
+Calendar gog transport、Eventbrite discovery/action/child-frame readback、Harness、native、schedule、live stateは変更0。injected Calendar/Telegramでcreated→reused、両canonical path、invalid identity/state/current URLのdownstream effect 0をTDD固定する。review/push後にEventbrite Calendar transportを別sliceで追加する。Item19 Eventbrite実bundleは未完。
+
+### O1B-25進捗441（Item 19E-E2 / Eventbrite minimal evidence chain ship）
+
+Lunaが`connector-minimal-evidence.js`とmatching testのexact 2 filesだけをSuperpowers TDD変更した。REDは既存34件GREEN、新Eventbrite slug/direct-ID正常系2件だけprovider未接続でFAIL。GREEN commit `d21e11c75`はreview済みstore、exact event/receipt refs、現行workflowと同じ2 canonical path、registered-only provider mapを配線した。親current page URL exactを要求し、navigate・置換・receipt renderなしのfull-page PNGを保存、初回receipt/artifactをdurable storeから再読取してからだけ既存Calendar→Telegram→bundleへ進む。
+
+初期negative tableのuppercase candidateはdefault lowercase page mismatchでも拒否できcanonical guard欠落をmaskしたため、candidateとpageUrlを同じuppercase raw hostにする恒久回帰caseへ修復した。`value !== expected`だけを一時除去するとnamed testが`Missing expected rejection`でFAILしdownstream到達を検知、guard復元後focused 36/36、adjacent store込み44/44、default reviewed store isolated smoke、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec PASS / quality PASS、Critical/Important/Minor 0で`ship`。
+
+Calendar transport、Eventbrite action/child-frame readback、Harness、native、schedule、live state、external effectは0。次active sliceはEventbrite canonical URLをCalendar gog transportへ追加する。Item19 Eventbrite実bundleは未完。
+
+### O1B-25進捗442（Item 19E-E3 / Eventbrite Calendar transport plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-calendar-transport-19e.md`はCalendar gog adapter/testのexact 2 files。現行Eventbrite workflowのcanonical 2 pathを既存`connectorCanonicalUrl`へ追加し、exact description/source-urlと固定`sourceTitle=Eventbrite`を既存idempotent Calendar createへ渡す。production約8〜16 LOC、test約45〜75 LOC。
+
+HTTP、non-www/wrong/subdomain host、uppercase raw host、credentials、explicit port、query、fragment、trailing slash、zero/nonnumeric ID、invalid/extra/listing/search pathは`gog`前にfail closed。既存5 providers、Calendar receipt/idempotency/readback、Eventbrite workflow/Harness、evidence、native、schedule、live stateは変更0。TDD・fresh review・push後だけofficial wakeへ進む。Item19 Eventbrite実bundleは未完。
+
+### O1B-25進捗443（Item 19E-E3 / Eventbrite Calendar transport ship）
+
+LunaがCalendar gog adapter/testのexact 2 filesだけをSuperpowers TDD変更した。REDは27件中26 pass / 1 failで、新しいEventbrite accepted testだけが既存Peatix fallbackで拒否された。GREEN commit `c3f5f9d79`はDoorkeeper後・Peatix前へ7 LOCのEventbrite branchを追加し、現行workflowと同じslug/direct-ID path grammar、exact `www.eventbrite.com`、raw/canonical equality、固定`sourceTitle=Eventbrite`を要求する。accepted 2形式はexact description/source-url、single source title、既存private idempotency propertyを保持する。
+
+raw equalityだけを一時除去するとnamed rejection testがcalls=3でFAILし、uppercase raw host、explicit default port `:443`、fragmentが`gog run`へ誤到達することを確認後、guardを復元した。Sol独立でfocused＋adjacent 63/63、syntax、diff、exact2-file scope PASS。fresh Sol reviewはspec/security/quality PASS、Critical/Important/Minor 0で`ship`。
+
+既存5 providers、Calendar receipt/idempotency/readback、Eventbrite workflow/Harness、minimal evidence、native、schedule、live state、external effectは0。次active sliceはpushed/clean preflight後、既存daily ownerをkickstartするofficial wake exact 1回。Item19 Eventbrite実bundleはcurrent eligible candidateの有無を含め未完。
+
+### O1B-25進捗444（Item 19E-E4 / Eventbrite evidence adapters official wake plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-eventbrite-evidence-live-acceptance-19e.md`はcode変更0。clean/pushed HEAD `9b79a8ad1`、Native label loaded・not running・runs 1、process 0、lock absent、CDP pages 4。baselineはbundle 13、report 133、report delivery 145、action 1492、provider audits `134/57/50/4/6/3`。
+
+既存daily ownerをexact 1回kickstartし最大12分watchする。Eventbrite eligible/Calendar-free candidateがあればcomplete evidence bundle、eligible 0継続ならtruthful audit・Eventbrite external write 0・positive wake report・exact cleanupだけを受入する。manual provider/browser action、second executor/wake、schedule変更、安全gate緩和は0。
+
+### O1B-25進捗445（Item 19E-E4 / Eventbrite evidence adapters official live no-effect acceptance）
+
+Pushed/clean HEAD `205fa0c8e`から既存Native daily ownerをexact 1回kickstartした。wake `wake-c19c857730b2187b62448756`は約171秒、action `1492→1536`、Luma/Connpass/Peatix/Doorkeeper/Eventbrite audits `134→135 / 57→58 / 50→51 / 6→7 / 3→4`、Meetup 4、report `133→134`、report delivery `145→146`、bundle `13→13`。terminalは`completed_no_effect / provider_discovery_failed / consecutive_failure_count 2`、positive Telegram provider ID `12237`、launchd last exit 1。
+
+Eventbrite durable auditはexact `discovered/within/eligible/calendar-free/selected = 188/0/0/0/0`。current 14日window内eligible候補0のためEventbrite action/Calendar/evidence/Telegram external write 0、new receipt/photo delivery 0、new bundle 0で安全に終了し、成功を偽装していない。Doorkeeper audit `100/12/4/0/0`までのprovider continuationも維持した。
+
+終了後Native label not running・runs 2、legacy 3 labels unloaded、process 0、lock absent、CDP pages 4、owned target intersection 0、Git clean/upstream 0/0。Eventbrite action/readback→evidence store→minimal chain→Calendar transport→official production reach/cleanupは受入済み。Item19 Eventbrite実bundleだけはcurrent eligible candidate 0でpending。次active sliceは発見済み次providerを確定し、一providerだけ追加する。
+
+### O1B-25進捗446（Item 19F-D1 / 次provider TECH PLAY選定・discovery plan）
+
+次providerをTECH PLAYに確定した。公式event index <https://techplay.jp/event> は「開催予定463件/開催中27件/全490件」とcurrent supplyを公開し、canonical detailを`https://techplay.jp/event/<positive ID>`へ束縛する。公式RSS <https://rss.techplay.jp/event/w3c-rss-format/rss.xml> は「点在している技術勉強会、セミナー情報をまとめて掲載」と説明し、実測でcurrent canonical detail 50件を返した。EventRegistはpublic discoveryが弱く、こくちーずプロは反復occurrence identityと有料/noisy supplyの追加境界が必要なため、先頭providerには採らない。
+
+2026-08-12のRSS 50件をpublic detail payloadと照合した実測は14日window内24件、東京現地8件。そのうちTECH PLAY内のnative action、fee 0、空席、open表示を同じevent/ticket identityに持つ構造上の候補は4件（`999211 / 999190 / 999180 / 999179`）。実Google Calendar busy 45区間とのread-only照合では4件とも非衝突。ただし先頭`999211`はtitleが「小学生・中学生対象」でDais向けではないため、明示school-age-only markerをeligibility gateでskipし、残る3件をaction候補にする。共有CDPはTECH PLAY匿名、read-only一時tabはbefore/afterとも4 pagesでcleanupし、button click・login・external writeは0。GitHub code searchでは公式RSS consumerを複数確認したが、Connectorのidentity/free/Calendar/action-safety contractを満たす再利用workflowは0だった。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-discovery-19f.md`は新規TECH PLAY workflow/testのexact 2 files。公式RSS最大50→canonical detail→native/offline/Tokyo/14日/open/exactly-one-free-ticket→Calendarのread-only discoveryとaggregate auditだけをTDD追加する。production約160〜220 LOC、test約180〜260 LOC。100 LOC soft targetを超えるため、action/readback、routing/Harness/native order、evidence、Calendar transport、launchd/live stateは次sliceへ分離した。このsliceの外部作用は0で、Item19 TECH PLAY実bundleは未完。
+
+### O1B-25進捗447（Item 19F-D1 / TECH PLAY read-only discovery ship）
+
+Lunaが新規TECH PLAY workflow/testのexact 2 filesだけをSuperpowers TDD実装し、code commit `34dc4fe82`をpushした。初回REDはfactory file不在の`MODULE_NOT_FOUND`。追加REDはticket ID型、current URL/detail base contract、hydration後DOM、window終端、event ID欠落、school-age-only、hidden apply、recruitment、joined/Stripe、coverage orderを個別に捕捉した。最終production 312 LOC / test 225 LOC。100 LOC soft target超過は、action/readback/routing/evidenceを別sliceへ切り離したうえで、main-document responseのbounded original-HTML parseとsafe-field projectionに必要なprovider boundaryとして受入する。
+
+初版のlive DOM `#app[data-page]` readerはfixture 10/10でも実TECH PLAY detail `999284`でhydration後attribute 0となり`TECHPLAY_DETAIL_RESULT_CONTRACT_FAILED`。成功を偽装せず、`page.goto`が返すmain-document Response exact 1回のURL/status/textを検証し、2MB HTML・1.5MB data-page・10,000 div上限、HTML entity decode、single app payload、JSON parse、csrf/auth/profileを除くsafe projectionへTDD修復した。second fetch、click、login、Calendar write、Telegram、external writeは0。
+
+Sol独立でfocused＋Eventbrite/Doorkeeper adjacent 47/47、両file syntax、diff、exact2-file scope PASS。unique-free-ticket guardを一時緩和するとnamed unsafe testが999189を誤選択して1 fail、復元後GREEN。fresh Sol reviewはspec/correctness/security/privacy PASS、Critical/Important/Minor 0で`ship`。
+
+実共有CDP＋公式RSS 50件＋各canonical detail＋実Google Calendar busy 45区間のread-only E2Eは約21秒で`discovered/within/eligible/calendar-free/selected = 50/22/3/3/3`。明示school-age-only `999211`を除外し、順序はClaude Code対面無料`999190`（ticket `98036`）→Python対面無料`999180`（`98030`）→`999179`（`98029`）。TECH PLAY owned pageはclose後0、current page inventoryにTECH PLAY origin 0。absolute page countは並行sessionのunrelated Buyma page追加で4→5だが、そのpageは非所有として保持した。次active sliceはTECH PLAY official parent action/readback contract。Item19実bundleは未完。
+
+### O1B-25進捗448（Item 19F-D2 / TECH PLAY authenticated form・parent readback plan）
+
+TECH PLAY公式email accountを作成・確認し、passwordはmacOS Keychain service `anicca.connector.techplay`だけへ保存した。共有CDPでlogin済み。Google OAuth passkey challengeは外部application effect前に中止し、event applicationは0。認証はConnectorのsetupでありlive application acceptanceには数えない。
+
+authenticated公式input `https://techplay.jp/event/join/999190`は選択済みfree ticket `98036`、required organizer questions 6件（氏名、email、年齢、career、所属、職種）、CTA exact `同意して内容を確認する`。既定ONは東京area、event tags 3、organizer、profile icon公開、input preset保存の計7項目。private SSOTの事実を一時入力し7項目を全OFFにしてcontent confirmへ進むと、exact `https://techplay.jp/event/join/999190/confirm`、final CTA exact `申し込みを確定する` 1件を確認した。final clickは0、一時tabは各回4→4でcleanupした。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-parent-readback-19f.md`は既存TECH PLAY workflow/testのexact 2 files。canonical eventのsame event ID＋exactly-one same ticket ID＋`is_joined === true`だけを`registered`、same current native-open ticketのfalseだけを`absent`にする。join/confirm page、redirect、identity/ticket ambiguity、malformed/closed state、page driftは`unavailable`。production約45〜75 LOC、test約70〜110 LOC。Browser controls/private values/final click/routing/evidence/Calendar/live stateは次slice。Item19実bundleは未完。
+
+### O1B-25進捗449（Item 19F-D2 / TECH PLAY exact parent readback ship）
+
+LunaがTECH PLAY workflow/testのexact 2 filesをTDD変更し、code commit `f910a4eeb`をpushした。初回REDは14件中13 pass / 1 failで現stubのregistered常時unavailableを捕捉。GREEN後、fresh reviewが募集開始前でも`absent`になるImportant 1件を反証したためshipを止め、同じLunaがstrict factory clock、event end、既存`recruitmentOpen`をreadbackへ追加した。default bounded reader経由のregistered/absentとstatus-only privacyも直接固定した。
+
+最終focused 16/16、Eventbrite 21/21、Doorkeeper 15/15、combined 52/52、両file syntax、diff、exact2-file scope PASS。ticket-ID guard除去mutationはnamed wrong-ticket caseをregisteredへ誤判定して1 fail、復元後GREEN。fresh re-reviewはCritical/Important/Minor 0で`ship`。実authenticated canonical `999190` / ticket `98036` readbackは`absent`、owned tab 4→4、external write 0。次active sliceはTECH PLAY input/confirm inspector。Item19実bundleは未完。
+
+### O1B-25進捗450（Item 19F-D3 / TECH PLAY input・confirm inspector plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-input-inspector-19f.md`はproduction Browser Harness/testのexact 2 files。初回Lunaが大きいHarness境界の読込段階で差分0のまま停止したため、code前にscopeをinput pageだけへ縮小した。exact input URL、same event/ticket、dynamic required question groups、known default-on opt-outs、review CTAをbounded privacy-safe controlsへ投影するread-only slice。confirm final CTAは次slice。production約70〜100 LOC、test約110〜170 LOC。
+
+value resolver、private profile更新、click/fill、final-effect readback配線、workflow factory/router/native order、evidence、Calendar、live stateは変更0。review/push後にaction operationを別sliceで追加する。Item19実bundleは未完。
+
+### O1B-25進捗451（Item 19F-D3 / TECH PLAY exact input inspector ship）
+
+Lunaがproduction Browser Harness/testのexact 2 filesをTDD変更し、code commit `c5e96420d`をpushした。初回REDは新規1件だけFAIL・既存98 GREEN。実DOM照合でCTA type submit、career/職種radio group 3/33へ修正。fresh reviewはbaseline GREENが隠すticket未選択、option欠落、tag/type偽装、checkbox drift、global ID衝突、privacy未証明などを反証し2回`fix-first`。同じLunaが各反証を独立fixtureへ戻し、最終re-reviewはCritical/Important/Minor 0で`ship`。
+
+最終production +96 / test +157、Full Harness 110/110、TECH PLAY workflow 16/16、combined 126/126、syntax、diff、exact2-file scope PASS。ticket value guard除去mutationはwrong-ticket negativeを非emptyへ誤受理してFAIL、復元後GREEN。実authenticated join `999190`は49 safe controls（radio37/input4/checkbox7/button1）、pending47、review submittable false、private leak 0。一時tabは他sessionの同時pageをownershipで区別し最終4へ復元、click/fill 0。次active sliceはconfirm final CTA inspector。Item19実bundleは未完。
+
+### O1B-25進捗452（Item 19F-D4 / TECH PLAY confirm inspector plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-confirm-inspector-19f.md`は同じHarness/testのexact 2 files。exact same-event confirm URLで一意のvisible enabled `BUTTON type=button` `申し込みを確定する`だけをsafe final controlへ投影する。production約20〜40 LOC、test約60〜100 LOC。
+
+final click、private resolver、input operation、effect polling、workflow factory/router/native order、evidence、Calendar、schedule/live stateは変更0。review/push後にprivate values＋operationを別sliceで閉じる。Item19実bundleは未完。
+
+### O1B-25進捗453（Item 19F-D4 / TECH PLAY exact confirm inspector ship）
+
+LunaがHarness/test exact 2 filesへconfirm projectionをTDD追加し、code commit `ecc3b27aa`をpushした。exact same-event `/event/join/<ID>/confirm`、一意visible enabled `BUTTON type=button` `申し込みを確定する`、150-node/global-ID/visibility/page-drift/residual-registration-controlを検証する。header search/menuはfinalのnearest main外として無視し、main内は既知`内容を修正する`以外のinput/textarea/select/buttonを拒否する。
+
+最終Full Harness 115/115、TECH PLAY workflow 16/16、combined 131/131、syntax、diff、exact2-file scope PASS。event-ID guard除去mutationはwrong-eventで`techplay_final_999191`を誤公開してFAIL、復元後GREEN。実confirmはprivate SSOT入力＋career/job選択＋7 opt-out解除＋review CTAだけで到達し、safe final control 1件、private leak 0、final click 0、owned page cleanup。fresh review Critical/Important/Minor 0で`ship`。次active sliceはparent-only private value resolver。Item19実bundleは未完。
+
+### O1B-25進捗454（Item 19F-D5 / TECH PLAY private value resolver plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-private-values-19f.md`はHarness/test exact 2 files。既存private identityから日本語氏名/email、mode-0600 form SSOTからDOB・所属・career・職種をexact mappingし、年齢をAsia/Tokyo当日計算するparent-only resolverを追加する。production約25〜45 LOC、test約70〜110 LOC。
+
+DOM操作、proposer、final click/readback、workflow factory/router/native order、evidence、Calendar、schedule/live stateは変更0。resolver ship後にprivate form stateをexact answersへ更新し、input operationを別sliceで閉じる。Item19実bundleは未完。
+
+### O1B-25進捗455（Item 19F-D5 / TECH PLAY private value resolver ship）
+
+LunaがHarness/test exact 2 filesへparent-only resolverをTDD追加し、code commit `c7fe75b66`をpushした。日本語氏名・email・所属はexact scalar、career・職種はexact own-property question＋public option完全一致だけをboolean true、年齢は一致するvalid DOBからAsia/Tokyo当日で18〜100の10進stringとして解決する。ticket/opt-out/review/final、unknown・state欠落・trim/case driftはprivate reader前に拒否し、private getter/Proxy例外はmessageを外へ出さずnullへ閉じる。
+
+fresh reviewはnormalized lookupによるkey/option driftとmalformed getterのprivate-bearing error伝播をImportant 2件反証し、同じLunaがexact lookup/equalityと全profile accessのfail-closed回帰へ修正した。exact equality guard除去mutationはnamed negativeを`true !== null`でFAILさせ、復元後はFull Harness 122/122＋TECH PLAY workflow 16/16、合計138/138、両file syntax、diff checkがPASS。最終re-reviewはCritical/Important/Minor 0で`ship`。production +40 / test +106がsoft targetを46 LOC超えるが、追加分はreviewで実証した漏洩・誤回答回帰を同じ2-file境界内に固定する最小差分で、新module/routingは0。
+
+既存private form SSOTへ実フォームで確認済みのcareer・所属・職種exact 3 keysを非表示で追記し、mode 0600と既存DOBを保持した。実private identity＋form profileを使うread-only resolver auditは6/6 non-null、private value出力0。DOM操作、final click/readback、workflow factory/router/native order、evidence、Calendar、schedule/live stateは変更0。次active sliceはTECH PLAY exact input operation。Item19実bundleは未完。
+
+### O1B-25進捗456（Item 19F-D6 / TECH PLAY exact input operation plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-input-operation-19f.md`はHarness/test exact 2 files。validated inspectorが全DOM契約通過後だけscalar/radio/opt-out/reviewへ一意tokenをephemeral bindingし、same join URL＋candidate event/ticketをaction前後に再検査する。scalarは`ax_fill`、private answerとexact一致するradioだけ`ax_check`、既定ON opt-outだけ`ax_uncheck`。TECH PLAY inputでは親processが一意controlを決定し、modelにprivate値やradio選択を推測させない。
+
+production約45〜75 LOC、test約90〜150 LOC。review/final CTA、final-effect/readback success、factory/router/native order、evidence、Calendar、Telegram、schedule/live applicationは変更0。ship後のlive E2Eもreview/final click 0でinput completionとcleanupだけを実測する。Item19実bundleは未完。
+
+### O1B-25進捗457（Item 19F-D6 / TECH PLAY live transient hydration repair plan）
+
+Luna実装commit `75975b32b`はvalidated DOM後binding、parent deterministic 13 input actions、same join URL＋candidate event/ticketのpre/post reinspection、local CDP websocket/maxSteps contractを追加した。setter set-then-throw cleanupをSolが反証して修復後、Harness 128/128＋TECH PLAY workflow 16/16、合計144/144、syntax、diff、unique-radio mutationがPASSし、fresh re-reviewはCritical/Important/Minor 0で`ship`。
+
+しかしauthenticated実DOM E2Eはaction後のimmediate post-inspectionが0 controlsとなり`agent_action_failed`。run差により6 answer後または最初のscalar後に再現したが、いずれも意図したDOM値自体は変化し、review/final click 0、private projection leak 0、owned pageは4→5→4へcleanupした。guard番号付き実関数診断と前後countで、stable DOMはselector 65 nodes / safe controls 49、mutation直後だけ88件のauxiliary `INPUT type=text`が加わり153 nodesとなって150 boundを超え、短時間後65へ戻ることを確定した。role空のhidden native checkbox 7件はstable Inspectorが既に49 controlsで受理し、原因ではない。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-optout-companion-repair-19f.md`は同じHarness/test exact 2 files。150-node Inspector contractは緩めず、operation成功後だけsame join URL＋candidateへのbounded reinspectionでstable 49-control postconditionを待つ。mutation再実行、oversized observation受理、model callは0。never-stable/page drift/wrong postconditionは失敗を維持する。review/final、factory/router/native order、evidence、Calendar、scheduleは変更0。修復後に同じ実E2Eを再実行する。Item19実bundleは未完。
+
+### O1B-25進捗458（Item 19F-D6 / TECH PLAY exact input operation live ship）
+
+Repair commit `84873e7f6`はInspectorの150-node上限を維持したまま、TECH PLAY input mutation成功後だけ最大20 attempts・19 sleeps×25ms＝475msのread-only stable postcheckを追加した。各pollはsame event/canonical URL/ticket binding＋exact join URLを再検証し、同じtoken/kind/label/questionが`completed:true`のときだけ成功する。allow-empty observationはこのpostcheck callsiteだけで、操作・private resolve・model proposerのretryは0。never-stable、inspector throw、wrong completion、page/candidate drift、invalid injected sleepはfail closed。
+
+REDはpost-inspect call 3だけ104 auxiliary nodesを加え153 nodes→0 controls、その次をstable49にして旧実装FAIL。postcondition guard弱体化mutationはwrong-completedをsuccessへ誤判定してnamed test FAIL、復元後Harness 131/131＋TECH PLAY workflow 16/16、合計147/147、syntax、diffがPASS。fresh reviewは必須finding 0で`ship`。repair差分はHarness +18/-9、test +44/-1のexact 2 files。
+
+authenticated実E2E再実行はparent deterministic actions 13、external proposer 0、safe controls 49、answer controls 40全完了、opt-out 7全OFF、review CTA submittable、join URL維持、review/final click 0。scalar private（氏名/email/DOB/所属）のprojection leak 0。career/職種は公開radio labelsなのでprivacy対象外と明示した。owned pageは4→5→4へcleanup。次active sliceはreview CTA navigation＋confirm final action/effect readback。Item19実bundleは未完。
+
+### O1B-25進捗459（Item 19F-D7 / TECH PLAY review navigation plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-review-navigation-19f.md`はHarness/test exact 2 files。全input完了後に一意の`techplay_review_<eventId>`だけを親processが選び、same candidate join pageを再検査してからexact confirm URL waitを先にarmし、一回だけclickする。navigation後は既存confirm inspectorの一意`techplay_final_<eventId>`を必須にする。
+
+production約30〜55 LOC、test約65〜105 LOC。external proposer/private値/final click/effect readback、factory/router/native order、evidence、Calendar、scheduleは変更0。ship後live E2Eはconfirm到達とfinal safe control 1件、final click 0まで。Item19実bundleは未完。
+
+### O1B-25進捗460（Item 19F-D7 / TECH PLAY exact review navigation live ship）
+
+Plan修復commit `aa98f53ed`、code commit `34fff7b14`をpushした。LunaはHarness/test exact 2 filesだけをSuperpowers TDD変更した。初回REDはcompleted inputが`review_blocked`/13 actionsで停止。GREENはparent deterministic 13 inputs後、一意のexact review CTAをsame join page・event/canonical/ticket bindingへ再固定し、30秒`domcontentloaded` exact same-event confirm URL waitをclick前にarmして1回だけ押す。pre-click failureはhistory 13、attempt済みで効果未証明は`effect_unknown`/history 14とし、reviewを再試行しない。final CTAは観測だけでclick 0。
+
+fresh Sol reviewは、再inspection中のticket driftと、confirm証明後の余分なloopで`maxSteps=14`がstep limitになるImportant 2件を反証した。同じLunaがevent/canonical/ticket全3要素をclick直前まで再比較し、exact final証明後はhistory 14で即`final_blocked`を返すよう修復。ticket driftはclick 0/history 13、positiveは`maxSteps=14`/confirm inspect 1回へ固定し、re-reviewはCritical/Important 0で`ship`。
+
+初回authenticated実E2EはURL wait自体がtimeout 30000・`domcontentloaded`でexact confirmへresolveしたが、直後のconfirm Inspectorだけhydration前で0 controlsとなり`effect_unknown`。直後の外部inspectionはexact final 1件だったため成功を偽装せず、既存postcheck budgetを再利用するplanへ更新した。修復はempty observationだけ最大20 attempts・19 sleeps×25ms＝475ms read-only retryし、各attempt前後のexact confirm URLとevent/canonical/ticket bindingを再検証する。never-stable/inspect throw/URL・ticket driftは即またはbounded `effect_unknown`、review/input/proposer mutation retryは0。pollを1 attemptへ弱体化するとtransient testと19-sleep境界がFAILし、復元後GREEN。fresh re-reviewはspec/quality PASS、Ponytail `Lean already. Ship.`。
+
+Sol独立でHarness 137/137＋TECH PLAY workflow 16/16、合計153/153、両file syntax、diff check PASS。最終authenticated実E2Eは`final_blocked`、13 input＋reviewのprivate-free history 14、external proposer 0、operate 14、review click 1、final click 0、exact `https://techplay.jp/event/join/999190/confirm`、safe final control exact 1、scalar private projection leak 0。owned pageは4→5→4、既存4 pagesを全保持した。application、provider readback、Calendar、evidence、factory/router/native order、schedule変更は0。次active sliceはfinal CTA one-shot＋registered effect readback。Item19実bundleは未完。
+
+### O1B-25進捗461（Item 19F-D8 / TECH PLAY final action＋registered readback plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-final-effect-19f.md`はHarness/test exact 2 files。既存final-effect latchと既存TECH PLAY workflow `readProviderState`だけを再利用し、exact confirmの一意`techplay_final_<eventId>`を最大1回clickする。成功はsame canonical event・same sole ticket・`is_joined === true`から得る`registered`だけ。pending/absent/unavailable/malformed/reject/timeoutは成功にせず、attempt済みならhistoryへfinal actionを1件だけ残して`effect_unknown`、再click 0。
+
+full deterministic pathは13 inputs＋review＋final＝15 actions、external proposer 0。`maxSteps=14`は現行`final_blocked`を保持し、15以上だけfinal actionへ進める。production約35〜65 LOC、test約75〜130 LOC。Calendar/evidence/factory/router/native order/report/scheduleは次slice。このsliceで実final applicationは行わず、全配線後に既存launchd ownerをexact 1回wakeしてapplication→registered readback→Calendar→evidence→Telegramを同じbundleで閉じる。Item19実bundleは未完。
+
+### O1B-25進捗462（Item 19F-D8 / TECH PLAY final action＋registered readback ship）
+
+LunaがHarness/testのexact 2 filesをSuperpowers TDD実装し、code commit `818f387f0`をpushした。exact confirmの一意final CTAだけを元element handleへ固定し、effect waitをclick前にarmする。`locator.count()`後にもsame confirm URL、event/canonical/ticket binding、同一handleのconnected/visible/label/type/enabled/token/idを再検証してから最大1回clickする。count中のticket差し替えとlocator retargetはclick 0・final history 0でfail closedする。
+
+成功は既存TECH PLAY parent readbackの`registered`だけ。pending/absent/unavailable/malformed/reject/timeoutは各1 attempt後`effect_unknown`で再click 0。click throwもregistered証明時だけ成功する。full pathは13 inputs＋review＋final＝15 private-free actions、external proposer 0、review click 1、final click 1。`maxSteps=14`はfinal click 0の`final_blocked`を維持した。
+
+RED、maxSteps guard・post-wait binding guard・count-time binding guardのmutation proof、Harness 147/147、TECH PLAY workflow 16/16、両syntax、diff checkがPASS。fresh Sol reviewは初回にcount await中のCritical driftを反証し、修復後re-reviewはCritical/Important 0で`ship`。実final applicationは未実行で、factory/router、audit、Calendar、evidence、native order、official launchd acceptance、schedule safetyは次slice以降。Item19実bundleは未完。
+
+### O1B-25進捗463（Item 19F-D9 / TECH PLAY discovery audit plan）
+
+次active sliceはproduction factoryの前提となるTECH PLAY discovery audit persistence。Plan `docs/superpowers/plans/2026-08-12-connector-techplay-discovery-audit-19f.md`はoperations/test exact 2 files、production約4〜8 LOC、test約25〜45 LOC。既存`safeDoorkeeperDiscoveryAudit`、JSONL append、private directory、`0600` contractをそのまま再利用し、`techplay-discovery-audits.jsonl`とthin recorderだけを追加する。
+
+Node公式`fs.appendFileSync`と英語・日本語のGitHub code searchを照合し、新package/logger/DBは不要と判断。factory/router、Harness、evidence、Calendar、native order、launchd、実applicationは変更0。Item19実bundleは未完。
+
+### O1B-25進捗464（Item 19F-D9 / TECH PLAY discovery audit ship）
+
+Lunaがoperations/test exact 2 filesをSuperpowers TDD実装し、code commit `59b1d6696`をpushした。production +5 LOCでexact private file `techplay-discovery-audits.jsonl`、既存`safeDoorkeeperDiscoveryAudit`＋appendを使うthin `recordTechPlayDiscoveryAudit`、frozen operations exportを追加した。新logger/package/schema/DBは0。
+
+REDはmissing methodで新規test 1 fail。GREENはexact schema/counts/timestamp、private field非保持、directory `0700`、file `0600`、missing/extra/type/range/monotonic invalidの非appendを証明した。shared monotonic guard mutationはnamed TECH PLAY testをFAILさせ、復元後focused 1/1＋operations 12/12、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0で`ship`。factory/router以降と実applicationは未実行。Item19実bundleは未完。
+
+### O1B-25進捗465（Item 19F-D10 / TECH PLAY production factory＋router plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-production-router-19f.md`はproduction factory/test exact 2 files。既存explicit provider branchesだけを拡張し、`createTechPlayDiscoveryWorkflow`、cache identity `techplay_registration_v1`、router six operations、default audit callback、Browser Harness readback injectionを同一workflow instanceへ接続する。production約20〜35 LOC、test約60〜110 LOC。
+
+Node CommonJS公式docs、英語provider-router、 日本語dependency-injectionの3検索と既存Eventbrite/Doorkeeper実装を照合し、新registry/framework/packageは不要と判断。private profile wiringは現行を再利用し、evidence、Calendar、native order、launchd、実applicationは変更0。Item19実bundleは未完。
+
+### O1B-25進捗466（Item 19F-D10 / TECH PLAY production factory＋router ship）
+
+Lunaがproduction factory/test exact 2 filesをSuperpowers TDD実装し、code commit `cfbf7455a`をpushした。既存explicit branchesへ`createTechPlayDiscoveryWorkflow`、cache identity `techplay_registration_v1`、optional 3-method validation、router six operationsを追加し、default factoryは同一TECH PLAY workflowをaudit callback付きでBrowser Harnessとrouterへ注入する。private profile追加、新registry/framework/packageは0で、unknown provider fail-closedを維持した。
+
+REDはTECH PLAY未配線でfocused 4 fail。GREENはrouter 6経路＋private-free cache metadata、injected discovery/no rail、default audit callback、default Harness exact final＋registered readback＋proposer 0を証明した。cache version mutationでnamed router testがFAILし、復元後production 22/22、Harness 147/147、TECH PLAY workflow 16/16、adapter 4/4、operations 12/12、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0で`ship`。evidence、Calendar、native order、launchd、実applicationは未実行。Item19実bundleは未完。
+
+### O1B-25進捗467（Item 19F-D11 / TECH PLAY immutable evidence store plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-evidence-store-19f.md`はgeneric browser evidence store/test exact 2 files。既存`createBrowserProviderEvidenceStore`へprovider `techplay`、exact positive event ref、exact 64 lowercase hex receipt ref、provider collision messageだけを渡すthin wrapperに限定する。production約8〜12 LOC、test約35〜60 LOC。
+
+Node公式atomic file API、英語immutable provider receipt、日本語tamper-evident SHA-256の3検索と既存Eventbrite/Doorkeeper wrapperを照合し、generic store変更や新packageは不要と判断。factory、Calendar、applied-bundle chain、native order、launchd、実applicationは変更0。Item19実bundleは未完。
+
+### O1B-25進捗468（Item 19F-D11 / TECH PLAY immutable evidence store ship）
+
+Lunaがgeneric evidence store/test exact 2 filesをSuperpowers TDD実装し、code commit `792d860d0`をpushした。production net +9 LOCのthin `createTechPlayEvidenceStore`だけで、provider `techplay`、positive event ref、64 lowercase hex receipt ref、provider collision messageを既存content-addressed storeへ固定した。generic behavior・依存追加は0。
+
+REDはmissing exportで新規2 fail。GREENはexact receipt tuple＋PNG readback、private tenant path、file `0600`、tenant非露出、wrong event/ref/provider、receipt tuple・artifact marker・object tamper、collision fail-closedを証明した。provider namespace mutationは2 testsをFAILさせ、復元後focused 10/10、evidence suites 50/50、outbound pretest 33/33、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0、Ponytail `Lean already. Ship.`。Calendar、applied-bundle chain、native order、launchd、実applicationは未実行。Item19実bundleは未完。
+
+### O1B-25進捗469（Item 19F-D12 / TECH PLAY Calendar canonical URL plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-calendar-url-19f.md`はCalendar gog transport/test exact 2 files。`connectorCanonicalUrl`へexact `https://techplay.jp/event/<positive ID>`とfixed source title `TECH PLAY`だけを追加し、raw-equals-canonical gateでHTTP、host/case、credentials、port、query、fragment、trailing slash、join/confirm/list/searchをgog実行前に拒否する。production約7〜12 LOC、test約30〜55 LOC。
+
+Google Calendar Events insert公式docs、英語canonical source URL、日本語event source URLの3検索と既存Doorkeeper/Eventbrite branchesを照合し、generic canonicalizer変更は不要と判断。evidence chain/store、factory/router、native order、launchd、実Calendar mutationは変更0。Item19実bundleは未完。
+
+### O1B-25進捗470（Item 19F-D12 / TECH PLAY Calendar canonical URL ship）
+
+LunaがCalendar gog transport/test exact 2 filesをSuperpowers TDD実装し、code commit `1f6b57857`をpushした。production +7 LOCでexact `https://techplay.jp/event/<positive ID>`のみをfixed source title `TECH PLAY`へ写し、既存共通経路が同じURLをdescription/source URLとprivate idempotency propertyへ渡す。
+
+REDはcanonical acceptance 1 fail。GREENはHTTP、host/case、credentials、port、zero/non-numeric ID、query、fragment、trailing slash、list/search、実形`/event/join/<id>`・`/confirm`をinjected runner実行前に拒否した。raw-equality mutationはreject testのcalls 0→3でFAILし、復元後focused 2/2、既存provider込みtransport 29/29、両syntax、diff check PASS。fresh Sol reviewはCritical/Important 0、Ponytail最小差分で`ship`。applied-bundle chain、native order、launchd、実Calendar mutation/applicationは未実行。Item19実bundleは未完。
+
+### O1B-25進捗471（Item 19F-D13 / TECH PLAY applied evidence bundle plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-applied-bundle-19f.md`はevidence chain/test exact 2 files。TECH PLAY exact event/receipt refs、same-ID canonical parser、shipped evidence store、registered-only stateをprovider mapへ追加し、Doorkeeper/Eventbrite同様にowned canonical parent pageのfull-page PNGを置換・再navigationなしで取得する。その後は既存receipt/artifact validation→Calendar create/readback→Telegram message/photo→checkpoint→`applied_bundle`→reuseを変更せず使う。production約24〜45 LOC、test約80〜135 LOC。
+
+Node SHA-256公式docsと英語・日本語bundle検索、既存Eventbrite/Doorkeeper implementationを照合し、新schema/queue/serviceは不要と判断。factory、native order、launchd、実外部作用は変更0。Item19実bundleは未完。
+
+### O1B-25進捗472（Item 19F-D13 / TECH PLAY applied evidence bundle ship）
+
+Lunaがevidence chain/test exact 2 filesをSuperpowers TDD実装し、code commit `ed907d3a8`をpushした。TECH PLAY exact event/receipt refs、same-ID canonical parser、shipped store injection、registered-only provider mapを追加。owned pageがcanonical parent URLと一致するときだけfull-page PNGを1回取得し、`setContent`/`goto`/`evaluate`/receipt renderingは0。receipt/artifactの厳密readback後だけ既存Calendar→Telegram message/photo→checkpoint→bundle→reuseへ進む。
+
+REDはprovider未配線で1 fail。GREENはcreated→reused bundle、duplicate external effect 0、receipt/artifact-before-Calendar、exact Calendar canonical、Telegram receipts、event/canonical/page drift、pending/absent、wrong receipt/artifact/tamper fail-closedを証明した。no-render branch mutationはnamed testをFAILさせ、復元後evidence 39/39＋adjacent 103/103、両syntax、diff check PASS。fresh Sol reviewは主要5 guardsのmutationも再確認しCritical/Important 0で`ship`。generic bundle schema、factory、native order、launchd、実外部作用は変更0。Item19実bundleは未完。
+
+### O1B-25進捗473（Item 19F-D14 / TECH PLAY native reachability plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-native-reachability-19f.md`はnative pass/test exact 2 files。frozen provider order末尾へ`techplay`を追加し、official native inputの`maxAgentSteps`を10→15にするexact 2 LOC production change。runner default、failure cap 3、wake timeout 600000、cursorなし、private-free boundary、CLI/exit、launchd plistは維持する。
+
+Node process公式docs、英語max-step/provider-order、日本語provider順検索と既存native boundaryを照合し、新registry/runtime変更は不要と判断。実launchd wake/applicationは次slice。Item19実bundleは未完。
+
+### O1B-25進捗474（Item 19F-D14 / TECH PLAY native reachability ship）
+
+Lunaがnative pass/test exact 2 filesをSuperpowers TDD実装し、code commit `ce8848715`をpushした。frozen provider順は`luma → connpass → peatix → meetup → doorkeeper → eventbrite → techplay`、official native inputはexact `maxAgentSteps:15`。failure cap 3、wake 600000ms、cursorなし、private-free input、runner default 10、CLI/exit、plistは不変。
+
+REDはprovider/orderとstep budgetでfocused 3 fail、GREEN 10/10。provider削除mutationは3 fail、15→14 mutationは1 fail。復元後production/runner/Harness adjacency 211/211、両syntax、diff check PASS。fresh Sol reviewは広域既存3 failuresが変更file非依存であることをHEAD comparisonまで実測し、Critical/Important 0、Ponytail `Lean already. Ship.`。次は既存launchd ownerのofficial wakeで実application→registered readback→Calendar→evidence→Telegram→cleanupを一回閉じる。Item19実bundleは未完。
+
+### O1B-25進捗475（Item 19F-D15 / official launchd acceptance plan・実state修正）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-techplay-official-acceptance-19f.md`を作成。read-only preflightで`gui/501/ai.anicca.life-manager-connector-native`はunloadedではなくdaily 09:00 trigger付きでloaded、active 0、runs 2、last exit 1、exact worktree直結、owner lockなしと実測した。共有CDPのpre-existing page targetsはexact 4。旧「schedule unloaded」記述は現stateと矛盾するため、この実測を正本にする。
+
+既存labelを`-k`なしでexact 1回kickstartし、new wake ID、TECH PLAY `applied_bundle`、registered、final action 1、Calendar exact canonical 1、receipt/PNG、Telegram message/photo、bundle/checkpoint、page 4→5→4、lock cleanupを独立readbackする。failure/effect unknown時はdaily scheduleを先にunloadしてから修復する。手動executor・plist reinstall・既存page closeはしない。Item19実bundleは未完。
+
+### O1B-25進捗476（Item 19F-D15 / official wake実測・no-effect exit修復plan）
+
+09:00 schedule起動と手動kickstartが同一PIDへcoalesceし、official wake `wake-7aef819a21c24d01047fb372`はexact 1 ownerで完走した。7 providersを探索し、最新auditはDoorkeeper `eligible=4/calendar_free=0`、Eventbrite `eligible=0/calendar_free=0`、TECH PLAY `eligible=3/calendar_free=0`。既存registered bundleは再検証されたが、非衝突候補がないため新規application・Calendar・bundleは0。durable report `completed_no_effect / existing_bundles_reused`とTelegram delivery ID `12758`は記録済み。Connector-owned pageだけが閉じ、pre-existing 4 pagesは全保持された。
+
+実故障は業務no-opではなく終了契約の矛盾。`native-pass.js`が`completed_no_effect`をexit `1`へ写し、`run.sh`が同じ安全結果を`worker_failed`、launchdが`last exit code=1`と記録した。誤作動防止の契約どおりscheduleをunload済み。Plan `docs/superpowers/plans/2026-08-12-connector-no-effect-exit-contract-19f.md`はnative entrypoint/test exact 2 files、production約5〜10 LOC、test約15〜35 LOC。`applied_bundle`と`completed_no_effect`だけをexit `0`、`circuit_open`・invalid・throwをnon-zeroに維持する。provider/filter/window/effect/report/plist変更は0。修復後は同じplistをreloadし、official wakeの`worker_finished`、exit 0、report delivery、4-page restoration、lock cleanupを再実測する。Item19の実TECH PLAY bundle acceptanceは非衝突候補が現れるまで未完のまま可視化する。
+
+### O1B-25進捗477（Item 19F-D16 / healthy no-effect exit ship）
+
+LunaがPlan `docs/superpowers/plans/2026-08-12-connector-no-effect-exit-contract-19f.md`のexact 2 filesをSuperpowers TDD実装し、code commit `96277e017`をpushした。pure `nativeExitCode`は`applied_bundle`と`completed_no_effect`だけを0、`circuit_open`・unknown・missing・non-objectを1へ写し、既存reject catchの2を維持する。provider、discovery、14日window、Calendar/evidence/Telegram effect、report、`run.sh`、plistの変更は0。
+
+REDは新named testが`nativeExitCode is not a function`で1 fail、既存10 pass。GREENはnative 11/11、runner 42/42、Connector command 88/88、syntax、diff check PASS。fresh Sol reviewはCritical/Important 0で`ship`。広域globの既存`minimal-crash-report` 1 failureは変更外のprivate email fixtureで、このdiffが触らない`productionConfig`境界。GNU Bash、Node.js、launchdの公式exit契約もzero=successで一致する。
+
+### O1B-25進捗478（Item 19F-D16 / official healthy no-effect E2E・README architecture sync）
+
+修復済みHEAD `96277e017`を指すinstalled plistをlint後、単一daily labelをbootstrapし、existing ownerを`-k`なしでexact 1回kickstartした。wake `wake-44eb04e69ececde08a73a2d1`はaction `1582→1628`、report `135→136`、delivery `147→148`で完走。terminalは`completed_no_effect / existing_bundles_reused / consecutive_failure_count 1`、Telegram ID `12782`、heartbeat `worker_finished`、launchd `last exit code=0`。scheduleはdaily 09:00のexact 1 labelでloadedを維持する。
+
+Doorkeeper audit `100/12/4/0/0`、Eventbrite `184/0/0/0/0`、TECH PLAY `50/22/3/0/0`。既存registered candidateはreadback/bundle reuseし、非衝突候補0のため新規application・Calendar/evidence/Telegram photo effectは0、bundle `13→13`。owned page `4→5→4`、元のexact 4 target ID/URLを保持、lockなし。READMEのMermaid provider loopへTECH PLAY、healthy no-effect exit、全7 providerの実statusを同期した。Item19の各pending live bundleは将来の非衝突候補だけが閉じられ、現在の残TODOはItem 20 unknown-provider contract、Item 21 restart continuation、Item 23 canonical merge gate。
+
+### O1B-25進捗479（Item 20A / unknown-provider Browser Harness seam plan）
+
+Active TODO 10B〜23を現物監査した。Items10B〜18と22は現行証拠・runtime readbackとも完了。Item19はPeatix以外のlive bundleが0で未完だが、Meetup/Doorkeeper/Eventbrite/TECH PLAYはいずれも現在のCalendar非衝突候補0という外部条件待ちであり、NO PASSIVE WAITINGに従ってItem20へ進む。Item21は同一process内fixtureのみで実process restart証拠がなく未完。Item23はfeatureが`origin/main`へ未包含、canonical main worktreeがdirtyかつbehindのため、Items20/21後に別clean integration worktreeで閉じる。
+
+未知site候補はKokuchProを採用する。公式東京一覧はoccurrence固有URLと募集中状態を公開し、公式guideは無料・会場払い・銀行振込とorganizer追加設問を区別する。read-only CloakBrowserで同一隔離pageを使い、一覧80 URLと詳細35件をclick/fill/submit 0で測定した。厳密な`料金制度 無料イベント`は0件で、「無料ドリンク」等を無料参加と誤認し得るため、本文中の`無料`だけを許可根拠にしない。pageは`4→5→4`、既存4 targetを保持した。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-unknown-provider-harness-20a.md`はBrowser Harness production/test exact 2 files、production約12〜24 LOC、test約45〜85 LOC。先頭sliceでは一つの明示設定されたextension provider/workflowだけを既存generic same-page fallbackへ通すconstructor seamをTDDする。未設定・別token・malformed configは引き続きfail closed。registry/crawler/service/package、factory/router/native order、Calendar/evidence、launchd、実applicationは変更0。次sliceでKokuchPro discovery/strict-free gate/router配線を行い、official wakeでsafe failure→次provider継続を実証する。
+
+### O1B-25進捗480（Item 20A / configured extension Harness seam ship）
+
+LunaがPlan `docs/superpowers/plans/2026-08-12-connector-unknown-provider-harness-20a.md`のHarness production/test exact 2 filesをSuperpowers TDD実装した。`extensionProvider`と`extensionWorkflow`は両方なしまたはexact pairだけを許可し、lowercase safe token、既存7 providerとの非衝突、`readProviderState`を要求する。instance-local predicateはexact extension tokenだけを既存same-page generic observe→one action→perform→readback loopへ通し、未設定unknown・別token・partial/malformed configはfail closedのまま。factory/router/native order、discovery、Calendar/evidence、launchd、実applicationは変更0。
+
+初回REDは149件中147 pass/新規2 fail、GREEN 149/149。fresh Sol reviewはextension action結果の自己申告`provider_state`が将来独立workflow readbackを迂回し得るImportantを提示した。現行generic action pathでは当該fieldが外側へ伝播せずpre-fix matrixは既にPASSだったが、同じLunaがextensionを`finalEffectProviderState` cacheから明示除外し、actionがregistered/pendingを自己申告してもworkflowがabsent/unavailable/malformed/throwなら必ずfailedとなる8組のregressionを追加した。最終focused 150/150、Harness＋adapter 154/154、syntax/diff check PASS。fresh Sol re-reviewはSpec compliance/Code qualityとも合格、Critical/Important 0。code commits `e44a11451`、`0d99afad4`。Item20は未完で、次sliceはbounded proposerとproduction routerへ同じsingle extension configを配線する。
+
+### O1B-25進捗481（Item 20B / bounded proposer extension plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-unknown-provider-proposer-20b.md`はHarness production/test exact 2 files。`createBoundedActionProposer`へ一つのoptional `extensionProvider`を追加し、exact configured tokenだけを既存structured Terra action選択へ通す。prompt/schemaはprovider、step/state、sanitized public controlsだけ、private valueとcandidate本文は0。既存10-step cap、Terra metadata gate、evidence path、native fast path、7 provider behaviorを変更しない。production約4〜10 LOC、test約30〜60 LOC。factory/router/native/discovery/Calendar/evidence/launchd/実browser effectは次slice以降。
+
+### O1B-25進捗482（Item 20B / bounded proposer extension ship）
+
+LunaがHarness production/test exact 2 filesをSuperpowers TDD実装した。`createBoundedActionProposer`はoptional `extensionProvider`を既存safe token grammarで構築時検証し、組み込み7 providerとのcollisionを拒否する。exact configured tokenだけが既存structured Terra runnerへ到達し、prompt/schema、10-step cap、Terra metadata gate、evidence path、native fast path、action contractは不変。private value、candidate本文、websocketのprompt/request露出0。
+
+初回REDは150/151。Solの独立pre-reviewでextension未設定時の`provider === extensionProvider`が欠落providerの`undefined === undefined`を通す反例を検出し、同じLunaがmissing provider REDを追加して`extensionProvider != null` guardへ修正した。最終Harness＋adapter 155/155、syntax/diff check PASS。fresh Sol reviewはundefined/null/unconfigured/second-token境界を含めSpec compliance/Code quality PASS、Critical/Important 0。code commit `b45f183dd`。factory/router/native/discovery/Calendar/evidence/launchd/実browser effectは0。Item20次sliceはKokuchProのcanonical discovery、strict-free/Tokyo/offline/14日/Calendar gate、verified readback workflow。
+
+### O1B-25進捗483（Item 20C / KokuchPro canonical candidate contract plan）
+
+KokuchPro公式filter URL `area-東京都/charge-0`に`et=0`、`start_date=2026-08-12`、`end_date=2026-08-26`、`enabled=1`を指定すると、公式見出しが無料・東京都・同期間を明示し、募集中の公開event URLを返す。公式detail `89a92aac6c9a221ec337481b51c1bbef`は2026-08-20 19:00〜20:30、池袋の会場/東京都住所、`料金制度 無料イベント`、単一無料ticket、募集中、申込むを独立表示する。一方、有料counterexampleは本文に無料語があっても`料金制度 有料イベント`と`￥1,000`を表示するため、body keywordは無料根拠にしない。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-candidate-contract-20c.md`は新workflow/test exact 2 files。exact HTTPS `www.kokuchpro.com/event/<lowercase 32hex>/[optional positive occurrence]/`からstable refを作り、single explicit zero-JPY available ticket、free scheme、open/not-full、Tokyo offline、今日を含む14日内だけをprivate-free candidateへ正規化するpure contractに限定する。production約70〜100 LOC。network/browser/action/readback/profile/Calendar/evidence/factory/router/native/launchdは変更0。
+
+### O1B-25進捗484（Item 20C / KokuchPro canonical candidate contract ship）
+
+Lunaが新規workflow/test exact 2 filesをSuperpowers TDD実装した。exact HTTPS `www.kokuchpro.com/event/<lowercase32hex>/[optional 1〜20桁positive occurrence]/`だけをstable refへ写す。structured detailはbounded/trimmed/control-free public text、明示timezone付きsemantic ISO、single safe ticket ID、free scheme、zero JPY、available/open/not-full、`東京都` prefix、offline、Tokyo 14-day start windowを全て満たす場合だけfrozen private-free candidateになる。identity corruptionはinvalid、ordinary ineligibilityはnull。I/Oは0。
+
+fresh Sol初回reviewは(1) canonical_url/href/urlとdetail event_refのalias競合、(2)千葉住所中のTokyo文字、(3)`2026-02-30`のDate rolloverをImportantとして反証した。同じLunaが全URL/identity alias exact一致、`東京都` prefix、暦日/時刻/offset数値検証をRED→GREENで追加。最終KokuchPro＋TECH PLAY 26/26、syntax/diff check PASS。fresh Sol再reviewは3件解消、Critical/Important 0。production 107 LOC、code commits `beb3baa1b`、`dc633d1a0`。既存Peatix named test 1 failureはこの新file未importでも単独再現する変更外既知failure。Item20次sliceはofficial filtered listing/detailをsame owned pageで読むbounded discovery workflow。
+
+### O1B-25進捗485（Item 20D / KokuchPro bounded browser discovery plan）
+
+shared CloakBrowserの隔離contextで公式KokuchProをread-only再測定した。Tokyo/free/offline/open/2026-08-12〜26 filterは336件、1ページ40件、canonical root/occurrence event URLを返す。同queryの`page=2`は見出しを保持して41〜80件を返す。公式detailはschema.org Event exact 1にcanonical URL、Offline、東京都Place/address、zero-JPY InStock Offer、zoned start/endを持ち、明示tableが`料金制度 無料イベント`とsingle `無料 / 募集中` ticketを独立表示した。direct `/entry/`は公式loginへredirectし、会員登録必須を表示する。click/fill/submit/external effectは0、専用context release後pageは元の4件へ復帰した。
+
+Ponytailでpagination2ページ目以降、auth/action/readback、factory/router/native/evidenceをdeferした。Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-browser-discovery-20d.md`は既存workflow/test exact 2 files、production約80〜100 LOC。passed pageだけで公式filter先頭40件をdedupeし、各detailのJSON-LD＋明示ticket表をItem20C contractへ渡し、Calendar-free候補とfrozen auditを返す。次sliceでsame-page Harnessが実login boundaryをsafe failureとして分類する。
+
+### O1B-25進捗486（Item 20D / official recurring-card boundary correction）
+
+初回実E2Eはwhole-document event anchorsが40を超えて`LISTING_RESULT_CONTRACT_FAILED`。result selectorを`.event_list .event_item`へ限定後も、公式40 cards中2 recurring cardsが各5 dated occurrence URLを公開し、unique canonical URLは48だった。これは一覧外noiseではなく同一cardに表示された別開催日であり、40 URLへ切ると実候補を失う。
+
+計画をcodeより先に訂正する。first official pageの1〜40 result cardsだけを読み、各cardは最大20 unique exact occurrence/root URL、全体最大800 rowsへbounded化する。card/DOM順dedupeを維持し、41 cards、1 card 21 URLs、801 rowsはfail closed。pagination、auth/action/readback、factory/router/native/evidenceは引き続きdeferする。read-only実測は専用contextをreleaseし、external application/Calendar/evidence/Telegram effect 0。
+
+### O1B-25進捗487（Item 20D / final review correction plan）
+
+実公式first page＋実Google Calendarのread-only E2Eは`busy_intervals=105`、audit `48/0/0/0/0`、candidate 0、KokuchPro owned page cleanup 0残存、focused＋TECH PLAY 36/36 PASS。code commit `d4f59cdf5`をremoteへpushした。fresh Sol reviewはCritical 0だが、(1) window判定をeligibility正規化に内包して`within_window_count`と`eligible_count`が常に同値、(2) top-level JSON-LD array要素内の`@graph`を展開せずhidden second Eventを見逃す、のImportant 2件を実反例で検出したためItem20Dは未accept。
+
+同じworkflow/test exact 2 filesへ戻す。production約20〜35 LOC、test約40〜70 LOC。identity/time/windowだけを先に分類し、within-window後にfree/Tokyo/offline/open/ticket eligibilityを判定して5段auditの意味を復元する。全JSON-LD scriptのtop-level object/arrayと各`@graph`をbounded flattenし、Event総数exact 1以外をfail closedにする。pagination、auth/action/readback、factory/router/native/evidence、external effectは0のまま。同じLunaのRED→GREEN後、fresh Sol re-reviewと同じ実E2Eを再実行してからacceptする。
+
+### O1B-25進捗488（Item 20D / bounded browser discovery accepted）
+
+同じLunaがfresh reviewの2反例をRED `20/22`で固定し、identity/time/windowをeligibilityより前に分類して5段auditを復元、top-level object/arrayと再帰`@graph`を最大256 nodesでflattenしてschema Event総数exact 1以外をfail closedにした。GREENはfocused 22/22、KokuchPro＋TECH PLAY 38/38、syntax/diff check PASS。code commit `6cd5013cb`をpushした。
+
+修復後の実CloakBrowser＋実Google Calendar read-only E2Eは`busy_intervals=105`、official first page `discovered=48 / within_window=0 / eligible=0 / calendar_free=0 / selected=0`、candidate 0。したがって今回は全48開催回が現在の14日窓外であり、eligibility落ちとの混同はない。application/Calendar/evidence/Telegram effect 0、KokuchPro owned page残存0、元のunrelated 4 pagesを保持した。fresh Sol re-reviewはSHIP、Critical/Important 0、HEAD/remote一致。Item20Dはaccept。Item20次sliceはsame-page Harnessで実`/entry/`→login boundaryをsafe failure分類し、次provider継続契約を固定する。
+
+### O1B-25進捗489（Item 20E1 / KokuchPro exact auth readback plan）
+
+同じowned pageで公式detailと`/entry/`をread-only再測定した。detailはcanonical exact、同一`POST ${canonical}entry/` form 2、visible `申込む` 2。direct entryは`https://www.kokuchpro.com/auth/login/?continue=<candidate entry path>`へ遷移し、title `ログイン - こくちーずプロ`、password input 1、official POST login form 1、visible `ログイン` 1。click/fill/submit/private value/external effect 0、owned page cleanup後unrelated 4 pagesを保持した。
+
+Ponytailでworkflow readbackとHarness停止を分割する。Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-auth-readback-20e1.md`はKokuchPro workflow/test exact 2 files、production約25〜45 LOC、test約55〜90 LOC。canonical pageのcandidate-bound entry formsだけを`absent`、official loginのexact decoded `continue`＋password1＋official login form1だけを`auth_required`、その他を`unavailable`にする。action/Harness/factory/router/native/evidence/Calendar/cache/schedule変更0。次sliceでHarnessが`auth_required`後の追加proposal/operation 0でsafe failureを返す。
+
+### O1B-25進捗490（Item 20E1 accepted / 20E2 terminal Harness plan）
+
+LunaがKokuchPro workflow/test exact 2 filesをTDD実装した。RED 23/24はcanonical entry boundaryが旧readbackで`unavailable`になる欠陥を再現。GREENはcanonical pageのcandidate-bound同一POST entry forms 1/2だけ`absent`、exact official login URLのdecoded candidate-bound `continue`＋password1＋official POST login form1だけ`auth_required`、URL/authority/query/fragment/candidate/DOM/drift/evaluate ambiguityを全て`unavailable`にした。focused 24/24、KokuchPro＋TECH PLAY 40/40、syntax/diff check PASS、commit `ea17b87df`をpush。fresh Sol reviewはSHIP、Critical/Important 0。
+
+実owned pageでproduction readback自身をaction 0で再実行し、official detailは`absent`、direct entry後のexact login URLは`auth_required`。cleanup後KokuchPro page 0、unrelated 4 pagesを保持した。Plan `docs/superpowers/plans/2026-08-12-connector-extension-auth-stop-20e2.md`はHarness production/test exact 2 files、production約12〜25 LOC、test約45〜80 LOC。configured extensionのpre-existingまたはaction後`auth_required`をterminal safe failureにし、login-page observe/proposal/operation/private resolution/retryを0にする。factory/router/native/evidence/Calendar/cache/schedule変更0。
+
+### O1B-25進捗491（Item 20E2 / scope-before-auth review correction）
+
+Lunaの初回TDDはRED Harness 151/153、GREEN 153/153、Harness＋adapter 157/157、syntax/diff check PASS、commit `d07d897b7`をpushした。extension-only auth preflight、action後auth latch、synthetic empty observation/no proposal、`safe_reason=auth_required`、既存repaired actions保持を実装し、auth後の実inspect/proposal/operation/private resolve/retry 0を満たした。
+
+fresh Sol reviewはCritical 0だが、auth preflightがadapter scope validationより前にworkflow readbackを呼ぶImportant反例を検出。malformed websocket、`maxSteps=0`、wrong expected state、null pageでもreadbackが先行し、workflowが`auth_required`ならinvalid rejectionを迂回した。Item20E2は未accept。同じHarness/test exact 2 filesへ戻し、adapterがscopeを検証した後のfirst logical observe内でextension readbackを実行する。invalid scopeはreadback/inspect/proposal/operation/resolve全0、valid authは実DOM inspect以降0をRED→GREENで固定し、fresh re-review後だけacceptする。
+
+### O1B-25進捗492（Item 20E2 accepted / 20F1 durable audit plan）
+
+同じLunaがinvalid scope回帰をRED 153/154で固定し、extension auth preflightをadapter scope検証後のfirst logical observe内へ移動した。GREEN focused 154/154、Harness＋adapter 158/158、syntax/diff check PASS。malformed websocket、maxSteps 0、wrong expected state、null pageはreadback/inspect/proposal/operation/resolve全0で従来どおりreject。valid pre-existing authはworkflow readback 1、実DOM inspect以降0、action後authはmutation exact1後の追加action 0で`safe_reason=auth_required`を返す。commit `9aa13ab2f`をpushし、fresh Sol re-reviewはSHIP、Critical/Important 0。Item20E2をaccept。
+
+production接続前にprivacy-safe auditを先に閉じる。Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-audit-20f1.md`はminimal operations production/test exact 2 files、production約3 LOC、test約30〜45 LOC。既存strict five-count validatorを再利用し、`kokuchpro-discovery-audits.jsonl`へschema/wake/5 counts/timestampだけを0600 appendする。workflow/router/browser/native/evidence/Calendar/cache/schedule変更0。次sliceでdefault KokuchPro workflowをfactory/router/Harness extension seamへ注入する。
+
+### O1B-25進捗493（Item 20F1 accepted / 20F2 production factory plan）
+
+Lunaがminimal operations production/test exact 2 filesをTDD実装した。RED 12/13はKokuchPro recorder不在、GREEN 13/13は既存strict five-count validatorを再利用して`kokuchpro-discovery-audits.jsonl`へschema/wake/5 counts/timestamp exact keysだけを0600 appendする。extra/missing/noninteger/out-of-order/>500は追記0、URL/title/ticket/auth/profile/emailを保存しない。commit `c7ed4409a`をpushし、fresh Sol reviewはSHIP、Critical/Important 0。Item20F1をaccept。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-production-factory-20f2.md`はminimal production factory/router production/test exact 2 files、production約25〜45 LOC、test約90〜140 LOC。既存KokuchPro workflowをdurable audit callback付きでdefault createし、routerのexact provider/version、bounded proposerのsingle extension token、Harnessのexact extension workflow pairへ接続する。同じpassed pageでdiscovery/direct/readback/fallbackをrouteし、auth safe failure時のagent proposal/operation/private resolve/cache saveは0。browser host/native order/evidence/Calendar/schedule変更0。次sliceでdaily driver host、その後native orderを個別に閉じる。
+
+### O1B-25進捗494（Item 20F2 accepted / 20F3 auth continuation plan）
+
+Lunaがminimal production factory/router production/test exact 2 filesをTDD実装した。RED 22/26、GREEN minimal-production 26/26、KokuchPro 24/24、Harness 154/154、syntax/diff check PASS。default KokuchPro workflow＋durable audit、exact route/version `kokuchpro_registration_v1`、single extension proposer/Harness pairを接続し、same-page discovery/direct/readback/fallbackとpartial workflow fail closedを実証した。auth preflightはinspect/proposal/operation/private resolve/cache save全0。commit `81873516d`をpushし、fresh Sol reviewはSHIP、Critical/Important 0。Item20F2をaccept。
+
+Ponytail再調査によりplanned daily-driver host sliceは棄却する。official minimal production railはowner-fenced targetを一つopenし、provider間を同じpageで`about:blank`経由navigateするため、`cloakbrowser-daily-driver.js`のprovider host allowlistは本call pathにない。代わりにrunner未完を先に閉じる。現状はKokuchPro fallback `auth_required`を通常candidate failureとして数え、3候補ならcircuit-openして次providerへ進めない。Plan `docs/superpowers/plans/2026-08-12-connector-auth-provider-continuation-20f3.md`はminimal runner production/test exact 2 files、production約4〜10 LOC、test約55〜85 LOC。exact auth failureでcurrent providerの残candidateを捨て、failure count/cache/evidence 0のまま同一session/target/pageで次providerへ進む。native order/schedule変更0。
+
+### O1B-25進捗495（Item 20F3 accepted / 20F4 native order plan）
+
+Lunaがminimal runner production/test exact 2 filesをTDD実装した。RED 42/43はprovider Aのfirst candidateが`auth_required`後も残2 candidatesを試してcircuit-openし、provider Bへ未到達。GREEN 43/43、syntax/diff check PASS、production 1 LOC。exact auth failureでcurrent candidate loopだけをbreakし、failure count/cache-save/evidence/残候補処理0、同じsession/target/pageを`about:blank`経由でprovider Bへ渡して実fixture `applied_bundle`、report failure count 0を証明した。ordinary failure/effect_unknown/circuitは不変。commit `3b2f1b297`をpushし、fresh Sol reviewはSHIP、Critical/Important 0。Item20F3をaccept。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-native-order-20f4.md`はnative pass production/test exact 2 files、production 1 LOC、test約4 LOC。frozen orderをexact `luma → connpass → peatix → meetup → doorkeeper → eventbrite → techplay → kokuchpro`へ末尾追加する。timeout/failure/agent steps/factory/runner/browser/evidence/schedule変更0。fresh review後だけofficial foreground wakeで実8-provider continuation、durable audit、safe auth/no-effect、Telegram、owned cleanupを観測する。
+
+### O1B-25進捗496（Item 20F4 / unknown-provider contract accepted）
+
+Lunaがnative pass production/test exact 2 filesをTDD変更し、KokuchProを凍結順序の末尾へ追加した。native 11/11、minimal production 26/26、runner 43/43、fresh Sol code review SHIP、Critical/Important 0。code commit `64fbfea3c`をpushし、HEADとremoteは一致した。
+
+実KokuchProの公式listing/detail read-only E2Eはaudit `discovered/within-window/eligible/calendar-free/selected = 48/0/0/0/0`、external effect 0。別の同一owned page実測でofficial detail readback `absent`、direct entry後のcandidate-bound official loginを`auth_required`と分類し、click/fill/private resolve/cache/evidence effect 0、owned page cleanupを確認した。production factoryはこのexact workflowをsingle extension Harnessへ接続し、runner fixtureは`auth_required`で現provider残候補を破棄、failure count 0のまま同一session/target/pageを次providerへ渡す。
+
+official launchd wake `wake-0ff1160ceb01d1698b00962b`はLuma、Connpass、Peatix auditを各1行増やし、Meetup discoveryでwake全体の3件目safe failureへ到達して既定どおり`circuit_open / provider_discovery_failed / consecutive_failure_count=3`、Telegram provider ID `13150`、owned page cleanup、duplicate external effect 0、process exit 1となった。KokuchPro前の停止はfailure threshold 3を保持した正しい安全動作であり、受入のために閾値を緩めたりprovider順を変えない。fresh Sol acceptance reviewは、公式KokuchPro実測、production配線、auth continuation fixture、official circuit wakeの合成証拠でItem20をSHIPと判定した。Item20をacceptし、次active itemはItem21 restart/durable continuation。
+
+### O1B-25進捗497（Item 21A / Telegram photo idempotency plan）
+
+Item21の既存実装を実測した。evidence、Calendar、Telegram message、photo、bundleのimmutable checkpointと同process recovery fixturesはあるが、`notifyOpenClawPhoto`だけが`openclaw message send`を使いidempotency keyを持たない。photo external effect直後かつcheckpoint永続化前のprocess lossでは重複photoを防げないため、OS process restart acceptanceをまだ主張できない。
+
+local installed OpenClawの`SendParamsSchema`は`mediaUrl`、`forceDocument`、required `idempotencyKey`を持ち、Gateway `send`は同key再送をdedupeする。PonytailでItem21を3 sliceへ分ける。Plan `docs/superpowers/plans/2026-08-12-connector-photo-idempotency-21a.md`はoutbound guardian production/test exact 2 files、production約12〜24 LOC、test約45〜80 LOC。private 0700 temp dir/0600 PNGを保持し、photo transportだけをGateway send＋caller keyへ移す。21Bでevidence chainのstable photo keyを接続し、21Cで別Node OS processを各external-effect境界から再開してduplicate effect 0を実証する。
+
+### O1B-25進捗498（Item 21A accepted / evidence photo key 21B plan）
+
+Lunaがoutbound guardian production/test exact 2 filesをTDD変更した。初回RED 22/25、GREEN 25/25。`notifyOpenClawPhoto`はnumeric Telegram targetとsafe idempotency keyをspawn前検証し、private 0700 temp dir/0600 PNGを保持したままOpenClaw Gateway `send`へexact `mediaUrl`、caption、`forceDocument=true`、caller keyを渡す。transport、parse、filesystem failureはprivate stderr/target/caption/pathを含めず固定文へsanitizeし、positive top-level message IDだけを受け入れる。
+
+fresh Sol初回reviewはtemp cleanup failureを握り潰してsuccess receiptを返し得るImportantを検出。同じLunaがRED 25/26で固定し、cleanup failureをsanitizeしてthrowしsuccessを禁止した。最終26/26、syntax/diff check PASS、fresh Sol re-review SHIP、Critical/Important 0。code commit `5fc0f8be5`をpushし、HEAD/remote一致。Plan `docs/superpowers/plans/2026-08-12-connector-evidence-photo-key-21b.md`はminimal evidence production/test exact 2 files、production約1〜3 LOC、test約15〜35 LOC。既存canonical URL SHA-256からexact `connector-evidence-photo:<hash>`を既存sendPhotoへ渡す。new state/service/retry/real external effectは0。
+
+### O1B-25進捗499（Item 21B accepted / OS-process restart 21C plan）
+
+Lunaがminimal evidence production/test exact 2 filesをTDD変更した。RED 38/39はphoto optionsのidempotency key不在、GREEN evidence 39/39＋guardian 26/26。既存canonical URL SHA-256からexact `connector-evidence-photo:<64 lowercase hex>`を一つのphoto call siteへ渡し、全providerで決定的、message namespaceと分離、raw URL/title/tenant/Telegram target非包含を実証した。checkpoint/bundle schemaは不変。production 1 LOC、code commit `19114e2c8`をpushし、fresh Sol review SHIP、Critical/Important 0、HEAD/remote一致。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-os-process-restart-21c.md`はtest-only exact 2 new files、production LOC 0。real runner/evidence chainを別Node OS processでprovider readback、evidence checkpoint、Calendar effect、Telegram message effect、Telegram photo effect、bundle boundaryから順に終了・再開する。durable fake external ledgersはeffectを先に保存し、次processは同じidentity/keyをreadbackして外部effect countを増やさない。最終条件はprovider/evidence/Calendar/message/photo/bundle各1、Submit/cache/direct/Harness 0、history byte-identical、0600 receipts、reused final rerun。
+
+### O1B-25進捗500（Item 21C / process fixture implementation sliced）
+
+21Cを一括で実装するLuna executorがfile write前に停滞したため、Ponytailで同じtest-only 2 filesへの段階追加へ縮小する。21C1はprovider registered readback後にchild processを終了し、次childがSubmit/cache/direct/Harness 0でreal evidence chainへ入り、0600 evidence checkpointを残して終了する。21C2は同じfixtureへCalendarとmessage/photo gateway ledgerを追加、21C3はbundle write boundaryとfinal reused rerunを追加する。production code/schema、最終acceptance、外部effect count各1は不変。executor停滞によるplaceholder以外のtest/production変更はまだ0。
+
+### O1B-25進捗501（Item 21C accepted / 別OS process durable continuation）
+
+Lunaがtest-only exact 2 files、production LOC 0でreal `createMinimalEvidenceChain`を別Node OS processから再開するfixtureを完成した。同じprivate stateを7つのdistinct positive PIDで順に開き、durable provider registered readback、evidence effect直後exit 42、Calendar effect直後43、Telegram message直後44、photo直後45、applied-bundle directory mode 0500による書込拒否、mode 0700復旧後の`created`、次runの`reused`を実行する。各effectは外部ledgerを先に0600保存し、次processが同じidentity/idempotency keyをreadbackする。
+
+最終台帳はprovider/evidence/Calendar/message/photo/bundle各1、Submit/cache/direct/Harness各0、message/photo keyは別namespace、evidence/message/photo checkpoints 3件とbundle 1件は全0600。seedしたappend-only action historyはbyte-identicalで、private URL/ref/title/tenant/targetはchild stdout/stderrへ0。provider ledgerを`registered`から`absent`へtamperした追加processはchain前にsilent nonzeroとなり、PID/effect countを増やさない。focused 1/1、minimal evidence/runner/outbound guardian隣接108/108、syntax、diff checkがPASS。fresh Sol初回reviewのdurable provider readback Importantをexact validation＋tamper regressionで修復し、re-reviewはSHIP。code commit `5328c50ce`をpushし、Item21を完了する。
+
+### O1B-25進捗502（Item 22 final production cleanup再監査）
+
+Item21後もproduction ownerは`ai.anicca.life-manager-connector-native` exact 1 labelだけで、09:00 daily、active count 0、program/working directoryはfeature worktreeのofficial `skills/connector/run.sh`。native healthcheck、healer shadow、host bridge、legacy fill-gaps、daily reportは全UNLOADED、Connector process 0、lock absent。shared CDPはunrelated page 4、durable target ledger 9件とのintersection 0で、Connector-owned pageは残っていない。installed plistはmode 0600・lint PASS、state 705 filesのうち旧PNG 4件だけが0644だったためbytes/pathを変えず0600へ締め、全705 filesを0600へ統一した。bundle 13、checkpoint 30は削除・変更せず、Gig code/state変更0。Item22のsingle-owner cleanupを再acceptし、次active itemをItem23 canonical merge gateとする。
+
+### O1B-25進捗503（Item 23 canonical merge plan）
+
+`origin/main`とfeature HEADのmerge-treeは284 changed files中4 conflictsだけを返した。production conflictは`connector-native-write-pipeline.js` 1件、testはpipeline/coverage Telegram 2件、履歴plan 1件。feature側はmain側に対してprovider-neutral inventory、registration PNG/photo receipt、Luma confirmation/ticket evidenceと後続acceptanceを含む新しいConnector contractであり、4 filesはfeature contentを保持する。その他のcanonical late-approval/CFO変更はthree-way auto-mergeを保持する。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-canonical-merge-23.md`はdirtyな既存main checkoutを触らずclean integration worktreeを作り、Lunaがexact 4 conflictsだけを解決、Solがcanonical＋Connector regression/fresh review/remote ancestryを検証して非force mergeする。その後single native plistをmerged commit pathへ切替え、existing labelをexact 1回kickstartし、positive Telegram、bundle/checkpoint non-duplication、process/lock/owned-page cleanupまで実測する。新schedule/provider順/circuit緩和/Item19の偽applicationは0。
+
+### O1B-25進捗504（Item 23 merge regression RED / 23A・23B plan）
+
+Clean integration worktreeでfeature HEADをmergeすると284 files中予告どおり4 conflicts。Lunaがfeature側accepted contractへexact解決し、conflict-focused 32/32、restart/evidence/runner/guardian 109/109、native 18/18、canonical late-approval 41/41、diff/syntax/secret scanがPASSした。full Connectorは589中583 pass・6 fail。同じ6件をmerge前featureでも再現したためmerge由来ではない。
+
+5件はtest drift。Luma 2・Peatix 1は2026-08-10/11 fixtureがreal clock 2026-08-12の14日window外になり、既存fixed clock注入がその3 factoryだけ欠落。native runtime 2はLuma exhausted後に同一runでConnpass emptyを処理してPeatixまで進む現行contractに対し、旧中間cursor Connpassを期待している。Plan 23Aはtest-only exact 3 files、production 0でclock 3行とPeatix/generation期待を直す。
+
+残るcrash report 1件はproduction fail-safe回帰。last-resort reporterはwake IDとTelegram targetしか使わないのにfull production configを構築し、報告不要のemail/legal name/Kana/keyring欠落で報告前に停止する。Plan 23Bはnative pass/crash reporter/test exact 3 files。shared env＋owner hash＋既存strict Telegram targetだけのnarrow report configを切り出し、ordinary production configの全identity validationを維持する。fake private identityをtestへ足す案はstartup failureとreport failureを再結合するため棄却する。
+
+### O1B-25進捗505（Item 23 canonical PR security gate / 23C〜23E plan）
+
+Clean integration commit `fb66c6bdf`はConnector full `589/589`、canonical late-approval `41/41`、fresh Sol review SHIPでPR `#1936`へpush済み。repository-wide CIはTruffleHog、Python、Shell、review gateがPASSし、OSS self-contained 13件、gitleaks current tree 23件、PII shape 16件だけがFAILした。`origin/main`単体にもOSS 12件、gitleaks 15件、同一PII 16件が存在し、canonical化で休眠fixture/historyを全tree scanへ戻したことが主因。Connector production behaviorのFAILではない。
+
+23Cは実secret 0を確認した上でsynthetic key/idempotency/hash/proseを低entropy構築またはredactし、featureが履歴へ作ったexact 10 commit fingerprintだけを既存history baselineへ追加する。23Dはtest 9件を非PII fixture、履歴7件を明示redactionへ変え、PII allowlist追加0。23Eはdeveloper-local env/pathをportable defaultまたはinstall-time placeholderへ変え、legacy retirement render regressionを追加し、最終bytesからmanifest hash/inventoryを再計算する。scannerのpath/rule緩和、実個人値のallowlist、production provider/order/circuit変更は0。23C→23D→23Eを各々focused verification、commit、pushで閉じ、全CI green後だけmain mergeとcanonical wakeへ進む。
+
+### O1B-25進捗506（Item 23C current tree GREEN / full-history baseline RED）
+
+Lunaがproduction 0、test/history exact 14 filesと`.gitleaksignore`を修正し、current-tree finding `23→0`、focused `125/125`、diff checkをPASSした。feature由来のexact commit fingerprint追加は予定どおり10件だけ。初めて到達可能になったfull-history stageはraw report 1,631件でREDだが、branch/tag重複を除くunique fingerprintは104件。82件はHEADに存在しない旧`skills/earn/marketing-engine/evidence`の3 commits、残22件はtest/docsのgeneric 20、Stripe test fixture 1、disabled integration doc curl 1。TruffleHog filesystem/history verified 0を維持し、非generic 2件を個別確認後、追加104 exact fingerprintだけをbaseline化する。path/rule/commit-wide allowlistとraw値保存は0、新しいunbound synthetic findingが引き続きFAILするnegative proofを要求する。これで23C planを現実のfull-history gateへ更新し、23Dへはhistory 0後だけ進む。
+
+### O1B-25進捗507（Item 23C accepted / current tree＋full history gitleaks GREEN）
+
+非generic 2件はHEAD不在のinvalid Stripe-key negative testとdisabled integration docのpublic placeholderと個別確認した。Lunaはredacted reportの1,631件を104 unique fingerprintへ正規化し、feature由来10件と合わせexact 114行だけを`.gitleaksignore`へ追加した。最終ignore 968行、重複0、path/rule/commit-wide allowlist 0。current treeはfinding `23→0`、full historyは14,132 commits scanでfinding `1,631→0`、focused `125/125`、diff checkがPASS。未baselineのsynthetic secret-shaped fixtureはscan rc=1を実証し、fixtureはGit patchで除去して残存0。raw secretのreport/saveは0、production code変更0。Item23Cを閉じ、次active sliceを23D PII redactionとする。
+
+### O1B-25進捗508（Item 23D accepted / PII shape GREEN）
+
+Lunaがtest 8 filesのGmail/E.164 fixture 9件を非PIIのexample addressまたはscanner対象外の明示的分割fixtureへ置換し、history evidence/plans/spec 5 filesの個人値7件を`<REDACTED_EMAIL>`または`<REDACTED_PHONE>`へ置換した。PII finding `16→0`、変更focused `48/48`、security scanner contract `8/8`、diff checkがPASS。`.pii-shape-allowlist`追加0、production code変更0、個人値のchat/log再出力0。Item23Dを閉じ、次active sliceを23E portable OSS boundaryとする。
+
+### O1B-25進捗509（Item 23E accepted / portable OSS boundary GREEN）
+
+Lunaがdeveloper-local test fixture 3件をsynthetic化し、Connector/healthcheck env defaultをportable state homeへ移し、README/SKILLのlocal-root依存を除去した。legacy archive plistsは`__REPO_ROOT__`/`__LIFE_MANAGER_HOME__` placeholderとなり、retirement fallbackがXML 5文字escape→sed replacement escape→unresolved placeholder拒否→`plutil`→0600 installの順でrenderする。native rendererは実在regular `--connector-env-file`を必須化し、rendered plistの`LM_CONNECTOR_SHARED_ENV_FILE`と`LIFE_MANAGER_STATE_HOME`へ明示する。不在envはwake/lock前にexit 2。manifestは最終`runtime/agent-runner/config.json` SHAと`skills/anicca-booking` inventoryをverifier exact algorithmで更新した。
+
+初回fresh Sol reviewの「portable default先に実credentialなし」「legacy pathのXML escapeなし」2 Importantを同じLunaがRED→GREENで修復し、re-reviewはSHIP。focused review `9/9`、全変更focused `24/24`、Connector `360/360`、OSS contract `11/11`＋verifier PASS、security contract `8/8`、PII clean、gitleaks current/history no leaks（14,134 commits / 579.29 MB）、shell syntax、diff checkがPASS。scanner/allowlist弱体化0、production API変更0。Item23Eを閉じ、次はPR全CI green確認→main merge→canonical plist実render/install→単一wake acceptance。

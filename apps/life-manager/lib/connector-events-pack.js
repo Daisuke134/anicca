@@ -15,6 +15,7 @@ const {
 } = require("./calendar-candidate-gate.js");
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { syncVerifiedRegistrationToGoogleCalendar } = require("./connector-calendar-sync.js");
+const { captureOfficialLumaTicketQr } = require("./luma-ticket-qr.js");
 const {
   buildConnectorCoverageTelegramMessage,
   deliverConnectorCoverageTelegram,
@@ -31,6 +32,7 @@ const {
   inspectSavedLumaPaymentMethod,
 } = require("./event-spend-policy.js");
 const { createConnpassApiClient } = require("./connpass-api-client.js");
+const { discoverConnpassDateWithBrowser } = require("./connpass-browser-discovery.js");
 const {
   createEventSourceCapabilities,
   executeEventSourceHandoff,
@@ -66,11 +68,13 @@ function createConnectorEventsPack(options = {}) {
   const executeSourceHandoff = options.executeSourceHandoff || executeEventSourceHandoff;
   const createConnpassClient = options.createConnpassClient || createConnpassApiClient;
   const runCandidateSequence = options.runCandidateSequence || runLumaCandidateSequence;
+  const discoverConnpassDate = options.discoverConnpassDate || discoverConnpassDateWithBrowser;
   const planCoverageContinuation = options.planCoverageContinuation || planConnectorCoverageContinuation;
   const selectCalendarEligibleCandidates = options.selectCalendarEligibleCandidates || calendarEligibleLumaCandidates;
   const inspectBusyCalendar = options.inspectBusyCalendar || inspectGoogleCalendarBusyInventory;
   const evaluateCalendarGate = options.evaluateCalendarGate || evaluateCalendarCandidateGate;
   const syncRegistrationCalendar = options.syncRegistrationCalendar || syncVerifiedRegistrationToGoogleCalendar;
+  const captureTicketQr = options.captureTicketQr || captureOfficialLumaTicketQr;
   const planSpendSequence = options.planSpendSequence || buildEventSpendSequence;
   const spendDecisionForSequence = options.spendDecisionForSequence || eventSpendDecisionForSequence;
   const buildCoverageTelegram = options.buildCoverageTelegram || buildConnectorCoverageTelegramMessage;
@@ -84,6 +88,8 @@ function createConnectorEventsPack(options = {}) {
   const provider = createProvider({
     dailyDriver: authAwareDriver,
     evidenceStore,
+    readLumaFormProfile: options.readLumaFormProfile,
+    agenticRegister: options.agenticRegister,
     now: options.now,
   });
   if (
@@ -161,6 +167,14 @@ function createConnectorEventsPack(options = {}) {
     syncRegistrationCalendar(input) {
       return syncRegistrationCalendar(input);
     },
+    captureLumaTicketQr(binding) {
+      if (!binding || typeof binding !== "object" || !/^https:\/\/(?:www\.)?(?:luma\.com|lu\.ma)\//i.test(
+        String(binding.event_url || ""),
+      )) throw invalid();
+      return authAwareDriver.withLumaPage(binding.event_url, (page) => (
+        captureTicketQr(page, binding, { observedAt: options.now })
+      ));
+    },
     buildCoverageTelegram(input) {
       return buildCoverageTelegram(input);
     },
@@ -192,6 +206,13 @@ function createConnectorEventsPack(options = {}) {
           : undefined)
         : (connpassApiKey ? createConnpassClient({ apiKey: connpassApiKey }) : undefined);
       return executeSourceHandoff({ plan, connpassClient });
+    },
+    discoverConnpassDate(date, extra = {}) {
+      return discoverConnpassDate({
+        date,
+        timeZone: extra.timeZone,
+        dailyDriver,
+      });
     },
   });
 }
