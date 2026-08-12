@@ -7519,7 +7519,7 @@ LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Rese
 
 post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗484。これ以外の残TODO一覧は履歴）
+### Active remaining TODO SSOT（進捗485。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -8088,3 +8088,9 @@ Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-candidate-contract-2
 Lunaが新規workflow/test exact 2 filesをSuperpowers TDD実装した。exact HTTPS `www.kokuchpro.com/event/<lowercase32hex>/[optional 1〜20桁positive occurrence]/`だけをstable refへ写す。structured detailはbounded/trimmed/control-free public text、明示timezone付きsemantic ISO、single safe ticket ID、free scheme、zero JPY、available/open/not-full、`東京都` prefix、offline、Tokyo 14-day start windowを全て満たす場合だけfrozen private-free candidateになる。identity corruptionはinvalid、ordinary ineligibilityはnull。I/Oは0。
 
 fresh Sol初回reviewは(1) canonical_url/href/urlとdetail event_refのalias競合、(2)千葉住所中のTokyo文字、(3)`2026-02-30`のDate rolloverをImportantとして反証した。同じLunaが全URL/identity alias exact一致、`東京都` prefix、暦日/時刻/offset数値検証をRED→GREENで追加。最終KokuchPro＋TECH PLAY 26/26、syntax/diff check PASS。fresh Sol再reviewは3件解消、Critical/Important 0。production 107 LOC、code commits `beb3baa1b`、`dc633d1a0`。既存Peatix named test 1 failureはこの新file未importでも単独再現する変更外既知failure。Item20次sliceはofficial filtered listing/detailをsame owned pageで読むbounded discovery workflow。
+
+### O1B-25進捗485（Item 20D / KokuchPro bounded browser discovery plan）
+
+shared CloakBrowserの隔離contextで公式KokuchProをread-only再測定した。Tokyo/free/offline/open/2026-08-12〜26 filterは336件、1ページ40件、canonical root/occurrence event URLを返す。同queryの`page=2`は見出しを保持して41〜80件を返す。公式detailはschema.org Event exact 1にcanonical URL、Offline、東京都Place/address、zero-JPY InStock Offer、zoned start/endを持ち、明示tableが`料金制度 無料イベント`とsingle `無料 / 募集中` ticketを独立表示した。direct `/entry/`は公式loginへredirectし、会員登録必須を表示する。click/fill/submit/external effectは0、専用context release後pageは元の4件へ復帰した。
+
+Ponytailでpagination2ページ目以降、auth/action/readback、factory/router/native/evidenceをdeferした。Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-browser-discovery-20d.md`は既存workflow/test exact 2 files、production約80〜100 LOC。passed pageだけで公式filter先頭40件をdedupeし、各detailのJSON-LD＋明示ticket表をItem20C contractへ渡し、Calendar-free候補とfrozen auditを返す。次sliceでsame-page Harnessが実login boundaryをsafe failureとして分類する。
