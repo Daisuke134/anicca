@@ -25,11 +25,11 @@
 - Create: `apps/life-manager/lib/connector-kokuchpro-workflow.js`
 - Create: `apps/life-manager/lib/connector-kokuchpro-workflow.test.js`
 
-- [ ] **Step 1: Write RED pure contract tests**
+- [x] **Step 1: Write RED pure contract tests**
 
   Cover root and occurrence URLs, exact derived refs, one valid public detail, and fail-closed variants for protocol/host/auth/port/query/hash/path/case, identity drift, paid or ambiguous ticket, online/non-Tokyo, closed/full, malformed times, and outside-window dates.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
   ```bash
   cd apps/life-manager
@@ -38,11 +38,11 @@
 
   Expected: module-not-found or missing-export failure only.
 
-- [ ] **Step 3: Implement the smallest pure GREEN contract**
+- [x] **Step 3: Implement the smallest pure GREEN contract**
 
   Reuse `zonedSlotInstant` for the Asia/Tokyo 14-day boundary. Keep the accepted detail schema explicit and private-free. Freeze returned binding/candidate.
 
-- [ ] **Step 4: Run GREEN and adjacent checks**
+- [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
   cd apps/life-manager
@@ -51,14 +51,18 @@
   git diff --check
   ```
 
-- [ ] **Step 5: Report without committing**
+- [x] **Step 5: Report without committing**
 
   Write RED/GREEN counts, exact schema and failure boundaries, diff LOC, and concerns to the SDD report. Sol reviews, commits, and pushes.
 
 ## Acceptance checklist
 
-- [ ] Canonical root and occurrence identity are exact, stable, and private-free.
-- [ ] A candidate exists only for exact free/zero-JPY/single-ticket/open/not-full/Tokyo/offline/14-day facts.
-- [ ] Body/title `無料` text cannot override paid or ambiguous structured facts.
-- [ ] Identity corruption throws; ordinary ineligibility returns no candidate.
-- [ ] No network, browser, action, readback, profile, Calendar, evidence, factory/router/native/launchd behavior.
+- [x] Canonical root and occurrence identity are exact, stable, and private-free.
+- [x] A candidate exists only for exact free/zero-JPY/single-ticket/open/not-full/Tokyo/offline/14-day facts.
+- [x] Body/title `無料` text cannot override paid or ambiguous structured facts.
+- [x] Identity corruption throws; ordinary ineligibility returns no candidate.
+- [x] No network, browser, action, readback, profile, Calendar, evidence, factory/router/native/launchd behavior.
+
+## Result
+
+Luna implemented the pure two-file contract at 107 production LOC. Initial focused tests were 7/7. Fresh Sol found URL/identity alias conflicts, a Tokyo substring false positive, and semantic ISO date rollover; round 1 added exact fail-closed guards and regressions. Final KokuchPro+TECH PLAY tests are 26/26, syntax/diff checks pass, and fresh Sol re-review reports no Critical/Important findings. Code commits: `beb3baa1b`, `dc633d1a0`.

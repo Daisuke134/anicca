@@ -7519,7 +7519,7 @@ LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Rese
 
 post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗483。これ以外の残TODO一覧は履歴）
+### Active remaining TODO SSOT（進捗484。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -8082,3 +8082,9 @@ LunaがHarness production/test exact 2 filesをSuperpowers TDD実装した。`cr
 KokuchPro公式filter URL `area-東京都/charge-0`に`et=0`、`start_date=2026-08-12`、`end_date=2026-08-26`、`enabled=1`を指定すると、公式見出しが無料・東京都・同期間を明示し、募集中の公開event URLを返す。公式detail `89a92aac6c9a221ec337481b51c1bbef`は2026-08-20 19:00〜20:30、池袋の会場/東京都住所、`料金制度 無料イベント`、単一無料ticket、募集中、申込むを独立表示する。一方、有料counterexampleは本文に無料語があっても`料金制度 有料イベント`と`￥1,000`を表示するため、body keywordは無料根拠にしない。
 
 Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-candidate-contract-20c.md`は新workflow/test exact 2 files。exact HTTPS `www.kokuchpro.com/event/<lowercase 32hex>/[optional positive occurrence]/`からstable refを作り、single explicit zero-JPY available ticket、free scheme、open/not-full、Tokyo offline、今日を含む14日内だけをprivate-free candidateへ正規化するpure contractに限定する。production約70〜100 LOC。network/browser/action/readback/profile/Calendar/evidence/factory/router/native/launchdは変更0。
+
+### O1B-25進捗484（Item 20C / KokuchPro canonical candidate contract ship）
+
+Lunaが新規workflow/test exact 2 filesをSuperpowers TDD実装した。exact HTTPS `www.kokuchpro.com/event/<lowercase32hex>/[optional 1〜20桁positive occurrence]/`だけをstable refへ写す。structured detailはbounded/trimmed/control-free public text、明示timezone付きsemantic ISO、single safe ticket ID、free scheme、zero JPY、available/open/not-full、`東京都` prefix、offline、Tokyo 14-day start windowを全て満たす場合だけfrozen private-free candidateになる。identity corruptionはinvalid、ordinary ineligibilityはnull。I/Oは0。
+
+fresh Sol初回reviewは(1) canonical_url/href/urlとdetail event_refのalias競合、(2)千葉住所中のTokyo文字、(3)`2026-02-30`のDate rolloverをImportantとして反証した。同じLunaが全URL/identity alias exact一致、`東京都` prefix、暦日/時刻/offset数値検証をRED→GREENで追加。最終KokuchPro＋TECH PLAY 26/26、syntax/diff check PASS。fresh Sol再reviewは3件解消、Critical/Important 0。production 107 LOC、code commits `beb3baa1b`、`dc633d1a0`。既存Peatix named test 1 failureはこの新file未importでも単独再現する変更外既知failure。Item20次sliceはofficial filtered listing/detailをsame owned pageで読むbounded discovery workflow。
