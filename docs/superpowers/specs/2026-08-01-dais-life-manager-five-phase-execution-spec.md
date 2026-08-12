@@ -8208,3 +8208,9 @@ Clean integration worktreeでfeature HEADをmergeすると284 files中予告ど�
 5件はtest drift。Luma 2・Peatix 1は2026-08-10/11 fixtureがreal clock 2026-08-12の14日window外になり、既存fixed clock注入がその3 factoryだけ欠落。native runtime 2はLuma exhausted後に同一runでConnpass emptyを処理してPeatixまで進む現行contractに対し、旧中間cursor Connpassを期待している。Plan 23Aはtest-only exact 3 files、production 0でclock 3行とPeatix/generation期待を直す。
 
 残るcrash report 1件はproduction fail-safe回帰。last-resort reporterはwake IDとTelegram targetしか使わないのにfull production configを構築し、報告不要のemail/legal name/Kana/keyring欠落で報告前に停止する。Plan 23Bはnative pass/crash reporter/test exact 3 files。shared env＋owner hash＋既存strict Telegram targetだけのnarrow report configを切り出し、ordinary production configの全identity validationを維持する。fake private identityをtestへ足す案はstartup failureとreport failureを再結合するため棄却する。
+
+### O1B-25進捗505（Item 23 canonical PR security gate / 23C〜23E plan）
+
+Clean integration commit `fb66c6bdf`はConnector full `589/589`、canonical late-approval `41/41`、fresh Sol review SHIPでPR `#1936`へpush済み。repository-wide CIはTruffleHog、Python、Shell、review gateがPASSし、OSS self-contained 13件、gitleaks current tree 23件、PII shape 16件だけがFAILした。`origin/main`単体にもOSS 12件、gitleaks 15件、同一PII 16件が存在し、canonical化で休眠fixture/historyを全tree scanへ戻したことが主因。Connector production behaviorのFAILではない。
+
+23Cは実secret 0を確認した上でsynthetic key/idempotency/hash/proseを低entropy構築またはredactし、featureが履歴へ作ったexact 10 commit fingerprintだけを既存history baselineへ追加する。23Dはtest 9件を非PII fixture、履歴7件を明示redactionへ変え、PII allowlist追加0。23Eはdeveloper-local env/pathをportable defaultまたはinstall-time placeholderへ変え、legacy retirement render regressionを追加し、最終bytesからmanifest hash/inventoryを再計算する。scannerのpath/rule緩和、実個人値のallowlist、production provider/order/circuit変更は0。23C→23D→23Eを各々focused verification、commit、pushで閉じ、全CI green後だけmain mergeとcanonical wakeへ進む。
