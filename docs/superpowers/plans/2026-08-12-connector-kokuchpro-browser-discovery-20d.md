@@ -4,7 +4,7 @@
 
 **Goal:** Turn the Item 20C pure KokuchPro contract into a bounded same-owned-page discovery workflow that reads the official Tokyo/free/active/14-day listing, validates each official detail independently, and returns only Calendar-free candidates.
 
-**Architecture:** Extend the existing KokuchPro workflow with one factory. The default listing reader navigates the already-owned page to the exact official filter URL and accepts the first official result page: exactly 1–40 `.event_list .event_item` cards, at most 20 unique canonical occurrence/root URLs per card and 800 total. This preserves the multiple dated occurrences that the official UI nests in one result card while remaining bounded. The default detail reader navigates that same page to each binding, reads one schema.org Event plus the explicit fee/ticket table, and emits only the public structured fields consumed by `normalizeKokuchProDetail`. The workflow deduplicates, normalizes, Calendar-gates, audits counts, and fails closed with bounded stage codes. It never creates a page/session/target, fills a field, submits, authenticates, or persists state.
+**Architecture:** Extend the existing KokuchPro workflow with one factory. The default listing reader navigates the already-owned page to the exact official filter URL and accepts the first official result page: exactly 1–40 `.event_list .event_item` cards, at most 20 unique canonical occurrence/root URLs per card and 800 total. This preserves the multiple dated occurrences that the official UI nests in one result card while remaining bounded. The default detail reader navigates that same page to each binding, bounded-flattens every top-level JSON-LD array and `@graph`, requires exactly one schema.org Event, then reads the explicit fee/ticket table and emits only public structured fields. The workflow records `within_window_count` after valid identity/time/window parsing but before free/Tokyo/offline/open/ticket eligibility, then Calendar-gates only eligible candidates. It never creates a page/session/target, fills a field, submits, authenticates, or persists state.
 
 **Ponytail size gate:**
 
@@ -35,6 +35,8 @@ Add focused tests proving:
 3. The workflow filters malformed/ineligible/out-of-window rows, calls Calendar gating once per eligible candidate, keeps only Calendar-free candidates, and emits frozen audit counts.
 4. Listing/detail/Calendar/audit exceptions map to explicit safe stage codes; no action or private value is produced.
 5. `runDirectAction` remains a deterministic safe failure requiring Harness; `readProviderState` remains unavailable until the action/readback slice.
+6. A within-window paid/ineligible detail increments `within_window_count` but not `eligible_count`; an out-of-window otherwise eligible detail increments neither.
+7. JSON-LD Events are counted across top-level objects, top-level arrays, and each bounded `@graph`; a hidden second Event fails closed even when a separate canonical Event is valid.
 
 Run:
 
