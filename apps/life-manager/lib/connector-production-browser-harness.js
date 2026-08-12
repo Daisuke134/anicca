@@ -6,6 +6,7 @@ const { createBrowserHarnessAdapter } = require("./connector-browser-harness-ada
 const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
+const EXTENSION_PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
 const PAGE_WEBSOCKET = /^ws:\/\/127\.0\.0\.1:9222\/devtools\/page\/[A-Za-z0-9._-]{3,128}$/;
 const TECHPLAY_POSTCHECK_ATTEMPTS = 20;
 const TECHPLAY_POSTCHECK_INTERVAL_MS = 25;
@@ -1414,6 +1415,9 @@ function createProductionBrowserHarness(options = {}) {
   const doorkeeperWorkflow = options.doorkeeperWorkflow;
   const eventbriteWorkflow = options.eventbriteWorkflow;
   const techplayWorkflow = options.techplayWorkflow;
+  const extensionProvider = options.extensionProvider;
+  const extensionWorkflow = options.extensionWorkflow;
+  const extensionConfigured = extensionProvider != null || extensionWorkflow != null;
   const inspectControls = options.inspectControls;
   const proposeAction = options.proposeAction;
   const operateControl = options.operateControl;
@@ -1427,10 +1431,13 @@ function createProductionBrowserHarness(options = {}) {
     || (doorkeeperWorkflow != null && typeof doorkeeperWorkflow.readProviderState !== "function")
     || (eventbriteWorkflow != null && typeof eventbriteWorkflow.readProviderState !== "function")
     || (techplayWorkflow != null && typeof techplayWorkflow.readProviderState !== "function")
+    || (extensionConfigured && (extensionProvider == null || extensionWorkflow == null || typeof extensionProvider !== "string"
+      || !EXTENSION_PROVIDER.test(extensionProvider) || PROVIDERS.has(extensionProvider) || !extensionWorkflow || typeof extensionWorkflow.readProviderState !== "function"))
     || typeof inspectControls !== "function" || typeof proposeAction !== "function"
     || typeof operateControl !== "function" || typeof resolveValue !== "function"
     || (options.sleep != null && typeof options.sleep !== "function")
   ) invalid();
+  const supportsProvider = (provider) => PROVIDERS.has(provider) || provider === extensionProvider;
   const registry = new WeakMap();
 
   async function observed(page, provider, candidate = null, allowEmpty = false) {
@@ -1489,7 +1496,7 @@ function createProductionBrowserHarness(options = {}) {
   async function performAction(input = {}) {
     if (!input.page || !input.action || !CONTROL.test(String(input.action.control || ""))) invalid();
     const provider = input.provider == null ? "luma" : String(input.provider);
-    if (!PROVIDERS.has(provider)) invalid();
+    if (!supportsProvider(provider)) invalid();
     if (provider === "techplay") {
       const binding = candidateTechPlayBinding(input.candidate);
       if (!binding) return Object.freeze({ status: "failed" });
@@ -1767,9 +1774,10 @@ function createProductionBrowserHarness(options = {}) {
   }
 
   async function runFallback(input = {}) {
-    if (!PROVIDERS.has(input.provider) || !input.candidate) invalid();
+    if (!supportsProvider(input.provider) || !input.candidate) invalid();
     if (input.provider === "techplay") return runTechPlayInputFallback(input);
-    const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow, meetup: meetupWorkflow, doorkeeper: doorkeeperWorkflow, eventbrite: eventbriteWorkflow }[input.provider];
+    const workflow = input.provider === extensionProvider ? extensionWorkflow
+      : { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow, meetup: meetupWorkflow, doorkeeper: doorkeeperWorkflow, eventbrite: eventbriteWorkflow }[input.provider];
     if (!workflow || typeof workflow.readProviderState !== "function") {
       if (input.provider === "doorkeeper") return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([]) });
       invalid();
@@ -1822,10 +1830,15 @@ function createProductionBrowserHarness(options = {}) {
         return result;
       },
       async readExpectedState({ page }) {
-        const state = finalEffectProviderState || await workflow.readProviderState({
-          page,
-          candidate: input.candidate,
-        });
+        let state;
+        try {
+          state = finalEffectProviderState || await workflow.readProviderState({ page, candidate: input.candidate });
+        } catch (error) {
+          if (input.provider === extensionProvider) return Object.freeze({ status: "unavailable" });
+          throw error;
+        }
+        if (input.provider === extensionProvider && (!state || typeof state !== "object" || Array.isArray(state)
+          || !["registered", "pending"].includes(state.status))) return Object.freeze({ status: "unavailable" });
         if (input.provider === "doorkeeper") {
           return state && typeof state === "object" && !Array.isArray(state) && state.status === "registered"
             ? state : Object.freeze({ status: "unavailable" });

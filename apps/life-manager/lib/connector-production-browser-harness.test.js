@@ -3236,6 +3236,73 @@ test("TECH PLAY harness rejects an invalid injected postcondition sleep", () => 
   }), /Connector production Browser Harness invalid/);
 });
 
+test("configured extension provider reuses the generic fallback for its exact token", async () => {
+  const page = { url() { return "https://extension.example.test/event/1"; } };
+  const candidate = { event_ref: "extension-event://event/1" };
+  let operated = 0;
+  let readbacks = 0;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    extensionProvider: "extension-site",
+    extensionWorkflow: {
+      async readProviderState(input) {
+        assert.equal(input.page, page);
+        assert.equal(input.candidate, candidate);
+        readbacks += 1;
+        return operated === 1 ? { status: "registered", receipt_id: "extension-1" } : { status: "absent" };
+      },
+    },
+    async inspectControls() {
+      return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }];
+    },
+    async proposeAction(input) {
+      assert.equal(input.provider, "extension-site");
+      return { control: "register_button" };
+    },
+    async operateControl(input) {
+      assert.equal(input.page, page);
+      operated += 1;
+      return { status: "success" };
+    },
+    async resolveValue() { throw new Error("extension submit must not resolve a private value"); },
+  });
+
+  const result = await harness.runFallback({
+    provider: "extension-site", candidate, page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EXTENSION1",
+    maxSteps: 2, expectedState: "registered_or_pending",
+  });
+  assert.equal(result.status, "completed");
+  assert.equal(result.provider_state.status, "registered");
+  assert.deepEqual(result.repaired_actions, [{ purpose: "submit", method: "ax_click", control: "register_button" }]);
+  assert.equal(operated, 1);
+  assert.equal(readbacks, 1);
+  await assert.rejects(() => harness.runFallback({
+    provider: "another-extension", candidate, page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EXTENSION2",
+    maxSteps: 1, expectedState: "registered_or_pending",
+  }), /Connector production Browser Harness invalid/);
+});
+
+test("extension provider configuration is an exact safe pair", () => {
+  const workflow = { async readProviderState() { return { status: "absent" }; } };
+  const base = {
+    lumaWorkflow: { async readProviderState() {} },
+    inspectControls() {}, proposeAction() {}, operateControl() {}, resolveValue() {},
+  };
+  for (const options of [
+    { extensionProvider: "extension-site" },
+    { extensionWorkflow: workflow },
+    { extensionProvider: "Extension-Site", extensionWorkflow: workflow },
+    { extensionProvider: "x", extensionWorkflow: workflow },
+    { extensionProvider: "extension-site", extensionWorkflow: {} },
+    { extensionProvider: "luma", extensionWorkflow: workflow },
+  ]) {
+    assert.throws(() => createProductionBrowserHarness({ ...base, ...options }), /Connector production Browser Harness invalid/);
+  }
+  assert.doesNotThrow(() => createProductionBrowserHarness({ ...base }));
+});
+
 test("TECH PLAY parent operation rejects radio ambiguity, drift, failed postcondition, and review/final clicks", async () => {
   for (const [name, resolveValue] of [
     ["zero-approved", async () => null],
