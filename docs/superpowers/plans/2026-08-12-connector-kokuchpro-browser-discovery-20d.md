@@ -4,7 +4,7 @@
 
 **Goal:** Turn the Item 20C pure KokuchPro contract into a bounded same-owned-page discovery workflow that reads the official Tokyo/free/active/14-day listing, validates each official detail independently, and returns only Calendar-free candidates.
 
-**Architecture:** Extend the existing KokuchPro workflow with one factory. The default listing reader navigates the already-owned page to the exact official filter URL and accepts at most the first 40 unique canonical event bindings. The default detail reader navigates that same page to each binding, reads one schema.org Event plus the explicit fee/ticket table, and emits only the public structured fields consumed by `normalizeKokuchProDetail`. The workflow deduplicates, normalizes, Calendar-gates, audits counts, and fails closed with bounded stage codes. It never creates a page/session/target, fills a field, submits, authenticates, or persists state.
+**Architecture:** Extend the existing KokuchPro workflow with one factory. The default listing reader navigates the already-owned page to the exact official filter URL and accepts the first official result page: exactly 1–40 `.event_list .event_item` cards, at most 20 unique canonical occurrence/root URLs per card and 800 total. This preserves the multiple dated occurrences that the official UI nests in one result card while remaining bounded. The default detail reader navigates that same page to each binding, reads one schema.org Event plus the explicit fee/ticket table, and emits only the public structured fields consumed by `normalizeKokuchProDetail`. The workflow deduplicates, normalizes, Calendar-gates, audits counts, and fails closed with bounded stage codes. It never creates a page/session/target, fills a field, submits, authenticates, or persists state.
 
 **Ponytail size gate:**
 
@@ -14,7 +14,7 @@
 
 **Measured official evidence:**
 
-- Filter page: <https://www.kokuchpro.com/s/area-%E6%9D%B1%E4%BA%AC%E9%83%BD/charge-0/?et=0&start_date=2026-08-12&end_date=2026-08-26&enabled=1&sort=date> — official heading independently states free, Tokyo, and the exact window; the live DOM shows `336件中 1件から40件まで`, canonical occurrence/root event links, and open markers.
+- Filter page: <https://www.kokuchpro.com/s/area-%E6%9D%B1%E4%BA%AC%E9%83%BD/charge-0/?et=0&start_date=2026-08-12&end_date=2026-08-26&enabled=1&sort=date> — official heading independently states free, Tokyo, and the exact window; the live DOM shows `336件中 1件から40件まで`, exactly 40 result cards and 48 unique canonical occurrence/root URLs because two recurring cards each expose five dated occurrences.
 - Filter page 2 with the same query plus `page=2` — live DOM preserves the heading and shows `336件中 41件から80件まで`; pagination is deliberately deferred because one unknown-site proof only needs a bounded first page.
 - Detail: <https://www.kokuchpro.com/event/89a92aac6c9a221ec337481b51c1bbef/> — one schema.org Event exposes exact URL, `OfflineEventAttendanceMode`, Tokyo Place/address, zero-JPY InStock Offer, and zoned start/end; the explicit table independently says `料金制度 無料イベント` and one `無料 / 募集中` ticket.
 - Direct `/entry/` navigation redirects to the official login page and says membership is required. This slice performs no login/action; the next slice lets the bounded Harness classify that exact auth boundary.
@@ -30,7 +30,7 @@
 
 Add focused tests proving:
 
-1. The default listing reader uses the exact Tokyo/free/offline/open/date-window URL on the supplied page, accepts only exact canonical KokuchPro event links, deduplicates in DOM order, and rejects redirect/over-40/malformed results.
+1. The default listing reader uses the exact Tokyo/free/offline/open/date-window URL on the supplied page, accepts only exact canonical KokuchPro event links from 1–40 official result cards, deduplicates in card/DOM order, and rejects redirect, over-40 cards, over-20 unique bindings in one card, over-800 total rows, or malformed results.
 2. The default detail reader requires the same canonical page identity, exactly one schema.org Event for that URL, offline mode, zero-JPY InStock offer, exact free fee row, and exactly one free/open ticket row. It returns bounded public fields only.
 3. The workflow filters malformed/ineligible/out-of-window rows, calls Calendar gating once per eligible candidate, keeps only Calendar-free candidates, and emits frozen audit counts.
 4. Listing/detail/Calendar/audit exceptions map to explicit safe stage codes; no action or private value is produced.
