@@ -374,7 +374,7 @@ test("official production factory routes Meetup after Peatix on the same page", 
     });
     assert.deepEqual(await dependencies.discoverCandidates("meetup", [], page), [candidate]);
     assert.deepEqual(await dependencies.runDirectAction({ provider: "meetup", candidate, page }), { status: "failed", safe_reason: "meetup_direct_requires_harness" });
-    assert.deepEqual(await dependencies.runAgentFallback({ provider: "meetup", candidate, page }), { status: "completed" });
+    assert.deepEqual(await dependencies.runAgentFallback({ provider: "meetup", candidate, page, maxSteps: 10 }), { status: "completed" });
     assert.deepEqual(await dependencies.readProviderState({ provider: "meetup", candidate, page }), { status: "registered" });
   } finally {
     fs.rmSync(stateDir, { recursive: true, force: true });
@@ -529,6 +529,69 @@ test("production provider router routes TECH PLAY through every closed path with
   assert.deepEqual(Object.keys(saved).sort(), ["actions", "expectedEffect", "observedAt", "pageState", "provider", "providerState", "workflowVersion"].sort());
   assert.deepEqual({ provider: saved.provider, version: saved.workflowVersion, pageState: saved.pageState, effect: saved.expectedEffect }, { provider: "techplay", version: "techplay_registration_v1", pageState: "registration_page_v1", effect: "registered_or_pending" });
   assert.doesNotMatch(JSON.stringify({ replay, saved }), /Private Name|private@example\.test/);
+});
+
+test("production provider router clamps normal Harness fallback to ten steps but preserves TECH PLAY fifteen", async () => {
+  const fallbackCalls = [];
+  const workflow = {
+    async discoverCandidates() { return []; },
+    async runDirectAction() { return { status: "failed" }; },
+    async readProviderState() { return { status: "absent" }; },
+  };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow,
+    connpassWorkflow: workflow,
+    techplayWorkflow: workflow,
+    actionCache: { async replay() { return { status: "cache_miss" }; }, saveVerifiedRepair() {} },
+    browserHarness: { async runFallback(input) { fallbackCalls.push(input); return { status: "failed" }; } },
+    async performAction() { return { status: "success" }; },
+    now: () => new Date("2026-08-12T08:30:00.000Z"),
+  });
+  const page = Object.freeze({ page_id: "budget-page" });
+  const candidate = Object.freeze({ event_ref: "fixture-event://budget" });
+
+  await router.runAgentFallback({
+    provider: "luma", candidate, page, pageWebsocket: "ws://page/luma", maxSteps: 15,
+    expectedState: "registered_or_pending",
+  });
+  await router.runAgentFallback({
+    provider: "techplay", candidate, page, pageWebsocket: "ws://page/techplay", maxSteps: 15,
+    expectedState: "registered_or_pending",
+  });
+
+  assert.deepEqual(fallbackCalls.map(({ provider, maxSteps }) => [provider, maxSteps]), [
+    ["luma", 10],
+    ["techplay", 15],
+  ]);
+});
+
+test("production provider router rejects invalid Harness step budgets before touching the Harness", async () => {
+  let fallbackCalls = 0;
+  const workflow = {
+    async discoverCandidates() { return []; },
+    async runDirectAction() { return { status: "failed" }; },
+    async readProviderState() { return { status: "absent" }; },
+  };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow,
+    connpassWorkflow: workflow,
+    techplayWorkflow: workflow,
+    actionCache: { async replay() { return { status: "cache_miss" }; }, saveVerifiedRepair() {} },
+    browserHarness: { async runFallback() { fallbackCalls += 1; return { status: "failed" }; } },
+    async performAction() { return { status: "success" }; },
+    now: () => new Date("2026-08-12T08:30:00.000Z"),
+  });
+  const candidate = Object.freeze({ event_ref: "fixture-event://invalid-budget" });
+  const page = Object.freeze({ page_id: "invalid-budget-page" });
+  const invalidBudgets = ["15", Number.NaN, Number.POSITIVE_INFINITY, 0, -1, 1.5];
+
+  for (const maxSteps of invalidBudgets) {
+    assert.throws(() => router.runAgentFallback({
+      provider: "luma", candidate, page, pageWebsocket: "ws://page/luma", maxSteps,
+      expectedState: "registered_or_pending",
+    }));
+    assert.equal(fallbackCalls, 0);
+  }
 });
 
 test("official production factory injects TECH PLAY on the supplied page without opening a browser rail", async () => {
