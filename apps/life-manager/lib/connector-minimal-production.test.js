@@ -865,3 +865,98 @@ test("composed cached action self-heal repairs one stale submit and replays it o
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
 });
+
+test("production provider router routes an injected KokuchPro workflow with an exact version", async () => {
+  const calls = [];
+  const page = Object.freeze({ page_id: "owned-page-kokuchpro" });
+  const candidate = Object.freeze({ provider: "kokuchpro", event_ref: "kokuchpro-event://event/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", canonical_url: "https://www.kokuchpro.com/event/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/" });
+  const workflow = {
+    async discoverCandidates(input) { calls.push(["discover", input]); return [candidate]; },
+    async runDirectAction(input) { calls.push(["direct", input]); return { status: "failed", safe_reason: "kokuchpro_direct_requires_harness" }; },
+    async readProviderState(input) { calls.push(["readback", input]); return { status: "absent" }; },
+  };
+  const actionCache = {
+    async replay(input) { calls.push(["cache", input]); return { status: "cache_miss" }; },
+    saveVerifiedRepair(input) { calls.push(["save", input]); return { status: "saved" }; },
+  };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow, kokuchproWorkflow: workflow, actionCache,
+    browserHarness: { async runFallback(input) { calls.push(["fallback", input]); return { status: "failed" }; } },
+    async performAction(input) { calls.push(["perform", input]); return { status: "success" }; },
+    now: () => new Date("2026-08-12T08:30:00.000Z"),
+  });
+  const calendar = Object.freeze([]);
+  assert.deepEqual(await router.discoverCandidates("kokuchpro", calendar, page), [candidate]);
+  assert.deepEqual(await router.runCachedAction({ provider: "kokuchpro", candidate, page }), { status: "cache_miss" });
+  assert.deepEqual(await router.runDirectAction({ provider: "kokuchpro", candidate, page }), { status: "failed", safe_reason: "kokuchpro_direct_requires_harness" });
+  assert.deepEqual(await router.runAgentFallback({ provider: "kokuchpro", candidate, page, pageWebsocket: "ws://page", maxSteps: 1, expectedState: "registered_or_pending" }), { status: "failed" });
+  assert.deepEqual(await router.readProviderState({ provider: "kokuchpro", candidate, page }), { status: "absent" });
+  assert.deepEqual(await router.saveRepairedActions({ provider: "kokuchpro", candidate, page, providerState: { status: "registered" }, repairedActions: [] }), { status: "saved" });
+  const cached = calls.find(([name]) => name === "cache")[1];
+  assert.deepEqual({ provider: cached.provider, version: cached.workflowVersion, page: cached.page }, { provider: "kokuchpro", version: "kokuchpro_registration_v1", page });
+  assert.equal(calls.find(([name]) => name === "discover")[1].page, page);
+  assert.equal(calls.find(([name]) => name === "direct")[1].page, page);
+  assert.equal(calls.find(([name]) => name === "readback")[1].page, page);
+  assert.equal(calls.find(([name]) => name === "fallback")[1].page, page);
+  assert.throws(() => router.discoverCandidates("KokuchPro", calendar, page));
+  assert.throws(() => router.discoverCandidates("unknown", calendar, page));
+});
+
+test("official production factory creates the default KokuchPro workflow with audit and one-page routes", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-kokuchpro-default-"));
+  const eventKey = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  const canonicalUrl = `https://www.kokuchpro.com/event/${eventKey}/`;
+  const candidate = Object.freeze({ provider: "kokuchpro", event_ref: `kokuchpro-event://event/${eventKey}`, canonical_url: canonicalUrl, title: "Tokyo free event", starts_at: "2026-08-20T10:00:00.000Z", ends_at: "2026-08-20T11:30:00.000Z", venue: "Hall", address: "東京都豊島区", registration_status: "available", ticket_id: "1", ticket_price_status: "free", ticket_price_minor: 0 });
+  const listingUrlPrefix = "https://www.kokuchpro.com/s/area-";
+  const detail = { jsonld: { "@type": "Event", url: canonicalUrl, name: "Tokyo free event", startDate: "2026-08-20T19:00:00+09:00", endDate: "2026-08-20T20:30:00+09:00", eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode", location: { "@type": "Place", name: "Hall", address: { addressLocality: "東京都豊島区" } }, offers: { "@type": "Offer", url: canonicalUrl, price: 0, priceCurrency: "JPY", availability: "https://schema.org/InStock" } }, fee_rows: [{ label: "料金制度", value: "無料イベント" }], ticket_rows: [{ id: "ticket-1", label: "無料", status: "募集中" }], canonical_url: canonicalUrl, availability_values: ["1"], entry_actions: [`${canonicalUrl}entry/`] };
+  const page = { current: "", mode: "detail", url() { return this.current; }, async goto(url) { this.current = url; }, async evaluate(_callback, argument) { if (this.current.startsWith(listingUrlPrefix)) return [[canonicalUrl]]; if (this.current === canonicalUrl && this.mode === "detail") return detail; if (this.current === canonicalUrl) return { entry_forms: [{ action: `${canonicalUrl}entry/`, method: "POST" }] }; return argument; } };
+  const audits = [], fallbackPages = [];
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-kokuchpro-default-1", calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target", lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } }, browserRail: { open() {}, navigate() {}, close() {} }, lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow,
+      actionCache: { async replay() { return { status: "cache_miss" }; }, saveVerifiedRepair() {} }, evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {}, async recordKokuchProDiscoveryAudit(input) { audits.push(input); } },
+      browserHarness: { async runFallback(input) { fallbackPages.push(input.page); return { status: "failed" }; }, async performAction() {} }, now: () => new Date("2026-08-12T08:30:00.000Z"),
+    });
+    assert.deepEqual(await dependencies.discoverCandidates("kokuchpro", [], page), [candidate]);
+    assert.deepEqual(audits, [{ discovered_count: 1, within_window_count: 1, eligible_count: 1, calendar_free_count: 1, selected_count: 1 }]);
+    assert.deepEqual(await dependencies.runDirectAction({ provider: "kokuchpro", candidate, page }), { status: "failed", safe_reason: "kokuchpro_direct_requires_harness" });
+    page.mode = "readback";
+    assert.deepEqual(await dependencies.readProviderState({ provider: "kokuchpro", candidate, page }), { status: "absent" });
+    assert.deepEqual(await dependencies.runAgentFallback({ provider: "kokuchpro", candidate, page, pageWebsocket: "ws://page", maxSteps: 1, expectedState: "registered_or_pending" }), { status: "failed" });
+    assert.deepEqual(fallbackPages, [page]);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("official production factory default KokuchPro Harness stops at auth before proposer, operation, private value, or cache save", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-kokuchpro-auth-"));
+  const eventKey = "cccccccccccccccccccccccccccccccc";
+  const canonicalUrl = `https://www.kokuchpro.com/event/${eventKey}/`;
+  const candidate = Object.freeze({ provider: "kokuchpro", event_ref: `kokuchpro-event://event/${eventKey}`, canonical_url: canonicalUrl, title: "Tokyo free event", starts_at: "2026-08-20T10:00:00.000Z", ends_at: "2026-08-20T11:00:00.000Z", venue: "Hall", address: "東京都豊島区", registration_status: "available", ticket_id: "ticket-1", ticket_price_status: "free", ticket_price_minor: 0 });
+  const entryPath = `${new URL(canonicalUrl).pathname}entry/`;
+  const page = { url() { return `https://www.kokuchpro.com/auth/login/?continue=${encodeURIComponent(entryPath)}`; }, async evaluate() { return { password_count: 1, login_forms: [{ action: "https://www.kokuchpro.com/auth/login/", method: "POST" }] }; } };
+  const counts = { inspect: 0, propose: 0, operate: 0, resolve: 0, save: 0 };
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-kokuchpro-auth-1", calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target", lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      calendar: { ready() { return true; } }, calendarReader: { async readCalendarGaps() { return []; } }, browserRail: { open() {}, navigate() {}, close() {} }, lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow,
+      actionCache: { async replay() { return { status: "cache_miss" }; }, saveVerifiedRepair() { counts.save += 1; } }, evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} },
+      inspectControls: async () => { counts.inspect += 1; return []; }, proposeAction: async () => { counts.propose += 1; return { control: "register" }; }, operateControl: async () => { counts.operate += 1; return { status: "success" }; }, resolveValue: async () => { counts.resolve += 1; return "private"; },
+    });
+    assert.deepEqual(await dependencies.runAgentFallback({ provider: "kokuchpro", candidate, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/KOKUCHPROAUTH1", maxSteps: 1, expectedState: "registered_or_pending" }), { status: "failed", safe_reason: "auth_required", repaired_actions: [] });
+    assert.deepEqual(counts, { inspect: 0, propose: 0, operate: 0, resolve: 0, save: 0 });
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("production provider router rejects a partial KokuchPro workflow without affecting existing routes", () => {
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  assert.throws(() => createProductionProviderRouter({
+    lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow, kokuchproWorkflow: { async discoverCandidates() {}, async runDirectAction() {} },
+    actionCache: { async replay() {}, saveVerifiedRepair() {} }, browserHarness: { async runFallback() {} }, performAction() {}, now: () => new Date(),
+  }), /Connector minimal production unavailable/);
+  assert.doesNotThrow(() => createProductionProviderRouter({
+    lumaWorkflow: emptyWorkflow, connpassWorkflow: emptyWorkflow, actionCache: { async replay() {}, saveVerifiedRepair() {} }, browserHarness: { async runFallback() {} }, performAction() {}, now: () => new Date(),
+  }));
+});
