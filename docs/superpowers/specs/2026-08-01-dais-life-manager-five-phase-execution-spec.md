@@ -8168,3 +8168,9 @@ official launchd wake `wake-0ff1160ceb01d1698b00962b`はLuma、Connpass、Peatix
 Item21の既存実装を実測した。evidence、Calendar、Telegram message、photo、bundleのimmutable checkpointと同process recovery fixturesはあるが、`notifyOpenClawPhoto`だけが`openclaw message send`を使いidempotency keyを持たない。photo external effect直後かつcheckpoint永続化前のprocess lossでは重複photoを防げないため、OS process restart acceptanceをまだ主張できない。
 
 local installed OpenClawの`SendParamsSchema`は`mediaUrl`、`forceDocument`、required `idempotencyKey`を持ち、Gateway `send`は同key再送をdedupeする。PonytailでItem21を3 sliceへ分ける。Plan `docs/superpowers/plans/2026-08-12-connector-photo-idempotency-21a.md`はoutbound guardian production/test exact 2 files、production約12〜24 LOC、test約45〜80 LOC。private 0700 temp dir/0600 PNGを保持し、photo transportだけをGateway send＋caller keyへ移す。21Bでevidence chainのstable photo keyを接続し、21Cで別Node OS processを各external-effect境界から再開してduplicate effect 0を実証する。
+
+### O1B-25進捗498（Item 21A accepted / evidence photo key 21B plan）
+
+Lunaがoutbound guardian production/test exact 2 filesをTDD変更した。初回RED 22/25、GREEN 25/25。`notifyOpenClawPhoto`はnumeric Telegram targetとsafe idempotency keyをspawn前検証し、private 0700 temp dir/0600 PNGを保持したままOpenClaw Gateway `send`へexact `mediaUrl`、caption、`forceDocument=true`、caller keyを渡す。transport、parse、filesystem failureはprivate stderr/target/caption/pathを含めず固定文へsanitizeし、positive top-level message IDだけを受け入れる。
+
+fresh Sol初回reviewはtemp cleanup failureを握り潰してsuccess receiptを返し得るImportantを検出。同じLunaがRED 25/26で固定し、cleanup failureをsanitizeしてthrowしsuccessを禁止した。最終26/26、syntax/diff check PASS、fresh Sol re-review SHIP、Critical/Important 0。code commit `5fc0f8be5`をpushし、HEAD/remote一致。Plan `docs/superpowers/plans/2026-08-12-connector-evidence-photo-key-21b.md`はminimal evidence production/test exact 2 files、production約1〜3 LOC、test約15〜35 LOC。既存canonical URL SHA-256からexact `connector-evidence-photo:<hash>`を既存sendPhotoへ渡す。new state/service/retry/real external effectは0。
