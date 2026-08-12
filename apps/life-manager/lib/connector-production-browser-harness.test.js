@@ -3399,6 +3399,34 @@ test("extension auth preflight is terminal before any browser adapter step", asy
   assert.deepEqual(calls, { readback: 1, inspect: 0, propose: 0, operate: 0, resolve: 0 });
 });
 
+test("extension auth preflight cannot bypass adapter scope validation", async () => {
+  const calls = { readback: 0, inspect: 0, propose: 0, operate: 0, resolve: 0 };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    extensionProvider: "extension-scope",
+    extensionWorkflow: { async readProviderState() { calls.readback += 1; return { status: "auth_required" }; } },
+    async inspectControls() { calls.inspect += 1; return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
+    async proposeAction() { calls.propose += 1; return { control: "register_button" }; },
+    async operateControl() { calls.operate += 1; return { status: "success" }; },
+    async resolveValue() { calls.resolve += 1; return "private-value"; },
+  });
+  const candidate = { event_ref: "extension-scope://event/1" };
+  const validWebsocket = "ws://127.0.0.1:9222/devtools/page/EXTENSION-SCOPE";
+  for (const [name, input] of [
+    ["malformed websocket", { page: {}, pageWebsocket: "http://bad", maxSteps: 1, expectedState: "registered_or_pending" }],
+    ["zero maxSteps", { page: {}, pageWebsocket: validWebsocket, maxSteps: 0, expectedState: "registered_or_pending" }],
+    ["wrong expectedState", { page: {}, pageWebsocket: validWebsocket, maxSteps: 1, expectedState: "registered" }],
+    ["null page", { page: null, pageWebsocket: validWebsocket, maxSteps: 1, expectedState: "registered_or_pending" }],
+  ]) {
+    await assert.rejects(
+      () => harness.runFallback({ provider: "extension-scope", candidate, ...input }),
+      /Browser Harness adapter invalid/,
+      name,
+    );
+  }
+  assert.deepEqual(calls, { readback: 0, inspect: 0, propose: 0, operate: 0, resolve: 0 });
+});
+
 test("extension auth after one action latches terminal failure without retry", async () => {
   const calls = { readback: 0, inspect: 0, propose: 0, operate: 0, resolve: 0 };
   const action = { purpose: "submit", method: "ax_click", control: "register_button" };
