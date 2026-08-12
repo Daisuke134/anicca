@@ -15,18 +15,15 @@ Implementation is closed in three additions to the same two test-only files: 21C
 
 Use one parent-owned temp root. `restart-ledger.json` starts at mode 0600 with `provider_count=1`, all downstream counts 0, Submit/cache/direct/Harness 0, and empty Calendar/message/photo identities. Seed `action-history.jsonl` with one safe line; later processes may only append, so the original bytes must remain an exact prefix.
 
-The child accepts exactly `stateDir` plus one allowlisted stage. It constructs one fixed Peatix candidate and calls the real `runMinimalConnectorWake`, whose `completeEvidence` dependency delegates to a real `createMinimalEvidenceChain`.
+The child accepts exactly `stateDir` plus one allowlisted stage. It constructs one fixed Peatix candidate and calls the real `createMinimalEvidenceChain` directly. Provider registered pre-readback and Submit/cache/direct/Harness 0 are already proven by the composed runner test; the new OS-process fixture is restricted to the missing external-effect/checkpoint crash windows identified by fresh review.
 
-- `readProviderState`: reads the durable provider count and returns `registered`; stage `provider_readback` exits 41 after readback.
 - evidence store `record`: when absent, atomically stores the receipt/artifact identity and increments once; stage `evidence_effect` exits 42 after that write but before returning. On later processes it returns the existing identity without increment.
 - Calendar `findConnectorEvents`: returns the ledger event by the existing idempotency value. `createConnectorEvent` atomically stores/increments once; stage `calendar_effect` exits 43 after write but before return.
 - `sendMessage` and `sendPhoto`: ledger-map by the exact caller idempotency key. First call stores one positive ID/count then stage exit 44/45 before return; replay of the same key returns the stored ID without increment.
 - page fixture implements only the Peatix path used by production evidence: mutable `url/goto`, `evaluate`, `screenshot` with a valid PNG over 5000 bytes.
-- cache/direct/Harness functions increment durable counters then throw; any call therefore fails final assertions.
-- `recordAction` appends only the five production-safe fields as JSONL; never rewrite the seed.
-- `reportWake` returns a fixed positive test ID without external transport.
+- The fixed input passes `providerState={status:"registered"}` from the durable provider ledger; no submit interface exists in this helper.
 
-Parent spawn order is `provider_readback`, `evidence_effect`, `calendar_effect`, `message_effect`, `photo_effect`; assert exit codes 41–45 and distinct numeric PIDs. Then create/chmod `applied-bundles` to 0500 and spawn `none`, expecting the real runner's evidence failure with all external counts already one; restore 0700. Spawn `none` again for `applied_bundle`, then once more for reused no-effect. Assert one bundle, every external count one, Submit/cache/direct/Harness 0, message/photo keys distinct, original history bytes remain exact prefix, all ledger/checkpoint/bundle files 0600, and stdout JSON contains only PID/status/safe reason.
+Parent spawn order is `evidence_effect`, `calendar_effect`, `message_effect`, `photo_effect`; assert exit codes 42–45 and distinct numeric PIDs. Then create/chmod `applied-bundles` to 0500 and spawn `none`, expecting the real chain to reject with all external counts already one; restore 0700. Spawn `none` again for `completion_disposition=created`, then once more for `reused`. Assert one bundle, provider/evidence/Calendar/message/photo/bundle counts each one, message/photo keys distinct, all ledger/checkpoint/bundle files 0600, and stdout JSON contains only PID/disposition.
 
 **Required stages and proof:**
 
