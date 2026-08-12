@@ -11,9 +11,10 @@ route once you are out the door, and asks before telling anyone you are late.
 | platform (finance, marketing, runtime migration, panel) | `docs/superpowers/specs/2026-07-29-life-manager-finance-marketing-platform-design.md` |
 
 This repository (`Daisuke134/life-manager`) is canonical. Copies of these specs
-under `anicca-project` / `anicca-products` are pointers, not sources of truth,
-and `~/.openclaw/skills/anicca-life-manager/` is the single-user BYOK build, not
-production.
+under `anicca-project` / `anicca-products` are pointers, not sources of truth.
+Runtime state and the single-user BYOK build live under the portable state home
+`${LIFE_MANAGER_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}`;
+they are not production source.
 
 ## Where the daily behavior lives
 
@@ -27,11 +28,12 @@ production.
 
 ## Reading live state
 
-Credentials come from `~/.openclaw/.env` (`SUPABASE_URL`,
+Credentials come from `${LIFE_MANAGER_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}/.env` (`SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`). Never echo them.
 
 ```bash
-set -a; . ~/.openclaw/.env; set +a
+LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}"
+set -a; . "$LIFE_MANAGER_STATE_HOME/.env"; set +a
 curl -s "$SUPABASE_URL/rest/v1/lm_wake_log?select=*&order=id.desc&limit=3" \
   -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
   -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"

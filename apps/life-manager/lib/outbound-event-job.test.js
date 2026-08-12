@@ -74,7 +74,7 @@ test("rejects non-Luma targets, malformed times, and raw identity data", () => {
     /identity reference/i,
   );
   assert.throws(
-    () => buildEventApplicationJob({ ...BASE, browserProfileRef: "/Users/operator/profile" }),
+    () => buildEventApplicationJob({ ...BASE, browserProfileRef: "browser-profile://fixture/profile" }),
     /browser profile reference/i,
   );
 });
