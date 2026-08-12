@@ -26417,3 +26417,10 @@
 {"ts":1786547765,"wake_id":"00MSQ8EUHLD8A6F82183BA4645","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786547894,"wake_id":"00MSQ8HLID8D8E91BCBB6E4575","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana token launch revenue model for AI agents paid APIs [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates"}
 {"ts":1786548025,"wake_id":"00MSQ8KEVP43A8046A867E44BC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786548160,"wake_id":"00MSQ8NBFR701904B46465444A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786548288,"wake_id":"00MSQ8Q1JD9931D2382CDC4FAD","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786548418,"wake_id":"00MSQ8STXC0A034627C358465E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786548545,"wake_id":"00MSQ8VKILD83A5ECDCC7442C5","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786548676,"wake_id":"00MSQ8YDMAFF8A9A3013914CF5","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786548803,"wake_id":"00MSQ912Z43AB805FFB98A447E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786548933,"wake_id":"00MSQ93V6LD7A3D0695D474869","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
