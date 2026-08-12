@@ -7519,7 +7519,7 @@ LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Rese
 
 post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗485。これ以外の残TODO一覧は履歴）
+### Active remaining TODO SSOT（進捗486。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -8094,3 +8094,9 @@ fresh Sol初回reviewは(1) canonical_url/href/urlとdetail event_refのalias競
 shared CloakBrowserの隔離contextで公式KokuchProをread-only再測定した。Tokyo/free/offline/open/2026-08-12〜26 filterは336件、1ページ40件、canonical root/occurrence event URLを返す。同queryの`page=2`は見出しを保持して41〜80件を返す。公式detailはschema.org Event exact 1にcanonical URL、Offline、東京都Place/address、zero-JPY InStock Offer、zoned start/endを持ち、明示tableが`料金制度 無料イベント`とsingle `無料 / 募集中` ticketを独立表示した。direct `/entry/`は公式loginへredirectし、会員登録必須を表示する。click/fill/submit/external effectは0、専用context release後pageは元の4件へ復帰した。
 
 Ponytailでpagination2ページ目以降、auth/action/readback、factory/router/native/evidenceをdeferした。Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-browser-discovery-20d.md`は既存workflow/test exact 2 files、production約80〜100 LOC。passed pageだけで公式filter先頭40件をdedupeし、各detailのJSON-LD＋明示ticket表をItem20C contractへ渡し、Calendar-free候補とfrozen auditを返す。次sliceでsame-page Harnessが実login boundaryをsafe failureとして分類する。
+
+### O1B-25進捗486（Item 20D / official recurring-card boundary correction）
+
+初回実E2Eはwhole-document event anchorsが40を超えて`LISTING_RESULT_CONTRACT_FAILED`。result selectorを`.event_list .event_item`へ限定後も、公式40 cards中2 recurring cardsが各5 dated occurrence URLを公開し、unique canonical URLは48だった。これは一覧外noiseではなく同一cardに表示された別開催日であり、40 URLへ切ると実候補を失う。
+
+計画をcodeより先に訂正する。first official pageの1〜40 result cardsだけを読み、各cardは最大20 unique exact occurrence/root URL、全体最大800 rowsへbounded化する。card/DOM順dedupeを維持し、41 cards、1 card 21 URLs、801 rowsはfail closed。pagination、auth/action/readback、factory/router/native/evidenceは引き続きdeferする。read-only実測は専用contextをreleaseし、external application/Calendar/evidence/Telegram effect 0。
