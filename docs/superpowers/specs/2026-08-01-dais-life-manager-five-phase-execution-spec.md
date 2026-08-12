@@ -29,7 +29,7 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 
 | organ / loop | 内部作業ではなく要求する現実成果 |
 |---|---|
-| Connector | 複数の東京event site（現行: Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite）を14日窓で探索し、無料・Calendar非衝突候補へ実申込して人と会う |
+| Connector | 複数の東京event site（現行: Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY）を14日窓で探索し、無料・Calendar非衝突候補へ実申込して人と会う |
 | LT | 登壇応募、登壇、Life Manager demo、参加者との接点 |
 | Fundraising | 実提出、返信、面談、採択、資金とpeer group |
 | Job Hunter | 実応募、返信、面接、offer、給与改善 |
@@ -53,12 +53,12 @@ Connectorの進行中正本はbranch `feature/connector-native-completion`のwor
 | 観測 | 現在の事実 | target / 境界 |
 |---|---|---|
 | branch / owner | `feature/connector-native-completion` のworktreeが実装SSOT | canonical mergeはItem23まで保留 |
-| production providers | `skills/connector/native-pass.js` の順序はLuma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite | 6 providerすべてを同じowned pageでproduction探索する。未知/次siteはItem20 |
+| production providers | `skills/connector/native-pass.js` の順序はLuma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY | 7 providerすべてを同じowned pageでproduction探索する。未知/次siteはItem20 |
 | acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
-| agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerを最大10 step使う。click成功だけをcompletionにせずofficial parent/child readbackを必須化 | `applied_bundle` evidence chainはLuma/Connpass/Peatix/Meetup。Doorkeeper/Eventbrite evidence adaptersはItem19のlive bundle gateとして未完 |
-| latest official wake | `wake-e289aa2e9963209e6996f099`: 6-provider順を完走し`completed_no_effect / provider_discovery_failed / 2`、Telegram provider ID `12117`。Eventbrite audit `188/0/0/0/0` | 3-page paginationはlive受入済み。現在の14日窓にEventbrite eligible candidate 0のためexternal write 0が正しい |
-| lifecycle / lock | Native labelだけが09:00 dailyでloaded、runs 0 / not running。healthcheck・Healer・bridgeはunloaded。process 0、lock idle、owned target intersection 0 | single production owner 1 / schedule 1。次の実行主体はlaunchd Native labelだけ |
-| TODO境界 | Items1〜18とItem22は完了。Item19はPeatixのみbundle完了、Meetup/Doorkeeper/Eventbriteは明示blocker付きpending。Items20/21/23は未完 | 完了判定は最新Active TODOの19〜23で行う |
+| agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerをprovider別step上限内で使う。click成功だけをcompletionにせずofficial parent/child readbackを必須化 | `applied_bundle` evidence adaptersは現行7 providerへ配線済み。実bundleはLuma/Connpass/Peatixに存在し、他4 providerは非衝突候補待ち |
+| latest official wake | `wake-44eb04e69ececde08a73a2d1`: 7-provider順を完走し`completed_no_effect / existing_bundles_reused`、Telegram ID `12782`、heartbeat `worker_finished`、launchd exit 0 | Doorkeeper `100/12/4/0/0`、Eventbrite `184/0/0/0/0`、TECH PLAY `50/22/3/0/0`。新規外部作用0、bundle `13→13` |
+| lifecycle / lock | Native labelだけが09:00 dailyでloaded、runs 1 / not running / last exit 0。healthcheck・Healer・bridgeはunloaded。process 0、lockなし、owned target intersection 0 | single production owner 1 / schedule 1。次の実行主体はlaunchd Native labelだけ |
+| TODO境界 | Items1〜18とItem22は完了。Item19はPeatixのみbundle完了、他4 providerはCalendar非衝突候補待ちのconditional pending。NO PASSIVE WAITINGによりItems20→21を進め、その後Item23 | 完了判定は最新Active TODOの19〜23で行う |
 
 #### Connector architecture — 現行productionと未完境界
 
@@ -87,7 +87,7 @@ flowchart TB
     subgraph OBSERVE["2. 現実を読む"]
         CAL["全Google Calendar<br/>今日を含む14日busy inventory"]
         TARGET["CloakBrowser :9222<br/>session 1 / owned target 1 / page 1"]
-        PROVIDERS["ordered provider loop<br/>Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite"]
+        PROVIDERS["ordered provider loop<br/>Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY"]
         DISCOVER["同じpageで候補をdiscover"]
         GATE{"無料・受付中・14日内<br/>Calendar非衝突?"}
         HEART --> CAL --> TARGET --> PROVIDERS --> DISCOVER --> GATE
@@ -1400,8 +1400,8 @@ Life Manager Core
 Lumaは現行productionで最初のproviderだが、検索・申込scopeをLumaへ限定する設計にはしない。現行runtimeのacceptance窓は14日で、
 無料・Calendar非衝突候補を対象に設定済みproviderを順に探索する。一providerの候補枯渇、満席、required form、selector drift、
 auth failure、provider障害をpass全体の終了条件にせず、同日次候補、設定済み次provider、次日へ進む。
-現在のproduction provider順は`Luma → Connpass`のみ（`DEFAULT_PROVIDERS`のexact値）。Peatix → Meetup → Doorkeeper → Eventbriteは
-Item19で順次追加するtarget、未知/次サイトはItem20のunknown-provider contractで追加するtargetである。各providerは
+現在のproduction provider順は`Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY`（`DEFAULT_PROVIDERS`のexact値）。
+未知/次サイトはItem20のunknown-provider contractで追加するtargetである。各providerは
 `discovery / registration / effect_readback / screenshot_evidence`のlive proofが揃った能力だけを使用し、探索URLだけでは
 登録成功やcoverage達成に数えない。新providerは同じregistry contractへ追加し、特定site名をruntime coreへhardcodeしない。
 旧rolling 21日coverageと全6 providerの順序はこの節の履歴・長期目標として保持するが、現在のruntime/gateとは区別する。
@@ -7519,7 +7519,7 @@ LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Rese
 
 post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗429。これ以外の残TODO一覧は履歴）
+### Active remaining TODO SSOT（進捗479。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -8052,3 +8052,11 @@ REDは新named testが`nativeExitCode is not a function`で1 fail、既存10 pas
 修復済みHEAD `96277e017`を指すinstalled plistをlint後、単一daily labelをbootstrapし、existing ownerを`-k`なしでexact 1回kickstartした。wake `wake-44eb04e69ececde08a73a2d1`はaction `1582→1628`、report `135→136`、delivery `147→148`で完走。terminalは`completed_no_effect / existing_bundles_reused / consecutive_failure_count 1`、Telegram ID `12782`、heartbeat `worker_finished`、launchd `last exit code=0`。scheduleはdaily 09:00のexact 1 labelでloadedを維持する。
 
 Doorkeeper audit `100/12/4/0/0`、Eventbrite `184/0/0/0/0`、TECH PLAY `50/22/3/0/0`。既存registered candidateはreadback/bundle reuseし、非衝突候補0のため新規application・Calendar/evidence/Telegram photo effectは0、bundle `13→13`。owned page `4→5→4`、元のexact 4 target ID/URLを保持、lockなし。READMEのMermaid provider loopへTECH PLAY、healthy no-effect exit、全7 providerの実statusを同期した。Item19の各pending live bundleは将来の非衝突候補だけが閉じられ、現在の残TODOはItem 20 unknown-provider contract、Item 21 restart continuation、Item 23 canonical merge gate。
+
+### O1B-25進捗479（Item 20A / unknown-provider Browser Harness seam plan）
+
+Active TODO 10B〜23を現物監査した。Items10B〜18と22は現行証拠・runtime readbackとも完了。Item19はPeatix以外のlive bundleが0で未完だが、Meetup/Doorkeeper/Eventbrite/TECH PLAYはいずれも現在のCalendar非衝突候補0という外部条件待ちであり、NO PASSIVE WAITINGに従ってItem20へ進む。Item21は同一process内fixtureのみで実process restart証拠がなく未完。Item23はfeatureが`origin/main`へ未包含、canonical main worktreeがdirtyかつbehindのため、Items20/21後に別clean integration worktreeで閉じる。
+
+未知site候補はKokuchProを採用する。公式東京一覧はoccurrence固有URLと募集中状態を公開し、公式guideは無料・会場払い・銀行振込とorganizer追加設問を区別する。read-only CloakBrowserで同一隔離pageを使い、一覧80 URLと詳細35件をclick/fill/submit 0で測定した。厳密な`料金制度 無料イベント`は0件で、「無料ドリンク」等を無料参加と誤認し得るため、本文中の`無料`だけを許可根拠にしない。pageは`4→5→4`、既存4 targetを保持した。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-unknown-provider-harness-20a.md`はBrowser Harness production/test exact 2 files、production約12〜24 LOC、test約45〜85 LOC。先頭sliceでは一つの明示設定されたextension provider/workflowだけを既存generic same-page fallbackへ通すconstructor seamをTDDする。未設定・別token・malformed configは引き続きfail closed。registry/crawler/service/package、factory/router/native order、Calendar/evidence、launchd、実applicationは変更0。次sliceでKokuchPro discovery/strict-free gate/router配線を行い、official wakeでsafe failure→次provider継続を実証する。
