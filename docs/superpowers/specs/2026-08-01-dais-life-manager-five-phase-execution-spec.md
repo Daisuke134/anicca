@@ -7519,7 +7519,7 @@ LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Rese
 
 post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗481。これ以外の残TODO一覧は履歴）
+### Active remaining TODO SSOT（進捗482。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -8070,3 +8070,9 @@ LunaがPlan `docs/superpowers/plans/2026-08-12-connector-unknown-provider-harnes
 ### O1B-25進捗481（Item 20B / bounded proposer extension plan）
 
 Plan `docs/superpowers/plans/2026-08-12-connector-unknown-provider-proposer-20b.md`はHarness production/test exact 2 files。`createBoundedActionProposer`へ一つのoptional `extensionProvider`を追加し、exact configured tokenだけを既存structured Terra action選択へ通す。prompt/schemaはprovider、step/state、sanitized public controlsだけ、private valueとcandidate本文は0。既存10-step cap、Terra metadata gate、evidence path、native fast path、7 provider behaviorを変更しない。production約4〜10 LOC、test約30〜60 LOC。factory/router/native/discovery/Calendar/evidence/launchd/実browser effectは次slice以降。
+
+### O1B-25進捗482（Item 20B / bounded proposer extension ship）
+
+LunaがHarness production/test exact 2 filesをSuperpowers TDD実装した。`createBoundedActionProposer`はoptional `extensionProvider`を既存safe token grammarで構築時検証し、組み込み7 providerとのcollisionを拒否する。exact configured tokenだけが既存structured Terra runnerへ到達し、prompt/schema、10-step cap、Terra metadata gate、evidence path、native fast path、action contractは不変。private value、candidate本文、websocketのprompt/request露出0。
+
+初回REDは150/151。Solの独立pre-reviewでextension未設定時の`provider === extensionProvider`が欠落providerの`undefined === undefined`を通す反例を検出し、同じLunaがmissing provider REDを追加して`extensionProvider != null` guardへ修正した。最終Harness＋adapter 155/155、syntax/diff check PASS。fresh Sol reviewはundefined/null/unconfigured/second-token境界を含めSpec compliance/Code quality PASS、Critical/Important 0。code commit `b45f183dd`。factory/router/native/discovery/Calendar/evidence/launchd/実browser effectは0。Item20次sliceはKokuchProのcanonical discovery、strict-free/Tokyo/offline/14日/Calendar gate、verified readback workflow。
