@@ -599,6 +599,7 @@ function createMinimalEvidenceChain(options = {}) {
       if (!photoCheckpoint) {
         photoId = parseOpenClawMessageId(await sendPhoto(screenshot, {
           telegramTarget,
+          idempotencyKey: `connector-evidence-photo:${identity.canonicalUrlSha256}`,
           caption: input.provider === "luma" ? `Connector::: ${title} / ${status}` : `Connector::: ${input.provider} / ${title} / ${status}`,
         }));
         const value = deliveryValue({
