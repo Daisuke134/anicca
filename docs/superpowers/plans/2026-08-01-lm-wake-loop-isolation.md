@@ -601,7 +601,7 @@ const DEPARTURE_MS = EVENT_START_MS - 40 * MINUTE;
 const USER = {
   uid: "iso-user",
   name: "Iso User",
-  phone: "+810000000000",
+  phone: "<REDACTED_PHONE>",
   home_address: "東京都渋谷区",
   call_language: "ja",
   daily_automation_enabled: true,

@@ -4,7 +4,7 @@
 
 > Status: 完了。実イベント一件のverified registrationとGoogle Calendar readbackが成立した。
 
-**Goal:** 既存CloakBrowser daily-driver上の`keiodaisuke@gmail.com` Luma認証を自動復旧し、Google Calendarと競合しない東京対面event一件へ既存`outbound.event.apply` workerで登録する。
+**Goal:** 既存CloakBrowser daily-driver上の`<REDACTED_EMAIL>` Luma認証を自動復旧し、Google Calendarと競合しない東京対面event一件へ既存`outbound.event.apply` workerで登録する。
 
 **Architecture:** 第二browser、第二queue、手動OTP、偽receiptを作らない。同じ`:9222` profileでLuma email codeを要求し、既存`gog` Gmail OAuthで新着codeだけを読み、同じpageへ入力する。登録はO1B-03 adapterを一度だけ実行し、E1 provider response、E2 PNG、E3 canonical URLを同一attemptで検証する。
 

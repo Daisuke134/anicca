@@ -19,6 +19,8 @@ const http = require("node:http");
 const crypto = require("node:crypto");
 const { decodeCallClientState } = require("../lib/telnyx-webhook.js");
 
+const TEST_PHONE = "+99900000000";
+
 function response(status, body) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 }
@@ -41,7 +43,7 @@ test("a /test-call that reaches voicemail is hung up on, and writes nothing", as
   process.env.PUBLIC_WSS = "wss://life-call-fixture.up.railway.app";
   process.env.TELNYX_API_KEY = "fixture-telnyx-key";
   process.env.TELNYX_CONNECTION_ID = "fixture-connection";
-  process.env.TELNYX_PHONE_NUMBER = "+15550000000";
+  process.env.TELNYX_PHONE_NUMBER = TEST_PHONE;
   process.env.TELNYX_PUBLIC_KEY = keys.publicKeyBase64;
   process.env.LM_AMD = "on";
   process.env.LIFE_RUN_LOOPS = "false";
@@ -61,7 +63,7 @@ test("a /test-call that reaches voicemail is hung up on, and writes nothing", as
     const method = String(init.method || "GET").toUpperCase();
     if (url.hostname === "fixture.supabase.co") {
       if (url.pathname === "/rest/v1/lm_users" && method === "GET") {
-        return response(200, [{ phone: "+819012345678", call_language: "ja", name: "Fixture", gmail_account_id: null }]);
+        return response(200, [{ phone: TEST_PHONE, call_language: "ja", name: "Fixture", gmail_account_id: null }]);
       }
       // Any other Supabase traffic on this route is the bug this design exists to prevent.
       throw new Error(`a test call must not touch Supabase: ${method} ${url.pathname}`);

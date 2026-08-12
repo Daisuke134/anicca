@@ -540,7 +540,7 @@ local完成gateの後だけ:
 
 | 項目 | 実測 | Daisが今渡すもの |
 |---|---|---|
-| Google Calendar / Gmail | `gog` OAuthで`keiodaisuke@gmail.com`のcalendar、gmail scopeが有効 | 追加credentialなし |
+| Google Calendar / Gmail | `gog` OAuthで`<REDACTED_EMAIL>`のcalendar、gmail scopeが有効 | 追加credentialなし |
 | CloakBrowser daily-driver | `:9222`が応答中。Lumaの現在loginは未確認 | 追加browserなし。agentが同profileと既存Google認証でloginを復旧 |
 | Telegram | Life Manager / OpenClawのtoken設定あり | 追加tokenなし |
 | 応募identity | 氏名、かな、romaji、電話、Google loginの環境設定あり | 秘密値をchatへ再送しない |
@@ -807,12 +807,12 @@ Luma認証を復旧し、実イベント一件の登録をverified receiptまで
 
 O1B-04開始: 専用plan
 `docs/superpowers/plans/2026-08-01-connector-o1b04-live-luma-registration.md`を追加した。既存
-`keiodaisuke@gmail.com`の`gog` OAuthはGmail/Calendarともread可能で、過去Luma sign-in code mailも
+`<REDACTED_EMAIL>`の`gog` OAuthはGmail/Calendarともread可能で、過去Luma sign-in code mailも
 実在する。新しいcodeは同じ`:9222` pageから要求し、request後に届いた新着mailだけを自動照合する。
 code値、mail本文、cookie、tokenは正本やlogへ残さない。
 
 O1B-04進捗1: 既存CloakBrowser daily-driverの共有context 1つだけを使い、
-`keiodaisuke@gmail.com`へ新しいLuma sign-in codeを要求した。最初のpollは英語件名に限定したため、
+`<REDACTED_EMAIL>`へ新しいLuma sign-in codeを要求した。最初のpollは英語件名に限定したため、
 実際に届いた日本語件名を見落とした。検索を`support@luma.com`送信元と今回要求の直近時刻へ修正し、
 直近15分の今回要求分だけを同じOTP pageへ入力した。code値は保存・spec記載・最終出力していない。
 認証後readbackは`https://luma.com/home`、auth inputなし、共有context 1、既存browser維持。
@@ -8222,3 +8222,7 @@ Lunaがproduction 0、test/history exact 14 filesと`.gitleaksignore`を修正�
 ### O1B-25進捗507（Item 23C accepted / current tree＋full history gitleaks GREEN）
 
 非generic 2件はHEAD不在のinvalid Stripe-key negative testとdisabled integration docのpublic placeholderと個別確認した。Lunaはredacted reportの1,631件を104 unique fingerprintへ正規化し、feature由来10件と合わせexact 114行だけを`.gitleaksignore`へ追加した。最終ignore 968行、重複0、path/rule/commit-wide allowlist 0。current treeはfinding `23→0`、full historyは14,132 commits scanでfinding `1,631→0`、focused `125/125`、diff checkがPASS。未baselineのsynthetic secret-shaped fixtureはscan rc=1を実証し、fixtureはGit patchで除去して残存0。raw secretのreport/saveは0、production code変更0。Item23Cを閉じ、次active sliceを23D PII redactionとする。
+
+### O1B-25進捗508（Item 23D accepted / PII shape GREEN）
+
+Lunaがtest 8 filesのGmail/E.164 fixture 9件を非PIIのexample addressまたはscanner対象外の明示的分割fixtureへ置換し、history evidence/plans/spec 5 filesの個人値7件を`<REDACTED_EMAIL>`または`<REDACTED_PHONE>`へ置換した。PII finding `16→0`、変更focused `48/48`、security scanner contract `8/8`、diff checkがPASS。`.pii-shape-allowlist`追加0、production code変更0、個人値のchat/log再出力0。Item23Dを閉じ、次active sliceを23E portable OSS boundaryとする。

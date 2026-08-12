@@ -70,7 +70,7 @@ test("rejects non-Luma targets, malformed times, and raw identity data", () => {
     /event start/i,
   );
   assert.throws(
-    () => buildEventApplicationJob({ ...BASE, identityRef: "keiodaisuke@gmail.com" }),
+    () => buildEventApplicationJob({ ...BASE, identityRef: "EMAIL_PLACEHOLDER" }),
     /identity reference/i,
   );
   assert.throws(

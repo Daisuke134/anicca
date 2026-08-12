@@ -132,7 +132,7 @@ test("one-shot URLs and raw identity or filesystem values never become evidence"
   assert.equal(fetched, false);
 
   const unsafe = fixture();
-  unsafe.input.externalReceiptRef = "keiodaisuke@gmail.com";
+  unsafe.input.externalReceiptRef = "EMAIL_PLACEHOLDER";
   unsafe.input.artifactRef = "/Users/anicca/confirmation.png";
   unsafe.input.canonicalUrl = "http://lu.ma/tokyo-founders-2026";
   let readersCalled = false;
