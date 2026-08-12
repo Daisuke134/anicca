@@ -25998,3 +25998,11 @@
 {"ts":1786493587,"wake_id":"00MSPC5MI1424810B995AC4779","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786493718,"wake_id":"00MSPC8F579563422CDA594EC1","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1786493786,"wake_id":"00MSPC9W8F1EF583D3EB3A4707","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786493917,"wake_id":"00MSPCCP8Q3A25C8A13B774353","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786494045,"wake_id":"00MSPCFFEK5AAB637CDE4743AC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786494206,"wake_id":"00MSPCIW1W9DC2817E82B74AB0","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana micro task platforms paid API calls low capital earn [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidat"}
+{"ts":1786494338,"wake_id":"00MSPCLPFG523B2980E3A443BA","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786494406,"wake_id":"00MSPCN5WH3B50C6F445EF4B44","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786494535,"wake_id":"00MSPCPXPCC41E122035074FDA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786494669,"wake_id":"00MSPCSTCK21A746B33024473A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786494796,"wake_id":"00MSPCVJHB4C064D49F4B44FD6","kind":"narrate","sleep_s":120,"model":"auto"}
