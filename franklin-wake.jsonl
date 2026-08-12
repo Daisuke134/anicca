@@ -26509,3 +26509,10 @@
 {"ts":1786559711,"wake_id":"00MSQFIVR0A46F55A728394532","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana pay-per-use API marketplace USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the "}
 {"ts":1786559841,"wake_id":"00MSQFLOL0B2E2F3261AE24A74","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786559971,"wake_id":"00MSQFOGMTB4B07E72B6804AA5","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana AI compute marketplace paid per request USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfa"}
+{"ts":1786560102,"wake_id":"00MSQFR9SEC9EB24A2ED094C7F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786560233,"wake_id":"00MSQFU2OIBF88CC4FB6954ABA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786560363,"wake_id":"00MSQFWUWI158BE9881FFD481E","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana low-minimum deposit high APY stablecoin farming protocol USDC under $5 [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded expl"}
+{"ts":1786560493,"wake_id":"00MSQFZN32476912AE9105422B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786560625,"wake_id":"00MSQG2GU7DC0FE8EFA9E74969","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786560753,"wake_id":"00MSQG57R384BA678D61154F89","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786560882,"wake_id":"00MSQG7ZKGBFD87FDBE39449CB","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
