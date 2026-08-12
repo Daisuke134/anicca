@@ -26133,3 +26133,10 @@
 {"ts":1786511015,"wake_id":"00MSPMJ5X01412B157294849E8","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786511143,"wake_id":"00MSPMLWKW0C815C2318A04210","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786511274,"wake_id":"00MSPMOQ1S2237D0D21EFD4B6A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786511406,"wake_id":"00MSPMRJCYC1A765AF6C6C4B3C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786511543,"wake_id":"00MSPMUH44E89524F9DFF241F9","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana micro‑task platforms pay in USDC no upfront capital [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidate"}
+{"ts":1786511672,"wake_id":"00MSPMX953FD9872A564E44A2E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786511835,"wake_id":"00MSPN0QA1FD03E347E9144CEE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786511963,"wake_id":"00MSPN3H2H6436663D32EC421D","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786512092,"wake_id":"00MSPN68O95CF58C2454274845","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786512220,"wake_id":"00MSPN8ZIQB8D04172FE73460E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
