@@ -33,6 +33,7 @@ function fixture() {
       LM_RETIRED_LAUNCHD_DIR: archive,
       LM_LAUNCHCTL_BIN: fake,
       LM_LAUNCH_DOMAIN: "gui/501",
+      LIFE_MANAGER_STATE_HOME: path.join(root, "state-home"),
     },
   };
 }
@@ -80,21 +81,32 @@ test("refuses broad or relative filesystem targets before launchctl", () => {
     });
     assert.notEqual(result.status, 0);
   }
+  const invalidStateHome = spawnSync("/bin/bash", [SCRIPT], {
+    env: { ...fx.env, LIFE_MANAGER_STATE_HOME: "/" },
+    encoding: "utf8",
+  });
+  assert.notEqual(invalidStateHome.status, 0);
   assert.equal(fs.existsSync(fx.calls), false);
 });
 
 test("secures verified fallback plists before launchctl when live files are already absent", () => {
   const fx = fixture();
+  const stateHome = path.join(fx.root, "state&home<fixture>\"'");
+  const env = { ...fx.env, LIFE_MANAGER_STATE_HOME: stateHome };
   for (const label of LABELS) {
     fs.unlinkSync(path.join(fx.agents, `${label}.plist`));
   }
   const result = JSON.parse(execFileSync("/bin/bash", [SCRIPT], {
-    env: fx.env,
+    env,
     encoding: "utf8",
   }));
   assert.equal(result.status, "retired");
   for (const label of LABELS) {
     assert.equal(fs.existsSync(path.join(fx.archive, `${label}.plist`)), true);
+    const archived = fs.readFileSync(path.join(fx.archive, `${label}.plist`), "utf8");
+    assert.doesNotMatch(archived, /__[A-Z][A-Z0-9_]*__/);
+    assert.match(archived, /state&amp;home&lt;fixture&gt;&quot;&apos;/);
+    assert.doesNotMatch(archived, /state&home<fixture>/);
   }
   assert.match(fs.readFileSync(fx.calls, "utf8"), /^print /m);
 });

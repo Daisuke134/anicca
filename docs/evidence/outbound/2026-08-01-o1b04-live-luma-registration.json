@@ -20,7 +20,7 @@
     "live_readback": "registered"
   },
   "selection": {
-    "calendar_account": "keiodaisuke@gmail.com",
+    "calendar_account": "<REDACTED_EMAIL>",
     "calendar_horizon_start": "2026-08-01T00:00:00+09:00",
     "calendar_horizon_end": "2026-08-22T00:00:00+09:00",
     "calendar_event_count": 127,

@@ -106,11 +106,12 @@ const MINUTE = 60_000;
 const EVENT_START_ISO = "2026-08-05T14:00:00+09:00";
 const EVENT_START_MS = Date.parse(EVENT_START_ISO);
 const DEPARTURE_MS = EVENT_START_MS - 40 * MINUTE; // 35 min travel + resolveDeparture's 5-min buffer
+const TEST_PHONE = "+99900000000";
 
 const USER = {
   uid: "token-user",
   name: "Token User",
-  phone: "+810000000000",
+  phone: TEST_PHONE,
   home_address: "東京都渋谷区",
   call_language: "ja",
   daily_automation_enabled: true,

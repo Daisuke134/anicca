@@ -8,10 +8,17 @@ const test = require("node:test");
 
 const {
   acquireLock,
+  generateOwnerToken,
   heartbeat,
   readHealth,
   releaseLock,
 } = require("../lib/native-state.js");
+
+test("owner tokens come from the dedicated native state boundary", () => {
+  const token = generateOwnerToken({ randomUUID: () => "12345678-1234-4234-8234-123456789abc" });
+  assert.equal(token, "12345678-1234-4234-8234-123456789abc");
+  assert.match(token, /^[A-Za-z0-9._-]{16,200}$/);
+});
 
 function stateDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-state-"));

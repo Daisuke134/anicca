@@ -238,6 +238,21 @@ test("Luma login request deterministically fills and submits the measured email 
   assert.match(calls[0][1], /agent@example\.test/);
 });
 
+test("Luma login request uses Playwright input actions so React receives the email", async () => {
+  const calls = [];
+  const page = {
+    async fill(selector, value) { calls.push(["fill", selector, value]); },
+    async click(selector) { calls.push(["click", selector]); },
+    async evaluate() { assert.fail("native DOM mutation must not bypass React"); },
+  };
+
+  assert.equal(await requestLumaEmailLogin(page, ENV.LM_AGENT_BROWSER_EMAIL), true);
+  assert.deepEqual(calls, [
+    ["fill", 'input[type="email"]', ENV.LM_AGENT_BROWSER_EMAIL],
+    ["click", 'button[type="submit"]'],
+  ]);
+});
+
 test("Luma email challenge accepts only a six-digit code from a Luma-shaped message", () => {
   assert.equal(extractLumaCode({
     from: "Luma <login@lu.ma>",

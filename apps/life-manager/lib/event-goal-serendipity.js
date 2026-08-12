@@ -26,11 +26,13 @@ const VERIFIED = new WeakSet();
 
 const RESPONSE_SCHEMA = Object.freeze({
   type: "object",
+  additionalProperties: false,
   properties: {
     ranked_events: {
       type: "array",
       items: {
         type: "object",
+        additionalProperties: false,
         properties: {
           event_ref: { type: "string" },
           goal_alignment: { type: "string", enum: GOAL_ALIGNMENTS },
@@ -280,9 +282,6 @@ async function inferEventGoalSerendipity(input, options = {}) {
   if (source.events.size === 0) {
     return validateEventGoalSerendipity({ ranked_events: [] }, source);
   }
-  const apiKey = String(options.apiKey || process.env.GEMINI_API_KEY || "").trim();
-  const fetchImpl = options.fetchImpl || globalThis.fetch;
-  if (!apiKey || typeof fetchImpl !== "function") unavailable("CONFIG");
   const eventData = source.preferenceRanking.ranked_events.map((ranking, index) => {
     const eventSource = source.events.get(ranking.event_ref);
     return {
@@ -302,28 +301,41 @@ async function inferEventGoalSerendipity(input, options = {}) {
     `USER_GOALS_START\n${source.goals}\nUSER_GOALS_END`,
     `EVENT_DATA_START\n${JSON.stringify(eventData)}\nEVENT_DATA_END`,
   ].join("\n");
-  let response;
-  try {
-    response = await fetchImpl(GEMINI, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: RESPONSE_SCHEMA,
-          temperature: 0,
-        },
-      }),
-      signal: AbortSignal.timeout(GOAL_EVALUATION_TIMEOUT_MS),
-    });
-  } catch { unavailable("TRANSPORT"); }
-  if (!response || response.ok !== true) unavailable("HTTP");
-  let body;
-  try { body = await response.json(); } catch { unavailable("BODY"); }
   let parsed;
-  try { parsed = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text || ""); }
-  catch { unavailable("JSON"); }
+  if (typeof options.generateDecision === "function") {
+    try {
+      parsed = await options.generateDecision(Object.freeze({
+        prompt,
+        schema: RESPONSE_SCHEMA,
+        timeoutMs: GOAL_EVALUATION_TIMEOUT_MS,
+      }));
+    } catch { unavailable("TRANSPORT"); }
+  } else {
+    const apiKey = String(options.apiKey || process.env.GEMINI_API_KEY || "").trim();
+    const fetchImpl = options.fetchImpl || globalThis.fetch;
+    if (!apiKey || typeof fetchImpl !== "function") unavailable("CONFIG");
+    let response;
+    try {
+      response = await fetchImpl(GEMINI, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: RESPONSE_SCHEMA,
+            temperature: 0,
+          },
+        }),
+        signal: AbortSignal.timeout(GOAL_EVALUATION_TIMEOUT_MS),
+      });
+    } catch { unavailable("TRANSPORT"); }
+    if (!response || response.ok !== true) unavailable("HTTP");
+    let body;
+    try { body = await response.json(); } catch { unavailable("BODY"); }
+    try { parsed = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text || ""); }
+    catch { unavailable("JSON"); }
+  }
   let grounded;
   try { grounded = groundModelDecision(parsed, source); }
   catch (error) {

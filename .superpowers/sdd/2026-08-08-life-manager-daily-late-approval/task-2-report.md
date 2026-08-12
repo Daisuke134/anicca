@@ -328,7 +328,7 @@ With `SET LOCAL ROLE service_role`, a transaction executed and then rolled back 
 transitions. Exact read-back notice:
 
 ```text
-staging transitions: awaiting_decision -> send_claimed -> sent; stable provider key=d772bc91bd4329d9157a4b66e88b9d04933666a6b662fde711576825144bdad5; duplicate receipt=true
+staging transitions: awaiting_decision -> send_claimed -> sent; stable provider key=<derived-key-redacted>; duplicate receipt=true
 ```
 
 A second transaction used a one-second lease and recovery worker. It proved the first token was
@@ -336,7 +336,7 @@ rejected after recovery, wrong uid and worker were rejected, NULL uid/token/work
 the provider key remained stable, and the recovered worker could record the receipt:
 
 ```text
-staging recovery: old token rejected, wrong uid/worker rejected, required identity enforced, stable provider key=50d1ec5c42326c9a5933795c41e5803e83f10473681e4ff9daa593422aa8215e
+staging recovery: old token rejected, wrong uid/worker rejected, required identity enforced, stable provider key=<derived-key-redacted>
 ```
 
 These are isolated PostgreSQL role/SQL validations, not staging app/PostgREST E2E: the isolated

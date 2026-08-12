@@ -4,7 +4,14 @@
   <key>Label</key><string>ai.anicca.life-manager-connector-native</string>
   <key>ProgramArguments</key><array><string>/bin/bash</string><string>__REPO_ROOT__/skills/connector/run.sh</string></array>
   <key>WorkingDirectory</key><string>__REPO_ROOT__</string>
-  <key>StartInterval</key><integer>300</integer>
+  <key>EnvironmentVariables</key><dict>
+    <key>LM_CONNECTOR_SHARED_ENV_FILE</key><string>__CONNECTOR_ENV_FILE__</string>
+    <key>LIFE_MANAGER_STATE_HOME</key><string>__LIFE_MANAGER_HOME__</string>
+  </dict>
+  <key>StartCalendarInterval</key><dict>
+    <key>Hour</key><integer>9</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
   <key>ThrottleInterval</key><integer>60</integer>
   <key>ProcessType</key><string>Background</string>
   <key>StandardOutPath</key><string>__LIFE_MANAGER_HOME__/logs/connector-native.out.log</string>

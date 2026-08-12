@@ -4,6 +4,7 @@ const { createHash } = require("node:crypto");
 
 const { canonicalEventUrl } = require("./canonical-event-url.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
+const { isVerifiedEventProviderDateInventory } = require("./event-provider-date-inventory.js");
 const { assertVerifiedOutboundReceipt } = require("./outbound-success.js");
 
 const VERIFIED = new WeakSet();
@@ -50,7 +51,8 @@ function providerEvent(value) {
 
 function sourceEvent(input) {
   if (
-    !isVerifiedLumaDateInventory(input.dateInventory)
+    !(isVerifiedLumaDateInventory(input.dateInventory)
+      || isVerifiedEventProviderDateInventory(input.dateInventory))
   ) invalid();
   const eventRef = String(input.eventRef == null ? "" : input.eventRef).trim();
   const events = input.dateInventory.days.flatMap((day) => day.events);

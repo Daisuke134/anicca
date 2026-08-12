@@ -45,6 +45,8 @@ function buildVerifiedOutboundReceipt(input = {}, evidence) {
     attempt_ref: expectedAttemptRef,
     external_receipt_ref: evidence.evidence.e1.ref,
     artifact_ref: evidence.evidence.e2.ref,
+    evidence_observed_at: evidence.evidence.e1.observed_at,
+    artifact_sha256: evidence.evidence.e2.sha256,
     canonical_url: evidence.evidence.e3.url,
     evidence_hash: evidence.evidence_hash,
     verified_at: verifiedAt,

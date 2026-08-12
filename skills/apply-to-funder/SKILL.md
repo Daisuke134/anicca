@@ -22,7 +22,7 @@ Read these before preparing an answer:
 3. `fundraising/application-kit/` for the generated canonical narrative.
 4. `fundraising/funders/<id>.json` for program-only facts and official sources.
 
-Do not take current facts from `~/.openclaw/identity/application-kit`, old `yc-w26.json`, submitted
+Do not take current facts from the portable runtime identity cache (`${LIFE_MANAGER_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}/identity/application-kit`), old `yc-w26.json`, submitted
 history, dashboards, or remembered answers.
 
 ## Workflow

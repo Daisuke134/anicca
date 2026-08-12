@@ -61,6 +61,8 @@ test("実verifier由来のE1/E2/E3だけが同じattemptのsuccess receiptにな
     attempt_ref: ATTEMPT_REF,
     external_receipt_ref: "gmail-message://dais/msg-501",
     artifact_ref: verified.evidence.e2.ref,
+    evidence_observed_at: "2026-08-01T09:00:00.000Z",
+    artifact_sha256: verified.evidence.e2.sha256,
     canonical_url: "https://lu.ma/tokyo-agent-night",
     evidence_hash: verified.evidence_hash,
     verified_at: "2026-08-01T09:00:01.000Z",
@@ -100,4 +102,3 @@ test("bare success、receipt copy、別attemptはruntime completionを通れな�
     job({ attempt: 3 }),
   ), /attempt mismatch/);
 });
-

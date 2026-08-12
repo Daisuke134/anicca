@@ -107,7 +107,7 @@ test("only classifier-verified decisions and reference-only inputs can create en
     { tenantId: "dais@example.com" },
     { eventUrl: "https://example.com/not-an-event" },
     { eventStartIso: "next week" },
-    { evidenceRef: "/Users/anicca/raw-page.html" },
+    { evidenceRef: "file://fixture/raw-page.html" },
   ]) {
     assert.throws(
       () => buildEventParticipationEntities({ ...BASE, ...override, opportunity: decision() }),

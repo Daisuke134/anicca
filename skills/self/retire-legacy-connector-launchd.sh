@@ -5,11 +5,14 @@ LABELS=(
   "ai.anicca.connector-fill-gaps"
   "ai.anicca.connector-daily-report"
 )
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
 LAUNCH_AGENTS_DIR="${LM_LAUNCH_AGENTS_DIR:-$HOME/Library/LaunchAgents}"
 ARCHIVE_DIR="${LM_RETIRED_LAUNCHD_DIR:-$HOME/.local/state/life-manager/retired-launchd/o1b10}"
 LAUNCHCTL_BIN="${LM_LAUNCHCTL_BIN:-/bin/launchctl}"
 LAUNCH_DOMAIN="${LM_LAUNCH_DOMAIN:-gui/$(id -u)}"
-FALLBACK_DIR="${LM_LEGACY_CONNECTOR_PLIST_FALLBACK_DIR:-$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)/legacy-launchd-archive}"
+LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}"
+FALLBACK_DIR="${LM_LEGACY_CONNECTOR_PLIST_FALLBACK_DIR:-$SCRIPT_DIR/legacy-launchd-archive}"
 
 safe_absolute_dir() {
   case "$1" in
@@ -27,6 +30,10 @@ safe_absolute_dir "$ARCHIVE_DIR" || {
   printf '%s\n' 'Legacy Connector retirement path invalid' >&2
   exit 2
 }
+safe_absolute_dir "$LIFE_MANAGER_STATE_HOME" || {
+  printf '%s\n' 'Legacy Connector state home invalid' >&2
+  exit 2
+}
 [ "$LAUNCH_AGENTS_DIR" != "$ARCHIVE_DIR" ] || {
   printf '%s\n' 'Legacy Connector retirement path invalid' >&2
   exit 2
@@ -34,6 +41,44 @@ safe_absolute_dir "$ARCHIVE_DIR" || {
 [ -x "$LAUNCHCTL_BIN" ] || {
   printf '%s\n' 'launchctl unavailable' >&2
   exit 2
+}
+
+escape_sed_replacement() {
+  if [ "$#" -gt 0 ]; then
+    printf '%s' "$1"
+  else
+    cat
+  fi | sed 's/[&|\\]/\\&/g'
+}
+
+xml_escape() {
+  sed \
+    -e 's/&/\&amp;/g' \
+    -e 's/</\&lt;/g' \
+    -e 's/>/\&gt;/g' \
+    -e 's/"/\&quot;/g' \
+    -e "s/'/\\&apos;/g"
+}
+
+render_fallback_plist() {
+  source_plist="$1"
+  target_plist="$2"
+  temp_plist="$(mktemp "${TMPDIR:-/tmp}/connector-legacy-plist.XXXXXX")" || return 1
+  trap 'rm -f "$temp_plist"' RETURN
+  repo_root_escaped="$(printf '%s' "$REPO_ROOT" | xml_escape | escape_sed_replacement)"
+  state_home_escaped="$(printf '%s' "$LIFE_MANAGER_STATE_HOME" | xml_escape | escape_sed_replacement)"
+  sed \
+    -e "s|__REPO_ROOT__|$repo_root_escaped|g" \
+    -e "s|__LIFE_MANAGER_HOME__|$state_home_escaped|g" \
+    "$source_plist" > "$temp_plist" || return 1
+  if grep -Eq '__[A-Z][A-Z0-9_]*__' "$temp_plist"; then
+    printf '%s\n' "Legacy Connector plist placeholder unresolved: $source_plist" >&2
+    return 1
+  fi
+  plutil -lint "$temp_plist" >/dev/null || return 1
+  install -m 600 "$temp_plist" "$target_plist"
+  rm -f "$temp_plist"
+  trap - RETURN
 }
 
 install -d -m 700 "$ARCHIVE_DIR"
@@ -66,9 +111,10 @@ for label in "${LABELS[@]}"; do
       printf '%s\n' "Legacy Connector plist unavailable: $label" >&2
       exit 3
     }
-    plutil -lint "$fallback" >/dev/null
-    cp "$fallback" "$archive_plist"
-    chmod 600 "$archive_plist"
+    render_fallback_plist "$fallback" "$archive_plist" || {
+      printf '%s\n' "Legacy Connector fallback plist invalid: $label" >&2
+      exit 3
+    }
     moved=1
   fi
 done
