@@ -12,10 +12,11 @@ REPO_ROOT="$(cd "$HERE/../.." && pwd -P)"
 }
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
-LM_CONNECTOR_SHARED_ENV_FILE="${LM_CONNECTOR_SHARED_ENV_FILE:-$HOME/.openclaw/.env}"
+LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}"
+LM_CONNECTOR_SHARED_ENV_FILE="${LM_CONNECTOR_SHARED_ENV_FILE:-$LIFE_MANAGER_STATE_HOME/.env}"
 export LM_CONNECTOR_SHARED_ENV_FILE
 
-STATE_DIR="${LM_CONNECTOR_STATE_DIR:-$HOME/.local/state/life-manager/connector-native}"
+STATE_DIR="${LM_CONNECTOR_STATE_DIR:-$LIFE_MANAGER_STATE_HOME/connector-native}"
 case "$STATE_DIR" in
   /*) ;;
   *) printf 'Connector native state directory unavailable\n' >&2; exit 2 ;;

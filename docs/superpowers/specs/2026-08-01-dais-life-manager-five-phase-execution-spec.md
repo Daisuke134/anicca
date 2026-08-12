@@ -8226,3 +8226,9 @@ Lunaがproduction 0、test/history exact 14 filesと`.gitleaksignore`を修正�
 ### O1B-25進捗508（Item 23D accepted / PII shape GREEN）
 
 Lunaがtest 8 filesのGmail/E.164 fixture 9件を非PIIのexample addressまたはscanner対象外の明示的分割fixtureへ置換し、history evidence/plans/spec 5 filesの個人値7件を`<REDACTED_EMAIL>`または`<REDACTED_PHONE>`へ置換した。PII finding `16→0`、変更focused `48/48`、security scanner contract `8/8`、diff checkがPASS。`.pii-shape-allowlist`追加0、production code変更0、個人値のchat/log再出力0。Item23Dを閉じ、次active sliceを23E portable OSS boundaryとする。
+
+### O1B-25進捗509（Item 23E accepted / portable OSS boundary GREEN）
+
+Lunaがdeveloper-local test fixture 3件をsynthetic化し、Connector/healthcheck env defaultをportable state homeへ移し、README/SKILLのlocal-root依存を除去した。legacy archive plistsは`__REPO_ROOT__`/`__LIFE_MANAGER_HOME__` placeholderとなり、retirement fallbackがXML 5文字escape→sed replacement escape→unresolved placeholder拒否→`plutil`→0600 installの順でrenderする。native rendererは実在regular `--connector-env-file`を必須化し、rendered plistの`LM_CONNECTOR_SHARED_ENV_FILE`と`LIFE_MANAGER_STATE_HOME`へ明示する。不在envはwake/lock前にexit 2。manifestは最終`runtime/agent-runner/config.json` SHAと`skills/anicca-booking` inventoryをverifier exact algorithmで更新した。
+
+初回fresh Sol reviewの「portable default先に実credentialなし」「legacy pathのXML escapeなし」2 Importantを同じLunaがRED→GREENで修復し、re-reviewはSHIP。focused review `9/9`、全変更focused `24/24`、Connector `360/360`、OSS contract `11/11`＋verifier PASS、security contract `8/8`、PII clean、gitleaks current/history no leaks（14,134 commits / 579.29 MB）、shell syntax、diff checkがPASS。scanner/allowlist弱体化0、production API変更0。Item23Eを閉じ、次はPR全CI green確認→main merge→canonical plist実render/install→単一wake acceptance。

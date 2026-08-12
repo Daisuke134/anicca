@@ -1,12 +1,15 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
 const { loadConnectorEnv } = require("../lib/load-connector-env.js");
+
+const ENTRYPOINT = path.resolve(__dirname, "..", "run.sh");
 
 function fixture(source) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-env-"));
@@ -33,4 +36,34 @@ test("fails closed for blank/control values, oversized files, and directories", 
   fs.rmSync(large.dir, { recursive: true, force: true });
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-env-dir-"));
   try { assert.throws(() => loadConnectorEnv(directory), /Connector env unavailable/); } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("official entrypoint uses the portable state-home default while retaining an explicit env override", () => {
+  const source = fs.readFileSync(ENTRYPOINT, "utf8");
+  assert.match(source, /LIFE_MANAGER_STATE_HOME=.*XDG_STATE_HOME/);
+  assert.match(source, /LM_CONNECTOR_SHARED_ENV_FILE=.*LIFE_MANAGER_STATE_HOME\/\.env/);
+  assert.match(source, /LM_CONNECTOR_STATE_DIR:-\$LIFE_MANAGER_STATE_HOME\/connector-native/);
+  assert.match(source, /LM_CONNECTOR_SHARED_ENV_FILE=\"\$\{LM_CONNECTOR_SHARED_ENV_FILE:-/);
+  assert.doesNotMatch(source, /\.openclaw\/\.env/);
+});
+
+test("official entrypoint fails before native wake when the rendered env file is absent", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-prestart-"));
+  try {
+    const stateHome = path.join(directory, "state-home");
+    const result = spawnSync("bash", [ENTRYPOINT], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: directory,
+        LIFE_MANAGER_STATE_HOME: stateHome,
+        LM_CONNECTOR_SHARED_ENV_FILE: path.join(directory, "missing.env"),
+        LM_CONNECTOR_STATE_DIR: path.join(directory, "connector-state"),
+        NODE_BIN: process.execPath,
+      },
+    });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /Connector env unavailable/);
+    assert.equal(fs.existsSync(path.join(directory, "connector-state", "lock")), false);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
