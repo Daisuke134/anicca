@@ -41,7 +41,7 @@ test("continues to the next same-day candidate until registration is verified", 
   ]);
 });
 
-test("global login failure triggers recovery instead of burning every candidate", async () => {
+test("login failure cannot stop the sequence before every candidate and provider handoff", async () => {
   let calls = 0;
   const result = await runLumaCandidateSequence({
     candidates,
@@ -51,16 +51,15 @@ test("global login failure triggers recovery instead of burning every candidate"
     },
   });
 
-  assert.equal(calls, 1);
+  assert.equal(calls, 3);
   assert.deepEqual(result, {
-    status: "recovery_required",
-    reason: "login_required",
-    candidate: candidates[0],
-    skipped: [],
+    status: "next_provider_required",
+    reason: "luma_candidates_exhausted",
+    skipped: candidates.map((candidate) => ({ event_ref: candidate.event_ref, reason: "login_required" })),
   });
 });
 
-test("unknown external effect stops for reconciliation before any retry", async () => {
+test("unknown external effect quarantines each candidate without stopping provider handoff", async () => {
   let calls = 0;
   const result = await runLumaCandidateSequence({
     candidates,
@@ -70,9 +69,12 @@ test("unknown external effect stops for reconciliation before any retry", async 
     },
   });
 
-  assert.equal(calls, 1);
-  assert.equal(result.status, "reconciliation_required");
-  assert.equal(result.candidate.event_ref, candidates[0].event_ref);
+  assert.equal(calls, 3);
+  assert.equal(result.status, "next_provider_required");
+  assert.deepEqual(result.skipped, candidates.map((candidate) => ({
+    event_ref: candidate.event_ref,
+    reason: "unknown_effect",
+  })));
 });
 
 test("candidate exhaustion explicitly hands the date to the next provider", async () => {

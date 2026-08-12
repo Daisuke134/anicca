@@ -81,5 +81,3 @@ render() {
 TEMPLATES="$REPO_ROOT/apps/life-manager/launchd"
 render "$TEMPLATES/ai.anicca.life-manager-connector-native.plist.template" \
   "$OUTPUT_DIR/ai.anicca.life-manager-connector-native.plist"
-render "$TEMPLATES/ai.anicca.life-manager-connector-native-healthcheck.plist.template" \
-  "$OUTPUT_DIR/ai.anicca.life-manager-connector-native-healthcheck.plist"

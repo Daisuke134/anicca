@@ -2,9 +2,14 @@
 
 const path = require("node:path");
 const fs = require("node:fs");
+const os = require("node:os");
 const { spawnSync } = require("node:child_process");
 
 const OUTBOUND_CAPABILITY = "outbound.event.apply";
+const SAFE_WAKE_ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/;
+const REPORT_TARGET = /^-?[0-9]{5,20}$/;
+const REPORT_FAILURE = "Telegram report delivery failed";
+const PHOTO_FAILURE = "Telegram photo delivery failed";
 const DEFAULT_HEALTH_URL = "http://127.0.0.1:18790/health";
 const DEFAULT_MAX_POLL_AGE_MS = 120_000;
 // The worker can run in a Colima/Docker VM whose clock is a few seconds ahead
@@ -134,6 +139,75 @@ async function notifyOpenClaw(message, options = {}) {
   }
   return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
 }
+
+async function notifyOpenClawGateway(message, options = {}) {
+  try {
+    const target = options.telegramTarget;
+    const idempotencyKey = options.idempotencyKey;
+    if (
+      typeof message !== "string" || !message || message.length > 4_096
+      || typeof target !== "string" || !REPORT_TARGET.test(target)
+      || typeof idempotencyKey !== "string" || !SAFE_WAKE_ID.test(idempotencyKey)
+    ) throw new Error(REPORT_FAILURE);
+    const spawn = options.spawnSync || spawnSync;
+    const result = spawn("openclaw", [
+      "gateway", "call", "send", "--timeout", "60000", "--params",
+      JSON.stringify({ channel: "telegram", to: target, message, idempotencyKey }), "--json",
+    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    if (!result || result.status !== 0) throw new Error(REPORT_FAILURE);
+    return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
+  } catch {
+    throw new Error(REPORT_FAILURE);
+  }
+}
+
+async function notifyOpenClawPhoto(bytes, options = {}) {
+  const target = options.telegramTarget;
+  const idempotencyKey = options.idempotencyKey;
+  if (
+    !Buffer.isBuffer(bytes)
+    || typeof target !== "string" || !REPORT_TARGET.test(target)
+    || typeof idempotencyKey !== "string" || !SAFE_WAKE_ID.test(idempotencyKey)
+  ) throw new Error("Telegram photo delivery invalid");
+  const spawn = options.spawnSync || spawnSync;
+  const remove = options.rmSync || fs.rmSync;
+  let directory;
+  try {
+    const mediaRoot = path.join(os.homedir(), ".openclaw", "media");
+    fs.mkdirSync(mediaRoot, { recursive: true, mode: 0o700 });
+    const rootStat = fs.lstatSync(mediaRoot);
+    if (
+      !rootStat.isDirectory() || rootStat.isSymbolicLink()
+      || (typeof process.getuid === "function" && rootStat.uid !== process.getuid())
+    ) throw new Error(PHOTO_FAILURE);
+    fs.chmodSync(mediaRoot, 0o700);
+    directory = fs.mkdtempSync(path.join(mediaRoot, "connector-telegram-photo-"));
+    fs.chmodSync(directory, 0o700);
+    const file = path.join(directory, "registered-page.png");
+    fs.writeFileSync(file, bytes, { mode: 0o600, flag: "wx" });
+    const result = spawn("openclaw", [
+      "gateway", "call", "send", "--timeout", "60000", "--params",
+      JSON.stringify({
+        channel: "telegram",
+        to: target,
+        message: String(options.caption || ""),
+        mediaUrl: file,
+        forceDocument: true,
+        idempotencyKey,
+      }), "--json",
+    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    if (!result || result.status !== 0) throw new Error(PHOTO_FAILURE);
+    return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
+  } catch {
+    throw new Error(PHOTO_FAILURE);
+  } finally {
+    if (directory) {
+      try { remove(directory, { recursive: true, force: true }); }
+      catch { throw new Error(PHOTO_FAILURE); }
+    }
+  }
+}
+
 
 async function recoverDockerWorker(options = {}) {
   const container = String(options.workerContainer || "").trim();
@@ -266,6 +340,8 @@ module.exports = {
   parseOpenClawMessageId,
   createFileIncidentStore,
   notifyOpenClaw,
+  notifyOpenClawGateway,
+  notifyOpenClawPhoto,
   recoverDockerWorker,
   runOutboundGuardian,
   guardianExitCode,

@@ -13,9 +13,10 @@ function unavailable() {
   return new Error("Luma authentication unavailable");
 }
 
-function pageUnavailable(code) {
+function pageUnavailable(code, unknownEffect) {
   const error = new Error("Luma page unavailable");
   error.code = code;
+  if (typeof unknownEffect === "boolean") error.unknownEffect = unknownEffect;
   throw error;
 }
 
@@ -123,6 +124,7 @@ function createLumaDailyDriverAuth(options = {}) {
       const code = String(await readLoginCode({ afterMs, account: email }) || "");
       if (!/^\d{6}$/.test(code)) throw unavailable();
       await submitCode(page, code);
+      if (typeof page.waitForTimeout === "function") await page.waitForTimeout(3_000);
       await finishPostAuth(page, name);
       const after = await inspectAuth(page);
       if (!after || after.status !== "authenticated") throw unavailable();
@@ -161,7 +163,12 @@ function createAuthAwareLumaDailyDriver(options = {}) {
       if (!result || result.status !== "authenticated") pageUnavailable("LUMA_PAGE_AUTH_FAILED");
       try {
         return await dailyDriver.withLumaPage(url, task);
-      } catch {
+      } catch (error) {
+        if (
+          error && typeof error === "object"
+          && /^[A-Z][A-Z0-9_:-]{0,99}$/.test(String(error.code || ""))
+          && typeof error.unknownEffect === "boolean"
+        ) pageUnavailable(String(error.code), error.unknownEffect);
         pageUnavailable("LUMA_PAGE_TARGET_FAILED");
       }
     },

@@ -9,9 +9,15 @@ const { normalizeLumaEventDetail } = require("./luma-event-detail.js");
 const { buildLumaDateInventory } = require("./luma-date-inventory.js");
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { proveCalendarGateUnavailable } = require("./connector-coverage-assembler.js");
+const { runLumaCandidateSequence } = require("./luma-candidate-loop.js");
 const {
+  createEventSourceCapabilities, executeEventSourceHandoff, planEventSourceHandoff,
+} = require("./event-source-handoff.js");
+const {
+  calendarEligibleConnpassCandidates,
   calendarEligibleLumaCandidates,
   evaluateCalendarCandidateGate,
+  evaluateConnpassCalendarCandidateGate,
   isVerifiedCalendarCandidateGate,
   mapWithConcurrency,
 } = require("./calendar-candidate-gate.js");
@@ -203,6 +209,39 @@ test("route failure requests recovery and fake inventories fail closed", async (
   }), /calendar candidate gate invalid/i);
   await assert.rejects(evaluateCalendarCandidateGate({
     dateInventory: inventory, busyInventory: structuredClone(busyInventory), date: "2026-08-05",
+    homeLocation: "Home", routeMinutes: async () => 10,
+  }), /calendar candidate gate invalid/i);
+});
+
+test("verified Connpass candidates use the same conflict and travel gate without Luma provenance", async () => {
+  const lumaOutcome = await runLumaCandidateSequence({ candidates: [], attempt: async () => {} });
+  const capabilities = createEventSourceCapabilities({ connpassApiKey: "fixture-secret-api-key-1234567890" });
+  const plan = planEventSourceHandoff({ date: "2026-08-05", lumaOutcome, capabilities });
+  const handoff = await executeEventSourceHandoff({
+    plan,
+    connpassClient: { async searchEvents() {
+      return { results_returned: 1, results_available: 1, results_start: 1, events: [{
+        id: 101, title: "Connpass Night", catch: "Public", description: "Public details",
+        started_at: "2026-08-05T12:00:00+09:00", ended_at: "2026-08-05T13:00:00+09:00",
+        place: "Shibuya Hall", address: "Shibuya Hall, Tokyo",
+        group: { subdomain: "tokyo-builders" },
+      }] };
+    } },
+  });
+  const gate = await evaluateConnpassCalendarCandidateGate({
+    handoff,
+    busyInventory: await busy([timed(
+      "before", "2026-08-05T11:30:00+09:00", "2026-08-05T11:45:00+09:00",
+    )]),
+    homeLocation: "Home",
+    routeMinutes: async () => 30,
+  });
+
+  assert.equal(gate.candidates[0].eligible, false);
+  assert.equal(gate.candidates[0].conflict_event_refs.length, 1);
+  assert.deepEqual(calendarEligibleConnpassCandidates(handoff, gate), []);
+  await assert.rejects(evaluateConnpassCalendarCandidateGate({
+    handoff: structuredClone(handoff), busyInventory: await busy([]),
     homeLocation: "Home", routeMinutes: async () => 10,
   }), /calendar candidate gate invalid/i);
 });

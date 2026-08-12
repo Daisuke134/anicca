@@ -1,5 +1,6 @@
 "use strict";
 
+const { createHash } = require("node:crypto");
 const { canonicalEventUrl } = require("./canonical-event-url.js");
 const {
   buildEventApplicationJob,
@@ -22,12 +23,16 @@ const {
   deliverConnectorCoverageTelegram,
 } = require("./connector-coverage-telegram.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
+const { isVerifiedEventProviderDateInventory } = require("./event-provider-date-inventory.js");
 const { isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { isVerifiedGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { hashChatId } = require("./telegram.js");
+const { verifyLumaConfirmationMessage } = require("./luma-confirmation-mail.js");
+const { createLumaGuestBinding } = require("./luma-ticket-qr.js");
+const { deliverConnectorTicket } = require("./connector-ticket-telegram.js");
 
-const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
+const EVENT_REF = /^(?:luma-event:\/\/event\/[A-Za-z0-9_-]+|connpass-event:\/\/event\/[1-9][0-9]*)$/;
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const POSITIVE_REF = /^[^\x00-\x1f\x7f]{1,1024}$/;
 
@@ -85,6 +90,8 @@ function safeReceiptProjection(receipt) {
     attempt_ref: receipt.attempt_ref,
     external_receipt_ref: receipt.external_receipt_ref,
     artifact_ref: receipt.artifact_ref,
+    evidence_observed_at: receipt.evidence_observed_at,
+    artifact_sha256: receipt.artifact_sha256,
     canonical_url: receipt.canonical_url,
     verified_at: receipt.verified_at,
   });
@@ -123,11 +130,16 @@ function reconciliationResult(context, error) {
   });
 }
 
-function verifiedTelegramDelivery(delivery, context, coverage) {
+function verifiedTelegramDelivery(delivery, context, coverage, artifactSha256) {
   if (!delivery || typeof delivery !== "object" || Array.isArray(delivery)) return null;
   if (delivery.kind !== "connector_coverage_telegram_delivery") return null;
   const providerId = String(delivery.provider_id == null ? "" : delivery.provider_id).trim();
-  if (!providerId || !POSITIVE_REF.test(providerId)) return null;
+  const photoProviderId = String(delivery.photo_provider_id == null ? "" : delivery.photo_provider_id).trim();
+  if (
+    !providerId || !POSITIVE_REF.test(providerId)
+    || !photoProviderId || !POSITIVE_REF.test(photoProviderId)
+    || delivery.artifact_sha256 !== artifactSha256
+  ) return null;
   const observedAt = String(delivery.observed_at == null ? "" : delivery.observed_at).trim();
   const observedMilliseconds = Date.parse(observedAt);
   if (
@@ -142,7 +154,7 @@ function verifiedTelegramDelivery(delivery, context, coverage) {
     !/^[0-9a-f]{64}$/.test(String(delivery.chat_id_sha256 || ""))
     || delivery.chat_id_sha256 !== hashChatId(context.telegramTarget)
   ) return null;
-  return Object.freeze({ providerId, observedAt });
+  return Object.freeze({ providerId, photoProviderId, artifactSha256, observedAt });
 }
 
 function selectedContext(input) {
@@ -207,6 +219,12 @@ function selectedContext(input) {
     || input.calendar_coverage_url
     || application.calendarCoverageUrl
     || application.calendar_coverage_url;
+  const registrationIdentity = text(
+    input.registrationIdentity || input.registration_identity || application.registrationIdentity
+      || application.registration_identity || "Dais",
+    "registration identity",
+    100,
+  );
   return {
     tenantId,
     eventUrl,
@@ -224,13 +242,17 @@ function selectedContext(input) {
     calendarId: calendarId == null ? "" : String(calendarId).trim(),
     telegramTarget: telegramTarget == null ? "" : String(telegramTarget).trim(),
     calendarCoverageUrl: calendarCoverageUrl == null ? "" : String(calendarCoverageUrl).trim(),
+    registrationIdentity,
     unavailableDays: Array.isArray(input.unavailableDays) ? input.unavailableDays : [],
     registrations: Array.isArray(input.registrations) ? input.registrations : [],
   };
 }
 
 function assertContext(context, deps) {
-  const verifyDateInventory = factory(deps, "isVerifiedLumaDateInventory", isVerifiedLumaDateInventory);
+  const providerInventory = isVerifiedEventProviderDateInventory(context.dateInventory);
+  const verifyDateInventory = typeof deps.isVerifiedLumaDateInventory === "function"
+    ? deps.isVerifiedLumaDateInventory
+    : (value) => isVerifiedLumaDateInventory(value) || isVerifiedEventProviderDateInventory(value);
   const verifyCoverage = factory(deps, "isVerifiedRollingEventCoverage", isVerifiedRollingEventCoverage);
   const verifyBusy = factory(deps, "isVerifiedGoogleCalendarBusyInventory", isVerifiedGoogleCalendarBusyInventory);
   if (!verifyDateInventory(context.dateInventory) || !verifyCoverage(context.currentCoverage) || !verifyBusy(context.busyInventory)) {
@@ -247,10 +269,12 @@ function assertContext(context, deps) {
   ));
   if (!event || event.canonical_url !== context.eventUrl) invalid("chosen event is not in verified inventory");
   if (Date.parse(event.starts_at) !== Date.parse(context.eventStartIso)) invalid("chosen event start mismatch");
-  const verifyGoal = factory(deps, "isVerifiedEventGoalSerendipity", isVerifiedEventGoalSerendipity);
-  if (!verifyGoal(context.goalDecision)) invalid("chosen judgment is not verified");
-  if (!context.goalDecision.ranked_events.some((candidate) => candidate.event_ref === context.eventRef)) {
-    invalid("chosen judgment event mismatch");
+  if (!providerInventory) {
+    const verifyGoal = factory(deps, "isVerifiedEventGoalSerendipity", isVerifiedEventGoalSerendipity);
+    if (!verifyGoal(context.goalDecision)) invalid("chosen judgment is not verified");
+    if (!context.goalDecision.ranked_events.some((candidate) => candidate.event_ref === context.eventRef)) {
+      invalid("chosen judgment event mismatch");
+    }
   }
   if (!context.calendar || !context.calendarId) invalid("Calendar write context missing");
   if (!context.telegramTarget || !context.calendarCoverageUrl) invalid("Telegram write context missing");
@@ -285,6 +309,11 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     "deliverConnectorCoverageTelegram",
     deliverConnectorCoverageTelegram,
   );
+  const verifyConfirmation = factory(
+    injected, "verifyLumaConfirmationMessage", verifyLumaConfirmationMessage,
+  );
+  const buildGuestBinding = factory(injected, "createLumaGuestBinding", createLumaGuestBinding);
+  const deliverTicket = factory(injected, "deliverConnectorTicket", deliverConnectorTicket);
 
   let job;
   try {
@@ -332,6 +361,52 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     return failureResult("receipt_verification_failed", { ...context, job }, error);
   }
 
+  let confirmation;
+  let ticket;
+  let ticketFailureReason = null;
+  try {
+    if (
+      typeof injected.readLumaConfirmation !== "function"
+      || typeof injected.recordLumaConfirmation !== "function"
+      || typeof injected.captureLumaTicketQr !== "function"
+      || typeof injected.recordLumaTicketQr !== "function"
+    ) throw new Error("Luma mail and ticket services unavailable");
+    const message = await injected.readLumaConfirmation({
+      registrationStartedAt: context.now,
+      registrationCompletedAt: receipt.verified_at,
+      eventUrl: context.eventUrl,
+      eventTitle: event.title,
+    });
+    const verifiedMail = verifyConfirmation({
+      tenantId: context.tenantId,
+      jobId: job.job_id,
+      eventUrl: context.eventUrl,
+      eventTitle: event.title,
+      registrationStartedAt: context.now,
+      registrationCompletedAt: receipt.verified_at,
+      message,
+    });
+    confirmation = await injected.recordLumaConfirmation(verifiedMail);
+    if (!/^gmail-message:\/\/[a-z0-9._-]+\/[0-9a-f]{64}$/i.test(String(confirmation.external_receipt_ref || ""))) {
+      throw new Error("Luma confirmation receipt invalid");
+    }
+    const binding = buildGuestBinding({
+      tenantId: context.tenantId,
+      jobId: job.job_id,
+      eventUrl: context.eventUrl,
+      providerMessageId: message.id,
+      body: message.body,
+    });
+    const verifiedQr = await injected.captureLumaTicketQr(binding);
+    ticket = await injected.recordLumaTicketQr(verifiedQr);
+    if (
+      !/^ticket:\/\/[a-z0-9._-]+\/[0-9a-f]{64}$/i.test(String(ticket.ticket_receipt_ref || ""))
+      || !/^object:\/\/sha256\/[0-9a-f]{64}$/.test(String(ticket.artifact_ref || ""))
+    ) throw new Error("Luma ticket receipt invalid");
+  } catch (error) {
+    ticketFailureReason = "TICKET_EVIDENCE_FAILED";
+  }
+
   const syncInput = {
     calendar: context.calendar,
     calendarId: context.calendarId,
@@ -356,6 +431,37 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     });
   } catch (error) {
     return failureResult("registration_evidence_failed", { ...context, job }, error);
+  }
+
+  let ticketDelivery;
+  if (ticket) {
+    try {
+      ticketDelivery = await deliverTicket({
+        tenantId: context.tenantId,
+        telegramTarget: context.telegramTarget,
+        artifactRef: ticket.artifact_ref,
+        eventTitle: event.title,
+        venue: event.venue_name || event.venue_address,
+        registrationIdentity: context.registrationIdentity,
+        selectionReason: context.goalDecision?.ranked_events.find(
+          (candidate) => candidate.event_ref === context.eventRef,
+        )?.goal_reason || "Calendarの空き枠に適合した登録",
+        startsAt: event.starts_at,
+        endsAt: event.ends_at,
+        eventUrl: event.canonical_url,
+        calendarUrl: calendarSync.calendar_event_url,
+      }, {
+        readArtifact: injected.readTicketArtifact,
+        sendMedia: injected.sendTicketMedia,
+        observedAt: injected.observedAt || (() => context.now),
+      });
+      if (!ticketDelivery || !POSITIVE_REF.test(String(ticketDelivery.provider_id || ""))) {
+        throw new Error("Luma ticket Telegram receipt invalid");
+      }
+    } catch {
+      ticketFailureReason = "TICKET_TELEGRAM_FAILED";
+      ticketDelivery = null;
+    }
   }
 
   let coverage;
@@ -390,6 +496,21 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     calendarCoverageUrl: context.calendarCoverageUrl,
   };
   try {
+    if (typeof injected.readArtifact !== "function") throw new Error("registration PNG reader unavailable");
+    const bytes = await injected.readArtifact(context.tenantId, receipt.artifact_ref);
+    const digest = Buffer.isBuffer(bytes) ? createHash("sha256").update(bytes).digest("hex") : "";
+    if (digest !== receipt.artifact_sha256) throw new Error("registration PNG hash mismatch");
+    telegramInput.registrationEvidence = Object.freeze({
+      event_ref: context.eventRef,
+      canonical_url: receipt.canonical_url,
+      artifact_ref: receipt.artifact_ref,
+      artifact_sha256: receipt.artifact_sha256,
+      bytes,
+    });
+  } catch (error) {
+    return failureResult("telegram_evidence_failed", { ...context, job }, error);
+  }
+  try {
     // Build first so a malformed report can never be hidden by a delivery call.
     buildTelegramMessage(telegramInput);
   } catch (error) {
@@ -406,7 +527,7 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     if (error && error.unknownEffect === true) return reconciliationResult({ ...context, job }, error);
     return failureResult("telegram_delivery_failed", { ...context, job }, error);
   }
-  const verifiedDelivery = verifiedTelegramDelivery(delivery, context, coverage);
+  const verifiedDelivery = verifiedTelegramDelivery(delivery, context, coverage, receipt.artifact_sha256);
   if (!verifiedDelivery) {
     const error = new Error("Telegram delivery needs a positive receipt");
     error.unknownEffect = true;
@@ -421,6 +542,16 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     event_ref: context.eventRef,
     canonical_url: event.canonical_url,
     registration_receipt: safeReceiptProjection(receipt),
+    confirmation: confirmation
+      ? Object.freeze({ external_receipt_ref: confirmation.external_receipt_ref })
+      : Object.freeze({ status: "unavailable", reason: "CONFIRMATION_EVIDENCE_FAILED" }),
+    ticket: ticket && ticketDelivery
+      ? Object.freeze({
+        ticket_receipt_ref: ticket.ticket_receipt_ref,
+        artifact_ref: ticket.artifact_ref,
+        telegram_provider_id: String(ticketDelivery.provider_id),
+      })
+      : Object.freeze({ status: "unavailable", reason: ticketFailureReason || "TICKET_EVIDENCE_FAILED" }),
     calendar_sync: Object.freeze({
       status: calendarSync.status,
       calendar_sync_id: calendarSync.calendar_sync_id,
@@ -431,6 +562,8 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     coverage: coverageProjection(coverage),
     telegram: Object.freeze({
       provider_id: verifiedDelivery.providerId,
+      photo_provider_id: verifiedDelivery.photoProviderId,
+      artifact_sha256: verifiedDelivery.artifactSha256,
       observed_at: verifiedDelivery.observedAt,
       coverage_snapshot_id: coverage.coverage_snapshot_id,
     }),

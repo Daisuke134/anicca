@@ -302,3 +302,21 @@ test("model validation failures expose only bounded contract stages", async () =
     ));
   }
 });
+
+test("a structured model generator still passes the existing grounding boundary", async () => {
+  const input = { ...await sources(), goals: GOALS };
+  let request;
+  const result = await inferEventGoalSerendipity(input, {
+    generateDecision: async (value) => {
+      request = value;
+      return modelDecision();
+    },
+  });
+  assert.equal(result.ranked_events.length, 2);
+  assert.match(request.prompt, /untrusted data/i);
+  assert.equal(request.schema.type, "object");
+  assert.equal(request.schema.additionalProperties, false);
+  assert.equal(request.schema.properties.ranked_events.items.additionalProperties, false);
+  assert.equal(request.timeoutMs, GOAL_EVALUATION_TIMEOUT_MS);
+  assert.equal(isVerifiedEventGoalSerendipity(result), true);
+});

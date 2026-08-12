@@ -46,11 +46,51 @@ function connectorIdempotency(value) {
 }
 
 function connectorCanonicalUrl(value) {
+  const raw = String(value == null ? "" : value);
   const url = canonicalEventUrl(value);
-  if (!url || !["luma.com", "www.luma.com", "lu.ma"].includes(new URL(url).hostname.toLowerCase())) {
-    connectorInvalid();
+  if (!url) connectorInvalid();
+  const parsed = new URL(url);
+  const host = parsed.hostname.toLowerCase();
+  if (["luma.com", "www.luma.com", "lu.ma"].includes(host)) return Object.freeze({ url, sourceTitle: "Luma" });
+  const connpassMatch = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)?connpass\.com$/i.test(host)
+    && /^\/event\/([1-9][0-9]*)\/$/.exec(parsed.pathname);
+  if (connpassMatch) {
+    const expected = `https://${host}/event/${connpassMatch[1]}/`;
+    if (raw !== expected || url !== expected) connectorInvalid();
+    return Object.freeze({ url: expected, sourceTitle: "Connpass" });
   }
-  return url;
+  const meetupMatch = host === "www.meetup.com"
+    && /^\/([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\/events\/([1-9][0-9]*)\/$/.exec(parsed.pathname);
+  if (meetupMatch) {
+    const expected = `https://www.meetup.com/${meetupMatch[1]}/events/${meetupMatch[2]}/`;
+    if (raw !== expected || url !== expected) connectorInvalid();
+    return Object.freeze({ url: expected, sourceTitle: "Meetup" });
+  }
+  const doorkeeperMatch = /^(?!www\.doorkeeper\.jp$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.doorkeeper\.jp$/.test(host)
+    && /^\/events\/([1-9][0-9]*)$/.exec(parsed.pathname);
+  if (doorkeeperMatch) {
+    const expected = `https://${host}/events/${doorkeeperMatch[1]}`;
+    if (raw !== expected || url !== expected) connectorInvalid();
+    return Object.freeze({ url: expected, sourceTitle: "Doorkeeper" });
+  }
+  const eventbriteMatch = host === "www.eventbrite.com"
+    && /^\/e\/(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)-tickets-[1-9][0-9]*|[1-9][0-9]*)$/i.exec(parsed.pathname);
+  if (eventbriteMatch) {
+    const expected = `https://www.eventbrite.com${parsed.pathname}`;
+    if (raw !== expected || url !== expected) connectorInvalid();
+    return Object.freeze({ url: expected, sourceTitle: "Eventbrite" });
+  }
+  const techPlayMatch = host === "techplay.jp"
+    && /^\/event\/([1-9][0-9]*)$/.exec(parsed.pathname);
+  if (techPlayMatch) {
+    const expected = `https://techplay.jp/event/${techPlayMatch[1]}`;
+    if (raw !== expected || url !== expected) connectorInvalid();
+    return Object.freeze({ url: expected, sourceTitle: "TECH PLAY" });
+  }
+  const match = host === "peatix.com" && /^\/event\/([1-9][0-9]*)$/.exec(parsed.pathname);
+  const expected = match ? `https://peatix.com/event/${match[1]}` : "";
+  if (!expected || raw !== expected || url !== expected) connectorInvalid();
+  return Object.freeze({ url: expected, sourceTitle: "Peatix" });
 }
 
 function googleCalendarEventUrl(url) {
@@ -144,7 +184,7 @@ function makeGogCalendar({ bin, account, keyring, calId = "primary", run } = {})
       const startAt = connectorInstant(input.startAt);
       const endAt = connectorInstant(input.endAt);
       const location = connectorText(input.location, 2_000);
-      const canonicalUrl = connectorCanonicalUrl(input.canonicalUrl);
+      const { url: canonicalUrl, sourceTitle } = connectorCanonicalUrl(input.canonicalUrl);
       if (Date.parse(endAt) <= Date.parse(startAt)) connectorInvalid();
       let data;
       try {
@@ -152,7 +192,7 @@ function makeGogCalendar({ bin, account, keyring, calId = "primary", run } = {})
           "calendar", "create", calendarId, "-j", "--no-input",
           opt("--summary", title), opt("--from", startAt), opt("--to", endAt),
           opt("--location", location), opt("--description", canonicalUrl),
-          opt("--source-url", canonicalUrl), opt("--source-title", "Luma"),
+          opt("--source-url", canonicalUrl), opt("--source-title", sourceTitle),
           opt("--private-prop", `${CONNECTOR_KEY}=${idempotencyValue}`),
         ], 30_000));
       } catch { connectorUnavailable(); }
