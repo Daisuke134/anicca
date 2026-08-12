@@ -6,7 +6,7 @@
 
 ## Constraints
 
-- `redacted@example.invalid`の既存OAuthを使い、別mail transportを作らない。
+- `<REDACTED_EMAIL>`の既存OAuthを使い、別mail transportを作らない。
 - 同一registration attempt開始前、完了から30分超、別event、曖昧な件名を証拠にしない。
 - Lumaはsubmit受理時にmailを送り、その後workerが完了画面を検証してjobを完了する。したがってmail受信がjob完了より数秒早い正常系を拒否しない。
 - code、mail本文、cookie、token、guest keyをspec/evidenceへ保存しない。
