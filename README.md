@@ -117,16 +117,16 @@ Some internal package names, environment variables, service labels, and older do
 
 ## Connector agent — how event applications work
 
-Connector is the local Life Manager agent that searches Tokyo event sites, removes unsafe or conflicting candidates, applies through one owned browser page, verifies the provider result, and reports an evidence-backed outcome in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
+Connector is the local Life Manager agent that searches seven Tokyo event rails—Luma, Connpass, Peatix, Meetup, Doorkeeper, Eventbrite, and TECH PLAY—removes unsafe or conflicting candidates, applies through one owned browser page, verifies the provider result, and reports an evidence-backed outcome in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
 
 ```mermaid
 flowchart LR
-    TRIGGER["Daily launchd trigger<br/>or supervised foreground wake"] --> ENTRY["run.sh<br/>single lock + heartbeat"]
+    TRIGGER["Daily launchd trigger<br/>or supervised launchd kickstart"] --> ENTRY["run.sh<br/>single lock + heartbeat"]
     ENTRY --> CAL["Google Calendar<br/>14-day busy inventory"]
     CAL --> RAIL["One CloakBrowser target<br/>one owned page"]
 
     subgraph LOOP["Forward-only provider loop"]
-        PROVIDERS["Luma → Connpass → Peatix<br/>→ Meetup → Doorkeeper → Eventbrite"]
+        PROVIDERS["Luma → Connpass → Peatix → Meetup<br/>→ Doorkeeper → Eventbrite → TECH PLAY"]
         DISCOVER["Provider discovery<br/>privacy-safe count audit"]
         GATE{"Free · open · Tokyo · in window<br/>and Calendar-safe?"}
         NEXT["Next candidate<br/>or next provider"]
@@ -160,13 +160,17 @@ flowchart LR
     SUPPORT -->|Yes| PROVE
     SUPPORT -->|No| EVIDPENDING["Acceptance pending<br/>no applied_bundle claim"]
 
-    NEXT -->|All exhausted| NOEFFECT["completed_no_effect<br/>external write 0"]
+    NEXT -->|All exhausted| NOEFFECT["completed_no_effect<br/>healthy external write 0"]
     HARNESS -->|effect unknown| CIRCUIT["circuit_open<br/>effect unknown · evidence failure · safety threshold"]
     EVIDPENDING --> CIRCUIT
     BUNDLE --> REPORT["Durable wake report"]
     NOEFFECT --> REPORT
     CIRCUIT --> REPORT
     REPORT --> CLEAN["Release owned target and lock<br/>leave unrelated tabs untouched"]
+    CLEAN --> TERMINAL{"Terminal result"}
+    TERMINAL -->|applied_bundle / completed_no_effect| HEALTHY["worker_finished<br/>process exit 0"]
+    TERMINAL -->|circuit_open| FAILED["worker_failed<br/>non-zero exit"]
+    ENTRY -. startup / contract error .-> FAILED
 ```
 
 ```mermaid
@@ -195,10 +199,11 @@ stateDiagram-v2
 | Connpass | Discovery, action, readback, evidence | Live bundle proven |
 | Peatix | Discovery, action, readback, evidence | Live bundle proven |
 | Meetup | Discovery, action, readback, evidence | Connected; current strict candidates conflict with Calendar |
-| Doorkeeper | Discovery, action, readback | Connected; evidence adapter and non-conflict live bundle remain |
-| Eventbrite | Three-page discovery, ticket/attendee/final action, child-frame readback | Connected; current production inventory has no eligible candidate, so external write is correctly zero |
+| Doorkeeper | Discovery, action, readback, evidence | Connected; all four current eligible candidates conflict with Calendar, so live bundle remains pending |
+| Eventbrite | Three-page discovery, ticket/attendee/final action, child-frame readback, evidence | Connected; current production inventory has no eligible candidate, so external write is correctly zero |
+| TECH PLAY | RSS/detail discovery, input/review/final action, registered readback, evidence | Connected; all three current eligible candidates conflict with Calendar, so live bundle remains pending |
 
-Safety invariants: one schedule owner, one browser target per wake, final mutation at most once, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` is a completed application. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
+Safety invariants: one schedule owner, one browser target per wake, final mutation at most once, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` proves a new completed application. `completed_no_effect` is a healthy process result with zero new external writes. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
 
 ---
 
