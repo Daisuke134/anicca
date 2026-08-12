@@ -8112,3 +8112,9 @@ Ponytailでpagination2ページ目以降、auth/action/readback、factory/router
 同じLunaがfresh reviewの2反例をRED `20/22`で固定し、identity/time/windowをeligibilityより前に分類して5段auditを復元、top-level object/arrayと再帰`@graph`を最大256 nodesでflattenしてschema Event総数exact 1以外をfail closedにした。GREENはfocused 22/22、KokuchPro＋TECH PLAY 38/38、syntax/diff check PASS。code commit `6cd5013cb`をpushした。
 
 修復後の実CloakBrowser＋実Google Calendar read-only E2Eは`busy_intervals=105`、official first page `discovered=48 / within_window=0 / eligible=0 / calendar_free=0 / selected=0`、candidate 0。したがって今回は全48開催回が現在の14日窓外であり、eligibility落ちとの混同はない。application/Calendar/evidence/Telegram effect 0、KokuchPro owned page残存0、元のunrelated 4 pagesを保持した。fresh Sol re-reviewはSHIP、Critical/Important 0、HEAD/remote一致。Item20Dはaccept。Item20次sliceはsame-page Harnessで実`/entry/`→login boundaryをsafe failure分類し、次provider継続契約を固定する。
+
+### O1B-25進捗489（Item 20E1 / KokuchPro exact auth readback plan）
+
+同じowned pageで公式detailと`/entry/`をread-only再測定した。detailはcanonical exact、同一`POST ${canonical}entry/` form 2、visible `申込む` 2。direct entryは`https://www.kokuchpro.com/auth/login/?continue=<candidate entry path>`へ遷移し、title `ログイン - こくちーずプロ`、password input 1、official POST login form 1、visible `ログイン` 1。click/fill/submit/private value/external effect 0、owned page cleanup後unrelated 4 pagesを保持した。
+
+Ponytailでworkflow readbackとHarness停止を分割する。Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-auth-readback-20e1.md`はKokuchPro workflow/test exact 2 files、production約25〜45 LOC、test約55〜90 LOC。canonical pageのcandidate-bound entry formsだけを`absent`、official loginのexact decoded `continue`＋password1＋official login form1だけを`auth_required`、その他を`unavailable`にする。action/Harness/factory/router/native/evidence/Calendar/cache/schedule変更0。次sliceでHarnessが`auth_required`後の追加proposal/operation 0でsafe failureを返す。
