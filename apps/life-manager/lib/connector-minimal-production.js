@@ -19,6 +19,7 @@ const { createMeetupScriptFirstWorkflow } = require("./connector-meetup-workflow
 const { createDoorkeeperScriptFirstWorkflow } = require("./connector-doorkeeper-workflow.js");
 const { createEventbriteScriptFirstWorkflow } = require("./connector-eventbrite-workflow.js");
 const { createTechPlayDiscoveryWorkflow } = require("./connector-techplay-workflow.js");
+const { createKokuchProDiscoveryWorkflow } = require("./connector-kokuchpro-workflow.js");
 const { readLumaFormProfile } = require("./luma-form-profile.js");
 const {
   createBoundedActionProposer,
@@ -43,6 +44,7 @@ const MEETUP_WORKFLOW_VERSION = "meetup_registration_v1";
 const DOORKEEPER_WORKFLOW_VERSION = "doorkeeper_registration_v1";
 const EVENTBRITE_WORKFLOW_VERSION = "eventbrite_registration_v1";
 const TECHPLAY_WORKFLOW_VERSION = "techplay_registration_v1";
+const KOKUCHPRO_WORKFLOW_VERSION = "kokuchpro_registration_v1";
 const LUMA_PAGE_STATE = "registration_page_v1";
 const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
 
@@ -138,6 +140,7 @@ function createProductionProviderRouter(options = {}) {
   const doorkeeperWorkflow = options.doorkeeperWorkflow;
   const eventbriteWorkflow = options.eventbriteWorkflow;
   const techplayWorkflow = options.techplayWorkflow;
+  const kokuchproWorkflow = options.kokuchproWorkflow;
   const actionCache = options.actionCache;
   const browserHarness = options.browserHarness;
   const performAction = options.performAction;
@@ -164,6 +167,9 @@ function createProductionProviderRouter(options = {}) {
     || (techplayWorkflow != null && (typeof techplayWorkflow.discoverCandidates !== "function"
       || typeof techplayWorkflow.runDirectAction !== "function"
       || typeof techplayWorkflow.readProviderState !== "function"))
+    || (kokuchproWorkflow != null && (typeof kokuchproWorkflow.discoverCandidates !== "function"
+      || typeof kokuchproWorkflow.runDirectAction !== "function"
+      || typeof kokuchproWorkflow.readProviderState !== "function"))
     || !actionCache || typeof actionCache.replay !== "function"
     || typeof actionCache.saveVerifiedRepair !== "function"
     || !browserHarness || typeof browserHarness.runFallback !== "function"
@@ -171,13 +177,14 @@ function createProductionProviderRouter(options = {}) {
   ) invalid();
 
   function selected(input) {
-    if (!input || !["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay"].includes(input.provider)) invalid();
+    if (!input || !["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay", "kokuchpro"].includes(input.provider)) invalid();
     const workflow = input.provider === "luma" ? lumaWorkflow
       : input.provider === "connpass" ? connpassWorkflow
         : input.provider === "peatix" ? peatixWorkflow
           : input.provider === "meetup" ? meetupWorkflow
             : input.provider === "doorkeeper" ? doorkeeperWorkflow
-              : input.provider === "eventbrite" ? eventbriteWorkflow : techplayWorkflow;
+              : input.provider === "eventbrite" ? eventbriteWorkflow
+                : input.provider === "techplay" ? techplayWorkflow : kokuchproWorkflow;
     if (!workflow) invalid();
     return Object.freeze({
       input,
@@ -187,7 +194,8 @@ function createProductionProviderRouter(options = {}) {
           : input.provider === "peatix" ? PEATIX_WORKFLOW_VERSION
             : input.provider === "meetup" ? MEETUP_WORKFLOW_VERSION
               : input.provider === "doorkeeper" ? DOORKEEPER_WORKFLOW_VERSION
-                : input.provider === "eventbrite" ? EVENTBRITE_WORKFLOW_VERSION : TECHPLAY_WORKFLOW_VERSION,
+                : input.provider === "eventbrite" ? EVENTBRITE_WORKFLOW_VERSION
+                  : input.provider === "techplay" ? TECHPLAY_WORKFLOW_VERSION : KOKUCHPRO_WORKFLOW_VERSION,
     });
   }
 
@@ -314,12 +322,17 @@ function createMinimalProductionDependencies(options = {}) {
     now,
     onDiscoveryAudit: operations.recordTechPlayDiscoveryAudit || (() => {}),
   });
+  const kokuchproWorkflow = options.kokuchproWorkflow || createKokuchProDiscoveryWorkflow({
+    now,
+    onDiscoveryAudit: operations.recordKokuchProDiscoveryAudit || (() => {}),
+  });
   const actionCache = options.actionCache || createConnectorActionCache({
     path: path.join(stateDir, "action-cache.json"),
   });
   const proposeAction = options.proposeAction || createBoundedActionProposer({
     repoRoot,
     evidenceDir: lunaEvidenceDir,
+    extensionProvider: "kokuchpro",
   });
   const resolveValue = options.resolveValue || createPrivateValueResolver({
     readPeatixProfile: () => options.peatixAttendeeProfile,
@@ -333,6 +346,8 @@ function createMinimalProductionDependencies(options = {}) {
     doorkeeperWorkflow,
     eventbriteWorkflow,
     techplayWorkflow,
+    extensionProvider: "kokuchpro",
+    extensionWorkflow: kokuchproWorkflow,
     inspectControls: inspectPageControls,
     proposeAction,
     operateControl: operatePageControl,
@@ -346,6 +361,7 @@ function createMinimalProductionDependencies(options = {}) {
     doorkeeperWorkflow,
     eventbriteWorkflow,
     techplayWorkflow,
+    kokuchproWorkflow,
     actionCache,
     browserHarness,
     performAction: browserHarness.performAction,
