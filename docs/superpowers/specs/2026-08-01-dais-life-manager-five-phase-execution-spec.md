@@ -8106,3 +8106,9 @@ Ponytailでpagination2ページ目以降、auth/action/readback、factory/router
 実公式first page＋実Google Calendarのread-only E2Eは`busy_intervals=105`、audit `48/0/0/0/0`、candidate 0、KokuchPro owned page cleanup 0残存、focused＋TECH PLAY 36/36 PASS。code commit `d4f59cdf5`をremoteへpushした。fresh Sol reviewはCritical 0だが、(1) window判定をeligibility正規化に内包して`within_window_count`と`eligible_count`が常に同値、(2) top-level JSON-LD array要素内の`@graph`を展開せずhidden second Eventを見逃す、のImportant 2件を実反例で検出したためItem20Dは未accept。
 
 同じworkflow/test exact 2 filesへ戻す。production約20〜35 LOC、test約40〜70 LOC。identity/time/windowだけを先に分類し、within-window後にfree/Tokyo/offline/open/ticket eligibilityを判定して5段auditの意味を復元する。全JSON-LD scriptのtop-level object/arrayと各`@graph`をbounded flattenし、Event総数exact 1以外をfail closedにする。pagination、auth/action/readback、factory/router/native/evidence、external effectは0のまま。同じLunaのRED→GREEN後、fresh Sol re-reviewと同じ実E2Eを再実行してからacceptする。
+
+### O1B-25進捗488（Item 20D / bounded browser discovery accepted）
+
+同じLunaがfresh reviewの2反例をRED `20/22`で固定し、identity/time/windowをeligibilityより前に分類して5段auditを復元、top-level object/arrayと再帰`@graph`を最大256 nodesでflattenしてschema Event総数exact 1以外をfail closedにした。GREENはfocused 22/22、KokuchPro＋TECH PLAY 38/38、syntax/diff check PASS。code commit `6cd5013cb`をpushした。
+
+修復後の実CloakBrowser＋実Google Calendar read-only E2Eは`busy_intervals=105`、official first page `discovered=48 / within_window=0 / eligible=0 / calendar_free=0 / selected=0`、candidate 0。したがって今回は全48開催回が現在の14日窓外であり、eligibility落ちとの混同はない。application/Calendar/evidence/Telegram effect 0、KokuchPro owned page残存0、元のunrelated 4 pagesを保持した。fresh Sol re-reviewはSHIP、Critical/Important 0、HEAD/remote一致。Item20Dはaccept。Item20次sliceはsame-page Harnessで実`/entry/`→login boundaryをsafe failure分類し、次provider継続契約を固定する。
