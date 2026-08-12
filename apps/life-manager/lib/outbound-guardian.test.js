@@ -90,29 +90,127 @@ test("report Gateway delivery hides failure stderr and still requires a positive
   }
 });
 
-test("OpenClaw photo delivery uses a private temporary PNG and returns a positive message ID", async () => {
+test("OpenClaw photo delivery uses Gateway send with a private temporary PNG and returns a positive message ID", async () => {
   const bytes = Buffer.alloc(5_000, 0x61);
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes);
   let mediaPath;
   const receipt = await notifyOpenClawPhoto(bytes, {
-    telegramTarget: "fixture-target",
+    telegramTarget: "123456789",
     caption: "registered evidence",
+    idempotencyKey: "connector-evidence:abc123",
     spawnSync(command, args) {
       assert.equal(command, "openclaw");
-      assert.deepEqual(args.slice(0, 6), [
-        "message", "send", "--channel", "telegram", "--target", "fixture-target",
+      assert.deepEqual(args.slice(0, 5), [
+        "gateway", "call", "send", "--timeout", "60000",
       ]);
-      mediaPath = args[args.indexOf("--media") + 1];
+      assert.equal(args[5], "--params");
+      const params = JSON.parse(args[6]);
+      assert.equal(params.channel, "telegram");
+      assert.equal(params.to, "123456789");
+      assert.equal(params.message, "registered evidence");
+      assert.equal(params.forceDocument, true);
+      assert.equal(params.idempotencyKey, "connector-evidence:abc123");
+      mediaPath = params.mediaUrl;
       assert.match(mediaPath, /\/\.openclaw\/media\/connector-telegram-photo-/);
-      assert.notEqual(args.indexOf("--force-document"), -1);
+      assert.equal(fs.statSync(path.dirname(mediaPath)).mode & 0o777, 0o700);
       assert.equal(fs.statSync(mediaPath).mode & 0o777, 0o600);
       assert.deepEqual(fs.readFileSync(mediaPath), bytes);
-      assert.equal(args[args.indexOf("--message") + 1], "registered evidence");
+      assert.equal(args[7], "--json");
       return { status: 0, stdout: JSON.stringify({ messageId: "322" }), stderr: "" };
     },
   });
   assert.deepEqual(receipt, { messageId: "322" });
   assert.equal(fs.existsSync(mediaPath), false);
+});
+
+test("OpenClaw photo delivery rejects malformed target or idempotency key before spawn", async () => {
+  const bytes = Buffer.alloc(5_000, 0x61);
+  for (const telegramTarget of ["fixture-target", "1234", "", null, 123456789]) {
+    let spawns = 0;
+    await assert.rejects(() => notifyOpenClawPhoto(bytes, {
+      telegramTarget,
+      idempotencyKey: "connector-evidence:abc123",
+      spawnSync() { spawns += 1; },
+    }), /Telegram photo delivery invalid/);
+    assert.equal(spawns, 0);
+  }
+  for (const idempotencyKey of ["", "x", "bad key", null, 9]) {
+    let spawns = 0;
+    await assert.rejects(() => notifyOpenClawPhoto(bytes, {
+      telegramTarget: "123456789",
+      idempotencyKey,
+      spawnSync() { spawns += 1; },
+    }), /Telegram photo delivery invalid/);
+    assert.equal(spawns, 0);
+  }
+});
+
+test("OpenClaw photo delivery sanitizes failures, requires a positive top-level message ID, and removes media", async () => {
+  const bytes = Buffer.alloc(5_000, 0x61);
+  const target = "123456789";
+  const caption = `private caption ${target}`;
+  const idempotencyKey = "connector-evidence:secret123";
+  let mediaPath;
+  await assert.rejects(() => notifyOpenClawPhoto(bytes, {
+    telegramTarget: target,
+    caption,
+    idempotencyKey,
+    spawnSync(command, args) {
+      assert.equal(command, "openclaw");
+      const paramsIndex = args.indexOf("--params");
+      mediaPath = paramsIndex === -1
+        ? args[args.indexOf("--media") + 1]
+        : JSON.parse(args[paramsIndex + 1]).mediaUrl;
+      return { status: 1, stdout: "", stderr: `private stderr ${target} ${caption} ${mediaPath}` };
+    },
+  }), (error) => {
+    assert.equal(error.message, "Telegram photo delivery failed");
+    assert.doesNotMatch(error.message, /private stderr|private caption|123456789|connector-evidence:secret123|registered-page\.png/);
+    return true;
+  });
+  assert.equal(fs.existsSync(mediaPath), false);
+
+  for (const stdout of ["{}", '{"messageId":0}', '{"messageId":"no"}']) {
+    await assert.rejects(() => notifyOpenClawPhoto(bytes, {
+      telegramTarget: target,
+      caption,
+      idempotencyKey: "connector-evidence:receipt123",
+      spawnSync(command, args) {
+        const paramsIndex = args.indexOf("--params");
+        mediaPath = paramsIndex === -1
+          ? args[args.indexOf("--media") + 1]
+          : JSON.parse(args[paramsIndex + 1]).mediaUrl;
+        return { status: 0, stdout, stderr: "" };
+      },
+    }), /Telegram photo delivery failed/);
+    assert.equal(fs.existsSync(mediaPath), false);
+  }
+});
+
+test("OpenClaw photo delivery does not return a receipt when temporary-directory cleanup fails", async () => {
+  const bytes = Buffer.alloc(5_000, 0x61);
+  let cleanupPath;
+  let cleanupCalls = 0;
+  await assert.rejects(() => notifyOpenClawPhoto(bytes, {
+    telegramTarget: "123456789",
+    caption: "cleanup failure evidence",
+    idempotencyKey: "connector-evidence:cleanup123",
+    spawnSync() {
+      return { status: 0, stdout: JSON.stringify({ messageId: "323" }), stderr: "" };
+    },
+    rmSync(target, options) {
+      cleanupPath = target;
+      cleanupCalls += 1;
+      fs.rmSync(target, options);
+      throw new Error("injected cleanup failure");
+    },
+  }), (error) => {
+    assert.equal(error.message, "Telegram photo delivery failed");
+    assert.doesNotMatch(error.message, /cleanup failure evidence|injected cleanup failure|registered-page\.png/);
+    return true;
+  });
+  assert.equal(cleanupCalls, 1);
+  assert.equal(fs.existsSync(cleanupPath), false);
 });
 
 function healthyBody(overrides = {}) {
