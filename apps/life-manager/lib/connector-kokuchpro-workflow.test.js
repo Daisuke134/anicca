@@ -260,20 +260,40 @@ function defaultEvaluatePage({ listingRows = [], details = {} } = {}) {
   const page = workflowPage();
   page.evaluate = async (_fn, argument) => {
     page.calls.push(["evaluate", page.current]);
-    if (page.current === LIST_URL) return listingRows;
+    if (page.current === LIST_URL) return listingRows.map((row) => [row && (row.href || row.canonical_url || row.url || row)]);
     return details[argument || page.current];
   };
   return page;
 }
 
 function scopedListingPage(inScopeCount = 40, outsideCount = 5) {
-  const inside = Array.from({ length: inScopeCount }, (_, index) => `https://www.kokuchpro.com/event/${String(index + 1).padStart(32, "a")}/`);
+  const cardLinks = Array.from({ length: inScopeCount }, (_, index) => [`https://www.kokuchpro.com/event/${String(index + 1).padStart(32, "a")}/`]);
+  if (inScopeCount === 40) {
+    cardLinks[38] = Array.from({ length: 5 }, (_, index) => `https://www.kokuchpro.com/event/${String(index + 39).padStart(32, "c")}/`);
+    cardLinks[39] = Array.from({ length: 5 }, (_, index) => `https://www.kokuchpro.com/event/${String(index + 44).padStart(32, "d")}/`);
+  }
+  const inside = cardLinks.flat();
   const outside = Array.from({ length: outsideCount }, (_, index) => `https://www.kokuchpro.com/event/${String(index + 101).padStart(32, "b")}/`);
+  const anchor = (href) => ({ href, getAttribute() { return href; } });
+  const cards = cardLinks.map((links) => [...links, links[0]]);
+  const page = workflowPage();
+  page.evaluate = async (fn) => {
+    const previous = global.document;
+    global.document = { querySelectorAll(selector) {
+      if (selector === ".event_list .event_item") return cards.map((links) => ({ querySelectorAll() { return links.map(anchor); } }));
+      return [...inside.flatMap((href) => [anchor(href), anchor(href)]), ...outside.map(anchor)];
+    } };
+    try { return await fn(); } finally { if (previous === undefined) delete global.document; else global.document = previous; }
+  };
+  return page;
+}
+
+function cardResultPage(cards) {
   const anchor = (href) => ({ href, getAttribute() { return href; } });
   const page = workflowPage();
   page.evaluate = async (fn) => {
     const previous = global.document;
-    global.document = { querySelectorAll(selector) { return (selector === ".event_list .event_item a[href]" ? inside.flatMap((href) => [anchor(href), anchor(href)]) : [...inside, ...outside].map(anchor)); } };
+    global.document = { querySelectorAll() { return cards.map((links) => links && { querySelectorAll(selector) { const selected = selector === 'a[href^="https://www.kokuchpro.com/event/"]' ? links.filter((href) => String(href).startsWith("https://www.kokuchpro.com/event/")) : links; return selected.map(anchor); } }); } };
     try { return await fn(); } finally { if (previous === undefined) delete global.document; else global.document = previous; }
   };
   return page;
@@ -288,11 +308,36 @@ test("KokuchPro listing scopes to first-page result items and ignores outside an
     onDiscoveryAudit: async (audit) => audits.push(audit),
   });
   assert.deepEqual(await workflow.discoverCandidates({ page, calendar: [] }), []);
-  assert.deepEqual(audits, [{ discovered_count: 40, within_window_count: 0, eligible_count: 0, calendar_free_count: 0, selected_count: 0 }]);
+  assert.deepEqual(audits, [{ discovered_count: 48, within_window_count: 0, eligible_count: 0, calendar_free_count: 0, selected_count: 0 }]);
   await assert.rejects(createKokuchProDiscoveryWorkflow({
     now: () => new Date(NOW),
     readEventDetail: async (ownedPage, url) => { ownedPage.current = url; return null; },
   }).discoverCandidates({ page: scopedListingPage(41, 1), calendar: [] }), (error) => error.code === "KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
+  const unique = Array.from({ length: 21 }, (_, index) => `https://www.kokuchpro.com/event/${String(index + 201).padStart(32, "e")}/`);
+  for (const cards of [[], [null], [unique]]) {
+    await assert.rejects(createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW), readEventDetail: async () => null }).discoverCandidates({ page: cardResultPage(cards), calendar: [] }), (error) => error.code === "KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
+  }
+  const tooManyInjected = createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW), readListingBindings: async () => Array.from({ length: 801 }, (_, index) => ({ canonical_url: `https://www.kokuchpro.com/event/${String(index + 301).padStart(32, "f")}/` })) });
+  await assert.rejects(tooManyInjected.discoverCandidates({ page: {}, calendar: [] }), (error) => error.code === "KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
+});
+
+test("KokuchPro listing ignores ordinary card anchors while bounding event-like raw and unique links", async () => {
+  const events = Array.from({ length: 5 }, (_, index) => `https://www.kokuchpro.com/event/${String(index + 501).padStart(32, "a")}/`);
+  const eventLinks = [events[0], events[0], events[1], events[1], events[2], events[3], events[4]];
+  const ordinary = Array.from({ length: 16 }, (_, index) => `https://www.kokuchpro.com/help/${index}`);
+  const audits = [];
+  const workflow = createKokuchProDiscoveryWorkflow({
+    now: () => new Date(NOW),
+    readEventDetail: async (ownedPage, url) => { ownedPage.current = url; return null; },
+    onDiscoveryAudit: async (audit) => audits.push(audit),
+  });
+  assert.deepEqual(await workflow.discoverCandidates({ page: cardResultPage([[...ordinary, ...eventLinks]]), calendar: [] }), []);
+  assert.deepEqual(audits, [{ discovered_count: 5, within_window_count: 0, eligible_count: 0, calendar_free_count: 0, selected_count: 0 }]);
+
+  const tooManyUnique = Array.from({ length: 21 }, (_, index) => `https://www.kokuchpro.com/event/${String(index + 601).padStart(32, "b")}/`);
+  await assert.rejects(createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW), readEventDetail: async () => null }).discoverCandidates({ page: cardResultPage([tooManyUnique]), calendar: [] }), (error) => error.code === "KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
+  const tooManyRaw = Array.from({ length: 101 }, (_, index) => events[index % events.length]);
+  await assert.rejects(createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW), readEventDetail: async () => null }).discoverCandidates({ page: cardResultPage([tooManyRaw]), calendar: [] }), (error) => error.code === "KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
 });
 
 test("KokuchPro default listing is exact, same-page, canonical-only, and bounded", async () => {
@@ -420,7 +465,7 @@ test("KokuchPro workflow gates Calendar once, orders exact coverage first, and f
   assert.deepEqual(reads, [ROOT, secondUrl]);
   assert.equal(calendarCalls, 2);
   assert.deepEqual(result.map((row) => row.canonical_url), [ROOT, secondUrl]);
-  assert.deepEqual(audits, [{ discovered_count: 4, within_window_count: 2, eligible_count: 2, calendar_free_count: 2, selected_count: 2 }]);
+  assert.deepEqual(audits, [{ discovered_count: 2, within_window_count: 2, eligible_count: 2, calendar_free_count: 2, selected_count: 2 }]);
   assert.equal(Object.isFrozen(audits[0]), true);
 });
 

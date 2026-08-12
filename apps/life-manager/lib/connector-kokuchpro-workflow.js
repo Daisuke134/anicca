@@ -6,6 +6,8 @@ const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const TIME_ZONE = "Asia/Tokyo";
 const LISTING_BASE = "https://www.kokuchpro.com/s/area-%E6%9D%B1%E4%BA%AC%E9%83%BD/charge-0/";
 const EVENT_URL = /^https:\/\/www\.kokuchpro\.com\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?\/$/;
+const EVENT_RAW_PER_CARD = 100;
+const EVENT_RAW_TOTAL = 4_000;
 const ISO_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})$/;
 const CONTROL = /[\u0000-\u001F\u007F-\u009F]/;
 const OFFLINE_MODE = new Set(["https://schema.org/OfflineEventAttendanceMode", "http://schema.org/OfflineEventAttendanceMode"]);
@@ -150,9 +152,14 @@ function structuredDetail(raw, canonicalUrl) {
 async function defaultReadListingBindings(page, observed) {
   if (!page || typeof page.goto !== "function" || typeof page.evaluate !== "function") invalid(); const url = listingUrl(observed);
   try { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 }); assertPageUrl(page, url, "KOKUCHPRO_LISTING_NAVIGATION_FAILED"); } catch (error) { if (error && error.code === "KOKUCHPRO_LISTING_NAVIGATION_FAILED") throw error; throw stageError("KOKUCHPRO_LISTING_NAVIGATION_FAILED"); }
-  let rows; try { rows = await page.evaluate(() => [...document.querySelectorAll(".event_list .event_item a[href]")].map((anchor) => ({ href: String(anchor.href || anchor.getAttribute("href") || "") }))); } catch { throw stageError("KOKUCHPRO_LISTING_READ_FAILED"); }
-  if (!Array.isArray(rows) || rows.length > 2_000) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); const result = []; const seen = new Set();
-  for (const row of rows) { const binding = canonicalKokuchProBinding(row); if (!binding || seen.has(binding.event_ref)) continue; seen.add(binding.event_ref); result.push(binding); if (result.length > 40) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); }
+  let cards; try { cards = await page.evaluate(() => [...document.querySelectorAll(".event_list .event_item")].map((item) => { if (!item || typeof item.querySelectorAll !== "function") return null; const anchors = item.querySelectorAll('a[href^="https://www.kokuchpro.com/event/"]'); return anchors && typeof anchors[Symbol.iterator] === "function" ? [...anchors].map((anchor) => String(anchor && (anchor.href || anchor.getAttribute("href")) || "")) : null; })); } catch { throw stageError("KOKUCHPRO_LISTING_READ_FAILED"); }
+  if (!Array.isArray(cards) || cards.length < 1 || cards.length > 40) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); const result = []; const seen = new Set(); let rawCount = 0;
+  for (const card of cards) {
+    if (!Array.isArray(card) || card.length < 1 || card.length > EVENT_RAW_PER_CARD) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); rawCount += card.length;
+    if (rawCount > EVENT_RAW_TOTAL) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); const cardSeen = new Set();
+    for (const raw of card) { if (typeof raw !== "string") throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); const binding = canonicalKokuchProBinding(raw); if (!binding || cardSeen.has(binding.event_ref)) continue; cardSeen.add(binding.event_ref); if (cardSeen.size > 20) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); if (seen.has(binding.event_ref)) continue; seen.add(binding.event_ref); result.push(binding); }
+  }
+  if (result.length > 800) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
   return Object.freeze(result);
 }
 
@@ -170,7 +177,7 @@ function createKokuchProDiscoveryWorkflow(options = {}) {
   return Object.freeze({
     async discoverCandidates({ page, calendar }) {
       const observed = now(); if (!(observed instanceof Date) || !Number.isFinite(observed.getTime())) invalid(); let rows;
-      try { rows = await readListingBindings(page, observed); } catch (error) { throw preserveSafe(error, "KOKUCHPRO_LISTING_READ_FAILED"); } if (!Array.isArray(rows) || rows.length > 40) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
+      try { rows = await readListingBindings(page, observed); } catch (error) { throw preserveSafe(error, "KOKUCHPRO_LISTING_READ_FAILED"); } if (!Array.isArray(rows) || rows.length > 800) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
       const bindings = []; const seen = new Set(); for (const row of rows) { const binding = canonicalKokuchProBinding(row); if (!binding || seen.has(binding.event_ref)) continue; seen.add(binding.event_ref); bindings.push(binding); }
       const window = candidateWindow(observed); const exactCovered = []; const unprocessed = []; let withinWindowCount = 0; let eligibleCount = 0;
       for (const binding of bindings) {
@@ -179,7 +186,7 @@ function createKokuchProDiscoveryWorkflow(options = {}) {
         withinWindowCount += 1; eligibleCount += 1; let free; try { free = await isCalendarFree(candidate, calendar); } catch { throw stageError("KOKUCHPRO_CALENDAR_CONFLICT_CHECK_FAILED"); } if (!free) continue;
         (calendarIntervals(calendar).some((busy) => exactCoverage(candidate, busy)) ? exactCovered : unprocessed).push(candidate);
       }
-      const selectedCount = exactCovered.length + unprocessed.length; try { await onDiscoveryAudit(Object.freeze({ discovered_count: rows.length, within_window_count: withinWindowCount, eligible_count: eligibleCount, calendar_free_count: selectedCount, selected_count: selectedCount })); } catch (error) { throw preserveSafe(error, "KOKUCHPRO_AUDIT_FAILED"); }
+      const selectedCount = exactCovered.length + unprocessed.length; try { await onDiscoveryAudit(Object.freeze({ discovered_count: bindings.length, within_window_count: withinWindowCount, eligible_count: eligibleCount, calendar_free_count: selectedCount, selected_count: selectedCount })); } catch (error) { throw preserveSafe(error, "KOKUCHPRO_AUDIT_FAILED"); }
       return Object.freeze([...exactCovered, ...unprocessed]);
     },
     async runDirectAction({ candidate }) { exactCandidate(candidate); return Object.freeze({ status: "failed", safe_reason: "kokuchpro_direct_requires_harness" }); },
