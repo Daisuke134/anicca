@@ -26552,3 +26552,10 @@
 {"ts":1786565271,"wake_id":"00MSQIU2E704AC14FB855D4B9D","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786565401,"wake_id":"00MSQIWUEF0625D801DE8B42BD","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786565531,"wake_id":"00MSQIZMEDBF096A5066214AC1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786565664,"wake_id":"00MSQJ2HNH0A94B98950364958","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786565791,"wake_id":"00MSQJ57LO183D98AE8177429D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786565921,"wake_id":"00MSQJ7ZSLE9E6C5BB61234D06","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana platform paying USDC for data labeling tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfa"}
+{"ts":1786566050,"wake_id":"00MSQJAQVBF0D668DFF952449C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786566178,"wake_id":"00MSQJDI4X6C3D3A4F5F434B45","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786566308,"wake_id":"00MSQJG9UCA1F4AACC0C534B96","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786566435,"wake_id":"00MSQJJ0ID174B84F3DE564A22","kind":"wake","sleep_s":120,"model":"auto","slot":"self/issue-dev","profitable":false,"exit_code":0,"result":"[issue-dev] no actionable problem in recent behaviour — healthy, nothing to file. "}
