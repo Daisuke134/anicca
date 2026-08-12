@@ -223,6 +223,8 @@ test("KokuchPro rejects semantically invalid ISO calendar dates", () => {
 });
 
 const LIST_URL = "https://www.kokuchpro.com/s/area-%E6%9D%B1%E4%BA%AC%E9%83%BD/charge-0/?et=0&start_date=2026-08-12&end_date=2026-08-26&enabled=1&sort=date";
+const LOGIN_URL = "https://www.kokuchpro.com/auth/login/";
+const ENTRY_URL = `${ROOT}entry/`;
 
 function jsonLdDetail(url = ROOT, overrides = {}) {
   const occurrence = url === ROOT ? null : OCCURRENCE;
@@ -262,6 +264,16 @@ function defaultEvaluatePage({ listingRows = [], details = {} } = {}) {
     page.calls.push(["evaluate", page.current]);
     if (page.current === LIST_URL) return listingRows.map((row) => [row && (row.href || row.canonical_url || row.url || row)]);
     return details[argument || page.current];
+  };
+  return page;
+}
+
+function readbackPage(url, facts, { evaluateError = false, driftTo = null } = {}) {
+  const page = workflowPage(url);
+  page.evaluate = async () => {
+    if (evaluateError) throw new Error("evaluate");
+    if (driftTo) page.current = driftTo;
+    return facts;
   };
   return page;
 }
@@ -491,6 +503,65 @@ test("KokuchPro rejects a hidden Event nested in a top-level JSON-LD array graph
     [ROOT]: jsonLdDetail(ROOT, { jsonld: [{ "@graph": [canonical] }, canonical] }),
   } });
   assert.deepEqual(await createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page, calendar: [] }), []);
+});
+
+test("KokuchPro readback classifies exact absent and auth-required boundaries", async () => {
+  const candidate = normalizeKokuchProDetail({ binding: binding(), detail: detail(), now: NOW });
+  const workflow = createKokuchProDiscoveryWorkflow();
+  for (const entry_forms of [
+    [{ action: ENTRY_URL, method: "POST" }],
+    [{ action: ENTRY_URL, method: "POST" }, { action: ENTRY_URL, method: "POST" }],
+  ]) {
+    assert.deepEqual(await workflow.readProviderState({ page: readbackPage(ROOT, { entry_forms }), candidate }), { status: "absent" });
+  }
+  const entryPath = new URL(ENTRY_URL).pathname;
+  const loginPage = readbackPage(`${LOGIN_URL}?continue=${encodeURIComponent(entryPath)}`, {
+    password_count: 1,
+    login_forms: [{ action: LOGIN_URL, method: "POST" }],
+  });
+  assert.deepEqual(await workflow.readProviderState({ page: loginPage, candidate }), { status: "auth_required" });
+});
+
+test("KokuchPro readback fails closed for URL, candidate, DOM, and evaluation ambiguity", async () => {
+  const candidate = normalizeKokuchProDetail({ binding: binding(), detail: detail(), now: NOW });
+  const workflow = createKokuchProDiscoveryWorkflow();
+  const entryForms = (actions, methods = actions.map(() => "POST")) => ({ entry_forms: actions.map((action, index) => ({ action, method: methods[index] })) });
+  for (const [name, page] of [
+    ["wrong current", readbackPage(`${ROOT}?x=1`, entryForms([ENTRY_URL]))],
+    ["entry missing", readbackPage(ROOT, entryForms([]))],
+    ["entry duplicate", readbackPage(ROOT, entryForms([ENTRY_URL, ENTRY_URL, ENTRY_URL]))],
+    ["entry action", readbackPage(ROOT, entryForms([`${ROOT}entry/?x=1`]))],
+    ["entry method", readbackPage(ROOT, entryForms([ENTRY_URL], ["GET"]))],
+    ["malformed entry", readbackPage(ROOT, { entry_forms: [{ action: ENTRY_URL }] })],
+    ["evaluate", readbackPage(ROOT, null, { evaluateError: true })],
+    ["redirect", readbackPage(ROOT, entryForms([ENTRY_URL]), { driftTo: LOGIN_URL })],
+  ]) {
+    assert.deepEqual(await workflow.readProviderState({ page, candidate }), { status: "unavailable" }, name);
+  }
+  const entryPath = new URL(ENTRY_URL).pathname;
+  const loginFacts = { password_count: 1, login_forms: [{ action: LOGIN_URL, method: "POST" }] };
+  const loginUrls = [
+    `http://www.kokuchpro.com/auth/login/?continue=${encodeURIComponent(entryPath)}`,
+    `https://kokuchpro.com/auth/login/?continue=${encodeURIComponent(entryPath)}`,
+    `https://www.kokuchpro.com:443/auth/login/?continue=${encodeURIComponent(entryPath)}`,
+    `https://user:pass@www.kokuchpro.com/auth/login/?continue=${encodeURIComponent(entryPath)}`,
+    `https://www.kokuchpro.com/auth/login?continue=${encodeURIComponent(entryPath)}`,
+    `${LOGIN_URL}?continue=${encodeURIComponent(entryPath)}#fragment`,
+    `${LOGIN_URL}?continue=${encodeURIComponent(entryPath)}&continue=${encodeURIComponent(entryPath)}`,
+    `${LOGIN_URL}?continue=${encodeURIComponent(`${entryPath}wrong`)}`,
+  ];
+  for (const url of loginUrls) assert.deepEqual(await workflow.readProviderState({ page: readbackPage(url, loginFacts), candidate }), { status: "unavailable" }, url);
+  for (const facts of [
+    { password_count: 0, login_forms: loginFacts.login_forms },
+    { password_count: 2, login_forms: loginFacts.login_forms },
+    { password_count: 1, login_forms: [] },
+    { password_count: 1, login_forms: [{ action: LOGIN_URL, method: "GET" }] },
+    { password_count: 1, login_forms: [loginFacts.login_forms[0], loginFacts.login_forms[0]] },
+    { password_count: 1, login_forms: [{ action: "https://evil.example/auth/login/", method: "POST" }] },
+    { password_count: 1 },
+  ]) assert.deepEqual(await workflow.readProviderState({ page: readbackPage(`${LOGIN_URL}?continue=${encodeURIComponent(entryPath)}`, facts), candidate }), { status: "unavailable" });
+  const otherCandidate = normalizeKokuchProDetail({ binding: binding(OCCURRENCE_URL), detail: detail({}, OCCURRENCE_URL), now: NOW });
+  assert.deepEqual(await workflow.readProviderState({ page: readbackPage(`${LOGIN_URL}?continue=${encodeURIComponent(entryPath)}`, loginFacts), candidate: otherCandidate }), { status: "unavailable" });
 });
 
 test("KokuchPro workflow maps stage failures safely and leaves action/readback unavailable", async () => {

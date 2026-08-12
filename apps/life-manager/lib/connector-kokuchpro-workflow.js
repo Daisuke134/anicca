@@ -10,6 +10,9 @@ const EVENT_RAW_PER_CARD = 100;
 const EVENT_RAW_TOTAL = 4_000;
 const ISO_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})$/;
 const JSONLD_NODE_LIMIT = 256;
+const LOGIN_URL = "https://www.kokuchpro.com/auth/login/";
+const READBACK_FORM_LIMIT = 32;
+const READBACK_PASSWORD_LIMIT = 16;
 const CONTROL = /[\u0000-\u001F\u007F-\u009F]/;
 const OFFLINE_MODE = new Set(["https://schema.org/OfflineEventAttendanceMode", "http://schema.org/OfflineEventAttendanceMode"]);
 const IN_STOCK = new Set(["InStock", "https://schema.org/InStock", "http://schema.org/InStock"]);
@@ -205,6 +208,51 @@ async function defaultReadEventDetail(page, canonicalUrl) {
   try { return structuredDetail(raw, canonicalUrl); } catch (error) { if (error && error.code) throw error; throw stageError("KOKUCHPRO_DETAIL_RESULT_CONTRACT_FAILED"); }
 }
 
+function exactLoginUrl(value, entryPath) {
+  if (typeof value !== "string") return false;
+  const authority = /^https:\/\/([^/]+)(?:\/|$)/.exec(value);
+  if (!authority || authority[1] !== "www.kokuchpro.com") return false;
+  let parsed; try { parsed = new URL(value); } catch { return false; }
+  if (parsed.pathname !== "/auth/login/" || parsed.hash) return false;
+  const parts = parsed.search.slice(1).split("&"); if (parts.length !== 1) return false;
+  const separator = parts[0].indexOf("="); if (separator <= 0 || parts[0].slice(0, separator) !== "continue") return false;
+  try { return decodeURIComponent(parts[0].slice(separator + 1).replace(/\+/g, " ")) === entryPath; } catch { return false; }
+}
+
+async function readProviderStateFacts(page, mode, entryUrl) {
+  return page.evaluate(({ mode: expectedMode, entryUrl: expectedEntry, loginUrl, formLimit, passwordLimit }) => {
+    const forms = [...document.querySelectorAll("form")];
+    if (forms.length > formLimit) return null;
+    const facts = forms.map((form) => ({
+      action: String(form && (form.action || form.getAttribute("action")) || ""),
+      method: String(form && (form.method || form.getAttribute("method")) || "").toUpperCase(),
+    }));
+    if (expectedMode === "entry") return { entry_forms: facts.filter((form) => form.action === expectedEntry) };
+    const passwords = [...document.querySelectorAll('input[type="password"]')];
+    if (passwords.length > passwordLimit) return null;
+    return { password_count: passwords.length, login_forms: facts.filter((form) => form.action === loginUrl) };
+  }, { mode, entryUrl, loginUrl: LOGIN_URL, formLimit: READBACK_FORM_LIMIT, passwordLimit: READBACK_PASSWORD_LIMIT });
+}
+
+async function defaultReadProviderState(page, selected) {
+  if (!page || typeof page.url !== "function" || typeof page.evaluate !== "function") return null;
+  const entryUrl = `${selected.canonical_url}entry/`; const entryPath = new URL(entryUrl).pathname;
+  const current = String(page.url());
+  const mode = current === selected.canonical_url ? "entry" : exactLoginUrl(current, entryPath) ? "login" : null;
+  if (!mode) return null;
+  const facts = await readProviderStateFacts(page, mode, entryUrl);
+  if (String(page.url()) !== current || !facts || typeof facts !== "object" || Array.isArray(facts)) return null;
+  if (mode === "entry") {
+    const forms = facts.entry_forms;
+    return Array.isArray(forms) && (forms.length === 1 || forms.length === 2)
+      && forms.every((form) => form && typeof form === "object" && !Array.isArray(form) && form.action === entryUrl && form.method === "POST") ? "absent" : null;
+  }
+  const forms = facts.login_forms;
+  return facts.password_count === 1 && Array.isArray(forms) && forms.length === 1
+    && forms[0] && typeof forms[0] === "object" && !Array.isArray(forms[0])
+    && forms[0].action === LOGIN_URL && forms[0].method === "POST" ? "auth_required" : null;
+}
+
 function exactCandidate(value) { if (!value || typeof value !== "object" || Array.isArray(value) || value.provider !== "kokuchpro" || !canonicalKokuchProBinding(value) || !String(value.title || "").trim() || !Number.isFinite(Date.parse(String(value.starts_at || ""))) || !Number.isFinite(Date.parse(String(value.ends_at || ""))) || Date.parse(value.starts_at) >= Date.parse(value.ends_at) || value.registration_status !== "available" || value.ticket_price_status !== "free" || value.ticket_price_minor !== 0 || typeof value.ticket_id !== "string" || !/^[A-Za-z0-9._:-]{1,128}$/.test(value.ticket_id)) invalid(); return value; }
 function createKokuchProDiscoveryWorkflow(options = {}) {
   const now = options.now || (() => new Date()); const readListingBindings = options.readListingBindings || options.readListing || defaultReadListingBindings; const readEventDetail = options.readEventDetail || defaultReadEventDetail; const isCalendarFree = options.isCalendarFree || defaultCalendarFree; const onDiscoveryAudit = options.onDiscoveryAudit || (() => {});
@@ -227,7 +275,10 @@ function createKokuchProDiscoveryWorkflow(options = {}) {
       return Object.freeze([...exactCovered, ...unprocessed]);
     },
     async runDirectAction({ candidate }) { exactCandidate(candidate); return Object.freeze({ status: "failed", safe_reason: "kokuchpro_direct_requires_harness" }); },
-    async readProviderState({ candidate }) { exactCandidate(candidate); return Object.freeze({ status: "unavailable" }); },
+    async readProviderState({ page, candidate } = {}) {
+      try { const selected = exactCandidate(candidate); const status = await defaultReadProviderState(page, selected); return Object.freeze({ status: status || "unavailable" }); }
+      catch { return Object.freeze({ status: "unavailable" }); }
+    },
   });
 }
 
