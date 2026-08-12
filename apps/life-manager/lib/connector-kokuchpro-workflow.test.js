@@ -175,3 +175,48 @@ test("KokuchPro bounds public text, ticket tokens, occurrence ids, and timestamp
     now: NOW,
   }), null);
 });
+
+test("KokuchPro rejects conflicting URL and identity aliases", () => {
+  assert.equal(canonicalKokuchProBinding({ canonical_url: ROOT, href: OCCURRENCE_URL }), null);
+  assert.equal(canonicalKokuchProBinding({ canonical_url: ROOT, url: ROOT, href: ROOT }).canonical_url, ROOT);
+  assert.equal(canonicalKokuchProBinding({
+    canonical_url: ROOT,
+    event_ref: `kokuchpro-event://event/${KEY}`,
+    event_key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  }), null);
+  assert.equal(canonicalKokuchProBinding({
+    canonical_url: OCCURRENCE_URL,
+    event_ref: `kokuchpro-event://event/${KEY}/${OCCURRENCE}`,
+    event_key: KEY,
+    occurrence_id: "1",
+  }), null);
+  assert.throws(() => normalizeKokuchProDetail({
+    binding: binding(), detail: detail({ event_ref: "kokuchpro-event://event/wrong" }), now: NOW,
+  }), /KokuchPro workflow invalid/);
+  assert.throws(() => normalizeKokuchProDetail({
+    binding: binding(), detail: detail({ canonical_url: ROOT, href: OCCURRENCE_URL }), now: NOW,
+  }), /KokuchPro workflow invalid/);
+});
+
+test("KokuchPro requires a Japanese Tokyo prefecture address", () => {
+  assert.equal(normalizeKokuchProDetail({
+    binding: binding(), detail: detail({ address: "千葉県浦安市 Tokyo venue" }), now: NOW,
+  }), null);
+  assert.equal(normalizeKokuchProDetail({
+    binding: binding(), detail: detail({ address: "東京都豊島区" }), now: NOW,
+  }).address, "東京都豊島区");
+});
+
+test("KokuchPro rejects semantically invalid ISO calendar dates", () => {
+  const februaryNow = new Date("2026-02-20T00:30:00.000Z");
+  assert.equal(normalizeKokuchProDetail({
+    binding: binding(),
+    detail: detail({ starts_at: "2026-02-30T19:00:00+09:00", ends_at: "2026-02-30T20:00:00+09:00" }),
+    now: februaryNow,
+  }), null);
+  assert.equal(normalizeKokuchProDetail({
+    binding: binding(),
+    detail: detail({ starts_at: "2026-02-20T24:00:00+09:00", ends_at: "2026-02-20T25:00:00+09:00" }),
+    now: februaryNow,
+  }), null);
+});
