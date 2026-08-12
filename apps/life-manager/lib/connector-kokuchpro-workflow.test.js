@@ -266,6 +266,35 @@ function defaultEvaluatePage({ listingRows = [], details = {} } = {}) {
   return page;
 }
 
+function scopedListingPage(inScopeCount = 40, outsideCount = 5) {
+  const inside = Array.from({ length: inScopeCount }, (_, index) => `https://www.kokuchpro.com/event/${String(index + 1).padStart(32, "a")}/`);
+  const outside = Array.from({ length: outsideCount }, (_, index) => `https://www.kokuchpro.com/event/${String(index + 101).padStart(32, "b")}/`);
+  const anchor = (href) => ({ href, getAttribute() { return href; } });
+  const page = workflowPage();
+  page.evaluate = async (fn) => {
+    const previous = global.document;
+    global.document = { querySelectorAll(selector) { return (selector === ".event_list .event_item a[href]" ? inside.flatMap((href) => [anchor(href), anchor(href)]) : [...inside, ...outside].map(anchor)); } };
+    try { return await fn(); } finally { if (previous === undefined) delete global.document; else global.document = previous; }
+  };
+  return page;
+}
+
+test("KokuchPro listing scopes to first-page result items and ignores outside anchors", async () => {
+  const audits = [];
+  const page = scopedListingPage(40, 5);
+  const workflow = createKokuchProDiscoveryWorkflow({
+    now: () => new Date(NOW),
+    readEventDetail: async (ownedPage, url) => { ownedPage.current = url; return null; },
+    onDiscoveryAudit: async (audit) => audits.push(audit),
+  });
+  assert.deepEqual(await workflow.discoverCandidates({ page, calendar: [] }), []);
+  assert.deepEqual(audits, [{ discovered_count: 40, within_window_count: 0, eligible_count: 0, calendar_free_count: 0, selected_count: 0 }]);
+  await assert.rejects(createKokuchProDiscoveryWorkflow({
+    now: () => new Date(NOW),
+    readEventDetail: async (ownedPage, url) => { ownedPage.current = url; return null; },
+  }).discoverCandidates({ page: scopedListingPage(41, 1), calendar: [] }), (error) => error.code === "KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
+});
+
 test("KokuchPro default listing is exact, same-page, canonical-only, and bounded", async () => {
   const first = ROOT;
   const second = `${ROOT}${OCCURRENCE}/`;
