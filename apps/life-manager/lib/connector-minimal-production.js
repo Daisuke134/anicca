@@ -228,12 +228,15 @@ function createProductionProviderRouter(options = {}) {
 
     runAgentFallback(input) {
       const route = selected(input);
+      if (!Number.isInteger(route.input.maxSteps) || route.input.maxSteps < 1) invalid();
+      const maxSteps = route.input.provider === "techplay"
+        ? route.input.maxSteps : Math.min(route.input.maxSteps, 10);
       return browserHarness.runFallback({
         provider: route.input.provider,
         candidate: route.input.candidate,
         page: route.input.page,
         pageWebsocket: route.input.pageWebsocket,
-        maxSteps: route.input.maxSteps,
+        maxSteps,
         expectedState: route.input.expectedState,
       });
     },

@@ -206,6 +206,8 @@ stateDiagram-v2
 
 Safety invariants: one schedule owner, one browser target per wake, final mutation at most once, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` proves a new completed application. `completed_no_effect` is a healthy process result with zero new external writes. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
 
+Current canonical acceptance: PR `#1936` is merged to `main` at `4f1960592`. The first post-merge production wake traversed all seven configured providers and KokuchPro on one owned page, reused existing bundles without a duplicate external effect, delivered a positive Telegram receipt, restored the exact unrelated browser pages, released the lock, and exited zero. The only remaining event-rail work is conditional: Meetup, Doorkeeper, Eventbrite, and TECH PLAY need a future Calendar-safe live candidate before their first real `applied_bundle` can be proven.
+
 ---
 
 ## What's real today (honest)
