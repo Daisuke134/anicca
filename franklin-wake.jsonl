@@ -26255,3 +26255,10 @@
 {"ts":1786526947,"wake_id":"00MSPW0NE5BC4B6524B81C4475","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786527078,"wake_id":"00MSPW3FX4B2C7718291C841EE","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786527241,"wake_id":"00MSPW6XPA1CC9F0E29BD749F7","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana pay per request compute marketplace API AI inference paid [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (can"}
+{"ts":1786527371,"wake_id":"00MSPW9QIO68507A1969464FD4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786527511,"wake_id":"00MSPWCQH4FDEF3B743B4C4B00","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786527671,"wake_id":"00MSPWG5NIEBD6F1774FA14A16","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786527798,"wake_id":"00MSPWIVWL423E9C0813184B32","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786527944,"wake_id":"00MSPWM04C08F6D04E9CFB442E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786528075,"wake_id":"00MSPWOTNZ87419587DF8B403B","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786528204,"wake_id":"00MSPWRKQ2D35D5CB0DF0740AB","kind":"narrate","sleep_s":120,"model":"auto"}
