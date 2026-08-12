@@ -6,7 +6,7 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
-const { runNativePass } = require("../native-pass.js");
+const { nativeExitCode, runNativePass } = require("../native-pass.js");
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const VALID_KANA = Object.freeze({ family: "サクラ", given: "テスト" });
@@ -24,6 +24,18 @@ function writeKanaProfile(home, value = VALID_KANA, mode = 0o600, nameJa, identi
 test("official foreground entrypoint is directly executable", () => {
   const mode = fs.statSync(path.join(REPO_ROOT, "skills", "connector", "run.sh")).mode;
   assert.notEqual(mode & 0o111, 0);
+});
+
+test("native terminal exit treats only healthy statuses as success", () => {
+  for (const [result, expected] of [
+    [{ status: "applied_bundle" }, 0],
+    [{ status: "completed_no_effect" }, 0],
+    [{ status: "circuit_open" }, 1],
+    [{ status: "malformed" }, 1],
+    [undefined, 1],
+    [null, 1],
+    [[], 1],
+  ]) assert.equal(nativeExitCode(result), expected);
 });
 
 test("official native pass forwards only the bounded minimal wake contract", async () => {

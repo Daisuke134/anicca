@@ -176,15 +176,20 @@ function cliArguments(argv = process.argv.slice(2)) {
   });
 }
 
+function nativeExitCode(result) {
+  const status = result && typeof result === "object" && !Array.isArray(result) && Object.hasOwn(result, "status")
+    ? result.status : undefined;
+  return status === "applied_bundle" || status === "completed_no_effect" ? 0 : 1;
+}
+
 if (require.main === module) {
   runNativePass(cliArguments())
     .then((result) => {
-      const exitCode = result && result.status === "applied_bundle" ? 0 : 1;
-      process.exit(exitCode);
+      process.exit(nativeExitCode(result));
     })
     .catch(() => {
       process.stderr.write("Connector minimal pass unavailable\n", () => process.exit(2));
     });
 }
 
-module.exports = { createNativeProductionConfig: productionConfig, runNativePass };
+module.exports = { createNativeProductionConfig: productionConfig, nativeExitCode, runNativePass };
