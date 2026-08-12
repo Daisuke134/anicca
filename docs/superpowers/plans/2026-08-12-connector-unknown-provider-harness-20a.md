@@ -28,11 +28,11 @@
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
 - Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
 
-- [ ] **Step 1: Write RED constructor and fallback tests**
+- [x] **Step 1: Write RED constructor and fallback tests**
 
   Require an exact configured extension provider/workflow to enter the existing generic fallback, while partial config, malformed tokens, unconfigured unknown tokens, and a second token fail closed.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
   ```bash
   cd apps/life-manager
@@ -41,11 +41,11 @@
 
   Expected: only the new extension-seam assertions fail because the constructor has no extension options.
 
-- [ ] **Step 3: Implement the smallest GREEN constructor seam**
+- [x] **Step 3: Implement the smallest GREEN constructor seam**
 
   Validate the optional pair once, use an instance-local provider predicate, select the extension workflow only for the exact token, and reuse the existing generic fallback unchanged.
 
-- [ ] **Step 4: Run GREEN and adjacent checks**
+- [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
   cd apps/life-manager
@@ -54,17 +54,21 @@
   git diff --check
   ```
 
-- [ ] **Step 5: Report without committing**
+- [x] **Step 5: Report without committing**
 
   Record RED/GREEN commands, exact test counts, changed lines, and any remaining risk in the SDD report. Sol performs review, commit, and push.
 
 ## Acceptance checklist
 
-- [ ] RED: an exact configured extension provider cannot currently enter the existing generic Browser Harness path.
-- [ ] Constructor accepts either neither extension option or both an exact safe provider token and a workflow with `readProviderState`; partial/malformed configuration fails closed.
-- [ ] Only the exact configured extension token is added to that Harness instance; any other unknown token remains rejected.
-- [ ] Configured extension reuses the existing generic observe → propose one action → perform → verified readback loop on the supplied page; it cannot create/navigate/close a browser target.
-- [ ] Success requires extension workflow readback status `registered` or `pending`; unavailable/absent/malformed proof is a safe failed result and never saves an action.
-- [ ] Existing seven providers, provider-specific guards, mutation dedupe, max-step boundary, and private-value resolver remain unchanged.
-- [ ] Focused Harness tests, syntax, diff check, mutation proof, and fresh Sol review pass.
-- [ ] Do not change production factory/router/native order, discovery, Calendar/evidence, launchd, or perform a real application in this slice.
+- [x] RED: an exact configured extension provider cannot currently enter the existing generic Browser Harness path.
+- [x] Constructor accepts either neither extension option or both an exact safe provider token and a workflow with `readProviderState`; partial/malformed configuration fails closed.
+- [x] Only the exact configured extension token is added to that Harness instance; any other unknown token remains rejected.
+- [x] Configured extension reuses the existing generic observe → propose one action → perform → verified readback loop on the supplied page; it cannot create/navigate/close a browser target.
+- [x] Success requires extension workflow readback status `registered` or `pending`; unavailable/absent/malformed proof is a safe failed result and never saves an action.
+- [x] Existing seven providers, provider-specific guards, mutation dedupe, max-step boundary, and private-value resolver remain unchanged.
+- [x] Focused Harness tests, syntax, diff check, mutation proof, and fresh Sol review pass.
+- [x] Do not change production factory/router/native order, discovery, Calendar/evidence, launchd, or perform a real application in this slice.
+
+## Result
+
+Luna implemented the exact two-file seam with RED `147/149` and initial GREEN `149/149`. Fresh Sol found that an extension must never be able to trust an action-result `provider_state`; round 1 added an explicit extension cache exclusion plus an eight-case independent-readback regression matrix. Final focused/adjacent tests are `150/150` and `154/154`, syntax and diff checks pass, and fresh Sol re-review reports Spec compliance and Code quality both pass with Critical/Important 0. Code commits: `e44a11451`, `0d99afad4`.
