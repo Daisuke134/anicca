@@ -26632,3 +26632,10 @@
 {"ts":1786575652,"wake_id":"00MSQP0K6D80EBB51345664DDC","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786575780,"wake_id":"00MSQP3APSB21E7B9990FE49D2","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786575907,"wake_id":"00MSQP60G4F00403B5C7474554","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid microtasks USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model to try"}
+{"ts":1786576039,"wake_id":"00MSQP8UQY11BB3BB5EF304186","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786576169,"wake_id":"00MSQPBMUK2806CEB1AB1B4877","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786576297,"wake_id":"00MSQPEDQ0ADF3570807E047A6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786576424,"wake_id":"00MSQPH3KF402947E5502342D0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786576553,"wake_id":"00MSQPJV7E897E917C4BE843DF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786576684,"wake_id":"00MSQPMOIR74BD287DC4A64EEB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786576814,"wake_id":"00MSQPPGA9DA119C5F171B4177","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
