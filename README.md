@@ -117,7 +117,7 @@ Some internal package names, environment variables, service labels, and older do
 
 ## Connector agent — how event applications work
 
-Connector is the local Life Manager agent that searches seven Tokyo event rails—Luma, Connpass, Peatix, Meetup, Doorkeeper, Eventbrite, and TECH PLAY—removes unsafe or conflicting candidates, applies through one owned browser page, verifies the provider result, and reports an evidence-backed outcome in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
+Connector is the local Life Manager agent that searches eight Tokyo event rails—Luma, Connpass, Peatix, Meetup, Doorkeeper, Eventbrite, TECH PLAY, and KokuchPro—removes unsafe or conflicting candidates, applies through one owned browser page, verifies the provider result, and reports an evidence-backed outcome in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
 
 ```mermaid
 flowchart LR
@@ -126,7 +126,7 @@ flowchart LR
     CAL --> RAIL["One CloakBrowser target<br/>one owned page"]
 
     subgraph LOOP["Forward-only provider loop"]
-        PROVIDERS["Luma → Connpass → Peatix → Meetup<br/>→ Doorkeeper → Eventbrite → TECH PLAY"]
+        PROVIDERS["Luma → Connpass → Peatix → Meetup<br/>→ Doorkeeper → Eventbrite → TECH PLAY → KokuchPro"]
         DISCOVER["Provider discovery<br/>privacy-safe count audit"]
         GATE{"Free · open · Tokyo · in window<br/>and Calendar-safe?"}
         NEXT["Next candidate<br/>or next provider"]
@@ -145,7 +145,7 @@ flowchart LR
     DIRECT -->|effect unknown| CIRCUIT
     DIRECT -->|safe not completed| HARNESS["Bounded Browser Harness<br/>observe → propose → operate"]
     HARNESS -->|completed| POST{"Official parent / child-frame readback<br/>registered or pending?"}
-    HARNESS -->|safe failure| NEXT
+    HARNESS -->|safe failure / auth required| NEXT
     POST -->|No / safe failure| NEXT
     POST -->|Yes| SUPPORT
 
@@ -202,6 +202,7 @@ stateDiagram-v2
 | Doorkeeper | Discovery, action, readback, evidence | Connected; all four current eligible candidates conflict with Calendar, so live bundle remains pending |
 | Eventbrite | Three-page discovery, ticket/attendee/final action, child-frame readback, evidence | Connected; current production inventory has no eligible candidate, so external write is correctly zero |
 | TECH PLAY | RSS/detail discovery, input/review/final action, registered readback, evidence | Connected; all three current eligible candidates conflict with Calendar, so live bundle remains pending |
+| KokuchPro | Official listing/detail discovery, strict free/Tokyo/open gate, entry/login readback, bounded Harness | Connected; current official first page has no event inside the 14-day window. Login is classified as `auth_required` and safely hands off without private-value or retry effects |
 
 Safety invariants: one schedule owner, one browser target per wake, final mutation at most once, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` proves a new completed application. `completed_no_effect` is a healthy process result with zero new external writes. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
 

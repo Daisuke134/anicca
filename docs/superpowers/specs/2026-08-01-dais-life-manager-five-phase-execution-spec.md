@@ -7519,7 +7519,7 @@ LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Rese
 
 post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗486。これ以外の残TODO一覧は履歴）
+### Active remaining TODO SSOT（進捗496。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -7542,7 +7542,7 @@ post-integration read-only production-workflow diagnosticではhydrated official
 17. [x] **単一daily production scheduleをrender/loadする。** Items 10–16のacceptance後だけ、official minimal runnerを一日一回起動するConnector labelを一つloadする。Native旧schedule、healthcheck、Healer、bridge、5分retry、重複runnerはloaded 0にする。証拠: 進捗339。
 18. [x] **最初のscheduled wakeを完走観測する。** 実`applied_bundle`または既登録readbackによるSubmit 0 continuation、Telegram every-wake positive ID、session/target各1、owned page cleanup、process exitを確認する。failure時はscheduleを増やさず同じentrypointだけを修復する。証拠: 進捗341。
 19. [ ] **providerを一つずつ拡張する。** Peatix [x] → Meetup [pending: Calendar非衝突候補0] → Doorkeeper [pending: Calendar非衝突候補0; evidence chain/Calendar adapter accepted] → Eventbrite [pending: eligible候補0; evidence chain/Calendar adapter accepted] → TECH PLAY [pending: Calendar非衝突候補0; action/readback/evidence/Calendar adapter and official no-effect wake accepted] の順に、未知browser flow、official parent / child-frame readback、Calendar、PNG、Telegram、idempotencyを個別にlive実証する。各providerは実`applied_bundle`を得るまでproduction supportedと表示しない。Peatix証拠: 進捗291。Meetup/Doorkeeper/Eventbrite/TECH PLAYはproduction rail、privacy-safe live audit、safe cleanupまで受入済みだが、現在の非衝突候補がないproviderの実bundleは未完。TECH PLAYの実測証拠: 進捗475〜478。
-20. [ ] **unknown-provider discovery contractを閉じる。** 事前domain skillのないevent site一件で、same-page Browser Harness fallbackが登録可能性を判断し、許可された無料申込を完遂するかsafe failureで次providerへ進むことを実証する。成功時は新provider skill/cacheを保存し、次run agent call 0を確認する。
+20. [x] **unknown-provider discovery contractを閉じる。** 事前domain skillのないevent site一件で、same-page Browser Harness fallbackが登録可能性を判断し、許可された無料申込を完遂するかsafe failureで次providerへ進むことを実証する。成功時は新provider skill/cacheを保存し、次run agent call 0を確認する。証拠: 進捗479〜496。
 21. [ ] **restartとdurable continuationを実証する。** 各external-effect境界でprocess restartし、既存provider registration、Calendar、evidence、Telegram receiptをreadbackして重複作用0で継続する。append-only historyと既存receiptを変更・削除しない。
 22. [x] **最終production cleanupを行う。** legacy runner、legacy bridge、Healer、healthcheck、重複plist/schedule/process consumerをcall pathで再確認し、production owner 1、schedule 1、browser session/target各1、Gig変更0を実測する。recoverable Git patch以外でcodeを削除しない。証拠: 進捗429。
 23. [ ] **canonical merge gateを閉じる。** Production scheduled wakeの実bundleまたはidempotent continuation、positive Telegram IDs、no-duplicate proof、clean git status、remote pushを確認後だけcanonical branchへmergeする。merge後の次wakeも同じacceptanceで観測する。
@@ -8154,3 +8154,11 @@ Ponytail再調査によりplanned daily-driver host sliceは棄却する。offic
 Lunaがminimal runner production/test exact 2 filesをTDD実装した。RED 42/43はprovider Aのfirst candidateが`auth_required`後も残2 candidatesを試してcircuit-openし、provider Bへ未到達。GREEN 43/43、syntax/diff check PASS、production 1 LOC。exact auth failureでcurrent candidate loopだけをbreakし、failure count/cache-save/evidence/残候補処理0、同じsession/target/pageを`about:blank`経由でprovider Bへ渡して実fixture `applied_bundle`、report failure count 0を証明した。ordinary failure/effect_unknown/circuitは不変。commit `3b2f1b297`をpushし、fresh Sol reviewはSHIP、Critical/Important 0。Item20F3をaccept。
 
 Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-native-order-20f4.md`はnative pass production/test exact 2 files、production 1 LOC、test約4 LOC。frozen orderをexact `luma → connpass → peatix → meetup → doorkeeper → eventbrite → techplay → kokuchpro`へ末尾追加する。timeout/failure/agent steps/factory/runner/browser/evidence/schedule変更0。fresh review後だけofficial foreground wakeで実8-provider continuation、durable audit、safe auth/no-effect、Telegram、owned cleanupを観測する。
+
+### O1B-25進捗496（Item 20F4 / unknown-provider contract accepted）
+
+Lunaがnative pass production/test exact 2 filesをTDD変更し、KokuchProを凍結順序の末尾へ追加した。native 11/11、minimal production 26/26、runner 43/43、fresh Sol code review SHIP、Critical/Important 0。code commit `64fbfea3c`をpushし、HEADとremoteは一致した。
+
+実KokuchProの公式listing/detail read-only E2Eはaudit `discovered/within-window/eligible/calendar-free/selected = 48/0/0/0/0`、external effect 0。別の同一owned page実測でofficial detail readback `absent`、direct entry後のcandidate-bound official loginを`auth_required`と分類し、click/fill/private resolve/cache/evidence effect 0、owned page cleanupを確認した。production factoryはこのexact workflowをsingle extension Harnessへ接続し、runner fixtureは`auth_required`で現provider残候補を破棄、failure count 0のまま同一session/target/pageを次providerへ渡す。
+
+official launchd wake `wake-0ff1160ceb01d1698b00962b`はLuma、Connpass、Peatix auditを各1行増やし、Meetup discoveryでwake全体の3件目safe failureへ到達して既定どおり`circuit_open / provider_discovery_failed / consecutive_failure_count=3`、Telegram provider ID `13150`、owned page cleanup、duplicate external effect 0、process exit 1となった。KokuchPro前の停止はfailure threshold 3を保持した正しい安全動作であり、受入のために閾値を緩めたりprovider順を変えない。fresh Sol acceptance reviewは、公式KokuchPro実測、production配線、auth continuation fixture、official circuit wakeの合成証拠でItem20をSHIPと判定した。Item20をacceptし、次active itemはItem21 restart/durable continuation。
