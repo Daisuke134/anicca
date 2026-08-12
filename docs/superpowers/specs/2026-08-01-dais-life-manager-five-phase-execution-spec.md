@@ -8180,3 +8180,7 @@ fresh Sol初回reviewはtemp cleanup failureを握り潰してsuccess receiptを
 Lunaがminimal evidence production/test exact 2 filesをTDD変更した。RED 38/39はphoto optionsのidempotency key不在、GREEN evidence 39/39＋guardian 26/26。既存canonical URL SHA-256からexact `connector-evidence-photo:<64 lowercase hex>`を一つのphoto call siteへ渡し、全providerで決定的、message namespaceと分離、raw URL/title/tenant/Telegram target非包含を実証した。checkpoint/bundle schemaは不変。production 1 LOC、code commit `19114e2c8`をpushし、fresh Sol review SHIP、Critical/Important 0、HEAD/remote一致。
 
 Plan `docs/superpowers/plans/2026-08-12-connector-os-process-restart-21c.md`はtest-only exact 2 new files、production LOC 0。real runner/evidence chainを別Node OS processでprovider readback、evidence checkpoint、Calendar effect、Telegram message effect、Telegram photo effect、bundle boundaryから順に終了・再開する。durable fake external ledgersはeffectを先に保存し、次processは同じidentity/keyをreadbackして外部effect countを増やさない。最終条件はprovider/evidence/Calendar/message/photo/bundle各1、Submit/cache/direct/Harness 0、history byte-identical、0600 receipts、reused final rerun。
+
+### O1B-25進捗500（Item 21C / process fixture implementation sliced）
+
+21Cを一括で実装するLuna executorがfile write前に停滞したため、Ponytailで同じtest-only 2 filesへの段階追加へ縮小する。21C1はprovider registered readback後にchild processを終了し、次childがSubmit/cache/direct/Harness 0でreal evidence chainへ入り、0600 evidence checkpointを残して終了する。21C2は同じfixtureへCalendarとmessage/photo gateway ledgerを追加、21C3はbundle write boundaryとfinal reused rerunを追加する。production code/schema、最終acceptance、外部effect count各1は不変。executor停滞によるplaceholder以外のtest/production変更はまだ0。
