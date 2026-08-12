@@ -8100,3 +8100,9 @@ Ponytailでpagination2ページ目以降、auth/action/readback、factory/router
 初回実E2Eはwhole-document event anchorsが40を超えて`LISTING_RESULT_CONTRACT_FAILED`。result selectorを`.event_list .event_item`へ限定後も、公式40 cards中2 recurring cardsが各5 dated occurrence URLを公開し、unique canonical URLは48だった。これは一覧外noiseではなく同一cardに表示された別開催日であり、40 URLへ切ると実候補を失う。
 
 計画をcodeより先に訂正する。first official pageの1〜40 result cardsだけを読み、各cardは最大20 unique exact occurrence/root URL、全体最大800 rowsへbounded化する。card/DOM順dedupeを維持し、41 cards、1 card 21 URLs、801 rowsはfail closed。pagination、auth/action/readback、factory/router/native/evidenceは引き続きdeferする。read-only実測は専用contextをreleaseし、external application/Calendar/evidence/Telegram effect 0。
+
+### O1B-25進捗487（Item 20D / final review correction plan）
+
+実公式first page＋実Google Calendarのread-only E2Eは`busy_intervals=105`、audit `48/0/0/0/0`、candidate 0、KokuchPro owned page cleanup 0残存、focused＋TECH PLAY 36/36 PASS。code commit `d4f59cdf5`をremoteへpushした。fresh Sol reviewはCritical 0だが、(1) window判定をeligibility正規化に内包して`within_window_count`と`eligible_count`が常に同値、(2) top-level JSON-LD array要素内の`@graph`を展開せずhidden second Eventを見逃す、のImportant 2件を実反例で検出したためItem20Dは未accept。
+
+同じworkflow/test exact 2 filesへ戻す。production約20〜35 LOC、test約40〜70 LOC。identity/time/windowだけを先に分類し、within-window後にfree/Tokyo/offline/open/ticket eligibilityを判定して5段auditの意味を復元する。全JSON-LD scriptのtop-level object/arrayと各`@graph`をbounded flattenし、Event総数exact 1以外をfail closedにする。pagination、auth/action/readback、factory/router/native/evidence、external effectは0のまま。同じLunaのRED→GREEN後、fresh Sol re-reviewと同じ実E2Eを再実行してからacceptする。
