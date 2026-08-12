@@ -174,6 +174,7 @@ function createMinimalProductionOperations(options = {}) {
   const doorkeeperDiscoveryAuditFile = path.join(stateDir, "doorkeeper-discovery-audits.jsonl");
   const eventbriteDiscoveryAuditFile = path.join(stateDir, "eventbrite-discovery-audits.jsonl");
   const techPlayDiscoveryAuditFile = path.join(stateDir, "techplay-discovery-audits.jsonl");
+  const kokuchproDiscoveryAuditFile = path.join(stateDir, "kokuchpro-discovery-audits.jsonl");
 
   async function recordAction(input) {
     const action = safeAction(input);
@@ -204,6 +205,9 @@ function createMinimalProductionOperations(options = {}) {
   }
   async function recordTechPlayDiscoveryAudit(input) {
     append(techPlayDiscoveryAuditFile, safeDoorkeeperDiscoveryAudit(input, wakeId, exactInstant(now())));
+  }
+  async function recordKokuchProDiscoveryAudit(input) {
+    append(kokuchproDiscoveryAuditFile, safeDoorkeeperDiscoveryAudit(input, wakeId, exactInstant(now())));
   }
 
   async function reportWake(input) {
@@ -260,7 +264,7 @@ function createMinimalProductionOperations(options = {}) {
   return Object.freeze({
     recordAction, recordDiscoveryAudit, recordConnpassDiscoveryAudit, recordPeatixDiscoveryAudit,
     recordMeetupDiscoveryAudit, recordDoorkeeperDiscoveryAudit, recordEventbriteDiscoveryAudit, reportWake,
-    recordTechPlayDiscoveryAudit,
+    recordTechPlayDiscoveryAudit, recordKokuchProDiscoveryAudit,
   });
 }
 
