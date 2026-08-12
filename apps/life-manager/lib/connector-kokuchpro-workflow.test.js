@@ -311,10 +311,49 @@ test("KokuchPro default detail requires one exact offline free Event and explici
     ["fee", { fee_rows: [{ label: "料金制度", value: "有料イベント" }] }],
     ["ticket", { ticket_rows: [{ id: "ticket-1", label: "無料", status: "受付終了" }] }],
     ["duplicate-ticket", { ticket_rows: [{ id: "ticket-1", label: "無料", status: "募集中" }, { id: "ticket-2", label: "無料", status: "募集中" }] }],
+    ["canonical-action", { availability_values: ["1"], entry_actions: [ROOT] }],
+    ["action-count", { availability_values: ["1", "1"], entry_actions: [`${ROOT}entry/`] }],
+    ["availability-count", { availability_values: ["1"], entry_actions: [`${ROOT}entry/`, `${ROOT}entry/`] }],
+    ["paired-action", { availability_values: ["1", "1"], entry_actions: [`${ROOT}entry/`, ROOT] }],
   ]) {
     const badPage = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: { [ROOT]: jsonLdDetail(ROOT, overrides) } });
     const badResult = await createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page: badPage, calendar: [] });
     assert.deepEqual(badResult, [], name);
+  }
+});
+
+test("KokuchPro rejects contradictory structured Tokyo address components", async () => {
+  const cases = [
+    { addressRegion: "東京都", addressLocality: "大阪市" },
+    { name: "東京都港区", addressRegion: "大阪府", addressLocality: "港区" },
+  ];
+  for (const address of cases) {
+    const page = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: { [ROOT]: jsonLdDetail(ROOT, { event: { location: { name: "会場", address } } }) } });
+    assert.deepEqual(await createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page, calendar: [] }), []);
+  }
+});
+
+test("KokuchPro maps coded goto and URL assertion failures to navigation stages", async () => {
+  const failure = (code) => Object.assign(new Error("timeout"), { code });
+  for (const mode of ["goto", "url"]) {
+    const listingPage = {
+      async goto() { if (mode === "goto") throw failure("ETIMEDOUT"); },
+      async evaluate() { return []; },
+      url() { if (mode === "url") throw failure("ETIMEDOUT"); return LIST_URL; },
+    };
+    const listingWorkflow = createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) });
+    await assert.rejects(listingWorkflow.discoverCandidates({ page: listingPage, calendar: [] }), (error) => error.code === "KOKUCHPRO_LISTING_NAVIGATION_FAILED");
+
+    const detailPage = {
+      async goto() { if (mode === "goto") throw failure("ETIMEDOUT"); },
+      async evaluate() { return null; },
+      url() { if (mode === "url") throw failure("ETIMEDOUT"); return ROOT; },
+    };
+    const detailWorkflow = createKokuchProDiscoveryWorkflow({
+      now: () => new Date(NOW),
+      readListingBindings: async () => [canonicalKokuchProBinding(ROOT)],
+    });
+    await assert.rejects(detailWorkflow.discoverCandidates({ page: detailPage, calendar: [] }), (error) => error.code === "KOKUCHPRO_DETAIL_NAVIGATION_FAILED");
   }
 });
 
