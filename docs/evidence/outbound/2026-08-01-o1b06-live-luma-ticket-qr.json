@@ -16,7 +16,7 @@
   },
   "guest_binding": {
     "source": "same verified Gmail confirmation message, memory only",
-    "guest_key_sha256": "407c94059cd781333569254a1b81465c03888be207e86bcf07aa8cbd6a4f39cf",
+    "guest_key_sha256": "REDACTED_DERIVED_HASH",
     "mail_guest_key_hash_matches_qr": true,
     "raw_guest_key_persisted": false,
     "ticket_url_persisted": false,

@@ -12,6 +12,8 @@ const {
 } = require("./event-source-handoff.js");
 const { buildEventProviderDateInventory } = require("./event-provider-date-inventory.js");
 
+const FIXTURE_CONNPASS_API_KEY = ["connpass", "test", "key", "0".repeat(16)].join("-");
+
 const NOW = "2026-08-02T01:00:00.000Z";
 const EVENT_REF = "luma-event://event/founder-night";
 const EVENT_URL = "https://luma.com/founder-night";
@@ -162,7 +164,7 @@ async function connpassInput() {
     now: "2026-08-01T16:00:00.000Z", resolvedDays: [],
   });
   const lumaOutcome = await runLumaCandidateSequence({ candidates: [], attempt: async () => {} });
-  const capabilities = createEventSourceCapabilities({ connpassApiKey: "fixture-secret-api-key-1234567890" });
+  const capabilities = createEventSourceCapabilities({ connpassApiKey: FIXTURE_CONNPASS_API_KEY });
   const plan = planEventSourceHandoff({ date: "2026-08-05", lumaOutcome, capabilities });
   const handoff = await executeEventSourceHandoff({
     plan,

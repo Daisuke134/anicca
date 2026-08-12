@@ -5,6 +5,8 @@ const assert = require("node:assert/strict");
 
 const { createConnectorEventsPack } = require("./connector-events-pack.js");
 
+const FIXTURE_CONNPASS_API_KEY = ["connpass", "test", "key", "0".repeat(16)].join("-");
+
 test("the pack captures an official ticket QR on the authenticated event page", async () => {
   const calls = [];
   const page = { kind: "luma-page" };
@@ -105,7 +107,7 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
     "date-inventory", "preference-ranking", "Dais goals", { apiKey: "fixture" },
   ), "goal-serendipity");
   assert.equal(await pack.handoffEventSource(
-    "2026-08-05", "luma-exhaustion", { connpassApiKey: "fixture-secret-api-key-1234567890" },
+    "2026-08-05", "luma-exhaustion", { connpassApiKey: FIXTURE_CONNPASS_API_KEY },
   ), "source-handoff-result");
   assert.equal(await pack.provider.submitRegistration({}), "registered");
   assert.equal(calls[1][1], calls[2][1]);
@@ -128,13 +130,13 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
     plan: "source-handoff-plan",
     connpassClient: "connpass-client",
   });
-  assert.deepEqual(calls.at(-4)[1], { connpassApiKey: "fixture-secret-api-key-1234567890" });
+  assert.deepEqual(calls.at(-4)[1], { connpassApiKey: FIXTURE_CONNPASS_API_KEY });
   assert.deepEqual(calls.at(-3)[1], {
     date: "2026-08-05",
     lumaOutcome: "luma-exhaustion",
     capabilities: "source-capabilities",
   });
-  assert.deepEqual(calls.at(-2)[1], { apiKey: "fixture-secret-api-key-1234567890" });
+  assert.deepEqual(calls.at(-2)[1], { apiKey: FIXTURE_CONNPASS_API_KEY });
 });
 
 test("the pack forwards only the trusted private form profile reader to the RSVP provider", () => {

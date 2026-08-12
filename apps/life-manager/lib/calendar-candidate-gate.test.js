@@ -22,6 +22,8 @@ const {
   mapWithConcurrency,
 } = require("./calendar-candidate-gate.js");
 
+const FIXTURE_CONNPASS_API_KEY = ["connpass", "test", "key", "0".repeat(16)].join("-");
+
 test("route work is bounded to four concurrent candidates and preserves source order", async () => {
   let active = 0;
   let peak = 0;
@@ -215,7 +217,7 @@ test("route failure requests recovery and fake inventories fail closed", async (
 
 test("verified Connpass candidates use the same conflict and travel gate without Luma provenance", async () => {
   const lumaOutcome = await runLumaCandidateSequence({ candidates: [], attempt: async () => {} });
-  const capabilities = createEventSourceCapabilities({ connpassApiKey: "fixture-secret-api-key-1234567890" });
+  const capabilities = createEventSourceCapabilities({ connpassApiKey: FIXTURE_CONNPASS_API_KEY });
   const plan = planEventSourceHandoff({ date: "2026-08-05", lumaOutcome, capabilities });
   const handoff = await executeEventSourceHandoff({
     plan,

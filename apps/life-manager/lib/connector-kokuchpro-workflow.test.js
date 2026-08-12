@@ -10,7 +10,7 @@ const {
 } = require("./connector-kokuchpro-workflow.js");
 
 const NOW = new Date("2026-08-12T00:30:00.000Z");
-const KEY = "89a92aac6c9a221ec337481b51c1bbef";
+const KEY = "ab".repeat(16);
 const OCCURRENCE = "3847918";
 const ROOT = `https://www.kokuchpro.com/event/${KEY}/`;
 const OCCURRENCE_URL = `${ROOT}${OCCURRENCE}/`;

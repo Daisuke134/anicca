@@ -12,6 +12,8 @@ const {
   planEventSourceHandoff,
 } = require("./event-source-handoff.js");
 
+const FIXTURE_CONNPASS_API_KEY = ["connpass", "test", "key", "0".repeat(16)].join("-");
+
 async function exhausted() {
   return runLumaCandidateSequence({
     candidates: [{ event_ref: "luma-event://event/a", canonical_url: "https://luma.com/a" }],
@@ -73,7 +75,7 @@ test("missing connpass key permits Luma only and produces zero-network open hand
 
 test("valid key enables exhaustive official API GET discovery but never registration or coverage credit", async () => {
   const capabilities = createEventSourceCapabilities({
-    connpassApiKey: "fixture-secret-api-key-1234567890",
+    connpassApiKey: FIXTURE_CONNPASS_API_KEY,
   });
   assert.equal(capabilities.sources.connpass.status, "official_api_discovery_only");
   const plan = planEventSourceHandoff({
@@ -112,7 +114,7 @@ test("valid key enables exhaustive official API GET discovery but never registra
 });
 
 test("source error and empty official inventory keep the date open for Luma retry", async () => {
-  const capabilities = createEventSourceCapabilities({ connpassApiKey: "fixture-secret-api-key-1234567890" });
+  const capabilities = createEventSourceCapabilities({ connpassApiKey: FIXTURE_CONNPASS_API_KEY });
   const makePlan = async () => planEventSourceHandoff({ date: "2026-08-05", lumaOutcome: await exhausted(), capabilities });
   const failed = await executeEventSourceHandoff({
     plan: await makePlan(),
@@ -133,7 +135,7 @@ test("source error and empty official inventory keep the date open for Luma retr
 
 test("fake provenance, short keys, non-exhausted Luma, and malformed connpass pages fail closed", async () => {
   assert.throws(() => createEventSourceCapabilities({ connpassApiKey: "short" }), /event source handoff invalid/i);
-  const capabilities = createEventSourceCapabilities({ connpassApiKey: "fixture-secret-api-key-1234567890" });
+  const capabilities = createEventSourceCapabilities({ connpassApiKey: FIXTURE_CONNPASS_API_KEY });
   const outcome = await exhausted();
   assert.throws(() => planEventSourceHandoff({
     date: "2026-08-05", lumaOutcome: structuredClone(outcome), capabilities,
