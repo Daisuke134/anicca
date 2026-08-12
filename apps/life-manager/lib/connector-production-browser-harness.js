@@ -1785,25 +1785,27 @@ function createProductionBrowserHarness(options = {}) {
       if (input.provider === "doorkeeper") return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([]) });
       invalid();
     }
-    if (input.provider === extensionProvider) {
-      try {
-        const preflight = await workflow.readProviderState({ page: input.page, candidate: input.candidate });
-        if (preflight && typeof preflight === "object" && !Array.isArray(preflight) && preflight.status === "auth_required") {
-          return Object.freeze({ status: "failed", safe_reason: "auth_required", repaired_actions: Object.freeze([]) });
-        }
-      } catch { /* non-auth readback remains on the existing fallback path */ }
-    }
     const seenMutations = new Set();
     let connpassSubmitAttempted = false;
     let doorkeeperSubmitAttempted = false;
     let doorkeeperTriggerAttempted = false;
     let ambiguousEffect = false;
     let finalEffectProviderState = null;
+    let extensionAuthPreflightDone = false;
     let extensionAuthRequired = false;
     const adapter = createBrowserHarnessAdapter({
-      observePage: ({ page }) => extensionAuthRequired
-        ? Object.freeze({ state: "registration_page", controls: Object.freeze([]) })
-        : observed(page, input.provider, input.candidate),
+      async observePage({ page }) {
+        if (input.provider === extensionProvider && !extensionAuthPreflightDone) {
+          extensionAuthPreflightDone = true;
+          try {
+            const preflight = await workflow.readProviderState({ page, candidate: input.candidate });
+            if (preflight && typeof preflight === "object" && !Array.isArray(preflight) && preflight.status === "auth_required") extensionAuthRequired = true;
+          } catch { /* non-auth readback remains on the existing fallback path */ }
+        }
+        return extensionAuthRequired
+          ? Object.freeze({ state: "registration_page", controls: Object.freeze([]) })
+          : observed(page, input.provider, input.candidate);
+      },
       async proposeAction(input) { if (extensionAuthRequired) return null; const proposal = await proposeAction(input); const token = String(proposal && typeof proposal === "object" ? proposal.control || "" : ""); const control = input.observation.controls.find((item) => item.control === token); return CONTROL.test(token) && control ? actionForControl(control) : null; },
       async performAction(action) {
         const selected = action.action || action;
