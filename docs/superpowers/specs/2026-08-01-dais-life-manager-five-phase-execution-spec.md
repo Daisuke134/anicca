@@ -99,7 +99,7 @@ flowchart TB
         PRE{"official parent / child-frame pre-readbackが<br/>already registered / pending?"}
         CACHE["verified action cache"]
         DIRECT["provider script-first action"]
-        MODEL["fallbackはunknown UI時だけ<br/>provider別bounded step"]
+        MODEL["fallbackはunknown UI時だけ<br/>generic最大10 / TECH PLAY最大15 step"]
         POST{"official parent / child-frame readbackが<br/>registered / pending?"}
         GATE -->|Yes| NAV --> PRE
         PRE -->|Yes| SUPPORT
@@ -195,7 +195,7 @@ flowchart TD
         DISCOVER["設定済み7 provider＋unknown-provider候補を順に探索"]
         GATE{"重複・時間・移動・予算gateを通過?"}
         APPLY["cache / provider workflowで参加登録"]
-        MODEL["unknown UI時だけprovider別bounded model action"]
+        MODEL["unknown UI時だけbounded model action<br/>generic最大10 / TECH PLAY最大15 step"]
         RECEIPT{"provider receiptを検証できた?"}
         VERIFY["確認mail・guest binding・ticket / QRを検証"]
         SYNC["Google Calendarへ冪等登録しreadback"]
@@ -8236,3 +8236,7 @@ PR `#1936`はOSS self-contained、gitleaks current/full history、TruffleHog fil
 ### O1B-25進捗511（Item 23F plan / provider別fallback budget RED）
 
 最終docs PR `#1947`のreviewで、native passのglobal `maxAgentSteps: 15`はTECH PLAYのreview/final flowに必要だが、同じ値がnormal providerのgeneric Browser Harnessへそのまま渡るとadapterのhard upper bound 10を超えるlatent failureを確認した。canonical wakeでは該当normal fallbackを踏まなかったためexit 0証拠とは矛盾しないが、次のunknown UIで起動前validation failureになり得る。Ponytailでrunner設定・Harness上限・TECH PLAY flowの変更を棄却し、production composition境界でnormal providerだけ`min(native budget, 10)`、TECH PLAYだけ15を保持する2-file sliceへ縮小する。Plan `docs/superpowers/plans/2026-08-12-connector-provider-step-budget-23f.md`をTDDし、fresh review後に同じPRへpushする。NEXT図もaccepted unknown-provider railの継続条件を明示した。
+
+### O1B-25進捗512（Item 23F accepted / provider別fallback budget GREEN）
+
+Lunaがproduction router/test exact 2 filesをTDDした。REDはnative budget 15がnormal LumaとTECH PLAYの両方へ15で渡ることを再現。GREENはproduction composition境界で整数かつ1以上を要求し、normal providerを`min(maxSteps, 10)`、TECH PLAYを15のままHarnessへ渡す。runner config、Harness validators、provider order、circuit、final-effect semanticsは変更0。fresh Sol reviewが文字列`"15"`の数値化bypassをImportantとして検出し、同じLunaがstring/NaN/Infinity/0/negative/decimalをHarness call 0でfail-closedするRED→GREENを追加した。re-reviewはSHIP。focused `28/28`、adjacent/native `99/99`、full Connector `360/360`、syntax、diff checkがPASS。Item23Fを閉じ、最終docs/code PRの全CI greenとmain mergeへ戻る。
