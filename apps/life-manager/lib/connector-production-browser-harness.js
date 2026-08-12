@@ -1349,13 +1349,16 @@ function createBoundedActionProposer(options = {}) {
   const repoRoot = absoluteDirectory(options.repoRoot);
   const evidenceDir = absoluteDirectory(options.evidenceDir);
   const runAgentRunner = options.runAgentRunner || runLocalAgentRunner;
+  const extensionProvider = options.extensionProvider;
+  if (extensionProvider != null && (typeof extensionProvider !== "string" || !EXTENSION_PROVIDER.test(extensionProvider) || PROVIDERS.has(extensionProvider))) invalid();
+  const supportsProvider = (provider) => PROVIDERS.has(provider) || (extensionProvider != null && provider === extensionProvider);
   if (typeof runAgentRunner !== "function") invalid();
   const fallbackSequences = new Map();
   return async function proposeAction(input = {}) {
     const targetId = String(input.target_id || "");
     const step = Number(input.step);
     if (
-      !PROVIDERS.has(input.provider) || !/^[A-Za-z0-9._-]{3,128}$/.test(targetId)
+      !supportsProvider(input.provider) || !/^[A-Za-z0-9._-]{3,128}$/.test(targetId)
       || input.expected_state !== "registered_or_pending"
       || !Number.isInteger(step) || step < 1 || step > 10
       || !input.observation || !Array.isArray(input.observation.controls)

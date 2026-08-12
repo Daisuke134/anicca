@@ -51,6 +51,52 @@ test("bounded proposer requests one structured action from Terra with sanitized 
   assert.equal(JSON.stringify(request).includes("ws://"), false);
 });
 
+test("bounded proposer admits only one exact configured extension token", async () => {
+  let request;
+  const proposer = createBoundedActionProposer({
+    repoRoot: "/private/repo",
+    evidenceDir: "/private/evidence",
+    extensionProvider: "extension-site",
+    async runAgentRunner(input) {
+      request = input;
+      return {
+        summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" },
+        value: { control: "register_button" },
+      };
+    },
+  });
+  const baseInput = {
+    target_id: "OWNEDTARGET1",
+    expected_state: "registered_or_pending",
+    step: 1,
+    observation: {
+      state: "registration_page",
+      controls: [{ control: "register_button", kind: "button", label: "Register", required: false, submittable: true }],
+    },
+  };
+  assert.deepEqual(await proposer({ ...baseInput, provider: "extension-site" }), { control: "register_button" });
+  assert.match(request.prompt, /extension-site/i);
+  assert.doesNotMatch(JSON.stringify(request), /event_ref|private-phone|private@example|cookie|password|ws:\/\//i);
+  await assert.rejects(() => proposer({ ...baseInput, provider: "another-extension" }), /Connector production Browser Harness invalid/);
+
+  const unconfigured = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner() {
+    throw new Error("unconfigured provider must not reach the runner");
+  } });
+  await assert.rejects(() => unconfigured({ ...baseInput, provider: "extension-site" }), /Connector production Browser Harness invalid/);
+
+  let missingProviderCalls = 0;
+  const missingProvider = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner() {
+    missingProviderCalls += 1;
+    return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: "register_button" } };
+  } });
+  await assert.rejects(() => missingProvider({ ...baseInput }), /Connector production Browser Harness invalid/);
+  assert.equal(missingProviderCalls, 0);
+
+  for (const extensionProvider of ["Extension-Site", "x", "extension/site", "luma"]) {
+    assert.throws(() => createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", extensionProvider, async runAgentRunner() {} }), /Connector production Browser Harness invalid/);
+  }
+});
+
 test("Connpass known form completes natively before the agent when the runner is unavailable", async () => {
   const radio = (control, label, question, group) => ({ control, kind: "radio", label, question, required: true, group });
   const groups = [radio("online_radio", "オンライン視聴枠（YouTube） 無料 参加者数 30人", "参加枠", "online"), radio("online_speaker", "オンライン登壇枠（Zoom） 無料 先着順 3/3人", "参加枠", "online"),
