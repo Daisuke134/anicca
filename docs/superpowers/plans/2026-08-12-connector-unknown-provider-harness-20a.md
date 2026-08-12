@@ -21,6 +21,45 @@
 
 ## Contract
 
+### Task 1: Add the single configured extension seam
+
+**Files:**
+
+- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
+- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+
+- [ ] **Step 1: Write RED constructor and fallback tests**
+
+  Require an exact configured extension provider/workflow to enter the existing generic fallback, while partial config, malformed tokens, unconfigured unknown tokens, and a second token fail closed.
+
+- [ ] **Step 2: Run RED**
+
+  ```bash
+  cd apps/life-manager
+  node --test lib/connector-production-browser-harness.test.js
+  ```
+
+  Expected: only the new extension-seam assertions fail because the constructor has no extension options.
+
+- [ ] **Step 3: Implement the smallest GREEN constructor seam**
+
+  Validate the optional pair once, use an instance-local provider predicate, select the extension workflow only for the exact token, and reuse the existing generic fallback unchanged.
+
+- [ ] **Step 4: Run GREEN and adjacent checks**
+
+  ```bash
+  cd apps/life-manager
+  node --test lib/connector-production-browser-harness.test.js lib/connector-browser-harness-adapter.test.js
+  node --check lib/connector-production-browser-harness.js
+  git diff --check
+  ```
+
+- [ ] **Step 5: Report without committing**
+
+  Record RED/GREEN commands, exact test counts, changed lines, and any remaining risk in the SDD report. Sol performs review, commit, and push.
+
+## Acceptance checklist
+
 - [ ] RED: an exact configured extension provider cannot currently enter the existing generic Browser Harness path.
 - [ ] Constructor accepts either neither extension option or both an exact safe provider token and a workflow with `readProviderState`; partial/malformed configuration fails closed.
 - [ ] Only the exact configured extension token is added to that Harness instance; any other unknown token remains rejected.
