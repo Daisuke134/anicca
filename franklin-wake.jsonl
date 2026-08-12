@@ -26365,3 +26365,11 @@
 {"ts":1786541195,"wake_id":"00MSQ4I0XG1D4CB78DF8DC46E2","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786541323,"wake_id":"00MSQ4KRW4F92D1E0F6B694305","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786541454,"wake_id":"00MSQ4NKR309E78F087E1C4A99","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786541585,"wake_id":"00MSQ4QDLE640DD67DCD694A23","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786541713,"wake_id":"00MSQ4T4M29BFE36C9A84A4A55","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786541846,"wake_id":"00MSQ4VYUCC51350D869C74592","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786541976,"wake_id":"00MSQ4YRPI0FEFC2BE45034F1D","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786542046,"wake_id":"00MSQ509A76A852FFDEE7246C1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786542175,"wake_id":"00MSQ530THD3A22600D9E447FE","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana microtask platform pay in USDC for simple tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates su"}
+{"ts":1786542303,"wake_id":"00MSQ55RGBE7583A24E22347E8","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/gig","profitable":false,"exit_code":0,"result":"{\"wallet\":null,\"source\":\"gig\",\"task\":\"supervise\",\"funding\":\"human(¥→MUFG)\",\"earn_usdc\":0,\"cost_usdc\":0,\"jpy_earned\":124878,\"applied_total\":422,\"core\":\"ALIVE\",\"wake\":\"00MSQ55RGBE7583A24E22347E8\",\"note\""}
+{"ts":1786542431,"wake_id":"00MSQ58IFK387BCDE184AD4828","kind":"narrate","sleep_s":120,"model":"auto"}
