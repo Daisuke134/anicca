@@ -52,7 +52,11 @@ async function runGog(args, options = {}) {
 
 function createGogLumaCodeReader(options = {}) {
   const run = options.run || ((args) => runGog(args, options));
-  if (typeof run !== "function") throw unavailable();
+  const attempts = Number.isSafeInteger(options.attempts)
+    ? options.attempts
+    : (options.run ? 1 : 6);
+  const sleep = options.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  if (typeof run !== "function" || typeof sleep !== "function" || attempts < 1 || attempts > 10) throw unavailable();
 
   return async function readLoginCode(input = {}) {
     const afterMs = Number(input.afterMs);
@@ -70,38 +74,31 @@ function createGogLumaCodeReader(options = {}) {
       "--account", account,
       "--max", "10", "--json", "--results-only", "--no-input",
     ];
-    const found = parseJson(await run(searchArgs));
-    if (!Array.isArray(found) || found.length > 10) throw unavailable();
-
-    const valid = [];
-    for (const row of found) {
-      const id = required(row && row.id, 300);
-      if (!id) continue;
-      const detail = parseJson(await run([
-        "gmail", "get", id,
-        "--account", account,
-        "--json", "--no-input",
-      ]));
-      const headers = detail && detail.headers || {};
-      const internalDate = Number(detail && detail.message && detail.message.internalDate);
-      const body = required(detail && detail.body, 2_000_000);
-      if (
-        !Number.isSafeInteger(internalDate)
-        || internalDate < afterMs - 5_000
-        || !trustedLumaSender(headers.from)
-        || !emailAddresses(headers.to).includes(account)
-        || !body
-      ) continue;
-      const code = extractLumaCode({
-        from: headers.from,
-        subject: headers.subject,
-        text: body,
-      });
-      if (/^\d{6}$/.test(String(code || ""))) valid.push({ internalDate, code });
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const found = parseJson(await run(searchArgs));
+      if (!Array.isArray(found) || found.length > 10) throw unavailable();
+      const valid = [];
+      for (const row of found) {
+        const id = required(row && row.id, 300);
+        if (!id) continue;
+        const detail = parseJson(await run([
+          "gmail", "get", id, "--account", account, "--json", "--no-input",
+        ]));
+        const headers = detail && detail.headers || {};
+        const internalDate = Number(detail && detail.message && detail.message.internalDate);
+        const body = required(detail && detail.body, 2_000_000);
+        if (
+          !Number.isSafeInteger(internalDate) || internalDate < afterMs - 5_000
+          || !trustedLumaSender(headers.from) || !emailAddresses(headers.to).includes(account) || !body
+        ) continue;
+        const code = extractLumaCode({ from: headers.from, subject: headers.subject, text: body });
+        if (/^\d{6}$/.test(String(code || ""))) valid.push({ internalDate, code });
+      }
+      valid.sort((a, b) => b.internalDate - a.internalDate);
+      if (valid[0]) return valid[0].code;
+      if (attempt + 1 < attempts) await sleep(5_000);
     }
-    valid.sort((a, b) => b.internalDate - a.internalDate);
-    if (!valid[0]) throw unavailable();
-    return valid[0].code;
+    throw unavailable();
   };
 }
 

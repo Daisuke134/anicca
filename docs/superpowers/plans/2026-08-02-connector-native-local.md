@@ -233,39 +233,34 @@ tests pass with env-override regression coverage; no external write boundary is 
 
 - Create: `apps/life-manager/lib/connector-native-write-pipeline.js`
 - Test: `apps/life-manager/lib/connector-native-write-pipeline.test.js`
-- Modify only if an explicit chosen-candidate entry point is needed: `apps/life-manager/lib/connector-native-runtime.js` and its test
+- Modify: `apps/life-manager/lib/connector-coverage-telegram.js`
+- Test: `apps/life-manager/lib/connector-coverage-telegram.test.js`
 
 **Interfaces:**
 
-- Consumes: a chosen `application`/candidate context from the judgment boundary, verified `dateInventory`, current rolling coverage, verified Google busy inventory, Calendar write context, and Telegram target/report URL.
-- Produces: `runNativeConnectorWrite(input, deps)` with secret-free status, opaque refs, and provider URLs. The default native runtime remains read-only unless this explicit chosen-candidate input is supplied by a caller.
-- Reuses the production chain in this exact order: `buildEventApplicationJob` (then bounded `attempt: 1`) → `executeLumaRsvpJob` → `syncVerifiedRegistrationToGoogleCalendar` → `buildVerifiedRegistrationCoverageEvidence` → `rebuildRollingEventCoverage` → `buildConnectorCoverageTelegramMessage` → `deliverConnectorCoverageTelegram`.
+- Consumes a chosen application, verified date inventory, rolling coverage, Google busy inventory, Calendar write context, and Telegram target.
+- Runs the trusted chain in order: application job → Luma RSVP → verified receipt → Calendar sync → coverage rebuild → Telegram delivery.
+- Produces only secret-free status and opaque references. Unknown external effects stop at reconciliation and never advance to Calendar or Telegram.
 
 - [x] **Step 1: Write failing pipeline tests**
 
-  Cover unknown RSVP effects stopping before Calendar/coverage/Telegram, verified RSVP evidence gating Calendar, Calendar verification gating coverage, coverage gating Telegram, missing positive Telegram receipt not completing, and `open>0` remaining incomplete.
+  The tests cover unknown RSVP effects, receipt and Calendar gates, coverage-before-Telegram ordering, exact Telegram receipt binding, and incomplete coverage.
 
 - [x] **Step 2: Run RED**
 
-  Run: `node --test apps/life-manager/lib/connector-native-write-pipeline.test.js`
-
-  Observed RED: the new test failed with `MODULE_NOT_FOUND` because the orchestrator module did not yet exist.
+  `node --test lib/connector-native-write-pipeline.test.js` failed with `MODULE_NOT_FOUND` because the orchestrator did not exist. The Telegram copy test separately failed because production claimed confirmation-mail verification that Task 5 does not perform.
 
 - [x] **Step 3: Implement the minimum verified chain**
 
-  Production exports are the defaults; dependency overrides are test seams only. The provider effect fence and outbound evidence verifier remain inside `executeLumaRsvpJob`; an unknown effect returns `reconciliation_required` without invoking later boundaries. Calendar/coverage/Telegram failures cannot become `complete`, and only `open=0` with a positive Telegram delivery receipt can be complete.
+  `runNativeConnectorWrite` reuses existing production modules and accepts dependency overrides only at trusted test seams. The Telegram copy now claims only registration evidence and Calendar registration. Gmail confirmation, guest binding, and ticket/QR remain Task 6.
 
 - [x] **Step 4: Run GREEN**
 
-  Run: `node --test apps/life-manager/lib/connector-native-write-pipeline.test.js`
-
-  Evidence: focused pipeline tests pass 16/16, including the exact call-order, stop-gate, trusted-I/O, target-bound hash, and Telegram receipt-contract assertions. The Task 5 Telegram copy reports only provider registration evidence plus Calendar registration; it does not add confirmation-email or QR verification.
-
-**Pending Task 6 (not implemented):** add a separate verified Gmail confirmation-message and guest-binding/QR capture coordinator before making any Telegram copy claim those artifacts; no raw Gmail input or fabricated receipt is accepted in Task 5.
+  `node --test lib/connector-native-write-pipeline.test.js lib/connector-coverage-telegram.test.js lib/connector-native-runtime.test.js` passes 24/24. The default native runtime still remains read-only; connecting candidate judgment and this write pipeline is the next task.
 
 ## Plan Self-Review
 
-- Coverage boundary: Tasks 1–3 deliver only the native boot/launchd lifecycle scaffold: lock, heartbeat, healthcheck, dynamic canonical path, and direct-runtime handoff. Task 4 completes only shared browser auth, Luma inventory, all-calendar `gog` reads, and coverage continuation. Task 5 wires a production-capable write orchestrator behind an explicit chosen-candidate boundary, but the default native read-only runtime does not invoke it; real registration, receipt verification, Calendar write/sync, and Telegram delivery remain live-unverified next work. This slice is not Connector completion.
+- Coverage boundary: Tasks 1–3 deliver the native boot/launchd lifecycle scaffold. Task 4 completes shared browser auth, Luma inventory, all-calendar `gog` reads, and coverage continuation. Task 5 provides a production-capable write orchestrator behind an explicit chosen-candidate boundary, but the default runtime does not invoke it and no live side effect is claimed.
 - Judgment boundary: no task encodes relevance, preference, or candidate selection in deterministic code; the local contract documents that boundary without becoming an executable override.
-- Safety: every action in Tasks 1–3 is local state, template rendering to an explicit test directory, or read-only health probing. Task 4 adds read-only browser/calendar inventory only. Task 5 adds no live invocation from the default runtime; real registration, receipt verification, Calendar write/sync, Telegram send, launchd loading, and legacy retirement remain outside this slice's verified execution.
+- Safety: Tasks 1–4 remain local or read-only. Task 5 adds verified write composition without invoking it live. Real registration, Gmail/ticket verification, Calendar write/readback, Telegram send, and launchd loading remain later explicit gates.
 - Scope: all planned production files are within the delegated ownership set; no master specification, runtime queue, bridge, package manifest, or lockfile changes are included.

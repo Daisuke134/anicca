@@ -260,10 +260,19 @@ function cliNow() {
   return new Date().toISOString();
 }
 
+function generateOwnerToken(options = {}) {
+  const makeToken = options.randomUUID || randomUUID;
+  if (typeof makeToken !== "function") invalid("token generator invalid");
+  return ownerToken(makeToken());
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const [command, stateDir, token, third, fourth] = argv;
   let result;
-  if (command === "acquire") {
+  if (command === "token" && argv.length === 1) {
+    process.stdout.write(`${generateOwnerToken()}\n`);
+    return;
+  } else if (command === "acquire") {
     result = acquireLock({
       stateDir,
       token,
@@ -294,6 +303,7 @@ if (require.main === module) {
 
 module.exports = {
   acquireLock,
+  generateOwnerToken,
   heartbeat,
   readHealth,
   recordContinuation,

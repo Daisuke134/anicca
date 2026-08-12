@@ -5,6 +5,35 @@ const assert = require("node:assert/strict");
 
 const { createConnectorEventsPack } = require("./connector-events-pack.js");
 
+test("the pack captures an official ticket QR on the authenticated event page", async () => {
+  const calls = [];
+  const page = { kind: "luma-page" };
+  const binding = { event_url: "https://luma.com/event-one" };
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({
+      async withLumaPage(url, action) {
+        calls.push(["page", url]);
+        return action(page);
+      },
+    }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    async captureTicketQr(actualPage, actualBinding, options) {
+      calls.push(["capture", actualPage, actualBinding, options.observedAt()]);
+      return "verified-ticket";
+    },
+    now: () => "2026-08-06T03:00:00.000Z",
+  });
+
+  assert.equal(await pack.captureLumaTicketQr(binding), "verified-ticket");
+  assert.deepEqual(calls, [
+    ["page", "https://luma.com/event-one"],
+    ["capture", page, binding, "2026-08-06T03:00:00.000Z"],
+  ]);
+});
+
 test("the pack gives discovery and RSVP one auth-aware daily-driver", async () => {
   const calls = [];
   const dailyDriver = { withLumaPage: async () => {} };
@@ -106,6 +135,24 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
     capabilities: "source-capabilities",
   });
   assert.deepEqual(calls.at(-2)[1], { apiKey: "fixture-secret-api-key-1234567890" });
+});
+
+test("the pack forwards only the trusted private form profile reader to the RSVP provider", () => {
+  const readLumaFormProfile = () => ({ form_answers: {} });
+  let providerInput;
+  createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    readLumaFormProfile,
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider(input) {
+      providerInput = input;
+      return { inspectRegistration: async () => {}, submitRegistration: async () => {} };
+    },
+  });
+
+  assert.equal(providerInput.readLumaFormProfile, readLumaFormProfile);
 });
 
 test("source handoff with no connpass key never constructs an API client", async () => {

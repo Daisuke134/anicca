@@ -102,7 +102,7 @@ async function verifiedNewEventReportInput() {
   const calendar = {
     async findConnectorEvents() { return existingCalendarEvents; },
     async createConnectorEvent() {
-      const created = { id: "private-id", htmlLink: "https://calendar.google.com/calendar/event?eid=opaque" };
+      const created = { id: "private-id", htmlLink: "https://www.google.com/calendar/event?eid=opaque" };
       existingCalendarEvents = [created];
       return created;
     },
@@ -127,6 +127,13 @@ async function verifiedNewEventReportInput() {
   return {
     coverage,
     newEvents: [{ eventRef: detail.event_ref, dateInventory, goalDecision, calendarSync }],
+    registrationEvidence: {
+      event_ref: detail.event_ref,
+      canonical_url: detail.canonical_url,
+      artifact_ref: `object://sha256/${artifactHash}`,
+      artifact_sha256: artifactHash,
+      bytes,
+    },
     calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
     existingCoverage,
   };
@@ -199,7 +206,7 @@ test("verified新規予約は名前・時刻・場所・選定理由とevent/Cal
   assert.match(message, /19:00〜21:00 \/ Shibuya Hall/);
   assert.match(message, /理由: Life Managerをfounderへ見せ/);
   assert.match(message, /イベントページ:\n   https:\/\/luma\.com\/founder-night/);
-  assert.match(message, /Calendar:\n   https:\/\/calendar\.google\.com\/calendar\/event\?eid=opaque/);
+  assert.match(message, /Calendar:\n   https:\/\/www\.google\.com\/calendar\/event\?eid=opaque/);
   assert.match(message, /今回予約し、登録証拠とCalendar登録を照合したevent/);
   assert.doesNotMatch(message, /確認メール/);
   assert.match(message, /未処理の空き: 20日/);
@@ -233,6 +240,7 @@ test("verified reportは一通だけ送り、targetを返さずopaque delivery r
   });
   assert.equal(sent.length, 1);
   assert.equal(sent[0][1].telegramTarget, "fixture-target");
+  assert.equal(sent[0][1].idempotencyKey, `connector-coverage:${openCoverage().coverage_snapshot_id}`);
   assert.deepEqual(receipt, {
     kind: "connector_coverage_telegram_delivery", provider_id: "321",
     observed_at: "2026-08-02T01:00:00.000Z", tenant_id: "dais-local",
@@ -240,4 +248,41 @@ test("verified reportは一通だけ送り、targetを返さずopaque delivery r
     coverage_snapshot_id: openCoverage().coverage_snapshot_id,
   });
   assert.doesNotMatch(JSON.stringify(receipt), /fixture-target/);
+});
+
+test("verified新規予約は結果cardと登録済みpage画像のpositive IDを両方返す", async () => {
+  const input = await verifiedNewEventReportInput();
+  const sent = [];
+  const photos = [];
+  const receipt = await deliverConnectorCoverageTelegram({
+    tenantId: "dais-local",
+    telegramTarget: "fixture-target",
+    ...input,
+  }, {
+    send: async (message, options) => {
+      sent.push([message, options]);
+      return { messageId: "321" };
+    },
+    sendPhoto: async (photo, options) => {
+      photos.push([photo, options]);
+      return { messageId: "322" };
+    },
+    observedAt: () => "2026-08-02T01:00:02.000Z",
+  });
+
+  assert.equal(sent.length, 1);
+  assert.equal(photos.length, 1);
+  assert.equal(createHash("sha256").update(photos[0][0]).digest("hex"), input.registrationEvidence.artifact_sha256);
+  assert.equal(photos[0][1].telegramTarget, "fixture-target");
+  assert.match(photos[0][1].caption, /Founder Night/);
+  assert.deepEqual(receipt, {
+    kind: "connector_coverage_telegram_delivery",
+    provider_id: "321",
+    photo_provider_id: "322",
+    artifact_sha256: input.registrationEvidence.artifact_sha256,
+    observed_at: "2026-08-02T01:00:02.000Z",
+    tenant_id: "dais-local",
+    chat_id_sha256: "37da4c800042eb1a27e8081315efc08f7d546c5be1e47d2d026be17417a090b3",
+    coverage_snapshot_id: input.coverage.coverage_snapshot_id,
+  });
 });

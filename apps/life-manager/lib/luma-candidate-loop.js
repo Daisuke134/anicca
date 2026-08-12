@@ -9,11 +9,6 @@ const CONTINUE = new Set([
   "not_eligible",
   "waitlist",
 ]);
-const RECOVER = new Set([
-  "inventory_incomplete",
-  "login_required",
-  "transport_unavailable",
-]);
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const RECEIPT_REF = /^provider-receipt:\/\/luma\/[A-Za-z0-9._:~-]+$/;
 const VERIFIED = new WeakSet();
@@ -52,12 +47,8 @@ async function runLumaCandidateSequence(options = {}) {
     try {
       outcome = await attempt(candidate);
     } catch {
-      return verified({
-        status: "recovery_required",
-        reason: "adapter_failure",
-        candidate,
-        skipped: Object.freeze([...skipped]),
-      });
+      skipped.push(Object.freeze({ event_ref: candidate.event_ref, reason: "adapter_failure" }));
+      continue;
     }
     const status = String(outcome && outcome.status || "").trim();
     if (status === "verified_registered" && RECEIPT_REF.test(
@@ -74,20 +65,10 @@ async function runLumaCandidateSequence(options = {}) {
       skipped.push(Object.freeze({ event_ref: candidate.event_ref, reason: status }));
       continue;
     }
-    if (RECOVER.has(status)) {
-      return verified({
-        status: "recovery_required",
-        reason: status,
-        candidate,
-        skipped: Object.freeze([...skipped]),
-      });
-    }
-    return verified({
-      status: "reconciliation_required",
-      reason: status === "unknown_effect" ? "unknown_effect" : "unverified_result",
-      candidate,
-      skipped: Object.freeze([...skipped]),
-    });
+    skipped.push(Object.freeze({
+      event_ref: candidate.event_ref,
+      reason: status || "unverified_result",
+    }));
   }
   return verified({
     status: "next_provider_required",
