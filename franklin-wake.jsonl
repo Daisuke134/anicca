@@ -26616,3 +26616,11 @@
 {"ts":1786573593,"wake_id":"00MSQNSFO040E7BBC1102E4943","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786573720,"wake_id":"00MSQNV5KU29CD725AC3174BC8","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786573850,"wake_id":"00MSQNXXBBA21D7DFA707C4D3A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786573983,"wake_id":"00MSQO0S6TE463EF761CB04D9A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786574112,"wake_id":"00MSQO3JFCEDF4B7921C854362","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786574237,"wake_id":"00MSQO68JH39DCCABD953B4880","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana on-chain job marketplace earn USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for th"}
+{"ts":1786574367,"wake_id":"00MSQO90KS91DE9537B1874B42","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786574494,"wake_id":"00MSQOBQJWC1BD4FF2B8DB4698","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786574623,"wake_id":"00MSQOEHT1176EB7E63B34487F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786574750,"wake_id":"00MSQOH84232C4CCE8F3F54E80","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786574878,"wake_id":"00MSQOJZ4054B6374B1577491F","kind":"narrate","sleep_s":120,"model":"auto"}
