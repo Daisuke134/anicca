@@ -8240,3 +8240,9 @@ PR `#1936`はOSS self-contained、gitleaks current/full history、TruffleHog fil
 ### O1B-25進捗512（Item 23F accepted / provider別fallback budget GREEN）
 
 Lunaがproduction router/test exact 2 filesをTDDした。REDはnative budget 15がnormal LumaとTECH PLAYの両方へ15で渡ることを再現。GREENはproduction composition境界で整数かつ1以上を要求し、normal providerを`min(maxSteps, 10)`、TECH PLAYを15のままHarnessへ渡す。runner config、Harness validators、provider order、circuit、final-effect semanticsは変更0。fresh Sol reviewが文字列`"15"`の数値化bypassをImportantとして検出し、同じLunaがstring/NaN/Infinity/0/negative/decimalをHarness call 0でfail-closedするRED→GREENを追加した。re-reviewはSHIP。focused `28/28`、adjacent/native `99/99`、full Connector `360/360`、syntax、diff checkがPASS。Item23Fを閉じ、最終docs/code PRの全CI greenとmain mergeへ戻る。
+
+### O1B-25進捗513（最終PR merge / SSOT・production readback確定）
+
+PR `#1947`はOSS self-contained、gitleaks current/full history、TruffleHog filesystem/history、PII、Python、Shell、CodeRabbitの全7 checks GREEN後にnon-force mergeし、`main` merge commitは`f1a13b2e7672c7a847d9f6d23bb559b13be07c3c`。clean integration worktreeのHEADと`origin/main`は同commitで一致し、Item23 baseline `4f1960592c5d5296b584109f13d550d61c0fa541`のancestryも確認した。
+
+productionのread-only最終確認はnative label exact 1、09:00 daily、`not running`、runs 1、last exit 0。healthcheck・Healer・bridgeはunloaded、Connector process 0、lock absent、durable target ledgerと現在の共有browser pagesのintersection 0。installed plistはcanonical integration worktreeの`skills/connector/run.sh`、portable state home、実在external env fileを指す。Item23Fを含む実行可能なItems1〜18・20〜23を完了する。残TODOはItem19の4 providerだけで、Meetup・Doorkeeper・Eventbrite・TECH PLAYに将来Calendar非衝突の実候補が出た時点で、各first live `applied_bundle`を外部条件付きで受け入れる。
