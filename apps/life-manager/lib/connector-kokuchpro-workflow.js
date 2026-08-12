@@ -1,13 +1,20 @@
 "use strict";
 
+const { createHash } = require("node:crypto");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
 const TIME_ZONE = "Asia/Tokyo";
+const LISTING_BASE = "https://www.kokuchpro.com/s/area-%E6%9D%B1%E4%BA%AC%E9%83%BD/charge-0/";
 const EVENT_URL = /^https:\/\/www\.kokuchpro\.com\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?\/$/;
 const ISO_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})$/;
 const CONTROL = /[\u0000-\u001F\u007F-\u009F]/;
+const OFFLINE_MODE = new Set(["https://schema.org/OfflineEventAttendanceMode", "http://schema.org/OfflineEventAttendanceMode"]);
+const IN_STOCK = new Set(["InStock", "https://schema.org/InStock", "http://schema.org/InStock"]);
+const SAFE_CODES = new Set("KOKUCHPRO_LISTING_NAVIGATION_FAILED KOKUCHPRO_LISTING_READ_FAILED KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED KOKUCHPRO_DETAIL_NAVIGATION_FAILED KOKUCHPRO_DETAIL_READ_FAILED KOKUCHPRO_DETAIL_RESULT_CONTRACT_FAILED KOKUCHPRO_DETAIL_IDENTITY_MISMATCH_FAILED KOKUCHPRO_CALENDAR_CONFLICT_CHECK_FAILED KOKUCHPRO_AUDIT_FAILED".split(" "));
 
 function invalid() { throw new Error("KokuchPro workflow invalid"); }
+function stageError(code) { const error = new Error("KokuchPro workflow stage failed"); error.code = code; return error; }
+function preserveSafe(error, fallback) { const code = String(error && error.code || ""); return stageError(SAFE_CODES.has(code) ? code : fallback); }
 
 function exactUrl(value) {
   if (typeof value !== "string") return null;
@@ -43,6 +50,25 @@ function candidateWindow(now) {
     year: end.getUTCFullYear(), month: end.getUTCMonth() + 1, day: end.getUTCDate(),
   }, "00:00", TIME_ZONE)) };
 }
+
+function listingUrl(observed) {
+  const parts = localParts(observed);
+  const end = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 14));
+  const text = (value) => [value.year, value.month, value.day].map((part) => String(part).padStart(2, "0")).join("-");
+  return `${LISTING_BASE}?et=0&start_date=${text(parts)}&end_date=${text({ year: end.getUTCFullYear(), month: end.getUTCMonth() + 1, day: end.getUTCDate() })}&enabled=1&sort=date`;
+}
+
+function assertPageUrl(page, expected, code) { if (page && typeof page.url === "function" && String(page.url()) !== expected) throw stageError(code); }
+function calendarIntervals(calendar) { return Array.isArray(calendar) ? calendar : calendar && Array.isArray(calendar.busy_intervals) ? calendar.busy_intervals : []; }
+function overlaps(candidate, busy) {
+  if (!busy || busy.kind !== "timed") return false;
+  const start = Date.parse(candidate.starts_at); const end = Date.parse(candidate.ends_at);
+  const busyStart = Date.parse(busy.start_at); const busyEnd = Date.parse(busy.end_at);
+  return [start, end, busyStart, busyEnd].every(Number.isFinite) && start < busyEnd && end > busyStart;
+}
+
+function exactCoverage(candidate, busy) { return overlaps(candidate, busy) && String(busy.connector_idempotency || "") === createHash("sha256").update(candidate.canonical_url, "utf8").digest("hex"); }
+function defaultCalendarFree(candidate, calendar) { return !calendarIntervals(calendar).some((busy) => overlaps(candidate, busy) && !exactCoverage(candidate, busy)); }
 
 function publicText(value, max) {
   return typeof value === "string" && value.length > 0 && value.length <= max
@@ -104,4 +130,60 @@ function normalizeKokuchProDetail(input = {}) {
     registration_status: "available", ticket_id: ticketId, ticket_price_status: "free", ticket_price_minor: 0 });
 }
 
-module.exports = { canonicalKokuchProBinding, normalizeKokuchProDetail };
+function eventNodes(raw) { const source = raw && Object.hasOwn(raw, "jsonld") ? raw.jsonld : raw && raw.jsonLd; const nodes = Array.isArray(source) ? source : source && Array.isArray(source["@graph"]) ? source["@graph"] : [source]; return nodes.filter((node) => (Array.isArray(node && node["@type"]) ? node["@type"] : [node && node["@type"]]).some((type) => ["Event", "https://schema.org/Event", "http://schema.org/Event"].includes(type))); }
+function locationFields(location) { const place = Array.isArray(location) ? (location.length === 1 ? location[0] : null) : location; if (!place || typeof place !== "object" || Array.isArray(place)) return { venue: "", address: "" }; const source = typeof place.address === "string" ? { name: place.address } : place.address; if (!source || typeof source !== "object" || Array.isArray(source)) return { venue: String(place.name || ""), address: "" }; return { venue: String(place.name || source.name || "").trim(), address: [source.name, source.addressCountry, source.addressRegion, source.addressLocality, source.streetAddress, source.postalCode].filter((value) => typeof value === "string" && value.trim()).join(" ").trim() }; }
+function structuredDetail(raw, canonicalUrl) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw stageError("KOKUCHPRO_DETAIL_RESULT_CONTRACT_FAILED");
+  if (Object.hasOwn(raw, "canonical_url") && String(raw.canonical_url || "") !== canonicalUrl) throw stageError("KOKUCHPRO_DETAIL_IDENTITY_MISMATCH_FAILED");
+  const events = eventNodes(raw); if (events.length !== 1) return null; const event = events[0];
+  if (String(event.url || "").trim() !== canonicalUrl) throw stageError("KOKUCHPRO_DETAIL_IDENTITY_MISMATCH_FAILED");
+  const parsed = exactUrl(canonicalUrl); const modes = Array.isArray(event.eventAttendanceMode) ? event.eventAttendanceMode : [event.eventAttendanceMode];
+  const offline = modes.length === 1 && OFFLINE_MODE.has(String(modes[0] || "")); const offers = Array.isArray(event.offers) ? event.offers : [event.offers];
+  const freeOffer = offers.length === 1 && offers.every((offer) => { const types = Array.isArray(offer && offer["@type"]) ? offer["@type"] : [offer && offer["@type"]]; return offer && typeof offer === "object" && types.length === 1 && ["Offer", "https://schema.org/Offer", "http://schema.org/Offer"].includes(types[0]) && String(offer.url || "").trim() === canonicalUrl && offer.priceCurrency === "JPY" && ((typeof offer.price === "number" && Number.isFinite(offer.price) && offer.price === 0) || (typeof offer.price === "string" && offer.price.trim() !== "" && Number(offer.price) === 0)) && IN_STOCK.has(String(offer.availability || "")); });
+  const feeRows = Array.isArray(raw.fee_rows) ? raw.fee_rows : []; const freeFee = feeRows.filter((row) => row && String(row.label || "").trim() === "料金制度" && String(row.value || "").trim() === "無料イベント").length === 1;
+  const freeTickets = (Array.isArray(raw.ticket_rows) ? raw.ticket_rows : []).filter((row) => row && String(row.label || "").trim() === "無料" && String(row.status || "").trim() === "募集中"); const actions = Array.isArray(raw.entry_actions) ? raw.entry_actions.map(String) : []; const actionOkay = !Object.hasOwn(raw, "entry_actions") || (actions.length > 0 && actions.every((action) => action === canonicalUrl || action === `${canonicalUrl}entry/`)); const values = Array.isArray(raw.availability_values) ? raw.availability_values.map(String) : null; const availability = values === null ? null : values.length >= 1 && values.length <= 2 && new Set(values).size === 1 && /^[1-9][0-9]{0,19}$/.test(values[0]) ? values[0] : ""; const ticket = freeTickets.length === 1 && actionOkay && availability !== "" ? freeTickets[0] : null;
+  const { venue, address } = locationFields(event.location);
+  return { canonical_url: canonicalUrl, event_key: parsed.event_key, occurrence_id: parsed.occurrence_id, title: String(event.name || ""), starts_at: event.startDate, ends_at: event.endDate, venue, address, event_format: offline ? "offline" : "online", fee_scheme: freeOffer && freeFee ? "free" : "paid", registration_status: ticket ? "open" : "closed", is_full: false, tickets: ticket ? [{ id: availability === null ? String(ticket.id || "") : availability, status: "available", price_currency: "JPY", price_minor: 0 }] : [] };
+}
+
+async function defaultReadListingBindings(page, observed) {
+  if (!page || typeof page.goto !== "function" || typeof page.evaluate !== "function") invalid(); const url = listingUrl(observed);
+  try { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 }); assertPageUrl(page, url, "KOKUCHPRO_LISTING_NAVIGATION_FAILED"); } catch (error) { if (error && error.code) throw error; throw stageError("KOKUCHPRO_LISTING_NAVIGATION_FAILED"); }
+  let rows; try { rows = await page.evaluate(() => [...document.querySelectorAll("a[href]")].map((anchor) => ({ href: String(anchor.href || anchor.getAttribute("href") || "") }))); } catch { throw stageError("KOKUCHPRO_LISTING_READ_FAILED"); }
+  if (!Array.isArray(rows) || rows.length > 2_000) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); const result = []; const seen = new Set();
+  for (const row of rows) { const binding = canonicalKokuchProBinding(row); if (!binding || seen.has(binding.event_ref)) continue; seen.add(binding.event_ref); result.push(binding); if (result.length > 40) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); }
+  return Object.freeze(result);
+}
+
+async function defaultReadEventDetail(page, canonicalUrl) {
+  if (!page || typeof page.goto !== "function" || typeof page.evaluate !== "function") invalid();
+  try { await page.goto(canonicalUrl, { waitUntil: "domcontentloaded", timeout: 30_000 }); assertPageUrl(page, canonicalUrl, "KOKUCHPRO_DETAIL_NAVIGATION_FAILED"); } catch (error) { if (error && error.code) throw error; throw stageError("KOKUCHPRO_DETAIL_NAVIGATION_FAILED"); }
+  let raw; try { raw = await page.evaluate((expectedUrl) => { const text = (node) => String(node && (node.innerText || node.textContent) || "").replace(/\s+/g, " ").trim(); const jsonld = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => { try { return [JSON.parse(script.textContent || "")]; } catch { return []; } }); const selector = 'input#FormEntryAvailability[name="data[Form][entry_availability]"]'; const availability_values = [...document.querySelectorAll(selector)].map((input) => String(input.value || "")); const entry_actions = [...document.querySelectorAll("form")].filter((form) => form.querySelector(selector)).map((form) => String(form.action || form.getAttribute("action") || "")); const tableRows = [...document.querySelectorAll("tr")].map((row) => { const cells = [...row.querySelectorAll("th,td")].map(text); const node = row.querySelector("[data-ticket-id],a[href*='ticket'],input[name='ticket_id']"); const id = node && (node.getAttribute("data-ticket-id") || node.value || node.textContent); return { cells, id: id ? String(id).trim() : "" }; }); return { canonical_url: String((typeof location !== "undefined" && location.href) || expectedUrl), jsonld, fee_rows: tableRows.map((row) => ({ label: row.cells[0] || "", value: row.cells.slice(1).join(" ") })), ticket_rows: tableRows.filter((row) => row.cells.includes("無料") && row.cells.includes("募集中")).map((row) => ({ id: row.id, label: "無料", status: "募集中" })), availability_values, entry_actions }; }, canonicalUrl); assertPageUrl(page, canonicalUrl, "KOKUCHPRO_DETAIL_NAVIGATION_FAILED"); } catch (error) { if (error && error.code) throw error; throw stageError("KOKUCHPRO_DETAIL_READ_FAILED"); }
+  try { return structuredDetail(raw, canonicalUrl); } catch (error) { if (error && error.code) throw error; throw stageError("KOKUCHPRO_DETAIL_RESULT_CONTRACT_FAILED"); }
+}
+
+function exactCandidate(value) { if (!value || typeof value !== "object" || Array.isArray(value) || value.provider !== "kokuchpro" || !canonicalKokuchProBinding(value) || !String(value.title || "").trim() || !Number.isFinite(Date.parse(String(value.starts_at || ""))) || !Number.isFinite(Date.parse(String(value.ends_at || ""))) || Date.parse(value.starts_at) >= Date.parse(value.ends_at) || value.registration_status !== "available" || value.ticket_price_status !== "free" || value.ticket_price_minor !== 0 || typeof value.ticket_id !== "string" || !/^[A-Za-z0-9._:-]{1,128}$/.test(value.ticket_id)) invalid(); return value; }
+function createKokuchProDiscoveryWorkflow(options = {}) {
+  const now = options.now || (() => new Date()); const readListingBindings = options.readListingBindings || options.readListing || defaultReadListingBindings; const readEventDetail = options.readEventDetail || defaultReadEventDetail; const isCalendarFree = options.isCalendarFree || defaultCalendarFree; const onDiscoveryAudit = options.onDiscoveryAudit || (() => {});
+  if ([now, readListingBindings, readEventDetail, isCalendarFree, onDiscoveryAudit].some((value) => typeof value !== "function")) invalid();
+  return Object.freeze({
+    async discoverCandidates({ page, calendar }) {
+      const observed = now(); if (!(observed instanceof Date) || !Number.isFinite(observed.getTime())) invalid(); let rows;
+      try { rows = await readListingBindings(page, observed); } catch (error) { throw preserveSafe(error, "KOKUCHPRO_LISTING_READ_FAILED"); } if (!Array.isArray(rows) || rows.length > 40) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
+      const bindings = []; const seen = new Set(); for (const row of rows) { const binding = canonicalKokuchProBinding(row); if (!binding || seen.has(binding.event_ref)) continue; seen.add(binding.event_ref); bindings.push(binding); }
+      const window = candidateWindow(observed); const exactCovered = []; const unprocessed = []; let withinWindowCount = 0; let eligibleCount = 0;
+      for (const binding of bindings) {
+        let raw; try { raw = await readEventDetail(page, binding.canonical_url); assertPageUrl(page, binding.canonical_url, "KOKUCHPRO_DETAIL_NAVIGATION_FAILED"); } catch (error) { throw preserveSafe(error, "KOKUCHPRO_DETAIL_READ_FAILED"); } if (raw == null) continue;
+        let candidate; try { candidate = normalizeKokuchProDetail({ binding, detail: raw, now: observed }); } catch (error) { throw preserveSafe(error, "KOKUCHPRO_DETAIL_RESULT_CONTRACT_FAILED"); } if (!candidate || Date.parse(candidate.starts_at) < window.start || Date.parse(candidate.starts_at) >= window.end) continue;
+        withinWindowCount += 1; eligibleCount += 1; let free; try { free = await isCalendarFree(candidate, calendar); } catch { throw stageError("KOKUCHPRO_CALENDAR_CONFLICT_CHECK_FAILED"); } if (!free) continue;
+        (calendarIntervals(calendar).some((busy) => exactCoverage(candidate, busy)) ? exactCovered : unprocessed).push(candidate);
+      }
+      const selectedCount = exactCovered.length + unprocessed.length; try { await onDiscoveryAudit(Object.freeze({ discovered_count: rows.length, within_window_count: withinWindowCount, eligible_count: eligibleCount, calendar_free_count: selectedCount, selected_count: selectedCount })); } catch (error) { throw preserveSafe(error, "KOKUCHPRO_AUDIT_FAILED"); }
+      return Object.freeze([...exactCovered, ...unprocessed]);
+    },
+    async runDirectAction({ candidate }) { exactCandidate(candidate); return Object.freeze({ status: "failed", safe_reason: "kokuchpro_direct_requires_harness" }); },
+    async readProviderState({ candidate }) { exactCandidate(candidate); return Object.freeze({ status: "unavailable" }); },
+  });
+}
+
+module.exports = { canonicalKokuchProBinding, normalizeKokuchProDetail, createKokuchProDiscoveryWorkflow };
