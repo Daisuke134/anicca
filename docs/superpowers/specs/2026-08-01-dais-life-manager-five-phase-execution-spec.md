@@ -8194,3 +8194,9 @@ Lunaがtest-only exact 2 files、production LOC 0でreal `createMinimalEvidenceC
 ### O1B-25進捗502（Item 22 final production cleanup再監査）
 
 Item21後もproduction ownerは`ai.anicca.life-manager-connector-native` exact 1 labelだけで、09:00 daily、active count 0、program/working directoryはfeature worktreeのofficial `skills/connector/run.sh`。native healthcheck、healer shadow、host bridge、legacy fill-gaps、daily reportは全UNLOADED、Connector process 0、lock absent。shared CDPはunrelated page 4、durable target ledger 9件とのintersection 0で、Connector-owned pageは残っていない。installed plistはmode 0600・lint PASS、state 705 filesのうち旧PNG 4件だけが0644だったためbytes/pathを変えず0600へ締め、全705 filesを0600へ統一した。bundle 13、checkpoint 30は削除・変更せず、Gig code/state変更0。Item22のsingle-owner cleanupを再acceptし、次active itemをItem23 canonical merge gateとする。
+
+### O1B-25進捗503（Item 23 canonical merge plan）
+
+`origin/main`とfeature HEADのmerge-treeは284 changed files中4 conflictsだけを返した。production conflictは`connector-native-write-pipeline.js` 1件、testはpipeline/coverage Telegram 2件、履歴plan 1件。feature側はmain側に対してprovider-neutral inventory、registration PNG/photo receipt、Luma confirmation/ticket evidenceと後続acceptanceを含む新しいConnector contractであり、4 filesはfeature contentを保持する。その他のcanonical late-approval/CFO変更はthree-way auto-mergeを保持する。
+
+Plan `docs/superpowers/plans/2026-08-12-connector-canonical-merge-23.md`はdirtyな既存main checkoutを触らずclean integration worktreeを作り、Lunaがexact 4 conflictsだけを解決、Solがcanonical＋Connector regression/fresh review/remote ancestryを検証して非force mergeする。その後single native plistをmerged commit pathへ切替え、existing labelをexact 1回kickstartし、positive Telegram、bundle/checkpoint non-duplication、process/lock/owned-page cleanupまで実測する。新schedule/provider順/circuit緩和/Item19の偽applicationは0。
