@@ -25983,3 +25983,11 @@
 {"ts":1786491658,"wake_id":"00MSPB09Y8CB31EE2841A34AC8","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786491787,"wake_id":"00MSPB31M89536CA368CEB48ED","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1786491855,"wake_id":"00MSPB4I2VC084B03B75374445","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786491986,"wake_id":"00MSPB7ASU48D641B5F92643FB","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786492144,"wake_id":"00MSPBAOHW6FBAEF2F347A4B83","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786492273,"wake_id":"00MSPBDGFIE41CB0B4EA234D1A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786492400,"wake_id":"00MSPBG68F237420E9305B4F96","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786492556,"wake_id":"00MSPBJJ2RA8FE951DC2454DEE","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786492624,"wake_id":"00MSPBKZI079A6DAAB57414CE6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786492752,"wake_id":"00MSPBNQ5N191A1589F1134C77","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786492880,"wake_id":"00MSPBQGR1A7D33B87840841E1","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana low capital yield farming opportunities small deposits [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candid"}
