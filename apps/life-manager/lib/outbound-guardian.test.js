@@ -75,7 +75,7 @@ test("report Gateway delivery hides failure stderr and still requires a positive
   const message = `private report ${target}`;
   await assert.rejects(() => notifyOpenClawGateway(message, {
     telegramTarget: target,
-    idempotencyKey: "wake-20260810-stderr",
+    idempotencyKey: "wake-test-stderr",
     spawnSync() { return { status: 1, stdout: "", stderr: `failure ${target} ${message}` }; },
   }), (error) => {
     assert.equal(error.message, "Telegram report delivery failed");
@@ -84,7 +84,7 @@ test("report Gateway delivery hides failure stderr and still requires a positive
   });
   for (const stdout of ["{}", '{"messageId":0}', '{"messageId":"no"}']) {
     await assert.rejects(() => notifyOpenClawGateway("wake report", {
-      telegramTarget: target, idempotencyKey: "wake-20260810-receipt",
+      telegramTarget: target, idempotencyKey: "wake-test-receipt",
       spawnSync() { return { status: 0, stdout, stderr: "" }; },
     }), /Telegram report delivery failed/);
   }

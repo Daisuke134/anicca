@@ -31,7 +31,7 @@ Soft target: 2 files; production +15–25 LOC; tests +35–55 LOC.
 
 1. Exact authenticated `/event/<same-id>/ticket` with exactly one `body.webticket`, `section.ticket`, and `#qr-code img.js-qrcode-image` returns `registered`.
 2. Exact authenticated canonical `/event/<same-id>` with exactly one browser-visible exact same-event `/ticket` anchor returns `registered` before any submit path.
-3. Wrong provider host/port/event/path/query/hash, auth redirect, missing/duplicate ticket markers, hidden/zero-size ticket link, competing event link, or checkout controls cannot become registered.
+3. Alternate provider target, authentication redirect, missing or duplicated ticket markers, hidden or zero-size ticket link, competing event link, or checkout controls cannot become registered.
 4. The existing unregistered canonical/tickets/form/confirm states remain `absent` or `unavailable` exactly as before, and a pre-registered state makes direct submission an idempotent no-op with final click count zero.
 
 ### GREEN

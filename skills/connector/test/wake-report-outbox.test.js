@@ -8,12 +8,14 @@ const test = require("node:test");
 
 const { deliverPendingWakeReports, enqueueWakeReport } = require("../lib/wake-report-outbox.js");
 
+const WAKE_ID = "wake-test-outbox";
+
 test("wake report outbox keys Gateway delivery by the exact wake ID", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-wake-outbox-"));
   const sent = [];
   try {
     enqueueWakeReport(stateDir, {
-      wake_id: "wake-20260810-outbox",
+      wake_id: WAKE_ID,
       report_kind: "continuing",
       safe_reason: "providers_exhausted",
       cursor: "provider:luma",
@@ -29,7 +31,7 @@ test("wake report outbox keys Gateway delivery by the exact wake ID", async () =
       },
     });
     assert.equal(sent.length, 1);
-    assert.equal(sent[0].options.idempotencyKey, "wake-20260810-outbox");
+    assert.equal(sent[0].options.idempotencyKey, WAKE_ID);
     await deliverPendingWakeReports(stateDir, {
       telegramTarget: "123456789",
       async send() { throw new Error("duplicate send"); },

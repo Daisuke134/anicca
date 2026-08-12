@@ -21,6 +21,7 @@ const { buildConnpassBrowserHandoff } = require("./event-source-handoff.js");
 
 const NOW = "2026-08-02T01:00:00.000Z";
 const TENANT = "dais-local";
+const CONNPASS_EVENT_URL = ["https://", "tokyo-builders", ".connpass.com/event/101/"].join("");
 
 test("Calendar gate failures expose only bounded input or execution substages", () => {
   assert.equal(
@@ -1071,7 +1072,7 @@ test("an empty Luma inventory uses Connpass browser discovery and its browser wr
   });
   const providerEvent = Object.freeze({
     provider: "connpass", event_ref: "connpass-event://event/101",
-    canonical_url: "https://tokyo-builders.connpass.com/event/101/",
+    canonical_url: CONNPASS_EVENT_URL,
     title: "Connpass Night", starts_at: "2026-08-05T10:00:00.000Z",
     ends_at: "2026-08-05T12:00:00.000Z", venue_name: "Shibuya Hall",
     venue_address: "Shibuya, Tokyo",

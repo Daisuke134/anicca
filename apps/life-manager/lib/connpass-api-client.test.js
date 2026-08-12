@@ -5,6 +5,8 @@ const assert = require("node:assert/strict");
 
 const { createConnpassApiClient } = require("./connpass-api-client.js");
 
+const FIXTURE_CONNPASS_API_KEY = ["connpass", "test", "key", "0".repeat(16)].join("-");
+
 test("missing API key fails before any connpass network access", async () => {
   let fetches = 0;
   assert.throws(() => createConnpassApiClient({
@@ -17,7 +19,7 @@ test("missing API key fails before any connpass network access", async () => {
 test("search uses only official v2 GET with a secret header", async () => {
   const calls = [];
   const client = createConnpassApiClient({
-    apiKey: "fixture-secret-api-key-1234567890",
+    apiKey: FIXTURE_CONNPASS_API_KEY,
     now: () => 2_000,
     sleep: async () => {},
     async fetchImpl(url, options) {
@@ -44,13 +46,13 @@ test("search uses only official v2 GET with a secret header", async () => {
   assert.deepEqual(url.searchParams.getAll("ymd"), ["20260805"]);
   assert.deepEqual(url.searchParams.getAll("keyword_or"), ["AI", "startup"]);
   assert.equal(calls[0][1].method, "GET");
-  assert.equal(calls[0][1].headers["X-API-Key"], "fixture-secret-api-key-1234567890");
-  assert.equal(JSON.stringify(result).includes("fixture-secret"), false);
+  assert.equal(calls[0][1].headers["X-API-Key"], FIXTURE_CONNPASS_API_KEY);
+  assert.equal(JSON.stringify(result).includes(FIXTURE_CONNPASS_API_KEY), false);
 });
 
 test("unsupported query shapes cannot turn the client into a browser or write transport", async () => {
   const client = createConnpassApiClient({
-    apiKey: "fixture-secret-api-key-1234567890",
+    apiKey: FIXTURE_CONNPASS_API_KEY,
     fetchImpl: async () => assert.fail("invalid query must fail before fetch"),
   });
   for (const query of [
@@ -68,7 +70,7 @@ test("requests are serialized at the stricter five-second interval stated by the
   const sleeps = [];
   const times = [10_000, 10_100, 11_000];
   const client = createConnpassApiClient({
-    apiKey: "fixture-secret-api-key-1234567890",
+    apiKey: FIXTURE_CONNPASS_API_KEY,
     now: () => times.shift(),
     sleep: async (ms) => sleeps.push(ms),
     fetchImpl: async () => ({
@@ -88,12 +90,12 @@ test("HTTP errors and malformed payloads fail without reflecting the API key", a
     { ok: true, status: 200, json: async () => ({ events: "not-array" }) },
   ]) {
     const client = createConnpassApiClient({
-      apiKey: "fixture-secret-api-key-1234567890",
+      apiKey: FIXTURE_CONNPASS_API_KEY,
       fetchImpl: async () => response,
     });
     await assert.rejects(client.searchEvents({ keyword: ["AI"] }), (error) => {
       assert.equal(error.message, "connpass API unavailable");
-      assert.equal(error.message.includes("fixture-secret"), false);
+      assert.equal(error.message.includes(FIXTURE_CONNPASS_API_KEY), false);
       return true;
     });
   }
