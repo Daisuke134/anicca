@@ -200,7 +200,7 @@ flowchart TD
         VERIFY["確認mail・guest binding・ticket / QRを検証"]
         SYNC["Google Calendarへ冪等登録しreadback"]
         COVERAGE["現行14日窓の候補・申込状態を再計算"]
-        NEXT{"設定済みprovider / 日の処理が残る?"}
+        NEXT{"設定済みprovider / accepted unknown-provider rail<br/>または日の処理が残る?"}
 
         CAL --> DISCOVER --> GATE
         GATE -->|No| DISCOVER
@@ -8232,3 +8232,7 @@ Lunaがdeveloper-local test fixture 3件をsynthetic化し、Connector/healthche
 PR `#1936`はOSS self-contained、gitleaks current/full history、TruffleHog filesystem/history、PII、Python、Shell、CodeRabbitの全7 checks GREEN後にnon-force mergeし、canonical `main` merge commitは`4f1960592c5d5296b584109f13d550d61c0fa541`。clean integration worktreeを同commitへexact fast-forwardし、feature/integration ancestryとremote main一致を確認した。production native plistはrendererから再生成し、canonical `run.sh`、実在external env file、portable state homeをreadbackしてmode 0600・lint PASS後、native label exact 1件だけをreloadした。legacy/healthcheck/Healer/bridge labelsはloaded 0。
 
 同じlaunchd labelをexact 1回kickstartしたofficial wake `wake-4a753f4dcd2917a18effb1db`は、Luma→Connpass→Peatix→Meetup→Doorkeeper→Eventbrite→TECH PLAY→KokuchProを同じowned pageで完走し、`completed_no_effect / existing_bundles_reused`、launchd exit 0。Telegram deliveryはprovider ID `13447`、report `137→138`、delivery `149→150`。configured provider auditは7 filesすべて各+1。bundle `13→13`、evidence `132→132`で新規/重複external effect 0、owned pageは一時`5→6`から元のexact 5 target IDsへ復帰、process 0、lock absent。Item23 canonical merge gateをacceptし、実行可能なItems1〜18・20〜23を完了する。残るItem19はMeetup/Doorkeeper/Eventbrite/TECH PLAYに将来Calendar非衝突候補が出現した時だけ各実bundleで閉じるexternal-condition TODOである。
+
+### O1B-25進捗511（Item 23F plan / provider別fallback budget RED）
+
+最終docs PR `#1947`のreviewで、native passのglobal `maxAgentSteps: 15`はTECH PLAYのreview/final flowに必要だが、同じ値がnormal providerのgeneric Browser Harnessへそのまま渡るとadapterのhard upper bound 10を超えるlatent failureを確認した。canonical wakeでは該当normal fallbackを踏まなかったためexit 0証拠とは矛盾しないが、次のunknown UIで起動前validation failureになり得る。Ponytailでrunner設定・Harness上限・TECH PLAY flowの変更を棄却し、production composition境界でnormal providerだけ`min(native budget, 10)`、TECH PLAYだけ15を保持する2-file sliceへ縮小する。Plan `docs/superpowers/plans/2026-08-12-connector-provider-step-budget-23f.md`をTDDし、fresh review後に同じPRへpushする。NEXT図もaccepted unknown-provider railの継続条件を明示した。
