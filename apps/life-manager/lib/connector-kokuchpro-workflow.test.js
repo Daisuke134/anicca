@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const {
   canonicalKokuchProBinding,
+  createKokuchProDiscoveryWorkflow,
   normalizeKokuchProDetail,
 } = require("./connector-kokuchpro-workflow.js");
 
@@ -219,4 +220,156 @@ test("KokuchPro rejects semantically invalid ISO calendar dates", () => {
     detail: detail({ starts_at: "2026-02-20T24:00:00+09:00", ends_at: "2026-02-20T25:00:00+09:00" }),
     now: februaryNow,
   }), null);
+});
+
+const LIST_URL = "https://www.kokuchpro.com/s/area-%E6%9D%B1%E4%BA%AC%E9%83%BD/charge-0/?et=0&start_date=2026-08-12&end_date=2026-08-26&enabled=1&sort=date";
+
+function jsonLdDetail(url = ROOT, overrides = {}) {
+  const occurrence = url === ROOT ? null : OCCURRENCE;
+  return {
+    jsonld: {
+      "@type": "Event",
+      url,
+      name: "Tokyo free event",
+      startDate: "2026-08-20T19:00:00+09:00",
+      endDate: "2026-08-20T20:30:00+09:00",
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      location: { "@type": "Place", name: "豊島区ホール", address: { addressLocality: "東京都豊島区" } },
+      offers: { "@type": "Offer", url, price: 0, priceCurrency: "JPY", availability: "https://schema.org/InStock" },
+      ...overrides.event,
+    },
+    fee_rows: [{ label: "料金制度", value: "無料イベント" }],
+    ticket_rows: [{ id: "ticket-1", label: "無料", status: "募集中" }],
+    canonical_url: url,
+    event_key: KEY,
+    occurrence_id: occurrence,
+    ...overrides,
+  };
+}
+
+function workflowPage(url = "") {
+  return {
+    current: url,
+    calls: [],
+    url() { return this.current; },
+    async goto(nextUrl) { this.calls.push(["goto", nextUrl]); this.current = nextUrl; },
+  };
+}
+
+function defaultEvaluatePage({ listingRows = [], details = {} } = {}) {
+  const page = workflowPage();
+  page.evaluate = async (_fn, argument) => {
+    page.calls.push(["evaluate", page.current]);
+    if (page.current === LIST_URL) return listingRows;
+    return details[argument || page.current];
+  };
+  return page;
+}
+
+test("KokuchPro default listing is exact, same-page, canonical-only, and bounded", async () => {
+  const first = ROOT;
+  const second = `${ROOT}${OCCURRENCE}/`;
+  const page = defaultEvaluatePage({ listingRows: [
+    { href: first }, { href: `${first}?tracking=1` }, { href: second }, { href: second },
+    { href: "https://kokuchpro.com/event/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/" },
+  ], details: { [first]: jsonLdDetail(first), [second]: jsonLdDetail(second) } });
+  const result = await createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page, calendar: [] });
+  assert.deepEqual(result.map((row) => row.canonical_url), [first, second]);
+  assert.deepEqual(page.calls.slice(0, 4), [["goto", LIST_URL], ["evaluate", LIST_URL], ["goto", first], ["evaluate", first]]);
+  const over = defaultEvaluatePage({ listingRows: Array.from({ length: 41 }, (_, index) => ({ href: `https://www.kokuchpro.com/event/${String(index + 1).padStart(32, "a")}/` })) });
+  await assert.rejects(createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page: over, calendar: [] }), (error) => error.code === "KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED");
+});
+
+test("KokuchPro default readers reject a same-page redirect", async () => {
+  const page = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: { [ROOT]: jsonLdDetail(ROOT) } });
+  const originalGoto = page.goto;
+  page.goto = async function redirected(url) {
+    await originalGoto.call(this, url);
+    if (url === LIST_URL) this.current = "https://www.kokuchpro.com/login/";
+  };
+  await assert.rejects(createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page, calendar: [] }), (error) => error.code === "KOKUCHPRO_LISTING_NAVIGATION_FAILED");
+});
+
+test("KokuchPro default detail requires one exact offline free Event and explicit ticket table", async () => {
+  const page = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: { [ROOT]: jsonLdDetail(ROOT) } });
+  const workflow = createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) });
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+  assert.deepEqual(Object.keys(result[0]).sort(), [
+    "address", "canonical_url", "ends_at", "event_ref", "provider", "registration_status",
+    "starts_at", "ticket_id", "ticket_price_minor", "ticket_price_status", "title", "venue",
+  ]);
+  assert.equal(JSON.stringify(result).includes("fee_rows"), false);
+  const stringAddressPage = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: { [ROOT]: jsonLdDetail(ROOT, { event: { location: { name: "豊島区ホール", address: "東京都豊島区" } } }) } });
+  assert.equal((await createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page: stringAddressPage, calendar: [] })).length, 1);
+  const identityPage = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: { [ROOT]: jsonLdDetail(ROOT, { event: { url: `${ROOT}?redirect=1` } }) } });
+  await assert.rejects(createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page: identityPage, calendar: [] }), (error) => error.code === "KOKUCHPRO_DETAIL_IDENTITY_MISMATCH_FAILED");
+  for (const [name, overrides] of [
+    ["duplicate-events", { jsonld: [jsonLdDetail(ROOT).jsonld, jsonLdDetail(ROOT).jsonld] }],
+    ["online", { event: { eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode" } }],
+    ["paid", { event: { offers: { "@type": "Offer", url: ROOT, price: 1000, priceCurrency: "JPY", availability: "https://schema.org/InStock" } } }],
+    ["wrong-offer-type", { event: { offers: { "@type": "Thing", url: ROOT, price: 0, priceCurrency: "JPY", availability: "https://schema.org/InStock" } } }],
+    ["fee", { fee_rows: [{ label: "料金制度", value: "有料イベント" }] }],
+    ["ticket", { ticket_rows: [{ id: "ticket-1", label: "無料", status: "受付終了" }] }],
+    ["duplicate-ticket", { ticket_rows: [{ id: "ticket-1", label: "無料", status: "募集中" }, { id: "ticket-2", label: "無料", status: "募集中" }] }],
+  ]) {
+    const badPage = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: { [ROOT]: jsonLdDetail(ROOT, overrides) } });
+    const badResult = await createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page: badPage, calendar: [] });
+    assert.deepEqual(badResult, [], name);
+  }
+});
+
+test("KokuchPro default detail derives one safe ticket id from duplicate availability forms and binds entry action identity", async () => {
+  const good = jsonLdDetail(ROOT, { availability_values: ["1", "1"], entry_actions: [`${ROOT}entry/`, `${ROOT}entry/`] });
+  const goodPage = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: { [ROOT]: good } });
+  const goodResult = await createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page: goodPage, calendar: [] });
+  assert.equal(goodResult[0].ticket_id, "1");
+  for (const [name, overrides] of [
+    ["zero", { availability_values: ["0", "0"] }],
+    ["mismatch", { availability_values: ["1", "2"] }],
+    ["unsafe", { availability_values: ["javascript:alert(1)"] }],
+    ["entry identity", { availability_values: ["1", "1"], entry_actions: ["https://www.kokuchpro.com/event/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/entry/"] }],
+  ]) {
+    const page = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: { [ROOT]: jsonLdDetail(ROOT, overrides) } });
+    assert.deepEqual(await createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page, calendar: [] }), [], name);
+  }
+});
+
+test("KokuchPro workflow gates Calendar once, orders exact coverage first, and freezes audit counts", async () => {
+  const first = canonicalKokuchProBinding(ROOT);
+  const secondUrl = OCCURRENCE_URL;
+  const second = canonicalKokuchProBinding(secondUrl);
+  const reads = [];
+  const audits = [];
+  let calendarCalls = 0;
+  const workflow = createKokuchProDiscoveryWorkflow({
+    now: () => new Date(NOW),
+    readListingBindings: async () => [first, first, second, { href: "https://evil.example/event/1" }],
+    readEventDetail: async (_page, url) => { reads.push(url); return detail({}, url); },
+    isCalendarFree: async () => { calendarCalls += 1; return true; },
+    onDiscoveryAudit: async (audit) => audits.push(audit),
+  });
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+  assert.deepEqual(reads, [ROOT, secondUrl]);
+  assert.equal(calendarCalls, 2);
+  assert.deepEqual(result.map((row) => row.canonical_url), [ROOT, secondUrl]);
+  assert.deepEqual(audits, [{ discovered_count: 4, within_window_count: 2, eligible_count: 2, calendar_free_count: 2, selected_count: 2 }]);
+  assert.equal(Object.isFrozen(audits[0]), true);
+});
+
+test("KokuchPro workflow maps stage failures safely and leaves action/readback unavailable", async () => {
+  const row = canonicalKokuchProBinding(ROOT);
+  const cases = [
+    ["KOKUCHPRO_LISTING_READ_FAILED", { readListingBindings: async () => { throw new Error("listing"); } }],
+    ["KOKUCHPRO_DETAIL_READ_FAILED", { readListingBindings: async () => [row], readEventDetail: async () => { throw new Error("detail"); } }],
+    ["KOKUCHPRO_CALENDAR_CONFLICT_CHECK_FAILED", { readListingBindings: async () => [row], readEventDetail: async () => detail(), isCalendarFree: async () => { throw new Error("calendar"); } }],
+    ["KOKUCHPRO_AUDIT_FAILED", { readListingBindings: async () => [row], readEventDetail: async () => detail(), onDiscoveryAudit: async () => { throw new Error("audit"); } }],
+  ];
+  for (const [code, options] of cases) {
+    const workflow = createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW), ...options });
+    await assert.rejects(workflow.discoverCandidates({ page: {}, calendar: [] }), (error) => error.code === code);
+  }
+  const candidate = normalizeKokuchProDetail({ binding: row, detail: detail(), now: NOW });
+  const workflow = createKokuchProDiscoveryWorkflow();
+  assert.deepEqual(await workflow.runDirectAction({ page: { click: async () => { throw new Error("must not click"); } }, candidate }), { status: "failed", safe_reason: "kokuchpro_direct_requires_harness" });
+  assert.deepEqual(await workflow.readProviderState({ page: {}, candidate }), { status: "unavailable" });
 });
