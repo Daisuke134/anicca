@@ -110,7 +110,15 @@ test("verified registration becomes one durable Calendar PNG Telegram applied bu
     calls.find(([name]) => name === "telegram-message")[2].idempotencyKey,
     `connector-evidence:${calls.find(([name]) => name === "calendar-create")[1].idempotencyValue}`,
   );
-  assert.equal(calls.find(([name]) => name === "telegram-photo")[2].caption, "Connector::: Verified Technology Event / registered");
+  const messageIdempotencyKey = calls.find(([name]) => name === "telegram-message")[2].idempotencyKey;
+  const photoOptions = calls.find(([name]) => name === "telegram-photo")[2];
+  const photoIdempotencyKey = photoOptions.idempotencyKey;
+  const canonicalUrlSha256 = calls.find(([name]) => name === "calendar-create")[1].idempotencyValue;
+  assert.equal(photoIdempotencyKey, `connector-evidence-photo:${canonicalUrlSha256}`);
+  assert.match(photoIdempotencyKey, /^connector-evidence-photo:[0-9a-f]{64}$/);
+  assert.notEqual(messageIdempotencyKey, photoIdempotencyKey);
+  assert.doesNotMatch(photoIdempotencyKey, /https?:\/\/|private-target|dais-local|Verified Technology Event/);
+  assert.equal(photoOptions.caption, "Connector::: Verified Technology Event / registered");
 
   const bundleFile = path.join(stateDir, "applied-bundles", `${bundle.bundle_id.slice("applied-bundle:".length)}.json`);
   const persisted = JSON.parse(fs.readFileSync(bundleFile, "utf8"));
