@@ -150,7 +150,7 @@ function structuredDetail(raw, canonicalUrl) {
 async function defaultReadListingBindings(page, observed) {
   if (!page || typeof page.goto !== "function" || typeof page.evaluate !== "function") invalid(); const url = listingUrl(observed);
   try { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 }); assertPageUrl(page, url, "KOKUCHPRO_LISTING_NAVIGATION_FAILED"); } catch (error) { if (error && error.code === "KOKUCHPRO_LISTING_NAVIGATION_FAILED") throw error; throw stageError("KOKUCHPRO_LISTING_NAVIGATION_FAILED"); }
-  let rows; try { rows = await page.evaluate(() => [...document.querySelectorAll("a[href]")].map((anchor) => ({ href: String(anchor.href || anchor.getAttribute("href") || "") }))); } catch { throw stageError("KOKUCHPRO_LISTING_READ_FAILED"); }
+  let rows; try { rows = await page.evaluate(() => [...document.querySelectorAll(".event_list .event_item a[href]")].map((anchor) => ({ href: String(anchor.href || anchor.getAttribute("href") || "") }))); } catch { throw stageError("KOKUCHPRO_LISTING_READ_FAILED"); }
   if (!Array.isArray(rows) || rows.length > 2_000) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); const result = []; const seen = new Set();
   for (const row of rows) { const binding = canonicalKokuchProBinding(row); if (!binding || seen.has(binding.event_ref)) continue; seen.add(binding.event_ref); result.push(binding); if (result.length > 40) throw stageError("KOKUCHPRO_LISTING_RESULT_CONTRACT_FAILED"); }
   return Object.freeze(result);
