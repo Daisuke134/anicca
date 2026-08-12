@@ -1820,7 +1820,7 @@ function createProductionBrowserHarness(options = {}) {
         if (signature && seenMutations.has(signature)) return Object.freeze({ status: "failed" });
         const result = await performAction({ ...action, provider: input.provider, candidate: input.candidate });
         if (result && result.safe_reason === "effect_unknown") ambiguousEffect = true;
-        if (result && result.status === "success" && result.provider_state && ["registered", "pending"].includes(result.provider_state.status)) {
+        if (input.provider !== extensionProvider && result && result.status === "success" && result.provider_state && ["registered", "pending"].includes(result.provider_state.status)) {
           finalEffectProviderState = result.provider_state;
         }
         if (signature && result && result.status === "success") {
