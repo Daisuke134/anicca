@@ -7519,7 +7519,7 @@ LunaがEventbrite workflow/test 2 filesだけをTDD変更した。hydrated `Rese
 
 post-integration read-only production-workflow diagnosticではhydrated official pageのidentity/Tokyo/offline/zero AggregateOffer/InStock/exact offer URL/`Reserve a spot`一意controlが全PASSし、独立したevent-owned overview money markerでeligible 0に安全停止した。checkout/final Submit 0。diagnostic pageをexact cleanupしbaseline page 2、Connector ledger/current-page intersection 0、label unloadedを維持した。次active sliceは`/checkout-external` frame inspector/actorを、final Submitなしのopen/observe境界からTDDする。Item19 Eventbriteと実bundleは未完。
 
-### Active remaining TODO SSOT（進捗480。これ以外の残TODO一覧は履歴）
+### Active remaining TODO SSOT（進捗481。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -8066,3 +8066,7 @@ Plan `docs/superpowers/plans/2026-08-12-connector-unknown-provider-harness-20a.m
 LunaがPlan `docs/superpowers/plans/2026-08-12-connector-unknown-provider-harness-20a.md`のHarness production/test exact 2 filesをSuperpowers TDD実装した。`extensionProvider`と`extensionWorkflow`は両方なしまたはexact pairだけを許可し、lowercase safe token、既存7 providerとの非衝突、`readProviderState`を要求する。instance-local predicateはexact extension tokenだけを既存same-page generic observe→one action→perform→readback loopへ通し、未設定unknown・別token・partial/malformed configはfail closedのまま。factory/router/native order、discovery、Calendar/evidence、launchd、実applicationは変更0。
 
 初回REDは149件中147 pass/新規2 fail、GREEN 149/149。fresh Sol reviewはextension action結果の自己申告`provider_state`が将来独立workflow readbackを迂回し得るImportantを提示した。現行generic action pathでは当該fieldが外側へ伝播せずpre-fix matrixは既にPASSだったが、同じLunaがextensionを`finalEffectProviderState` cacheから明示除外し、actionがregistered/pendingを自己申告してもworkflowがabsent/unavailable/malformed/throwなら必ずfailedとなる8組のregressionを追加した。最終focused 150/150、Harness＋adapter 154/154、syntax/diff check PASS。fresh Sol re-reviewはSpec compliance/Code qualityとも合格、Critical/Important 0。code commits `e44a11451`、`0d99afad4`。Item20は未完で、次sliceはbounded proposerとproduction routerへ同じsingle extension configを配線する。
+
+### O1B-25進捗481（Item 20B / bounded proposer extension plan）
+
+Plan `docs/superpowers/plans/2026-08-12-connector-unknown-provider-proposer-20b.md`はHarness production/test exact 2 files。`createBoundedActionProposer`へ一つのoptional `extensionProvider`を追加し、exact configured tokenだけを既存structured Terra action選択へ通す。prompt/schemaはprovider、step/state、sanitized public controlsだけ、private valueとcandidate本文は0。既存10-step cap、Terra metadata gate、evidence path、native fast path、7 provider behaviorを変更しない。production約4〜10 LOC、test約30〜60 LOC。factory/router/native/discovery/Calendar/evidence/launchd/実browser effectは次slice以降。
