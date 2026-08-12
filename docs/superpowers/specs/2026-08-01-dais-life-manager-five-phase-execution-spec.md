@@ -8130,3 +8130,9 @@ LunaがKokuchPro workflow/test exact 2 filesをTDD実装した。RED 23/24はcan
 Lunaの初回TDDはRED Harness 151/153、GREEN 153/153、Harness＋adapter 157/157、syntax/diff check PASS、commit `d07d897b7`をpushした。extension-only auth preflight、action後auth latch、synthetic empty observation/no proposal、`safe_reason=auth_required`、既存repaired actions保持を実装し、auth後の実inspect/proposal/operation/private resolve/retry 0を満たした。
 
 fresh Sol reviewはCritical 0だが、auth preflightがadapter scope validationより前にworkflow readbackを呼ぶImportant反例を検出。malformed websocket、`maxSteps=0`、wrong expected state、null pageでもreadbackが先行し、workflowが`auth_required`ならinvalid rejectionを迂回した。Item20E2は未accept。同じHarness/test exact 2 filesへ戻し、adapterがscopeを検証した後のfirst logical observe内でextension readbackを実行する。invalid scopeはreadback/inspect/proposal/operation/resolve全0、valid authは実DOM inspect以降0をRED→GREENで固定し、fresh re-review後だけacceptする。
+
+### O1B-25進捗492（Item 20E2 accepted / 20F1 durable audit plan）
+
+同じLunaがinvalid scope回帰をRED 153/154で固定し、extension auth preflightをadapter scope検証後のfirst logical observe内へ移動した。GREEN focused 154/154、Harness＋adapter 158/158、syntax/diff check PASS。malformed websocket、maxSteps 0、wrong expected state、null pageはreadback/inspect/proposal/operation/resolve全0で従来どおりreject。valid pre-existing authはworkflow readback 1、実DOM inspect以降0、action後authはmutation exact1後の追加action 0で`safe_reason=auth_required`を返す。commit `9aa13ab2f`をpushし、fresh Sol re-reviewはSHIP、Critical/Important 0。Item20E2をaccept。
+
+production接続前にprivacy-safe auditを先に閉じる。Plan `docs/superpowers/plans/2026-08-12-connector-kokuchpro-audit-20f1.md`はminimal operations production/test exact 2 files、production約3 LOC、test約30〜45 LOC。既存strict five-count validatorを再利用し、`kokuchpro-discovery-audits.jsonl`へschema/wake/5 counts/timestampだけを0600 appendする。workflow/router/browser/native/evidence/Calendar/cache/schedule変更0。次sliceでdefault KokuchPro workflowをfactory/router/Harness extension seamへ注入する。
