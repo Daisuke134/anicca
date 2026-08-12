@@ -3303,6 +3303,35 @@ test("extension provider configuration is an exact safe pair", () => {
   assert.doesNotThrow(() => createProductionBrowserHarness({ ...base }));
 });
 
+test("extension fallback requires independent workflow readback despite action proof", async () => {
+  const cases = [
+    ["absent", async () => ({ status: "absent" })],
+    ["unavailable", async () => ({ status: "unavailable" })],
+    ["malformed", async () => ({ status: 42 })],
+    ["throw", async () => { throw new Error("extension readback"); }],
+  ];
+  for (const claimedStatus of ["registered", "pending"]) {
+    for (const [name, read] of cases) {
+      let reads = 0;
+      let operations = 0;
+      const harness = createProductionBrowserHarness({
+        lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+        extensionProvider: "extension-proof",
+        extensionWorkflow: { async readProviderState(input) { reads += 1; return read(input); } },
+        async inspectControls() { return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
+        async proposeAction() { return { control: "register_button" }; },
+        async operateControl() { operations += 1; return { status: "success", provider_state: { status: claimedStatus } }; },
+        async resolveValue() { return null; },
+      });
+      const result = await harness.runFallback({ provider: "extension-proof", candidate: { event_ref: "extension-proof://event/1" }, page: { url() { return "https://extension-proof.example/event/1"; } }, pageWebsocket: `ws://127.0.0.1:9222/devtools/page/EXTENSION-PROOF-${claimedStatus}-${name}`, maxSteps: 1, expectedState: "registered_or_pending" });
+      assert.equal(reads, 1, `${claimedStatus}-${name}-readback`);
+      assert.equal(operations, 1, `${claimedStatus}-${name}-operation`);
+      assert.equal(result.status, "failed", `${claimedStatus}-${name}-status`);
+      assert.equal(result.provider_state, undefined, `${claimedStatus}-${name}-no-self-proof`);
+    }
+  }
+});
+
 test("TECH PLAY parent operation rejects radio ambiguity, drift, failed postcondition, and review/final clicks", async () => {
   for (const [name, resolveValue] of [
     ["zero-approved", async () => null],
