@@ -445,6 +445,67 @@ test("ordinary agent action failure still uses the bounded three-candidate circu
   ]);
 });
 
+test("auth-required fallback exhausts only the current provider and continues the same owned rail", async () => {
+  const providerA = "luma";
+  const providerB = "connpass";
+  const aCandidates = [candidate(providerA, "auth-one"), candidate(providerA, "auth-two"), candidate(providerA, "auth-three")];
+  const bCandidate = candidate(providerB, "healthy-one");
+  let state;
+  state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return provider === providerA ? aCandidates : [bCandidate];
+    },
+    async runCachedAction({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["cache", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "cache_miss" });
+    },
+    async runDirectAction({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["direct", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "failed", safe_reason: "direct_action_unavailable" });
+    },
+    async runAgentFallback({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["agent", selected.event_ref, suppliedPage.page_id]);
+      return selected.provider === providerA
+        ? Object.freeze({ status: "failed", safe_reason: "auth_required", repaired_actions: [] })
+        : Object.freeze({ status: "completed", repaired_actions: [] });
+    },
+    async readProviderState({ candidate: selected, page: suppliedPage, phase }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["readback", selected.event_ref, phase, suppliedPage.page_id]);
+      return selected.provider === providerB && ["post_submit", "canonical_recovery"].includes(phase)
+        ? Object.freeze({ status: "registered", provider_receipt_id: "healthy-receipt" })
+        : Object.freeze({ status: "absent" });
+    },
+    async saveRepairedActions(input) {
+      state.calls.push(["cache-save", input.provider, input.candidate.event_ref]);
+      return Object.freeze({ status: "saved" });
+    },
+    async completeEvidence(input) {
+      state.calls.push(["evidence", input.provider, input.candidate.event_ref, input.page.page_id]);
+      return Object.freeze({ status: "applied_bundle", bundle_id: "healthy-bundle", completion_disposition: "created" });
+    },
+    async reportWake(report) {
+      state.calls.push(["report", report.status, report.safe_reason, report.consecutive_failure_count]);
+      return Object.freeze({ telegram_provider_id: "9001" });
+    },
+  });
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-auth-continuation", providers: [providerA, providerB] }, state.dependencies);
+  assert.deepEqual(result, { status: "applied_bundle", bundle_id: "healthy-bundle", telegram_provider_id: "9001" });
+  assert.deepEqual(state.calls.filter(([name, eventRef]) => name === "agent" && eventRef.startsWith(`${providerA}-`)).map(([, eventRef]) => eventRef), [aCandidates[0].event_ref]);
+  assert.deepEqual(state.calls.filter(([name]) => name === "discover").map(([, provider]) => provider), [providerA, providerB]);
+  assert.equal(state.calls.filter(([name, , , , url]) => name === "navigate" && url === aCandidates[0].canonical_url).length, 1);
+  assert.equal(state.calls.some(([name, , , , url]) => name === "navigate" && aCandidates.slice(1).some((item) => item.canonical_url === url)), false);
+  assert.equal(state.calls.filter(([name]) => name === "cache-save").length, 0);
+  assert.deepEqual(state.calls.filter(([name]) => name === "evidence"), [["evidence", providerB, bCandidate.event_ref, "page-owned-1"]]);
+  assert.deepEqual(state.calls.filter(([name]) => name === "report").at(-1), ["report", "applied_bundle", "applied_bundle", 0]);
+  assert.equal(state.calls.filter(([name]) => name === "navigate").filter(([, , , , url]) => url === "about:blank").length, 1);
+  assert.equal(state.calls.filter(([name, , , , url]) => name === "navigate" && url === bCandidate.canonical_url).length, 2);
+});
+
 test("valid direct safe reason survives failed fallback and opens the circuit with that exact reason", async () => {
   const state = fixture({
     async runDirectAction() { return Object.freeze({ status: "failed", safe_reason: "peatix_unknown_required_field" }); },
