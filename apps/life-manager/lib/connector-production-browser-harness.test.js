@@ -3322,7 +3322,7 @@ test("configured extension provider reuses the generic fallback for its exact to
   assert.equal(result.provider_state.status, "registered");
   assert.deepEqual(result.repaired_actions, [{ purpose: "submit", method: "ax_click", control: "register_button" }]);
   assert.equal(operated, 1);
-  assert.equal(readbacks, 1);
+  assert.equal(readbacks, 2);
   await assert.rejects(() => harness.runFallback({
     provider: "another-extension", candidate, page,
     pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EXTENSION2",
@@ -3370,12 +3370,55 @@ test("extension fallback requires independent workflow readback despite action p
         async resolveValue() { return null; },
       });
       const result = await harness.runFallback({ provider: "extension-proof", candidate: { event_ref: "extension-proof://event/1" }, page: { url() { return "https://extension-proof.example/event/1"; } }, pageWebsocket: `ws://127.0.0.1:9222/devtools/page/EXTENSION-PROOF-${claimedStatus}-${name}`, maxSteps: 1, expectedState: "registered_or_pending" });
-      assert.equal(reads, 1, `${claimedStatus}-${name}-readback`);
+      assert.equal(reads, 2, `${claimedStatus}-${name}-readback`);
       assert.equal(operations, 1, `${claimedStatus}-${name}-operation`);
       assert.equal(result.status, "failed", `${claimedStatus}-${name}-status`);
       assert.equal(result.provider_state, undefined, `${claimedStatus}-${name}-no-self-proof`);
     }
   }
+});
+
+test("extension auth preflight is terminal before any browser adapter step", async () => {
+  const calls = { readback: 0, inspect: 0, propose: 0, operate: 0, resolve: 0 };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    extensionProvider: "extension-auth",
+    extensionWorkflow: { async readProviderState() { calls.readback += 1; return { status: "auth_required" }; } },
+    async inspectControls() { calls.inspect += 1; return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
+    async proposeAction() { calls.propose += 1; return { control: "register_button" }; },
+    async operateControl() { calls.operate += 1; return { status: "success" }; },
+    async resolveValue() { calls.resolve += 1; return "private-value"; },
+  });
+  const result = await harness.runFallback({
+    provider: "extension-auth", candidate: { event_ref: "extension-auth://event/1" },
+    page: { url() { return "https://extension-auth.example/event/1"; } },
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EXTENSION-AUTH",
+    maxSteps: 10, expectedState: "registered_or_pending",
+  });
+  assert.deepEqual(result, { status: "failed", safe_reason: "auth_required", repaired_actions: [] });
+  assert.deepEqual(calls, { readback: 1, inspect: 0, propose: 0, operate: 0, resolve: 0 });
+});
+
+test("extension auth after one action latches terminal failure without retry", async () => {
+  const calls = { readback: 0, inspect: 0, propose: 0, operate: 0, resolve: 0 };
+  const action = { purpose: "submit", method: "ax_click", control: "register_button" };
+  const page = { url() { return "https://extension-auth-after.example/event/1"; } };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    extensionProvider: "extension-auth-after",
+    extensionWorkflow: { async readProviderState() { calls.readback += 1; return { status: calls.readback === 1 ? "absent" : "auth_required" }; } },
+    async inspectControls() { calls.inspect += 1; return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
+    async proposeAction() { calls.propose += 1; return { control: "register_button" }; },
+    async operateControl() { calls.operate += 1; return { status: "success" }; },
+    async resolveValue() { calls.resolve += 1; return "must-not-read"; },
+  });
+  const result = await harness.runFallback({
+    provider: "extension-auth-after", candidate: { event_ref: "extension-auth-after://event/1" }, page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EXTENSION-AUTH-AFTER",
+    maxSteps: 2, expectedState: "registered_or_pending",
+  });
+  assert.deepEqual(result, { status: "failed", safe_reason: "auth_required", repaired_actions: [action] });
+  assert.deepEqual(calls, { readback: 2, inspect: 1, propose: 1, operate: 1, resolve: 0 });
 });
 
 test("TECH PLAY parent operation rejects radio ambiguity, drift, failed postcondition, and review/final clicks", async () => {
