@@ -276,6 +276,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             operation = Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
           }
           if (deadlineReached()) return finish("circuit_open", "wake_deadline");
+          if (operation && operation.status === "failed" && operation.safe_reason === "auth_required") break;
         }
 
         if (operation && operation.status === "completed") {
