@@ -469,6 +469,30 @@ test("KokuchPro workflow gates Calendar once, orders exact coverage first, and f
   assert.equal(Object.isFrozen(audits[0]), true);
 });
 
+test("KokuchPro audit counts valid in-window timing before remaining eligibility", async () => {
+  const first = canonicalKokuchProBinding(ROOT);
+  const second = canonicalKokuchProBinding(OCCURRENCE_URL);
+  const audits = [];
+  const workflow = createKokuchProDiscoveryWorkflow({
+    now: () => new Date(NOW),
+    readListingBindings: async () => [first, second],
+    readEventDetail: async (_page, url) => url === ROOT
+      ? detail({ fee_scheme: "paid" })
+      : detail({ starts_at: "2026-09-01T19:00:00+09:00", ends_at: "2026-09-01T20:00:00+09:00" }, OCCURRENCE_URL),
+    onDiscoveryAudit: async (audit) => audits.push(audit),
+  });
+  assert.deepEqual(await workflow.discoverCandidates({ page: {}, calendar: [] }), []);
+  assert.deepEqual(audits, [{ discovered_count: 2, within_window_count: 1, eligible_count: 0, calendar_free_count: 0, selected_count: 0 }]);
+});
+
+test("KokuchPro rejects a hidden Event nested in a top-level JSON-LD array graph", async () => {
+  const canonical = jsonLdDetail(ROOT).jsonld;
+  const page = defaultEvaluatePage({ listingRows: [{ href: ROOT }], details: {
+    [ROOT]: jsonLdDetail(ROOT, { jsonld: [{ "@graph": [canonical] }, canonical] }),
+  } });
+  assert.deepEqual(await createKokuchProDiscoveryWorkflow({ now: () => new Date(NOW) }).discoverCandidates({ page, calendar: [] }), []);
+});
+
 test("KokuchPro workflow maps stage failures safely and leaves action/readback unavailable", async () => {
   const row = canonicalKokuchProBinding(ROOT);
   const cases = [
