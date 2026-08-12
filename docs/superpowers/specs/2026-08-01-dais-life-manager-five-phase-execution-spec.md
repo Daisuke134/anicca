@@ -8034,3 +8034,9 @@ REDはprovider/orderとstep budgetでfocused 3 fail、GREEN 10/10。provider削�
 Plan `docs/superpowers/plans/2026-08-12-connector-techplay-official-acceptance-19f.md`を作成。read-only preflightで`gui/501/ai.anicca.life-manager-connector-native`はunloadedではなくdaily 09:00 trigger付きでloaded、active 0、runs 2、last exit 1、exact worktree直結、owner lockなしと実測した。共有CDPのpre-existing page targetsはexact 4。旧「schedule unloaded」記述は現stateと矛盾するため、この実測を正本にする。
 
 既存labelを`-k`なしでexact 1回kickstartし、new wake ID、TECH PLAY `applied_bundle`、registered、final action 1、Calendar exact canonical 1、receipt/PNG、Telegram message/photo、bundle/checkpoint、page 4→5→4、lock cleanupを独立readbackする。failure/effect unknown時はdaily scheduleを先にunloadしてから修復する。手動executor・plist reinstall・既存page closeはしない。Item19実bundleは未完。
+
+### O1B-25進捗476（Item 19F-D15 / official wake実測・no-effect exit修復plan）
+
+09:00 schedule起動と手動kickstartが同一PIDへcoalesceし、official wake `wake-7aef819a21c24d01047fb372`はexact 1 ownerで完走した。7 providersを探索し、最新auditはDoorkeeper `eligible=4/calendar_free=0`、Eventbrite `eligible=0/calendar_free=0`、TECH PLAY `eligible=3/calendar_free=0`。既存registered bundleは再検証されたが、非衝突候補がないため新規application・Calendar・bundleは0。durable report `completed_no_effect / existing_bundles_reused`とTelegram delivery ID `12758`は記録済み。Connector-owned pageだけが閉じ、pre-existing 4 pagesは全保持された。
+
+実故障は業務no-opではなく終了契約の矛盾。`native-pass.js`が`completed_no_effect`をexit `1`へ写し、`run.sh`が同じ安全結果を`worker_failed`、launchdが`last exit code=1`と記録した。誤作動防止の契約どおりscheduleをunload済み。Plan `docs/superpowers/plans/2026-08-12-connector-no-effect-exit-contract-19f.md`はnative entrypoint/test exact 2 files、production約5〜10 LOC、test約15〜35 LOC。`applied_bundle`と`completed_no_effect`だけをexit `0`、`circuit_open`・invalid・throwをnon-zeroに維持する。provider/filter/window/effect/report/plist変更は0。修復後は同じplistをreloadし、official wakeの`worker_finished`、exit 0、report delivery、4-page restoration、lock cleanupを再実測する。Item19の実TECH PLAY bundle acceptanceは非衝突候補が現れるまで未完のまま可視化する。
