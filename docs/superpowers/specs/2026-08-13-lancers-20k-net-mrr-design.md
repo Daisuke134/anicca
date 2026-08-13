@@ -770,28 +770,25 @@ enabledである。G3Aはquery coverageだけを閉じ、次のactive sliceはG3
 
 ### 9.5 G3B active slice: deterministic eligible ranking
 
-G3Aは検索面を広げたが、現在の`_plan_and_submit`はvalidated eligibleをprovider row順のまま並べ、先頭一件を
-送る。provider新着順はcoverageの安全な既定だが、複数eligibleが同じtickに存在する時、月額継続の明示度や
-projected net contributionを使わない。G3Bはeligible gate、proposal生成、submit/readback、tick上限を変えず、
-validated eligibleの送信順だけを決定的にする。
+G3Aは検索面を広げたが、従来の`_plan_and_submit`はvalidated eligibleをprovider row順のまま並べ、先頭一件を
+送った。G3Bはeligible gate、proposal生成、submit/readback、tick上限を変えず、validated eligibleの送信順を
+projected net contributionで決定的にする。
 
 rank keyは次の順である。
 
-1. `ongoing_sns_outsourcing_evidence`に`月額 / 毎月 / 定期`のいずれかがある候補を最優先する。
-2. 次に`price_jpy - expected_platform_fee_jpy - expected_ai_cost_jpy - expected_subcontractor_cost_jpy - expected_revision_refund_allowance_jpy`のprojected net JPYが大きい候補を優先する。
-3. 同点はPythonのstable sortで既存provider row順を維持する。project IDを人工的なtie breakerにしない。
+1. `price_jpy - expected_platform_fee_jpy - expected_ai_cost_jpy - expected_subcontractor_cost_jpy - expected_revision_refund_allowance_jpy`のprojected net JPYが大きい候補を優先する。
+2. 同点はPythonのstable sortで既存provider row順を維持する。project IDを人工的なtie breakerにしない。
 
 全eligibleはすでに公式業種、SNS/channel、継続scope、外部委任、observed budget、70%以上marginのruntime
 validationを通る。したがってrankerはvalidationを複製しない。`reason_codes`、proposal文の形容、buyer名、
-keyword、公開証拠にないbuyerのB2B度、競争率、将来売上をscoreに使わない。一般的な`継続 / 長期 / 運用`
-だけのcandidateは除外せず、explicit monthly候補より後ろに置く。rankは収益receiptではなく、応募順の
-選択規則である。
+keyword、公開証拠にないbuyerのB2B度、競争率、将来売上をscoreに使わない。rankは収益receiptではなく、
+validation済み応募の送信順を決める算術規則である。
 
 Ponytail比較では、新score field/schema、二回目のplanner、ML ranker、historical conversion DBを作る案を
 棄却する。最初の支払前には学習signalがなく、既存のvalidated decisionだけで十分だからである。
 G3Bのsoft targetはproduction 1 file / 15 LOC以下、existing test 1 file / 35 LOC以下である。
 Luna/Terraはprimaryの完成planから直接実装し、実装後にregressionと既存suiteを実行する。fresh Sol
-adversarial reviewは1回だけで、monthly優先、net JPY順、stable tie、claim除外、最大1 submitを反証する。
+adversarial reviewは1回だけで、net JPY順、stable tie、claim除外、最大1 submitを反証する。
 
 G3B implementation commit `0c700ab99c30bdc40f1a8b1c6c15d04dab01eb1f`はproduction 9行、test 32行で、
 HOL 16、Lancers統合31、agent-runner 15、compile、diff checkがPASSする。fresh Sol adversarial review
@@ -825,8 +822,40 @@ hardcodeするため不適合である。全eligibleはすでにplannerの継続
 projected net JPY降順だけへ縮小する。同点のprovider stable order、claim除外、最大1 submitは維持する。
 
 これは月額適格性を緩和しない。eligible/ineligibleの自然言語判断は既存plannerが所有し、codeはその結果の
-budget/margin bookkeepingと送信順だけを扱う。production 1 file / 2 LOC以下、test 1 file / 20 LOC以下。
+budget/margin bookkeepingと送信順だけを扱う。production 1 file / 6 changed LOC、test 1 file / 20 LOC以下。
 primaryがspec/plan、Lunaが直接実装、fresh Sol review 1回、exact-SHA deployと実tickを所有する。
+
+G3B.2 implementationのgit正本は`f427f480b2c5ee43dceae72f2852116274212c33`、primary plan correctionを
+含むcanonical main / deployed exact releaseは`68f42e5b44680a22e6c0f6603d31550bf5c94f0b`である。productionは
+`+2/-4`、testは`+2/-2`で、HOL 17、Lancers統合32、agent-runner 15、compile、diff checkがPASSする。
+fresh Sol adversarial review 1/1はAST上もrank pathにregex・自然言語分岐がないこと、projected net算術、
+stable tie、claimed首位除外、invalid planner fail-closed、最大一discover/submitを確認し、`ship`である。
+
+exact releaseへ両ownerをreloadした実application tickはquery `AI活用`、`observed=1 / eligible=0 /
+submitted=false / verified=0`、exit 0、stderr 0で終了した。application state、ledger、listingのSHA-256は
+pre/post一致、pending 0、fingerprints 19、verified receipts 14である。G3B.2は完了した。
+
+### 9.6 二つのacquisition surfaceの現在地
+
+Lancersの売上入口は二つあるが、別々の収益pipelineではない。
+
+1. **応募surface**: 10 query rotation → planner → submit → official proposal readback。14件の
+   `application_verified`がある。30分ownerはcanonical exact releaseで動く。
+2. **Storefront surface**: 自社商品`SNS AI workflow`を公開し、inbound inquiry/orderを受ける。canonical
+   listing receipt `1338233`はpublishedだが、公式画面は受付中6件、余分なduplicate 5件、最新実行は
+   `listing_readback_mismatch`である。
+
+両surfaceの後は同じSales / Contract → Fulfillment → Finance laneへ合流する。しかしledgerの実イベントは
+現在`application_verified=14`だけで、ContractReceipt、WorkEvent、DeliveryReceipt、PaymentReceiptは0件である。
+`work-sync`は5分でenabledだが`observed_working_count=0 / emitted_count=0`を反復する。したがって応募柱は
+proposal receiptまで、storefront柱はlisting公開までしか働いておらず、どちらも受注・納品・入金を作っていない。
+
+source ownershipも非対称である。application/reportはexact release `68f42e5b…`、1800秒/300秒でcanonical。
+storefront/work-syncはrepo外mutable path `~/.local/lib/anicca/lancers/skills/.../listing_tick.py`と
+`work_sync.py`をRunAtLoad付きで直接実行し、canonical repoにはsource/test/installerがない。この二つを
+そのまま収益SSOTにせず、次sliceでofficial reply/order/contract readback boundaryを確定し、必要な最小sourceだけを
+canonical exact releaseへ入れる。storefront duplicateを新規publishで直さず、read-only inventory後に一意listingを
+選ぶ。応募とstorefrontの両方を同じcontract sourceへ接続する。
 
 ## 10. 段階的 acceptance gate
 
@@ -840,7 +869,7 @@ primaryがspec/plan、Lunaが直接実装、fresh Sol review 1回、exact-SHA de
 | G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
 | G2 truthful acquisition | **完了。** storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | exact release `d63dfd1…`、Telegram message ID `15922`、同一状態の再kick 0送信 |
 | G3A query coverage | **完了。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | exact release `a2081bc0…`、review 1/1 ship、実tick `LinkedIn / observed 2 / submitted false`、state/ledger/listing不変 |
-| G3B eligible ranking | **G3B.2 correction active。** validated eligibleをprojected net JPY、provider stable orderで並べ、自然言語priorityをhardcodeしない | net JPY順、stable tie、claim除外、最大1 submit |
+| G3B eligible ranking | **完了。** validated eligibleをprojected net JPY、provider stable orderで並べ、自然言語priorityをhardcodeしない | exact release `68f42e5b…`、review 1/1 ship、実tick `AI活用 / observed 1 / submitted false`、state不変 |
 | G3B.1 empty search normalization | **完了。** providerの正常な0件をfailureではなくno-op successとして扱う | exact release `086037263…`、実tick `B2Bマーケティング / observed 0 / ok true / submitted false`、state不変 |
 | G3C capacity quota | authoritative active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下） | active contract source、tick/day quota、100% cap、duplicate拒否 |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
@@ -895,10 +924,11 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | G3C/G4 contract-source boundary | 14 proposal receiptからreply/active contractの公式readback sourceを確定し、capacityのauthoritative inputを作る | 0.5–1日設計、1–3日実装 |
-| 2 | G3C capacity quota | authoritative active contract sourceを接続し、tick/day quotaと100% capを適用 | 1–2日 |
-| 3 | G4 Sales / Contract actions | buyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
-| 4 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
+| 1 | G3C/G4 contract-source boundary | 応募14 receiptとstorefront inquiry/orderからreply/active contractの公式readback sourceを確定し、capacityのauthoritative inputを作る | 0.5–1日設計、1–3日実装 |
+| 2 | Storefront integrity/canonicalization | 公式6 listingをread-only inventoryし、一意canonical listing以外を新規publishせず安全に整理する | 0.5–1日 |
+| 3 | G3C capacity quota | authoritative active contract sourceを接続し、tick/day quotaと100% capを適用 | 1–2日 |
+| 4 | G4 Sales / Contract actions | buyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
+| 5 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
