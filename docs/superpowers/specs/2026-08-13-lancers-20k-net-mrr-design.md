@@ -579,18 +579,20 @@ provider-only planner 検証も完了し、公開20案件を入力した Codex/L
 現在の公開 snapshot に G1 hard gate を満たす案件がなかったことを意味する。
 canonical feature branch は専用 integration worktree で conflict なく main に統合され、統合commit上で
 application 9 tests、installer 2 tests、agent-runner 15 tests がすべて通り、canonical main へ push される。
+canonical main commit `b05900b48f58b0f29ecf1fe387f2f864685b0de8` は normal mode の immutable release として
+installされ、deployment manifest、plist、13 filesのhashは同じSHAへ一致する。install後もapplication、
+terminal、ledgerのhashと`application_verified=11`は不変で、launchdはdisabled / unloadedを保つ。
 
 G1 の残TODOは次の直列順序だけである。途中で失敗した場合は次へ進まず、同じ Luna implementer に
 最小 RED を戻す。fresh adversarial review は既に 1/1 を消化しているため追加しない。
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | exact canonical main SHAをnormal modeでinstall | manifest、plist、release hashが同じSHAを指す | 5–10分 |
-| 2 | official launchd ownerを一回だけenable/kick | 二重ownerなし、外部submitは最大一件 | 5–15分 |
-| 3 | acquisition E2Eを閉じる | qualified案件なら公式proposal IDと一件の`ApplicationReceipt`。該当なしならtruthful `no_eligible_project` | 10–25分＋案件待ち |
-| 4 | G1を閉じる | state/ledger/receipt、deployed SHA、reportを検証し、一時worktreeを削除 | 10–20分 |
+| 1 | official launchd ownerを一回だけenable/kick | 二重ownerなし、外部submitは最大一件 | 5–15分 |
+| 2 | acquisition E2Eを閉じる | qualified案件なら公式proposal IDと一件の`ApplicationReceipt`。該当なしならtruthful `no_eligible_project` | 10–25分＋案件待ち |
+| 3 | G1を閉じる | state/ledger/receipt、deployed SHA、reportを検証し、一時worktreeを削除 | 10–20分 |
 
-残る技術作業だけなら G1 は **約15–50分**を base とする。公開中のqualified案件がない場合、追加実装で
+残る技術作業だけなら G1 は **約10–40分**を base とする。公開中のqualified案件がない場合、追加実装で
 gateを弱めず、30分 scheduled tickで新規案件を待つため、暦時間は案件供給に依存する。
 
 G1 後は G2→G3→G4→G5→G6→G7 を一つずつ閉じる。4 lane の実装・実E2Eは集中作業で
