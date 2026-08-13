@@ -21,6 +21,10 @@ class TerraDefaultTest(unittest.TestCase):
                         {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
                         {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
                     ]
+                if name == "job-search-terra-high":
+                    expected = [
+                        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "high"},
+                    ]
                 self.assertEqual(candidates, expected)
 
 

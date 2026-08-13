@@ -4,10 +4,12 @@
 **Worktree:** `/Users/anicca/Projects/.worktrees/life-manager/job-hunter-local-completion-20260802`
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Original base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`
-**Latest measured origin/main:** `56ebf9c57c51222dd86b548ea2f19a6a78b0f918`
+**Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Status:** Resume baseline is accepted. Audit is current. Autonomous application,
-mail, and learning lanes are stopped and must not be described as healthy or complete.
+**Status:** O2-02 history recovery and rebase are integrated at pre-ledger tip
+`8141db51bbc4fcd7cf6da86e72be39d1c0c017a7`. Resume baseline is accepted. Audit is
+current. Autonomous application, mail, and learning lanes are stopped and must not
+be described as healthy or complete.
 
 ## 1. Done condition
 
@@ -724,49 +726,33 @@ after bounded recovery fails.
 
 ## 10. Current verified state
 
-- The required worktree had disappeared again. It has been recreated at the canonical
-  path on `feat/job-hunter-local-completion-20260802`; canonical main's unrelated
-  Connector edits remain untouched.
-- At audit start, the dedicated branch was clean at `c7eb197f0`, 6 commits ahead and
-  759 commits behind current `origin/main` (`56ebf9c57`). Its 203-test suite is green.
-- The advanced Job Hunter implementation is not on main. Remote branch
-  `origin/docs/job-hunter-spec-20260805` contains 364 Job Hunter commits after the
-  same `2099a29da` base, includes the accepted resume generation commit, and passes
-  564 tests in a clean detached worktree. It is also 759 commits behind current main.
-- Stable launchers are installed under `~/.local/libexec/anicca/job-search/`, and
-  `current` points to immutable release `f9642b2f...`. Browser and observability
-  LaunchAgents are running; daily, inbox, learning, and guardian are not loaded.
-- Release `f9642b2f...` claims a commit that is not resolvable in the fetched local
-  repository. Its 572-test suite has 6 failures and 3 errors, including application
-  reporting, Ashby confirmation semantics, daily canary, and release-context cases.
-  It is not a reproducible green release.
-- Existing CloakBrowser at `127.0.0.1:9222` is healthy. Thirteen observed tabs belong
-  to existing shared work; none is identified as Job Hunter-owned. No tab was closed.
-- `gog gmail search` succeeds.
-- Production SSOT is `~/.local/state/anicca/job-search/ledger.sqlite3`: 57 applications;
-  6 discovered, 8 materials-ready, 1 submit-claimed, 25 submit-unknown, 6 submitted,
-  5 email-sent, and 6 rejected.
-- There is one authoritative submission confirmation: ElevenLabs, Account Manager —
-  Japan, Ashby, Gmail message/thread `19fdb630faed4c2b`. Its submitted resume receipt
-  exists and Telegram message 8493 delivered the resume. The receipt has employer
-  answers but no cover letter, no evidence bundle, and no complete Japanese dossier
-  message, so O2-08 is evidence-incomplete.
-- There is no authoritative Workday submission confirmation. Historical Gmail-derived
-  funnel rows and `submitted` projections do not substitute for a Workday receipt.
-- The ledger has 26 material receipts, 1 Gmail application match, 9 Gmail-derived
-  funnel outcomes, 5 application artifacts, 0 evidence bundles, and 0 follow-ups.
-- `summary.v2` is stale at 2026-08-08 and cannot be rebuilt: five recorded
-  `submitted -> email_sent` events violate the state machine. The last daily and inbox
-  logs repeatedly end at this projection failure.
-- The current private profile and installed strategy incorrectly enforce JPY 8M as
-  the hard floor. This conflicts with the accepted JPY 7M floor / JPY 10M target /
-  JPY 30M stretch contract and must be corrected before discovery is evaluated.
-- Current confirmed-application Telegram reporting sends only an English resume line.
-  It omits compensation, location, fit reason, cover letter, questions/answers, and
-  receipt detail required by section 7.
-- The four accepted resume PDFs remain content-addressed and available through stable
-  production filenames, with original acceptance messages 6119–6122 and latest
-  re-send messages 8961–8964.
+- The dedicated worktree is clean before this ledger update at pre-task target
+  `b3a69f9f07aa450d2c58eeca2d1b136fc43a3bf8`; recoverable backup ref
+  `refs/backup/job-hunter-local-completion-20260802-pre-o2-02` points to that SHA.
+  Canonical main and the donor branch were not modified.
+- The locked rebase base is `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`. Donor
+  `origin/docs/job-hunter-spec-20260805` remains `66ab20d07ca7c310e53d2008707cb982a116ca16`
+  with 364 commits after `2099a29da61345a120d2f68a819d7b854dcebd83`. Target-only
+  commits `8f928c2e7` and `b3a69f9f0` replayed in order; integration tip before this
+  status update is `8141db51bbc4fcd7cf6da86e72be39d1c0c017a7`.
+- Rebase conflicts were limited to shared runner files: `runtime/agent-runner/agent_runner.py`
+  retained current-main application-intent browser-route isolation and donor
+  repeatable-agent credential stripping; `runtime/agent-runner/config.json` retained
+  the planner route and donor Job Hunter Terra-high route. No Connector, Fundraising,
+  CFO, Crypto, or Gig Work behavior was changed.
+- The accepted resume manifest and all four stable PDFs match SHA-256 values
+  `31d8ca96a396526d23a8a4de4dcffdb8cc773cd7ff43db04e52a0e4c35e2d21e`,
+  `2e3ed9c27c7c4abc6dc6ff478c5718821d3d4ad4a5034c99f808841f41a1cd88`,
+  `e23efc2c9c09e0780a6dcdcf92c1487e6beafb5880ebc2f5dd77da54c67dd5d4`, and
+  `13e4e3a78152182a7dad411f00b3846150151721396e16eefaefe7548edd94b9`.
+- The complete Job Hunter suite passes `564` tests. The complete agent-runner suite
+  passes `19` tests, including donor `test_repeatable_authority.py`; its explicit
+  `job-search-terra-high` high-effort exception is recorded in the shared route test.
+- Current owner-declared company pauses for OpenAI, Anthropic, and Cursor remain
+  authoritative, and the mandatory Japan/global-remote discovery segment remains in
+  the O2-06 contract. The JPY 7M floor / JPY 10M target / JPY 30M stretch policy is
+  unchanged. Autonomous application, mail, and learning lanes remain stopped; O2-03
+  and later tasks are not complete.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -799,11 +785,13 @@ before the next item begins.
 - [x] **O2-01** — Recreate and measure the missing dedicated branch/worktree; preserve
   unrelated main changes; measure launchd, browser, Gmail, release, tests, resumes,
   ledger, Telegram, and upstream OSS truth.
-- [ ] **O2-02** — Recover the pushed advanced implementation without copying from the
-  unresolvable installed release. Rebase the 364 commits from
-  `origin/docs/job-hunter-spec-20260805` from base `2099a29da` onto latest
-  `origin/main`, replay the dedicated acceptance-spec commit, resolve conflicts, and
-  push only the dedicated branch. Verify the accepted resume hashes survive.
+- [x] **O2-02** — Recover the pushed advanced implementation without copying from the
+  unresolvable installed release. Rebased the 364 commits from
+  `origin/docs/job-hunter-spec-20260805` from base `2099a29da` onto locked
+  `origin/main` snapshot `4fcddb65`, replayed `8f928c2e7` and `b3a69f9f0`, resolved
+  shared-runner conflicts without changing unrelated product behavior, and verified
+  the accepted resume hashes plus `564` Job Hunter and `19` runner tests. O2-03 and
+  later tasks remain open.
 - [ ] **O2-03** — Run the complete integrated Job Hunter and agent-runner suites in a
   clean worktree and release-shaped environment. Fix every current installed-release
   failure, including Telegram dossier injection, Ashby authoritative confirmation,
