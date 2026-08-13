@@ -541,11 +541,11 @@ The card teaser is only 188–200 characters. Public detail probing of the six b
 all six have an official buyer-industry field and ongoing SNS scope, four explicitly request an external
 owner, and two contain all SNS/ongoing/delegation signals within a 240-character exact quote.
 
-- [ ] Add one `status.py` regression with search HTML plus detail HTML fixtures: detail fetching occurs only for rows whose maximum budget is at least ¥98,000; it replaces the teaser with bounded public `依頼主の業種` and `依頼概要`; failure leaves that row un-enriched and therefore fail-closed.
-- [ ] Add one application-loop RED proving `commercial_buyer_evidence` and `ongoing_sns_outsourcing_evidence` accept an exact public quote with official industry plus SNS/ongoing/delegation signals, while the old staff proxy and a one-off SNS task are rejected before submit.
-- [ ] Replace the two old qualification fields in the planner schema, prompt, runtime field set, and semantic validator. Preserve price >= ¥98,000, observed-budget bounds, fee allowance >=20%, four nonnegative costs, projected margin >=70%, due date, proposal structure, scope exclusions, and one-submit cap.
-- [ ] In `status.py`, reuse the existing public HTTP boundary to fetch detail only for budget-qualified cards. Parse only the stable definition-list labels `依頼主の業種` and `依頼概要`; do not add browser/login/profile lookup, a new schema, DB, cache, crawler, or all-card enrichment.
-- [ ] Run focused RED/GREEN, all Lancers tests, installer tests, agent-runner tests, compile/JSON/diff checks. Confirm state/ledger hashes unchanged. Commit/push canonical main.
+- [x] Add one `status.py` regression with search HTML plus detail HTML fixtures: detail fetching occurs only for rows whose maximum budget is at least ¥98,000; it replaces the teaser with bounded public `依頼主の業種` and `依頼概要`; failure leaves that row un-enriched and therefore fail-closed.
+- [x] Add one application-loop RED proving `commercial_buyer_evidence` and `ongoing_sns_outsourcing_evidence` accept an exact public quote with official industry plus SNS/ongoing/delegation signals, while the old staff proxy and a one-off SNS task are rejected before submit.
+- [x] Replace the two old qualification fields in the planner schema, prompt, runtime field set, and semantic validator. Preserve price >= ¥98,000, observed-budget bounds, fee allowance >=20%, four nonnegative costs, projected margin >=70%, due date, proposal structure, scope exclusions, and one-submit cap.
+- [x] In `status.py`, reuse the existing public HTTP boundary to fetch detail only for budget-qualified cards. Parse only the stable definition-list labels `依頼主の業種` and `依頼概要`; do not add browser/login/profile lookup, a new schema, DB, cache, crawler, or all-card enrichment.
+- [x] Run focused RED/GREEN, all Lancers tests, installer tests, agent-runner tests, compile/JSON/diff checks. Confirm state/ledger hashes unchanged. Commit through canonical integration.
 - [ ] Disable/unload the official job for exact-SHA install, deploy schema/prompt/runtime atomically, enable/kick once, and accept at most one official submit/readback/receipt.
 
 Soft target: 3 production files (`status.py`, `application_loop.py`, planner schema), 2 tests, <=90 handwritten production LOC. Qualification is planner-ephemeral, so state/ledger/receipt migration is explicitly excluded.
