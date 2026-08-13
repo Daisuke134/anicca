@@ -15,15 +15,16 @@
     .panel,.metric { border:1px solid var(--line); border-radius:18px; background:color-mix(in srgb,var(--panel) 92%,transparent); padding:20px; }
     .metric span { display:block; color:var(--muted); } .metric strong { display:block; margin-top:5px; font-size:1.65rem; }
     .money strong { color:var(--mint); } .incident { border-color:#70542c; } .incident strong { color:var(--amber); } .healthy { border-color:#2f7653; }
+    .source-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; } .source { display:grid; gap:2px; border:1px solid var(--line); border-radius:12px; padding:12px; } .source-status { font-weight:800; letter-spacing:.08em; } .source.fresh .source-status { color:var(--mint); } .source.stale,.source.unknown { border-color:var(--amber); } .source.stale .source-status,.source.unknown .source-status { color:var(--amber); }
     a { color:var(--mint); overflow-wrap:anywhere; } a:focus-visible { outline:3px solid var(--amber); outline-offset:3px; }
     footer { margin-top:28px; color:var(--muted); font-size:.9rem; }
     @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; } }
   </style>
 </head>
 <body><main>
-  <header><div class="eyebrow">Evidence-backed company loop</div><h1>Capafy</h1><p>One Builder. One Marketer. One shared revenue ledger.</p><p class="muted">As of 2026-08-03T00:30:04Z · Projection 3154a2b47004</p></header>
+  <header><div class="eyebrow">Evidence-backed company loop</div><h1>Capafy</h1><p>One Builder. One Marketer. One shared revenue ledger.</p><p class="muted">As of 2026-08-13T06:57:03Z · Projection e12cba45605a</p></header>
   <section class="grid money" aria-label="Money">
-    <div class="metric"><span>Gross revenue</span><strong>$9.99</strong></div>
+    <div class="metric"><span>Gross revenue</span><strong>$19.98</strong></div>
     <div class="metric"><span>Pending balance</span><strong>$8.00</strong></div>
     <div class="metric"><span>Realized payout</span><strong>$0.00</strong></div>
     <div class="metric"><span>MRR</span><strong>$0.00</strong></div>
@@ -31,12 +32,13 @@
     <div class="metric"><span>Contribution</span><strong>-$4.78</strong></div>
   </section>
   <section class="grid" aria-label="Business state">
-    <div class="panel"><h2>Sales & inventory</h2><p><strong>1</strong> lifetime orders</p><p>20 online · 9 under review · 2 draft · 1 rejected</p></div>
+    <div class="panel"><h2>Sales & inventory</h2><p>5 lifetime orders · 2 paid</p><p>21 online · 0 under review · 2 draft · 9 rejected</p></div>
     <div class="panel"><h2>Instagram owner</h2><p><strong>@capafy.skills8m4q2z</strong></p><p>commercial_ready · commercial_post</p><p class="muted">Session: verified · Account: clean</p></div>
     <div class="panel"><h2>Public evidence</h2><p><a href="https://www.instagram.com/reel/DbhCWLhorxy/" rel="noopener noreferrer">Open the verified Reel</a></p><p><a href="https://capafy.ai/agent/5051239796" rel="noopener noreferrer">Open the Capafy skill</a></p><p><a href="https://capafy-skills-daily.netlify.app/go/5051239796?utm_source=instagram&amp;utm_medium=reel&amp;utm_campaign=capafy-skill" rel="noopener noreferrer">Open the attributed campaign</a></p></div>
   </section>
   <section class="panel"><h2>Latest marketing measurements</h2><div class="grid"><div class="metric"><span>Views</span><strong>121</strong></div><div class="metric"><span>Likes</span><strong>0</strong></div><div class="metric"><span>Comments</span><strong>0</strong></div><div class="metric"><span>Attributed clicks</span><strong>1</strong></div></div></section>
+  <section class="panel"><h2>Source freshness</h2><div class="source-grid"><div class="source fresh"><strong>money</strong><span class="source-status">FRESH</span><span class="muted">Observed: 2026-08-13T04:58:58Z · current</span></div><div class="source stale"><strong>inventory</strong><span class="source-status">STALE</span><span class="muted">Observed: 2026-08-04T00:30:08Z · not current</span></div><div class="source stale"><strong>account</strong><span class="source-status">STALE</span><span class="muted">Observed: 2026-08-01T23:48:03Z · not current</span></div><div class="source stale"><strong>marketing</strong><span class="source-status">STALE</span><span class="muted">Observed: 2026-08-01T23:38:57Z · not current</span></div><div class="source stale"><strong>cost</strong><span class="source-status">STALE</span><span class="muted">Observed: 2026-08-01T21:24:22Z · not current</span></div></div></section>
   <section class="panel"><h2>Stopped revenue experiment</h2><p><strong>one_time</strong> · $49.00 price hypothesis</p><p>$392.00 projected · not realized. Observed contribution: not measured.</p><p><span class="muted">Not yet verified</span></p><p class="muted">Success: At least one eligible Amazon seller downloads the bounded deliverable across the 10-unit exposure scenario.<br>Stop: Stop if no eligible Amazon seller downloads it across all 10 exposure units, or if execution requires seller-side inputs beyond one product listing.<br>Reason: Capafy forbids changing an already-online Agent from run-online to Download; the experiment moved to a separate buyer-run Download product without changing the live Agent.</p></section>
-  <section class="panel incident"><h2>Active repair</h2><p><strong>unresolved</strong> · Capafy publish-init rejected the new renewal-gated X KOL Tracker — Weekly Narrative Read with: /agent/agents/addAgent platform returned an error: A maximum of 5 unlisted agents is allowed. No new agent_id or review URL was created.</p><p class="muted">Owner: builder · Next retry: automatic</p></section>
-  <footer>Projection sha256:3154a2b47004a35b50e46df82aad3a3f040adaa19f5beaafdc1097be3af14438 · Last event capafy:listing.observed:7686597754:draft:1785644552918</footer>
+  <section class="panel incident"><h2>Active repair</h2><p><strong>unresolved</strong> · active Instagram browser tab is missing</p><p class="muted">Owner: marketer · Next retry: 2026-08-07T04:50:52Z</p></section>
+  <footer>Projection sha256:e12cba45605a29759b182d5ceece19d183dca976c3b33fc34c5d9c748189d4e3 · Last event capafy:incident.verified:capafy-company-20260813T063739Z-e10a2195</footer>
 </main></body></html>
