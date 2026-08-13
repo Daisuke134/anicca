@@ -253,6 +253,10 @@ def _advance_application_entry(page: Any) -> int:
     ):
         control = page.locator(selector)
         control = _single_visible(control)
+        if control is None and actions == 1 and hasattr(page, "get_by_role"):
+            control = _single_visible(
+                page.get_by_role("button", name="Apply Manually", exact=True)
+            )
         if control is None:
             continue
         try:
@@ -262,11 +266,19 @@ def _advance_application_entry(page: Any) -> int:
                 raise
             control.click(timeout=15_000, force=True)
         actions += 1
-        _wait_visible(
-            page,
-            next_selector,
-            "manual_choice" if actions == 1 else "native_chooser",
-        )
+        if actions == 1 and hasattr(page, "get_by_role"):
+            try:
+                page.get_by_role(
+                    "button", name="Apply Manually", exact=True
+                ).first.wait_for(state="visible", timeout=20_000)
+            except Exception as error:
+                if error.__class__.__name__ == "TimeoutError":
+                    raise WorkdayCredentialError(
+                        "Workday account surface did not load:manual_choice"
+                    ) from error
+                raise
+        else:
+            _wait_visible(page, next_selector, "native_chooser")
     return actions
 
 
