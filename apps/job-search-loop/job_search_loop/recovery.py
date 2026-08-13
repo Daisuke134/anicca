@@ -11,7 +11,7 @@ from .summary import write_summary
 
 HARD_GATES = (
     "japan_eligible",
-    "compensation_floor_jpy_8000000",
+    "compensation_floor_jpy_7000000",
     "truthful_candidate_facts",
     "ai_requirement_evidence",
     "language_requirement",

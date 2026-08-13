@@ -12,13 +12,13 @@ class KnockoutGateTests(unittest.TestCase):
             {
                 "title": "AI Engineer",
                 "location": "Tokyo",
-                "description": "Annual salary range JPY 5,000,000 - JPY 7,000,000.",
+                "description": "Annual salary range JPY 5,000,000 - JPY 6,500,000.",
             }
         )
 
         self.assertNotEqual(unknown["gate_status"], "rejected")
         self.assertEqual(low["gate_status"], "rejected")
-        self.assertIn("compensation_max_below_jpy_8000000", low["gate_reasons"])
+        self.assertIn("compensation_max_below_jpy_7000000", low["gate_reasons"])
 
     def test_exact_source_spans_quote_title_location_and_description(self):
         from job_search_loop.knockout import assess_candidate

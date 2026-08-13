@@ -85,7 +85,7 @@ def load_settings(
     required = {
         "daily_target": 10,
         "auto_apply_threshold": 75,
-        "compensation_floor_jpy": 8_000_000,
+        "compensation_floor_jpy": 7_000_000,
         "compensation_target_jpy": 10_000_000,
         "compensation_stretch_jpy": 30_000_000,
     }

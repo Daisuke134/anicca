@@ -1,7 +1,7 @@
 {
   "version": 1,
   "hard_gates": {
-    "minimum_compensation_jpy": 8000000,
+    "minimum_compensation_jpy": 7000000,
     "location": "Tokyo or remote from Japan",
     "authorization": "never infer work authorization or clearance"
   },

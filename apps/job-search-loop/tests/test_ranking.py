@@ -90,7 +90,7 @@ class RankingTests(unittest.TestCase):
             url="https://jobs.example.com/genai",
             location="Tokyo",
             japan_eligible=True,
-            compensation_min_jpy=8_000_000,
+            compensation_min_jpy=7_000_000,
             clearance_required=False,
             skills=["agents", "databricks"],
             domains=["enterprise_ai"],

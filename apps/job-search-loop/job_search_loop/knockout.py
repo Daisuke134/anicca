@@ -4,7 +4,7 @@ import re
 from typing import Any, Iterable
 
 
-JPY_FLOOR = 8_000_000
+JPY_FLOOR = 7_000_000
 JPY_AMOUNT_RE = re.compile(
     r"(?:\bJPY\b|¥)\s*([0-9][0-9,]*(?:\.[0-9]+)?)|"
     r"([0-9][0-9,]*(?:\.[0-9]+)?)\s*(?:\bJPY\b|円)",
@@ -48,7 +48,7 @@ def assess_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     amounts = _jpy_amounts(description)
     if amounts and max(amounts) < JPY_FLOOR:
         status = "rejected"
-        reasons.append("compensation_max_below_jpy_8000000")
+        reasons.append("compensation_max_below_jpy_7000000")
     elif RELEVANT_TITLE_RE.search(title):
         status = "pass"
         reasons.append("title_relevance_explicit")

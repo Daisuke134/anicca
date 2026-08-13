@@ -26,7 +26,7 @@ class ConfigTests(unittest.TestCase):
                     "dream_score_min": 95,
                     "dream_compensation_min_jpy": 20_000_000,
                     "auto_apply_threshold": 75,
-                    "compensation_floor_jpy": 8_000_000,
+                    "compensation_floor_jpy": 7_000_000,
                     "compensation_target_jpy": 10_000_000,
                     "compensation_stretch_jpy": 30_000_000,
                 }
@@ -71,7 +71,7 @@ class ConfigTests(unittest.TestCase):
         )
         self.assertEqual(settings.daily_target, 10)
         self.assertEqual(settings.auto_apply_threshold, 75)
-        self.assertEqual(settings.compensation_floor_jpy, 8_000_000)
+        self.assertEqual(settings.compensation_floor_jpy, 7_000_000)
         self.assertEqual(settings.compensation_target_jpy, 10_000_000)
         self.assertEqual(settings.compensation_stretch_jpy, 30_000_000)
         self.assertEqual(settings.state_dir.stat().st_mode & 0o777, 0o700)
@@ -126,7 +126,7 @@ class ConfigTests(unittest.TestCase):
     def test_committed_strategy_uses_compensation_contract(self):
         strategy_path = Path(__file__).parents[1] / "config" / "strategy.default.json"
         value = json.loads(strategy_path.read_text(encoding="utf-8"))
-        self.assertEqual(value["compensation_floor_jpy"], 8_000_000)
+        self.assertEqual(value["compensation_floor_jpy"], 7_000_000)
         self.assertEqual(value["compensation_target_jpy"], 10_000_000)
         self.assertEqual(value["compensation_stretch_jpy"], 30_000_000)
 
