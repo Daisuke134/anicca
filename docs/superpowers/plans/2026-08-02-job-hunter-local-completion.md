@@ -867,6 +867,17 @@ and outbox bookkeeping.
 Each item closes RED → GREEN → real verification → this spec update → commit/push
 before the next item begins.
 
+Execution ownership is fixed for every remaining slice. The primary Codex controller
+alone writes and changes this running spec, task briefs, task order, acceptance
+criteria, and completion state. Luna receives one already-decided code task, edits
+only its assigned production/test files, runs the exact requested commands, and
+returns raw evidence in a task report; it does not author, reinterpret, or update the
+spec or plan. A fresh reviewer is read-only and may only challenge the supplied
+contract and evidence. After review, the primary controller decides the correction,
+updates this spec itself, commits, pushes, performs the real E2E, and records the
+milestone. Subagent-written spec text is never completion evidence until the primary
+has independently inspected and adopted it.
+
 - [x] **O2-01** — Recreate and measure the missing dedicated branch/worktree; preserve
   unrelated main changes; measure launchd, browser, Gmail, release, tests, resumes,
   ledger, Telegram, and upstream OSS truth.
