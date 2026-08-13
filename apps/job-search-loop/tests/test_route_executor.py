@@ -1,9 +1,9 @@
 import hashlib
+import json
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch
 
 from job_search_loop.guardian import ledger_health
 from job_search_loop.ledger import FenceError, Ledger
@@ -62,6 +62,64 @@ class RouteExecutorTests(unittest.TestCase):
             evidence_sha256=evidence_sha256,
         )
         return self.ledger.application_routes(self.application_id)[0]
+
+    def _seed_legacy_outreach(self, company, url, *, fence, email_payload=None):
+        application_id = self.ledger.add_application(company, "AI Engineer", url)
+        for state in ("qualified", "materials_ready", "submit_claimed", "submitted"):
+            self.ledger.transition(application_id, state)
+        route_id = self.ledger.register_application_route(
+            application_id,
+            route_kind="recruiting_outreach",
+            endpoint=f"talent@{company.casefold().replace(' ', '')}.example.test",
+            ordinal=4,
+            source_url="https://careers.example.test/jobs",
+            source_sha256=self.source_sha,
+            recipient_acceptance="outreach_only",
+        )
+        evidence_sha256 = hashlib.sha256(
+            f"{application_id}-outreach-receipt".encode()
+        ).hexdigest()
+        self.ledger.claim_application_route(
+            route_id,
+            actor="resident_worker",
+            fence=fence,
+            message_path=str(self.message),
+            message_sha256=hashlib.sha256(self.message.read_bytes()).hexdigest(),
+            resume_path=str(self.resume),
+            resume_sha256=hashlib.sha256(self.resume.read_bytes()).hexdigest(),
+        )
+        self.ledger.complete_application_route(
+            route_id,
+            fence=fence,
+            state="delivered",
+            provider_id=f"gmail:{application_id}",
+            evidence_sha256=evidence_sha256,
+        )
+        route = self.ledger.application_routes(application_id)[0]
+        with self.ledger._transaction():
+            self.ledger._project_delivered_application_route_in_transaction(
+                row={**route, "recipient_acceptance": "accepts_applications"},
+                provider_id=f"gmail:{application_id}",
+                evidence_sha256=evidence_sha256,
+            )
+        with self.ledger._transaction():
+            self.ledger._append_event(
+                application_id,
+                "submitted",
+                "email_sent",
+                email_payload
+                if email_payload is not None
+                else {
+                    "route_id": route_id,
+                    "provider_id": f"gmail:{application_id}",
+                    "channel": "recruiting_outreach",
+                },
+            )
+            self.ledger.connection.execute(
+                "UPDATE applications SET current_state = 'email_sent' WHERE id = ?",
+                (application_id,),
+            )
+        return application_id, route_id, evidence_sha256
 
     def _append_forged_correction(
         self, route, *, provider_id=None, evidence_sha256=None
@@ -188,15 +246,14 @@ class RouteExecutorTests(unittest.TestCase):
             )
         self.assertEqual(self.ledger.current_state(self.application_id), "submitted")
 
-        with patch("job_search_loop.ledger.RUN_74_APPLICATION_ID", self.application_id):
-            first = self.ledger.reconcile_delivered_application_routes()
-            second = self.ledger.reconcile_delivered_application_routes()
-            summary = next(
-                row
-                for row in self.ledger.event_summary_rows()
-                if row["application_id"] == self.application_id
-            )
-            health = ledger_health(self.ledger.path)
+        first = self.ledger.reconcile_delivered_application_routes()
+        second = self.ledger.reconcile_delivered_application_routes()
+        summary = next(
+            row
+            for row in self.ledger.event_summary_rows()
+            if row["application_id"] == self.application_id
+        )
+        health = ledger_health(self.ledger.path)
 
         japan_day = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
         route = self.ledger.application_routes(self.application_id)[0]
@@ -226,6 +283,105 @@ class RouteExecutorTests(unittest.TestCase):
         )
         self.assertEqual(summary_value["ats_progress"]["confirmed_adapters"], [])
 
+    def test_reconciliation_repairs_every_legacy_outreach_chain_append_only(self):
+        first_id, first_route, first_evidence = self._seed_legacy_outreach(
+            "Legacy One", "https://jobs.example.test/legacy-one", fence=101
+        )
+        second_id, second_route, second_evidence = self._seed_legacy_outreach(
+            "Legacy Two", "https://jobs.example.test/legacy-two", fence=102
+        )
+        before_event_count = self.ledger.connection.execute(
+            "SELECT COUNT(*) FROM events"
+        ).fetchone()[0]
+        before_route_event_count = self.ledger.connection.execute(
+            "SELECT COUNT(*) FROM application_route_events"
+        ).fetchone()[0]
+
+        first = self.ledger.reconcile_delivered_application_routes()
+        second = self.ledger.reconcile_delivered_application_routes()
+
+        self.assertEqual(first["outreach_correction_count"], 2)
+        self.assertEqual(second["outreach_correction_count"], 0)
+        for application_id in (first_id, second_id):
+            self.assertEqual(
+                [row["funnel_stage"] for row in self.ledger.funnel_outcomes(application_id)],
+                ["confirmed_application"],
+            )
+        self.assertEqual(
+            self.ledger.connection.execute("SELECT COUNT(*) FROM events").fetchone()[0],
+            before_event_count + 2,
+        )
+        self.assertEqual(
+            self.ledger.connection.execute(
+                "SELECT COUNT(*) FROM application_route_events"
+            ).fetchone()[0],
+            before_route_event_count,
+        )
+        for application_id, route_id, evidence_sha256 in (
+            (first_id, first_route, first_evidence),
+            (second_id, second_route, second_evidence),
+        ):
+            self.assertEqual(self.ledger.current_state(application_id), "submit_unknown")
+            correction = self.ledger.connection.execute(
+                "SELECT from_state, to_state, payload_json FROM events "
+                "WHERE application_id = ? ORDER BY rowid DESC LIMIT 1",
+                (application_id,),
+            ).fetchone()
+            self.assertEqual(
+                (correction["from_state"], correction["to_state"]),
+                ("email_sent", "submit_unknown"),
+            )
+            payload = json.loads(str(correction["payload_json"]))
+            self.assertEqual(payload["route_id"], route_id)
+            self.assertEqual(payload["provider_id"], f"gmail:{application_id}")
+            self.assertEqual(payload["evidence_sha256"], evidence_sha256)
+            summary = next(
+                row
+                for row in self.ledger.event_summary_rows()
+                if row["application_id"] == application_id
+            )
+            self.assertFalse(summary["ever_submitted"])
+            self.assertTrue(summary["submission_attempted"])
+            self.assertEqual(
+                [
+                    row
+                    for row in self.ledger.strategy_outcome_projection()
+                    if row["funnel_stage"] == "confirmed_application"
+                ],
+                [],
+            )
+            self.assertEqual(
+                self.ledger.connection.execute(
+                    "SELECT status FROM daily_slots WHERE application_id = ?",
+                    (application_id,),
+                ).fetchone()["status"],
+                "submit_unknown",
+            )
+            self.assertEqual(
+                [row["to_state"] for row in self.ledger.application_route_events(route_id)],
+                ["eligible", "action_started", "delivered"],
+            )
+        self.assertEqual(ledger_health(self.ledger.path)["status"], "healthy")
+
+    def test_reconciliation_rejects_unbound_legacy_email_sent_event(self):
+        application_id, route_id, evidence_sha256 = self._seed_legacy_outreach(
+            "Unbound Legacy",
+            "https://jobs.example.test/unbound-legacy",
+            fence=103,
+            email_payload={},
+        )
+
+        result = self.ledger.reconcile_delivered_application_routes()
+
+        self.assertEqual(result["outreach_correction_count"], 0)
+        self.assertEqual(self.ledger.current_state(application_id), "email_sent")
+        route = self.ledger.application_routes(application_id)[0]
+        self.assertEqual(route["route_id"], route_id)
+        self.assertEqual(route["delivery_evidence_sha256"], evidence_sha256)
+        with self.assertRaises(FenceError):
+            self.ledger.event_summary_rows()
+        self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
+
     def test_correction_rejects_accepted_email_route(self):
         self._advance_to("submit_unknown")
         route = self._deliver_route(
@@ -238,10 +394,9 @@ class RouteExecutorTests(unittest.TestCase):
         )
         self._append_forged_correction(route)
 
-        with patch("job_search_loop.ledger.RUN_74_APPLICATION_ID", self.application_id):
-            with self.assertRaises(FenceError):
-                self.ledger.event_summary_rows()
-            self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
+        with self.assertRaises(FenceError):
+            self.ledger.event_summary_rows()
+        self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
 
     def test_correction_rejects_mismatched_delivery_receipt(self):
         self._advance_to("submit_unknown")
@@ -261,10 +416,9 @@ class RouteExecutorTests(unittest.TestCase):
             )
         self._append_forged_correction(route, provider_id="gmail:forged")
 
-        with patch("job_search_loop.ledger.RUN_74_APPLICATION_ID", self.application_id):
-            with self.assertRaises(FenceError):
-                self.ledger.event_summary_rows()
-            self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
+        with self.assertRaises(FenceError):
+            self.ledger.event_summary_rows()
+        self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
 
     def test_guardian_requires_correction_to_follow_legacy_projection(self):
         self._advance_to("submitted")
@@ -293,8 +447,7 @@ class RouteExecutorTests(unittest.TestCase):
                 (self.application_id,),
             )
 
-        with patch("job_search_loop.ledger.RUN_74_APPLICATION_ID", self.application_id):
-            self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
+        self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
 
     def test_transport_exception_is_unknown_and_never_retried(self):
         self._route("recruiting_outreach", "talent@example.test", 4, "outreach_only")

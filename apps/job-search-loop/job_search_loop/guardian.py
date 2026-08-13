@@ -17,7 +17,7 @@ from typing import Any
 from .browser_owner import probe_cdp
 from .ledger import (
     is_authoritative_ashby_browser_confirmation,
-    is_run_74_outreach_truth_correction,
+    is_outreach_truth_correction,
 )
 from .release_activation import ActivationError, LANES, _link_commit, _validate_release
 from .state import InvalidTransition, validate_transition
@@ -405,7 +405,7 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
                     and not has_authoritative_ashby_confirmation
                     and (
                         index + 1 >= len(events)
-                        or not is_run_74_outreach_truth_correction(
+                        or not is_outreach_truth_correction(
                             connection,
                             str(application["id"]),
                             events[index + 1],
@@ -414,10 +414,27 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
                 ):
                     return False
             elif previous == "submitted" and to_state == "submit_unknown":
-                if not is_run_74_outreach_truth_correction(
+                if not is_outreach_truth_correction(
                     connection,
                     str(application["id"]),
                     event,
+                ):
+                    return False
+            elif previous == "email_sent" and to_state == "submit_unknown":
+                if not is_outreach_truth_correction(
+                    connection,
+                    str(application["id"]),
+                    event,
+                ):
+                    return False
+            elif previous == "submitted" and to_state == "email_sent":
+                if (
+                    index + 1 >= len(events)
+                    or not is_outreach_truth_correction(
+                        connection,
+                        str(application["id"]),
+                        events[index + 1],
+                    )
                 ):
                     return False
             else:

@@ -800,6 +800,22 @@ after bounded recovery fails.
   receipts. Repair must append evidence-bound corrections for every qualifying row,
   preserve the delivery receipts, and be idempotent. It must not retain the current
   one-application hard-code.
+- O2-05A1 code-only evidence now covers that repair contract without changing the
+  real ledger: a focused production-shaped regression seeds two non-hard-coded
+  application IDs, the legacy `discovered -> qualified -> materials_ready ->
+  submit_claimed -> submitted -> email_sent` chain, immutable delivered
+  `recruiting_outreach`/`outreach_only` route evidence, and the old false
+  `confirmed_application` projection. Reconciliation appends exactly one
+  evidence-bound `email_sent -> submit_unknown` event per qualifying row, leaves
+  prior events and route receipts untouched, updates mutable state/slot projection,
+  excludes the false confirmed stage, and returns zero new corrections on replay.
+  Guardian now uses the same application-agnostic exact predecessor/route/provider/
+  hash predicate, including the older `submit_unknown -> submitted -> submit_unknown`
+  shape; forged or unbound preceding events fail closed. The focused route tests pass
+  `13/13`, the complete Job Hunter suite passes `566/566`, and the complete
+  agent-runner suite passes `18/18`. O2-05 remains unchecked: real-ledger repair,
+  Gmail audit, release activation, LaunchAgent load, Guardian runtime checks, and a
+  real canonical cycle are still pending.
 - The same ledger has 25 `submit_unknown` applications: 24 Ashby and one Cursor;
   22 are agent-owned and three are owner-imported. None has a stored authoritative
   confirmation. All have clicked-phase fences; 17 reached `request_started` and
