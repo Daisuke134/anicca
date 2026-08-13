@@ -1495,7 +1495,22 @@ performs the real E2E, and records the milestone.
   the healthy prior release and preserved shared-browser PID `22279`, UUID
   `2ac269b0-350a-49a4-971e-9a0556aed50d`, and all six baseline page IDs. Remaining
   in O2-06: prove travel/clearance behavior and salary/remote segmentation against
-  real current official postings during a live daily wake.
+  real current official postings during a live daily wake. The first O2-06 live wake,
+  `daily-20260814-013258`, refreshed `2,809` official ATS jobs, discovered `451`,
+  verified `52`, marked `7` eligible and `45` rejected, and retained `399` for later
+  verification. It produced zero submission receipts and correctly claimed zero new
+  applications. The seven current candidates resolved to manual-fenced Japan roles or
+  existing terminal Ledger history; ElevenLabs reached a six-field pre-submit-ready
+  Ashby fill but was not reopened. No new Ledger event or submit intent was written,
+  SQLite integrity remained `ok`, and driver cleanup closed exactly its one page and
+  restored the exact six-page baseline. The wake exited `76` because the provider
+  read `JOB_SEARCH_PRIVATE_ENV`; assignment values were redacted, but two comments in
+  that file contained the application email, so the privacy gate correctly rejected
+  the run. A natural Japanese failure report was delivered as Telegram message ID
+  `16461`. Before the next live wake, remove provider access to the private environment,
+  route Ashby standard answers through the deterministic generator instead of model
+  shell construction, and filter manual/terminal history before model selection so
+  the loop advances to genuinely new eligible candidates.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
