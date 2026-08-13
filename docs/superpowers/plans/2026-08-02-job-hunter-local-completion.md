@@ -7,10 +7,10 @@
 **Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Status:** O2-03 reproducible release validation and O2-05P regional prompt fence
-are complete; O2-05A1 remains in review-fix with one Important truth-boundary finding
-open and is the current slice. O2-05 through O2-12 remain open. Resume baseline is
-accepted. Autonomous application, mail, and learning lanes are disabled and unloaded
-and must not be described as healthy or complete.
+are complete; O2-05A1 authoritative submission preservation is complete. O2-05
+through O2-12 remain open. Resume baseline is accepted. Autonomous application,
+mail, and learning lanes are disabled and unloaded and must not be described as
+healthy or complete.
 
 ## 1. Done condition
 
@@ -811,33 +811,22 @@ after bounded recovery fails.
   receipts. Repair must append evidence-bound corrections for every qualifying row,
   preserve the delivery receipts, and be idempotent. It must not retain the current
   one-application hard-code.
-- O2-05A1 code tip `d40f3aebff975e44f03f0927e29251e934fe2104` improves that repair
-  contract without changing the real ledger: a focused production-shaped regression seeds two non-hard-coded
-  application IDs, the legacy `discovered -> qualified -> materials_ready ->
-  submit_claimed -> submitted -> email_sent` chain, immutable delivered
-  `recruiting_outreach`/`outreach_only` route evidence, and the old false
-  `confirmed_application` projection. Reconciliation appends exactly one
-  evidence-bound `email_sent -> submit_unknown` event per qualifying row, leaves
-  prior events and route receipts untouched, updates mutable state/slot projection,
-  excludes the false confirmed stage, and returns zero new corrections on replay.
-  Guardian now uses the same application-agnostic exact predecessor/route/provider/
-  hash predicate, including the older `submit_unknown -> submitted -> submit_unknown`
-  shape; forged or unbound preceding events fail closed. An authoritative Gmail/Ashby
-  `submitted` immediately before outreach blocks email-shaped correction, and
-  per-event pairing keeps genuine submissions before or after an unrelated correction
-  in `ever_submitted`. However, scoped adversarial re-review remains FAIL with one
-  Important finding: existing canonical/alternate ATS receipts and external imports
-  are authoritative submission shapes too, but the current guard recognizes only
-  Gmail and the special Ashby browser receipt. A later outreach can therefore demote
-  a real ATS/imported application, and ATS route replay can then break idempotency.
-  O2-05A1 is not complete until both production-shaped cases preserve submitted truth
-  across two reconciliation runs and Guardian remains healthy. The currently passing
-  focused route tests are `15/15`, the complete Job Hunter
-  suite passes `568/568`, and the complete
-  agent-runner suite passes `18/18`; these GREEN suites are insufficient completion
-  evidence while the review finding is open. O2-05 remains unchecked: real-ledger repair,
-  Gmail audit, release activation, LaunchAgent load, Guardian runtime checks, and a
-  real canonical cycle are still pending.
+- O2-05A1 completes the append-only repair contract without changing the real ledger.
+  False outreach-only submissions still receive one evidence-bound
+  `email_sent -> submit_unknown` correction and replay adds nothing. Gmail, Ashby,
+  exact external imports, and canonical/alternate ATS receipts are now recognized
+  only through their existing durable evidence. If legacy outreach regresses a real
+  submission to `email_sent`, reconciliation appends one evidence-bound
+  `email_sent -> submitted` restoration; replay adds nothing. Guardian and event
+  summary validate the same chain and forged/unbound evidence fails closed. The one
+  adversarial review found that ATS routes legitimately advance from `delivered` to
+  `replied`; the reviewed correction now relies on the immutable delivered event
+  rather than the mutable current route state. Primary verification passes the five
+  Gmail/import/ATS/reply lifecycle cases `5/5`, the route suite `19/19`, and the full
+  Job Hunter suite `573/573` in `44.626s`; compile and diff checks pass. The real
+  ledger SHA-256 and mtime/size were identical before and after verification. O2-05
+  remains unchecked: real-ledger repair, Gmail audit, release activation, LaunchAgent
+  load, Guardian runtime checks, and a real canonical cycle are still pending.
 - The same ledger has 25 `submit_unknown` applications: 24 Ashby and one Cursor;
   22 are agent-owned and three are owner-imported. None has a stored authoritative
   confirmation. All have clicked-phase fences; 17 reached `request_started` and
@@ -969,7 +958,7 @@ evidence until the primary has independently inspected and adopted it.
   sender reads `JOB_SEARCH_TELEGRAM_CHAT_ID`, sends through the durable outbox, and
   stores the provider acknowledgement. Real message ID: `15940`. No code change was
   needed; the failed attempt used the wrong generic sender contract.
-- [ ] **O2-05A1 — current slice: preserve every authoritative submitted shape** —
+- [x] **O2-05A1 — preserve every authoritative submitted shape** —
   Extend the existing pre-outreach guard without adding a table, migration, service,
   or payload-only trust. An external-import `submitted` event is authoritative only
   when its application, source message, applied time, and evidence hash match the

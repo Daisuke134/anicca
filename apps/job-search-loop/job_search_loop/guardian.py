@@ -16,7 +16,8 @@ from typing import Any
 
 from .browser_owner import probe_cdp
 from .ledger import (
-    is_authoritative_ashby_browser_confirmation,
+    _is_authoritative_submission_event,
+    _is_external_import_submission_event,
     is_outreach_truth_correction,
 )
 from .release_activation import ActivationError, LANES, _link_commit, _validate_release
@@ -369,11 +370,9 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
             payload = json.loads(str(events[0]["payload_json"]))
         except (json.JSONDecodeError, TypeError):
             return False
-        external_origin = previous == "submitted" and (
-            payload.get("external_import") is True
-            and all(
-                payload.get(key)
-                for key in ("applied_at", "source", "source_message_id", "evidence_sha256")
+        external_origin = previous == "submitted" and isinstance(payload, dict) and (
+            _is_external_import_submission_event(
+                connection, str(application["id"]), payload
             )
         )
         if previous != "discovered" and not external_origin:
@@ -389,20 +388,10 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
             if not isinstance(payload, dict):
                 return False
             if previous == "submit_unknown" and to_state == "submitted":
-                has_gmail_confirmation = all(
-                    payload.get(key)
-                    for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
-                )
-                has_authoritative_ashby_confirmation = (
-                    is_authoritative_ashby_browser_confirmation(
-                        connection,
-                        str(application["id"]),
-                        event,
-                    )
-                )
                 if (
-                    not has_gmail_confirmation
-                    and not has_authoritative_ashby_confirmation
+                    not _is_authoritative_submission_event(
+                        connection, str(application["id"]), event
+                    )
                     and (
                         index + 1 >= len(events)
                         or not is_outreach_truth_correction(
@@ -420,6 +409,14 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
                     event,
                 ):
                     return False
+            elif previous == "email_sent" and to_state == "submitted":
+                if not is_outreach_truth_correction(
+                    connection,
+                    str(application["id"]),
+                    event,
+                    restoration=True,
+                ):
+                    return False
             elif previous == "email_sent" and to_state == "submit_unknown":
                 if not is_outreach_truth_correction(
                     connection,
@@ -430,10 +427,18 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
             elif previous == "submitted" and to_state == "email_sent":
                 if (
                     index + 1 >= len(events)
-                    or not is_outreach_truth_correction(
-                        connection,
-                        str(application["id"]),
-                        events[index + 1],
+                    or not (
+                        is_outreach_truth_correction(
+                            connection,
+                            str(application["id"]),
+                            events[index + 1],
+                        )
+                        or is_outreach_truth_correction(
+                            connection,
+                            str(application["id"]),
+                            events[index + 1],
+                            restoration=True,
+                        )
                     )
                 ):
                     return False

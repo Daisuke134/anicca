@@ -55,19 +55,22 @@ APPLICATION_ARTIFACT_KINDS = frozenset(
 )
 APPLICATION_OWNERS = frozenset({"agent", "dais_manual", "recruiter"})
 OUTREACH_TRUTH_CORRECTION_REASON = "outreach_only_delivery_correction"
+OUTREACH_TRUTH_RESTORATION_REASON = "outreach_only_authoritative_submission_restoration"
 ASHBY_GRAPHQL_VISIBLE_SUCCESS_SOURCE = "ashby_graphql_plus_visible_success"
 ASHBY_GRAPHQL_VISIBLE_SUCCESS_TERMINAL_SHA256 = (
     "e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b"
 )
 
 
-def _has_immutable_outreach_delivery(
+def _has_immutable_route_delivery(
     connection: sqlite3.Connection,
     *,
     application_id: str,
     route_id: str,
     provider_id: str,
     evidence_sha256: str,
+    route_kind: str,
+    recipient_acceptance: str | None = None,
 ) -> bool:
     route = connection.execute(
         """
@@ -75,13 +78,15 @@ def _has_immutable_outreach_delivery(
         FROM application_routes
         WHERE route_id = ?
           AND application_id = ?
-          AND route_kind = 'recruiting_outreach'
-          AND recipient_acceptance = 'outreach_only'
-          AND delivery_state = 'delivered'
+          AND route_kind = ?
+          AND (? IS NULL OR recipient_acceptance = ?)
           AND provider_id = ?
           AND delivery_evidence_sha256 = ?
         """,
-        (route_id, application_id, provider_id, evidence_sha256),
+        (
+            route_id, application_id, route_kind, recipient_acceptance,
+            recipient_acceptance, provider_id, evidence_sha256,
+        ),
     ).fetchone()
     if route is None:
         return False
@@ -110,6 +115,75 @@ def _has_immutable_outreach_delivery(
     return False
 
 
+def _is_external_import_submission_event(
+    connection: sqlite3.Connection,
+    application_id: str,
+    payload: Mapping[str, Any],
+) -> bool:
+    values = tuple(payload.get(key) for key in ("source", "source_message_id", "applied_at", "evidence_sha256"))
+    if (
+        payload.get("external_import") is not True
+        or not all(isinstance(value, str) and value for value in values)
+        or re.fullmatch(r"[0-9a-f]{64}", str(values[3])) is None
+    ):
+        return False
+    return connection.execute(
+        """
+        SELECT 1
+        FROM external_application_imports
+        WHERE application_id = ?
+          AND source = ?
+          AND source_message_id = ?
+          AND applied_at = ?
+          AND evidence_sha256 = ?
+        """,
+        (application_id, *values),
+    ).fetchone() is not None
+
+
+def _is_authoritative_ats_submission_event(
+    connection: sqlite3.Connection,
+    application_id: str,
+    payload: Mapping[str, Any],
+) -> bool:
+    route_id, provider_id, channel = (payload.get(key) for key in ("route_id", "provider_id", "channel"))
+    if not (
+        channel in {"canonical_ats", "alternate_official"}
+        and all(isinstance(value, str) and value for value in (route_id, provider_id, channel))
+    ):
+        return False
+    route = connection.execute(
+        """
+        SELECT routes.delivery_evidence_sha256
+        FROM application_routes AS routes
+        JOIN funnel_outcomes AS outcomes
+          ON outcomes.application_id = routes.application_id
+         AND outcomes.evidence_sha256 = routes.delivery_evidence_sha256
+        WHERE routes.route_id = ?
+          AND routes.application_id = ?
+          AND routes.route_kind = ?
+          AND routes.provider_id = ?
+          AND outcomes.funnel_stage = 'confirmed_application'
+          AND outcomes.disposition = 'positive'
+          AND outcomes.evidence_source = 'ats'
+        """,
+        (route_id, application_id, channel, provider_id),
+    ).fetchone()
+    evidence_sha256 = None if route is None else route["delivery_evidence_sha256"]
+    if not isinstance(evidence_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", evidence_sha256) is None:
+        return False
+    if payload.get("evidence_sha256", evidence_sha256) != evidence_sha256:
+        return False
+    return _has_immutable_route_delivery(
+        connection,
+        application_id=application_id,
+        route_id=route_id,
+        provider_id=provider_id,
+        evidence_sha256=evidence_sha256,
+        route_kind=channel,
+    )
+
+
 def _is_authoritative_submission_event(
     connection: sqlite3.Connection,
     application_id: str,
@@ -125,6 +199,12 @@ def _is_authoritative_submission_event(
         all(payload.get(key) for key in (
             "message_id", "thread_id", "evidence_sha256", "received_at"
         ))
+        or _is_external_import_submission_event(
+            connection, application_id, payload
+        )
+        or _is_authoritative_ats_submission_event(
+            connection, application_id, payload
+        )
         or is_authoritative_ashby_browser_confirmation(
             connection, application_id, event
         )
@@ -136,11 +216,15 @@ def _has_authoritative_submission_before(
     application_id: str,
     event: Mapping[str, Any],
 ) -> bool:
+    try:
+        event_rowid = int(event["event_rowid"])
+    except (KeyError, TypeError, ValueError):
+        return False
     submission = connection.execute(
         "SELECT rowid AS event_rowid, from_state, to_state, payload_json "
         "FROM events WHERE application_id = ? AND rowid < ? "
         "ORDER BY rowid DESC LIMIT 1",
-        (application_id, int(event["event_rowid"])),
+        (application_id, event_rowid),
     ).fetchone()
     return submission is not None and _is_authoritative_submission_event(
         connection, application_id, submission
@@ -151,93 +235,91 @@ def is_outreach_truth_correction(
     connection: sqlite3.Connection,
     application_id: str,
     correction_event: Mapping[str, Any],
+    *,
+    restoration: bool = False,
 ) -> bool:
-    """Return whether one immutable event corrects an outreach-only regression."""
+    """Return whether one immutable event repairs an outreach-only regression."""
     try:
-        correction_rowid = int(correction_event["event_rowid"])
+        repair_rowid = int(correction_event["event_rowid"])
     except (KeyError, TypeError, ValueError):
         return False
-    correction = connection.execute(
-        """
-        SELECT rowid AS event_rowid, from_state, to_state, payload_json
-        FROM events
-        WHERE application_id = ? AND rowid = ?
-        """,
-        (application_id, correction_rowid),
+    repair = connection.execute(
+        "SELECT rowid AS event_rowid, from_state, to_state, payload_json "
+        "FROM events WHERE application_id = ? AND rowid = ?",
+        (application_id, repair_rowid),
     ).fetchone()
-    if correction is None or str(correction["to_state"]) != "submit_unknown":
-        return False
-    correction_from = str(correction["from_state"])
-    if correction_from not in {"submitted", "email_sent"}:
-        return False
-    try:
-        payload = json.loads(str(correction["payload_json"]))
-    except (json.JSONDecodeError, TypeError):
-        return False
-    if (
-        not isinstance(payload, dict)
-        or payload.get("reason") != OUTREACH_TRUTH_CORRECTION_REASON
-    ):
-        return False
-    route_id = payload.get("route_id")
-    provider_id = payload.get("provider_id")
-    evidence_sha256 = payload.get("evidence_sha256")
-    if not all(
-        isinstance(value, str) and value
-        for value in (route_id, provider_id, evidence_sha256)
-    ):
-        return False
     previous = connection.execute(
-        """
-        SELECT rowid AS event_rowid, from_state, to_state, payload_json
-        FROM events
-        WHERE application_id = ? AND rowid < ?
-        ORDER BY rowid DESC
-        LIMIT 1
-        """,
-        (application_id, correction_rowid),
+        "SELECT rowid AS event_rowid, from_state, to_state, payload_json "
+        "FROM events WHERE application_id = ? AND rowid < ? "
+        "ORDER BY rowid DESC LIMIT 1",
+        (application_id, repair_rowid),
     ).fetchone()
-    expected_previous = (
-        ("submit_unknown", "submitted")
-        if correction_from == "submitted"
-        else ("submitted", "email_sent")
-    )
-    if previous is None or (
-        str(previous["from_state"]), str(previous["to_state"])
-    ) != expected_previous:
+    if repair is None or previous is None:
         return False
     try:
+        payload = json.loads(str(repair["payload_json"]))
         previous_payload = json.loads(str(previous["payload_json"]))
     except (json.JSONDecodeError, TypeError):
         return False
-    if not isinstance(previous_payload, dict):
+    if not isinstance(payload, dict) or not isinstance(previous_payload, dict):
         return False
+    route_id, provider_id, evidence_sha256 = (
+        payload.get(key) for key in ("route_id", "provider_id", "evidence_sha256")
+    )
     if (
-        previous_payload.get("route_id") != route_id
+        payload.get("reason") != (
+            OUTREACH_TRUTH_RESTORATION_REASON
+            if restoration else OUTREACH_TRUTH_CORRECTION_REASON
+        )
+        or not all(isinstance(value, str) and value for value in (
+            route_id, provider_id, evidence_sha256
+        ))
+        or previous_payload.get("route_id") != route_id
         or previous_payload.get("provider_id") != provider_id
         or previous_payload.get("channel") != "recruiting_outreach"
+        or (
+            "evidence_sha256" in previous_payload
+            and previous_payload.get("evidence_sha256") != evidence_sha256
+        )
+        or not _has_immutable_route_delivery(
+            connection,
+            application_id=application_id,
+            route_id=route_id,
+            provider_id=provider_id,
+            evidence_sha256=evidence_sha256,
+            route_kind="recruiting_outreach",
+            recipient_acceptance="outreach_only",
+        )
     ):
         return False
-    if correction_from == "submitted" and all(
-        previous_payload.get(key)
-        for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
+    if restoration:
+        return (
+            (str(repair["from_state"]), str(repair["to_state"]))
+            == ("email_sent", "submitted")
+            and payload.get("channel") == "recruiting_outreach"
+            and (str(previous["from_state"]), str(previous["to_state"]))
+            == ("submitted", "email_sent")
+            and _has_authoritative_submission_before(
+                connection, application_id, previous
+            )
+        )
+    correction_from = str(repair["from_state"])
+    expected_previous = (
+        ("submit_unknown", "submitted")
+        if correction_from == "submitted" else ("submitted", "email_sent")
+    )
+    if (
+        str(repair["to_state"]) != "submit_unknown"
+        or correction_from not in {"submitted", "email_sent"}
+        or (str(previous["from_state"]), str(previous["to_state"]))
+        != expected_previous
     ):
         return False
-    if correction_from == "email_sent" and (
-        "evidence_sha256" in previous_payload
-        and previous_payload.get("evidence_sha256") != evidence_sha256
-    ):
-        return False
-    if correction_from == "email_sent" and _has_authoritative_submission_before(
-        connection, application_id, previous
-    ):
-        return False
-    return _has_immutable_outreach_delivery(
-        connection,
-        application_id=application_id,
-        route_id=route_id,
-        provider_id=provider_id,
-        evidence_sha256=evidence_sha256,
+    return not (
+        correction_from == "submitted"
+        and _is_authoritative_submission_event(connection, application_id, previous)
+        or correction_from == "email_sent"
+        and _has_authoritative_submission_before(connection, application_id, previous)
     )
 
 
@@ -2622,12 +2704,15 @@ class Ledger:
             if not rows or rows[0]["from_state"] is not None:
                 raise FenceError("application event chain lacks a valid origin")
             first_state = str(rows[0]["to_state"])
-            first_payload = json.loads(str(rows[0]["payload_json"]))
+            try:
+                first_payload = json.loads(str(rows[0]["payload_json"]))
+            except (json.JSONDecodeError, TypeError) as error:
+                raise FenceError("application event chain lacks a valid origin") from error
             external_origin = first_state == "submitted" and (
-                first_payload.get("external_import") is True
-                and all(first_payload.get(key) for key in (
-                    "applied_at", "source", "source_message_id", "evidence_sha256"
-                ))
+                isinstance(first_payload, dict)
+                and _is_external_import_submission_event(
+                    self.connection, str(application["id"]), first_payload
+                )
             )
             if first_state != "discovered" and not external_origin:
                 raise FenceError("application event chain lacks a valid origin")
@@ -2651,29 +2736,25 @@ class Ledger:
                         )
                     )
                 if previous == "submit_unknown" and to_state == "submitted":
-                    payload = json.loads(str(event["payload_json"]))
-                    if not isinstance(payload, dict):
-                        raise FenceError("late confirmation event lacks evidence")
-                    has_gmail_confirmation = all(payload.get(key) for key in (
-                        "message_id", "thread_id", "evidence_sha256", "received_at"
-                    ))
-                    has_authoritative_ashby_confirmation = (
-                        is_authoritative_ashby_browser_confirmation(
-                            self.connection,
-                            str(application["id"]),
-                            event,
-                        )
-                    )
                     if index + 1 < len(rows):
                         paired_correction = paired_correction or is_outreach_truth_correction(
                             self.connection, str(application["id"]), rows[index + 1]
                         )
                     if (
-                        not has_gmail_confirmation
-                        and not has_authoritative_ashby_confirmation
+                        not _is_authoritative_submission_event(
+                            self.connection, str(application["id"]), event
+                        )
                         and not paired_correction
                     ):
                         raise FenceError("late confirmation event lacks evidence")
+                elif previous == "email_sent" and to_state == "submitted":
+                    if not is_outreach_truth_correction(
+                        self.connection,
+                        str(application["id"]),
+                        event,
+                        restoration=True,
+                    ):
+                        raise FenceError("email-sent application lacks valid restoration")
                 elif previous == "email_sent" and to_state == "submit_unknown":
                     if not is_outreach_truth_correction(
                         self.connection,
@@ -2690,15 +2771,24 @@ class Ledger:
                         ):
                             raise FenceError("submitted application lacks valid correction")
                     elif to_state == "email_sent":
-                        if index + 1 >= len(rows) or not is_outreach_truth_correction(
+                        if index + 1 >= len(rows):
+                            raise FenceError(
+                                "submitted application has uncorrected email regression"
+                            )
+                        following = rows[index + 1]
+                        if is_outreach_truth_correction(
+                            self.connection, str(application["id"]), following
+                        ):
+                            paired_correction = True
+                        elif not is_outreach_truth_correction(
                             self.connection,
                             str(application["id"]),
-                            rows[index + 1],
+                            following,
+                            restoration=True,
                         ):
                             raise FenceError(
                                 "submitted application has uncorrected email regression"
                             )
-                        paired_correction = True
                     else:
                         validate_transition(previous, to_state)
                 else:
@@ -3913,12 +4003,14 @@ class Ledger:
             route_id = str(route["route_id"])
             provider_id = str(route["provider_id"] or "")
             evidence_sha256 = str(route["delivery_evidence_sha256"] or "")
-            if not provider_id or not evidence_sha256 or not _has_immutable_outreach_delivery(
+            if not provider_id or not evidence_sha256 or not _has_immutable_route_delivery(
                 self.connection,
                 application_id=application_id,
                 route_id=route_id,
                 provider_id=provider_id,
                 evidence_sha256=evidence_sha256,
+                route_kind="recruiting_outreach",
+                recipient_acceptance="outreach_only",
             ):
                 continue
             event = self.connection.execute(
@@ -3947,21 +4039,41 @@ class Ledger:
                 or payload.get("channel") != "recruiting_outreach"
             ):
                 continue
-            if correction_from == "submitted" and all(
-                payload.get(key)
-                for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
+            if correction_from == "submitted" and _is_authoritative_submission_event(
+                self.connection, application_id, event
             ):
                 continue
-            if correction_from == "email_sent" and (
-                (
+            if correction_from == "email_sent":
+                if (
                     "evidence_sha256" in payload
                     and payload.get("evidence_sha256") != evidence_sha256
-                )
-                or _has_authoritative_submission_before(
+                ):
+                    continue
+                if _has_authoritative_submission_before(
                     self.connection, application_id, event
-                )
-            ):
-                continue
+                ):
+                    self._append_event(
+                        application_id,
+                        "email_sent",
+                        "submitted",
+                        {
+                            "route_id": route_id,
+                            "provider_id": provider_id,
+                            "channel": "recruiting_outreach",
+                            "evidence_sha256": evidence_sha256,
+                            "reason": OUTREACH_TRUTH_RESTORATION_REASON,
+                        },
+                    )
+                    self.connection.execute(
+                        "UPDATE applications SET current_state = 'submitted' WHERE id = ?",
+                        (application_id,),
+                    )
+                    self.connection.execute(
+                        "UPDATE daily_slots SET status = 'submitted' "
+                        "WHERE application_id = ? AND status = 'submit_unknown'",
+                        (application_id,),
+                    )
+                    continue
             self._append_event(
                 application_id,
                 correction_from,
