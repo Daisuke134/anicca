@@ -66,3 +66,13 @@ Return status, SHA, tests, diffstat, selected/tie IDs, concerns. Do not edit doc
 1. Primary reruns all verification.
 2. One fresh Sol adversarial reviewer attacks hidden keyword judgment, net arithmetic, stable ties, claim filtering, invalid planner fail-closed, and one-submit bound.
 3. Primary pushes main, deploys exact SHA, reloads owners, and executes one launchd-owned tick. Accept only bounded no-op, one verified application, or one quarantined uncertainty.
+
+## Completion record
+
+- Primary plan/correction commits: `9f52092365b8870b867277fd0f05d600e915fb84` and `68f42e5b44680a22e6c0f6603d31550bf5c94f0b`.
+- Luna implementation git SSOT: `f427f480b2c5ee43dceae72f2852116274212c33`; two owned files, production `+2/-4`, test `+2/-2`.
+- Verification: HOL 17, combined Lancers 32, agent-runner 15, compile and diff check pass.
+- Fresh Sol adversarial review: 1/1, `ship`; no hidden natural-language judgment in the changed rank path, no second review.
+- Canonical main/deployed exact release: `68f42e5b44680a22e6c0f6603d31550bf5c94f0b`.
+- Real launchd tick: query `AI活用`, observed 1, eligible 0, submitted false, verified 0, exit 0, empty stderr.
+- State/ledger/listing hashes unchanged; pending 0, fingerprints 19, verified application receipts 14. Both owners remain enabled and exact-release bound.
