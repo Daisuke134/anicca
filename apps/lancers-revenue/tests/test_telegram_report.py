@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -54,11 +55,11 @@ class _InventoryResponse:
 
 
 class _InventoryPage:
-    def __init__(self, report, counts, rows, public, *, statuses=None):
+    def __init__(self, report, counts, rows, public, *, statuses=None, final_urls=None):
         self.report, self.counts, self.rows, self.public = report, counts, rows, public
-        self.statuses, self.url, self.closed = statuses or {}, "", False
+        self.statuses, self.final_urls, self.url, self.closed = statuses or {}, final_urls or {}, "", False
     def goto(self, url, **_kwargs):
-        self.url = url
+        self.url = self.final_urls.get(url, url)
         return _InventoryResponse(self.statuses.get(url, 200))
     def close(self): self.closed = True
     def locator(self, selector):
@@ -105,7 +106,7 @@ def _inventory_store(report, listing_id, title="AI workflow package"):
     })
 
 
-def _inventory_public(report, listing_id, *, canonical_id="101", og_url=None, complete=True):
+def _inventory_public(report, listing_id, *, canonical_id="101", canonical_url=None, og_url=None, complete=True):
     plan = _InventoryNode(children={
         "p.p-menu-browse-detail__sidebar-description": [_InventoryNode("private plan body")],
         "div.p-menu-browse-detail__sidebar-header-price": [_InventoryNode("10,000円")],
@@ -121,7 +122,7 @@ def _inventory_public(report, listing_id, *, canonical_id="101", og_url=None, co
         ".l-page-header__heading-description": [_InventoryNode("private subtitle")],
         "#body + .p-project-plan-markdown": [_InventoryNode("private business description")],
         "#notice_for_sale + .c-text": [_InventoryNode("private order notice")],
-        'link[rel="canonical"]': [_InventoryNode(attrs={"href": f"https://www.lancers.jp/menu/detail/{canonical_id}"})],
+        'link[rel="canonical"]': [_InventoryNode(attrs={"href": canonical_url or f"https://www.lancers.jp/menu/detail/{canonical_id}"})],
         'meta[property="og:url"]': [_InventoryNode(attrs={"content": og_url or public_url})],
         "a.c-tag-list__item": [_InventoryNode("AI活用", attrs={"href": "/menu/tag/ai"})],
         "li.p-menu-browse-detail__sidebar-content.js-project-plan-tab-content": [plan, _InventoryNode()],
@@ -260,8 +261,8 @@ class TelegramReportTests(unittest.TestCase):
             self.assertEqual(result.delivered, 0)
             self.assertEqual(result.delivery_uncertain, 3)
 
-    def _run_inventory(self, report, counts, rows, public, *, statuses=None):
-        page = _InventoryPage(report, counts, rows, public, statuses=statuses)
+    def _run_inventory(self, report, counts, rows, public, *, statuses=None, final_urls=None):
+        page = _InventoryPage(report, counts, rows, public, statuses=statuses, final_urls=final_urls)
         tick = _InventoryTick()
         result = report.run_inventory(
             state_path=Path("/tmp/application.json"), browser_factory=lambda _url: _InventoryBrowser(page), tick_module=tick,
@@ -340,11 +341,68 @@ class TelegramReportTests(unittest.TestCase):
             sys.executable, str(REPORT_PATH.resolve()), "--inventory-json", "--inventory-worker", "--state-path", "/tmp/application.json",
         ], 120)])
 
-    def test_inventory_boundary_has_no_mutating_or_publisher_operations(self):
+    def test_scheduled_json_path_is_unchanged_and_never_enters_inventory_or_watchdog(self):
+        report, output = _load_report(), io.StringIO()
+        snapshot = {"complete": False}
+        delivery = report.DeliveryResult(attempted=1, delivered=1)
+        with (
+            patch.object(report, "run_inventory", side_effect=AssertionError("inventory worker called")),
+            patch.object(report, "_run_inventory_parent", side_effect=AssertionError("watchdog called")),
+            patch.object(report, "collect_snapshot", return_value=snapshot) as collect,
+            patch.object(report, "enqueue_snapshot", return_value=True) as enqueue,
+            patch.object(report, "deliver_pending", return_value=delivery) as deliver,
+        ):
+            code = report.main(["--json", "--now", "2026-08-13T00:00:00Z"], stdout=output)
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(output.getvalue()), {
+            "ok": True, "enqueued": 1, "attempted": 1, "delivered": 1,
+            "delivery_uncertain": 0, "pre_send_failed": 0,
+        })
+        self.assertEqual(collect.call_count, enqueue.call_count)
+        self.assertEqual(deliver.call_count, 1)
+
+    def test_inventory_worker_fails_closed_for_each_required_public_boundary(self):
+        report, listing_id = _load_report(), "101"
+        counts = {"published": 1, "paused": 0, "hidden": 0, "draft": 0}
+        rows = {("/myplan", None): [_inventory_store(report, listing_id)]}
+        public_url = f"https://www.lancers.jp/menu/detail/{listing_id}"
+        cases = {
+            "http_non_200": {"statuses": {public_url: 503}},
+            "public_route_drift": {"final_urls": {public_url: "https://www.lancers.jp/menu/detail/999"}},
+            "missing_h1": {"remove": "h1"},
+            "missing_subtitle": {"remove": ".l-page-header__heading-description"},
+            "missing_canonical": {"remove": 'link[rel="canonical"]'},
+            "invalid_canonical": {"canonical_url": "https://www.lancers.jp/menu/detail/not-a-number"},
+            "missing_business": {"remove": "#body + .p-project-plan-markdown"},
+            "missing_notice": {"remove": "#notice_for_sale + .c-text"},
+        }
+        for name, inject in cases.items():
+            with self.subTest(name=name):
+                public = _inventory_public(report, listing_id, canonical_url=inject.get("canonical_url"))
+                if inject.get("remove"):
+                    public.pop(inject["remove"])
+                result = self._run_inventory(
+                    report, counts, rows, {listing_id: public}, statuses=inject.get("statuses"), final_urls=inject.get("final_urls"),
+                )
+                self.assertFalse(result["ok"])
+                self.assertFalse(result["source_complete"])
+                self.assertIsInstance(result.get("error"), str)
+                output = io.StringIO()
+                with patch.object(report, "run_inventory", return_value=result):
+                    code = report.main(["--inventory-json", "--inventory-worker"], stdout=output)
+                self.assertEqual(code, 1)
+                self.assertEqual(json.loads(output.getvalue()), result)
+
+    def test_inventory_reachable_boundary_has_no_mutation_or_report_side_effects(self):
         source = REPORT_PATH.read_text(encoding="utf-8")
         inventory = source[source.index("class InventoryFailure"):source.index("@dataclass")]
-        for disallowed in ("POST", "PUT", "PATCH", "DELETE", ".click(", "run_publish", "adopt_", "launchctl", "write_text("):
+        for disallowed in (
+            "POST", "PUT", "PATCH", "DELETE", ".evaluate(", ".fill(", ".press(", ".click(",
+            "run_publish", "adopt_", "append_event", "enqueue_snapshot", "launchctl", "write_text(",
+            "write_bytes(", "os.replace", "sqlite3", "INSERT ", "UPDATE ", "DELETE ",
+        ):
             self.assertNotIn(disallowed, inventory)
+        self.assertIsNone(re.search(r"(?:^|[^A-Za-z_])open\s*\([^\n]*[,=]\s*['\"]w", inventory))
 
 
 if __name__ == "__main__":
