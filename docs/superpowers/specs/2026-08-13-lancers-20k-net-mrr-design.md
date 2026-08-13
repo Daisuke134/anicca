@@ -819,6 +819,15 @@ observed=0 / eligible=0 / submitted=false / verified=0`、exit 0、stderr 0を�
 SHA-256はpre/post一致、pending 0、fingerprints 19、verified receipts 14である。application 1800秒、reporter
 300秒は同じexact releaseでenabled。G3B rankingとG3B.1 empty normalizationは完了した。
 
+building-agentsの判断境界を再適用すると、G3Bの`月額 / 毎月 / 定期`regexは自然言語からbusiness priorityを
+hardcodeするため不適合である。全eligibleはすでにplannerの継続scope判断とgrounded evidence validationを
+通るため、G3B.2では新しいschemaや第二plannerを追加せず、rank keyを許可された決定論的算術である
+projected net JPY降順だけへ縮小する。同点のprovider stable order、claim除外、最大1 submitは維持する。
+
+これは月額適格性を緩和しない。eligible/ineligibleの自然言語判断は既存plannerが所有し、codeはその結果の
+budget/margin bookkeepingと送信順だけを扱う。production 1 file / 2 LOC以下、test 1 file / 20 LOC以下。
+primaryがspec/plan、Lunaが直接実装、fresh Sol review 1回、exact-SHA deployと実tickを所有する。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
@@ -831,7 +840,7 @@ SHA-256はpre/post一致、pending 0、fingerprints 19、verified receipts 14で
 | G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
 | G2 truthful acquisition | **完了。** storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | exact release `d63dfd1…`、Telegram message ID `15922`、同一状態の再kick 0送信 |
 | G3A query coverage | **完了。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | exact release `a2081bc0…`、review 1/1 ship、実tick `LinkedIn / observed 2 / submitted false`、state/ledger/listing不変 |
-| G3B eligible ranking | **完了。** validated eligibleをexplicit monthly、projected net JPY、provider stable orderで並べる | review 1/1 ship、production 9行、monthly/net/stable tie/最大1 submit検証 |
+| G3B eligible ranking | **G3B.2 correction active。** validated eligibleをprojected net JPY、provider stable orderで並べ、自然言語priorityをhardcodeしない | net JPY順、stable tie、claim除外、最大1 submit |
 | G3B.1 empty search normalization | **完了。** providerの正常な0件をfailureではなくno-op successとして扱う | exact release `086037263…`、実tick `B2Bマーケティング / observed 0 / ok true / submitted false`、state不変 |
 | G3C capacity quota | authoritative active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下） | active contract source、tick/day quota、100% cap、duplicate拒否 |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
