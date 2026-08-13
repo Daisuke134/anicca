@@ -285,6 +285,13 @@ def test_daily_reconciles_before_full_first_version_queue_action_selection(tmp_p
     assert "addAgentVersion for an existing agent_id remains allowed" in prompt
     assert prompt.rstrip().endswith("Use only the existing Capafy commands already named in this prompt.")
     assert "poll_review, measure, repair_rejected, reposition, retire_candidate, optimize_packaging, handoff_marketing, no_op" in prompt
+    for forbidden in (
+        "publishing ONE more", "brand-new", "PHASE B", "PACKAGING DEFAULT",
+        "NEVER Download", "ONE paid week plan", "$9.99/week", "Portfolio Tracker",
+    ):
+        assert forbidden not in prompt
+    assert "Creating a new Agent" in prompt and "it is never mandatory" in prompt
+    assert "Do not assume a purchase model, delivery mode, price, trial, or cap" in prompt
     assert (tmp_path / "inventory-calls").read_text() == "1"
 
     Path(env["RUN_AGENT_MARKER"]).unlink()
