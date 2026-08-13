@@ -966,6 +966,42 @@ inventory後のprimary実測ではinventory reporter processは残存せず、ap
 `7a58d8fb6e66a9b83e288c348cb638bf94ab483c5b6187c22458c2f32ef173ca`、listing
 `db22b6ba9055c39e6d76a846a66fa3f6348a6e430105e3fcd13013ea570dc701`のSHA-256は事前値と一致した。
 
+### 9.8.1 Storefront canonical offer skill
+
+Storefront alignmentは一度限りの手編集ではなく、canonical `skills/earn/lancers/`内のrepeatable skillとして所有する。
+既存application/report/work-syncのscheduler、shared ledger、Chrome CDPを再利用し、新daemon、DB、state、checkout、
+listing publisherは作らない。skillは明示実行時だけ既存listing一件を編集し、定期的な商品mutationは行わない。
+最初のtargetはpublic canonicalがselfを指す`1338228`だけであり、`1338229`〜`1338233`を削除、非公開、再publish、
+一括編集しない。
+
+canonical product `monthly-sns-content-ops-v1`は3.2/3.3をprovider formへ次のように写像する。
+
+| provider field | canonical value |
+|---|---|
+| title | `小規模B2B企業向けにSNS投稿企画と月次コンテンツ制作を代行します` |
+| subtitle | `企画・投稿案・画像指示・月次カレンダー・レポートまで毎月まとめて納品します` |
+| category | `Web集客・マーケティング` → `SNSマーケティング・運用代行` |
+| industry | `コンサルティング・シンクタンク` |
+| Founding | ¥98,000、30日、1媒体・月8投稿案、1 consolidated revision |
+| Standard | ¥198,000、30日、1媒体・月12投稿案、競合観察、1 consolidated revision |
+| Premium | ¥398,000、30日、2媒体・月24投稿案、競合観察、2 consolidated revisions |
+
+説明本文は、月次企画、投稿文draft、画像方向性、投稿カレンダー、月次改善レポートを納品物として明示する。
+顧客password、account login、直接投稿、広告運用・広告費、撮影・動画編集、comment/DM対応、電話、訪問は含めない。
+3/6ヶ月継続はprovider-native `/monthly_work_contracts/...` routeを維持し、独自checkoutを追加しない。main imageは
+公式推奨16:9の1220×686 PNGをcanonical assetとして同梱し、文字・logo・実績数値を捏造せず、monthly content
+calendar、post cards、reportを視覚化する。
+
+apply前にproduct JSONのfield長、3 plan、価格、target ID、public self-canonical、logged-in edit routeをfail closedで
+検証する。保存後はpublic title、subtitle、description、notice、3 price/delivery、canonical URL、画像placeholder解消、
+spot/3ヶ月/6ヶ月routeを公式pageからreadbackする。stdoutはsecretを含まない一行JSONとし、他5 listingのcontent
+hashとapplication/listing/ledger hashが不変であることをprimaryが確認する。検索結果への反映は公式完了画面の
+「最大24時間」を観測境界とし、保存直後の検索表示0を失敗と誤判定しない。
+
+Ponytailの最小差分は`SKILL.md`、product JSON、実行script、必須main imageの4 skill filesと、exact-release installer/
+既存installer regressionの2変更である。handwritten productionは約180 LOCをsoft targetとし、legacy 1,458 LOC
+`listing_tick.py`をcanonical化せず、実測済みDOM境界だけをcopy+tweakする。
+
 ### 9.9 G3B.3 planner contract recovery と単一release収束
 
 #### 一次証拠と実際の根因
