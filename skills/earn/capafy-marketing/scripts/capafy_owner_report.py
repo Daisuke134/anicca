@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import fcntl
 import json
 import os
 import re
 import stat
 import sys
 import tempfile
+from contextlib import contextmanager
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from capafy_outcome import validate_outcome
@@ -22,6 +24,9 @@ KINDS = {"hourly", "morning", "daily_close", "event"}
 REASONS = {"sale", "published", "repair_closed", "unresolved"}
 KEY = re.compile(r"^[A-Za-z0-9_.:-]+$")
 PERIOD = {"hourly": re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}$"), "morning": re.compile(r"^\d{4}-\d{2}-\d{2}$"), "daily_close": re.compile(r"^\d{4}-\d{2}-\d{2}$")}
+HANDLE = re.compile(r"(?:no-active-account|capafy\.[a-z0-9](?:[a-z0-9._-]{0,61}[a-z0-9])?)$")
+REEL_PATH = re.compile(r"^/reel/[A-Za-z0-9_-]+/$")
+CREDENTIAL_WORDS = ("token", "secret", "password", "authorization", "credential", "sk_live", "bearer")
 
 
 def bad(message: str):
@@ -41,8 +46,59 @@ def amount(value: object) -> str:
 def public_url(value: object) -> str | None:
     if not isinstance(value, str) or "{" in value or "}" in value:
         return None
+    try:
+        parsed = urlparse(value)
+        port = parsed.port
+        hostname = parsed.hostname
+    except ValueError:
+        return None
+    if parsed.scheme != "https" or not hostname or "@" in parsed.netloc or parsed.username or parsed.password or port not in (None, 443) or "#" in value:
+        return None
+    try:
+        pairs = parse_qsl(parsed.query, keep_blank_values=True)
+    except ValueError:
+        return None
+    query_text = "&".join(f"{key}={val}" for key, val in pairs).lower()
+    return value if not any(word in query_text for word in CREDENTIAL_WORDS) else None
+
+
+def role_url(value: object, hosts: set[str], path_pattern: re.Pattern[str] | None = None) -> str | None:
+    value = public_url(value)
+    if not value:
+        return None
     parsed = urlparse(value)
-    return value if parsed.scheme == "https" and parsed.netloc else None
+    if (parsed.hostname or "").lower() not in hosts:
+        return None
+    if path_pattern and not path_pattern.fullmatch(parsed.path):
+        return None
+    return value
+
+
+def validate_links(state: dict) -> None:
+    listing = state.get("listing_url")
+    if listing is not None and not role_url(listing, {"capafy.ai"}):
+        bad("listing_url is not a safe Capafy URL")
+    marketing = state.get("marketing")
+    if not isinstance(marketing, dict):
+        bad("marketing is required")
+    reel = marketing.get("public_post_url")
+    if reel is not None and not role_url(reel, {"www.instagram.com", "instagram.com"}, REEL_PATH):
+        bad("marketing.public_post_url is not a safe Reel URL")
+    campaign = marketing.get("campaign_url")
+    if campaign is not None and not role_url(campaign, {"capafy-skills-daily.netlify.app"}):
+        bad("marketing.campaign_url is not a safe campaign URL")
+    if not role_url(state.get("dashboard_url"), {"capafy-skills-daily.netlify.app"}):
+        bad("dashboard_url is not a safe dashboard URL")
+
+
+def validate_company_state(state: dict) -> None:
+    errors = validate_outcome(state)
+    if errors:
+        bad("company_state is not deliverable: " + "; ".join(errors))
+    account = state.get("account")
+    if not isinstance(account, dict) or not HANDLE.fullmatch(str(account.get("handle") or "")):
+        bad("account.handle is invalid")
+    validate_links(state)
 
 
 def infer_reason(state: dict, previous: dict | None) -> str | None:
@@ -57,13 +113,27 @@ def infer_reason(state: dict, previous: dict | None) -> str | None:
     if state.get("incident"):
         return "unresolved"
     event_id = str(state.get("last_event_id") or "")
-    if "order.received" in event_id:
+    if re.search(r"(?:^|:)order\.received(?:[:]|$)", event_id):
         return "sale"
-    if "published" in event_id or "publication" in event_id:
+    if re.search(r"(?:^|:)content\.published(?:[:]|$)", event_id):
         return "published"
-    if "incident.verified" in event_id or "repair_closed" in event_id:
+    if re.search(r"(?:^|:)incident\.verified(?:[:]|$)", event_id):
         return "repair_closed"
-    return None
+    return "unresolved" if state.get("incident") and state["incident"].get("phase") != "verified" else None
+
+
+def reason_is_valid(reason: str, state: dict, previous: dict | None) -> bool:
+    old_marketing, new_marketing = (previous or {}).get("marketing") or {}, state.get("marketing") or {}
+    event_id = str(state.get("last_event_id") or "")
+    if reason == "sale":
+        paid_up = previous and isinstance(state.get("paid_orders"), int) and isinstance(previous.get("paid_orders"), int) and state["paid_orders"] > previous["paid_orders"]
+        return bool(previous and (state.get("orders", 0) > previous.get("orders", 0) or paid_up)) or bool(re.search(r"(?:^|:)order\.received(?:[:]|$)", event_id))
+    if reason == "published":
+        return bool(public_url(new_marketing.get("public_post_url")) and not public_url(old_marketing.get("public_post_url"))) or bool(re.search(r"(?:^|:)content\.published(?:[:]|$)", event_id))
+    if reason == "repair_closed":
+        prior_active = isinstance((previous or {}).get("incident"), dict) and (previous["incident"].get("phase") != "verified")
+        return bool((prior_active and not state.get("incident")) or (not state.get("incident") and re.search(r"(?:^|:)incident\.verified(?:[:]|$)", event_id)))
+    return bool(isinstance(state.get("incident"), dict) and state["incident"].get("phase") != "verified")
 
 
 def load_envelope(stream: object) -> dict:
@@ -76,28 +146,21 @@ def load_envelope(stream: object) -> dict:
     state = envelope.get("company_state")
     if not isinstance(state, dict):
         bad("company_state is required")
-    errors = validate_outcome(state)
-    if errors:
-        bad("company_state is not deliverable: " + "; ".join(errors))
-    account = state.get("account")
-    if not isinstance(account, dict) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", str(account.get("handle") or "")):
-        bad("account.handle is invalid")
+    validate_company_state(state)
     previous = envelope.get("previous_company_state")
     if previous is not None:
         if not isinstance(previous, dict):
             bad("previous_company_state must be an object or null")
-        errors = validate_outcome(previous)
-        if errors:
-            bad("previous_company_state is not deliverable: " + "; ".join(errors))
+        validate_company_state(previous)
     kind = envelope["report_kind"] if "report_kind" in envelope else "morning"
     if kind not in KINDS:
         bad("report_kind is invalid")
     reason = envelope.get("event_reason")
+    if kind != "event" and reason is not None:
+        bad("event_reason is only valid for event reports")
     if kind == "event" and reason is None:
         reason = infer_reason(state, previous)
-    if kind == "event" and reason not in REASONS:
-        bad("event_reason is invalid")
-    if kind != "event" and reason is not None and reason not in REASONS:
+    if kind == "event" and (reason not in REASONS or not reason_is_valid(reason, state, previous)):
         bad("event_reason is invalid")
     period = envelope.get("period_key")
     if not period:
@@ -105,6 +168,11 @@ def load_envelope(stream: object) -> dict:
         period = now.strftime("%Y-%m-%dT%H" if kind == "hourly" else "%Y-%m-%d")
     if kind != "event" and (not isinstance(period, str) or not PERIOD[kind].fullmatch(period)):
         bad("period_key is invalid")
+    if kind != "event":
+        try:
+            dt.datetime.strptime(period, "%Y-%m-%dT%H" if kind == "hourly" else "%Y-%m-%d")
+        except (TypeError, ValueError):
+            bad("period_key is invalid")
     if kind == "event" and (not isinstance(period, str) or not KEY.fullmatch(period)):
         bad("period_key is invalid")
     envelope = dict(envelope)
@@ -154,7 +222,8 @@ def marketer(state: dict) -> str:
     account, marketing, metrics = state["account"], state["marketing"], state["metrics"]
     reel = "公開Reelを確認済み" if public_url(marketing.get("public_post_url")) else "公開Reelは未確認"
     values = [str(metrics[x]) if isinstance(metrics.get(x), int) else "不明" for x in ("views", "likes", "comments", "clicks")]
-    return f"Marketer: @{account['handle']}。{reel}。閲覧{values[0]}、いいね{values[1]}、コメント{values[2]}、計測クリック{values[3]}。"
+    handle = "アカウント不明" if account["handle"] == "no-active-account" else f"@{account['handle']}"
+    return f"Marketer: {handle}。{reel}。閲覧{values[0]}、いいね{values[1]}、コメント{values[2]}、計測クリック{values[3]}。"
 
 
 def repair(state: dict, previous: dict | None, reason: str | None) -> str:
@@ -217,10 +286,17 @@ def render(envelope: dict) -> str:
 
 
 def read_state(path: str) -> list[dict]:
-    if not os.path.exists(path):
-        return []
+    target = Path(path)
     try:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        metadata = os.lstat(target)
+    except FileNotFoundError:
+        return []
+    except OSError as exc:
+        bad(f"delivery state is unsafe: {exc}")
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != 0o600:
+        bad("delivery state is unsafe")
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         bad(f"delivery state is corrupt: {exc}")
     if not isinstance(payload, dict) or payload.get("schema_version") not in (1, 2):
@@ -237,6 +313,8 @@ def read_state(path: str) -> list[dict]:
 def write_state(path: str, rows: list[dict]) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists() or target.is_symlink():
+        read_state(path)
     fd, temporary = tempfile.mkstemp(prefix=f".{target.name}.", dir=str(target.parent))
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
@@ -248,14 +326,39 @@ def write_state(path: str, rows: list[dict]) -> None:
             os.unlink(temporary)
 
 
+@contextmanager
+def delivery_ledger_lock(path: str):
+    target = Path(f"{path}.lock")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    flags = os.O_RDWR | os.O_CREAT
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        fd = os.open(target, flags, 0o600)
+    except OSError as exc:
+        bad(f"delivery ledger lock is unsafe: {exc}")
+    try:
+        metadata = os.fstat(fd)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != 0o600:
+            bad("delivery ledger lock is unsafe")
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
+
+
 def record(args: argparse.Namespace) -> int:
     if not KEY.fullmatch(args.key or "") or not re.fullmatch(r"[0-9]+", args.message_id or "") or not re.fullmatch(r"sha256:[0-9a-f]{64}", args.projection_id or ""):
         bad("delivery record arguments are invalid")
-    rows = read_state(args.state)
-    if any(row.get("delivery_key") == args.key for row in rows):
-        return 0
-    rows.append({"delivery_key": args.key, "projection_id": args.projection_id, "telegram_message_id": args.message_id, "delivered_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")})
-    write_state(args.state, rows)
+    with delivery_ledger_lock(args.state):
+        rows = read_state(args.state)
+        if any(row.get("delivery_key") == args.key for row in rows):
+            return 0
+        rows.append({"delivery_key": args.key, "projection_id": args.projection_id, "telegram_message_id": args.message_id, "delivered_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")})
+        write_state(args.state, rows)
     return 0
 
 
@@ -268,7 +371,8 @@ def main() -> int:
         if not args.state or not KEY.fullmatch(args.key or ""):
             bad("state and delivery key are required")
         if args.command == "delivered":
-            return 0 if any(row.get("delivery_key") == args.key for row in read_state(args.state)) else 1
+            with delivery_ledger_lock(args.state):
+                return 0 if any(row.get("delivery_key") == args.key for row in read_state(args.state)) else 1
         if not args.projection_id or not args.message_id:
             bad("projection id and message id are required")
         return record(args)

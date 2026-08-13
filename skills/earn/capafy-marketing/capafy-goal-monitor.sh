@@ -24,7 +24,48 @@ EVENT_EVIDENCE_DIR="${CAPAFY_EVENT_EVIDENCE_DIR:-$HOME/.openclaw/state/capafy-re
 PORTFOLIO_STATE="${CAPAFY_PORTFOLIO_STATE:-$HOME/.openclaw/state/capafy-portfolio.json}"
 STATE="$HOME/.openclaw/state/capafy-goal-monitor.json"
 DELIVERY_STATE="${CAPAFY_GOAL_MONITOR_DELIVERY_STATE:-$HOME/.openclaw/state/capafy-goal-monitor-delivery.json}"
+DELIVERY_LOCK="${CAPAFY_GOAL_MONITOR_DELIVERY_LOCK:-${DELIVERY_STATE}.send-lock}"
 mkdir -p "$(dirname "$STATE")"
+
+DELIVERY_LOCK_HELD=0
+release_delivery_lock() {
+  if [ "$DELIVERY_LOCK_HELD" = 1 ]; then
+    rm -f "$DELIVERY_LOCK/pid" 2>/dev/null || true
+    rmdir "$DELIVERY_LOCK" 2>/dev/null || true
+    DELIVERY_LOCK_HELD=0
+  fi
+}
+delivery_lock_signal() {
+  release_delivery_lock
+  exit 143
+}
+trap release_delivery_lock EXIT
+trap delivery_lock_signal HUP INT TERM
+acquire_delivery_lock() {
+  local attempt=0 max_attempts="${CAPAFY_GOAL_MONITOR_LOCK_ATTEMPTS:-600}" owner
+  mkdir -p "$(dirname "$DELIVERY_LOCK")" || return 1
+  while [ "$attempt" -lt "$max_attempts" ]; do
+    if [ -L "$DELIVERY_LOCK" ] || { [ -e "$DELIVERY_LOCK" ] && [ ! -d "$DELIVERY_LOCK" ]; }; then
+      return 1
+    fi
+    if mkdir "$DELIVERY_LOCK" 2>/dev/null; then
+      chmod 700 "$DELIVERY_LOCK" 2>/dev/null || { rmdir "$DELIVERY_LOCK" 2>/dev/null || true; return 1; }
+      (umask 077; printf '%s\n' "$$" > "$DELIVERY_LOCK/pid") || { rmdir "$DELIVERY_LOCK" 2>/dev/null || true; return 1; }
+      chmod 600 "$DELIVERY_LOCK/pid" 2>/dev/null || { rm -f "$DELIVERY_LOCK/pid"; rmdir "$DELIVERY_LOCK" 2>/dev/null || true; return 1; }
+      DELIVERY_LOCK_HELD=1
+      return 0
+    fi
+    owner="$(cat "$DELIVERY_LOCK/pid" 2>/dev/null || true)"
+    if [[ "$owner" =~ ^[0-9]+$ ]] && ! kill -0 "$owner" 2>/dev/null; then
+      rm -f "$DELIVERY_LOCK/pid" 2>/dev/null || true
+      rmdir "$DELIVERY_LOCK" 2>/dev/null || true
+      continue
+    fi
+    sleep 0.05
+    attempt=$((attempt + 1))
+  done
+  return 1
+}
 
 DAILY_LOG="$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log"
 EARN_LEDGER="$HOME/anicca/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
@@ -487,6 +528,7 @@ if [ "$RC" -ne 0 ]; then
   cat "$PARITY_FILE" >&2 2>/dev/null || true
   exit "$RC"
 fi
+acquire_delivery_lock || exit 2
 if ! "$PY" "$COMPANY_DASHBOARD_BUILDER" \
   --projection "$PROJECTION_FILE" --output-dir "$COMPANY_DASHBOARD_DIR" >/dev/null; then
   "$PY" "$OUTCOME_SCRIPT" start-incident \
@@ -512,8 +554,14 @@ if [ "$DELIVERED_RC" -eq 1 ]; then
       --fingerprint goal-monitor-telegram-delivery-failed >/dev/null 2>&1 || true
     exit 1
   }
-  MESSAGE_ID="$(printf '%s\n' "$SEND_RESULT" | sed -nE 's/.*MSGID=([0-9]+).*/\1/p' | tail -1)"
-  [ -n "$MESSAGE_ID" ] || exit 1
+  if [[ "$SEND_RESULT" =~ ^TELEGRAM_SENT=true\ MSGID=([0-9]+)$ ]]; then
+    MESSAGE_ID="${BASH_REMATCH[1]}"
+  else
+    "$PY" "$OUTCOME_SCRIPT" start-incident \
+      --owner company --summary "Projection-backed Telegram delivery failed." \
+      --fingerprint goal-monitor-telegram-delivery-failed >/dev/null 2>&1 || true
+    exit 1
+  fi
   "$PY" "$OWNER_REPORT" record-delivery --state "$DELIVERY_STATE" \
     --key "$DELIVERY_KEY" --projection-id "$PROJECTION_ID" --message-id "$MESSAGE_ID" || exit 2
 fi

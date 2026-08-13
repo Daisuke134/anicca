@@ -1,4 +1,5 @@
 import json
+import concurrent.futures
 import os
 import stat
 import subprocess
@@ -173,22 +174,18 @@ GOLDEN_CASES = [
         ("sale", report_envelope(
             state=owner_state(orders=6, paid_orders=3, gross_usd="29.97"),
             previous=owner_state(orders=5, paid_orders=2, gross_usd="19.98"),
-            event_reason="sale",
         )),
         ("published", report_envelope(
             previous=owner_state(marketing={"state": "not_published", "public_post_url": None, "campaign_url": None}),
-            event_reason="published",
         )),
         ("repair_closed", report_envelope(
             previous=owner_state(incident={"incident_id": "i", "owner": "marketer", "summary": "old", "phase": "repair_started", "next_retry_at": "2026-08-13T08:50:00Z"}),
-            event_reason="repair_closed",
         )),
         ("unresolved", report_envelope(
             state=owner_state(
                 account={"handle": "capafy.skills8m4q2z", "lifecycle_status": "unknown_raw", "capability": "unknown_raw", "session_established": False, "post_write_session_verified": False, "account_status": "unknown_raw"},
                 incident={"incident_id": "i", "owner": "marketer", "summary": "/Users/private/Traceback raw unresolved", "phase": "unresolved", "next_retry_at": "2026-08-13T08:50:00Z"},
             ),
-            event_reason="unresolved",
         )),
 ]
 
@@ -268,12 +265,12 @@ def test_owner_report_event_delivery_key_uses_reason_and_immutable_event() -> No
 
 def test_owner_report_event_delivery_key_derives_supported_reason() -> None:
     current = owner_state()
-    current["last_event_id"] = "capafy:marketing.published:2026-08-13"
+    current["last_event_id"] = "capafy:content.published:2026-08-13"
     old = owner_state(marketing={"state": "not_published", "public_post_url": None, "campaign_url": None})
     envelope = report_envelope(report_kind="event", period_key="event-period", state=current, previous=old)
     result = owner_report("delivery-key", envelope)
     assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == "event:published:capafy:marketing.published:2026-08-13"
+    assert result.stdout.strip() == "event:published:capafy:content.published:2026-08-13"
 
 
 def test_owner_report_unset_kind_defaults_to_morning() -> None:
@@ -294,6 +291,117 @@ def test_owner_report_rejects_invalid_event_reason() -> None:
     assert "event_reason" in result.stderr
 
 
+@pytest.mark.parametrize("kind", ["hourly", "morning", "daily_close"])
+def test_owner_report_rejects_event_reason_on_non_event(kind: str) -> None:
+    result = owner_report(
+        "delivery-key",
+        report_envelope(report_kind=kind, event_reason="sale"),
+    )
+    assert result.returncode != 0
+    assert "event_reason" in result.stderr
+
+
+def test_owner_report_rejects_false_sale_reason() -> None:
+    result = owner_report(
+        "delivery-key",
+        report_envelope(report_kind="event", period_key="same", event_reason="sale", previous=owner_state()),
+    )
+    assert result.returncode != 0
+    assert "event_reason" in result.stderr
+
+
+def test_owner_report_rejects_false_repair_closed_reason() -> None:
+    result = owner_report(
+        "delivery-key",
+        report_envelope(report_kind="event", period_key="same", event_reason="repair_closed"),
+    )
+    assert result.returncode != 0
+    assert "event_reason" in result.stderr
+
+
+@pytest.mark.parametrize("period", ["2026-99-99T99", "2026-02-30T17", "2026-13-01T00"])
+def test_owner_report_rejects_non_calendar_hourly_period(period: str) -> None:
+    result = owner_report("delivery-key", report_envelope(period_key=period))
+    assert result.returncode != 0
+    assert "period_key" in result.stderr
+
+
+@pytest.mark.parametrize("field,value", [
+    ("listing_url", "https://evil.example/agent/1"),
+    ("listing_url", "https://user:pass@capafy.ai/agent/1"),
+    ("listing_url", "https://@capafy.ai/agent/1"),
+    ("listing_url", "https://capafy.ai/agent/1?token=secret"),
+    ("dashboard_url", "https://capafy-skills-daily.netlify.app/company/#private"),
+    ("dashboard_url", "https://capafy-skills-daily.netlify.app/company/#"),
+    ("dashboard_url", "https://capafy-skills-daily.netlify.app:444/company/"),
+])
+def test_owner_report_rejects_listing_dashboard_url_counterexamples(field: str, value: str) -> None:
+    result = owner_report("render", report_envelope(state=owner_state(**{field: value})))
+    assert result.returncode != 0
+    assert value not in result.stdout
+
+
+@pytest.mark.parametrize("reel", [
+    "https://evil.example/reel/DbhCWLhorxy/",
+    "https://www.instagram.com/p/DbhCWLhorxy/",
+    "https://www.instagram.com/reel/DbhCWLhorxy/?secret=1",
+    "https://www.instagram.com/reel/DbhCWLhorxy/#x",
+])
+def test_owner_report_rejects_reel_url_counterexamples(reel: str) -> None:
+    state = owner_state(marketing={"state": "reach_observing", "public_post_url": reel, "campaign_url": None})
+    result = owner_report("render", report_envelope(state=state))
+    assert result.returncode != 0
+    assert reel not in result.stdout
+
+
+def test_owner_report_renders_no_active_account_without_at_handle() -> None:
+    account = owner_state()["account"] | {"handle": "no-active-account"}
+    result = owner_report("render", report_envelope(state=owner_state(account=account)))
+    assert result.returncode == 0, result.stderr
+    assert "Marketer: アカウント不明。" in result.stdout
+    assert "@no-active-account" not in result.stdout
+
+
+def test_owner_report_rejects_unsafe_account_handle() -> None:
+    account = owner_state()["account"] | {"handle": "private/path"}
+    result = owner_report("render", report_envelope(state=owner_state(account=account)))
+    assert result.returncode != 0
+    assert "private/path" not in result.stdout
+
+
+def test_owner_report_rejects_campaign_credential_query() -> None:
+    state = owner_state(marketing={
+        "state": "reach_observing",
+        "public_post_url": "https://www.instagram.com/reel/DbhCWLhorxy/",
+        "campaign_url": "https://capafy-skills-daily.netlify.app/go/1?authorization=secret",
+    })
+    result = owner_report("render", report_envelope(state=state))
+    assert result.returncode != 0
+    assert "authorization" not in result.stdout
+
+
+def test_owner_report_event_key_is_immutable_across_period_values() -> None:
+    state = owner_state(last_event_id="capafy:order.received:2026-08-13")
+    first = owner_report("delivery-key", report_envelope(report_kind="event", period_key="future-a", event_reason="sale", state=state))
+    second = owner_report("delivery-key", report_envelope(report_kind="event", period_key="future-b", event_reason="sale", state=state))
+    assert first.returncode == second.returncode == 0
+    assert first.stdout == second.stdout == "event:sale:capafy:order.received:2026-08-13\n"
+
+
+@pytest.mark.parametrize("output", [
+    "TELEGRAM_SENT=false ERROR=NOTMSGID=4242\\n",
+    "TELEGRAM_SENT=true MSGID=42\\nextra\\n",
+    "TELEGRAM_SENT=true MSGID=42\\nTELEGRAM_SENT=true MSGID=43\\n",
+    " TELEGRAM_SENT=true MSGID=42\\n",
+])
+def test_goal_monitor_rejects_spoofed_or_non_exact_sender_output(tmp_path: Path, output: str) -> None:
+    env, script, _, delivery = _goal_monitor_fixture(tmp_path)
+    env["FAKE_SEND_OUTPUT"] = output
+    result = _run_monitor(env, script, kind="hourly", period="2026-08-13T17")
+    assert result.returncode == 1
+    assert not delivery.exists()
+
+
 @pytest.mark.parametrize("kind", ["", "weekly", "EVENT", "hourly:bad"])
 def test_owner_report_rejects_invalid_report_kind(kind: str) -> None:
     result = owner_report("delivery-key", report_envelope(report_kind=kind))
@@ -304,6 +412,7 @@ def test_owner_report_rejects_invalid_report_kind(kind: str) -> None:
 def test_owner_report_delivery_state_migrates_legacy_and_retains_256(tmp_path: Path) -> None:
     state = tmp_path / "delivery.json"
     state.write_text(json.dumps({"schema_version": 1, "projection_id": "sha256:" + "a" * 64}))
+    state.chmod(0o600)
     envelope = report_envelope()
     key = "hourly:2026-08-13T17"
     result = owner_report("delivered", envelope, "--state", str(state), "--key", key)
@@ -327,6 +436,7 @@ def test_owner_report_delivery_state_migrates_legacy_and_retains_256(tmp_path: P
 def test_owner_report_corrupt_delivery_state_fails_closed(tmp_path: Path) -> None:
     state = tmp_path / "delivery.json"
     state.write_text("not-json")
+    state.chmod(0o600)
     result = owner_report("delivered", report_envelope(), "--state", str(state), "--key", "hourly:2026-08-13T17")
     assert result.returncode == 2
     result = subprocess.run(
@@ -346,6 +456,42 @@ def test_owner_report_rejects_non_numeric_message_id(tmp_path: Path) -> None:
     )
     assert result.returncode != 0
     assert not state.exists()
+
+
+@pytest.mark.parametrize("kind", ["mode", "symlink", "directory"])
+def test_owner_report_existing_delivery_state_must_be_private_regular_file(tmp_path: Path, kind: str) -> None:
+    state = tmp_path / "delivery.json"
+    if kind == "mode":
+        state.write_text(json.dumps({"schema_version": 2, "deliveries": []}))
+        state.chmod(0o644)
+    elif kind == "symlink":
+        target = tmp_path / "real.json"
+        target.write_text(json.dumps({"schema_version": 2, "deliveries": []}))
+        state.symlink_to(target)
+    else:
+        state.mkdir()
+    result = owner_report("delivered", report_envelope(), "--state", str(state), "--key", "hourly:2026-08-13T17")
+    assert result.returncode == 2
+
+
+def test_owner_report_concurrent_records_retain_all_distinct_keys(tmp_path: Path) -> None:
+    state = tmp_path / "delivery.json"
+    command = [sys.executable, str(OWNER_SCRIPT), "record-delivery", "--state", str(state)]
+
+    def record_one(index: int) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            command + ["--key", f"hourly:concurrent-{index}", "--projection-id", "sha256:" + "b" * 64, "--message-id", str(index + 1)],
+            text=True, capture_output=True, check=False,
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+        results = list(pool.map(record_one, range(64)))
+    assert all(result.returncode == 0 for result in results), [result.stderr for result in results if result.returncode]
+    payload = json.loads(state.read_text())
+    assert len(payload["deliveries"]) == 64
+    assert len({row["delivery_key"] for row in payload["deliveries"]}) == 64
+    assert state.stat().st_mode & 0o777 == 0o600
+    assert state.with_name(state.name + ".lock").stat().st_mode & 0o777 == 0o600
 
 
 def _goal_monitor_fixture(tmp_path: Path) -> tuple[dict[str, str], Path, Path, Path]:
@@ -400,8 +546,9 @@ def _goal_monitor_fixture(tmp_path: Path) -> tuple[dict[str, str], Path, Path, P
     sender = tmp_path / "send.sh"
     sender.write_text(
         'if [ "${FAKE_SEND_FAIL:-0}" = 1 ]; then exit 1; fi\n'
+        'if [ -n "${FAKE_SEND_DELAY:-}" ]; then sleep "$FAKE_SEND_DELAY"; fi\n'
         'printf "%s\\n" "$1" >> "$FAKE_SENT"\n'
-        'printf "TELEGRAM_SENT=true MSGID=%s\\n" "${FAKE_MSGID:-777}"\n'
+        'if [ -n "${FAKE_SEND_OUTPUT:-}" ]; then printf "%b" "$FAKE_SEND_OUTPUT"; else printf "TELEGRAM_SENT=true MSGID=%s\\n" "${FAKE_MSGID:-777}"; fi\n'
     )
     delivery = state / "capafy-goal-monitor-delivery.json"
     env = os.environ | {
@@ -417,6 +564,7 @@ def _goal_monitor_fixture(tmp_path: Path) -> tuple[dict[str, str], Path, Path, P
         "CAPAFY_GOAL_MONITOR_TMP_DIR": str(scratch),
         "CAPAFY_TELEGRAM_SENDER": str(sender),
         "CAPAFY_GOAL_MONITOR_DELIVERY_STATE": str(delivery),
+        "CAPAFY_GOAL_MONITOR_DELIVERY_LOCK": str(delivery.with_name(delivery.name + ".send-lock")),
         "FAKE_SENT": str(sent),
     }
     return env, SCRIPT.parent.parent / "capafy-goal-monitor.sh", sent, delivery
@@ -439,6 +587,30 @@ def test_goal_monitor_failed_send_does_not_record_delivery(tmp_path: Path) -> No
     assert not delivery.exists()
 
 
+def test_goal_monitor_releases_one_send_lock_for_simultaneous_runs(tmp_path: Path) -> None:
+    env, script, sent, delivery = _goal_monitor_fixture(tmp_path)
+    env["FAKE_SEND_DELAY"] = "1"
+    processes = [
+        subprocess.Popen(["bash", str(script)], env=dict(env, CAPAFY_REPORT_KIND="hourly", CAPAFY_REPORT_PERIOD_KEY="2026-08-13T17"), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        for _ in range(2)
+    ]
+    results = [process.communicate(timeout=30) for process in processes]
+    assert all(process.returncode == 0 for process in processes), results
+    assert sent.read_text().count("レポート（") == 1
+    assert len(json.loads(delivery.read_text())["deliveries"]) == 1
+
+
+def test_goal_monitor_recovers_stale_send_lock(tmp_path: Path) -> None:
+    env, script, sent, delivery = _goal_monitor_fixture(tmp_path)
+    lock = Path(env["CAPAFY_GOAL_MONITOR_DELIVERY_LOCK"])
+    lock.mkdir()
+    (lock / "pid").write_text("999999\n")
+    result = _run_monitor(env, script, kind="hourly", period="2026-08-13T17")
+    assert result.returncode == 0, result.stderr
+    assert sent.read_text().count("レポート（") == 1
+    assert len(json.loads(delivery.read_text())["deliveries"]) == 1
+
+
 def test_goal_monitor_period_retry_and_event_do_not_duplicate_or_evict(tmp_path: Path) -> None:
     env, script, sent, delivery = _goal_monitor_fixture(tmp_path)
     first = _run_monitor(env, script, kind="hourly", period="2026-08-13T17")
@@ -448,12 +620,16 @@ def test_goal_monitor_period_retry_and_event_do_not_duplicate_or_evict(tmp_path:
     assert retry.returncode == 0, retry.stderr
     assert sent.read_bytes() == first_sent
     assert delivery.read_bytes() == first_state
-    event = _run_monitor(env, script, kind="event", period="event-period", reason="sale")
+    rows = [json.loads(line) for line in (Path(env["CAPAFY_EVENT_LEDGER"]).read_text()).splitlines() if line.strip()]
+    published = next(row for row in rows if row["event_type"] == "content.published")
+    published = dict(published, event_id="capafy:content.published:instagram:DbhCWLhorxy:retry", recorded_at="2026-08-13T17:01:00Z")
+    Path(env["CAPAFY_EVENT_LEDGER"]).write_text("\n".join(json.dumps(row) for row in [*rows, published]) + "\n")
+    event = _run_monitor(env, script, kind="event", period="event-period", reason="published")
     assert event.returncode == 0, event.stderr
     event_state = json.loads(delivery.read_text())
     assert {row["delivery_key"] for row in event_state["deliveries"]} >= {
         "hourly:2026-08-13T17",
-        "event:sale:capafy:cost.measured:openrouter:1785539400",
+        "event:published:capafy:content.published:instagram:DbhCWLhorxy:retry",
     }
     retry_after_event = _run_monitor(env, script, kind="hourly", period="2026-08-13T17")
     assert retry_after_event.returncode == 0, retry_after_event.stderr
