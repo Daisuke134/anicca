@@ -25,7 +25,7 @@ The implementer must not edit this plan, the authoritative spec, launchd plists,
    - keep registry-shape, unique-handle, browser ownership, and credential/handle validation for new-account verification;
    - add a current-session mode that does not require a credential and does not trust the registry's stale dynamic port;
    - under the caller's already-held browser lease, select one existing Instagram or blank page, creating one target only when none is reusable;
-   - navigate that exact target to `https://www.instagram.com/accounts/edit/` and require a non-login, non-challenge page whose username/profile-link evidence resolves to the exact expected handle;
+   - navigate that exact target to `https://www.instagram.com/accounts/edit/` and require the canonical Instagram origin, the exact `/accounts/edit/` path, and an exact expected handle in the username input; arbitrary profile links are not owner proof;
    - return one JSON object containing `verified=true`, exact `handle`, `session_owner=browser`, and numeric-free opaque `target_id`; never print cookies, credentials, DOM text, URLs with secrets, or screenshots;
    - exact mismatch, unavailable proof, login, challenge, malformed CDP response, or an untrusted target returns nonzero and no success JSON;
    - retain a command seam only for focused tests; production defaults to the existing raw-CDP adapter already used by `capafy_reel_poster.py`.
@@ -34,20 +34,21 @@ The implementer must not edit this plan, the authoritative spec, launchd plists,
    - use only the verifier-returned target ID; an explicit `CAPAFY_IG_TID` remains a test seam and must not bypass live verification in production launchd;
    - if exact owner proof fails, write a deterministic failure result whose stable reason remains `active Instagram browser tab is missing`, with the invalid active handle, a clear repair detail, and a future aware RFC3339 `next_retry_at` (five minutes is sufficient);
    - hand that result to the existing handoff; do not run the creative agent, selector, or poster, and do not attempt login or account creation in the controller;
-   - release the browser guard exactly once on every success/failure path.
+   - release the browser guard exactly once on every success/failure path, and synchronously release it before handing session recovery to the replacement workflow so the account manager cannot collide with the controller lease.
 3. In `capafy-marketing-handoff.sh`:
    - for the exact controller session-recovery failure, preserve the stable reason/fingerprint so existing incident `capafy-marketer-20260803T070010Z-99b1374a` is reused rather than creating a competing incident;
    - when an invalid handle and valid future retry are present, retire that exact registry row, request replacement in lifecycle state, transition the incident with that retry, and kickstart only `ai.anicca.capafy-ig-account-manager` once;
    - reject or replace malformed/past/naive retry input with a bounded future RFC3339 value before transition;
    - do not use `-k` when waking an already-running manager; do not kill it, double-wake it, send success Telegram, or swallow an event-store conflict;
-   - treat the incident's persisted `terminal_message_key` as the direct-failure delivery receipt: an already-notified reused incident sends no second failure Telegram; a brand-new incident records a deterministic key and numeric message ID after the first successful send so sender retry cannot duplicate it;
+   - treat the incident's persisted `terminal_message_key` as an at-most-once direct-failure reservation: persist the deterministic key before calling Telegram, never retry that direct alert after the reservation exists, and add the numeric message ID only after strict sender success; the hourly Japanese owner report is the completeness path if a crash occurs before the external send;
+   - make retirement and lifecycle replacement request independently idempotent; replay a persisted session-recovery result before snapshot cleanup, wake the account manager only when the replacement request is newly established, and rely on its existing 300-second schedule for crash convergence;
    - keep existing challenge, account-created, dry, and published behavior compatible.
 4. Focused regressions, written after implementation (no TDD/RED cycle):
    - a missing tab is recreated/reused and exact current owner returns one target;
-   - a logged-out, challenge, wrong-owner, malformed, or no-proof page cannot verify;
+   - a logged-out, challenge, wrong-origin, wrong-owner, arbitrary matching external profile link, malformed, numeric-only target, or no-proof page cannot verify;
    - a stale registry port is allowed only in current-session mode; new-account verification still requires the exact port and matching credential;
    - controller exact-owner success reaches the existing selector/creative/poster once;
-   - controller owner mismatch runs no selector/creative/poster, releases its lease once, retires only the invalid row, sets `replacement_requested`, gives the reused incident a future retry, and wakes only the account manager once without `-k`;
+   - controller owner mismatch runs no selector/creative/poster, releases its lease once before the manager wake, retires only the invalid row, sets `replacement_requested`, gives the reused incident a future retry, and wakes only the account manager once without `-k`;
    - immediate replay does not create another incident, duplicate canonical incident event, second account retirement, second failure Telegram, or second simultaneous manager process.
 5. Synchronize only the three directly affected stale assertions in `test_capafy_marketing_outcome.sh`. Its pre-change baseline is `34 passed / 3 failed` because a verified publication now correctly emits three canonical events while the old assertions expect two. Update those three expected counts to three; do not change production event emission to satisfy the stale expectations.
 
