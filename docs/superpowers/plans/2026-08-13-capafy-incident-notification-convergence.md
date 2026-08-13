@@ -33,7 +33,7 @@
 
 **Interfaces:** Consume the lifecycle's existing `incident_id`, the exact registry row carrying that incident, and the existing handoff session-recovery contract. Produce the existing `replacement_waiting` result with `session_recovery=true`, stable reason `active Instagram browser tab is missing`, the exact retired handle, bounded future RFC3339 retry, and a plain repair detail.
 
-- [ ] After lifecycle snapshot, resolve exactly one `session_failed` browser-owned registry row whose `incident_id` equals the lifecycle incident. Zero or multiple matches do not take the recovery shortcut and fail closed to the existing generic technical path.
+- [ ] After lifecycle snapshot, count all `session_failed` browser-owned registry rows whose `incident_id` equals the lifecycle incident before validating the handle. Only one raw candidate with a valid Capafy handle may shortcut; zero, multiple, or one invalid candidate fails closed to the existing generic technical path.
 - [ ] For that exact match, write the stable session-recovery `replacement_waiting` result and exit `1` before handoff, browser lease, provisioning prompt, or model execution. Calling the current handoff would fingerprint the fixed recovery reason, reopen an older incident, rewrite lifecycle ownership, and recursively wake the manager. Item 9c owns the next account mutation.
 - [ ] Do not retire another row, wake the manager recursively, create another incident fingerprint, or send a second failure Telegram. The handoff remains the sole incident writer.
 - [ ] Preserve successful account-created, malformed-row, missing-credential, failed-verifier, lock, sender-recovery, and challenge behavior.
@@ -52,7 +52,7 @@
 - [ ] For unresolved incidents, any existing non-empty terminal reservation means already notified/reserved; exit zero even if repair text or retry changes the newly rendered key.
 - [ ] For a first unresolved notification, persist the key before Telegram. For a closure, reserve its distinct closure key on the current phase before Telegram. Replay after sender failure/crash never invokes Telegram twice.
 - [ ] Accept only exactly one line `TELEGRAM_SENT=true MSGID=<digits>` with sender exit zero; reject substrings, false markers, blank IDs, and multiline output.
-- [ ] After strict success, persist the numeric ID and complete the existing unresolved or verified transition. Event-store conflicts remain fatal.
+- [ ] Closure business verification is independent from Telegram delivery. After reserving, a sender failure still completes the incident to `verified` with explicit `telegram_delivery_status=reserved_unconfirmed`, no fabricated message ID, and a nonzero monitor exit; replay stays silent and the hourly Japanese report is the completeness path. Strict sender success records the numeric ID and `telegram_delivery_status=confirmed`. Unresolved sender failure remains reserved/unresolved. Event-store conflicts remain fatal.
 - [ ] Add regressions for changed-retry existing reservation, first-send failure then replay, spoofed/multiline output, and strict success. Preserve verified stale-sidecar silence and repair closure semantics.
 
 ## Direct verification
