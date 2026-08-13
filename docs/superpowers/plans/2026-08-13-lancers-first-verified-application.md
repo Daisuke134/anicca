@@ -567,11 +567,11 @@ name to equal the immutable URL username.
 
 Actual production scope: 1 production file, 1 test file, 11 production additions / 2 deletions. No manual proposal adoption and no second submit.
 
-- [ ] **Step 1: Install the same exact main SHA in normal mode**
+- [x] **Step 1: Install the same exact main SHA in normal mode**
 
 Run installer with `LANCERS_INSTALL_MODE=normal`; verify the only artifact difference is manifest mode and absence of `--reconcile-only` in ProgramArguments. Re-run installed-file hashes.
 
-- [ ] **Step 2: Preflight the real acquisition boundary**
+- [x] **Step 2: Preflight the real acquisition boundary**
 
 Require public discovery available, CDP `127.0.0.1:9227` reachable, account session ready, planner route available, no existing application process/lock, capacity below 100%, and current state/ledger readable. Capture ledger receipt count and both pending entries before the wake.
 
@@ -583,17 +583,17 @@ for row, decision in eligible[:1]:
 
 Keep `eligible_count` truthful as the number the planner marked eligible, but require `verified_count <= 1` and one external submit at most per tick. Do not add a quota service, new state, new config, or capacity framework in G1. G3 may later raise the bounded batch after measured demand, but a one-item batch remains within its stated maximum.
 
-- [ ] **Step 3: Enable and kick the one official launchd owner once**
+- [x] **Step 3: Enable and kick the one official launchd owner once**
 
 Announce the production scheduler state change, then enable/bootstrap/kickstart exactly as in Task 5. Do not run the Python entrypoint manually and do not trigger a second wake.
 
-- [ ] **Step 4: Verify the external effect end to end**
+- [x] **Step 4: Verify the external effect end to end**
 
 Accept only if one newly discovered project has an official buyer-industry field plus exact public evidence for SNS scope, ongoing work, and external delegation; price at least ¥98,000; conservative projected margin at least 70%; tailored proposal fields; one persisted intent; one provider submit; official proposal ID readback; and exactly one new unique `ApplicationReceipt`. Verify neither `5585496` nor `5586112` was resubmitted.
 
 If no qualified project exists, report truthful `no_eligible_project`, leave net MRR unknown, keep the scheduled lane enabled for its normal 30-minute ticks, and continue watching future official wakes; do not weaken ICP/margin gates to manufacture a success.
 
-- [ ] **Step 5: Close G1 and clean development workspace**
+- [x] **Step 5: Close G1 and clean development workspace**
 
 Update the spec with observed provider ID/receipt evidence without secrets or buyer-private text. Commit and push main. Confirm launchd ProgramArguments point to the exact main SHA release, git main is clean/upstream, and delete the temporary feature/integration worktrees only after deployment verification. Keep runtime state and ledger untouched except for verified transaction transitions.
 
