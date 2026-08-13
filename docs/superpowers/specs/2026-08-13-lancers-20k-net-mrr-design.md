@@ -664,6 +664,30 @@ application launchdはenabledのまま維持する。G2は新しい収益lane、
 application state、application launchdの最終valid JSON、公式storefront四状態、既存durable outboxを再利用する。
 通常summaryは一日一回、state change / incident / recoveryだけ即時とし、同じ状態を5分ごとに再送しない。
 
+G2の実装は既存launchd labelと5分pollを維持するが、legacy 1,161行のreporter/observabilityを移植しない。
+canonical releaseへ最小report tickと既存`telegram_outbox.py`のbyte-compatible snapshotだけを置く。
+report tickは同じapplication account lockを使うread-only observerであり、lock busy時はprovider画面へ入らず
+`account_lock_busy`をtruthful blockerとして扱う。application transaction、state、ledger、listingを変更しない。
+
+一つのsnapshotは次だけを持つ。
+
+- acquisition最終valid JSONの`observed_count / eligible_count / submitted / verified_count / reason / error`
+- application stateのpending件数とledgerのcumulative `application_verified`件数
+- ledger最新receiptの`observed_at`を`official_readback_observed_at`として表示する
+- official storefrontの受付中 / 受付休止中 / 非表示 / 下書きとlatest listing readback error
+- actual AI costはmeter未接続なら`unknown`。qualificationの予測費をactualと呼ばない
+- `source_observed_at`はlocal observation time、provider event timeは`unknown`として分離する
+
+dedupe keyは`lancers:g2:<JST YYYY-MM-DD>:<semantic-status-sha256>`とする。時刻文字列をhashへ入れず、
+同じsemantic stateは同日一回、同日中にfunnel/pending/blocker/storefront状態が変わった時だけもう一回送る。
+翌日は同じ状態でもdaily summaryを一回送る。provider message IDを受けた時だけdeliveredとし、送信開始後の
+receipt欠落はdelivery uncertainへ隔離してblind retryしない。`partial / failed / readback mismatch`は`⚠️`、
+全必須sourceが正常な時だけ`✅`を使う。
+
+変更規模のsoft targetはhandwritten production 180 LOC以下、既存outbox snapshotを除いてproduction 2 files、
+installer/launchd 2 files、test 2 filesである。application loop、marketplace ledger schema、新DB、新service、
+report envelope framework、CloudEvents、ML/agent compositionは作らない。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
