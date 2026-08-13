@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gig application planner decisions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decisions"],
+  "properties": {
+    "decisions": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "eligibility",
+          "reason_codes",
+          "proposal_text",
+          "price_jpy",
+          "deliver_date",
+          "qualification"
+        ],
+        "properties": {
+          "request_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "eligibility": {"enum": ["eligible", "ineligible"]},
+          "reason_codes": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1}
+          },
+          "proposal_text": {"type": ["string", "null"], "minLength": 200, "maxLength": 3000},
+          "price_jpy": {"type": ["integer", "null"], "minimum": 1},
+          "deliver_date": {
+            "type": ["string", "null"],
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "qualification": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": [
+              "small_b2b_evidence",
+              "sns_staff_evidence",
+              "expected_platform_fee_jpy",
+              "expected_ai_cost_jpy",
+              "expected_subcontractor_cost_jpy",
+              "expected_revision_refund_allowance_jpy",
+              "cost_source_version"
+            ],
+            "properties": {
+              "small_b2b_evidence": {"type": "string", "minLength": 4, "maxLength": 240},
+              "sns_staff_evidence": {"type": "string", "minLength": 4, "maxLength": 240},
+              "expected_platform_fee_jpy": {"type": "integer", "minimum": 0},
+              "expected_ai_cost_jpy": {"type": "integer", "minimum": 0},
+              "expected_subcontractor_cost_jpy": {"type": "integer", "minimum": 0},
+              "expected_revision_refund_allowance_jpy": {"type": "integer", "minimum": 0},
+              "cost_source_version": {"const": "lancers-g1-conservative-v1"}
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "eligibility": {"const": "eligible"}
+              }
+            },
+            "then": {
+              "required": ["proposal_text", "price_jpy", "deliver_date", "qualification"],
+              "properties": {
+                "proposal_text": {"type": "string", "minLength": 200, "maxLength": 3000},
+                "price_jpy": {"type": "integer", "minimum": 98000},
+                "deliver_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+                "qualification": {"type": "object"}
+              }
+            },
+            "else": {
+              "required": ["proposal_text", "price_jpy", "deliver_date", "qualification"],
+              "properties": {
+                "proposal_text": {"type": "null"},
+                "price_jpy": {"type": "null"},
+                "deliver_date": {"type": "null"},
+                "qualification": {"type": "null"}
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
