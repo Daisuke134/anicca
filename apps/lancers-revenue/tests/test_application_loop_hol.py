@@ -110,6 +110,30 @@ def _ineligible_decision(project_id: str) -> dict[str, object]:
 
 
 class ApplicationLoopHolTests(unittest.TestCase):
+    def test_default_discovery_query_targets_g1_revenue_lane(self):
+        application_loop = _load_deployed_loop()
+        queries = []
+
+        def discoverer(**kwargs):
+            queries.append(kwargs["query"])
+            return {"ok": True, "error": None, "opportunities": []}
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            application_loop.run_loop(
+                state_path=root / "application.json",
+                evidence_root=root / "evidence",
+                discoverer=discoverer,
+            )
+            application_loop.run_loop(
+                state_path=root / "application.json",
+                evidence_root=root / "evidence",
+                discoverer=discoverer,
+                query="explicit-query",
+            )
+
+        self.assertEqual(queries, ["SNS運用", "explicit-query"])
+
     def test_invoke_planner_uses_canonical_agent_runner_arguments(self):
         application_loop = _load_deployed_loop()
         calls = []
