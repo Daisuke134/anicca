@@ -34,7 +34,7 @@
 - Produces: `render` stdout as Japanese plain text; `delivery-key` stdout as a stable non-secret key; `delivered` exit `0` when that key already exists and exit `1` otherwise; `record-delivery --message-id N` atomically appends one successful record to the bounded state.
 - Environment used by the shell: `CAPAFY_REPORT_KIND` (`hourly|morning|daily_close|event`) and optional `CAPAFY_REPORT_PERIOD_KEY`. An unset kind defaults to `morning`; default keys are JST `YYYY-MM-DDTHH` for hourly, `YYYY-MM-DD` for morning/daily close, and `<event_reason>:<last_event_id>` for event.
 
-- [ ] **Step 1: Add the seven failing golden-message tests**
+- [x] **Step 1: Add the seven failing golden-message tests**
 
 Add parameterized fixtures for `healthy`, `unchanged`, `stale_metrics`, `sale`, `published`, `repair_closed`, and `unresolved`. Each exact message asserts a Japanese heading, money summary, freshness, Builder, Marketer, repair/next action, Capafy listing URL, Reel/content URL, and dashboard URL. The unresolved fixture contains a private-path-shaped source error and raw enum inputs, then asserts none of these tokens appear:
 
@@ -52,7 +52,7 @@ def test_japanese_owner_report_golden_cases(case):
     assert not any(token in result.stdout for token in FORBIDDEN)
 ```
 
-- [ ] **Step 2: Run the golden tests and confirm RED**
+- [x] **Step 2: Run the golden tests and confirm RED**
 
 Run:
 
@@ -62,7 +62,7 @@ python3 -m pytest -q skills/earn/capafy-marketing/tests/test_capafy_goal_monitor
 
 Expected: collection or invocation fails because `capafy_owner_report.py` does not exist.
 
-- [ ] **Step 3: Add failing period-key and delivery-ledger tests**
+- [x] **Step 3: Add failing period-key and delivery-ledger tests**
 
 Cover all four report kinds, invalid/missing kinds and keys, same-period retry, the next unchanged hourly period, an event inserted between hourly retries, two distinct event identities, legacy delivery-state migration, corrupt-state fail-closed behavior, a failed-send no-record assertion at the shell boundary, mode `0600`, atomic JSON validity, and retention at exactly 256 entries. The key assertions are:
 
@@ -75,7 +75,7 @@ assert key(event("sale", "capafy:order.received:2026-08-13")) == (
 assert already_delivered("hourly:2026-08-13T17", state_after_event) is True
 ```
 
-- [ ] **Step 4: Run delivery tests and confirm RED**
+- [x] **Step 4: Run delivery tests and confirm RED**
 
 Run:
 
@@ -85,7 +85,7 @@ python3 -m pytest -q skills/earn/capafy-marketing/tests/test_capafy_goal_monitor
 
 Expected: the current projection-only delivery state cannot distinguish periods and cannot retain non-adjacent keys.
 
-- [ ] **Step 5: Implement the minimal deterministic helper**
+- [x] **Step 5: Implement the minimal deterministic helper**
 
 Create `capafy_owner_report.py` with four commands. Reuse `capafy_outcome.validate_outcome(company_state)` before rendering. Map every supported raw state to Japanese and map unknown values to `不明`; never echo an unknown raw value. Compute change reasons in this priority order: explicit `event_reason`, paid/order increase, new public Reel, prior active incident now absent, current active incident, unchanged projection, healthy status. Render fixed sections in this order:
 
@@ -105,7 +105,7 @@ Reel: https://www.instagram.com/reel/DbhCWLhorxy/
 
 Use `json.dumps`, `tempfile.mkstemp`, `os.fsync`, and `os.replace` for state. Store only `delivery_key`, `projection_id`, `telegram_message_id`, and UTC `delivered_at`; reject non-numeric message IDs and malformed/private envelope data.
 
-- [ ] **Step 6: Integrate the existing goal monitor**
+- [x] **Step 6: Integrate the existing goal monitor**
 
 In `capafy-goal-monitor.sh`, read the previous `company_state` before appending the current report history, derive or accept the report kind/key, write one private temporary envelope, and call the helper. Replace the projection-only comparison with:
 
@@ -123,7 +123,7 @@ fi
 
 Preserve the existing incident-on-send-failure behavior. Do not install or change launchd schedules in this task.
 
-- [ ] **Step 7: Run focused and full verification**
+- [x] **Step 7: Run focused and full verification**
 
 Run:
 
@@ -137,10 +137,19 @@ git diff --check
 
 Expected: all PASS. Also render the current production projection read-only and assert Japanese text contains `累計5件（有料2件）`, `$19.98`, the Capafy skill, Reel, and dashboard URLs, while the forbidden-token set is absent.
 
-- [ ] **Step 8: Fresh adversarial review and one correction round**
+- [x] **Step 8: Fresh adversarial review and one correction round**
 
 Review the exact commit read-only. Attack period collisions, timezone boundaries, event-between-period retries, state truncation, legacy/corrupt state, failed-send recording, duplicate Telegram, raw enum/path/trace leakage, missing URLs, unknown paid count, zero-dollar attribution, false repair closure, and English leakage. Send Critical/Important findings back to the same implementer once, then rerun Step 7 without a second review cycle.
 
-- [ ] **Step 9: Production cross-run and close the spec item**
+- [x] **Step 9: Production cross-run and close the spec item**
 
 Run the existing goal monitor with a unique test hourly period key and the real Telegram sender; require exit `0`, a real `MSGID`, and Japanese 5 / 2 / `$19.98` text. Repeat the identical period key and require no new message and byte-identical delivery state. Run the next hourly period key with unchanged projection and require exactly one new message. Update the authoritative Capafy spec with commits, test counts, message IDs, delivery-state hashes, and remaining stale sources; commit and push before Item 6.
+
+## Closure evidence
+
+- Implementation commits: `e8b0265f0`, `2786983ad`, `ffdfdf3ef`, and `90216887c`; merged as `455424e86`.
+- Fresh parent verification: all Marketing tests `358 passed`; adversarial counterexamples `7 passed`; Python compile, Bash syntax, and diff checks passed.
+- The single fresh adversarial review reproduced duplicate concurrent sends/lost delivery updates, spoofed sender success, unsafe URL/handle leakage, false event reasons, unsafe state modes, and invalid calendar periods. The same Luna implementer corrected them; no second review cycle was run.
+- Production launchd runs 9–11 all exited `0`. `hourly:2026-08-13T17` delivered Telegram `15899`; its identical retry preserved the one-row delivery-state SHA-256 `846a6ca42222ac580ddfd76c5239a195beb0a529ef0a0bd3ffc27105b65789fc`; `hourly:2026-08-13T18` delivered Telegram `15900` and produced the two-row SHA-256 `d812ae6a16c9ffc3dd5b2200eac40e173939b54c039ec1cc6cadfafa2918e4dc`.
+- The real Japanese body renders 5 lifetime orders, 2 paid orders, `$19.98`, freshness, Builder, Marketer, repair/next action, listing, Reel/content, and dashboard URLs with no forbidden raw token. The canonical revenue ledger stayed at 409 rows with SHA-256 `2729ed05e5504f9c6c26f684dca27fd35cdd2bc02d670a4971c0ffd5c6dc023e` across all three runs.
+- Remaining truthful stale sources are inventory, Instagram account, Marketing, and cost. Scheduling remains deliberately deferred to Item 6.
