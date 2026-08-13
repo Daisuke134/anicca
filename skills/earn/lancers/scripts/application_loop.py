@@ -345,7 +345,7 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     if not eligible:
         return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project"), observed_count, 0, (), ())
     verified, blocked = [], []
-    for row, decision in eligible:
+    for row, decision in eligible[:1]:
         project_id, proposal = str(row["external_id"]), str(decision["proposal_text"])
         amount, due = int(decision["price_jpy"]), str(decision["deliver_date"])
         try:
