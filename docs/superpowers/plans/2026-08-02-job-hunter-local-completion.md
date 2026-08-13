@@ -977,11 +977,16 @@ evidence until the primary has independently inspected and adopted it.
   event is authoritative only when its route/provider/channel match a delivered ATS
   route, its immutable delivered route event, and a distinct positive
   `confirmed_application` outcome with `evidence_source=ats` and the same evidence
-  hash. For both production-shaped fixtures, two reconciliation runs must append no
-  correction or replay event, retain `current_state=submitted` and
-  `ever_submitted=true`, and keep Guardian healthy. Existing false outreach-only
-  correction and Gmail/Ashby authority behavior must remain unchanged. Terra edits
-  only `ledger.py` and `test_route_executor.py`; the real ledger remains read-only.
+  hash. A durable authoritative submission followed by the legacy outreach-only
+  `submitted -> email_sent` regression cannot be both append-only and healthy without
+  an explicit repair event: the first reconciliation therefore appends exactly one
+  evidence-bound `email_sent -> submitted` restoration, never the false
+  `submit_unknown` correction; the second reconciliation appends nothing. Both
+  fixtures retain `current_state=submitted` and `ever_submitted=true`, and Guardian
+  validates the restoration from the same durable evidence. Existing false
+  outreach-only correction and Gmail/Ashby authority behavior remain unchanged.
+  Terra edits only `ledger.py`, `guardian.py`, and `test_route_executor.py`; the real
+  ledger remains read-only.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
