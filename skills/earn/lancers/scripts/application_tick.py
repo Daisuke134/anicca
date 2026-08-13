@@ -47,6 +47,7 @@ SubmissionNotStarted = shared.SubmissionNotStarted
 account_lock = shared.account_lock
 load_marketplace_contracts = shared.load_marketplace_contracts
 read_pending_descriptor = shared.read_pending_descriptor
+read_pending_descriptors = shared.read_pending_descriptors
 
 
 def run_tick(**kwargs):
@@ -595,7 +596,7 @@ def _default_proposal_reader(page: Any, project_id: str) -> Mapping[str, object]
 
         heading = _one(page.locator("a.p-simpleProposal-list__heading-title")).nth(0)
         heading_text = " ".join(heading.inner_text().split())
-        if heading_text != f"{username} さんの提案":
+        if re.fullmatch(r"\S.{0,99} さんの提案", heading_text) is None:
             return {}
         heading_href = heading.get_attribute("href")
         parsed_heading = urlsplit(heading_href or "")
@@ -883,7 +884,15 @@ def run_live_tick(
         if not _production_account_ready(page):
             return TickResult(ok=False, error="account_unavailable", project_id=str(project_id))
         pending_claim = _state_has_claim(state_path, str(project_id))
-        pending_terms = read_pending_descriptor(state_path) if pending_claim else {}
+        pending_terms = next(
+            (
+                descriptor
+                for descriptor in read_pending_descriptors(state_path)
+                if isinstance(descriptor, Mapping)
+                and descriptor.get("project_id") == str(project_id)
+            ),
+            {},
+        ) if pending_claim else {}
         if not pending_claim:
             try:
                 _production_prepare(page, str(project_id), proposed_amount_minor, delivery_due_on)
