@@ -13,9 +13,15 @@ class TerraDefaultTest(unittest.TestCase):
             if not candidates:
                 continue
             with self.subTest(task_class=name):
-                self.assertEqual(candidates, [
+                expected = [
                     {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
-                ])
+                ]
+                if name == "application-intent-planner":
+                    expected = [
+                        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
+                        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
+                    ]
+                self.assertEqual(candidates, expected)
 
 
 if __name__ == "__main__":
