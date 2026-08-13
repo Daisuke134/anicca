@@ -684,7 +684,9 @@ dedupe keyは`lancers:g2:<JST YYYY-MM-DD>:<semantic-status-sha256>`とする。�
 receipt欠落はdelivery uncertainへ隔離してblind retryしない。`partial / failed / readback mismatch`は`⚠️`、
 全必須sourceが正常な時だけ`✅`を使う。
 
-変更規模のsoft targetはhandwritten production 180 LOC以下、既存outbox snapshotを除いてproduction 2 files、
+RED後の実測で、snapshot/render/dedupe/delivery/CLIだけで265 LOCを要し、公式`/myplan`四状態readerと
+account lockがまだ含まれないことを確認した。180 LOC見積りはacceptanceを欠くため撤回する。変更規模の
+soft targetはhandwritten reporter 320 LOC以下、既存outbox snapshotを除いてproduction 2 files、
 installer/launchd 2 files、test 2 filesである。application loop、marketplace ledger schema、新DB、新service、
 report envelope framework、CloudEvents、ML/agent compositionは作らない。
 
