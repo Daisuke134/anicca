@@ -29,17 +29,39 @@ runtime state、receipt、ledger は外部に残す。この仕様は runtime st
 ```text
 net_mrr_usd = recorded_fx(
   gross_monthly_receipts_jpy
-  - lancers_fees_jpy
+  - platform_fee_jpy
   - ai_cost_jpy
   - subcontractor_cost_jpy
   - refunds_jpy
 )
 ```
 
-- `gross_monthly_receipts_jpy` は、その月額契約について実際に受領した額だけである。
-- Lancers 手数料、AI 原価、外注原価、返金は、契約または支払に紐づく実額を控除する。
+- `gross_monthly_receipts_jpy` は、Lancers が `confirmed/received` とした、手数料控除前の月額対価である。
+- `platform_fee_jpy` は、Lancers の provider 明細にある手数料の実額である。
+- `bank_settlement_jpy` は同じ provider payout batch に帰属する実際の銀行入金額であり、net の式に追加控除として入れない。
+- `refunds_jpy` は同じ契約に帰属する provider-confirmed refund の実額である。AI 原価と外注原価もそれぞれ別項目として契約または支払に紐づける。
+- `provider_adjustments_jpy` は provider settlement 明細に記載された調整額だけであり、net の原価や fee に自動分類しない。
+- provider の payout 対象額は別式で照合する。
+
+```text
+provider_payout_target_jpy =
+  gross_monthly_receipts_jpy
+  - platform_fee_jpy
+  - refunds_jpy
+  + provider_adjustments_jpy
+
+bank_reconciliation_delta_jpy =
+  bank_settlement_jpy - provider_payout_target_jpy
+```
+
+`provider_payout_target_jpy` は provider の settlement 明細から再計算し、
+`bank_reconciliation_delta_jpy` は `0` または provider adjustment の根拠付きでなければならない。
+手数料は net の式と payout target の各一回だけに現れ、bank settlement を再度 fee として控除しない。
+provider payout target、fee 明細、銀行入金のいずれかが未取得なら reconciliation は `unknown` とし、
+MRR gate を開けない。
+
+- `PaymentReceipt` が `received` であることを必須とし、未受領の請求、提案額、見積額、予測、未受領の offer、単発売上は MRR に含めない。
 - 為替は集計時に都合よく選ばず、取得時刻とレートを記録した `recorded_fx` を使う。
-- `PaymentReceipt` がない請求、提案額、見積額、予測、未受領の offer、単発売上は MRR に含めない。
 - 単発売上は別の `one_off_revenue` として表示し、gross MRR と net MRR に混ぜない。
 - `$20,000` の受入判定と `$25,000` の安全目標は、同じ式・同じ証憑で検証する。
 
@@ -59,6 +81,10 @@ flowchart LR
   J --> K[公式納品 readback]
   K --> L[PaymentReceipt received]
   L --> M[gross monthly receipts]
+  L --> Q[provider payout target + fee statement]
+  Q --> R[bank settlement readback]
+  R --> S[bank reconciliation matched]
+  S --> M
   M --> N[fee / AI / subcontract / refund を実額控除]
   N --> O[記録済み FX で USD 換算]
   O --> P[net MRR USD]
@@ -74,7 +100,7 @@ flowchart LR
 | 観測 | 事実 | 計上・運用上の意味 |
 |---|---|---|
 | 応募 | `application_verified` が 11 件 | 公式応募 ID の readback は観測済みだが、売上を意味しない |
-| 作業・納品・支払 | `WorkEvent` 0、`DeliveryReceipt` 0、`PaymentReceipt` 0 | revenue は **¥0**。active recurring contract も受入証拠なし |
+| 作業・納品・支払 | `WorkEvent`、`DeliveryReceipt`、`PaymentReceipt` は記録なし。baseline ledger revenue は **¥0** | 記録なしは source が official empty readback のときだけ 0 と表示し、active recurring contract の受入証拠はない |
 | 不確実な応募 | project `5585496` が null-ID pending のまま繰り返し `submission_uncertain` | この job だけを隔離すべきで、現状は head-of-line (HOL) で discovery を止める |
 | storefront | duplicate listing が 6 件。canonical receipt ID は `1338233` | 重複表示は販売実績ではなく、readback と重複排除の問題 |
 | storefront observability | 4 状態を合算し、合計を `unprocessed` として表示 | `partial 6/6 official_timestamp_missing` という誤解を生む |
@@ -90,7 +116,12 @@ flowchart LR
 ### 3.1 ICP
 
 対象は、**SNS 担当者が 0 人または 1 人の日本の小規模 B2B 企業**である。
-依頼内容が B2B でなく、SNS 運用の継続課題が見えない案件は応募対象外とする。
+`qualified` は keyword 一致ではなく、公開案件本文または企業 profile に、日本の小規模 B2B で
+あることと SNS 担当者 0–1 人の証拠がある状態とする。literal な人数表記がない案件では、
+専任担当者がいない、代表または少人数で兼務している、初めて SNS 担当を募集している、を
+強い proxy として認める。人数の明示も proxy もない pure unknown は G1 の qualified にしない。
+clarification の一問で後から unknown を qualified に昇格させる設計にもせず、最初の応募前に
+この証拠を揃える。依頼内容が B2B でなく、SNS 運用の継続課題が見えない案件も応募対象外とする。
 
 ### 3.2 商品境界
 
@@ -117,7 +148,7 @@ flowchart LR
 
 capacity は、契約が要求する base drafts と revision 最大数を合わせた draft-equivalent
 で記録する。Founding は 16、Standard は 24、Premium は 72 units を一契約の上限消費と
-する。初期 intake cap は Founding 3 社分の 48 units/月とし、3 社を超える契約は、実際の
+する。capacity 使用率は、active contract が予約した units を現行 cap で割って求める。初期 intake cap は Founding 3 社分の 48 units/月とし、3 社を超える契約は、実際の
 支払・納品時間・原価を測定して cap を更新するまで受けない。cap を自動で増やしたり、
 スコープ外作業を capacity に隠したりしない。
 
@@ -181,9 +212,25 @@ SNS運用、SNS投稿、コンテンツ制作、X運用、LinkedIn、B2Bマー�
 AI活用、継続依頼、長期、月額
 ```
 
+projected net gross margin は proposal 時点の JPY 見積で次の式に固定する。
+
+```text
+projected_net_gross_margin = (
+  proposal_price_jpy
+  - expected_platform_fee_jpy
+  - expected_ai_cost_jpy
+  - expected_subcontractor_cost_jpy
+  - expected_revision_refund_allowance_jpy
+) / proposal_price_jpy
+```
+
+各 `expected_*` は算定 source と version を記録し、`projected_net_gross_margin < 70%` は
+不適格とする。実績の fee、AI、外注、refund は別の finance ledger で照合し、projected 値で
+net MRR を計上しない。
+
 次をすべて満たさない案件は応募しない。
 
-- 日本語で、日本の B2B SNS 業務である。
+- 日本語で、日本の小規模 B2B SNS 業務であり、SNS 担当者 0–1 人の明示証拠または強い proxy がある。
 - remote で完結する。
 - 顧客パスワードを要求しない。
 - 直接投稿、広告費の取り扱い、電話営業、訪問を要求しない。
@@ -207,9 +254,10 @@ planner 一つの決定で次の順に評価する。ML ranking system は導入
 
 ### 5.3 応募上限と重複防止
 
-- 最初の 3 active contract までは一 tick 最大 2 応募、Japan day あたり最大 10 応募。
-- capacity 消費が 70% に達したら acquisition を遅くする。
-- 90% に達したら Premium 候補だけを受け付ける。
+- 最初の 3 active recurring contracts に到達するまでは、capacity に応じて次を守る。
+- capacity 使用率が 70% 未満なら、一 tick 最大 2 応募、Japan day あたり最大 10 応募。
+- 70% 以上 90% 未満なら、一 tick 最大 1 応募、Japan day あたり最大 5 応募。
+- 90% 以上なら Premium 候補だけを一 tick 最大 1 件受け付け、増分後の使用率が 100% 以下になる場合に限る。それ以外は pause する。
 - 同一会社または同一 job に重複応募しない。
 - `submission_uncertain` は当該 job だけを quarantine し、別 job の discovery・応募を止めない。
 
@@ -222,6 +270,9 @@ proposal は次の五要素を持つ。一般的な「AI で効率化できま�
 3. channel 数、draft 数、revision cap
 4. 価格と due date
 5. 継続 scope と、必要な clarification **一問だけ**
+
+この clarification は、既に揃っている qualified 証拠の不足を埋めるためには使わない。
+pure unknown を G1 の qualified に変える質問は送らない。
 
 ## 6. 応募後から契約までの状態
 
@@ -319,6 +370,7 @@ active contract ごとに durable な brand context を保持し、月次で次�
 - storefront は `published`、`paused`、`hidden`、`draft` を別々に表示する。四状態の合計を `unprocessed` と呼ばない。
 - `listing_readback_mismatch` に成功アイコンを付けない。
 - 応募は `observed`、`qualified`、`submitted`、`verified` を別々に表示する。
+- `0` は provider の official empty readback または ledger で検証済みの zero に限る。記録なしの観測、source failure、missing timestamp は `unknown` / `unverified` と表示する。
 - selector、内部 timestamp code、内部 lock code は通常の owner report に出さない。
 - state change、incident、recovery は直ちに報告し、正常な executive summary は一日一回にまとめる。
 - report には active recurring contracts、gross MRR、net MRR、delivery status、実際の costs、次の automatic action を含める。
@@ -328,8 +380,9 @@ active contract ごとに durable な brand context を保持し、月次で次�
 ```text
 Lancers baseline
 - application_verified: 11
-- WorkEvent: 0 / DeliveryReceipt: 0 / PaymentReceipt: 0
-- gross MRR: ¥0 / net MRR: USD 0
+- WorkEvent: unknown (official empty readback 未確認) / DeliveryReceipt: unknown (official empty readback 未確認) / PaymentReceipt: unknown (official empty readback 未確認)
+- gross MRR: ¥0 (ledger verified zero) / net MRR: USD 0 (ledger verified zero)
+- bank settlement: unknown (provider payout target と銀行 readback 未確認)
 - storefront: published・paused・hidden・draft を個別表示
 - storefront incident: duplicate listing 6 件、canonical receipt 1338233、latest readback mismatch
 - quarantined job: 5585496 (submission_uncertain)
@@ -337,7 +390,7 @@ Lancers baseline
 ```
 
 この report は「11 件応募したので売上見込みがある」「listing 6 件なので未処理」とは
-言わない。未検証の値は `0` または状態名で表し、推測値を補わない。
+言わない。未検証の値は `unknown` / `unverified` または状態名で表し、推測値を補わない。
 
 ## 10. 段階的 acceptance gate
 
@@ -347,13 +400,13 @@ Lancers baseline
 | Gate | 受入条件 | 必須証拠 |
 |---|---|---|
 | G0 定義 | MRR 式、商品境界、4 lane、receipt 順序、安全不変条件がこの仕様と一致する | 仕様レビュー記録 |
-| G1 first slice | 一件の新規 qualified job を発見し、tailored proposal を一度 submit し、公式 proposal ID を readback し、`ApplicationReceipt` を正確に一件 append する。`5585496` は二重 submit されず、別 job の discovery を止めない | 新規 job の provider ID、intent/effect/readback/receipt、5585496 quarantine 証拠、独立 discovery 証拠 |
+| G1 first slice | 日本の小規模 B2B と SNS 担当者 0–1 人の明示証拠または強い proxy、および 70% 以上の projected margin がある新規 qualified job を発見し、tailored proposal を一度 submit し、公式 proposal ID を readback し、`ApplicationReceipt` を正確に一件 append する。`5585496` は二重 submit されず、別 job の discovery を止めない | ICP の証拠/proxy、margin 式と各見積 source、provider ID、intent/effect/readback/receipt、5585496 quarantine 証拠、独立 discovery 証拠 |
 | G2 truthful acquisition | storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | 6 duplicate listing を成功扱いしない report と state-change report |
-| G3 profitable acquisition | hard filter、70% margin、recurring/B2B ranking、proposal 固定構造、capacity 70%/90% 制御、重複防止が実際に働く | qualified/ineligible 判定、margin 算定、応募上限、duplicate 拒否の readback |
+| G3 profitable acquisition | 最初の 3 active recurring contracts まで、hard filter、固定式による 70% margin、recurring/B2B ranking、proposal 固定構造、capacity 使用率別 quota（<70%=2/10、70–<90%=1/5、>=90%=Premium のみかつ 100% 以下）、重複防止が実際に働く | qualified/ineligible 判定、ICP 証拠/proxy、margin 算定と各 source、応募上限、duplicate 拒否の readback |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
-| G6 finance | `PaymentReceipt received` と銀行 settlement を照合し、fee・AI・subcontract・refund を実額で控除し、FX を記録して net MRR を再計算できる | provider receipt、銀行照合、cost attribution、ledger、計算結果 |
-| G7 target | active recurring Lancers contracts の net MRR が USD 20,000 以上。USD 25,000 は内部安全目標として別表示する | 複数契約の active readback、全 PaymentReceipt、全 cost、recorded FX、再計算可能な ledger |
+| G6 finance | `PaymentReceipt received`、provider payout target、fee 明細、銀行 settlement を照合し、`bank_reconciliation_delta_jpy=0` または根拠付き adjustment とする。net 式では fee・AI・subcontract・refund を実額で一度だけ控除し、FX を記録して net MRR を再計算できる | provider receipt、payout target、fee 明細、銀行照合、cost attribution、ledger、計算結果 |
+| G7 target | active recurring Lancers contracts の net MRR が USD 20,000 以上。USD 25,000 は内部安全目標として別表示する | 複数契約の active readback、全 PaymentReceipt、全 cost、recorded FX、`bank_reconciliation=matched` または根拠付き adjustment、再計算可能な ledger |
 
 G1 が閉じるまで、product mutation、negotiation、fulfillment、新規 common kernel、新規 DB、
 multi-account、別 marketplace は開始しない。
@@ -398,9 +451,7 @@ product version、proposal version、job type ごとの net MRR、retention、re
 一度に一変数だけを変え、劣化したら戻す。最初の payment 前に learning infrastructure や ML
 ranking を作らない。
 
-後段の各 slice は Superpowers の writing-plans → using-git-worktrees →
-subagent-driven-development → TDD RED/GREEN → requesting/receiving-code-review →
-verification-before-completion → finishing branch の workflow で実施する。fresh adversarial
+後段の各 slice は既存の Superpowers workflow（writing-plans → using-git-worktrees → subagent-driven-development → TDD RED/GREEN → requesting/receiving-code-review → verification-before-completion → finishing branch）を参照する。fresh adversarial
 subagent は一次証拠で Critical / Important のみを block とし、Minor / nitpick は記録する。
 fix と scoped review は一 slice 最大 3 round とし、3 round 後も load-bearing issue が残る
 場合は round 4 を行わず、systematic debugging または architecture に戻る。
@@ -411,7 +462,7 @@ fix と scoped review は一 slice 最大 3 round とし、3 round 後も load-b
 |---|---|---|
 | Best | 最初の 3 Founding 社が実支払・継続し、納品原価を保ったまま Standard/Premium へ拡張。例示構成の 3/10/7 契約を active 化し、recorded FX と実費控除後に USD 20,000 を超える | ¥5,060,000 は gross の例であり、net MRR は証憑からのみ確定する。USD 25,000 は安全目標として別 gate |
 | Base | Founding 3 社を先に閉じ、capacity と margin を実測してから一件ずつ Standard/Premium を追加。支払・retention・revision cost が揃わない期間は target を未達のまま正直に表示 | proposal、offer、未受領請求を足して target 到達とは言わない |
-| Worst | qualified job は見つかっても buyer が月額契約・支払に進まず、または原価・revision が margin を壊す | `PaymentReceipt=0` なら net MRR は ¥0 相当として停止・原因報告し、応募数で穴埋めしない |
+| Worst | qualified job は見つかっても buyer が月額契約・支払に進まず、または原価・revision が margin を壊す | `PaymentReceipt` が official empty readback または ledger verified zero なら net MRR は ¥0 相当として停止・原因報告し、source failure なら `unknown` とする。応募数で穴埋めしない |
 
 Best でも構成と為替は仮定であり、受入は G6/G7 の実証だけである。Base と Worst を
 正常な結果として報告できることも設計の一部である。
@@ -434,7 +485,7 @@ storefront と応募件数を成長指標にしてから商品と payment を考
 案件母数を増やし、空振りを減らせるように見える。
 
 しかしこれは、現状の `submission_uncertain` が HOL を止め、duplicate listing が 6 件あり、
-`WorkEvent`・`DeliveryReceipt`・`PaymentReceipt` がすべて 0 という一次観測を隠す。さらに
+`WorkEvent`・`DeliveryReceipt`・`PaymentReceipt` に記録がないという一次観測を隠す。さらに
 Lancers fee、AI 原価、revision cost、返金を追跡できず、応募の成功を MRR の成功と誤認する。
 まず一つの Lancers lane で、公式 readback・一意 receipt・実支払までの境界を閉じる方が、
 失敗時に戻せて実際の収益を測定できる。したがってこの代替案は採用しない。
