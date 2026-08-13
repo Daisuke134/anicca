@@ -5,16 +5,19 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 
 SCRIPT = Path(__file__).parents[1] / "capafy_business_health.py"
 HEALTHCHECK = Path(__file__).parents[1] / "capafy-loop-healthcheck.sh"
 
 
-def run_health(state: Path) -> subprocess.CompletedProcess[str]:
+def run_health(state: Path, **overrides: str) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["CAPAFY_OUTCOME_STATE_DIR"] = str(state)
     env["CAPAFY_RECONCILIATION_LEDGER"] = str(state / "capafy-earn-ledger.jsonl")
     env["CAPAFY_REPORT_DELIVERY_STATE"] = str(state / "capafy-goal-monitor-delivery.json")
+    env.update(overrides)
     return subprocess.run(
         [sys.executable, str(SCRIPT)], text=True, capture_output=True, env=env, check=False
     )
@@ -237,13 +240,14 @@ def test_stale_reconciliation_routes_only_to_builder(tmp_path: Path) -> None:
     assert result.returncode != 0
     assert json.loads(result.stdout) == {
         "reason": "stale_reconciliation",
+        "repair_action": "kickstart",
         "repair_label": "ai.anicca.capafy-loop-daily",
         "repair_owner": "builder",
         "status": "unhealthy",
     }
 
 
-def test_missing_hourly_report_routes_only_to_company(tmp_path: Path) -> None:
+def test_missing_hourly_report_routes_only_to_hourly_job(tmp_path: Path) -> None:
     write_reconciliation_ledger(tmp_path)
     write_delivery_state(tmp_path, [delivery("daily_close:2026-08-13")])
 
@@ -253,10 +257,11 @@ def test_missing_hourly_report_routes_only_to_company(tmp_path: Path) -> None:
     payload = json.loads(result.stdout)
     assert payload["reason"] == "owner_report_missing"
     assert payload["repair_owner"] == "company"
-    assert payload["repair_label"] == "ai.anicca.capafy-goal-monitor"
+    assert payload["repair_action"] == "kickstart"
+    assert payload["repair_label"] == "ai.anicca.capafy-goal-monitor-hourly"
 
 
-def test_missing_daily_close_report_routes_only_to_company(tmp_path: Path) -> None:
+def test_missing_daily_close_report_routes_only_to_daily_close_job(tmp_path: Path) -> None:
     write_reconciliation_ledger(tmp_path)
     write_delivery_state(tmp_path, [delivery("hourly:2026-08-13T17")])
 
@@ -266,7 +271,8 @@ def test_missing_daily_close_report_routes_only_to_company(tmp_path: Path) -> No
     payload = json.loads(result.stdout)
     assert payload["reason"] == "owner_report_missing"
     assert payload["repair_owner"] == "company"
-    assert payload["repair_label"] == "ai.anicca.capafy-goal-monitor"
+    assert payload["repair_action"] == "kickstart"
+    assert payload["repair_label"] == "ai.anicca.capafy-goal-monitor-daily-close"
 
 
 def test_overdue_marketer_incident_routes_only_to_marketer(tmp_path: Path) -> None:
@@ -287,10 +293,11 @@ def test_overdue_marketer_incident_routes_only_to_marketer(tmp_path: Path) -> No
     payload = json.loads(result.stdout)
     assert payload["reason"] == "repair_sla_expired"
     assert payload["repair_owner"] == "marketer"
+    assert payload["repair_action"] == "kickstart"
     assert payload["repair_label"] == "ai.anicca.capafy-ig-marketing-daily"
 
 
-def test_unknown_incident_owner_routes_to_fixed_company_owner(tmp_path: Path) -> None:
+def test_unknown_incident_owner_routes_to_fixed_integrity_self_fix(tmp_path: Path) -> None:
     write_business_baseline(tmp_path)
     write(
         tmp_path / "capafy-incidents" / "unknown.json",
@@ -307,8 +314,9 @@ def test_unknown_incident_owner_routes_to_fixed_company_owner(tmp_path: Path) ->
     assert result.returncode != 0
     payload = json.loads(result.stdout)
     assert payload["reason"] == "unknown_incident_owner"
-    assert payload["repair_owner"] == "company"
-    assert payload["repair_label"] == "ai.anicca.capafy-goal-monitor"
+    assert payload["repair_owner"] == "integrity"
+    assert payload["repair_action"] == "self_fix"
+    assert "repair_label" not in payload
 
 
 def test_malformed_delivery_state_routes_to_company(tmp_path: Path) -> None:
@@ -321,7 +329,9 @@ def test_malformed_delivery_state_routes_to_company(tmp_path: Path) -> None:
     result = run_health(tmp_path)
 
     assert result.returncode != 0
-    assert json.loads(result.stdout)["reason"] == "owner_report_missing"
+    payload = json.loads(result.stdout)
+    assert payload["reason"] == "owner_report_missing"
+    assert payload["repair_label"] == "ai.anicca.capafy-goal-monitor-hourly"
 
 
 def test_healthcheck_kickstarts_only_an_allowlisted_routed_owner(tmp_path: Path) -> None:
@@ -367,6 +377,18 @@ def test_healthcheck_kickstarts_only_an_allowlisted_routed_owner(tmp_path: Path)
     ]
     assert not fixer_calls.exists()
 
+    hourly = {**routed, "repair_label": "ai.anicca.capafy-goal-monitor-hourly"}
+    write_executable(checker, f"#!/usr/bin/env bash\nprintf '%s\\n' '{json.dumps(hourly)}'\nexit 1\n")
+
+    result = subprocess.run(["bash", str(HEALTHCHECK)], text=True, capture_output=True, env=env, check=False)
+
+    assert result.returncode != 0
+    assert launchctl_calls.read_text().splitlines() == [
+        f"kickstart gui/{os.getuid()}/ai.anicca.capafy-ig-marketing-daily",
+        f"kickstart gui/{os.getuid()}/ai.anicca.capafy-goal-monitor-hourly",
+    ]
+    assert not fixer_calls.exists()
+
     unknown = {**routed, "repair_label": "ai.anicca.attacker-controlled"}
     write_executable(checker, f"#!/usr/bin/env bash\nprintf '%s\\n' '{json.dumps(unknown)}'\nexit 1\n")
 
@@ -374,6 +396,139 @@ def test_healthcheck_kickstarts_only_an_allowlisted_routed_owner(tmp_path: Path)
 
     assert result.returncode != 0
     assert launchctl_calls.read_text().splitlines() == [
-        f"kickstart gui/{os.getuid()}/ai.anicca.capafy-ig-marketing-daily"
+        f"kickstart gui/{os.getuid()}/ai.anicca.capafy-ig-marketing-daily",
+        f"kickstart gui/{os.getuid()}/ai.anicca.capafy-goal-monitor-hourly",
     ]
     assert not fixer_calls.exists()
+
+    integrity = {
+        "status": "unhealthy",
+        "reason": "unknown_incident_owner",
+        "repair_owner": "integrity",
+        "repair_action": "self_fix",
+    }
+    write_executable(checker, f"#!/usr/bin/env bash\nprintf '%s\\n' '{json.dumps(integrity)}'\nexit 1\n")
+
+    result = subprocess.run(["bash", str(HEALTHCHECK)], text=True, capture_output=True, env=env, check=False)
+
+    assert result.returncode != 0
+    assert launchctl_calls.read_text().splitlines() == [
+        f"kickstart gui/{os.getuid()}/ai.anicca.capafy-ig-marketing-daily",
+        f"kickstart gui/{os.getuid()}/ai.anicca.capafy-goal-monitor-hourly",
+    ]
+    assert fixer_calls.read_text().splitlines() == ["capafy Capafy business-outcome watchdog: integrity health check failed."]
+
+
+@pytest.mark.parametrize("name,value", [
+    ("CAPAFY_BUSINESS_OUTCOME_MAX_HOURS", "0"),
+    ("CAPAFY_REPAIR_SLA_MINUTES", "nan"),
+    ("CAPAFY_RECONCILIATION_MAX_HOURS", "inf"),
+    ("CAPAFY_HOURLY_REPORT_MAX_MINUTES", "-1"),
+    ("CAPAFY_DAILY_CLOSE_MAX_HOURS", "not-a-number"),
+])
+def test_invalid_thresholds_route_to_integrity_self_fix(
+    tmp_path: Path, name: str, value: str
+) -> None:
+    write_business_baseline(tmp_path)
+    write(tmp_path / "capafy-builder-terminal.json", {"recorded_at": iso(), "outcome": {"kind": "builder_submitted"}})
+
+    result = run_health(tmp_path, **{name: value})
+
+    assert result.returncode != 0
+    assert json.loads(result.stdout) == {
+        "reason": "invalid_health_configuration",
+        "repair_action": "self_fix",
+        "repair_owner": "integrity",
+        "status": "unhealthy",
+    }
+
+
+@pytest.mark.parametrize("timestamp", ["2026-08-13T17:00:00", "not-a-time"])
+def test_naive_or_invalid_delivery_timestamp_is_missing(tmp_path: Path, timestamp: str) -> None:
+    write_reconciliation_ledger(tmp_path)
+    row = delivery("hourly:2026-08-13T17")
+    row["delivered_at"] = timestamp
+    write_delivery_state(tmp_path, [row, delivery("daily_close:2026-08-13")])
+
+    result = run_health(tmp_path)
+
+    assert result.returncode != 0
+    assert json.loads(result.stdout)["repair_label"] == "ai.anicca.capafy-goal-monitor-hourly"
+
+
+def test_future_observations_cannot_be_healthy(tmp_path: Path) -> None:
+    ledger = write_reconciliation_ledger(tmp_path)
+    future = (datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()
+    os.utime(ledger, (future, future))
+    write_delivery_state(
+        tmp_path,
+        [delivery("hourly:2026-08-13T17", -60), delivery("daily_close:2026-08-13", -60)],
+    )
+    write(tmp_path / "capafy-builder-terminal.json", {"recorded_at": iso(minutes_ago=-60), "outcome": {"kind": "builder_submitted"}})
+
+    result = run_health(tmp_path)
+
+    assert result.returncode != 0
+    assert json.loads(result.stdout)["reason"] == "stale_reconciliation"
+
+
+@pytest.mark.parametrize("recorded_at", ["2026-08-13T17:00:00", iso(minutes_ago=-60)])
+def test_naive_or_future_terminal_timestamp_cannot_be_healthy(
+    tmp_path: Path, recorded_at: str
+) -> None:
+    write_business_baseline(tmp_path)
+    write(
+        tmp_path / "capafy-builder-terminal.json",
+        {"recorded_at": recorded_at, "outcome": {"kind": "builder_submitted"}},
+    )
+
+    result = run_health(tmp_path)
+
+    assert result.returncode != 0
+    assert json.loads(result.stdout)["reason"] == "no_recent_business_outcome"
+
+
+def test_future_delivery_and_incident_timestamp_cannot_be_healthy(tmp_path: Path) -> None:
+    write_reconciliation_ledger(tmp_path)
+    write_delivery_state(
+        tmp_path,
+        [delivery("hourly:2026-08-13T17", -60), delivery("daily_close:2026-08-13")],
+    )
+    write(
+        tmp_path / "capafy-incidents" / "future.json",
+        {
+            "incident_id": "future",
+            "owner": "builder",
+            "phase": "repair_started",
+            "updated_at": iso(minutes_ago=-60),
+        },
+    )
+
+    result = run_health(tmp_path)
+
+    assert result.returncode != 0
+    assert json.loads(result.stdout)["repair_label"] == "ai.anicca.capafy-goal-monitor-hourly"
+
+    write_business_baseline(tmp_path)
+    result = run_health(tmp_path)
+
+    assert result.returncode != 0
+    assert json.loads(result.stdout)["repair_label"] == "ai.anicca.capafy-loop-daily"
+
+
+@pytest.mark.parametrize("field,value", [
+    ("delivery_key", "hourly:2026-02-30T25"),
+    ("projection_id", "sha256:" + "A" * 64),
+    ("telegram_message_id", "not-numeric"),
+])
+def test_invalid_delivery_proof_cannot_be_healthy(tmp_path: Path, field: str, value: str) -> None:
+    write_reconciliation_ledger(tmp_path)
+    row = delivery("hourly:2026-08-13T17")
+    row[field] = value
+    write_delivery_state(tmp_path, [row, delivery("daily_close:2026-08-13")])
+    write(tmp_path / "capafy-builder-terminal.json", {"recorded_at": iso(), "outcome": {"kind": "builder_submitted"}})
+
+    result = run_health(tmp_path)
+
+    assert result.returncode != 0
+    assert json.loads(result.stdout)["repair_label"] == "ai.anicca.capafy-goal-monitor-hourly"

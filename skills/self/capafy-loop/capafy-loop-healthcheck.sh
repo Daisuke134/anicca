@@ -36,14 +36,39 @@ try: print(json.loads(sys.argv[1]).get("repair_label") or "")
 except Exception: print("")
 PY
 )"
+  REPAIR_ACTION="$(python3 - "$BUSINESS_HEALTH_JSON" <<'PY'
+import json,sys
+try: print(json.loads(sys.argv[1]).get("repair_action") or "")
+except Exception: print("")
+PY
+)"
+  REPAIR_OWNER="$(python3 - "$BUSINESS_HEALTH_JSON" <<'PY'
+import json,sys
+try: print(json.loads(sys.argv[1]).get("repair_owner") or "")
+except Exception: print("")
+PY
+)"
+  ROUTING_METADATA="$(python3 - "$BUSINESS_HEALTH_JSON" <<'PY'
+import json,sys
+try:
+    payload=json.loads(sys.argv[1])
+    print("1" if isinstance(payload,dict) and any(key in payload for key in ("repair_action","repair_label","repair_owner")) else "0")
+except Exception: print("0")
+PY
+)"
   echo "$(date '+%F %T') unhealthy $BUSINESS_HEALTH_JSON" >> "$LOG"
   case "$REPAIR_LABEL" in
-    ai.anicca.capafy-loop-daily|ai.anicca.capafy-ig-marketing-daily|ai.anicca.capafy-goal-monitor)
+    ai.anicca.capafy-loop-daily|ai.anicca.capafy-ig-marketing-daily|ai.anicca.capafy-goal-monitor|ai.anicca.capafy-goal-monitor-hourly|ai.anicca.capafy-goal-monitor-daily-close)
       "$LAUNCHCTL" kickstart "gui/$(id -u)/$REPAIR_LABEL" >> "$LOG" 2>&1 || true
       ;;
-    "")
+    *)
+      if [ "$REPAIR_ACTION" = "self_fix" ] && [ "$REPAIR_OWNER" = "integrity" ]; then
+        CAPAFY_INCIDENT_ID="" bash "$FIXER" capafy \
+          "Capafy business-outcome watchdog: integrity health check failed." >> "$LOG" 2>&1 || true
+      elif [ "$ROUTING_METADATA" = "0" ]; then
       CAPAFY_INCIDENT_ID="$INCIDENT_ID" bash "$FIXER" capafy \
         "Capafy business-outcome watchdog: $REASON. Evidence: $BUSINESS_HEALTH_JSON" >> "$LOG" 2>&1 || true
+      fi
       ;;
   esac
   exit 1
