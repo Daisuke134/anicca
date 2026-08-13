@@ -258,6 +258,27 @@ def semantic_event_bytes(event: dict) -> bytes:
     return canonical_event_bytes(semantic)
 
 
+def _is_legacy_incident_duplicate(prior: dict, prepared: dict) -> bool:
+    """Recognize only exact semantic replay under a new occurrence suffix."""
+
+    event_id = prepared["event_id"]
+    if not event_id.startswith("capafy:incident."):
+        return False
+    legacy_id = next(
+        (
+            event_id.split(marker, 1)[0]
+            for marker in (":attempt-", ":occurrence-")
+            if marker in event_id
+        ),
+        None,
+    )
+    if legacy_id is None or prior["event_id"] != legacy_id:
+        return False
+    old = {**prior, "event_id": legacy_id, "technical_evidence_ref": legacy_id}
+    current = {**prepared, "event_id": legacy_id, "technical_evidence_ref": legacy_id}
+    return semantic_event_bytes(old) == semantic_event_bytes(current)
+
+
 def _read_events_unlocked(ledger: Path) -> list[dict]:
     if not ledger.exists():
         return []
@@ -353,6 +374,19 @@ def append_event(
                         _write_sidecar(evidence_dir, prepared["event_id"], evidence)
                     )
             return AppendResult(prepared["event_id"], False, len(existing), evidence_path)
+
+        # A prior ledger may contain the pre-occurrence-suffix ID. Alias only
+        # an exact incident replay; all ordinary event-id conflicts stay strict.
+        for prior in existing:
+            if not _is_legacy_incident_duplicate(prior, prepared):
+                continue
+            prior_sidecar = evidence_dir / f"{prior['event_id']}.json"
+            return AppendResult(
+                prepared["event_id"],
+                False,
+                len(existing),
+                str(prior_sidecar) if prior_sidecar.exists() else None,
+            )
 
         evidence_path = None
         if evidence is not None:

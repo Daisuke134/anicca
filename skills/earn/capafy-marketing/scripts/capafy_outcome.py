@@ -71,6 +71,17 @@ def _is_timestamp(value: Any) -> bool:
     return True
 
 
+def _normalized_timestamp(value: Any) -> str | None:
+    if not _is_timestamp(value):
+        return None
+    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(timezone.utc).isoformat(timespec="seconds").replace(
+        "+00:00", "Z"
+    )
+
+
 def validate_outcome(data: dict) -> list[str]:
     errors: list[str] = []
     if data.get("schema_version") != 1:
@@ -595,17 +606,31 @@ def transition_incident(
     if phase != current and phase not in INCIDENT_PHASES.get(current, set()):
         raise ValueError(f"incident phase cannot move backwards: {current} -> {phase}")
     if current == "unresolved" and phase == "repair_started":
-        record["attempts"] = int(record.get("attempts", 0)) + 1
+        record["attempts"] = int(record.get("attempts") or 0) + 1
     now = _now()
+    new_occurrence = phase != current
+    if phase == current:
+        for field in ("summary", "repair_summary", "verification", "outcome"):
+            if field in update and update[field] != record.get(field):
+                new_occurrence = True
     # Retry scheduling is a machine contract. Older callers supplied prose
     # such as "the next repair cycle", which made the health watchdog treat a
     # real retry as missing forever. Preserve the incident but repair that
     # boundary to a concrete, near-term retry timestamp.
     if phase == "unresolved":
+        previous_retry_at = _normalized_timestamp(record.get("next_retry_at"))
         retry_at = update.get("next_retry_at", record.get("next_retry_at"))
-        if not _is_timestamp(retry_at):
+        normalized_retry_at = _normalized_timestamp(retry_at)
+        if normalized_retry_at is None and current == "unresolved":
+            normalized_retry_at = previous_retry_at
+        if normalized_retry_at is None:
             retry_dt = datetime.fromisoformat(now.replace("Z", "+00:00")) + timedelta(hours=1)
-            update["next_retry_at"] = retry_dt.isoformat().replace("+00:00", "Z")
+            normalized_retry_at = retry_dt.isoformat(timespec="seconds").replace(
+                "+00:00", "Z"
+            )
+        update["next_retry_at"] = normalized_retry_at
+        if normalized_retry_at != previous_retry_at:
+            new_occurrence = True
     for field in (
         "phase",
         "summary",
@@ -620,7 +645,18 @@ def transition_incident(
             record[field] = update[field]
     phase_timestamps = record.setdefault("phase_timestamps", {})
     phase_timestamps.setdefault("detected", record.get("detected_at") or now)
-    phase_timestamps.setdefault(phase, now)
+    phase_occurrences = record.setdefault("phase_occurrences", {})
+    if new_occurrence:
+        try:
+            occurrence = int(phase_occurrences.get(phase) or 0)
+        except (TypeError, ValueError):
+            occurrence = 0
+        if occurrence == 0 and phase in phase_timestamps:
+            occurrence = 1
+        phase_occurrences[phase] = occurrence + 1
+        phase_timestamps[phase] = now
+    else:
+        phase_timestamps.setdefault(phase, now)
     record["updated_at"] = now
     _atomic_json_write(path, record)
     if event_writer is not None:

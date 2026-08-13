@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import subprocess
@@ -10,9 +11,38 @@ SCRIPTS = Path(__file__).parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import capafy_event_adapters as adapters
+import capafy_event_store as store
 
 
 OCCURRED_AT = "2026-08-01T20:32:53Z"
+
+
+def incident_record(
+    phase: str = "unresolved",
+    *,
+    retry_at: str | None = "2026-08-07T04:50:52Z",
+    attempts: int = 0,
+) -> dict:
+    return {
+        "schema_version": 1,
+        "incident_id": "capafy-marketer-20260803T070010Z-99b1374a",
+        "owner": "capafy-marketer",
+        "phase": phase,
+        "detected_at": "2026-08-03T07:00:10Z",
+        "updated_at": "2026-08-07T04:00:00Z",
+        "phase_timestamps": {
+            "detected": "2026-08-03T07:00:10Z",
+            "repair_started": "2026-08-03T07:01:00Z",
+            "repaired": "2026-08-03T07:02:00Z",
+            "verified": "2026-08-03T07:03:00Z",
+            "unresolved": "2026-08-07T04:00:00Z",
+        },
+        "summary": "Canonical revenue source sync failed.",
+        "repair_summary": "The retry did not restore the canonical writer.",
+        "verification": {"event_sync_succeeded": True} if phase == "verified" else None,
+        "next_retry_at": retry_at,
+        "attempts": attempts,
+    }
 
 
 def builder_submitted() -> dict:
@@ -178,6 +208,70 @@ def test_source_identity_is_deterministic_and_changes_with_source() -> None:
     assert first[0]["source"] == retry[0]["source"]
     assert first[0]["source"]["source_digest"].startswith("sha256:")
     assert first[0]["source"]["source_digest"] != mutated[0]["source"]["source_digest"]
+
+
+def test_unresolved_retry_occurrences_coexist_with_legacy_row_and_replay_exactly(
+    tmp_path: Path,
+) -> None:
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    evidence_dir = tmp_path / "evidence"
+    legacy_record = incident_record(retry_at=None)
+    legacy_event = adapters.event_from_incident(legacy_record)
+    assert legacy_event["event_id"] == (
+        "capafy:incident.unresolved:capafy-marketer-20260803T070010Z-99b1374a"
+    )
+    assert store.append_event(ledger, legacy_event, legacy_record, evidence_dir).appended
+
+    current_record = copy.deepcopy(legacy_record)
+    current_record["next_retry_at"] = "2026-08-07T04:50:52Z"
+    current_event = adapters.event_from_incident(current_record)
+    assert current_event["event_id"] == (
+        "capafy:incident.unresolved:capafy-marketer-20260803T070010Z-99b1374a:retry-20260807T045052Z"
+    )
+    first = store.append_event(ledger, current_event, current_record, evidence_dir)
+    retry = store.append_event(
+        ledger,
+        adapters.event_from_incident(current_record),
+        current_record,
+        evidence_dir,
+    )
+
+    assert first.appended is True
+    assert retry.appended is False
+    assert len(store.read_events(ledger)) == 2
+
+    changed = copy.deepcopy(current_record)
+    changed["next_retry_at"] = "2026-08-07T05:50:52Z"
+    changed_result = store.append_event(
+        ledger,
+        adapters.event_from_incident(changed),
+        changed,
+        evidence_dir,
+    )
+    assert changed_result.appended is True
+    assert len(store.read_events(ledger)) == 3
+
+
+def test_recurrent_incident_phases_use_attempt_suffix_but_attempt_zero_ids_stay_legacy() -> None:
+    first_cycle = [
+        adapters.event_from_incident(incident_record(phase, attempts=0))
+        for phase in ("repair_started", "repaired", "verified")
+    ]
+    recurring_cycle = [
+        adapters.event_from_incident(incident_record(phase, attempts=1))
+        for phase in ("repair_started", "repaired", "verified")
+    ]
+
+    assert [event["event_id"] for event in first_cycle] == [
+        "capafy:incident.repair_started:capafy-marketer-20260803T070010Z-99b1374a",
+        "capafy:incident.repaired:capafy-marketer-20260803T070010Z-99b1374a",
+        "capafy:incident.verified:capafy-marketer-20260803T070010Z-99b1374a",
+    ]
+    assert [event["event_id"] for event in recurring_cycle] == [
+        "capafy:incident.repair_started:capafy-marketer-20260803T070010Z-99b1374a:attempt-1",
+        "capafy:incident.repaired:capafy-marketer-20260803T070010Z-99b1374a:attempt-1",
+        "capafy:incident.verified:capafy-marketer-20260803T070010Z-99b1374a:attempt-1",
+    ]
 
 
 def test_append_outcome_cli_uses_source_mtime_and_retries_without_duplicates(

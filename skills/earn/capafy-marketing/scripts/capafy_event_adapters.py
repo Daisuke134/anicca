@@ -310,6 +310,40 @@ def _utc_timestamp(value: Any) -> str | None:
     )
 
 
+def _phase_occurrence(record: dict, phase: str) -> int:
+    try:
+        return int((record.get("phase_occurrences") or {}).get(phase) or 0)
+    except (AttributeError, TypeError, ValueError):
+        return 0
+
+
+def _incident_event_id(record: dict, occurred_phase: str) -> str:
+    incident_id = str(record["incident_id"])
+    event_id = f"capafy:incident.{occurred_phase}:{incident_id}"
+    occurrence = _phase_occurrence(record, occurred_phase)
+    if occurred_phase == "unresolved":
+        retry_at = _utc_timestamp(record.get("next_retry_at"))
+        if retry_at is not None:
+            compact_retry = retry_at.replace("-", "").replace(":", "")
+            event_id = f"{event_id}:retry-{compact_retry}"
+            if occurrence > 1:
+                event_id = f"{event_id}:occurrence-{occurrence}"
+            return event_id
+        return event_id
+    try:
+        attempts = int(record.get("attempts") or 0)
+    except (TypeError, ValueError):
+        attempts = 0
+    if occurred_phase in {"repair_started", "repaired", "verified"} and attempts > 0:
+        event_id = f"{event_id}:attempt-{attempts}"
+        if occurrence > attempts + 1:
+            event_id = f"{event_id}:occurrence-{occurrence}"
+        return event_id
+    if occurrence > 1:
+        return f"{event_id}:occurrence-{occurrence}"
+    return event_id
+
+
 def event_from_incident(record: dict) -> dict:
     """Translate one persisted incident phase into a retry-stable public event."""
 
@@ -338,8 +372,15 @@ def event_from_incident(record: dict) -> dict:
         "repair_summary": record.get("repair_summary"),
         "verification": record.get("verification"),
         "outcome": record.get("outcome"),
-        "next_retry_at": record.get("next_retry_at"),
+        "next_retry_at": (
+            _utc_timestamp(record.get("next_retry_at"))
+            if phase == "unresolved"
+            else record.get("next_retry_at")
+        ),
     }
+    occurrence = _phase_occurrence(record, phase)
+    if occurrence > 1:
+        phase_source["occurrence"] = occurrence
     urls: list[str] = []
     outcome = record.get("outcome")
     if isinstance(outcome, dict):
@@ -358,7 +399,7 @@ def event_from_incident(record: dict) -> dict:
     if phase in {"repaired", "verified"} and record.get("repair_summary"):
         summary = str(record["repair_summary"])
     retry_at = _utc_timestamp(record.get("next_retry_at")) if phase == "unresolved" else None
-    event_id = f"capafy:incident.{phase}:{incident_id}"
+    event_id = _incident_event_id(record, phase)
     event = _event(
         event_id=event_id,
         event_type=f"incident.{phase}",

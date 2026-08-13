@@ -13,6 +13,7 @@ SCRIPTS = Path(__file__).parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import capafy_event_store as store
+import capafy_event_adapters as adapters
 from capafy_event_store import validate_event
 
 
@@ -49,6 +50,20 @@ def valid_event() -> dict:
             "source_digest": "sha256:" + "a" * 64,
         },
         "next": {"owner": "marketer", "retry_at": None},
+    }
+
+
+def verified_incident(*, attempts: int) -> dict:
+    return {
+        "schema_version": 1,
+        "incident_id": "capafy-marketer-20260801T201313Z-6b646dbe",
+        "owner": "marketer",
+        "phase": "verified",
+        "phase_timestamps": {"verified": "2026-08-01T20:40:03Z"},
+        "summary": "The repair completed.",
+        "repair_summary": "The owner session was restored.",
+        "verification": {"business_outcome_validated": True},
+        "attempts": attempts,
     }
 
 
@@ -165,6 +180,41 @@ def test_same_id_with_different_semantic_payload_is_a_conflict(tmp_path: Path) -
         store.append_event(ledger, event, None, tmp_path / "evidence")
 
     assert len(ledger.read_text().splitlines()) == 1
+
+
+def test_legacy_incident_id_is_a_duplicate_of_exact_new_attempt_occurrence(
+    tmp_path: Path,
+) -> None:
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    evidence_dir = tmp_path / "evidence"
+    legacy_record = verified_incident(attempts=0)
+    current_record = verified_incident(attempts=1)
+    legacy = adapters.event_from_incident(legacy_record)
+    current = adapters.event_from_incident(current_record)
+
+    assert legacy["event_id"] != current["event_id"]
+    first = store.append_event(ledger, legacy, legacy_record, evidence_dir)
+    replay = store.append_event(ledger, current, current_record, evidence_dir)
+
+    assert first.appended is True
+    assert replay.appended is False
+    assert len(store.read_events(ledger)) == 1
+
+
+def test_new_recurrent_occurrence_is_not_aliased_to_legacy_row(tmp_path: Path) -> None:
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    evidence_dir = tmp_path / "evidence"
+    legacy_record = verified_incident(attempts=0)
+    recurring_record = verified_incident(attempts=1)
+    recurring_record["phase_occurrences"] = {"verified": 2}
+    legacy = adapters.event_from_incident(legacy_record)
+    recurring = adapters.event_from_incident(recurring_record)
+
+    store.append_event(ledger, legacy, legacy_record, evidence_dir)
+    result = store.append_event(ledger, recurring, recurring_record, evidence_dir)
+
+    assert result.appended is True
+    assert len(store.read_events(ledger)) == 2
 
 
 def test_concurrent_writers_append_exactly_one_line(tmp_path: Path) -> None:

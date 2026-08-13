@@ -1,4 +1,5 @@
 import json
+import copy
 import subprocess
 import sys
 from pathlib import Path
@@ -8,6 +9,7 @@ SCRIPTS = Path(__file__).parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import capafy_event_sync as sync
+import capafy_event_store as store
 
 
 def test_sales_row_emits_order_gross_without_recognizing_contribution() -> None:
@@ -295,6 +297,52 @@ def test_incident_replay_uses_phase_timestamp_not_mutable_updated_at() -> None:
         "capafy:incident.unresolved:capafy-company-20260804T003008Z-9109bc73"
     )
     assert events[-1]["occurred_at"] == "2026-08-04T00:30:09Z"
+
+
+def test_sync_runtime_appends_retry_occurrence_after_legacy_unresolved_row(
+    tmp_path: Path,
+) -> None:
+    current = {
+        "schema_version": 1,
+        "incident_id": "capafy-marketer-20260803T070010Z-99b1374a",
+        "owner": "capafy-marketer",
+        "phase": "unresolved",
+        "detected_at": "2026-08-03T07:00:10Z",
+        "updated_at": "2026-08-07T04:50:52Z",
+        "phase_timestamps": {
+            "detected": "2026-08-03T07:00:10Z",
+            "unresolved": "2026-08-07T04:00:00Z",
+        },
+        "summary": "Canonical revenue source sync failed.",
+        "next_retry_at": "2026-08-07T04:50:52Z",
+        "attempts": 1,
+    }
+    legacy = copy.deepcopy(current)
+    legacy["next_retry_at"] = None
+    legacy_event = sync.event_from_incident(legacy)
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    evidence_dir = tmp_path / "evidence"
+    detected = copy.deepcopy(legacy)
+    detected["phase"] = "detected"
+    detected["phase_timestamps"] = {"detected": current["detected_at"]}
+    store.append_event(
+        ledger, sync.event_from_incident(detected), detected, evidence_dir
+    )
+    store.append_event(ledger, legacy_event, legacy, evidence_dir)
+
+    observed = sync.events_from_verified_runtime({}, {}, [current])
+    first = [
+        store.append_event(ledger, event, current, evidence_dir) for event in observed
+    ]
+    retry = [
+        store.append_event(ledger, event, current, evidence_dir) for event in observed
+    ]
+
+    assert sum(result.appended for result in first) == 1
+    assert sum(result.appended for result in retry) == 0
+    assert len(store.read_events(ledger)) == 3
+    unresolved = [event for event in observed if event["event_type"] == "incident.unresolved"]
+    assert unresolved[0]["event_id"].endswith(":retry-20260807T045052Z")
 
 
 def test_sync_all_cli_backfills_once_and_keeps_exact_cost_private(tmp_path: Path) -> None:
