@@ -1,0 +1,25 @@
+Capafy observability/recovery handover
+
+HANDOVER_MARKER: CAPAFY-HANDOVER-20260813-1236-54a8fac78
+
+Handover:
+/Users/anicca/anicca/.claude/handovers/2026-08-13_1236_capafy-observability.md
+
+Spec / remaining TODO SSOT:
+/Users/anicca/anicca/docs/superpowers/specs/2026-08-01-capafy-self-improving-revenue-loop-design.md
+Section: Current atomic queue — authoritative order
+
+Verified state:
+- Capafy API: 5 orders / 2 paid / $19.98 gross / $0 refunds.
+- Local ledger and Telegram/company projection are stale at 1 order / $9.99.
+- Goal monitor and Marketer last exit 2; incident monitor repeats event conflicts despite exit 0; healthcheck is not loaded.
+- No hourly report or 23:50 daily-close production job exists.
+- First implementation item is authoritative money reconciliation before reporting and before Builder CAP_FULL.
+- Existing shared worktree is dirty with unrelated runtime changes; do not reset, clean, stash, switch, or overwrite it.
+
+Fresh-session prompt:
+
+/goal Capafy skillsをLife Manager repo上で、正しい売上、自然な日本語Telegram、business-observableで閉じるself-healing、収益で学ぶself-improvementを備えたno-human loopとして本番E2E検証済みにする。最初に `/Users/anicca/anicca/.claude/handovers/2026-08-13_1236_capafy-observability.md` と `/Users/anicca/anicca/docs/superpowers/specs/2026-08-01-capafy-self-improving-revenue-loop-design.md` の `Current atomic queue — authoritative order` を読み、git/runtimeを再実測して差異を先にspecへ反映する。Doneは、Capafy server money truthとledger/company/TGが一致し、毎時HH:00と23:50日次報告が期間ごとに一度届き、Builder/Marketerが各wakeでverified outcome/no-op/convergent incidentのいずれかを自然文と実URLで返し、watchdogがloaded、repairが元business observable再実行で閉じ、1回の実E2E再実行が重複外部作用を起こさず、その後7日間のno-human監査が欠落・矛盾・手動代行ゼロを示すこと。売上基準は現時点で5 orders / 2 paid / $19.98 gross / $0 refunds、zero-dollar ordersは意味を捏造しない。実装順はspecの15項目を厳守し、一度に先頭1項目だけTDD→live readback→spec更新→commit/pushで閉じる。Codex/人間が個別商品作成や投稿を代行せず、修理後は既存launchd loopをkickstartして検証する。fixture/mock、exit 0、code completion、scheduler loadedだけを成功扱いしない。外部投稿・商品変更はspec内の本来のloop作用だけに限定し、秘密を出力せず、既存の無関係なdirty changesを保持する。routing: repo `/Users/anicca/anicca`; shared dirty worktree/branch `feature/dist1-mcp-launchd` at verified `22dfc0cb983c763732b483edc73b33278854e52c`, upstream `origin/feature/dist1-mcp-launchd` はfetch/read-only確認だけでswitch/reset/clean/stash禁止。実装とspecはcommit `22dfc0cb9`から `/Users/anicca/anicca/.worktrees/capafy-observability-recovery` / `feature/capafy-observability-recovery` を作り、同branchをpush。Luna implementerをspawn_agentして各production-code sliceを実装させ、親はspec/統合/live E2Eを担当し、各slice後にfresh Sol adversarial verifierをspawn_agentしてdetached exact commitをread-only反証させる。正確性/課金/重複外部作用/secret/Doneに関する指摘は修正までblock。進捗は実測結果だけで報告し、specを常に更新する。3つの異なる修理でも同じ必須検証が失敗する、必要credential/capabilityがなく代替不能、または設計外の不可逆作用が必要な時だけ、証拠・試行・最小の人間行動を示してblockedにする。それ以外は計画で止まらずDoneまで継続する。
+
+Fallback prompt:
+上記handoverとspecだけを読み、現在のgit/runtimeをread-onlyで照合し、残TODOを日本語で列挙し、TO-BEのASCIIを描いて待機する。実装・投稿・launchd変更はしない。
