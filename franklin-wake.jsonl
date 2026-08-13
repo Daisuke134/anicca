@@ -27229,3 +27229,11 @@
 {"ts":1786652739,"wake_id":"00MSRYWSZC7547ADDCC56A4B54","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786652867,"wake_id":"00MSRYZJR7EA61CAFB2DE54E9F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786652996,"wake_id":"00MSRZ2B19E68B1424B22B4939","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786653126,"wake_id":"00MSRZ53K42709CCE786C04345","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786653254,"wake_id":"00MSRZ7U61E33A6945EF964C7D","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786653381,"wake_id":"00MSRZAKCB43D33925104F4632","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786653509,"wake_id":"00MSRZDARE91DDFF9D5825470B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786653635,"wake_id":"00MSRZG0CI3E4BA8BDA0B442F5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786653763,"wake_id":"00MSRZIQVG9BF789E6D36C4DE8","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786653891,"wake_id":"00MSRZLHRC994813B55BE04C27","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786654019,"wake_id":"00MSRZO8GMC63E9DEF66C44807","kind":"narrate","sleep_s":120,"model":"auto"}
