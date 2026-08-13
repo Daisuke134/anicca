@@ -118,7 +118,7 @@ def build_planner_prompt(rows: Sequence[Mapping[str, object]], today: date) -> s
     return PLANNER_RULES + json.dumps(_snapshot(rows, _tick_date(today)), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 def invoke_planner(prompt: str, evidence_dir: Path) -> Mapping[str, object]:
-    command = [sys.executable, str(AGENT_RUNNER), "--task-class", PLANNER_TASK_CLASS, "--prompt-stdin", "--schema", str(PLANNER_SCHEMA), "--evidence-dir", str(evidence_dir), "--task-label", "lancers-application-intent", "--loop", "lancers-application", "--workdir", str(SKILLS_ROOT.parent), "--timeout-seconds", str(PLANNER_TIMEOUT_SECONDS)]
+    command = [sys.executable, str(AGENT_RUNNER), "--task-class", PLANNER_TASK_CLASS, "--prompt-stdin", "--schema", str(PLANNER_SCHEMA), "--evidence-dir", str(evidence_dir), "--task-label", "lancers-application-intent", "--loop", "lancers-application", "--workdir", str(SKILLS_ROOT.parent)]
     try:
         completed = subprocess.run(command, input=prompt, text=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False, timeout=PLANNER_TIMEOUT_SECONDS + 30)
         if completed.returncode != 0: raise ValueError

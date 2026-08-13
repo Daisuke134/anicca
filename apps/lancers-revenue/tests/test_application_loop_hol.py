@@ -110,6 +110,48 @@ def _ineligible_decision(project_id: str) -> dict[str, object]:
 
 
 class ApplicationLoopHolTests(unittest.TestCase):
+    def test_invoke_planner_uses_canonical_agent_runner_arguments(self):
+        application_loop = _load_deployed_loop()
+        calls = []
+
+        def fake_run(command, **kwargs):
+            calls.append((command, kwargs))
+            return type("Completed", (), {"returncode": 0})()
+
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = Path(directory) / "evidence"
+            evidence.mkdir()
+            result_path = evidence / "result.json"
+            result_path.write_text(json.dumps({"decisions": []}), encoding="utf-8")
+            (evidence / "summary.json").write_text(
+                json.dumps({"status": "success", "result_path": str(result_path)}),
+                encoding="utf-8",
+            )
+            with patch.object(
+                application_loop.subprocess, "run", side_effect=fake_run
+            ):
+                result = application_loop.invoke_planner("planner prompt", evidence)
+
+        command = calls[0][0]
+        self.assertNotIn("--timeout-seconds", command)
+        for argument in (
+            "--task-class",
+            "application-intent-planner",
+            "--prompt-stdin",
+            "--schema",
+            str(application_loop.PLANNER_SCHEMA),
+            "--evidence-dir",
+            str(evidence),
+            "--task-label",
+            "lancers-application-intent",
+            "--loop",
+            "lancers-application",
+            "--workdir",
+            str(application_loop.SKILLS_ROOT.parent),
+        ):
+            self.assertIn(argument, command)
+        self.assertEqual(result, {"decisions": []})
+
     def test_normal_tick_submits_only_first_ranked_eligible_project(self):
         application_loop = _load_deployed_loop()
         submitter_project_ids = []
