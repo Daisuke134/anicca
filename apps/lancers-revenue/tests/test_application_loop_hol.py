@@ -25,18 +25,21 @@ def _load_deployed_loop():
     return module
 
 
-def _opportunity(project_id: str) -> dict[str, object]:
+def _opportunity(project_id: str, *, budget_min_minor: int = 100000) -> dict[str, object]:
     return {
         "schema_version": 1,
         "record_type": "lancers_public_opportunity",
         "platform": "lancers",
         "external_id": project_id,
         "title": "業務改善のためのWebシステム開発",
-        "description": "公開された要件に沿って業務を支援するWebシステムを開発する案件です。",
+        "description": (
+            "公開された要件に沿って業務を支援するWebシステムを開発する案件です。"
+            "少人数の担当者がSNSを兼務しており、運用を整備します。"
+        ),
         "url": f"https://www.lancers.jp/work/detail/{project_id}",
         "category": "システム開発・運用",
         "budget_type": "fixed",
-        "budget_min_minor": 100000,
+        "budget_min_minor": budget_min_minor,
         "budget_max_minor": 300000,
         "currency": "JPY",
         "buyer_external_id": f"buyer-{project_id}",
@@ -52,9 +55,11 @@ class ApplicationLoopHolTests(unittest.TestCase):
         submitter_project_ids = []
         opportunities = [_opportunity("5585496"), _opportunity("6000001")]
         proposal_text = (
-            "公開された要件を丁寧に確認し、利用者の業務が円滑になるよう画面と処理の流れを整理します。"
-            "現状の課題を踏まえて実装方針を提案し、確認事項は分かりやすく共有します。"
-        ) * 5
+            "公開された要件を踏まえ、業務改善のためのWebシステムを整備し、少人数の担当者がSNSを兼務する状況でも作業が滞らない状態を目指します。"
+            "最初の30日で現状整理、画面設計、試作、動作確認、引き継ぎ資料を納品します。"
+            "対象チャネルは2つ、月8本、修正は2回までとし、価格は250000円、納期は2026-08-20です。"
+            "毎月の運用支援と改善提案を継続範囲に含めます。現在の優先チャネルはこの2つでよろしいでしょうか？"
+        )
 
         def discoverer(**kwargs):
             discovery_calls.append(kwargs)
@@ -71,6 +76,15 @@ class ApplicationLoopHolTests(unittest.TestCase):
                         "proposal_text": proposal_text,
                         "price_jpy": 250000,
                         "deliver_date": "2026-08-20",
+                        "qualification": {
+                            "small_b2b_evidence": "業務改善のためのWebシステム開発",
+                            "sns_staff_evidence": "少人数の担当者がSNSを兼務",
+                            "expected_platform_fee_jpy": 50000,
+                            "expected_ai_cost_jpy": 2000,
+                            "expected_subcontractor_cost_jpy": 0,
+                            "expected_revision_refund_allowance_jpy": 7000,
+                            "cost_source_version": "lancers-g1-conservative-v1",
+                        },
                     }
                 ]
             }
@@ -136,6 +150,78 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(result["verified_project_ids"], ["6000001"])
         self.assertEqual(result["verified_provider_proposal_ids"], ["9000001"])
         self.assertEqual(result["unresolved_project_id"], "5585496")
+
+    def test_rejects_eligible_decision_below_seventy_percent_margin(self):
+        application_loop = _load_deployed_loop()
+        submitter_project_ids = []
+        opportunities = [_opportunity("6000001", budget_min_minor=98000)]
+        proposal_text = (
+            "公開された要件を踏まえ、業務改善のためのWebシステムを整備し、少人数の担当者がSNSを兼務する状況でも作業が滞らない状態を目指します。"
+            "最初の30日で現状整理、画面設計、試作、動作確認、引き継ぎ資料を納品します。"
+            "対象チャネルは2つ、月8本、修正は2回までとし、価格は98000円、納期は2026-08-20です。"
+            "毎月の運用支援と改善提案を継続範囲に含めます。現在の優先チャネルはこの2つでよろしいでしょうか？"
+        )
+
+        def discoverer(**kwargs):
+            return {"ok": True, "error": None, "opportunities": opportunities}
+
+        def planner(prompt, evidence):
+            return {
+                "decisions": [
+                    {
+                        "request_id": "6000001",
+                        "eligibility": "eligible",
+                        "reason_codes": ["public_scope_fit"],
+                        "proposal_text": proposal_text,
+                        "price_jpy": 98000,
+                        "deliver_date": "2026-08-20",
+                        "qualification": {
+                            "small_b2b_evidence": "業務改善のためのWebシステム開発",
+                            "sns_staff_evidence": "少人数の担当者がSNSを兼務",
+                            "expected_platform_fee_jpy": 19600,
+                            "expected_ai_cost_jpy": 2000,
+                            "expected_subcontractor_cost_jpy": 0,
+                            "expected_revision_refund_allowance_jpy": 7801,
+                            "cost_source_version": "lancers-g1-conservative-v1",
+                        },
+                    }
+                ]
+            }
+
+        def submitter(**kwargs):
+            submitter_project_ids.append(kwargs["project_id"])
+            return {
+                "ok": True,
+                "submitted": True,
+                "application_verified": True,
+                "project_id": kwargs["project_id"],
+                "provider_proposal_id": "9000002",
+            }
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(
+                application_loop.application_tick,
+                "read_pending_descriptor",
+                return_value=None,
+            ), patch.object(
+                application_loop.application_tick,
+                "state_has_claim",
+                return_value=False,
+            ):
+                result = application_loop.run_loop(
+                    state_path=root / "application.json",
+                    evidence_root=root / "evidence",
+                    discoverer=discoverer,
+                    planner=planner,
+                    submitter=submitter,
+                    clock=lambda: datetime(
+                        2026, 8, 13, 12, 0, tzinfo=timezone.utc
+                    ),
+                )
+
+        self.assertEqual(result["error"], "planner_failed")
+        self.assertEqual(submitter_project_ids, [])
 
 
 if __name__ == "__main__":

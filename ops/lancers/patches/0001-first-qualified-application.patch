@@ -1,0 +1,82 @@
+--- a/skills/earn/lancers/scripts/application_loop.py
++++ b/skills/earn/lancers/scripts/application_loop.py
+@@ -29 +29,3 @@
+-DECISION_FIELDS = frozenset({"request_id", "eligibility", "reason_codes", "proposal_text", "price_jpy", "deliver_date"})
++DECISION_FIELDS = frozenset({"request_id", "eligibility", "reason_codes", "proposal_text", "price_jpy", "deliver_date", "qualification"})
++QUALIFICATION_FIELDS = frozenset({"small_b2b_evidence", "sns_staff_evidence", "expected_platform_fee_jpy", "expected_ai_cost_jpy", "expected_subcontractor_cost_jpy", "expected_revision_refund_allowance_jpy", "cost_source_version"})
++QUALIFICATION_COST_FIELDS = ("expected_platform_fee_jpy", "expected_ai_cost_jpy", "expected_subcontractor_cost_jpy", "expected_revision_refund_allowance_jpy")
+@@ -103 +105,8 @@
+-PLANNER_RULES = "Lancersの公開案件だけを読み、全案件を一対一でeligible/ineligibleに分類する。ブラウザ・認証・外部操作はできない。eligibleは買い手宛て自然な日本語200〜3000文字、観測されたJPY予算内の整数価格、翌日から60日以内の実在日を返す。物理出席、ライブ通話・講義、本人固有の調査、AI禁止、声や顔の収録、実写動画編集はineligibleとし、提案・価格・納期をnullにする。提案文には次の語を含めない: " + ", ".join(FORBIDDEN_TERMS) + "。送信・受注・納品・支払済みと主張せず、指定スキーマのJSONだけを返す。\nSNAPSHOT:\n"
++PLANNER_RULES = ("Lancersの公開案件だけを読み、全案件を一対一でeligible/ineligibleに分類する。ブラウザ・認証・外部操作はできない。"
++    "eligibleは日本語の小規模B2B案件で、公開title/description/categoryからsmall_b2b_evidenceとsns_staff_evidenceを各4〜240文字の完全一致抜粋で返す。"
++    "sns_staff_evidenceは専任担当者不在、代表者または少人数チームのSNS兼務、初めてのSNS担当採用のいずれかの公開事実を示すこと。純粋な不明はineligible。"
++    "eligibleは買い手宛て自然な日本語200〜3000文字、観測されたJPY予算内の整数価格、98000円以上、翌日から60日以内の実在日を返し、qualificationには4コストとcost_source_versionを指定する。"
++    "expected_platform_fee_jpyは価格の20%切上げ以上、他コストは非負整数、cost_source_versionはlancers-g1-conservative-v1とする。"
++    "提案文には買い手の課題、最初の30日間の納品物、チャネル数・投稿本数・修正回数上限、価格・納期、継続範囲、確認質問をちょうど1つ含める。"
++    "物理出席、ライブ通話・講義、本人固有の調査、AI禁止、声や顔の収録、実写動画編集はineligibleとし、提案・価格・納期・qualificationをnullにする。"
++    "提案文には次の語を含めない: " + ", ".join(FORBIDDEN_TERMS) + "。送信・受注・納品・支払済みと主張せず、指定スキーマのJSONだけを返す。\nSNAPSHOT:\n")
+@@ -146 +155 @@
+-        expected = [str(row["external_id"]) for row in rows]; found: dict[str, Mapping[str, object]] = {}
++        expected = [str(row["external_id"]) for row in rows]; rows_by_id = {str(row["external_id"]): row for row in rows}; found: dict[str, Mapping[str, object]] = {}
+@@ -151 +160 @@
+-            proposal, price, due = decision.get("proposal_text"), decision.get("price_jpy"), decision.get("deliver_date")
++            proposal, price, due, qualification = decision.get("proposal_text"), decision.get("price_jpy"), decision.get("deliver_date"), decision.get("qualification")
+@@ -153,2 +162,13 @@
+-                if proposal is not None or price is not None or due is not None: raise ValueError
+-            elif not _safe_proposal(proposal, expected) or isinstance(price, bool) or not isinstance(price, int) or price < 1 or not _valid_date(due, today): raise ValueError
++                if proposal is not None or price is not None or due is not None or qualification is not None: raise ValueError
++            elif not _safe_proposal(proposal, expected) or isinstance(price, bool) or not isinstance(price, int) or price < 98000 or not _valid_date(due, today): raise ValueError
++            elif not isinstance(qualification, Mapping) or set(qualification) != QUALIFICATION_FIELDS: raise ValueError
++            else:
++                public_row = rows_by_id[project_id]
++                public_text = " ".join(public_row[key] for key in ("title", "description", "category") if isinstance(public_row.get(key), str))
++                evidence = (qualification.get("small_b2b_evidence"), qualification.get("sns_staff_evidence"))
++                if any(not isinstance(item, str) or not 4 <= len(item) <= 240 or item not in public_text for item in evidence): raise ValueError
++                if qualification.get("cost_source_version") != "lancers-g1-conservative-v1": raise ValueError
++                costs = [qualification.get(key) for key in QUALIFICATION_COST_FIELDS]
++                if any(isinstance(cost, bool) or not isinstance(cost, int) or cost < 0 for cost in costs): raise ValueError
++                if qualification["expected_platform_fee_jpy"] < (price * 20 + 99) // 100: raise ValueError
++                if 10 * (price - sum(costs)) < 7 * price: raise ValueError
+@@ -296,0 +317 @@
++    quarantined_project_id = None
+@@ -298,3 +319,5 @@
+-        result = _reconcile_pending(pending, Path(state_path))
+-        if output_stream is not None: _emit(result, output_stream)
+-        return result.to_dict()
++        pending_result = _reconcile_pending(pending, Path(state_path))
++        if pending_result.error != "submission_uncertain":
++            if output_stream is not None: _emit(pending_result, output_stream)
++            return pending_result.to_dict()
++        quarantined_project_id = pending_result.unresolved_project_id or pending_result.project_id
+@@ -330,0 +354,2 @@
++    if quarantined_project_id is not None and result.unresolved_project_id is None:
++        result = replace(result, unresolved_project_id=quarantined_project_id)
+--- a/skills/gig-work/schemas/application_decisions.schema.json
++++ b/skills/gig-work/schemas/application_decisions.schema.json
+@@ -20 +20,2 @@
+-          "deliver_date"
++          "deliver_date",
++          "qualification"
+@@ -33,0 +35,22 @@
++          },
++          "qualification": {
++            "type": ["object", "null"],
++            "additionalProperties": false,
++            "required": [
++              "small_b2b_evidence",
++              "sns_staff_evidence",
++              "expected_platform_fee_jpy",
++              "expected_ai_cost_jpy",
++              "expected_subcontractor_cost_jpy",
++              "expected_revision_refund_allowance_jpy",
++              "cost_source_version"
++            ],
++            "properties": {
++              "small_b2b_evidence": {"type": "string", "minLength": 4, "maxLength": 240},
++              "sns_staff_evidence": {"type": "string", "minLength": 4, "maxLength": 240},
++              "expected_platform_fee_jpy": {"type": "integer", "minimum": 0},
++              "expected_ai_cost_jpy": {"type": "integer", "minimum": 0},
++              "expected_subcontractor_cost_jpy": {"type": "integer", "minimum": 0},
++              "expected_revision_refund_allowance_jpy": {"type": "integer", "minimum": 0},
++              "cost_source_version": {"const": "lancers-g1-conservative-v1"}
++            }
