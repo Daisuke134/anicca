@@ -26888,3 +26888,11 @@
 {"ts":1786608712,"wake_id":"00MSR8P5LJCE14249A78F749E9","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786608840,"wake_id":"00MSR8RVW94DFA8071C4094963","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786608967,"wake_id":"00MSR8UM3QAB15C30A15A04EB2","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid microtask API platform USDC per task [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced"}
+{"ts":1786609097,"wake_id":"00MSR8XE2T52975543AB964460","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786609223,"wake_id":"00MSR903QO25B849A88487454F","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786609351,"wake_id":"00MSR92U8F0661659CA6E04D9B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786609478,"wake_id":"00MSR95KEXA7D3FB2F6C5A4FCE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786609606,"wake_id":"00MSR98AZY0CC387F5BE5A4647","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786609733,"wake_id":"00MSR9B1FN7126A79FF2D140C4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786609861,"wake_id":"00MSR9DS7W59D3530D42104F54","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786609990,"wake_id":"00MSR9GJN5AAA153E61D3847F6","kind":"narrate","sleep_s":120,"model":"auto"}
