@@ -236,6 +236,30 @@ bash "$MANAGER" >/dev/null 2>&1; ambiguous_rc=$?
 [ "$(wc -l <"$BROWSER_CALLS" | tr -d ' ')" -gt 0 ] && ok "ambiguous recovery invokes browser" || bad "ambiguous recovery skipped browser"
 [ "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" -gt 0 ] && ok "ambiguous recovery invokes agent" || bad "ambiguous recovery skipped agent"
 
+new_case ambiguous-invalid-recovery
+seed_recovery_incident
+python3 - "$CAPAFY_IG_ACCOUNTS_FILE" <<'PY'
+import json,sys
+path=sys.argv[1]; rows=json.load(open(path)); rows.append(dict(rows[0],handle="legacy-user")); json.dump(rows,open(path,"w"))
+PY
+export FAKE_PROVISION_MODE=no_mutation
+bash "$MANAGER" >/dev/null 2>&1; ambiguous_invalid_rc=$?
+[ "$ambiguous_invalid_rc" -ne 0 ] && ok "valid plus invalid recovery fails closed" || bad "valid plus invalid recovery unexpectedly short-circuits"
+[ "$(wc -l <"$BROWSER_CALLS" | tr -d ' ')" -gt 0 ] && ok "valid plus invalid recovery invokes browser" || bad "valid plus invalid recovery skipped browser"
+[ "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" -gt 0 ] && ok "valid plus invalid recovery invokes agent" || bad "valid plus invalid recovery skipped agent"
+
+new_case invalid-recovery
+seed_recovery_incident
+python3 - "$CAPAFY_IG_ACCOUNTS_FILE" <<'PY'
+import json,sys
+path=sys.argv[1]; rows=json.load(open(path)); rows[0]["handle"]="legacy-user"; json.dump(rows,open(path,"w"))
+PY
+export FAKE_PROVISION_MODE=no_mutation
+bash "$MANAGER" >/dev/null 2>&1; invalid_rc=$?
+[ "$invalid_rc" -ne 0 ] && ok "single invalid recovery fails closed" || bad "single invalid recovery unexpectedly short-circuits"
+[ "$(wc -l <"$BROWSER_CALLS" | tr -d ' ')" -gt 0 ] && ok "single invalid recovery invokes browser" || bad "single invalid recovery skipped browser"
+[ "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" -gt 0 ] && ok "single invalid recovery invokes agent" || bad "single invalid recovery skipped agent"
+
 new_case challenge
 python3 - "$CAPAFY_IG_ACCOUNTS_FILE" <<'PY'
 import json,sys

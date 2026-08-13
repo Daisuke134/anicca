@@ -134,6 +134,24 @@ import json,sys
 print(json.dumps({"terminal_message_key":sys.argv[1]}))
 PY
 }
+complete_closure() {
+  local delivery_status="$1" message_id="${2:-}" verification
+  case "$CURRENT_PHASE" in
+    detected) transition repair_started || return 1; transition repaired || return 1 ;;
+    repair_started) transition repaired || return 1 ;;
+    unresolved) transition repair_started || return 1; transition repaired || return 1 ;;
+    repaired) ;;
+    verified) return 0 ;;
+    *) return 1 ;;
+  esac
+  if [ "$delivery_status" = confirmed ]; then
+    verification="$(printf '{"business_outcome_validated":true,"telegram_delivery_status":"confirmed","telegram_message_id":%s}' "$message_id")"
+    transition verified "$(printf '{"terminal_message_key":"%s","telegram_message_id":%s,"verification":%s}' "$KEY" "$message_id" "$verification")"
+  else
+    verification='{"business_outcome_validated":true,"telegram_delivery_status":"reserved_unconfirmed"}'
+    transition verified "$(printf '{"terminal_message_key":"%s","verification":%s}' "$KEY" "$verification")"
+  fi
+}
 
 if [ "$KIND" = "repair_closure" ]; then
   if [ "$CURRENT_KEY" = "$KEY" ]; then
@@ -145,18 +163,17 @@ else
   transition unresolved "$(reservation_payload "$KEY")" || exit 2
 fi
 
-MESSAGE_ID="$(send_receipt "$BODY")" || exit 1
-
 if [ "$KIND" = "repair_closure" ]; then
-  case "$CURRENT_PHASE" in
-    detected) transition repair_started || exit 2; transition repaired || exit 2 ;;
-    repair_started) transition repaired || exit 2 ;;
-    unresolved) transition repair_started || exit 2; transition repaired || exit 2 ;;
-    repaired) ;;
-    verified) exit 0 ;;
-  esac
-  transition verified "$(printf '{"terminal_message_key":"%s","telegram_message_id":"%s","verification":{"business_outcome_validated":true,"telegram_message_id":"%s"}}' "$KEY" "$MESSAGE_ID" "$MESSAGE_ID")" || exit 2
+  MESSAGE_ID="$(send_receipt "$BODY")"
+  send_rc=$?
+  if [ "$send_rc" -eq 0 ]; then
+    complete_closure confirmed "$MESSAGE_ID" || exit 2
+    exit 0
+  fi
+  complete_closure reserved_unconfirmed || exit 2
+  exit 1
 else
+  MESSAGE_ID="$(send_receipt "$BODY")" || exit 1
   transition unresolved "$(printf '{"terminal_message_key":"%s","telegram_message_id":"%s"}' "$KEY" "$MESSAGE_ID")" || exit 2
 fi
 

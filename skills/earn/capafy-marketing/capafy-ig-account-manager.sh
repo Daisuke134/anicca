@@ -76,11 +76,13 @@ matches=[
     and row.get("status")=="session_failed"
     and row.get("session_owner")=="browser"
     and row.get("incident_id")==incident_id
-    and re.fullmatch(r"capafy\.[a-z0-9](?:[a-z0-9._-]{0,61}[a-z0-9])?", str(row.get("handle") or "").lstrip("@").lower())
 ]
 if len(matches)!=1:
     raise SystemExit(1)
-print(matches[0]["handle"])
+handle=str(matches[0].get("handle") or "").lstrip("@").lower()
+if not re.fullmatch(r"capafy\.[a-z0-9](?:[a-z0-9._-]{0,61}[a-z0-9])?", handle):
+    raise SystemExit(1)
+print(handle)
 PY
 }
 session_recovery_shortcut(){
