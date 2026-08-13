@@ -984,9 +984,12 @@ evidence until the primary has independently inspected and adopted it.
   `submit_unknown` correction; the second reconciliation appends nothing. Both
   fixtures retain `current_state=submitted` and `ever_submitted=true`, and Guardian
   validates the restoration from the same durable evidence. Existing false
-  outreach-only correction and Gmail/Ashby authority behavior remain unchanged.
-  Terra edits only `ledger.py`, `guardian.py`, and `test_route_executor.py`; the real
-  ledger remains read-only.
+  outreach-only correction and Gmail/Ashby authority recognition remain unchanged.
+  The existing Gmail-authoritative-before-outreach fixture now uses this shared
+  restoration outcome instead of preserving its former unhealthy `email_sent`
+  expectation; Gmail-after and Ashby behavior remain otherwise unchanged. Terra edits
+  only `ledger.py`, `guardian.py`, and `test_route_executor.py`; the real ledger
+  remains read-only.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
