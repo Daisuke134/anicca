@@ -85,6 +85,13 @@ MRR gate を開けない。
 - 単発売上は別の `one_off_revenue` として表示し、gross MRR と net MRR に混ぜない。
 - `$20,000` の受入判定と `$25,000` の安全目標は、同じ式・同じ証憑で検証する。
 
+対象 `mrr_period` の公式 source readback 完了を示す `source_completeness_receipt`（または
+明確に同等の source completeness evidence）があり、かつその source に対応する ledger 集合が
+空または合計 `0` のときだけ、該当値を verified zero と表示する。PaymentReceipt の rows が
+単に 0 件であること、source failure、未取得、missing timestamp だけでは zero と断定せず、
+`unknown` / `unverified` とする。この source completeness schema/evidence は後段 finance slice
+で追加する必須要件であり、Slice 1 では扱わない。
+
 ### 1.2 収益の流れ
 
 ```mermaid
@@ -120,7 +127,7 @@ flowchart LR
 | 観測 | 事実 | 計上・運用上の意味 |
 |---|---|---|
 | 応募 | `application_verified` が 11 件 | 公式応募 ID の readback は観測済みだが、売上を意味しない |
-| 作業・納品・支払 | `WorkEvent`、`DeliveryReceipt`、`PaymentReceipt` は記録なし。baseline ledger revenue は **¥0** | 記録なしは source が official empty readback のときだけ 0 と表示し、active recurring contract の受入証拠はない |
+| 作業・納品・支払 | `WorkEvent`、`DeliveryReceipt`、`PaymentReceipt` は記録なし。記録された baseline ledger revenue は **¥0** だが PaymentReceipt source completeness は未確認 | source completeness がない記録なしは MRR の 0 を証明せず、active recurring contract の受入証拠もない |
 | 不確実な応募 | project `5585496` が null-ID pending のまま繰り返し `submission_uncertain` | この job だけを隔離すべきで、現状は head-of-line (HOL) で discovery を止める |
 | storefront | duplicate listing が 6 件。canonical receipt ID は `1338233` | 重複表示は販売実績ではなく、readback と重複排除の問題 |
 | storefront observability | 4 状態を合算し、合計を `unprocessed` として表示 | `partial 6/6 official_timestamp_missing` という誤解を生む |
@@ -395,7 +402,7 @@ missing は `unknown` / `unmatched` のまま G6/G7 を閉じない。
 - storefront は `published`、`paused`、`hidden`、`draft` を別々に表示する。四状態の合計を `unprocessed` と呼ばない。
 - `listing_readback_mismatch` に成功アイコンを付けない。
 - 応募は `observed`、`qualified`、`submitted`、`verified` を別々に表示する。
-- `0` は provider の official empty readback または ledger で検証済みの zero に限る。記録なしの観測、source failure、missing timestamp は `unknown` / `unverified` と表示する。
+- 対象 `mrr_period` の `source_completeness_receipt`（または明確に同等の source completeness evidence）があり、公式 source readback 完了後の対応 ledger 集合が空または合計 `0` のときだけ verified zero を表示する。rows が 0 件だけ、source failure、missing timestamp は `unknown` / `unverified` とする。
 - selector、内部 timestamp code、内部 lock code は通常の owner report に出さない。
 - state change、incident、recovery は直ちに報告し、正常な executive summary は一日一回にまとめる。
 - report には active recurring contracts、gross MRR、net MRR、delivery status、実際の costs、次の automatic action を含める。
@@ -407,7 +414,7 @@ Lancers baseline
 - mrr_period: 2026-08 (service period の対象例。過去月累積なし)
 - application_verified: 11
 - WorkEvent: unknown (official empty readback 未確認) / DeliveryReceipt: unknown (official empty readback 未確認) / PaymentReceipt: unknown (official empty readback 未確認)
-- gross MRR: ¥0 (ledger verified zero) / net MRR: USD 0 (ledger verified zero)
+- gross MRR: unknown (recorded ledger revenue is ¥0, but PaymentReceipt source completeness unverified) / net MRR: unknown (同じ理由)
 - bank settlement: unknown (provider payout target と銀行 readback 未確認)
 - storefront: published・paused・hidden・draft を個別表示
 - storefront incident: duplicate listing 6 件、canonical receipt 1338233、latest readback mismatch
@@ -431,8 +438,8 @@ Lancers baseline
 | G3 profitable acquisition | 最初の 3 active recurring contracts まで、hard filter、固定式による 70% margin、recurring/B2B ranking、proposal 固定構造、capacity 使用率別 quota（<70%=2/10、70–<90%=1/5、>=90%=Premium のみかつ 100% 以下）、重複防止が実際に働く | qualified/ineligible 判定、ICP 証拠/proxy、margin 算定と各 source、応募上限、duplicate 拒否の readback |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
-| G6 finance | 対象 `mrr_period` の active recurring contract receipts だけを `contract_external_id + mrr_period + provider_receipt_id` へ一意帰属させ、provider payout target、fee 明細、銀行 settlement を `payout_batch_id` ごとに照合する。unique bank transaction 一件との `bank_reconciliation_delta_jpy=0` だけを `matched` とし、non-zero/missing は `unknown` / `unmatched` のままにする。net 式では fee・AI・subcontract・refund を実額で一度だけ控除し、FX を記録して net MRR を再計算できる | 対象 mrr_period、provider receipt、receipt key、payout batch、payout target、fee 明細、unique bank transaction、銀行照合、cost attribution、ledger、計算結果 |
-| G7 target | 対象 `mrr_period` の active recurring Lancers contract receipts だけから net MRR が USD 20,000 以上。過去月の累積、未受領、単発、重複 receipt は除外し、USD 25,000 は内部安全目標として別表示する | 対象 mrr_period、複数契約の active readback、全 PaymentReceipt、receipt key、全 payout batch、各 unique bank transaction、全 cost、recorded FX、全 batch の `bank_reconciliation=matched`、再計算可能な ledger |
+| G6 finance | 対象 `mrr_period` の active recurring contract receipts だけを `contract_external_id + mrr_period + provider_receipt_id` へ一意帰属させ、`source_completeness_receipt` で公式 source readback 完了を確認し、provider payout target、fee 明細、銀行 settlement を `payout_batch_id` ごとに照合する。unique bank transaction 一件との `bank_reconciliation_delta_jpy=0` だけを `matched` とし、non-zero/missing は `unknown` / `unmatched` のままにする。net 式では fee・AI・subcontract・refund を実額で一度だけ控除し、FX を記録して net MRR を再計算できる | 対象 mrr_period、source_completeness_receipt、provider receipt、receipt key、payout batch、payout target、fee 明細、unique bank transaction、銀行照合、cost attribution、ledger、計算結果 |
+| G7 target | 対象 `mrr_period` の `source_completeness_receipt` があり、公式 source readback 完了後の active recurring Lancers contract receipts だけから net MRR が USD 20,000 以上。過去月の累積、未受領、単発、重複 receipt は除外し、USD 25,000 は内部安全目標として別表示する | 対象 mrr_period、source_completeness_receipt、複数契約の active readback、全 PaymentReceipt、receipt key、全 payout batch、各 unique bank transaction、全 cost、recorded FX、全 batch の `bank_reconciliation=matched`、再計算可能な ledger |
 
 G1 が閉じるまで、product mutation、negotiation、fulfillment、新規 common kernel、新規 DB、
 multi-account、別 marketplace は開始しない。
@@ -459,9 +466,9 @@ Slice 1 は acquisition の一つの実証だけである。
 new common kernel、new DB、multi-account、別 marketplace は Slice 1 に含めない。
 
 `mrr_period`、`contract_external_id`、`provider_receipt_id`、`payout_batch_id`、
-`bank_transaction_id` の一意帰属 schema は既存 schema にないため、後段 finance slice の必須
-schema evolution とする。Slice 1 ではこの schema を作成・移行・記帳せず、応募 receipt の
-公式 ID 検証だけを行う。
+`bank_transaction_id`、`source_completeness_receipt` の一意帰属 schema/evidence は後段 finance
+slice の必須 schema evolution とする。Slice 1 ではこれらを作成・移行・記帳・readback せず、
+応募 receipt の公式 ID 検証だけを行う。
 
 Slice 1 の成功は「応募件数が増えた」ではなく、未確定 job が全体を止めない状態で、
 一件の新規応募が公式 ID と一件の receipt まで閉じることである。
@@ -493,7 +500,7 @@ fix と scoped review は一 slice 最大 3 round とし、3 round 後も load-b
 |---|---|---|
 | Best | 最初の 3 Founding 社が実支払・継続し、納品原価を保ったまま Standard/Premium へ拡張。例示構成の 3/10/7 契約を active 化し、recorded FX と実費控除後に USD 20,000 を超える | ¥5,060,000 は gross の例であり、net MRR は証憑からのみ確定する。USD 25,000 は安全目標として別 gate |
 | Base | Founding 3 社を先に閉じ、capacity と margin を実測してから一件ずつ Standard/Premium を追加。支払・retention・revision cost が揃わない期間は target を未達のまま正直に表示 | proposal、offer、未受領請求を足して target 到達とは言わない |
-| Worst | qualified job は見つかっても buyer が月額契約・支払に進まず、または原価・revision が margin を壊す | `PaymentReceipt` が official empty readback または ledger verified zero なら net MRR は ¥0 相当として停止・原因報告し、source failure なら `unknown` とする。応募数で穴埋めしない |
+| Worst | qualified job は見つかっても buyer が月額契約・支払に進まず、または原価・revision が margin を壊す | 対象 `mrr_period` の `source_completeness_receipt` があり、対応 ledger 集合が空または合計 `0` のときだけ net MRR は ¥0 相当として停止・原因報告する。source completeness がなければ `unknown` とし、応募数で穴埋めしない |
 
 Best でも構成と為替は仮定であり、受入は G6/G7 の実証だけである。Base と Worst を
 正常な結果として報告できることも設計の一部である。
