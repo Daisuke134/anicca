@@ -30,7 +30,7 @@ def _product(path: Path) -> tuple[dict[str, Any], Path]:
     try: value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, ValueError): raise OfferError("product_invalid") from None
     if not isinstance(value, dict): raise OfferError("product_invalid")
-    strings = ("product_id", "listing_external_id", "title_stem", "subtitle", "category", "subcategory", "industry", "description", "notice", "image_path")
+    strings = ("product_id", "listing_external_id", "title_stem", "subtitle", "category", "subcategory", "service_type", "industry", "description", "notice", "image_path")
     if any(not isinstance(value.get(key), str) or not value[key].strip() for key in strings): raise OfferError("product_invalid")
     if not re.fullmatch(r"[0-9]+", value["listing_external_id"]): raise OfferError("product_invalid")
     if not (1 <= len(value["title_stem"] + "ます") <= 40 and len(value["subtitle"]) <= 60 and len(value["description"]) <= 2000 and len(value["notice"]) <= 2000): raise OfferError("product_invalid")
@@ -109,6 +109,14 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     _field(page, '[name="___main_category_id"]').select_option(label=product["category"])
     page.wait_for_function("label => [...document.querySelectorAll('[name=\"ProjectPlanForm.project_category_id\"] option')].some(o => o.textContent.trim() === label)", arg=product["subcategory"], timeout=5_000)
     _field(page, '[name="ProjectPlanForm.project_category_id"]').select_option(label=product["subcategory"])
+    page.wait_for_selector('[name="ProjectPlanCategoryForm.service_type[0]"]', state="attached", timeout=5_000)
+    services = page.locator('[name="ProjectPlanCategoryForm.service_type[0]"]')
+    matches = [field for field in services.all() if " ".join(field.evaluate("e => e.parentElement.parentElement.innerText").split()) == product["service_type"]]
+    if len(matches) != 1 or re.fullmatch(r"[0-9]+", matches[0].get_attribute("value") or "") is None: raise OfferError("form_changed")
+    service_id = matches[0].get_attribute("value")
+    with page.expect_response(lambda response: urlsplit(response.url).path == f"/v1/project_store_api/project_category/{service_id}", timeout=10_000) as service_loaded:
+        matches[0].check()
+    if service_loaded.value.status != 200 or not matches[0].is_checked(): raise OfferError("form_changed")
     _field(page, '[name="ProjectPlanForm.industry_type_id"]').select_option(label=product["industry"])
     while page.locator('[aria-label="削除"]').count(): page.locator('[aria-label="削除"]').first.click()
     tag_field = _field(page, '[name="MultiSelectTagSearch_ProjectPlanTagForm"]')
