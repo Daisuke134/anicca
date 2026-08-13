@@ -12,6 +12,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 INSTALLER = REPO_ROOT / "apps/lancers-revenue/scripts/install-local.sh"
 PLIST_NAME = "ai.anicca.lancers-revenue-application.plist"
+REPORTER_PLIST_NAME = "ai.anicca.lancers-revenue-telegram-report.plist"
 RELEASE_FILES = (
     "skills/earn/lancers/scripts/application_loop.py",
     "skills/earn/lancers/scripts/application_tick.py",
@@ -26,6 +27,8 @@ RELEASE_FILES = (
     "skills/agent-runner/agent_runner.py",
     "skills/agent-runner/token_budget.py",
     "skills/agent-runner/config.json",
+    "skills/earn/lancers/scripts/telegram_report.py",
+    "skills/_shared/marketplace-core/scripts/telegram_outbox.py",
 )
 
 
@@ -44,7 +47,7 @@ class InstallLocalTests(unittest.TestCase):
             text=True,
         ).stdout.strip()
 
-    def _run_install(self, root: Path, mode: str) -> tuple[Path, dict, dict]:
+    def _run_install(self, root: Path, mode: str) -> tuple[Path, dict, dict, dict]:
         install_root = root / "install"
         launch_agent_dir = root / "LaunchAgents"
         state_root = root / "state"
@@ -70,14 +73,16 @@ class InstallLocalTests(unittest.TestCase):
         release = install_root / "releases" / self.release_sha
         manifest_path = state_root / "deployment.json"
         plist_path = launch_agent_dir / PLIST_NAME
+        reporter_plist_path = launch_agent_dir / REPORTER_PLIST_NAME
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         plist = plistlib.loads(plist_path.read_bytes())
-        return release, manifest, plist
+        reporter_plist = plistlib.loads(reporter_plist_path.read_bytes())
+        return release, manifest, plist, reporter_plist
 
     def test_installs_immutable_exact_sha_release_and_reconcile_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            release, manifest, plist = self._run_install(root / "reconcile", "reconcile-only")
+            release, manifest, plist, reporter_plist = self._run_install(root / "reconcile", "reconcile-only")
             self.assertEqual(release, root / "reconcile/install/releases" / self.release_sha)
             for relative in RELEASE_FILES:
                 self.assertTrue((release / relative).is_file(), relative)
@@ -109,6 +114,15 @@ class InstallLocalTests(unittest.TestCase):
                 f"{os.environ['HOME']}/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
             )
             self.assertNotIn("__LANCERS_", str(plist))
+            self.assertEqual(reporter_plist["Label"], REPORTER_PLIST_NAME.removesuffix(".plist"))
+            self.assertEqual(reporter_plist["StartInterval"], 300)
+            self.assertNotIn("RunAtLoad", reporter_plist)
+            self.assertIn("--json", reporter_plist["ProgramArguments"])
+            self.assertIn(
+                str(release / "skills/earn/lancers/scripts/telegram_report.py"),
+                reporter_plist["ProgramArguments"],
+            )
+            self.assertNotIn("__LANCERS_", str(reporter_plist))
 
             state_root = root / "reconcile/state"
             for path in state_root.rglob("*"):
@@ -121,11 +135,12 @@ class InstallLocalTests(unittest.TestCase):
 
     def test_normal_owner_keeps_json_without_reconcile_flag(self):
         with tempfile.TemporaryDirectory() as directory:
-            _, manifest, plist = self._run_install(Path(directory), "normal")
+            _, manifest, plist, reporter_plist = self._run_install(Path(directory), "normal")
             self.assertEqual(manifest["mode"], "normal")
             arguments = plist["ProgramArguments"]
             self.assertIn("--json", arguments)
             self.assertNotIn("--reconcile-only", arguments)
+            self.assertIn("--json", reporter_plist["ProgramArguments"])
 
 
 if __name__ == "__main__":
