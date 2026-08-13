@@ -86,6 +86,16 @@ Use one fresh Sol adversarial verifier, exactly once. It must try to disprove:
 
 Critical/Important findings return once to the same implementer. Primary then performs mechanical verification; no second review.
 
+### Recorded one-shot review corrections
+
+The sole review returned `FIX_FIRST`; there is no second review. The same implementer must make exactly these corrections before primary mechanical verification:
+
+1. Open the existing sibling `marketplace-ledger.sqlite3` with SQLite URI `mode=ro`. Read only the exact `external_id` set for `platform=lancers AND event_type=application_verified`. Count an application board only when `with.proposal.id` is in that verified set. Missing ledger, query/schema failure, or conflicting duplicate identity fails closed. Never initialize, migrate, checkpoint, or append the ledger. Tests must include one verified ID and one non-receipt proposal ID and prove only the former counts.
+2. Make the launchd-facing invocation a parent watchdog in this same script. It starts one hidden worker invocation in a new process group; the worker owns Playwright and performs the tick. The parent enforces a 120-second whole-tick deadline, requires exactly one valid sanitized JSON line and the expected exit status, and treats unexpected stderr/invalid output as failure. On deadline or incomplete exit, terminate and then kill the entire worker process group so the Playwright driver cannot remain orphaned. Return one stable nonzero JSON result such as `tick_timeout`/`worker_failed`. Do not add a file, service, scheduler, or daemon.
+3. Add a real subprocess watchdog regression using a harmless child fixture/hidden test hook or a narrowly injectable process command: prove the parent returns within the test bound, kills a descendant in the same process group, and emits one parseable failure JSON. Retain the cleanup-exception regression. Production launchd must not expose the test hook.
+
+These corrections may exceed the original production LOC soft target because the observed orphan consumed CPU for more than a day. Keep the implementation local to `work_sync.py`; do not introduce a general supervisor abstraction.
+
 ## Deploy and live acceptance
 
 Primary records pre-deploy SHA-256 for application state, listing state, and ledger. After the implementation commit is on `origin/main`, install the exact main SHA, lint the rendered plist, replace the existing mutable work-sync owner, and kickstart that real launchd owner once.
