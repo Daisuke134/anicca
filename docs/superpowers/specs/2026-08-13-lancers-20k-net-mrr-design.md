@@ -715,6 +715,46 @@ positive receiptだけdeliveredとなる。
 同じexact releaseへreloadして`StartInterval=1800`、enabled / loaded / not runningを確認した。
 application state、ledger、listingは本番report送信で変更しない。G2は完了し、次のactive sliceはG3である。
 
+### 9.4 G3A active slice: bounded query coverage
+
+G3は一つの巨大変更にしない。順序は **G3A query coverage → G3B eligible ranking → G3C capacity quota**
+とし、各sliceをexact-SHA deploy、実tick、receipt/state不変確認まで閉じてから次へ進む。
+
+現在のacquisitionは30分ごとに`SNS運用`一語だけを検索し、最大20件をprovider新着順で取得する。
+直近の実tickは13件を観測してqualified 0件である。hard filter、公式detail enrichment、70%以上の
+projected margin、claim重複防止、一tick最大1応募はすでに存在する。G3Aで不足しているのは、仕様に記録した
+検索面を時間をかけて漏れなくscanすることだけである。
+
+G3Aは次の10 queryをこの順で固定する。
+
+```text
+SNS運用、SNS投稿、コンテンツ制作、X運用、LinkedIn、
+B2Bマーケティング、AI活用、継続依頼、長期、月額
+```
+
+UTC epochの30分slotを`floor(timestamp / 1800) mod 10`でindex化し、一tickにつき一queryだけを選ぶ。
+同一slotの再実行は同じqueryを選び、10 slot、すなわち5時間で全queryを一巡する。新しいcursor state、
+DB、scheduler、HTTP client、crawlerを追加しない。provider呼出しは従来どおり一tick一回、queryごとの
+limitは20、sortはproviderの`started_at`を維持する。テストや診断用の明示`query` overrideはrotationより
+優先し、値を変更しない。
+
+clock値は一tickで一度だけ取得し、query selectionとplannerのtick dateへ同じ値を渡す。timezone-aware
+`datetime`またはtimezone付きRFC3339ならrotationする。既存互換の`date`や不正clock値では、安全な既定
+`SNS運用`を検索し、planner date validationは従来どおりfail closedする。rotationはcoverageだけを所有し、
+複数queryの結果をmergeしない。cross-query dedupeは既存claim/fingerprintが担い、eligibleの順位は
+provider順のままG3Bへdeferする。capacityに基づくtick/day quotaは、G4のactive contract sourceを
+先取りせずG3Cへdeferする。
+
+Ponytail比較では、全10 queryを毎tick取得してmerge/dedupe/global rankする案はHTTP負荷を10倍にし、
+新しいrank contractを同時に要求するため棄却する。単一固定queryを維持する案は最小だが、qualified 0の
+検索面を永久に反復するため棄却する。決定的な一query rotationが、既存境界を再利用してcoverageを
+10倍へ広げる最小変更である。
+
+G3Aのsoft targetはproduction 1 file / 25 LOC以下、existing test 1 file / 35 LOC以下、spec/planのみである。
+Lunaはprimaryが完成させたplanだけを直接実装し、RED-first TDDを行わない。実装後にfocused regressionと
+既存suiteを実行する。fresh Sol adversarial reviewは1回だけで、provider call増加、clock drift、override、
+同一slot安定性、claim/submit boundを一次証拠で反証する。primaryだけがspec/plan、deploy、実E2Eを所有する。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
@@ -726,7 +766,8 @@ application state、ledger、listingは本番report送信で変更しない。G2
 | G0.5 canonical source / safe deployment | source/schema/test/launchd template/spec/plan を canonical Life Manager repo に揃え、tests と許可された一回の fresh adversarial review を通し、main に merge/push した exact commit SHA の release artifact を install して manifest/deployed SHA を記録する。worktree/feature branch/untracked `~/.local` source は実行せず、その後にだけ application service を enable する。runtime state、secret、browser session、append-only ledger、evidence は移動・削除しない | test result、レビュー記録、main commit、artifact manifest、deployed SHA、service enable の順序、runtime state 不変の確認 |
 | G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
 | G2 truthful acquisition | **完了。** storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | exact release `d63dfd1…`、Telegram message ID `15922`、同一状態の再kick 0送信 |
-| G3 profitable acquisition | 最初の 3 active recurring contracts まで、hard filter、固定式による 70% margin、recurring/B2B ranking、proposal 固定構造、capacity 使用率別 quota（<70%=2/10、70–<90%=1/5、>=90%=Premium のみかつ 100% 以下）、重複防止が実際に働く | qualified/ineligible 判定、ICP 証拠/proxy、margin 算定と各 source、応募上限、duplicate 拒否の readback |
+| G3A query coverage | **active。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | 同一slot同一query、10 slot全coverage、明示override、1 discovery/tick、最大1 submit/tick |
+| G3B–C profitable acquisition | recurring/B2B ranking、proposal固定構造、active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下）を一件ずつ閉じる | ranking順、margin source、tick/day quota、duplicate拒否、公式readback |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
 | G6 finance | 対象 `mrr_period` の active recurring contract receipts だけを `contract_external_id + mrr_period + provider_receipt_id` へ一意帰属させ、`source_completeness_receipt` で公式 source readback 完了を確認し、provider payout target、fee 明細、銀行 settlement を `payout_batch_id` ごとに照合する。unique bank transaction 一件との `bank_reconciliation_delta_jpy=0` だけを `matched` とし、non-zero/missing は `unknown` / `unmatched` のままにする。net 式では fee・AI・subcontract・refund を実額で一度だけ控除し、FX を記録して net MRR を再計算できる | 対象 mrr_period、source_completeness_receipt、provider receipt、receipt key、payout batch、payout target、fee 明細、unique bank transaction、銀行照合、cost attribution、ledger、計算結果 |
@@ -771,16 +812,18 @@ stateはfingerprints 19 / pending 0、ledgerは14 receiptのまま変わらず�
 
 G1とG2は完了した。G2のfresh adversarial reviewは許可された1/1だけで、追加reviewは行わない。
 役割は固定する。primary Solだけが調査、設計判断、spec、implementation plan、acceptance、deployを所有する。
-Lunaはprimaryが完成させたplanに基づくproduction/test実装とコマンド実行だけを所有し、spec/planを書かない。
+Luna/Terraはprimaryが完成させたplanに基づくproduction/test実装とコマンド実行だけを所有し、spec/planを書かない。
+RED-first TDDは行わず、直接実装後に最小regressionと既存suiteで検証する。
 reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_FIRSTは同じLunaへ一度返した後、primaryが
 機械的に再検証する。
 次の直列TODOは以下であり、一度に先頭一件だけを実装する。
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | G3 profitable acquisition | capacity、query coverage、ranking、応募率を実receipt funnelで調整 | 1–2日 |
-| 2 | G4 Sales / Contract lane | 14 receiptを入力としてreply監視→分類→offer→公式contract readbackを実装 | 1–3日 |
-| 3 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
+| 1 | G3A bounded query coverage | 10 queryを5時間で一巡し、一tick一HTTP・最大1応募を維持 | 0.5日 |
+| 2 | G3B deterministic eligible ranking | provider rowsのうちvalidated eligibleだけを既存公開証拠で安定順位付け | 0.5–1日 |
+| 3 | G3C capacity quota | authoritative active contract sourceを接続し、tick/day quotaと100% capを適用 | 1–2日 |
+| 4 | G4 Sales / Contract lane | 14 receiptを入力としてreply監視→分類→offer→公式contract readbackを実装 | 1–3日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
