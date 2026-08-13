@@ -953,6 +953,26 @@ deadline、invalid worker JSON、unexpected stderr、異常exitではworkerとPl
 親だけがstable nonzero JSONを一行出す。正常workerも一行JSONとexitを必須にし、残存process groupを許さない。
 これは二回目のreviewを追加せず、同じTerra修正後にprimaryのmechanical testとlive exit/orphan確認で閉じる。
 
+G4Aは完了した。implementation `a8a0a9d59560e3c72f9cdb7afe0df59fd559d556`に対するfresh Sol
+adversarial review 1/1は`FIX_FIRST`で、verified receipt相関とtick全体watchdogの二点だけを指摘した。
+review追加は行わず、修正commit `bfd1fc568553744b682cb6fa7e5755f1b8442bc4`で次を閉じた。
+
+- ledgerをURI `mode=ro`で読み、14件の`application_verified` external IDsと一致するproposal boardだけを数える。
+- launchd ownerは親watchdog、Playwright tickは別process groupのworkerとし、120秒deadlineでgroup全体を終了する。
+- valid worker failure JSONはそのまま返し、stderr、exit/JSON不一致、複数行、timeoutはstable failureにする。
+- focused 8、Lancers 40、agent-runner 15、installer 2、compile、plist、diff/static guardがPASSした。
+
+canonical mainとdeployed exact releaseは`bfd1fc568553744b682cb6fa7e5755f1b8442bc4`である。旧mutable
+work-sync PID `34089`をbootoutし、同labelをexact releaseへbootstrapした。real owner tickは約3秒でJSON一行、
+exit 0、stderr 0、launchd idleになり、旧PID、worker PGID `24129`、同groupのPlaywright descendantは0である。
+application、ledger、listingのSHA-256はpre/post一致した。application/report/work-syncの三ownerは同じexact
+release pathに揃い、それぞれ1800秒、300秒、300秒でenabled、`RunAtLoad`なしである。
+
+公式snapshotは`board_count=1 / required_reply_count=1 / unread_count=0 / application_board_count=0 /
+storefront_contract_candidate_count=0`である。board `9024494`、message `58918062`は観測できたがdetailは`with={}`
+で、14 ApplicationReceiptまたはservice item contractへの公式相関がない。これは返信を見つけた事実であって、
+契約・売上の証拠ではない。G4Cがmodelで本文を分類する前に自動返信せず、unknownとして保持する。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
@@ -967,7 +987,7 @@ deadline、invalid worker JSON、unexpected stderr、異常exitではworkerとPl
 | G3A query coverage | **完了。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | exact release `a2081bc0…`、review 1/1 ship、実tick `LinkedIn / observed 2 / submitted false`、state/ledger/listing不変 |
 | G3B eligible ranking | **完了。** validated eligibleをprojected net JPY、provider stable orderで並べ、自然言語priorityをhardcodeしない | exact release `68f42e5b…`、review 1/1 ship、実tick `AI活用 / observed 1 / submitted false`、state不変 |
 | G3B.1 empty search normalization | **完了。** providerの正常な0件をfailureではなくno-op successとして扱う | exact release `086037263…`、実tick `B2Bマーケティング / observed 0 / ok true / submitted false`、state不変 |
-| G4A canonical Sales source | 応募返信とstorefront inquiry/orderの公式message sourceを、既存5分work-sync ownerからread-only観測する。外部送信・ledger appendはしない | boards/detail/messagesのofficial GET、snake_case検証、sanitized snapshot、exact release、state/ledger不変 |
+| G4A canonical Sales source | **完了。** 応募返信とstorefront inquiry/orderの公式message sourceを、既存5分work-sync ownerからread-only観測する。外部送信・ledger appendはしない | exact release `bfd1fc568…`、review 1/1 FIX_FIRST修正済み、real tick exit 0、board 1 / required reply 1 / officially correlated 0、state/ledger不変、orphan 0 |
 | G3C capacity quota | authoritative active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下） | active contract source、tick/day quota、100% cap、duplicate拒否 |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
@@ -1021,13 +1041,12 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | G4A canonical Sales source | 既存5分work-sync ownerをcanonical exact releaseへ置換し、応募14 receiptとstorefront inquiry/orderに共通するofficial boards/detail/messagesをread-only観測する | 0.5–1日 |
-| 2 | Storefront read-only inventory | 公式6 listingのID/URL/title/status/public hashを保存し、canonical候補の一意性とmismatch原因を確定する。publish/archive/deleteは0 | 0.5–1日 |
-| 3 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
-| 4 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
-| 5 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
-| 6 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
-| 7 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、net MRRを計算する | 2–4日 |
+| 1 | Storefront read-only inventory | 公式6 listingのID/URL/title/status/public hashを保存し、canonical候補の一意性とmismatch原因を確定する。publish/archive/deleteは0 | 0.5–1日 |
+| 2 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
+| 3 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
+| 4 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
+| 5 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
+| 6 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、net MRRを計算する | 2–4日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
