@@ -2414,6 +2414,47 @@ performs the real E2E, and records the milestone.
   verified resume-bearing receipt or one exact unresolved required question. Only
   after Review evidence exists may O2-09 create a submit intent and exercise final
   Submit with authoritative Workday/Gmail receipt reconciliation.
+
+  Deterministic wizard source commit `6f7ba2e04acc679c7d49ed7d9ee55a2c3cac63fb`
+  is pushed and active. Two builds are byte-identical at archive SHA-256
+  `db2f8a1c8b03bf7bb7c6837c39108a87d82ace0cd402a7a07134382b74f38da4`
+  with `267` entries. Source and installed functional tests pass `587/587`; the
+  extracted archive has the two expected release-self-build failures because it does
+  not contain `.git`, leaving `585` installed functional tests green. Previous release
+  `a72c47b8d6e29ed34b535452279a6c71f521d74f` remains the rollback target.
+
+  Fourteenth real wake `daily-20260814-074834` ran the new release and exposed the
+  current external blocker before the wizard: both fresh NVIDIA application pages
+  returned to the native login screen with an account-lock error. It created no submit
+  intent and no application receipt. It exited `0`, sent Telegram message ID `16831`,
+  closed exactly its one owned page, preserved all seven pre-existing pages, and left
+  the Ledger byte-identical at SHA-256
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  The official NVIDIA Forgot Password flow was then executed on Job Hunter-owned
+  pages. The exact flow requires `Sign In with Email`, `Forgot Password`, then the
+  hidden `resetPasswordButton`; its `click_filter` overlay requires the existing
+  Workday normal-click then force-click fallback. Gmail produced one new trusted
+  NVIDIA Workday reset thread, ID `19ffd60639f5f4d9`, with one exact
+  `nvidia.wd5.myworkdayjobs.com` reset link. The token showed the password form once
+  and became a consumed error page after submission. A fresh sign-in still reports
+  account locked, so this is not authentication success. The generated password is
+  saved only in the private Workday store with status
+  `reset_complete_unlock_pending`; the token and message body remain private and the
+  Ledger is unchanged.
+
+  The same wake also confirms unnecessary live-agent duplication: when deterministic
+  pre-submit returned `claim_ready_dossier=null`, the free-form runner spent time
+  rediscovering the same Workday route and credentials. The minimal prompt contract now
+  forbids page navigation, credential retry, observer calls, and route rediscovery in
+  that state; it returns the exact deterministic blockers and queue counts. This keeps
+  one clean browser authority path.
+
+  **Immediate next slice:** after the NVIDIA account cooldown, perform one fresh
+  sign-in using the reset private credential. If authentication succeeds, run the
+  deterministic wizard to Review. If it remains locked, select a different eligible
+  non-terminal Workday employer instead of retrying NVIDIA. O2-09 still requires a real
+  authoritative application receipt; none exists yet.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or

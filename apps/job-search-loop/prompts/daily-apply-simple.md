@@ -146,6 +146,11 @@ For each selected role:
    then materialize the canonical application and route idempotently before claiming.
    Read `application_id`, `intent_id`, and `fence` from that receipt. Never create
    these rows with SQL.
+   When `claim_ready_dossier` is null, the deterministic owned-page pass has already
+   exhausted the bounded ATS candidates for this wake. Do not navigate the page,
+   retry credentials, run the observer, or rediscover another route. Return its exact
+   `blocked` reasons and the current candidate-queue counts. The next scheduled wake
+   handles a changed credential, posting, or queue state.
 4. Before any Submit side effect, use the existing Ledger intent, material receipt,
    click fence, and request fence. Execute Submit once. Treat only the existing
    authoritative ATS confirmation classifier as `applied_ats`; HTTP 200 or model prose
