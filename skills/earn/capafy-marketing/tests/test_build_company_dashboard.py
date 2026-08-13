@@ -22,6 +22,7 @@ def company_projection() -> dict:
         "projection_id": "sha256:" + "c" * 64,
         "inventory": {"online": 27, "under_review": 2, "draft": 1, "rejected": 1},
         "orders": 1,
+        "paid_orders": 1,
         "gross_usd": "9.99",
         "pending_usd": "8.00",
         "realized_usd": "0.00",
@@ -177,3 +178,24 @@ def test_goal_monitor_builds_dashboard_after_parity_and_before_telegram() -> Non
     telegram = script.index('bash "$TELEGRAM_SENDER"')
     assert parity_gate < dashboard_build < telegram
     assert "goal-monitor-dashboard-generation-failed" in script
+
+
+def test_dashboard_sales_shows_paid_count_or_unknown_and_validates_type() -> None:
+    known = dashboard.render_html(company_projection() | {"paid_orders": 1})
+    unknown = dashboard.render_html(company_projection() | {"paid_orders": None})
+    missing = company_projection().copy()
+    missing.pop("paid_orders")
+
+    assert "1 lifetime orders · 1 paid" in known
+    assert "1 lifetime orders · paid count unavailable" in unknown
+    assert any(
+        error == "paid_orders is required"
+        for error in dashboard.validate_public_projection(missing)
+    )
+    for value in (True, -1, 1.0, "1"):
+        assert dashboard.validate_public_projection(
+            company_projection() | {"paid_orders": value}
+        ) == ["paid_orders must be a non-negative integer or null"]
+    assert dashboard.validate_public_projection(
+        company_projection() | {"paid_orders": 2}
+    ) == ["paid_orders must not exceed orders"]

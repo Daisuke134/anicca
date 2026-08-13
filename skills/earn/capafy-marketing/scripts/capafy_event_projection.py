@@ -18,6 +18,7 @@ from capafy_event_store import MONEY_FIELDS, read_events, validate_event
 
 
 ZERO = Decimal("0.00")
+_MISSING = object()
 INVENTORY_STATES = {
     "online": "online",
     "approved": "online",
@@ -36,6 +37,17 @@ SOURCE_EVENT_TYPES = {
     "cost": {"cost.measured"},
 }
 INCIDENT_PHASE_ORDER = {"detected": 0, "repair_started": 1, "unresolved": 1, "repaired": 2, "verified": 3}
+
+
+def _paid_orders_for_event(event: dict) -> int | None:
+    gross = Decimal(event["money"]["gross_delta"])
+    if gross < ZERO:
+        return None
+    orders = event["metrics"].get("orders", 0)
+    explicit = event["metrics"].get("paid_orders", _MISSING)
+    if explicit is not _MISSING:
+        return explicit if isinstance(explicit, int) and not isinstance(explicit, bool) and 0 <= explicit <= orders else None
+    return int(gross > ZERO) if orders == 1 else None
 
 
 def _canonical(value: Any) -> bytes:
@@ -176,6 +188,8 @@ def project_company(events: list[dict], reference_time: str | datetime | None = 
     latest_publication: dict | None = None
     incident_states: dict[str, tuple[tuple[datetime, int, int], dict]] = {}
     experiment_states: dict[str, tuple[int, dict]] = {}
+    paid_orders: int | None = 0
+    sales_latest: dict[tuple[str, str], int] = {}
 
     for index, event in enumerate(events):
         errors = validate_event(event)
@@ -187,11 +201,22 @@ def project_company(events: list[dict], reference_time: str | datetime | None = 
         if event_id in seen:
             raise ValueError(f"duplicate event_id: {event_id}")
         seen.add(event_id)
+        if event["event_type"] == "order.received":
+            source = event["source"]
+            sales_latest[(source["producer"], source["source_id"])] = index
 
+    for index, event in enumerate(events):
+        if event["event_type"] == "order.received":
+            source = event["source"]
+            if sales_latest[(source["producer"], source["source_id"])] != index:
+                continue
         for field in MONEY_FIELDS:
             money[field] += Decimal(event["money"][field])
         if event["event_type"] == "order.received":
             orders += int(event["metrics"].get("orders", 0))
+            paid = _paid_orders_for_event(event)
+            if paid_orders is not None:
+                paid_orders = None if paid is None else paid_orders + paid
 
         entity = event["entity"]
         if entity["type"] == "listing" and event["event_type"].startswith("listing."):
@@ -301,6 +326,7 @@ def project_company(events: list[dict], reference_time: str | datetime | None = 
         "cost_usd": _money(money["cost_delta"]),
         "contribution_usd": _money(money["contribution_delta"]),
         "orders": orders,
+        "paid_orders": paid_orders,
         "account": account,
         "marketing": {
             "state": latest_publication["status"]["after"]
@@ -354,6 +380,14 @@ def parity_errors(projected: dict, independent: dict) -> list[str]:
             errors.append(
                 f"{field} mismatch: projection={projected_value!r} source={source_value!r}"
             )
+    projected_paid = projected.get("paid_orders", _MISSING)
+    source_paid = independent.get("paid_orders", _MISSING)
+    if projected_paid is _MISSING or source_paid is _MISSING:
+        projected_label = "<missing>" if projected_paid is _MISSING else repr(projected_paid)
+        source_label = "<missing>" if source_paid is _MISSING else repr(source_paid)
+        errors.append(f"paid_orders missing: projection={projected_label} source={source_label}")
+    elif projected_paid != source_paid:
+        errors.append(f"paid_orders mismatch: projection={projected_paid} source={source_paid}")
     for field in ("inventory", "orders", "experiment"):
         if projected.get(field) != independent.get(field):
             errors.append(

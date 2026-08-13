@@ -3,8 +3,79 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "capafy_outcome.py"
+
+
+def company_state_payload(*, paid_orders: object, orders: object = 5) -> dict:
+    return {
+        "schema_version": 1,
+        "kind": "company_state",
+        "as_of": "2026-08-13T12:00:00Z",
+        "date": "2026-08-13",
+        "last_event_id": "capafy:order.received:test",
+        "projection_id": "sha256:" + "d" * 64,
+        "inventory": {"online": 1, "under_review": 0, "draft": 0, "rejected": 0},
+        "orders": orders,
+        "paid_orders": paid_orders,
+        "gross_usd": "19.98",
+        "pending_usd": "0.00",
+        "realized_usd": "0.00",
+        "mrr_usd": "0.00",
+        "cost_usd": "0.00",
+        "contribution_usd": "0.00",
+        "account": {
+            "handle": "no-active-account",
+            "lifecycle_status": "unknown",
+            "capability": "none",
+            "session_established": False,
+            "post_write_session_verified": False,
+            "account_status": "clean",
+        },
+        "marketing": {"public_post_url": None, "campaign_url": None},
+        "metrics": {},
+        "incident": None,
+        "listing_url": None,
+        "dashboard_url": "https://capafy-skills-daily.netlify.app/company/",
+    }
+
+
+def render(payload: dict) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), "render"],
+        input=json.dumps(payload),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+def test_company_state_render_shows_paid_count_or_unknown() -> None:
+    known = render(company_state_payload(paid_orders=2))
+    unknown = render(company_state_payload(paid_orders=None))
+
+    assert known.returncode == 0, known.stderr
+    assert "Sales: 5 lifetime orders / 2 paid / $19.98 gross." in known.stdout
+    assert unknown.returncode == 0, unknown.stderr
+    assert "Sales: 5 lifetime orders / paid count unavailable / $19.98 gross." in unknown.stdout
+
+
+@pytest.mark.parametrize("paid_orders", [True, -1, 1.0, "1", 6])
+def test_company_state_rejects_invalid_paid_count(paid_orders: object) -> None:
+    result = render(company_state_payload(paid_orders=paid_orders))
+
+    assert result.returncode != 0
+    assert "paid_orders" in result.stderr
+
+
+@pytest.mark.parametrize("orders", [True, -1, 1.0, "5"])
+def test_company_state_rejects_invalid_order_count(orders: object) -> None:
+    result = render(company_state_payload(paid_orders=0, orders=orders))
+
+    assert result.returncode != 0
+    assert "orders" in result.stderr
 
 
 def test_august_first_company_state_is_natural_and_truthful() -> None:
@@ -17,6 +88,7 @@ def test_august_first_company_state_is_natural_and_truthful() -> None:
         "projection_id": "sha256:" + "a" * 64,
         "inventory": {"online": 27, "under_review": 1, "draft": 2, "rejected": 1},
         "orders": 1,
+        "paid_orders": 1,
         "gross_usd": 9.99,
         "pending_usd": 8.0,
         "realized_usd": 0.0,
@@ -53,7 +125,7 @@ def test_august_first_company_state_is_natural_and_truthful() -> None:
     assert result.returncode == 0, result.stderr
     report = result.stdout
     assert "27 online, 1 under review, 2 drafts" in report
-    assert "1 lifetime order / $9.99 gross" in report
+    assert "1 lifetime order / 1 paid / $9.99 gross" in report
     assert "Pending seller balance: $8.00" in report
     assert "Realized bank payout: $0.00" in report
     assert "MRR: $0.00" in report
@@ -87,6 +159,7 @@ def test_singular_inventory_nouns_are_grammatical() -> None:
         "projection_id": "sha256:" + "b" * 64,
         "inventory": {"online": 1, "under_review": 1, "draft": 1, "rejected": 1},
         "orders": 0,
+        "paid_orders": 0,
         "gross_usd": 0,
         "pending_usd": 0,
         "realized_usd": 0,
@@ -117,6 +190,7 @@ def test_projection_report_contains_identical_business_values_and_public_links()
         "projection_id": "sha256:" + "c" * 64,
         "inventory": {"online": 1, "under_review": 0, "draft": 0, "rejected": 0},
         "orders": 1,
+        "paid_orders": 1,
         "gross_usd": "9.99",
         "pending_usd": "8.00",
         "realized_usd": "0.00",

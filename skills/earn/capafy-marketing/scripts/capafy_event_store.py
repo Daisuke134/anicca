@@ -51,7 +51,7 @@ MONEY_FIELDS = (
     "cost_delta",
     "contribution_delta",
 )
-METRIC_FIELDS = {"impressions", "views", "clicks", "likes", "comments", "orders"}
+METRIC_FIELDS = {"impressions", "views", "clicks", "likes", "comments", "orders", "paid_orders"}
 TOP_LEVEL_FIELDS = {
     "schema_version",
     "event_id",
@@ -194,6 +194,21 @@ def validate_event(event: dict) -> list[str]:
                 errors.append(f"unsupported metric: {field}")
             if isinstance(value, bool) or not isinstance(value, int) or value < 0:
                 errors.append(f"metrics.{field} must be a non-negative integer")
+        if "paid_orders" in metrics:
+            if event_type != "order.received":
+                errors.append("metrics.paid_orders is only allowed on order.received")
+            orders = metrics.get("orders")
+            if "orders" not in metrics:
+                errors.append("metrics.orders is required with metrics.paid_orders")
+            elif (
+                isinstance(orders, int)
+                and not isinstance(orders, bool)
+                and orders >= 0
+                and isinstance(metrics["paid_orders"], int)
+                and not isinstance(metrics["paid_orders"], bool)
+                and metrics["paid_orders"] > orders
+            ):
+                errors.append("metrics.paid_orders must not exceed orders")
 
     public_evidence = event.get("public_evidence")
     if not isinstance(public_evidence, dict) or set(public_evidence) != {"urls", "labels"}:

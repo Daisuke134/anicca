@@ -120,6 +120,33 @@ def test_validation_rejects_negative_metric() -> None:
     assert "metrics.clicks must be a non-negative integer" in validate_event(event)
 
 
+def test_validation_accepts_paid_orders_metric() -> None:
+    event = valid_event()
+    event["event_type"] = "order.received"
+    event["entity"] = {"type": "order_batch", "id": "2026-08-13"}
+    event["metrics"] = {"paid_orders": 1}
+
+    assert any("metrics.orders" in error for error in validate_event(event))
+    event["metrics"]["orders"] = 2
+    assert validate_event(event) == []
+
+
+def test_validation_rejects_paid_orders_on_non_order_event() -> None:
+    event = valid_event()
+    event["metrics"] = {"paid_orders": 1, "orders": 1}
+
+    assert any("only allowed on order.received" in error for error in validate_event(event))
+
+
+def test_validation_rejects_paid_orders_above_orders() -> None:
+    event = valid_event()
+    event["event_type"] = "order.received"
+    event["entity"] = {"type": "order_batch", "id": "2026-08-13"}
+    event["metrics"] = {"orders": 1, "paid_orders": 2}
+
+    assert any("paid_orders must not exceed orders" in error for error in validate_event(event))
+
+
 def test_validation_rejects_invalid_timestamp() -> None:
     event = valid_event()
     event["occurred_at"] = "yesterday"

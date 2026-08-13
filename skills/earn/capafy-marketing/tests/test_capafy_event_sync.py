@@ -4,12 +4,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 SCRIPTS = Path(__file__).parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-import capafy_event_sync as sync
 import capafy_event_store as store
+import capafy_event_projection as projection
+import capafy_event_sync as sync
 
 
 def test_sales_row_emits_order_gross_without_recognizing_contribution() -> None:
@@ -35,6 +38,57 @@ def test_sales_row_emits_order_gross_without_recognizing_contribution() -> None:
     assert events[0]["metrics"] == {"orders": 1}
 
 
+def test_sales_row_propagates_explicit_paid_orders_and_stores_valid_event() -> None:
+    row = {
+        "ts": 1786579200,
+        "source": "capafy-sales",
+        "date": "2026-08-13",
+        "orders": 2,
+        "paid_orders": 1,
+        "gross_usd": 19.98,
+    }
+
+    event = sync.events_from_sales_rows([row])[0]
+
+    assert event["metrics"] == {"orders": 2, "paid_orders": 1}
+    assert store.validate_event(event | {"recorded_at": "2026-08-13T12:00:00Z"}) == []
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("orders", None),
+        ("orders", True),
+        ("orders", -1),
+        ("orders", 1.0),
+        ("gross_usd", None),
+        ("gross_usd", -0.01),
+        ("gross_usd", float("nan")),
+        ("gross_usd", "Infinity"),
+        ("paid_orders", True),
+        ("paid_orders", -1),
+        ("paid_orders", 3),
+        ("paid_orders", 1.0),
+        ("paid_orders", None),
+    ],
+)
+def test_sales_rows_reject_malformed_paid_order_inputs(field: str, value: object) -> None:
+    row = {
+        "ts": 1786579200,
+        "source": "capafy-sales",
+        "date": "2026-08-13",
+        "orders": 2,
+        "gross_usd": 19.98,
+    }
+    if value is None and field in {"orders", "gross_usd"}:
+        row.pop(field)
+    else:
+        row[field] = value
+
+    with pytest.raises(ValueError, match=field):
+        sync.events_from_sales_rows([row])
+
+
 def test_duplicate_sales_source_date_is_not_counted_twice() -> None:
     row = {
         "ts": 1782172800,
@@ -48,6 +102,23 @@ def test_duplicate_sales_source_date_is_not_counted_twice() -> None:
     events = sync.events_from_sales_rows([row, dict(row)])
 
     assert len(events) == 1
+    assert events[0]["event_id"].endswith(":daily-aggregate")
+
+
+def test_same_timestamp_uses_original_line_order_for_latest_revision() -> None:
+    first = {
+        "ts": 100,
+        "source": "capafy-sales",
+        "date": "2026-08-13",
+        "orders": 1,
+        "gross_usd": 9.99,
+    }
+    second = first | {"orders": 2, "paid_orders": 1, "gross_usd": 19.98}
+
+    event = sync.events_from_sales_rows([first, second])[0]
+
+    assert event["metrics"] == {"orders": 2, "paid_orders": 1}
+    assert event["event_id"].startswith("capafy:order.received:2026-08-13:revision-")
 
 
 def test_payout_snapshots_emit_pending_then_only_positive_realized_delta() -> None:
@@ -459,3 +530,74 @@ def test_sync_all_cli_backfills_once_and_keeps_exact_cost_private(tmp_path: Path
     assert cost_event["money"]["cost_delta"] == "4.78"
     cost_sidecar = evidence / f"{cost_event['event_id']}.json"
     assert json.loads(cost_sidecar.read_text())["source"]["total_usage_usd"] == 4.776955221
+
+
+def test_sync_money_revises_replaced_source_row_without_mutating_legacy_event(
+    tmp_path: Path,
+) -> None:
+    money = tmp_path / "capafy-earn-ledger.jsonl"
+    cost = tmp_path / "capafy-loop.log"
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    evidence = tmp_path / "capafy-revenue-evidence"
+    old_row = {
+        "ts": 100,
+        "source": "capafy-sales",
+        "date": "2026-08-13",
+        "orders": 1,
+        "gross_usd": 9.99,
+    }
+    new_row = old_row | {"ts": 200, "orders": 2, "paid_orders": 1, "gross_usd": 19.98}
+    money.write_text(json.dumps(old_row) + "\n")
+    cost.write_text("")
+    command = [
+        sys.executable,
+        str(SCRIPTS / "capafy_event_sync.py"),
+        "sync-money",
+        "--money-ledger",
+        str(money),
+        "--cost-log",
+        str(cost),
+        "--ledger",
+        str(ledger),
+        "--evidence-dir",
+        str(evidence),
+    ]
+
+    first = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert first.returncode == 0, first.stderr
+    first_events = store.read_events(ledger)
+    assert len(first_events) == 1
+    assert first_events[0]["event_id"].endswith(":daily-aggregate")
+    old_bytes = ledger.read_bytes()
+    legacy_retry = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert legacy_retry.returncode == 0, legacy_retry.stderr
+    assert json.loads(legacy_retry.stdout)["appended"] == 0
+    assert ledger.read_bytes() == old_bytes
+
+    money.write_text(json.dumps(new_row) + "\n")
+    second = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert second.returncode == 0, second.stderr
+    second_events = store.read_events(ledger)
+    assert len(second_events) == 2
+    assert second_events[0] == first_events[0]
+    assert second_events[0]["event_id"] == first_events[0]["event_id"]
+    assert second_events[1]["event_id"].startswith(
+        "capafy:order.received:2026-08-13:revision-"
+    )
+    assert ledger.read_bytes() != old_bytes
+    projected = projection.project_company(second_events)
+    assert projected["orders"] == 2
+    assert projected["paid_orders"] == 1
+    assert projected["gross_usd"] == "19.98"
+
+    before_replay = ledger.read_bytes()
+    third = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert third.returncode == 0, third.stderr
+    assert json.loads(third.stdout)["appended"] == 0
+    assert ledger.read_bytes() == before_replay
+
+    ledger.write_text("not-json\n")
+    corrupt = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert corrupt.returncode != 0
+    assert "invalid ledger JSON" in corrupt.stderr
+    assert ledger.read_text() == "not-json\n"
