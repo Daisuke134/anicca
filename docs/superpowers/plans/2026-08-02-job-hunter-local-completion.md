@@ -22,23 +22,25 @@ mail, and learning lanes are enabled and loaded. They completed real wakes with 
 `0`; natural daily reports are delivered and all health gates pass. The active release
 already contains private-environment isolation, deterministic Ashby answers, direct
 answer-artifact reuse, terminal-candidate filtering, and the canonical `claim_ready`
-bridge through the existing `browser_worker` path. The latest pushed source additionally
-closes the measured Workday account-creation blocker: the credential process now fills
-only the registered wake-owned page and returns no secret value. That source is verified
-but not yet activated or proven in a real wake. The next slice builds and activates one
-immutable release, triggers the existing daily LaunchAgent, and observes the next real
-Workday state without claiming an application until an authoritative receipt exists.
+bridge through the existing `browser_worker` path. The Workday account-creation fix is
+now pushed, released, and proven in a real wake: the credential process filled only the
+registered wake-owned page, returned no secret, and reached the tenant login screen.
+The measured next blocker is narrower: the same private tool supports account creation
+but not the two-field Workday login form. The next slice adds login mode to that same
+tool and reruns the existing daily LaunchAgent without claiming an application until an
+authoritative receipt exists.
 
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
 unloaded. They are now loaded. The pushed source commit
-`01590d5524e684bc8659d487f9d31ba0b9bb59bf` is now the active immutable release.
+`d6210d09f35d8705f5ad52b44827e980e112e1d7` is now the active immutable release.
 It contains O2-05N natural reporting, O2-05U unlimited eligible applications, O2-05B
 binding to the existing `interactive:dais` browser at `127.0.0.1:9222` with no restart
 fallback, the first O2-06 salary-policy correction, terminal filtering, and the Ashby
-claim-ready bridge. Release `9c18e355e6d52bdfb390d0a28946fee05b3f23a9`
-is the rollback target. Real daily wakes proved discovery, adaptive application work,
-natural reporting, and safe browser ownership. All current health gates pass.
+claim-ready bridge, and private Workday account creation. Release
+`01590d5524e684bc8659d487f9d31ba0b9bb59bf` is the rollback target. Real daily wakes
+proved discovery, adaptive application work, natural reporting, and safe browser
+ownership. All current health gates pass.
 O2-06 through O2-12 improve and prove the live loop; they must
 not delay turning the application loop on.
 
@@ -1590,12 +1592,39 @@ performs the real E2E, and records the milestone.
   the complete Job Hunter suite passes `579/579`, Python compilation and diff checks
   pass, and the three-file change is pushed. It is not yet an application receipt.
 
-  **Immediate next slice:** build and activate one immutable release from the pushed
-  source, trigger the existing `ai.anicca.job-search-daily` LaunchAgent, and observe the
-  real Workday continuation. Preserve the exact shared-browser PID, UUID, context, and
-  baseline page set. If the next screen requires email verification or another action,
-  record that exact blocker and solve only that next step. Until an authoritative ATS
-  or Gmail receipt exists, the system continues reporting zero confirmed applications.
+  Release build and real-cycle proof are complete. Source commit
+  `d6210d09f35d8705f5ad52b44827e980e112e1d7` built twice to identical archive SHA-256
+  `dc4d8c16df10cea2882102873b8318d7d3036ac3628bccd993f1d5e1d933de34`, with `267`
+  entries and no private-state-shaped entry. The source suite passes `579/579`; the
+  extracted runtime passes `577/577`, excluding only the two source-only tests that
+  intentionally require a Git repository to build another archive. The release is
+  read-only and active; `01590d5524e684bc8659d487f9d31ba0b9bb59bf` is the rollback.
+
+  Real launchd wake `daily-20260814-024317` exited `0`. It refreshed `451` discovered
+  jobs, verified `52`, kept `7` eligible, rejected `45`, retained `399` for later
+  verification, excluded `11` terminal candidates, and processed the one remaining
+  Salesforce `Technical Architect - MuleSoft` role in Tokyo/Remote. The safe credential
+  tool reused the tenant credential, filled the exact registered page, clicked Create
+  Account with `browser_action_count=4`, returned `secret_values_returned=false`, and
+  Workday redirected to its login page. The next call failed closed because login has
+  no `verifyPassword` control; this proves account creation works and identifies the
+  exact missing two-field login operation. The wake truthfully reported zero submitted
+  and zero submit-unknown; Telegram acknowledged message ID `16528`.
+
+  Production Ledger stayed byte-identical at SHA-256
+  `d6d494d2185137ab76d2079756f38326819bf149be50cb4b1dfc4bf8d9d0ee74`: `57`
+  applications, `257` events, `30` intents, `6` submitted, `31` submit-unknown, and
+  `0` submit-claimed; SQLite integrity is `ok`. All three privacy scans are clean.
+  Cleanup closed exactly the one Job Hunter-created page and restored shared-browser
+  PID `22279`, UUID `2ac269b0-350a-49a4-971e-9a0556aed50d`, and the exact six original
+  page IDs.
+
+  **Immediate next slice:** extend the same Workday credential module with a login mode
+  that requires the registered owned page and same tenant, fills only email/password,
+  clicks the stable Workday sign-in control, and returns only a redacted receipt. Do not
+  add a service, adapter, database, browser, or scheduler. Rebuild, activate, and rerun
+  the real daily lane. Until an authoritative ATS or Gmail receipt exists, the system
+  continues reporting zero confirmed applications.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
