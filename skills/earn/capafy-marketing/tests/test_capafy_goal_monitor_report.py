@@ -1,9 +1,11 @@
 import json
 import concurrent.futures
 import os
+import re
 import stat
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -604,6 +606,73 @@ def test_goal_monitor_releases_one_send_lock_for_simultaneous_runs(tmp_path: Pat
     results = [process.communicate(timeout=30) for process in processes]
     assert all(process.returncode == 0 for process in processes), results
     assert sent.read_text().count("レポート（") == 1
+    assert len(json.loads(delivery.read_text())["deliveries"]) == 1
+
+
+def test_goal_monitor_serializes_shared_scratch_for_distinct_periods(tmp_path: Path) -> None:
+    env, script, sent, delivery = _goal_monitor_fixture(tmp_path)
+    ledger = Path(env["CAPAFY_EVENT_LEDGER"])
+    rows = [json.loads(line) for line in ledger.read_text().splitlines() if line.strip()]
+    sale = next(row for row in rows if row["event_type"] == "order.received")
+    ledger.write_text("\n".join(json.dumps(row) for row in [*(row for row in rows if row is not sale), sale]) + "\n")
+    ready = tmp_path / "sync-ready"
+    sync = Path(env["CAPAFY_EVENT_SYNC"])
+    sync.write_text(
+        "import os, time\n"
+        "from pathlib import Path\n"
+        "kind = os.environ['CAPAFY_REPORT_KIND']\n"
+        "ready = Path(os.environ['CAPAFY_SYNC_READY_DIR'])\n"
+        "ready.mkdir(parents=True, exist_ok=True)\n"
+        "if kind == 'hourly': time.sleep(0.25)\n"
+        "(ready / kind).write_text('done')\n"
+        "if kind == 'hourly': time.sleep(0.1)\n"
+    )
+    env["CAPAFY_SYNC_READY_DIR"] = str(ready)
+    lock = Path(env["CAPAFY_GOAL_MONITOR_DELIVERY_LOCK"])
+    lock.mkdir()
+    (lock / "pid").write_text(f"{os.getpid()}\n")
+    processes = [
+        subprocess.Popen(
+            ["bash", str(script)],
+            env=dict(env, CAPAFY_REPORT_KIND="hourly", CAPAFY_REPORT_PERIOD_KEY="2026-08-13T17"),
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ),
+        subprocess.Popen(
+            ["bash", str(script)],
+            env=dict(env, CAPAFY_REPORT_KIND="event", CAPAFY_REPORT_PERIOD_KEY="sale-period", CAPAFY_EVENT_REASON="sale"),
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ),
+    ]
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline and not all((ready / kind).exists() for kind in ("hourly", "event")):
+        time.sleep(0.02)
+    (lock / "pid").unlink(missing_ok=True)
+    lock.rmdir()
+    results = [process.communicate(timeout=30) for process in processes]
+    assert all(process.returncode == 0 for process in processes), results
+    body = sent.read_text()
+    messages = [message for message in re.split(r"(?=Capafy (?:時間|イベント)レポート)", body) if message.strip()]
+    assert len(messages) == 2
+    hourly = next(message for message in messages if message.startswith("Capafy 時間レポート"))
+    event = next(message for message in messages if message.startswith("Capafy イベントレポート"))
+    assert "2026-08-13 17時" in hourly
+    assert "次の対応: 新しい注文の受取状況を確認する。" in event
+    assert "次の対応: 新しい注文の受取状況を確認する。" not in hourly
+    keys = {row["delivery_key"] for row in json.loads(delivery.read_text())["deliveries"]}
+    assert keys == {"hourly:2026-08-13T17", f"event:sale:{sale['event_id']}"}
+
+
+def test_goal_monitor_releases_send_lock_after_early_sync_failure(tmp_path: Path) -> None:
+    env, script, sent, delivery = _goal_monitor_fixture(tmp_path)
+    sync = Path(env["CAPAFY_EVENT_SYNC"])
+    sync.write_text("raise SystemExit(1)\n")
+    failed = _run_monitor(env, script, kind="hourly", period="2026-08-13T17")
+    assert failed.returncode == 2
+    assert not Path(env["CAPAFY_GOAL_MONITOR_DELIVERY_LOCK"]).exists()
+    sync.write_text("raise SystemExit(0)\n")
+    recovered = _run_monitor(env, script, kind="hourly", period="2026-08-13T17")
+    assert recovered.returncode == 0, recovered.stderr
+    assert sent.read_text().count("Capafy 時間レポート") == 1
     assert len(json.loads(delivery.read_text())["deliveries"]) == 1
 
 

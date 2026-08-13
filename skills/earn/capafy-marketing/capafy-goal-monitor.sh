@@ -94,6 +94,8 @@ PY
   exit 0
 fi
 
+acquire_delivery_lock || exit 2
+
 # Refresh canonical writers before reading the projection. Failure cannot fall through
 # to the legacy report path.
 TMP_ROOT="${CAPAFY_GOAL_MONITOR_TMP_DIR:-/tmp}"
@@ -519,6 +521,7 @@ PY
   [ "$INCIDENT_PHASE" = "verified" ] || transition_incident verified || exit 2
   export CAPAFY_GOAL_MONITOR_RECONCILE_PASS=1
   export CAPAFY_GOAL_MONITOR_RESOLVED_INCIDENT_ID="$INCIDENT_ID"
+  release_delivery_lock
   exec bash "$0"
 fi
 if [ "$RC" -ne 0 ]; then
@@ -528,7 +531,6 @@ if [ "$RC" -ne 0 ]; then
   cat "$PARITY_FILE" >&2 2>/dev/null || true
   exit "$RC"
 fi
-acquire_delivery_lock || exit 2
 if ! "$PY" "$COMPANY_DASHBOARD_BUILDER" \
   --projection "$PROJECTION_FILE" --output-dir "$COMPANY_DASHBOARD_DIR" >/dev/null; then
   "$PY" "$OUTCOME_SCRIPT" start-incident \
