@@ -1764,6 +1764,26 @@ performs the real E2E, and records the milestone.
   add no service, queue, database, browser, or scheduler. Release and rerun; the live
   wake must select a new ranking-ready non-terminal role rather than recycling the
   Salesforce fallback. An ATS/Gmail receipt remains the only completion evidence.
+
+  **Terminal-before-shortlist slice complete in pushed source:** commit `27b1207e1`
+  changes only the existing terminal filter, daily shell, and its regression test. The
+  daily shell now passes the full queue to the Ledger terminal fence and requests the
+  existing twelve-candidate shortlist only after terminal rows are removed. No ranking,
+  route, submission, browser, database, or scheduler logic changed. Focused tests pass
+  `15/15`; Python compilation, shell syntax, diff checks, and the complete suite pass
+  `581/581`.
+
+  A read-only production-shaped replay against the real Ledger and the prior `436`-row
+  queue excluded `17` terminal rows first, retained `419`, and then selected `12`.
+  The selected set now includes ranking-ready NVIDIA Physical AI/Generative AI roles
+  that were previously starved behind terminal history. OpenAI and Cursor Japan roles
+  remain visible to the manual-owner prompt fence and are not authorized for automatic
+  submission. The replay changed no Ledger or browser state.
+
+  **Immediate next slice:** build and activate the pushed queue-order release, run the
+  real daily lane, and verify a ranking-ready non-terminal role reaches the same owned
+  browser/application pipeline. Record an application only with an authoritative ATS
+  or Gmail receipt.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
