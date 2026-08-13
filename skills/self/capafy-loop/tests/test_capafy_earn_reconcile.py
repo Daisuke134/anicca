@@ -136,6 +136,27 @@ def test_nonfinite_sales_preserves_previous_source_evidence(tmp_path: Path) -> N
     assert ledger.read_bytes() == before and calls_after.read_bytes() == sync_before
 
 
+def test_malformed_numeric_values_preserve_previous_source_evidence(tmp_path: Path) -> None:
+    first, ledger, calls = _run(tmp_path, 0)
+    before, sync_before = ledger.read_bytes(), calls.read_bytes()
+    payout_fields = ("balancePayout", "balancePending", "balanceConfirmed", "totalPayout")
+    for field in payout_fields:
+        for bad in (None, [], {}):
+            payout = {name: 0 for name in payout_fields}
+            payout[field] = bad
+            failed, _, calls_after = _run(tmp_path, 0, payout_payload={"data": payout})
+            assert failed.returncode != 0 and "payout" in failed.stderr
+            assert ledger.read_bytes() == before and calls_after.read_bytes() == sync_before
+    sales_fields = ("orders", "revenue", "netRevenue", "refundAmount", "newBuyers")
+    for field in sales_fields:
+        for bad in (None, [], {}):
+            row = {name: 1 for name in sales_fields} | {"date": "2026-08-12"}
+            row[field] = bad
+            failed, _, calls_after = _run(tmp_path, 0, sales_payload={"data": {"data": [row]}})
+            assert failed.returncode != 0 and "sales" in failed.stderr
+            assert ledger.read_bytes() == before and calls_after.read_bytes() == sync_before
+
+
 def test_sales_window_failure_does_not_return_partial_rows() -> None:
     spec = importlib.util.spec_from_file_location("reconcile", SCRIPT)
     module = importlib.util.module_from_spec(spec)

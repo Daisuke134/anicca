@@ -73,9 +73,11 @@ def _date_windows(lookback_days: int):
 
 
 def _finite(value: object, field: str) -> float:
+    if isinstance(value, bool):
+        raise RuntimeError(f"{field} is not numeric")
     try:
-        number = float(value or 0)
-    except (TypeError, ValueError) as exc:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
         raise RuntimeError(f"{field} is not numeric") from exc
     if not math.isfinite(number):
         raise RuntimeError(f"{field} is not finite")
