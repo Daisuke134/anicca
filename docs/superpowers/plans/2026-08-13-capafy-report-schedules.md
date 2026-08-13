@@ -33,7 +33,7 @@
 - Consumes: the existing `capafy-goal-monitor.sh` environment contract `CAPAFY_REPORT_KIND=hourly|daily_close`.
 - Produces: two launchd jobs with exact calendar triggers and unique logs; both continue to use the monitor's shared period-keyed delivery ledger.
 
-- [ ] **Step 1: Add failing source-plist contract tests**
+- [x] **Step 1: Add failing source-plist contract tests**
 
 Extend `test_capafy_p1_launchd.py` with these exact schedule expectations:
 
@@ -66,7 +66,7 @@ def test_owner_report_jobs_use_the_existing_monitor_with_exact_schedules():
 
 Also assert all five Capafy P1/report jobs have unique labels and log paths, and both new jobs retain `HOME=/Users/anicca` plus a `PATH` containing `/opt/homebrew/bin`.
 
-- [ ] **Step 2: Run the focused test and confirm RED**
+- [x] **Step 2: Run the focused test and confirm RED**
 
 Run:
 
@@ -76,7 +76,7 @@ python3 -m pytest -q skills/earn/capafy-marketing/tests/test_capafy_p1_launchd.p
 
 Expected: FAIL because the two source plists do not exist.
 
-- [ ] **Step 3: Add the two minimal source plists**
+- [x] **Step 3: Add the two minimal source plists**
 
 Create both XML plists using the exact labels, program arguments, environment, schedules, and unique log names from Global Constraints. Use:
 
@@ -89,7 +89,7 @@ Create both XML plists using the exact labels, program arguments, environment, s
 
 Do not add `RunAtLoad=true`, `KeepAlive`, `StartInterval`, a wrapper script, or a separate state path.
 
-- [ ] **Step 4: Run focused and full verification**
+- [x] **Step 4: Run focused and full verification**
 
 Run:
 
@@ -103,7 +103,7 @@ git diff --check
 
 Expected: all PASS.
 
-- [ ] **Step 5: Commit and push the implementation branch**
+- [x] **Step 5: Commit and push the implementation branch**
 
 Commit only the two plists and the focused test:
 
@@ -115,11 +115,11 @@ git commit -m "feat(capafy): schedule owner reports"
 git push -u origin feature/capafy-report-schedules
 ```
 
-- [ ] **Step 6: Run one fresh adversarial review and at most one correction**
+- [x] **Step 6: Run one fresh adversarial review and at most one correction**
 
 Review the exact implementation commit read-only. Attack wrong wall-clock semantics, a daily job accidentally firing hourly, missing report-kind environment, collisions with the 09:30 job, duplicate labels/log paths, `RunAtLoad`/`KeepAlive` surprise sends, divergent state files, invalid plist syntax, and retry duplication. Send Critical/Important findings to the same Luna implementer once, rerun Step 4, and do not start a second review cycle.
 
-- [ ] **Step 7: Merge, install, and read back production launchd state**
+- [x] **Step 7: Merge, install, and read back production launchd state**
 
 After parent verification and merge, install the exact source bytes with mode `0644`, then bootstrap only the two new labels:
 
@@ -134,10 +134,21 @@ launchctl bootstrap gui/$(id -u) /Users/anicca/Library/LaunchAgents/ai.anicca.ca
 
 Require `cmp -s` for source versus installed bytes. `launchctl print` must show hourly `Minute=0`, daily close `Hour=23/Minute=50`, the exact report kind, inactive state, and no unexpected run from installation.
 
-- [ ] **Step 8: Prove each job and period dedupe with the existing loop**
+- [x] **Step 8: Prove each job and period dedupe with the existing loop**
 
 Kickstart the hourly label with one valid unused hourly period key, repeat it, and require exactly one new real Telegram message ID. Kickstart the daily-close label with the current JST date, repeat it, and require exactly one new real Telegram message ID. Set a temporary manager-level `CAPAFY_REPORT_PERIOD_KEY` only around each pair and unset it in an EXIT trap. Across both pairs require exit `0`, byte-identical delivery state on each repeated key, no new stderr, a 409-row revenue ledger with unchanged SHA-256, and Japanese 5 / 2 / `$19.98` content. Do not kickstart Builder or Marketer.
 
-- [ ] **Step 9: Close Item 6 in the authoritative spec**
+- [x] **Step 9: Close Item 6 in the authoritative spec**
 
 Record implementation/merge commits, focused/full test counts, source-installed hashes, launchctl calendar/environment readback, real Telegram IDs, dedupe hashes, and remaining stale sources. Commit and push the spec before Item 7.
+
+## Closure evidence
+
+- Implementation commit `c3acfabc8` is deployed through merge `8d170e336`. Parent verification is focused launchd `6 passed`, all Marketing `360 passed`, two `plutil -lint` checks, and `git diff --check`.
+- The only fresh Sol adversarial review returned `ship` with zero Critical/Important findings. One deferred Minor notes that the test would not reject a future `StartInterval` or stdout/stderr cross-collision; the installed plist values themselves are exact, so no correction or second review was run.
+- Source and installed hourly plist bytes share SHA-256 `032688ce9d30aaac17d203d017e19039848db20e3ced8bea224e1d6b24036301`; daily-close bytes share `528399bf41099360e44c906455e3428fd3589184b89093a572ecf8a43c158aed`. Both jobs bootstrapped with `runs=0` and no surprise send.
+- `launchctl print` reads hourly `CAPAFY_REPORT_KIND=hourly` with `Minute=0`, and daily close `CAPAFY_REPORT_KIND=daily_close` with `Hour=23, Minute=50`.
+- The real 19:00 calendar trigger produced hourly run 1, exit `0`, and Telegram `15920`. A forced same-period run 2 exited `0` with delivery SHA unchanged at `0b9f87cb0a7c55f2c0a112507a8e9fbbbc31ae8ad17ceb87e3162f5186851bd0` and no duplicate.
+- Daily-close run 1 exited `0` and delivered Telegram `15921`; same-day run 2 exited `0` with delivery SHA unchanged at `7d12190937e426713202fe243b69395d13cce7670a35494d51fad481b55a19b2` and no duplicate. Both new stderr logs remain zero lines.
+- The deterministic daily-close body is Japanese and contains 5 lifetime orders, 2 paid, `$19.98`, freshness, Builder, Marketer, repair/next action, listing, Reel/content, and dashboard URLs with no forbidden token. The canonical revenue ledger remained 409 rows with SHA-256 `2729ed05e5504f9c6c26f684dca27fd35cdd2bc02d670a4971c0ffd5c6dc023e`.
+- Inventory, Instagram account, Marketing, and cost remain visibly stale. Item 7 owns the existing 09:30 morning job.
