@@ -425,6 +425,54 @@ def test_parity_gate_accepts_equivalent_sources_and_rejects_contradiction() -> N
     ]
 
 
+def test_parity_gate_compares_incident_retry_at_by_canonical_utc_second() -> None:
+    incident = {
+        "incident_id": "capafy-marketer-20260807T045052Z-deadbeef",
+        "owner": "marketer",
+        "summary": "Instagram readback failed.",
+        "phase": "unresolved",
+        "next_retry_at": "2026-08-07T04:50:52Z",
+    }
+    independent = {
+        "incident": incident
+        | {"next_retry_at": "2026-08-07T13:50:52.266822+09:00"}
+    }
+
+    assert projection.parity_errors({"incident": incident}, independent) == []
+
+
+@pytest.mark.parametrize(
+    ("projected_retry_at", "independent_retry_at"),
+    [
+        ("2026-08-07T04:50:52Z", "2026-08-07T04:50:53Z"),
+        (None, "2026-08-07T04:50:52Z"),
+        ("2026-08-07T04:50:52", "2026-08-07T04:50:52"),
+        ("not-a-timestamp", "not-a-timestamp"),
+    ],
+)
+def test_parity_gate_fails_closed_for_invalid_incident_retry_at(
+    projected_retry_at: str | None, independent_retry_at: str | None
+) -> None:
+    projected = {
+        "incident": {
+            "incident_id": "capafy-marketer-20260807T045052Z-deadbeef",
+            "owner": "marketer",
+            "summary": "Instagram readback failed.",
+            "phase": "unresolved",
+            "next_retry_at": projected_retry_at,
+        }
+    }
+    independent = {
+        "incident": projected["incident"]
+        | {"next_retry_at": independent_retry_at}
+    }
+
+    assert projection.parity_errors(projected, independent) == [
+        f"incident mismatch: projection={projected['incident']!r} "
+        f"source={independent['incident']!r}"
+    ]
+
+
 def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_mismatch(
     tmp_path: Path,
 ) -> None:

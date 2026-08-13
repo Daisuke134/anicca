@@ -54,6 +54,15 @@ def _utc(value: str | datetime) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def _incident_parity(incident: dict | None) -> tuple[bool, tuple | None]:
+    if incident is None: return True, None
+    try:
+        retry_at = incident.get("next_retry_at")
+        retry_at = None if retry_at is None else _utc(retry_at).replace(microsecond=0)
+    except (AttributeError, TypeError, ValueError): return False, None
+    return True, tuple(incident.get(field) for field in ("incident_id", "owner", "summary", "phase")) + (retry_at,)
+
+
 def _source_freshness(events: list[dict], reference_time: str | datetime | None) -> dict:
     reference = _utc(reference_time) if reference_time is not None else max((_utc(event["recorded_at"]) for event in events), default=_utc("1970-01-01T00:00:00Z"))
     result = {}
@@ -343,12 +352,16 @@ def parity_errors(projected: dict, independent: dict) -> list[str]:
             errors.append(
                 f"{field} mismatch: projection={projected_value!r} source={source_value!r}"
             )
-    for field in ("inventory", "orders", "incident", "experiment"):
+    for field in ("inventory", "orders", "experiment"):
         if projected.get(field) != independent.get(field):
             errors.append(
                 f"{field} mismatch: projection={projected.get(field)!r} "
                 f"source={independent.get(field)!r}"
             )
+    projected_incident = _incident_parity(projected.get("incident"))
+    source_incident = _incident_parity(independent.get("incident"))
+    if not all((projected_incident[0], source_incident[0], projected_incident[1] == source_incident[1])):
+        errors.append(f"incident mismatch: projection={projected.get('incident')!r} source={independent.get('incident')!r}")
     for field in (
         "handle",
         "lifecycle_status",
