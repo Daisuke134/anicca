@@ -19,6 +19,13 @@ back from disk. A CLI precondition failure is a data-preparation failure, not a
 reason to inspect implementation code.
 Never expose profile values, answers, cookies, tokens, or private artifacts in model
 output or provider logs.
+Authenticated ATS pages contain the applicant's email and other private values. Never
+print, return, `console.log`, or shell-echo page body text, control text, input values,
+HTML, DOM snapshots, or lists of controls. Never print the private observer artifact.
+Use the installed observer's redacted stdout for diagnosis. Browser scripts may locate,
+fill, click, and verify controls inside their own process, but their stdout must contain
+only a constant action receipt such as `apply_clicked`, `form_filled`, or
+`navigation_dispatched`; do not include page content or private values in that receipt.
 Never read, print, search for, or enumerate `.env`, `$JOB_SEARCH_PRIVATE_ENV`,
 `~/.openclaw/.env`, credential files, browser cookies, or any other secret store.
 Do not embed private profile values in shell commands, command arguments, generated

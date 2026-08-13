@@ -178,6 +178,17 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("Do not embed private profile values in shell commands", contract)
         self.assertNotIn("A Gmail provider message ID is `applied_email`", contract)
 
+    def test_daily_agent_never_prints_authenticated_page_content(self):
+        root = Path(__file__).parents[1]
+        contract = (root / "prompts" / "daily-apply-simple.md").read_text(
+            encoding="utf-8"
+        )
+        normalized = " ".join(contract.split())
+
+        self.assertIn("Never print, return, `console.log`, or shell-echo page body text", normalized)
+        self.assertIn("Never print the private observer artifact", normalized)
+        self.assertIn("stdout must contain only a constant action receipt", normalized)
+
     def test_browser_persists_exact_submission_materials_before_click(self):
         root = Path(__file__).parents[1]
         prompts = [
