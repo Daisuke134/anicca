@@ -42,6 +42,54 @@ with open(t,"w") as f: json.dump(value,f); f.write("\n"); f.flush(); os.fsync(f.
 os.replace(t,p)
 PY
 }
+write_session_recovery_result(){
+  python3 - "$RESULT" "$1" <<'PY'
+import datetime,json,os,sys
+path,handle=sys.argv[1:]
+retry=datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(minutes=5)
+value={
+    "result":"replacement_waiting",
+    "session_recovery":True,
+    "reason":"active Instagram browser tab is missing",
+    "handle":handle,
+    "repair_detail":"The existing browser-owned recovery row is retained for structural reauthentication.",
+    "next_retry_at":retry.isoformat(timespec="seconds").replace("+00:00","Z"),
+}
+tmp=path+".tmp"
+with open(tmp,"w") as stream:
+    json.dump(value,stream); stream.write("\n"); stream.flush(); os.fsync(stream.fileno())
+os.replace(tmp,path)
+PY
+}
+resolve_session_recovery_handle(){
+  python3 - "$ACCOUNTS" "$STATE" <<'PY'
+import json,re,sys
+accounts_path,state_path=sys.argv[1:]
+state=json.load(open(state_path))
+incident_id=state.get("incident_id")
+if not incident_id:
+    raise SystemExit(1)
+rows=json.load(open(accounts_path))
+matches=[
+    row for row in rows
+    if isinstance(row,dict)
+    and row.get("status")=="session_failed"
+    and row.get("session_owner")=="browser"
+    and row.get("incident_id")==incident_id
+    and re.fullmatch(r"capafy\.[a-z0-9](?:[a-z0-9._-]{0,61}[a-z0-9])?", str(row.get("handle") or "").lstrip("@").lower())
+]
+if len(matches)!=1:
+    raise SystemExit(1)
+print(matches[0]["handle"])
+PY
+}
+session_recovery_shortcut(){
+  local handle="$1" rc
+  write_session_recovery_result "$handle"
+  CAPAFY_MARKETING_RESULT="$RESULT" CAPAFY_IG_LIFECYCLE_STATE="$STATE" bash "$HANDOFF" 1 account-manager
+  rc=$?
+  exit "$rc"
+}
 fail(){
   local reason="$1" rc
   write_result failure "$reason"
@@ -88,6 +136,10 @@ fi
 python3 "$LIFECYCLE" snapshot --accounts "$ACCOUNTS" --state "$STATE" >/dev/null || fail "could not derive the Instagram lifecycle snapshot"
 replacement="$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1])).get("replacement_requested",False)).lower())' "$STATE")"
 [ "$replacement" = "true" ] || exit 0
+prior_result_kind="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("result", ""))' "$RESULT" 2>/dev/null || true)"
+
+recovery_handle="$(resolve_session_recovery_handle 2>/dev/null || true)"
+[ -z "$recovery_handle" ] || [ "$prior_result_kind" = "challenge" ] || session_recovery_shortcut "$recovery_handle"
 
 python3 - "$STATE" <<'PY' || fail "could not persist the provisioning lifecycle state"
 import datetime,json,os,sys
@@ -113,6 +165,11 @@ rows=json.load(open(sys.argv[1])); before=int(sys.argv[2])
 print(rows[-1].get("handle", "") if len(rows)==before+1 and isinstance(rows[-1],dict) else "")
 PY
 )" || candidate=""
+after_count="$(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))))' "$ACCOUNTS" 2>/dev/null || true)"
+if [ "$after_count" = "$before_count" ]; then
+  recovery_handle="$(resolve_session_recovery_handle 2>/dev/null || true)"
+  [ -z "$recovery_handle" ] || [ "$prior_result_kind" = "challenge" ] || session_recovery_shortcut "$recovery_handle"
+fi
 readback="$(python3 - "$ACCOUNTS" "$before_count" "$port" "$IDENTITY" <<'PY'
 import json,sys
 rows=json.load(open(sys.argv[1])); before=int(sys.argv[2]); port=int(sys.argv[3]); identity=sys.argv[4]

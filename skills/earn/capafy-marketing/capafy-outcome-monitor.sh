@@ -94,11 +94,6 @@ import json, sys
 print(json.loads(sys.argv[1]).get("terminal_message_key") or "")
 PY
 )"
-[ "$CURRENT_KEY" = "$KEY" ] && exit 0
-
-SEND_RESULT="$(bash "$SENDER" "$BODY" 2>&1)" || exit 1
-MESSAGE_ID="$(printf '%s\n' "$SEND_RESULT" | sed -nE 's/.*MSGID=([0-9]+).*/\1/p' | tail -1)"
-[ -n "$MESSAGE_ID" ] || exit 1
 
 KIND="$(python3 - "$ENVELOPE" <<'PY'
 import json, sys
@@ -115,6 +110,42 @@ payload.update({"incident_id": sys.argv[1], "phase": sys.argv[2]})
 print(json.dumps(payload))
 PY
 }
+
+send_receipt() {
+  local output response rc
+  output="$(mktemp -t capafy-outcome-telegram.XXXXXX)" || return 1
+  bash "$SENDER" "$1" >"$output" 2>&1
+  rc=$?
+  if [ "$rc" -ne 0 ] || [ "$(awk 'END {print NR}' "$output")" != 1 ]; then
+    rm -f "$output"
+    return 1
+  fi
+  response="$(cat "$output")"
+  rm -f "$output"
+  if [[ "$response" =~ ^TELEGRAM_SENT=true\ MSGID=([0-9]+)$ ]]; then
+    printf '%s' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  return 1
+}
+reservation_payload() {
+  python3 - "$1" <<'PY'
+import json,sys
+print(json.dumps({"terminal_message_key":sys.argv[1]}))
+PY
+}
+
+if [ "$KIND" = "repair_closure" ]; then
+  if [ "$CURRENT_KEY" = "$KEY" ]; then
+    exit 0
+  fi
+  transition "$CURRENT_PHASE" "$(reservation_payload "$KEY")" || exit 2
+else
+  [ -z "$CURRENT_KEY" ] || exit 0
+  transition unresolved "$(reservation_payload "$KEY")" || exit 2
+fi
+
+MESSAGE_ID="$(send_receipt "$BODY")" || exit 1
 
 if [ "$KIND" = "repair_closure" ]; then
   case "$CURRENT_PHASE" in
