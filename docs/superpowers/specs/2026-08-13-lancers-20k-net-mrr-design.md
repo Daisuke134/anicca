@@ -403,7 +403,17 @@ G1 default query接続はTDDで実装済みである。REDはdefault discovery�
 GREENはdefaultで`SNS運用`、明示overrideで指定queryをそのまま渡すことを確認する。production差分は
 `application_loop.py`の定数と既存call boundaryだけで、status、adapter、state、ledger、schema、submitは
 変更しない。統合後のmechanical verificationはapplication 10 tests、installer 2 tests、agent-runner
-15 testsがPASSする。次はこのcanonical main SHAをimmutable normal releaseへdeployしてofficial wakeを一回行う。
+15 testsがPASSする。canonical main `9e26a71759b8918a1269a31f48b4a3f9bad6671f`をimmutable normal
+releaseへdeployし、13 filesのmanifest hash一致後にofficial wakeを一回行う。結果はrun 1、exit 0、
+stderr 0、`observed_count=13`、`eligible_count=0`、`submitted=false`、`no_eligible_project`であり、
+default queryが本番で効いたことと、外部作用がゼロだったことを示す。
+
+同じ13件をprovider-onlyで再分類したreason集計は`sns_staff_evidence_unknown=13`、
+`small_b2b_evidence_unknown=6`、`budget_below_98000=6`である。検索カードのdescriptionは188–200文字で、
+公開detail全文3件も確認したが、既存の`専任不在 / 少人数 / リソース不足` proxyは0件だった。
+したがって次のbottleneckはquery配線やparserではなく、marketplace本文でほぼ観測できない
+「SNS担当0–1人」を全応募の必須条件にしたICP contractである。gateを黙って緩めたり、応募数で成功を
+装ったりせず、観測可能なcommercial proxyへ設計変更してから次のproduction mutationを行う。
 
 projected net gross margin は proposal 時点の JPY 見積で次の式に固定する。
 
