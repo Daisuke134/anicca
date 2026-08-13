@@ -1919,6 +1919,25 @@ performs the real E2E, and records the milestone.
   surface. When native email/password or explicit Create Account controls coexist with
   Google/SSO, classify `account_auth` and let the existing safe tool select only native
   auth. Preserve `blocked_sso` for SSO-only hosts/surfaces. Then release and rerun.
+
+  **Native-auth chooser slice complete in pushed source:** structured inspection of the
+  stored NVIDIA auth snapshot found three Sign In-family controls: one Google/SSO and
+  two non-SSO controls, with no email/password input yet. Commit `0e780f9ad` makes an
+  exact native `Sign In`, `Create Account`, or `Sign In with Email` control classify as
+  `account_auth` before optional SSO copy, while blocked SSO hosts and SSO-only surfaces
+  remain blocked. The safe owned-page tool prefers stable `createAccountLink`; if it is
+  absent it selects only `SignInWithEmailButton` or `signInLink`, then requires exact
+  Workday email/password controls before filling. It never selects Google/SSO.
+  Selectors are corroborated by pinned AutoApply commit
+  `053071ba1bba5733b522d78c3d645002d817e55a` and the public Workday implementations
+  inspected above. Reclassification of the real stored NVIDIA snapshot is now
+  `account_auth` with signal `native_account_controls`. Focused tests pass `29/29`;
+  compilation, diff checks, and the complete suite pass `585/585`.
+
+  **Immediate next slice:** build and activate the pushed native-auth release and run
+  the real daily lane. Verify that NVIDIA uses Create Account or Sign In with Email,
+  reaches exact native credential controls, and never selects optional SSO. Preserve
+  receipt truth and shared-browser ownership.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
