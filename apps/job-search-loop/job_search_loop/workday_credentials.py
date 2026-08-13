@@ -278,6 +278,15 @@ def _advance_application_entry(page: Any) -> int:
                     ) from error
                 raise
         else:
+            if hasattr(page, "wait_for_url"):
+                try:
+                    page.wait_for_url("**/apply/**", wait_until="commit", timeout=20_000)
+                except Exception as error:
+                    if error.__class__.__name__ == "TimeoutError":
+                        raise WorkdayCredentialError(
+                            "Workday account surface did not load:native_chooser"
+                        ) from error
+                    raise
             _wait_visible(page, next_selector, "native_chooser")
     return actions
 
