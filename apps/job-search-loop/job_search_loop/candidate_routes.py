@@ -27,6 +27,21 @@ EXCLUDED_APPLICATION_STATES = frozenset(
         "offer",
     }
 )
+MANUAL_OWNER_JAPAN_COMPANIES = frozenset(
+    {"openai", "anthropic", "cursor", "anysphere", "palantir"}
+)
+
+
+def _manual_owner_japan(candidate: dict[str, Any]) -> bool:
+    company = "".join(
+        character
+        for character in str(candidate.get("company") or "").casefold()
+        if character.isalnum()
+    )
+    location = str(candidate.get("location") or "").casefold()
+    return any(name in company for name in MANUAL_OWNER_JAPAN_COMPANIES) and any(
+        marker in location for marker in ("japan", "tokyo", "日本", "東京")
+    )
 
 
 def filter_terminal_candidates(
@@ -48,6 +63,9 @@ def filter_terminal_candidates(
         ).fetchall()
         for candidate in candidates:
             if not isinstance(candidate, dict):
+                continue
+            if _manual_owner_japan(candidate):
+                reasons.append("manual_owner_japan")
                 continue
             candidate_url = canonical_url(str(candidate.get("official_url") or ""))
             candidate_alias = ledger._posting_alias(
