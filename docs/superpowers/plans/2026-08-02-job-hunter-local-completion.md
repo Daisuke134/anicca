@@ -1892,6 +1892,33 @@ performs the real E2E, and records the milestone.
   the real daily lane, and verify NVIDIA reaches native account creation/sign-in rather
   than SSO. Continue through the application only with grounded private facts and keep
   receipt truth unchanged until authoritative confirmation exists.
+
+  Native-entry release and live proof are complete. Pushed source commit
+  `abefa3e10ee903e3897793af84553671595a14c4` built twice to identical archive SHA-256
+  `a425030a999b3a44c5d21cfddd49c4dea41163bfcc1fa96e3598b248a74b4680` with `267`
+  entries. The extracted runtime passes `581/581`; the release is active with
+  `c3a70e72850dbe109c7699c9058e1b31045f5284` as rollback and preserved browser state.
+
+  Real launchd wake `daily-20260814-041416` exited `0`. On fenced owned target
+  `7F211DF1B61960C11190319233459A98`, the safe native-entry tool reached NVIDIA's
+  `/apply/applyManually` route for the first ranking-ready role; this proves Apply and
+  Apply Manually were executed without selecting SSO. The observer then classified the
+  mixed auth surface as `blocked_sso` before invoking native account creation, and the
+  second NVIDIA role stopped at the same classification. No retry, submit intent,
+  request start, or receipt occurred.
+
+  Telegram sent the natural result as message ID `16619`; all three privacy scans are
+  clean. Cleanup closed exactly the owned page and restored all seven pre-existing page
+  IDs and browser UUID `2ac269b0-350a-49a4-971e-9a0556aed50d`. Production Ledger is
+  byte-identical at SHA-256
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`; counts remain
+  `60` applications, `260` events, `30` intents, `6` submitted, and `31`
+  submit-unknown.
+
+  **Immediate next slice:** distinguish a mixed Workday auth chooser from an SSO-only
+  surface. When native email/password or explicit Create Account controls coexist with
+  Google/SSO, classify `account_auth` and let the existing safe tool select only native
+  auth. Preserve `blocked_sso` for SSO-only hosts/surfaces. Then release and rerun.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
