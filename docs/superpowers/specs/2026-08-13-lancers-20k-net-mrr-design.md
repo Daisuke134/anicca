@@ -935,6 +935,14 @@ G4A acceptanceは次の全てである。
 5. 既存mutable work-sync plistをexact release pathへ置換し、5分ownerは一つだけである。
 6. fresh Sol adversarial reviewは一回だけで、外部送信、誤ったcontract昇格、secret漏洩、二重schedulerを反証する。
 
+追加のlive診断で、旧mutable work-sync processは成功JSONを出した後もPlaywright driverの
+`Page.handleJavaScriptDialog: No dialog is showing`例外後に終了せず、launchd上で約1日16時間running、
+CPU time約35時間、run count 316の一processとして残っている。これは短い5分tickのcontract違反であり、
+次tickの再起動ではなく同一processのspinである。G4Aは正常・provider failure・cleanup failureのいずれでも
+bounded time内にprocessを終了し、page/runtime close時の例外をstable errorへ変換する。live acceptanceでは
+一回のkick後にJSON一行、exit、launchd idle、orphan Python/Playwright process 0を確認する。旧processの停止は、
+exact release plistが準備できた切替直前に一度だけ行い、空白期間や二重ownerを作らない。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、

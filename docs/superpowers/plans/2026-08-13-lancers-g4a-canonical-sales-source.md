@@ -49,6 +49,7 @@ One tick must:
 7. Return a deterministic JSON snapshot with `ok`, `logged_in`, `source_complete`, `board_count`, `required_reply_count`, `unread_count`, `application_board_count`, `storefront_contract_candidate_count`, and opaque board/message IDs plus SHA-256 hashes where needed for identity.
 8. Never output message bodies, names, emails, cookies, headers, tokens, or arbitrary provider payloads.
 9. Never call POST/PUT/PATCH/DELETE, click provider actions, call a model, append ledger events, or modify application/listing state.
+10. Guarantee bounded process exit after the JSON line. Page/runtime cleanup exceptions, including Playwright dialog teardown races, must be caught and converted to a stable failed result without leaving the Python or driver process spinning.
 
 If the provider envelope cannot prove completeness, return `ok=false`, `source_complete=false`, and a stable error. Do not report zero leads from an incomplete source.
 
@@ -67,6 +68,7 @@ After implementation, verify only:
 - Duplicate board/message ID, malformed/incomplete provider response, or unsupported truncation fails closed.
 - The serialized result does not contain fixture message text, buyer identity, cookie, token, or arbitrary payload fields.
 - Installer manifest contains `work_sync.py`; rendered plist uses the immutable release path, 300 seconds, no `RunAtLoad`, and no unresolved placeholders.
+- Cleanup failure regression proves `main` returns a stable non-zero result and does not escape an unhandled teardown exception. Live process exit is verified during deployment, not mocked as proof.
 
 Run the new focused test, all `apps/lancers-revenue/tests`, agent-runner tests, `py_compile` for release Python files, plist lint, JSON output parse, and production diff check. Record exact counts and SHA.
 
@@ -80,6 +82,7 @@ Use one fresh Sol adversarial verifier, exactly once. It must try to disprove:
 4. message content or secrets cannot escape in JSON/logs;
 5. only one 300-second work-sync owner exists and it points to an exact release;
 6. application/listing state and ledger are not written.
+7. one tick cannot remain resident or spin after emitting JSON, including on browser/page/runtime cleanup failure.
 
 Critical/Important findings return once to the same implementer. Primary then performs mechanical verification; no second review.
 
@@ -95,6 +98,7 @@ Accept only when:
 - stdout is one valid sanitized JSON snapshot from official boards/detail/messages;
 - the deployed manifest and plist point to the exact main release;
 - one work-sync label is loaded at 300 seconds;
+- the kicked process exits within the bounded observation window, launchd returns idle, and no orphan work-sync Python/Playwright driver remains;
 - application/listing/ledger hashes match pre-deploy values;
 - no provider message, offer, order, listing, application, or ledger event is created.
 
