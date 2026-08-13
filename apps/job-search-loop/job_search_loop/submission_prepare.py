@@ -15,6 +15,40 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _normalized_answers(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, list):
+        return value
+    answer_map = value.get("answers") if isinstance(value, dict) else None
+    if (
+        not isinstance(value, dict)
+        or value.get("status") != "ready"
+        or value.get("missing_required") != []
+        or not isinstance(answer_map, dict)
+        or not answer_map
+    ):
+        raise ValueError("answers must be an array or ready Ashby answers artifact")
+    answers = []
+    for question, item in answer_map.items():
+        if (
+            not isinstance(question, str)
+            or not question.strip()
+            or not isinstance(item, dict)
+            or not isinstance(item.get("answer"), str)
+            or not item["answer"].strip()
+            or not isinstance(item.get("fact_ids"), list)
+            or not item["fact_ids"]
+        ):
+            raise ValueError("Ashby answers artifact is invalid")
+        answers.append(
+            {
+                "question": question,
+                "answer": item["answer"],
+                "fact_ids": item["fact_ids"],
+            }
+        )
+    return answers
+
+
 def prepare_submission(
     *,
     ledger_path: Path,
@@ -41,9 +75,7 @@ def prepare_submission(
     ):
         if not path.is_file():
             raise ValueError(f"{label} is not a file")
-    answers = json.loads(answers_path.read_text(encoding="utf-8"))
-    if not isinstance(answers, list):
-        raise ValueError("answers must be an array")
+    answers = _normalized_answers(json.loads(answers_path.read_text(encoding="utf-8")))
     ledger = Ledger(Path(ledger_path))
     try:
         if application_id is None:

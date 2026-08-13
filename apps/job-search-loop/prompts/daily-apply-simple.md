@@ -113,7 +113,9 @@ For each selected role:
    --company COMPANY --title ROLE --official-url OFFICIAL_URL
    --japan-day YYYY-MM-DD --portfolio-bucket BUCKET --resume EXACT_RESUME_PDF
    --snapshot ATS_SNAPSHOT_JSON --fill-receipt FILL_RECEIPT_JSON --answers
-   PRIVATE_ANSWERS_JSON --output "$JOB_SEARCH_EVIDENCE_DIR/submission-prepare.json"`.
+   ASHBY_ANSWERS_JSON --output "$JOB_SEARCH_EVIDENCE_DIR/submission-prepare.json"`.
+   Pass the exact ready artifact produced by Ashby `answers`; do not reshape it with
+   `jq`, generate a second answers file, or inspect Ledger with direct SQL.
    Omit `--application-id` when it does not exist; the three official posting fields
    then materialize the canonical application and route idempotently before claiming.
    Read `application_id`, `intent_id`, and `fence` from that receipt. Never create
