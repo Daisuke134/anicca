@@ -121,6 +121,14 @@ Once base resumes and candidate facts are accepted, Job Hunter:
 There is no routine `Apply / Skip / Edit` approval gate. The user may have many
 applications and offers and choose among verified outcomes later.
 
+Owner-declared application history is authoritative even when an old external
+application has no ATS receipt in the local ledger. OpenAI, Anthropic, and Cursor are
+currently company-level paused as already applied: Job Hunter must persist those
+three owner declarations, suppress every automatic application to those companies
+across role aliases and ATS URLs, and report the suppression reason. A later explicit
+owner instruction may remove a company pause. URL-only or title-only dedup remains in
+force for every other employer.
+
 ### 5.2 Minimal human-only boundary
 
 Job Hunter asks the user only when a truthful, authorized completion is impossible
@@ -668,6 +676,8 @@ The tracker exposes:
 - source, role-family, resume variant, and segment Pareto;
 - baseline/candidate strategy, 20% holdout, and rollback state;
 - last healthy daily/inbox/learning/guardian runs.
+- owner-declared company pauses and the evidence/source that created each pause;
+- remote-job discovery volume, eligible remote roles, applications, and outcomes.
 
 `summary.v2`, Telegram, and the local Career surface are projections of the same
 ledger/event stream and cannot maintain independent truth.
@@ -809,12 +819,15 @@ before the next item begins.
   keep this file as progress SSOT and leave the five-phase master spec untouched.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; reconcile all 25 `submit_unknown`
-  rows without duplicate applications; build from the pushed green commit; atomically
-  activate the reproducible stable release; load daily/inbox/learning/guardian; then
-  run and observe one real canonical local cycle.
+  rows without duplicate applications; persist owner-declared company pauses for
+  OpenAI, Anthropic, and Cursor and prove every role/URL alias is suppressed; build
+  from the pushed green commit; atomically activate the reproducible stable release;
+  load daily/inbox/learning/guardian; then run and observe one real canonical cycle.
 - [ ] **O2-06** — TDD the JPY 7M floor / JPY 10M target / JPY 30M stretch policy,
-  travel-positive policy, and clearance non-rejection contract; prove with real
-  discovery logs.
+  travel-positive policy, clearance non-rejection contract, and mandatory remote-job
+  segment. Reuse pinned OSS/public ATS sources for Japan-remote and globally remote
+  roles that can employ or contract a Japan resident; prove discovery and ranking
+  with real official-job logs rather than adding a second scheduler or browser.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
