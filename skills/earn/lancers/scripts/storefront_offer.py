@@ -115,7 +115,7 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     if len(matches) != 1 or re.fullmatch(r"[0-9]+", matches[0].get_attribute("value") or "") is None: raise OfferError("form_changed")
     service_id = matches[0].get_attribute("value")
     with page.expect_response(lambda response: urlsplit(response.url).path == f"/v1/project_store_api/project_category/{service_id}", timeout=10_000) as service_loaded:
-        matches[0].check()
+        page.locator(f'label[for="{service_id}"]').click()
     if service_loaded.value.status != 200 or not matches[0].is_checked(): raise OfferError("form_changed")
     _field(page, '[name="ProjectPlanForm.industry_type_id"]').select_option(label=product["industry"])
     while page.locator('[aria-label="削除"]').count(): page.locator('[aria-label="削除"]').first.click()
