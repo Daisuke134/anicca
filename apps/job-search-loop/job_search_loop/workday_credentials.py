@@ -244,10 +244,10 @@ def _advance_application_entry(page: Any) -> int:
     for selector, next_selector in (
         (
             '[data-automation-id="jobPostingApplyButton"]',
-            '[data-automation-id="applyManually"], [data-automation-id="adventureButton"]',
+            '[data-automation-id="applyManually"], [data-automation-id="adventureButton"], a[role="button"]:text-is("Apply Manually")',
         ),
         (
-            '[data-automation-id="applyManually"], [data-automation-id="adventureButton"]',
+            '[data-automation-id="applyManually"], [data-automation-id="adventureButton"], a[role="button"]:text-is("Apply Manually")',
             '[data-automation-id="createAccountLink"], [data-automation-id="SignInWithEmailButton"], [data-automation-id="signInLink"], [data-automation-id="email"]',
         ),
     ):
