@@ -155,8 +155,8 @@ def decimal_value(row, field, line_number):
 def derive_earn_money(path):
     if not os.path.isfile(path):
         raise ValueError(f"EARN_LEDGER is missing: {path}")
-    sales = []
-    payouts = []
+    sales = {}
+    payouts = {}
     with open(path, encoding="utf-8") as stream:
         for line_number, raw in enumerate(stream, 1):
             if not raw.strip():
@@ -180,21 +180,25 @@ def derive_earn_money(path):
                 orders = decimal_value(row, "orders", line_number)
                 if orders != orders.to_integral_value() or orders < 0:
                     raise ValueError(f"EARN_LEDGER line {line_number}: orders is malformed")
-                sales.append((int(ts), date, int(orders), decimal_value(row, "gross_usd", line_number)))
+                candidate = (int(ts), date, line_number, int(orders), decimal_value(row, "gross_usd", line_number))
+                if (source, date) not in sales or candidate[:3] >= sales[(source, date)][:3]:
+                    sales[(source, date)] = candidate
             else:
-                payouts.append((int(ts), date, decimal_value(row, "balance_payout_usd", line_number), decimal_value(row, "total_payout_usd", line_number)))
+                candidate = (int(ts), date, line_number, decimal_value(row, "balance_payout_usd", line_number), decimal_value(row, "total_payout_usd", line_number))
+                if (source, date) not in payouts or candidate[:3] >= payouts[(source, date)][:3]:
+                    payouts[(source, date)] = candidate
     if not sales:
         raise ValueError("EARN_LEDGER has no capafy-sales rows")
     if not payouts:
         raise ValueError("EARN_LEDGER has no capafy-payout rows")
-    latest_sales = max(sales, key=lambda row: row[:2])
-    latest_payout = max(payouts, key=lambda row: row[:2])
+    latest_sales = max(sales.values(), key=lambda row: row[:3])
+    latest_payout = max(payouts.values(), key=lambda row: row[:3])
     return {
-        "orders": sum(row[2] for row in sales),
-        "gross": sum((row[3] for row in sales), Decimal("0")),
+        "orders": sum(row[3] for row in sales.values()),
+        "gross": sum((row[4] for row in sales.values()), Decimal("0")),
         "last_sales_date": latest_sales[1],
-        "pending": latest_payout[2],
-        "realized": latest_payout[3],
+        "pending": latest_payout[3],
+        "realized": latest_payout[4],
     }
 
 try:

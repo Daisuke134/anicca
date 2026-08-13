@@ -59,7 +59,8 @@ def _source_freshness(events: list[dict], reference_time: str | datetime | None)
     for name, event_types in SOURCE_EVENT_TYPES.items():
         latest = max((event for event in events if event["event_type"] in event_types), default=None, key=lambda event: _utc(event["recorded_at"]))
         observed = _utc(latest["recorded_at"]) if latest else None
-        result[name] = {"observed_at": latest["recorded_at"], "freshness": "fresh" if reference - observed <= timedelta(hours=24) else "stale"} if latest else {"observed_at": None, "freshness": "unknown"}
+        age = reference - observed if observed else None
+        result[name] = {"observed_at": latest["recorded_at"], "freshness": "fresh" if timedelta(0) <= age <= timedelta(hours=24) else "stale"} if latest else {"observed_at": None, "freshness": "unknown"}
     return result
 
 

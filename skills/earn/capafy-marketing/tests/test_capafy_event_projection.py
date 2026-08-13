@@ -193,6 +193,16 @@ def test_projection_sources_report_mixed_fresh_stale_unknown_and_stable_id() -> 
     assert projection.project_company(events, reference_time="2026-08-02T12:30:00Z")["projection_id"] == result["projection_id"]
 
 
+def test_projection_marks_future_source_observation_stale() -> None:
+    future = [
+        event
+        | ({"recorded_at": "2026-08-02T13:00:00Z"} if event["event_type"] in {"order.received", "balance.reconciled", "payout.received"} else {})
+        for event in fixture_events()
+    ]
+    result = projection.project_company(future, reference_time="2026-08-02T12:00:00Z")
+    assert result["sources"]["money"]["freshness"] == "stale"
+
+
 def test_projection_id_is_deterministic_and_changes_after_one_event() -> None:
     events = fixture_events()
 
@@ -401,7 +411,9 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
         "\n".join(
             json.dumps(row)
             for row in (
+                {"ts": 1782172800, "source": "capafy-sales", "date": "2026-06-23", "orders": 9, "gross_usd": 1.11},
                 {"ts": 1782172800, "source": "capafy-sales", "date": "2026-06-23", "orders": 1, "gross_usd": 9.99},
+                {"ts": 1784330227, "source": "capafy-payout", "date": "2026-07-18", "balance_payout_usd": 77.0, "total_payout_usd": 66.0},
                 {"ts": 1784330227, "source": "capafy-payout", "date": "2026-07-18", "balance_payout_usd": 8.0, "total_payout_usd": 0.0},
             )
         )
@@ -487,6 +499,10 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
 
     assert clean.returncode == 0, clean.stderr
     report = json.loads(clean.stdout)
+    assert report["goal_b"]["orders"] == 1
+    assert report["goal_b"]["gross_usd"] == 9.99
+    assert report["company_state"]["pending_usd"] == "8.00"
+    assert report["company_state"]["realized_usd"] == "0.00"
     expected = projection.project_company(fixture_events(), reference_time=datetime.now(timezone.utc))
     assert report["company_state"] == expected
     assert json.loads((tmp_path / "site/company/state.json").read_text()) == expected
