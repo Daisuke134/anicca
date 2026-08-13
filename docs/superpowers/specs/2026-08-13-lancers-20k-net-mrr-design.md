@@ -572,7 +572,7 @@ multi-account、別 marketplace は開始しない。
 一 tick 一応募上限、exact-SHA installer、planner isolation、許可された adversarial review 1/1 は完了する。
 `5585496` と `5586112` は readback-only で reconcile され、blind resend されず、state/ledger は不変である。
 Codex strict schema が要求する `qualification.cost_source_version.type=string` も正本 schema に追加され、
-focused test、Lancers 11 tests、agent-runner 15 tests は通る。application launchd は disabled / unloaded を保つ。
+focused test、Lancers 11 tests、agent-runner 15 tests は通る。provider-only検証時点ではapplication launchdをdisabled / unloadedに保つ。
 provider-only planner 検証も完了し、公開20案件を入力した Codex/Luna の一回目で provider schema が受理され、
 20 decisions（eligible 0、ineligible 20）が元の strict schema にも error 0 で適合する。これは応募を
 行わない検証であり、application state と terminal state の hash は不変である。eligible 0 は失敗ではなく、
@@ -581,19 +581,24 @@ canonical feature branch は専用 integration worktree で conflict なく main
 application 9 tests、installer 2 tests、agent-runner 15 tests がすべて通り、canonical main へ push される。
 canonical main commit `b05900b48f58b0f29ecf1fe387f2f864685b0de8` は normal mode の immutable release として
 installされ、deployment manifest、plist、13 filesのhashは同じSHAへ一致する。install後もapplication、
-terminal、ledgerのhashと`application_verified=11`は不変で、launchdはdisabled / unloadedを保つ。
+terminal、ledgerのhashと`application_verified=11`は不変で、install完了時点ではlaunchdをdisabled / unloadedに保つ。
+そのreleaseをofficial launchd ownerで一回だけenable / bootstrap / kickし、run 1、exit 0、stderr 0で
+`observed_count=20`、`eligible_count=0`、`submitted=false`、`verified_count=0`、
+`reason=no_eligible_project`を得る。二つのpending、fingerprints、application / terminal / ledger hash、
+`application_verified=11`は不変である。launchdは同じreleaseを30分間隔で実行するenabled状態に残り、
+追加のmanual wakeは行わない。次のautomatic actionは将来tickで新しいqualified案件を待つことである。
 
 G1 の残TODOは次の直列順序だけである。途中で失敗した場合は次へ進まず、同じ Luna implementer に
 最小 RED を戻す。fresh adversarial review は既に 1/1 を消化しているため追加しない。
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | official launchd ownerを一回だけenable/kick | 二重ownerなし、外部submitは最大一件 | 5–15分 |
-| 2 | acquisition E2Eを閉じる | qualified案件なら公式proposal IDと一件の`ApplicationReceipt`。該当なしならtruthful `no_eligible_project` | 10–25分＋案件待ち |
-| 3 | G1を閉じる | state/ledger/receipt、deployed SHA、reportを検証し、一時worktreeを削除 | 10–20分 |
+| 1 | automatic acquisition E2Eを閉じる | 将来tickでqualified案件を得た場合だけ、公式proposal IDと一件の`ApplicationReceipt`を記録 | qualified案件待ち＋10–25分 |
+| 2 | G1を閉じる | state/ledger/receipt、deployed SHA、reportを検証し、一時worktreeを削除 | 10–20分 |
 
-残る技術作業だけなら G1 は **約10–40分**を base とする。公開中のqualified案件がない場合、追加実装で
-gateを弱めず、30分 scheduled tickで新規案件を待つため、暦時間は案件供給に依存する。
+残る技術作業はqualified案件が現れた後 **約20–45分**を base とする。現在のsnapshotには対象がないため、
+gateを弱めず、30分 scheduled tickで新規案件を待つ。G1の暦時間は案件供給に依存し、待機を実装失敗や
+売上として数えない。
 
 G1 後は G2→G3→G4→G5→G6→G7 を一つずつ閉じる。4 lane の実装・実E2Eは集中作業で
 best 5日、base 10日、worst 20日以上を計画値とする。これは入金時間ではない。buyer acceptance、
