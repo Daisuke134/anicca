@@ -88,3 +88,13 @@ Also assert live application/state/ledger/listing hashes and both launchd enable
 4. Run report tick once with notifier interception to inspect the real snapshot without sending; require current values: application receipts 14, pending 0, separate storefront states, mismatch warning, actual cost unknown.
 5. Announce the external report, enable/bootstrap/kick the existing reporter owner once, require a positive Telegram message ID, then leave it enabled at 300 seconds. Repeated unchanged kick must enqueue/send zero.
 6. Verify application scheduler remains enabled, state/ledger/listing hashes unchanged, update SSOT, commit/push, and remove the G2 worktree only after deployment verification.
+
+## Completion record
+
+- Primary-owned spec/plan and Luna-owned production/test boundary held. Luna did not edit this plan or the design spec.
+- Fresh Sol adversarial review: 1/1. Three HIGH findings were returned once to the same Luna; no second review ran.
+- Canonical main and deployed exact release: `d63dfd1ad38458e0e5cb076cd9563df5b374bd72`.
+- Primary verification: focused reporter 12, combined Lancers 30, agent-runner 15, compile and diff check pass; reporter is exactly 320 LOC.
+- Real intercepted snapshot: observed 13, qualified 0, submitted 0, newly verified 0, pending 0, cumulative verified 14, storefront 6/0/0/0, warning `listing_readback_mismatch`, revenue and actual AI cost unknown.
+- Live delivery: one event delivered with Telegram provider message ID `15922`; immediate unchanged kick produced `enqueued=0`, `attempted=0`, `delivered=0`.
+- Final scheduler state: reporter enabled at 300 seconds and application enabled at 1800 seconds; both point to the same exact release. Existing 34 `delivery_uncertain` rows were not retried.
