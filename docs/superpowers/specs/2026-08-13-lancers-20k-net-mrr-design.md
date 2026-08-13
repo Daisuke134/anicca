@@ -430,6 +430,13 @@ mechanical verificationはLancers 15 tests、installer 2 tests、agent-runner 15
 schema JSON parse、diff checkがPASSし、application stateとledger hashは不変である。次の外部作用は、
 このschema/prompt/runtimeを同一canonical main SHAとしてdeployしたofficial wake一回だけである。
 
+canonical main `8487560899dfbf17b129e815b25148feea633293`をnormal immutable releaseとして
+原子的にdeployし、13 filesのmanifest hash一致後にofficial wakeを一回行う。run 1、exit 0、stderr 0、
+`observed=13`、`eligible=0`、`submitted=false`、`no_eligible_project`で終了し、二つのpending、
+application/terminal/ledger hash、`application_verified=11`は不変である。保存済み同一snapshotで
+runtime-validだったeligible候補は既存claim/pendingではないため、差は重複filterではなくfresh planner
+decisionである。Acquisitionは同releaseでenabledを維持し、次のbounded tickを実行する。
+
 projected net gross margin は proposal 時点の JPY 見積で次の式に固定する。
 
 ```text
