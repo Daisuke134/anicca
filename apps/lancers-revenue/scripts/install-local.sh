@@ -223,7 +223,8 @@ if [[ "$ACTIVATE" == "1" ]]; then
   [[ -n "$LAUNCHCTL_BIN" && -x "$LAUNCHCTL_BIN" ]] || fail "launchctl is unavailable"
   DOMAIN="gui/$(id -u)"
   activate_owner() {
-    local label="$1" plist="$2" program="$3" target="$DOMAIN/$label" loaded arguments working
+    local label="$1" plist="$2" program="$3"
+    local target="$DOMAIN/$label" loaded arguments working
     "$LAUNCHCTL_BIN" enable "$target"
     if loaded="$("$LAUNCHCTL_BIN" print "$target" 2>&1)"; then
       "$LAUNCHCTL_BIN" bootout "$target"
