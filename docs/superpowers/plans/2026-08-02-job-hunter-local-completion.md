@@ -2170,6 +2170,33 @@ performs the real E2E, and records the milestone.
   **Immediate next slice:** build, activate, and run the exact native Sign In release.
   Require a redacted Workday account receipt or consume only the next finite stage
   code.
+
+  Native exact-Sign-In release and seventh real wake are complete. Pushed commit
+  `d9cf79bbbff0af6e8985ad28be34b7ac0983f3f5` built twice to byte-identical archive
+  SHA-256 `f1951d542f0be010f6d51dc92800f7871d2eb77f10ee4ec7a3188256d27a668d`
+  with `267` entries and is active with
+  `edc7b66b67aed9afbdad7acec414ffd24cfdfd56` as rollback. Real wake
+  `daily-20260814-055642` still reports native-auth unavailable. The exact Sign In
+  locator is present more than once on the Workday surface, so the generic
+  single-visible safety helper rejects the otherwise safe exact-name fallback. Both
+  matches exclude the differently named Google SSO control. No submit intent,
+  request start, receipt, or submit-unknown was created.
+
+  Telegram sent message ID `16713`; cleanup closed exactly one owned page, restored
+  all seven pre-existing page IDs, and left production Ledger byte-identical at
+  SHA-256 `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  **Exact native-login slice complete in pushed source:** commit `5a97c55f7` changes
+  only the exact accessible-name fallback. When one or more visible buttons have the
+  exact name `Sign In`, it selects the last visible match; `Sign In with Google` and
+  every other SSO label remain excluded by exact matching. Stable automation IDs are
+  still preferred, and exact email/password controls remain mandatory after the
+  click. Compilation and diff checks pass, focused tests pass `14/14`, and the full
+  suite passes `585/585`.
+
+  **Immediate next slice:** build, activate, and run the exact native-login release.
+  Require a redacted Workday account receipt or consume only the next finite stage
+  code.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
