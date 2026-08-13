@@ -106,6 +106,7 @@ fi
 # ── the rest (goal a/b/d parsing + state + telegram body) is one python pass (read+append only). ──
 $PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$KEY_GATE" "$IG_LABEL" "$IG_HANDLE" "$LIFECYCLE_STATE" "$OUTCOME_SCRIPT" "$EVENT_PROJECTION" "$PROJECTION_FILE" "$PARITY_FILE" "$BODY_FILE" "$PORTFOLIO_STATE" <<'PY' > "$REPORT_FILE"
 import json, os, re, subprocess, sys, datetime
+from decimal import Decimal, InvalidOperation
 (state_p, daily_log, earn_ledger, key_gate, ig_label, ig_handle,
  lifecycle_state_path, outcome_script, projection_script, projection_path,
  parity_path, body_path, portfolio_path) = sys.argv[1:14]
@@ -142,18 +143,76 @@ while True:
     day = day - datetime.timedelta(days=1)
 goal_a_pass = streak >= 7
 
+def decimal_value(row, field, line_number):
+    try:
+        value = Decimal(str(row[field]))
+        if not value.is_finite():
+            raise ValueError
+        return value
+    except (KeyError, InvalidOperation, TypeError, ValueError):
+        raise ValueError(f"EARN_LEDGER line {line_number}: {field} is malformed")
+
+def derive_earn_money(path):
+    if not os.path.isfile(path):
+        raise ValueError(f"EARN_LEDGER is missing: {path}")
+    sales = {}
+    payouts = {}
+    with open(path, encoding="utf-8") as stream:
+        for line_number, raw in enumerate(stream, 1):
+            if not raw.strip():
+                continue
+            try:
+                row = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"EARN_LEDGER line {line_number}: invalid JSON") from exc
+            if not isinstance(row, dict):
+                raise ValueError(f"EARN_LEDGER line {line_number}: row must be an object")
+            source = row.get("source")
+            if source not in {"capafy-sales", "capafy-payout"}:
+                continue
+            date = row.get("date")
+            if not isinstance(date, str) or not date:
+                raise ValueError(f"EARN_LEDGER line {line_number}: {source} date is required")
+            ts = decimal_value(row, "ts", line_number)
+            if ts != ts.to_integral_value():
+                raise ValueError(f"EARN_LEDGER line {line_number}: ts is not an integer")
+            if source == "capafy-sales":
+                orders = decimal_value(row, "orders", line_number)
+                if orders != orders.to_integral_value() or orders < 0:
+                    raise ValueError(f"EARN_LEDGER line {line_number}: orders is malformed")
+                candidate = (int(ts), date, line_number, int(orders), decimal_value(row, "gross_usd", line_number))
+                if (source, date) not in sales or candidate[:3] >= sales[(source, date)][:3]:
+                    sales[(source, date)] = candidate
+            else:
+                candidate = (int(ts), date, line_number, decimal_value(row, "balance_payout_usd", line_number), decimal_value(row, "total_payout_usd", line_number))
+                if (source, date) not in payouts or candidate[:3] >= payouts[(source, date)][:3]:
+                    payouts[(source, date)] = candidate
+    if not sales:
+        raise ValueError("EARN_LEDGER has no capafy-sales rows")
+    if not payouts:
+        raise ValueError("EARN_LEDGER has no capafy-payout rows")
+    latest_sales = max(sales.values(), key=lambda row: row[:3])
+    latest_payout = max(payouts.values(), key=lambda row: row[:3])
+    return {
+        "orders": sum(row[3] for row in sales.values()),
+        "gross": sum((row[4] for row in sales.values()), Decimal("0")),
+        "last_sales_date": latest_sales[1],
+        "pending": latest_payout[3],
+        "realized": latest_payout[4],
+    }
+
+try:
+    earn_money = derive_earn_money(earn_ledger)
+except (OSError, ValueError) as exc:
+    open(parity_path, "w").write(f"EARN_LEDGER parity source invalid: {exc}\n")
+    raise SystemExit(3)
+
 # goal(b): latest sales row + reconcile freshness (staleness = divergence risk).
-gross = orders = None; last_sales_date = None; reconcile_age_h = None
-if os.path.exists(earn_ledger):
-    reconcile_age_h = round((now.timestamp() - os.path.getmtime(earn_ledger)) / 3600, 1)
-    for line in open(earn_ledger):
-        line = line.strip()
-        if not line: continue
-        try: r = json.loads(line)
-        except: continue
-        if r.get("orders") is not None:
-            orders = r.get("orders"); gross = r.get("gross_usd"); last_sales_date = r.get("date")
-goal_b_ok = reconcile_age_h is not None and reconcile_age_h < 48  # reconcile ran within 2 days
+orders = earn_money["orders"]
+gross = float(earn_money["gross"])
+last_sales_date = earn_money["last_sales_date"]
+reconcile_age_h = round((now.timestamp() - os.path.getmtime(earn_ledger)) / 3600, 1)
+goal_b_ok = reconcile_age_h < 48  # reconcile ran within 2 days
 
 # goal(d): NON-DESTRUCTIVE health — launchctl loaded? plist exists? key-health gate exit?
 def loaded(label):
@@ -193,13 +252,6 @@ report = {
 # Consolidated company projection. Each value comes from deterministic state or a fresh
 # server read; agent-authored narration is never used as a business fact.
 home = os.path.expanduser("~")
-money = {}
-state_md = os.path.join(home, "anicca/skills/self/capafy-loop/state/STATE.md")
-if os.path.exists(state_md):
-    for line in open(state_md, errors="ignore"):
-        match = re.match(r"(capafy_[a-z_]+):\s*([-0-9.]+)", line)
-        if match:
-            money[match.group(1)] = float(match.group(2))
 
 cost = 0.0
 cost_log = os.path.join(home, ".openclaw/logs/capafy-loop-daily.log")
@@ -281,16 +333,15 @@ if experiment_products:
         "public_url": product.get("public_url"),
     }
 
-realized = money.get("capafy_realized_payout_usd", 0.0)
 independent = {
     "inventory": inventory,
-    "orders": int(money.get("capafy_lifetime_orders", orders or 0)),
-    "gross_usd": money.get("capafy_lifetime_gross_usd", gross or 0.0),
-    "pending_usd": money.get("capafy_seller_balance_pending_usd", 0.0),
-    "realized_usd": realized,
-    "mrr_usd": money.get("capafy_mrr_usd", 0.0),
+    "orders": earn_money["orders"],
+    "gross_usd": earn_money["gross"],
+    "pending_usd": earn_money["pending"],
+    "realized_usd": earn_money["realized"],
+    "mrr_usd": Decimal("0"),
     "cost_usd": cost,
-    "contribution_usd": realized - cost,
+    "contribution_usd": earn_money["realized"] - Decimal(str(cost)),
     "account": {
         "handle": ig_handle or "no-active-account",
         "lifecycle_status": lifecycle.get("status", "unknown"),

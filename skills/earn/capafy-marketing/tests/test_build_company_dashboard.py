@@ -64,6 +64,10 @@ def company_projection() -> dict:
         },
         "listing_url": "https://capafy.ai/agent/4866150011",
         "dashboard_url": "https://capafy-skills-daily.netlify.app/company/",
+        "sources": {
+            name: {"observed_at": "2026-08-02T12:00:00Z", "freshness": "fresh"}
+            for name in ("money", "inventory", "account", "marketing", "cost")
+        },
     }
 
 
@@ -100,6 +104,23 @@ def test_dashboard_is_deterministic_safe_and_contains_projection_evidence(
     assert "/Users/" not in html
     assert "technical_evidence" not in html
     assert "<script" not in html.lower()
+
+
+def test_dashboard_visibly_labels_source_freshness_and_observed_at() -> None:
+    projection = company_projection() | {
+        "sources": {
+            "money": {"observed_at": "2026-08-02T12:00:00Z", "freshness": "fresh"},
+            "inventory": {"observed_at": "2026-07-31T12:00:00Z", "freshness": "stale"},
+            "account": {"observed_at": None, "freshness": "unknown"},
+            "marketing": {"observed_at": "2026-08-02T12:00:00Z", "freshness": "fresh"},
+            "cost": {"observed_at": "2026-07-31T12:00:00Z", "freshness": "stale"},
+        }
+    }
+    html = dashboard.render_html(projection)
+    assert "Source freshness" in html
+    assert "money" in html and "2026-08-02T12:00:00Z" in html
+    assert "STALE" in html and "UNKNOWN" in html
+    assert "not current" in html.lower() or "stale" in html.lower()
 
 
 def test_dashboard_rejects_private_or_credential_bearing_projection(

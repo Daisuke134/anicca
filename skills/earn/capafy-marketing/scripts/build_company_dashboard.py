@@ -10,6 +10,7 @@ import os
 import sys
 import tempfile
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -39,7 +40,10 @@ PROJECTION_FIELDS = {
     "experiment",
     "listing_url",
     "dashboard_url",
+    "sources",
 }
+SOURCE_NAMES = ("money", "inventory", "account", "marketing", "cost")
+FRESHNESS_VALUES = {"fresh", "stale", "unknown"}
 PRIVATE_PREFIXES = ("/Users/", "/private/", "~/", "file:")
 
 
@@ -60,6 +64,14 @@ def _walk(value: Any):
             yield from _walk(child)
 
 
+def _is_rfc3339(value: Any) -> bool:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError):
+        return False
+    return isinstance(value, str) and "T" in value and parsed.utcoffset() is not None
+
+
 def validate_public_projection(projection: dict) -> list[str]:
     if not isinstance(projection, dict):
         return ["projection must be an object"]
@@ -67,6 +79,25 @@ def validate_public_projection(projection: dict) -> list[str]:
     unknown = sorted(set(projection) - PROJECTION_FIELDS)
     if unknown:
         errors.append(f"unsupported projection fields: {', '.join(unknown)}")
+    sources = projection.get("sources")
+    if not isinstance(sources, dict):
+        errors.append("sources must contain money, inventory, account, marketing, and cost")
+    else:
+        if set(sources) != set(SOURCE_NAMES):
+            errors.append("sources must contain money, inventory, account, marketing, and cost")
+        for name in SOURCE_NAMES:
+            source = sources.get(name)
+            if not isinstance(source, dict) or set(source) != {"observed_at", "freshness"}:
+                errors.append(f"sources.{name} must contain observed_at and freshness")
+                continue
+            observed_at = source["observed_at"]
+            freshness = source["freshness"]
+            if observed_at is not None and not _is_rfc3339(observed_at):
+                errors.append(f"sources.{name}.observed_at must be RFC3339 or null")
+            if freshness not in FRESHNESS_VALUES:
+                errors.append(f"sources.{name}.freshness must be fresh, stale, or unknown")
+            elif (freshness == "unknown") != (observed_at is None):
+                errors.append(f"sources.{name} freshness does not match observed_at")
     if any(
         isinstance(value, str) and value.startswith(PRIVATE_PREFIXES)
         for value in _walk(projection)
@@ -95,6 +126,7 @@ def render_html(projection: dict) -> str:
     account = projection["account"]
     marketing = projection["marketing"]
     metrics = projection["metrics"]
+    sources = projection["sources"]
     short_id = projection["projection_id"].removeprefix("sha256:")[:12]
     metric_cards = "".join(
         f'<div class="metric"><span>{html.escape(label)}</span><strong>{metrics.get(field, "—")}</strong></div>'
@@ -139,6 +171,21 @@ def render_html(projection: dict) -> str:
         )
     else:
         experiment_html = '<section class="panel"><h2>Revenue experiment</h2><p>No active experiment.</p></section>'
+    source_rows = []
+    for name in SOURCE_NAMES:
+        source = sources[name]
+        freshness = source["freshness"]
+        status, note = {"fresh": ("FRESH", "current"), "stale": ("STALE", "not current"), "unknown": ("UNKNOWN", "not observed")}[freshness]
+        observed_at = source["observed_at"] or "not observed"
+        source_rows.append(
+            f'<div class="source {freshness}"><strong>{html.escape(name)}</strong>'
+            f'<span class="source-status">{status}</span>'
+            f'<span class="muted">Observed: {html.escape(observed_at)} · {note}</span></div>'
+        )
+    sources_html = (
+        '<section class="panel"><h2>Source freshness</h2>'
+        '<div class="source-grid">' + "".join(source_rows) + "</div></section>"
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -156,6 +203,7 @@ def render_html(projection: dict) -> str:
     .panel,.metric {{ border:1px solid var(--line); border-radius:18px; background:color-mix(in srgb,var(--panel) 92%,transparent); padding:20px; }}
     .metric span {{ display:block; color:var(--muted); }} .metric strong {{ display:block; margin-top:5px; font-size:1.65rem; }}
     .money strong {{ color:var(--mint); }} .incident {{ border-color:#70542c; }} .incident strong {{ color:var(--amber); }} .healthy {{ border-color:#2f7653; }}
+    .source-grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; }} .source {{ display:grid; gap:2px; border:1px solid var(--line); border-radius:12px; padding:12px; }} .source-status {{ font-weight:800; letter-spacing:.08em; }} .source.fresh .source-status {{ color:var(--mint); }} .source.stale,.source.unknown {{ border-color:var(--amber); }} .source.stale .source-status,.source.unknown .source-status {{ color:var(--amber); }}
     a {{ color:var(--mint); overflow-wrap:anywhere; }} a:focus-visible {{ outline:3px solid var(--amber); outline-offset:3px; }}
     footer {{ margin-top:28px; color:var(--muted); font-size:.9rem; }}
     @media (prefers-reduced-motion:reduce) {{ * {{ scroll-behavior:auto!important; }} }}
@@ -177,6 +225,7 @@ def render_html(projection: dict) -> str:
     <div class="panel"><h2>Public evidence</h2><p>{_link(marketing.get('public_post_url'), 'Open the verified Reel')}</p><p>{_link(projection.get('listing_url'), 'Open the Capafy skill')}</p><p>{_link(marketing.get('campaign_url'), 'Open the attributed campaign')}</p></div>
   </section>
   <section class="panel"><h2>Latest marketing measurements</h2><div class="grid">{metric_cards}</div></section>
+  {sources_html}
   {experiment_html}
   {incident_html}
   <footer>Projection {html.escape(projection['projection_id'])} · Last event {html.escape(str(projection['last_event_id']))}</footer>

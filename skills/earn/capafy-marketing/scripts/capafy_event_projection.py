@@ -8,6 +8,7 @@ import hashlib
 import json
 import sys
 import re
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,13 @@ INVENTORY_STATES = {
     "review_rejected": "rejected",
     "banned": "rejected",
 }
+SOURCE_EVENT_TYPES = {
+    "money": {"order.received", "balance.reconciled", "payout.received"},
+    "inventory": {"listing.submitted", "listing.approved", "listing.observed"},
+    "account": {"account.created", "account.session_ready", "account.publish_probe_ready", "account.post_verified", "account.commercial_ready"},
+    "marketing": {"content.published", "content.measured", "experiment.activated", "experiment.configured", "experiment.measured", "experiment.stopped"},
+    "cost": {"cost.measured"},
+}
 
 
 def _canonical(value: Any) -> bytes:
@@ -37,6 +45,23 @@ def _canonical(value: Any) -> bytes:
 
 def _money(value: Decimal) -> str:
     return f"{value.quantize(Decimal('0.01')):.2f}"
+
+
+def _utc(value: str | datetime) -> datetime:
+    parsed = value if isinstance(value, datetime) else datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.utcoffset() is None: raise ValueError("timestamp must include a timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def _source_freshness(events: list[dict], reference_time: str | datetime | None) -> dict:
+    reference = _utc(reference_time) if reference_time is not None else max((_utc(event["recorded_at"]) for event in events), default=_utc("1970-01-01T00:00:00Z"))
+    result = {}
+    for name, event_types in SOURCE_EVENT_TYPES.items():
+        latest = max((event for event in events if event["event_type"] in event_types), default=None, key=lambda event: _utc(event["recorded_at"]))
+        observed = _utc(latest["recorded_at"]) if latest else None
+        age = reference - observed if observed else None
+        result[name] = {"observed_at": latest["recorded_at"], "freshness": "fresh" if timedelta(0) <= age <= timedelta(hours=24) else "stale"} if latest else {"observed_at": None, "freshness": "unknown"}
+    return result
 
 
 def _url_for_host(urls: list[str], host_suffix: str) -> str | None:
@@ -127,7 +152,7 @@ def _experiment_projection(event: dict | None) -> dict | None:
     }
 
 
-def project_company(events: list[dict]) -> dict:
+def project_company(events: list[dict], reference_time: str | datetime | None = None) -> dict:
     """Validate and fold events in ledger order without consulting legacy state."""
 
     seen: set[str] = set()
@@ -239,6 +264,8 @@ def project_company(events: list[dict]) -> dict:
                 else None
             )
 
+    sources = _source_freshness(events, reference_time)
+
     as_of = events[-1]["recorded_at"] if events else "1970-01-01T00:00:00Z"
     company = {
         "schema_version": 1,
@@ -267,6 +294,7 @@ def project_company(events: list[dict]) -> dict:
         "experiment": experiment,
         "listing_url": marketing_listing_url or fallback_listing,
         "dashboard_url": "https://capafy-skills-daily.netlify.app/company/",
+        "sources": sources,
     }
     identity_input = {
         "event_ids": [event["event_id"] for event in events],
@@ -345,7 +373,7 @@ def _main() -> int:
     project.add_argument("--ledger", type=Path, required=True)
     args = parser.parse_args()
     try:
-        value = project_company(read_events(args.ledger))
+        value = project_company(read_events(args.ledger), reference_time=datetime.now(timezone.utc))
     except (OSError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
