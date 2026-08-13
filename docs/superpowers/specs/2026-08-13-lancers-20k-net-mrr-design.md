@@ -768,6 +768,31 @@ stderr 0で終了した。application state、ledger、listingのSHA-256はpre/p
 fingerprints 19、application verified receipts 14を維持する。applicationは1800秒、reporterは300秒で
 enabledである。G3Aはquery coverageだけを閉じ、次のactive sliceはG3B deterministic eligible rankingである。
 
+### 9.5 G3B active slice: deterministic eligible ranking
+
+G3Aは検索面を広げたが、現在の`_plan_and_submit`はvalidated eligibleをprovider row順のまま並べ、先頭一件を
+送る。provider新着順はcoverageの安全な既定だが、複数eligibleが同じtickに存在する時、月額継続の明示度や
+projected net contributionを使わない。G3Bはeligible gate、proposal生成、submit/readback、tick上限を変えず、
+validated eligibleの送信順だけを決定的にする。
+
+rank keyは次の順である。
+
+1. `ongoing_sns_outsourcing_evidence`に`月額 / 毎月 / 定期`のいずれかがある候補を最優先する。
+2. 次に`price_jpy - expected_platform_fee_jpy - expected_ai_cost_jpy - expected_subcontractor_cost_jpy - expected_revision_refund_allowance_jpy`のprojected net JPYが大きい候補を優先する。
+3. 同点はPythonのstable sortで既存provider row順を維持する。project IDを人工的なtie breakerにしない。
+
+全eligibleはすでに公式業種、SNS/channel、継続scope、外部委任、observed budget、70%以上marginのruntime
+validationを通る。したがってrankerはvalidationを複製しない。`reason_codes`、proposal文の形容、buyer名、
+keyword、公開証拠にないbuyerのB2B度、競争率、将来売上をscoreに使わない。一般的な`継続 / 長期 / 運用`
+だけのcandidateは除外せず、explicit monthly候補より後ろに置く。rankは収益receiptではなく、応募順の
+選択規則である。
+
+Ponytail比較では、新score field/schema、二回目のplanner、ML ranker、historical conversion DBを作る案を
+棄却する。最初の支払前には学習signalがなく、既存のvalidated decisionだけで十分だからである。
+G3Bのsoft targetはproduction 1 file / 15 LOC以下、existing test 1 file / 35 LOC以下である。
+Luna/Terraはprimaryの完成planから直接実装し、実装後にregressionと既存suiteを実行する。fresh Sol
+adversarial reviewは1回だけで、monthly優先、net JPY順、stable tie、claim除外、最大1 submitを反証する。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
@@ -780,7 +805,8 @@ enabledである。G3Aはquery coverageだけを閉じ、次のactive sliceはG3
 | G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
 | G2 truthful acquisition | **完了。** storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | exact release `d63dfd1…`、Telegram message ID `15922`、同一状態の再kick 0送信 |
 | G3A query coverage | **完了。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | exact release `a2081bc0…`、review 1/1 ship、実tick `LinkedIn / observed 2 / submitted false`、state/ledger/listing不変 |
-| G3B–C profitable acquisition | recurring/B2B ranking、proposal固定構造、active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下）を一件ずつ閉じる | ranking順、margin source、tick/day quota、duplicate拒否、公式readback |
+| G3B eligible ranking | **active。** validated eligibleをexplicit monthly、projected net JPY、provider stable orderで並べる | monthly優先、net JPY順、stable tie、claim除外、最大1 submit |
+| G3C capacity quota | authoritative active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下） | active contract source、tick/day quota、100% cap、duplicate拒否 |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
 | G6 finance | 対象 `mrr_period` の active recurring contract receipts だけを `contract_external_id + mrr_period + provider_receipt_id` へ一意帰属させ、`source_completeness_receipt` で公式 source readback 完了を確認し、provider payout target、fee 明細、銀行 settlement を `payout_batch_id` ごとに照合する。unique bank transaction 一件との `bank_reconciliation_delta_jpy=0` だけを `matched` とし、non-zero/missing は `unknown` / `unmatched` のままにする。net 式では fee・AI・subcontract・refund を実額で一度だけ控除し、FX を記録して net MRR を再計算できる | 対象 mrr_period、source_completeness_receipt、provider receipt、receipt key、payout batch、payout target、fee 明細、unique bank transaction、銀行照合、cost attribution、ledger、計算結果 |
