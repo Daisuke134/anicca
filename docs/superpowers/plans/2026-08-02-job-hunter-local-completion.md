@@ -998,7 +998,8 @@ ledger, evidence, or submitted artifacts.
   and fault paths `7/7`, canonical runtime `16/16`, full Job Hunter suite `579/579` in
   `62.686s`, shell syntax, and diff check. The fresh adversarial verifier independently
   passes contract paths `9/9`, canonical runtime `16/16`, adjacent suites `26/26`, and
-  reports Critical `0`, Important `0`, Minor `0`.
+  reports Critical `0`, Important `0`, Minor `0`. Commit `6f102e403` is pushed and the
+  natural-language owner milestone is acknowledged by Telegram message ID `16219`.
 - The same preflight found two further load blockers. First, the normal daily outcome
   report still exposes an `Agent` owner label and a 12-character internal evidence
   hash and does not explain in plain Japanese why the wake produced no confirmed
