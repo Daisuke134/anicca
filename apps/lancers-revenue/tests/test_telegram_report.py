@@ -145,6 +145,13 @@ class TelegramReportTests(unittest.TestCase):
         self.assertNotIn("✅", message)
         self.assertNotIn("0件", message)
 
+    def test_last_valid_json_ignores_malformed_trailing_lines(self):
+        report = _load_report()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "application.log"
+            path.write_text('{"observed_count":13}\nnot-json\n', encoding="utf-8")
+            self.assertEqual(report.read_last_json(path), {"observed_count": 13})
+
 
 if __name__ == "__main__":
     unittest.main()
