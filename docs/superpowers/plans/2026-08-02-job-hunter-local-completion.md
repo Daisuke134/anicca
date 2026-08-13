@@ -2251,6 +2251,43 @@ performs the real E2E, and records the milestone.
   **Immediate next slice:** build, activate, and run the exact owned same-page release.
   Require a redacted Workday account receipt or consume only the next finite stage
   code.
+
+  Owned same-page release and tenth real wake are complete. Pushed commit
+  `da66fd82702b5dd667e0519eedffecefbb04e98e` built twice to byte-identical archive
+  SHA-256 `ecca30e38bfe60a054cfa2932dca8544334b282c90e56099d06310a491745a57`
+  with `267` entries and is active with
+  `b63356485b40c90806823416170fdf2a93f53d77` as rollback. Real wake
+  `daily-20260814-062123` still leaves both Workday snapshots on the job-detail route.
+  The exact Apply Manually wait sees the control, but the click path still uses the
+  generic single-visible helper and rejects responsive duplicate exact-role matches.
+  Native authentication is therefore never reached. No submit intent, request start,
+  receipt, or submit-unknown was created.
+
+  Telegram sent message ID `16744`; cleanup closed exactly one owned page, restored
+  all seven pre-existing page IDs, and left production Ledger byte-identical at
+  SHA-256 `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  **Manual-owner Japan fence complete in pushed source:** commit `e5440f7f3` applies
+  the existing owner policy before shortlist selection: OpenAI, Anthropic,
+  Cursor/Anysphere, and Palantir roles located in Japan or Tokyo are excluded from
+  autonomous routing, while overseas/Global/APAC roles remain eligible. Replay on a
+  private Ledger copy excludes fifteen current queue rows. It also proves there is no
+  currently eligible unprocessed ranking-ready Ashby role: ElevenLabs Japan roles are
+  already `submitted`, `rejected`, or `submit_unknown`, and remaining Ashby Japan
+  roles are manual-owner companies. O2-08 therefore requires discovery of a new
+  eligible Ashby requisition rather than duplicate submission.
+
+  **Exact manual-click slice complete in pushed source:** commit `2b5cef57f` selects
+  the last visible match only within the exact accessible name `Apply Manually`, the
+  same bounded rule already used for exact native Sign In. It never uses fuzzy text or
+  a different action. Compilation and diff checks pass, focused tests pass `18/18`,
+  and the complete suite passes `585/585`.
+
+  **Immediate next slice:** build and activate the combined manual-owner fence plus
+  exact manual-click release. Run one real daily wake; require either the Workday
+  `/apply/` route/account receipt or the next finite stage code. In parallel within
+  the same existing discovery loop, a new non-terminal eligible Ashby role may enter
+  O2-08; never reuse the three terminal ElevenLabs roles or manual-owner Japan roles.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
