@@ -253,6 +253,14 @@ def _advance_application_entry(page: Any) -> int:
     ):
         control = page.locator(selector)
         control = _single_visible(control)
+        if control is None and actions == 0 and hasattr(page, "get_by_role"):
+            matches = page.get_by_role("button", name="Apply", exact=True)
+            visible = [
+                matches.nth(index)
+                for index in range(matches.count())
+                if matches.nth(index).is_visible()
+            ]
+            control = visible[-1] if visible else None
         if control is None and actions == 1 and hasattr(page, "get_by_role"):
             matches = page.get_by_role("button", name="Apply Manually", exact=True)
             visible = [
