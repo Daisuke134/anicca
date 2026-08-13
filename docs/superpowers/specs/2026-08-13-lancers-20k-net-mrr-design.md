@@ -139,7 +139,7 @@ flowchart LR
 | 作業・納品・支払 | `WorkEvent`、`DeliveryReceipt`、`PaymentReceipt` は記録なし。記録された baseline ledger revenue は **¥0** だが PaymentReceipt source completeness は未確認 | source completeness がない記録なしは MRR の 0 を証明せず、active recurring contract の受入証拠もない |
 | 現在の pending | 0件 | project `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`を公式readbackし、3件ともreceipt化してpendingから削除した。submitは0件 |
 | application launchd incident | Task2 source が Task3 safety gate より先に schedule され、launchd が自動実行された。その review 前の実行で、二つ目の null-ID pending project `5586112`（¥10,000）が作成された | verified incidentとして記録する。Task 6C receipt acceptanceまでjobを停止し、acceptance後にcanonical normal releaseで再開した |
-| storefront | 公式画面は受付中6、受付休止中0、非表示0、下書き0。canonical receipt IDは`1338233`の1件 | 受付中は合計6件で、canonical 1件に対する余分なduplicateは5件。販売・未処理件数ではない |
+| storefront | 公式画面は受付中6、受付休止中0、非表示0、下書き0。canonical receipt IDは`1338233`の1件 | 6件は同一content groupだが、出品上限違反や非公開必須とは確認できていない。販売・未処理件数ではない |
 | storefront observability | 4 状態を合算し、合計を `unprocessed` として表示 | `partial 6/6 official_timestamp_missing` という誤解を生む |
 | storefront 最新実行 | `listing_readback_mismatch` を観測 | 不一致に成功アイコンを付けてはならない |
 | work-sync | プロセスは alive だが productive progress がない | alive と成果を同じ health signal にしない |
@@ -655,7 +655,7 @@ Lancers daily summary
 - last local observation: observed 13 / qualified 0 / submitted 0 / newly verified 0
 - application receipts: 14 / pending: 0 / blocker: なし
 - storefront official counts: 受付中6 / 受付休止中0 / 非表示0 / 下書き0
-- storefront integrity: canonical receipt 1338233は1件、余分なduplicate 5件、latest readback mismatch
+- storefront integrity: canonical receipt 1338233は1件、同一content group 6件、latest readback mismatch
 - official source timestamp: 未確認（local observation timeと混同しない）
 - WorkEvent / DeliveryReceipt / PaymentReceipt / gross MRR / net MRR / bank settlement: source completeness未確認のためunknown
 - AI processing cost: provider usage receipt未接続のためunknown
@@ -859,7 +859,7 @@ Lancersの売上入口は二つあるが、別々の収益pipelineではない�
    `application_verified`がある。30分ownerはcanonical exact releaseで動くが、最新実tickは17件取得後に
    `planner_failed`、応募0、exit 1である。根因と修正境界は9.9を正本とする。
 2. **Storefront surface**: 自社商品`SNS AI workflow`を公開し、inbound inquiry/orderを受ける。canonical
-   listing receipt `1338233`はpublishedだが、公式画面は受付中6件、余分なduplicate 5件、最新実行は
+   listing receipt `1338233`はpublishedだが、公式画面は受付中6件、同一content group 6件、最新実行は
    `listing_readback_mismatch`である。
 
 両surfaceの後は同じSales / Contract → Fulfillment → Finance laneへ合流する。しかしledgerの実イベントは
@@ -867,11 +867,10 @@ Lancersの売上入口は二つあるが、別々の収益pipelineではない�
 `work-sync`は5分でenabledだが`observed_working_count=0 / emitted_count=0`を反復する。したがって応募柱は
 proposal receiptまで、storefront柱はlisting公開までしか働いておらず、どちらも受注・納品・入金を作っていない。
 
-sourceはLife Manager `origin/main`、immutable exact-SHA release、repo外runtime stateへ分離済みであり、worktreeや
-mutable sourceを実行しない。ただし現在ロード済みownerはapplicationが`d0553944…`、report/work-syncが
-`bfd1fc568…`でsplitしている。plistとdeployment manifestは`d0553944…`を指すため、これはsource chaosではなく
-install後に三ownerを同時activateしなかったrelease activation driftである。次releaseではinstallだけを完了扱いにせず、
-三ownerの`launchctl print`がmanifestの同一SHAを指すまでdeploy未完了とする。
+sourceはLife Manager `origin/main`、immutable exact-SHA release、repo外runtime stateへ分離済みであり、三canonical ownerは
+exact release `295749ad…`へ収束済みである。一方、repo外mutable `listing_tick.py`を30分ごとにpublish modeで動かす
+第四のlegacy storefront ownerがenabled、105 runsで残っていた。canonical source/deploy境界の外からlisting mutation権限を
+持つため、idle状態でdisable/unloadした。plist、receipt、provider listingは削除せず、application/listing/ledger hashは前後不変である。
 
 Storefrontの追加実測では、`listing.json`は全在庫ではなく最後に検証できたcanonical receipt一件だけを保持する。
 管理画面readerは四状態の件数しか保存せず、6件のID inventoryを持たない。既存published receiptがある通常経路は
@@ -905,8 +904,10 @@ local 3 tags + industryだけでなく`投稿代行 / AI代行 / java ai`を含�
 現在のStorefront商品は月額content operations packではなく、単発またはLancers継続期間選択付きの
 AI活用手順書で、価格は¥10k/¥20k/¥30kである。これはStorefrontが公開されていても、3.3の
 Founding ¥98k / Standard ¥198k / Premium ¥398k recurring offerと一致しない。G7のMRRへ寄与するには、
-inventory後に一意なcanonical listingを選び、低単価diagnosticを月額offerへ明示接続するか、月額scope/priceへ
-置換する必要がある。listing数と低単価spot売上をnet MRRに数えない。
+各listingを月額offerへ明示接続するか、月額scope/priceへ置換する必要がある。Lancers公式FAQ 909は公開中
+パッケージを出品管理の「編集する」から料金表を保存して価格変更できると説明し、FAQ 911は内容・納品数・対応時間・
+option・titleを見直すよう案内する。非公開化は価格変更の前提ではない。出品数上限や6件の同時公開禁止を示す
+一次資料は確認できていないため、6件を非公開・削除するTODOは置かない。listing数と低単価spot売上をnet MRRに数えない。
 
 Storefront inventoryは新しいsource file、daemon、launchd label、DB、state fileを追加しない。すでにexact releaseへ
 含まれる`telegram_report.py`は四状態count、CDP/account/browser helper、manual CLIを所有するため、ここへ
@@ -1204,7 +1205,7 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 |---|---|---|---:|
 | 完了 | Storefront read-only inventory | exact releaseから公式6 listing、canonical `1338228`、単一content groupを確定。mutation 0、state/ledger不変 | 完了 |
 | 完了 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じた | 完了 |
-| 1 | Storefront offer alignment | canonical `1338228`を選び、duplicateを一件ずつ整理し、¥10k–¥30k手順書を月額¥98k–¥398k offerへの入口または同scopeへ揃える | 1–2日 |
+| 1 | Storefront offer alignment | 6件を公開のまま、同一copyを異なるICP/query入口へ分化し、各listingの料金表を月額¥98k–¥398k offerへ揃える。非公開・削除はしない | 1–2日 |
 | 2 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
 | 3 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
 | 4 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
