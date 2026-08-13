@@ -1784,6 +1784,44 @@ performs the real E2E, and records the milestone.
   real daily lane, and verify a ranking-ready non-terminal role reaches the same owned
   browser/application pipeline. Record an application only with an authoritative ATS
   or Gmail receipt.
+
+  Queue-order release and live proof are complete. Pushed source commit
+  `bef728012a3d9ff803b437f664fa639d859b4323` built twice to identical archive
+  SHA-256 `532bbce994508b9fa008057166e3de0d0e447e7a87ae195c3d29ed249e158466`
+  with `267` entries. The extracted runtime passes `579/579`; the read-only release is
+  active with `44953bc8f838d5906b983bf1e56a9abbb3ccb1ef` as rollback. Activation preserved
+  browser UUID and all seven existing page IDs.
+
+  Real launchd wake `daily-20260814-034509` exited `0` and proved the repaired order:
+  `436` candidates entered the terminal fence, `17` were excluded, `419` remained, and
+  `12` were selected. Durable verification advanced from `52` to `55`, eligible count
+  from `7` to `10`, and remaining-unverified count from `399` to `396`. The application
+  lane used only fenced owned target `3EF84B98BB5AC9E066FC8E082E893573` and attempted,
+  in order, NVIDIA `Principal Engineer, Autonomous Vehicles and Physical AI Solutions`,
+  NVIDIA `Physical AI and Simulation Solution Architect`, and Salesforce `AI Native
+  Delivery Consultant`. Candidate failure no longer stopped the wake from trying the
+  next role.
+
+  No ATS/Gmail receipt or request-start evidence was produced. Both NVIDIA Workday
+  routes classified as `validation_error` with the account form unavailable; the
+  Salesforce route exposed no usable Apply control and the observer also classified a
+  validation error. Telegram sent the natural Japanese outcome as message ID `16591`;
+  all three privacy scans are clean. Cleanup closed exactly the owned page and restored
+  the prior seven page IDs and browser UUID
+  `2ac269b0-350a-49a4-971e-9a0556aed50d`.
+
+  Ledger now contains `60` applications and `260` events because the deterministic
+  route bridge registered the three new official candidates as `discovered`. Submit
+  intents remain `30`; submitted remains `6`; submit-unknown remains `31`; no submission
+  claim was added. Ledger SHA-256 is
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a` and integrity is
+  `ok`.
+
+  **Immediate next slice:** isolate the Workday `validation_error` signal on the public
+  job-detail page without exposing page text, identify whether the false signal is a
+  generic accessibility alert or an actual form error, and correct only that classifier
+  or entry-control path. Then release and rerun the existing loop; receipt truth remains
+  unchanged.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
