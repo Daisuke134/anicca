@@ -1985,6 +1985,39 @@ performs the real E2E, and records the milestone.
   unless a real submission transition occurs, and sends the truthful natural-language
   Telegram result. If the native path still blocks, use that exact structural surface
   as the next single fix rather than returning selection to the model.
+
+  Deterministic-entry release and real wake are complete. Pushed commit
+  `ab51eda6f7b86b1c2d1b9e8e7c9233416d93f57e` built twice to byte-identical
+  archive SHA-256
+  `a9004e653cc2bfb7cf42ee20e41da1dcbbe1b0888b2297f53fb5a31971f86bb7`
+  with `267` entries. The source suite passes `585/585`; in the extracted archive,
+  `583` runtime tests pass and the only two failures are the expected source-only
+  tests that try to build another archive without a Git repository. The release is
+  active with `42300e11e5aed69ee3343fed41559b0c01d67a5e` as rollback.
+
+  Real launchd wake `daily-20260814-044919` exited `0`. Deterministic pre-submit tried
+  two ranking-ready NVIDIA Workday roles and one OpenAI Ashby role. The Workday calls
+  returned `workday_native_auth_unavailable`; the first stored Workday snapshot had
+  one frame and zero controls, while the second had twelve controls and a native Sign
+  In chooser. This proves a load/transition race: pre-submit calls the helper
+  immediately after `wait_until=commit`, and the helper checks the next form only one
+  second after a native chooser click. The Ashby application surface was truthfully
+  `claim_ready`, but resume routing then raised `RuntimeError`, so no fill or Submit
+  occurred. No submit intent, request start, receipt, or submit-unknown was created.
+
+  Telegram sent the natural result as message ID `16651`; all three privacy scans are
+  clean. Cleanup closed exactly one owned application page and restored the exact
+  seven pre-existing page IDs. Production Ledger is byte-identical at SHA-256
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`, integrity is
+  `ok`, and counts remain `60` applications, `260` events, `30` intents, `6`
+  submitted, and `31` submit-unknown.
+
+  **Immediate next slice:** remove only this Workday race. Before native entry, wait
+  boundedly for the first known Workday Apply/manual/native/account control; after a
+  native chooser click, wait boundedly for exact email/password controls before
+  classifying the form unavailable. Reuse the same selectors and safety fences; do
+  not add retries around Submit, a second browser, or a new abstraction. Then rebuild,
+  activate, and run one real wake.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
