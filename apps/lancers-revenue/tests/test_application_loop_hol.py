@@ -301,29 +301,33 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(receipts[0]["opportunity_external_id"], target_project_id)
         self.assertEqual(remaining_pending.keys(), {markers[other_project_id]})
 
-    def test_default_discovery_query_targets_g1_revenue_lane(self):
+    def test_discovery_query_rotates_by_utc_half_hour_slot(self):
         application_loop = _load_deployed_loop()
-        queries = []
+        calls = []
+        clock_calls = []
 
         def discoverer(**kwargs):
-            queries.append(kwargs["query"])
+            calls.append(kwargs)
             return {"ok": True, "error": None, "opportunities": []}
+
+        def clock_for(value):
+            return lambda: (clock_calls.append(value) or value)
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            application_loop.run_loop(
-                state_path=root / "application.json",
-                evidence_root=root / "evidence",
-                discoverer=discoverer,
-            )
-            application_loop.run_loop(
-                state_path=root / "application.json",
-                evidence_root=root / "evidence",
-                discoverer=discoverer,
-                query="explicit-query",
-            )
+            slots = [datetime(2026, 8, 13, 3 + index // 2, (index % 2) * 30, tzinfo=timezone.utc) for index in range(10)]
+            for slot in slots:
+                application_loop.run_loop(state_path=root / "application.json", evidence_root=root / "evidence", discoverer=discoverer, clock=clock_for(slot))
+            same_slot = slots[3]
+            for _ in range(2):
+                application_loop.run_loop(state_path=root / "application.json", evidence_root=root / "evidence", discoverer=discoverer, clock=clock_for(same_slot))
+            application_loop.run_loop(state_path=root / "application.json", evidence_root=root / "evidence", discoverer=discoverer, clock=clock_for(same_slot), query="explicit-query")
 
-        self.assertEqual(queries, ["SNS運用", "explicit-query"])
+        self.assertEqual([call["query"] for call in calls[:10]], list(application_loop.DISCOVERY_QUERIES))
+        self.assertEqual(calls[10]["query"], calls[11]["query"])
+        self.assertEqual(calls[12]["query"], "explicit-query")
+        self.assertEqual(len(calls), len(clock_calls))
+        self.assertTrue(all(call["limit"] == 20 for call in calls))
 
     def test_invoke_planner_uses_canonical_agent_runner_arguments(self):
         application_loop = _load_deployed_loop()

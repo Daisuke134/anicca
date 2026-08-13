@@ -22,6 +22,10 @@ SCHEMA_PATH = PLANNER_SCHEMA
 PLATFORM = "lancers"
 MAX_OPPORTUNITIES = 20
 DEFAULT_DISCOVERY_QUERY = "SNS運用"
+DISCOVERY_QUERIES = (
+    "SNS運用", "SNS投稿", "コンテンツ制作", "X運用", "LinkedIn",
+    "B2Bマーケティング", "AI活用", "継続依頼", "長期", "月額",
+)
 PLANNER_TASK_CLASS = "application-intent-planner"
 PLANNER_TIMEOUT_SECONDS = 180
 DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json"
@@ -95,6 +99,21 @@ def _tick_date(value: object) -> date:
             return parsed.astimezone(timezone.utc).date() if parsed.tzinfo else date.fromisoformat(value.strip())
         except (TypeError, ValueError, OverflowError): pass
     raise ValueError
+
+def _discovery_query(value: object) -> str:
+    try:
+        if isinstance(value, datetime):
+            parsed = value
+        elif isinstance(value, str):
+            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        else:
+            return DEFAULT_DISCOVERY_QUERY
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            return DEFAULT_DISCOVERY_QUERY
+        slot = int(parsed.astimezone(timezone.utc).timestamp() // 1800) % len(DISCOVERY_QUERIES)
+        return DISCOVERY_QUERIES[slot]
+    except (TypeError, ValueError, OverflowError, OSError):
+        return DEFAULT_DISCOVERY_QUERY
 
 def _snapshot(rows: Sequence[Mapping[str, object]], today: date) -> dict[str, object]:
     if len(rows) > MAX_OPPORTUNITIES: raise ValueError
@@ -378,11 +397,13 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
         quarantined_project_id = pending_result.unresolved_project_id or pending_result.project_id
     root = Path(evidence_root if evidence_root is not None else evidence_dir or DEFAULT_EVIDENCE_ROOT); result = ApplicationLoopResult(False, error="planner_failed"); cleanup_failed = False; evidence: Optional[Path] = None
     try:
+        try: tick_value = (clock or now or (lambda: datetime.now(timezone.utc)))()
+        except Exception: tick_value = None
         try:
             _reset(root); evidence = root / f"run-{uuid.uuid4().hex}"; evidence.mkdir(mode=0o700, exist_ok=False); os.chmod(evidence, 0o700)
         except Exception: evidence = None
         if evidence is not None:
-            try: observed = (discoverer or discovery or status.run_discovery)(query=DEFAULT_DISCOVERY_QUERY if query is None else query, limit=MAX_OPPORTUNITIES, timeout=timeout)
+            try: observed = (discoverer or discovery or status.run_discovery)(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout)
             except Exception: observed = None
             if observed is None: result = ApplicationLoopResult(False, error="discovery_failed")
             elif not isinstance(observed, Mapping): result = ApplicationLoopResult(False, error="discovery_failed")
@@ -396,7 +417,7 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
                 elif isinstance(opportunities, (str, bytes, bytearray)) or not isinstance(opportunities, Sequence): result = ApplicationLoopResult(False, error="discovery_failed")
                 elif not opportunities: result = ApplicationLoopResult(True, reason="no_eligible_project")
                 else:
-                    try: today = _tick_date((clock or now or (lambda: datetime.now(timezone.utc)))())
+                    try: today = _tick_date(tick_value)
                     except Exception: result = ApplicationLoopResult(False, error="planner_failed")
                     else: result = _plan_and_submit(opportunities, today, evidence, planner, submitter, Path(state_path))
     finally:
