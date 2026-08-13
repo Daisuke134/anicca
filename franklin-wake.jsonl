@@ -27285,3 +27285,11 @@
 {"ts":1786659899,"wake_id":"00MSS369RZ777E668F30514FD5","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786660027,"wake_id":"00MSS390FHF24CA9238E8B4667","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786660155,"wake_id":"00MSS3BR9YD699EB9C9AA644F1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786660286,"wake_id":"00MSS3EJR43AF76392761549D5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786660413,"wake_id":"00MSS3H9QH125A18A4CDDD48D9","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786660538,"wake_id":"00MSS3JYHEE86C8DA702464F5A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786660667,"wake_id":"00MSS3MPRL988B1DAEA4944E1F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786660795,"wake_id":"00MSS3PGUOAF6C8E79268C4B46","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786660921,"wake_id":"00MSS3S6DZ37658CD3709F4709","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana microtask platform pay per API call USDC no upfront deposit [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (c"}
+{"ts":1786661050,"wake_id":"00MSS3UXEFED99BEF1C4F54953","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786661177,"wake_id":"00MSS3XNQR0F18BF3EFCCC41E8","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
