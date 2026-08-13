@@ -318,6 +318,17 @@ def _advance_native_auth(page: Any) -> int:
             _wait_visible(page, '[data-automation-id="email"]', "email_form")
             _wait_visible(page, '[data-automation-id="password"]', "password_form")
             return 1
+    matches = page.locator('button:text-is("Sign In")')
+    visible = [
+        matches.nth(index)
+        for index in range(matches.count())
+        if matches.nth(index).is_visible()
+    ]
+    if visible:
+        visible[-1].click(timeout=5_000)
+        _wait_visible(page, '[data-automation-id="email"]', "email_form")
+        _wait_visible(page, '[data-automation-id="password"]', "password_form")
+        return 1
     return 0
 
 
