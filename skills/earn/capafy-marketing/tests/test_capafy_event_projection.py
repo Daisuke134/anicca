@@ -876,6 +876,13 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
             ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
         )
         assert malformed.returncode != 0
+    earn_ledger.write_text(
+        valid_earn_ledger + json.dumps(ambiguous_row | {"paid_orders": 3}) + "\n"
+    )
+    invalid_source = subprocess.run(
+        ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
+    )
+    assert invalid_source.returncode != 0
     earn_ledger.write_text(valid_earn_ledger)
 
     invalid_event = ambiguous_event | {
