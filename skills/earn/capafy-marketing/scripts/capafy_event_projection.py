@@ -189,13 +189,10 @@ def project_company(events: list[dict], reference_time: str | datetime | None = 
     incident_states: dict[str, tuple[tuple[datetime, int, int], dict]] = {}
     experiment_states: dict[str, tuple[int, dict]] = {}
     paid_orders: int | None = 0
+    sales_latest: dict[tuple[str, str], int] = {}
 
     for index, event in enumerate(events):
-        validation_event = event
-        if event.get("event_type") == "order.received" and isinstance(event.get("metrics"), dict) and "paid_orders" in event["metrics"]:
-            validation_event = dict(event)
-            validation_event["metrics"] = {key: value for key, value in event["metrics"].items() if key != "paid_orders"}
-        errors = validate_event(validation_event)
+        errors = validate_event(event)
         if errors:
             raise ValueError(
                 f"invalid event at index {index}: {'; '.join(errors)}"
@@ -204,7 +201,15 @@ def project_company(events: list[dict], reference_time: str | datetime | None = 
         if event_id in seen:
             raise ValueError(f"duplicate event_id: {event_id}")
         seen.add(event_id)
+        if event["event_type"] == "order.received":
+            source = event["source"]
+            sales_latest[(source["producer"], source["source_id"])] = index
 
+    for index, event in enumerate(events):
+        if event["event_type"] == "order.received":
+            source = event["source"]
+            if sales_latest[(source["producer"], source["source_id"])] != index:
+                continue
         for field in MONEY_FIELDS:
             money[field] += Decimal(event["money"][field])
         if event["event_type"] == "order.received":

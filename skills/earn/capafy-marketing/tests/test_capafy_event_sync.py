@@ -4,6 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 SCRIPTS = Path(__file__).parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
@@ -51,20 +53,39 @@ def test_sales_row_propagates_explicit_paid_orders_and_stores_valid_event() -> N
     assert store.validate_event(event | {"recorded_at": "2026-08-13T12:00:00Z"}) == []
 
 
-def test_sales_row_preserves_invalid_explicit_paid_orders_for_validation() -> None:
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("orders", None),
+        ("orders", True),
+        ("orders", -1),
+        ("orders", 1.0),
+        ("gross_usd", None),
+        ("gross_usd", -0.01),
+        ("gross_usd", float("nan")),
+        ("gross_usd", "Infinity"),
+        ("paid_orders", True),
+        ("paid_orders", -1),
+        ("paid_orders", 3),
+        ("paid_orders", 1.0),
+        ("paid_orders", None),
+    ],
+)
+def test_sales_rows_reject_malformed_paid_order_inputs(field: str, value: object) -> None:
     row = {
         "ts": 1786579200,
         "source": "capafy-sales",
         "date": "2026-08-13",
         "orders": 2,
-        "paid_orders": "unknown",
         "gross_usd": 19.98,
     }
+    if value is None and field in {"orders", "gross_usd"}:
+        row.pop(field)
+    else:
+        row[field] = value
 
-    event = sync.events_from_sales_rows([row])[0]
-
-    assert event["metrics"]["paid_orders"] == "unknown"
-    assert any("metrics.paid_orders" in error for error in store.validate_event(event))
+    with pytest.raises(ValueError, match=field):
+        sync.events_from_sales_rows([row])
 
 
 def test_duplicate_sales_source_date_is_not_counted_twice() -> None:
@@ -80,6 +101,23 @@ def test_duplicate_sales_source_date_is_not_counted_twice() -> None:
     events = sync.events_from_sales_rows([row, dict(row)])
 
     assert len(events) == 1
+    assert events[0]["event_id"].endswith(":daily-aggregate")
+
+
+def test_same_timestamp_uses_original_line_order_for_latest_revision() -> None:
+    first = {
+        "ts": 100,
+        "source": "capafy-sales",
+        "date": "2026-08-13",
+        "orders": 1,
+        "gross_usd": 9.99,
+    }
+    second = first | {"orders": 2, "paid_orders": 1, "gross_usd": 19.98}
+
+    event = sync.events_from_sales_rows([first, second])[0]
+
+    assert event["metrics"] == {"orders": 2, "paid_orders": 1}
+    assert event["event_id"].startswith("capafy:order.received:2026-08-13:revision-")
 
 
 def test_payout_snapshots_emit_pending_then_only_positive_realized_delta() -> None:

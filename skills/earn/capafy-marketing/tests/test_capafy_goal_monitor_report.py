@@ -9,7 +9,7 @@ import pytest
 SCRIPT = Path(__file__).parents[1] / "scripts" / "capafy_outcome.py"
 
 
-def company_state_payload(*, paid_orders: object) -> dict:
+def company_state_payload(*, paid_orders: object, orders: object = 5) -> dict:
     return {
         "schema_version": 1,
         "kind": "company_state",
@@ -18,7 +18,7 @@ def company_state_payload(*, paid_orders: object) -> dict:
         "last_event_id": "capafy:order.received:test",
         "projection_id": "sha256:" + "d" * 64,
         "inventory": {"online": 1, "under_review": 0, "draft": 0, "rejected": 0},
-        "orders": 5,
+        "orders": orders,
         "paid_orders": paid_orders,
         "gross_usd": "19.98",
         "pending_usd": "0.00",
@@ -62,12 +62,20 @@ def test_company_state_render_shows_paid_count_or_unknown() -> None:
     assert "Sales: 5 lifetime orders / paid count unavailable / $19.98 gross." in unknown.stdout
 
 
-@pytest.mark.parametrize("paid_orders", [True, -1, 1.0, "1"])
+@pytest.mark.parametrize("paid_orders", [True, -1, 1.0, "1", 6])
 def test_company_state_rejects_invalid_paid_count(paid_orders: object) -> None:
     result = render(company_state_payload(paid_orders=paid_orders))
 
     assert result.returncode != 0
     assert "paid_orders" in result.stderr
+
+
+@pytest.mark.parametrize("orders", [True, -1, 1.0, "5"])
+def test_company_state_rejects_invalid_order_count(orders: object) -> None:
+    result = render(company_state_payload(paid_orders=0, orders=orders))
+
+    assert result.returncode != 0
+    assert "orders" in result.stderr
 
 
 def test_august_first_company_state_is_natural_and_truthful() -> None:

@@ -196,3 +196,6 @@ def test_dashboard_sales_shows_paid_count_or_unknown_and_validates_type() -> Non
         assert dashboard.validate_public_projection(
             company_projection() | {"paid_orders": value}
         ) == ["paid_orders must be a non-negative integer or null"]
+    assert dashboard.validate_public_projection(
+        company_projection() | {"paid_orders": 2}
+    ) == ["paid_orders must not exceed orders"]

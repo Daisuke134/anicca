@@ -11,7 +11,7 @@ import os
 import subprocess
 import sys
 from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -48,6 +48,30 @@ def _decimal(value: Any) -> Decimal:
 
 def _cent(value: Any) -> Decimal:
     return _decimal(value).quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def _sales_values(row: dict) -> tuple[int, Decimal, int | None]:
+    orders = row.get("orders")
+    if isinstance(orders, bool) or not isinstance(orders, int) or orders < 0:
+        raise ValueError("orders is malformed")
+    gross_value = row.get("gross_usd")
+    if isinstance(gross_value, bool):
+        raise ValueError("gross_usd is malformed")
+    try:
+        gross = Decimal(str(gross_value))
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValueError("gross_usd is malformed") from None
+    if not gross.is_finite() or gross < 0:
+        raise ValueError("gross_usd is malformed")
+    paid = row.get("paid_orders")
+    if "paid_orders" in row and (
+        isinstance(paid, bool)
+        or not isinstance(paid, int)
+        or paid < 0
+        or paid > orders
+    ):
+        raise ValueError("paid_orders is malformed")
+    return orders, _cent(gross), paid if "paid_orders" in row else None
 
 
 def _money_text(value: Decimal) -> str:
@@ -243,25 +267,38 @@ def events_from_verified_runtime(
 
 def events_from_sales_rows(rows: list[dict]) -> list[dict]:
     events: list[dict] = []
-    seen: set[tuple[str, str]] = set()
-    for row in sorted(rows, key=lambda item: (str(item.get("date") or ""), int(item.get("ts") or 0))):
-        if row.get("source") != "capafy-sales" or not row.get("date"):
+    sales: dict[str, list[tuple[int, int, dict, int, Decimal, int | None]]] = {}
+    for line, row in enumerate(rows):
+        if row.get("source") != "capafy-sales":
             continue
-        identity = (str(row["source"]), str(row["date"]))
-        if identity in seen:
-            continue
-        seen.add(identity)
-        gross = _cent(row.get("gross_usd"))
-        orders = max(0, int(row.get("orders") or 0))
+        date = row.get("date")
+        if not isinstance(date, str) or not date:
+            raise ValueError("date is required")
+        try:
+            ts = int(row.get("ts") or 0)
+        except (TypeError, ValueError):
+            raise ValueError("ts is malformed") from None
+        orders, gross, paid = _sales_values(row)
+        sales.setdefault(date, []).append((ts, line, row, orders, gross, paid))
+
+    for date in sorted(sales):
+        candidates = sales[date]
+        latest = max(candidates, key=lambda item: (item[0], item[1]))
+        _, _, row, orders, gross, paid = latest
         if gross == 0 and orders == 0:
             continue
-        date = str(row["date"])
         metrics: dict[str, Any] = {"orders": orders}
-        if "paid_orders" in row:
-            metrics["paid_orders"] = row["paid_orders"]
+        if paid is not None:
+            metrics["paid_orders"] = paid
+        digest = _digest(row)
+        event_id = (
+            f"capafy:order.received:{date}:daily-aggregate"
+            if len({_digest(candidate[2]) for candidate in candidates}) == 1
+            else f"capafy:order.received:{date}:revision-{digest.removeprefix('sha256:')}"
+        )
         events.append(
             _event(
-                event_id=f"capafy:order.received:{date}:daily-aggregate",
+                event_id=event_id,
                 event_type="order.received",
                 occurred_at=_date_timestamp(date),
                 loop="company",

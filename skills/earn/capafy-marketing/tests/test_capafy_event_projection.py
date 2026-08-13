@@ -12,6 +12,7 @@ SCRIPTS = Path(__file__).parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import capafy_event_adapters as adapters
+import capafy_event_store as store
 import capafy_event_projection as projection
 import capafy_event_sync as sync
 import capafy_experiment
@@ -191,6 +192,44 @@ def test_projection_counts_paid_orders_without_attributing_zero_dollar_orders() 
     assert result["gross_usd"] == "19.98"
 
 
+def test_same_date_revision_keeps_immutable_events_but_folds_latest_only(
+    tmp_path: Path,
+) -> None:
+    legacy_row = {
+        "ts": 100,
+        "source": "capafy-sales",
+        "date": "2026-08-13",
+        "orders": 1,
+        "gross_usd": 9.99,
+    }
+    revision_row = legacy_row | {
+        "ts": 200,
+        "orders": 2,
+        "paid_orders": 1,
+        "gross_usd": 19.98,
+    }
+    legacy = sync.events_from_sales_rows([legacy_row])[0]
+    revision = sync.events_from_sales_rows([legacy_row, revision_row])[0]
+
+    assert legacy["event_id"].endswith(":daily-aggregate")
+    assert revision["event_id"] != legacy["event_id"]
+    assert revision["event_id"].startswith("capafy:order.received:2026-08-13:revision-")
+
+    ledger = tmp_path / "events.jsonl"
+    evidence = tmp_path / "evidence"
+    assert store.append_event(ledger, legacy, None, evidence).appended
+    assert store.append_event(ledger, revision, None, evidence).appended
+    replay = sync.events_from_sales_rows([legacy_row, revision_row])
+    assert replay == [revision]
+    assert store.append_event(ledger, replay[0], None, evidence).appended is False
+    assert len(store.read_events(ledger)) == 2
+
+    result = projection.project_company(store.read_events(ledger))
+    assert result["orders"] == 2
+    assert result["paid_orders"] == 1
+    assert result["gross_usd"] == "19.98"
+
+
 def test_projection_marks_multi_order_batch_paid_count_unknown() -> None:
     event = sync.events_from_sales_rows(
         [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 2, "gross_usd": 19.98}]
@@ -218,9 +257,8 @@ def test_projection_marks_explicit_paid_orders_above_orders_unknown() -> None:
         [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 2, "gross_usd": 19.98}]
     )[0] | {"metrics": {"orders": 2, "paid_orders": 3}}
 
-    result = projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])
-
-    assert result["paid_orders"] is None
+    with pytest.raises(ValueError, match="paid_orders must not exceed orders"):
+        projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])
 
 
 @pytest.mark.parametrize("paid_orders", [True, -1, 1.0, "1", None])
@@ -229,15 +267,15 @@ def test_projection_fails_closed_for_invalid_explicit_paid_orders(paid_orders: o
         [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 1, "gross_usd": 9.99}]
     )[0] | {"metrics": {"orders": 1, "paid_orders": paid_orders}}
 
-    assert projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])["paid_orders"] is None
+    with pytest.raises(ValueError, match="metrics.paid_orders"):
+        projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])
 
 
 def test_projection_fails_closed_for_negative_gross_order_batch() -> None:
-    event = sync.events_from_sales_rows(
-        [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 1, "gross_usd": -1.0}]
-    )[0]
-
-    assert projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])["paid_orders"] is None
+    with pytest.raises(ValueError, match="gross_usd"):
+        sync.events_from_sales_rows(
+            [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 1, "gross_usd": -1.0}]
+        )
 
 
 def test_projection_sources_report_mixed_fresh_stale_unknown_and_stable_id() -> None:
@@ -793,7 +831,6 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
         "source": "capafy-sales",
         "date": "2026-08-13",
         "orders": 2,
-        "paid_orders": 3,
         "gross_usd": 19.98,
     }
     ambiguous_event = sync.events_from_sales_rows([ambiguous_row])[0]
@@ -813,3 +850,48 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
     ambiguous_report = json.loads(ambiguous.stdout)
     assert ambiguous_report["goal_b"]["paid_orders"] is None
     assert ambiguous_report["company_state"]["paid_orders"] is None
+
+    valid_earn_ledger = earn_ledger.read_text()
+    malformed_rows = [
+        ambiguous_row | {"orders": True},
+        ambiguous_row | {"orders": -1},
+        ambiguous_row | {"orders": 2.0},
+        ambiguous_row | {"gross_usd": -0.01},
+        ambiguous_row | {"gross_usd": "NaN"},
+        ambiguous_row | {"gross_usd": "Infinity"},
+        ambiguous_row | {"paid_orders": True},
+        ambiguous_row | {"paid_orders": -1},
+        ambiguous_row | {"paid_orders": 2.0},
+    ]
+    missing_orders = dict(ambiguous_row)
+    missing_orders.pop("orders")
+    missing_gross = dict(ambiguous_row)
+    missing_gross.pop("gross_usd")
+    malformed_rows.extend((missing_orders, missing_gross))
+    for malformed_row in malformed_rows:
+        earn_ledger.write_text(
+            valid_earn_ledger + json.dumps(malformed_row) + "\n"
+        )
+        malformed = subprocess.run(
+            ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
+        )
+        assert malformed.returncode != 0
+    earn_ledger.write_text(valid_earn_ledger)
+
+    invalid_event = ambiguous_event | {
+        "metrics": {"orders": 2, "paid_orders": 3},
+        "event_id": "capafy:order.received:2026-08-13:invalid-paid-count",
+    }
+    ledger.write_text(
+        ledger.read_text()
+        + json.dumps(stored(invalid_event, "2026-08-13T12:01:00Z"))
+        + "\n"
+    )
+    with earn_ledger.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(ambiguous_row | {"paid_orders": 3}) + "\n")
+
+    invalid = subprocess.run(
+        ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
+    )
+
+    assert invalid.returncode != 0

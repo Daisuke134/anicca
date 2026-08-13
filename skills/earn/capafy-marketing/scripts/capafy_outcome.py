@@ -197,6 +197,9 @@ def validate_outcome(data: dict) -> list[str]:
             for value in metrics.values()
         ):
             errors.append("metrics must contain non-negative integer values")
+        orders = data.get("orders")
+        if "orders" not in data or isinstance(orders, bool) or not isinstance(orders, int) or orders < 0:
+            errors.append("orders must be a non-negative integer")
         if "paid_orders" not in data:
             errors.append("paid_orders is required")
         elif data["paid_orders"] is not None and (
@@ -205,6 +208,8 @@ def validate_outcome(data: dict) -> list[str]:
             or data["paid_orders"] < 0
         ):
             errors.append("paid_orders must be a non-negative integer or null")
+        elif data["paid_orders"] is not None and isinstance(orders, int) and data["paid_orders"] > orders:
+            errors.append("paid_orders must not exceed orders")
         if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(data.get("projection_id") or "")):
             errors.append("projection_id must be sha256:<64 lowercase hex>")
         if not data.get("last_event_id"):

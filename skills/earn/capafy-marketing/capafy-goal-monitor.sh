@@ -184,10 +184,18 @@ def derive_earn_money(path):
             if ts != ts.to_integral_value():
                 raise ValueError(f"EARN_LEDGER line {line_number}: ts is not an integer")
             if source == "capafy-sales":
-                orders = decimal_value(row, "orders", line_number)
-                if orders != orders.to_integral_value() or orders < 0:
+                raw_orders = row.get("orders")
+                if isinstance(raw_orders, bool) or not isinstance(raw_orders, int) or raw_orders < 0:
                     raise ValueError(f"EARN_LEDGER line {line_number}: orders is malformed")
-                candidate = (int(ts), date, line_number, int(orders), decimal_value(row, "gross_usd", line_number), "paid_orders" in row, row.get("paid_orders"))
+                orders = int(raw_orders)
+                gross = decimal_value(row, "gross_usd", line_number)
+                if gross < 0:
+                    raise ValueError(f"EARN_LEDGER line {line_number}: gross_usd is malformed")
+                if "paid_orders" in row:
+                    paid = row["paid_orders"]
+                    if isinstance(paid, bool) or not isinstance(paid, int) or paid < 0 or paid > orders:
+                        raise ValueError(f"EARN_LEDGER line {line_number}: paid_orders is malformed")
+                candidate = (int(ts), date, line_number, orders, gross, "paid_orders" in row, row.get("paid_orders"))
                 if (source, date) not in sales or candidate[:3] >= sales[(source, date)][:3]:
                     sales[(source, date)] = candidate
             else:
