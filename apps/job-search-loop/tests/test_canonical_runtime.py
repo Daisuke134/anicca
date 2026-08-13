@@ -638,6 +638,7 @@ raise SystemExit(0)
             learning = plistlib.loads(
                 (agents / "ai.anicca.job-search-learning.plist").read_bytes()
             )
+            self.assertFalse((agents / "ai.anicca.job-search-browser.plist").exists())
             self.assertEqual(
                 daily["ProgramArguments"][0],
                 str(private_root / "libexec" / "daily"),

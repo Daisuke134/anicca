@@ -91,7 +91,7 @@ TRAPEXIT() {
   fi
   if [[ "$JOB_SEARCH_BROWSER_LEASED" == "1" ]]; then
     "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner release \
-      --identity "job-search:dais" \
+      --identity "interactive:dais" \
       --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
       --fence "$JOB_SEARCH_BROWSER_FENCE" \
       --holder-pid "$$" >/dev/null 2>&1 || true
@@ -112,14 +112,14 @@ ATS_SURFACE_CANARY_REQUEST="$JOB_SEARCH_STATE_ROOT/ats-surface-canary-request.js
 if [[ -f "$ROUTE_FIXTURE_REQUEST" ]]; then
   JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
   "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
-    --identity "job-search:dais" \
+    --identity "interactive:dais" \
     --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
     --fence "$JOB_SEARCH_BROWSER_FENCE" \
     --holder-pid "$$"
   (
     TRAPEXIT() { :; }
     exec "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
-      --identity "job-search:dais" \
+      --identity "interactive:dais" \
       --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
       --fence "$JOB_SEARCH_BROWSER_FENCE" \
       --holder-pid "$$"
@@ -142,7 +142,7 @@ if [[ -f "$ROUTE_FIXTURE_REQUEST" ]]; then
   kill "$ROUTE_FIXTURE_BEAT_PID" >/dev/null 2>&1 || true
   wait "$ROUTE_FIXTURE_BEAT_PID" >/dev/null 2>&1 || true
   "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner release \
-    --identity "job-search:dais" \
+    --identity "interactive:dais" \
     --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
     --fence "$JOB_SEARCH_BROWSER_FENCE" \
     --holder-pid "$$" >/dev/null 2>&1 || true
@@ -159,14 +159,14 @@ fi
 if [[ -f "$ATS_SURFACE_CANARY_REQUEST" ]]; then
   JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
   "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
-    --identity "job-search:dais" \
+    --identity "interactive:dais" \
     --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
     --fence "$JOB_SEARCH_BROWSER_FENCE" \
     --holder-pid "$$"
   (
     TRAPEXIT() { :; }
     exec "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
-      --identity "job-search:dais" \
+      --identity "interactive:dais" \
       --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
       --fence "$JOB_SEARCH_BROWSER_FENCE" \
       --holder-pid "$$"
@@ -186,7 +186,7 @@ if [[ -f "$ATS_SURFACE_CANARY_REQUEST" ]]; then
   kill "$ATS_CANARY_BEAT_PID" >/dev/null 2>&1 || true
   wait "$ATS_CANARY_BEAT_PID" >/dev/null 2>&1 || true
   "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner release \
-    --identity "job-search:dais" \
+    --identity "interactive:dais" \
     --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
     --fence "$JOB_SEARCH_BROWSER_FENCE" \
     --holder-pid "$$" >/dev/null 2>&1 || true
@@ -282,7 +282,7 @@ chmod 600 "$JOB_SEARCH_TERRA_PLAN_RESULT" "$JOB_SEARCH_TERRA_HIGH_RESULT" \
   "$EVIDENCE/terra-plan-runner.json" "$EVIDENCE/terra-high-runner.json"
 JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
-  --identity "job-search:dais" \
+  --identity "interactive:dais" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
   --fence "$JOB_SEARCH_BROWSER_FENCE" \
   --holder-pid "$$"
@@ -290,7 +290,7 @@ JOB_SEARCH_BROWSER_LEASED=1
 (
   TRAPEXIT() { :; }
   exec "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
-    --identity "job-search:dais" \
+    --identity "interactive:dais" \
     --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
     --fence "$JOB_SEARCH_BROWSER_FENCE" \
     --holder-pid "$$"

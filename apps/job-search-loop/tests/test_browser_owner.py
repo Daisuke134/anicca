@@ -39,63 +39,15 @@ class BrowserOwnerTests(unittest.TestCase):
         source = inspect.getsource(browser_owner)
         self.assertIn("from playwright", source)
         self.assertNotIn("PinnedBrowserUseBackend", source)
+        self.assertNotIn("kickstart", source)
+        self.assertNotIn("job-search-browser", source)
+        self.assertIn('default="interactive:dais"', source)
         default = inspect.signature(
-            browser_owner.acquire_with_attach_recovery
+            browser_owner.acquire_with_attach
         ).parameters["attach_probe"].default
         self.assertEqual(default.__name__, "attach_playwright_cdp")
 
-    def test_browser_owner_exposes_attach_verified_recovery_acquire(self):
-        self.assertTrue(hasattr(browser_owner, "acquire_with_attach_recovery"))
-
-    def test_attach_timeout_restarts_only_browser_and_reacquires_once(self):
-        self.assertIn(
-            "attach_probe",
-            inspect.signature(browser_owner.acquire_with_attach_recovery).parameters,
-        )
-        events = []
-
-        class Lease:
-            receipt_path = Path("/unused")
-
-            def acquire(self):
-                endpoint = f"http://127.0.0.1:{49151 + events.count('acquire')}"
-                events.append("acquire")
-                return {"status": "ready", "endpoint": endpoint, "fence": len(events)}
-
-            def release(self):
-                events.append("release")
-                return True
-
-        attach_attempts = []
-
-        def attach(endpoint):
-            attach_attempts.append(endpoint)
-            events.append("attach")
-            if len(attach_attempts) == 1:
-                raise TimeoutError("CDP initialization timed out")
-            return {"browser": "Chrome/140", "context_count": 1}
-
-        restarted = []
-
-        result = browser_owner.acquire_with_attach_recovery(
-            Lease(),
-            attach_probe=attach,
-            restart_browser=lambda label: (restarted.append(label), events.append("restart")),
-        )
-
-        self.assertEqual(
-            events,
-            ["acquire", "attach", "release", "restart", "acquire", "attach"],
-        )
-        self.assertEqual(restarted, ["ai.anicca.job-search-browser"])
-        self.assertEqual(
-            attach_attempts,
-            ["http://127.0.0.1:49151", "http://127.0.0.1:49152"],
-        )
-        self.assertEqual(result["attach_status"], "ready")
-        self.assertEqual(result["attach_attempts"], 2)
-
-    def test_second_attach_failure_releases_lease_and_never_retries_again(self):
+    def test_attach_failure_releases_once_without_restart_or_retry(self):
         events = []
 
         class Lease:
@@ -103,7 +55,7 @@ class BrowserOwnerTests(unittest.TestCase):
 
             def acquire(self):
                 events.append("acquire")
-                return {"status": "ready", "endpoint": "http://127.0.0.1:49151"}
+                return {"status": "leased", "endpoint": "http://127.0.0.1:9222"}
 
             def release(self):
                 events.append("release")
@@ -114,74 +66,31 @@ class BrowserOwnerTests(unittest.TestCase):
             raise TimeoutError("CDP initialization timed out")
 
         with self.assertRaisesRegex(TimeoutError, "timed out"):
-            browser_owner.acquire_with_attach_recovery(
-                Lease(),
-                attach_probe=attach,
-                restart_browser=lambda label: events.append(f"restart:{label}"),
-            )
+            browser_owner.acquire_with_attach(Lease(), attach_probe=attach)
 
-        self.assertEqual(
-            events,
-            [
-                "acquire",
-                "attach",
-                "release",
-                "restart:ai.anicca.job-search-browser",
-                "acquire",
-                "attach",
-                "release",
-            ],
-        )
+        self.assertEqual(events, ["acquire", "attach", "release"])
 
-    def test_restart_waits_for_fresh_browser_before_second_attach(self):
-        self.assertIn(
-            "readiness_wait",
-            inspect.signature(browser_owner.acquire_with_attach_recovery).parameters,
-        )
-        events = []
-
+    def test_successful_attach_uses_existing_browser_once(self):
         class Lease:
             receipt_path = Path("/unused")
 
-            def __init__(self):
-                self.acquire_count = 0
-
             def acquire(self):
-                self.acquire_count += 1
-                events.append(f"acquire:{self.acquire_count}")
-                if self.acquire_count in {2, 3}:
-                    raise RuntimeError("browser lease unavailable")
-                return {
-                    "status": "leased",
-                    "endpoint": f"http://127.0.0.1:{49150 + self.acquire_count}",
-                }
+                return {"status": "leased", "endpoint": "http://127.0.0.1:9222"}
 
             def release(self):
-                events.append("release")
                 return True
 
-        attach_count = 0
+        endpoints = []
 
         def attach(endpoint):
-            nonlocal attach_count
-            attach_count += 1
-            events.append(f"attach:{attach_count}")
-            if attach_count == 1:
-                raise TimeoutError("CDP initialization timed out")
+            endpoints.append(endpoint)
             return {"browser": "Chrome/140", "context_count": 1}
 
-        result = browser_owner.acquire_with_attach_recovery(
-            Lease(),
-            attach_probe=attach,
-            restart_browser=lambda label: events.append("restart"),
-            readiness_wait=lambda seconds: events.append("wait"),
-        )
+        result = browser_owner.acquire_with_attach(Lease(), attach_probe=attach)
 
-        self.assertEqual(result["attach_attempts"], 2)
-        self.assertEqual(attach_count, 2)
-        self.assertEqual(events.count("restart"), 1)
-        self.assertEqual(events.count("wait"), 2)
-        self.assertEqual(events[-1], "attach:2")
+        self.assertEqual(endpoints, ["http://127.0.0.1:9222"])
+        self.assertEqual(result["attach_attempts"], 1)
+        self.assertEqual(result["status"], "ready")
 
     def test_running_cdp_is_declared_ready_for_the_existing_loop_owner(self):
         server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
@@ -229,13 +138,13 @@ class BrowserOwnerTests(unittest.TestCase):
     def test_receipt_is_not_ready_until_playwright_attach_succeeds(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            lease_path = root / "job_search_dais.lease"
+            lease_path = root / "interactive_dais.lease"
             receipt_path = root / "browser-owner.json"
             fence_path = root / "browser-fence"
             lease_path.write_text(
                 json.dumps(
                     {
-                        "identity": "job-search:dais",
+                        "identity": "interactive:dais",
                         "pid": os.getpid(),
                         "host": "test-host",
                         "port": 49152,
@@ -267,10 +176,10 @@ class BrowserOwnerTests(unittest.TestCase):
                 "job_search_loop.browser_owner.socket.gethostname",
                 return_value="test-host",
             ):
-                result = browser_owner.acquire_with_attach_recovery(
+                result = browser_owner.acquire_with_attach(
                     BrowserLease(
                         guard=Path("/guard"),
-                        identity="job-search:dais",
+                        identity="interactive:dais",
                         owner="ai.anicca.job-search-daily",
                         receipt_path=receipt_path,
                         lease_path=lease_path,
@@ -313,11 +222,11 @@ class BrowserOwnerTests(unittest.TestCase):
     def test_release_accepts_same_lease_after_heartbeat_refreshes_timestamp(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            lease_path = root / "job_search_dais.lease"
+            lease_path = root / "interactive_dais.lease"
             receipt_path = root / "browser-owner.json"
             fence_path = root / "browser-fence"
             original = {
-                "identity": "job-search:dais",
+                "identity": "interactive:dais",
                 "pid": 123,
                 "host": "test-host",
                 "port": 49152,
@@ -332,7 +241,7 @@ class BrowserOwnerTests(unittest.TestCase):
             )()
             owner = BrowserLease(
                 guard=Path("/guard"),
-                identity="job-search:dais",
+                identity="interactive:dais",
                 owner="ai.anicca.job-search-daily",
                 receipt_path=receipt_path,
                 lease_path=lease_path,

@@ -11,7 +11,8 @@ work. O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
 daily outcome reporting and O2-05U unlimited eligible applications are complete.
-O2-05B shared-browser cutover is now the active slice before activation.
+O2-05B shared-browser cutover is complete. Current `origin/main` integration and one
+new release activation are now the active steps before launchd load.
 O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
 mail, and learning lanes are disabled and unloaded and must not be described as
 healthy or complete.
@@ -23,10 +24,11 @@ unloaded; the last daily evidence is from 2026-08-08. The active release is
 listening on `127.0.0.1:49167`, can restart that browser after an attach failure, and
 contains the old technical progress copy. Do not load that stale release. O2-05N is
 complete. O2-05U removes the fixed daily/portfolio submission caps and fixed-ten
-search/recovery target. The only remaining behavioral blocker before activation is
-O2-05B, which binds the daily lane to the existing `interactive:dais` browser at
-`127.0.0.1:9222` and removes restart behavior. Immediately after O2-05B is pushed,
-build/activate once and load daily/inbox/learning. O2-06 through O2-12 improve and
+search/recovery target. O2-05B binds the daily lane to the existing
+`interactive:dais` browser at `127.0.0.1:9222`, removes restart behavior, and excludes
+the legacy browser label from the installer. No behavioral blocker remains before
+activation. Integrate current `origin/main`, build/activate once, and load
+daily/inbox/learning. O2-06 through O2-12 improve and
 prove the live loop; they must
 not delay turning the application loop on.
 
@@ -1328,7 +1330,7 @@ performs the real E2E, and records the milestone.
   new reporting describes confirmed count and eligible backlog, never a fixed target
   or deficit to ten. Add no scheduler, service, table, or second queue. Completion is
   acknowledged by Telegram message ID `16330`; final pushed commit: `7eaaf85cf`.
-- [ ] **O2-05B — use only the existing shared CloakBrowser** — Route every normal
+- [x] **O2-05B — use only the existing shared CloakBrowser** — Route every normal
   daily acquisition to registry identity `interactive:dais` on the measured
   `127.0.0.1:9222` daily-driver. A busy, unavailable, or failed attach never starts or
   restarts another browser; it fails closed and O2-05R reports the natural reason and
@@ -1336,7 +1338,14 @@ performs the real E2E, and records the milestone.
   the `:9222` browser PID, UUID, contexts, and pre-existing tab-ID set are unchanged
   across a no-submit acquisition/release canary before loading launchd. Do not use
   `install-launchd.sh`, because it also restarts the browser label; enable/bootstrap
-  only daily, inbox, and learning individually after activation.
+  only daily, inbox, and learning individually after activation. All production daily
+  acquire/hold/release paths now use `interactive:dais`; the browser owner performs one
+  attach and fails closed after releasing the lease, with no kickstart/restart code;
+  the installer renders/loads only daily, inbox, and learning. Focused/related checks
+  pass `34/34`; the full Job Hunter suite passes `574/574` in `33.156s`; shell syntax,
+  compile, and diff checks pass. A real `:9222` acquire→attach→release canary preserved
+  PID `22279`, browser UUID `2ac269b0-350a-49a4-971e-9a0556aed50d`, one context, and
+  all `13` pre-existing tab IDs; no page was created or closed.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping

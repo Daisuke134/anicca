@@ -8,7 +8,6 @@ import socket
 import subprocess
 import signal
 import threading
-import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -49,19 +48,6 @@ def attach_playwright_cdp(endpoint: str) -> dict[str, Any]:
         # Stopping the Playwright transport disconnects this probe. Never call
         # browser.close() against a shared connect_over_cdp browser.
         playwright.stop()
-
-
-def _restart_browser_launchagent(label: str) -> None:
-    if label != "ai.anicca.job-search-browser":
-        raise RuntimeError("browser recovery label is not authorized")
-    completed = subprocess.run(
-        ["/bin/launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{label}"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError("browser LaunchAgent restart failed")
 
 
 def _browser_pid(port: int) -> int:
@@ -219,46 +205,27 @@ class BrowserLease:
         return True
 
 
-def acquire_with_attach_recovery(
+def acquire_with_attach(
     lease: BrowserLease,
     *,
     attach_probe: Callable[[str], dict[str, Any]] = attach_playwright_cdp,
-    restart_browser: Callable[[str], Any] = _restart_browser_launchagent,
-    readiness_wait: Callable[[float], Any] = time.sleep,
 ) -> dict[str, Any]:
-    attempts = 0
-    while attempts < 2:
-        if attempts == 0:
-            receipt = lease.acquire()
-        else:
-            for readiness_attempt in range(30):
-                try:
-                    receipt = lease.acquire()
-                    break
-                except RuntimeError as error:
-                    if str(error) != "browser lease unavailable" or readiness_attempt == 29:
-                        raise
-                    readiness_wait(0.5)
-        attempts += 1
-        try:
-            attached = attach_probe(str(receipt["endpoint"]))
-        except Exception:
-            if not lease.release():
-                raise RuntimeError("failed CDP attach lease could not be released")
-            if attempts == 2:
-                raise
-            restart_browser("ai.anicca.job-search-browser")
-            continue
-        receipt["attach_status"] = "ready"
-        receipt["status"] = "ready"
-        receipt["attach_attempts"] = attempts
-        receipt["attach_browser"] = str(attached.get("browser") or "")
-        receipt["attach_context_count"] = int(attached.get("context_count") or 0)
-        receipt["attach_verified_at"] = datetime.now(timezone.utc).isoformat()
-        if lease.receipt_path.is_file():
-            _private_write(lease.receipt_path, receipt)
-        return receipt
-    raise RuntimeError("CDP attach recovery exhausted")
+    receipt = lease.acquire()
+    try:
+        attached = attach_probe(str(receipt["endpoint"]))
+    except Exception as error:
+        if not lease.release():
+            raise RuntimeError("failed CDP attach lease could not be released") from error
+        raise
+    receipt["attach_status"] = "ready"
+    receipt["status"] = "ready"
+    receipt["attach_attempts"] = 1
+    receipt["attach_browser"] = str(attached.get("browser") or "")
+    receipt["attach_context_count"] = int(attached.get("context_count") or 0)
+    receipt["attach_verified_at"] = datetime.now(timezone.utc).isoformat()
+    if lease.receipt_path.is_file():
+        _private_write(lease.receipt_path, receipt)
+    return receipt
 
 
 def _defaults(args: argparse.Namespace) -> BrowserLease:
@@ -275,7 +242,7 @@ def _defaults(args: argparse.Namespace) -> BrowserLease:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=("acquire", "beat", "hold", "release"))
-    parser.add_argument("--identity", default="job-search:dais")
+    parser.add_argument("--identity", default="interactive:dais")
     parser.add_argument("--owner", default="ai.anicca.job-search-daily")
     parser.add_argument("--guard", type=Path, default=Path("~/.config/ai/bin/browser-guard.sh"))
     parser.add_argument("--lease-dir", type=Path, default=Path("~/.cloak/leases"))
@@ -285,7 +252,7 @@ def main() -> None:
     args = parser.parse_args()
     lease = _defaults(args)
     if args.action == "acquire":
-        result = acquire_with_attach_recovery(lease)
+        result = acquire_with_attach(lease)
         print(json.dumps({"status": result["status"], "fence": result["fence"]}))
     elif args.action == "beat":
         if not lease.beat():
