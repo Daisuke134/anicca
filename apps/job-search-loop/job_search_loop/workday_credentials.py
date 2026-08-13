@@ -234,6 +234,21 @@ def _advance_application_entry(page: Any) -> int:
     return actions
 
 
+def _advance_native_auth(page: Any) -> int:
+    for selector in (
+        '[data-automation-id="createAccountLink"]',
+        '[data-automation-id="SignInWithEmailButton"]',
+        '[data-automation-id="signInLink"]',
+    ):
+        control = page.locator(selector)
+        if control.count() != 1 or not control.is_visible():
+            continue
+        control.click(timeout=5_000)
+        page.wait_for_timeout(1_000)
+        return 1
+    return 0
+
+
 def fill_account_creation(
     *,
     job_url: str,
@@ -285,12 +300,17 @@ def fill_account_creation(
     verify_password = page.locator('[data-automation-id="verifyPassword"]')
     if verify_password.count() == 0 and "/login" not in urlsplit(page.url).path:
         entry_actions = _advance_application_entry(page)
+        entry_actions += _advance_native_auth(page)
         verify_password = page.locator('[data-automation-id="verifyPassword"]')
     else:
         entry_actions = 0
     if verify_password.count() == 1:
         mode = "create"
-    elif verify_password.count() == 0 and "/login" in urlsplit(page.url).path:
+    elif (
+        verify_password.count() == 0
+        and page.locator('[data-automation-id="email"]').count() == 1
+        and page.locator('[data-automation-id="password"]').count() == 1
+    ):
         mode = "sign_in"
     else:
         raise WorkdayCredentialError("Workday account form is unavailable")

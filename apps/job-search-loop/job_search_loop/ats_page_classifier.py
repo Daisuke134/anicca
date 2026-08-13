@@ -133,6 +133,17 @@ def classify_ats_page(snapshot: Mapping[str, Any]) -> dict[str, Any]:
     text = "\n".join(control["text"] for control in controls if control["text"])
     hostname = parsed.hostname.casefold()
     signals: list[str] = []
+    blocked_sso_host = any(
+        hostname == host or hostname.endswith(f".{host}")
+        for host in BLOCKED_SSO_HOSTS
+    )
+    native_auth = any(
+        control["type"] in {"email", "password"}
+        or control["text"].casefold() in {
+            "sign in", "create account", "sign in with email",
+        }
+        for control in controls
+    )
 
     if CONFIRMATION_RE.search(text) or re.search(r"/(?:thank-you|application-submitted)(?:/|$)", parsed.path, re.I):
         classification = "confirmation_like"
@@ -146,7 +157,7 @@ def classify_ats_page(snapshot: Mapping[str, Any]) -> dict[str, Any]:
         classification = "visible_captcha"
         next_route = "gmail_fallback_required"
         signals.append("visible_human_challenge")
-    elif any(hostname == host or hostname.endswith(f".{host}") for host in BLOCKED_SSO_HOSTS) or SSO_RE.search(text):
+    elif blocked_sso_host:
         classification = "blocked_sso"
         next_route = "gmail_fallback_required"
         signals.append("blocked_sso_surface")
@@ -161,6 +172,14 @@ def classify_ats_page(snapshot: Mapping[str, Any]) -> dict[str, Any]:
         classification = "application_form"
         next_route = "terra_continue_formal"
         signals.append("application_controls")
+    elif native_auth:
+        classification = "account_auth"
+        next_route = "terra_continue_formal"
+        signals.append("native_account_controls")
+    elif SSO_RE.search(text):
+        classification = "blocked_sso"
+        next_route = "gmail_fallback_required"
+        signals.append("blocked_sso_surface")
     elif ACCOUNT_RE.search(text) or any(control["type"] == "password" for control in controls):
         classification = "account_auth"
         next_route = "terra_continue_formal"

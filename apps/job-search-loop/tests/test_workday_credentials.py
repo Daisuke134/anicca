@@ -11,6 +11,7 @@ from pathlib import Path
 from job_search_loop.workday_credentials import (
     WorkdayCredentialError,
     _advance_application_entry,
+    _advance_native_auth,
     ensure_credentials,
     fill_account_creation,
     known_tenants,
@@ -87,6 +88,24 @@ class WorkdayCredentialTests(unittest.TestCase):
         self.assertIn("jobPostingApplyButton", clicked[0])
         self.assertIn("applyManually", clicked[1])
         self.assertTrue(all("sso" not in value.casefold() for value in clicked))
+
+    def test_native_auth_prefers_create_account_and_never_selects_sso(self):
+        clicked = []
+
+        class Locator:
+            def __init__(self, selector): self.selector = selector
+            def count(self): return 0 if "createAccountLink" not in self.selector else 1
+            def is_visible(self): return True
+            def click(self, **_kwargs): clicked.append(self.selector)
+
+        class Page:
+            def locator(self, selector): return Locator(selector)
+            def wait_for_timeout(self, _milliseconds): pass
+
+        self.assertEqual(_advance_native_auth(Page()), 1)
+        self.assertEqual(len(clicked), 1)
+        self.assertIn("createAccountLink", clicked[0])
+        self.assertNotIn("Google", clicked[0])
 
     def test_creation_is_private_strong_atomic_and_receipt_is_redacted(self):
         receipt = ensure_credentials(

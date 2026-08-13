@@ -71,6 +71,20 @@ class AtsPageClassifierTests(unittest.TestCase):
         self.assertEqual(receipt["classification"], "job_detail")
         self.assertEqual(receipt["next_route"], "terra_continue_formal")
 
+    def test_native_sign_in_wins_over_optional_google_sso(self):
+        receipt = classify_ats_page({
+            "version": 1,
+            "url": "https://example.wd5.myworkdayjobs.com/site/job/role/apply",
+            "navigation_committed": True,
+            "frames": [{"controls": [
+                {"tag": "button", "text": "Sign In"},
+                {"tag": "button", "text": "Sign In with Google"},
+            ]}],
+        })
+
+        self.assertEqual(receipt["classification"], "account_auth")
+        self.assertEqual(receipt["signals"], ["native_account_controls"])
+
 
 if __name__ == "__main__":
     unittest.main()
