@@ -17,6 +17,11 @@ from .state import canonical_url
 
 
 JAPAN_RE = re.compile(r"\b(?:japan|tokyo)\b|日本|東京", re.IGNORECASE)
+WORLDWIDE_REMOTE_RE = re.compile(
+    r"\b(?:remote worldwide|worldwide remote|work from anywhere|remote from anywhere|"
+    r"anywhere in the world|globally remote|global remote)\b",
+    re.IGNORECASE,
+)
 AI_RE = re.compile(r"\b(?:AI|LLM|GenAI|machine learning)\b|生成AI", re.IGNORECASE)
 CUSTOMER_DEPLOYMENT_RE = re.compile(
     r"\b(?:deployment|forward deployed|solutions?|customer-facing|customers?)\b",
@@ -55,13 +60,59 @@ def _source_for(candidate: dict[str, Any], field: str) -> str | None:
     )
 
 
+def _compensation(
+    candidate: dict[str, Any], description: Any
+) -> tuple[int | None, bool, str]:
+    structured = candidate.get("compensation_evidence")
+    if isinstance(structured, dict) and structured.get("type") == "annual_salary":
+        currency = structured.get("currency")
+        minimum = structured.get("min")
+        if isinstance(minimum, int) and minimum > 0:
+            if currency == "JPY":
+                return minimum, False, "verified_jpy"
+            if currency == "USD" and minimum >= 100_000:
+                return None, True, "verified_six_figure_usd"
+    amounts = _jpy_amounts(description)
+    return (
+        (min(amounts), False, "verified_jpy")
+        if amounts
+        else (None, False, "unverified")
+    )
+
+
+def _japan_eligibility(
+    candidate: dict[str, Any], description: Any
+) -> tuple[bool, str | None]:
+    location_parts = [str(candidate.get("location") or "")]
+    secondary = candidate.get("secondary_locations")
+    if isinstance(secondary, list):
+        location_parts.extend(str(value) for value in secondary)
+    location_text = "; ".join(value for value in location_parts if value)
+    if JAPAN_RE.search(location_text):
+        primary_span = _source_for(candidate, "location")
+        if primary_span and JAPAN_RE.search(str(candidate.get("location") or "")):
+            return True, primary_span
+        return True, (
+            f"{candidate.get('official_url')}#secondary_locations={location_text}"
+        )
+    text = f"{location_text} {description if isinstance(description, str) else ''}"
+    match = WORLDWIDE_REMOTE_RE.search(text)
+    if match is None:
+        return False, None
+    return True, _source_for(candidate, "description") or _source_for(
+        candidate, "location"
+    )
+
+
 def _rank_candidate(candidate: dict[str, Any], description: Any) -> dict[str, Any]:
     title = str(candidate.get("title") or "")
     location = str(candidate.get("location") or "")
     text = f"{title} {description if isinstance(description, str) else ''}"
     role_family = _role_family(title, description)
-    amounts = _jpy_amounts(description)
-    compensation_min_jpy = min(amounts) if amounts else None
+    compensation_min_jpy, six_figure_usd, compensation_status = _compensation(
+        candidate, description
+    )
+    japan_eligible, japan_evidence = _japan_eligibility(candidate, description)
     skills: list[str] = []
     if AI_RE.search(text):
         skills.append("ai")
@@ -77,13 +128,13 @@ def _rank_candidate(candidate: dict[str, Any], description: Any) -> dict[str, An
         title=title,
         url=str(candidate.get("official_url") or ""),
         location=location,
-        japan_eligible=bool(JAPAN_RE.search(location)),
+        japan_eligible=japan_eligible,
         compensation_min_jpy=compensation_min_jpy,
         clearance_required=False,
         skills=skills,
         domains=domains,
     )
-    evaluation = evaluate(job)
+    evaluation = evaluate(job, six_figure_usd_verified=six_figure_usd)
     portfolio_bucket = None
     if evaluation.eligible and role_family != "unknown":
         portfolio_bucket = classify_portfolio(
@@ -94,12 +145,13 @@ def _rank_candidate(candidate: dict[str, Any], description: Any) -> dict[str, An
     return {
         "role_family": role_family,
         "compensation_min_jpy": compensation_min_jpy,
-        "compensation_status": "known" if amounts else "unknown",
+        "compensation_status": compensation_status,
         "ranking_inputs": {
             "japan_eligible": job.japan_eligible,
-            "japan_eligible_source_span": _source_for(candidate, "location"),
+            "japan_eligible_source_span": japan_evidence,
             "role_family_source_span": _source_for(candidate, "title"),
-            "compensation_source_span": _source_for(candidate, "description") if amounts else None,
+            "compensation_source_span": candidate.get("compensation_evidence"),
+            "six_figure_usd_verified": six_figure_usd,
             "skills": skills,
             "domains": domains,
         },
@@ -186,6 +238,8 @@ def build_prefilter_result(
                 continue
             location = str(row.get("location") or "").strip() or None
             description = row.get("description")
+            secondary_locations = row.get("secondary_locations")
+            compensation = row.get("compensation")
             candidate = {
                 "bucket": query_item.get("bucket"),
                 "language": query_item.get("language"),
@@ -195,10 +249,17 @@ def build_prefilter_result(
                 "company": company,
                 "location": location,
                 "ai_requirement_evidence": _excerpt(description, AI_RE),
-                "japan_eligibility_evidence": (
-                    location if location and JAPAN_RE.search(location) else None
+                "japan_eligibility_evidence": None,
+                "compensation_evidence": (
+                    compensation if isinstance(compensation, dict) else None
                 ),
-                "compensation_evidence": None,
+                "secondary_locations": (
+                    secondary_locations
+                    if isinstance(secondary_locations, list)
+                    else []
+                ),
+                "is_remote": row.get("is_remote") is True,
+                "workplace_type": row.get("workplace_type"),
                 "deadline_evidence": None,
                 "jd_fingerprint": fingerprint_text(description),
             }
@@ -212,6 +273,11 @@ def build_prefilter_result(
                 )
             )
             candidate.update(_rank_candidate(candidate, description))
+            candidate["japan_eligibility_evidence"] = (
+                location
+                if location and JAPAN_RE.search(location)
+                else candidate["ranking_inputs"]["japan_eligible_source_span"]
+            )
             candidates_by_url[normalized_url] = candidate
     candidates = list(candidates_by_url.values())
     return {

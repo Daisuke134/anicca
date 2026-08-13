@@ -67,6 +67,7 @@ def evaluate(
     *,
     today: date | None = None,
     candidate_clearance_state: str = "unknown",
+    six_figure_usd_verified: bool = False,
 ) -> Evaluation:
     reasons: list[str] = []
     warnings: list[str] = []
@@ -110,6 +111,8 @@ def evaluate(
         and job.compensation_min_jpy < COMPENSATION_FLOOR_JPY
     ):
         reasons.append("compensation_below_floor")
+    elif job.compensation_min_jpy is None and not six_figure_usd_verified:
+        reasons.append("compensation_unverified")
 
     title = job.title.casefold()
     skills = {value.casefold() for value in job.skills}
@@ -120,12 +123,15 @@ def evaluate(
         "consumer": 15 if skills & CONSUMER_SKILLS else 0,
         "location": 15 if job.japan_eligible else 0,
         "compensation": (
-            5
-            if job.compensation_min_jpy is None
-            else 10
-            if job.compensation_min_jpy >= COMPENSATION_TARGET_JPY
+            10
+            if six_figure_usd_verified
+            or (
+                job.compensation_min_jpy is not None
+                and job.compensation_min_jpy >= COMPENSATION_TARGET_JPY
+            )
             else 7
-            if job.compensation_min_jpy >= COMPENSATION_FLOOR_JPY
+            if job.compensation_min_jpy is not None
+            and job.compensation_min_jpy >= COMPENSATION_FLOOR_JPY
             else 0
         ),
         "mission": 10 if domains & PREFERRED_DOMAINS else 0,

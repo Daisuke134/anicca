@@ -2450,7 +2450,7 @@ performs the real E2E, and records the milestone.
   that state; it returns the exact deterministic blockers and queue counts. This keeps
   one clean browser authority path.
 
-  The prompt-only cleanup is pushed as commit
+The prompt-only cleanup is pushed as commit
   `a14717682d6cc9cea2fa1bb152a6e4f7c3cb9382` and active. Its two release builds are
   byte-identical at SHA-256
   `9638dc7f3fef67736520ee5344472722807b7e95a212ff8f3b6a6499ca1ec1f0`
@@ -2460,11 +2460,36 @@ performs the real E2E, and records the milestone.
   Telegram message ID `16853`; it explicitly states that no application receipt exists
   and that NVIDIA is waiting for account unlock.
 
-  **Immediate next slice:** after the NVIDIA account cooldown, perform one fresh
-  sign-in using the reset private credential. If authentication succeeds, run the
-  deterministic wizard to Review. If it remains locked, select a different eligible
-  non-terminal Workday employer instead of retrying NVIDIA. O2-09 still requires a real
-  authoritative application receipt; none exists yet.
+  **Official compensation and remote-source slice verified in source:** the existing
+  official-board adapter now retains Ashby's annual salary component and secondary
+  locations instead of discarding them, and Greenhouse requests include posting
+  content. Unknown compensation is no longer a positive ranking input and cannot be
+  `ranking_ready`. An exact annual JPY minimum remains subject to the JPY 7M floor;
+  an exact annual USD minimum of USD 100,000 or more satisfies the six-figure target
+  without inventing a currency conversion. A bare `Remote` or `APAC` label is not
+  Japan eligibility; the official posting must name Japan/Tokyo or an explicit
+  worldwide-work phrase. GitLab, Zapier, and Supabase are added to the same existing
+  official-board provider, with no second scheduler, browser, database, or service.
+
+  Fresh official APIs returned `3,076` current jobs across the configured boards,
+  including `1,170` jobs with an exact annual USD salary component and `61` whose
+  official locations name Japan or Tokyo. The resulting real prefilter examined
+  `232` current candidates, held `167` for unverified compensation, rejected `190`
+  for unavailable-from-Japan evidence (categories may overlap), and produced exactly
+  one current ranking-ready candidate: Perplexity,
+  `Customer Success & Enterprise Support Lead, APAC`, Tokyo, USD 140,000–165,000,
+  score `85`, with no ranking veto. Evidence is private at
+  `~/.local/state/anicca/job-search/evidence/o2-06-salary-remote-20260814-083757/`.
+  Focused checks pass `28/28`; the complete source suite passes `590/590` in
+  `71.504s`. This is discovery/ranking evidence, not an application receipt.
+
+  **Immediate next slice:** push and activate this official-compensation release,
+  then run the real daily launchd lane. It must either route the current verified
+  candidate through the normal duplicate/manual-company/experience/material gates or
+  report its exact natural-language blocker. After the NVIDIA account cooldown,
+  perform one fresh sign-in using the reset private credential; if it remains locked,
+  select a different eligible non-terminal Workday employer. O2-08 and O2-09 still
+  require real authoritative application receipts; neither exists yet.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or

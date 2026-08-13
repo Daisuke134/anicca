@@ -30,7 +30,7 @@ def _api_url(board: dict[str, str]) -> str:
     if ats == "ashby":
         return f"https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true"
     if ats == "greenhouse":
-        return f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs"
+        return f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true"
     raise ValueError(f"unsupported ATS board: {ats}")
 
 
@@ -69,6 +69,57 @@ def _posted_at_ms(value: Any) -> int | None:
         return None
 
 
+def _ashby_annual_salary(value: dict[str, Any]) -> dict[str, Any] | None:
+    compensation = value.get("compensation")
+    components = (
+        compensation.get("summaryComponents")
+        if isinstance(compensation, dict)
+        else None
+    )
+    if not isinstance(components, list):
+        return None
+    for component in components:
+        if not isinstance(component, dict):
+            continue
+        if (
+            component.get("compensationType") != "Salary"
+            or component.get("interval") != "1 YEAR"
+        ):
+            continue
+        currency = str(component.get("currencyCode", "")).upper()
+        minimum = component.get("minValue")
+        maximum = component.get("maxValue")
+        if (
+            currency not in {"JPY", "USD"}
+            or not isinstance(minimum, (int, float))
+            or minimum <= 0
+        ):
+            continue
+        return {
+            "type": "annual_salary",
+            "currency": currency,
+            "min": int(minimum),
+            "max": (
+                int(maximum)
+                if isinstance(maximum, (int, float)) and maximum > 0
+                else None
+            ),
+            "source": "official_ashby",
+        }
+    return None
+
+
+def _ashby_secondary_locations(value: dict[str, Any]) -> list[str]:
+    locations = value.get("secondaryLocations")
+    if not isinstance(locations, list):
+        return []
+    return [
+        str(item.get("location", "")).strip()
+        for item in locations
+        if isinstance(item, dict) and str(item.get("location", "")).strip()
+    ]
+
+
 def _normalize(board: dict[str, str], payload: Any) -> list[dict[str, Any]]:
     if not isinstance(payload, dict) or not isinstance(payload.get("jobs"), list):
         raise ValueError("unexpected official ATS board response")
@@ -84,6 +135,8 @@ def _normalize(board: dict[str, str], payload: Any) -> list[dict[str, Any]]:
             location = str(value.get("location", "")).strip()
             posted = _posted_at_ms(value.get("publishedAt"))
             description = value.get("descriptionPlain") or value.get("description")
+            compensation = _ashby_annual_salary(value)
+            secondary_locations = _ashby_secondary_locations(value)
         else:
             title = str(value.get("title", "")).strip()
             url = str(value.get("absolute_url", "")).strip()
@@ -95,6 +148,8 @@ def _normalize(board: dict[str, str], payload: Any) -> list[dict[str, Any]]:
             )
             posted = _posted_at_ms(value.get("first_published"))
             description = value.get("content")
+            compensation = None
+            secondary_locations = []
         try:
             parsed = urlsplit(url)
         except ValueError:
@@ -113,6 +168,15 @@ def _normalize(board: dict[str, str], payload: Any) -> list[dict[str, Any]]:
             row["posted_at_ms"] = posted
         if isinstance(description, str) and description.strip():
             row["description"] = description[:1_000]
+        if compensation is not None:
+            row["compensation"] = compensation
+        if board["ats"] == "ashby":
+            row["is_remote"] = value.get("isRemote") is True
+            workplace_type = str(value.get("workplaceType", "")).strip()
+            if workplace_type:
+                row["workplace_type"] = workplace_type
+            if secondary_locations:
+                row["secondary_locations"] = secondary_locations
         rows.append(row)
     return rows
 

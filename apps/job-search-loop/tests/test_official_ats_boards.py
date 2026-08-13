@@ -25,6 +25,20 @@ class OfficialAtsBoardsTests(unittest.TestCase):
                             "location": "Tokyo",
                             "publishedAt": "2026-08-01T00:00:00Z",
                             "isListed": True,
+                            "isRemote": True,
+                            "workplaceType": "Remote",
+                            "secondaryLocations": [{"location": "Japan"}],
+                            "compensation": {
+                                "summaryComponents": [
+                                    {
+                                        "compensationType": "Salary",
+                                        "interval": "1 YEAR",
+                                        "currencyCode": "USD",
+                                        "minValue": 120000,
+                                        "maxValue": 180000,
+                                    }
+                                ]
+                            },
                         }
                     ]
                 }
@@ -50,6 +64,13 @@ class OfficialAtsBoardsTests(unittest.TestCase):
         self.assertEqual({row["company"] for row in rows}, {"OpenAI", "Anthropic"})
         self.assertTrue(all(row["source_kind"] == "official" for row in rows))
         self.assertTrue(all(call[2] is False for call in calls))
+        self.assertIn(
+            "content=true", next(url for url, *_ in calls if "greenhouse" in url)
+        )
+        ashby = next(row for row in rows if row["company"] == "OpenAI")
+        self.assertEqual(ashby["compensation"]["min"], 120000)
+        self.assertEqual(ashby["secondary_locations"], ["Japan"])
+        self.assertTrue(ashby["is_remote"])
 
     def test_unlisted_ashby_and_malformed_rows_are_dropped(self):
         rows = search_official_boards(

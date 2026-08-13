@@ -26,6 +26,13 @@ class DeterministicPrefilterTests(unittest.TestCase):
                             ["Deploy production AI systems with customers in Tokyo."]
                             * 12
                         ),
+                        "compensation": {
+                            "type": "annual_salary",
+                            "currency": "USD",
+                            "min": 120000,
+                            "max": 180000,
+                            "source": "official_ashby",
+                        },
                         "discovery_provider": "official_ats_boards",
                     }
                 ],
@@ -55,11 +62,14 @@ class DeterministicPrefilterTests(unittest.TestCase):
         self.assertRegex(candidate["jd_fingerprint"], r"^[0-9a-f]{16}$")
         self.assertEqual(candidate["role_family"], "applied_ai")
         self.assertIsNone(candidate["compensation_min_jpy"])
-        self.assertEqual(candidate["compensation_status"], "unknown")
+        self.assertEqual(
+            candidate["compensation_status"], "verified_six_figure_usd"
+        )
         self.assertTrue(candidate["ranking"]["eligible"])
         self.assertGreaterEqual(candidate["ranking"]["score"], 75)
         self.assertEqual(candidate["portfolio_bucket"], "strong_fit")
         self.assertTrue(candidate["ranking_ready"])
+        self.assertTrue(candidate["ranking_inputs"]["six_figure_usd_verified"])
         self.assertEqual(
             candidate["ranking_inputs"]["japan_eligible_source_span"],
             "https://jobs.ashbyhq.com/openai/role-1#location=Tokyo, Japan",
@@ -71,6 +81,70 @@ class DeterministicPrefilterTests(unittest.TestCase):
         )
         self.assertEqual(len(result["provider_results"]), 2)
         self.assertTrue(all("results" not in row for row in result["provider_results"]))
+
+    def test_salary_unknown_is_not_ranking_ready(self):
+        from job_search_loop.prefilter import build_prefilter_result
+
+        result = build_prefilter_result(
+            {
+                "queries": [
+                    {"bucket": "dream", "language": "en", "query": "AI Tokyo"}
+                ]
+            },
+            search=lambda _query: {
+                "results": [
+                    {
+                        "company": "Unknown Pay AI",
+                        "title": "AI Deployment Engineer",
+                        "location": "Tokyo, Japan",
+                        "url": "https://jobs.example.com/unknown",
+                        "description": "Deploy AI agents with enterprise customers.",
+                        "discovery_provider": "official_ats_boards",
+                    }
+                ],
+                "providers": [],
+            },
+        )
+
+        candidate = result["candidates"][0]
+        self.assertFalse(candidate["ranking_ready"])
+        self.assertEqual(candidate["compensation_status"], "unverified")
+        self.assertIn("compensation_unverified", candidate["ranking"]["reasons"])
+
+    def test_bare_apac_remote_is_not_japan_eligible(self):
+        from job_search_loop.prefilter import build_prefilter_result
+
+        result = build_prefilter_result(
+            {
+                "queries": [
+                    {"bucket": "dream", "language": "en", "query": "AI remote"}
+                ]
+            },
+            search=lambda _query: {
+                "results": [
+                    {
+                        "company": "Remote AI",
+                        "title": "AI Engineer",
+                        "location": "Remote, APAC",
+                        "url": "https://jobs.example.com/apac",
+                        "description": "Remote role in the APAC region.",
+                        "compensation": {
+                            "type": "annual_salary",
+                            "currency": "USD",
+                            "min": 150000,
+                            "max": 200000,
+                            "source": "official_ashby",
+                        },
+                        "discovery_provider": "official_ats_boards",
+                    }
+                ],
+                "providers": [],
+            },
+        )
+
+        candidate = result["candidates"][0]
+        self.assertFalse(candidate["ranking_ready"])
+        self.assertIn("not_available_from_japan", candidate["ranking"]["reasons"])
 
     def test_failed_query_is_reported_and_does_not_block_other_queries(self):
         from job_search_loop.prefilter import build_prefilter_result

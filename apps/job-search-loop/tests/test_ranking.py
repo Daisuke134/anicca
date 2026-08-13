@@ -23,11 +23,16 @@ class RankingTests(unittest.TestCase):
         self.assertEqual(result.components["ai_skill"], 30)
         self.assertEqual(result.components["enterprise"], 20)
 
-    def test_global_remote_unknown_compensation_is_neutral_not_zero(self):
+    def test_global_remote_unknown_compensation_is_not_eligible(self):
         result = evaluate(self.jobs["global_remote"])
+        self.assertFalse(result.eligible)
+        self.assertEqual(result.components["compensation"], 0)
+        self.assertIn("compensation_unverified", result.reasons)
+
+    def test_verified_six_figure_usd_salary_meets_target_without_fx_guess(self):
+        result = evaluate(self.jobs["global_remote"], six_figure_usd_verified=True)
         self.assertTrue(result.eligible)
-        self.assertEqual(result.components["compensation"], 5)
-        self.assertGreaterEqual(result.score, 75)
+        self.assertEqual(result.components["compensation"], 10)
 
     def test_us_only_is_hard_rejected(self):
         result = evaluate(self.jobs["us_only"])

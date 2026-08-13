@@ -17,6 +17,9 @@
     {"company": "Vercel", "ats": "greenhouse", "slug": "vercel"},
     {"company": "Replit", "ats": "ashby", "slug": "replit"},
     {"company": "ElevenLabs", "ats": "ashby", "slug": "elevenlabs"},
-    {"company": "LangChain", "ats": "ashby", "slug": "langchain"}
+    {"company": "LangChain", "ats": "ashby", "slug": "langchain"},
+    {"company": "GitLab", "ats": "greenhouse", "slug": "gitlab"},
+    {"company": "Zapier", "ats": "ashby", "slug": "zapier"},
+    {"company": "Supabase", "ats": "ashby", "slug": "supabase"}
   ]
 }
