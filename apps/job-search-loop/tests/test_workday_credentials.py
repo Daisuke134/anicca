@@ -254,6 +254,36 @@ class WorkdayCredentialTests(unittest.TestCase):
         self.assertTrue(controls["createAccountCheckbox"].checked)
         self.assertTrue(controls["createAccountSubmitButton"].clicked)
 
+        page.url = "https://crowdstrike.wd5.myworkdayjobs.com/login"
+        controls.pop("verifyPassword")
+        controls.pop("createAccountCheckbox")
+        controls.pop("createAccountSubmitButton")
+        controls["signInSubmitButton"] = Locator("signInSubmitButton")
+
+        def login_locator(selector):
+            if "signInSubmitButton" in selector or 'button[type="submit"]' in selector:
+                return controls["signInSubmitButton"]
+            name = selector.split('"')[1]
+            return controls.get(name, type("Missing", (), {"count": lambda self: 0})())
+
+        page.locator = login_locator
+        login_receipt = fill_account_creation(
+            job_url=WORKDAY_URL,
+            profile_path=self.profile,
+            store_path=self.store,
+            owner_receipt=owner,
+            ownership_receipt=ownership,
+            owned_page={"target_id": target, "lease_id": lease, "fence": 3},
+            playwright=type("Playwright", (), {"chromium": Chromium()})(),
+        )
+
+        self.assertEqual(login_receipt["status"], "sign_in_clicked")
+        self.assertEqual(login_receipt["browser_action_count"], 3)
+        self.assertFalse(login_receipt["secret_values_returned"])
+        self.assertNotIn(account["application_email"], json.dumps(login_receipt))
+        self.assertNotIn(account["password"], json.dumps(login_receipt))
+        self.assertTrue(controls["signInSubmitButton"].clicked)
+
 
 if __name__ == "__main__":
     unittest.main()

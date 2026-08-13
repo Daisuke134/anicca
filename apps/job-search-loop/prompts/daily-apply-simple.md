@@ -90,7 +90,9 @@ For each selected role:
    `--output`. This tool loads and fills the credential inside its own process and
    returns only a redacted receipt. Never read the store or expose a generated
    credential in commands, logs, artifacts, or model output. Re-observe the same owned
-   page after the tool returns and continue through the application.
+   page after the tool returns and continue through the application. If Workday then
+   shows its `/login` page, run the same command again; it safely detects the two-field
+   sign-in form and returns only a redacted receipt.
    For Ashby, the command contract is fixed. `inspect` requires `--endpoint`, `--url`,
    and `--output`. Immediately run `answers` with that `--inspect-result`,
    `--profile "$JOB_SEARCH_PROFILE"`, and a private `--output`; use that exact artifact

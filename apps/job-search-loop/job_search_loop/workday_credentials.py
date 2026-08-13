@@ -262,22 +262,42 @@ def fill_account_creation(
             )
         return value
 
+    verify_password = page.locator('[data-automation-id="verifyPassword"]')
+    if verify_password.count() == 1:
+        mode = "create"
+    elif verify_password.count() == 0 and "/login" in urlsplit(page.url).path:
+        mode = "sign_in"
+    else:
+        raise WorkdayCredentialError("Workday account form is unavailable")
+
     email = locator("email")
     password = locator("password")
-    verify_password = locator("verifyPassword")
     email.fill(account["application_email"])
     password.fill(account["password"])
-    verify_password.fill(account["password"])
     if (
         email.input_value() != account["application_email"]
         or password.input_value() != account["password"]
-        or verify_password.input_value() != account["password"]
     ):
         raise WorkdayCredentialError("Workday credential fill verification failed")
-    checkbox = page.locator('[data-automation-id="createAccountCheckbox"]')
-    if checkbox.count() == 1 and not checkbox.is_checked():
-        checkbox.check(force=True)
-    submit = locator("createAccountSubmitButton")
+
+    if mode == "create":
+        verify_password.fill(account["password"])
+        if verify_password.input_value() != account["password"]:
+            raise WorkdayCredentialError("Workday credential fill verification failed")
+        checkbox = page.locator('[data-automation-id="createAccountCheckbox"]')
+        if checkbox.count() == 1 and not checkbox.is_checked():
+            checkbox.check(force=True)
+        submit = locator("createAccountSubmitButton")
+        status = "account_creation_clicked"
+        action_count = 5 if checkbox.count() == 1 else 4
+    else:
+        submit = page.locator(
+            '[data-automation-id="signInSubmitButton"], button[type="submit"]'
+        )
+        if submit.count() != 1:
+            raise WorkdayCredentialError("Workday sign-in control is unavailable")
+        status = "sign_in_clicked"
+        action_count = 3
     try:
         submit.click(timeout=5_000)
     except Exception as error:
@@ -287,8 +307,8 @@ def fill_account_creation(
     page.wait_for_timeout(2_000)
     return {
         **receipt,
-        "status": "account_creation_clicked",
-        "browser_action_count": 5 if checkbox.count() == 1 else 4,
+        "status": status,
+        "browser_action_count": action_count,
         "owned_target_sha256": hashlib.sha256(target.encode()).hexdigest(),
         "secret_values_returned": False,
     }
