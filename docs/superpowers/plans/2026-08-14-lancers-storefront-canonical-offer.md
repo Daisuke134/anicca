@@ -58,3 +58,14 @@ existing installer acceptance; do not add a fourth launchd owner.
 If save completion occurs but public readback is incomplete, report `publication_uncertain` and do not save again. Reconcile by
 read-only public/edit inspection. Search result propagation can take up to 24 hours and is monitored separately; it never triggers
 a blind duplicate edit.
+
+## Completion evidence
+
+- Main/exact release: `ec8255263f7e4ba5c58afa03b11ef11444868f95`
+- Apply/readback: `action=updated`, `aligned=true`, image present, prices ¥98k/¥198k/¥398k, delivery 30/30/30,
+  native spot/3-month/6-month routes each present for all three plans.
+- Idempotency: immediate second apply returned `action=unchanged`.
+- Scope: `1338228` moved to its own content hash; `1338229`–`1338233` retained the old content hash and published state.
+- Safety: application, ledger, and listing state hashes stayed unchanged; no new scheduler, DB, state, checkout, listing, archive,
+  delete, or republish operation was added.
+- Funnel: management counters remain zero immediately after the update; provider search propagation is observed for up to 24 hours.

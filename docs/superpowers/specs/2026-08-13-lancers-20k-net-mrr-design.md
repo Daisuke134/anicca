@@ -1003,6 +1003,31 @@ Ponytailの最小差分は`SKILL.md`、product JSON、実行script、必須main 
 既存installer regressionの2変更である。handwritten productionは約180 LOCをsoft targetとし、legacy 1,458 LOC
 `listing_tick.py`をcanonical化せず、実測済みDOM境界だけをcopy+tweakする。
 
+実装はcanonical `skills/earn/lancers/SKILL.md`、product JSON、1220×686 PNG、161 LOCの
+`storefront_offer.py`としてmainへ入り、exact release `ec8255263f7e4ba5c58afa03b11ef11444868f95`へdeployした。
+公式bundleとDOMから、SNS中カテゴリーは追加の必須`ProjectPlanCategoryForm.service_type[0]`を持ち、
+`コンテンツ作成・投稿`選択時に`/v1/project_store_api/project_category/66`を取得すること、画像uploadは
+`/v1/project_store_api/project_blob/add` 200後にprovider image DOMが確定することを実測した。scriptはこの二境界を
+待ち、target以外へ進まない。
+
+同releaseの一回のapplyは`action=updated / aligned=true`で終了した。公式public readbackはtitle一致、main imageあり、
+plan価格`¥98,000 / ¥198,000 / ¥398,000`、納期`30 / 30 / 30日`、spot / 3ヶ月 / 6ヶ月routeを各3件確認した。
+直後の再applyは`action=unchanged`で外部作用0である。公開pageは1440×900 viewportで高さ5,578pxとなり、代表画像、
+業務内容、3 plan、注文時のお願いが可視である。
+
+read-only inventoryはpublished 6 / paused 0 / hidden 0 / draft 0を維持する。`1338228`だけが新content SHA-256
+`a43d27e7182e82b501876473936be12da898a4c264a037526a7da9ebc448eda7`かつself-canonicalである。他5件は旧content
+SHA-256 `999d290c4b84e90c28a89728e394e178c9e76487180a2ceb6ac12e641203d285`のまま不変で、provider canonical groupは
+`1338229`へ移った。削除・非公開・再publishは0である。application、ledger、listing state SHA-256はそれぞれ
+`e26ac5c56c6a48b34eba6098e15d45c8aa81df069db56596a5bc4cf1a274f0e2`、
+`7a58d8fb6e66a9b83e288c348cb638bf94ab483c5b6187c22458c2f32ef173ca`、
+`db22b6ba9055c39e6d76a846a66fa3f6348a6e430105e3fcd13013ea570dc701`で事前値と一致した。
+
+管理画面`1338228` cardの更新直後baselineは既知の検索表示、閲覧、お気に入り、相談、注文を含む全表示counterが0である。
+検索index反映はprovider表示の最大24時間境界で継続観測し、0の間は売上や失敗を捏造しない。application、report、
+work-syncの三ownerは同じ`ec825526…`を参照し、work-syncは公式board 1 / required reply 1 / storefront contract candidate 0を
+観測した。boardはContractReceiptではなく、次のactive sliceはG4B ContractReceipt sourceである。
+
 ### 9.9 G3B.3 planner contract recovery と単一release収束
 
 #### 一次証拠と実際の根因
@@ -1109,7 +1134,8 @@ WorkingDirectoryを全てexact release `295749ad…`へ収束した。配備前�
 `e26ac5c5…`、ledger `7a58d8fb…`、listing `db22b6ba…` hashは一致する。その後、既存application launchdを
 一回だけkickした実money tickはquery `LinkedIn`、observed 2、eligible 0、submitted false、
 `reason=no_eligible_project`、exit 0、stderr 0で終了した。pending 0、fingerprints 19、ApplicationReceipt 14は不変、
-planner evidence rootは削除済み、Python orphanは0である。G3B.3は完了し、次のactive sliceはStorefront canonical offer alignmentである。
+planner evidence rootは削除済み、Python orphanは0である。G3B.3とStorefront canonical offer alignmentは完了し、
+次のactive sliceはG4B ContractReceipt sourceである。
 
 ### 9.7 G4A canonical Sales / Contract source
 
@@ -1280,12 +1306,12 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 |---|---|---|---:|
 | 完了 | Storefront read-only inventory | exact releaseから公式6 listing、canonical `1338228`、単一content groupを確定。mutation 0、state/ledger不変 | 完了 |
 | 完了 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じた | 完了 |
-| 1 | Storefront canonical offer alignment | まずself-canonical `1338228`一件だけを、画像placeholderなし、specific ICP/title、月額SNS deliverable、¥98k–¥398kへ揃え、native 3/6ヶ月contract routeを維持する。公開6件の削除・再publishや一括編集はせず、canonical一件の検索表示→閲覧→相談を先に実測する | 1日 |
-| 2 | G4B ContractReceipt source | 既存work-syncでcompleteなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 1–2日 |
-| 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
-| 4 | G4C Sales / Contract actions | 既存work-syncでbuyer本文をtarget / clarification / out-of-scopeへ分類し、保有証拠だけで一問clarification、honest decline、月額offerを送る。送信後は公式message/contract readbackを必須にする | 1–3日 |
-| 5 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
-| 6 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
+| 完了 | Storefront canonical offer alignment | exact release `ec825526…`のcanonical skillから`1338228`だけを画像あり、specific ICP、月額SNS deliverable、¥98k–¥398k、native 3/6ヶ月routeへ揃えた。再applyはunchanged、他5件とstate/ledger不変。更新直後funnel baselineは0、検索反映は最大24時間で継続観測 | 完了 |
+| 1 | G4B ContractReceipt source | 既存work-syncでcompleteなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 1–2日 |
+| 2 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
+| 3 | G4C Sales / Contract actions | 既存work-syncでbuyer本文をtarget / clarification / out-of-scopeへ分類し、保有証拠だけで一問clarification、honest decline、月額offerを送る。送信後は公式message/contract readbackを必須にする | 1–3日 |
+| 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
+| 5 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
