@@ -13,6 +13,11 @@
     <string>--state-path</string>
     <string>__LANCERS_APPLICATION_STATE__</string>
   </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>__LANCERS_RUNTIME_PATH__</string>
+  </dict>
   <key>WorkingDirectory</key>
   <string>__LANCERS_RELEASE_ROOT__</string>
   <key>StartInterval</key>
