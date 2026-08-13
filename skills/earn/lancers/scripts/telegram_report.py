@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 from typing import Any, Callable, Mapping, Optional, Sequence
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
@@ -20,6 +21,7 @@ ROOT = HERE.parents[3]
 OUTBOX_PATH = ROOT / "skills/_shared/marketplace-core/scripts/telegram_outbox.py"
 LEDGER_PATH = OUTBOX_PATH.with_name("ledger.py")
 TICK_PATH = HERE / "application_tick.py"
+WORK_SYNC_PATH = HERE / "work_sync.py"
 STATE = Path.home() / ".local/state/anicca/lancers/application.json"
 DATABASE = STATE.with_name("telegram.sqlite3")
 LEDGER_DATABASE = STATE.with_name("marketplace-ledger.sqlite3")
@@ -27,6 +29,16 @@ STOREFRONT_LOG = STATE.parent / "logs/storefront.stdout.log"
 TARGET = "8547730585"
 TOKYO = ZoneInfo("Asia/Tokyo")
 _LABELS = (("published", "受付中", "/myplan"), ("paused", "受付休止中", "/myplan/paused"), ("hidden", "非表示", "/myplan/archived"), ("draft", "下書き", "/myplan/draft"))
+_LANCERS_ORIGIN = "https://www.lancers.jp"
+_INVENTORY_STORE_SELECTOR = ".p-project-plan-myplan__stores .p-project-plan-myplan__store"
+_INVENTORY_TITLE_SELECTOR = ".p-project-plan-myplan__store-content-over-title-link"
+_INVENTORY_MAX_PAGES = 20
+
+
+class InventoryFailure(RuntimeError):
+    """Stable, sanitized failure at the read-only storefront boundary."""
+
+
 def _load(name: str, path: Path) -> Any:
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
@@ -36,6 +48,172 @@ def _load(name: str, path: Path) -> Any:
     spec.loader.exec_module(module)
     return module
 outbox = _load("lancers_report_outbox", OUTBOX_PATH)
+
+
+def _inventory_item(locator: Any, code: str, visible: bool = True) -> Any:
+    try:
+        if int(locator.count()) != 1:
+            raise InventoryFailure(code)
+        item = locator.nth(0)
+        if visible and not item.is_visible():
+            raise InventoryFailure(code)
+        return item
+    except InventoryFailure:
+        raise
+    except Exception:
+        raise InventoryFailure(code) from None
+
+
+def _inventory_text(item: Any, code: str) -> str:
+    try:
+        value = " ".join(str(item.inner_text() or "").split())
+    except Exception:
+        raise InventoryFailure(code) from None
+    if not value or len(value) > 50_000:
+        raise InventoryFailure(code)
+    return value
+
+
+def _inventory_url(value: object, *, relative: bool = False) -> tuple[str, str]:
+    try:
+        parsed = urlsplit(value) if isinstance(value, str) else None
+        match = re.fullmatch(r"/menu/detail/([1-9][0-9]{0,18})", parsed.path if parsed else "")
+    except Exception:
+        match = None; parsed = None
+    if not parsed or not match or parsed.query or parsed.fragment or parsed.username or parsed.password or (relative and (parsed.scheme or parsed.netloc)) or (not relative and (parsed.scheme, parsed.netloc) != ("https", "www.lancers.jp")):
+        raise InventoryFailure("inventory_management_invalid" if relative else "inventory_public_route_invalid")
+    return f"{_LANCERS_ORIGIN}{parsed.path}", match.group(1)
+
+
+def _inventory_rows(page: Any, state: str) -> list[dict[str, str]]:
+    try:
+        stores = page.locator(_INVENTORY_STORE_SELECTOR)
+        rows = []
+        for index in range(int(stores.count())):
+            link = _inventory_item(stores.nth(index).locator(_INVENTORY_TITLE_SELECTOR), "inventory_management_invalid")
+            url, listing_id = _inventory_url(link.get_attribute("href"), relative=True)
+            rows.append({"listing_external_id": listing_id, "state": state, "management_title": _inventory_text(link, "inventory_management_invalid"), "public_url": url})
+        return rows
+    except InventoryFailure:
+        raise
+    except Exception:
+        raise InventoryFailure("inventory_management_invalid") from None
+
+
+def _inventory_management(page: Any) -> tuple[dict[str, int], list[Mapping[str, str]]]:
+    try:
+        page.goto(_LANCERS_ORIGIN + "/myplan", wait_until="domcontentloaded", timeout=20_000)
+        counts = _parse_storefront(page)
+    except Exception:
+        raise InventoryFailure("inventory_anchor_invalid") from None
+    seen: dict[str, Mapping[str, str]] = {}
+    for state, _label, path in _LABELS:
+        state_rows: list[Mapping[str, str]] = []
+        for page_number in range(1, _INVENTORY_MAX_PAGES + 1):
+            url = _LANCERS_ORIGIN + path + ("" if page_number == 1 else f"?page={page_number}")
+            try:
+                if page_number != 1 or path != "/myplan": page.goto(url, wait_until="domcontentloaded", timeout=20_000)
+                parsed = urlsplit(page.url)
+            except Exception:
+                raise InventoryFailure("inventory_management_route_invalid") from None
+            if (parsed.scheme, parsed.netloc, parsed.path, parsed.query, parsed.fragment) != ("https", "www.lancers.jp", path, "" if page_number == 1 else f"page={page_number}", "") or parsed.username or parsed.password:
+                raise InventoryFailure("inventory_management_route_invalid")
+            rows = _inventory_rows(page, state)
+            if not rows and len(state_rows) < counts[state]: raise InventoryFailure("inventory_page_empty")
+            for row in rows:
+                old = seen.get(row["listing_external_id"])
+                if old:
+                    if old["state"] != state: raise InventoryFailure("inventory_cross_state_duplicate")
+                    raise InventoryFailure("inventory_listing_title_conflict" if old["management_title"] != row["management_title"] else "inventory_duplicate_listing_id")
+                seen[row["listing_external_id"]] = row; state_rows.append(row)
+            if len(state_rows) > counts[state]: raise InventoryFailure("inventory_count_overflow")
+            if len(state_rows) == counts[state]: break
+        if len(state_rows) != counts[state]: raise InventoryFailure("inventory_page_limit_reached")
+    return counts, list(seen.values())
+
+
+def _inventory_offer(page: Any, row: Mapping[str, str]) -> dict[str, object]:
+    public_url, listing_id = _inventory_url(row["public_url"])
+    try:
+        response = page.goto(public_url, wait_until="domcontentloaded", timeout=20_000)
+        parsed = urlsplit(page.url)
+        if getattr(response, "status", None) != 200 or (parsed.scheme, parsed.netloc, parsed.path) != ("https", "www.lancers.jp", f"/menu/detail/{listing_id}") or parsed.query or parsed.fragment or parsed.username or parsed.password: raise InventoryFailure("inventory_public_route_invalid")
+        def text(selector: str, visible: bool = True) -> str:
+            return _inventory_text(_inventory_item(page.locator(selector), "inventory_public_invalid", visible), "inventory_public_invalid")
+        def attr(selector: str, name: str) -> str:
+            try: value = _inventory_item(page.locator(selector), "inventory_public_invalid", False).get_attribute(name)
+            except InventoryFailure: raise
+            except Exception: raise InventoryFailure("inventory_public_invalid") from None
+            if not isinstance(value, str) or not value: raise InventoryFailure("inventory_public_invalid")
+            return value
+        title, subtitle = text("h1"), text(".l-page-header__heading-description")
+        description, notice = text("#body + .p-project-plan-markdown"), text("#notice_for_sale + .c-text")
+        canonical_url, canonical_listing_id = _inventory_url(attr('link[rel="canonical"]', "href"))
+        if attr('meta[property="og:url"]', "content") != public_url: raise InventoryFailure("inventory_public_og_invalid")
+        tags = []
+        for index in range(int(page.locator("a.c-tag-list__item").count())):
+            tag = page.locator("a.c-tag-list__item").nth(index)
+            if tag.is_visible(): tags.append({"text": _inventory_text(tag, "inventory_public_invalid"), "href": attr_from(tag, "href")})
+        plans, sections = [], page.locator("li.p-menu-browse-detail__sidebar-content.js-project-plan-tab-content")
+        for index in range(int(sections.count())):
+            section = sections.nth(index); selectors = ("p.p-menu-browse-detail__sidebar-description", "div.p-menu-browse-detail__sidebar-header-price", "div.p-menu-browse-detail__sidebar-menu")
+            fields = [section.locator(selector) for selector in selectors]
+            if [int(field.count()) for field in fields] == [0, 0, 0]: continue
+            description_text, price_text, delivery_text = [_inventory_text(_inventory_item(field, "inventory_plan_invalid", False), "inventory_plan_invalid") for field in fields]
+            price, delivery = "".join(re.findall(r"[0-9]", price_text)), re.search(r"納期\s*([0-9]+)\s*日", delivery_text)
+            if not price or not delivery or int(price) <= 0 or int(delivery.group(1)) <= 0: raise InventoryFailure("inventory_plan_invalid")
+            plans.append({"description": description_text, "price_jpy": int(price), "delivery_days": int(delivery.group(1))})
+    except InventoryFailure:
+        raise
+    except Exception:
+        raise InventoryFailure("inventory_public_invalid") from None
+    if not plans: raise InventoryFailure("inventory_plan_invalid")
+    payload = {"title": title, "subtitle": subtitle, "description": description, "notice": notice, "plans": plans, "tags": tags}
+    return {"listing_external_id": listing_id, "state": row["state"], "public_url": public_url, "title": title, "canonical_url": canonical_url, "canonical_listing_id": canonical_listing_id, "plans": [{"price_jpy": item["price_jpy"], "delivery_days": item["delivery_days"]} for item in plans], "content_sha256": hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()}
+
+
+def attr_from(item: Any, name: str) -> str:
+    try: value = item.get_attribute(name)
+    except Exception: raise InventoryFailure("inventory_public_invalid") from None
+    if not isinstance(value, str) or not value: raise InventoryFailure("inventory_public_invalid")
+    return value
+
+
+def _inventory_result_error(error: str, logged_in: bool = False) -> dict[str, object]:
+    return {"ok": False, "logged_in": logged_in, "source_complete": False, "error": error}
+
+
+def run_inventory(*, state_path: Path = STATE, browser_factory: Optional[Callable[[str], object]] = None, tick_module: Any = None) -> dict[str, object]:
+    tick = browser = page = None; logged_in = False; result = _inventory_result_error("inventory_unavailable")
+    try:
+        tick = tick_module or _load("lancers_inventory_application_tick", TICK_PATH)
+        with tick.account_lock(Path(state_path).with_name("work-sync.json")):
+            browser = (browser_factory or tick._default_browser_factory)(tick.CDP_URL); page = tick._new_owned_page(browser)
+            if not tick._production_account_ready(page): raise InventoryFailure("account_unavailable")
+            logged_in = True; counts, rows = _inventory_management(page)
+            listings = [_inventory_offer(page, row) for row in sorted(rows, key=lambda row: int(row["listing_external_id"]))]
+            groups: dict[str, list[Mapping[str, object]]] = {}
+            for listing in listings: groups.setdefault(str(listing["content_sha256"]), []).append(listing)
+            result = {"ok": True, "logged_in": True, "source_complete": True, "state_counts": counts, "listing_count": len(listings), "listings": listings, "content_groups": [{"content_sha256": digest, "listing_ids": sorted(str(item["listing_external_id"]) for item in group), "canonical_listing_ids": sorted({str(item["canonical_listing_id"]) for item in group})} for digest, group in sorted(groups.items())]}
+    except InventoryFailure as error:
+        result = _inventory_result_error(str(error), logged_in)
+    except Exception as error:
+        result = _inventory_result_error("account_lock_busy" if "LockBusy" in type(error).__name__ else "inventory_unavailable", logged_in)
+    finally:
+        try:
+            closed = page is None or bool(tick._close_owned_page(page))
+            if browser is not None: tick._stop_playwright_runtime(getattr(browser, "_anicca_playwright_runtime", None))
+        except Exception: closed = False
+        if not closed: result = _inventory_result_error("inventory_cleanup_failed", logged_in)
+    return result
+
+
+def _run_inventory_parent(state_path: str) -> dict[str, object]:
+    try:
+        sync = _load("lancers_inventory_work_sync", WORK_SYNC_PATH)
+        result = sync._watchdog([sys.executable, str(Path(__file__).resolve()), "--inventory-json", "--inventory-worker", "--state-path", state_path], sync.TICK_TIMEOUT_SECONDS)
+        return dict(result) if isinstance(result, Mapping) else _inventory_result_error("inventory_unavailable")
+    except Exception: return _inventory_result_error("inventory_unavailable")
 
 @dataclass(frozen=True)
 class SendResult:
@@ -305,11 +483,21 @@ def _default_notifier(message: str) -> SendResult:
 
 def main(argv: Optional[Sequence[str]] = None, *, notifier: Optional[Callable[[str], object]] = None, stdout: Any = None) -> int:
     parser = argparse.ArgumentParser(allow_abbrev=False)
-    parser.add_argument("--json", action="store_true", required=True); parser.add_argument("--database", default=str(DATABASE)); parser.add_argument("--ledger-database", default=str(LEDGER_DATABASE)); parser.add_argument("--state-path", default=str(STATE)); parser.add_argument("--application-log", default=str(STATE.parent / "logs/application.out.log")); parser.add_argument("--storefront-log", default=str(STOREFRONT_LOG)); parser.add_argument("--now")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--json", action="store_true")
+    mode.add_argument("--inventory-json", action="store_true")
+    parser.add_argument("--inventory-worker", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--database", default=str(DATABASE)); parser.add_argument("--ledger-database", default=str(LEDGER_DATABASE)); parser.add_argument("--state-path", default=str(STATE)); parser.add_argument("--application-log", default=str(STATE.parent / "logs/application.out.log")); parser.add_argument("--storefront-log", default=str(STOREFRONT_LOG)); parser.add_argument("--now")
     out = sys.stdout if stdout is None else stdout
     try:
-        args = parser.parse_args(list(argv) if argv is not None else None); now = args.now or datetime.now(timezone.utc).isoformat(); snapshot = collect_snapshot(application_log=Path(args.application_log), state_path=Path(args.state_path), ledger_database=Path(args.ledger_database), storefront_log=Path(args.storefront_log), now=now); enqueued = int(enqueue_snapshot(Path(args.database), snapshot, now)); delivery = deliver_pending(Path(args.database), notifier or _default_notifier, now)
-        payload = {"ok": delivery.delivery_uncertain == 0, "enqueued": enqueued, "attempted": delivery.attempted, "delivered": delivery.delivered, "delivery_uncertain": delivery.delivery_uncertain, "pre_send_failed": delivery.pre_send_failed}
+        args = parser.parse_args(list(argv) if argv is not None else None)
+        if args.inventory_worker and not args.inventory_json:
+            raise InventoryFailure("inventory_mode_invalid")
+        if args.inventory_json:
+            payload = run_inventory(state_path=Path(args.state_path)) if args.inventory_worker else _run_inventory_parent(args.state_path)
+        else:
+            now = args.now or datetime.now(timezone.utc).isoformat(); snapshot = collect_snapshot(application_log=Path(args.application_log), state_path=Path(args.state_path), ledger_database=Path(args.ledger_database), storefront_log=Path(args.storefront_log), now=now); enqueued = int(enqueue_snapshot(Path(args.database), snapshot, now)); delivery = deliver_pending(Path(args.database), notifier or _default_notifier, now)
+            payload = {"ok": delivery.delivery_uncertain == 0, "enqueued": enqueued, "attempted": delivery.attempted, "delivered": delivery.delivered, "delivery_uncertain": delivery.delivery_uncertain, "pre_send_failed": delivery.pre_send_failed}
     except Exception as exc:
         payload = {"ok": False, "error": re.sub(r"[^a-z0-9_]", "_", type(exc).__name__.lower())}
     out.write(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n"); out.flush()
