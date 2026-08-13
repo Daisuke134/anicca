@@ -990,6 +990,19 @@ evidence until the primary has independently inspected and adopted it.
   reply-after-restoration, with submitted truth, replay idempotency, and Guardian
   health preserved. No second adversarial-review cycle is added; the primary closes
   the reviewed correction with focused and full verification.
+- [ ] **O2-05A2 — current slice: repair the five deployed legacy-v0 rows** — A
+  read-only immutable-copy rehearsal of the real ledger returned zero corrections
+  and Guardian unhealthy, so no production mutation was attempted. The five rows are
+  not the original `channel=recruiting_outreach` regression fixture: a prior deployed
+  repair already appended `submitted -> email_sent` with
+  `reason=outreach_only_delivery_correction`, the exact route/provider/evidence hash,
+  and no `channel`. Recognize only that durable legacy-v0 shape when it is bound to
+  the same immutable delivered `recruiting_outreach/outreach_only` route. Append one
+  evidence-bound `email_sent -> submit_unknown` correction per row, preserve all old
+  events/routes/outcomes, update mutable application/slot truth, and append nothing
+  on replay. A production-shaped regression must yield five corrections in an
+  isolated real-ledger copy and Guardian healthy before the real ledger is backed up
+  and changed. Payload-only or mismatched route/provider/hash evidence fails closed.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
