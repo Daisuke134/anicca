@@ -638,6 +638,25 @@ entity の business state は `discovered → applied → contract_active → de
 実行は上図の4 laneが独立tickで同じqueueをscanするため並列であり、projectごとの常駐loopも、
 全工程を待ち続けるgiant passも作らない。
 
+### 10.2 continuous activation policy
+
+`nonstop` は、一つのprocessが常駐して無制限に応募し続ける意味ではない。各laneは短いscheduled tickで
+起動し、shared ledgerからbounded件数だけを処理し、公式readbackとreceiptを保存して終了する。
+対象がないtickは何も送信せず正常終了し、次tickを待つ。provider不確実性、capacity超過、lock競合、
+schema不適合ではfail closedし、blind retryやgate緩和を行わない。
+
+| lane | activation | schedule / bound | ONにする条件 |
+|---|---|---|---|
+| Acquisition | **ON** | 30分tick。G1は最大1応募/tick | exact canonical release、tests、review 1/1、provider-only検証、read-only reconcile、正常wake完了 |
+| Sales / Contract | OFF | 実装時にreply SLAを満たすbounded tick | 最初の一意な`ApplicationReceipt`を得て、reply分類・offer・公式contract readbackをTDD実装後 |
+| Fulfillment | OFF | active contractだけをbounded claim | 最初の`ContractReceipt`を得て、固定scope・QA・revision cap・delivery readbackをTDD実装後 |
+| Finance | OFF | payment/payout eventをbounded claim | `DeliveryReceipt`を得て、PaymentReceipt・fee/cost・bank reconciliationをTDD実装後 |
+
+Acquisitionは現在の保守boundで継続scanする。最初の公式proposal IDと`ApplicationReceipt`が得られた後も
+停止せず、G3のcapacity規則が実測で有効になるまで最大1応募/tickを維持する。将来boundを上げる場合も、
+最初の3 active recurring contractsと実測capacityを根拠にし、単に応募件数を増やすためには上げない。
+後段laneは上流receiptが一件もない状態で空回しさせず、各activation gateを一つずつ閉じてからONにする。
+
 ## 11. First implementation slice の厳密な境界
 
 Slice 1 は、application service を安全に戻す canonical source/deployment gate と、acquisition の
