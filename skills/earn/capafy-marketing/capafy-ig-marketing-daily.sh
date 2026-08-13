@@ -15,6 +15,7 @@ export ANICCA_TOKEN_BUDGET_LEDGER="${CAPAFY_TOKEN_BUDGET_LEDGER:-$HOME/.local/st
 ENGINE="$HERE/../marketing-engine"
 RUN_AGENT="${CAPAFY_RUN_AGENT:-$ENGINE/run_agent.sh}"
 LIFECYCLE="${CAPAFY_IG_LIFECYCLE:-$HERE/scripts/capafy_ig_lifecycle.py}"
+VERIFY_SESSION="${CAPAFY_IG_SESSION_VERIFY:-$HERE/scripts/capafy_ig_session_verify.py}"
 POSTER="${CAPAFY_REEL_POSTER:-$HERE/scripts/capafy_reel_poster.py}"
 SELECTOR="${CAPAFY_LISTING_SELECTOR:-$HERE/scripts/select_listing.py}"
 BROWSER="${CAPAFY_MARKETING_BROWSER:-$HERE/../../browser/ensure_provision_browser.sh}"
@@ -70,11 +71,22 @@ PY
   CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 1 controller
   exit $?
 }
+session_recovery_fail(){
+  python3 - "$RESULT" "$handle" "$1" <<'PY'
+import datetime,json,sys
+path,handle,detail=sys.argv[1:]
+retry=datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(minutes=5)
+json.dump({"result":"replacement_waiting","session_recovery":True,"reason":"active Instagram browser tab is missing","handle":handle,"repair_detail":detail,"next_retry_at":retry.isoformat(timespec="seconds").replace("+00:00","Z")},open(path,"w"))
+PY
+  CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 1 controller
+  exit $?
+}
 handle="$(resolve_capafy_ig_handle "$ACCOUNTS")"
 python3 "$LIFECYCLE" snapshot --accounts "$ACCOUNTS" --state "$STATE" >/dev/null || fail "could not derive marketing lifecycle state"
 replacement="$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1]))["replacement_requested"]).lower())' "$STATE")"
 if [ "$replacement" = true ]; then
-  "$KICKSTART" kickstart -k "gui/$(id -u)/ai.anicca.capafy-ig-account-manager" >/dev/null 2>&1 || true
+  replacement_incident="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("incident_id") or "")' "$STATE")"
+  [ -n "$replacement_incident" ] || "$KICKSTART" kickstart "gui/$(id -u)/ai.anicca.capafy-ig-account-manager" >/dev/null 2>&1 || true
   exit 0
 fi
 status="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$STATE")"
@@ -86,15 +98,27 @@ esac
 identity="$(_resolve_capafy_ig_account_field "$ACCOUNTS" browser_identity)"; [ -n "$identity" ] || fail "active account has no browser identity"
 cdp="$(AI_BROWSER_HOLDER_PID=$$ AI_BROWSER_GUARD="$GUARD" bash "$BROWSER" "$identity")" || fail "active account browser did not start"; browser_leased=1; port="${cdp##*:}"
 case "$port" in ''|*[!0-9]*) fail "active browser returned no numeric port";; esac
-tid="${CAPAFY_IG_TID:-}"
-if [ -z "$tid" ]; then
-  tid="$(python3 - "$port" <<'PY'
-import json,sys,urllib.request
-tabs=json.load(urllib.request.urlopen(f"http://127.0.0.1:{sys.argv[1]}/json/list",timeout=8));print(next((x["id"] for x in tabs if x.get("type")=="page" and "instagram.com" in x.get("url","")),""))
-PY
-)"
+verify_args=(--accounts "$ACCOUNTS" --handle "$handle" --port "$port" --current-session)
+if [ -n "${CAPAFY_IG_TID:-}" ] && [ "${CAPAFY_IG_SESSION_VERIFY_TEST_SEAM:-0}" = "1" ]; then
+  verify_args+=(--target-id "$CAPAFY_IG_TID")
 fi
-[ -n "$tid" ] || fail "active Instagram browser tab is missing"
+if [ -x "$VERIFY_SESSION" ]; then
+  verify_raw="$("$VERIFY_SESSION" "${verify_args[@]}" 2>/dev/null)"; verify_rc=$?
+else
+  verify_raw="$(python3 "$VERIFY_SESSION" "${verify_args[@]}" 2>/dev/null)"; verify_rc=$?
+fi
+if [ "$verify_rc" -ne 0 ]; then
+  session_recovery_fail "The leased browser could not prove that @$handle is the live Instagram owner."
+fi
+tid="$(python3 - "$verify_raw" "$handle" "$port" <<'PY'
+import json,sys
+d=json.loads(sys.argv[1]); expected=sys.argv[2].lstrip("@").lower(); port=sys.argv[3]
+if d.get("verified") is not True or d.get("handle")!=expected or d.get("session_owner")!="browser": raise SystemExit(2)
+tid=d.get("target_id")
+if not isinstance(tid,str) or not tid or tid==port: raise SystemExit(2)
+print(tid)
+PY
+)" || session_recovery_fail "The leased browser returned malformed exact-owner proof for @$handle."
 if [ -x "$SELECTOR" ]; then
   selection_raw="$("$SELECTOR" 2>&1)"; selection_rc=$?
 else

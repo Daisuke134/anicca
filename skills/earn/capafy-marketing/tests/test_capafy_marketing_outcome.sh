@@ -51,7 +51,7 @@ bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; first_rc=$?
 bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; second_rc=$?
 [ "$first_rc" -ne 0 ] && ok "first sender failure returns nonzero" || bad "first sender failure returns nonzero" "rc=$first_rc"
 eq "sender retry succeeds" "$second_rc" "0"
-eq "sender retry keeps two Marketer events" "$(wc -l < "$CAPAFY_EVENT_LEDGER" | tr -d ' ')" "2"
+eq "sender retry keeps three Marketer events" "$(wc -l < "$CAPAFY_EVENT_LEDGER" | tr -d ' ')" "3"
 eq "sender was attempted twice" "$(cat "$COUNT")" "2"
 rm -rf "$T"
 
@@ -81,11 +81,11 @@ has "published contains skill URL" "$body" "https://capafy.ai/agent/9480246345"
 has "published contains campaign URL" "$body" "utm_medium=reel"
 has "published contains media artifact" "$body" "$MEDIA"
 has "published contains post-write owner proof" "$body" "owner session was re-verified"
-eq "published appends content and owner-proof events" "$(wc -l < "$CAPAFY_EVENT_LEDGER" | tr -d ' ')" "2"
+eq "published appends content and owner-proof events" "$(wc -l < "$CAPAFY_EVENT_LEDGER" | tr -d ' ')" "3"
 has "published ledger contains Reel identity" "$(cat "$CAPAFY_EVENT_LEDGER")" "capafy:content.published:instagram:REAL123"
 bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1
 eq "same published envelope sends once" "$(cat "$COUNT")" "1"
-eq "same published envelope keeps two events" "$(wc -l < "$CAPAFY_EVENT_LEDGER" | tr -d ' ')" "2"
+eq "same published envelope keeps three events" "$(wc -l < "$CAPAFY_EVENT_LEDGER" | tr -d ' ')" "3"
 rm -rf "$T"
 
 echo "(D) challenge is an account lifecycle incident, not a ban claim"

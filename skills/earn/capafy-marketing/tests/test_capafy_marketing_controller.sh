@@ -12,6 +12,14 @@ cat >"$T/bin/browser" <<'SH'
 #!/usr/bin/env bash
 echo http://127.0.0.1:9555
 SH
+cat >"$T/bin/verify" <<'SH'
+#!/usr/bin/env bash
+echo "$*" >>"$VERIFY_CALLS"
+case "${VERIFY_MODE:-owner}" in
+ mismatch) exit 2;;
+ *) echo '{"verified":true,"handle":"capafy.skills25042","session_owner":"browser","target_id":"verified-target"}';;
+esac
+SH
 cat >"$T/bin/runner" <<'SH'
 #!/usr/bin/env bash
 echo "$*" >>"$RUN_CALLS"; cat >/dev/null
@@ -54,15 +62,16 @@ SH
 chmod +x "$T/bin/"*
 case_setup(){
  C="$T/$1"; mkdir -p "$C/home/.cloak" "$C/state"; echo '[]' >"$C/accounts"
- : >"$C/runs"; : >"$C/posts"; : >"$C/messages"; : >"$C/kicks"; : >"$C/guard.calls"
+ : >"$C/runs"; : >"$C/posts"; : >"$C/messages"; : >"$C/kicks"; : >"$C/guard.calls"; : >"$C/verify.calls"
  MEDIA="$C/reel.mp4"; printf '\0\0\0\30ftypmp42fixture' >"$MEDIA"
  export HOME="$C/home" CAPAFY_IG_ACCOUNTS_FILE="$C/accounts" CAPAFY_IG_LIFECYCLE_STATE="$C/state/lifecycle.json" CAPAFY_OUTCOME_STATE_DIR="$C/state"
  export CAPAFY_MARKETING_RESULT="$C/state/result.json" CAPAFY_CREATIVE_CANDIDATE="$C/state/candidate.json" CAPAFY_RUN_AGENT="$T/bin/runner" CAPAFY_REEL_POSTER="$T/bin/poster"
  export CAPAFY_LISTING_SELECTOR="$T/bin/selector" SELECT_CALLS="$C/select.calls"; : >"$SELECT_CALLS"
  export CAPAFY_MARKETING_BROWSER="$T/bin/browser" CAPAFY_TELEGRAM_SENDER="$T/bin/sender" CAPAFY_LAUNCHCTL="$T/bin/launchctl" CAPAFY_IG_LIFECYCLE="$LIFECYCLE"
  export CAPAFY_BROWSER_GUARD="$T/bin/guard" GUARD_CALLS="$C/guard.calls"
+ export CAPAFY_IG_SESSION_VERIFY="$T/bin/verify" VERIFY_CALLS="$C/verify.calls" CAPAFY_IG_SESSION_VERIFY_TEST_SEAM=1
  export CAPAFY_IG_TID=tab-1 CAPAFY_MARKETING_MODE=live RUN_CALLS="$C/runs" POST_CALLS="$C/posts" MESSAGES="$C/messages" KICKS="$C/kicks" MEDIA
- unset CANDIDATE_MODE POSTER_MODE
+ unset CANDIDATE_MODE POSTER_MODE VERIFY_MODE
 }
 active(){ python3 - "$CAPAFY_IG_ACCOUNTS_FILE" <<'PY'
 import json,sys
@@ -74,6 +83,7 @@ eq "needed does not call creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 0; eq "n
 case_setup immediate; active; export CAPAFY_MARKETING_MODE=dry POSTER_MODE=dry; bash "$DAILY" >/dev/null 2>&1
 eq "verified session immediately calls creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 1; has "immediate probe reaches poster" "$POST_CALLS" "--expected-capability publish_probe"
 eq "immediate probe selects from seller inventory" "$(wc -l <"$SELECT_CALLS" | tr -d ' ')" 1
+has "immediate probe uses verifier target" "$POST_CALLS" "--tid verified-target"
 case_setup foreign; active; export CANDIDATE_MODE=foreign; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "foreign public listing refused" || bad "foreign public listing accepted"; eq "foreign listing not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
 eq "foreign failure releases browser lease" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
@@ -101,4 +111,32 @@ case_setup unverified; active; export POSTER_MODE=unverified; bash "$DAILY" >/de
 [ "$rc" -ne 0 ] && ok "missing owner proof fails terminal" || bad "missing owner proof accepted"; recorded_unverified="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("last_public_reel_url") or "")' "$CAPAFY_IG_LIFECYCLE_STATE" 2>/dev/null || true)"; [ -z "$recorded_unverified" ] && ok "unverified owner records no Reel" || bad "unverified owner recorded Reel"
 case_setup challenge; active; export POSTER_MODE=challenge; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "poster challenge fails terminal" || bad "challenge accepted"; eq "poster challenge retires account" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))[0]["status"])' "$CAPAFY_IG_ACCOUNTS_FILE")" session_failed; eq "poster challenge wakes manager" "$(wc -l <"$KICKS" | tr -d ' ')" 1
+case_setup owner_mismatch; active; python3 - "$CAPAFY_IG_ACCOUNTS_FILE" <<'PY'
+import json,sys
+p=sys.argv[1]; rows=json.load(open(p)); rows.append({"handle":"capafy.other","status":"session_failed","session_owner":"browser","browser_identity":"instagram:other","port":9556,"created":"2026-07-01"}); json.dump(rows,open(p,"w"))
+PY
+export VERIFY_MODE=mismatch; bash "$DAILY" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "owner mismatch fails terminal" || bad "owner mismatch accepted"
+eq "owner mismatch calls no selector" "$(wc -l <"$SELECT_CALLS" | tr -d ' ')" 0
+eq "owner mismatch calls no creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 0
+eq "owner mismatch calls no poster" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
+eq "owner mismatch releases lease once" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
+eq "owner mismatch retires only active row" "$(python3 -c 'import json,sys;rows=json.load(open(sys.argv[1]));print(rows[0]["status"]+":"+rows[1]["status"])' "$CAPAFY_IG_ACCOUNTS_FILE")" "session_failed:session_failed"
+eq "owner mismatch requests replacement" "$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1]))["replacement_requested"]).lower())' "$CAPAFY_IG_LIFECYCLE_STATE")" true
+eq "owner mismatch wakes only account manager once" "$(wc -l <"$KICKS" | tr -d ' ')" 1
+if grep -Fq -- '-k' "$KICKS"; then bad "owner mismatch avoids kill kickstart"; else ok "owner mismatch avoids kill kickstart"; fi
+incident="$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json')"
+eq "owner mismatch creates one incident" "$(printf '%s\n' "$incident"|wc -l|tr -d ' ')" 1
+retry="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["next_retry_at"])' "$incident")"
+python3 - "$retry" <<'PY' && ok "owner mismatch sets future aware retry" || bad "owner mismatch sets future aware retry"
+import datetime,sys
+value=datetime.datetime.fromisoformat(sys.argv[1].replace("Z","+00:00")); raise SystemExit(0 if value.tzinfo and value>datetime.datetime.now(datetime.timezone.utc) else 1)
+PY
+events_before="$(wc -l <"$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" | tr -d ' ')"; messages_before="$(wc -l <"$MESSAGES" | tr -d ' ')"
+bash "$DAILY" >/dev/null 2>&1; replay_rc=$?
+eq "owner mismatch replay is contained" "$replay_rc" 0
+eq "owner mismatch replay creates no incident" "$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json'|wc -l|tr -d ' ')" 1
+eq "owner mismatch replay adds no canonical event" "$(wc -l <"$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" | tr -d ' ')" "$events_before"
+eq "owner mismatch replay sends no second failure Telegram" "$(wc -l <"$MESSAGES" | tr -d ' ')" "$messages_before"
+eq "owner mismatch replay adds no manager wake" "$(wc -l <"$KICKS" | tr -d ' ')" 1
 echo "=== test_capafy_marketing_controller: $P passed $F failed ==="; [ "$F" -eq 0 ]

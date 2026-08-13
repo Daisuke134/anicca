@@ -1,98 +1,75 @@
 import json
+import os
 import subprocess
 import sys
-import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+
+import pytest
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "capafy_ig_session_verify.py"
+HANDLE = "capafy.skills25042"
+OWNER = {"path": "/accounts/edit/", "username": HANDLE, "profile_hrefs": [f"/{HANDLE}/"]}
+PAGE = {"id": "target", "type": "page", "url": "about:blank"}
+SEAM = """#!/usr/bin/env python3
+import json,os,sys
+fixture=json.loads(os.environ["FIXTURE"]); request=json.load(sys.stdin); operation=request["operation"]
+value=fixture["pages"] if operation=="pages" else fixture["created"] if operation=="create" else fixture["evidence"] if operation=="evidence" else {} if operation=="navigate" else None
+if value is None: raise SystemExit(2)
+with open(os.environ["CAPAFY_TEST_CDP_LOG"],"a") as stream: stream.write(operation+"\\n")
+print(json.dumps(value))
+"""
 
 
-class CdpHandler(BaseHTTPRequestHandler):
-    tabs = [{"url": "https://www.instagram.com/capafy.skills25042/"}]
-
-    def do_GET(self):
-        body = json.dumps(self.tabs).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def log_message(self, *_args):
-        pass
+def run_verify(tmp_path, *, pages, evidence=OWNER, current=True, registry_port=9555, live_port=9555, credential=HANDLE):
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    seam, accounts, secret, log = (tmp_path / name for name in ("cdp.py", "accounts.json", "credential.json", "calls"))
+    seam.write_text(SEAM); seam.chmod(0o755)
+    accounts.write_text(json.dumps([{"handle": HANDLE, "status": "warming", "session_owner": "browser", "port": registry_port}]))
+    secret.write_text(json.dumps({"username": credential, "pw": "fixture"}))
+    command = [sys.executable, str(SCRIPT), "--accounts", str(accounts), "--handle", HANDLE, "--port", str(live_port)]
+    command += ["--current-session"] if current else ["--credential", str(secret)]
+    env = {**os.environ, "CAPAFY_IG_CDP_COMMAND": str(seam), "CAPAFY_IG_SESSION_VERIFY_TEST_SEAM": "1", "CAPAFY_TEST_CDP_LOG": str(log), "FIXTURE": json.dumps({"pages": pages, "evidence": evidence, "created": "created-target"})}
+    result = subprocess.run(command, text=True, capture_output=True, env=env, check=False)
+    return result, log.read_text().splitlines() if log.exists() else []
 
 
-def run_verify(tmp_path, tabs, credential_username="capafy.skills25042"):
-    CdpHandler.tabs = tabs
-    server = ThreadingHTTPServer(("127.0.0.1", 0), CdpHandler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        port = server.server_address[1]
-        accounts = tmp_path / "accounts.json"
-        credential = tmp_path / "credential.json"
-        accounts.write_text(
-            json.dumps(
-                [
-                    {
-                        "handle": "capafy.skills25042",
-                        "status": "warming",
-                        "session_owner": "browser",
-                        "port": port,
-                    }
-                ]
-            ),
-            encoding="utf-8",
-        )
-        credential.write_text(
-            json.dumps({"username": credential_username, "pw": "fixture"}),
-            encoding="utf-8",
-        )
-        return subprocess.run(
-            [
-                sys.executable,
-                str(SCRIPT),
-                "--accounts",
-                str(accounts),
-                "--credential",
-                str(credential),
-                "--handle",
-                "capafy.skills25042",
-                "--port",
-                str(port),
-            ],
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-    finally:
-        server.shutdown()
-        thread.join()
-
-
-def test_profile_tab_and_matching_browser_owned_row_are_verified(tmp_path):
-    result = run_verify(
-        tmp_path, [{"url": "https://www.instagram.com/capafy.skills25042/"}]
-    )
+def test_current_session_reuses_existing_target_and_proves_exact_owner(tmp_path):
+    result, calls = run_verify(tmp_path, pages=[{**PAGE, "id": "existing", "url": f"https://www.instagram.com/{HANDLE}/"}])
     assert result.returncode == 0, result.stderr
-    assert json.loads(result.stdout)["verified"] is True
+    assert json.loads(result.stdout)["target_id"] == "existing"
+    assert calls == ["pages", "navigate", "evidence"]
 
 
-def test_login_or_challenge_tab_is_not_an_established_session(tmp_path):
-    for url in (
-        "https://www.instagram.com/accounts/login/",
-        "https://www.instagram.com/challenge/ABC/",
-    ):
-        result = run_verify(tmp_path, [{"url": url}])
-        assert result.returncode != 0
+def test_current_session_creates_one_target_when_none_is_reusable(tmp_path):
+    result, calls = run_verify(tmp_path, pages=[{**PAGE, "id": "foreign", "url": "https://example.test/"}])
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["target_id"] == "created-target"
+    assert calls == ["pages", "create", "navigate", "evidence"]
 
 
-def test_credential_must_belong_to_the_new_handle(tmp_path):
-    result = run_verify(
-        tmp_path,
-        [{"url": "https://www.instagram.com/capafy.skills25042/"}],
-        credential_username="capafy.someone-else",
-    )
-    assert result.returncode != 0
+@pytest.mark.parametrize("evidence", [
+    {**OWNER, "path": "/accounts/login/"},
+    {**OWNER, "path": "/challenge/ABC/"},
+    {"path": "/accounts/edit/", "username": "capafy.someone_else", "profile_hrefs": ["/capafy.someone_else/"]},
+    {"path": ["malformed"], "username": HANDLE, "profile_hrefs": [f"/{HANDLE}/"]},
+    {"path": "/accounts/edit/", "username": "", "profile_hrefs": []},
+])
+def test_current_session_rejects_untrusted_owner_evidence(tmp_path, evidence):
+    result, _ = run_verify(tmp_path, pages=[PAGE], evidence=evidence)
+    assert result.returncode != 0 and not result.stdout
+
+
+def test_current_session_rejects_malformed_cdp_and_ignores_stale_registry_port(tmp_path):
+    bad, _ = run_verify(tmp_path / "bad", pages=[{**PAGE, "url": None}])
+    live, _ = run_verify(tmp_path / "live", pages=[PAGE], registry_port=9554)
+    assert bad.returncode != 0 and not bad.stdout
+    assert live.returncode == 0, live.stderr
+
+
+def test_new_account_keeps_exact_port_credential_and_owner_requirements(tmp_path):
+    stale, _ = run_verify(tmp_path / "stale", pages=[PAGE], current=False, registry_port=9554)
+    wrong, _ = run_verify(tmp_path / "wrong", pages=[PAGE], current=False, credential="capafy.someone_else")
+    valid, _ = run_verify(tmp_path / "valid", pages=[PAGE], current=False)
+    assert stale.returncode != 0 and wrong.returncode != 0
+    assert valid.returncode == 0, valid.stderr

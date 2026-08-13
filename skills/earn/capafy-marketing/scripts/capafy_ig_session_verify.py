@@ -1,50 +1,115 @@
 #!/usr/bin/env python3
-"""Verify a newly appended browser-owned Instagram session without logging in."""
+"""Prove the live browser owns one exact Instagram handle without logging in."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import subprocess
+import sys
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
 
+HOSTS = {"instagram.com", "www.instagram.com"}
+EDIT_URL = "https://www.instagram.com/accounts/edit/"
+
+
+def handle(value: object) -> str:
+    return str(value or "").strip().lstrip("@").lower()
+
+
+def cdp_call(port: int):
+    seam = os.environ.get("CAPAFY_IG_CDP_COMMAND")
+    if seam:
+        if os.environ.get("CAPAFY_IG_SESSION_VERIFY_TEST_SEAM") != "1":
+            raise ValueError("CDP test seam is disabled")
+        def call(operation: str, **payload):
+            result = subprocess.run([seam], input=json.dumps({"operation": operation, **payload}), text=True, capture_output=True)
+            if result.returncode:
+                raise ValueError("CDP test seam failed")
+            return json.loads(result.stdout)
+        return call
+    os.environ["CDP_PORT"] = str(port)
+    sys.path.insert(0, str(Path.home() / ".agents/skills/ig-account-create/scripts"))
+    import cdp  # type: ignore
+
+    def call(operation: str, **payload):
+        if operation == "pages":
+            with urlopen(f"http://127.0.0.1:{port}/json/list", timeout=8) as response:
+                return json.load(response)
+        if operation == "create":
+            return cdp.new_tab("about:blank")
+        if operation == "navigate":
+            cdp.navigate(payload["target_id"], EDIT_URL); time.sleep(float(os.environ.get("CAPAFY_IG_SESSION_VERIFY_WAIT_SECONDS", "3")))
+            return None
+        if operation == "evidence":
+            return cdp.evaluate(payload["target_id"], """(()=>{const u=document.querySelector('input[name="username"]');return {path:location.pathname,username:u&&u.value,profile_hrefs:[...document.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')).filter(Boolean)}})()""")
+        raise ValueError("unknown CDP operation")
+    return call
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--accounts", type=Path, required=True)
-    parser.add_argument("--credential", type=Path, required=True)
+    parser.add_argument("--credential", type=Path)
     parser.add_argument("--handle", required=True)
     parser.add_argument("--port", type=int, required=True)
+    parser.add_argument("--current-session", action="store_true")
+    parser.add_argument("--target-id")
     args = parser.parse_args()
-
-    rows = json.loads(args.accounts.read_text(encoding="utf-8"))
-    matches = [row for row in rows if isinstance(row, dict) and row.get("handle") == args.handle]
-    if len(matches) != 1:
-        raise SystemExit("expected exactly one appended account row")
-    row = matches[0]
-    if row.get("status") != "warming" or row.get("session_owner") != "browser":
-        raise SystemExit("account row is not a browser-owned warming session")
-    if int(row.get("port") or 0) != args.port:
-        raise SystemExit("account row port does not match the live browser")
-
-    credential = json.loads(args.credential.read_text(encoding="utf-8"))
-    if credential.get("username") != args.handle or not credential.get("pw"):
-        raise SystemExit("credential file does not match the new handle")
-
-    with urlopen(f"http://127.0.0.1:{args.port}/json/list", timeout=8) as response:
-        tabs = json.load(response)
-    instagram_tabs = []
-    for tab in tabs if isinstance(tabs, list) else []:
-        parsed = urlparse(str(tab.get("url") or ""))
-        if parsed.hostname not in {"instagram.com", "www.instagram.com"}:
-            continue
-        if parsed.path.startswith(("/accounts/login", "/challenge")):
-            continue
-        instagram_tabs.append(tab)
-    if not instagram_tabs:
-        raise SystemExit("no authenticated-looking Instagram tab exists in the isolated browser")
-    print(json.dumps({"verified": True, "handle": args.handle, "session_owner": "browser"}))
+    expected = handle(args.handle)
+    if not expected or bool(args.credential) == args.current_session:
+        raise SystemExit("invalid session verification arguments")
+    try:
+        rows = json.loads(args.accounts.read_text(encoding="utf-8"))
+        matches = [row for row in rows if isinstance(row, dict) and handle(row.get("handle")) == expected]
+        if len(matches) != 1 or matches[0].get("session_owner") != "browser":
+            raise ValueError("untrusted account row")
+        row = matches[0]
+        if not args.current_session:
+            credential = json.loads(args.credential.read_text(encoding="utf-8"))
+            if row.get("status") != "warming" or int(row.get("port") or 0) != args.port or handle(credential.get("username")) != expected or not credential.get("pw"):
+                raise ValueError("new account proof unavailable")
+        call = cdp_call(args.port)
+        pages = call("pages")
+        if not isinstance(pages, list):
+            raise ValueError("malformed CDP target list")
+        targets = []
+        for page in pages:
+            if not isinstance(page, dict):
+                raise ValueError("malformed CDP target")
+            if page.get("type") != "page":
+                continue
+            target_id, url = page.get("id"), page.get("url")
+            if not isinstance(target_id, str) or not target_id or not isinstance(url, str):
+                raise ValueError("malformed CDP page")
+            targets.append((target_id, url))
+        known_ids = {target_id for target_id, _ in targets}
+        if args.target_id:
+            if os.environ.get("CAPAFY_IG_SESSION_VERIFY_TEST_SEAM") != "1" or args.target_id not in known_ids:
+                raise ValueError("untrusted target injection")
+            target_id = args.target_id
+        else:
+            target_id = next((target_id for target_id, url in targets if urlparse(url).hostname in HOSTS or urlparse(url).scheme == "about" and urlparse(url).path == "blank"), None) or call("create")
+        if not isinstance(target_id, str) or not target_id:
+            raise ValueError("malformed target id")
+        call("navigate", target_id=target_id)
+        evidence = call("evidence", target_id=target_id)
+        if not isinstance(evidence, dict) or not isinstance(evidence.get("path"), str) or not evidence["path"].lower().startswith("/accounts/edit"):
+            raise ValueError("not an authenticated account page")
+        username, hrefs = handle(evidence.get("username")), evidence.get("profile_hrefs")
+        if username and username != expected or not isinstance(hrefs, list) or any(not isinstance(href, str) for href in hrefs):
+            raise ValueError("owner proof unavailable")
+        profile_match = any(urlparse(href).path.rstrip("/").lower() == f"/{expected}" for href in hrefs)
+        if username != expected and not profile_match:
+            raise ValueError("owner proof unavailable")
+    except Exception:
+        raise SystemExit("current Instagram session could not be verified")
+    print(json.dumps({"verified": True, "handle": expected, "session_owner": "browser", "target_id": target_id}, separators=(",", ":")))
     return 0
 
 
