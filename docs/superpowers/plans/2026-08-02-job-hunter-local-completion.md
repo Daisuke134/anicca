@@ -1633,10 +1633,35 @@ performs the real E2E, and records the milestone.
   full Job Hunter suite passes `579/579` in `30.526s`; Python compilation and diff checks
   pass. No application receipt is claimed.
 
-  **Immediate next slice:** build and activate one immutable release from this pushed
-  source and rerun the real daily lane. Preserve the shared browser and inspect the next
-  authoritative Workday state. Until an ATS or Gmail receipt exists, the system
-  continues reporting zero confirmed applications.
+  Login release proof is complete. Source commit
+  `6b7b104ae7210e3651d8c0cda230c3fc0902089c` built twice to identical archive SHA-256
+  `33f0cc8af06530858ca505c70d91f1a971061500460945a4e8dd234622d01d90`, with `267`
+  entries and no private-state-shaped entry. The extracted runtime passes `577/577`;
+  the release is read-only and active, and
+  `d6210d09f35d8705f5ad52b44827e980e112e1d7` is the rollback.
+
+  Real launchd wake `daily-20260814-025625` proved both account modes on the same
+  registered owned page. Create Account returned a redacted
+  `account_creation_clicked` receipt, login returned redacted `sign_in_clicked` with
+  `browser_action_count=3`, and Workday advanced to the real five-step Salesforce
+  application at `My Information`. The next truthful form blocker is the required
+  former-Salesforce-employment question: the complete private profile has no explicit
+  answer, so the agent did not invent one. A separate privacy gate also correctly
+  stopped the wake because an adaptive diagnostic printed the authenticated page body,
+  which contained the application email. Telegram delivered the natural failure as
+  message ID `16542`; daily exited `76`, while inbox and learning remain last-exit `0`.
+
+  The wake made no submission claim and production Ledger remained byte-identical at
+  SHA-256 `d6d494d2185137ab76d2079756f38326819bf149be50cb4b1dfc4bf8d9d0ee74`:
+  `57` applications, `257` events, and `30` submit intents. Cleanup closed exactly the
+  one Job Hunter-created page and restored shared-browser PID `22279`, UUID
+  `2ac269b0-350a-49a4-971e-9a0556aed50d`, and the exact six original pages.
+
+  **Immediate next slice:** prohibit authenticated page body/control text from adaptive
+  command output and provide a production observer that reports only allowlisted form
+  structure. Then add only the missing truthful former-employer answer to the private
+  profile SSOT and rerun the real daily lane. Until an ATS or Gmail receipt exists, the
+  system continues reporting zero confirmed applications.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
