@@ -10,6 +10,7 @@ STATE_ROOT="${LANCERS_STATE_ROOT:?LANCERS_STATE_ROOT is required}"
 INSTALL_MODE="${LANCERS_INSTALL_MODE:?LANCERS_INSTALL_MODE is required}"
 LABEL="ai.anicca.lancers-revenue-application"
 REPORT_LABEL="ai.anicca.lancers-revenue-telegram-report"
+WORK_SYNC_LABEL="ai.anicca.lancers-revenue-work-sync"
 RUNTIME_PATH="${LANCERS_RUNTIME_PATH:-${HOME}/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin}"
 
 fail() {
@@ -45,10 +46,12 @@ STAGING="$(mktemp -d "$RELEASES_ROOT/.${RELEASE_SHA}.staging.XXXXXX")"
 CHECK_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/lancers-install-check.XXXXXX")"
 PLIST_TEMP=""
 REPORT_PLIST_TEMP=""
+WORK_SYNC_PLIST_TEMP=""
 
 cleanup() {
   [[ -z "$PLIST_TEMP" || ! -e "$PLIST_TEMP" ]] || rm -f "$PLIST_TEMP"
   [[ -z "$REPORT_PLIST_TEMP" || ! -e "$REPORT_PLIST_TEMP" ]] || rm -f "$REPORT_PLIST_TEMP"
+  [[ -z "$WORK_SYNC_PLIST_TEMP" || ! -e "$WORK_SYNC_PLIST_TEMP" ]] || rm -f "$WORK_SYNC_PLIST_TEMP"
   [[ ! -e "$STAGING" ]] || rm -rf "$STAGING"
   [[ ! -e "$CHECK_ROOT" ]] || rm -rf "$CHECK_ROOT"
 }
@@ -57,6 +60,7 @@ trap cleanup EXIT
 git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   skills/earn/lancers/scripts/application_loop.py \
   skills/earn/lancers/scripts/application_tick.py \
+  skills/earn/lancers/scripts/work_sync.py \
   skills/earn/lancers/scripts/status.py \
   skills/earn/lancers/scripts/lancers_adapter.py \
   skills/_shared/marketplace-core/scripts/application_transaction.py \
@@ -170,6 +174,26 @@ mv -f "$PLIST_TEMP" "$PLIST_PATH"
 PLIST_TEMP=""
 "$PLUTIL_BIN" -lint "$PLIST_PATH" >/dev/null
 
+WORK_SYNC_TEMPLATE="$SCRIPT_DIR/../launchd/$WORK_SYNC_LABEL.plist"
+WORK_SYNC_PLIST_PATH="$LAUNCH_AGENT_DIR/$WORK_SYNC_LABEL.plist"
+WORK_SYNC_PLIST_TEMP="$(mktemp "$LAUNCH_AGENT_DIR/.${WORK_SYNC_LABEL}.plist.XXXXXX")"
+"$PYTHON_BIN" - "$WORK_SYNC_TEMPLATE" "$WORK_SYNC_PLIST_TEMP" "$PYTHON_BIN" \
+  "$RELEASE_PATH/skills/earn/lancers/scripts/work_sync.py" "$STATE_ROOT/work-sync.json" \
+  "$STATE_ROOT/logs/work-sync.out.log" "$STATE_ROOT/logs/work-sync.err.log" \
+  "$RELEASE_PATH" "$RUNTIME_PATH" <<'PY'
+import os, plistlib, sys
+from pathlib import Path
+template, output, python_bin, work_sync, state, stdout, stderr, release, runtime = sys.argv[1:]
+value = plistlib.loads(Path(template).read_bytes())
+value["ProgramArguments"] = [python_bin, work_sync, "--json", "--state-path", state]
+value["WorkingDirectory"] = release; value["StandardOutPath"] = stdout; value["StandardErrorPath"] = stderr
+value["EnvironmentVariables"]["PATH"] = runtime
+Path(output).write_bytes(plistlib.dumps(value, fmt=plistlib.FMT_XML, sort_keys=False)); os.chmod(output, 0o644)
+PY
+mv -f "$WORK_SYNC_PLIST_TEMP" "$WORK_SYNC_PLIST_PATH"
+WORK_SYNC_PLIST_TEMP=""
+"$PLUTIL_BIN" -lint "$WORK_SYNC_PLIST_PATH" >/dev/null
+
 REPORT_TEMPLATE="$SCRIPT_DIR/../launchd/$REPORT_LABEL.plist"
 REPORT_PLIST_PATH="$LAUNCH_AGENT_DIR/$REPORT_LABEL.plist"
 REPORT_PLIST_TEMP="$(mktemp "$LAUNCH_AGENT_DIR/.${REPORT_LABEL}.plist.XXXXXX")"
@@ -193,7 +217,7 @@ REPORT_PLIST_TEMP=""
 
 INSTALLED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 "$PYTHON_BIN" - "$STATE_ROOT/deployment.json" "$RELEASE_PATH" "$RELEASE_SHA" \
-  "$INSTALL_MODE" "$INSTALLED_AT" "$LABEL" <<'PY'
+  "$INSTALL_MODE" "$INSTALLED_AT" "$LABEL" "$WORK_SYNC_LABEL" <<'PY'
 import hashlib
 import json
 import os
@@ -201,7 +225,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-manifest_path, release_path, deployed_sha, mode, installed_at, label = sys.argv[1:]
+manifest_path, release_path, deployed_sha, mode, installed_at, label, work_sync_label = sys.argv[1:]
 release = Path(release_path)
 files = {}
 for path in sorted(path for path in release.rglob("*") if path.is_file()):
@@ -212,6 +236,7 @@ manifest = {
     "files": files,
     "installed_at": installed_at,
     "launchd_label": label,
+    "work_sync_launchd_label": work_sync_label,
     "mode": mode,
 }
 target = Path(manifest_path)
