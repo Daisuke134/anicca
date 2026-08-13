@@ -200,15 +200,50 @@ def test_sales_window_failure_does_not_return_partial_rows() -> None:
         module.fetch_sales("token", 14)
 
 
-def test_daily_reconciles_before_cap_full_builder_return(tmp_path: Path) -> None:
+def test_daily_reconciles_before_full_first_version_queue_action_selection(tmp_path: Path) -> None:
     _fixtures(tmp_path)
     home = tmp_path / "home"
-    inventory = home / ".openclaw/skills/capafy-autopublish/scripts/inventory_status.py"
-    inventory.parent.mkdir(parents=True)
-    inventory.write_text("import os; from pathlib import Path; Path(os.environ['ORDER_MARKER']).write_text('ready' if Path(os.environ['CAPAFY_RECONCILE_LEDGER']).exists() else 'missing'); print('VERDICT=CAP_FULL'); print('{\"online_count\": 5}')\n")
+    publisher = home / "publisher"
+    publisher.mkdir(parents=True)
+    publish_list = publisher / "packager.py"
+    publish_list.write_text(
+        "import json,os,sys\n"
+        "from pathlib import Path\n"
+        "calls=Path(os.environ['INVENTORY_CALLS']); calls.write_text(str(int(calls.read_text())+1) if calls.exists() else '1')\n"
+        "Path(os.environ['ORDER_MARKER']).write_text('ready' if Path(os.environ['CAPAFY_RECONCILE_LEDGER']).exists() else 'missing')\n"
+        "agents=[{'agentStatus':'online','hasOnlineVersion':True} for _ in range(21)]\n"
+        "agents += [{'agentStatus':'review_rejected','hasOnlineVersion':False} for _ in range(5)]\n"
+        "agents += [{'agentStatus':'review_rejected','hasOnlineVersion':True} for _ in range(4)]\n"
+        "agents += [{'agentStatus':'draft','hasOnlineVersion':True} for _ in range(2)]\n"
+        "print(json.dumps({'agents':{'list':agents}})); raise SystemExit(int(os.environ.get('INVENTORY_EXIT','0')))\n"
+    )
+    guard_probe = tmp_path / "guard-probe.py"
+    guard_probe.write_text(
+        "import os,sys\n"
+        "sys.path.insert(0, os.environ['CAPAFY_PUBLISHER_ROOT'])\n"
+        "import capafy_platform.api as api\n"
+        "api.post_platform_json=lambda path,*args,**kwargs:{'path':path}\n"
+        "try: api.create_agent({})\n"
+        "except ValueError as exc: assert 'first-version review queue is full' in str(exc)\n"
+        "else: raise AssertionError('new addAgent was not blocked')\n"
+        "assert api.create_agent_version({})['path'].endswith('/addAgentVersion')\n"
+        "open(os.environ['GUARD_MARKER'],'w').write('blocked-new-allowed-version')\n"
+    )
     sender = tmp_path / "sender.sh"
     sender.write_text("#!/usr/bin/env bash\nprintf 'MSGID=1\\n'\n")
     sender.chmod(0o755)
+    runner = tmp_path / "run-agent.sh"
+    runner.write_text(
+        "#!/usr/bin/env bash\n"
+        "touch \"$RUN_AGENT_MARKER\"\n"
+        "cat > \"$PROMPT_CAPTURE\"\n"
+        "python3 \"$GUARD_PROBE\"\n"
+        "printf '%s\\n' \"$RUN_AGENT_RESULT\" > \"$CAPAFY_BUILDER_RESULT\"\n"
+    )
+    runner.chmod(0o755)
+    fixer = tmp_path / "self-fix.sh"
+    fixer.write_text("#!/usr/bin/env bash\nexit 0\n")
+    fixer.chmod(0o755)
     sync, calls = _sync_stub(tmp_path, 0)
     money = tmp_path / "money.json"; money.write_text('{"gross_usd":19.98,"pending_usd":8,"realized_usd":0,"mrr_usd":0,"cost_usd":0,"contribution_usd":0}')
     env = os.environ.copy()
@@ -226,10 +261,76 @@ def test_daily_reconciles_before_cap_full_builder_return(tmp_path: Path) -> None
         "CAPAFY_TELEGRAM_SENDER": str(sender),
         "CAPAFY_EVENT_SYNC": str(sync),
         "SYNC_CALLS": str(calls),
+        "CAPAFY_RUN_AGENT": str(runner),
+        "CAPAFY_PUBLISH_LIST": str(publish_list),
+        "CAPAFY_PUBLISHER_ROOT": str(Path.home() / ".openclaw/skills/capafy-autopublish/vendor/capafy-publisher"),
+        "RUN_AGENT_MARKER": str(tmp_path / "run-agent-marker"),
+        "GUARD_PROBE": str(guard_probe),
+        "GUARD_MARKER": str(tmp_path / "guard-marker"),
+        "PROMPT_CAPTURE": str(tmp_path / "prompt.txt"),
+        "INVENTORY_CALLS": str(tmp_path / "inventory-calls"),
+        "INVENTORY_EXIT": "0",
+        "CAPAFY_SELF_FIX": str(fixer),
+        "RUN_AGENT_RESULT": '{"result":"no-op","reason":"first-version queue full: no useful action using existing listings/capabilities"}',
     })
     result = subprocess.run(["bash", str(DAILY)], text=True, capture_output=True, env=env, check=False)
     assert result.returncode == 0, result.stderr
     assert (tmp_path / "order-marker").read_text() == "ready"
+    assert (tmp_path / "run-agent-marker").exists()
+    assert (tmp_path / "guard-marker").read_text() == "blocked-new-allowed-version"
+    prompt = (tmp_path / "prompt.txt").read_text()
+    assert "FIRST-VERSION REVIEW QUEUE FULL" in prompt
+    assert "never_online=5, total=32, online=21, review_rejected=9, draft=2" in prompt
+    assert "New addAgent creation is forbidden" in prompt
+    assert "addAgentVersion for an existing agent_id remains allowed" in prompt
+    assert prompt.rstrip().endswith("Never omit the existing agent_id when repairing or resubmitting a rejected Agent.")
+    assert (tmp_path / "inventory-calls").read_text() == "1"
+
+    Path(env["RUN_AGENT_MARKER"]).unlink()
+    env["INVENTORY_EXIT"] = "7"
+    blocked = subprocess.run(["bash", str(DAILY)], text=True, capture_output=True, env=env, check=False)
+    assert blocked.returncode != 0
+    assert not Path(env["RUN_AGENT_MARKER"]).exists()
+    assert (tmp_path / "inventory-calls").read_text() == "2"
+
+
+def test_shared_inventory_counts_only_never_online_agents(capsys: pytest.CaptureFixture[str]) -> None:
+    script = Path.home() / ".openclaw/skills/capafy-autopublish/scripts/inventory_status.py"
+    spec = importlib.util.spec_from_file_location("capafy_inventory_status", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    module.ready_inventory = lambda: []
+    module._load_archive = lambda: {}
+    module._save_archive = lambda archive: None
+
+    existing_versions = [
+        {"name": f"existing-{i}", "agentStatus": "review_rejected", "hasOnlineVersion": True}
+        for i in range(6)
+    ]
+    module.server_agents = lambda: existing_versions + [
+        {"name": f"new-{i}", "agentStatus": "draft", "hasOnlineVersion": False}
+        for i in range(5)
+    ]
+    assert module.main() == 0
+    full = json.loads(capsys.readouterr().out.splitlines()[-1])
+    assert full["verdict"] == "CAP_FULL"
+    assert full["never_online_count"] == 5
+    assert full["cap_occupied_count"] == 5
+
+    module.server_agents = lambda: existing_versions + [
+        {"name": f"new-{i}", "agentStatus": "draft", "hasOnlineVersion": False}
+        for i in range(4)
+    ]
+    assert module.main() == 0
+    open_slot = json.loads(capsys.readouterr().out.splitlines()[-1])
+    assert open_slot["verdict"] == "DRAINED"
+    assert open_slot["never_online_count"] == 4
+
+    module.server_agents = lambda: [{"name": "unknown", "agentStatus": "draft"}]
+    assert module.main() == 0
+    malformed = json.loads(capsys.readouterr().out.splitlines()[-1])
+    assert malformed["verdict"] == "SERVER_UNREADABLE"
 
 
 def test_reconcile_syncs_money_after_source_ledger_write(tmp_path: Path) -> None:

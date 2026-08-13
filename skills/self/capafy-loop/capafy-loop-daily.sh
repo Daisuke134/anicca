@@ -20,14 +20,12 @@ if [ "${CAPAFY_LOOP_REPORTING_PROBE_ONLY:-0}" = "1" ]; then
   printf 'terminal_owner=capafy-builder-handoff.sh agent_telegram=false\n'
   exit 0
 fi
-RUN_AGENT="$SCRIPT_DIR/../../earn/marketing-engine/run_agent.sh"
+RUN_AGENT="${CAPAFY_RUN_AGENT:-$SCRIPT_DIR/../../earn/marketing-engine/run_agent.sh}"
+PUBLISH_LIST="${CAPAFY_PUBLISH_LIST:-$HOME/.openclaw/skills/capafy-autopublish/vendor/capafy-publisher/packager.py}"
 LOG="$HOME/.openclaw/logs/capafy-loop-daily.log"
 mkdir -p "$(dirname "$LOG")"
 echo "=== capafy-loop-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 
-# Live preflight for incident capafy-builder-20260802T231418Z-a1558bd0.
-# Never launch the expensive builder when Capafy already rejects new agents.
-INVENTORY_STATUS="$HOME/.openclaw/skills/capafy-autopublish/scripts/inventory_status.py"
 BUILDER_RESULT="${CAPAFY_BUILDER_RESULT:-$HOME/.openclaw/state/capafy-builder-result.json}"
 RECONCILE_LEDGER="${CAPAFY_RECONCILE_LEDGER:-$SCRIPT_DIR/state/capafy-earn-ledger.jsonl}"
 RECONCILE_ARGS=(--ledger "$RECONCILE_LEDGER")
@@ -40,16 +38,29 @@ if ! python3 "$SCRIPT_DIR/capafy_earn_reconcile.py" "${RECONCILE_ARGS[@]}" >>"$L
   echo "=== capafy-loop-daily blocked: authoritative reconcile failed ===" >>"$LOG"
   exit 1
 fi
-if [ -f "$INVENTORY_STATUS" ]; then
-  CAP_VERDICT="$(python3 "$INVENTORY_STATUS" 2>>"$LOG" | sed -n 's/^VERDICT=//p' | head -1)"
-  if [ "$CAP_VERDICT" = "CAP_FULL" ]; then
-    ONLINE_COUNT="$(python3 "$INVENTORY_STATUS" 2>>"$LOG" | tail -1 | python3 -c 'import json,sys; print(json.load(sys.stdin).get("online_count", "?"))' 2>>"$LOG" || printf '?')"
-    printf '{"result":"no-op","reason":"Capafy publish cap full: live inventory verdict CAP_FULL; no addAgent attempted; online_count=%s"}\n' "$ONLINE_COUNT" >"$BUILDER_RESULT"
-    echo "=== capafy-loop-daily no-op: live CAP_FULL; skipped model and addAgent (online_count=$ONLINE_COUNT) ===" >>"$LOG"
-    touch "$HOME/.openclaw/state/.capafy-loop-last-pass" 2>/dev/null || true
-    CAPAFY_BUILDER_RESULT="$BUILDER_RESULT" bash "$SCRIPT_DIR/capafy-builder-handoff.sh" 0 "cap-preflight" >>"$LOG" 2>&1
-    exit $?
-  fi
+CAPACITY_CONSTRAINT=""
+if [ ! -f "$PUBLISH_LIST" ]; then
+  echo "=== capafy-loop-daily blocked: publisher inventory command is missing ===" >>"$LOG"
+  exit 1
+fi
+if ! INVENTORY_READBACK="$(cd "$(dirname "$PUBLISH_LIST")" && python3 "$PUBLISH_LIST" publish-list 2>>"$LOG")"; then
+  echo "=== capafy-loop-daily blocked: inventory status read failed ===" >>"$LOG"
+  exit 1
+fi
+if ! INVENTORY_COUNTS="$(printf '%s' "$INVENTORY_READBACK" | python3 -c 'import json,sys
+a=json.load(sys.stdin)["agents"]["list"]
+assert isinstance(a,list) and all(type(x.get("hasOnlineVersion")) is bool for x in a)
+count=lambda status: sum(x.get("agentStatus")==status for x in a)
+print(len(a),count("online"),count("review_rejected"),count("draft"),sum(not x["hasOnlineVersion"] for x in a),sep="\t")' 2>>"$LOG")"; then
+  echo "=== capafy-loop-daily blocked: inventory status is malformed ===" >>"$LOG"
+  exit 1
+fi
+IFS=$'\t' read -r INVENTORY_TOTAL ONLINE_COUNT REJECTED_COUNT DRAFT_COUNT NEVER_ONLINE_COUNT <<<"$INVENTORY_COUNTS"
+unset CAPAFY_BLOCK_NEW_AGENT
+if [ "$NEVER_ONLINE_COUNT" -ge 5 ]; then
+  export CAPAFY_BLOCK_NEW_AGENT=1
+  CAPACITY_CONSTRAINT="FIRST-VERSION REVIEW QUEUE FULL — never_online=$NEVER_ONLINE_COUNT, total=$INVENTORY_TOTAL, online=$ONLINE_COUNT, review_rejected=$REJECTED_COUNT, draft=$DRAFT_COUNT. New addAgent creation is forbidden this pass; addAgentVersion for an existing agent_id remains allowed. Reconciliation and authenticated inventory refresh completed; continue STEP1/STEP2 and choose one bounded highest-EV review repair, measurement, optimization, Marketing handoff, or truthful no-op."
+  echo "=== capafy-loop-daily continuing with first-version queue full (never_online=$NEVER_ONLINE_COUNT) ===" >>"$LOG"
 fi
 
 # ── TOKEN BUDGET BREAKER (2026-07-30) ─────────────────────────────────────────
@@ -145,6 +156,10 @@ exactly one JSON object to $BUILDER_RESULT:
   no-op:     {\"result\":\"no-op\",\"reason\":\"<bounded truthful reason>\"}
   failure:   {\"result\":\"failure\",\"reason\":\"<exact terminal blocker>\"}
 Writing submitted is only a candidate claim; the caller independently re-reads Capafy's remote status."
+if [ -n "$CAPACITY_CONSTRAINT" ]; then
+  PROMPT="$PROMPT
+$CAPACITY_CONSTRAINT This trailing constraint overrides earlier new-skill/addAgent/mandatory Phase B clauses. Never omit the existing agent_id when repairing or resubmitting a rejected Agent."
+fi
 # task-class application-lane-agent (3600s), NOT browser-lane-agent (900s).
 # WHY THE RAISE (and not "make orphan work resumable"): orphan work is ALREADY resumable —
 # every CP1/CP2/CP3 checkpoint is server-side and idempotent and publish_finish.sh skips
