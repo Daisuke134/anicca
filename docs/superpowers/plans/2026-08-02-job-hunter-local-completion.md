@@ -1345,7 +1345,8 @@ performs the real E2E, and records the milestone.
   pass `34/34`; the full Job Hunter suite passes `574/574` in `33.156s`; shell syntax,
   compile, and diff checks pass. A real `:9222` acquire→attach→release canary preserved
   PID `22279`, browser UUID `2ac269b0-350a-49a4-971e-9a0556aed50d`, one context, and
-  all `13` pre-existing tab IDs; no page was created or closed.
+  all `13` pre-existing tab IDs; no page was created or closed. Completion is
+  acknowledged by Telegram message ID `16338`; pushed commit: `c02919968`.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
