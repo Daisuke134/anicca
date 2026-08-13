@@ -2223,6 +2223,34 @@ performs the real E2E, and records the milestone.
   **Immediate next slice:** build, activate, and run the exact native-DOM release.
   Require a redacted Workday account receipt or consume only the next finite stage
   code.
+
+  Native-DOM release and ninth real wake are complete. Pushed commit
+  `b63356485b40c90806823416170fdf2a93f53d77` built twice to byte-identical archive
+  SHA-256 `84c46465fa83d501f1251a0724edf9ad5c0ba65acd25de50d3066ce3b592203d`
+  with `267` entries and is active with
+  `2c79b6d777e5e2598c5cacda74950109d129ac99` as rollback. Real wake
+  `daily-20260814-061132` still reports native-auth unavailable. Both accessible-role
+  and exact-DOM controls are visible to the deterministic outer snapshot but absent
+  from the helper's separately reconnected Page wrapper. Selector expansion is no
+  longer justified; the two Page wrappers are the remaining causal difference. No
+  submit intent, request start, receipt, or submit-unknown was created.
+
+  Telegram sent message ID `16736`; cleanup closed exactly one owned page, restored
+  all seven pre-existing page IDs, and left production Ledger byte-identical at
+  SHA-256 `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  **Owned same-page slice complete in pushed source:** commit `9ab0c2912` lets the
+  deterministic caller pass its existing Page object to the credential helper after
+  the helper independently verifies the live lease, fence, registered target ID, and
+  CDP target identity. This removes the second CDP connection and keeps navigation,
+  selectors, snapshot, and later fill on one exact owned page. The CLI path retains
+  its existing reconnect-and-resolve behavior. No new browser or weaker ownership
+  path was added. Compilation and diff checks pass, focused tests pass `14/14`, and
+  the full suite passes `585/585`.
+
+  **Immediate next slice:** build, activate, and run the exact owned same-page release.
+  Require a redacted Workday account receipt or consume only the next finite stage
+  code.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
