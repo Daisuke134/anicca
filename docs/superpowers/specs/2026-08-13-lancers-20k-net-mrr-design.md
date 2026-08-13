@@ -809,6 +809,16 @@ G3B.1はstatus contractを変えず、production 1 file / 3 LOC以下、existing
 network/provider/schema/invalid argument等の他errorは従来どおりfail closedする。planner/submitは呼ばず、
 state/ledgerを変更しない。primaryがplanを書き、Lunaが直接実装し、fresh Sol reviewを1回だけ行う。
 
+G3B.1 canonical main / deployed exact releaseは`086037263acc11c3877875094d51bd79ed8b3ced`である。
+productionは一行置換、testは19行追加で、HOL 17、Lancers統合32、agent-runner 15、compile、diff checkが
+PASSする。fresh Sol adversarial review 1/1は独立19 payloadでmissing/nonempty/malformed/other errorを
+fail-closed、対象emptyだけsuccess、planner/submit 0と確認し、`ship`である。追加reviewは行わない。
+
+同じUTC slotのquery `B2Bマーケティング`でlaunchd ownerを再実行し、`ok=true / no_eligible_project /
+observed=0 / eligible=0 / submitted=false / verified=0`、exit 0、stderr 0を確認した。state、ledger、listingの
+SHA-256はpre/post一致、pending 0、fingerprints 19、verified receipts 14である。application 1800秒、reporter
+300秒は同じexact releaseでenabled。G3B rankingとG3B.1 empty normalizationは完了した。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
@@ -821,8 +831,8 @@ state/ledgerを変更しない。primaryがplanを書き、Lunaが直接実装�
 | G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
 | G2 truthful acquisition | **完了。** storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | exact release `d63dfd1…`、Telegram message ID `15922`、同一状態の再kick 0送信 |
 | G3A query coverage | **完了。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | exact release `a2081bc0…`、review 1/1 ship、実tick `LinkedIn / observed 2 / submitted false`、state/ledger/listing不変 |
-| G3B eligible ranking | **implementation/review/deploy完了、live acceptance中。** validated eligibleをexplicit monthly、projected net JPY、provider stable orderで並べる | review 1/1 ship、exact release `0c700ab9…`、実tickでempty-result境界を発見 |
-| G3B.1 empty search normalization | **active。** providerの正常な0件をfailureではなくno-op successとして扱う | `ok=true / no_eligible_project / submitted=false`、planner/submit 0、state/ledger不変 |
+| G3B eligible ranking | **完了。** validated eligibleをexplicit monthly、projected net JPY、provider stable orderで並べる | review 1/1 ship、production 9行、monthly/net/stable tie/最大1 submit検証 |
+| G3B.1 empty search normalization | **完了。** providerの正常な0件をfailureではなくno-op successとして扱う | exact release `086037263…`、実tick `B2Bマーケティング / observed 0 / ok true / submitted false`、state不変 |
 | G3C capacity quota | authoritative active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下） | active contract source、tick/day quota、100% cap、duplicate拒否 |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
@@ -876,9 +886,9 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | G3B deterministic eligible ranking | provider rowsのうちvalidated eligibleだけを既存公開証拠で安定順位付け | 0.5–1日 |
+| 1 | G3C/G4 contract-source boundary | 14 proposal receiptからreply/active contractの公式readback sourceを確定し、capacityのauthoritative inputを作る | 0.5–1日設計、1–3日実装 |
 | 2 | G3C capacity quota | authoritative active contract sourceを接続し、tick/day quotaと100% capを適用 | 1–2日 |
-| 3 | G4 Sales / Contract lane | 14 receiptを入力としてreply監視→分類→offer→公式contract readbackを実装 | 1–3日 |
+| 3 | G4 Sales / Contract actions | buyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
 | 4 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。

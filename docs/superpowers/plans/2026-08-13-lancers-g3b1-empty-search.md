@@ -81,3 +81,12 @@ Return status, SHA, test counts, diffstat, and concerns. Do not edit docs.
 2. The reviewer attacks nonempty `ok=false`, forged empty error with nonempty opportunities, malformed opportunities, network/provider errors, planner/submit call count, and state safety.
 3. Primary pushes canonical main, deploys exact SHA, reloads owners, and kicks application once while `B2Bマーケティング` remains the selected slot if possible.
 4. Require `ok=true / reason=no_eligible_project / submitted=false`, exit 0, empty stderr, and unchanged state/ledger/listing. If the slot changes or real candidates appear, accept only existing bounded behavior and verify at most one submit with authoritative receipt or quarantine.
+
+## Completion record
+
+- Primary plan commit: `7df2d072fc5ccb2889b5e002ced10ed6024f4689`.
+- Luna implementation commit (git/remote SSOT): `086037263acc11c3877875094d51bd79ed8b3ced`; one production line replaced, 19 test lines added, two owned files only.
+- Verification: HOL 17, combined Lancers 32, agent-runner 15, compile and diff check pass.
+- Fresh Sol adversarial review: 1/1, `ship`; 19 adversarial payload cases, no mandatory finding, no second review.
+- Real launchd-owned `B2Bマーケティング` empty tick: ok true, reason no_eligible_project, observed/eligible/verified 0, submitted false, exit 0, empty stderr.
+- Application state, ledger, listing hashes unchanged; pending 0, fingerprints 19, verified receipts 14. Both schedulers enabled and exact-release bound.
