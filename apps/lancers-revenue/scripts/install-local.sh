@@ -9,6 +9,7 @@ LAUNCH_AGENT_DIR="${LANCERS_LAUNCH_AGENT_DIR:?LANCERS_LAUNCH_AGENT_DIR is requir
 STATE_ROOT="${LANCERS_STATE_ROOT:?LANCERS_STATE_ROOT is required}"
 INSTALL_MODE="${LANCERS_INSTALL_MODE:?LANCERS_INSTALL_MODE is required}"
 LABEL="ai.anicca.lancers-revenue-application"
+REPORT_LABEL="ai.anicca.lancers-revenue-telegram-report"
 RUNTIME_PATH="${LANCERS_RUNTIME_PATH:-${HOME}/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin}"
 
 fail() {
@@ -43,9 +44,11 @@ chmod 700 "$INSTALL_ROOT" "$RELEASES_ROOT"
 STAGING="$(mktemp -d "$RELEASES_ROOT/.${RELEASE_SHA}.staging.XXXXXX")"
 CHECK_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/lancers-install-check.XXXXXX")"
 PLIST_TEMP=""
+REPORT_PLIST_TEMP=""
 
 cleanup() {
   [[ -z "$PLIST_TEMP" || ! -e "$PLIST_TEMP" ]] || rm -f "$PLIST_TEMP"
+  [[ -z "$REPORT_PLIST_TEMP" || ! -e "$REPORT_PLIST_TEMP" ]] || rm -f "$REPORT_PLIST_TEMP"
   [[ ! -e "$STAGING" ]] || rm -rf "$STAGING"
   [[ ! -e "$CHECK_ROOT" ]] || rm -rf "$CHECK_ROOT"
 }
@@ -65,6 +68,9 @@ git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   runtime/agent-runner/agent_runner.py \
   runtime/agent-runner/token_budget.py \
   runtime/agent-runner/config.json | tar -xf - -C "$STAGING"
+git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
+  skills/earn/lancers/scripts/telegram_report.py \
+  skills/_shared/marketplace-core/scripts/telegram_outbox.py | tar -xf - -C "$STAGING"
 mkdir -p "$STAGING/skills/agent-runner"
 for source in agent_runner.py token_budget.py config.json; do
   mv "$STAGING/runtime/agent-runner/$source" "$STAGING/skills/agent-runner/$source"
@@ -163,6 +169,27 @@ PY
 mv -f "$PLIST_TEMP" "$PLIST_PATH"
 PLIST_TEMP=""
 "$PLUTIL_BIN" -lint "$PLIST_PATH" >/dev/null
+
+REPORT_TEMPLATE="$SCRIPT_DIR/../launchd/$REPORT_LABEL.plist"
+REPORT_PLIST_PATH="$LAUNCH_AGENT_DIR/$REPORT_LABEL.plist"
+REPORT_PLIST_TEMP="$(mktemp "$LAUNCH_AGENT_DIR/.${REPORT_LABEL}.plist.XXXXXX")"
+"$PYTHON_BIN" - "$REPORT_TEMPLATE" "$REPORT_PLIST_TEMP" "$PYTHON_BIN" \
+  "$RELEASE_PATH/skills/earn/lancers/scripts/telegram_report.py" "$RELEASE_PATH" \
+  "$STATE_ROOT/telegram.sqlite3" "$STATE_ROOT/marketplace-ledger.sqlite3" \
+  "$STATE_ROOT/application.json" "$STATE_ROOT/logs/application.out.log" \
+  "$STATE_ROOT/logs/storefront.stdout.log" "$STATE_ROOT/logs/telegram-report.stdout.log" \
+  "$STATE_ROOT/logs/telegram-report.stderr.log" "$RUNTIME_PATH" <<'PY'
+import os, plistlib, sys
+from pathlib import Path
+template, output, python_bin, reporter, release, database, ledger, state, application_log, storefront_log, stdout, stderr, runtime = sys.argv[1:]
+value = plistlib.loads(Path(template).read_bytes())
+value["ProgramArguments"] = [python_bin, reporter, "--json", "--database", database, "--ledger-database", ledger, "--state-path", state, "--application-log", application_log, "--storefront-log", storefront_log]
+value["WorkingDirectory"] = release; value["StandardOutPath"] = stdout; value["StandardErrorPath"] = stderr; value["EnvironmentVariables"]["PATH"] = runtime
+Path(output).write_bytes(plistlib.dumps(value, fmt=plistlib.FMT_XML, sort_keys=False)); os.chmod(output, 0o644)
+PY
+mv -f "$REPORT_PLIST_TEMP" "$REPORT_PLIST_PATH"
+REPORT_PLIST_TEMP=""
+"$PLUTIL_BIN" -lint "$REPORT_PLIST_PATH" >/dev/null
 
 INSTALLED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 "$PYTHON_BIN" - "$STATE_ROOT/deployment.json" "$RELEASE_PATH" "$RELEASE_SHA" \
