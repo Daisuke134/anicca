@@ -383,12 +383,22 @@ life-manager/
 
 ### 5.1 検索面と hard filter
 
-既存の公開検索に次の query を再利用する。
+公開検索は provider の新着順を再利用する。G1のdefault queryは **`SNS運用` 一つ**に固定する。
+無queryの全カテゴリ新着20件ではSNS案件が他カテゴリに押し出され、二回のofficial wakeがともに
+20件全件ineligibleになった。一方、read-only比較では`SNS運用`が13 normalized案件、うち予算上限
+¥98,000以上6件を返したため、最初の`ApplicationReceipt`へ進む最小修正として採用する。
+
+次のquery群はG3のcoverage候補であり、G1でmulti-query aggregator、dedupe、global rankingを作らない。
+最初のreceiptと実測funnel後、一tick一queryのdeterministic rotationが必要かを判断する。
 
 ```text
-SNS運用、SNS投稿、コンテンツ制作、X運用、LinkedIn、B2Bマーケティング、
+SNS投稿、コンテンツ制作、X運用、LinkedIn、B2Bマーケティング、
 AI活用、継続依頼、長期、月額
 ```
+
+coverage比較の一次結果は、無query 20件（¥98,000以上6件だがSNS中心ではない）、`SNS運用`
+13件/6件、`SNS投稿`17件/1件、`コンテンツ制作`4件/1件、`LinkedIn`2件/1件、`月額`8件/4件である。
+ここで分母はnormalized件数、後者は予算上限¥98,000以上の件数であり、qualified件数や収益ではない。
 
 projected net gross margin は proposal 時点の JPY 見積で次の式に固定する。
 
