@@ -9,6 +9,7 @@ if [ "${CAPAFY_HEALTH_PROBE_ONLY:-0}" = "1" ]; then
 fi
 CHECKER="${CAPAFY_BUSINESS_HEALTH_CMD:-$HERE/capafy_business_health.py}"
 FIXER="${CAPAFY_SELF_FIX:-$HERE/../self-fix.sh}"
+LAUNCHCTL="${CAPAFY_LAUNCHCTL:-launchctl}"
 LOG="${CAPAFY_HEALTH_LOG:-$HOME/.openclaw/logs/capafy-loop-healthcheck.log}"
 mkdir -p "$(dirname "$LOG")"
 if [[ "$CHECKER" = *.py ]]; then
@@ -29,13 +30,51 @@ try: print(json.loads(sys.argv[1]).get("reason") or "business outcome health fai
 except Exception: print("business outcome health returned invalid JSON")
 PY
 )"
+  REPAIR_LABEL="$(python3 - "$BUSINESS_HEALTH_JSON" <<'PY'
+import json,sys
+try: print(json.loads(sys.argv[1]).get("repair_label") or "")
+except Exception: print("")
+PY
+)"
+  REPAIR_ACTION="$(python3 - "$BUSINESS_HEALTH_JSON" <<'PY'
+import json,sys
+try: print(json.loads(sys.argv[1]).get("repair_action") or "")
+except Exception: print("")
+PY
+)"
+  REPAIR_OWNER="$(python3 - "$BUSINESS_HEALTH_JSON" <<'PY'
+import json,sys
+try: print(json.loads(sys.argv[1]).get("repair_owner") or "")
+except Exception: print("")
+PY
+)"
+  ROUTING_METADATA="$(python3 - "$BUSINESS_HEALTH_JSON" <<'PY'
+import json,sys
+try:
+    payload=json.loads(sys.argv[1])
+    print("1" if isinstance(payload,dict) and any(key in payload for key in ("repair_action","repair_label","repair_owner")) else "0")
+except Exception: print("0")
+PY
+)"
   echo "$(date '+%F %T') unhealthy $BUSINESS_HEALTH_JSON" >> "$LOG"
-  CAPAFY_INCIDENT_ID="$INCIDENT_ID" bash "$FIXER" capafy \
-    "Capafy business-outcome watchdog: $REASON. Evidence: $BUSINESS_HEALTH_JSON" >> "$LOG" 2>&1 || true
+  case "$REPAIR_LABEL" in
+    ai.anicca.capafy-loop-daily|ai.anicca.capafy-ig-marketing-daily|ai.anicca.capafy-goal-monitor|ai.anicca.capafy-goal-monitor-hourly|ai.anicca.capafy-goal-monitor-daily-close)
+      "$LAUNCHCTL" kickstart "gui/$(id -u)/$REPAIR_LABEL" >> "$LOG" 2>&1 || true
+      ;;
+    *)
+      if [ "$REPAIR_ACTION" = "self_fix" ] && [ "$REPAIR_OWNER" = "integrity" ]; then
+        CAPAFY_INCIDENT_ID="" bash "$FIXER" capafy \
+          "Capafy business-outcome watchdog: integrity health check failed." >> "$LOG" 2>&1 || true
+      elif [ "$ROUTING_METADATA" = "0" ]; then
+      CAPAFY_INCIDENT_ID="$INCIDENT_ID" bash "$FIXER" capafy \
+        "Capafy business-outcome watchdog: $REASON. Evidence: $BUSINESS_HEALTH_JSON" >> "$LOG" 2>&1 || true
+      fi
+      ;;
+  esac
   exit 1
 fi
 if [ "${CAPAFY_HEALTH_SKIP_SCHEDULER_CHECK:-0}" != "1" ]; then
-  if ! launchctl print "gui/$(id -u)/ai.anicca.capafy-loop-daily" >/dev/null 2>&1; then
+  if ! "$LAUNCHCTL" print "gui/$(id -u)/ai.anicca.capafy-loop-daily" >/dev/null 2>&1; then
     echo "$(date '+%F %T') unhealthy scheduler_not_loaded" >> "$LOG"
     CAPAFY_INCIDENT_ID="" bash "$FIXER" capafy \
       "Capafy business-outcome watchdog: daily LaunchAgent is not loaded. Restore ai.anicca.capafy-loop-daily and verify a terminal outcome." >> "$LOG" 2>&1 || true
