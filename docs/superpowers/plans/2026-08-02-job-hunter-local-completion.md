@@ -2355,6 +2355,40 @@ performs the real E2E, and records the milestone.
   existing `workday-accounts.json` atomically, and verify native sign-in before
   returning to the application wizard. Do not retry the stale password or click job
   Submit.
+
+  Password reset is not needed and was not sent. Two owner-fenced reset attempts
+  stopped before external send because the expected Forgot or native Sign In control
+  was absent on the direct route; each created and closed only its own page. A
+  structural follow-up then proved the Workday session is authenticated: the route
+  exposes Candidate Home and the application account menu, with zero email/password
+  login controls. No reset email, token, or password change occurred.
+
+  The authenticated application route initially exposes an exact `Save and Continue`
+  control with no fillable fields. A bounded live diagnostic waited for the Workday
+  shell, clicked that non-final control once, and reached a real application step with
+  `50` controls. The required fields are application source, Western-script family and
+  given name, country phone code, and phone number. Optional Kanji, Furigana, address,
+  and preferred-name fields are not guessed or touched. The legacy evaluator still
+  returned `application_surface_not_found` because it required email, resume upload,
+  and final Submit on one page and did not model Workday's multi-step wizard.
+
+  **Workday application-step slice complete in pushed source:** commit `3ef19d60e`
+  recognizes a Workday step only when an exact `Save and Continue` control coexists
+  with at least one required input and no password field. It maps only grounded
+  application source, Western-script names, Japan phone code, and verified phone;
+  Error helper buttons and optional Kanji/Furigana fields are excluded. The generated
+  plan has five actions, zero blockers, and no Submit action. A real owner-fenced fill
+  on the authenticated NVIDIA draft returns `status=claim_ready`,
+  `verified_action_count=5`, `blockers=[]`, and `submit_clicked=false`. It closes one
+  diagnostic page, restores all seven pre-existing page IDs, and leaves production
+  Ledger byte-identical. The complete suite passes `585/585`.
+
+  **Immediate next slice:** build and activate the exact multi-step release and run one
+  real daily wake. Require deterministic pre-submit to produce the authenticated
+  Workday fill receipt with five verified actions and no Submit. Then advance only
+  through exact `Save and Continue` steps, filling verified facts/materials and
+  stopping before final Submit until the existing intent and confirmation gates are
+  present.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
