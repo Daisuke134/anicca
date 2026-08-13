@@ -24,15 +24,29 @@ runtime state、receipt、ledger は外部に残す。この仕様は runtime st
 相談・交渉 → client offer → client approval → active monthly contract
 ```
 
-各 active 契約の当月相当額は、次の式で計算する。
+現在の MRR は一つの対象期間 `mrr_period`（契約の service period、形式 `YYYY-MM`）について
+だけ計算する。receipt の取得日、銀行入金日、集計実行日ではなく、契約が提供する service
+period に帰属させ、過去月の累積を現在の MRR に足さない。対象集合は、その `mrr_period` に
+属する active recurring contract の `PaymentReceipt` だけである。
+
+各 receipt の最低限の一意帰属キーは次である。
 
 ```text
-net_mrr_usd = recorded_fx(
-  gross_monthly_receipts_jpy
-  - platform_fee_jpy
-  - ai_cost_jpy
-  - subcontractor_cost_jpy
-  - refunds_jpy
+payment_receipt_key = (contract_external_id, mrr_period, provider_receipt_id)
+```
+
+同じ `provider_receipt_id`、同じ contract、同じ `mrr_period` を二度 ledger に計上しない。
+receipt は一つの `payout_batch_id` に一度だけ属し、一つの bank transaction に重複帰属させない。
+
+対象 `mrr_period` の全 receipt を合算した net MRR は、次の式で計算する。
+
+```text
+net_mrr_usd(mrr_period) = recorded_fx(mrr_period,
+  sum(gross_monthly_receipts_jpy for active recurring receipts in mrr_period)
+  - sum(platform_fee_jpy for active recurring receipts in mrr_period)
+  - sum(ai_cost_jpy for active recurring receipts in mrr_period)
+  - sum(subcontractor_cost_jpy for active recurring receipts in mrr_period)
+  - sum(refunds_jpy for active recurring receipts in mrr_period)
 )
 ```
 
@@ -40,27 +54,33 @@ net_mrr_usd = recorded_fx(
 - `platform_fee_jpy` は、Lancers の provider 明細にある手数料の実額である。
 - `bank_settlement_jpy` は同じ provider payout batch に帰属する実際の銀行入金額であり、net の式に追加控除として入れない。
 - `refunds_jpy` は同じ契約に帰属する provider-confirmed refund の実額である。AI 原価と外注原価もそれぞれ別項目として契約または支払に紐づける。
-- `provider_adjustments_jpy` は provider settlement 明細に記載された調整額だけであり、net の原価や fee に自動分類しない。
+- `signed_provider_adjustment_jpy` は provider settlement 明細に記載された符号付き調整額だけであり、net の原価や fee に自動分類しない。
 - provider の payout 対象額は別式で照合する。
 
 ```text
-provider_payout_target_jpy =
-  gross_monthly_receipts_jpy
-  - platform_fee_jpy
-  - refunds_jpy
-  + provider_adjustments_jpy
+provider_payout_target_jpy(payout_batch_id) =
+  sum(gross_monthly_receipts_jpy for receipts in payout_batch_id)
+  - sum(platform_fee_jpy for receipts in payout_batch_id)
+  - sum(refunds_jpy for receipts in payout_batch_id)
+  + signed_provider_adjustment_jpy(payout_batch_id)
 
-bank_reconciliation_delta_jpy =
-  bank_settlement_jpy - provider_payout_target_jpy
+bank_reconciliation_delta_jpy(payout_batch_id) =
+  bank_settlement_jpy(unique bank_transaction_id for payout_batch_id)
+  - provider_payout_target_jpy(payout_batch_id)
 ```
 
 `provider_payout_target_jpy` は provider の settlement 明細から再計算し、
-`bank_reconciliation_delta_jpy` は `0` または provider adjustment の根拠付きでなければならない。
-手数料は net の式と payout target の各一回だけに現れ、bank settlement を再度 fee として控除しない。
+各 `payout_batch_id` の対象 receipt、gross、fee、refund、符号付き adjustment は一度だけ合計する。
+一つの batch に対応する `bank_transaction_id` は一件だけ、一つの bank transaction は一つの batch
+だけにする。同じ receipt、bank transaction、batch の複数帰属を禁止する。
+`bank_reconciliation_delta_jpy` は必ず `0` のときだけ `matched` とし、non-zero または対象 receipt、
+bank transaction、provider 明細の欠落は `unknown` / `unmatched` とする。根拠付き adjustment が
+あっても non-zero delta を `matched` としてはならず、G6/G7 を閉じない。手数料は net の式と
+payout target の各一回だけに現れ、bank settlement を再度 fee として控除しない。
 provider payout target、fee 明細、銀行入金のいずれかが未取得なら reconciliation は `unknown` とし、
 MRR gate を開けない。
 
-- `PaymentReceipt` が `received` であることを必須とし、未受領の請求、提案額、見積額、予測、未受領の offer、単発売上は MRR に含めない。
+- `PaymentReceipt` が `received` であることを必須とし、対象 `mrr_period` 外の receipt、未受領の請求、提案額、見積額、予測、未受領の offer、単発売上は MRR に含めない。
 - 為替は集計時に都合よく選ばず、取得時刻とレートを記録した `recorded_fx` を使う。
 - 単発売上は別の `one_off_revenue` として表示し、gross MRR と net MRR に混ぜない。
 - `$20,000` の受入判定と `$25,000` の安全目標は、同じ式・同じ証憑で検証する。
@@ -350,7 +370,12 @@ active contract ごとに durable な brand context を保持し、月次で次�
 - active recurring MRR
 - net MRR
 
-銀行 settlement と Lancers receipt を照合し、同じ provider receipt ID を二度計上しない。
+各 receipt は `contract_external_id`、契約 service period の `mrr_period`、`provider_receipt_id`
+へ一意に帰属させ、対象 `mrr_period` 外の receipt や過去月累積を現在 MRR に入れない。各
+`payout_batch_id` の対象 receipt、gross、fee、refund、符号付き provider adjustment を一度だけ
+合計し、unique `bank_transaction_id` 一件と照合する。同じ receipt、batch、bank transaction を
+複数帰属させない。`bank_reconciliation_delta_jpy=0` だけを `matched` とし、non-zero または
+missing は `unknown` / `unmatched` のまま G6/G7 を閉じない。
 支払が pending、推定、画面表示だけで受領証拠がない場合は net MRR に入れない。
 
 ## 8. 真実性・安全不変条件
@@ -379,6 +404,7 @@ active contract ごとに durable な brand context を保持し、月次で次�
 
 ```text
 Lancers baseline
+- mrr_period: 2026-08 (service period の対象例。過去月累積なし)
 - application_verified: 11
 - WorkEvent: unknown (official empty readback 未確認) / DeliveryReceipt: unknown (official empty readback 未確認) / PaymentReceipt: unknown (official empty readback 未確認)
 - gross MRR: ¥0 (ledger verified zero) / net MRR: USD 0 (ledger verified zero)
@@ -405,8 +431,8 @@ Lancers baseline
 | G3 profitable acquisition | 最初の 3 active recurring contracts まで、hard filter、固定式による 70% margin、recurring/B2B ranking、proposal 固定構造、capacity 使用率別 quota（<70%=2/10、70–<90%=1/5、>=90%=Premium のみかつ 100% 以下）、重複防止が実際に働く | qualified/ineligible 判定、ICP 証拠/proxy、margin 算定と各 source、応募上限、duplicate 拒否の readback |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
-| G6 finance | `PaymentReceipt received`、provider payout target、fee 明細、銀行 settlement を照合し、`bank_reconciliation_delta_jpy=0` または根拠付き adjustment とする。net 式では fee・AI・subcontract・refund を実額で一度だけ控除し、FX を記録して net MRR を再計算できる | provider receipt、payout target、fee 明細、銀行照合、cost attribution、ledger、計算結果 |
-| G7 target | active recurring Lancers contracts の net MRR が USD 20,000 以上。USD 25,000 は内部安全目標として別表示する | 複数契約の active readback、全 PaymentReceipt、全 cost、recorded FX、`bank_reconciliation=matched` または根拠付き adjustment、再計算可能な ledger |
+| G6 finance | 対象 `mrr_period` の active recurring contract receipts だけを `contract_external_id + mrr_period + provider_receipt_id` へ一意帰属させ、provider payout target、fee 明細、銀行 settlement を `payout_batch_id` ごとに照合する。unique bank transaction 一件との `bank_reconciliation_delta_jpy=0` だけを `matched` とし、non-zero/missing は `unknown` / `unmatched` のままにする。net 式では fee・AI・subcontract・refund を実額で一度だけ控除し、FX を記録して net MRR を再計算できる | 対象 mrr_period、provider receipt、receipt key、payout batch、payout target、fee 明細、unique bank transaction、銀行照合、cost attribution、ledger、計算結果 |
+| G7 target | 対象 `mrr_period` の active recurring Lancers contract receipts だけから net MRR が USD 20,000 以上。過去月の累積、未受領、単発、重複 receipt は除外し、USD 25,000 は内部安全目標として別表示する | 対象 mrr_period、複数契約の active readback、全 PaymentReceipt、receipt key、全 payout batch、各 unique bank transaction、全 cost、recorded FX、全 batch の `bank_reconciliation=matched`、再計算可能な ledger |
 
 G1 が閉じるまで、product mutation、negotiation、fulfillment、新規 common kernel、新規 DB、
 multi-account、別 marketplace は開始しない。
@@ -431,6 +457,11 @@ Slice 1 は acquisition の一つの実証だけである。
 月額商品そのものの変更、buyer との negotiation、monthly offer の送信、契約の active 化、
 納品、顧客ブランド context、直接投稿、広告運用、PaymentReceipt、net MRR 記帳、self-improvement、
 new common kernel、new DB、multi-account、別 marketplace は Slice 1 に含めない。
+
+`mrr_period`、`contract_external_id`、`provider_receipt_id`、`payout_batch_id`、
+`bank_transaction_id` の一意帰属 schema は既存 schema にないため、後段 finance slice の必須
+schema evolution とする。Slice 1 ではこの schema を作成・移行・記帳せず、応募 receipt の
+公式 ID 検証だけを行う。
 
 Slice 1 の成功は「応募件数が増えた」ではなく、未確定 job が全体を止めない状態で、
 一件の新規応募が公式 ID と一件の receipt まで閉じることである。
