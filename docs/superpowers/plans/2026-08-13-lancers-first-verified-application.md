@@ -1,330 +1,551 @@
-# Lancers First Verified Application Implementation Plan
+# Lancers Canonical First Verified Application Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `5585496` の `submission_uncertain` を再送せず案件単位に隔離し、既存 Lancers loop が別の適格案件を発見・応募して、公式 proposal ID と `ApplicationReceipt` 1件まで閉じる。
+**Goal:** Life Manager の canonical main からだけ Lancers acquisition loop を配備し、既存の不確実な2応募を再送せず公式readbackしながら、別の利益性ある案件1件を一度だけ応募して公式 proposal ID と `ApplicationReceipt` 1件まで閉じる。
 
-**Architecture:** 既存 pending state を quarantine の正本として再利用する。`run_loop()` の pending reconciliation が `submission_uncertain` のときだけ discovery へ継続し、既存 `_filter_claimed_rows()` が claim 済み `5585496` を応募候補から除外する。同じ planner decision に公開ICP証拠と保守的原価見積を持たせ、submit直前に70% marginを整数演算で検証する。新DB、新サービス、新しい transaction abstraction は作らない。
+**Architecture:** entity の状態は直線だが、実行はlane単位である。このsliceは acquisition lane だけを実装し、既存JSON stateとmarketplace ledgerを再利用する。canonical sourceからcommit SHA固定releaseを組み立て、最初は全pending対象のreconcile-onlyで起動し、その検証後だけ通常discovery/submit modeへ切り替える。
 
-**Tech Stack:** Python 3 stdlib、既存 Lancers `application_loop.py` / `application_tick.py`、既存 JSON state、既存 marketplace SQLite ledger、launchd。
+**Tech Stack:** Python 3 stdlib、`jsonschema`、Playwright/CDP、既存 agent runner、既存 JSON state、既存 SQLite marketplace ledger、launchd、zsh。
 
 ## Global Constraints
 
-- 外部 submit は既存 `ai.anicca.lancers-revenue-application` launchd loop だけが行う。テストや実装 subagent は submit しない。
-- project `5585496` を blind resubmit しない。既存 pending entry と claim marker を削除・書換えしない。
-- verified は Lancers 公式 proposal ID readback 後だけ。`ApplicationReceipt` は新規 provider proposal ID に対して正確に1件だけ appendする。
-- G1 中は negotiation、fulfillment、finance、商品変更、新DB、common kernel、multi-account、他 marketplace を作らない。
-- 本 slice の production logic は2ファイル、目標差分80 LOC以下。回帰testはHOL正常系1本＋金額過大評価を防ぐ1本だけ。
-- 実装後の fresh adversarial review は1回だけ。Critical / Important だけを blocking とし、追加review roundは行わない。
-- 現在の deployed source は canonical repo 外にある。G1ではversioned patchと検証証拠をrepoに残し、runtime全体の移管はG1完了後の別sliceにする。
+- Ponytail `full`: 新DB、新common kernel、per-project process、resident straight-shot process、sales/fulfillment/finance実装を作らない。
+- primary はplan/spec/最終検証を担当し、production code/test/SQLはLunaが書く。
+- TDD: production変更より先に最小の失敗testを実行し、期待した理由でREDを観測する。
+- Review budget: このsliceのfresh adversarial reviewは既に `fba8a3d83` に対して1/1を使用済み。追加reviewerを起動しない。同じLunaが3件のFIX_FIRSTを直し、primaryが機械検証する。
+- application launchd `ai.anicca.lancers-revenue-application` はTask 5までdisabled/unloadedのままにする。
+- `5585496` と `5586112` はreadback-only quarantineであり、submitterを呼ばず、claim/pendingを消さない。ただし公式proposal IDとtermsが一致した場合は既存transaction contractどおりreceipt化してよい。
+- source、schema、tests、launchd template、installer、spec、planの正本はLife Manager mainだけに置く。
+- credential、CDP session、`~/.local/state/anicca/lancers/application.json`、terminal state、SQLite ledger、planner evidenceは移動・削除・repo追加しない。
+- launchdはworktree、feature branch、mutable untracked sourceを実行しない。exact main SHA release pathだけを実行する。
+- 外部submitはintent永続化後に一度だけ行い、公式readback前にverified/receiptを作らない。
+- reviewで指摘済みのsemantic ICP evidence、eligibility別schema、review前deploy事故をすべて閉じる。
+- 意味あるcommitごとにfetch、commit、pushする。既存の無関係なdirty変更をrevertしない。
 
-## File Map and Size
+## Plan Size
 
-| File | Responsibility | Change size |
-|---|---|---:|
-| `/Users/operator/.local/lib/anicca/lancers/skills/earn/lancers/scripts/application_loop.py` | deployed loopのHOL根因修正 | modify 8–15 LOC |
-| `/Users/operator/.local/lib/anicca/lancers/skills/gig-work/schemas/application_decisions.schema.json` | ICP証拠・予測原価のplanner contract | modify 35–50 LOC |
-| `apps/lancers-revenue/tests/test_application_loop_hol.py` | HOL隔離とmargin gateの最小回帰test | create 110–140 LOC |
-| `ops/lancers/patches/0001-first-qualified-application.patch` | deployed 2ファイル差分のversioned SSOT | create 80–120 LOC |
+| 要素 | files | 推定差分 |
+|---|---:|---:|
+| canonical Lancers/acquisition source snapshot | 10 | 既存runtime約4,600 LOCのbyte import。新規設計コードではない |
+| canonical agent-runner isolation/config | 3 | test約45 LOC、production約35 LOC、config約10 LOC |
+| reconcile-only all-pending | 3 | test約70 LOC、production約55 LOC |
+| exact-SHA deploy/launchd | 3 | test約90 LOC、script/template約120 LOC |
+| existing patch artifact | 1 | canonical source導入後に削除 |
 
-Production 2 files、repo artifact 2 files。新規依存なし。runtime全体のcopyはこのsliceでは行わない。
+3 files/100 LOCのsoft targetを超える主因は、repo外に散った既存production dependencyを正本へbyte importする一回限りの移行である。手書きbehavior changeは各taskを3 files以下、約100 LOC以下に保つ。
 
----
+## Canonical File Map
 
-### Task 1: Reproduce the HOL block with one regression test
+次の相対配置は既存の `Path(__file__).parents[...]` contractを維持するため変更しない。
 
-**Files:**
-- Create: `apps/lancers-revenue/tests/test_application_loop_hol.py`
-- Read: `/Users/operator/.local/lib/anicca/lancers/skills/earn/lancers/scripts/application_loop.py:195-323`
-
-**Interfaces:**
-- Consumes: `application_loop.run_loop(...)`、`ApplicationLoopResult`、inject済み `discoverer` / `planner` / `submitter`。
-- Produces: `test_uncertain_pending_is_quarantined_without_blocking_new_verified_application()`。
-
-- [ ] **Step 1: Snapshot the real immutable baseline**
-
-Run:
-
-```bash
-sha256sum /Users/operator/.local/lib/anicca/lancers/skills/earn/lancers/scripts/application_loop.py
-jq '{fingerprints: (.fingerprints | length), pending: [.pending[] | {project_id, proposal_id}]}' /Users/operator/.local/state/anicca/lancers/application.json
-sqlite3 'file:/Users/operator/.local/state/anicca/lancers/marketplace-ledger.sqlite3?immutable=1' "SELECT event_type, COUNT(*) FROM ledger_events GROUP BY event_type ORDER BY event_type;"
-```
-
-Expected: pending は `project_id=5585496`, `proposal_id=null` の1件。ledgerには `application_verified=11`、5585496のverified receiptなし。
-
-- [ ] **Step 2: Add the failing stdlib regression test**
-
-The test must:
-
-```python
-def test_uncertain_pending_is_quarantined_without_blocking_new_verified_application():
-    # Import the deployed module by absolute path.
-    # Stub read_pending_descriptor() to return project 5585496 terms.
-    # Stub _reconcile_pending() to return submission_uncertain for 5585496.
-    # Stub state_has_claim() as True only for 5585496.
-    # Discover exactly [5585496, 6000001].
-    # Planner receives only 6000001 and returns one eligible tailored decision.
-    # Submitter records calls and returns application_verified with proposal ID 9000001.
-    # Assert discoverer called once.
-    # Assert submitter project IDs == ["6000001"] and never include "5585496".
-    # Assert result verified_count == 1 and verified_project_ids == ["6000001"].
-    # Assert result verified_provider_proposal_ids == ["9000001"].
-    # Assert result unresolved_project_id == "5585496".
-```
-
-Use `unittest.mock.patch.object` and `tempfile.TemporaryDirectory`; do not read or mutate the live state from the test. Supply a complete normalized public opportunity row for each project and a timezone-aware fixed clock. At this stage the planner decision uses the current exact fields: `request_id`, `eligibility`, `reason_codes`, `proposal_text`, `price_jpy`, `deliver_date`。Task 3で同じfixtureを新しいqualification contractへ更新する。
-
-- [ ] **Step 3: Run RED and prove the cause**
-
-Run:
-
-```bash
-/opt/homebrew/bin/python3 -m unittest -v apps/lancers-revenue/tests/test_application_loop_hol.py
-```
-
-Expected: FAIL because `discoverer` is never called or the verified new project is absent; current `run_loop()` returns immediately after `_reconcile_pending()`.
-
-- [ ] **Step 4: Commit only the RED test**
-
-```bash
-git add apps/lancers-revenue/tests/test_application_loop_hol.py
-git commit -m "test(lancers): reproduce pending application HOL block"
-git push origin docs/lancers-20k-mrr-design
-```
+- Create `skills/earn/lancers/scripts/application_loop.py`: acquisition orchestration、planner validation、reconcile-only CLI。
+- Create `skills/earn/lancers/scripts/application_tick.py`: provider submit/readback adapter。
+- Create `skills/earn/lancers/scripts/status.py`: read-only public discovery。
+- Create `skills/earn/lancers/scripts/lancers_adapter.py`: provider card normalization。
+- Create `skills/_shared/marketplace-core/scripts/application_transaction.py`: claim/pending/receipt transaction。
+- Create `skills/_shared/marketplace-core/scripts/contracts.py`: marketplace contract parsing。
+- Create `skills/_shared/marketplace-core/scripts/ledger.py`: receipt-backed SQLite append。
+- Create `skills/_shared/marketplace-core/schemas/event.schema.json`: `ApplicationReceipt` schema。
+- Create `skills/_shared/marketplace-core/schemas/opportunity.schema.json`: normalized opportunity schema。
+- Create `skills/gig-work/schemas/application_decisions.schema.json`: planner decision schema。
+- Modify `runtime/agent-runner/agent_runner.py`: application-intent planner child isolation only。
+- Modify `runtime/agent-runner/config.json`: `application-intent-planner` task class only。
+- Create `runtime/agent-runner/tests/test_application_intent_isolation.py`: isolation regression。
+- Modify `apps/lancers-revenue/tests/test_application_loop_hol.py`: canonical import、review regressions、all-pending reconcile regression。
+- Create `apps/lancers-revenue/scripts/install-local.sh`: exact-SHA release install and plist rendering。
+- Create `apps/lancers-revenue/launchd/ai.anicca.lancers-revenue-application.plist`: placeholder template。
+- Create `apps/lancers-revenue/tests/test_install_local.py`: isolated installer test。
+- Delete `ops/lancers/patches/0001-first-qualified-application.patch`: canonical sourceがpatchを置換する。
 
 ---
 
-### Task 2: Continue discovery after an uncertain pending readback
+### Task 1: Import the minimal canonical acquisition runtime and close the existing review findings
 
 **Files:**
-- Modify: `/Users/operator/.local/lib/anicca/lancers/skills/earn/lancers/scripts/application_loop.py:290-335`
-- Test: `apps/lancers-revenue/tests/test_application_loop_hol.py`
+- Modify: `apps/lancers-revenue/tests/test_application_loop_hol.py`
+- Create: the 10 canonical source/schema files listed above
+- Delete: `ops/lancers/patches/0001-first-qualified-application.patch`
 
 **Interfaces:**
-- Consumes: existing `_reconcile_pending()`, `_filter_claimed_rows()`, `_batch_summary()` and `ApplicationLoopResult.unresolved_project_id`.
-- Produces: `run_loop()` behavior where pre-existing `submission_uncertain` is reported but does not block discovery; all other pending outcomes retain their current return behavior.
+- Consumes: deployed source under `/Users/operator/.local/lib/anicca/lancers/skills/`; immutable state path remains external。
+- Produces: `application_loop.run_loop(...) -> dict[str, object]` and the same relative dependency layout, now tracked in Life Manager。
 
-- [ ] **Step 1: Implement the minimum branch at the root cause**
+- [ ] **Step 1: Preserve the current review-fix tests and point them at canonical source**
 
-At the start of `run_loop()`, keep the pending result separately. Preserve current immediate return for verified, terminal, state-invalid, and other non-`submission_uncertain` outcomes. Only `submission_uncertain` falls through:
-
-```python
-    quarantined_project_id = None
-    if pending is not None:
-        pending_result = _reconcile_pending(pending, Path(state_path))
-        if pending_result.error != "submission_uncertain":
-            if output_stream is not None:
-                _emit(pending_result, output_stream)
-            return pending_result.to_dict()
-        quarantined_project_id = pending_result.unresolved_project_id or pending_result.project_id
-```
-
-Immediately before final emit/return, merge the old quarantine only when the new batch did not create its own unresolved project:
+Change only the test import constant:
 
 ```python
-    if quarantined_project_id is not None and result.unresolved_project_id is None:
-        result = replace(result, unresolved_project_id=quarantined_project_id)
+REPO_ROOT = Path(__file__).resolve().parents[3]
+CANONICAL_LOOP_PATH = REPO_ROOT / "skills/earn/lancers/scripts/application_loop.py"
 ```
 
-Do not change `_reconcile_pending()`, `_filter_claimed_rows()`, transaction state, ledger code, or pending JSON.
-
-- [ ] **Step 2: Run GREEN**
-
-```bash
-/opt/homebrew/bin/python3 -m unittest -v apps/lancers-revenue/tests/test_application_loop_hol.py
-```
-
-Expected at this point: HOL test passes; margin regression still fails until Task 3.
-
-- [ ] **Step 3: Run a read-only real-state check with external actions disabled**
-
-Invoke `run_loop()` from a short Python process with the real state path but injected discoverer/planner/submitter. The injected submitter must only record its call and return a verified fake result; it must never load a browser or provider code.
-
-Expected assertions:
+Keep these load-bearing tests:
 
 ```text
-5585496 still present in pending state
-discoverer called exactly once
-submitter never called for 5585496
-unresolved_project_id remains 5585496
-live ledger row count unchanged
+test_uncertain_pending_is_quarantined_without_blocking_new_verified_application
+test_rejects_projected_margin_below_seventy_percent_before_submit
+test_rejects_semantically_empty_public_evidence_before_submit
+test_claimed_pending_projects_are_excluded_before_planning_even_over_batch_limit
+test_schema_and_runtime_share_eligibility_contract_matrix
 ```
 
-- [ ] **Step 4: Preserve the deployed baseline for the combined versioned patch**
+- [ ] **Step 2: Run the focused test and verify RED**
 
-Keep the immutable pre-change copies inside a `mktemp -d` directory until Task 3 creates one combined patch. Do not write backup files beside the deployed runtime or under state directories.
-
-- [ ] **Step 5: Commit and push the isolated HOL test state**
+Run:
 
 ```bash
+/opt/homebrew/bin/python3 -m unittest apps/lancers-revenue/tests/test_application_loop_hol.py -v
+```
+
+Expected: ERROR/FAIL because `skills/earn/lancers/scripts/application_loop.py` is not present in canonical repo. The failure must not touch live state because every behavioral test passes a temporary state path and replaces provider calls.
+
+- [ ] **Step 3: Commit and push the RED test state**
+
+```bash
+git fetch origin
 git add apps/lancers-revenue/tests/test_application_loop_hol.py
-git commit -m "fix(lancers): isolate uncertain application from discovery"
-git push origin docs/lancers-20k-mrr-design
+git commit -m "test(lancers): bind acquisition regressions to canonical source"
+git push
+```
+
+- [ ] **Step 4: Import the minimal dependency snapshot with the reviewed fixes**
+
+Use `apply_patch` to add the exact currently deployed bytes for the 10 canonical files. Before adding them, record these source hashes in the task report:
+
+```bash
+shasum -a 256 \
+  /Users/operator/.local/lib/anicca/lancers/skills/earn/lancers/scripts/{application_loop.py,application_tick.py,status.py,lancers_adapter.py} \
+  /Users/operator/.local/lib/anicca/lancers/skills/_shared/marketplace-core/scripts/{application_transaction.py,contracts.py,ledger.py} \
+  /Users/operator/.local/lib/anicca/lancers/skills/_shared/marketplace-core/schemas/{event.schema.json,opportunity.schema.json} \
+  /Users/operator/.local/lib/anicca/lancers/skills/gig-work/schemas/application_decisions.schema.json
+```
+
+The imported `application_loop.py` must retain all of the following deterministic guards:
+
+```python
+SMALL_B2B_SIGNAL_RE = re.compile(r"(?:B2B|BtoB|法人|企業向け|事業者向け)", re.IGNORECASE)
+SMALL_BUSINESS_SIGNAL_RE = re.compile(r"(?:小規模|中小|少人数|スタートアップ|ベンチャー|個人事業|代表)")
+SNS_STAFF_SIGNAL_RE = re.compile(r"(?:専任(?:担当者|スタッフ)?(?:が)?(?:不在|いない|なし)|担当者(?:が)?(?:不在|いない|なし)|一人|1名|代表(?:者)?(?:または|と)?少人数.*兼務|少人数.*兼務|初めて(?:の)?SNS担当(?:募集)?|初のSNS担当(?:募集)?)")
+```
+
+It must validate exact public excerpts, price `>= 98000`, fee allowance `>= ceil(price * 20%)`, all costs as nonnegative integers, and:
+
+```python
+10 * (price - sum(costs)) >= 7 * price
+```
+
+The decision schema must enforce:
+
+```text
+eligible   => proposal string, price integer >= 98000, date string, qualification object
+ineligible => proposal=null, price=null, date=null, qualification=null
+```
+
+Remove the patch artifact only after canonical files contain the same reviewed behavior.
+
+- [ ] **Step 5: Run focused tests and source checks**
+
+Run:
+
+```bash
+/opt/homebrew/bin/python3 -m unittest apps/lancers-revenue/tests/test_application_loop_hol.py -v
+/opt/homebrew/bin/python3 -m py_compile \
+  skills/earn/lancers/scripts/application_loop.py \
+  skills/earn/lancers/scripts/application_tick.py \
+  skills/earn/lancers/scripts/status.py \
+  skills/earn/lancers/scripts/lancers_adapter.py \
+  skills/_shared/marketplace-core/scripts/application_transaction.py \
+  skills/_shared/marketplace-core/scripts/contracts.py \
+  skills/_shared/marketplace-core/scripts/ledger.py
+git diff --check
+```
+
+Expected: 5 tests PASS, compile PASS, diff check PASS. Verify test execution does not change live state/ledger hashes.
+
+- [ ] **Step 6: Commit and push canonical runtime**
+
+```bash
+git fetch origin
+git add skills/earn/lancers skills/_shared/marketplace-core skills/gig-work/schemas/application_decisions.schema.json apps/lancers-revenue/tests/test_application_loop_hol.py ops/lancers/patches/0001-first-qualified-application.patch
+git commit -m "feat(lancers): canonicalize safe acquisition runtime"
+git push
 ```
 
 ---
 
-### Task 3: Enforce public ICP evidence and 70% projected margin
+### Task 2: Isolate the application-intent planner while reusing the canonical agent runner
 
 **Files:**
-- Modify: `/Users/operator/.local/lib/anicca/lancers/skills/earn/lancers/scripts/application_loop.py:20-170`
-- Modify: `/Users/operator/.local/lib/anicca/lancers/skills/gig-work/schemas/application_decisions.schema.json`
-- Create: `ops/lancers/patches/0001-first-qualified-application.patch`
-- Test: `apps/lancers-revenue/tests/test_application_loop_hol.py`
+- Create: `runtime/agent-runner/tests/test_application_intent_isolation.py`
+- Modify: `runtime/agent-runner/agent_runner.py`
+- Modify: `runtime/agent-runner/config.json`
 
 **Interfaces:**
-- Consumes: normalized public `title` / `description` / `category`, planner `price_jpy`, and qualification cost fields.
-- Produces: eligible decision accepted only with exact public evidence and `projected_net_gross_margin >= 70%`; `test_rejects_eligible_decision_below_seventy_percent_margin()`。
+- Consumes: `provider_process_env(provider, provider_config, environ=None, *, task_class=None)`.
+- Produces: application-intent child environment with browser/CDP/WebSocket/loopback routes removed; other task classes retain current behavior。
 
-- [ ] **Step 1: Extend the existing decision object, not a new service**
+- [ ] **Step 1: Write the isolation regression**
 
-Add required `qualification` to each decision. It is `null` for ineligible and this exact object for eligible:
+Add a unittest that passes this environment:
 
-```json
-{
-  "small_b2b_evidence": "4–240 character exact excerpt from title/description/category",
-  "sns_staff_evidence": "4–240 character exact excerpt proving 0–1 staff or approved proxy",
-  "expected_platform_fee_jpy": 19600,
-  "expected_ai_cost_jpy": 2000,
-  "expected_subcontractor_cost_jpy": 0,
-  "expected_revision_refund_allowance_jpy": 7000,
-  "cost_source_version": "lancers-g1-conservative-v1"
+```python
+source = {
+    "PATH": "/usr/bin:/bin",
+    "CODEX_HOME": "/tmp/codex",
+    "LANCERS_CDP_URL": "http://127.0.0.1:9227",
+    "PLAYWRIGHT_WS_ENDPOINT": "ws://localhost:9227/devtools/browser/secret",
+    "MARKETPLACE_TOKEN": "fixture-token",
 }
 ```
 
-The conservative v1 rule requires `expected_platform_fee_jpy >= ceil(price_jpy * 20 / 100)`. This is a safety allowance, not a claim about the current provider fee. All other costs are non-negative integers and must reflect this proposal's bounded scope. Founding proposal price is at least ¥98,000 and remains within the observed budget.
+Assert for `task_class="application-intent-planner"` that `PATH`, `CODEX_HOME`, and `MARKETPLACE_TOKEN` remain, while both browser route variables are absent. Assert a normal task class preserves the original environment. Also load `config.json` and assert `application-intent-planner` has only Luna then Terra candidates, 24,576 reserved tokens, and 180-second timeout.
 
-- [ ] **Step 2: Validate evidence and margin before submit**
+- [ ] **Step 2: Run the test and verify RED**
 
-Extend `DECISION_FIELDS` and `_validate()` only. For eligible decisions require both evidence strings to occur verbatim in the concatenated public title/description/category. Reject hallucinated or missing excerpts. Use integer arithmetic:
+```bash
+/opt/homebrew/bin/python3 -m unittest runtime/agent-runner/tests/test_application_intent_isolation.py -v
+```
+
+Expected: FAIL because the current runner neither accepts `task_class` nor contains the task class config.
+
+- [ ] **Step 3: Add the minimal isolation and route**
+
+Add one helper and one optional keyword:
 
 ```python
-costs = platform_fee + ai_cost + subcontractor_cost + revision_refund_allowance
-if 10 * (price_jpy - costs) < 7 * price_jpy:
-    raise ValueError
+def _strip_browser_routes_for_planner(child_env: dict[str, str]) -> dict[str, str]:
+    forbidden_names = ("BROWSER", "CDP", "WEBSOCKET", "PLAYWRIGHT", "PUPPETEER")
+    loopback_values = ("localhost", "127.0.0.1", "[::1]", "//::1")
+    return {
+        name: value
+        for name, value in child_env.items()
+        if not any(token in name.upper() for token in forbidden_names)
+        and not any(token in value.lower() for token in loopback_values)
+    }
 ```
 
-Require `price_jpy >= 98_000`, the conservative fee floor, exact `cost_source_version`, and all four costs. Do not add floating point, configuration service, database columns, or ML ranking.
+Pass the parsed task class to `provider_process_env`; apply this helper only for `application-intent-planner`. Add exactly this config entry, without modifying other task classes:
 
-- [ ] **Step 3: Tighten the planner instruction**
+```json
+"application-intent-planner": {
+  "route": "luna-medium-isolated-application-intent",
+  "token_reservation": 24576,
+  "timeout_seconds": 180,
+  "candidates": [
+    {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
+    {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
+  ]
+}
+```
 
-Update `PLANNER_RULES` so eligible requires Japanese small B2B evidence plus one of these public SNS staffing facts: dedicated staff absent, representative/small team handles SNS concurrently, or first SNS hire. Require the proposal to state buyer problem, first-30-day deliverables, channel/count/revision cap, price/due date, recurring scope, and exactly one clarification question. Pure unknown is ineligible.
-
-- [ ] **Step 4: Run the two-test GREEN gate**
-
-Update the Task 1 eligible fixture with the new `qualification` object. Add the second test with a ¥98,000 proposal whose total expected costs are ¥29,401; assert `planner_failed` and zero submit calls.
+- [ ] **Step 4: Verify GREEN and no runner regression**
 
 ```bash
-/opt/homebrew/bin/python3 -m unittest -v apps/lancers-revenue/tests/test_application_loop_hol.py
+/opt/homebrew/bin/python3 -m unittest runtime/agent-runner/tests/test_application_intent_isolation.py -v
+/opt/homebrew/bin/python3 -m unittest discover -s runtime/agent-runner/tests -p 'test_*.py' -v
+git diff --check
 ```
 
-Expected: 2 PASS. One proves HOL isolation/no resend; one proves a 69.99%-or-lower projected margin never reaches submit.
+Expected: all runner tests PASS.
 
-- [ ] **Step 5: Create and verify the combined versioned patch**
-
-Create `ops/lancers/patches/0001-first-qualified-application.patch` from the preserved baselines. It contains only unified diffs for:
-
-```text
-skills/earn/lancers/scripts/application_loop.py
-skills/gig-work/schemas/application_decisions.schema.json
-```
-
-Verify `patch --dry-run -p1` against a temporary copy of the unmodified deployed tree. Then run `git diff --check`; scan the patch for home paths, state payloads, cookies, email, tokens, and proposal content.
-
-- [ ] **Step 6: Commit and push qualification GREEN**
+- [ ] **Step 5: Commit and push**
 
 ```bash
-git add apps/lancers-revenue/tests/test_application_loop_hol.py ops/lancers/patches/0001-first-qualified-application.patch
-git commit -m "feat(lancers): require profitable B2B application evidence"
-git push origin docs/lancers-20k-mrr-design
+git fetch origin
+git add runtime/agent-runner/agent_runner.py runtime/agent-runner/config.json runtime/agent-runner/tests/test_application_intent_isolation.py
+git commit -m "fix(agent-runner): isolate application intent planning"
+git push
 ```
 
 ---
 
-### Task 4: One fresh adversarial verification
+### Task 3: Reconcile every existing pending application without discovery or submit
 
 **Files:**
-- Read only: deployed source, test, versioned patch, live state, immutable ledger, launchd plist.
+- Modify: `apps/lancers-revenue/tests/test_application_loop_hol.py`
+- Modify: `skills/_shared/marketplace-core/scripts/application_transaction.py`
+- Modify: `skills/earn/lancers/scripts/application_loop.py`
 
 **Interfaces:**
-- Consumes: Task 3 commit and primary evidence.
-- Produces: one verdict `SHIP`, `FIX_FIRST`, or `RETHINK`; no second review round.
+- Produces: `read_pending_descriptors(state_path) -> list[dict[str, object]]` sorted by durable marker。
+- Produces: `run_reconcile_only(state_path, output_stream=None) -> dict[str, object]` with `reconciled_project_ids`, `verified_project_ids`, and `unresolved_project_ids`。
+- Produces CLI: `application_loop.py --json --reconcile-only`。
 
-- [ ] **Step 1: Dispatch one fresh GPT/Sol adversarial verifier**
+- [ ] **Step 1: Add one all-pending reconcile regression**
 
-The verifier must independently try to disprove:
+Create a temporary state containing claims/pending for `5585496` and `5586112`. Patch `application_tick.run_live_tick` to record calls and return `submission_uncertain` for both. Patch discovery and any submit path to raise immediately if called.
 
-```text
-1. 5585496 cannot be resubmitted by the new path.
-2. submission_uncertain no longer prevents discovery.
-3. a new unresolved submit is not overwritten by the old unresolved ID.
-4. verified still requires official proposal ID readback in production.
-5. ApplicationReceipt uniqueness remains owned by the existing transaction/ledger path.
-6. public ICP evidence cannot be fabricated outside the observed row.
-7. a proposal below 70% projected margin cannot reach submit.
-8. the patch contains no state, secret, or unrelated change.
+Assert:
+
+```python
+self.assertEqual(called_project_ids, ["5585496", "5586112"])
+self.assertEqual(result["reconciled_project_ids"], ["5585496", "5586112"])
+self.assertEqual(result["verified_project_ids"], [])
+self.assertEqual(result["unresolved_project_ids"], ["5585496", "5586112"])
+self.assertFalse(result["submitted"])
+self.assertEqual(json.loads(state_path.read_text()), original_state)
 ```
 
-Critical / Important findings block deployment. Minor findings are recorded. Because review is capped at one, a blocking verdict returns the implementation to systematic debugging; do not dispatch another reviewer.
+Also call `main(["--json", "--reconcile-only", "--state-path", str(state_path)])` and assert no discovery/submit occurs.
+
+- [ ] **Step 2: Run the focused test and verify RED**
+
+```bash
+/opt/homebrew/bin/python3 -m unittest apps/lancers-revenue/tests/test_application_loop_hol.py -v
+```
+
+Expected: FAIL because `read_pending_descriptors`, `run_reconcile_only`, and `--reconcile-only` do not exist.
+
+- [ ] **Step 3: Implement the smallest all-pending readback path**
+
+In shared transaction code, make the existing singular helper delegate to the plural helper:
+
+```python
+def read_pending_descriptors(state_path: Path) -> list[Dict[str, object]]:
+    _, pending = _read_state(Path(state_path))
+    return [
+        {key: pending[marker][key] for key in ("project_id", "amount_minor", "delivery_due_on")}
+        for marker in sorted(pending)
+        if _is_project_id(pending[marker].get("project_id"))
+    ]
+
+def read_pending_descriptor(state_path: Path) -> Optional[Dict[str, object]]:
+    values = read_pending_descriptors(state_path)
+    return values[0] if values else None
+```
+
+In `application_loop.py`, reconcile each descriptor through existing `_reconcile_pending`, whose submitter override already fails closed. Return one deterministic summary. Do not call `status.run_discovery`, planner, or submitter from this function. Add only the `--reconcile-only` boolean CLI flag and route to this function.
+
+- [ ] **Step 4: Verify GREEN and unchanged live state**
+
+```bash
+before_state=$(shasum -a 256 /Users/operator/.local/state/anicca/lancers/application.json | awk '{print $1}')
+before_ledger=$(shasum -a 256 /Users/operator/.local/state/anicca/lancers/marketplace-ledger.sqlite3 | awk '{print $1}')
+/opt/homebrew/bin/python3 -m unittest apps/lancers-revenue/tests/test_application_loop_hol.py -v
+test "$before_state" = "$(shasum -a 256 /Users/operator/.local/state/anicca/lancers/application.json | awk '{print $1}')"
+test "$before_ledger" = "$(shasum -a 256 /Users/operator/.local/state/anicca/lancers/marketplace-ledger.sqlite3 | awk '{print $1}')"
+git diff --check
+```
+
+Expected: tests PASS and live hashes unchanged.
+
+- [ ] **Step 5: Commit and push**
+
+```bash
+git fetch origin
+git add apps/lancers-revenue/tests/test_application_loop_hol.py skills/_shared/marketplace-core/scripts/application_transaction.py skills/earn/lancers/scripts/application_loop.py
+git commit -m "feat(lancers): reconcile every pending application safely"
+git push
+```
 
 ---
 
-### Task 5: Trigger the real loop and prove one verified application
+### Task 4: Install an exact-main-SHA release and render the one launchd owner
 
 **Files:**
-- Modify only through the existing loop: `/Users/operator/.local/state/anicca/lancers/application.json`, planner evidence, marketplace ledger, provider state.
-- Read: launchd plist and application logs.
+- Create: `apps/lancers-revenue/tests/test_install_local.py`
+- Create: `apps/lancers-revenue/scripts/install-local.sh`
+- Create: `apps/lancers-revenue/launchd/ai.anicca.lancers-revenue-application.plist`
 
 **Interfaces:**
-- Consumes: adversarial `SHIP`, passing regression test, clean git branch, installed deployed patch.
-- Produces: one real new provider proposal ID, exactly one new `application_verified` ledger event, unchanged 5585496 pending quarantine.
+- Consumes: `LANCERS_RELEASE_SHA` equal to repo `HEAD`, `LANCERS_INSTALL_ROOT`, `LANCERS_LAUNCH_AGENT_DIR`, `LANCERS_STATE_ROOT`, `LANCERS_INSTALL_MODE=reconcile-only|normal`。
+- Produces: immutable `releases/<sha>/skills/...`, owner-only `deployment.json`, rendered plist whose ProgramArguments point to the exact release。
+- Does not enable/bootstrap/kickstart launchd. Task 5 owns those state changes。
 
-- [ ] **Step 1: Capture before-state evidence**
+- [ ] **Step 1: Write the isolated installer test**
 
-Record without printing secrets:
+In a temporary directory, execute the installer with:
 
 ```text
-application_verified count and external IDs
-5585496 pending entry hash
-application.json SHA-256
-latest application stdout line
+LANCERS_RELEASE_SHA=<git rev-parse HEAD>
+LANCERS_INSTALL_ROOT=<tmp>/install
+LANCERS_LAUNCH_AGENT_DIR=<tmp>/LaunchAgents
+LANCERS_STATE_ROOT=<tmp>/state
+LANCERS_INSTALL_MODE=reconcile-only
+LANCERS_SKIP_MAIN_ASSERT=1
 ```
 
-- [ ] **Step 2: Trigger the existing launchd loop**
+Assert:
 
-Declare the external submit, then run the real configured loop rather than a custom executor:
+```text
+release path is <install>/releases/<sha>/skills
+application_loop.py and all declared dependencies exist
+runtime/agent-runner is mapped to release skills/agent-runner
+rendered plist ProgramArguments contains exact release application_loop.py, --json, --reconcile-only
+manifest deployed_sha equals <sha> and lists SHA-256 for every installed file
+manifest mode is 0600
+no file under the supplied state root except deployment.json and logs is created
+installer source contains no launchctl call
+```
+
+Run a second isolated install with `LANCERS_INSTALL_MODE=normal`; assert `--reconcile-only` is absent and `--json` remains.
+
+- [ ] **Step 2: Run the installer test and verify RED**
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/ai.anicca.lancers-revenue-application
+/opt/homebrew/bin/python3 -m unittest apps/lancers-revenue/tests/test_install_local.py -v
 ```
 
-Watch the existing stdout/stderr and state for a bounded 30-minute window. Do not kickstart again while a tick is active. Do not delete or edit `5585496` pending state.
+Expected: FAIL because installer/template do not exist.
 
-- [ ] **Step 3: Verify the official external effect**
+- [ ] **Step 3: Implement the exact-SHA installer**
 
-Acceptance requires all of:
+The installer must:
 
 ```text
-new project_id != 5585496
-public evidence proves Japanese small B2B and SNS staff 0–1 or an approved proxy
-recorded cost source and integer calculation prove projected margin >= 70%
-new provider_proposal_id is non-null and read back from Lancers
-exactly one new application_verified ledger event for that provider ID
-no second event for the same provider ID
-5585496 pending entry hash unchanged
-no submit intent/effect for 5585496 during the tick
-result.unresolved_project_id == 5585496
+1. set -euo pipefail
+2. resolve repo root from its own location
+3. require LANCERS_RELEASE_SHA == git rev-parse HEAD unless test-only LANCERS_SKIP_MAIN_ASSERT=1
+4. require git status --porcelain empty and the SHA to exist on origin/main unless test override is set
+5. stage only the canonical files from Tasks 1-3 plus runtime/agent-runner/{agent_runner.py,token_budget.py,config.json}
+6. compile/import from staging before install
+7. atomically rename staging to releases/<sha>; refuse different bytes at an existing SHA
+8. render plist with exact release path and external state log paths
+9. include --reconcile-only only in reconcile-only mode
+10. lint rendered plist with plutil
+11. atomically write mode-0600 deployment.json containing deployed_sha, mode, installed_at, launchd label, and sorted file hash map
+12. never read/write application.json, terminal state, SQLite ledger, credentials, or browser session
+13. never call launchctl
 ```
 
-If no suitable project is observed, report `no_eligible_project` truthfully and let the normal 30-minute loop retry; do not weaken filters or fabricate success. If the new submit becomes uncertain, preserve both provider evidence and state, do not retry blindly, and return to systematic debugging rather than claiming G1.
+The plist keeps one owner and this schedule:
 
-- [ ] **Step 4: Close G1 only after evidence passes**
+```xml
+<key>Label</key><string>ai.anicca.lancers-revenue-application</string>
+<key>StartInterval</key><integer>1800</integer>
+<key>ProcessType</key><string>Background</string>
+<key>Umask</key><integer>63</integer>
+```
 
-Run the regression test again, `git diff --check`, `git status --short`, and confirm branch remote SHA. Update the design/task state with the verified provider ID and receipt evidence, commit, and push. Do not begin truthful reporting or profitable-acquisition automation until G1 is closed.
+Do not set `RunAtLoad`; Task 5 performs an explicit one-time `kickstart` after preflight.
 
-## Deferred after G1
+- [ ] **Step 4: Verify installer GREEN**
 
-- Move the complete deployed Lancers runtime and its dependencies into the canonical life-manager repository, then make launchd execute the canonical checkout. This is a separate migration slice because copying a partial dependency graph would create a false source of truth.
-- Add ranking, per-tick/day quotas, and 70%/90% capacity control to complete G3. G1 already enforces its required public ICP evidence and 70% margin floor.
-- Implement truthful storefront/application reporting (G2), negotiation/contract (G4), fulfillment (G5), and payment/net MRR (G6/G7) in that order.
+```bash
+/opt/homebrew/bin/python3 -m unittest apps/lancers-revenue/tests/test_install_local.py -v
+/opt/homebrew/bin/python3 -m unittest apps/lancers-revenue/tests/test_application_loop_hol.py -v
+/opt/homebrew/bin/python3 -m unittest discover -s runtime/agent-runner/tests -p 'test_*.py' -v
+/bin/zsh -n apps/lancers-revenue/scripts/install-local.sh
+plutil -lint apps/lancers-revenue/launchd/ai.anicca.lancers-revenue-application.plist
+git diff --check
+```
+
+Expected: all PASS.
+
+- [ ] **Step 5: Commit and push**
+
+```bash
+git fetch origin
+git add apps/lancers-revenue/scripts/install-local.sh apps/lancers-revenue/launchd/ai.anicca.lancers-revenue-application.plist apps/lancers-revenue/tests/test_install_local.py
+git commit -m "feat(lancers): install exact-sha acquisition releases"
+git push
+```
+
+---
+
+### Task 5: Primary mechanical verification, main integration, and reconcile-only production wake
+
+**Files:**
+- No production edit unless a mechanical verification failure returns to the same Luna.
+- Update progress evidence in the existing spec/task ledger only after observed results。
+
+**Interfaces:**
+- Consumes: Tasks 1-4 pushed and clean; application launchd still disabled/unloaded。
+- Produces: exact main SHA deployed, both pending officially read back without submit, service returned to disabled if any uncertainty appears。
+
+- [ ] **Step 1: Primary verifies the one review’s three blockers mechanically**
+
+Run focused tests, full relevant tests, schema/runtime matrix, mutation guard, secret scan, `git diff --check`, and verify application launchd remains disabled. Re-run the semantic evidence test with the signal validator removed in a temporary copy and confirm the test fails. Do not dispatch another reviewer.
+
+- [ ] **Step 2: Integrate without touching another session’s dirty main checkout**
+
+Fetch origin. Create a temporary clean integration worktree from `origin/main`, merge the feature branch with `--no-ff`, run the full relevant test set, commit the merge, and push `HEAD:main`. If origin/main advances, fetch/rebase or recreate the clean integration worktree and re-run tests. Never reset or clean the user’s main checkout.
+
+- [ ] **Step 3: Install exact main SHA in reconcile-only mode**
+
+Record pre-install SHA-256 for `application.json`, terminal state if present, and SQLite ledger. From the clean main integration checkout run:
+
+```bash
+LANCERS_RELEASE_SHA="$(git rev-parse HEAD)" \
+LANCERS_INSTALL_MODE=reconcile-only \
+apps/lancers-revenue/scripts/install-local.sh
+```
+
+Verify `deployment.json`, every installed file hash, plist lint, exact release ProgramArguments, and no worktree/branch path.
+
+- [ ] **Step 4: Enable and trigger the existing launchd owner exactly once**
+
+This changes production scheduler state; announce it immediately before execution. Use the rendered installed plist only:
+
+```bash
+launchctl enable "gui/$(id -u)/ai.anicca.lancers-revenue-application"
+launchctl bootout "gui/$(id -u)/ai.anicca.lancers-revenue-application" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/ai.anicca.lancers-revenue-application.plist"
+launchctl kickstart "gui/$(id -u)/ai.anicca.lancers-revenue-application"
+```
+
+Watch the one launchd-owned process to exit. Do not invoke a separate application executor.
+
+- [ ] **Step 5: Accept only read-only reconciliation evidence**
+
+Require output to name both `5585496` and `5586112` in `reconciled_project_ids`; require `submitted=false`; compare state/ledger deltas. A verified official proposal may move its own pending to exactly one receipt; otherwise pending/claims remain unchanged. No unrelated project may be discovered or submitted.
+
+On any mismatch, immediately disable/bootout the label, retain state, and return the evidence to the same Luna under `receiving-code-review` plus `systematic-debugging`.
+
+- [ ] **Step 6: Return the owner to disabled before normal-mode preparation**
+
+```bash
+launchctl disable "gui/$(id -u)/ai.anicca.lancers-revenue-application"
+launchctl bootout "gui/$(id -u)/ai.anicca.lancers-revenue-application" 2>/dev/null || true
+```
+
+Commit/push any evidence-only spec status update. Do not start Task 6 unless reconciliation acceptance is complete.
+
+---
+
+### Task 6: Deploy normal acquisition mode and prove one new verified application
+
+**Files:**
+- No planned production edits. Any failure returns to the same Luna and requires a new RED test before a fix。
+
+**Interfaces:**
+- Consumes: G0.5 and reconcile-only acceptance complete; two legacy pending IDs remain protected by claim filtering。
+- Produces: one new qualified project with one official proposal ID and exactly one `ApplicationReceipt`。
+
+- [ ] **Step 1: Install the same exact main SHA in normal mode**
+
+Run installer with `LANCERS_INSTALL_MODE=normal`; verify the only artifact difference is manifest mode and absence of `--reconcile-only` in ProgramArguments. Re-run installed-file hashes.
+
+- [ ] **Step 2: Preflight the real acquisition boundary**
+
+Require public discovery available, CDP `127.0.0.1:9227` reachable, account session ready, planner route available, no existing application process/lock, capacity below 100%, and current state/ledger readable. Capture ledger receipt count and both pending entries before the wake.
+
+- [ ] **Step 3: Enable and kick the one official launchd owner once**
+
+Announce the production scheduler state change, then enable/bootstrap/kickstart exactly as in Task 5. Do not run the Python entrypoint manually and do not trigger a second wake.
+
+- [ ] **Step 4: Verify the external effect end to end**
+
+Accept only if one newly discovered project has public evidence for Japanese small B2B plus SNS staff 0-1/proxy, price at least ¥98,000, conservative projected margin at least 70%, tailored proposal fields, one persisted intent, one provider submit, official proposal ID readback, and exactly one new unique `ApplicationReceipt`. Verify neither `5585496` nor `5586112` was resubmitted.
+
+If no qualified project exists, report truthful `no_eligible_project`, leave net MRR unknown, keep the scheduled lane enabled for its normal 30-minute ticks, and continue watching future official wakes; do not weaken ICP/margin gates to manufacture a success.
+
+- [ ] **Step 5: Close G1 and clean development workspace**
+
+Update the spec with observed provider ID/receipt evidence without secrets or buyer-private text. Commit and push main. Confirm launchd ProgramArguments point to the exact main SHA release, git main is clean/upstream, and delete the temporary feature/integration worktrees only after deployment verification. Keep runtime state and ledger untouched except for verified transaction transitions.
+
+---
+
+## Deferred Plans After G1
+
+Do not implement these in this plan. Create and execute one Superpowers plan at a time in this order:
+
+1. G2 truthful acquisition/reporting: `brainstorming → writing-plans → TDD → Luna → one fresh adversarial review → verification`.
+2. G3 profitable acquisition quotas/capacity/ranking: same workflow。
+3. G4 sales/contract lane: buyer reply → offer → approval → active monthly contract。
+4. G5 fulfillment lane: bounded scope → QA → official delivery readback。
+5. G6 payment/finance lane: PaymentReceipt → payout batch → bank reconciliation → net MRR。
+6. G7 target/self-improvement: only after real payment; optimize net MRR/retention/revision cost one variable at a time。
+
+The reusable website pattern remains: per-entity straight state, lane-parallel scheduled ticks, one shared durable ledger/queue, one serialized account/browser mutation lock, and official receipt handoff between lanes.
