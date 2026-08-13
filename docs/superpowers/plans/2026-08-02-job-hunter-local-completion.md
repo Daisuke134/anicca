@@ -8,9 +8,9 @@
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Status:** O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 remains in review-fix with one Important truth-boundary finding
-open. O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous
-application, mail, and learning lanes are disabled and unloaded and must not be
-described as healthy or complete.
+open and is the current slice. O2-05 through O2-12 remain open. Resume baseline is
+accepted. Autonomous application, mail, and learning lanes are disabled and unloaded
+and must not be described as healthy or complete.
 
 ## 1. Done condition
 
@@ -969,6 +969,19 @@ evidence until the primary has independently inspected and adopted it.
   sender reads `JOB_SEARCH_TELEGRAM_CHAT_ID`, sends through the durable outbox, and
   stores the provider acknowledgement. Real message ID: `15940`. No code change was
   needed; the failed attempt used the wrong generic sender contract.
+- [ ] **O2-05A1 — current slice: preserve every authoritative submitted shape** —
+  Extend the existing pre-outreach guard without adding a table, migration, service,
+  or payload-only trust. An external-import `submitted` event is authoritative only
+  when its application, source message, applied time, and evidence hash match the
+  durable `external_application_imports` row. A canonical/alternate ATS `submitted`
+  event is authoritative only when its route/provider/channel match a delivered ATS
+  route, its immutable delivered route event, and a distinct positive
+  `confirmed_application` outcome with `evidence_source=ats` and the same evidence
+  hash. For both production-shaped fixtures, two reconciliation runs must append no
+  correction or replay event, retain `current_state=submitted` and
+  `ever_submitted=true`, and keep Guardian healthy. Existing false outreach-only
+  correction and Gmail/Ashby authority behavior must remain unchanged. Terra edits
+  only `ledger.py` and `test_route_executor.py`; the real ledger remains read-only.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
