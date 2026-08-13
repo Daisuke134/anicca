@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** G1 acquisition E2E完了、30分bounded loop稼働中。G2着手中。誤報する旧Telegram reporterだけをdisabled / unloaded
+**状態:** G1 acquisition E2E完了。G2 truthful reporting E2E完了。acquisitionは30分、reporterは5分のexact-SHA bounded loopとして稼働中
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -643,7 +643,7 @@ Lancers daily summary
 - official source timestamp: 未確認（local observation timeと混同しない）
 - WorkEvent / DeliveryReceipt / PaymentReceipt / gross MRR / net MRR / bank settlement: source completeness未確認のためunknown
 - AI processing cost: provider usage receipt未接続のためunknown
-- next automatic action: acquisitionは次の30分tick。reporterはG2 canonical release検証まで停止
+- next automatic action: acquisitionは次の30分tick、reporterは次の5分tick。同一semantic状態は同日再送しない
 ```
 
 このreportは「14件応募したので売上見込みがある」「listing 6件なので未処理」と言わない。
@@ -702,11 +702,18 @@ deliveredにできる、の三つをHIGHとして反証した。同じLunaが各
 provider IDは正の十進整数/文字列だけを受理するよう最小修正した。二回目のreviewは行わず、primaryが
 focused 12 / Lancers 30 / runner 15、320 LOC ceiling、compile/diff checkを再検証する。
 
-本番acceptance前の状態は、reporter disabled / unloaded、application enabled、application pending 0、
-ledger application receipts 14、公式storefront受付中6 / 受付休止中0 / 非表示0 / 下書き0である。
-次はこの実装をcanonical mainへ統合し、exact-SHA install後もreporterを停止したままnotifier interceptionで
-実snapshotを検査する。そこでsource truth、warning icon、dedupe、state/ledger/listing不変を確認してから、
-既存report ownerを一回だけenable / kickする。
+canonical main / deployed release `d63dfd1ad38458e0e5cb076cd9563df5b374bd72`で本番acceptanceを完了した。
+外部送信なしの実snapshotはapplication `observed=13 / qualified=0 / submitted=0 / newly verified=0`、
+pending 0、cumulative verified 14、storefront `受付中6 / 受付休止中0 / 非表示0 / 下書き0`、
+blocker `listing_readback_mismatch`、actual AI cost unknownを返し、`未処理`と
+`official_timestamp_missing`を表示しない。同一snapshotの一時outbox投入は一回目true、二回目false、
+positive receiptだけdeliveredとなる。
+
+既存report ownerをenable / bootstrap / kickし、Telegram provider message ID `15922`で一件だけdeliveredを
+確認した。直後の同一状態kickは`enqueued=0 / attempted=0 / delivered=0`である。既存34件の
+`delivery_uncertain`は再claimしない。reporterはexact releaseを`StartInterval=300`で参照し、applicationも
+同じexact releaseへreloadして`StartInterval=1800`、enabled / loaded / not runningを確認した。
+application state、ledger、listingは本番report送信で変更しない。G2は完了し、次のactive sliceはG3である。
 
 ## 10. 段階的 acceptance gate
 
@@ -718,7 +725,7 @@ ledger application receipts 14、公式storefront受付中6 / 受付休止中0 /
 | G0 定義 | MRR 式、商品境界、4 lane、shared ledger、per-entity straight state、serialized browser effect boundary、receipt 順序、安全不変条件がこの仕様と一致する | 仕様レビュー記録 |
 | G0.5 canonical source / safe deployment | source/schema/test/launchd template/spec/plan を canonical Life Manager repo に揃え、tests と許可された一回の fresh adversarial review を通し、main に merge/push した exact commit SHA の release artifact を install して manifest/deployed SHA を記録する。worktree/feature branch/untracked `~/.local` source は実行せず、その後にだけ application service を enable する。runtime state、secret、browser session、append-only ledger、evidence は移動・削除しない | test result、レビュー記録、main commit、artifact manifest、deployed SHA、service enable の順序、runtime state 不変の確認 |
 | G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
-| G2 truthful acquisition | storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | 6 duplicate listing を成功扱いしない report と state-change report |
+| G2 truthful acquisition | **完了。** storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | exact release `d63dfd1…`、Telegram message ID `15922`、同一状態の再kick 0送信 |
 | G3 profitable acquisition | 最初の 3 active recurring contracts まで、hard filter、固定式による 70% margin、recurring/B2B ranking、proposal 固定構造、capacity 使用率別 quota（<70%=2/10、70–<90%=1/5、>=90%=Premium のみかつ 100% 以下）、重複防止が実際に働く | qualified/ineligible 判定、ICP 証拠/proxy、margin 算定と各 source、応募上限、duplicate 拒否の readback |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
@@ -762,14 +769,18 @@ process/lockなしである。official launchd ownerの最初のnormal wakeはru
 `observed_count=13`、`eligible_count=0`、`submitted=false`、`reason=no_eligible_project`で終了した。
 stateはfingerprints 19 / pending 0、ledgerは14 receiptのまま変わらず、launchdはenabled / loadedである。
 
-G1は完了した。fresh adversarial reviewは許可された1/1だけで、追加reviewは行わない。
+G1とG2は完了した。G2のfresh adversarial reviewは許可された1/1だけで、追加reviewは行わない。
+役割は固定する。primary Solだけが調査、設計判断、spec、implementation plan、acceptance、deployを所有する。
+Lunaはprimaryが完成させたplanに基づくproduction/test実装とコマンド実行だけを所有し、spec/planを書かない。
+reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_FIRSTは同じLunaへ一度返した後、primaryが
+機械的に再検証する。
 次の直列TODOは以下であり、一度に先頭一件だけを実装する。
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | G2 truthful acquisition/reporting | storefrontとapplicationを混ぜず、observed / qualified / submitted / verified / pending / blocker / costを公式timestamp付き自然言語で報告 | 0.5–1日 |
-| 2 | G3 profitable acquisition | capacity、query coverage、ranking、応募率を実receipt funnelで調整 | 1–2日 |
-| 3 | G4 Sales / Contract lane | 14 receiptを入力としてreply監視→分類→offer→公式contract readbackを実装 | 1–3日 |
+| 1 | G3 profitable acquisition | capacity、query coverage、ranking、応募率を実receipt funnelで調整 | 1–2日 |
+| 2 | G4 Sales / Contract lane | 14 receiptを入力としてreply監視→分類→offer→公式contract readbackを実装 | 1–3日 |
+| 3 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
