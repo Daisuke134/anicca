@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -168,6 +169,28 @@ def test_projection_folds_money_inventory_account_urls_and_latest_metrics() -> N
         "https://www.instagram.com/reel/DbgsvEbo5kd/"
     )
     assert result["listing_url"] == "https://capafy.ai/agent/4866150011"
+
+
+def test_projection_sources_report_mixed_fresh_stale_unknown_and_stable_id() -> None:
+    reference = "2026-08-02T12:00:00Z"
+    events = []
+    for event in fixture_events():
+        event_type = event["event_type"]
+        if event_type.startswith("account."):
+            continue
+        if event_type.startswith("listing.") or event_type == "cost.measured":
+            recorded_at = "2026-08-01T11:00:00Z"
+        else:
+            recorded_at = "2026-08-02T11:30:00Z"
+        events.append(event | {"recorded_at": recorded_at})
+
+    result = projection.project_company(events, reference_time=reference)
+    assert result["sources"]["money"] == {"observed_at": "2026-08-02T11:30:00Z", "freshness": "fresh"}
+    assert result["sources"]["inventory"] == {"observed_at": "2026-08-01T11:00:00Z", "freshness": "stale"}
+    assert result["sources"]["account"] == {"observed_at": None, "freshness": "unknown"}
+    assert result["sources"]["marketing"] == {"observed_at": "2026-08-02T11:30:00Z", "freshness": "fresh"}
+    assert result["sources"]["cost"] == {"observed_at": "2026-08-01T11:00:00Z", "freshness": "stale"}
+    assert projection.project_company(events, reference_time="2026-08-02T12:30:00Z")["projection_id"] == result["projection_id"]
 
 
 def test_projection_id_is_deterministic_and_changes_after_one_event() -> None:
@@ -373,12 +396,16 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
     ):
         directory.mkdir(parents=True, exist_ok=True)
     ledger.write_text("\n".join(json.dumps(event) for event in fixture_events()) + "\n")
-    (home / "anicca/skills/self/capafy-loop/state/STATE.md").write_text(
-        "capafy_lifetime_orders: 1\n"
-        "capafy_lifetime_gross_usd: 9.99\n"
-        "capafy_seller_balance_pending_usd: 8.00\n"
-        "capafy_realized_payout_usd: 0.00\n"
-        "capafy_mrr_usd: 0.00\n"
+    earn_ledger = home / "anicca/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
+    earn_ledger.write_text(
+        "\n".join(
+            json.dumps(row)
+            for row in (
+                {"ts": 1782172800, "source": "capafy-sales", "date": "2026-06-23", "orders": 1, "gross_usd": 9.99},
+                {"ts": 1784330227, "source": "capafy-payout", "date": "2026-07-18", "balance_payout_usd": 8.0, "total_payout_usd": 0.0},
+            )
+        )
+        + "\n"
     )
     (home / ".openclaw/logs/capafy-loop-daily.log").write_text(
         json.dumps(
@@ -460,7 +487,7 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
 
     assert clean.returncode == 0, clean.stderr
     report = json.loads(clean.stdout)
-    expected = projection.project_company(fixture_events())
+    expected = projection.project_company(fixture_events(), reference_time=datetime.now(timezone.utc))
     assert report["company_state"] == expected
     assert json.loads((tmp_path / "site/company/state.json").read_text()) == expected
     assert "wrong-legacy-value" not in sent.read_text()
@@ -472,8 +499,7 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
     assert duplicate.returncode == 0, duplicate.stderr
     assert sent.read_text().count("Capafy — Consolidated company state") == 1
 
-    state_md = home / "anicca/skills/self/capafy-loop/state/STATE.md"
-    state_md.write_text(state_md.read_text().replace("9.99", "999.00"))
+    earn_ledger.write_text(earn_ledger.read_text().replace("9.99", "999.00"))
     mismatch = subprocess.run(
         ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
     )
@@ -484,7 +510,7 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
     incidents = list((state / "capafy-incidents").glob("*.json"))
     assert len(incidents) == 1
 
-    state_md.write_text(state_md.read_text().replace("999.00", "9.99"))
+    earn_ledger.write_text(earn_ledger.read_text().replace("999.00", "9.99"))
     recovered = subprocess.run(
         ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
     )
