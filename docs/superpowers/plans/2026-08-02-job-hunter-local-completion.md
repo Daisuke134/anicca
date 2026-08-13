@@ -1934,10 +1934,37 @@ performs the real E2E, and records the milestone.
   `account_auth` with signal `native_account_controls`. Focused tests pass `29/29`;
   compilation, diff checks, and the complete suite pass `585/585`.
 
-  **Immediate next slice:** build and activate the pushed native-auth release and run
-  the real daily lane. Verify that NVIDIA uses Create Account or Sign In with Email,
-  reaches exact native credential controls, and never selects optional SSO. Preserve
-  receipt truth and shared-browser ownership.
+  Native-auth release and live verification are complete, but the application is not.
+  Pushed source commit `42300e11e5aed69ee3343fed41559b0c01d67a5e` built to
+  archive SHA-256
+  `bf2cea8a28f0d5207d06133f71754408acb77087309bb3721728b3439281345e`
+  with `267` entries and is active with
+  `abefa3e10ee903e3897793af84553671595a14c4` as rollback. The extracted
+  runtime passes `583/583`; source-only release tests make the source total
+  `585/585`.
+
+  Real launchd wake `daily-20260814-042748` exited `0`, but it did not reach the
+  native chooser proof. The model invoked the Workday credential path without a
+  complete verified precondition, received `Workday credentials precondition failed;
+  no Submit was clicked.`, then moved to a Salesforce/Ashby fallback whose required
+  inspection artifact was absent. No submit intent, request start, authoritative
+  receipt, or unknown submission was recorded. Telegram sent the truthful natural
+  result as message ID `16633`; all three privacy scans are clean. Cleanup restored
+  the exact seven pre-existing browser page IDs and browser UUID
+  `2ac269b0-350a-49a4-971e-9a0556aed50d`. Production Ledger remains byte-identical at
+  SHA-256 `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`
+  with `60` applications, `260` events, `30` intents, `6` submitted, and `31`
+  submit-unknown.
+
+  **Immediate next slice:** remove prompt/model choice from the already-supported
+  Workday entry and authentication precondition. Reuse the existing owned-page
+  `workday_credentials` implementation directly inside deterministic pre-submit,
+  using the same private profile/store and browser-owner receipts. Workday must click
+  Apply, choose only native Create Account or Sign In with Email, and capture a
+  structural blocker or application surface without the current blind file-input
+  timeout. Do not add a service, database, browser, or second loop. Then build,
+  activate, and prove the exact path in one real launchd wake; receipt truth remains
+  unchanged until authoritative confirmation exists.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
