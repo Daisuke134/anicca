@@ -2065,6 +2065,33 @@ performs the real E2E, and records the milestone.
   **Immediate next slice:** build and activate this exact visible-control release and
   run one real daily wake. A redacted Workday account receipt is the success criterion
   for the slice; otherwise the finite stage code becomes the sole next blocker.
+
+  Visible-control release and third real wake are complete. Pushed commit
+  `9501fdd765c0717cd83729a7f4d3da11238c399e` built twice to byte-identical archive
+  SHA-256 `80f8f607e5e3625fc141ecf28dbc18f5d730b645e2c1c68367df4ce92f62c284`
+  with `267` entries and is active with
+  `8da71d220ffa9cf6494b66aae514fb0b1441da47` as rollback. Real wake
+  `daily-20260814-051716` exited `0`. Both NVIDIA attempts now report the exact finite
+  blocker `workday_manual_choice_unavailable`. The post-Apply snapshots contain one
+  visible structural control `<a role="button">Apply Manually</a>`, but no matching
+  `applyManually` or `adventureButton` automation ID. This is a current NVIDIA DOM
+  selector delta, not a load race or missing action. No submit intent, request start,
+  receipt, or submit-unknown was created.
+
+  Telegram sent message ID `16680`; cleanup closed exactly one owned page and restored
+  all seven pre-existing page IDs. Production Ledger remains byte-identical at SHA-256
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  **Current Workday manual-action slice complete in pushed source:** commit
+  `97ee5a855` retains the two established automation IDs and adds only the exact
+  production-observed fallback `a[role="button"]:text-is("Apply Manually")` for both
+  the bounded wait and click. It does not add generic text search or broaden the
+  action. Compilation and diff checks pass, focused tests pass `14/14`, and the full
+  suite passes `585/585`.
+
+  **Immediate next slice:** build, activate, and run this exact two-line selector
+  release. Require either a redacted Workday account receipt or the next finite stage
+  code; preserve all no-Submit, Ledger, Telegram, and browser ownership contracts.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
