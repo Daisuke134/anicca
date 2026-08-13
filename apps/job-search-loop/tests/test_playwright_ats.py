@@ -76,7 +76,7 @@ class PlaywrightAtsTests(unittest.TestCase):
 
         self.assertEqual(
             set(answers),
-            {"full_name", "first_name", "last_name", "email", "phone", "linkedin", "github", "location"},
+            {"full_name", "first_name", "last_name", "email", "phone", "phone_country_code", "linkedin", "github", "location"},
         )
         self.assertEqual(answers["full_name"]["fact_ids"], ["profile.name"])
         self.assertEqual(

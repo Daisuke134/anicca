@@ -62,15 +62,19 @@ def _field_key(control: dict[str, Any]) -> str | None:
     text = _control_text(control)
     label = _normalized(control.get("label"))
     group_label = _normalized(control.get("group_label"))
+    if _normalized(control.get("text")).startswith("error-"):
+        return None
+    if "kanji" in text or "furigana" in text:
+        return None
     if control_type == "email" or text in {"email", "email address"}:
         return "email"
     if control_type == "file" and any(
         token in text for token in ("resume", "cv", "curriculum vitae")
     ):
         return "resume"
-    if "first name" in text or text in {"firstname", "given name"}:
+    if "first name" in text or "given name" in text or text == "firstname":
         return "first_name"
-    if "last name" in text or text in {"lastname", "family name", "surname"}:
+    if "last name" in text or "family name" in text or text in {"lastname", "surname"}:
         return "last_name"
     if label in {"name", "full name", "legal name", "preferred name"}:
         return "full_name"
@@ -98,8 +102,10 @@ def _field_key(control: dict[str, Any]) -> str | None:
         return "work_authorization"
     if "sponsorship" in group_label:
         return "sponsorship"
-    if "how did you hear" in group_label:
+    if "how did you hear" in group_label or "how did you hear" in text:
         return "application_source"
+    if "country phone code" in text:
+        return "phone_country_code"
     if "tokyo office" in group_label and "days per week" in group_label:
         return "tokyo_office"
     if control_type == "checkbox" and label.startswith("i confirm"):
@@ -435,6 +441,20 @@ def _is_workday_account_create(controls: list[dict[str, Any]]) -> bool:
     )
 
 
+def _is_workday_application_step(controls: list[dict[str, Any]]) -> bool:
+    has_continue = _has_exact_text(controls, "Save and Continue")
+    required_fields = [
+        control
+        for control in controls
+        if control.get("required") is True
+        and _normalized(control.get("tag")) in {"input", "textarea", "select"}
+    ]
+    has_password = any(
+        _normalized(control.get("type")) == "password" for control in controls
+    )
+    return has_continue and bool(required_fields) and not has_password
+
+
 def _validate_snapshot(snapshot: Any) -> dict[str, Any]:
     if not isinstance(snapshot, dict):
         raise ValueError("snapshot must be an object")
@@ -495,6 +515,16 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
             )
             return base
         if provider == "workday":
+            if _is_workday_application_step(controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "claim_ready": True,
+                        "surface": "workday_application_step",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
             if _is_workday_apply_choice(controls):
                 base.update(
                     {

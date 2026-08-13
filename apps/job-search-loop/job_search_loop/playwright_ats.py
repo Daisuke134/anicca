@@ -88,6 +88,10 @@ def grounded_profile_answers(profile: dict[str, Any]) -> dict[str, dict[str, Any
             "value": phone.strip(),
             "fact_ids": ["profile.phone"],
         }
+        answers["phone_country_code"] = {
+            "value": "Japan (+81)",
+            "fact_ids": ["profile.phone"],
+        }
     known_fact_ids = {
         str(item.get("id"))
         for item in profile.get("facts", [])
