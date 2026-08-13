@@ -12,20 +12,23 @@ are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
 daily outcome reporting and O2-05U unlimited eligible applications are complete.
 O2-05B shared-browser cutover, current `origin/main` integration, reproducible release
-build, isolated validation, and atomic activation are complete. Loading and observing
-the three production lanes is now the active step.
+build, isolated validation, atomic activation, and the first real three-lane wake are
+complete. The live wake exposed one daily Telegram result-shape mismatch; the source
+fix is complete and its release activation plus real report retry are now active.
 O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
-mail, and learning lanes remain disabled and unloaded until the next step and must not
-yet be described as healthy or complete.
+mail, and learning lanes are enabled and loaded. They completed one real wake with
+exit `0`, but O2-05 remains open until the corrected daily report is delivered and
+post-wake health is proven.
 
-**Activation cutline:** the measured reason Job Hunter is not applying is that
-`ai.anicca.job-search-daily`, `inbox`, and `learning` are explicitly disabled and
-unloaded; the last daily evidence is from 2026-08-08. The pushed source commit
+**Activation cutline:** the prior measured reason Job Hunter was not applying was that
+`ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
+unloaded. They are now loaded. The pushed source commit
 `fb2f4d289695ffc8de968097903ba6923cf969e7` is now the active immutable release.
 It contains O2-05N natural reporting, O2-05U unlimited eligible applications, and
 O2-05B binding to the existing `interactive:dais` browser at `127.0.0.1:9222` with no
-restart fallback. Healthy `932ae25e...` is the rollback release. No behavioral or
-deployment blocker remains before individually loading daily/inbox/learning.
+restart fallback. Healthy `932ae25e...` is the rollback release. The first real wake
+proved discovery and processing; its daily report contract mismatch is the current
+load gate being corrected without stopping the hourly schedule.
 O2-06 through O2-12 improve and prove the live loop; they must
 not delay turning the application loop on.
 
@@ -1126,7 +1129,20 @@ ledger, evidence, or submitted artifacts.
   `f9642b2...` to healthy `932ae25e...`. Release health is healthy with four immutable
   runners and four stable launchers. Activation preserved shared-browser PID `22279`,
   browser UUID, all `13` pre-existing tab IDs, and their exact set hash. The three
-  work lanes remain unloaded; individual load and one observed real cycle are next.
+  work lanes were then enabled and loaded individually without touching the browser
+  service. Their first real wake all exited `0`. Daily discovered `451` links,
+  verified `52`, accepted `7` as eligible, rejected `45`, and retained `399` for
+  later verification. It submitted `0`: the only non-historical eligible target,
+  Salesforce Technical Architect - MuleSoft on Workday, did not advance from its
+  official application control and had neither an authoritative receipt nor another
+  verified submission route. Inbox completed a real Gmail pass; learning reported
+  insufficient resolved outcomes and exited normally. Ledger health remained healthy
+  with `57` applications, `257` events, and zero active claims. The live daily report
+  then failed before outbox enqueue because `daily_reporting` required obsolete
+  `attempted_count` while the canonical result schema emits `discovered_link_count`.
+  The minimal source fix aligns those fields and includes each blocked role plus its
+  plain-Japanese non-application reason; focused `7/7` and full `574/574` pass. New
+  release activation and an outbox-backed retry remain before O2-05 closure.
 
 ## 11. Ponytail OSS reuse decision
 

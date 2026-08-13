@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Callable
 
@@ -20,7 +21,7 @@ LABELS = (
 )
 MATERIAL_BROWSER_FIELDS = (
     "status",
-    "attempted_count",
+    "discovered_link_count",
     "verified_link_count",
     "remaining_unverified_count",
     "submitted",
@@ -29,11 +30,12 @@ MATERIAL_BROWSER_FIELDS = (
 )
 MISSING_BROWSER_RESULT = {
     "status": "not_started",
-    "attempted_count": 0,
+    "discovered_link_count": 0,
     "verified_link_count": 0,
     "remaining_unverified_count": 0,
     "submitted": [],
     "submit_unknown": [],
+    "blocked": [],
 }
 
 
@@ -69,11 +71,11 @@ def _metric(label: str, value: dict[str, Any]) -> str:
 def _validate_browser(value: dict[str, Any]) -> None:
     if not isinstance(value, dict):
         raise ValueError("browser result must be an object")
-    for key in ("submitted", "submit_unknown"):
+    for key in ("submitted", "submit_unknown", "blocked"):
         if not isinstance(value.get(key), list):
             raise ValueError("browser result lists are invalid")
     for key in (
-        "attempted_count",
+        "discovered_link_count",
         "verified_link_count",
         "remaining_unverified_count",
     ):
@@ -96,6 +98,25 @@ def _browser_wake_result(browser: dict[str, Any]) -> str:
         return (
             "応募完了を確認できない求人は応募済みには数えず、"
             "メールと応募履歴を確認します。"
+        )
+    if browser["blocked"]:
+        roles = []
+        for reason in browser["blocked"]:
+            match = re.match(r"^(.{1,160}?) \([0-9a-f]{64}\):", str(reason))
+            roles.append(match.group(1) if match else "求人名を確認中の求人")
+        details = "\n".join(
+            f"・{role}: 応募ページから申請画面へ進めず、正式な完了確認も"
+            "別の正規応募方法も確認できなかったため、応募済みには数えていません。"
+            for role in roles
+        )
+        remaining = browser["remaining_unverified_count"]
+        follow_up = (
+            f"\nこのほか{remaining}件の候補を引き続き確認します。"
+            if remaining else ""
+        )
+        return (
+            f"今回、応募を完了できなかった求人は{len(roles)}件です。\n"
+            f"{details}{follow_up}\n次回も自動で確認します。"
         )
     remaining = browser["remaining_unverified_count"]
     if remaining > 0:

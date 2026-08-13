@@ -44,7 +44,6 @@ def browser_result(
 ):
     return {
         "status": status,
-        "attempted_count": 2,
         "discovered_link_count": 2,
         "verified_link_count": 2,
         "remaining_unverified_count": remaining_unverified_count,
@@ -77,7 +76,7 @@ class DailyReportingTests(unittest.TestCase):
                 json.dumps(
                     {
                         "status": "pending_verification",
-                        "attempted_count": 3,
+                        "discovered_link_count": 50,
                         "verified_link_count": 40,
                         "remaining_unverified_count": 10,
                         "submitted": [],
@@ -126,7 +125,7 @@ class DailyReportingTests(unittest.TestCase):
         invalid = browser_result()
         invalid["submitted"] = {}
         cases = [invalid]
-        for key in ("attempted_count", "verified_link_count", "remaining_unverified_count"):
+        for key in ("discovered_link_count", "verified_link_count", "remaining_unverified_count"):
             invalid = browser_result()
             invalid[key] = True
             cases.append(invalid)
@@ -151,6 +150,22 @@ class DailyReportingTests(unittest.TestCase):
             (
                 browser_result(remaining_unverified_count=3),
                 ("3件の候補", "役割や条件の確認", "次回の自動確認"),
+            ),
+            (
+                {
+                    **browser_result(remaining_unverified_count=3),
+                    "blocked": [
+                        "Salesforce Technical Architect - MuleSoft "
+                        f"({'a' * 64}): internal browser detail"
+                    ],
+                },
+                (
+                    "応募を完了できなかった求人は1件",
+                    "Salesforce Technical Architect - MuleSoft",
+                    "正式な完了確認",
+                    "応募済みには数えていません",
+                    "このほか3件",
+                ),
             ),
             (
                 browser_result(),
