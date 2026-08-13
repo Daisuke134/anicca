@@ -22,6 +22,18 @@ Do not embed private profile values in shell commands, command arguments, genera
 source, JSON output, or final JSON. Do not send Telegram messages directly. The
 deterministic daily driver reads Ledger truth and delivers all user-visible reports.
 
+Browser page ownership is absolute. Before any navigation, connect Playwright to the
+leased endpoint, capture every existing page target ID with `Target.getTargets`, and
+initialize `job_search_loop.browser_pages.PageOwnership` with that immutable baseline,
+the live `lease_id`, and `fence`. Create one new page in the existing default context,
+read its exact target ID with `Target.getTargetInfo`, and immediately call
+`register_created(targetId)`. Operate only that registered page for this wake.
+Never select or navigate `pages[0]`, `context.pages[0]`, or any target present in the
+baseline. If owned-page creation or registration fails, record the role in `blocked`
+and perform no browser navigation. At cleanup call `Target.closeTarget` only for IDs
+returned by `PageOwnership.closable()`; never close the browser, context, an existing
+page, or an unregistered popup.
+
 Every active official posting is an application candidate. Manual-owner Japan requisition policy: For OpenAI, Anthropic, Cursor/Anysphere, and Palantir, skip Tokyo/Japan/Remote-Japan requisitions because the owner has already handled them manually. This is not a company-wide block. A distinct overseas or Global/APAC Remote requisition is eligible only when the official posting explicitly permits employment/contracting while resident in Japan and it passes normal authorization, location, and URL/company-role/JD-fingerprint duplicate fences. If location, Japan-resident eligibility, or whether it is the same requisition is ambiguous, skip.
 
 Ranking, compensation,
@@ -42,7 +54,8 @@ For each selected role:
    submit-unknown application. A role whose route is already `delivered` or
    `delivery_unknown` is terminal history for this pass: do not reopen or re-inspect
    it. Select a different eligible role immediately.
-2. After each ATS navigation or major page transition, reuse the current leased page
+2. After each ATS navigation or major page transition, reuse only the page created and
+   registered by this wake
    instead of building another browser owner. Run the installed read-only observer:
    `$JOB_SEARCH_PYTHON -m job_search_loop.ats_page_observer --owner-receipt
    "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" --output

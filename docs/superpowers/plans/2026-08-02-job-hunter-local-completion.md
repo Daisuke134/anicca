@@ -14,11 +14,13 @@ daily outcome reporting and O2-05U unlimited eligible applications are complete.
 O2-05B shared-browser cutover, current `origin/main` integration, reproducible release
 build, isolated validation, atomic activation, and the first real three-lane wake are
 complete. The live wake exposed one daily Telegram result-shape mismatch; the source
-fix is complete and its release activation plus real report retry are now active.
+fix is deployed and its report retry is acknowledged. The same wake exposed a
+baseline-page navigation violation; its minimal ownership prompt fix is complete and
+release activation plus a second real wake are now active.
 O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
 mail, and learning lanes are enabled and loaded. They completed one real wake with
-exit `0`, but O2-05 remains open until the corrected daily report is delivered and
-post-wake health is proven.
+exit `0`, and the corrected daily report was delivered. O2-05 remains open until the
+next daily wake proves created-page-only operation and post-wake health.
 
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
@@ -1128,7 +1130,8 @@ ledger, evidence, or submitted artifacts.
   `current` from `932ae25e...` to `fb2f4d...` and changed `previous` from incompatible
   `f9642b2...` to healthy `932ae25e...`. Release health is healthy with four immutable
   runners and four stable launchers. Activation preserved shared-browser PID `22279`,
-  browser UUID, all `13` pre-existing tab IDs, and their exact set hash. The three
+  browser UUID, all `13` pre-existing CDP target IDs, including all `5` page IDs, and
+  their exact set hashes. The three
   work lanes were then enabled and loaded individually without touching the browser
   service. Their first real wake all exited `0`. Daily discovered `451` links,
   verified `52`, accepted `7` as eligible, rejected `45`, and retained `399` for
@@ -1142,7 +1145,19 @@ ledger, evidence, or submitted artifacts.
   `attempted_count` while the canonical result schema emits `discovered_link_count`.
   The minimal source fix aligns those fields and includes each blocked role plus its
   plain-Japanese non-application reason; focused `7/7` and full `574/574` pass. New
-  release activation and an outbox-backed retry remain before O2-05 closure.
+  release `de9a21a42...` is active and healthy; the corrected natural report was sent
+  from the canonical outbox with Telegram message ID `16379`.
+- The same live wake exposed a shared-page ownership violation before the next hourly
+  run. The application agent selected the first baseline page and navigated it to the
+  Salesforce Workday role instead of creating a Job Hunter-owned page. It did not
+  close a page: all `5` baseline page IDs were still present afterward, with zero new
+  or missing page IDs, and browser PID/UUID remained unchanged. Nevertheless, changing
+  an existing page is forbidden. The simple live prompt now makes the existing
+  `PageOwnership` contract mandatory: capture the baseline, create and register one
+  fresh page, operate only that exact target, and close only a registered target.
+  `pages[0]`, `context.pages[0]`, baseline navigation, and unregistered cleanup are
+  explicitly forbidden. A second real daily wake must produce an ownership receipt
+  and preserve the complete baseline page-ID set before O2-05/O2-12 can close.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -1376,7 +1391,8 @@ performs the real E2E, and records the milestone.
   pass `34/34`; the full Job Hunter suite passes `574/574` in `33.156s`; shell syntax,
   compile, and diff checks pass. A real `:9222` acquire→attach→release canary preserved
   PID `22279`, browser UUID `2ac269b0-350a-49a4-971e-9a0556aed50d`, one context, and
-  all `13` pre-existing tab IDs; no page was created or closed. Completion is
+  all `13` pre-existing CDP target IDs, including all `5` page IDs; no page was created
+  or closed. Completion is
   acknowledged by Telegram message ID `16338`; pushed commit: `c02919968`.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
