@@ -11,25 +11,22 @@ work. O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
 daily outcome reporting and O2-05U unlimited eligible applications are complete.
-O2-05B shared-browser cutover and current `origin/main` integration are complete. One
-new release activation is now the active step before launchd load.
+O2-05B shared-browser cutover, current `origin/main` integration, reproducible release
+build, isolated validation, and atomic activation are complete. Loading and observing
+the three production lanes is now the active step.
 O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
-mail, and learning lanes are disabled and unloaded and must not be described as
-healthy or complete.
+mail, and learning lanes remain disabled and unloaded until the next step and must not
+yet be described as healthy or complete.
 
 **Activation cutline:** the measured reason Job Hunter is not applying is that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` are explicitly disabled and
-unloaded; the last daily evidence is from 2026-08-08. The active release is
-`932ae25e...`, which still leases `job-search:dais` on a separate browser currently
-listening on `127.0.0.1:49167`, can restart that browser after an attach failure, and
-contains the old technical progress copy. Do not load that stale release. O2-05N is
-complete. O2-05U removes the fixed daily/portfolio submission caps and fixed-ten
-search/recovery target. O2-05B binds the daily lane to the existing
-`interactive:dais` browser at `127.0.0.1:9222`, removes restart behavior, and excludes
-the legacy browser label from the installer. No behavioral blocker remains before
-activation. Build/activate once, then load daily/inbox/learning. O2-06 through O2-12
-improve and
-prove the live loop; they must
+unloaded; the last daily evidence is from 2026-08-08. The pushed source commit
+`fb2f4d289695ffc8de968097903ba6923cf969e7` is now the active immutable release.
+It contains O2-05N natural reporting, O2-05U unlimited eligible applications, and
+O2-05B binding to the existing `interactive:dais` browser at `127.0.0.1:9222` with no
+restart fallback. Healthy `932ae25e...` is the rollback release. No behavioral or
+deployment blocker remains before individually loading daily/inbox/learning.
+O2-06 through O2-12 improve and prove the live loop; they must
 not delay turning the application loop on.
 
 **Execution rule from this point:** no test-first/TDD ceremony and no separate
@@ -88,7 +85,7 @@ Ordered cleanup is mandatory:
    `interactive:dais`; attach failure reports and exits without launch/restart;
 5. build one candidate from the pushed integrated commit, validate it against a
    copied production ledger, then atomically activate it so `current` is the new
-   release and healthy `932ae25e...` is `previous`;
+   release and healthy `932ae25e...` is `previous`; **complete**;
 6. enable/bootstrap only daily, inbox, and learning and observe one real cycle;
 7. after PID/UUID/context/tab ownership proof, unload and disable only the obsolete
    `ai.anicca.job-search-browser` service; never stop the shared `:9222` browser;
@@ -1113,11 +1110,23 @@ ledger, evidence, or submitted artifacts.
   not restarted or used by these slices; its later removal requires tab-ownership
   proof. Daily/inbox/learning stay unloaded until O2-05N and O2-05B are reviewed and
   activated.
-- The adversarial verifier also proved `previous=f9642b2...` is not a usable rollback
-  against the repaired ledger: its projection rejects the historical
-  `submitted -> email_sent` chain. Pointer/manifest validity alone is insufficient.
-  The next reviewed activation must make the current healthy `932ae25e...` release
-  the `previous` target before any launchd lane is loaded.
+- The pushed integrated source commit
+  `fb2f4d289695ffc8de968097903ba6923cf969e7` built twice into byte-identical
+  `267`-entry archives with SHA-256
+  `ee82d763ae445e8f9305819aa88febea3bd74cf505fa664b7620466a22e988bc`; the archive
+  contains no profile, credential, ledger, state, evidence, or log path. The installed
+  read-only candidate passes all `572/572` functional tests that do not require a Git
+  checkout and agent-runner `18/18`; the two excluded release-builder tests were
+  already passed in the clean source checkout and cannot run by design after `.git`
+  is excluded from an installed artifact. An isolated SQLite backup of the real
+  ledger is healthy with `57` applications, `257` events, zero active claims, zero
+  foreign-key violations, and a valid rebuilt `summary.v2`. Isolated activation,
+  release health, Gmail auth, and Gmail read all pass. Real atomic activation changed
+  `current` from `932ae25e...` to `fb2f4d...` and changed `previous` from incompatible
+  `f9642b2...` to healthy `932ae25e...`. Release health is healthy with four immutable
+  runners and four stable launchers. Activation preserved shared-browser PID `22279`,
+  browser UUID, all `13` pre-existing tab IDs, and their exact set hash. The three
+  work lanes remain unloaded; individual load and one observed real cycle are next.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -1359,8 +1368,10 @@ performs the real E2E, and records the milestone.
   unmatched rows dedup-fenced; complete O2-05N, O2-05U, and O2-05B; build from the
   pushed green commit; atomically activate the reproducible stable release; load
   daily/inbox/learning without touching the shared browser; run Guardian health
-  gates and observe one real canonical cycle. The Guardian LaunchAgent itself closes
-  in O2-07.
+  gates and observe one real canonical cycle. Release build, isolated-copy checks,
+  Gmail read preflight, and atomic activation of `fb2f4d...` are complete; individual
+  lane load and live observation remain. The Guardian LaunchAgent itself closes in
+  O2-07.
 - [ ] **O2-06** — Complete the JPY 7M floor / JPY 10M target / JPY 30M stretch policy,
   travel-positive policy, clearance non-rejection contract, and mandatory remote-job
   segment. Reuse pinned OSS/public ATS sources for Japan-remote and globally remote
