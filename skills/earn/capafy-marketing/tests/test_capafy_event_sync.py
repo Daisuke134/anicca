@@ -35,6 +35,38 @@ def test_sales_row_emits_order_gross_without_recognizing_contribution() -> None:
     assert events[0]["metrics"] == {"orders": 1}
 
 
+def test_sales_row_propagates_explicit_paid_orders_and_stores_valid_event() -> None:
+    row = {
+        "ts": 1786579200,
+        "source": "capafy-sales",
+        "date": "2026-08-13",
+        "orders": 2,
+        "paid_orders": 1,
+        "gross_usd": 19.98,
+    }
+
+    event = sync.events_from_sales_rows([row])[0]
+
+    assert event["metrics"] == {"orders": 2, "paid_orders": 1}
+    assert store.validate_event(event | {"recorded_at": "2026-08-13T12:00:00Z"}) == []
+
+
+def test_sales_row_preserves_invalid_explicit_paid_orders_for_validation() -> None:
+    row = {
+        "ts": 1786579200,
+        "source": "capafy-sales",
+        "date": "2026-08-13",
+        "orders": 2,
+        "paid_orders": "unknown",
+        "gross_usd": 19.98,
+    }
+
+    event = sync.events_from_sales_rows([row])[0]
+
+    assert event["metrics"]["paid_orders"] == "unknown"
+    assert any("metrics.paid_orders" in error for error in store.validate_event(event))
+
+
 def test_duplicate_sales_source_date_is_not_counted_twice() -> None:
     row = {
         "ts": 1782172800,

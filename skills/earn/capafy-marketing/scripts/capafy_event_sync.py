@@ -88,7 +88,7 @@ def _event(
     entity_id: str,
     summary: str,
     money: dict[str, str] | None = None,
-    metrics: dict[str, int] | None = None,
+    metrics: dict[str, Any] | None = None,
     urls: list[str] | None = None,
     labels: list[str] | None = None,
     source_producer: str,
@@ -256,6 +256,9 @@ def events_from_sales_rows(rows: list[dict]) -> list[dict]:
         if gross == 0 and orders == 0:
             continue
         date = str(row["date"])
+        metrics: dict[str, Any] = {"orders": orders}
+        if "paid_orders" in row:
+            metrics["paid_orders"] = row["paid_orders"]
         events.append(
             _event(
                 event_id=f"capafy:order.received:{date}:daily-aggregate",
@@ -266,7 +269,7 @@ def events_from_sales_rows(rows: list[dict]) -> list[dict]:
                 entity_id=date,
                 summary=f"Reconciled {orders} Capafy order(s) for {date}.",
                 money={"gross_delta": _money_text(gross)},
-                metrics={"orders": orders},
+                metrics=metrics,
                 labels=["gross buyer payment; settlement tracked separately"],
                 source_producer="capafy_earn_reconcile",
                 source_id=f"capafy-sales:{date}",

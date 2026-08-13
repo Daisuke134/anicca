@@ -156,7 +156,7 @@ def paid_orders_value(orders, gross, has_explicit, value):
     if gross < 0:
         return None
     if has_explicit:
-        return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+        return value if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= orders else None
     return int(gross > 0) if orders == 1 else None
 
 def derive_earn_money(path):

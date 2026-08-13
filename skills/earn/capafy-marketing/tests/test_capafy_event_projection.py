@@ -213,6 +213,16 @@ def test_projection_uses_explicit_paid_orders_for_multi_order_batch() -> None:
     assert result["paid_orders"] == 2
 
 
+def test_projection_marks_explicit_paid_orders_above_orders_unknown() -> None:
+    event = sync.events_from_sales_rows(
+        [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 2, "gross_usd": 19.98}]
+    )[0] | {"metrics": {"orders": 2, "paid_orders": 3}}
+
+    result = projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])
+
+    assert result["paid_orders"] is None
+
+
 @pytest.mark.parametrize("paid_orders", [True, -1, 1.0, "1", None])
 def test_projection_fails_closed_for_invalid_explicit_paid_orders(paid_orders: object) -> None:
     event = sync.events_from_sales_rows(
@@ -777,3 +787,29 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
         "incident.repaired",
         "incident.verified",
     ]
+
+    ambiguous_row = {
+        "ts": 1786579200,
+        "source": "capafy-sales",
+        "date": "2026-08-13",
+        "orders": 2,
+        "paid_orders": 3,
+        "gross_usd": 19.98,
+    }
+    ambiguous_event = sync.events_from_sales_rows([ambiguous_row])[0]
+    ledger.write_text(
+        ledger.read_text()
+        + json.dumps(stored(ambiguous_event, "2026-08-13T12:00:00Z"))
+        + "\n"
+    )
+    with earn_ledger.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(ambiguous_row) + "\n")
+
+    ambiguous = subprocess.run(
+        ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
+    )
+
+    assert ambiguous.returncode == 0, ambiguous.stderr
+    ambiguous_report = json.loads(ambiguous.stdout)
+    assert ambiguous_report["goal_b"]["paid_orders"] is None
+    assert ambiguous_report["company_state"]["paid_orders"] is None

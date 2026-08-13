@@ -120,6 +120,13 @@ def test_validation_rejects_negative_metric() -> None:
     assert "metrics.clicks must be a non-negative integer" in validate_event(event)
 
 
+def test_validation_accepts_paid_orders_metric() -> None:
+    event = valid_event()
+    event["metrics"] = {"paid_orders": 1}
+
+    assert validate_event(event) == []
+
+
 def test_validation_rejects_invalid_timestamp() -> None:
     event = valid_event()
     event["occurred_at"] = "yesterday"

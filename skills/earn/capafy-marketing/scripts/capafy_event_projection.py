@@ -43,10 +43,11 @@ def _paid_orders_for_event(event: dict) -> int | None:
     gross = Decimal(event["money"]["gross_delta"])
     if gross < ZERO:
         return None
+    orders = event["metrics"].get("orders", 0)
     explicit = event["metrics"].get("paid_orders", _MISSING)
     if explicit is not _MISSING:
-        return explicit if isinstance(explicit, int) and not isinstance(explicit, bool) and explicit >= 0 else None
-    return int(gross > ZERO) if event["metrics"].get("orders", 0) == 1 else None
+        return explicit if isinstance(explicit, int) and not isinstance(explicit, bool) and 0 <= explicit <= orders else None
+    return int(gross > ZERO) if orders == 1 else None
 
 
 def _canonical(value: Any) -> bytes:

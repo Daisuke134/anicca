@@ -51,7 +51,7 @@ MONEY_FIELDS = (
     "cost_delta",
     "contribution_delta",
 )
-METRIC_FIELDS = {"impressions", "views", "clicks", "likes", "comments", "orders"}
+METRIC_FIELDS = {"impressions", "views", "clicks", "likes", "comments", "orders", "paid_orders"}
 TOP_LEVEL_FIELDS = {
     "schema_version",
     "event_id",
