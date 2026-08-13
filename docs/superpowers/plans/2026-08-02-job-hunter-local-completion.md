@@ -23,10 +23,12 @@ exit `0`; corrected daily reports are delivered and all health gates pass. The f
 O2-06 live application wake exposed and closed provider private-environment access,
 deterministic Ashby standard-answer generation, normalized answer-artifact reuse, and
 terminal-candidate reprocessing. These four source fixes are pushed but not yet in the
-active immutable release. The remaining immediate application blocker is the split
-between Ashby's ready fill artifact and the existing canonical `claim_ready` receipt;
-the next slice reuses the existing `browser_worker` pre-submit path instead of adding
-another adapter, queue, database, browser, or scheduler.
+active immutable release. The split between Ashby's ready fill artifact and the
+existing canonical `claim_ready` receipt is now closed in pushed source by reusing the
+existing `browser_worker` pre-submit path; no adapter, queue, database, browser, or
+scheduler was added. The next slice builds and activates one immutable release from
+this pushed source, triggers the real daily lane, and observes whether a newly eligible
+non-terminal posting reaches one authoritative application receipt.
 
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
@@ -1527,16 +1529,32 @@ performs the real E2E, and records the milestone.
   `Technical Architect - MuleSoft` role in Tokyo/Remote. The complete Job Hunter suite
   passes `577/577`; pushed commit: `3c74e2120`.
 
-  **Immediate next slice:** stop asking the provider to bridge incompatible evidence
-  shapes. `ashby_apply fill` produces a useful `ready` artifact but not the canonical
-  Ledger-bound `claim_ready` receipt and snapshot required by `claim_submission`.
-  The repository already has that implementation in `browser_worker` through
-  `playwright_ats.run_pre_submit`, including page ownership, lease/fence, URL and
-  artifact hashes, and no-submit behavior. Connect that existing pre-submit path to
-  the normal daily execution, then let the provider perform only the final verified
-  submission. Activate one immutable release only after this path is green; then
-  trigger and observe the real daily loop. Until an authoritative ATS or Gmail receipt
-  exists, the system must continue reporting zero confirmed applications.
+  **Claim-ready bridge slice complete:** normal daily now invokes the existing
+  `browser_worker -> playwright_ats.run_pre_submit` path before its one application
+  agent. The private result carries one matched application ID plus the exact company,
+  role, official URL, portfolio bucket, resume, ATS snapshot, fill receipt, and grounded
+  employer-answer paths. The agent consumes those paths with the existing
+  `submission_prepare` command and performs only the final fenced Submit. The common
+  no-submit executor now executes and verifies its existing `select` and `check`
+  actions; radio text containing `LinkedIn` no longer masquerades as a LinkedIn URL
+  input; Ashby job and `/application` URLs are equivalent only for submission evidence
+  matching, without changing canonical dedup identity. `ashby_apply` accepts the same
+  grounded answer list for its final refill and single Submit.
+
+  A real no-submit Ashby canary against the existing ElevenLabs form produced one
+  canonical `claim_ready` receipt with `5` verified actions, `4` grounded answers,
+  empty blockers, `submit_clicked=false`, bound owner lease/snapshot/resume hashes, and
+  private `600` snapshot, fill-receipt, and answer files. It did not change the
+  production Ledger. A temporary Ledger then consumed those exact artifacts and
+  produced `status=prepared`, an application ID, intent ID, fence `1`, click phase
+  `pre_click`, transport phase `pre_request`, and SQLite integrity `ok`. The shared
+  browser retained PID `22279`, UUID
+  `2ac269b0-350a-49a4-971e-9a0556aed50d`, and the exact same six page IDs. The full
+  Job Hunter suite passes `578/578`; pushed source commit: `c887ec107`. This is not an
+  application receipt and is not counted as an application. The current active release
+  remains `9c18e355e6d52bdfb390d0a28946fee05b3f23a9`; the next slice builds, activates,
+  and triggers this pushed source. Until an authoritative ATS or Gmail receipt exists,
+  the system continues reporting zero confirmed applications.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
