@@ -856,7 +856,8 @@ pre/post一致、pending 0、fingerprints 19、verified receipts 14である。G
 Lancersの売上入口は二つあるが、別々の収益pipelineではない。
 
 1. **応募surface**: 10 query rotation → planner → submit → official proposal readback。14件の
-   `application_verified`がある。30分ownerはcanonical exact releaseで動く。
+   `application_verified`がある。30分ownerはcanonical exact releaseで動くが、最新実tickは17件取得後に
+   `planner_failed`、応募0、exit 1である。根因と修正境界は9.9を正本とする。
 2. **Storefront surface**: 自社商品`SNS AI workflow`を公開し、inbound inquiry/orderを受ける。canonical
    listing receipt `1338233`はpublishedだが、公式画面は受付中6件、余分なduplicate 5件、最新実行は
    `listing_readback_mismatch`である。
@@ -866,12 +867,11 @@ Lancersの売上入口は二つあるが、別々の収益pipelineではない�
 `work-sync`は5分でenabledだが`observed_working_count=0 / emitted_count=0`を反復する。したがって応募柱は
 proposal receiptまで、storefront柱はlisting公開までしか働いておらず、どちらも受注・納品・入金を作っていない。
 
-source ownershipも非対称である。application/reportはexact release `68f42e5b…`、1800秒/300秒でcanonical。
-storefront/work-syncはrepo外mutable path `~/.local/lib/anicca/lancers/skills/.../listing_tick.py`と
-`work_sync.py`をRunAtLoad付きで直接実行し、canonical repoにはsource/test/installerがない。この二つを
-そのまま収益SSOTにせず、次sliceでofficial reply/order/contract readback boundaryを確定し、必要な最小sourceだけを
-canonical exact releaseへ入れる。storefront duplicateを新規publishで直さず、read-only inventory後に一意listingを
-選ぶ。応募とstorefrontの両方を同じcontract sourceへ接続する。
+sourceはLife Manager `origin/main`、immutable exact-SHA release、repo外runtime stateへ分離済みであり、worktreeや
+mutable sourceを実行しない。ただし現在ロード済みownerはapplicationが`d0553944…`、report/work-syncが
+`bfd1fc568…`でsplitしている。plistとdeployment manifestは`d0553944…`を指すため、これはsource chaosではなく
+install後に三ownerを同時activateしなかったrelease activation driftである。次releaseではinstallだけを完了扱いにせず、
+三ownerの`launchctl print`がmanifestの同一SHAを指すまでdeploy未完了とする。
 
 Storefrontの追加実測では、`listing.json`は全在庫ではなく最後に検証できたcanonical receipt一件だけを保持する。
 管理画面readerは四状態の件数しか保存せず、6件のID inventoryを持たない。既存published receiptがある通常経路は
@@ -921,6 +921,104 @@ message、buyer identity、cookie、token、browser payload、seller private dat
 達するまでboundedに読み、count mismatch、duplicate ID、route drift、public HTTP/ID不一致、deadlineはfail closedする。
 live acceptanceは6 official rows、6 public readbacks、one JSON、exit 0、stderr/orphan 0、application/listing/ledger
 hash不変である。
+
+実inventoryはexact release `d0553944fa32856f9dc6e1fbec7a5992efe8f286`から一回実行し、exit 0、stdout一行、
+stderr 0、orphan 0、`logged_in=true / source_complete=true`を確認した。公式状態はpublished 6、paused 0、
+hidden 0、draft 0、IDは`1338228`〜`1338233`である。全6件は同一content SHA-256
+`999d290c4b84e90c28a89728e394e178c9e76487180a2ceb6ac12e641203d285`、canonical targetは一意に
+`1338228`、全planは`¥10k/3日・¥20k/5日・¥30k/7日`である。publish/archive/deleteは0、application、listing、
+ledgerのhashは不変である。Storefront read-only inventoryは完了した。
+
+inventory後のprimary実測ではinventory reporter processは残存せず、application
+`e26ac5c56c6a48b34eba6098e15d45c8aa81df069db56596a5bc4cf1a274f0e2`、ledger
+`7a58d8fb6e66a9b83e288c348cb638bf94ab483c5b6187c22458c2f32ef173ca`、listing
+`db22b6ba9055c39e6d76a846a66fa3f6348a6e430105e3fcd13013ea570dc701`のSHA-256は事前値と一致した。
+
+### 9.9 G3B.3 planner contract recovery と単一release収束
+
+#### 一次証拠と実際の根因
+
+最新のofficial application ownerはquery `SNS投稿`から17件を取得したが、`planner_failed`、応募0、exit 1で終了した。
+同一release、同一runner、同一model、同一公開入力をsubmissionなしで再現すると、providerは38秒、rc 0、schema validで
+終了した一方、17件中9件のdecisionだけを返した。provider reported usageはinput 14,676、output 1,909、reasoning 976、
+API equivalent estimate USD 0.02613である。静的schemaはarrayを最大40件にするだけで、入力17件と出力17件の
+cardinalityを表現しないため、Structured Outputとしては正しい9件がbusiness contractでは不完全だった。
+
+同じ17件に対して、canonical schemaから一時的に`minItems=maxItems=17`と17件の`request_id enum`を加えた
+schemaをexisting runnerへ渡すと、同じ一回のLuna callが38秒、rc 0、schema validで、入力と同順の17 IDを全て返した。
+したがってauth、model availability、timeout、JSON syntax、runner routingは根因ではない。
+
+17/17 resultを現行validatorへ通すと、唯一modelがeligibleとしたproject `5585701`はproposal、date、budget、fee、
+70% margin、commercial quote、SNS signal、ongoing signalを全て通り、`OUTSOURCING_SIGNAL_RE`だけで拒否された。
+quoteは公開description中の「集客の実務を任せられるパートナーを採用し…」という外部委任根拠だが、手書き語彙に
+含まれない。これは自然言語判断をmodelからregexへ戻した第二の不整合である。同時に同案件は週次MTGとZoom選考が
+必須なのに、modelは現在の「live call必須はineligible」という明示instructionを見落とした。regexは偶然この案件を
+止めただけであり、これを取り除くだけではunsafe submitになる。cardinality不一致、semantic regex false rejection、
+model safety missの三つを別々のboundaryで閉じる。根因修正を応募数のためのgate緩和に使わない。
+
+現行callerはさらに、runner stdout/stderrを`DEVNULL`へ捨て、validatorの全例外を`planner_failed`へ潰し、finallyで
+evidence rootを削除する。一方existing agent-runnerはattemptごとのstdout、stderr、schema errors、error class、usage、
+result path、summaryをすでに生成する。新しいobservability serviceを作る必要はなく、callerが既存証拠を読むだけでよい。
+
+この判断は次の一次資料と公式実装に基づく。
+
+- [OpenAI Codex non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode): scheduled automationには
+  `codex exec`を使い、進捗/errorはstderr、machine-readable eventは`--json` JSONL、最終structured resultは
+  `--output-schema`と`-o`で分離する。
+- [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs): JSON modeではなく
+  strict JSON Schemaで必要field・enumを契約化し、refusalをprogrammatically区別する。
+- [openai/codex output-schema test](https://github.com/openai/codex/blob/main/codex-rs/exec/tests/suite/output_schema.rs):
+  CLIが指定schemaを`text.format`の`strict:true`としてprovider requestへ渡す公式実装証拠である。
+- [openai/codex-action](https://github.com/openai/codex-action/blob/main/src/runCodexExec.ts): inline schemaを一時fileへ書き、
+  `codex exec --output-schema`へ渡す。tick固有schemaは新しいSSOTではなく、canonical base schemaから作るephemeral contractでよい。
+- [Anthropic, Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents): well-defined taskは
+  single LLM callから始め、複雑性は実測改善がある場合だけ増やし、simplicity・transparency・ACIを優先する。
+- [Anthropic, Effective context engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents):
+  最小のhigh-signal context、right-altitude instruction、少数のcanonical examplesを使い、brittleなif/else judgmentを避ける。
+- macOS `launchctl(1)`と[Apple launchd OSS](https://github.com/apple-oss-distributions/launchd): plistの置換はloaded jobを
+  自動更新しない。`bootout`後に`bootstrap`し、`launchctl print`で実際にロードされたProgramArgumentsを検証する。
+
+#### 採用する最小設計
+
+一回の30分tickは現行どおり一query、通常一planner call、最大一submitとする。primary plannerがeligibleを一件以上返した
+時だけ、最上位一件へ独立した安全確認を一call追加する。新しいagent service、retry loop、queue、DB、daemon、
+schema SSOTを追加しない。
+
+1. canonical `application_decisions.schema.json`をbaseとしてevidence directoryへephemeral schemaを作り、そのtickの
+   `decision count=N`と許可`request_id`を拘束してexisting agent-runnerへ渡す。runner後のduplicate/exact ID set validationは維持する。
+2. eligibility、商用性、継続性、外部委任、live-call必須性はprimary modelが判断する。promptへeligible一例と
+   「週次MTG・Zoom選考必須ならineligible」一例だけを加える。コードからSNS/継続/外部委任のsemantic keyword regex gateを除く。
+3. primaryがeligibleを返した場合だけ、既存agent-runnerのTerra read-only `diagnostic-agent` routeへ最上位一件の公開本文、
+   policy、primary decisionを渡す。ephemeral strict schemaは`safe_to_submit`、`blocker_evidence`、`reason`を必須にし、
+   `safe_to_submit=true`の明示一致だけを許可する。runner failure、grounding failure、否認は全てsubmit 0とする。
+   これにより自然言語safety judgmentをregexへ戻さず、実測した同一modelのinstruction missを送信前に独立拒否する。
+4. deterministic codeは、全ID一対一、quoteが公開descriptionの指定sectionに完全一致、日本語、priceが観測budget内、
+   fee・AI・外注・refund、70% margin、date、proposal safety、duplicate claim、公式submit/readbackだけを検証する。
+5. errorは`planner_runner_failed`、`planner_contract_incomplete`、`planner_grounding_failed`、
+   `safety_rejected`、`no_eligible_project`を区別し、
+   expected/returned count、runner status/error classだけをsanitized logへ出す。cookie、prompt本文、proposal本文、buyer identityは出さない。
+   raw evidenceは成功時削除、失敗時はexisting planner rootに最新一runだけ残し、次tickのresetで置換する。
+6. authoring SSOTはLife Manager `origin/main`だけ、runtimeはそのcommitからinstallerが作るread-only exact-SHA releaseだけとする。
+   worktree、feature branch、repo外mutable sourceを実行しない。既存installerはartifact/plist/manifest作成だけを所有し、
+   canonical deploy entrypointがinstaller実行後にapplication/report/work-sync三ownerを同じSHAへ`bootout → bootstrap`する。
+   manifestへreport labelも含め、三つの`launchctl print`のProgramArgumentsとWorkingDirectoryがmanifest SHAと一致しなければ
+   deployをnonzero failureにする。production activationで手動command列やinstall-only経路を使わない。
+
+Ponytail比較では、promptだけにregex語彙を追記する案は新しい表現で再発し、blind retryは同じ曖昧契約へ費用を二重払いし、
+案件ごとのplanner分割は最大20 callとranking mergeを生み、validatorを削除する案は金額・duplicate・grounding安全性を失う。
+primary一callだけの案も、実測で週次MTG必須をeligibleにしたため棄却する。採用案は通常一call、eligible発生時だけ
+既存Terra routeの一安全callを払い、新しいserviceを作らず三つのfailure boundaryを閉じる。
+
+soft targetはapplication production 1 file / 55〜80 changed LOC、canonical deploy/manifest 2 files / 25〜40 LOC、
+合計3 files / 95〜120 LOC、既存static schemaを変更せず、new dependency 0、new service/state/DB 0である。
+ユーザー指示に従い新しいtest fileやRED-first作業は作らない。検証は保存済み17件相当のdirect contract check、既存suite、
+fresh Sol adversarial review一回、submissionなしreal tick、eligibleが実在する後続tickの公式ApplicationReceiptで行う。
+
+acceptanceは、(a) 同一17件で17/17 decision、(b) regex false rejectionなし、(c) `5585701`をconditional Terra safety callが
+週次MTG/Zoom根拠付きで拒否、(d) normal tickがopaque `planner_failed`でなく`no_eligible_project`、`safety_rejected`、
+または最大一件のverified application、(e) 一query・通常一planner call・eligible時だけ一safety call・最大一submit、
+(f) failureにsanitized stage/count、(g) verified submitがない限りapplication state/ledger不変、
+(h) canonical deploy entrypointが三ownerをmanifestと同じexact main SHAへactivateし不一致時nonzero、の全てである。
 
 ### 9.7 G4A canonical Sales / Contract source
 
@@ -1027,6 +1125,7 @@ storefront_contract_candidate_count=0`である。board `9024494`、message `589
 | G3A query coverage | **完了。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | exact release `a2081bc0…`、review 1/1 ship、実tick `LinkedIn / observed 2 / submitted false`、state/ledger/listing不変 |
 | G3B eligible ranking | **完了。** validated eligibleをprojected net JPY、provider stable orderで並べ、自然言語priorityをhardcodeしない | exact release `68f42e5b…`、review 1/1 ship、実tick `AI活用 / observed 1 / submitted false`、state不変 |
 | G3B.1 empty search normalization | **完了。** providerの正常な0件をfailureではなくno-op successとして扱う | exact release `086037263…`、実tick `B2Bマーケティング / observed 0 / ok true / submitted false`、state不変 |
+| G3B.3 planner contract recovery | 入力N件をdynamic strict schemaでN件へ拘束し、semantic judgmentをprimary model、eligible候補のsafety vetoをconditional Terra、grounding・金額・receiptをdeterministic codeへ分離する。failure stage/countをsanitized表示し、canonical deploy entrypointで三ownerを同一exact releaseへ収束する | 17/17 contract check、no regex false rejection、`5585701` safety rejection、real tickが明示結果または最大一verified application、state/ledger safety、三owner SHA一致 |
 | G4A canonical Sales source | **完了。** 応募返信とstorefront inquiry/orderの公式message sourceを、既存5分work-sync ownerからread-only観測する。外部送信・ledger appendはしない | exact release `bfd1fc568…`、review 1/1 FIX_FIRST修正済み、real tick exit 0、board 1 / required reply 1 / officially correlated 0、state/ledger不変、orphan 0 |
 | G3C capacity quota | authoritative active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下） | active contract source、tick/day quota、100% cap、duplicate拒否 |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
@@ -1081,8 +1180,9 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | Storefront read-only inventory | 公式6 listingのID/URL/title/status/public field hash、canonical target、content groupを確定する。publish/archive/deleteは0 | 0.5–1日 |
-| 2 | Storefront offer alignment | 一意canonical listingを選び、¥10k–¥30k手順書を月額¥98k–¥398k offerへの入口または同scopeへ揃える。mutationは別途一件ずつ公式readbackする | 1–2日 |
+| 完了 | Storefront read-only inventory | exact releaseから公式6 listing、canonical `1338228`、単一content groupを確定。mutation 0、state/ledger不変 | 完了 |
+| 1 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じる | 0.5–1日 |
+| 2 | Storefront offer alignment | canonical `1338228`を選び、duplicateを一件ずつ整理し、¥10k–¥30k手順書を月額¥98k–¥398k offerへの入口または同scopeへ揃える | 1–2日 |
 | 3 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
 | 4 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
 | 5 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
