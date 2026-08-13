@@ -127,6 +127,7 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     with page.expect_response(lambda response: urlsplit(response.url).path == "/v1/project_store_api/project_blob/add", timeout=20_000) as uploaded:
         upload.set_input_files(str(image))
     if uploaded.value.status != 200: raise OfferError("image_upload_failed")
+    page.wait_for_selector('img[src*="img2.lancers.jp/projectblob/"]', state="visible", timeout=5_000)
     save = page.get_by_role("button", name="保存する", exact=True)
     if save.count() != 1: raise OfferError("form_changed")
     save.click(); page.wait_for_url(f"**/myplan/{listing_id}/edit/complete", timeout=30_000)
