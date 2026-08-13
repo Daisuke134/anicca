@@ -990,6 +990,15 @@ evidence until the primary has independently inspected and adopted it.
   expectation; Gmail-after and Ashby behavior remain otherwise unchanged. Terra edits
   only `ledger.py`, `guardian.py`, and `test_route_executor.py`; the real ledger
   remains read-only.
+  The single adversarial review found one Important lifecycle case: a valid ATS
+  route advances from mutable state `delivered` to `replied` while its immutable
+  `action_started -> delivered` evidence remains authoritative. Authority therefore
+  cannot require the route's current state to remain `delivered`; it requires the
+  immutable delivery event and all existing app/route/kind/provider/hash/outcome
+  bindings. Canonical ATS fixtures cover both reply-before-outreach restoration and
+  reply-after-restoration, with submitted truth, replay idempotency, and Guardian
+  health preserved. No second adversarial-review cycle is added; the primary closes
+  the reviewed correction with focused and full verification.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
