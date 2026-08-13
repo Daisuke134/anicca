@@ -95,3 +95,11 @@ Return status, commit SHA, test counts, selected project IDs for priority and st
 3. FIX_FIRST findings return once to the same implementer; primary re-verifies without a second review.
 4. Primary updates SSOT, pushes canonical main, installs exact SHA, and reloads the existing launchd owners.
 5. Primary triggers one real application owner tick. A qualified result may submit at most one project; any uncertainty quarantines only that project and is never blindly resent.
+
+## Completion record
+
+- Primary plan commit: `d266e3634721080aec06960dddbd8e58f63b36ec`.
+- Luna direct implementation: `0c700ab99c30bdc40f1a8b1c6c15d04dab01eb1f`, only two owned files, production 9 lines and test 32 lines.
+- Verification: HOL 16, combined Lancers 31, agent-runner 15, compile and diff check pass.
+- Fresh Sol adversarial review: 1/1, `ship`, no mandatory finding; no second review.
+- Live deploy exposed the separate empty-search boundary, which is resolved and accepted by the G3B.1 plan. Final exact release for the combined G3B behavior is `086037263acc11c3877875094d51bd79ed8b3ced`.
