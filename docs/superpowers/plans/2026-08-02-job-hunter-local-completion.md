@@ -8,10 +8,11 @@
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Status:** O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
-legacy-v0 repair are complete. O2-05R natural wake/error reporting is the active
-slice inside O2-05; O2-05 through O2-12 remain open. Resume baseline is accepted.
-Autonomous application, mail, and learning lanes are disabled and unloaded and
-must not be described as healthy or complete.
+legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
+daily outcome reporting is the active slice inside O2-05; O2-05 through O2-12
+remain open. Resume baseline is accepted. Autonomous application, mail, and
+learning lanes are disabled and unloaded and must not be described as healthy or
+complete.
 
 ## 1. Done condition
 
@@ -982,6 +983,39 @@ ledger, evidence, or submitted artifacts.
   guarantees one best-effort failure report for every nonzero daily exit after wake,
   and never claims an unconfirmed application. Daily/inbox/learning remain disabled
   until that reviewed release is activated.
+- O2-05R removes all three premature hourly progress messages rather than merely
+  rewriting them. Normal success relies on the single existing daily outcome report;
+  a processing-limit stop sends one natural message and exits successfully, while a
+  safety/evidence stop, unexpected runner stop, or pre-run failure sends exactly one
+  natural message and preserves the original nonzero status. All three messages say
+  that a job without formal completion evidence is not treated as applied and state
+  the next automatic action. Failed passes update durable state without first sending
+  a second daily-progress message. The main-shell-only exit path prevents command
+  substitutions and background heartbeat children from sending or releasing early.
+  Fault injection proves that a summary refresh failure preserves the original runner
+  status and still sends once/releases once, while an invalid install provider reports
+  once before any browser acquisition. Primary verification passes focused terminal
+  and fault paths `7/7`, canonical runtime `16/16`, full Job Hunter suite `579/579` in
+  `62.686s`, shell syntax, and diff check. The fresh adversarial verifier independently
+  passes contract paths `9/9`, canonical runtime `16/16`, adjacent suites `26/26`, and
+  reports Critical `0`, Important `0`, Minor `0`.
+- The same preflight found two further load blockers. First, the normal daily outcome
+  report still exposes an `Agent` owner label and a 12-character internal evidence
+  hash and does not explain in plain Japanese why the wake produced no confirmed
+  application; O2-05N removes that copy and reports one evidence-grounded outcome.
+  Second, the browser registry maps `job-search:dais` to a separate dynamic profile
+  currently listening on port `49167`, while the owner explicitly requires the
+  existing `interactive:dais` daily-driver on `127.0.0.1:9222` and forbids starting a
+  new browser. O2-05B changes the daily lane to lease the existing identity and fail
+  closed without browser restart. The currently loaded separate browser service is
+  not restarted or used by these slices; its later removal requires tab-ownership
+  proof. Daily/inbox/learning stay unloaded until O2-05N and O2-05B are reviewed and
+  activated.
+- The adversarial verifier also proved `previous=f9642b2...` is not a usable rollback
+  against the repaired ledger: its projection rejects the historical
+  `submitted -> email_sent` chain. Pointer/manifest validity alone is insufficient.
+  The next reviewed activation must make the current healthy `932ae25e...` release
+  the `previous` target before any launchd lane is loaded.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -1139,7 +1173,7 @@ evidence until the primary has independently inspected and adopted it.
   legacy-v0 shape. A forged reason plus channel/extra-key fixture must produce zero
   corrections and leave Guardian unhealthy. No second review cycle is added; the
   primary closes this correction with isolated-copy and full-suite verification.
-- [ ] **O2-05R — natural wake and failure reporting before launchd load** — Reuse the
+- [x] **O2-05R — natural wake and failure reporting before launchd load** — Reuse the
   current durable Telegram outbox in `run-daily.sh`; add no service, database, or
   scheduler. Replace the three technical progress messages with concise natural
   Japanese containing no run ID, model/provider, browser implementation, ATS,
@@ -1151,6 +1185,23 @@ evidence until the primary has independently inspected and adopted it.
   actual Telegram message arguments for the success, limit, verification-failure,
   and unexpected-failure paths. The browser lease cleanup and original exit status
   remain intact.
+- [ ] **O2-05N — natural daily outcome report before launchd load** — Modify only the
+  existing daily report renderer and its test. Remove internal hashes, `Agent` owner
+  vocabulary, and implementation/provider scorekeeping from the normal Telegram
+  body. One wake report states in natural Japanese whether a confirmed application
+  occurred; if none did, it explains the user-visible reason class from validated
+  terminal evidence, confirms that no unverified job was counted as applied, and
+  states the next automatic action. Preserve tappable company/artifact dossiers in
+  the existing per-application reporter rather than duplicating them here.
+- [ ] **O2-05B — use only the existing shared CloakBrowser** — Route every normal
+  daily acquisition to registry identity `interactive:dais` on the measured
+  `127.0.0.1:9222` daily-driver. A busy, unavailable, or failed attach never starts or
+  restarts another browser; it fails closed and O2-05R reports the natural reason and
+  next retry. Preserve the lease/fence and created-page-only cleanup contracts. Prove
+  the `:9222` browser PID, UUID, contexts, and pre-existing tab-ID set are unchanged
+  across a no-submit acquisition/release canary before loading launchd. Do not use
+  `install-launchd.sh`, because it also restarts the browser label; enable/bootstrap
+  only daily, inbox, and learning individually after activation.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping

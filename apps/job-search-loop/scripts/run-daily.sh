@@ -2,7 +2,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="${0:A:h}"
+RUNTIME_PATHS_RC=0
+set +e
 source "$SCRIPT_DIR/runtime-paths.sh"
+RUNTIME_PATHS_RC=$?
+set -e
+if [[ "$RUNTIME_PATHS_RC" -eq 0 ]] \
+  && [[ -z "${AGENT_RUNNER_PROVIDER:-}" ]] \
+  && [[ -f "$JOB_SEARCH_INSTALL_CONFIG" ]]; then
+  RUNTIME_PATHS_RC=1
+fi
 
 RUN_ID="daily-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
@@ -11,6 +20,12 @@ TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
 RESULT_PATH="$EVIDENCE/browser-worker-result.json"
 FILL_CANARY_REQUEST="$JOB_SEARCH_STATE_ROOT/ashby-fill-canary-request.json"
 FILL_CANARY_ACTIVE=0
+REPORT_FAILURE_SENT=0
+JOB_SEARCH_BROWSER_LEASED=0
+JOB_SEARCH_BROWSER_BEAT_PID=""
+MAIN_SHELL_PID=$$
+MAIN_SHELL_SUBSHELL=$ZSH_SUBSHELL
+SUMMARY_PATH="$EVIDENCE/summary.json"
 export JOB_SEARCH_SUBMIT_ENABLED=1
 export JOB_SEARCH_ASHBY_APPLY_MODULE="job_search_loop.ashby_apply"
 export JOB_SEARCH_ASHBY_APPLY_RESULT="$EVIDENCE/ashby-apply-result.json"
@@ -19,15 +34,79 @@ if [[ -f "$FILL_CANARY_REQUEST" ]]; then
   export JOB_SEARCH_NO_SUBMIT_CANARY=1
 fi
 
+export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
+export JOB_SEARCH_BROWSER_OWNER_EVIDENCE="$EVIDENCE/browser-owner.json"
+export JOB_SEARCH_CANDIDATE_QUEUE="$JOB_SEARCH_STATE_ROOT/candidate-queue.sqlite3"
+report_failure() {
+  local kind="$1"
+  if [[ "$REPORT_FAILURE_SENT" == "1" ]]; then
+    return 0
+  fi
+  REPORT_FAILURE_SENT=1
+  local message
+  case "$kind" in
+    limit)
+      message="⏳ 今回は処理できる範囲に達したため、ここで安全に区切りました。正式な応募完了を確認できない求人は応募済みにしていません。次回の自動実行で、続きの確認を行います。"
+      ;;
+    verification)
+      message="🛡️ 応募内容や証拠を確認できない状態になったため、安全のため停止しました。正式な応募完了を確認できない求人は応募済みにしていません。次回の自動実行で、確認できる状態から再開します。"
+      ;;
+    *)
+      message="⚠️ 予期しない問題が起きたため、今回は停止しました。正式な応募完了を確認できない求人は応募済みにしていません。次の自動実行で状態を確認してから続けます。"
+      ;;
+  esac
+  "$JOB_SEARCH_PYTHON" - "$TELEGRAM_OUTBOX" "$RUN_ID" "failure" "$message" <<'PY' || true
+import sys
+from pathlib import Path
+
+from job_search_loop.telegram import send_once
+
+send_once(
+    database=Path(sys.argv[1]),
+    event_key=f"job-search-progress:{sys.argv[2]}:{sys.argv[3]}",
+    message=sys.argv[4],
+)
+PY
+}
+TRAPEXIT() {
+  local exit_status=$?
+  if [[ "$$" != "$MAIN_SHELL_PID" || "$ZSH_SUBSHELL" != "$MAIN_SHELL_SUBSHELL" ]]; then
+    return "$exit_status"
+  fi
+  if [[ "$REPORT_FAILURE_SENT" != "1" && "$exit_status" -ne 0 ]]; then
+    if [[ "$exit_status" -eq 76 ]]; then
+      report_failure "verification"
+    elif [[ "$exit_status" -eq 75 ]] \
+      && [[ -f "$SUMMARY_PATH" ]] \
+      && "$JOB_SEARCH_JQ" -e '.status == "budget_blocked"' \
+        "$SUMMARY_PATH" >/dev/null 2>&1; then
+      report_failure "limit"
+    else
+      report_failure "unexpected"
+    fi
+  fi
+  if [[ -n "${JOB_SEARCH_BROWSER_BEAT_PID:-}" ]]; then
+    kill "$JOB_SEARCH_BROWSER_BEAT_PID" >/dev/null 2>&1 || true
+    wait "$JOB_SEARCH_BROWSER_BEAT_PID" >/dev/null 2>&1 || true
+  fi
+  if [[ "$JOB_SEARCH_BROWSER_LEASED" == "1" ]]; then
+    "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner release \
+      --identity "job-search:dais" \
+      --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+      --fence "$JOB_SEARCH_BROWSER_FENCE" \
+      --holder-pid "$$" >/dev/null 2>&1 || true
+  fi
+  return "$exit_status"
+}
 mkdir -p "$EVIDENCE" "$JOB_SEARCH_STATE_ROOT/logs"
 chmod 700 \
   "$JOB_SEARCH_STATE_ROOT" \
   "$JOB_SEARCH_STATE_ROOT/evidence" \
   "$EVIDENCE" \
   "$JOB_SEARCH_STATE_ROOT/logs"
-export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
-export JOB_SEARCH_BROWSER_OWNER_EVIDENCE="$EVIDENCE/browser-owner.json"
-export JOB_SEARCH_CANDIDATE_QUEUE="$JOB_SEARCH_STATE_ROOT/candidate-queue.sqlite3"
+if [[ "$RUNTIME_PATHS_RC" -ne 0 ]]; then
+  exit "$RUNTIME_PATHS_RC"
+fi
 ROUTE_FIXTURE_REQUEST="$JOB_SEARCH_STATE_ROOT/route-fixture-request.json"
 ATS_SURFACE_CANARY_REQUEST="$JOB_SEARCH_STATE_ROOT/ats-surface-canary-request.json"
 if [[ -f "$ROUTE_FIXTURE_REQUEST" ]]; then
@@ -37,11 +116,14 @@ if [[ -f "$ROUTE_FIXTURE_REQUEST" ]]; then
     --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
     --fence "$JOB_SEARCH_BROWSER_FENCE" \
     --holder-pid "$$"
-  "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
-    --identity "job-search:dais" \
-    --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
-    --fence "$JOB_SEARCH_BROWSER_FENCE" \
-    --holder-pid "$$" >/dev/null 2>&1 &
+  (
+    TRAPEXIT() { :; }
+    exec "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
+      --identity "job-search:dais" \
+      --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+      --fence "$JOB_SEARCH_BROWSER_FENCE" \
+      --holder-pid "$$"
+  ) >/dev/null 2>&1 &
   ROUTE_FIXTURE_BEAT_PID=$!
   set +e
   "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_worker route-fixture \
@@ -81,11 +163,14 @@ if [[ -f "$ATS_SURFACE_CANARY_REQUEST" ]]; then
     --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
     --fence "$JOB_SEARCH_BROWSER_FENCE" \
     --holder-pid "$$"
-  "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
-    --identity "job-search:dais" \
-    --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
-    --fence "$JOB_SEARCH_BROWSER_FENCE" \
-    --holder-pid "$$" >/dev/null 2>&1 &
+  (
+    TRAPEXIT() { :; }
+    exec "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
+      --identity "job-search:dais" \
+      --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+      --fence "$JOB_SEARCH_BROWSER_FENCE" \
+      --holder-pid "$$"
+  ) >/dev/null 2>&1 &
   ATS_CANARY_BEAT_PID=$!
   set +e
   "$JOB_SEARCH_PYTHON" -m job_search_loop.ats_surface_canary \
@@ -118,26 +203,8 @@ fi
   --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
   --output "$EVIDENCE/resume-deliver-before.json"
 JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
-report_progress() {
-  local stage="$1"
-  local message="$2"
-  "$JOB_SEARCH_PYTHON" - "$TELEGRAM_OUTBOX" "$RUN_ID" "$stage" "$message" <<'PY' || true
-import sys
-from pathlib import Path
-
-from job_search_loop.telegram import send_once
-
-receipt = send_once(
-    database=Path(sys.argv[1]),
-    event_key=f"job-search-progress:{sys.argv[2]}:{sys.argv[3]}",
-    message=sys.argv[4],
-)
-print(receipt)
-PY
-}
-report_progress "started" \
-  "Job Hunter ${RUN_ID}: 求人探索を開始しました。候補取得、ATS確認、Terraによる応募、証拠保存まで同じLoopが続行します。"
 refresh_summary() {
+  local deliver_report="${1:-1}"
   "$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
     --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
     --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
@@ -147,23 +214,25 @@ refresh_summary() {
     --day "$JAPAN_DAY" \
     --reason "hourly_pass_complete" \
     --output "$EVIDENCE/quota-deficit.json"
-  set +e
-  "$JOB_SEARCH_PYTHON" -m job_search_loop.daily_reporting deliver \
-    --summary "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
-    --outbox "$TELEGRAM_OUTBOX" \
-    --release-manifest "$JOB_SEARCH_REPO_ROOT/RELEASE.json" \
-    --browser-result "$RESULT_PATH" \
-    --output "$EVIDENCE/daily-pipeline-report.json"
-  DAILY_REPORT_RC=$?
-  set -e
-  if [[ "$DAILY_REPORT_RC" -ne 0 ]]; then
-    "$JOB_SEARCH_JQ" -n \
-      --arg status "delivery_failed" \
-      --argjson rc "$DAILY_REPORT_RC" \
-      '{status:$status,rc:$rc}' \
-      >"$EVIDENCE/daily-pipeline-report.json"
+  if [[ "$deliver_report" == "1" ]]; then
+    set +e
+    "$JOB_SEARCH_PYTHON" -m job_search_loop.daily_reporting deliver \
+      --summary "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
+      --outbox "$TELEGRAM_OUTBOX" \
+      --release-manifest "$JOB_SEARCH_REPO_ROOT/RELEASE.json" \
+      --browser-result "$RESULT_PATH" \
+      --output "$EVIDENCE/daily-pipeline-report.json"
+    DAILY_REPORT_RC=$?
+    set -e
+    if [[ "$DAILY_REPORT_RC" -ne 0 ]]; then
+      "$JOB_SEARCH_JQ" -n \
+        --arg status "delivery_failed" \
+        --argjson rc "$DAILY_REPORT_RC" \
+        '{status:$status,rc:$rc}' \
+        >"$EVIDENCE/daily-pipeline-report.json"
+    fi
+    chmod 600 "$EVIDENCE/daily-pipeline-report.json"
   fi
-  chmod 600 "$EVIDENCE/daily-pipeline-report.json"
   return 0
 }
 CONFIRMED_COUNT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" "$JAPAN_DAY" <<'PY'
@@ -224,8 +293,6 @@ chmod 700 "$EVIDENCE/ats-liveness"
   >"$EVIDENCE/ats-liveness-sweep.json"
 chmod 600 "$EVIDENCE/ats-liveness-sweep.json"
 ATS_CHECKED_COUNT=0
-report_progress "candidates-checked" \
-  "Job Hunter ${RUN_ID}: 候補取得を完了しました。全件事前検査を待たず、単一Terra Job Hunterが最高候補からCloakBrowserで応募します。"
 TERRA_PLAN_EVIDENCE="$EVIDENCE/terra-plan"
 TERRA_HIGH_EVIDENCE="$EVIDENCE/terra-high"
 mkdir -p "$TERRA_PLAN_EVIDENCE" "$TERRA_HIGH_EVIDENCE"
@@ -249,28 +316,16 @@ JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
   --fence "$JOB_SEARCH_BROWSER_FENCE" \
   --holder-pid "$$"
 JOB_SEARCH_BROWSER_LEASED=1
-"$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
-  --identity "job-search:dais" \
-  --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
-  --fence "$JOB_SEARCH_BROWSER_FENCE" \
-  --holder-pid "$$" >/dev/null 2>&1 &
+(
+  TRAPEXIT() { :; }
+  exec "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
+    --identity "job-search:dais" \
+    --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+    --fence "$JOB_SEARCH_BROWSER_FENCE" \
+    --holder-pid "$$"
+) >/dev/null 2>&1 &
 JOB_SEARCH_BROWSER_BEAT_PID=$!
-TRAPEXIT() {
-  if [[ -n "${JOB_SEARCH_BROWSER_BEAT_PID:-}" ]]; then
-    kill "$JOB_SEARCH_BROWSER_BEAT_PID" >/dev/null 2>&1 || true
-    wait "$JOB_SEARCH_BROWSER_BEAT_PID" >/dev/null 2>&1 || true
-  fi
-  if [[ "${JOB_SEARCH_BROWSER_LEASED:-0}" == "1" ]]; then
-    "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner release \
-      --identity "job-search:dais" \
-      --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
-      --fence "$JOB_SEARCH_BROWSER_FENCE" \
-      --holder-pid "$$" >/dev/null 2>&1 || true
-  fi
-}
 set +e
-report_progress "terra-started" \
-  "Job Hunter ${RUN_ID}: GPT-5.6 Terra Job Hunterが起動しました。候補評価、フォーム適応、履歴書提出、Submit確認、証拠保存を一体で実行します。"
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class application-lane-agent \
   --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-apply-simple.md" \
@@ -337,10 +392,13 @@ if [[ "$PRIVACY_RC" -ne 0 ]]; then
   RUNNER_RC=76
 fi
 if [[ "$RUNNER_RC" -ne 0 ]]; then
-  refresh_summary
+  set +e
+  refresh_summary 0
+  set -e
   if [[ "$RUNNER_RC" -eq 75 ]] \
     && "$JOB_SEARCH_JQ" -e '.status == "budget_blocked"' \
       "$EVIDENCE/summary.json" >/dev/null 2>&1; then
+    report_failure "limit"
     exit 0
   fi
   exit "$RUNNER_RC"

@@ -51,6 +51,9 @@ class CanonicalRuntimeTests(unittest.TestCase):
         *,
         invalid_fill_result: bool = False,
         daily_report_rc: int = 0,
+        pre_run_rc: int = 0,
+        summary_rc: int = 0,
+        invalid_install_provider: str | None = None,
     ):
         fake_python = root / "fake-python"
         calls = root / "python-calls.jsonl"
@@ -65,9 +68,20 @@ calls = pathlib.Path(__file__).with_name("python-calls.jsonl")
 with calls.open("a", encoding="utf-8") as handle:
     handle.write(json.dumps(sys.argv[1:]) + "\\n")
 if sys.argv[1:2] == ["-"]:
+    if len(sys.argv) > 2 and pathlib.Path(sys.argv[2]).name == "install.json":
+        receipt = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding="utf-8"))
+        if receipt.get("provider") not in {"codex", "claude-direct"}:
+            raise SystemExit(9)
     print(%d)
     raise SystemExit(0)
+if sys.argv[1:4] == ["-m", "job_search_loop.recovery", "plan"]:
+    raise SystemExit(int(os.environ.get("TEST_PRE_RUN_RC", "0")))
+if sys.argv[1:4] == ["-m", "job_search_loop.browser_owner", "hold"]:
+    raise SystemExit(23)
 if sys.argv[1:3] == ["-m", "job_search_loop.summary"]:
+    summary_rc = int(os.environ.get("TEST_SUMMARY_RC", "0"))
+    if summary_rc:
+        raise SystemExit(summary_rc)
     from job_search_loop.summary import main
     raise SystemExit(main(sys.argv[3:]))
 if sys.argv[1:3] == ["-m", "job_search_loop.daily_reporting"]:
@@ -203,7 +217,21 @@ raise SystemExit(0)
             "JOB_SEARCH_TELEGRAM_MEDIA": str(root / "media"),
             "TEST_INVALID_FILL_RESULT": "1" if invalid_fill_result else "0",
             "TEST_DAILY_REPORT_RC": str(daily_report_rc),
+            "TEST_PRE_RUN_RC": str(pre_run_rc),
+            "TEST_SUMMARY_RC": str(summary_rc),
         }
+        if invalid_install_provider is not None:
+            install_config = (
+                Path(env["XDG_CONFIG_HOME"])
+                / "anicca"
+                / "job-search"
+                / "install.json"
+            )
+            install_config.parent.mkdir(parents=True, exist_ok=True)
+            install_config.write_text(
+                json.dumps({"provider": invalid_install_provider}) + "\n",
+                encoding="utf-8",
+            )
         result = subprocess.run(
             ["/bin/zsh", str(APP_ROOT / "scripts" / "run-daily.sh")],
             check=False,
@@ -218,12 +246,59 @@ raise SystemExit(0)
         ]
         return result, recorded
 
+    @staticmethod
+    def _failure_calls(calls):
+        return [
+            call
+            for call in calls
+            if len(call) >= 5 and call[:1] == ["-"] and call[3] == "failure"
+        ]
+
+    @staticmethod
+    def _release_calls(calls):
+        return [
+            call
+            for call in calls
+            if call[:3] == ["-m", "job_search_loop.browser_owner", "release"]
+        ]
+
+    @staticmethod
+    def _daily_reporting_calls(calls):
+        return [
+            call
+            for call in calls
+            if call[:3] == ["-m", "job_search_loop.daily_reporting", "deliver"]
+        ]
+
+    def _assert_natural_failure(self, calls, *, kind):
+        failures = self._failure_calls(calls)
+        self.assertEqual(len(failures), 1)
+        self.assertEqual(failures[0][3], "failure")
+        message = failures[0][4]
+        self.assertIn("正式な応募完了を確認できない求人は応募済みにしていません", message)
+        self.assertRegex(message, r"次回の自動実行|次の自動実行")
+        for banned in (
+            "GPT", "model", "provider", "Terra", "CloakBrowser", "ATS",
+            "Submit", "runner", "exit", "bounded", "none", "raw", "hash",
+            "approval",
+        ):
+            self.assertNotIn(banned, message)
+        if kind == "limit":
+            self.assertIn("処理できる範囲", message)
+        elif kind == "verification":
+            self.assertIn("証拠を確認できない", message)
+        else:
+            self.assertIn("予期しない問題", message)
+
     def test_daily_full_quota_exits_without_browser_or_model(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             result, calls = self._run_daily_with_fake_python(root, 10, 99)
 
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(self._failure_calls(calls), [])
+            self.assertEqual(len(self._release_calls(calls)), 0)
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 1)
             encoded = json.dumps(calls)
             self.assertNotIn("job_search_loop.browser_owner", encoded)
             self.assertNotIn("agent_runner.py", encoded)
@@ -243,6 +318,8 @@ raise SystemExit(0)
             result, calls = self._run_daily_with_fake_python(root, 2, 0)
 
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(len(self._release_calls(calls)), 1)
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 1)
             encoded = json.dumps(calls)
             self.assertIn("job_search_loop.browser_owner", encoded)
             self.assertIn("agent_runner.py", encoded)
@@ -272,6 +349,9 @@ raise SystemExit(0)
             result, calls = self._run_daily_with_fake_python(root, 0, 75)
 
             self.assertEqual(result.returncode, 0, result.stderr)
+            self._assert_natural_failure(calls, kind="limit")
+            self.assertEqual(len(self._release_calls(calls)), 1)
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 0)
             encoded = json.dumps(calls)
             self.assertIn("job_search_loop.browser_owner", encoded)
             self.assertNotIn("job_search_loop.browser_worker", encoded)
@@ -291,6 +371,9 @@ raise SystemExit(0)
             result, calls = self._run_daily_with_fake_python(root, 0, 0)
 
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(self._failure_calls(calls), [])
+            self.assertEqual(len(self._release_calls(calls)), 1)
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 1)
             projection = root / "state" / "summary.v2.json"
             self.assertTrue(projection.is_file())
             self.assertEqual(
@@ -311,9 +394,12 @@ raise SystemExit(0)
                 encoding="utf-8",
             )
 
-            result, _ = self._run_daily_with_fake_python(root, 0, 0)
+            result, calls = self._run_daily_with_fake_python(root, 0, 0)
 
             self.assertEqual(result.returncode, 76, result.stderr)
+            self._assert_natural_failure(calls, kind="verification")
+            self.assertEqual(len(self._release_calls(calls)), 1)
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 0)
             evidence = list((state / "evidence").glob("daily-*/"))
             self.assertEqual(len(evidence), 1)
             self.assertFalse((evidence[0] / "ashby-fill-verification.json").is_file())
@@ -337,6 +423,9 @@ raise SystemExit(0)
             )
 
             self.assertEqual(result.returncode, 76, result.stderr)
+            self._assert_natural_failure(calls, kind="verification")
+            self.assertEqual(len(self._release_calls(calls)), 1)
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 0)
             evidence = list((state / "evidence").glob("daily-*/"))
             self.assertEqual(len(evidence), 1)
             verification = evidence[0] / "ashby-fill-verification.json"
@@ -346,15 +435,67 @@ raise SystemExit(0)
             )
             self.assertEqual(verification.stat().st_mode & 0o777, 0o600)
             reporting = evidence[0] / "daily-pipeline-report.json"
-            self.assertEqual(
-                json.loads(reporting.read_text(encoding="utf-8"))["status"],
-                "delivery_failed",
-            )
-            self.assertEqual(reporting.stat().st_mode & 0o777, 0o600)
+            self.assertFalse(reporting.exists())
             self.assertIn(
                 ["-m", "job_search_loop.browser_owner", "release"],
                 [call[:3] for call in calls],
             )
+
+    def test_daily_unexpected_runner_failure_reports_once_and_preserves_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result, calls = self._run_daily_with_fake_python(root, 0, 2)
+
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self._assert_natural_failure(calls, kind="unexpected")
+            self.assertEqual(len(self._release_calls(calls)), 1)
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 0)
+
+    def test_daily_summary_refresh_failure_preserves_runner_status_and_cleanup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result, calls = self._run_daily_with_fake_python(
+                root,
+                0,
+                2,
+                summary_rc=9,
+            )
+
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self._assert_natural_failure(calls, kind="unexpected")
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 0)
+            self.assertEqual(len(self._release_calls(calls)), 1)
+
+    def test_daily_invalid_install_provider_reports_before_browser_acquire(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result, calls = self._run_daily_with_fake_python(
+                root,
+                0,
+                0,
+                invalid_install_provider="invalid-provider",
+            )
+
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self._assert_natural_failure(calls, kind="unexpected")
+            self.assertEqual(len(self._release_calls(calls)), 0)
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 0)
+            self.assertNotIn("job_search_loop.browser_owner", json.dumps(calls))
+            evidence_roots = list((root / "state" / "evidence").glob("daily-*/"))
+            self.assertEqual(len(evidence_roots), 1)
+            self.assertEqual((root / "state").stat().st_mode & 0o777, 0o700)
+            self.assertEqual(evidence_roots[0].stat().st_mode & 0o777, 0o700)
+
+    def test_daily_pre_run_failure_reports_once_and_preserves_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result, calls = self._run_daily_with_fake_python(root, 0, 0, pre_run_rc=7)
+
+            self.assertEqual(result.returncode, 7, result.stderr)
+            self._assert_natural_failure(calls, kind="unexpected")
+            self.assertEqual(len(self._release_calls(calls)), 0)
+            self.assertEqual(len(self._daily_reporting_calls(calls)), 0)
+            self.assertNotIn("job_search_loop.browser_owner", json.dumps(calls))
 
 
     def test_runner_config_is_job_scoped_and_contains_no_private_identity(self):
