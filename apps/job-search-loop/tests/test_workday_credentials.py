@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import stat
 import subprocess
@@ -10,6 +11,7 @@ from pathlib import Path
 from job_search_loop.workday_credentials import (
     WorkdayCredentialError,
     ensure_credentials,
+    fill_account_creation,
     known_tenants,
     load_credentials,
     tenant_key,
@@ -167,6 +169,90 @@ class WorkdayCredentialTests(unittest.TestCase):
         self.assertEqual(receipt["tenant"], "crowdstrike.wd5.myworkdayjobs.com")
         self.assertNotIn(account["application_email"], completed.stdout)
         self.assertNotIn(account["password"], completed.stdout)
+
+    def test_fill_account_uses_only_registered_page_and_returns_no_secret(self):
+        target = "owned-target"
+        lease = "lease-1"
+
+        class Locator:
+            def __init__(self, kind):
+                self.kind = kind
+                self.value = ""
+                self.checked = False
+                self.clicked = False
+
+            def count(self): return 1
+            def fill(self, value): self.value = value
+            def input_value(self): return self.value
+            def is_checked(self): return self.checked
+            def check(self, force=False): self.checked = True
+            def click(self, **kwargs): self.clicked = True
+
+        controls = {
+            name: Locator(name)
+            for name in (
+                "email",
+                "password",
+                "verifyPassword",
+                "createAccountCheckbox",
+                "createAccountSubmitButton",
+            )
+        }
+
+        class Page:
+            url = WORKDAY_URL
+
+            def locator(self, selector):
+                name = selector.split('"')[1]
+                return controls[name]
+
+            def wait_for_timeout(self, _milliseconds): pass
+
+        page = Page()
+
+        class Session:
+            def send(self, _method): return {"targetInfo": {"targetId": target}}
+
+        class Context:
+            pages = [page]
+            def new_cdp_session(self, _page): return Session()
+
+        class Chromium:
+            def connect_over_cdp(self, _endpoint):
+                return type("Browser", (), {"contexts": [Context()]})()
+
+        owner = {
+            "status": "ready",
+            "endpoint": "http://127.0.0.1:9222",
+            "lease_id": lease,
+            "fence": 3,
+        }
+        ownership = {
+            "version": 1,
+            "lease_sha256": hashlib.sha256(lease.encode()).hexdigest(),
+            "fence": 3,
+            "baseline_sha256": [],
+            "created_sha256": [hashlib.sha256(target.encode()).hexdigest()],
+        }
+        receipt = fill_account_creation(
+            job_url=WORKDAY_URL,
+            profile_path=self.profile,
+            store_path=self.store,
+            owner_receipt=owner,
+            ownership_receipt=ownership,
+            owned_page={"target_id": target, "lease_id": lease, "fence": 3},
+            playwright=type("Playwright", (), {"chromium": Chromium()})(),
+        )
+        account = load_credentials(self.store, WORKDAY_URL)
+
+        self.assertEqual(receipt["status"], "account_creation_clicked")
+        self.assertFalse(receipt["secret_values_returned"])
+        self.assertNotIn(account["application_email"], json.dumps(receipt))
+        self.assertNotIn(account["password"], json.dumps(receipt))
+        self.assertEqual(controls["email"].value, account["application_email"])
+        self.assertEqual(controls["password"].value, account["password"])
+        self.assertTrue(controls["createAccountCheckbox"].checked)
+        self.assertTrue(controls["createAccountSubmitButton"].clicked)
 
 
 if __name__ == "__main__":

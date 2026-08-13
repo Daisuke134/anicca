@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
+from .browser_pages import registered_created_target
 from .config import ConfigError, validate_profile
 
 
@@ -213,18 +214,141 @@ def known_tenants(store_path: Path) -> list[str]:
     return sorted(tenants)
 
 
+def fill_account_creation(
+    *,
+    job_url: str,
+    profile_path: Path,
+    store_path: Path,
+    owner_receipt: dict[str, Any],
+    ownership_receipt: dict[str, Any],
+    owned_page: dict[str, Any],
+    playwright: Any,
+) -> dict[str, Any]:
+    if owner_receipt.get("status") != "ready":
+        raise WorkdayCredentialError("browser owner is not ready")
+    receipt = ensure_credentials(
+        job_url=job_url,
+        profile_path=profile_path,
+        store_path=store_path,
+    )
+    target = registered_created_target(
+        owner_receipt, ownership_receipt, owned_page
+    )
+    endpoint = str(owner_receipt.get("endpoint") or "")
+    if endpoint != "http://127.0.0.1:9222":
+        raise WorkdayCredentialError("browser owner endpoint is invalid")
+    browser = playwright.chromium.connect_over_cdp(endpoint)
+    pages = []
+    for context in browser.contexts:
+        for page in context.pages:
+            session = context.new_cdp_session(page)
+            page_target = session.send("Target.getTargetInfo")["targetInfo"][
+                "targetId"
+            ]
+            if page_target == target:
+                pages.append(page)
+    if len(pages) != 1:
+        raise WorkdayCredentialError("owned Workday page is unavailable")
+    page = pages[0]
+    if tenant_key(page.url) != receipt["tenant"]:
+        raise WorkdayCredentialError("owned page does not match the Workday tenant")
+    account = load_credentials(store_path, job_url)
+
+    def locator(automation_id: str) -> Any:
+        value = page.locator(f'[data-automation-id="{automation_id}"]')
+        if value.count() != 1:
+            raise WorkdayCredentialError(
+                f"Workday account control is unavailable: {automation_id}"
+            )
+        return value
+
+    email = locator("email")
+    password = locator("password")
+    verify_password = locator("verifyPassword")
+    email.fill(account["application_email"])
+    password.fill(account["password"])
+    verify_password.fill(account["password"])
+    if (
+        email.input_value() != account["application_email"]
+        or password.input_value() != account["password"]
+        or verify_password.input_value() != account["password"]
+    ):
+        raise WorkdayCredentialError("Workday credential fill verification failed")
+    checkbox = page.locator('[data-automation-id="createAccountCheckbox"]')
+    if checkbox.count() == 1 and not checkbox.is_checked():
+        checkbox.check(force=True)
+    submit = locator("createAccountSubmitButton")
+    try:
+        submit.click(timeout=5_000)
+    except Exception as error:
+        if error.__class__.__name__ != "TimeoutError":
+            raise
+        submit.click(timeout=15_000, force=True)
+    page.wait_for_timeout(2_000)
+    return {
+        **receipt,
+        "status": "account_creation_clicked",
+        "browser_action_count": 5 if checkbox.count() == 1 else 4,
+        "owned_target_sha256": hashlib.sha256(target.encode()).hexdigest(),
+        "secret_values_returned": False,
+    }
+
+
+def _write_receipt(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
+    try:
+        temporary.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, path)
+        os.chmod(path, 0o600)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--job-url", required=True)
     parser.add_argument("--profile-path", required=True, type=Path)
     parser.add_argument("--store-path", required=True, type=Path)
+    parser.add_argument("--fill-account", action="store_true")
+    parser.add_argument("--owner-receipt", type=Path)
+    parser.add_argument("--ownership-receipt", type=Path)
+    parser.add_argument("--owned-page", type=Path)
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:
-        receipt = ensure_credentials(
-            job_url=args.job_url,
-            profile_path=args.profile_path,
-            store_path=args.store_path,
-        )
+        if args.fill_account:
+            if not all(
+                (args.owner_receipt, args.ownership_receipt, args.owned_page, args.output)
+            ):
+                parser.error(
+                    "--fill-account requires owner, ownership, owned-page, and output"
+                )
+            owner = json.loads(args.owner_receipt.read_text(encoding="utf-8"))
+            ownership = json.loads(
+                args.ownership_receipt.read_text(encoding="utf-8")
+            )
+            owned_page = json.loads(args.owned_page.read_text(encoding="utf-8"))
+            from playwright.sync_api import sync_playwright
+
+            with sync_playwright() as playwright:
+                receipt = fill_account_creation(
+                    job_url=args.job_url,
+                    profile_path=args.profile_path,
+                    store_path=args.store_path,
+                    owner_receipt=owner,
+                    ownership_receipt=ownership,
+                    owned_page=owned_page,
+                    playwright=playwright,
+                )
+            _write_receipt(args.output, receipt)
+        else:
+            receipt = ensure_credentials(
+                job_url=args.job_url,
+                profile_path=args.profile_path,
+                store_path=args.store_path,
+            )
     except WorkdayCredentialError as error:
         print(f"job-search Workday credentials: {error}", file=sys.stderr)
         return 2
