@@ -36,6 +36,7 @@ setup_case(){
   export CAPAFY_EVENT_ADAPTER="$EVENT_ADAPTER" CAPAFY_EVENT_LEDGER="$STATE/capafy-revenue-events.jsonl"
   export CAPAFY_EVENT_EVIDENCE_DIR="$STATE/capafy-revenue-evidence"
   export COUNT MESSAGES FIX_CALLS
+  unset CAPAFY_BLOCK_NEW_AGENT
   unset FAIL_FIRST_SEND
 }
 
@@ -114,6 +115,33 @@ bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "event append failure returns nonzero" || bad "event append failure returns nonzero" "rc=$rc"
 eq "event append failure sends no success Telegram" "$(cat "$COUNT")" "0"
 rm -rf "$T"
+
+echo "(H) full review queue accepts only one finite action and one target"
+setup_case
+export CAPAFY_BLOCK_NEW_AGENT=1
+printf '%s\n' '{"result":"measure","target":"9480246345","reason":"refreshed current sales and exposure evidence"}' > "$CANDIDATE"
+bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; rc=$?
+eq "finite action exits zero" "$rc" "0"
+has "finite action is recorded" "$(cat "$STATE/capafy-builder-terminal.json")" '"action": "measure"'
+has "single target is recorded" "$(cat "$STATE/capafy-builder-terminal.json")" '"target": "9480246345"'
+rm -rf "$T"
+
+echo "(I) full review queue rejects unknown, multi-target, and targetless actions"
+for invalid in \
+  '{"result":"invent_product","target":"9480246345","reason":"unsupported"}' \
+  '{"result":"measure","target":"9480246345,3098034209","reason":"two targets"}' \
+  '{"result":"measure","reason":"missing target"}' \
+  '{"result":"no_op","target":"9480246345","reason":"no-op must not target"}' \
+  '{"result":"no_op","reason":""}'
+do
+  setup_case
+  export CAPAFY_BLOCK_NEW_AGENT=1
+  printf '%s\n' "$invalid" > "$CANDIDATE"
+  bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; rc=$?
+  [ "$rc" -ne 0 ] && ok "invalid full-queue result fails closed" || bad "invalid full-queue result fails closed" "artifact=$invalid"
+  eq "invalid full-queue result sends no success report" "$(cat "$COUNT")" "1"
+  rm -rf "$T"
+done
 
 echo "=== capafy builder outcome: $PASS passed $FAIL failed ==="
 [ "$FAIL" -eq 0 ] || exit 1

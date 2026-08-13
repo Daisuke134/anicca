@@ -77,6 +77,53 @@ if [ "$RESULT_KIND" = "failure" ]; then
   start_failure "$reason"; exit $?
 fi
 
+FULL_QUEUE_ACTION=""; FULL_QUEUE_TARGET=""; FULL_QUEUE_REASON=""
+if [ "${CAPAFY_BLOCK_NEW_AGENT:-0}" = "1" ]; then
+  if ! ACTION_RESULT="$(python3 - "$RESULT" 2>&1 <<'PY'
+import json, re, sys
+
+allowed = {
+    "poll_review", "measure", "repair_rejected", "reposition",
+    "retire_candidate", "optimize_packaging", "handoff_marketing", "no_op",
+}
+try:
+    data = json.load(open(sys.argv[1]))
+    action = data.get("result")
+    if action not in allowed:
+        raise ValueError("result must be exactly one allowed full-queue action")
+    required = {"result", "reason"} if action == "no_op" else {"result", "target", "reason"}
+    if action == "repair_rejected":
+        required |= {"agent_id", "listing_url"}
+    if set(data) != required:
+        raise ValueError("result artifact has unsupported or missing fields")
+    reason = data.get("reason")
+    if not isinstance(reason, str) or not reason.strip():
+        raise ValueError("reason must be a non-empty string")
+    target = "" if action == "no_op" else data.get("target")
+    if action != "no_op" and (not isinstance(target, str) or not target.strip()):
+        raise ValueError("action requires exactly one non-empty string target")
+    if action != "no_op" and not (
+        re.fullmatch(r"[0-9]+", target)
+        or re.fullmatch(r"https://capafy\.ai/agent/[0-9]+", target)
+    ):
+        raise ValueError("target must be one agent_id or canonical public listing URL")
+    if action == "repair_rejected" and data.get("agent_id") != target:
+        raise ValueError("repair_rejected agent_id must equal target")
+    if any(c in value for value in (action, target, reason) for c in "\t\r\n"):
+        raise ValueError("action fields must be single-line")
+    print(action)
+except (OSError, ValueError, json.JSONDecodeError) as exc:
+    print(str(exc))
+    raise SystemExit(2)
+PY
+)"; then
+    start_failure "Builder full-queue result is invalid: $ACTION_RESULT"; exit $?
+  fi
+  FULL_QUEUE_ACTION="$ACTION_RESULT"
+  FULL_QUEUE_TARGET="$(read_result_field target)"
+  FULL_QUEUE_REASON="$(read_result_field reason)"
+fi
+
 money_json(){
   if [ -n "${CAPAFY_MONEY_JSON:-}" ] && [ -f "$CAPAFY_MONEY_JSON" ]; then
     cat "$CAPAFY_MONEY_JSON"
@@ -115,8 +162,14 @@ PY
 
 MONEY="$(money_json)" || { start_failure "Builder money reconciliation could not be read"; exit $?; }
 
-if [ "$RESULT_KIND" = "no-op" ]; then
-  reason="$(read_result_field reason)"; [ -n "$reason" ] || reason="bounded pass had no safe submission"
+if [ "$RESULT_KIND" = "no-op" ] || { [ -n "$FULL_QUEUE_ACTION" ] && [ "$FULL_QUEUE_ACTION" != "repair_rejected" ]; }; then
+  if [ -n "$FULL_QUEUE_ACTION" ]; then
+    reason="action=$FULL_QUEUE_ACTION"
+    [ -n "$FULL_QUEUE_TARGET" ] && reason="$reason target=$FULL_QUEUE_TARGET"
+    reason="$reason: $FULL_QUEUE_REASON"
+  else
+    reason="$(read_result_field reason)"; [ -n "$reason" ] || reason="bounded pass had no safe submission"
+  fi
   # CAP_FULL is a verified external capacity condition, not a builder failure.
   # Close the exact stale builder incident after the live preflight has
   # confirmed the condition, so the business watchdog does not keep treating
@@ -161,13 +214,16 @@ if incident_dir.exists():
             )
 PY
   fi
-  ENVELOPE="$(python3 - "$MONEY" "$reason" <<'PY'
+  ENVELOPE="$(python3 - "$MONEY" "$reason" "$FULL_QUEUE_ACTION" "$FULL_QUEUE_TARGET" <<'PY'
 import json, sys
-data = json.loads(sys.argv[1]); data.update({"schema_version": 1, "kind": "builder_noop", "owner": "builder", "reason": sys.argv[2]}); print(json.dumps(data))
+data = json.loads(sys.argv[1]); data.update({"schema_version": 1, "kind": "builder_noop", "owner": "builder", "reason": sys.argv[2]})
+if sys.argv[3]: data["action"] = sys.argv[3]
+if sys.argv[4]: data["target"] = sys.argv[4]
+print(json.dumps(data))
 PY
 )"
 else
-  [ "$RESULT_KIND" = "submitted" ] || { start_failure "Builder result artifact has unsupported result=$RESULT_KIND"; exit $?; }
+  [ "$RESULT_KIND" = "submitted" ] || [ "$FULL_QUEUE_ACTION" = "repair_rejected" ] || { start_failure "Builder result artifact has unsupported result=$RESULT_KIND"; exit $?; }
   AGENT_ID="$(read_result_field agent_id)"; LISTING_URL="$(read_result_field listing_url)"
   [ -n "$AGENT_ID" ] || { start_failure "Builder submitted result omitted agent_id"; exit $?; }
   if [ -n "${CAPAFY_REMOTE_STATUS_JSON:-}" ] && [ -f "$CAPAFY_REMOTE_STATUS_JSON" ]; then
@@ -184,10 +240,12 @@ print("yes" if same and v.get("status") in (1,4) and v.get("isConfirmedSkills")=
 PY
 )"
   [ "$VERIFIED" = "yes" ] || { start_failure "Capafy remote readback is not submitted: agent_id=$AGENT_ID"; exit $?; }
-  ENVELOPE="$(python3 - "$REMOTE" "$MONEY" "$AGENT_ID" "$LISTING_URL" <<'PY'
+  ENVELOPE="$(python3 - "$REMOTE" "$MONEY" "$AGENT_ID" "$LISTING_URL" "$FULL_QUEUE_ACTION" "$FULL_QUEUE_TARGET" <<'PY'
 import json, sys
 v=json.loads(sys.argv[1])["latest_version"]; data=json.loads(sys.argv[2])
 data.update({"schema_version":1,"kind":"builder_submitted","owner":"builder","title":v.get("title") or "Untitled Capafy skill","agent_id":sys.argv[3],"remote_status":v["status"],"skills_confirmed":v["isConfirmedSkills"]==1,"config_confirmed":v["isConfirmedConfigKeys"]==1,"listing_url":sys.argv[4],"next_action":"Watch for approval and hand the public listing to Marketing"})
+if sys.argv[5]: data["action"] = sys.argv[5]
+if sys.argv[6]: data["target"] = sys.argv[6]
 print(json.dumps(data))
 PY
 )"

@@ -158,7 +158,14 @@ exactly one JSON object to $BUILDER_RESULT:
 Writing submitted is only a candidate claim; the caller independently re-reads Capafy's remote status."
 if [ -n "$CAPACITY_CONSTRAINT" ]; then
   PROMPT="$PROMPT
-$CAPACITY_CONSTRAINT This trailing constraint overrides earlier new-skill/addAgent/mandatory Phase B clauses. Never omit the existing agent_id when repairing or resubmitting a rejected Agent."
+$CAPACITY_CONSTRAINT This trailing constraint overrides earlier new-skill/addAgent/mandatory Phase B clauses. Never omit the existing agent_id when repairing or resubmitting a rejected Agent.
+★★ FULL-QUEUE RESULT CONTRACT — OVERRIDES THE GENERIC submitted/no-op EXAMPLES ABOVE ★★
+Write result as exactly one of: poll_review, measure, repair_rejected, reposition, retire_candidate, optimize_packaging, handoff_marketing, no_op.
+For any action except no_op, write exactly one non-empty target and one evidence-backed reason:
+  {\"result\":\"<allowed action>\",\"target\":\"<one agent_id or public listing URL>\",\"reason\":\"<observed result>\"}
+For repair_rejected only, also include agent_id equal to target plus its real listing_url; the caller independently verifies the remote submission.
+For no_op, omit target and write one explicit bounded reason: {\"result\":\"no_op\",\"reason\":\"<why none of the seven actions is safe now>\"}.
+Do not invent another action, executor, service, or command. Use only the existing Capafy commands already named in this prompt."
 fi
 # task-class application-lane-agent (3600s), NOT browser-lane-agent (900s).
 # WHY THE RAISE (and not "make orphan work resumable"): orphan work is ALREADY resumable —

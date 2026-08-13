@@ -271,7 +271,7 @@ def test_daily_reconciles_before_full_first_version_queue_action_selection(tmp_p
         "INVENTORY_CALLS": str(tmp_path / "inventory-calls"),
         "INVENTORY_EXIT": "0",
         "CAPAFY_SELF_FIX": str(fixer),
-        "RUN_AGENT_RESULT": '{"result":"no-op","reason":"first-version queue full: no useful action using existing listings/capabilities"}',
+        "RUN_AGENT_RESULT": '{"result":"no_op","reason":"no rejected Agent has a verified safe correction yet"}',
     })
     result = subprocess.run(["bash", str(DAILY)], text=True, capture_output=True, env=env, check=False)
     assert result.returncode == 0, result.stderr
@@ -283,7 +283,8 @@ def test_daily_reconciles_before_full_first_version_queue_action_selection(tmp_p
     assert "never_online=5, total=32, online=21, review_rejected=9, draft=2" in prompt
     assert "New addAgent creation is forbidden" in prompt
     assert "addAgentVersion for an existing agent_id remains allowed" in prompt
-    assert prompt.rstrip().endswith("Never omit the existing agent_id when repairing or resubmitting a rejected Agent.")
+    assert prompt.rstrip().endswith("Use only the existing Capafy commands already named in this prompt.")
+    assert "poll_review, measure, repair_rejected, reposition, retire_candidate, optimize_packaging, handoff_marketing, no_op" in prompt
     assert (tmp_path / "inventory-calls").read_text() == "1"
 
     Path(env["RUN_AGENT_MARKER"]).unlink()
