@@ -521,6 +521,14 @@ Run installer with `LANCERS_INSTALL_MODE=normal`; verify the only artifact diffe
 
 Require public discovery available, CDP `127.0.0.1:9227` reachable, account session ready, planner route available, no existing application process/lock, capacity below 100%, and current state/ledger readable. Capture ledger receipt count and both pending entries before the wake.
 
+Before any live wake, inject two valid eligible decisions into the canonical loop and require exactly the first ranked project to reach the submitter. If more than one reaches it, treat that as a RED safety failure and return the same application-loop Luna to add the minimum deterministic cap:
+
+```python
+for row, decision in eligible[:1]:
+```
+
+Keep `eligible_count` truthful as the number the planner marked eligible, but require `verified_count <= 1` and one external submit at most per tick. Do not add a quota service, new state, new config, or capacity framework in G1. G3 may later raise the bounded batch after measured demand, but a one-item batch remains within its stated maximum.
+
 - [ ] **Step 3: Enable and kick the one official launchd owner once**
 
 Announce the production scheduler state change, then enable/bootstrap/kickstart exactly as in Task 5. Do not run the Python entrypoint manually and do not trigger a second wake.
