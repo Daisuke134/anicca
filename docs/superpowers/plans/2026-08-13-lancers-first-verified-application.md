@@ -550,6 +550,22 @@ owner, and two contain all SNS/ongoing/delegation signals within a 240-character
 
 Soft target: 3 production files (`status.py`, `application_loop.py`, planner schema), 2 tests, <=90 handwritten production LOC. Qualification is planner-ephemeral, so state/ledger/receipt migration is explicitly excluded.
 
+#### Task 6C: Read back the official proposal without coupling identity to display name
+
+The first eligible production wake creates pending project `5585503` at ¥98,000. Official read-only DOM
+inspection proves `/mypage/proposals` contains the project link, own proposal link
+`/work/proposals/5585503/keiodaisuke?ref=mypage_control`, official proposal ID `27808988`, and matching
+`js-list-item-27808988`. The current reader returns empty only because it expects the mutable heading display
+name to equal the immutable URL username.
+
+- [ ] Add a RED reader regression where URL username and valid nonempty display name differ, while project link, own URL, proposal ID, heading href, and card ID all match.
+- [ ] Remove only the username/display-name equality requirement. Require the heading text to remain a bounded nonempty Japanese `さんの提案` label and preserve every structural identity check.
+- [ ] Prove malformed heading, mismatched project, mismatched proposal href/card, cross-origin URL, and duplicate selectors still fail closed through existing/minimal tests.
+- [ ] Run all Lancers/installer/agent-runner tests, compile/diff checks, and verify live state/ledger hashes are unchanged. Commit/push canonical main.
+- [ ] Deploy exact main SHA in reconcile-only mode, read back pending `5585503`, verify amount ¥98,000 and due date match, append exactly one `ApplicationReceipt`, and only then restore normal scheduled mode.
+
+Soft target: 1 production file, 1 test file, <=10 handwritten production LOC. No manual proposal adoption and no second submit.
+
 - [ ] **Step 1: Install the same exact main SHA in normal mode**
 
 Run installer with `LANCERS_INSTALL_MODE=normal`; verify the only artifact difference is manifest mode and absence of `--reconcile-only` in ProgramArguments. Re-run installed-file hashes.

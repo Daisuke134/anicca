@@ -437,6 +437,15 @@ application/terminal/ledger hash、`application_verified=11`は不変である�
 runtime-validだったeligible候補は既存claim/pendingではないため、差は重複filterではなくfresh planner
 decisionである。Acquisitionは同releaseでenabledを維持し、次のbounded tickを実行する。
 
+次のofficial wakeは`observed=13`、`eligible=1`でproject `5585503`（¥98,000）をsubmit境界へ進め、
+stateへ一意claim/pendingを一件追加するが、公式ID readbackを閉じられず`submission_uncertain`になる。
+normal schedulerは直ちにdisabled/unloadedへ戻し、3 pendingをreconcile-onlyで再読する。公式DOMのread-only
+診断では`/mypage/proposals`にproject link、own `提案をみる` link、proposal ID `27808988`、対応card IDが
+すべて存在する。root causeはreaderがURL username `keiodaisuke`と可変display name
+`SNS・AI業務設計室`を同値と要求したことである。identityはproject ID、own proposal URL、official proposal
+ID、card IDの一致で閉じ、可変display nameをidentity条件にしない。これをTDD修正し、readback-onlyで
+amount/dueを含むtermsを再検証するまでnormal schedulerを再開しない。
+
 projected net gross margin は proposal 時点の JPY 見積で次の式に固定する。
 
 ```text
