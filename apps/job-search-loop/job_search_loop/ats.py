@@ -443,16 +443,19 @@ def _is_workday_account_create(controls: list[dict[str, Any]]) -> bool:
 
 def _is_workday_application_step(controls: list[dict[str, Any]]) -> bool:
     has_continue = _has_exact_text(controls, "Save and Continue")
-    required_fields = [
-        control
-        for control in controls
-        if control.get("required") is True
-        and _normalized(control.get("tag")) in {"input", "textarea", "select"}
-    ]
     has_password = any(
         _normalized(control.get("type")) == "password" for control in controls
     )
-    return has_continue and bool(required_fields) and not has_password
+    return has_continue and not has_password
+
+
+def _is_workday_review(controls: list[dict[str, Any]]) -> bool:
+    return any(
+        _normalized(control.get("text")) == "submit"
+        and _normalized(control.get("automation_id"))
+        in {"bottom-navigation-next-button", "pagefooternextbutton"}
+        for control in controls
+    )
 
 
 def _validate_snapshot(snapshot: Any) -> dict[str, Any]:
@@ -496,6 +499,16 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
 
     for frame_index, frame in enumerate(value["frames"]):
         controls = frame["controls"]
+        if provider == "workday" and _is_workday_review(controls):
+            base.update(
+                {
+                    "ready": True,
+                    "claim_ready": True,
+                    "surface": "workday_review",
+                    "frame_index": frame_index,
+                }
+            )
+            return base
         if _is_application_form(controls):
             base.update(
                 {

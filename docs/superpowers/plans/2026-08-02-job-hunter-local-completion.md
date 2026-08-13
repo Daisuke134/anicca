@@ -25,23 +25,24 @@ answer-artifact reuse, terminal-candidate filtering, and the canonical `claim_re
 bridge through the existing `browser_worker` path. The Workday account-creation fix is
 now pushed, released, and proven in a real wake: the credential process filled only the
 registered wake-owned page, returned no secret, and reached the tenant login screen.
-The Workday login and authenticated-page privacy blockers are closed in the active
-immutable release. A real wake proved account creation, sign-in, and entry to the
-five-step Workday application without leaking authenticated content. It still produced
-no authoritative application receipt. The next measured defect is exact page
-ownership: the observer can select another open page instead of the page registered to
-the current wake. O2-06 therefore makes observation fail closed unless that exact page
-is supplied before another real application attempt.
+The Workday login, authenticated-page privacy, and exact owned-page blockers are closed
+in the active immutable release. Real wake `daily-20260814-072554` filled five grounded
+fields with no blocker and no Submit, then exposed the remaining defect: deterministic
+pre-submit stopped at the first Workday step and the free-form runner redundantly
+re-explored the same owned page. It still produced no authoritative application
+receipt. O2-06 now moves all Workday wizard navigation into the deterministic
+owned-page path, stops at Review, and permits final Submit only after the existing
+intent and confirmation gates.
 
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
 unloaded. They are now loaded. The pushed source commit
-`bd18c96f1c75b472ff295cc07f51339ad578855e` is now the active immutable release.
+`a72c47b8d6e29ed34b535452279a6c71f521d74f` is now the active immutable release.
 It contains O2-05N natural reporting, O2-05U unlimited eligible applications, O2-05B
 binding to the existing `interactive:dais` browser at `127.0.0.1:9222` with no restart
 fallback, the first O2-06 salary-policy correction, terminal filtering, and the Ashby
 claim-ready bridge, private Workday account creation/sign-in, and the authenticated-page
-privacy contract. Release `6b7b104ae7210e3651d8c0cda230c3fc0902089c` is the
+privacy contract. Release `ba3b487ae4d6f2085acbad87569b822fac0553f5` is the
 rollback target. Real daily wakes
 proved discovery, adaptive application work, natural reporting, and safe browser
 ownership. All current health gates pass.
@@ -2389,6 +2390,30 @@ performs the real E2E, and records the milestone.
   through exact `Save and Continue` steps, filling verified facts/materials and
   stopping before final Submit until the existing intent and confirmation gates are
   present.
+
+  Thirteenth real wake `daily-20260814-072554` closes that first requirement. The
+  deterministic pre-submit path selected NVIDIA Principal Engineer, produced a private
+  receipt with `status=claim_ready`, five verified actions, zero blockers, and
+  `submit_clicked=false`. The wake exited `0`, Telegram delivery is message ID `16809`,
+  cleanup closed exactly its one owned page, all seven pre-existing page IDs remained,
+  and the production Ledger stayed byte-identical at SHA-256
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  The same wake proves why no application was submitted: first-step `claim_ready`
+  terminated deterministic preparation, after which the free-form runner navigated
+  the owned page and retried provider discovery without authoritative progress. The
+  source fix keeps the same page and existing grounded fill adapter, repeats at most
+  ten exact `Save and Continue` steps, requires the structural page signature to
+  change, recognizes Workday Review only from its exact footer Submit control, and
+  never clicks that control. It retains the resume-bearing step receipt for the
+  existing submit-intent gate and aggregates the private employer answers. Focused
+  regression verification passes `26/26`; the full suite passes `587/587`.
+
+  **Immediate next slice:** commit and push this deterministic wizard change, build and
+  activate it, then run one real wake. The required outcome is either Review with a
+  verified resume-bearing receipt or one exact unresolved required question. Only
+  after Review evidence exists may O2-09 create a submit intent and exercise final
+  Submit with authoritative Workday/Gmail receipt reconciliation.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or

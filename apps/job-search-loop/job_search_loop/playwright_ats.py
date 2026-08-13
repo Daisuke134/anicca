@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any, Callable
 
@@ -245,6 +246,7 @@ def capture_snapshot(page: Any, *, navigation_committed: bool) -> dict[str, Any]
         tag: tag,
         type: n.getAttribute('type') || '',
         role: role,
+        automation_id: n.getAttribute('data-automation-id') || '',
         label: explicit || associated || placeholder,
         name: n.getAttribute('name') || '',
         text: ownText,
@@ -318,6 +320,38 @@ class PlaywrightFillAdapter:
 
     def screenshot(self, path: str) -> None:
         self.page.screenshot(path=path, full_page=True)
+
+
+def _workday_step_signature(snapshot: dict[str, Any]) -> str:
+    controls = [
+        control
+        for frame in snapshot.get("frames") or []
+        for control in frame.get("controls") or []
+        if str(control.get("role") or "").casefold() not in {"alert", "status"}
+    ]
+    return hashlib.sha256(
+        json.dumps(controls, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+
+def _advance_workday_step(page: Any, snapshot: dict[str, Any]) -> dict[str, Any] | None:
+    matches = page.get_by_role("button", name="Save and Continue", exact=True)
+    visible = [
+        matches.nth(index)
+        for index in range(matches.count())
+        if matches.nth(index).is_visible()
+    ]
+    if len(visible) != 1:
+        return None
+    previous = _workday_step_signature(snapshot)
+    visible[0].click(timeout=10_000)
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        page.wait_for_timeout(500)
+        current = capture_snapshot(page, navigation_committed=True)
+        if any(frame.get("controls") for frame in current["frames"]) and _workday_step_signature(current) != previous:
+            return current
+    return None
 
 
 def _application_url(url: str, provider: str) -> str:
@@ -418,23 +452,6 @@ def run_pre_submit(
                         page.locator("input[type=file]").first.wait_for(
                             state="attached", timeout=20_000
                         )
-                    snapshot = capture_snapshot(page, navigation_committed=True)
-                    snapshot_path = evidence_dir / f"ats-snapshot-{digest}.json"
-                    _private_write(snapshot_path, snapshot)
-                    snapshot_sha256 = hashlib.sha256(snapshot_path.read_bytes()).hexdigest()
-                    evaluation = evaluate_snapshot(snapshot)
-                    _private_write(
-                        evidence_dir / f"ats-evaluation-{digest}.json", evaluation
-                    )
-                    if not evaluation["claim_ready"]:
-                        return {
-                            "claim_ready": False,
-                            "blockers": provider_blockers
-                            + list(
-                                evaluation.get("blockers")
-                                or ["application_surface_not_ready"]
-                            ),
-                        }
                     posting_text = " ".join(
                         str(value) for value in candidate.get("source_spans", [])
                     )
@@ -444,48 +461,104 @@ def run_pre_submit(
                         materials_root=materials_root,
                         posting_language=str(candidate.get("language") or "en"),
                     )
-                    plan = build_non_submit_fill_plan(
-                        snapshot,
-                        answers=grounded_profile_answers(profile),
-                        resume_path=routed["resume_path"],
-                        resume_sha256=routed["resume_sha256"],
-                    )
-                    receipt = execute_non_submit_fill_plan(
-                        plan,
-                        adapter=PlaywrightFillAdapter(page),
-                        owner_receipt=owner_receipt,
-                        snapshot_sha256=snapshot_sha256,
-                        screenshot_path=evidence_dir / f"pre-submit-{digest}.png",
-                        receipt_path=evidence_dir / f"fill-receipt-{digest}.json",
-                    )
                     answers_path = evidence_dir / f"employer-answers-{digest}.json"
-                    _private_write(answers_path, receipt["answers"])
-                    claim_ready = receipt["status"] == "claim_ready"
-                    return {
-                        "claim_ready": claim_ready,
-                        "blockers": [
-                            f"pre_submit_blocked:{item}"
-                            for item in receipt.get("blockers", [])
-                        ],
-                        "claim_ready_dossier": (
-                            {
-                                "company": str(candidate.get("company") or ""),
-                                "title": str(candidate.get("title") or ""),
-                                "official_url": url,
-                                "url_sha256": digest,
-                                "portfolio_bucket": str(
-                                    candidate.get("portfolio_bucket") or "adjacent"
-                                ),
-                                "resume_path": routed["resume_path"],
-                                "snapshot_path": str(snapshot_path),
-                                "fill_receipt_path": str(
-                                    evidence_dir / f"fill-receipt-{digest}.json"
-                                ),
-                                "answers_path": str(answers_path),
+                    all_answers: list[dict[str, Any]] = []
+                    submission_evidence: tuple[Path, Path] | None = None
+                    snapshot: dict[str, Any] | None = None
+                    for step in range(1, 11):
+                        if snapshot is None:
+                            snapshot = capture_snapshot(page, navigation_committed=True)
+                        suffix = "" if step == 1 else f"-step-{step:02d}"
+                        snapshot_path = evidence_dir / f"ats-snapshot-{digest}{suffix}.json"
+                        evaluation_path = evidence_dir / f"ats-evaluation-{digest}{suffix}.json"
+                        _private_write(snapshot_path, snapshot)
+                        snapshot_sha256 = hashlib.sha256(snapshot_path.read_bytes()).hexdigest()
+                        evaluation = evaluate_snapshot(snapshot)
+                        _private_write(evaluation_path, evaluation)
+                        if evaluation.get("surface") == "workday_review":
+                            if submission_evidence is None:
+                                return {
+                                    "claim_ready": False,
+                                    "blockers": ["workday_resume_not_verified"],
+                                }
+                            _private_write(answers_path, all_answers)
+                            evidence_snapshot, evidence_receipt = submission_evidence
+                            return {
+                                "claim_ready": True,
+                                "blockers": [],
+                                "claim_ready_dossier": {
+                                    "company": str(candidate.get("company") or ""),
+                                    "title": str(candidate.get("title") or ""),
+                                    "official_url": url,
+                                    "url_sha256": digest,
+                                    "portfolio_bucket": str(candidate.get("portfolio_bucket") or "adjacent"),
+                                    "resume_path": routed["resume_path"],
+                                    "snapshot_path": str(evidence_snapshot),
+                                    "fill_receipt_path": str(evidence_receipt),
+                                    "answers_path": str(answers_path),
+                                    "review_snapshot_path": str(snapshot_path),
+                                    "workday_step_count": step - 1,
+                                },
                             }
-                            if claim_ready
-                            else None
-                        ),
+                        if not evaluation["claim_ready"]:
+                            return {
+                                "claim_ready": False,
+                                "blockers": provider_blockers
+                                + list(evaluation.get("blockers") or ["application_surface_not_ready"]),
+                            }
+                        plan = build_non_submit_fill_plan(
+                            snapshot,
+                            answers=grounded_profile_answers(profile),
+                            resume_path=routed["resume_path"],
+                            resume_sha256=routed["resume_sha256"],
+                        )
+                        screenshot_path = evidence_dir / f"pre-submit-{digest}{suffix}.png"
+                        receipt_path = evidence_dir / f"fill-receipt-{digest}{suffix}.json"
+                        receipt = execute_non_submit_fill_plan(
+                            plan,
+                            adapter=PlaywrightFillAdapter(page),
+                            owner_receipt=owner_receipt,
+                            snapshot_sha256=snapshot_sha256,
+                            screenshot_path=screenshot_path,
+                            receipt_path=receipt_path,
+                        )
+                        all_answers.extend(receipt["answers"])
+                        _private_write(answers_path, all_answers)
+                        if receipt["status"] != "claim_ready":
+                            return {
+                                "claim_ready": False,
+                                "blockers": [
+                                    f"pre_submit_blocked:{item}"
+                                    for item in receipt.get("blockers", [])
+                                ],
+                            }
+                        if receipt.get("resume_sha256") == routed["resume_sha256"]:
+                            submission_evidence = (snapshot_path, receipt_path)
+                        if provider != "workday" or evaluation.get("surface") != "workday_application_step":
+                            return {
+                                "claim_ready": True,
+                                "blockers": [],
+                                "claim_ready_dossier": {
+                                    "company": str(candidate.get("company") or ""),
+                                    "title": str(candidate.get("title") or ""),
+                                    "official_url": url,
+                                    "url_sha256": digest,
+                                    "portfolio_bucket": str(candidate.get("portfolio_bucket") or "adjacent"),
+                                    "resume_path": routed["resume_path"],
+                                    "snapshot_path": str(snapshot_path),
+                                    "fill_receipt_path": str(receipt_path),
+                                    "answers_path": str(answers_path),
+                                },
+                            }
+                        snapshot = _advance_workday_step(page, snapshot)
+                        if snapshot is None:
+                            return {
+                                "claim_ready": False,
+                                "blockers": ["workday_save_and_continue_no_progress"],
+                            }
+                    return {
+                        "claim_ready": False,
+                        "blockers": ["workday_step_limit_reached"],
                     }
 
                 return {**attempt_ranked_candidates(candidates, attempt), "executor": EXECUTOR}

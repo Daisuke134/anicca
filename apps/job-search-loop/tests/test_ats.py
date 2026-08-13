@@ -466,6 +466,28 @@ class AtsReadinessTests(unittest.TestCase):
         self.assertFalse(result["claim_ready"])
         self.assertEqual(result["surface"], "none")
 
+    def test_workday_optional_step_and_review_are_distinct(self):
+        url = "https://example.wd5.myworkdayjobs.com/Careers/job/role/apply/applyManually"
+        optional_step = {
+            "version": 1,
+            "url": url,
+            "navigation_committed": True,
+            "frames": [{"url": url, "controls": [
+                {"tag": "button", "text": "Save and Continue", "automation_id": "pageFooterNextButton"},
+            ]}],
+        }
+        review = {
+            **optional_step,
+            "frames": [{"url": url, "controls": [
+                {"tag": "input", "type": "email", "label": "Email"},
+                {"tag": "input", "type": "file", "label": "Resume"},
+                {"tag": "button", "text": "Submit", "automation_id": "bottom-navigation-next-button"},
+            ]}],
+        }
+
+        self.assertEqual(evaluate_snapshot(optional_step)["surface"], "workday_application_step")
+        self.assertEqual(evaluate_snapshot(review)["surface"], "workday_review")
+
     def test_generic_application_surface_is_claim_ready(self):
         snapshot = {
             "version": 1,

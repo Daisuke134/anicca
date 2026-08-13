@@ -46,10 +46,53 @@ class PlaywrightAtsTests(unittest.TestCase):
         )
         script = page.frames[0].control_locator.script
         self.assertIn("group_label", script)
+        self.assertIn("automation_id", script)
         self.assertIn("needsGroup", script)
         self.assertIn("choiceText", script)
         self.assertIn("groupLabel.includes('?')", script)
         self.assertNotIn("n.value", script)
+
+    def test_workday_continue_requires_one_exact_button_and_changed_step(self):
+        from unittest.mock import patch
+        from job_search_loop.playwright_ats import _advance_workday_step
+
+        before = {"frames": [{"controls": [{"tag": "input", "label": "First Name"}]}]}
+        after = {"frames": [{"controls": [{"tag": "input", "label": "Experience"}]}]}
+
+        class Button:
+            clicked = False
+
+            def is_visible(self):
+                return True
+
+            def click(self, timeout):
+                self.clicked = timeout == 10_000
+
+        button = Button()
+
+        class Matches:
+            def count(self):
+                return 1
+
+            def nth(self, index):
+                self.index = index
+                return button
+
+        class Page:
+            def get_by_role(self, role, name, exact):
+                self.lookup = (role, name, exact)
+                return Matches()
+
+            def wait_for_timeout(self, value):
+                self.waited = value
+
+        page = Page()
+        with patch("job_search_loop.playwright_ats.capture_snapshot", return_value=after):
+            result = _advance_workday_step(page, before)
+
+        self.assertEqual(result, after)
+        self.assertEqual(page.lookup, ("button", "Save and Continue", True))
+        self.assertTrue(button.clicked)
 
     def test_builds_contact_answers_without_legal_inference(self):
         self.assertIsNotNone(
