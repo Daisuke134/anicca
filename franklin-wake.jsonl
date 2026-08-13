@@ -27213,3 +27213,11 @@
 {"ts":1786650693,"wake_id":"00MSRXOY518FB0964C95934FB4","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786650819,"wake_id":"00MSRXRNHPB9D9D7AB5D694B6B","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786650947,"wake_id":"00MSRXUE4W1BE48BBD9C98417C","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana AI autonomous agent marketplace earn USDC API [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surf"}
+{"ts":1786651077,"wake_id":"00MSRXX6H5CDC7B28A5CD741EE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786651205,"wake_id":"00MSRXZWSHFE29D35E9F32431F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786651332,"wake_id":"00MSRY2MX69A3652189515477B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786651458,"wake_id":"00MSRY5CKS58A4A699FF414CB3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786651585,"wake_id":"00MSRY81YOE121C4A12C4A4C94","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786651714,"wake_id":"00MSRYAU7J66DC86D8D2CB4DE5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786651842,"wake_id":"00MSRYDKSH08B6A60A3E98453E","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786651970,"wake_id":"00MSRYGB0Z6BFFC4420C574821","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana autonomous agent microtask marketplace paid API earn USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (can"}
