@@ -25,21 +25,24 @@ answer-artifact reuse, terminal-candidate filtering, and the canonical `claim_re
 bridge through the existing `browser_worker` path. The Workday account-creation fix is
 now pushed, released, and proven in a real wake: the credential process filled only the
 registered wake-owned page, returned no secret, and reached the tenant login screen.
-The measured two-field Workday login blocker is now closed in pushed source by the same
-private tool, with no new service or browser. That source is verified but not yet in the
-active immutable release. The next slice builds and activates it, then reruns the
-existing daily LaunchAgent without claiming an application until an authoritative
-receipt exists.
+The Workday login and authenticated-page privacy blockers are closed in the active
+immutable release. A real wake proved account creation, sign-in, and entry to the
+five-step Workday application without leaking authenticated content. It still produced
+no authoritative application receipt. The next measured defect is exact page
+ownership: the observer can select another open page instead of the page registered to
+the current wake. O2-06 therefore makes observation fail closed unless that exact page
+is supplied before another real application attempt.
 
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
 unloaded. They are now loaded. The pushed source commit
-`d6210d09f35d8705f5ad52b44827e980e112e1d7` is now the active immutable release.
+`bd18c96f1c75b472ff295cc07f51339ad578855e` is now the active immutable release.
 It contains O2-05N natural reporting, O2-05U unlimited eligible applications, O2-05B
 binding to the existing `interactive:dais` browser at `127.0.0.1:9222` with no restart
 fallback, the first O2-06 salary-policy correction, terminal filtering, and the Ashby
-claim-ready bridge, and private Workday account creation. Release
-`01590d5524e684bc8659d487f9d31ba0b9bb59bf` is the rollback target. Real daily wakes
+claim-ready bridge, private Workday account creation/sign-in, and the authenticated-page
+privacy contract. Release `6b7b104ae7210e3651d8c0cda230c3fc0902089c` is the
+rollback target. Real daily wakes
 proved discovery, adaptive application work, natural reporting, and safe browser
 ownership. All current health gates pass.
 O2-06 through O2-12 improve and prove the live loop; they must
@@ -1677,10 +1680,38 @@ performs the real E2E, and records the milestone.
   passes, and the fact is unique. This value is not committed or logged. The source
   privacy fix is pushed but not yet in the active release.
 
-  **Immediate next slice:** build and activate the pushed privacy release, rerun the
-  existing daily lane, and verify both a clean provider transcript and progression past
-  Workday Step 1. Until an ATS or Gmail receipt exists, the system continues reporting
-  zero confirmed applications.
+  Privacy release proof is complete. Source commit
+  `bd18c96f1c75b472ff295cc07f51339ad578855e` built to archive SHA-256
+  `4811df26d29803624a534f8aa1dbdb90e38e93ec52f2b555161414386b7de258`, contains
+  `267` entries with no private-state-shaped entry, and passes `578/578` extracted
+  runtime tests; only the two source-only release tests are excluded. It is read-only
+  and active, with `6b7b104ae7210e3651d8c0cda230c3fc0902089c` as rollback.
+
+  Real launchd wake `daily-20260814-030947` exited `0` and kept all three provider
+  privacy scans clean. It discovered `451` links, verified `52`, retained `7` eligible
+  roles, rejected `45`, and left `399` for later verification. It truthfully reported
+  zero submitted and zero submit-unknown. Telegram acknowledged the Japanese outcome as
+  message ID `16556`. Production Ledger stayed byte-identical at SHA-256
+  `d6d494d2185137ab76d2079756f38326819bf149be50cb4b1dfc4bf8d9d0ee74`: `57`
+  applications, `257` events, `30` intents, `6` submitted, `31` submit-unknown, and
+  `0` submit-claimed.
+
+  The wake recorded three blockers: the Salesforce Workday route did not surface its
+  formal application entry in that run; the Rakuten route exposed an unsupported
+  login-like pre-click form; and the DeNA Herp route did not yield an observable formal
+  ATS form. Cleanup closed the one page in its registered ownership receipt and left
+  shared-browser PID `22279` and UUID
+  `2ac269b0-350a-49a4-971e-9a0556aed50d` unchanged. A new Herp page target
+  `88B95B71821090C28E3EA71297C9B1BA` is nevertheless present after the wake. It is not
+  in authoritative Job Hunter ownership evidence, so it remains untouched; Job Hunter
+  must not guess ownership or close it.
+
+  **Immediate next slice:** replace the observer's ambient current-page lookup with the
+  exact target registered by the current browser owner, ownership receipt, and
+  owned-page receipt. Observation fails closed on every mismatch and never falls back
+  to a baseline page or unregistered popup. Then build, activate, and rerun the real
+  daily lane. Until an ATS or Gmail receipt exists, the system reports zero confirmed
+  applications.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
