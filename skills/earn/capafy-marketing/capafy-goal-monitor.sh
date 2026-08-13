@@ -13,6 +13,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY=/opt/homebrew/bin/python3
 OUTCOME_SCRIPT="$SCRIPT_DIR/scripts/capafy_outcome.py"
+OWNER_REPORT="$SCRIPT_DIR/scripts/capafy_owner_report.py"
 TELEGRAM_SENDER="${CAPAFY_TELEGRAM_SENDER:-$SCRIPT_DIR/../../_shared/send-telegram.sh}"
 EVENT_SYNC="${CAPAFY_EVENT_SYNC:-$SCRIPT_DIR/scripts/capafy_event_sync.py}"
 EVENT_PROJECTION="${CAPAFY_EVENT_PROJECTION:-$SCRIPT_DIR/scripts/capafy_event_projection.py}"
@@ -57,9 +58,9 @@ fi
 TMP_ROOT="${CAPAFY_GOAL_MONITOR_TMP_DIR:-/tmp}"
 PROJECTION_FILE="$TMP_ROOT/capafy_company_projection.json"
 REPORT_FILE="$TMP_ROOT/capafy_goal_monitor.json"
-BODY_FILE="$TMP_ROOT/capafy_goal_monitor_body.txt"
+OWNER_REPORT_ENVELOPE="$TMP_ROOT/capafy_owner_report_envelope.json"
 PARITY_FILE="$TMP_ROOT/capafy_goal_monitor_parity_error.txt"
-rm -f "$PROJECTION_FILE" "$REPORT_FILE" "$BODY_FILE" "$PARITY_FILE"
+rm -f "$PROJECTION_FILE" "$REPORT_FILE" "$OWNER_REPORT_ENVELOPE" "$PARITY_FILE"
 if ! "$PY" "$EVENT_SYNC" sync-all \
   --ledger "$EVENT_LEDGER" --evidence-dir "$EVENT_EVIDENCE_DIR" >/dev/null; then
   "$PY" "$OUTCOME_SCRIPT" start-incident \
@@ -104,12 +105,12 @@ if ! "$PY" "$EVENT_PROJECTION" project --ledger "$EVENT_LEDGER" > "$PROJECTION_F
 fi
 
 # ── the rest (goal a/b/d parsing + state + telegram body) is one python pass (read+append only). ──
-$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$KEY_GATE" "$IG_LABEL" "$IG_HANDLE" "$LIFECYCLE_STATE" "$OUTCOME_SCRIPT" "$EVENT_PROJECTION" "$PROJECTION_FILE" "$PARITY_FILE" "$BODY_FILE" "$PORTFOLIO_STATE" <<'PY' > "$REPORT_FILE"
+$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$KEY_GATE" "$IG_LABEL" "$IG_HANDLE" "$LIFECYCLE_STATE" "$OUTCOME_SCRIPT" "$EVENT_PROJECTION" "$PROJECTION_FILE" "$PARITY_FILE" "$PORTFOLIO_STATE" "$OWNER_REPORT_ENVELOPE" <<'PY' > "$REPORT_FILE"
 import json, os, re, subprocess, sys, datetime
 from decimal import Decimal, InvalidOperation
 (state_p, daily_log, earn_ledger, key_gate, ig_label, ig_handle,
  lifecycle_state_path, outcome_script, projection_script, projection_path,
- parity_path, body_path, portfolio_path) = sys.argv[1:14]
+ parity_path, portfolio_path, owner_envelope_path) = sys.argv[1:14]
 sys.path.insert(0, os.path.dirname(projection_script))
 from capafy_event_projection import parity_errors
 try:
@@ -404,6 +405,33 @@ if (
     raise SystemExit(4)
 company = projection
 report["company_state"] = company
+# Keep the previous canonical projection before appending this run to history.
+previous_company = None
+try:
+    previous_company = json.load(open(state_p)).get("latest", {}).get("company_state")
+except Exception:
+    pass
+resolved_incident_id = os.environ.get("CAPAFY_GOAL_MONITOR_RESOLVED_INCIDENT_ID")
+report_kind = "event" if resolved_incident_id else os.environ.get("CAPAFY_REPORT_KIND", "morning")
+now_jst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+period_key = os.environ.get("CAPAFY_REPORT_PERIOD_KEY")
+if resolved_incident_id:
+    period_key = company.get("last_event_id")
+elif not period_key:
+    period_key = company.get("last_event_id") if report_kind == "event" else now_jst.strftime("%Y-%m-%dT%H" if report_kind == "hourly" else "%Y-%m-%d")
+owner_envelope = {
+    "schema_version": 1,
+    "report_kind": report_kind,
+    "period_key": period_key,
+    "company_state": company,
+    "previous_company_state": previous_company,
+}
+event_reason = "repair_closed" if resolved_incident_id else os.environ.get("CAPAFY_EVENT_REASON")
+if event_reason:
+    owner_envelope["event_reason"] = event_reason
+with open(owner_envelope_path, "w", encoding="utf-8") as stream:
+    json.dump(owner_envelope, stream, ensure_ascii=False)
+os.chmod(owner_envelope_path, 0o600)
 # append to state (history), keep last 60
 hist = []
 if os.path.exists(state_p):
@@ -412,21 +440,6 @@ if os.path.exists(state_p):
 hist.append(report); hist = hist[-60:]
 json.dump({"latest": report, "history": hist}, open(state_p, "w"), ensure_ascii=False, indent=1)
 
-rendered = subprocess.run(
-    [sys.executable, outcome_script, "render"], input=json.dumps(company),
-    capture_output=True, text=True, timeout=30,
-)
-body = rendered.stdout.strip() if rendered.returncode == 0 else ""
-resolved_incident_id = os.environ.get("CAPAFY_GOAL_MONITOR_RESOLVED_INCIDENT_ID")
-if body and resolved_incident_id:
-    body = "\n".join([
-        "Capafy incident resolved — no action needed",
-        "The canonical ledger and independent company source reads agree again.",
-        f"Resolved incident: {resolved_incident_id}",
-        "",
-        body,
-    ])
-open(body_path,"w").write(body)
 print(json.dumps(report, ensure_ascii=False))
 PY
 
@@ -481,12 +494,18 @@ if ! "$PY" "$COMPANY_DASHBOARD_BUILDER" \
     --fingerprint goal-monitor-dashboard-generation-failed >/dev/null 2>&1 || true
   exit 2
 fi
-BODY="$(cat "$BODY_FILE" 2>/dev/null)"
 PROJECTION_ID="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["projection_id"])' "$PROJECTION_FILE")"
-DELIVERED_ID="$($PY -c 'import json,sys
-try: print(json.load(open(sys.argv[1])).get("projection_id", ""))
-except Exception: print("")' "$DELIVERY_STATE")"
-if [ -n "$BODY" ] && [ "$DELIVERED_ID" != "$PROJECTION_ID" ]; then
+DELIVERY_KEY="$($PY "$OWNER_REPORT" delivery-key < "$OWNER_REPORT_ENVELOPE")" || exit 2
+"$PY" "$OWNER_REPORT" delivered --state "$DELIVERY_STATE" --key "$DELIVERY_KEY"
+DELIVERED_RC=$?
+if [ "$DELIVERED_RC" -eq 2 ]; then
+  exit 2
+fi
+if [ "$DELIVERED_RC" -ne 0 ] && [ "$DELIVERED_RC" -ne 1 ]; then
+  exit 2
+fi
+if [ "$DELIVERED_RC" -eq 1 ]; then
+  BODY="$($PY "$OWNER_REPORT" render < "$OWNER_REPORT_ENVELOPE")" || exit 2
   SEND_RESULT="$(bash "$TELEGRAM_SENDER" "$BODY" 2>&1)" || {
     "$PY" "$OUTCOME_SCRIPT" start-incident \
       --owner company --summary "Projection-backed Telegram delivery failed." \
@@ -495,16 +514,8 @@ if [ -n "$BODY" ] && [ "$DELIVERED_ID" != "$PROJECTION_ID" ]; then
   }
   MESSAGE_ID="$(printf '%s\n' "$SEND_RESULT" | sed -nE 's/.*MSGID=([0-9]+).*/\1/p' | tail -1)"
   [ -n "$MESSAGE_ID" ] || exit 1
-  "$PY" - "$DELIVERY_STATE" "$PROJECTION_ID" "$MESSAGE_ID" <<'PY'
-import datetime,json,os,sys,tempfile
-path,projection_id,message_id=sys.argv[1:]
-os.makedirs(os.path.dirname(path),exist_ok=True)
-payload={"schema_version":1,"projection_id":projection_id,"telegram_message_id":message_id,"delivered_at":datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z")}
-fd,tmp=tempfile.mkstemp(prefix=".capafy-delivery-",dir=os.path.dirname(path))
-with os.fdopen(fd,"w") as stream:
- json.dump(payload,stream,sort_keys=True);stream.write("\n");stream.flush();os.fsync(stream.fileno())
-os.replace(tmp,path)
-PY
+  "$PY" "$OWNER_REPORT" record-delivery --state "$DELIVERY_STATE" \
+    --key "$DELIVERY_KEY" --projection-id "$PROJECTION_ID" --message-id "$MESSAGE_ID" || exit 2
 fi
 cat "$REPORT_FILE" 2>/dev/null
 exit "$RC"
