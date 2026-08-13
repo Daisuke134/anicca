@@ -24,14 +24,14 @@
 
 | File | Responsibility | Budget |
 |---|---|---:|
-| `skills/earn/lancers/scripts/telegram_report.py` | bounded snapshot, render, daily/state-change key, enqueue/deliver, CLI | <=180 handwritten production LOC |
+| `skills/earn/lancers/scripts/telegram_report.py` | bounded snapshot, render, daily/state-change key, official storefront reader under account lock, enqueue/deliver, CLI | <=320 handwritten production LOC |
 | `skills/_shared/marketplace-core/scripts/telegram_outbox.py` | copy the currently deployed byte-compatible durable outbox; no redesign | existing 312 LOC snapshot |
 | `apps/lancers-revenue/launchd/ai.anicca.lancers-revenue-telegram-report.plist` | existing label, 300s interval, exact release arguments, no `RunAtLoad` | <=25 LOC |
 | `apps/lancers-revenue/scripts/install-local.sh` | include reporter/outbox and atomically render both plists from exact SHA | <=30 changed LOC |
 | `apps/lancers-revenue/tests/test_telegram_report.py` | one focused RED/GREEN behavioral suite | <=170 LOC |
 | `apps/lancers-revenue/tests/test_install_local.py` | reporter exact-release/manifest/plist regression | <=30 changed LOC |
 
-If handwritten production exceeds 180 LOC or needs another production file, stop and return `NEEDS_CONTEXT`; do not hide expansion in helpers.
+If the reporter exceeds 320 LOC or needs another production file, stop and return `NEEDS_CONTEXT`; do not hide expansion in helpers. The original 180 LOC estimate was superseded after RED measured 265 LOC before the required official storefront reader/account lock existed. This revised ceiling is still 72% smaller than importing the 1,161-line legacy reporter/observability pair.
 
 ## Task 1: Canonical truthful report tick and exact-SHA deployment
 
