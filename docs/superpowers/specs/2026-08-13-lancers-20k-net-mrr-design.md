@@ -793,6 +793,22 @@ G3Bのsoft targetはproduction 1 file / 15 LOC以下、existing test 1 file / 35
 Luna/Terraはprimaryの完成planから直接実装し、実装後にregressionと既存suiteを実行する。fresh Sol
 adversarial reviewは1回だけで、monthly優先、net JPY順、stable tie、claim除外、最大1 submitを反証する。
 
+G3B implementation commit `0c700ab99c30bdc40f1a8b1c6c15d04dab01eb1f`はproduction 9行、test 32行で、
+HOL 16、Lancers統合31、agent-runner 15、compile、diff checkがPASSする。fresh Sol adversarial review
+1/1は70%境界、巨大値、invalid costs、generic/monthly、逆ID stable tie、claimed最上位、invalid plannerを
+反証し、必須修正なしの`ship`である。exact release deploy後の実tickはquery `B2Bマーケティング`を選んだ。
+
+この実tickはprovider_count 0 / normalized_count 0を返し、state、ledger、listingを変更せず、pending 0、
+receipts 14を維持したが、applicationは`ok=false / error=no_normalized_opportunities`、exit 1にした。
+root causeは`status.run_discovery`の既存empty-result contractが`ok=false`を返す一方、application側は
+`no_normalized_opportunities`をerror branchの後でしか例外扱いせず、正常な空集合branchへ到達できないこと
+である。これはranking不具合でもprovider blockでもない。G3Bを閉じてG3Cへ進む前に、G3B.1としてapplication
+boundaryだけでempty resultを`ok=true / reason=no_eligible_project / submitted=false`へ正規化する。
+
+G3B.1はstatus contractを変えず、production 1 file / 3 LOC以下、existing test 1 file / 20 LOC以下とする。
+network/provider/schema/invalid argument等の他errorは従来どおりfail closedする。planner/submitは呼ばず、
+state/ledgerを変更しない。primaryがplanを書き、Lunaが直接実装し、fresh Sol reviewを1回だけ行う。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
@@ -805,7 +821,8 @@ adversarial reviewは1回だけで、monthly優先、net JPY順、stable tie、c
 | G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
 | G2 truthful acquisition | **完了。** storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | exact release `d63dfd1…`、Telegram message ID `15922`、同一状態の再kick 0送信 |
 | G3A query coverage | **完了。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | exact release `a2081bc0…`、review 1/1 ship、実tick `LinkedIn / observed 2 / submitted false`、state/ledger/listing不変 |
-| G3B eligible ranking | **active。** validated eligibleをexplicit monthly、projected net JPY、provider stable orderで並べる | monthly優先、net JPY順、stable tie、claim除外、最大1 submit |
+| G3B eligible ranking | **implementation/review/deploy完了、live acceptance中。** validated eligibleをexplicit monthly、projected net JPY、provider stable orderで並べる | review 1/1 ship、exact release `0c700ab9…`、実tickでempty-result境界を発見 |
+| G3B.1 empty search normalization | **active。** providerの正常な0件をfailureではなくno-op successとして扱う | `ok=true / no_eligible_project / submitted=false`、planner/submit 0、state/ledger不変 |
 | G3C capacity quota | authoritative active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下） | active contract source、tick/day quota、100% cap、duplicate拒否 |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
