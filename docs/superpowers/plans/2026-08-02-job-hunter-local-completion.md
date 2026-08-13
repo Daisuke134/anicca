@@ -6,12 +6,11 @@
 **Original base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`
 **Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Status:** O2-03 reproducible release validation is complete; O2-05A1 remains in
-review-fix with one Important truth-boundary finding open. O2-05P is implemented and
-reviewed but remains open until the full suite can rerun without the Mac mini's
-disk-full SQLite failures. O2-05 through O2-12 remain open. Resume baseline is
-accepted. Autonomous application, mail, and learning lanes are disabled and unloaded
-and must not be described as healthy or complete.
+**Status:** O2-03 reproducible release validation and O2-05P regional prompt fence
+are complete; O2-05A1 remains in review-fix with one Important truth-boundary finding
+open. O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous
+application, mail, and learning lanes are disabled and unloaded and must not be
+described as healthy or complete.
 
 ## 1. Done condition
 
@@ -865,13 +864,11 @@ after bounded recovery fails.
   implements the three rules in section 11, with no database, service, parser, or
   configuration addition. The contract test binds the exact non-negated policy to
   the actual multiline runner invocation. Focused prompt tests pass `16/16` and the
-  fresh read-only adversarial review is PASS. The same production prompt previously
-  passed the complete Job Hunter suite `569/569`; after strengthening only the test,
-  two fresh full-suite attempts were interrupted by the Mac mini data volume at
-  100% capacity, producing SQLite `disk I/O error` (`1` failure and `11` errors).
-  Individually rerun affected ledger and route-executor tests passed `1/1` and
-  `15/15`. This is not recorded as a current full-suite GREEN; O2-05P remains open
-  until space is available and `569/569` reruns successfully.
+  fresh read-only adversarial review is PASS. Two earlier full-suite attempts were
+  interrupted by the Mac mini data volume at 100% capacity and were not counted as
+  GREEN. After free space recovered, the unchanged pushed regional-fence source ran
+  the complete Job Hunter suite successfully: `569/569` in `32.338s`. O2-05P is
+  complete.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -963,11 +960,11 @@ evidence until the primary has independently inspected and adopted it.
   authoring; post-change verification completed with 203 tests green.
 - [x] **O2-04B** — Keep reviewable work committed and pushed on the dedicated branch;
   keep this file as progress SSOT and leave the five-phase master spec untouched.
-- [ ] **O2-05P — implemented; verification blocked by disk capacity** — The compact
-  Japan-role rule and one production-path contract test are implemented and pass
-  focused verification plus adversarial review. Free sufficient Mac mini disk space
-  without deleting protected/private state, rerun the complete Job Hunter suite, and
-  mark complete only on `569/569`. No new state store or service.
+- [x] **O2-05P — regional prompt fence** — The compact Japan-role rule and one
+  production-path contract test pass focused verification, one adversarial review,
+  and the complete Job Hunter suite `569/569`. Completion was reported through the
+  canonical Job Hunter Telegram outbox with message ID `15943`. No new state store
+  or service.
 - [x] **O2-05T — canonical Telegram-path diagnosis** — Prove the working Job Hunter
   sender reads `JOB_SEARCH_TELEGRAM_CHAT_ID`, sends through the durable outbox, and
   stores the provider acknowledgement. Real message ID: `15940`. No code change was
