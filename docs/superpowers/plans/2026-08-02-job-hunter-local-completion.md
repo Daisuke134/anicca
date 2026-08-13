@@ -1326,7 +1326,8 @@ performs the real E2E, and records the milestone.
   wake cannot finish every eligible role, persist the remainder and continue on the
   next wake without owner approval. Historical immutable quota rows remain readable;
   new reporting describes confirmed count and eligible backlog, never a fixed target
-  or deficit to ten. Add no scheduler, service, table, or second queue.
+  or deficit to ten. Add no scheduler, service, table, or second queue. Completion is
+  acknowledged by Telegram message ID `16330`; final pushed commit: `7eaaf85cf`.
 - [ ] **O2-05B — use only the existing shared CloakBrowser** — Route every normal
   daily acquisition to registry identity `interactive:dais` on the measured
   `127.0.0.1:9222` daily-driver. A busy, unavailable, or failed attach never starts or
