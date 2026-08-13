@@ -2092,6 +2092,30 @@ performs the real E2E, and records the milestone.
   **Immediate next slice:** build, activate, and run this exact two-line selector
   release. Require either a redacted Workday account receipt or the next finite stage
   code; preserve all no-Submit, Ledger, Telegram, and browser ownership contracts.
+
+  Exact-text selector release and fourth real wake are complete. Pushed commit
+  `5c9030b23012d3cc4efde7ee371ed8e5c4a063dc` built twice to byte-identical archive
+  SHA-256 `353ff4a03b32d704062bf7db3840c23c8b66cef2f998ff3ad3c002e907611393`
+  with `267` entries and is active with
+  `9501fdd765c0717cd83729a7f4d3da11238c399e` as rollback. Real wake
+  `daily-20260814-052555` again reports `workday_manual_choice_unavailable` for both
+  NVIDIA roles. The exact CSS text engine did not resolve the production control even
+  though the structural snapshot exposes accessible role `button` and name
+  `Apply Manually`. No submit intent, request start, receipt, or submit-unknown was
+  created. Telegram sent message ID `16690`; cleanup closed one owned page, restored
+  all seven pre-existing page IDs, and left production Ledger byte-identical at
+  SHA-256 `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  **Accessible-role slice complete in pushed source:** commit `845ec3768` waits for
+  and resolves the observed control with Playwright's exact accessible locator
+  `get_by_role("button", name="Apply Manually", exact=True)`. It uses the existing
+  automation-ID selector first and never broadens to fuzzy or arbitrary text. Zero or
+  multiple visible exact-role matches still fail closed. Compilation and diff checks
+  pass, focused tests pass `14/14`, and the full suite passes `585/585`.
+
+  **Immediate next slice:** build, activate, and run the exact accessible-role
+  release. Require a redacted Workday account receipt or consume only the next finite
+  stage code.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
