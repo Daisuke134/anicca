@@ -329,6 +329,25 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(len(calls), len(clock_calls))
         self.assertTrue(all(call["limit"] == 20 for call in calls))
 
+    def test_empty_normalized_discovery_is_noop_but_other_errors_fail(self):
+        application_loop = _load_deployed_loop()
+        for payload in (
+            {"ok": False, "error": "no_normalized_opportunities", "opportunities": []},
+            {"ok": False, "error": "lancers_provider_error", "opportunities": []},
+        ):
+            calls = []
+            def discoverer(**_kwargs):
+                calls.append(1)
+                return payload
+            with tempfile.TemporaryDirectory() as directory:
+                result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=lambda *_args, **_kwargs: self.fail("planner_called"), submitter=lambda *_args, **_kwargs: self.fail("submitter_called"), clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
+            self.assertEqual(calls, [1])
+            self.assertEqual(result["ok"], payload["error"] == "no_normalized_opportunities")
+            self.assertEqual(result.get("reason") if result["ok"] else result["error"], "no_eligible_project" if result["ok"] else "lancers_provider_error")
+            if result["ok"]:
+                self.assertFalse(result["submitted"])
+                self.assertEqual(tuple(result[key] for key in ("observed_count", "eligible_count", "verified_count")), (0, 0, 0))
+
     def test_invoke_planner_uses_canonical_agent_runner_arguments(self):
         application_loop = _load_deployed_loop()
         calls = []

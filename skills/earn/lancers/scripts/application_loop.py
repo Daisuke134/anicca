@@ -418,7 +418,7 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
             elif not isinstance(observed, Mapping): result = ApplicationLoopResult(False, error="discovery_failed")
             else:
                 error, opportunities = observed.get("error"), observed.get("opportunities", [])
-                if observed.get("ok") is not True:
+                if observed.get("ok") is not True and not (error == "no_normalized_opportunities" and "opportunities" in observed and not opportunities):
                     clean_error = error if isinstance(error, str) and re.fullmatch(r"[A-Za-z0-9._:-]{1,256}", error or "") else "discovery_failed"
                     result = ApplicationLoopResult(False, error=clean_error)
                 elif error is not None and error != "no_normalized_opportunities":
