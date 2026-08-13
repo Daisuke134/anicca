@@ -1720,6 +1720,39 @@ performs the real E2E, and records the milestone.
   exact-page source, then rerun the real daily lane. Verify the registered target is the
   only observed page, browser PID/UUID and all unrelated pages remain unchanged, and
   only an authoritative ATS/Gmail receipt may create a submitted claim.
+
+  Exact-page release and live proof are complete. Pushed source commit
+  `44953bc8f838d5906b983bf1e56a9abbb3ccb1ef` built twice to identical archive
+  SHA-256 `52e471b1eff39039b5c48f51cb4c4dace53005272d474d281943f99be53a86ca`
+  with `267` entries and no private-state-shaped entry. The extracted runtime passes
+  `578/578`; the only two excluded tests require a Git repository to build another
+  release and fail for exactly `not a git repository`. The read-only release is active,
+  with `bd18c96f1c75b472ff295cc07f51339ad578855e` as rollback. Activation changed no
+  browser page ID and preserved browser UUID
+  `2ac269b0-350a-49a4-971e-9a0556aed50d`.
+
+  Real launchd wake `daily-20260814-032820` exited `0`. The observer used fence `207`
+  and the registered target only, observing the Salesforce Workday URL rather than the
+  unregistered Herp page. The application agent then kept all navigation on that owned
+  target, cleanup closed exactly that one page, and every pre-existing page—including
+  the untouched ownership-ambiguous Herp page—remained. All three provider privacy
+  scans are clean. Telegram acknowledged the natural Japanese outcome as message ID
+  `16572`.
+
+  No application was submitted or marked unknown. The measured blocker is now narrower:
+  the Salesforce `Technical Architect - MuleSoft` Workday route classified as a
+  validation error; its verified official alternate exposed neither a formal
+  application form nor an employer-authorized application email route. Production
+  Ledger remained byte-identical at SHA-256
+  `d6d494d2185137ab76d2079756f38326819bf149be50cb4b1dfc4bf8d9d0ee74` with `57`
+  applications, `257` events, `30` intents, `6` submitted, `31` submit-unknown, `6`
+  rejected, `8` materials-ready, and `6` discovered; SQLite integrity is `ok`. Daily,
+  inbox, and learning are all loaded, stopped between wakes, and last-exit `0`.
+
+  **Immediate next slice:** diagnose the redacted Workday snapshot and classifier
+  contract that produced `validation_error`, compare it with the live owned page and
+  existing Workday implementation, and make the smallest deterministic correction.
+  Then release and rerun; an ATS/Gmail receipt remains the only completion evidence.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
