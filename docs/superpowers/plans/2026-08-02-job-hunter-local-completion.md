@@ -19,7 +19,14 @@ baseline-page navigation violation; deterministic driver-owned page creation and
 cleanup are deployed and proven on the real shared browser. O2-06 is now active.
 O2-06 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
 mail, and learning lanes are enabled and loaded. They completed one real wake with
-exit `0`; corrected daily reports are delivered and all health gates pass.
+exit `0`; corrected daily reports are delivered and all health gates pass. The first
+O2-06 live application wake exposed and closed provider private-environment access,
+deterministic Ashby standard-answer generation, normalized answer-artifact reuse, and
+terminal-candidate reprocessing. These four source fixes are pushed but not yet in the
+active immutable release. The remaining immediate application blocker is the split
+between Ashby's ready fill artifact and the existing canonical `claim_ready` receipt;
+the next slice reuses the existing `browser_worker` pre-submit path instead of adding
+another adapter, queue, database, browser, or scheduler.
 
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
@@ -1507,10 +1514,29 @@ performs the real E2E, and records the milestone.
   read `JOB_SEARCH_PRIVATE_ENV`; assignment values were redacted, but two comments in
   that file contained the application email, so the privacy gate correctly rejected
   the run. A natural Japanese failure report was delivered as Telegram message ID
-  `16461`. Before the next live wake, remove provider access to the private environment,
-  route Ashby standard answers through the deterministic generator instead of model
-  shell construction, and filter manual/terminal history before model selection so
-  the loop advances to genuinely new eligible candidates.
+  `16461`. The provider now runs without `JOB_SEARCH_PRIVATE_ENV` and is explicitly
+  forbidden from opening private environment or credential files; pushed commit:
+  `a6e3c8c36`. Ashby Location, LinkedIn, and job-source answers now come from the
+  verified private profile and deterministic answer generator rather than model shell
+  construction; pushed commit: `650419e55`. `submission_prepare` now consumes the
+  generated ready Ashby answer map directly and normalizes it to the existing grounded
+  question/answer list; pushed commit: `4ed08679b`. The daily lane now applies the
+  existing Ledger-backed terminal filter before invoking the provider; against the
+  real `daily-20260814-013258` candidate set it excluded `11` of `12` submitted,
+  rejected, or submit-unknown rows and retained only the unprocessed Salesforce
+  `Technical Architect - MuleSoft` role in Tokyo/Remote. The complete Job Hunter suite
+  passes `577/577`; pushed commit: `3c74e2120`.
+
+  **Immediate next slice:** stop asking the provider to bridge incompatible evidence
+  shapes. `ashby_apply fill` produces a useful `ready` artifact but not the canonical
+  Ledger-bound `claim_ready` receipt and snapshot required by `claim_submission`.
+  The repository already has that implementation in `browser_worker` through
+  `playwright_ats.run_pre_submit`, including page ownership, lease/fence, URL and
+  artifact hashes, and no-submit behavior. Connect that existing pre-submit path to
+  the normal daily execution, then let the provider perform only the final verified
+  submission. Activate one immutable release only after this path is green; then
+  trigger and observe the real daily loop. Until an authoritative ATS or Gmail receipt
+  exists, the system must continue reporting zero confirmed applications.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
