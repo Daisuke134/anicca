@@ -27221,3 +27221,11 @@
 {"ts":1786651714,"wake_id":"00MSRYAU7J66DC86D8D2CB4DE5","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786651842,"wake_id":"00MSRYDKSH08B6A60A3E98453E","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786651970,"wake_id":"00MSRYGB0Z6BFFC4420C574821","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana autonomous agent microtask marketplace paid API earn USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (can"}
+{"ts":1786652102,"wake_id":"00MSRYJ5AGFF4FBE9B585245C5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786652229,"wake_id":"00MSRYLV4Y6EDC24B9844E4E8F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786652356,"wake_id":"00MSRYOKYP5F6869218D68411C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786652484,"wake_id":"00MSRYRBO7E7F90B285C6D4282","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786652611,"wake_id":"00MSRYU1QPA5EC207CF9D24BFB","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana DeFi liquidation bot API earn USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for th"}
+{"ts":1786652739,"wake_id":"00MSRYWSZC7547ADDCC56A4B54","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786652867,"wake_id":"00MSRYZJR7EA61CAFB2DE54E9F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786652996,"wake_id":"00MSRZ2B19E68B1424B22B4939","kind":"narrate","sleep_s":120,"model":"auto"}
