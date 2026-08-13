@@ -10,13 +10,11 @@
 work. O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
-daily outcome reporting is implemented in two uncommitted files and is the active
-slice inside O2-05; Luna's focused check is `7/7`, but adversarial review, primary
-runtime verification, commit, push, and activation remain open. O2-05U must then
-remove the measured global ten-application stop and per-bucket submission caps before
-activation. O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous
-application, mail, and learning lanes are disabled and unloaded and must not be
-described as healthy or complete.
+daily outcome reporting is complete. O2-05U is now the active slice and removes the
+measured global ten-application stop and per-bucket submission caps before activation.
+O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
+mail, and learning lanes are disabled and unloaded and must not be described as
+healthy or complete.
 
 **Activation cutline:** the measured reason Job Hunter is not applying is that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` are explicitly disabled and
@@ -24,20 +22,19 @@ unloaded; the last daily evidence is from 2026-08-08. The active release is
 `932ae25e...`, which still leases `job-search:dais` on a separate browser currently
 listening on `127.0.0.1:49167`, can restart that browser after an attach failure, and
 contains the old technical progress copy. Do not load that stale release. O2-05N is
-already implemented and needs only its single review/push. The two remaining
-behavioral blockers before activation are O2-05U, which removes the fixed daily and
-portfolio application caps, and O2-05B, which binds the daily lane to the existing
-`interactive:dais` browser at `127.0.0.1:9222` and removes restart behavior.
-Immediately after O2-05N, O2-05U, and O2-05B are pushed, build/activate once and load
+complete. The two remaining behavioral blockers before activation are O2-05U, which
+removes the fixed daily and portfolio application caps, and O2-05B, which binds the
+daily lane to the existing `interactive:dais` browser at `127.0.0.1:9222` and removes
+restart behavior.
+Immediately after O2-05U and O2-05B are pushed, build/activate once and load
 daily/inbox/learning. O2-06 through O2-12 improve and prove the live loop; they must
 not delay turning the application loop on.
 
-**Execution rule from this point:** no test-first/TDD ceremony. The primary owns one
-next item, its design, acceptance criteria, spec state, and completion decision;
-Luna implements that bounded item; one fresh adversarial reviewer challenges the
-finished diff; the primary then performs the smallest real verification, updates
-this spec, commits, pushes, and moves to the next item. Do not add a second review
-round unless the first review finds a concrete blocker.
+**Execution rule from this point:** no test-first/TDD ceremony and no separate
+adversarial reviewer. The primary owns one next item, its design, acceptance criteria,
+spec state, and completion decision; Luna implements that bounded item; the primary
+directly inspects the finished diff, performs the smallest real verification, updates
+this spec, commits, pushes, and moves to the next item.
 
 ## 0. Clean runtime consolidation gate (O2-05C)
 
@@ -79,8 +76,8 @@ Canonical locations after consolidation:
 
 Ordered cleanup is mandatory:
 
-1. freeze feature work and preserve the current two-file O2-05N change with one
-   adversarial review and one pushed commit;
+1. preserve the completed two-file O2-05N change with primary verification and one
+   pushed commit;
 2. fetch and integrate current `origin/main` into the dedicated branch, resolving
    only Job Hunter overlap and preserving unrelated main work;
 3. implement O2-05U as the smallest cap-removal slice: keep the existing ledger and
@@ -1161,22 +1158,22 @@ and outbox bookkeeping.
 
 ## 12. Execution order and remaining TODO
 
-Each item closes direct implementation → focused verification → one adversarial
-review → real verification → this spec update → commit/push before the next item
-begins. Per the owner's current instruction, remaining Job Hunter slices do not add
-a TDD/RED ceremony. Existing tests are retained and the smallest relevant checks are
-run after implementation.
+Each item closes direct implementation → primary diff inspection → focused/real
+verification → this spec update → commit/push before the next item begins. Per the
+owner's current instruction, remaining Job Hunter slices use neither a TDD/RED
+ceremony nor a separate adversarial reviewer. Existing tests are retained and the
+smallest relevant checks are run after implementation.
 
 Execution ownership is fixed for every remaining slice. The primary Codex controller
 alone writes and changes this running spec, task briefs, task order, acceptance
 criteria, and completion state. Luna receives a bounded, already-decided code task;
-Terra receives only a context-heavy implementation task. Each edits only its assigned
-production/test files, runs the exact requested commands, and returns raw evidence;
-neither authors, reinterprets, or updates the spec or plan. Exactly one adversarial
-reviewer is used after implementation and is read-only. The primary controller then
-decides any correction, updates this spec itself, commits, pushes, performs the real
-E2E, and records the milestone. Subagent-written spec text is never completion
-evidence until the primary has independently inspected and adopted it.
+Luna edits only its assigned production/test files, runs the exact requested commands,
+and returns raw evidence; it does not author, reinterpret, or update the spec or plan.
+The primary controller
+directly inspects the diff, decides any correction, updates this spec itself, commits,
+pushes, performs the real E2E, and records the milestone. Subagent-written spec text
+is never completion evidence until the primary has independently inspected and
+adopted it.
 
 - [x] **O2-01** — Recreate and measure the missing dedicated branch/worktree; preserve
   unrelated main changes; measure launchd, browser, Gmail, release, tests, resumes,
@@ -1289,7 +1286,7 @@ evidence until the primary has independently inspected and adopted it.
   actual Telegram message arguments for the success, limit, verification-failure,
   and unexpected-failure paths. The browser lease cleanup and original exit status
   remain intact.
-- [ ] **O2-05N — natural daily outcome report before launchd load** — Modify only the
+- [x] **O2-05N — natural daily outcome report before launchd load** — Modify only the
   existing daily report renderer and its test. Remove internal hashes, `Agent` owner
   vocabulary, and implementation/provider scorekeeping from the normal Telegram
   body. One wake report states in natural Japanese whether a confirmed application
@@ -1297,10 +1294,12 @@ evidence until the primary has independently inspected and adopted it.
   terminal evidence, confirms that no unverified job was counted as applied, and
   states the next automatic action. Preserve tappable company/artifact dossiers in
   the existing per-application reporter rather than duplicating them here. Current
-  uncommitted implementation covers confirmed submission, confirmation-unknown,
+  implementation covers confirmed submission, confirmation-unknown,
   candidate verification pending, no eligible role, and no new processing; it keeps
-  the durable digest for deduplication but removes it from the Telegram body. It is
-  not complete until one adversarial review, primary inspection, commit, and push.
+  the durable digest for deduplication but removes it from the Telegram body. Primary
+  inspection confirms the production delivery path reads the result once and keeps
+  the digest only in durable sender metadata. Focused verification passes `7/7`; the
+  full Job Hunter suite passes `581/581` in `35.037s`; compile and diff checks pass.
 - [ ] **O2-05U — unlimited eligible applications before launchd load** — Remove the
   `confirmed_daily_count >= 10` early stop, the ordinary `1..10` slot ceiling, and
   dream/strong-fit/adjacent submission ceilings from the existing execution path.

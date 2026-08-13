@@ -35,6 +35,25 @@ def summary():
     return value
 
 
+def browser_result(
+    *,
+    submitted=None,
+    submit_unknown=None,
+    remaining_unverified_count=0,
+    status="pending_verification",
+):
+    return {
+        "status": status,
+        "attempted_count": 2,
+        "discovered_link_count": 2,
+        "verified_link_count": 2,
+        "remaining_unverified_count": remaining_unverified_count,
+        "submitted": submitted or [],
+        "submit_unknown": submit_unknown or [],
+        "blocked": [],
+    }
+
+
 class DailyReportingTests(unittest.TestCase):
     def test_delivery_accepts_release_and_browser_material_evidence(self):
         self.assertIn(
@@ -86,7 +105,7 @@ class DailyReportingTests(unittest.TestCase):
             self.assertIn("material_digest", calls[0])
             self.assertEqual(calls[0]["material_digest"], calls[1]["material_digest"])
             self.assertEqual(len(calls[0]["material_digest"]), 64)
-            self.assertIn(calls[0]["material_digest"][:12], calls[0]["message"])
+            self.assertNotIn(calls[0]["material_digest"], calls[0]["message"])
 
             release_path.write_text(json.dumps({"commit": "commit-b"}), encoding="utf-8")
             deliver()
@@ -100,10 +119,58 @@ class DailyReportingTests(unittest.TestCase):
             "採用担当返信: 0/0 (母数なし)",
             "面接: 0/0 (母数なし)",
             "オファー: 0/0 (母数なし)",
-            "Agent 5 / Dais手動 1",
-            "Ashby・Workdayの確認済み応募: 0/2",
         ):
             self.assertIn(phrase, message)
+
+    def test_render_rejects_invalid_browser_shape_and_counts(self):
+        invalid = browser_result()
+        invalid["submitted"] = {}
+        cases = [invalid]
+        for key in ("attempted_count", "verified_link_count", "remaining_unverified_count"):
+            invalid = browser_result()
+            invalid[key] = True
+            cases.append(invalid)
+            invalid = browser_result()
+            invalid[key] = -1
+            cases.append(invalid)
+        for browser in cases:
+            with self.subTest(browser=browser):
+                with self.assertRaises(ValueError):
+                    render_pipeline(summary(), browser)
+
+    def test_render_describes_five_browser_wake_outcomes_without_internal_terms(self):
+        cases = (
+            (
+                browser_result(submitted=[{"id": "one"}]),
+                ("正式な応募完了を確認できた求人は1件", "先にお送りした応募ごとの報告"),
+            ),
+            (
+                browser_result(submit_unknown=[{"id": "one"}]),
+                ("応募済みには数えず", "メールと応募履歴"),
+            ),
+            (
+                browser_result(remaining_unverified_count=3),
+                ("3件の候補", "役割や条件の確認", "次回の自動確認"),
+            ),
+            (
+                browser_result(),
+                ("新たに応募対象として確認できる求人はありませんでした", "次回の自動検索"),
+            ),
+            (
+                None,
+                ("新しい応募処理は必要ありませんでした", "次回の確認"),
+            ),
+        )
+        for browser, expected in cases:
+            with self.subTest(browser=browser):
+                message = render_pipeline(summary(), browser)
+                for phrase in expected:
+                    self.assertIn(phrase, message)
+                for banned in (
+                    "Agent", "Dais", "ATS", "provider", "adapters", "submit_unknown",
+                    "blocked", "status", "commit", "hash", "digest", "SHA", "GPT", "model",
+                ):
+                    self.assertNotIn(banned, message)
 
     def test_delivery_rejects_tampered_projection_before_sender(self):
         with tempfile.TemporaryDirectory() as directory:
