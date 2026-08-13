@@ -1965,6 +1965,26 @@ performs the real E2E, and records the milestone.
   timeout. Do not add a service, database, browser, or second loop. Then build,
   activate, and prove the exact path in one real launchd wake; receipt truth remains
   unchanged until authoritative confirmation exists.
+
+  **Deterministic Workday pre-submit slice complete in pushed source:** commit
+  `af41f0828` reuses the existing `fill_account_creation` implementation directly
+  from `playwright_ats.run_pre_submit` on the page that the deterministic driver
+  created and registered under the live browser lease. It passes the existing
+  ownership receipt, exact target ID, private profile, and canonical private
+  `workday-accounts.json`; no new adapter, service, store, browser, or loop was added.
+  Workday no longer performs the incorrect 20-second wait for a file input before
+  clicking Apply. The redacted credential receipt and the resulting structural ATS
+  snapshot remain private evidence. Native-auth failure becomes a truthful blocker;
+  Submit is never clicked by this slice. Compilation and diff checks pass, focused
+  tests pass `14/14`, and the complete suite passes `585/585`.
+
+  **Immediate next slice:** build and activate this exact pushed commit, then run one
+  real daily launchd wake. Verify the deterministic pre-submit page reaches NVIDIA's
+  native Create Account or Sign In with Email path without optional SSO, captures the
+  resulting surface, closes only its owned page, preserves the production Ledger
+  unless a real submission transition occurs, and sends the truthful natural-language
+  Telegram result. If the native path still blocks, use that exact structural surface
+  as the next single fix rather than returning selection to the model.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
