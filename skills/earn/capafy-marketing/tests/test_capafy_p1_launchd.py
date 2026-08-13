@@ -7,6 +7,21 @@ LABELS = (
     "ai.anicca.capafy-ig-account-manager",
     "ai.anicca.capafy-ig-marketing-daily",
 )
+REPORT_LABELS = {
+    "ai.anicca.capafy-goal-monitor-hourly": {
+        "kind": "hourly",
+        "schedule": {"Minute": 0},
+    },
+    "ai.anicca.capafy-goal-monitor-daily-close": {
+        "kind": "daily_close",
+        "schedule": {"Hour": 23, "Minute": 50},
+    },
+}
+ALL_P1_REPORT_LABELS = (
+    *LABELS,
+    "ai.anicca.capafy-goal-monitor",
+    *REPORT_LABELS,
+)
 
 
 def load(label):
@@ -39,11 +54,32 @@ def test_p1_schedules_and_environment_are_explicit():
         assert data["StandardErrorPath"].startswith("/Users/anicca/.openclaw/logs/")
 
 
+def test_owner_report_jobs_use_the_existing_monitor_with_exact_schedules():
+    for label, expected in REPORT_LABELS.items():
+        data = load(label)
+        assert data["Label"] == label
+        assert data["ProgramArguments"] == [
+            "/bin/bash",
+            "/Users/anicca/anicca/skills/earn/capafy-marketing/capafy-goal-monitor.sh",
+        ]
+        assert data["StartCalendarInterval"] == expected["schedule"]
+        assert data["EnvironmentVariables"]["CAPAFY_REPORT_KIND"] == expected["kind"]
+        assert data["RunAtLoad"] is False
+        assert "KeepAlive" not in data
+
+
+def test_owner_report_jobs_keep_home_and_path_environment():
+    for label in REPORT_LABELS:
+        data = load(label)
+        assert data["EnvironmentVariables"]["HOME"] == "/Users/anicca"
+        assert "/opt/homebrew/bin" in data["EnvironmentVariables"]["PATH"]
+
+
 def test_labels_and_log_paths_are_unique():
-    jobs = [load(label) for label in LABELS]
-    assert len({job["Label"] for job in jobs}) == 2
-    assert len({job["StandardOutPath"] for job in jobs}) == 2
-    assert len({job["StandardErrorPath"] for job in jobs}) == 2
+    jobs = [load(label) for label in ALL_P1_REPORT_LABELS]
+    assert len({job["Label"] for job in jobs}) == 5
+    assert len({job["StandardOutPath"] for job in jobs}) == 5
+    assert len({job["StandardErrorPath"] for job in jobs}) == 5
 
 
 def test_synthetic_warmup_job_and_script_are_absent():
