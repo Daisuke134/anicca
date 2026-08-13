@@ -347,6 +347,14 @@ def _batch_summary(
     success = result.ok if ok is None else ok
     return replace(result, ok=success, submitted=any(item.submitted for item in verified) if submitted is None else submitted, observed_count=observed_count, eligible_count=eligible_count, verified_count=len(verified), provider_terminal_blocked_count=len(blocked), verified_project_ids=verified_projects, verified_provider_proposal_ids=verified_proposals, provider_terminal_blocked_project_ids=tuple(blocked), unresolved_project_id=unresolved_project_id)
 
+def _eligible_rank(item: tuple[Mapping[str, object], Mapping[str, object]]) -> tuple[int, int]:
+    decision = item[1]
+    qualification = decision["qualification"]
+    evidence = qualification["ongoing_sns_outsourcing_evidence"]
+    explicit_monthly = bool(re.search(r"(?:月額|毎月|定期)", evidence))
+    projected_net_jpy = decision["price_jpy"] - sum(qualification[name] for name in QUALIFICATION_COST_FIELDS)
+    return (-int(explicit_monthly), -projected_net_jpy)
+
 def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence: Path, planner: Optional[Callable[..., object]], submitter: Optional[Callable[..., object]], state_path: Path) -> ApplicationLoopResult:
     observed_count = len(rows)
     try:
@@ -360,6 +368,7 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
         for row in rows
         if decisions[str(row["external_id"])].get("eligibility") == "eligible"
     ]
+    eligible = sorted(eligible, key=_eligible_rank)
     if not eligible:
         return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project"), observed_count, 0, (), ())
     verified, blocked = [], []

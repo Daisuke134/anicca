@@ -412,6 +412,38 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(result["eligible_count"], 2)
         self.assertEqual(result["verified_count"], 1)
 
+    def test_normal_tick_prioritizes_monthly_net_and_keeps_ties_stable(self):
+        application_loop = _load_deployed_loop()
+        project_ids = ["6000001", "6000002", "6000003"]
+        opportunities = [_opportunity(project_id) for project_id in project_ids]
+        generic_evidence = "SNS運用を継続し、外部委託でお願いしたいです。"
+        opportunities[0]["description"] = f"依頼主の業種: 情報通信業\n依頼概要: {generic_evidence}"
+        decisions = [
+            _eligible_decision("6000001", price_jpy=250000, qualification=_qualification(ongoing_sns_outsourcing_evidence=generic_evidence, expected_ai_cost_jpy=1000, expected_revision_refund_allowance_jpy=4000)),
+            _eligible_decision("6000002", price_jpy=220000),
+            _eligible_decision("6000003", price_jpy=230000, qualification=_qualification(expected_ai_cost_jpy=1000, expected_revision_refund_allowance_jpy=5000)),
+        ]
+        submitted = []
+
+        def discoverer(**_kwargs):
+            return {"ok": True, "error": None, "opportunities": opportunities}
+
+        def planner(_prompt, _evidence):
+            return {"decisions": decisions}
+
+        def submitter(**kwargs):
+            submitted.append(kwargs["project_id"])
+            return {"ok": True, "submitted": True, "application_verified": True, "project_id": kwargs["project_id"], "provider_proposal_id": "9000011"}
+
+        with tempfile.TemporaryDirectory() as directory:
+            result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
+
+        self.assertEqual(result["eligible_count"], 3)
+        self.assertEqual(submitted, ["6000003"])
+        ties = [(opportunities[1], _eligible_decision("6000002")), (opportunities[2], _eligible_decision("6000003"))]
+        self.assertEqual(application_loop._eligible_rank(ties[0]), application_loop._eligible_rank(ties[1]))
+        self.assertEqual([row["external_id"] for row, _ in sorted(ties, key=application_loop._eligible_rank)], ["6000002", "6000003"])
+
     def test_reconcile_only_reconciles_every_pending_application_without_discovery_or_submit(self):
         application_loop = _load_deployed_loop()
         project_ids = ["5585496", "5586112"]
