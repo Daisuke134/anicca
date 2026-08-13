@@ -153,13 +153,12 @@ flowchart LR
 
 ### 3.1 ICP
 
-対象は、**SNS 担当者が 0 人または 1 人の日本の小規模 B2B 企業**である。
-`qualified` は keyword 一致ではなく、公開案件本文または企業 profile に、日本の小規模 B2B で
-あることと SNS 担当者 0–1 人の証拠がある状態とする。literal な人数表記がない案件では、
-専任担当者がいない、代表または少人数で兼務している、初めて SNS 担当を募集している、を
-強い proxy として認める。人数の明示も proxy もない pure unknown は G1 の qualified にしない。
-clarification の一問で後から unknown を qualified に昇格させる設計にもせず、最初の応募前に
-この証拠を揃える。依頼内容が B2B でなく、SNS 運用の継続課題が見えない案件も応募対象外とする。
+対象は、**日本語の商用組織案件として、継続SNS運用を外部ownerへ明示的に委任するbuyer**である。
+`qualified` はkeyword一致ではなく、Lancers公式detailの`依頼主の業種`が空でなく、公開`依頼概要`に
+SNS/channel、継続scope、外部委任の三つが明示される状態とする。`依頼主の業種`はbuyerが事業用途の
+公式分類を選んだ証拠であり、buyer自身の顧客がB2Bだと推測する証拠には使わない。個人趣味、単発投稿、
+継続不明、外部owner不明はG1のqualifiedにしない。clarificationでunknownをqualifiedへ昇格させず、
+最初の応募前に公開detailから証拠を揃える。
 
 ### 3.2 商品境界
 
@@ -412,8 +411,12 @@ default queryが本番で効いたことと、外部作用がゼロだったこ�
 `small_b2b_evidence_unknown=6`、`budget_below_98000=6`である。検索カードのdescriptionは188–200文字で、
 公開detail全文3件も確認したが、既存の`専任不在 / 少人数 / リソース不足` proxyは0件だった。
 したがって次のbottleneckはquery配線やparserではなく、marketplace本文でほぼ観測できない
-「SNS担当0–1人」を全応募の必須条件にしたICP contractである。gateを黙って緩めたり、応募数で成功を
-装ったりせず、観測可能なcommercial proxyへ設計変更してから次のproduction mutationを行う。
+「SNS担当0–1人」を全応募の必須条件にしたICP contractである。承認後のread-only detail probeでは、
+予算¥98,000以上6件の全件に公式`依頼主の業種`があり、全件にSNS＋継続scope、4件に外部委任、
+2件に240文字以内で三信号を含む完全一致引用がある。したがって、次のproduction mutationは予算通過
+カードだけのdetail enrichmentと、`commercial_buyer_evidence`＋`ongoing_sns_outsourcing_evidence`の
+truthful contractへの置換である。資格decisionはstate/receiptへ永続化されないためmigrationは不要だが、
+schema、prompt、runtimeは一つのexact-SHA releaseとして原子的にdeployする。
 
 projected net gross margin は proposal 時点の JPY 見積で次の式に固定する。
 
@@ -433,7 +436,7 @@ net MRR を計上しない。
 
 次をすべて満たさない案件は応募しない。
 
-- 日本語で、日本の小規模 B2B SNS 業務であり、SNS 担当者 0–1 人の明示証拠または強い proxy がある。
+- 日本語の商用組織案件で、公式`依頼主の業種`があり、SNS/channel・継続scope・外部owner委任が公開`依頼概要`に明示される。
 - remote で完結する。
 - 顧客パスワードを要求しない。
 - 直接投稿、広告費の取り扱い、電話営業、訪問を要求しない。
@@ -448,8 +451,8 @@ net MRR を計上しない。
 planner 一つの決定で次の順に評価する。ML ranking system は導入しない。
 
 1. 継続・月額の明示度
-2. SNS 担当者不足が明示されているか
-3. 日本の B2B 適合度
+2. 継続SNS運用を外部ownerへ委任することが明示されているか
+3. 公式業種欄を持つ商用組織案件か
 4. Founding 以上の予算に見合うか
 5. 商品の固定 deliverable に合うか
 6. 要件が具体的か
@@ -629,7 +632,7 @@ Lancers baseline
 |---|---|---|
 | G0 定義 | MRR 式、商品境界、4 lane、shared ledger、per-entity straight state、serialized browser effect boundary、receipt 順序、安全不変条件がこの仕様と一致する | 仕様レビュー記録 |
 | G0.5 canonical source / safe deployment | source/schema/test/launchd template/spec/plan を canonical Life Manager repo に揃え、tests と許可された一回の fresh adversarial review を通し、main に merge/push した exact commit SHA の release artifact を install して manifest/deployed SHA を記録する。worktree/feature branch/untracked `~/.local` source は実行せず、その後にだけ application service を enable する。runtime state、secret、browser session、append-only ledger、evidence は移動・削除しない | test result、レビュー記録、main commit、artifact manifest、deployed SHA、service enable の順序、runtime state 不変の確認 |
-| G1 first slice | まず semantic evidence/schema を修正し、canonicalization と G0.5 を完了してから application launchd を再有効化する。再有効化後の最初の E2E は `5585496`（¥250,000）と `5586112`（¥10,000）の両方を readback-only reconcile し、両方が `proposal_id=null` のまま blind resend されず、どちらも他 entity の progress を block しないことを証明する。その後、application launchd が有効な tick で、日本の小規模 B2B と SNS 担当者 0–1 人の明示証拠または強い proxy、および 70% 以上の projected margin がある新規 qualified job を一件 discover し、tailored proposal を一度 submit し、公式 proposal ID を readback し、`ApplicationReceipt` を正確に一件 append する。G1 は後段 lane の実装を先取りしない | 両 pending ID の current readback、quarantine/重複防止証拠、launchd paused→safe deploy→enable の時系列、ICP の証拠/proxy、margin 式と各見積 source、provider ID、intent/effect/readback/receipt、独立 discovery 証拠 |
+| G1 first slice | まず semantic evidence/schema を修正し、canonicalization と G0.5 を完了してから application launchd を再有効化する。再有効化後の最初の E2E は `5585496`（¥250,000）と `5586112`（¥10,000）の両方を readback-only reconcile し、両方が `proposal_id=null` のまま blind resend されず、どちらも他 entity の progress を block しないことを証明する。その後、application launchd が有効な tick で、公式業種欄がある日本語の商用組織案件として、継続SNS運用を外部ownerへ委任する公開detail証拠と70%以上のprojected marginがある新規jobを一件discoverし、tailored proposalを一度submitし、公式proposal IDをreadbackし、`ApplicationReceipt`を正確に一件appendする。G1は後段laneの実装を先取りしない | 両pending IDのcurrent readback、quarantine/重複防止証拠、launchd paused→safe deploy→enableの時系列、公式業種・SNS・継続・外部委任の完全一致引用、margin式と各見積source、provider ID、intent/effect/readback/receipt、独立discovery証拠 |
 | G2 truthful acquisition | storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | 6 duplicate listing を成功扱いしない report と state-change report |
 | G3 profitable acquisition | 最初の 3 active recurring contracts まで、hard filter、固定式による 70% margin、recurring/B2B ranking、proposal 固定構造、capacity 使用率別 quota（<70%=2/10、70–<90%=1/5、>=90%=Premium のみかつ 100% 以下）、重複防止が実際に働く | qualified/ineligible 判定、ICP 証拠/proxy、margin 算定と各 source、応募上限、duplicate 拒否の readback |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
