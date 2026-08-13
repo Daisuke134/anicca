@@ -2288,6 +2288,47 @@ performs the real E2E, and records the milestone.
   `/apply/` route/account receipt or the next finite stage code. In parallel within
   the same existing discovery loop, a new non-terminal eligible Ashby role may enter
   O2-08; never reuse the three terminal ElevenLabs roles or manual-owner Japan roles.
+
+  Combined fence/manual-click release and eleventh real wake are complete. Pushed
+  commit `4bd18eb33337a4702af088bbc7328387240984c6` built twice to byte-identical
+  archive SHA-256
+  `cbcfcc28e7e982e4eb2404b57548530b2ddbc5be60a5c7022f674950c128af59`
+  with `267` entries and is active with
+  `da66fd82702b5dd667e0519eedffecefbb04e98e` as rollback. Real wake
+  `daily-20260814-063616` proves the manual-owner fence in production: the OpenAI
+  Japan Ashby attempt disappears, leaving exactly the two NVIDIA Workday attempts.
+  Both still remain on the job-detail URL with native-auth unavailable. No submit
+  intent, request start, receipt, or submit-unknown was created.
+
+  Telegram sent message ID `16756`; cleanup closed exactly one owned page, restored
+  all seven pre-existing page IDs, and left production Ledger byte-identical at
+  SHA-256 `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  A bounded owner-fenced live diagnostic then isolated the first action instead of
+  spending another full model wake. On one Job Hunter-created page, the current
+  NVIDIA job surface has zero visible `jobPostingApplyButton` controls and one exact
+  structural `<a role="button">Apply</a>`. No click occurred with the legacy selector,
+  no extra page target was created, and the diagnostic page alone was closed. After
+  adding the exact accessible Apply fallback, a second owner-fenced diagnostic ran the
+  production helper end to end through Apply, Apply Manually, and native Sign In. It
+  reached the exact `/apply/applyManually` route with one email and one password
+  control and returned the redacted receipt `status=sign_in_clicked`,
+  `browser_action_count=6`, `created=false`, and `secret_values_returned=false`.
+  It reused the existing private NVIDIA credential, clicked no job Submit, closed
+  exactly one diagnostic page, restored all seven pre-existing page IDs, and left the
+  Ledger byte-identical.
+
+  **Current exact-Apply slice complete in pushed source:** commit `a04746671` keeps
+  the legacy automation ID first and adds only the exact accessible button name
+  `Apply`, selecting the last visible exact match. It does not match Apply Manually or
+  any fuzzy text. Focused tests pass `18/18`, the complete suite passes `585/585`, and
+  the live helper receipt above proves the real browser path.
+
+  **Immediate next slice:** build and activate the exact-Apply release, run one real
+  daily wake, and require the same redacted Workday account receipt inside
+  deterministic pre-submit. Then continue from the authenticated application wizard
+  to truthful field/material completion; job Submit remains forbidden until the
+  existing intent and verification gates are satisfied.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
