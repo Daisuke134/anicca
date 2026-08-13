@@ -1662,6 +1662,25 @@ performs the real E2E, and records the milestone.
   structure. Then add only the missing truthful former-employer answer to the private
   profile SSOT and rerun the real daily lane. Until an ATS or Gmail receipt exists, the
   system continues reporting zero confirmed applications.
+
+  **Authenticated-page privacy and missing-fact slice complete in pushed source/private
+  SSOT:** commit `9c1b4713b` makes the application-agent contract prohibit printing,
+  returning, logging, or echoing authenticated page body text, control text, input
+  values, HTML, DOM snapshots, control lists, or the private observer artifact. Browser
+  scripts may still locate, fill, click, and verify inside their process, but stdout is
+  restricted to constant action receipts. The focused prompt contract passes `17/17`;
+  the full suite passes `580/580` in `30.179s`.
+
+  Private profile fact `salesforce_former_employment_no_20260814` records the truthful
+  No answer grounded in Daisuke's explicitly supplied complete employment history of
+  A10Lab, NAIST/ATR, and MUIT. The private file remains mode `600`, profile validation
+  passes, and the fact is unique. This value is not committed or logged. The source
+  privacy fix is pushed but not yet in the active release.
+
+  **Immediate next slice:** build and activate the pushed privacy release, rerun the
+  existing daily lane, and verify both a clean provider transcript and progression past
+  Workday Step 1. Until an ATS or Gmail receipt exists, the system continues reporting
+  zero confirmed applications.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
