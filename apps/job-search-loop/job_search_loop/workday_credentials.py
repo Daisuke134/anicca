@@ -305,6 +305,13 @@ def _advance_native_auth(page: Any) -> int:
         _wait_visible(page, '[data-automation-id="email"]', "email_form")
         _wait_visible(page, '[data-automation-id="password"]', "password_form")
         return 1
+    if hasattr(page, "get_by_role"):
+        control = _single_visible(page.get_by_role("button", name="Sign In", exact=True))
+        if control is not None:
+            control.click(timeout=5_000)
+            _wait_visible(page, '[data-automation-id="email"]', "email_form")
+            _wait_visible(page, '[data-automation-id="password"]', "password_form")
+            return 1
     return 0
 
 
