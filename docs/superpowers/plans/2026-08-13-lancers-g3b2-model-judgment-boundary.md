@@ -21,10 +21,13 @@
 
 | File | Responsibility | Ceiling |
 |---|---|---:|
-| `skills/earn/lancers/scripts/application_loop.py` | rank by projected net JPY only | 2 changed production LOC |
+| `skills/earn/lancers/scripts/application_loop.py` | rank by projected net JPY only | 6 changed production LOC |
 | `apps/lancers-revenue/tests/test_application_loop_hol.py` | prove generic higher-net beats monthly lower-net and ties stay stable | 20 changed test LOC |
 
 ## Task 1: Remove keyword priority from the rank key
+
+The original 2-LOC estimate counted only the return-type/key replacements and omitted the three deleted judgment lines.
+The corrected ceiling is six changed LOC (`+2/-4`); this is deletion of the forbidden judgment, not scope expansion.
 
 ### Step 1: Direct implementation
 
