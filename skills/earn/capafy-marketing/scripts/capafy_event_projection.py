@@ -57,7 +57,9 @@ def _utc(value: str | datetime) -> datetime:
 def _incident_parity(incident: dict | None) -> tuple[bool, tuple | None]:
     if incident is None: return True, None
     try:
+        if not {"incident_id", "owner", "summary", "phase", "next_retry_at"} <= incident.keys(): return False, None
         retry_at = incident.get("next_retry_at")
+        if retry_at is not None and (not isinstance(retry_at, str) or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})", retry_at)): return False, None
         retry_at = None if retry_at is None else _utc(retry_at).replace(microsecond=0)
     except (AttributeError, TypeError, ValueError): return False, None
     return True, tuple(incident.get(field) for field in ("incident_id", "owner", "summary", "phase")) + (retry_at,)

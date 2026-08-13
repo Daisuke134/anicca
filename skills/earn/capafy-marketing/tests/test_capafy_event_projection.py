@@ -473,6 +473,56 @@ def test_parity_gate_fails_closed_for_invalid_incident_retry_at(
     ]
 
 
+@pytest.mark.parametrize(
+    "malformed_retry_at",
+    [
+        "20260807T045052+00:00",
+        "2026-W32-5T04:50:52+00:00",
+        "2026-08-07 04:50:52+00:00",
+        "not-a-timestamp",
+        42,
+    ],
+)
+def test_parity_gate_rejects_non_rfc3339_incident_retry_at(
+    malformed_retry_at: object,
+) -> None:
+    incident = {
+        "incident_id": "capafy-marketer-20260807T045052Z-deadbeef",
+        "owner": "marketer",
+        "summary": "Instagram readback failed.",
+        "phase": "unresolved",
+        "next_retry_at": malformed_retry_at,
+    }
+
+    assert projection.parity_errors(
+        {"incident": incident}, {"incident": dict(incident)}
+    ) == [
+        f"incident mismatch: projection={incident!r} source={incident!r}"
+    ]
+
+
+@pytest.mark.parametrize(
+    "missing_key", ["incident_id", "owner", "summary", "phase", "next_retry_at"]
+)
+def test_parity_gate_fails_closed_when_incident_required_key_is_missing(
+    missing_key: str,
+) -> None:
+    incident = {
+        "incident_id": "capafy-marketer-20260807T045052Z-deadbeef",
+        "owner": "marketer",
+        "summary": "Instagram readback failed.",
+        "phase": "unresolved",
+        "next_retry_at": "2026-08-07T04:50:52Z",
+    }
+    incident.pop(missing_key)
+
+    assert projection.parity_errors(
+        {"incident": incident}, {"incident": dict(incident)}
+    ) == [
+        f"incident mismatch: projection={incident!r} source={incident!r}"
+    ]
+
+
 def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_mismatch(
     tmp_path: Path,
 ) -> None:
