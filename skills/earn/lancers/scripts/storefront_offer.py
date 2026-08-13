@@ -103,6 +103,7 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     listing_id = product["listing_external_id"]; edit_url = f"{ORIGIN}/myplan/{listing_id}/edit"
     page.goto(edit_url, wait_until="domcontentloaded", timeout=30_000)
     if page.url != edit_url: raise OfferError("edit_route_invalid")
+    page.wait_for_selector('[name="ProjectPlanForm.title"]', state="visible", timeout=5_000)
     _field(page, '[name="ProjectPlanForm.title"]').fill(product["title_stem"])
     _field(page, '[name="ProjectPlanForm.subtitle"]').fill(product["subtitle"])
     _field(page, '[name="___main_category_id"]').select_option(label=product["category"])
@@ -121,7 +122,7 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     _step(page, "業務内容"); _field(page, "textarea:not([name])").fill(product["description"])
     _step(page, "確認事項"); _field(page, '[name="ProjectPlanForm.notice_for_sale"]').fill(product["notice"])
     _step(page, "画像ほか")
-    upload = page.locator('input[type="file"]')
+    upload = page.locator('input[type="file"][accept*="image/"]')
     if upload.count() != 1: raise OfferError("form_changed")
     upload.set_input_files(str(image))
     save = page.get_by_role("button", name="保存する", exact=True)
