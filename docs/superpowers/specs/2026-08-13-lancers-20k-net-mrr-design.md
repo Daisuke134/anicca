@@ -908,10 +908,10 @@ Founding ¥98k / Standard ¥198k / Premium ¥398k recurring offerと一致しな
 inventory後に一意なcanonical listingを選び、低単価diagnosticを月額offerへ明示接続するか、月額scope/priceへ
 置換する必要がある。listing数と低単価spot売上をnet MRRに数えない。
 
-Storefront inventoryは新しいdaemon、launchd label、DB、state fileを追加しない。canonical releaseに
-`listing_inventory.py`を一つ追加し、既存`work_sync.py`の120秒parent watchdogと
-`application_tick.py`のaccount/browser helperを再利用する。exact releaseから一回だけ実行し、次をsanitized
-JSONへ出す。
+Storefront inventoryは新しいsource file、daemon、launchd label、DB、state fileを追加しない。すでにexact releaseへ
+含まれる`telegram_report.py`は四状態count、CDP/account/browser helper、manual CLIを所有するため、ここへ
+inventory-only modeを追加する。既存`work_sync.py`の120秒parent watchdogを再利用し、scheduled reportの通常経路は
+変更しない。exact releaseから一回だけinventory modeを実行し、次をsanitized JSONへ出す。
 
 - 四状態のofficial countsと、管理containerから得た全listing ID/title/status/public URL
 - 各public pageのHTTP/route、canonical URL、og URL、plan price/delivery、provider-visible field setのhash

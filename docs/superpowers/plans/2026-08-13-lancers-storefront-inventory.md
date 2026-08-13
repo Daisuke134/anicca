@@ -6,13 +6,13 @@ Produce one complete, sanitized, official inventory of all Lancers storefront li
 
 ## Ponytail decision
 
-Do not canonicalize the 1,467-line mutable publisher. Do not add a scheduler, DB, state file, schema, general storefront framework, or continuous public-page poller. Add one exact-release diagnostic command and run it once.
+Do not canonicalize the 1,467-line mutable publisher. Do not add a source file, installer entry, scheduler, DB, state file, schema, general storefront framework, or continuous public-page poller. Extend the already canonical exact-release reporter with one inventory-only CLI mode and run it once.
 
 Reuse:
 
 - `application_tick.py`: CDP endpoint, account readiness, account lock, owned page lifecycle.
 - `work_sync.py`: same-script parent watchdog/process-group cleanup and 120-second whole-command deadline.
-- `install-local.sh`: immutable exact-SHA archive/manifest.
+- `telegram_report.py`: existing four-state counts, browser boundary, CLI, immutable exact-release inclusion.
 
 Do not reuse the publisher's global menu-link selector or exact local-tag comparison; both are proven false boundaries.
 
@@ -22,12 +22,10 @@ Luna/Terra owns production/test implementation and commands only. Primary owns t
 
 | File | Change | Soft target |
 |---|---|---:|
-| `skills/earn/lancers/scripts/listing_inventory.py` | one-shot management/public reader plus sanitized projection | 100–150 production LOC |
-| `apps/lancers-revenue/tests/test_listing_inventory.py` | complete six-row case and bounded fail-closed regressions | 80–120 test LOC |
-| `apps/lancers-revenue/scripts/install-local.sh` | include inventory command in exact release | 1–5 changed LOC |
-| `apps/lancers-revenue/tests/test_install_local.py` | manifest assertion | 1–5 changed LOC |
+| `skills/earn/lancers/scripts/telegram_report.py` | inventory-only parent/worker mode plus management/public sanitized projection | 90–140 production LOC |
+| `apps/lancers-revenue/tests/test_telegram_report.py` | complete six-row case and bounded fail-closed regressions | 80–120 test LOC |
 
-Four files are necessary because executable source and exact-release ownership cannot be separated. No plist changes; no owner is added.
+Two files are sufficient because the reporter is already in the immutable release manifest. No installer or plist changes; no owner is added.
 
 ## Task 1: Implement the exact-release inventory command
 
@@ -61,7 +59,7 @@ Group listing IDs by identical `content_sha256` deterministically. A canonical t
 
 ### Process and output
 
-The launch-facing CLI is only a manual exact-release command with `--json` and a hidden worker flag. Use the existing work-sync watchdog to run the worker in a new process group with the existing 120-second deadline. Output exactly one JSON line. No launchd plist or schedule is created.
+The existing reporter keeps its normal scheduled `--json` path unchanged. Add a mutually exclusive manual `--inventory-json` mode and a hidden inventory worker flag. Inventory parent mode uses the existing work-sync watchdog to run the same reporter file as a worker in a new process group with the existing 120-second deadline. Output exactly one JSON line. No launchd plist or schedule is created.
 
 The result includes `ok`, `logged_in`, `source_complete`, four state counts, `listing_count`, sanitized listings, content groups, and stable error. Failures return nonzero. Cleanup/timeout cannot leave a Python/Playwright descendant.
 
@@ -72,7 +70,7 @@ After direct implementation, test:
 1. A complete fixture with six published management containers, zero other states, one unrelated update-hint link, and six complete public payloads returns six unique IDs, correct counts, one deterministic content group/canonical target, and no raw description/secret text.
 2. Official count mismatch, duplicate/cross-state ID, malformed public route/og/plan, or page-limit fails closed and never returns healthy zero.
 3. Static scan finds no POST/PUT/PATCH/DELETE, click, publisher/adopt import, ledger append, state write, or launchctl.
-4. Installer manifest contains `listing_inventory.py`; existing three launchd plists and schedules remain unchanged.
+4. Existing installer manifest already contains the changed reporter; exact-release installer tests prove no file-list/plist/schedule change.
 
 Run focused tests, all `apps/lancers-revenue` tests, agent-runner tests, release Python compile, plist lint, installer exact-release tests, JSON one-line parse, diff check, and the static mutation guard. Commit and push only the feature branch.
 
