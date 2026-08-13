@@ -9,10 +9,19 @@
 **Status:** O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
-daily outcome reporting is the active slice inside O2-05; O2-05 through O2-12
-remain open. Resume baseline is accepted. Autonomous application, mail, and
+daily outcome reporting is implemented in two uncommitted files and is the active
+slice inside O2-05; Luna's focused check is `7/7`, but adversarial review, primary
+runtime verification, commit, push, and activation remain open. O2-05 through
+O2-12 remain open. Resume baseline is accepted. Autonomous application, mail, and
 learning lanes are disabled and unloaded and must not be described as healthy or
 complete.
+
+**Execution rule from this point:** no test-first/TDD ceremony. The primary owns one
+next item, its design, acceptance criteria, spec state, and completion decision;
+Luna implements that bounded item; one fresh adversarial reviewer challenges the
+finished diff; the primary then performs the smallest real verification, updates
+this spec, commits, pushes, and moves to the next item. Do not add a second review
+round unless the first review finds a concrete blocker.
 
 ## 1. Done condition
 
@@ -1193,7 +1202,11 @@ evidence until the primary has independently inspected and adopted it.
   occurred; if none did, it explains the user-visible reason class from validated
   terminal evidence, confirms that no unverified job was counted as applied, and
   states the next automatic action. Preserve tappable company/artifact dossiers in
-  the existing per-application reporter rather than duplicating them here.
+  the existing per-application reporter rather than duplicating them here. Current
+  uncommitted implementation covers confirmed submission, confirmation-unknown,
+  candidate verification pending, no eligible role, and no new processing; it keeps
+  the durable digest for deduplication but removes it from the Telegram body. It is
+  not complete until one adversarial review, primary inspection, commit, and push.
 - [ ] **O2-05B — use only the existing shared CloakBrowser** — Route every normal
   daily acquisition to registry identity `interactive:dais` on the measured
   `127.0.0.1:9222` daily-driver. A busy, unavailable, or failed attach never starts or
