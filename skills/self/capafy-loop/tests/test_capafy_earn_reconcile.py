@@ -34,10 +34,12 @@ def _sync_stub(tmp_path: Path, exit_code: int) -> tuple[Path, Path]:
     return stub, calls
 
 
-def _run(tmp_path: Path, sync_exit: int, seed: list[dict] | None = None, payout_payload: dict | None = None, sync_path: Path | None = None) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
+def _run(tmp_path: Path, sync_exit: int, seed: list[dict] | None = None, payout_payload: dict | None = None, sales_payload: dict | None = None, sync_path: Path | None = None) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
     sales, payout = _fixtures(tmp_path)
     if payout_payload is not None:
         payout.write_text(json.dumps(payout_payload))
+    if sales_payload is not None:
+        sales.write_text(json.dumps(sales_payload))
     sync, calls = (sync_path, tmp_path / "sync-calls.jsonl") if sync_path else _sync_stub(tmp_path, sync_exit)
     source_ledger = tmp_path / "capafy-earn-ledger.jsonl"
     event_ledger = tmp_path / "capafy-revenue-events.jsonl"
@@ -114,6 +116,24 @@ def test_payout_failure_preserves_previous_source_evidence(tmp_path: Path) -> No
         failed, _, calls_after = _run(tmp_path, 0, payout_payload=payload)
         assert failed.returncode != 0 and "payout" in failed.stderr
         assert ledger.read_bytes() == before and calls_after.read_bytes() == sync_before
+
+
+def test_nonfinite_payout_preserves_previous_source_evidence(tmp_path: Path) -> None:
+    first, ledger, calls = _run(tmp_path, 0)
+    before, sync_before = ledger.read_bytes(), calls.read_bytes()
+    failed, _, calls_after = _run(tmp_path, 0, payout_payload={"data": {"balancePayout": "NaN", "balancePending": "Infinity", "balanceConfirmed": 0, "totalPayout": 0}})
+    assert first.returncode == 0
+    assert failed.returncode != 0 and "payout" in failed.stderr
+    assert ledger.read_bytes() == before and calls_after.read_bytes() == sync_before
+
+
+def test_nonfinite_sales_preserves_previous_source_evidence(tmp_path: Path) -> None:
+    first, ledger, calls = _run(tmp_path, 0)
+    before, sync_before = ledger.read_bytes(), calls.read_bytes()
+    failed, _, calls_after = _run(tmp_path, 0, sales_payload={"data": {"data": [{"date": "2026-08-12", "orders": 1, "revenue": "NaN", "netRevenue": "Infinity", "refundAmount": "NaN"}]}})
+    assert first.returncode == 0
+    assert failed.returncode != 0 and "sales" in failed.stderr
+    assert ledger.read_bytes() == before and calls_after.read_bytes() == sync_before
 
 
 def test_sales_window_failure_does_not_return_partial_rows() -> None:

@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import os
 import subprocess
 import sys
@@ -71,13 +72,26 @@ def _date_windows(lookback_days: int):
         cur = end + dt.timedelta(days=1)
 
 
+def _finite(value: object, field: str) -> float:
+    try:
+        number = float(value or 0)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(f"{field} is not numeric") from exc
+    if not math.isfinite(number):
+        raise RuntimeError(f"{field} is not finite")
+    return number
+
+
 def _sales_rows(raw: object) -> list:
     if isinstance(raw, dict) and raw.get("code", 0) != 0:
         raise RuntimeError("sales response returned an error")
     raw = raw.get("data", {}).get("data") if isinstance(raw, dict) else raw
     if not isinstance(raw, list) or any(not isinstance(d, dict) or not isinstance(d.get("date"), str) for d in raw):
         raise RuntimeError("sales response has malformed data")
-    return [d for d in raw if float(d.get("orders", 0) or 0) > 0 or float(d.get("revenue", 0) or 0) > 0]
+    for row in raw:
+        for field in ("orders", "revenue", "netRevenue", "refundAmount", "newBuyers"):
+            _finite(row.get(field, 0), f"sales {field}")
+    return [d for d in raw if _finite(d.get("orders", 0), "sales orders") > 0 or _finite(d.get("revenue", 0), "sales revenue") > 0]
 
 
 def fetch_sales(token: str, lookback_days: int) -> list:
@@ -98,8 +112,8 @@ def _payout_snapshot(raw: object) -> dict:
     if not isinstance(data, dict) or any(field not in data for field in required):
         raise RuntimeError("payout response has malformed balance fields")
     try:
-        [float(data[field]) for field in required]
-    except (TypeError, ValueError) as exc:
+        [_finite(data[field], f"payout {field}") for field in required]
+    except RuntimeError as exc:
         raise RuntimeError("payout response has malformed balance fields") from exc
     return data
 
