@@ -6,7 +6,8 @@
 **Original base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`
 **Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Status:** O2-03 reproducible release validation and O2-05P regional prompt fence
+**Status:** O2-05C runtime consolidation is the active gate before further feature
+work. O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
 daily outcome reporting is implemented in two uncommitted files and is the active
@@ -35,6 +36,68 @@ Luna implements that bounded item; one fresh adversarial reviewer challenges the
 finished diff; the primary then performs the smallest real verification, updates
 this spec, commits, pushes, and moves to the next item. Do not add a second review
 round unless the first review finds a concrete blocker.
+
+## 0. Clean runtime consolidation gate (O2-05C)
+
+The system is not blocked by missing job-search logic. It is blocked by deployment
+generation drift. Measurements on 2026-08-13 show one long-lived Job Hunter branch
+`397` commits ahead of and `65` commits behind `origin/main`, two uncommitted O2-05N
+files, active release `932ae25e...`, incompatible previous release `f9642b2...`, `172`
+immutable release directories, three disabled/unloaded work lanes, and two browser
+processes (`interactive:dais` on `127.0.0.1:9222` and stale `job-search:dais` on
+`127.0.0.1:49167`). The last daily evidence is 2026-08-08.
+
+The clean target is one operational chain, not one physical directory. Private config
+and persistent application state must remain outside Git:
+
+```mermaid
+flowchart LR
+  A[Life Manager origin/main] --> B[one reviewed Job Hunter commit]
+  B --> C[one immutable current release]
+  C --> D[stable launchd wrappers]
+  D --> E[daily / inbox / learning]
+  E --> F[existing CloakBrowser :9222]
+  E --> G[one ledger + outbox + evidence root]
+```
+
+Canonical locations after consolidation:
+
+- source SSOT: `/Users/anicca/Projects/life-manager-main` after the dedicated branch
+  is integrated; the temporary linked worktree is removed only after integration;
+- runtime code: `~/.local/share/anicca/job-search/current` plus exactly one healthy
+  `previous` release;
+- private config: `~/.config/anicca/job-search`;
+- persistent state and application evidence: `~/.local/state/anicca/job-search`;
+- scheduler entrypoints: `~/.local/libexec/anicca/job-search/{daily,inbox,learning}`;
+- browser: existing registry identity `interactive:dais` at `127.0.0.1:9222`; no
+  Job Hunter-owned browser service remains after safe cutover.
+
+Ordered cleanup is mandatory:
+
+1. freeze feature work and preserve the current two-file O2-05N change with one
+   adversarial review and one pushed commit;
+2. fetch and integrate current `origin/main` into the dedicated branch, resolving
+   only Job Hunter overlap and preserving unrelated main work;
+3. implement the minimal O2-05B cutover: every Job Hunter browser lease uses
+   `interactive:dais`; attach failure reports and exits without launch/restart;
+4. build one candidate from the pushed integrated commit, validate it against a
+   copied production ledger, then atomically activate it so `current` is the new
+   release and healthy `932ae25e...` is `previous`;
+5. enable/bootstrap only daily, inbox, and learning and observe one real cycle;
+6. after PID/UUID/context/tab ownership proof, unload and disable only the obsolete
+   `ai.anicca.job-search-browser` service; never stop the shared `:9222` browser;
+7. retain only the verified `current` and `previous` immutable releases and remove
+   the other generated releases. They are reproducible from Git. Never delete private
+   config, ledger, outbox, receipts, submitted artifacts, evidence, or browser data;
+8. integrate the reviewed Job Hunter branch into `origin/main`, remove its temporary
+   worktree, prune only stale Job Hunter worktree metadata, and delete only fully
+   merged Job Hunter branches. Do not touch Connector or other Life Manager worktrees;
+9. prove every launcher resolves the same current commit, every lane uses the same
+   ledger/outbox, all three labels are healthy, and Telegram reports the live cycle.
+
+O2-06 through O2-12 resume only after this gate. Cleanup is complete only when the
+live loop is applying from this single chain; a tidy directory without a running loop
+is not completion.
 
 ## 1. Done condition
 
