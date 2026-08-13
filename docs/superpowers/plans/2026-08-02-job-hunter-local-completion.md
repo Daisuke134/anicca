@@ -1300,6 +1300,8 @@ adopted it.
   inspection confirms the production delivery path reads the result once and keeps
   the digest only in durable sender metadata. Focused verification passes `7/7`; the
   full Job Hunter suite passes `581/581` in `35.037s`; compile and diff checks pass.
+  The natural-language completion report is acknowledged by Telegram message ID
+  `16306`; pushed implementation commit: `2b219f5d9`.
 - [ ] **O2-05U — unlimited eligible applications before launchd load** — Remove the
   `confirmed_daily_count >= 10` early stop, the ordinary `1..10` slot ceiling, and
   dream/strong-fit/adjacent submission ceilings from the existing execution path.
