@@ -32,7 +32,7 @@ OPENCLAW_THINKING_VALUES = frozenset(("off", "minimal", "low", "medium", "high",
 OPENCLAW_JSON_FENCE = re.compile(r"\A```json\r?\n(?P<body>.*?)\r?\n```\Z", re.DOTALL)
 DEFAULT_USAGE_LEDGER = Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "agent-usage.jsonl"
 CLAUDE_PROVIDERS = {"claude", "claude-direct"}
-CODEX_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset(("uniqueItems",))
+CODEX_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset(("uniqueItems", "allOf", "if", "then", "else"))
 # Smallest prompt that could plausibly express a bounded task. Kept low on
 # purpose: this is a floor against empty/degenerate transport, not a style
 # rule. Callers that legitimately want a stricter floor set
