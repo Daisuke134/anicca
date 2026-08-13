@@ -6,10 +6,13 @@
 **Original base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`
 **Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Status:** O2-02 history recovery and rebase are integrated at pre-ledger tip
-`8141db51bbc4fcd7cf6da86e72be39d1c0c017a7`. Resume baseline is accepted. Audit is
-current. Autonomous application, mail, and learning lanes are stopped and must not
-be described as healthy or complete.
+**Status:** O2-02 history recovery, runner-scope correction, and verification are
+integrated at production/history tip
+`061d85060fd7ab8e5f9cf4d94926dfc88e0efefd`. This is the latest committed evidence
+parent for this spec update; the enclosing spec commit is intentionally not named
+inside itself. Resume baseline is accepted. Audit is current. Autonomous
+application, mail, and learning lanes are stopped and must not be described as
+healthy or complete.
 
 ## 1. Done condition
 
@@ -726,10 +729,12 @@ after bounded recovery fails.
 
 ## 10. Current verified state
 
-- The dedicated worktree is clean before this ledger update at pre-task target
+- The dedicated worktree was clean before the O2-02 ledger update at pre-task target
   `b3a69f9f07aa450d2c58eeca2d1b136fc43a3bf8`; recoverable backup ref
   `refs/backup/job-hunter-local-completion-20260802-pre-o2-02` points to that SHA.
-  Canonical main and the donor branch were not modified.
+  The current local and remote dedicated tips are
+  `061d85060fd7ab8e5f9cf4d94926dfc88e0efefd` before this spec commit. Canonical
+  main and the donor branch were not modified.
 - The locked rebase base is `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`. Donor
   `origin/docs/job-hunter-spec-20260805` remains `66ab20d07ca7c310e53d2008707cb982a116ca16`
   with 364 commits after `2099a29da61345a120d2f68a819d7b854dcebd83`. Target-only
@@ -737,23 +742,28 @@ after bounded recovery fails.
   status update is `8141db51bbc4fcd7cf6da86e72be39d1c0c017a7`; the pushed O2-02
   verification commit is `c7c65e3ffb7307d929fa6a5425f0cab5c76e9dc5`.
 - Rebase conflicts were limited to shared runner files: `runtime/agent-runner/agent_runner.py`
-  retained current-main application-intent browser-route isolation and donor
-  repeatable-agent credential stripping; `runtime/agent-runner/config.json` retained
-  the planner route and donor Job Hunter Terra-high route. No Connector, Fundraising,
-  CFO, Crypto, or Gig Work behavior was changed.
+  retained current-main application-intent browser-route isolation and the donor
+  Job Hunter Terra-high route. The O2-02 correction scopes authority and secret
+  filtering to `job-search-terra-high` and restores locked-main `repeatable-agent`
+  authority/environment semantics for Connector and Marketing/Gig consumers;
+  `runtime/agent-runner/config.json` retains the planner and Job Hunter Terra-high
+  routes. No Connector, Fundraising, CFO, Crypto, or Gig Work behavior is changed.
 - The accepted resume manifest and all four stable PDFs match SHA-256 values
   `31d8ca96a396526d23a8a4de4dcffdb8cc773cd7ff43db04e52a0e4c35e2d21e`,
   `2e3ed9c27c7c4abc6dc6ff478c5718821d3d4ad4a5034c99f808841f41a1cd88`,
   `e23efc2c9c09e0780a6dcdcf92c1487e6beafb5880ebc2f5dd77da54c67dd5d4`, and
   `13e4e3a78152182a7dad411f00b3846150151721396e16eefaefe7548edd94b9`.
 - The complete Job Hunter suite passes `564` tests. The complete agent-runner suite
-  passes `19` tests, including donor `test_repeatable_authority.py`; its explicit
-  `job-search-terra-high` high-effort exception is recorded in the shared route test.
+  passes `18` tests, including the focused three-test authority regression; its
+  explicit `job-search-terra-high` high-effort exception is recorded in the shared
+  route test. Connector consumer tests pass `6` tests and Marketing/Gig consumer
+  wiring tests pass `4` tests.
 - Current owner-declared company pauses for OpenAI, Anthropic, and Cursor remain
   authoritative, and the mandatory Japan/global-remote discovery segment remains in
   the O2-06 contract. The JPY 7M floor / JPY 10M target / JPY 30M stretch policy is
   unchanged. Autonomous application, mail, and learning lanes remain stopped; O2-03
-  and later tasks are not complete.
+  and O2-05 through O2-12 remain open. O2-04A and O2-04B were complete before O2-02
+  and remain complete; this task did not newly close them.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -790,13 +800,19 @@ before the next item begins.
   unresolvable installed release. Rebased the 364 commits from
   `origin/docs/job-hunter-spec-20260805` from base `2099a29da` onto locked
   `origin/main` snapshot `4fcddb65`, replayed `8f928c2e7` and `b3a69f9f0`, resolved
-  shared-runner conflicts without changing unrelated product behavior, and verified
-  the accepted resume hashes plus `564` Job Hunter and `19` runner tests. O2-03 and
-  later tasks remain open.
+  shared-runner conflicts without changing unrelated product behavior. The fix
+  scopes the donor authority boundary to Job Hunter's explicit Terra-high route and
+  proves the locked-main shared `repeatable-agent` contract for Connector and
+  Marketing/Gig consumers. Verified the accepted resume hashes, `564` Job Hunter
+  tests, `18` runner tests, focused runner `3`, Connector `6`, and Marketing/Gig
+  `4` tests. O2-03 and O2-05 through O2-12 remain open; O2-04A/O2-04B remain
+  pre-task-complete.
 - [ ] **O2-03** — Run the complete integrated Job Hunter and agent-runner suites in a
   clean worktree and release-shaped environment. Fix every current installed-release
   failure, including Telegram dossier injection, Ashby authoritative confirmation,
   daily canary artifact creation, and release provenance. No activation until green.
+- O2-04A and O2-04B were accepted before O2-02 and remain complete; O2-02 does not
+  newly complete either item.
 - [x] **O2-04A — first implementation slice: corrected resume baseline** — Build the
   approved one-page English resume and the separate Japanese `履歴書` and
   `職務経歴書`; update the private fact ledger without inventing facts; render PDFs;
