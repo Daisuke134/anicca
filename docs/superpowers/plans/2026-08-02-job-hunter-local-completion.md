@@ -1001,8 +1001,22 @@ evidence until the primary has independently inspected and adopted it.
   evidence-bound `email_sent -> submit_unknown` correction per row, preserve all old
   events/routes/outcomes, update mutable application/slot truth, and append nothing
   on replay. A production-shaped regression must yield five corrections in an
-  isolated real-ledger copy and Guardian healthy before the real ledger is backed up
-  and changed. Payload-only or mismatched route/provider/hash evidence fails closed.
+  isolated real-ledger copy before the real ledger is backed up and changed.
+  Rehearsal now yields exactly `5` corrections, `0` on replay, events `251 -> 256`,
+  email-sent `5 -> 0`, submit-unknown `25 -> 30`, unchanged route/route-event/outcome
+  counts, valid event projection, rebuildable summaries for all `57` applications,
+  SQLite integrity `ok`, and no foreign-key violations. Overall Guardian remains
+  unhealthy solely because the real ledger already has one unrelated
+  `stale_submission_claim`; this slice must not hide or mutate that separate O2-05
+  item and must add no new Guardian reason. Payload-only or mismatched
+  route/provider/hash evidence fails closed.
+  The single adversarial review found one Important hybrid bypass: adding
+  `channel=recruiting_outreach` let a payload with a forged `reason` avoid the exact
+  legacy-v0 check. The reviewed correction forbids any payload containing `reason`
+  from using the normal channel-bound path; it must satisfy the exact four-key
+  legacy-v0 shape. A forged reason plus channel/extra-key fixture must produce zero
+  corrections and leave Guardian unhealthy. No second review cycle is added; the
+  primary closes this correction with isolated-copy and full-suite verification.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
