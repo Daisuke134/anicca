@@ -218,13 +218,21 @@ def require_project_id(opportunity: Mapping[str, object]) -> str:
     return value
 
 
-def read_pending_descriptor(state_path: Path) -> Optional[Dict[str, object]]:
+def read_pending_descriptors(state_path: Path) -> list[Dict[str, object]]:
     _, pending = _read_state(Path(state_path))
-    for marker in sorted(pending):
-        entry = pending[marker]
-        if _is_project_id(entry.get("project_id")):
-            return {key: entry[key] for key in ("project_id", "amount_minor", "delivery_due_on")}
-    return None
+    return [
+        {
+            key: pending[marker][key]
+            for key in ("project_id", "amount_minor", "delivery_due_on")
+        }
+        for marker in sorted(pending)
+        if _is_project_id(pending[marker].get("project_id"))
+    ]
+
+
+def read_pending_descriptor(state_path: Path) -> Optional[Dict[str, object]]:
+    values = read_pending_descriptors(state_path)
+    return values[0] if values else None
 
 
 def load_marketplace_contracts():
@@ -463,5 +471,7 @@ __all__ = [
     "TickResult",
     "account_lock",
     "load_marketplace_contracts",
+    "read_pending_descriptor",
+    "read_pending_descriptors",
     "run_transaction",
 ]

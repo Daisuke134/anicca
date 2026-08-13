@@ -1,4 +1,6 @@
 import copy
+import hashlib
+import io
 import importlib.util
 import json
 import sys
@@ -108,6 +110,70 @@ def _ineligible_decision(project_id: str) -> dict[str, object]:
 
 
 class ApplicationLoopHolTests(unittest.TestCase):
+    def test_reconcile_only_reconciles_every_pending_application_without_discovery_or_submit(self):
+        application_loop = _load_deployed_loop()
+        project_ids = ["5585496", "5586112"]
+        state = {"fingerprints": [], "pending": {}}
+        for project_id in project_ids:
+            marker = hashlib.sha256(
+                f"lancers:application:{project_id}".encode()
+            ).hexdigest()
+            state["fingerprints"].append(marker)
+            state["pending"][marker] = {
+                "proposal_id": None,
+                "content_sha256": hashlib.sha256(
+                    f"proposal:{project_id}".encode()
+                ).hexdigest(),
+                "amount_minor": 250000,
+                "delivery_due_on": "2026-09-10",
+                "project_id": project_id,
+            }
+
+        called_project_ids = []
+
+        def run_live_tick(**kwargs):
+            called_project_ids.append(kwargs["project_id"])
+            return {
+                "ok": False,
+                "error": "submission_uncertain",
+                "project_id": kwargs["project_id"],
+            }
+
+        def forbidden(*_args, **_kwargs):
+            raise AssertionError("discovery_or_submit_called")
+
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "application.json"
+            state_path.write_text(json.dumps(state, sort_keys=True), encoding="utf-8")
+            original_state = copy.deepcopy(json.loads(state_path.read_text()))
+            with patch.object(
+                application_loop.application_tick,
+                "run_live_tick",
+                side_effect=run_live_tick,
+            ), patch.object(
+                application_loop.status, "run_discovery", side_effect=forbidden
+            ), patch.object(
+                application_loop, "_plan_and_submit", side_effect=forbidden
+            ), patch.object(application_loop, "_submit", side_effect=forbidden):
+                result = application_loop.run_reconcile_only(state_path)
+
+                self.assertEqual(called_project_ids, project_ids)
+                self.assertEqual(result["reconciled_project_ids"], project_ids)
+                self.assertEqual(result["verified_project_ids"], [])
+                self.assertEqual(result["unresolved_project_ids"], project_ids)
+                self.assertFalse(result["submitted"])
+                self.assertEqual(json.loads(state_path.read_text()), original_state)
+
+                called_project_ids.clear()
+                self.assertEqual(
+                    application_loop.main(
+                        ["--json", "--reconcile-only", "--state-path", str(state_path)],
+                        stdout=io.StringIO(),
+                    ),
+                    1,
+                )
+                self.assertEqual(called_project_ids, project_ids)
+
     def test_uncertain_pending_is_quarantined_without_blocking_new_verified_application(self):
         application_loop = _load_deployed_loop()
         discovery_calls = []
