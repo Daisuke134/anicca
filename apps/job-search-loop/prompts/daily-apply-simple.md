@@ -65,7 +65,9 @@ For each selected role:
    registered by this wake
    instead of building another browser owner. Run the installed read-only observer:
    `$JOB_SEARCH_PYTHON -m job_search_loop.ats_page_observer --owner-receipt
-   "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" --output
+   "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" --ownership-receipt
+   "$JOB_SEARCH_EVIDENCE_DIR/page-ownership.json" --owned-page
+   "$JOB_SEARCH_EVIDENCE_DIR/owned-page.json" --output
    "$JOB_SEARCH_EVIDENCE_DIR/ats-page-observation.json"`. Treat its classification as
    an observation for your adaptive judgment, not a workflow that replaces you.
    `terra_continue_formal` means inspect and fill the current semantic controls using

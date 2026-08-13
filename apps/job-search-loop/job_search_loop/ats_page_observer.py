@@ -11,19 +11,27 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from .ats_page_classifier import classify_ats_page
+from .browser_pages import registered_created_target
 from .playwright_ats import capture_snapshot
 
 
-def _current_http_page(browser: Any) -> Any:
-    for context in reversed(list(browser.contexts)):
-        for page in reversed(list(context.pages)):
-            if urlsplit(str(page.url)).scheme in {"http", "https"}:
-                return page
-    raise RuntimeError("resident CloakBrowser has no current HTTP(S) page")
+def _registered_page(browser: Any, target: str) -> Any:
+    pages = []
+    for context in browser.contexts:
+        for page in context.pages:
+            session = context.new_cdp_session(page)
+            page_target = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
+            if page_target == target:
+                pages.append(page)
+    if len(pages) != 1:
+        raise RuntimeError("registered ATS page is unavailable")
+    return pages[0]
 
 
 def observe_current_page(
     owner_receipt: Mapping[str, Any],
+    ownership_receipt: Mapping[str, Any],
+    owned_page: Mapping[str, Any],
     *,
     playwright: Any,
     snapshotter: Callable[..., dict[str, Any]] = capture_snapshot,
@@ -42,8 +50,11 @@ def observe_current_page(
         raise ValueError("browser owner lease is missing")
     if isinstance(fence, bool) or not isinstance(fence, int) or fence <= 0:
         raise ValueError("browser owner fence is missing")
+    target = registered_created_target(
+        dict(owner_receipt), dict(ownership_receipt), dict(owned_page)
+    )
     browser = playwright.chromium.connect_over_cdp(endpoint)
-    snapshot = snapshotter(_current_http_page(browser), navigation_committed=True)
+    snapshot = snapshotter(_registered_page(browser, target), navigation_committed=True)
     return {
         "version": 1,
         "owner_lease_id": lease_id,
@@ -69,13 +80,19 @@ def _write_private(path: Path, payload: dict[str, Any]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--owner-receipt", type=Path, required=True)
+    parser.add_argument("--ownership-receipt", type=Path, required=True)
+    parser.add_argument("--owned-page", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     owner = json.loads(args.owner_receipt.read_text(encoding="utf-8"))
+    ownership = json.loads(args.ownership_receipt.read_text(encoding="utf-8"))
+    owned_page = json.loads(args.owned_page.read_text(encoding="utf-8"))
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as playwright:
-        receipt = observe_current_page(owner, playwright=playwright)
+        receipt = observe_current_page(
+            owner, ownership, owned_page, playwright=playwright
+        )
     _write_private(args.output, receipt)
     classification = receipt["classification"]
     print(json.dumps({
