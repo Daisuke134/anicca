@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from capafy_event_store import append_event
+from capafy_event_store import append_event, read_events
 from capafy_event_adapters import event_from_incident, events_from_outcome
 
 
@@ -544,6 +544,41 @@ def _match_source_row(event: dict, candidates: list[dict]) -> dict:
     return next((row for row in candidates if _digest(row) == wanted), {})
 
 
+def _reconcile_order_event_ids(events: list[dict], ledger: Path) -> list[dict]:
+    if not any(event.get("event_type") == "order.received" for event in events):
+        return events
+    existing = read_events(ledger)
+    identities: set[tuple[str, str]] = set()
+    by_digest: dict[tuple[str, str, str], dict] = {}
+    for event in existing:
+        if event["event_type"] != "order.received":
+            continue
+        source = event["source"]
+        identity = (source["producer"], source["source_id"])
+        identities.add(identity)
+        by_digest[(*identity, source["source_digest"])] = event
+
+    reconciled: list[dict] = []
+    for event in events:
+        if event.get("event_type") != "order.received":
+            reconciled.append(event)
+            continue
+        source = event["source"]
+        identity = (source["producer"], source["source_id"])
+        prior = by_digest.get((*identity, source["source_digest"]))
+        if prior is not None:
+            event = dict(event)
+            event["event_id"] = prior["event_id"]
+            event["technical_evidence_ref"] = prior["technical_evidence_ref"]
+        elif identity in identities:
+            event = dict(event)
+            revision_id = f"{event['event_id'].rsplit(':', 1)[0]}:revision-{source['source_digest'].removeprefix('sha256:')}"
+            event["event_id"] = revision_id
+            event["technical_evidence_ref"] = revision_id
+        reconciled.append(event)
+    return reconciled
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -664,6 +699,14 @@ def _main() -> int:
                 events_from_verified_runtime({}, {}, incidents),
                 incidents,
                 args.incident_dir,
+            )
+
+        if "money" in groups:
+            events, candidates, source_path = groups["money"]
+            groups["money"] = (
+                _reconcile_order_event_ids(events, args.ledger),
+                candidates,
+                source_path,
             )
 
         source_counts: dict[str, dict[str, int]] = {}
