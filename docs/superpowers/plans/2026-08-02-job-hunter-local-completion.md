@@ -732,9 +732,9 @@ after bounded recovery fails.
 - The dedicated worktree was clean before the O2-02 ledger update at pre-task target
   `b3a69f9f07aa450d2c58eeca2d1b136fc43a3bf8`; recoverable backup ref
   `refs/backup/job-hunter-local-completion-20260802-pre-o2-02` points to that SHA.
-  The current local and remote dedicated tips are
-  `061d85060fd7ab8e5f9cf4d94926dfc88e0efefd` before this spec commit. Canonical
-  main and the donor branch were not modified.
+  The O2-03 release-validation source tip was local/remote
+  `fb267a27bdb5eaf38db6ed72071625dbceee3ba9` before this enclosing spec update.
+  Canonical main and the donor branch were not modified.
 - The locked rebase base is `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`. Donor
   `origin/docs/job-hunter-spec-20260805` remains `66ab20d07ca7c310e53d2008707cb982a116ca16`
   with 364 commits after `2099a29da61345a120d2f68a819d7b854dcebd83`. Target-only
@@ -758,12 +758,40 @@ after bounded recovery fails.
   explicit `job-search-terra-high` high-effort exception is recorded in the shared
   route test. Connector consumer tests pass `6` tests and Marketing/Gig consumer
   wiring tests pass `4` tests.
+- O2-03 release validation passed from source tip
+  `fb267a27bdb5eaf38db6ed72071625dbceee3ba9`: the Job Hunter suite ran `564/564`
+  and the agent-runner suite `18/18` with exit code 0. Read-only focused tests
+  reproduced the four installed-release classes on current
+  `releases/f9642b2f3e2e520affdea9b847ae428706d89607`: application-reporting had
+  `2` errors from direct Telegram Outbox access, Ashby confirmation had `1` failure
+  accepting GraphQL-only success, the daily fill canary had a missing
+  `ashby-fill-verification.json`, and release tests failed when an extracted tree
+  attempted a Git build. The corresponding branch tests passed (`8`, `16`, `2`, and
+  `2` respectively), so no production fix was needed. The installed commit is not
+  a Git object or reachable ref; its campaign/persistent-runner additions were not
+  copied because no focused RED demonstrated a branch gap.
+- After `git fetch origin`, `git merge-base --is-ancestor HEAD
+  origin/feat/job-hunter-local-completion-20260802` exited 0 with local and remote
+  both at the source tip, proving the candidate was reachable from the pushed ref.
+- The existing `apps/job-search-loop/scripts/build-release.sh` built the source tip
+  twice into private temporary directories. Both archives and checksum sidecars are
+  byte-identical with SHA-256
+  `eccc809807c8e4ce0126025a200555d1ef4a627bc21f75c88f9d1d05f13a2c27`; each has
+  `269` entries, only `apps/job-search-loop` and `runtime/agent-runner` roots, no
+  private-state-shaped files, and `RELEASE.json.commit` equal to the source tip.
+- One archive was extracted into a private clean-HOME fixture. Existing
+  `setup-profile.sh` and `install-local.sh --provider auto --scheduler none` selected
+  `codex`, wrote private leaf directories as `700` and profile/install/state files
+  as `600`, and resolved all installed paths under the fixture. Bundled imports passed;
+  the bundled healthcheck passed for daily/inbox/learning with SQLite integrity
+  `ok`, fresh evidence, and `last_exit=0`. The real `current` symlink, profile,
+  ledger, browser, and LaunchAgents were not touched.
 - Current owner-declared company pauses for OpenAI, Anthropic, and Cursor remain
   authoritative, and the mandatory Japan/global-remote discovery segment remains in
   the O2-06 contract. The JPY 7M floor / JPY 10M target / JPY 30M stretch policy is
-  unchanged. Autonomous application, mail, and learning lanes remain stopped; O2-03
-  and O2-05 through O2-12 remain open. O2-04A and O2-04B were complete before O2-02
-  and remain complete; this task did not newly close them.
+  unchanged. Autonomous application, mail, and learning lanes remain stopped; O2-05
+  through O2-12 remain open. O2-04A and O2-04B were complete before O2-02 and remain
+  complete; this task did not newly close them.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -807,10 +835,14 @@ before the next item begins.
   tests, `18` runner tests, focused runner `3`, Connector `6`, and Marketing/Gig
   `4` tests. O2-03 and O2-05 through O2-12 remain open; O2-04A/O2-04B remain
   pre-task-complete.
-- [ ] **O2-03** — Run the complete integrated Job Hunter and agent-runner suites in a
-  clean worktree and release-shaped environment. Fix every current installed-release
-  failure, including Telegram dossier injection, Ashby authoritative confirmation,
-  daily canary artifact creation, and release provenance. No activation until green.
+- [x] **O2-03** — Prove a reproducible green release candidate from pushed source tip
+  `fb267a27bdb5eaf38db6ed72071625dbceee3ba9`: reproduce the four installed-release
+  failure classes with focused read-only tests, verify the integrated `564/564` and
+  `18/18` suites, build two byte-identical bounded archives with matching sidecars
+  and `RELEASE.json` provenance, prove remote reachability, and run the extracted
+  clean-HOME `--scheduler none` install/import/healthcheck smoke. No production
+  change or activation was needed; unresolved installed-only additions were not
+  copied because the branch focused tests were already green.
 - O2-04A and O2-04B were accepted before O2-02 and remain complete; O2-02 does not
   newly complete either item.
 - [x] **O2-04A — first implementation slice: corrected resume baseline** — Build the
