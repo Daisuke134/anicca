@@ -1872,6 +1872,26 @@ performs the real E2E, and records the milestone.
   deterministic supported path. If the tenant is truly SSO-only, reject that route and
   continue to the next eligible non-SSO ATS rather than repeatedly spending a wake on
   it.
+
+  **Native Workday entry slice complete in pushed source:** existing production
+  pre-submit was independently timing out because it navigated to the Workday job page
+  and waited for a file input without clicking Apply. The adaptive path also waited
+  until an account form was already visible before invoking the safe credential tool,
+  which allowed SSO controls to become the apparent blocker. Commit `be0cc826c` extends
+  the existing owned-page credential tool: when invoked on a verified Workday job
+  surface it clicks only stable `jobPostingApplyButton`, then
+  `applyManually`/`adventureButton`, and only then reuses the existing native
+  email/password create-or-sign-in flow. It never selects SSO and returns only the same
+  redacted receipt. The selectors are corroborated by pinned AutoApply commit
+  `053071ba1bba5733b522d78c3d645002d817e55a`, Scout commit
+  `65e3e0fa8987bf66d639bc0707b828eb26ebb3be`, and dotel/applyjobs commit
+  `5bd0cf04931d736bd5fc9213dc455b80cd87b153`. Focused tests pass `24/24`; compilation,
+  diff checks, and the complete suite pass `583/583`.
+
+  **Immediate next slice:** build and activate the pushed native-entry release, rerun
+  the real daily lane, and verify NVIDIA reaches native account creation/sign-in rather
+  than SSO. Continue through the application only with grounded private facts and keep
+  receipt truth unchanged until authoritative confirmation exists.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
