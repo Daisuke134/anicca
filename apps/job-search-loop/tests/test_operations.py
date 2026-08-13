@@ -378,6 +378,22 @@ class OperationsTests(unittest.TestCase):
                 outbox.claim(row)
             outbox.close()
 
+    def test_legacy_delivery_unknown_normalizes_missing_send_time(self):
+        with tempfile.TemporaryDirectory() as directory:
+            outbox = Outbox(Path(directory) / "outbox.sqlite3")
+            row = outbox.enqueue("legacy", "hello")
+            fence = outbox.claim(row)
+            outbox.mark_send_started(row, fence)
+            outbox.connection.execute(
+                "UPDATE outbox SET send_started_at=NULL WHERE event_key=?", (row,)
+            )
+            outbox.mark_delivery_unknown(row, fence)
+            started = outbox.connection.execute(
+                "SELECT send_started_at FROM outbox WHERE event_key=?", (row,)
+            ).fetchone()[0]
+            self.assertIsNotNone(started)
+            outbox.close()
+
     def test_summary_contains_counts_without_pii(self):
         value = build_summary(
             day="2026-07-28",

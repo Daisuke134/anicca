@@ -1213,6 +1213,14 @@ ledger, evidence, or submitted artifacts.
   current natural report will tell the owner that those historical notification
   deliveries are unknown; it does not alter application receipts or claim delivery.
   Focused checks pass `16/16`, full Job Hunter `576/576`, compile and diff checks pass.
+- Before mutating production, the outbox was backed up with integrity `ok` and owner
+  notification was acknowledged by Telegram message ID `16432`. All `15` historical
+  rows moved through the fenced Outbox API to `delivery_unknown`, and uncertainty fell
+  to zero. Guardian then found the oldest `3` migration-era rows lacked their original
+  `send_started_at`. The terminalization API now deterministically preserves that
+  legacy chronology using existing `claimed_at` or `created_at`; it never invents a
+  Telegram ACK. Focused checks pass `17/17` and full Job Hunter `577/577`. Normalize
+  those three rows through the API, rerun all health gates, and then close O2-05.
 
 ## 11. Ponytail OSS reuse decision
 

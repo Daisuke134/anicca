@@ -98,10 +98,21 @@ class Outbox:
 
     def mark_delivery_unknown(self, event_key: str, fence: str) -> None:
         changed = self.connection.execute(
-            "UPDATE outbox SET status='delivery_unknown',completed_at=? "
+            "UPDATE outbox SET status='delivery_unknown',"
+            "send_started_at=COALESCE(send_started_at,claimed_at,created_at),completed_at=? "
             "WHERE event_key=? AND fence=? AND status='send_started' "
             "AND telegram_message_id IS NULL",
             (_now(), event_key, fence),
+        ).rowcount
+        if changed != 1:
+            raise DeliveryUncertain("outbox fence mismatch")
+
+    def normalize_legacy_delivery_unknown(self, event_key: str, fence: str) -> None:
+        changed = self.connection.execute(
+            "UPDATE outbox SET send_started_at=COALESCE(send_started_at,claimed_at,created_at) "
+            "WHERE event_key=? AND fence=? AND status='delivery_unknown' "
+            "AND telegram_message_id IS NULL",
+            (event_key, fence),
         ).rowcount
         if changed != 1:
             raise DeliveryUncertain("outbox fence mismatch")
