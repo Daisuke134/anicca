@@ -61,7 +61,8 @@ def _date_windows(lookback_days: int):
     """Yield (start,end) date strings in <=7-day chunks (sales/trend returns per-day detail only
     for ranges <= 7 days; > 7 days collapses to a single date=null summary)."""
     today = dt.date.today()
-    start = today - dt.timedelta(days=lookback_days)
+    days = min(max(int(lookback_days), 1), 90)
+    start = today - dt.timedelta(days=days - 1)
     cur = start
     while cur <= today:
         end = min(cur + dt.timedelta(days=6), today)
@@ -70,7 +71,7 @@ def _date_windows(lookback_days: int):
 
 
 def fetch_sales(token: str, lookback_days: int) -> list:
-    """Return per-day sales entries (orders>0) across the lookback, deduped by date."""
+    """Return dated order aggregates, including zero-dollar orders, deduped by date."""
     seen = {}
     for s, e in _date_windows(lookback_days):
         try:
@@ -171,19 +172,12 @@ def main() -> int:
 
     # --- merge into ledger (idempotent by (source,date)) ---
     existing = load_rows(args.ledger)
-    have = set()
-    for r in existing:
-        if isinstance(r, dict) and "source" in r and "date" in r:
-            have.add((r["source"], r["date"]))
-
     today = dt.date.today().isoformat()
     added = []
     new_rows = list(existing)
 
     for d in sales:
         key = ("capafy-sales", d["date"])
-        if key in have:
-            continue
         row = {
             "ts": _date_to_ts(d["date"]),
             "source": "capafy-sales",
@@ -198,9 +192,19 @@ def main() -> int:
             "note": "capafy sales/trend reconcile; gross buyer payment (NOT on-chain; seller take in capafy-payout snapshot)",
             "wake": "capafy_earn_reconcile",
         }
-        new_rows.append(row)
-        have.add(key)
-        added.append(d["date"])
+        replaced = False
+        deduped = []
+        for old in new_rows:
+            if isinstance(old, dict) and (old.get("source"), old.get("date")) == key:
+                if not replaced:
+                    deduped.append(row)
+                    replaced = True
+                continue
+            deduped.append(old)
+        new_rows = deduped
+        if not replaced:
+            new_rows.append(row)
+            added.append(d["date"])
 
     # payout snapshot: one per day (upsert today's — replace if already present today)
     payout_row = {
