@@ -291,6 +291,13 @@ def test_owner_report_rejects_invalid_event_reason() -> None:
     assert "event_reason" in result.stderr
 
 
+@pytest.mark.parametrize("reason", [{}, []])
+def test_owner_report_rejects_non_string_event_reason(reason: object) -> None:
+    result = owner_report("delivery-key", report_envelope(report_kind="event", event_reason=reason))
+    assert result.returncode != 0
+    assert "event_reason" in result.stderr
+
+
 @pytest.mark.parametrize("kind", ["hourly", "morning", "daily_close"])
 def test_owner_report_rejects_event_reason_on_non_event(kind: str) -> None:
     result = owner_report(
@@ -402,7 +409,7 @@ def test_goal_monitor_rejects_spoofed_or_non_exact_sender_output(tmp_path: Path,
     assert not delivery.exists()
 
 
-@pytest.mark.parametrize("kind", ["", "weekly", "EVENT", "hourly:bad"])
+@pytest.mark.parametrize("kind", ["", "weekly", "EVENT", "hourly:bad", None, []])
 def test_owner_report_rejects_invalid_report_kind(kind: str) -> None:
     result = owner_report("delivery-key", report_envelope(report_kind=kind))
     assert result.returncode != 0

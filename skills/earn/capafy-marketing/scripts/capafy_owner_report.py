@@ -153,14 +153,14 @@ def load_envelope(stream: object) -> dict:
             bad("previous_company_state must be an object or null")
         validate_company_state(previous)
     kind = envelope["report_kind"] if "report_kind" in envelope else "morning"
-    if kind not in KINDS:
+    if not isinstance(kind, str) or kind not in KINDS:
         bad("report_kind is invalid")
     reason = envelope.get("event_reason")
     if kind != "event" and reason is not None:
         bad("event_reason is only valid for event reports")
     if kind == "event" and reason is None:
         reason = infer_reason(state, previous)
-    if kind == "event" and (reason not in REASONS or not reason_is_valid(reason, state, previous)):
+    if kind == "event" and (not isinstance(reason, str) or reason not in REASONS or not reason_is_valid(reason, state, previous)):
         bad("event_reason is invalid")
     period = envelope.get("period_key")
     if not period:
