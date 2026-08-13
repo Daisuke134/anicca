@@ -108,3 +108,14 @@ Return the commit SHA, selected query sequence, test counts, diffstat, and any c
 4. Primary updates SSOT, fast-forwards canonical main, installs exact SHA, and records pre-deploy state/ledger/listing hashes.
 5. Primary triggers the existing application launchd owner once and verifies the selected production query indirectly from exact slot calculation plus the real tick output. Any eligible result may perform at most one normal application under the already-enabled policy.
 6. Require state/ledger changes to match only verified provider receipts; otherwise quarantine the affected project and stop G3A acceptance without blind resend.
+
+## Completion record
+
+- Primary-authored spec/plan commit: `cd01379b8d10fe4eb4ce034145cdebb7d00e21df`.
+- Luna direct implementation commit: `a2081bc0462623a6da1ba531bcb73f17219c7ee4`; only the two owned files changed. Luna did not edit spec/plan or live state.
+- Post-implementation verification: HOL 15, combined Lancers 30, agent-runner 15, compile and diff check all exit 0.
+- Fresh Sol adversarial review: 1/1, `ship`, no mandatory finding. No second review ran.
+- Canonical main and deployed exact release: `a2081bc0462623a6da1ba531bcb73f17219c7ee4`, normal mode, 15-file manifest.
+- Real launchd-owned tick selected `LinkedIn` and returned observed 2, qualified 0, submitted false, verified 0, exit 0, empty stderr.
+- Application state, ledger, and listing SHA-256 remained unchanged; pending 0, fingerprints 19, application verified receipts 14.
+- Final scheduler state: application enabled at 1800 seconds and reporter enabled at 300 seconds, both exact-release bound.
