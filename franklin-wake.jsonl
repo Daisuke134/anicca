@@ -27197,3 +27197,11 @@
 {"ts":1786648637,"wake_id":"00MSRWGW13BB326B91A4644166","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786648766,"wake_id":"00MSRWJMVD4539AD5720824440","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786648894,"wake_id":"00MSRWMDWYD49DEF1BF54649F8","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786649026,"wake_id":"00MSRWP7N502288FDC1CC0435A","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786649153,"wake_id":"00MSRWRXZHEFD5BA47B8344635","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786649283,"wake_id":"00MSRWUQ5C002251206CF74AAB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786649412,"wake_id":"00MSRWXHAN53E648E048F54776","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786649540,"wake_id":"00MSRX082N0B3324E7BF2A4EAC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786649667,"wake_id":"00MSRX2YEV38184DE02F4844E8","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786649794,"wake_id":"00MSRX5OQT13015E3915464B07","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana decentralized freelance platform for autonomous agents payment API [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore "}
+{"ts":1786649923,"wake_id":"00MSRX8FK37265F2FF261048E7","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana microtask marketplace for autonomous agents earn USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candida"}
