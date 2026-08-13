@@ -943,6 +943,16 @@ bounded time内にprocessを終了し、page/runtime close時の例外をstable 
 一回のkick後にJSON一行、exit、launchd idle、orphan Python/Playwright process 0を確認する。旧processの停止は、
 exact release plistが準備できた切替直前に一度だけ行い、空白期間や二重ownerを作らない。
 
+唯一のfresh adversarial reviewは`FIX_FIRST`とし、二点をdeploy blockerにした。第一に、任意の
+`with.proposal.id`を応募由来として数えず、既存`marketplace-ledger.sqlite3`をSQLite read-only modeで開き、
+`platform=lancers AND event_type=application_verified`の14 proposal ID集合と一致するboardだけを
+`application_board_count`へ入れる。ledger file不在、schema/query失敗、duplicate conflictはsource incompleteであり、
+DB作成・migration・appendは行わない。第二に、一fetch 20秒だけでは最大約8,000逐次callとcleanup hangを止められない。
+同じcanonical script内の親watchdogが、別process groupのworkerとして一tickを実行し、全体120秒をhard deadlineにする。
+deadline、invalid worker JSON、unexpected stderr、異常exitではworkerとPlaywright descendantsをprocess groupごと終了し、
+親だけがstable nonzero JSONを一行出す。正常workerも一行JSONとexitを必須にし、残存process groupを許さない。
+これは二回目のreviewを追加せず、同じTerra修正後にprimaryのmechanical testとlive exit/orphan確認で閉じる。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
