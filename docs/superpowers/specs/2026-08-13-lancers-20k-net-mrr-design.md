@@ -981,6 +981,7 @@ canonical product `monthly-sns-content-ops-v1`は3.2/3.3をprovider formへ次�
 | title | `小規模B2B企業向けにSNS投稿企画と月次コンテンツ制作を代行します` |
 | subtitle | `企画・投稿案・画像指示・月次カレンダー・レポートまで毎月まとめて納品します` |
 | category | `Web集客・マーケティング` → `SNSマーケティング・運用代行` |
+| required service type | `コンテンツ作成・投稿` |
 | industry | `コンサルティング・シンクタンク` |
 | Founding | ¥98,000、30日、1媒体・月8投稿案、1 consolidated revision |
 | Standard | ¥198,000、30日、1媒体・月12投稿案、競合観察、1 consolidated revision |
