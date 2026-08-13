@@ -388,6 +388,7 @@ def run_pre_submit(
                                 ),
                                 owned_page=owned_page,
                                 playwright=playwright,
+                                page=page,
                             )
                             _private_write(
                                 evidence_dir / f"workday-account-{digest}.json",

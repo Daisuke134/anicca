@@ -341,6 +341,7 @@ def fill_account_creation(
     ownership_receipt: dict[str, Any],
     owned_page: dict[str, Any],
     playwright: Any,
+    page: Any | None = None,
 ) -> dict[str, Any]:
     if owner_receipt.get("status") != "ready":
         raise WorkdayCredentialError("browser owner is not ready")
@@ -355,19 +356,25 @@ def fill_account_creation(
     endpoint = str(owner_receipt.get("endpoint") or "")
     if endpoint != "http://127.0.0.1:9222":
         raise WorkdayCredentialError("browser owner endpoint is invalid")
-    browser = playwright.chromium.connect_over_cdp(endpoint)
-    pages = []
-    for context in browser.contexts:
-        for page in context.pages:
-            session = context.new_cdp_session(page)
-            page_target = session.send("Target.getTargetInfo")["targetInfo"][
-                "targetId"
-            ]
-            if page_target == target:
-                pages.append(page)
-    if len(pages) != 1:
-        raise WorkdayCredentialError("owned Workday page is unavailable")
-    page = pages[0]
+    if page is not None:
+        session = page.context.new_cdp_session(page)
+        page_target = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
+        if page_target != target:
+            raise WorkdayCredentialError("owned Workday page is unavailable")
+    else:
+        browser = playwright.chromium.connect_over_cdp(endpoint)
+        pages = []
+        for context in browser.contexts:
+            for candidate_page in context.pages:
+                session = context.new_cdp_session(candidate_page)
+                page_target = session.send("Target.getTargetInfo")["targetInfo"][
+                    "targetId"
+                ]
+                if page_target == target:
+                    pages.append(candidate_page)
+        if len(pages) != 1:
+            raise WorkdayCredentialError("owned Workday page is unavailable")
+        page = pages[0]
     if tenant_key(page.url) != receipt["tenant"]:
         raise WorkdayCredentialError("owned page does not match the Workday tenant")
     account = load_credentials(store_path, job_url)
