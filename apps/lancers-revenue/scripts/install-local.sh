@@ -8,6 +8,7 @@ INSTALL_ROOT="${LANCERS_INSTALL_ROOT:?LANCERS_INSTALL_ROOT is required}"
 LAUNCH_AGENT_DIR="${LANCERS_LAUNCH_AGENT_DIR:?LANCERS_LAUNCH_AGENT_DIR is required}"
 STATE_ROOT="${LANCERS_STATE_ROOT:?LANCERS_STATE_ROOT is required}"
 INSTALL_MODE="${LANCERS_INSTALL_MODE:?LANCERS_INSTALL_MODE is required}"
+ACTIVATE="${LANCERS_ACTIVATE:?LANCERS_ACTIVATE is required}"
 LABEL="ai.anicca.lancers-revenue-application"
 REPORT_LABEL="ai.anicca.lancers-revenue-telegram-report"
 WORK_SYNC_LABEL="ai.anicca.lancers-revenue-work-sync"
@@ -20,6 +21,8 @@ fail() {
 
 [[ "$INSTALL_MODE" == "reconcile-only" || "$INSTALL_MODE" == "normal" ]] \
   || fail "LANCERS_INSTALL_MODE must be reconcile-only or normal"
+[[ "$ACTIVATE" == "0" || "$ACTIVATE" == "1" ]] \
+  || fail "LANCERS_ACTIVATE must be 0 or 1"
 [[ "$RELEASE_SHA" =~ '^[0-9a-f]{40}$' ]] || fail "LANCERS_RELEASE_SHA must be a full commit SHA"
 
 if [[ "${LANCERS_SKIP_MAIN_ASSERT:-0}" != "1" ]]; then
@@ -215,9 +218,29 @@ mv -f "$REPORT_PLIST_TEMP" "$REPORT_PLIST_PATH"
 REPORT_PLIST_TEMP=""
 "$PLUTIL_BIN" -lint "$REPORT_PLIST_PATH" >/dev/null
 
+if [[ "$ACTIVATE" == "1" ]]; then
+  LAUNCHCTL_BIN="${LANCERS_LAUNCHCTL:-$(command -v launchctl || true)}"
+  [[ -n "$LAUNCHCTL_BIN" && -x "$LAUNCHCTL_BIN" ]] || fail "launchctl is unavailable"
+  DOMAIN="gui/$(id -u)"
+  activate_owner() {
+    local label="$1" plist="$2" program="$3" target="$DOMAIN/$label" loaded
+    "$LAUNCHCTL_BIN" enable "$target"
+    if "$LAUNCHCTL_BIN" print "$target" >/dev/null 2>&1; then
+      "$LAUNCHCTL_BIN" bootout "$target"
+    fi
+    "$LAUNCHCTL_BIN" bootstrap "$DOMAIN" "$plist"
+    loaded="$("$LAUNCHCTL_BIN" print "$target")"
+    [[ "$loaded" == *"$program"* ]] || fail "$label does not run the exact release program"
+    [[ "$loaded" == *"working directory = $RELEASE_PATH"* ]] || fail "$label does not use the exact release working directory"
+  }
+  activate_owner "$LABEL" "$PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/application_loop.py"
+  activate_owner "$REPORT_LABEL" "$REPORT_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/telegram_report.py"
+  activate_owner "$WORK_SYNC_LABEL" "$WORK_SYNC_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/work_sync.py"
+fi
+
 INSTALLED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 "$PYTHON_BIN" - "$STATE_ROOT/deployment.json" "$RELEASE_PATH" "$RELEASE_SHA" \
-  "$INSTALL_MODE" "$INSTALLED_AT" "$LABEL" "$WORK_SYNC_LABEL" <<'PY'
+  "$INSTALL_MODE" "$INSTALLED_AT" "$LABEL" "$REPORT_LABEL" "$WORK_SYNC_LABEL" <<'PY'
 import hashlib
 import json
 import os
@@ -225,7 +248,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-manifest_path, release_path, deployed_sha, mode, installed_at, label, work_sync_label = sys.argv[1:]
+manifest_path, release_path, deployed_sha, mode, installed_at, label, report_label, work_sync_label = sys.argv[1:]
 release = Path(release_path)
 files = {}
 for path in sorted(path for path in release.rglob("*") if path.is_file()):
@@ -236,6 +259,7 @@ manifest = {
     "files": files,
     "installed_at": installed_at,
     "launchd_label": label,
+    "report_launchd_label": report_label,
     "work_sync_launchd_label": work_sync_label,
     "mode": mode,
 }
