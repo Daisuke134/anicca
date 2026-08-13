@@ -16,6 +16,19 @@ O2-12 remain open. Resume baseline is accepted. Autonomous application, mail, an
 learning lanes are disabled and unloaded and must not be described as healthy or
 complete.
 
+**Activation cutline:** the measured reason Job Hunter is not applying is that
+`ai.anicca.job-search-daily`, `inbox`, and `learning` are explicitly disabled and
+unloaded; the last daily evidence is from 2026-08-08. The active release is
+`932ae25e...`, which still leases `job-search:dais` on a separate browser currently
+listening on `127.0.0.1:49167`, can restart that browser after an attach failure, and
+contains the old technical progress copy. Do not load that stale release. O2-05N is
+already implemented and needs only its single review/push. The only remaining
+behavioral blocker before activation is O2-05B: bind the daily lane to the existing
+`interactive:dais` browser at `127.0.0.1:9222` and remove restart behavior. Immediately
+after O2-05N and O2-05B are pushed, build/activate once and load daily/inbox/learning.
+O2-06 through O2-12 improve and prove the live loop; they must not delay turning the
+application loop on.
+
 **Execution rule from this point:** no test-first/TDD ceremony. The primary owns one
 next item, its design, acceptance criteria, spec state, and completion decision;
 Luna implements that bounded item; one fresh adversarial reviewer challenges the
