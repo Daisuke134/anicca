@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** G1 acquisition E2E完了。canonical normal releaseで30分bounded loop稼働中。次はG2 truthful acquisition/reporting
+**状態:** G1 acquisition E2E完了、30分bounded loop稼働中。G2着手中。誤報する旧Telegram reporterだけをdisabled / unloaded
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -139,7 +139,7 @@ flowchart LR
 | 作業・納品・支払 | `WorkEvent`、`DeliveryReceipt`、`PaymentReceipt` は記録なし。記録された baseline ledger revenue は **¥0** だが PaymentReceipt source completeness は未確認 | source completeness がない記録なしは MRR の 0 を証明せず、active recurring contract の受入証拠もない |
 | 現在の pending | 0件 | project `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`を公式readbackし、3件ともreceipt化してpendingから削除した。submitは0件 |
 | application launchd incident | Task2 source が Task3 safety gate より先に schedule され、launchd が自動実行された。その review 前の実行で、二つ目の null-ID pending project `5586112`（¥10,000）が作成された | verified incidentとして記録する。Task 6C receipt acceptanceまでjobを停止し、acceptance後にcanonical normal releaseで再開した |
-| storefront | duplicate listing が 6 件。canonical receipt ID は `1338233` | 重複表示は販売実績ではなく、readback と重複排除の問題 |
+| storefront | 公式画面は受付中6、受付休止中0、非表示0、下書き0。canonical receipt IDは`1338233`の1件 | 受付中は合計6件で、canonical 1件に対する余分なduplicateは5件。販売・未処理件数ではない |
 | storefront observability | 4 状態を合算し、合計を `unprocessed` として表示 | `partial 6/6 official_timestamp_missing` という誤解を生む |
 | storefront 最新実行 | `listing_readback_mismatch` を観測 | 不一致に成功アイコンを付けてはならない |
 | work-sync | プロセスは alive だが productive progress がない | alive と成果を同じ health signal にしない |
@@ -634,22 +634,35 @@ missing は `unknown` / `unmatched` のまま G6/G7 を閉じない。
 ### 9.2 現状を正しく表す report 例
 
 ```text
-Lancers baseline
-- mrr_period: 2026-08 (service period の対象例。過去月累積なし)
-- application launchd: paused/disabled (Task2 が Task3 safety gate 前に auto-run した verified incident の blocker 修正待ち)
-- application_verified: unknown (11 は prior baseline measurement。current evidence は未再測定)
-- WorkEvent: unknown (official empty readback 未確認) / DeliveryReceipt: unknown (official empty readback 未確認) / PaymentReceipt: unknown (official empty readback 未確認)
-- gross MRR: unknown (recorded ledger revenue is ¥0, but PaymentReceipt source completeness unverified) / net MRR: unknown (同じ理由)
-- bank settlement: unknown (provider payout target と銀行 readback 未確認)
-- storefront: published・paused・hidden・draft を個別表示
-- storefront incident: duplicate listing 6 件、canonical receipt 1338233、latest readback mismatch
-- quarantined pending: 5585496 (¥250,000, proposal_id=null) と 5586112 (¥10,000, proposal_id=null)。両方 readback-only quarantine、blind resend なし
-- next automatic action: semantic evidence/schema を修正し、canonical source の安全な deploy 後に、両 pending ID を read-only reconcile。application launchd disabled 中は auto-discover しない
+Lancers daily summary
+- acquisition: ON、30分tick、最大1応募/tick
+- last local observation: observed 13 / qualified 0 / submitted 0 / newly verified 0
+- application receipts: 14 / pending: 0 / blocker: なし
+- storefront official counts: 受付中6 / 受付休止中0 / 非表示0 / 下書き0
+- storefront integrity: canonical receipt 1338233は1件、余分なduplicate 5件、latest readback mismatch
+- official source timestamp: 未確認（local observation timeと混同しない）
+- WorkEvent / DeliveryReceipt / PaymentReceipt / gross MRR / net MRR / bank settlement: source completeness未確認のためunknown
+- AI processing cost: provider usage receipt未接続のためunknown
+- next automatic action: acquisitionは次の30分tick。reporterはG2 canonical release検証まで停止
 ```
 
-この report は「11 件応募したので売上見込みがある」「listing 6 件なので未処理」とは
-言わない。未検証の値は `unknown` / `unverified` または状態名で表し、推測値を補わない。
-`application_verified=11` は過去 baseline のラベルとしてのみ残し、現在の件数として再利用しない。
+このreportは「14件応募したので売上見込みがある」「listing 6件なので未処理」と言わない。
+未検証値は`unknown` / `unverified`または状態名で表し、推測値を補わない。公式source timestampと
+local observation timeを別fieldにし、内部code `official_timestamp_missing`をownerへそのまま出さない。
+
+### 9.3 G2 active slice
+
+現行Telegram reporterはcanonical repo外のmutable sourceを5分ごとに実行し、4 laneを毎回enqueueする。
+storefront readerは四状態を正しく読んだ後に合計6を`target_count`と`unprocessed_count`の両方へ入れ、
+`partial / 未処理6件 / official_timestamp_missing`として送る。acquisition observerも実応募loopとは異なる
+無query・最大100件の公開検索を行い、planner未通過32件を`observed_unprocessed_count=32`とするため、
+実loopの`SNS運用`13件、qualified 0、submitted 0と一致しない。直近実行は一部messageを送った後に
+`telegram_report_failed`を反復し、outboxはdelivered 1075、delivery_uncertain 34である。
+
+誤報停止を優先し、`ai.anicca.lancers-revenue-telegram-report`だけをdisabled / unloadedにした。
+application launchdはenabledのまま維持する。G2は新しい収益lane、DB、crawlerを作らず、既存ledger、
+application state、application launchdの最終valid JSON、公式storefront四状態、既存durable outboxを再利用する。
+通常summaryは一日一回、state change / incident / recoveryだけ即時とし、同じ状態を5分ごとに再送しない。
 
 ## 10. 段階的 acceptance gate
 
