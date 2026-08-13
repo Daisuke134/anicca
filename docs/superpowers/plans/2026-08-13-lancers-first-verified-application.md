@@ -562,8 +562,8 @@ name to equal the immutable URL username.
 - [x] Remove only the username/display-name equality requirement. Require the heading text to remain a bounded nonempty `さんの提案` label and preserve every structural identity check.
 - [x] Add a RED for multiple pending where the target is not the sorted-first descriptor; select terms by exact target `project_id` and prove a null-ID pending can receive the official readback ID without submit.
 - [x] Prove malformed heading and the existing structural mismatch cases still fail closed; run Lancers 18/18, installer 2/2, agent-runner 15/15, py_compile and diff check. Commit `37410365dce1f513bfef6ada5379f88aa9f44308` is pushed to the integration branch.
-- [ ] Integrate the verified commit plus updated SSOT into canonical main.
-- [ ] Deploy exact main SHA in reconcile-only mode, read back pending `5585503`, verify amount ¥98,000 and due date match, append exactly one `ApplicationReceipt`, and only then restore normal scheduled mode.
+- [x] Integrate the verified commit plus updated SSOT into canonical main `250d7d5479f9bb744ce282951303cbc7142a25ad`.
+- [x] Deploy exact main SHA in reconcile-only mode. One launchd run exits 0 with no stderr or submit; it maps `5585496 → 27803189`, `5586112 → 27808073`, `5585503 → 27808988`, clears all three pending entries, and increases unique `application_verified` receipts from 11 to 14.
 
 Actual production scope: 1 production file, 1 test file, 11 production additions / 2 deletions. No manual proposal adoption and no second submit.
 
