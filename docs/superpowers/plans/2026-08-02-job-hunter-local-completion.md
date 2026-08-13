@@ -6,13 +6,12 @@
 **Original base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`
 **Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Status:** O2-02 history recovery, runner-scope correction, and verification are
-integrated at production/history tip
-`061d85060fd7ab8e5f9cf4d94926dfc88e0efefd`. This is the latest committed evidence
-parent for this spec update; the enclosing spec commit is intentionally not named
-inside itself. Resume baseline is accepted. Audit is current. Autonomous
-application, mail, and learning lanes are stopped and must not be described as
-healthy or complete.
+**Status:** O2-03 reproducible release-candidate validation is complete from
+production/history tip `fb267a27bdb5eaf38db6ed72071625dbceee3ba9`. This is the latest
+committed evidence parent for this spec update; the enclosing spec commit is
+intentionally not named inside itself. O2-05 through O2-12 remain open. Resume
+baseline is accepted. Audit is current. Autonomous application, mail, and learning
+lanes are stopped and must not be described as healthy or complete.
 
 ## 1. Done condition
 
