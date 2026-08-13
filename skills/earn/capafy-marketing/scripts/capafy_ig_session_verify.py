@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -17,10 +18,42 @@ from urllib.request import urlopen
 CANONICAL_HOST = "www.instagram.com"
 CANONICAL_ORIGIN = f"https://{CANONICAL_HOST}"
 EDIT_URL = "https://www.instagram.com/accounts/edit/"
+HANDLE = re.compile(r"[a-z0-9](?:[a-z0-9._-]{0,61}[a-z0-9])?$")
 
 
 def handle(value: object) -> str:
-    return str(value or "").strip().lstrip("@").lower()
+    if not isinstance(value, str):
+        return ""
+    normalized = value.strip().lower()
+    if normalized.startswith("@"):
+        normalized = normalized[1:]
+    return normalized if HANDLE.fullmatch(normalized) else ""
+
+
+def profile_owner(value: object, expected: str) -> bool:
+    if not isinstance(value, list):
+        return False
+    candidates = []
+    for anchor in value:
+        if not isinstance(anchor, dict) or not isinstance(anchor.get("has_profile_image"), bool):
+            return False
+        href = anchor.get("href")
+        if not isinstance(href, str):
+            return False
+        if not anchor["has_profile_image"]:
+            continue
+        parsed = urlparse(href)
+        if (
+            parsed.scheme != "https"
+            or parsed.netloc != CANONICAL_HOST
+            or parsed.query
+            or parsed.fragment
+        ):
+            continue
+        parts = parsed.path.strip("/").split("/")
+        if len(parts) == 1 and (candidate := handle(parts[0])):
+            candidates.append(candidate)
+    return len(candidates) == 1 and candidates[0] == expected
 
 
 def opaque_target(value: object) -> str | None:
@@ -52,7 +85,7 @@ def cdp_call(port: int):
             cdp.navigate(payload["target_id"], EDIT_URL); time.sleep(float(os.environ.get("CAPAFY_IG_SESSION_VERIFY_WAIT_SECONDS", "3")))
             return None
         if operation == "evidence":
-            return cdp.evaluate(payload["target_id"], """(()=>{const u=document.querySelector('input[name="username"]');return {origin:location.origin,hostname:location.hostname,path:location.pathname,username:u&&u.value}})()""")
+            return cdp.evaluate(payload["target_id"], """(()=>{const u=document.querySelector('input[name="username"]');return {origin:location.origin,hostname:location.hostname,path:location.pathname,username:u?u.value:null,profile_anchors:[...document.querySelectorAll('a[href]')].map(a=>({href:a.href,has_profile_image:!!a.querySelector('img')}))}})()""")
         raise ValueError("unknown CDP operation")
     return call
 
@@ -106,7 +139,11 @@ def main() -> int:
         evidence = call("evidence", target_id=target_id)
         if not isinstance(evidence, dict) or evidence.get("origin") != CANONICAL_ORIGIN or evidence.get("hostname") != CANONICAL_HOST or evidence.get("path") != "/accounts/edit/":
             raise ValueError("not an authenticated account page")
-        if not isinstance(evidence.get("username"), str) or handle(evidence["username"]) != expected:
+        username = evidence.get("username")
+        if username is None:
+            if not profile_owner(evidence.get("profile_anchors"), expected):
+                raise ValueError("owner proof unavailable")
+        elif not isinstance(username, str) or handle(username) != expected:
             raise ValueError("owner proof unavailable")
     except Exception:
         raise SystemExit("current Instagram session could not be verified")
