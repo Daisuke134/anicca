@@ -12,10 +12,11 @@ are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
 daily outcome reporting is implemented in two uncommitted files and is the active
 slice inside O2-05; Luna's focused check is `7/7`, but adversarial review, primary
-runtime verification, commit, push, and activation remain open. O2-05 through
-O2-12 remain open. Resume baseline is accepted. Autonomous application, mail, and
-learning lanes are disabled and unloaded and must not be described as healthy or
-complete.
+runtime verification, commit, push, and activation remain open. O2-05U must then
+remove the measured global ten-application stop and per-bucket submission caps before
+activation. O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous
+application, mail, and learning lanes are disabled and unloaded and must not be
+described as healthy or complete.
 
 **Activation cutline:** the measured reason Job Hunter is not applying is that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` are explicitly disabled and
@@ -23,12 +24,13 @@ unloaded; the last daily evidence is from 2026-08-08. The active release is
 `932ae25e...`, which still leases `job-search:dais` on a separate browser currently
 listening on `127.0.0.1:49167`, can restart that browser after an attach failure, and
 contains the old technical progress copy. Do not load that stale release. O2-05N is
-already implemented and needs only its single review/push. The only remaining
-behavioral blocker before activation is O2-05B: bind the daily lane to the existing
-`interactive:dais` browser at `127.0.0.1:9222` and remove restart behavior. Immediately
-after O2-05N and O2-05B are pushed, build/activate once and load daily/inbox/learning.
-O2-06 through O2-12 improve and prove the live loop; they must not delay turning the
-application loop on.
+already implemented and needs only its single review/push. The two remaining
+behavioral blockers before activation are O2-05U, which removes the fixed daily and
+portfolio application caps, and O2-05B, which binds the daily lane to the existing
+`interactive:dais` browser at `127.0.0.1:9222` and removes restart behavior.
+Immediately after O2-05N, O2-05U, and O2-05B are pushed, build/activate once and load
+daily/inbox/learning. O2-06 through O2-12 improve and prove the live loop; they must
+not delay turning the application loop on.
 
 **Execution rule from this point:** no test-first/TDD ceremony. The primary owns one
 next item, its design, acceptance criteria, spec state, and completion decision;
@@ -41,11 +43,14 @@ round unless the first review finds a concrete blocker.
 
 The system is not blocked by missing job-search logic. It is blocked by deployment
 generation drift. Measurements on 2026-08-13 show one long-lived Job Hunter branch
-`397` commits ahead of and `65` commits behind `origin/main`, two uncommitted O2-05N
+`398` commits ahead of and `66` commits behind `origin/main`, two uncommitted O2-05N
 files, active release `932ae25e...`, incompatible previous release `f9642b2...`, `172`
 immutable release directories, three disabled/unloaded work lanes, and two browser
 processes (`interactive:dais` on `127.0.0.1:9222` and stale `job-search:dais` on
-`127.0.0.1:49167`). The last daily evidence is 2026-08-08.
+`127.0.0.1:49167`). The last daily evidence is 2026-08-08. The source also stops a
+wake when `confirmed_daily_count >= 10`, allocates ordinary slots only from `1..10`,
+and enforces portfolio limits of dream `2`, strong-fit `5`, and adjacent `3`; these
+are application caps, not ranking policy, and O2-05U removes them.
 
 The clean target is one operational chain, not one physical directory. Private config
 and persistent application state must remain outside Git:
@@ -78,21 +83,24 @@ Ordered cleanup is mandatory:
    adversarial review and one pushed commit;
 2. fetch and integrate current `origin/main` into the dedicated branch, resolving
    only Job Hunter overlap and preserving unrelated main work;
-3. implement the minimal O2-05B cutover: every Job Hunter browser lease uses
+3. implement O2-05U as the smallest cap-removal slice: keep the existing ledger and
+   queue, but remove the ten-confirmation early exit, fixed ten-slot allocation, and
+   portfolio submission ceilings; ranking mix remains a preference, never a stop;
+4. implement the minimal O2-05B cutover: every Job Hunter browser lease uses
    `interactive:dais`; attach failure reports and exits without launch/restart;
-4. build one candidate from the pushed integrated commit, validate it against a
+5. build one candidate from the pushed integrated commit, validate it against a
    copied production ledger, then atomically activate it so `current` is the new
    release and healthy `932ae25e...` is `previous`;
-5. enable/bootstrap only daily, inbox, and learning and observe one real cycle;
-6. after PID/UUID/context/tab ownership proof, unload and disable only the obsolete
+6. enable/bootstrap only daily, inbox, and learning and observe one real cycle;
+7. after PID/UUID/context/tab ownership proof, unload and disable only the obsolete
    `ai.anicca.job-search-browser` service; never stop the shared `:9222` browser;
-7. retain only the verified `current` and `previous` immutable releases and remove
+8. retain only the verified `current` and `previous` immutable releases and remove
    the other generated releases. They are reproducible from Git. Never delete private
    config, ledger, outbox, receipts, submitted artifacts, evidence, or browser data;
-8. integrate the reviewed Job Hunter branch into `origin/main`, remove its temporary
+9. integrate the reviewed Job Hunter branch into `origin/main`, remove its temporary
    worktree, prune only stale Job Hunter worktree metadata, and delete only fully
    merged Job Hunter branches. Do not touch Connector or other Life Manager worktrees;
-9. prove every launcher resolves the same current commit, every lane uses the same
+10. prove every launcher resolves the same current commit, every lane uses the same
    ledger/outbox, all three labels are healthy, and Telegram reports the live cycle.
 
 O2-06 through O2-12 resume only after this gate. Cleanup is complete only when the
@@ -217,6 +225,16 @@ non-duplicate role that passes this spec. A day with zero confirmed applications
 not silently treated as success. The daily Telegram report states what was searched,
 which roles were rejected and why, what remains blocked, and the next automatic
 action. Job Hunter never claims an application without an authoritative receipt.
+
+There is no global daily, weekly, monthly, company, or lifetime application-count
+maximum. `10`, `100`, or `1,000` is never a configured ceiling: every distinct,
+active, eligible requisition is queued and pursued. A single wake may stop for its
+existing time, browser-ownership, evidence-safety, or execution budget, but that is a
+bounded work session, not an application quota. Unprocessed queue items persist and
+the next wake continues automatically. Unlimited means unlimited eligible distinct
+requisitions; it never permits duplicate submission to the same requisition, bypasses
+the JPY 7M floor or truth/authorization gates, or counts a click without a receipt.
+Portfolio buckets determine ordering and reporting only; they never block submission.
 
 Owner-declared application history is authoritative even when an old external
 application has no ATS receipt in the local ledger. OpenAI, Anthropic,
@@ -1283,6 +1301,16 @@ evidence until the primary has independently inspected and adopted it.
   candidate verification pending, no eligible role, and no new processing; it keeps
   the durable digest for deduplication but removes it from the Telegram body. It is
   not complete until one adversarial review, primary inspection, commit, and push.
+- [ ] **O2-05U — unlimited eligible applications before launchd load** — Remove the
+  `confirmed_daily_count >= 10` early stop, the ordinary `1..10` slot ceiling, and
+  dream/strong-fit/adjacent submission ceilings from the existing execution path.
+  Keep those buckets only for priority ordering and outcome analysis. Preserve the
+  current queue, ledger, evidence, duplicate requisition fences, JPY 7M floor,
+  truth/authorization gates, receipt requirement, and per-wake safety budget. When a
+  wake cannot finish every eligible role, persist the remainder and continue on the
+  next wake without owner approval. Historical immutable quota rows remain readable;
+  new reporting describes confirmed count and eligible backlog, never a fixed target
+  or deficit to ten. Add no scheduler, service, table, or second queue.
 - [ ] **O2-05B — use only the existing shared CloakBrowser** — Route every normal
   daily acquisition to registry identity `interactive:dais` on the measured
   `127.0.0.1:9222` daily-driver. A busy, unavailable, or failed attach never starts or
@@ -1295,9 +1323,9 @@ evidence until the primary has independently inspected and adopted it.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
-  unmatched rows dedup-fenced; build from the pushed green commit; atomically activate the
-  reproducible stable release; complete O2-05R; load daily/inbox/learning without
-  touching the shared browser; run Guardian health
+  unmatched rows dedup-fenced; complete O2-05N, O2-05U, and O2-05B; build from the
+  pushed green commit; atomically activate the reproducible stable release; load
+  daily/inbox/learning without touching the shared browser; run Guardian health
   gates and observe one real canonical cycle. The Guardian LaunchAgent itself closes
   in O2-07.
 - [ ] **O2-06** — Complete the JPY 7M floor / JPY 10M target / JPY 30M stretch policy,
