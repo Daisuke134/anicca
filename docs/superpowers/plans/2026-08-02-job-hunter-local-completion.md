@@ -2018,6 +2018,21 @@ performs the real E2E, and records the milestone.
   classifying the form unavailable. Reuse the same selectors and safety fences; do
   not add retries around Submit, a second browser, or a new abstraction. Then rebuild,
   activate, and run one real wake.
+
+  **Workday surface-wait slice complete in pushed source:** commit `8a9726b56`
+  changes only the existing Workday credential module. Each transition now waits up
+  to twenty seconds for the next stable Workday automation control: job Apply to
+  Apply Manually, manual choice to native account controls, and native chooser to the
+  exact email/password form. A bounded timeout becomes the redacted
+  `Workday account surface did not load` blocker. Existing SSO exclusion, exact-page
+  ownership, credential privacy, action count, and no-Submit contract are unchanged.
+  Compilation and diff checks pass, focused tests pass `14/14`, and the complete
+  suite passes `585/585`.
+
+  **Immediate next slice:** build and activate the exact pushed race fix, then rerun
+  the real daily lane and inspect only the redacted Workday account receipt plus
+  structural application surface. Preserve receipt truth, Ledger, and all shared
+  browser pages.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
