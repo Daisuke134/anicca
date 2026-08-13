@@ -2033,6 +2033,38 @@ performs the real E2E, and records the milestone.
   the real daily lane and inspect only the redacted Workday account receipt plus
   structural application surface. Preserve receipt truth, Ledger, and all shared
   browser pages.
+
+  Race-fix release and second real wake are complete. Pushed commit
+  `8da71d220ffa9cf6494b66aae514fb0b1441da47` built twice to byte-identical
+  archive SHA-256
+  `188486e70e5e80fd5250deac9ad1b520ddb470868c48a53c76c42df5542badfb`
+  with `267` entries and is active with `ab51eda6f7b86b1c2d1b9e8e7c9233416d93f57e`
+  as rollback. Real wake `daily-20260814-050642` exited `0`. Both NVIDIA snapshots
+  now load consistently with `20` and `23` controls and visible Apply plus Sign In
+  controls, proving the load race is closed. The helper still leaves each page on the
+  job detail and returns native-auth unavailable. Structural inspection shows three
+  Apply-family controls per page, while the helper rejects a locator whenever its
+  total DOM count is not exactly one. The responsive/hidden duplicate contract is the
+  remaining entry blocker. The OpenAI Ashby form again reaches `claim_ready` before
+  resume routing raises `RuntimeError`; no fill or Submit occurs.
+
+  Telegram sent message ID `16673`; cleanup closed exactly one owned page and restored
+  all seven pre-existing page IDs. Production Ledger remains byte-identical at SHA-256
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`, integrity is
+  `ok`, and counts remain `60` applications, `260` events, and `30` intents.
+
+  **Visible-control slice complete in pushed source:** commit `7aafe83b3` selects a
+  Workday action only when exactly one matching control is visible, instead of
+  requiring exactly one matching DOM node. Zero or multiple visible controls still
+  fail closed. Bounded surface failures are now classified into finite private codes:
+  `job_surface`, `manual_choice`, `native_chooser`, `email_form`, and `password_form`;
+  arbitrary page or credential text is never copied into the result. Compilation and
+  diff checks pass, focused tests pass `14/14`, and the complete suite passes
+  `585/585`.
+
+  **Immediate next slice:** build and activate this exact visible-control release and
+  run one real daily wake. A redacted Workday account receipt is the success criterion
+  for the slice; otherwise the finite stage code becomes the sole next blocker.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
