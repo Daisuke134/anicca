@@ -1749,10 +1749,21 @@ performs the real E2E, and records the milestone.
   rejected, `8` materials-ready, and `6` discovered; SQLite integrity is `ok`. Daily,
   inbox, and learning are all loaded, stopped between wakes, and last-exit `0`.
 
-  **Immediate next slice:** diagnose the redacted Workday snapshot and classifier
-  contract that produced `validation_error`, compare it with the live owned page and
-  existing Workday implementation, and make the smallest deterministic correction.
-  Then release and rerun; an ATS/Gmail receipt remains the only completion evidence.
+  Root-cause diagnosis shows the Workday page classifier is not the queue-level
+  blocker. A read-only classification of the retained Salesforce Workday page is
+  `unknown` with `13` controls, zero validation-regex matches, and zero non-empty alert
+  controls. The full prefilter queue contains `436` candidates and multiple
+  ranking-ready roles, including NVIDIA AI roles, but the current order shortlists to
+  `12` before terminal-history filtering. Eleven already-submitted/rejected/unknown
+  rows consume those slots, leaving only the unranked Salesforce role for the
+  application lane. The remaining non-terminal candidates never become visible to it.
+
+  **Immediate next slice:** feed the full prefilter queue through the existing terminal
+  Ledger fence first, then apply the existing `shortlist_candidates(..., limit=12)` to
+  the non-terminal result. Keep every duplicate/submitted/unknown fence unchanged and
+  add no service, queue, database, browser, or scheduler. Release and rerun; the live
+  wake must select a new ranking-ready non-terminal role rather than recycling the
+  Salesforce fallback. An ATS/Gmail receipt remains the only completion evidence.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
