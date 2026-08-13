@@ -2450,6 +2450,16 @@ performs the real E2E, and records the milestone.
   that state; it returns the exact deterministic blockers and queue counts. This keeps
   one clean browser authority path.
 
+  The prompt-only cleanup is pushed as commit
+  `a14717682d6cc9cea2fa1bb152a6e4f7c3cb9382` and active. Its two release builds are
+  byte-identical at SHA-256
+  `9638dc7f3fef67736520ee5344472722807b7e95a212ff8f3b6a6499ca1ec1f0`
+  with `267` entries; `6f7ba2e04acc679c7d49ed7d9ee55a2c3cac63fb` is the rollback
+  release. Prompt contract verification passes `17/17` and the complete source suite
+  passes `587/587`. The owner received the natural Japanese milestone report as
+  Telegram message ID `16853`; it explicitly states that no application receipt exists
+  and that NVIDIA is waiting for account unlock.
+
   **Immediate next slice:** after the NVIDIA account cooldown, perform one fresh
   sign-in using the reset private credential. If authentication succeeds, run the
   deterministic wizard to Review. If it remains locked, select a different eligible
