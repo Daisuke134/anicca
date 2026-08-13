@@ -6,7 +6,7 @@
 
 **Observed production cause:** Registry truth selects active row `@capafy.skills8m4q2z`, but its declared profile `capafy-mkt-69019` does not exist. Browser identity `instagram:capafy-provision` resolves to the live persistent profile `capafy-mkt-provision`; a leased read-only owner probe reached `/accounts/edit/` but proved `@capafy.skills10491`, an already-retired challenged account. The latest Marketer run therefore wrote `active Instagram browser tab is missing`, exited `1`, and refreshed incident `capafy-marketer-20260803T070010Z-99b1374a` while preserving its past-due 2026-08-07 retry. Account manager runs `1196` and exits `0` because lifecycle snapshot incorrectly remains `commercial_ready / session_established=true` from registry history.
 
-**Ponytail scope:** Change three existing production files and two existing focused test files. Expected production delta is about 70 net lines and test delta about 55 net lines. Five files are necessary because exact-owner proof, controller routing, and immutable incident retry are one end-to-end trust boundary; no new file or abstraction is allowed.
+**Ponytail scope:** Change three existing production files and three existing focused test files. Expected production delta is about 70 net lines and test delta about 60 net lines. Six files are necessary because exact-owner proof, controller routing, immutable incident retry, and the already-stale canonical event-count contract are one end-to-end trust boundary; no new file or abstraction is allowed.
 
 ## Files owned by implementer
 
@@ -15,6 +15,7 @@
 - `skills/earn/capafy-marketing/scripts/capafy_ig_session_verify.py`
 - `skills/earn/capafy-marketing/tests/test_capafy_ig_session_verify.py`
 - `skills/earn/capafy-marketing/tests/test_capafy_marketing_controller.sh`
+- `skills/earn/capafy-marketing/tests/test_capafy_marketing_outcome.sh`
 
 The implementer must not edit this plan, the authoritative spec, launchd plists, production state, browser registry, account credentials, or any other file.
 
@@ -47,7 +48,7 @@ The implementer must not edit this plan, the authoritative spec, launchd plists,
    - controller exact-owner success reaches the existing selector/creative/poster once;
    - controller owner mismatch runs no selector/creative/poster, releases its lease once, retires only the invalid row, sets `replacement_requested`, gives the reused incident a future retry, and wakes only the account manager once without `-k`;
    - immediate replay does not create another incident, duplicate canonical incident event, second account retirement, or second simultaneous manager process.
-5. Synchronize only directly affected stale assertions. The pre-change `test_capafy_marketing_outcome.sh` currently reports `34 passed / 3 failed` because a verified publication now correctly emits three canonical events, while the old assertion expects two. Do not change production to satisfy that stale count; if this shell suite is used for final verification, update its three count assertions in a separate parent-owned follow-up or expand the implementer file list before work starts.
+5. Synchronize only the three directly affected stale assertions in `test_capafy_marketing_outcome.sh`. Its pre-change baseline is `34 passed / 3 failed` because a verified publication now correctly emits three canonical events while the old assertions expect two. Update those three expected counts to three; do not change production event emission to satisfy the stale expectations.
 
 ## Direct verification — no TDD/RED cycle
 
@@ -56,6 +57,7 @@ Run after implementation:
 ```bash
 python3 -m pytest -q skills/earn/capafy-marketing/tests/test_capafy_ig_session_verify.py
 bash skills/earn/capafy-marketing/tests/test_capafy_marketing_controller.sh
+bash skills/earn/capafy-marketing/tests/test_capafy_marketing_outcome.sh
 python3 -m pytest -q skills/earn/capafy-marketing/tests/test_capafy_ig_lifecycle.py skills/earn/capafy-marketing/tests/test_capafy_reel_poster.py
 bash -n skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh skills/earn/capafy-marketing/capafy-marketing-handoff.sh
 python3 -m py_compile skills/earn/capafy-marketing/scripts/capafy_ig_session_verify.py
