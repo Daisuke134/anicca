@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** G1 readback acceptance完了。acquisition laneはnormal exact-SHA再installと最初のbounded tick検証まで停止中
+**状態:** G1 acquisition E2E完了。canonical normal releaseで30分bounded loop稼働中。次はG2 truthful acquisition/reporting
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -660,7 +660,7 @@ Lancers baseline
 |---|---|---|
 | G0 定義 | MRR 式、商品境界、4 lane、shared ledger、per-entity straight state、serialized browser effect boundary、receipt 順序、安全不変条件がこの仕様と一致する | 仕様レビュー記録 |
 | G0.5 canonical source / safe deployment | source/schema/test/launchd template/spec/plan を canonical Life Manager repo に揃え、tests と許可された一回の fresh adversarial review を通し、main に merge/push した exact commit SHA の release artifact を install して manifest/deployed SHA を記録する。worktree/feature branch/untracked `~/.local` source は実行せず、その後にだけ application service を enable する。runtime state、secret、browser session、append-only ledger、evidence は移動・削除しない | test result、レビュー記録、main commit、artifact manifest、deployed SHA、service enable の順序、runtime state 不変の確認 |
-| G1 first slice | まず semantic evidence/schema を修正し、canonicalization と G0.5 を完了してから application launchd を再有効化する。再有効化後の最初の E2E は `5585496`（¥250,000）と `5586112`（¥10,000）の両方を readback-only reconcile し、両方が `proposal_id=null` のまま blind resend されず、どちらも他 entity の progress を block しないことを証明する。その後、application launchd が有効な tick で、公式業種欄がある日本語の商用組織案件として、継続SNS運用を外部ownerへ委任する公開detail証拠と70%以上のprojected marginがある新規jobを一件discoverし、tailored proposalを一度submitし、公式proposal IDをreadbackし、`ApplicationReceipt`を正確に一件appendする。G1は後段laneの実装を先取りしない | 両pending IDのcurrent readback、quarantine/重複防止証拠、launchd paused→safe deploy→enableの時系列、公式業種・SNS・継続・外部委任の完全一致引用、margin式と各見積source、provider ID、intent/effect/readback/receipt、独立discovery証拠 |
+| G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
 | G2 truthful acquisition | storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | 6 duplicate listing を成功扱いしない report と state-change report |
 | G3 profitable acquisition | 最初の 3 active recurring contracts まで、hard filter、固定式による 70% margin、recurring/B2B ranking、proposal 固定構造、capacity 使用率別 quota（<70%=2/10、70–<90%=1/5、>=90%=Premium のみかつ 100% 以下）、重複防止が実際に働く | qualified/ineligible 判定、ICP 証拠/proxy、margin 算定と各 source、応募上限、duplicate 拒否の readback |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
@@ -695,18 +695,26 @@ Task 6Cを含むcanonical main `250d7d5479f9bb744ce282951303cbc7142a25ad`を13-f
 `submitted=false`で、3 pendingすべてを公式readbackした。project/proposal mappingは
 `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`である。stateはpending 3→0、
 ledgerは`application_verified` 11→14となり、各`lancers:application_receipt:<proposal_id>:v1`は一意である。
-application launchdは検証直後にdisabled / unloadedへ戻している。次は同じcanonical mainをnormal modeで
-installし、30分schedulerを再開する。reconcile-onlyのmanifest SHAと13 installed file hashesを変えない。
+application launchdはreconcile検証直後にdisabled / unloadedへ戻した。その後、同じproduction codeを含む
+最新canonical mainをnormal modeでinstallして30分schedulerを再開した。
 
-G1 の残TODOは次の直列順序だけである。途中で失敗した場合は次へ進まず、同じ Luna implementer に
-最小 RED を戻す。fresh adversarial review は既に 1/1 を消化しているため追加しない。
+SSOT更新後のcanonical main `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432`をnormal modeでinstallした。
+installはapplication stateとledgerを変更せず、rendered plistから`--reconcile-only`だけを除き、
+`StartInterval=1800`を維持する。起動前preflightは公開`SNS運用`13件、account ready、planner route ready、
+process/lockなしである。official launchd ownerの最初のnormal wakeはrun 1、exit 0、stderr 0、
+`observed_count=13`、`eligible_count=0`、`submitted=false`、`reason=no_eligible_project`で終了した。
+stateはfingerprints 19 / pending 0、ledgerは14 receiptのまま変わらず、launchdはenabled / loadedである。
+
+G1は完了した。fresh adversarial reviewは許可された1/1だけで、追加reviewは行わない。
+次の直列TODOは以下であり、一度に先頭一件だけを実装する。
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | normal acquisitionを再開 | 同じcanonical releaseをnormal modeでinstallし、30分schedulerをON、最初のbounded tickと重複応募なしを確認 | 5–15分 |
-| 2 | G1を閉じる | state/ledger/receipt、deployed SHA、reportを検証し、一時worktreeを削除 | 10–20分 |
+| 1 | G2 truthful acquisition/reporting | storefrontとapplicationを混ぜず、observed / qualified / submitted / verified / pending / blocker / costを公式timestamp付き自然言語で報告 | 0.5–1日 |
+| 2 | G3 profitable acquisition | capacity、query coverage、ranking、応募率を実receipt funnelで調整 | 1–2日 |
+| 3 | G4 Sales / Contract lane | 14 receiptを入力としてreply監視→分類→offer→公式contract readbackを実装 | 1–3日 |
 
-残るG1技術作業は **約15–35分**をbaseとする。今回閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
+G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
 G1 後は G2→G3→G4→G5→G6→G7 を一つずつ閉じる。4 lane の実装・実E2Eは集中作業で
 best 5日、base 10日、worst 20日以上を計画値とする。これは入金時間ではない。buyer acceptance、
@@ -755,12 +763,12 @@ schema不適合ではfail closedし、blind retryやgate緩和を行わない。
 
 | lane | activation | schedule / bound | ONにする条件 |
 |---|---|---|---|
-| Acquisition | **PAUSED** | 再開後は30分tick。G1は最大1応募/tick | Task 6C receipt acceptance完了。normal mode exact-SHA再install後にON |
+| Acquisition | **ON** | 30分tick。G1/G2は最大1応募/tick | exact canonical normal release、receipt acceptance、正常wake完了 |
 | Sales / Contract | OFF | 実装時にreply SLAを満たすbounded tick | 最初の一意な`ApplicationReceipt`を得て、reply分類・offer・公式contract readbackをTDD実装後 |
 | Fulfillment | OFF | active contractだけをbounded claim | 最初の`ContractReceipt`を得て、固定scope・QA・revision cap・delivery readbackをTDD実装後 |
 | Finance | OFF | payment/payout eventをbounded claim | `DeliveryReceipt`を得て、PaymentReceipt・fee/cost・bank reconciliationをTDD実装後 |
 
-AcquisitionはTask 6C acceptance後に保守boundで継続scanする。最初の公式proposal IDと`ApplicationReceipt`が得られた後も
+Acquisitionは保守boundで継続scanする。最初の公式proposal IDと`ApplicationReceipt`が得られた後も
 停止せず、G3のcapacity規則が実測で有効になるまで最大1応募/tickを維持する。将来boundを上げる場合も、
 最初の3 active recurring contractsと実測capacityを根拠にし、単に応募件数を増やすためには上げない。
 後段laneは上流receiptが一件もない状態で空回しさせず、各activation gateを一つずつ閉じてからONにする。
