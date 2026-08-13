@@ -61,6 +61,7 @@ class InstallLocalTests(unittest.TestCase):
                 "LANCERS_LAUNCH_AGENT_DIR": str(launch_agent_dir),
                 "LANCERS_STATE_ROOT": str(state_root),
                 "LANCERS_INSTALL_MODE": mode,
+                "LANCERS_ACTIVATE": "0",
                 "LANCERS_SKIP_MAIN_ASSERT": "1",
             }
         )
@@ -95,6 +96,7 @@ class InstallLocalTests(unittest.TestCase):
             self.assertEqual(manifest["deployed_sha"], self.release_sha)
             self.assertEqual(manifest["mode"], "reconcile-only")
             self.assertEqual(manifest["launchd_label"], "ai.anicca.lancers-revenue-application")
+            self.assertEqual(manifest["report_launchd_label"], REPORTER_PLIST_NAME.removesuffix(".plist"))
             self.assertEqual(manifest["work_sync_launchd_label"], WORK_SYNC_PLIST_NAME.removesuffix(".plist"))
             self.assertEqual(list(manifest["files"]), sorted(manifest["files"]))
             self.assertEqual(
@@ -146,7 +148,7 @@ class InstallLocalTests(unittest.TestCase):
                     relative == Path("deployment.json") or relative.parts[0] == "logs",
                     relative,
                 )
-            self.assertNotIn("launchctl", INSTALLER.read_text(encoding="utf-8"))
+            self.assertIn("LANCERS_ACTIVATE", INSTALLER.read_text(encoding="utf-8"))
 
     def test_normal_owner_keeps_json_without_reconcile_flag(self):
         with tempfile.TemporaryDirectory() as directory:

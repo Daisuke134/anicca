@@ -27,6 +27,7 @@ DISCOVERY_QUERIES = (
     "B2Bマーケティング", "AI活用", "継続依頼", "長期", "月額",
 )
 PLANNER_TASK_CLASS = "application-intent-planner"
+SAFETY_TASK_CLASS = "diagnostic-agent"
 PLANNER_TIMEOUT_SECONDS = 180
 DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json"
 DEFAULT_EVIDENCE_ROOT = Path.home() / ".local/state/anicca/lancers/planner"
@@ -35,16 +36,22 @@ DECISION_FIELDS = frozenset({"request_id", "eligibility", "reason_codes", "propo
 QUALIFICATION_FIELDS = frozenset({"commercial_buyer_evidence", "ongoing_sns_outsourcing_evidence", "expected_platform_fee_jpy", "expected_ai_cost_jpy", "expected_subcontractor_cost_jpy", "expected_revision_refund_allowance_jpy", "cost_source_version"})
 QUALIFICATION_COST_FIELDS = ("expected_platform_fee_jpy", "expected_ai_cost_jpy", "expected_subcontractor_cost_jpy", "expected_revision_refund_allowance_jpy")
 JAPANESE_TEXT_RE = re.compile(r"[ぁ-ゖァ-ヺ一-龯]")
-COMMERCIAL_BUYER_SIGNAL_RE = re.compile(r"依頼主の業種[:：]\s*\S{2,}")
-SNS_SCOPE_SIGNAL_RE = re.compile(r"(?:SNS|Instagram|インスタ|X(?:運用|投稿)|Twitter|LinkedIn|Facebook|TikTok)", re.IGNORECASE)
-ONGOING_SCOPE_SIGNAL_RE = re.compile(r"(?:継続|長期|月額|毎月|定期|運用)")
-OUTSOURCING_SIGNAL_RE = re.compile(r"(?:外注|外部委託|業務委託|委託|外部パートナー|担当者募集|運用代行|代行.{0,12}(?:依頼|募集|お願い)|運用.{0,12}(?:募集|お願い)|(?:運用[\s\S]{0,40}依頼|依頼[\s\S]{0,40}運用))")
 PUBLIC_FIELDS = ("schema_version", "record_type", "platform", "external_id", "title", "description", "url", "category", "budget_type", "budget_min_minor", "budget_max_minor", "currency", "buyer_external_id", "observed_at")
 DATE_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 ID_RE = re.compile(r"^[0-9]+$")
 KANA_RE = re.compile(r"[ぁ-ゖァ-ヺ]")
 FORBIDDEN_TERMS = ("receipt", "gate", "agent", "model", "browser", "token", "prompt", "internal id", "レシート", "ゲート", "エージェント", "モデル", "ブラウザ", "トークン", "プロンプト", "内部ID")
 FORBIDDEN_RE = re.compile("|".join(re.escape(term).replace(r"\ ", r"[ _]") for term in FORBIDDEN_TERMS), re.IGNORECASE)
+RETAIN_EVIDENCE_ERRORS = frozenset({"planner_runner_failed", "planner_contract_incomplete", "planner_contract_invalid", "safety_check_failed"})
+SAFETY_SCHEMA = {
+    "type": "object", "additionalProperties": False,
+    "required": ["safe_to_submit", "reason", "blocker_evidence"],
+    "properties": {
+        "safe_to_submit": {"type": "boolean"},
+        "reason": {"enum": ["approved", "live_interaction_required", "physical_presence_required", "personal_identity_required", "recording_required", "other_policy_blocker", "uncertain"]},
+        "blocker_evidence": {"type": ["string", "null"], "maxLength": 240},
+    },
+}
 
 def _load(name: str, path: Path) -> Any:
     spec = importlib.util.spec_from_file_location(name, path)
@@ -73,6 +80,8 @@ class ApplicationLoopResult:
     verified_provider_proposal_ids: Optional[tuple[str, ...]] = None
     provider_terminal_blocked_project_ids: Optional[tuple[str, ...]] = None
     unresolved_project_id: Optional[str] = None
+    planner_expected_count: Optional[int] = None
+    planner_returned_count: Optional[int] = None
 
     def to_dict(self) -> dict[str, object]:
         result: dict[str, object] = {"ok": bool(self.ok), "platform": PLATFORM, "submitted": bool(self.submitted), "application_verified": bool(self.application_verified)}
@@ -82,6 +91,9 @@ class ApplicationLoopResult:
         for key in ("observed_count", "eligible_count", "verified_count", "provider_terminal_blocked_count"):
             value = getattr(self, key)
             result[key] = int(value) if isinstance(value, int) and not isinstance(value, bool) else 0
+        for key in ("planner_expected_count", "planner_returned_count"):
+            value = getattr(self, key)
+            if isinstance(value, int) and not isinstance(value, bool): result[key] = value
         for key in ("verified_project_ids", "verified_provider_proposal_ids", "provider_terminal_blocked_project_ids"):
             value = getattr(self, key)
             if value: result[key] = list(value)
@@ -134,13 +146,15 @@ PLANNER_RULES = ("Lancersの公開案件だけを読み、全案件を一対一�
     "expected_platform_fee_jpyは価格の20%切上げ以上、他コストは非負整数、cost_source_versionはlancers-g1-conservative-v1とする。"
     "提案文には買い手の課題、最初の30日間の納品物、チャネル数・投稿本数・修正回数上限、価格・納期、継続範囲、確認質問をちょうど1つ含める。"
     "物理出席、ライブ通話・講義、本人固有の調査、AI禁止、声や顔の収録、実写動画編集はineligibleとし、提案・価格・納期・qualificationをnullにする。"
+    "例: 商用組織が継続的なSNS運用の外部委託先を明示的に探し、金額とscope条件を満たす案件はeligibleになり得る。"
+    "例: 週次ミーティング、Zoom面談、ライブ通話、現地参加、本人の声・顔の収録など同期的な本人義務がある案件は、予算とSNS scopeが合ってもineligibleとする。"
     "提案文には次の語を含めない: " + ", ".join(FORBIDDEN_TERMS) + "。送信・受注・納品・支払済みと主張せず、指定スキーマのJSONだけを返す。\nSNAPSHOT:\n")
 
 def build_planner_prompt(rows: Sequence[Mapping[str, object]], today: date) -> str:
     return PLANNER_RULES + json.dumps(_snapshot(rows, _tick_date(today)), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
-def invoke_planner(prompt: str, evidence_dir: Path) -> Mapping[str, object]:
-    command = [sys.executable, str(AGENT_RUNNER), "--task-class", PLANNER_TASK_CLASS, "--prompt-stdin", "--schema", str(PLANNER_SCHEMA), "--evidence-dir", str(evidence_dir), "--task-label", "lancers-application-intent", "--loop", "lancers-application", "--workdir", str(SKILLS_ROOT.parent)]
+def _invoke_agent(prompt: str, evidence_dir: Path, task_class: str, schema_path: Path, label: str) -> Mapping[str, object]:
+    command = [sys.executable, str(AGENT_RUNNER), "--task-class", task_class, "--prompt-stdin", "--schema", str(schema_path), "--evidence-dir", str(evidence_dir), "--task-label", label, "--loop", "lancers-application", "--workdir", str(SKILLS_ROOT.parent)]
     try:
         completed = subprocess.run(command, input=prompt, text=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False, timeout=PLANNER_TIMEOUT_SECONDS + 30)
         if completed.returncode != 0: raise ValueError
@@ -150,7 +164,22 @@ def invoke_planner(prompt: str, evidence_dir: Path) -> Mapping[str, object]:
         result = json.loads(result_path.read_text(encoding="utf-8"))
         if not isinstance(result, Mapping): raise ValueError
         return result
-    except Exception: raise RuntimeError("planner_failed") from None
+    except Exception: raise RuntimeError("agent_runner_failed") from None
+
+def _planner_runtime_schema(prompt: str, evidence_dir: Path) -> Path:
+    snapshot = json.loads(prompt.rsplit("SNAPSHOT:\n", 1)[1])
+    ids = [row["external_id"] for row in snapshot["opportunities"]]
+    schema = json.loads(PLANNER_SCHEMA.read_text(encoding="utf-8"))
+    decisions = schema["properties"]["decisions"]
+    decisions["minItems"] = decisions["maxItems"] = len(ids)
+    decisions["items"]["properties"]["request_id"]["enum"] = ids
+    path = Path(evidence_dir) / "planner-runtime.schema.json"
+    path.write_text(json.dumps(schema, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    os.chmod(path, 0o600)
+    return path
+
+def invoke_planner(prompt: str, evidence_dir: Path) -> Mapping[str, object]:
+    return _invoke_agent(prompt, evidence_dir, PLANNER_TASK_CLASS, _planner_runtime_schema(prompt, evidence_dir), "lancers-application-intent")
 
 def _default_planner(prompt: str, evidence: Path) -> Mapping[str, object]:
     return invoke_planner(prompt, evidence)
@@ -177,7 +206,8 @@ def _valid_qualification_evidence(qualification: Mapping[str, object], public_te
     if any(not isinstance(item, str) or not 4 <= len(item) <= 240 or item not in public_text for item in (commercial, ongoing)):
         return False
     overview = re.search(r"(?:^|\n)依頼概要[:：](.*)", public_text, re.S)
-    return bool(JAPANESE_TEXT_RE.search(public_text) and commercial in public_text.splitlines() and COMMERCIAL_BUYER_SIGNAL_RE.fullmatch(commercial) and overview and ongoing in overview.group(1) and all(pattern.search(ongoing) for pattern in (SNS_SCOPE_SIGNAL_RE, ONGOING_SCOPE_SIGNAL_RE, OUTSOURCING_SIGNAL_RE)))
+    industry = re.fullmatch(r"依頼主の業種[:：]\s*\S.*", commercial)
+    return bool(JAPANESE_TEXT_RE.search(public_text) and commercial in public_text.splitlines() and industry and overview and ongoing in overview.group(1))
 
 def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) -> dict[str, Mapping[str, object]]:
     try:
@@ -353,14 +383,47 @@ def _eligible_rank(item: tuple[Mapping[str, object], Mapping[str, object]]) -> t
     projected_net_jpy = decision["price_jpy"] - sum(qualification[name] for name in QUALIFICATION_COST_FIELDS)
     return (-projected_net_jpy,)
 
-def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence: Path, planner: Optional[Callable[..., object]], submitter: Optional[Callable[..., object]], state_path: Path) -> ApplicationLoopResult:
+def _safety_prompt(row: Mapping[str, object], decision: Mapping[str, object]) -> str:
+    policy = ("次の公開Lancers案件と応募判断をread-onlyで独立審査する。週次MTG、Zoom面談、ライブ通話、現地参加、本人固有の身元・声・顔、収録が必須なら拒否する。"
+        "safe_to_submit=trueは同期的な本人義務がなく明確に安全な場合だけ。拒否時blocker_evidenceは公開descriptionから240文字以内の完全一致引用、曖昧ならreason=uncertain。指定JSONだけを返す。\n")
+    payload = {"public_opportunity": {key: row.get(key) for key in PUBLIC_FIELDS}, "primary_decision": decision}
+    return policy + json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+def _default_safety_verifier(prompt: str, evidence_dir: Path) -> Mapping[str, object]:
+    schema_path = evidence_dir.parent / "safety.schema.json"
+    schema_path.write_text(json.dumps(SAFETY_SCHEMA, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    os.chmod(schema_path, 0o600)
+    return _invoke_agent(prompt, evidence_dir, SAFETY_TASK_CLASS, schema_path, "lancers-submission-safety")
+
+def _safety_outcome(row: Mapping[str, object], decision: Mapping[str, object], evidence: Path, verifier: Optional[Callable[..., object]]) -> str:
+    try:
+        value = (verifier or _default_safety_verifier)(_safety_prompt(row, decision), evidence / "safety")
+        if not isinstance(value, Mapping) or set(value) != {"safe_to_submit", "reason", "blocker_evidence"}: raise ValueError
+        safe, reason, blocker = value["safe_to_submit"], value["reason"], value["blocker_evidence"]
+        if safe is True and reason == "approved" and blocker is None: return "approved"
+        description = row.get("description")
+        rejected = reason in set(SAFETY_SCHEMA["properties"]["reason"]["enum"]) - {"approved", "uncertain"}
+        if safe is False and rejected and isinstance(blocker, str) and blocker and isinstance(description, str) and blocker in description:
+            return "rejected"
+    except Exception:
+        pass
+    return "failed"
+
+def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence: Path, planner: Optional[Callable[..., object]], safety_verifier: Optional[Callable[..., object]], submitter: Optional[Callable[..., object]], state_path: Path) -> ApplicationLoopResult:
     observed_count = len(rows)
     try:
         rows, claimed_project_id = _filter_claimed_rows(rows, state_path)
         if not rows:
             return _batch_summary(ApplicationLoopResult(True, reason="duplicate_project", project_id=claimed_project_id), observed_count, 0, (), ())
-        prompt = build_planner_prompt(rows, today); planned = (planner or _default_planner)(prompt, evidence); decisions = _validate(rows, planned, today)
-    except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_failed"), observed_count, 0, (), ())
+        prompt = build_planner_prompt(rows, today)
+    except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid"), observed_count, 0, (), ())
+    try: planned = (planner or _default_planner)(prompt, evidence)
+    except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_runner_failed", planner_expected_count=len(rows)), observed_count, 0, (), ())
+    returned = len(planned.get("decisions")) if isinstance(planned, Mapping) and isinstance(planned.get("decisions"), list) else None
+    if returned != len(rows):
+        return _batch_summary(ApplicationLoopResult(False, error="planner_contract_incomplete", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
+    try: decisions = _validate(rows, planned, today)
+    except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
     eligible = [
         (row, decisions[str(row["external_id"])])
         for row in rows
@@ -369,6 +432,12 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     eligible = sorted(eligible, key=_eligible_rank)
     if not eligible:
         return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project"), observed_count, 0, (), ())
+    row, decision = eligible[0]
+    safety = _safety_outcome(row, decision, evidence, safety_verifier)
+    if safety == "rejected":
+        return _batch_summary(ApplicationLoopResult(True, reason="safety_rejected", project_id=str(row["external_id"])), observed_count, len(eligible), (), ())
+    if safety != "approved":
+        return _batch_summary(ApplicationLoopResult(False, error="safety_check_failed", project_id=str(row["external_id"])), observed_count, len(eligible), (), ())
     verified, blocked = [], []
     for row, decision in eligible[:1]:
         project_id, proposal = str(row["external_id"]), str(decision["proposal_text"])
@@ -388,7 +457,7 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     final = verified[-1] if verified else ApplicationLoopResult(True, reason="provider_terminal_blocked", project_id=blocked[-1] if blocked else None)
     return _batch_summary(final, observed_count, len(eligible), verified, blocked, ok=True, submitted=any(item.submitted for item in verified))
 
-def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[Path] = None, discoverer: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, clock: Optional[Callable[[], object]] = None, discovery: Optional[Callable[..., Mapping[str, object]]] = None, now: Optional[Callable[[], object]] = None, evidence_dir: Optional[Path] = None, output_stream: Optional[TextIO] = None, query: Optional[str] = None, timeout: float = 20.0) -> dict[str, object]:
+def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[Path] = None, discoverer: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, safety_verifier: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, clock: Optional[Callable[[], object]] = None, discovery: Optional[Callable[..., Mapping[str, object]]] = None, now: Optional[Callable[[], object]] = None, evidence_dir: Optional[Path] = None, output_stream: Optional[TextIO] = None, query: Optional[str] = None, timeout: float = 20.0) -> dict[str, object]:
     try:
         pending = application_tick.read_pending_descriptor(Path(state_path))
     except Exception:
@@ -402,7 +471,7 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
             if output_stream is not None: _emit(pending_result, output_stream)
             return pending_result.to_dict()
         quarantined_project_id = pending_result.unresolved_project_id or pending_result.project_id
-    root = Path(evidence_root if evidence_root is not None else evidence_dir or DEFAULT_EVIDENCE_ROOT); result = ApplicationLoopResult(False, error="planner_failed"); cleanup_failed = False; evidence: Optional[Path] = None
+    root = Path(evidence_root if evidence_root is not None else evidence_dir or DEFAULT_EVIDENCE_ROOT); result = ApplicationLoopResult(False, error="planner_runner_failed"); cleanup_failed = False; evidence: Optional[Path] = None
     try:
         try: tick_value = (clock or now or (lambda: datetime.now(timezone.utc)))()
         except Exception: tick_value = None
@@ -425,15 +494,16 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
                 elif not opportunities: result = ApplicationLoopResult(True, reason="no_eligible_project")
                 else:
                     try: today = _tick_date(tick_value)
-                    except Exception: result = ApplicationLoopResult(False, error="planner_failed")
-                    else: result = _plan_and_submit(opportunities, today, evidence, planner, submitter, Path(state_path))
+                    except Exception: result = ApplicationLoopResult(False, error="planner_contract_invalid")
+                    else: result = _plan_and_submit(opportunities, today, evidence, planner, safety_verifier, submitter, Path(state_path))
     finally:
-        try:
-            if root.is_symlink() or root.is_file(): root.unlink()
-            elif root.is_dir(): shutil.rmtree(root)
-        except OSError: cleanup_failed = True
+        if result.error not in RETAIN_EVIDENCE_ERRORS:
+            try:
+                if root.is_symlink() or root.is_file(): root.unlink()
+                elif root.is_dir(): shutil.rmtree(root)
+            except OSError: cleanup_failed = True
     if cleanup_failed:
-        result = ApplicationLoopResult(False, submitted=result.submitted, application_verified=result.application_verified, reason=result.reason, error=result.error or "evidence_cleanup_failed", project_id=result.project_id, provider_proposal_id=result.provider_proposal_id, cleanup_error="evidence_cleanup_failed" if result.error else None, observed_count=result.observed_count, eligible_count=result.eligible_count, verified_count=result.verified_count, provider_terminal_blocked_count=result.provider_terminal_blocked_count, verified_project_ids=result.verified_project_ids, verified_provider_proposal_ids=result.verified_provider_proposal_ids, provider_terminal_blocked_project_ids=result.provider_terminal_blocked_project_ids, unresolved_project_id=result.unresolved_project_id)
+        result = replace(result, ok=False, error=result.error or "evidence_cleanup_failed", cleanup_error="evidence_cleanup_failed" if result.error else None)
     if quarantined_project_id is not None and result.unresolved_project_id is None:
         result = replace(result, unresolved_project_id=quarantined_project_id)
     if output_stream is not None: _emit(result, output_stream)

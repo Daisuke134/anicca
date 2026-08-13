@@ -109,6 +109,17 @@ def _ineligible_decision(project_id: str) -> dict[str, object]:
     }
 
 
+def _approved_safety(*_args, **_kwargs) -> dict[str, object]:
+    return {"safe_to_submit": True, "reason": "approved", "blocker_evidence": None}
+
+
+def _rejected_safety(prompt, _evidence) -> dict[str, object]:
+    payload = json.loads(prompt.split("\n", 1)[1])
+    description = payload["public_opportunity"]["description"]
+    blocker = description.split("依頼概要:", 1)[-1].strip()[:240]
+    return {"safe_to_submit": False, "reason": "other_policy_blocker", "blocker_evidence": blocker}
+
+
 class _FakeLocator:
     def __init__(self, *, text: str = "", attributes: dict[str, str] | None = None, children: dict[str, object] | None = None):
         self._text = text
@@ -365,10 +376,12 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 json.dumps({"status": "success", "result_path": str(result_path)}),
                 encoding="utf-8",
             )
+            prompt = application_loop.build_planner_prompt([_opportunity("6000001")], datetime(2026, 8, 13, tzinfo=timezone.utc))
             with patch.object(
                 application_loop.subprocess, "run", side_effect=fake_run
             ):
-                result = application_loop.invoke_planner("planner prompt", evidence)
+                result = application_loop.invoke_planner(prompt, evidence)
+            runtime_schema = json.loads((evidence / "planner-runtime.schema.json").read_text(encoding="utf-8"))
 
         command = calls[0][0]
         self.assertNotIn("--timeout-seconds", command)
@@ -377,7 +390,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
             "application-intent-planner",
             "--prompt-stdin",
             "--schema",
-            str(application_loop.PLANNER_SCHEMA),
+            str(evidence / "planner-runtime.schema.json"),
             "--evidence-dir",
             str(evidence),
             "--task-label",
@@ -389,6 +402,9 @@ class ApplicationLoopHolTests(unittest.TestCase):
         ):
             self.assertIn(argument, command)
         self.assertEqual(result, {"decisions": []})
+        decisions = runtime_schema["properties"]["decisions"]
+        self.assertEqual((decisions["minItems"], decisions["maxItems"]), (1, 1))
+        self.assertEqual(decisions["items"]["properties"]["request_id"]["enum"], ["6000001"])
 
     def test_normal_tick_submits_only_first_ranked_eligible_project(self):
         application_loop = _load_deployed_loop()
@@ -423,6 +439,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 evidence_root=root / "evidence",
                 discoverer=discoverer,
                 planner=planner,
+                safety_verifier=_approved_safety,
                 submitter=submitter,
                 clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
             )
@@ -430,6 +447,16 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(submitter_project_ids, ["6000001"])
         self.assertEqual(result["eligible_count"], 2)
         self.assertEqual(result["verified_count"], 1)
+        with tempfile.TemporaryDirectory() as directory:
+            incomplete = application_loop.run_loop(
+                state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence",
+                discoverer=discoverer, planner=lambda *_args: {"decisions": [_eligible_decision("6000001")]},
+                safety_verifier=lambda *_args: self.fail("safety_called"), submitter=lambda **_kwargs: self.fail("submitter_called"),
+                clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
+            )
+        self.assertEqual(incomplete["error"], "planner_contract_incomplete")
+        self.assertEqual((incomplete["planner_expected_count"], incomplete["planner_returned_count"]), (2, 1))
+        self.assertNotIn(opportunities[0]["description"], json.dumps(incomplete, ensure_ascii=False))
 
     def test_normal_tick_prioritizes_projected_net_and_keeps_ties_stable(self):
         application_loop = _load_deployed_loop()
@@ -455,7 +482,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
             return {"ok": True, "submitted": True, "application_verified": True, "project_id": kwargs["project_id"], "provider_proposal_id": "9000011"}
 
         with tempfile.TemporaryDirectory() as directory:
-            result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
+            result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, safety_verifier=_approved_safety, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
 
         self.assertEqual(result["eligible_count"], 3)
         self.assertEqual(submitted, ["6000001"])
@@ -613,6 +640,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
                     evidence_root=root / "evidence",
                     discoverer=discoverer,
                     planner=planner,
+                    safety_verifier=_approved_safety,
                     submitter=submitter,
                     clock=fixed_clock,
                 )
@@ -699,7 +727,8 @@ class ApplicationLoopHolTests(unittest.TestCase):
                     ),
                 )
 
-        self.assertEqual(result.get("error"), "planner_failed")
+        self.assertEqual(result.get("error"), "planner_contract_invalid")
+        self.assertEqual((result["planner_expected_count"], result["planner_returned_count"]), (1, 1))
         self.assertEqual(submitter_project_ids, [])
 
     def test_rejects_semantically_empty_public_evidence_before_submit(self):
@@ -748,13 +777,14 @@ class ApplicationLoopHolTests(unittest.TestCase):
                     evidence_root=root / "evidence",
                     discoverer=discoverer,
                     planner=planner,
+                    safety_verifier=_rejected_safety,
                     submitter=submitter,
                     clock=lambda: datetime(
                         2026, 8, 13, 12, 0, tzinfo=timezone.utc
                     ),
                 )
 
-        self.assertEqual(result.get("error"), "planner_failed")
+        self.assertEqual(result.get("reason"), "safety_rejected")
         self.assertEqual(submitter_project_ids, [])
 
     def test_claimed_pending_projects_are_excluded_before_planning_even_over_batch_limit(self):
@@ -809,6 +839,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
                     evidence_root=root / "evidence",
                     discoverer=discoverer,
                     planner=planner,
+                    safety_verifier=_approved_safety,
                     submitter=submitter,
                     clock=lambda: datetime(
                         2026, 8, 13, 12, 0, tzinfo=timezone.utc
@@ -900,10 +931,12 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 return {"ok": True, "submitted": True, "application_verified": True, "project_id": kwargs["project_id"], "provider_proposal_id": "9000010"}
 
             with tempfile.TemporaryDirectory() as directory, patch.object(application_loop.application_tick, "read_pending_descriptor", return_value=None), patch.object(application_loop.application_tick, "state_has_claim", return_value=False):
-                result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
+                verifier = _approved_safety if accepted else _rejected_safety
+                result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, safety_verifier=verifier, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
 
             self.assertEqual(submitted, ["6000001"] if accepted else [], name)
             self.assertEqual(result.get("verified_count"), 1 if accepted else 0, name)
+            self.assertEqual(result.get("reason") if not accepted else None, "safety_rejected" if not accepted else None, name)
 
     def test_ongoing_operation_request_pair_accepts_40_char_proximity_in_either_order(self):
         application_loop = _load_deployed_loop()
@@ -915,7 +948,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
             ("forward_21_char_gap", forward, []),
             ("forward_newline_19_char_gap", newline, []),
             ("reverse", "SNSの長期継続案件として、専門家へ依頼し、月次のアカウント運用を予定します。", []),
-            ("bare_request", "SNSの長期継続案件として、専門家へ依頼します。", ["planner_failed"]),
+            ("bare_request", "SNSの長期継続案件として、専門家へ依頼します。", []),
         )
         for name, evidence, expected in cases:
             row = _opportunity("6000001")
