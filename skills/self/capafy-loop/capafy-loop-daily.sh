@@ -29,6 +29,17 @@ echo "=== capafy-loop-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 # Never launch the expensive builder when Capafy already rejects new agents.
 INVENTORY_STATUS="$HOME/.openclaw/skills/capafy-autopublish/scripts/inventory_status.py"
 BUILDER_RESULT="${CAPAFY_BUILDER_RESULT:-$HOME/.openclaw/state/capafy-builder-result.json}"
+RECONCILE_LEDGER="${CAPAFY_RECONCILE_LEDGER:-$SCRIPT_DIR/state/capafy-earn-ledger.jsonl}"
+RECONCILE_ARGS=(--ledger "$RECONCILE_LEDGER")
+if [ "${CAPAFY_TEST:-0}" = "1" ]; then
+  RECONCILE_ARGS+=(--sales-json "${CAPAFY_FIXTURE:-/nonexistent}/cap_trend.json" --payout-json "${CAPAFY_FIXTURE:-/nonexistent}/cap_payout.json")
+else
+  RECONCILE_ARGS+=(--backfill)
+fi
+if ! python3 "$SCRIPT_DIR/capafy_earn_reconcile.py" "${RECONCILE_ARGS[@]}" >>"$LOG" 2>&1; then
+  echo "=== capafy-loop-daily blocked: authoritative reconcile failed ===" >>"$LOG"
+  exit 1
+fi
 if [ -f "$INVENTORY_STATUS" ]; then
   CAP_VERDICT="$(python3 "$INVENTORY_STATUS" 2>>"$LOG" | sed -n 's/^VERDICT=//p' | head -1)"
   if [ "$CAP_VERDICT" = "CAP_FULL" ]; then
