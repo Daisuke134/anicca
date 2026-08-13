@@ -285,10 +285,24 @@ def terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
         process.wait()
 
 
+def _strip_browser_routes_for_planner(child_env: dict[str, str]) -> dict[str, str]:
+    forbidden_names = ("BROWSER", "CDP", "WEBSOCKET", "PLAYWRIGHT", "PUPPETEER")
+    loopback_values = ("localhost", "127.0.0.1", "[::1]", "//::1")
+    return {
+        name: value
+        for name, value in child_env.items()
+        if not any(token in name.upper() for token in forbidden_names)
+        and not any(token in value.lower() for token in loopback_values)
+    }
+
+
 def provider_process_env(provider: str, provider_config: dict[str, Any],
-                         environ: dict[str, str] | None = None) -> dict[str, str]:
+                         environ: dict[str, str] | None = None, *,
+                         task_class: str | None = None) -> dict[str, str]:
     """Build a provider-scoped, non-interactive child environment."""
     child_env = dict(os.environ if environ is None else environ)
+    if task_class == "application-intent-planner":
+        child_env = _strip_browser_routes_for_planner(child_env)
     if provider == "codex":
         automation_home_value = provider_config.get("automation_home")
         if not automation_home_value:
@@ -358,6 +372,8 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
         provider_config.get("base_url", "http://127.0.0.1:8317")
     )
     child_env["ANTHROPIC_AUTH_TOKEN"] = auth_token
+    if task_class == "application-intent-planner":
+        child_env = _strip_browser_routes_for_planner(child_env)
     return child_env
 
 
@@ -884,7 +900,7 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
 def run() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-class", required=True,
-                        choices=("deterministic", "composition-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent"))
+                        choices=("deterministic", "composition-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "application-intent-planner", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent"))
     prompt_source = parser.add_mutually_exclusive_group(required=True)
     prompt_source.add_argument("--prompt-file", type=Path)
     prompt_source.add_argument("--prompt-stdin", action="store_true")
@@ -1114,7 +1130,9 @@ def run() -> int:
                         cwd=parsed.workdir,
                         input_bytes=prompt.encode("utf-8") if parsed.prompt_stdin else None,
                         stdin=None if parsed.prompt_stdin else subprocess.DEVNULL,
-                        env=provider_process_env(provider, provider_config),
+                        env=provider_process_env(
+                            provider, provider_config, task_class=parsed.task_class,
+                        ),
                     )
                 except subprocess.TimeoutExpired:
                     timed_out = True
