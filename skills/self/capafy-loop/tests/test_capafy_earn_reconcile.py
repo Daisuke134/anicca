@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 import pytest
 
@@ -106,6 +107,37 @@ def test_canonical_sync_same_day_retry_is_idempotent(tmp_path: Path) -> None:
     assert first.returncode == 0, first.stderr
     assert second.returncode == 0, second.stderr
     assert len((tmp_path / "capafy-revenue-events.jsonl").read_text().splitlines()) == 6
+    payout = next(json.loads(line) for line in ledger.read_text().splitlines() if '"source": "capafy-payout"' in line)
+    assert payout["ts"] == int(datetime.strptime(payout["date"], "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp())
+
+
+def test_canonical_sync_preserves_legacy_payout_event(tmp_path: Path) -> None:
+    legacy = {
+        "ts": 1784330227,
+        "source": "capafy-payout",
+        "date": "2026-07-18",
+        "balance_payout_usd": 8.0,
+        "total_payout_usd": 0.0,
+        "balance_pending_usd": 6.4,
+        "balance_confirmed_usd": 0.0,
+        "currency": "usd",
+        "channel": "capafy_bank_wire",
+        "account": "",
+        "note": "legacy payout snapshot",
+        "wake": "capafy_earn_reconcile",
+    }
+    source = tmp_path / "capafy-earn-ledger.jsonl"
+    source.write_text(json.dumps(legacy) + "\n")
+    event_ledger = tmp_path / "capafy-revenue-events.jsonl"
+    seeded = subprocess.run(
+        [sys.executable, str(CANONICAL_SYNC), "sync-money", "--money-ledger", str(source), "--cost-log", str(tmp_path / "cost.log"), "--ledger", str(event_ledger), "--evidence-dir", str(tmp_path / "event-evidence")],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert seeded.returncode == 0, seeded.stderr
+    result, _, _ = _run(tmp_path, 0, seed=[legacy], sync_path=CANONICAL_SYNC)
+    assert result.returncode == 0, result.stderr
 
 
 def test_payout_failure_preserves_previous_source_evidence(tmp_path: Path) -> None:
@@ -206,7 +238,7 @@ def test_reconcile_syncs_money_after_source_ledger_write(tmp_path: Path) -> None
     assert result.returncode == 0, result.stderr
     arguments = json.loads(calls.read_text().splitlines()[0])
     assert arguments[:2] == ["sync-money", "--money-ledger"]
-    assert arguments[2] != str(source_ledger)
+    assert arguments[2] == str(source_ledger)
     assert "--cost-log" in arguments
     assert "--ledger" in arguments
     assert "--evidence-dir" in arguments

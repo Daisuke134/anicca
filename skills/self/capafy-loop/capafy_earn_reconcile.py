@@ -35,7 +35,6 @@ import math
 import os
 import subprocess
 import sys
-import tempfile
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -118,14 +117,6 @@ def _payout_snapshot(raw: object) -> dict:
     except RuntimeError as exc:
         raise RuntimeError("payout response has malformed balance fields") from exc
     return data
-
-
-def _canonical_money_ledger(rows: list, source: str) -> str:
-    fd, path = tempfile.mkstemp(prefix="capafy-money-", suffix=".jsonl", dir=os.path.dirname(source) or ".")
-    rows = [{**r, "ts": _date_to_ts(r["date"])} if isinstance(r, dict) and r.get("source") == "capafy-payout" and r.get("date") else r for r in rows]
-    with os.fdopen(fd, "w", encoding="utf-8") as handle:
-        handle.write("".join((r.get("_raw") if isinstance(r, dict) and "_raw" in r else json.dumps(r, ensure_ascii=False)) + "\n" for r in rows))
-    return path
 
 
 def load_rows(path: str) -> list:
@@ -242,7 +233,7 @@ def main() -> int:
 
     # payout snapshot: one per day (upsert today's — replace if already present today)
     payout_row = {
-        "ts": int(dt.datetime.now(dt.timezone.utc).timestamp()),
+        "ts": _date_to_ts(today),
         "source": "capafy-payout",
         "date": today,
         "balance_payout_usd": round(float(payout.get("balancePayout", 0) or 0), 2),
@@ -266,13 +257,12 @@ def main() -> int:
         os.path.abspath(os.path.join(HERE, "../../earn/capafy-marketing/scripts/capafy_event_sync.py")),
     )
     if not (os.environ.get("CAPAFY_TEST") == "1" and "CAPAFY_EVENT_SYNC" not in os.environ):
-        sync_ledger = _canonical_money_ledger(new_rows, args.ledger)
         sync_command = [
             sys.executable,
             event_sync,
             "sync-money",
             "--money-ledger",
-            sync_ledger,
+            args.ledger,
             "--cost-log",
             os.environ.get(
                 "CAPAFY_EVENT_COST_LOG",
@@ -289,19 +279,13 @@ def main() -> int:
                 os.path.expanduser("~/.openclaw/state/capafy-revenue-evidence"),
             ),
         ]
-        try:
-            synced = subprocess.run(sync_command, capture_output=True, text=True, check=False)
-            if synced.returncode != 0:
-                print(
-                    f"event sync failed rc={synced.returncode}: {synced.stderr.strip()}",
-                    file=sys.stderr,
-                )
-                return 1
-        finally:
-            try:
-                os.unlink(sync_ledger)
-            except OSError:
-                pass
+        synced = subprocess.run(sync_command, capture_output=True, text=True, check=False)
+        if synced.returncode != 0:
+            print(
+                f"event sync failed rc={synced.returncode}: {synced.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return 1
 
     sale_rows = [r for r in new_rows if isinstance(r, dict) and r.get("source") == "capafy-sales"]
     lifetime_gross = round(sum(float(r.get("gross_usd", 0)) for r in sale_rows), 2)
