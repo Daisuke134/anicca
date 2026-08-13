@@ -596,6 +596,11 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 name,
             )
 
+    def test_qualification_cost_source_version_is_typed_for_codex_schema(self):
+        schema = json.loads((REPO_ROOT / "skills/gig-work/schemas/application_decisions.schema.json").read_text(encoding="utf-8"))
+        leaf = schema["properties"]["decisions"]["items"]["properties"]["qualification"]["properties"]["cost_source_version"]
+        self.assertEqual(leaf, {"type": "string", "const": "lancers-g1-conservative-v1"})
+
 
 if __name__ == "__main__":
     unittest.main()

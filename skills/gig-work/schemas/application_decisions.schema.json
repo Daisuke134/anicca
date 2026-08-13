@@ -52,7 +52,7 @@
               "expected_ai_cost_jpy": {"type": "integer", "minimum": 0},
               "expected_subcontractor_cost_jpy": {"type": "integer", "minimum": 0},
               "expected_revision_refund_allowance_jpy": {"type": "integer", "minimum": 0},
-              "cost_source_version": {"const": "lancers-g1-conservative-v1"}
+              "cost_source_version": {"type": "string", "const": "lancers-g1-conservative-v1"}
             }
           }
         },
