@@ -37,7 +37,6 @@ def _load(name: str, path: Path) -> Any:
     return module
 outbox = _load("lancers_report_outbox", OUTBOX_PATH)
 
-
 @dataclass(frozen=True)
 class SendResult:
     attempted: bool
@@ -69,13 +68,19 @@ def read_last_json(path: Path) -> Optional[Mapping[str, object]]:
 def _int(value: object) -> Optional[int]:
     return value if type(value) is int and value >= 0 else None
 
-
 def _timestamp(value: object) -> Optional[str]:
     if isinstance(value, datetime):
         value = value if value.tzinfo else value.replace(tzinfo=timezone.utc)
         return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
     return value.strip() if isinstance(value, str) and value.strip() else None
 
+
+def _source_timestamp(application: object) -> Optional[str]:
+    for value in (application.get(k) for k in ("source_observed_at", "observed_at")) if isinstance(application, Mapping) else ():
+        try: parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00")) if isinstance(value, str) and value.strip() else None
+        except ValueError: continue
+        if parsed is not None and parsed.tzinfo is not None: return _timestamp(parsed)
+    return None
 
 def _storefront_counts(value: object) -> dict[str, object]:
     if not isinstance(value, Mapping):
@@ -86,7 +91,6 @@ def _storefront_counts(value: object) -> dict[str, object]:
         counts[key] = _int(value_for_key)
     counts["error"] = value.get("error") if isinstance(value.get("error"), str) else None
     return counts
-
 
 def _parse_storefront(page: object) -> dict[str, int]:
     if getattr(page, "url", None) != "https://www.lancers.jp/myplan":
@@ -106,7 +110,6 @@ def _parse_storefront(page: object) -> dict[str, int]:
                 found[key] = int(match.group(1).replace(",", "")); break
     if set(found) != {key for key, _label, _href in _LABELS}: raise RuntimeError("storefront_anchor_missing")
     return found
-
 
 def read_storefront(state_path: Path = STATE, *, browser_factory: Optional[Callable[[str], object]] = None,
                     lock: Optional[Callable[[Path], object]] = None) -> dict[str, int]:
@@ -147,7 +150,7 @@ def build_snapshot(*, application: object, pending_count: object, cumulative_ver
         "official_readback_observed_at": _timestamp(official_readback_observed_at),
         "provider_event_time": _timestamp(provider_event_time),
         "actual_ai_cost": "unknown (meter未接続)",
-        "complete": bool(app_ok and pending is not None and verified is not None and store_ok and source_observed_at and official_readback_observed_at and not resolved_blocker and not store.get("error")),
+        "complete": bool(app.get("ok") is True and app_ok and pending is not None and verified is not None and store_ok and source_observed_at and official_readback_observed_at and not resolved_blocker and not store.get("error")),
     }
 
 
@@ -205,9 +208,9 @@ def _provider_id(value: object) -> Optional[str]:
         if value is None and isinstance(payload.get("result"), Mapping):
             result = payload["result"]
             value = result.get("messageId", result.get("message_id", result.get("id")))
-    if isinstance(value, int) and value > 0:
+    if type(value) is int and value > 0:
         return str(value)
-    if isinstance(value, str) and value.strip():
+    if isinstance(value, str) and re.fullmatch(r"[0-9]+", value.strip()) and int(value.strip()) > 0:
         return value.strip()
     return None
 
@@ -269,7 +272,7 @@ def _source_error(error: BaseException) -> str:
 
 def collect_snapshot(*, application_log: Path, state_path: Path, ledger_database: Path, storefront: object = None, storefront_log: Path = STOREFRONT_LOG, now: object = None, ledger_events: object = None) -> dict[str, object]:
     observed = read_last_json(application_log)
-    source_time = _timestamp(now or datetime.now(timezone.utc))
+    source_time = _source_timestamp(observed)
     events = ledger_events
     if events is None:
         try:
