@@ -108,6 +108,21 @@ if sys.argv[1:3] == ["-m", "job_search_loop.prefilter"]:
         queue_output.write_text(json.dumps(payload) + "\\n", encoding="utf-8")
     print(json.dumps({"status": "browser_fallback_required", "candidate_count": 0}))
     raise SystemExit(0)
+if sys.argv[1:4] == ["-m", "job_search_loop.candidate_routes", "filter"]:
+    source = pathlib.Path(sys.argv[sys.argv.index("--input") + 1])
+    output = pathlib.Path(sys.argv[sys.argv.index("--output") + 1])
+    output.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    candidates = payload.get("candidates", [])
+    payload["terminal_filter"] = {
+        "observed_count": len(candidates),
+        "excluded_count": 0,
+        "included_count": len(candidates),
+        "reasons": [],
+    }
+    output.write_text(json.dumps(payload) + "\\n", encoding="utf-8")
+    print(json.dumps(payload["terminal_filter"]))
+    raise SystemExit(0)
 if sys.argv[1:4] == ["-m", "job_search_loop.candidate_queue", "discover-prefilter"]:
     output = pathlib.Path(sys.argv[sys.argv.index("--output") + 1])
     output.parent.mkdir(parents=True, exist_ok=True)

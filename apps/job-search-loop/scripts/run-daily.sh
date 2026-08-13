@@ -249,15 +249,22 @@ OFFICIAL_ATS_REFRESH_RC=$?
 set -e
 chmod 600 "$EVIDENCE/official-ats-refresh.json"
 export JOB_SEARCH_PREFILTER_RESULT="$EVIDENCE/prefilter-result.json"
+JOB_SEARCH_PREFILTER_UNFILTERED="$EVIDENCE/prefilter-unfiltered.json"
 JOB_SEARCH_PREFILTER_QUEUE="$EVIDENCE/prefilter-queue.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.prefilter \
   --recovery-plan "$JOB_SEARCH_RECOVERY_PLAN" \
   --framework-root "$JOB_SEARCH_FRAMEWORK_ROOT" \
   --queue-output "$JOB_SEARCH_PREFILTER_QUEUE" \
-  --output "$JOB_SEARCH_PREFILTER_RESULT" \
+  --output "$JOB_SEARCH_PREFILTER_UNFILTERED" \
   >"$EVIDENCE/prefilter-runner.json"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.candidate_routes filter \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --input "$JOB_SEARCH_PREFILTER_UNFILTERED" \
+  --output "$JOB_SEARCH_PREFILTER_RESULT" \
+  >"$EVIDENCE/terminal-filter.json"
 chmod 600 "$EVIDENCE/prefilter-runner.json"
 chmod 600 "$JOB_SEARCH_PREFILTER_RESULT"
+chmod 600 "$JOB_SEARCH_PREFILTER_UNFILTERED" "$EVIDENCE/terminal-filter.json"
 chmod 600 "$JOB_SEARCH_PREFILTER_QUEUE"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.candidate_queue discover-prefilter \
   --database "$JOB_SEARCH_CANDIDATE_QUEUE" \

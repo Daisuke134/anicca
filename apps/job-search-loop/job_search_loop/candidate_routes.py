@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -8,6 +9,7 @@ from typing import Any
 from .ledger import FenceError, Ledger
 from .playwright_ats import ranked_pre_submit_candidates
 from .state import canonical_url
+from .summary import write_summary
 
 
 EXCLUDED_APPLICATION_STATES = frozenset(
@@ -141,3 +143,21 @@ def materialize_canonical_routes(
     finally:
         ledger.close()
     return materialized
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=("filter",))
+    parser.add_argument("--ledger", required=True, type=Path)
+    parser.add_argument("--input", required=True, type=Path)
+    parser.add_argument("--output", required=True, type=Path)
+    args = parser.parse_args(argv)
+    payload = json.loads(args.input.read_text(encoding="utf-8"))
+    filtered = filter_terminal_candidates(args.ledger, payload)
+    write_summary(args.output, filtered)
+    print(json.dumps(filtered["terminal_filter"], sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

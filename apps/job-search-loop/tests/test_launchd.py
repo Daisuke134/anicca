@@ -139,6 +139,9 @@ class LaunchdTests(unittest.TestCase):
         self.assertLess(script.index(acquire), script.index(runner))
         self.assertLess(script.index("TRAPEXIT"), script.index(runner))
         self.assertIn("/usr/bin/env -u JOB_SEARCH_PRIVATE_ENV", script)
+        terminal_filter = "job_search_loop.candidate_routes filter"
+        self.assertIn(terminal_filter, script)
+        self.assertLess(script.index(terminal_filter), script.index(runner))
 
     def test_healthcheck_covers_scheduler_ledger_and_private_state(self):
         root = Path(__file__).parents[1]
