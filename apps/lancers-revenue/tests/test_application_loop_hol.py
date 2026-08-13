@@ -431,7 +431,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(result["eligible_count"], 2)
         self.assertEqual(result["verified_count"], 1)
 
-    def test_normal_tick_prioritizes_monthly_net_and_keeps_ties_stable(self):
+    def test_normal_tick_prioritizes_projected_net_and_keeps_ties_stable(self):
         application_loop = _load_deployed_loop()
         project_ids = ["6000001", "6000002", "6000003"]
         opportunities = [_opportunity(project_id) for project_id in project_ids]
@@ -458,7 +458,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
             result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
 
         self.assertEqual(result["eligible_count"], 3)
-        self.assertEqual(submitted, ["6000003"])
+        self.assertEqual(submitted, ["6000001"])
         ties = [(opportunities[1], _eligible_decision("6000002")), (opportunities[2], _eligible_decision("6000003"))]
         self.assertEqual(application_loop._eligible_rank(ties[0]), application_loop._eligible_rank(ties[1]))
         self.assertEqual([row["external_id"] for row, _ in sorted(ties, key=application_loop._eligible_rank)], ["6000002", "6000003"])
