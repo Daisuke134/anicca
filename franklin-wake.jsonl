@@ -27293,3 +27293,10 @@
 {"ts":1786660921,"wake_id":"00MSS3S6DZ37658CD3709F4709","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana microtask platform pay per API call USDC no upfront deposit [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (c"}
 {"ts":1786661050,"wake_id":"00MSS3UXEFED99BEF1C4F54953","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786661177,"wake_id":"00MSS3XNQR0F18BF3EFCCC41E8","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786661307,"wake_id":"00MSS40FJ52DF895BE0DF345A0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786661434,"wake_id":"00MSS4364BD7299DAE1D1F4E82","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786661565,"wake_id":"00MSS45YLR0152E9B2E39B4734","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid API inference microservice USDC per request marketplace [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake ("}
+{"ts":1786661693,"wake_id":"00MSS48PM269AAF1F3EAA14277","kind":"wake","sleep_s":120,"model":"auto","slot":"report","profitable":false,"exit_code":0}
+{"ts":1786661833,"wake_id":"00MSS4BPMHB0EE797767814813","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786661967,"wake_id":"00MSS4EL4N749D4D30D8F34CC4","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana marketplace for microtasks paid in USDC API call per request platform [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explo"}
+{"ts":1786662098,"wake_id":"00MSS4HEEOFC3DDEBCDF4D42F2","kind":"narrate","sleep_s":120,"model":"auto"}
