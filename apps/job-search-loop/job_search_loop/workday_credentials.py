@@ -214,6 +214,26 @@ def known_tenants(store_path: Path) -> list[str]:
     return sorted(tenants)
 
 
+def _advance_application_entry(page: Any) -> int:
+    actions = 0
+    for selector in (
+        '[data-automation-id="jobPostingApplyButton"]',
+        '[data-automation-id="applyManually"], [data-automation-id="adventureButton"]',
+    ):
+        control = page.locator(selector)
+        if control.count() != 1 or not control.is_visible():
+            continue
+        try:
+            control.click(timeout=5_000)
+        except Exception as error:
+            if error.__class__.__name__ != "TimeoutError":
+                raise
+            control.click(timeout=15_000, force=True)
+        actions += 1
+        page.wait_for_timeout(1_000)
+    return actions
+
+
 def fill_account_creation(
     *,
     job_url: str,
@@ -263,6 +283,11 @@ def fill_account_creation(
         return value
 
     verify_password = page.locator('[data-automation-id="verifyPassword"]')
+    if verify_password.count() == 0 and "/login" not in urlsplit(page.url).path:
+        entry_actions = _advance_application_entry(page)
+        verify_password = page.locator('[data-automation-id="verifyPassword"]')
+    else:
+        entry_actions = 0
     if verify_password.count() == 1:
         mode = "create"
     elif verify_password.count() == 0 and "/login" in urlsplit(page.url).path:
@@ -289,7 +314,7 @@ def fill_account_creation(
             checkbox.check(force=True)
         submit = locator("createAccountSubmitButton")
         status = "account_creation_clicked"
-        action_count = 5 if checkbox.count() == 1 else 4
+        action_count = entry_actions + (5 if checkbox.count() == 1 else 4)
     else:
         submit = page.locator(
             '[data-automation-id="signInSubmitButton"], button[type="submit"]'
@@ -297,7 +322,7 @@ def fill_account_creation(
         if submit.count() != 1:
             raise WorkdayCredentialError("Workday sign-in control is unavailable")
         status = "sign_in_clicked"
-        action_count = 3
+        action_count = entry_actions + 3
     try:
         submit.click(timeout=5_000)
     except Exception as error:

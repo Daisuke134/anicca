@@ -90,14 +90,17 @@ For each selected role:
    underneath it. If the hidden button reports intercepted pointer events, click the
    visible wrapper/role control and verify the page or step transition before continuing.
    A tenant-required Workday account creation screen is an application step, not a
-   reason to stop or ask for authorization. On that verified screen, run the installed
+   reason to stop or ask for authorization. On any verified Workday job or account-auth
+   surface, run the installed
    `job_search_loop.workday_credentials` module with `--fill-account`, the current
    official `--job-url`, `--profile-path "$JOB_SEARCH_PROFILE"`, private
    `--store-path`, `--owner-receipt "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"`,
    `--ownership-receipt "$JOB_SEARCH_EVIDENCE_DIR/page-ownership.json"`,
    `--owned-page "$JOB_SEARCH_EVIDENCE_DIR/owned-page.json"`, and a private
    `--output`. This tool loads and fills the credential inside its own process and
-   returns only a redacted receipt. Never read the store or expose a generated
+   returns only a redacted receipt. From a job-detail surface it first uses the stable
+   Workday Apply and Apply Manually controls on the same owned page; it never selects
+   SSO. Never read the store or expose a generated
    credential in commands, logs, artifacts, or model output. Re-observe the same owned
    page after the tool returns and continue through the application. If Workday then
    shows its `/login` page, run the same command again; it safely detects the two-field

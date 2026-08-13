@@ -10,6 +10,7 @@ from pathlib import Path
 
 from job_search_loop.workday_credentials import (
     WorkdayCredentialError,
+    _advance_application_entry,
     ensure_credentials,
     fill_account_creation,
     known_tenants,
@@ -66,6 +67,26 @@ class WorkdayCredentialTests(unittest.TestCase):
             tenant_key("https://example.com/jobs/42")
         with self.assertRaises(WorkdayCredentialError):
             tenant_key("https://myworkdayjobs.com.evil.example/jobs/42")
+
+    def test_advances_workday_apply_and_manual_entry_without_sso(self):
+        clicked = []
+
+        class Locator:
+            def __init__(self, name): self.name = name
+            def count(self): return 1
+            def is_visible(self): return True
+            def click(self, **_kwargs): clicked.append(self.name)
+
+        class Page:
+            def locator(self, selector): return Locator(selector)
+            def wait_for_timeout(self, _milliseconds): pass
+
+        actions = _advance_application_entry(Page())
+
+        self.assertEqual(actions, 2)
+        self.assertIn("jobPostingApplyButton", clicked[0])
+        self.assertIn("applyManually", clicked[1])
+        self.assertTrue(all("sso" not in value.casefold() for value in clicked))
 
     def test_creation_is_private_strong_atomic_and_receipt_is_redacted(self):
         receipt = ensure_credentials(
