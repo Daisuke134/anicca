@@ -57,6 +57,20 @@ class AtsPageClassifierTests(unittest.TestCase):
                 if expected in {"visible_captcha", "blocked_sso", "closed_posting"}:
                     self.assertEqual(receipt["next_route"], "gmail_fallback_required")
 
+    def test_generic_aria_alert_does_not_hide_the_apply_entry(self):
+        receipt = classify_ats_page({
+            "version": 1,
+            "url": "https://example.myworkdayjobs.com/site/job/role",
+            "navigation_committed": True,
+            "frames": [{"controls": [
+                {"role": "alert", "text": "Accessibility announcement"},
+                {"tag": "button", "text": "Apply"},
+            ]}],
+        })
+
+        self.assertEqual(receipt["classification"], "job_detail")
+        self.assertEqual(receipt["next_route"], "terra_continue_formal")
+
 
 if __name__ == "__main__":
     unittest.main()

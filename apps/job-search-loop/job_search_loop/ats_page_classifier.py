@@ -150,9 +150,7 @@ def classify_ats_page(snapshot: Mapping[str, Any]) -> dict[str, Any]:
         classification = "blocked_sso"
         next_route = "gmail_fallback_required"
         signals.append("blocked_sso_surface")
-    elif VALIDATION_RE.search(text) or any(
-        control["role"] == "alert" and control["text"] for control in controls
-    ):
+    elif VALIDATION_RE.search(text):
         classification = "validation_error"
         next_route = "terra_continue_formal"
         signals.append("visible_validation_error")
