@@ -2,9 +2,9 @@
 
 > **For agentic workers:** Implement only the assigned production/test files. The parent owns this plan, the authoritative spec, production state, acceptance, merge, and deployment.
 
-**Goal:** Keep one already-notified Marketing recovery incident authoritative when replacement provisioning produces no account row, and prevent the 60-second outcome monitor from notifying the same unresolved incident again.
+**Goal:** Keep the one current Marketing recovery incident authoritative once its exact browser-owned row is already `session_failed`, and prevent the 60-second outcome monitor from notifying that unresolved incident again.
 
-**Architecture:** Reuse the existing incident record, lifecycle state, handoff, canonical event store, hourly Japanese report, and account-manager schedule. The account manager maps a successful agent pass with no appended row back to the exact session-recovery incident instead of creating a second failure identity. The outcome monitor reserves one deterministic delivery key before any Telegram call and treats any existing unresolved reservation as terminal; strict one-line sender evidence is required. No new daemon, database, delivery ledger, model route, or account action is added.
+**Architecture:** Reuse the existing incident record, lifecycle state, handoff, canonical event store, hourly Japanese report, and account-manager schedule. When the lifecycle incident already maps to exactly one browser-owned `session_failed` registry row, the account manager hands that exact recovery result back before browser/model provisioning; reauthentication belongs to Item 9c. The outcome monitor reserves one deterministic delivery key before any Telegram call and treats any existing unresolved reservation as terminal; strict one-line sender evidence is required. No new daemon, database, delivery ledger, model route, or account action is added.
 
 **Tech Stack:** Bash, existing Python incident/lifecycle CLIs, launchd, shell fixtures.
 
@@ -23,6 +23,7 @@
 - The replacement model returned provider status success but explicitly performed no browser or registry mutation because the current prompt's email paths were structurally exhausted. The wrapper converted that no-row result into competing incident `capafy-marketer-20260813T120922Z-ed60fa9e`.
 - The 60-second outcome monitor generated a different delivery key after the retry/repair text changed and overwrote the original incident's existing direct-failure receipt, sending Telegram `16102`; the replacement failure then sent `16103`.
 - Immediate Marketer replay itself is idempotent: runs `20 -> 21`, exit `0`, manager runs unchanged at `1217`, canonical ledger unchanged at 412 rows, incident delivery ID unchanged, and recovery result removed.
+- A later natural manager run `1218` proved the no-row assumption was too narrow: it appended `@capafy.skillsz8aoa4no`, then retired it after the same Google QR/device gate and created third incident `capafy-marketer-20260813T121537Z-5578796a` with Telegram `16113`. The lifecycle now points to that incident and exactly one matching browser-owned `session_failed` row. Therefore this slice must stop before another provisioning model pass whenever that exact durable recovery target already exists.
 
 ## Task 1: Preserve the original incident on no-row replacement
 
@@ -32,12 +33,12 @@
 
 **Interfaces:** Consume the lifecycle's existing `incident_id`, the exact registry row carrying that incident, and the existing handoff session-recovery contract. Produce the existing `replacement_waiting` result with `session_recovery=true`, stable reason `active Instagram browser tab is missing`, the exact retired handle, bounded future RFC3339 retry, and a plain repair detail.
 
-- [ ] After lifecycle snapshot, resolve exactly one `session_failed` browser-owned registry row whose `incident_id` equals the lifecycle incident. Zero or multiple matches fail closed to the existing generic technical path.
-- [ ] When the model returns zero but the registry count did not increase, route that exact case through the session-recovery result instead of creating a new fingerprint.
+- [ ] After lifecycle snapshot, resolve exactly one `session_failed` browser-owned registry row whose `incident_id` equals the lifecycle incident. Zero or multiple matches do not take the recovery shortcut and fail closed to the existing generic technical path.
+- [ ] For that exact match, write the existing stable session-recovery `replacement_waiting` result and hand it off before browser lease, provisioning prompt, or model execution. Item 9c owns the next account mutation.
 - [ ] Do not retire another row, wake the manager recursively, create another incident fingerprint, or send a second failure Telegram. The handoff remains the sole incident writer.
 - [ ] Preserve successful account-created, malformed-row, missing-credential, failed-verifier, lock, sender-recovery, and challenge behavior.
 - [ ] Synchronize the sender fixture with `TELEGRAM_SENT=true MSGID=<digits>`; this is a stale fixture repair, not a production weakening.
-- [ ] Add one regression with a pre-existing session-recovery incident and retired row: a zero-mutation agent result reuses that incident, preserves one active incident and its delivery receipt, and adds no manager wake.
+- [ ] Add one regression with a pre-existing session-recovery incident and retired row: the manager reuses that incident, preserves its delivery receipt, and calls no browser, agent, recursive manager wake, or Telegram. Add the ambiguous-match fail-closed counterexample.
 
 ## Task 2: Make the outcome monitor at-most-once
 
@@ -73,6 +74,6 @@ The implementer commits and pushes an isolated branch. Exactly one fresh read-on
 ## Production acceptance
 
 1. Parent captures current active Marketer incidents, terminal keys/message IDs, event-ledger hash/rows, manager/monitor counts, and delivery evidence.
-2. Parent kickstarts only the existing account manager. A no-row result updates the original recovery incident without creating a third incident or another Telegram; browser/manager leases release.
+2. Parent kickstarts only the existing account manager. The exact existing recovery row short-circuits before model/browser work and preserves the current incident without creating a fourth incident or another Telegram; manager lock releases.
 3. Two outcome-monitor wakes preserve both existing incident delivery IDs, add no message or duplicate event, and exit zero.
 4. Immediate account-manager replay adds no row, incident, event, recursive wake, or Telegram. Structural browser login remains separate Item 9c; this slice does not claim Marketing health.
