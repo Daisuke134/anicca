@@ -199,6 +199,22 @@ capacity は、契約が要求する base drafts と revision 最大数を合わ
 この組合せは計画を考えるための例示にすぎず、受入判定は実際の `PaymentReceipt`、
 実費、記録済み FX から計算する。見込み契約数や proposal 金額で置き換えない。
 
+初期のacquisition配分は、公式ApplicationReceiptを14件持つ応募surfaceを70%、公開だけでinquiry実績が
+未確認のStorefront surfaceを30%とする。両者は同じ商品、価格、Sales / Contract、Fulfillment、Financeを
+共有し、入口だけが異なる。上のgross MRR例を入口別に割る計画モデルは次である。
+
+| acquisition surface | 契約構成の計画例 | gross MRR例 | net MRR $20k目標への初期寄与 |
+|---|---:|---:|---:|
+| 応募 | 2 Founding + 7 Standard + 5 Premium | ¥3,572,000/月 | 70% = $14,000/月 |
+| Storefront | 1 Founding + 3 Standard + 2 Premium | ¥1,488,000/月 | 30% = $6,000/月 |
+| 合計 | 3 Founding + 10 Standard + 7 Premium | ¥5,060,000/月 | 100% = $20,000/月 |
+
+gross JPYとnet USDを固定為替で同一視しない。右端は獲得責任の配分であり、各surfaceの実netは、入口を
+`contract_external_id`へ帰属させたPaymentReceipt、fee、AI cost、subcontract cost、refund、recorded FXが
+揃った時だけ確定する。最初の3 Founding契約までは48 units/月のcapacity capを守り、納品時間と実原価を
+測る前に20契約へ拡大しない。Storefrontが実測で高い成約率・retention・net marginを示した場合だけ、
+この70/30配分を50/50またはStorefront優先へ更新する。
+
 ## 4. ループ構造と既存契約の再利用
 
 acquisition は補助機能ではなく、最初に動かす **first-class primary loop** である。
