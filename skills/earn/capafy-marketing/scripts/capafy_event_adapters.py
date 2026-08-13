@@ -310,6 +310,24 @@ def _utc_timestamp(value: Any) -> str | None:
     )
 
 
+def _incident_event_id(record: dict, occurred_phase: str) -> str:
+    incident_id = str(record["incident_id"])
+    event_id = f"capafy:incident.{occurred_phase}:{incident_id}"
+    if occurred_phase == "unresolved":
+        retry_at = _utc_timestamp(record.get("next_retry_at"))
+        if retry_at is not None:
+            compact_retry = retry_at.replace("-", "").replace(":", "")
+            return f"{event_id}:retry-{compact_retry}"
+        return event_id
+    try:
+        attempts = int(record.get("attempts") or 0)
+    except (TypeError, ValueError):
+        attempts = 0
+    if occurred_phase in {"repair_started", "repaired", "verified"} and attempts > 0:
+        return f"{event_id}:attempt-{attempts}"
+    return event_id
+
+
 def event_from_incident(record: dict) -> dict:
     """Translate one persisted incident phase into a retry-stable public event."""
 
@@ -358,7 +376,7 @@ def event_from_incident(record: dict) -> dict:
     if phase in {"repaired", "verified"} and record.get("repair_summary"):
         summary = str(record["repair_summary"])
     retry_at = _utc_timestamp(record.get("next_retry_at")) if phase == "unresolved" else None
-    event_id = f"capafy:incident.{phase}:{incident_id}"
+    event_id = _incident_event_id(record, phase)
     event = _event(
         event_id=event_id,
         event_type=f"incident.{phase}",

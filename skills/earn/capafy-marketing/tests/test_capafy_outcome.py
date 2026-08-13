@@ -113,17 +113,25 @@ def test_unresolved_transition_repairs_human_retry_sentinel(tmp_path: Path) -> N
         ("detected", "capafy:incident.detected:capafy-marketer-20260801T201313Z-6b646dbe"),
         (
             "repair_started",
-            "capafy:incident.repair_started:capafy-marketer-20260801T201313Z-6b646dbe",
+            "capafy:incident.repair_started:capafy-marketer-20260801T201313Z-6b646dbe:attempt-1",
         ),
-        ("repaired", "capafy:incident.repaired:capafy-marketer-20260801T201313Z-6b646dbe"),
-        ("verified", "capafy:incident.verified:capafy-marketer-20260801T201313Z-6b646dbe"),
+        (
+            "repaired",
+            "capafy:incident.repaired:capafy-marketer-20260801T201313Z-6b646dbe:attempt-1",
+        ),
+        (
+            "verified",
+            "capafy:incident.verified:capafy-marketer-20260801T201313Z-6b646dbe:attempt-1",
+        ),
         (
             "unresolved",
-            "capafy:incident.unresolved:capafy-marketer-20260801T201313Z-6b646dbe",
+            "capafy:incident.unresolved:capafy-marketer-20260801T201313Z-6b646dbe:retry-20260801T210000Z",
         ),
     ],
 )
-def test_incident_phase_maps_to_stable_canonical_event(phase: str, expected_id: str) -> None:
+def test_incident_phase_maps_to_legacy_or_occurrence_canonical_event(
+    phase: str, expected_id: str
+) -> None:
     event = event_adapters.event_from_incident(incident_record(phase))
 
     assert event["event_id"] == expected_id
@@ -175,6 +183,109 @@ def test_incident_state_is_written_before_event_and_same_phase_retries_writer(
 
     assert observations[0] == ("detected", "detected")
     assert observations[-1] == ("repair_started", first_phase_time)
+
+
+def test_new_phase_occurrence_refreshes_timestamp_but_same_phase_retry_preserves_it(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CAPAFY_OUTCOME_STATE_DIR", str(tmp_path))
+    clock = iter(
+        (
+            "2026-08-03T07:00:10Z",
+            "2026-08-03T07:01:00Z",
+            "2026-08-03T07:02:00Z",
+            "2026-08-03T07:03:00Z",
+            "2026-08-03T07:04:00Z",
+        )
+    )
+    monkeypatch.setattr(capafy_outcome, "_now", lambda: next(clock))
+    record = capafy_outcome.start_incident(
+        owner="capafy-marketer",
+        summary="sync failed",
+        fingerprint="sync-failed",
+        repair_result_path=None,
+    )
+
+    first = capafy_outcome.transition_incident(
+        {"incident_id": record["incident_id"], "phase": "repair_started"}
+    )
+    first_timestamp = first["phase_timestamps"]["repair_started"]
+    retry = capafy_outcome.transition_incident(
+        {"incident_id": record["incident_id"], "phase": "repair_started"}
+    )
+    assert retry["phase_timestamps"]["repair_started"] == first_timestamp
+
+    capafy_outcome.transition_incident(
+        {
+            "incident_id": record["incident_id"],
+            "phase": "unresolved",
+            "next_retry_at": "2026-08-03T08:00:00Z",
+        }
+    )
+    recurring = capafy_outcome.transition_incident(
+        {"incident_id": record["incident_id"], "phase": "repair_started"}
+    )
+    assert recurring["attempts"] == 1
+    assert recurring["phase_timestamps"]["repair_started"] == "2026-08-03T07:04:00Z"
+
+
+def test_changed_unresolved_retry_schedule_is_a_new_occurrence(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("CAPAFY_OUTCOME_STATE_DIR", str(tmp_path))
+    clock = iter(
+        (
+            "2026-08-03T07:00:10Z",
+            "2026-08-03T07:01:00Z",
+            "2026-08-03T07:02:00Z",
+            "2026-08-03T07:03:00Z",
+        )
+    )
+    monkeypatch.setattr(capafy_outcome, "_now", lambda: next(clock))
+    record = capafy_outcome.start_incident(
+        owner="capafy-marketer",
+        summary="sync failed",
+        fingerprint="sync-failed",
+        repair_result_path=None,
+    )
+    first = capafy_outcome.transition_incident(
+        {
+            "incident_id": record["incident_id"],
+            "phase": "unresolved",
+            "next_retry_at": "2026-08-03T08:00:00Z",
+        }
+    )
+    second = capafy_outcome.transition_incident(
+        {
+            "incident_id": record["incident_id"],
+            "phase": "unresolved",
+            "next_retry_at": "2026-08-03T09:00:00Z",
+        }
+    )
+    same = capafy_outcome.transition_incident(
+        {
+            "incident_id": record["incident_id"],
+            "phase": "unresolved",
+            "next_retry_at": "2026-08-03T09:00:00Z",
+        }
+    )
+
+    assert first["phase_timestamps"]["unresolved"] == "2026-08-03T07:01:00Z"
+    assert second["phase_timestamps"]["unresolved"] == "2026-08-03T07:02:00Z"
+    assert same["phase_timestamps"]["unresolved"] == "2026-08-03T07:02:00Z"
+
+
+def test_verified_incident_cannot_transition_back_to_unresolved(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CAPAFY_OUTCOME_STATE_DIR", str(tmp_path))
+    incident = incident_record("verified")
+    path = tmp_path / "capafy-incidents" / f"{incident['incident_id']}.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(incident), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="backwards"):
+        capafy_outcome.transition_incident(
+            {"incident_id": incident["incident_id"], "phase": "unresolved"}
+        )
 
 
 def test_builder_success_without_listing_url_is_rejected() -> None:
