@@ -54,6 +54,41 @@ class CandidateRouteTests(unittest.TestCase):
                 {"submitted", "rejected", "submit_unknown"},
             )
 
+    def test_terminal_history_is_removed_before_shortlisting(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(database)
+            terminal = ledger.add_application(
+                "Old AI", "AI Engineer", "https://jobs.example/old"
+            )
+            ledger._append_event(terminal, "discovered", "submitted")
+            ledger.connection.execute(
+                "UPDATE applications SET current_state='submitted' WHERE id=?",
+                (terminal,),
+            )
+            ledger.connection.commit()
+            ledger.close()
+            payload = {"candidates": [
+                {
+                    "company": "Old AI", "title": "AI Engineer",
+                    "official_url": "https://jobs.example/old",
+                    "gate_status": "pass", "ranking_ready": True,
+                },
+                {
+                    "company": "Fresh AI", "title": "AI Deployment Engineer",
+                    "official_url": "https://jobs.example/fresh",
+                    "gate_status": "pass", "ranking_ready": True,
+                },
+            ]}
+
+            filtered = filter_terminal_candidates(database, payload, limit=1)
+
+            self.assertEqual(
+                [row["company"] for row in filtered["candidates"]], ["Fresh AI"]
+            )
+            self.assertEqual(filtered["terminal_filter"]["included_count"], 1)
+            self.assertEqual(filtered["terminal_filter"]["selected_count"], 1)
+
     def test_manual_owned_candidate_is_audited_and_next_candidate_materializes(self):
         with tempfile.TemporaryDirectory() as directory:
             root, database = Path(directory), Path(directory) / "ledger.sqlite3"

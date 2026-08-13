@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .knockout import shortlist_candidates
 from .ledger import FenceError, Ledger
 from .playwright_ats import ranked_pre_submit_candidates
 from .state import canonical_url
@@ -33,6 +34,7 @@ def filter_terminal_candidates(
     payload: dict[str, Any],
     *,
     preserve_cross_owner_audit: bool = False,
+    limit: int | None = None,
 ) -> dict[str, Any]:
     candidates = payload.get("candidates")
     if not isinstance(candidates, list):
@@ -78,13 +80,17 @@ def filter_terminal_candidates(
             included.append(candidate)
     finally:
         ledger.close()
+    filtered_count = len(included)
+    if limit is not None:
+        included = shortlist_candidates(included, limit=limit)
     return {
         **payload,
         "candidates": included,
         "terminal_filter": {
             "observed_count": len(candidates),
             "excluded_count": len(reasons),
-            "included_count": len(included),
+            "included_count": filtered_count,
+            "selected_count": len(included),
             "reasons": reasons,
         },
     }
@@ -151,9 +157,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--ledger", required=True, type=Path)
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--limit", type=int)
     args = parser.parse_args(argv)
     payload = json.loads(args.input.read_text(encoding="utf-8"))
-    filtered = filter_terminal_candidates(args.ledger, payload)
+    filtered = filter_terminal_candidates(args.ledger, payload, limit=args.limit)
     write_summary(args.output, filtered)
     print(json.dumps(filtered["terminal_filter"], sort_keys=True))
     return 0

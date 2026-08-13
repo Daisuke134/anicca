@@ -259,7 +259,8 @@ JOB_SEARCH_PREFILTER_QUEUE="$EVIDENCE/prefilter-queue.json"
   >"$EVIDENCE/prefilter-runner.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.candidate_routes filter \
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --input "$JOB_SEARCH_PREFILTER_UNFILTERED" \
+  --input "$JOB_SEARCH_PREFILTER_QUEUE" \
+  --limit 12 \
   --output "$JOB_SEARCH_PREFILTER_RESULT" \
   >"$EVIDENCE/terminal-filter.json"
 chmod 600 "$EVIDENCE/prefilter-runner.json"
