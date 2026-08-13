@@ -943,6 +943,24 @@ hidden 0、draft 0、IDは`1338228`〜`1338233`である。全6件は同一conte
 `1338228`、全planは`¥10k/3日・¥20k/5日・¥30k/7日`である。publish/archive/deleteは0、application、listing、
 ledgerのhashは不変である。Storefront read-only inventoryは完了した。
 
+6 public URLを`crwl crawl`と既存Chromeの実DOM/screenshotで一件ずつ再検証した。全URLはHTTP 200で、
+取得Markdownは各25,635文字、1440px viewportの可視本文は各3,984文字、ページ高さは各4,233pxである。
+商品titleは各33文字、業務内容は各281文字、料金表の可視textは各312文字、注文時のお願いは各81文字であり、
+6件すべて完全一致する。HTML byte差とcrawl hash差はown URLと「こちらもあわせて承ります」の並びによるもので、
+商品差ではない。公開pageはmain imageが未設定のplaceholderで、販売実績は満足0 / 残念0と表示する。
+
+public canonical/OG truthは次である。`1338228`だけがself-canonicalで、`1338229`〜`1338233`のcanonical URLは
+すべて`https://www.lancers.jp/menu/detail/1338228`を指す。OG URLは各自URLを指すが、現状の6 duplicateを
+独立したICP/query入口として数えてはならない。公式`/myplan`は受付中6、受付休止中0、非表示0、下書き0、
+「受付中と受付休止中を含めて最大20件掲載できる」と表示するため、6件はprovider上限ではない。各6 cardの
+`検索結果の表示人数`、`パッケージの閲覧人数`、`お気に入り`、`相談数`、`注文数`はすべて0である。
+Storefront売上0の直接funnelは、`検索表示0 → 閲覧0 → 相談0 → 注文0`である。
+
+各planの公開DOMにはスポットに加え3ヶ月継続/6ヶ月継続があり、後者はprovider-native
+`/monthly_work_contracts/client/keiodaisuke/add?project_plan_menu_id=<plan_id>&month=3|6`へ接続する。
+したがって独自のrecurring checkoutを作らず、既存packageのtitle、main image、業務内容、price/scopeを直し、
+このnative monthly contract boundaryを公式readbackするのが最短である。
+
 inventory後のprimary実測ではinventory reporter processは残存せず、application
 `e26ac5c56c6a48b34eba6098e15d45c8aa81df069db56596a5bc4cf1a274f0e2`、ledger
 `7a58d8fb6e66a9b83e288c348cb638bf94ab483c5b6187c22458c2f32ef173ca`、listing
@@ -1054,7 +1072,7 @@ WorkingDirectoryを全てexact release `295749ad…`へ収束した。配備前�
 `e26ac5c5…`、ledger `7a58d8fb…`、listing `db22b6ba…` hashは一致する。その後、既存application launchdを
 一回だけkickした実money tickはquery `LinkedIn`、observed 2、eligible 0、submitted false、
 `reason=no_eligible_project`、exit 0、stderr 0で終了した。pending 0、fingerprints 19、ApplicationReceipt 14は不変、
-planner evidence rootは削除済み、Python orphanは0である。G3B.3は完了し、次のactive sliceはStorefront offer alignmentである。
+planner evidence rootは削除済み、Python orphanは0である。G3B.3は完了し、次のactive sliceはStorefront canonical offer alignmentである。
 
 ### 9.7 G4A canonical Sales / Contract source
 
@@ -1225,7 +1243,7 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 |---|---|---|---:|
 | 完了 | Storefront read-only inventory | exact releaseから公式6 listing、canonical `1338228`、単一content groupを確定。mutation 0、state/ledger不変 | 完了 |
 | 完了 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じた | 完了 |
-| 1 | Storefront offer alignment | 6件を公開のまま、同一copyを異なるICP/query入口へ分化し、各listingの料金表を月額¥98k–¥398k offerへ揃える。公式FAQ 909の既存編集経路だけを使い、非公開・削除・再publishはしない | 1–2日 |
+| 1 | Storefront canonical offer alignment | まずself-canonical `1338228`一件だけを、画像placeholderなし、specific ICP/title、月額SNS deliverable、¥98k–¥398kへ揃え、native 3/6ヶ月contract routeを維持する。公開6件の削除・再publishや一括編集はせず、canonical一件の検索表示→閲覧→相談を先に実測する | 1日 |
 | 2 | G4B ContractReceipt source | 既存work-syncでcompleteなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 1–2日 |
 | 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
 | 4 | G4C Sales / Contract actions | 既存work-syncでbuyer本文をtarget / clarification / out-of-scopeへ分類し、保有証拠だけで一問clarification、honest decline、月額offerを送る。送信後は公式message/contract readbackを必須にする | 1–3日 |
