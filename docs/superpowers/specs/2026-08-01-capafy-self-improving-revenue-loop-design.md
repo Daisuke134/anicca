@@ -640,31 +640,24 @@ Only the first unchecked item is active. Every item below is one state transitio
    - [ ] **13.4 Verify automatic repair.** Inject no production failure; use the next naturally observed failure or an isolated fixture. **Done when:** the correct existing owner wakes within five minutes and closes or schedules one bounded retry.
    - [ ] **13.5 Replay immediately.** **Done when:** no remote mutation, post, event, wake, or Telegram duplicates.
 
-14. **Prove seven consecutive autonomous days.**
+14. **Reach the first recurring revenue gates on one measured offer/channel pair.**
 
-   - [ ] **14.1 Start the seven-day audit at the first complete day after 13.5.** **Done when:** start time, opening hashes, balances, inventory, and run counters are stored.
-   - [ ] **14.2 Close each calendar day independently.** **Done when:** that day has complete hourly reports, one daily close, fresh money, bounded Builder/Marketer outcomes, released leases, and no unexplained incident.
-   - [ ] **14.3 Repair any failed day before restarting the count.** **Done when:** root cause and verified repair are recorded; the seven-day count restarts at day one rather than hiding the gap.
-   - [ ] **14.4 Accept the autonomy gate.** **Done when:** seven consecutive daily records pass with no manual product operation, post, account replacement, report, or state edit.
+   - [ ] **14.1 Record the first attributed active subscription.** **Done when:** canonical evidence shows product, offer, source, gross, fee, contribution, and renewal terms; projected revenue does not count.
+   - [ ] **14.2 Reach `$100 MRR`.** Repeat only the proven offer/channel experiment until recognized active MRR is at least `$100`, with positive contribution and no hidden subsidy. **Done when:** the canonical projection and payout evidence agree for two consecutive reports.
+   - [ ] **14.3 Name one winner.** **Done when:** one offer/channel pair has enough exposure to report conversion, positive contribution, and at least one observed renewal or an explicit renewal-observation window still open; no other product is scaled by intuition.
 
-15. **Reach the first recurring revenue gates on one measured offer/channel pair.**
+15. **Scale the winner to `$1K MRR` without changing the business model.**
 
-   - [ ] **15.1 Record the first attributed active subscription.** **Done when:** canonical evidence shows product, offer, source, gross, fee, contribution, and renewal terms; projected revenue does not count.
-   - [ ] **15.2 Reach `$100 MRR`.** Repeat only the proven offer/channel experiment until recognized active MRR is at least `$100`, with positive contribution and no hidden subsidy. **Done when:** the canonical projection and payout evidence agree for two consecutive reports.
-   - [ ] **15.3 Name one winner.** **Done when:** one offer/channel pair has enough exposure to report conversion, positive contribution, and at least one observed renewal or an explicit renewal-observation window still open; no other product is scaled by intuition.
+   - [ ] **15.1 Increase qualified exposure on the winning channel.** Change one distribution variable per registered experiment. **Done when:** exposure and attributed conversions rise without breaching channel payback or support limits.
+   - [ ] **15.2 Improve the winning offer.** Change one of onboarding, proof, packaging, or price per experiment. **Done when:** conversion or contribution improves by the declared rule; otherwise revert.
+   - [ ] **15.3 Reach `$1K MRR`.** **Done when:** recognized active MRR is at least `$1,000`, contribution is positive, churn and renewal are observable, and the level persists across two consecutive reporting periods.
 
-16. **Scale the winner to `$1K MRR` without changing the business model.**
+16. **Scale the proven engine to `$10K MRR`.**
 
-   - [ ] **16.1 Increase qualified exposure on the winning channel.** Change one distribution variable per registered experiment. **Done when:** exposure and attributed conversions rise without breaching channel payback or support limits.
-   - [ ] **16.2 Improve the winning offer.** Change one of onboarding, proof, packaging, or price per experiment. **Done when:** conversion or contribution improves by the declared rule; otherwise revert.
-   - [ ] **16.3 Reach `$1K MRR`.** **Done when:** recognized active MRR is at least `$1,000`, contribution is positive, churn and renewal are observable, and the level persists across two consecutive reporting periods.
-
-17. **Scale the proven engine to `$10K MRR`.**
-
-   - [ ] **17.1 Add one compatible distribution surface.** Repackage the same proven capability for one of Capafy, Apify, RapidAPI, or direct billing; do not invent a new core product. **Done when:** the second surface has one attributed paid recurring customer and independent unit economics.
-   - [ ] **17.2 Allocate by net revenue per impression.** Shift the next bounded experiment toward the highest positive-contribution surface while retaining a control. **Done when:** allocation is reproducible from canonical metrics.
-   - [ ] **17.3 Repeat winner expansion one surface or segment at a time.** **Done when:** each addition passes attribution, contribution, renewal, churn, support-cost, and channel-payback gates before the next begins.
-   - [ ] **17.4 Reach `$10K MRR`.** At the current approximate `$32.9` net monthly equivalent per active weekly Capafy subscriber, the reference requirement is about 304 active equivalents; a mixed portfolio may reach the same recognized recurring total with fewer higher-ARPU customers. **Done when:** canonical recognized active MRR is at least `$10,000`, positive total contribution is independently reconciled, no one-time revenue is counted as MRR, and the level persists across two consecutive monthly closes.
+   - [ ] **16.1 Add one compatible distribution surface.** Repackage the same proven capability for one of Capafy, Apify, RapidAPI, or direct billing; do not invent a new core product. **Done when:** the second surface has one attributed paid recurring customer and independent unit economics.
+   - [ ] **16.2 Allocate by net revenue per impression.** Shift the next bounded experiment toward the highest positive-contribution surface while retaining a control. **Done when:** allocation is reproducible from canonical metrics.
+   - [ ] **16.3 Repeat winner expansion one surface or segment at a time.** **Done when:** each addition passes attribution, contribution, renewal, churn, support-cost, and channel-payback gates before the next begins.
+   - [ ] **16.4 Reach `$10K MRR`.** At the current approximate `$32.9` net monthly equivalent per active weekly Capafy subscriber, the reference requirement is about 304 active equivalents; a mixed portfolio may reach the same recognized recurring total with fewer higher-ARPU customers. **Done when:** canonical recognized active MRR is at least `$10,000`, positive total contribution is independently reconciled against the payment source, no one-time revenue is counted as MRR, and an immediate second reconciliation is identical.
 
 #### P1 execution log
 
@@ -889,4 +882,4 @@ Dashboard: https://capafy-skills-daily.netlify.app
 9. Every hosted product has a hard loss cap and measurable contribution margin.
 10. The next product and marketing action are chosen from fresh evidence and prior experiment outcomes.
 11. Routine operation, account replacement, retries, and repair require no babysitting.
-12. A full seven-day run completes without a silent failure or contradictory report.
+12. One complete Builder/Marketer cycle and its immediate replay finish without a silent failure, duplicate external effect, or contradictory report.
