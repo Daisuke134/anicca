@@ -21,6 +21,7 @@ PLANNER_SCHEMA = SKILLS_ROOT / "gig-work" / "schemas" / "application_decisions.s
 SCHEMA_PATH = PLANNER_SCHEMA
 PLATFORM = "lancers"
 MAX_OPPORTUNITIES = 20
+DEFAULT_DISCOVERY_QUERY = "SNS運用"
 PLANNER_TASK_CLASS = "application-intent-planner"
 PLANNER_TIMEOUT_SECONDS = 180
 DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json"
@@ -383,7 +384,7 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
             _reset(root); evidence = root / f"run-{uuid.uuid4().hex}"; evidence.mkdir(mode=0o700, exist_ok=False); os.chmod(evidence, 0o700)
         except Exception: evidence = None
         if evidence is not None:
-            try: observed = (discoverer or discovery or status.run_discovery)(query=query, limit=MAX_OPPORTUNITIES, timeout=timeout)
+            try: observed = (discoverer or discovery or status.run_discovery)(query=DEFAULT_DISCOVERY_QUERY if query is None else query, limit=MAX_OPPORTUNITIES, timeout=timeout)
             except Exception: observed = None
             if observed is None: result = ApplicationLoopResult(False, error="discovery_failed")
             elif not isinstance(observed, Mapping): result = ApplicationLoopResult(False, error="discovery_failed")
