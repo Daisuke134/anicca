@@ -1552,9 +1552,38 @@ performs the real E2E, and records the milestone.
   `2ac269b0-350a-49a4-971e-9a0556aed50d`, and the exact same six page IDs. The full
   Job Hunter suite passes `578/578`; pushed source commit: `c887ec107`. This is not an
   application receipt and is not counted as an application. The current active release
-  remains `9c18e355e6d52bdfb390d0a28946fee05b3f23a9`; the next slice builds, activates,
-  and triggers this pushed source. Until an authoritative ATS or Gmail receipt exists,
-  the system continues reporting zero confirmed applications.
+  is now `01590d5524e684bc8659d487f9d31ba0b9bb59bf`; release archive SHA-256 is
+  `05424531b202bad7cea2793677e88452bdc2d862ecc2085cd524e3b18c328423`, with `267`
+  entries and no private state. Archive-contained focused verification passes
+  `133/133`; the prior active `9c18e355e6d52bdfb390d0a28946fee05b3f23a9` is the rollback release.
+
+  Real daily wake `daily-20260814-022714` ran from the new release and exited `0`.
+  It excluded the same `11` terminal rows, retained one Salesforce `Technical
+  Architect - MuleSoft` Tokyo/Remote role, opened only the wake-owned page, and
+  navigated to the official Workday manual-application flow. No ranking-ready dossier
+  was produced because that current role scored `20`; the application agent continued
+  adaptively but stopped at the mandatory Workday account-creation step. The private
+  credential CLI created/reused the required credential, but no production tool could
+  inject it into the owned page without exposing the secret to the model. Therefore the
+  wake truthfully returned zero `submitted` and zero `submit_unknown`, and Telegram
+  delivered the natural outcome as message ID `16513`. Development milestone message
+  ID is `16503`.
+
+  Ledger truth was identical before and after the wake: `57` applications, `257`
+  events, `30` submit intents, `6` submitted, `31` submit-unknown, and `0`
+  submit-claimed; SQLite integrity is `ok`. All three provider privacy scans are clean.
+  Cleanup closed exactly one Job Hunter page and restored the exact prior six page IDs;
+  shared-browser PID `22279` and UUID
+  `2ac269b0-350a-49a4-971e-9a0556aed50d` are unchanged. Post-activation healthcheck
+  passes daily, inbox, and learning with last exit `0`, fresh evidence, Ledger and
+  interview-prep integrity `ok`.
+
+  **Immediate next slice:** extend the existing Workday credential tool so it attaches
+  to the already owned page and fills/verifies account email/password controls inside
+  the tool process. It must return only a redacted receipt, never a password or private
+  value, and must not create, close, or adopt any page. Then rerun the real daily lane.
+  Until an authoritative ATS or Gmail receipt exists, the system continues reporting
+  zero confirmed applications.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
