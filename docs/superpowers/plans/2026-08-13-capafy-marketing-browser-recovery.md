@@ -40,6 +40,7 @@ The implementer must not edit this plan, the authoritative spec, launchd plists,
    - when an invalid handle and valid future retry are present, retire that exact registry row, request replacement in lifecycle state, transition the incident with that retry, and kickstart only `ai.anicca.capafy-ig-account-manager` once;
    - reject or replace malformed/past/naive retry input with a bounded future RFC3339 value before transition;
    - do not use `-k` when waking an already-running manager; do not kill it, double-wake it, send success Telegram, or swallow an event-store conflict;
+   - treat the incident's persisted `terminal_message_key` as the direct-failure delivery receipt: an already-notified reused incident sends no second failure Telegram; a brand-new incident records a deterministic key and numeric message ID after the first successful send so sender retry cannot duplicate it;
    - keep existing challenge, account-created, dry, and published behavior compatible.
 4. Focused regressions, written after implementation (no TDD/RED cycle):
    - a missing tab is recreated/reused and exact current owner returns one target;
@@ -47,7 +48,7 @@ The implementer must not edit this plan, the authoritative spec, launchd plists,
    - a stale registry port is allowed only in current-session mode; new-account verification still requires the exact port and matching credential;
    - controller exact-owner success reaches the existing selector/creative/poster once;
    - controller owner mismatch runs no selector/creative/poster, releases its lease once, retires only the invalid row, sets `replacement_requested`, gives the reused incident a future retry, and wakes only the account manager once without `-k`;
-   - immediate replay does not create another incident, duplicate canonical incident event, second account retirement, or second simultaneous manager process.
+   - immediate replay does not create another incident, duplicate canonical incident event, second account retirement, second failure Telegram, or second simultaneous manager process.
 5. Synchronize only the three directly affected stale assertions in `test_capafy_marketing_outcome.sh`. Its pre-change baseline is `34 passed / 3 failed` because a verified publication now correctly emits three canonical events while the old assertions expect two. Update those three expected counts to three; do not change production event emission to satisfy the stale expectations.
 
 ## Direct verification — no TDD/RED cycle
