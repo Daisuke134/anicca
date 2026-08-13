@@ -80,7 +80,7 @@ new_case(){
   export CAPAFY_BROWSER_GUARD="$T/bin/guard" GUARD_CALLS="$CASE/guard.calls"
   export RUNNER_CALLS="$CASE/runner.calls" TELEGRAM_BODY="$CASE/telegram.body" KICKSTART_CALLS="$CASE/kick.calls" BROWSER_CALLS="$CASE/browser.calls"
   export CAPAFY_ACCOUNT_MANAGER_LOCK_DIR="$CASE/manager.lock" CAPAFY_IG_LIFECYCLE="$LIFECYCLE"
-  unset FAKE_PROVISION_MODE FAKE_VERIFY_MODE FAKE_SENDER_MODE
+  unset FAKE_PROVISION_MODE FAKE_VERIFY_MODE FAKE_SENDER_MODE CAPAFY_MARKETING_HANDOFF HANDOFF_CALLS
 }
 
 seed_recovery_incident(){
@@ -168,9 +168,20 @@ eq "sender retry wakes publisher once" "$(grep -Fc 'ai.anicca.capafy-ig-marketin
 
 new_case exact-recovery
 seed_recovery_incident
+cat >"$CASE/handoff-counter" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$HANDOFF_CALLS"
+exit 99
+SH
+chmod +x "$CASE/handoff-counter"
+export CAPAFY_MARKETING_HANDOFF="$CASE/handoff-counter" HANDOFF_CALLS="$CASE/handoff.calls"
+: >"$HANDOFF_CALLS"
 before_record="$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json' -exec cat {} \;)"
+before_accounts="$(cat "$CAPAFY_IG_ACCOUNTS_FILE")"
+before_events="$(cat "$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" 2>/dev/null || true)"
 bash "$MANAGER" >/dev/null 2>&1; exact_rc=$?
-[ "$exact_rc" -ne 0 ] && ok "exact recovery keeps existing unresolved result" || bad "exact recovery unexpectedly reports success"
+eq "exact recovery exits one without handoff" "$exact_rc" 1
+eq "exact recovery calls no handoff" "$(wc -l <"$HANDOFF_CALLS" | tr -d ' ')" 0
 eq "exact recovery does not invoke browser" "$(wc -l <"$BROWSER_CALLS" | tr -d ' ')" 0
 eq "exact recovery does not invoke agent" "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" 0
 eq "exact recovery adds no manager wake" "$(wc -l <"$KICKSTART_CALLS" | tr -d ' ')" 0
@@ -181,6 +192,37 @@ eq "exact recovery preserves delivery reservation" "$(python3 -c 'import json,sy
 eq "exact recovery preserves Telegram id" "$(python3 -c 'import json,sys;print(json.load(sys.stdin)["telegram_message_id"])' <<<"$after_record")" 6001
 has "exact recovery writes stable result" "$CAPAFY_MARKETING_RESULT" '"session_recovery": true'
 has "exact recovery writes exact handle" "$CAPAFY_MARKETING_RESULT" 'capafy.recovery'
+eq "exact recovery preserves account row" "$(cat "$CAPAFY_IG_ACCOUNTS_FILE")" "$before_accounts"
+after_lifecycle="$(python3 - "$CAPAFY_IG_LIFECYCLE_STATE" <<'PY'
+import json,sys
+d=json.load(open(sys.argv[1])); d.pop("updated_at",None); print(json.dumps(d,sort_keys=True))
+PY
+)"
+first_lifecycle="$after_lifecycle"
+eq "exact recovery preserves event ledger" "$(cat "$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" 2>/dev/null || true)" "$before_events"
+result_shape(){
+  python3 - "$1" <<'PY'
+import json,sys
+d=json.load(open(sys.argv[1])); d.pop("next_retry_at",None); print(json.dumps(d,sort_keys=True))
+PY
+}
+first_result_shape="$(result_shape "$CAPAFY_MARKETING_RESULT")"
+bash "$MANAGER" >/dev/null 2>&1; exact_replay_rc=$?
+eq "exact recovery replay exits one" "$exact_replay_rc" 1
+eq "exact recovery replay calls no handoff" "$(wc -l <"$HANDOFF_CALLS" | tr -d ' ')" 0
+eq "exact recovery replay preserves account row" "$(cat "$CAPAFY_IG_ACCOUNTS_FILE")" "$before_accounts"
+eq "exact recovery replay preserves lifecycle state" "$(python3 - "$CAPAFY_IG_LIFECYCLE_STATE" <<'PY'
+import json,sys
+d=json.load(open(sys.argv[1])); d.pop("updated_at",None); print(json.dumps(d,sort_keys=True))
+PY
+)" "$first_lifecycle"
+eq "exact recovery replay preserves incident" "$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json' -exec cat {} \;)" "$before_record"
+eq "exact recovery replay preserves event ledger" "$(cat "$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" 2>/dev/null || true)" "$before_events"
+eq "exact recovery replay preserves result" "$(result_shape "$CAPAFY_MARKETING_RESULT")" "$first_result_shape"
+eq "exact recovery replay sends no Telegram" "$(wc -l <"$TELEGRAM_BODY" | tr -d ' ')" 0
+eq "exact recovery replay invokes no browser" "$(wc -l <"$BROWSER_CALLS" | tr -d ' ')" 0
+eq "exact recovery replay invokes no agent" "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" 0
+eq "exact recovery replay adds no manager wake" "$(wc -l <"$KICKSTART_CALLS" | tr -d ' ')" 0
 
 new_case ambiguous-recovery
 seed_recovery_incident

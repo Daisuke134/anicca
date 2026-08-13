@@ -84,11 +84,9 @@ print(matches[0]["handle"])
 PY
 }
 session_recovery_shortcut(){
-  local handle="$1" rc
+  local handle="$1"
   write_session_recovery_result "$handle"
-  CAPAFY_MARKETING_RESULT="$RESULT" CAPAFY_IG_LIFECYCLE_STATE="$STATE" bash "$HANDOFF" 1 account-manager
-  rc=$?
-  exit "$rc"
+  exit 1
 }
 fail(){
   local reason="$1" rc
@@ -165,11 +163,6 @@ rows=json.load(open(sys.argv[1])); before=int(sys.argv[2])
 print(rows[-1].get("handle", "") if len(rows)==before+1 and isinstance(rows[-1],dict) else "")
 PY
 )" || candidate=""
-after_count="$(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))))' "$ACCOUNTS" 2>/dev/null || true)"
-if [ "$after_count" = "$before_count" ]; then
-  recovery_handle="$(resolve_session_recovery_handle 2>/dev/null || true)"
-  [ -z "$recovery_handle" ] || [ "$prior_result_kind" = "challenge" ] || session_recovery_shortcut "$recovery_handle"
-fi
 readback="$(python3 - "$ACCOUNTS" "$before_count" "$port" "$IDENTITY" <<'PY'
 import json,sys
 rows=json.load(open(sys.argv[1])); before=int(sys.argv[2]); port=int(sys.argv[3]); identity=sys.argv[4]
