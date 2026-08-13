@@ -566,6 +566,67 @@ multi-account、別 marketplace は開始しない。
 ことを意味しない。sales、fulfillment、finance はそれぞれ独立した後続 slice として一つずつ
 実装し、G1 は acquisition の receipt 境界だけを閉じる。
 
+### 10.1 現在地、残TODO、時間境界
+
+現在、G0 の設計、canonical acquisition runtime、pending 全件 reconcile、semantic ICP/margin gate、
+一 tick 一応募上限、exact-SHA installer、planner isolation、許可された adversarial review 1/1 は完了する。
+`5585496` と `5586112` は readback-only で reconcile され、blind resend されず、state/ledger は不変である。
+Codex strict schema が要求する `qualification.cost_source_version.type=string` も正本 schema に追加され、
+focused test、Lancers 11 tests、agent-runner 15 tests は通る。application launchd は disabled / unloaded を保つ。
+
+G1 の残TODOは次の直列順序だけである。途中で失敗した場合は次へ進まず、同じ Luna implementer に
+最小 RED を戻す。fresh adversarial review は既に 1/1 を消化しているため追加しない。
+
+| 順序 | 残TODO | 完了条件 | 作業時間の目安 |
+|---|---|---|---:|
+| 1 | provider-only planner 検証 | strict schema が 400 にならず、元 schema に対して decision が valid | 10–20分 |
+| 2 | canonical main へ merge/push | clean main、全関連test PASS、exact commit SHA確定 | 10–20分 |
+| 3 | exact SHAをnormal modeでinstall | manifest、plist、release hashが同じSHAを指す | 5–10分 |
+| 4 | official launchd ownerを一回だけenable/kick | 二重ownerなし、外部submitは最大一件 | 5–15分 |
+| 5 | acquisition E2Eを閉じる | qualified案件なら公式proposal IDと一件の`ApplicationReceipt`。該当なしならtruthful `no_eligible_project` | 10–25分＋案件待ち |
+| 6 | G1を閉じる | state/ledger/receipt、deployed SHA、reportを検証し、一時worktreeを削除 | 10–20分 |
+
+技術作業だけなら G1 は **約30–90分**を base とする。公開中のqualified案件がない場合、追加実装で
+gateを弱めず、30分 scheduled tickで新規案件を待つため、暦時間は案件供給に依存する。
+
+G1 後は G2→G3→G4→G5→G6→G7 を一つずつ閉じる。4 lane の実装・実E2Eは集中作業で
+best 5日、base 10日、worst 20日以上を計画値とする。これは入金時間ではない。buyer acceptance、
+delivery、provider payoutを含む最初の入金は best 1–3週、base 3–8週、worst 8週以上、
+net MRR USD 20,000 は best 2–4か月、base 4–9か月、worst 9か月以上または未達を仮説レンジとする。
+売上の事実は G6/G7 の公式 receipt と銀行照合だけで確定し、この時間レンジを収益証拠に使わない。
+
+```mermaid
+flowchart LR
+  Q[(shared durable ledger / queue)]
+
+  subgraph L[独立scheduled lane]
+    A[Acquisition\n検索→審査→応募→ApplicationReceipt]
+    S[Sales / Contract\n返信→提案→承認→ContractReceipt]
+    F[Fulfillment\n制作→QA→納品→DeliveryReceipt]
+    M[Finance\n支払→照合→PaymentReceipt→net MRR]
+  end
+
+  Q --> A --> Q
+  Q --> S --> Q
+  Q --> F --> Q
+  Q --> M --> Q
+
+  A -. entity handoff .-> S
+  S -. entity handoff .-> F
+  F -. entity handoff .-> M
+
+  B[one account/browser mutation lock] --- A
+  B --- S
+  B --- F
+  B --- M
+
+  C[control plane\nhealth / self-heal / natural-language report] -. observe .-> Q
+```
+
+entity の business state は `discovered → applied → contract_active → delivered → paid` の直線である。
+実行は上図の4 laneが独立tickで同じqueueをscanするため並列であり、projectごとの常駐loopも、
+全工程を待ち続けるgiant passも作らない。
+
 ## 11. First implementation slice の厳密な境界
 
 Slice 1 は、application service を安全に戻す canonical source/deployment gate と、acquisition の
