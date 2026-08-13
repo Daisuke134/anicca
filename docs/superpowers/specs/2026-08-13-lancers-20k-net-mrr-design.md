@@ -857,6 +857,68 @@ storefront/work-syncはrepo外mutable path `~/.local/lib/anicca/lancers/skills/.
 canonical exact releaseへ入れる。storefront duplicateを新規publishで直さず、read-only inventory後に一意listingを
 選ぶ。応募とstorefrontの両方を同じcontract sourceへ接続する。
 
+Storefrontの追加実測では、`listing.json`は全在庫ではなく最後に検証できたcanonical receipt一件だけを保持する。
+管理画面readerは四状態の件数しか保存せず、6件のID inventoryを持たない。既存published receiptがある通常経路は
+ID `1338233`の管理画面行と公開pageを厳密照合し、不一致ならpublish formへ進まず
+`listing_readback_mismatch`で終了する。したがって現在のstateが残る限りこのloopは新規duplicateを作らないが、
+余分5件の作成主体と各listingの同一性は未確定である。直近97回は成功79、browser connect失敗2、account失敗1、
+readback mismatch 15で、末尾は連続mismatch、launchd last exitは1である。G4A後のStorefront sliceは、providerを
+変更せず6件のID、URL、title、status、public hashをinventoryし、canonical候補が一意な場合だけ後続のadopt/archive
+判断へ進む。再publish、delete、archiveはinventory sliceに含めない。
+
+### 9.7 G4A canonical Sales / Contract source
+
+次の一件は、応募数やlisting数を増やすことではなく、二つの入口から来た買い手の反応を同じ公式sourceで
+5分ごとに観測できるようにすることである。現行`work-sync`は`/mypage/proposals/all/working`だけを読み、
+working cardが0件なら即終了する。14件の`ApplicationReceipt`、メッセージ、storefront inquiry/orderを読まず、
+working cardが存在した場合も公式受注状態を確認せず`order_awarded`を作るため、Sales / Contract sourceとしては
+使用できない。
+
+Lancersの公式message UIが使用するread-only sourceは次である。
+
+1. `GET /v1/message_api/boards/?limit=20`
+2. `GET /v1/message_api/boards/{board_id}`
+3. `GET /v1/message_api/boards/{board_id}/messages`
+
+board detailの`with.proposal`は応募surface、`with.job`と`with.serviceItemContract`は案件・storefront契約surfaceへの
+公式correlation boundaryである。raw API fieldは`is_required_reply`、`unread_count`のsnake_caseであり、既存の
+camelCase前提observerは再利用しない。`with={}`、欠損ID、未知statusはactive contractへ昇格せず`unknown`として
+fail closedする。
+
+実測payloadではboardsとmessagesはどちらもJSON配列、detailはobjectである。boardsは`id`、`modified`、
+`is_required_reply`、`unread_count`を持ち、detailは`id`、`with`を持つ。messagesは`id`、`board_id`、`modified`、
+`is_required_reply`、`send_user`を持つ。API envelopeに`next`、`total`、`has_next`はない。公式UIはboardsを
+`limit=20&modified=<last modified>`、messagesの過去方向を`limit=20&message_id=<oldest id>&direction=prev`で
+追加取得する。G4Aはこのcursorをboundedにたどり、empty pageでcomplete、cursor非進行、duplicate conflict、
+上限到達をincomplete failureとする。最初の20件だけを全件としてzero/healthy表示してはならない。
+
+G4Aは既存`ai.anicca.lancers-revenue-work-sync`という5分ownerを置換し、新しいschedulerやDBを追加しない。
+canonical `work_sync.py`はaccount/browser lockを再利用し、一回のbounded tickでboards、detail、messagesをGETして、
+次のsanitized snapshotだけを出力する。
+
+- source completenessと観測board数
+- official `is_required_reply` / unread数
+- `with.proposal.id`でApplicationReceiptへ一意に対応したboard数
+- `with.serviceItemContract`を持つstorefront/contract候補数
+- board/messageのopaque IDとcontent hash。本文、相手の氏名、secretはstdout、state、Telegramへ出さない
+
+このsliceはPOST、返信、offer、発注URL click、ContractReceipt、capacity計算、ledger appendを行わない。
+現行working-card observerが作る根拠の弱い`order_awarded`も発行しない。message本文の意味分類は後続G4でmodelに
+担当させ、G4Aのdeterministic codeは公式fieldの検証、ID相関、件数、hashだけを扱う。
+
+Ponytail判定では、既存274行のmutable `work_sync.py`をそのままcanonical化して誤った`order_awarded`境界を残す案、
+新しいsales serviceを追加して二重schedulerにする案、新しいschema/DBを先取りする案を棄却する。最小の有効解は、
+既存labelを同じ5分scheduleのcanonical read-only sourceへ置換し、exact-SHA installerへ含めることである。
+
+G4A acceptanceは次の全てである。
+
+1. source、launchd template、installer、最小regressionがcanonical repoにあり、exact release manifestに含まれる。
+2. raw snake_case payload、empty `with`、duplicate ID、provider failure、本文非露出をfail closedで検証する。
+3. live read-only tickが公式boards/detail/messagesを読み、exit 0でsanitized snapshotを一件出す。
+4. application state、listing state、append-only ledgerのpre/post hashが一致する。
+5. 既存mutable work-sync plistをexact release pathへ置換し、5分ownerは一つだけである。
+6. fresh Sol adversarial reviewは一回だけで、外部送信、誤ったcontract昇格、secret漏洩、二重schedulerを反証する。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
@@ -871,6 +933,7 @@ canonical exact releaseへ入れる。storefront duplicateを新規publishで直
 | G3A query coverage | **完了。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | exact release `a2081bc0…`、review 1/1 ship、実tick `LinkedIn / observed 2 / submitted false`、state/ledger/listing不変 |
 | G3B eligible ranking | **完了。** validated eligibleをprojected net JPY、provider stable orderで並べ、自然言語priorityをhardcodeしない | exact release `68f42e5b…`、review 1/1 ship、実tick `AI活用 / observed 1 / submitted false`、state不変 |
 | G3B.1 empty search normalization | **完了。** providerの正常な0件をfailureではなくno-op successとして扱う | exact release `086037263…`、実tick `B2Bマーケティング / observed 0 / ok true / submitted false`、state不変 |
+| G4A canonical Sales source | 応募返信とstorefront inquiry/orderの公式message sourceを、既存5分work-sync ownerからread-only観測する。外部送信・ledger appendはしない | boards/detail/messagesのofficial GET、snake_case検証、sanitized snapshot、exact release、state/ledger不変 |
 | G3C capacity quota | authoritative active contract sourceに基づくcapacity quota（<70%=2/10、70–<90%=1/5、>=90%=Premiumのみかつ100%以下） | active contract source、tick/day quota、100% cap、duplicate拒否 |
 | G4 contract | buyer reply を 5 分以内に classify し、一問の clarification、月額 offer、scope・money 確認を経て active contract を公式 readback する | provider の offer・approval・active 状態と契約 receipt |
 | G5 fulfillment | brand context を再利用し、固定 scope と revision cap 内で制作・QA・納品し、公式 readback 後だけ `DeliveryReceipt` を出す | deliverable hash、QA 結果、revision count、delivery readback |
@@ -924,11 +987,13 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | G3C/G4 contract-source boundary | 応募14 receiptとstorefront inquiry/orderからreply/active contractの公式readback sourceを確定し、capacityのauthoritative inputを作る | 0.5–1日設計、1–3日実装 |
-| 2 | Storefront integrity/canonicalization | 公式6 listingをread-only inventoryし、一意canonical listing以外を新規publishせず安全に整理する | 0.5–1日 |
-| 3 | G3C capacity quota | authoritative active contract sourceを接続し、tick/day quotaと100% capを適用 | 1–2日 |
-| 4 | G4 Sales / Contract actions | buyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
-| 5 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
+| 1 | G4A canonical Sales source | 既存5分work-sync ownerをcanonical exact releaseへ置換し、応募14 receiptとstorefront inquiry/orderに共通するofficial boards/detail/messagesをread-only観測する | 0.5–1日 |
+| 2 | Storefront read-only inventory | 公式6 listingのID/URL/title/status/public hashを保存し、canonical候補の一意性とmismatch原因を確定する。publish/archive/deleteは0 | 0.5–1日 |
+| 3 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
+| 4 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
+| 5 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
+| 6 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
+| 7 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、net MRRを計算する | 2–4日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
@@ -980,9 +1045,10 @@ schema不適合ではfail closedし、blind retryやgate緩和を行わない。
 | lane | activation | schedule / bound | ONにする条件 |
 |---|---|---|---|
 | Acquisition | **ON** | 30分tick。G3Aも最大1応募/tick、10 queryを5時間で一巡 | exact canonical normal release、receipt acceptance、G3A実wake完了 |
-| Sales / Contract | OFF | 実装時にreply SLAを満たすbounded tick | 最初の一意な`ApplicationReceipt`を得て、reply分類・offer・公式contract readbackをTDD実装後 |
-| Fulfillment | OFF | active contractだけをbounded claim | 最初の`ContractReceipt`を得て、固定scope・QA・revision cap・delivery readbackをTDD実装後 |
-| Finance | OFF | payment/payout eventをbounded claim | `DeliveryReceipt`を得て、PaymentReceipt・fee/cost・bank reconciliationをTDD実装後 |
+| Sales / Contract source | **G4Aでread-only ON** | 5分bounded tick。公式boards/detail/messagesをGET、外部送信0 | canonical exact release、sanitized snapshot、state/ledger不変、review 1/1 |
+| Sales / Contract actions | OFF | source snapshotから一件だけclaim | model分類・offer・公式contract readbackを直接実装し、最小regressionと実E2Eを通した後 |
+| Fulfillment | OFF | active contractだけをbounded claim | 最初の`ContractReceipt`を得て、固定scope・QA・revision cap・delivery readbackを直接実装し、最小regressionと実E2Eを通した後 |
+| Finance | OFF | payment/payout eventをbounded claim | `DeliveryReceipt`を得て、PaymentReceipt・fee/cost・bank reconciliationを直接実装し、最小regressionと実E2Eを通した後 |
 
 Acquisitionは保守boundで継続scanする。最初の公式proposal IDと`ApplicationReceipt`が得られた後も
 停止せず、G3のcapacity規則が実測で有効になるまで最大1応募/tickを維持する。将来boundを上げる場合も、
