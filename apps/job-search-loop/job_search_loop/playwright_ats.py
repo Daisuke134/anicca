@@ -15,6 +15,7 @@ from .ats import (
 )
 from .browser_pages import PageOwnership
 from .resume_routing import select_resume
+from .workday_credentials import WorkdayCredentialError, fill_account_creation
 
 
 CONTROL_SELECTOR = (
@@ -359,6 +360,11 @@ def run_pre_submit(
             page_session = context.new_cdp_session(page)
             target = page_session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
             ownership.register_created(target)
+            owned_page = {
+                "target_id": target,
+                "lease_id": str(owner_receipt.get("lease_id") or ""),
+                "fence": int(owner_receipt.get("fence") or 0),
+            }
             try:
                 def attempt(candidate: dict[str, Any]) -> dict[str, Any]:
                     url = str(candidate.get("official_url") or "")
@@ -369,9 +375,30 @@ def run_pre_submit(
                         wait_until="commit",
                         timeout=45_000,
                     )
-                    page.locator("input[type=file]").first.wait_for(
-                        state="attached", timeout=20_000
-                    )
+                    provider_blockers: list[str] = []
+                    if provider == "workday":
+                        try:
+                            credential_receipt = fill_account_creation(
+                                job_url=url,
+                                profile_path=profile_path,
+                                store_path=profile_path.parent / "workday-accounts.json",
+                                owner_receipt=owner_receipt,
+                                ownership_receipt=json.loads(
+                                    ownership.receipt_path.read_text(encoding="utf-8")
+                                ),
+                                owned_page=owned_page,
+                                playwright=playwright,
+                            )
+                            _private_write(
+                                evidence_dir / f"workday-account-{digest}.json",
+                                credential_receipt,
+                            )
+                        except WorkdayCredentialError:
+                            provider_blockers.append("workday_native_auth_unavailable")
+                    else:
+                        page.locator("input[type=file]").first.wait_for(
+                            state="attached", timeout=20_000
+                        )
                     snapshot = capture_snapshot(page, navigation_committed=True)
                     snapshot_path = evidence_dir / f"ats-snapshot-{digest}.json"
                     _private_write(snapshot_path, snapshot)
@@ -383,7 +410,8 @@ def run_pre_submit(
                     if not evaluation["claim_ready"]:
                         return {
                             "claim_ready": False,
-                            "blockers": list(
+                            "blockers": provider_blockers
+                            + list(
                                 evaluation.get("blockers")
                                 or ["application_surface_not_ready"]
                             ),
