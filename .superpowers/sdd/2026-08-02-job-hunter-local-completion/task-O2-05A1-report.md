@@ -1,4 +1,4 @@
-# O2-05A1 report — RED
+# O2-05A1 report — GREEN
 
 ## Scope
 
@@ -11,7 +11,7 @@ created through the old application-accepting projection. The test was run
 before the O2-05A1 production correction; pre-existing O2-05A outreach edits
 were preserved.
 
-## RED evidence
+## Initial RED characterization (partial implementation)
 
 Command:
 
@@ -29,11 +29,13 @@ Observed result: `Ran 1 test`, `FAILED`.
   generalized application IDs. The remaining hard-coded run-74 Guardian
   predicate rejects the otherwise evidence-bound corrections.
 
-This is the expected feature-missing RED for O2-05A1. Production correction may
-now begin. Company pause, real ledger/profile, launchd, browser, and Telegram
-state remain out of scope.
+This was not a strict pre-code RED: the shared worktree already contained the
+O2-05A outreach reconciler before this test was recorded. It is retained as a
+partial-implementation characterization showing the generalized reconciler had
+not yet been paired with a generalized Guardian predicate. Company pause, real
+ledger/profile, launchd, browser, and Telegram state remain out of scope.
 
-## RED — strict preceding-event binding
+## Earlier boundary characterization
 
 The focused boundary regression also ran before its production correction:
 
@@ -44,7 +46,34 @@ python3 -m unittest tests.test_route_executor.RouteExecutorTests.test_reconcilia
 
 Observed result: `Ran 1 test`, `FAILED`; reconciliation incorrectly returned
 `outreach_correction_count=1` for an `email_sent` event with no route/provider
-binding. This proves the optional preceding-event check was too permissive.
+binding. This characterized the optional preceding-event check before it was
+made strict.
+
+## Review-driven RED — isolated authoritative histories
+
+At HEAD `5907588fb`, the two isolated authoritative-history regressions were
+added and run before production changes:
+
+```text
+cd apps/job-search-loop
+python3 -m unittest \
+  tests.test_route_executor.RouteExecutorTests.test_reconciliation_preserves_authoritative_submission_before_outreach \
+  tests.test_route_executor.RouteExecutorTests.test_reconciliation_preserves_authoritative_submission_after_outreach_correction
+```
+
+Observed result: `Ran 2 tests`, `FAILED (failures=2)`.
+
+- `test_reconciliation_preserves_authoritative_submission_before_outreach`
+  observed `outreach_correction_count=1` instead of `0`; a Gmail-confirmed
+  `submit_unknown -> submitted` event immediately before a separately delivered
+  outreach route was demoted to `submit_unknown`.
+- `test_reconciliation_preserves_authoritative_submission_after_outreach_correction`
+  observed `ever_submitted=False` after a later Gmail-confirmed
+  `submit_unknown -> submitted` event; the application-global correction flag
+  suppressed the real submission.
+
+These are the review-driven RED tests for the two authoritative-history
+boundaries. Production correction begins only after this RED was observed.
 
 ## Scope correction
 
@@ -59,9 +88,13 @@ Production changes were limited to the owned ledger/Guardian path. The correctio
 predicate is now application-agnostic and requires the immediately preceding
 legacy event to bind the exact route, provider, outreach channel, and delivery
 hash where present, plus an immutable delivered route event/provider/evidence
-match. The reconciler appends only `email_sent -> submit_unknown`, updates mutable
-state/slot/projection data, and leaves immutable events and route receipts alone.
-Guardian uses the same predicate and accepts the older
+match. Before an `email_sent` correction, an authoritative Gmail/Ashby
+`submitted` event immediately before the outreach event blocks correction and
+preserves the real submission. `ever_submitted` is paired per exact submitted
+event/correction, so a genuine submission before or after an unrelated correction
+remains true. The reconciler appends only `email_sent -> submit_unknown`, updates
+mutable state/slot/projection data, and leaves immutable events and route receipts
+alone. Guardian uses the same predicate and accepts the older
 `submit_unknown -> submitted -> submit_unknown` correction shape.
 
 Focused commands and observed results:
@@ -69,7 +102,7 @@ Focused commands and observed results:
 ```text
 cd apps/job-search-loop
 python3 -m unittest tests.test_route_executor
-Ran 13 tests ... OK
+Ran 15 tests ... OK
 
 python3 -m unittest \
   tests.test_route_executor.RouteExecutorTests.test_reconciliation_repairs_every_legacy_outreach_chain_append_only \
@@ -80,9 +113,12 @@ Ran 2 tests ... OK
 The focused suite proves two non-hard-coded application IDs, false
 `confirmed_application` projection exclusion, `submit_unknown` current state and
 daily slot, append-only route/event counts, idempotent replay, and fail-closed
-unbound evidence. The full Job Hunter suite passed `566/566`; the full
-`runtime/agent-runner` suite passed `18/18`; `git diff --check` passed. The
-production diff is 73 net lines across ledger and Guardian.
+unbound evidence. The authoritative-history regressions prove zero correction and
+fail-closed health for a real submission before outreach, plus `ever_submitted=true`
+for a real submission after an earlier correction. The focused route suite passed
+`15/15`; the complete Job Hunter suite passed `568/568`; the complete
+`runtime/agent-runner` suite passed `18/18`; and `git diff --check` passed. The
+production diff is 88 net lines across ledger and Guardian.
 
 O2-05 remains unchecked. Real-ledger repair, Gmail audit, release activation,
 LaunchAgent loading, Guardian runtime gates, and a real canonical cycle remain

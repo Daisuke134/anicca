@@ -811,8 +811,11 @@ after bounded recovery fails.
   excludes the false confirmed stage, and returns zero new corrections on replay.
   Guardian now uses the same application-agnostic exact predecessor/route/provider/
   hash predicate, including the older `submit_unknown -> submitted -> submit_unknown`
-  shape; forged or unbound preceding events fail closed. The focused route tests pass
-  `13/13`, the complete Job Hunter suite passes `566/566`, and the complete
+  shape; forged or unbound preceding events fail closed. An authoritative Gmail/Ashby
+  `submitted` immediately before outreach blocks email-shaped correction, and
+  per-event pairing keeps genuine submissions before or after an unrelated correction
+  in `ever_submitted`. The focused route tests pass `15/15`, the complete Job Hunter
+  suite passes `568/568`, and the complete
   agent-runner suite passes `18/18`. O2-05 remains unchecked: real-ledger repair,
   Gmail audit, release activation, LaunchAgent load, Guardian runtime checks, and a
   real canonical cycle are still pending.

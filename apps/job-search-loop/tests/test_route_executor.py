@@ -142,6 +142,74 @@ class RouteExecutorTests(unittest.TestCase):
                 (self.application_id,),
             )
 
+    def _seed_authoritative_submission_before_outreach(self, company, url, *, fence):
+        application_id = self.ledger.add_application(company, "AI Engineer", url)
+        for state in ("qualified", "materials_ready", "submit_claimed", "submit_unknown"):
+            self.ledger.transition(application_id, state)
+        confirmation_sha256 = hashlib.sha256(
+            f"{application_id}-gmail-confirmation".encode()
+        ).hexdigest()
+        with self.ledger._transaction():
+            self.ledger._append_event(
+                application_id,
+                "submit_unknown",
+                "submitted",
+                {
+                    "message_id": f"gmail-message-{application_id}",
+                    "thread_id": f"gmail-thread-{application_id}",
+                    "evidence_sha256": confirmation_sha256,
+                    "received_at": "2026-08-13T00:00:00+00:00",
+                },
+            )
+            self.ledger.connection.execute(
+                "UPDATE applications SET current_state = 'submitted' WHERE id = ?",
+                (application_id,),
+            )
+        route_id = self.ledger.register_application_route(
+            application_id,
+            route_kind="recruiting_outreach",
+            endpoint=f"talent@{company.casefold().replace(' ', '')}.example.test",
+            ordinal=4,
+            source_url="https://careers.example.test/jobs",
+            source_sha256=self.source_sha,
+            recipient_acceptance="outreach_only",
+        )
+        outreach_sha256 = hashlib.sha256(
+            f"{application_id}-outreach-receipt".encode()
+        ).hexdigest()
+        self.ledger.claim_application_route(
+            route_id,
+            actor="resident_worker",
+            fence=fence,
+            message_path=str(self.message),
+            message_sha256=hashlib.sha256(self.message.read_bytes()).hexdigest(),
+            resume_path=str(self.resume),
+            resume_sha256=hashlib.sha256(self.resume.read_bytes()).hexdigest(),
+        )
+        self.ledger.complete_application_route(
+            route_id,
+            fence=fence,
+            state="delivered",
+            provider_id=f"gmail:outreach-{application_id}",
+            evidence_sha256=outreach_sha256,
+        )
+        with self.ledger._transaction():
+            self.ledger._append_event(
+                application_id,
+                "submitted",
+                "email_sent",
+                {
+                    "route_id": route_id,
+                    "provider_id": f"gmail:outreach-{application_id}",
+                    "channel": "recruiting_outreach",
+                },
+            )
+            self.ledger.connection.execute(
+                "UPDATE applications SET current_state = 'email_sent' WHERE id = ?",
+                (application_id,),
+            )
+        return application_id
+
     def test_delivered_email_is_sent_once_and_exact_artifacts_are_preserved(self):
         self._route("recruiting_email", "jobs@example.test", 3, "accepts_applications")
         calls = []
@@ -381,6 +449,61 @@ class RouteExecutorTests(unittest.TestCase):
         with self.assertRaises(FenceError):
             self.ledger.event_summary_rows()
         self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
+
+    def test_reconciliation_preserves_authoritative_submission_before_outreach(self):
+        application_id = self._seed_authoritative_submission_before_outreach(
+            "Authoritative Before",
+            "https://jobs.example.test/authoritative-before",
+            fence=104,
+        )
+
+        result = self.ledger.reconcile_delivered_application_routes()
+
+        self.assertEqual(result["outreach_correction_count"], 0)
+        self.assertEqual(self.ledger.current_state(application_id), "email_sent")
+        events = self.ledger.events(application_id)
+        self.assertEqual(events[5]["to_state"], "submitted")
+        with self.assertRaises(FenceError):
+            self.ledger.event_summary_rows()
+        self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
+
+    def test_reconciliation_preserves_authoritative_submission_after_outreach_correction(self):
+        application_id, _, _ = self._seed_legacy_outreach(
+            "Authoritative After",
+            "https://jobs.example.test/authoritative-after",
+            fence=105,
+        )
+        first = self.ledger.reconcile_delivered_application_routes()
+        confirmation_sha256 = hashlib.sha256(
+            f"{application_id}-late-gmail-confirmation".encode()
+        ).hexdigest()
+        with self.ledger._transaction():
+            self.ledger._append_event(
+                application_id,
+                "submit_unknown",
+                "submitted",
+                {
+                    "message_id": f"late-gmail-message-{application_id}",
+                    "thread_id": f"late-gmail-thread-{application_id}",
+                    "evidence_sha256": confirmation_sha256,
+                    "received_at": "2026-08-13T01:00:00+00:00",
+                },
+            )
+            self.ledger.connection.execute(
+                "UPDATE applications SET current_state = 'submitted' WHERE id = ?",
+                (application_id,),
+            )
+
+        self.assertEqual(first["outreach_correction_count"], 1)
+        summary = next(
+            row
+            for row in self.ledger.event_summary_rows()
+            if row["application_id"] == application_id
+        )
+        self.assertEqual(self.ledger.current_state(application_id), "submitted")
+        self.assertTrue(summary["ever_submitted"])
+        self.assertTrue(summary["submission_attempted"])
+        self.assertEqual(ledger_health(self.ledger.path)["status"], "healthy")
 
     def test_correction_rejects_accepted_email_route(self):
         self._advance_to("submit_unknown")

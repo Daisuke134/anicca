@@ -110,6 +110,43 @@ def _has_immutable_outreach_delivery(
     return False
 
 
+def _is_authoritative_submission_event(
+    connection: sqlite3.Connection,
+    application_id: str,
+    event: Mapping[str, Any],
+) -> bool:
+    try:
+        if str(event["to_state"]) != "submitted":
+            return False
+        payload = json.loads(str(event["payload_json"]))
+    except (KeyError, json.JSONDecodeError, TypeError):
+        return False
+    return isinstance(payload, dict) and (
+        all(payload.get(key) for key in (
+            "message_id", "thread_id", "evidence_sha256", "received_at"
+        ))
+        or is_authoritative_ashby_browser_confirmation(
+            connection, application_id, event
+        )
+    )
+
+
+def _has_authoritative_submission_before(
+    connection: sqlite3.Connection,
+    application_id: str,
+    event: Mapping[str, Any],
+) -> bool:
+    submission = connection.execute(
+        "SELECT rowid AS event_rowid, from_state, to_state, payload_json "
+        "FROM events WHERE application_id = ? AND rowid < ? "
+        "ORDER BY rowid DESC LIMIT 1",
+        (application_id, int(event["event_rowid"])),
+    ).fetchone()
+    return submission is not None and _is_authoritative_submission_event(
+        connection, application_id, submission
+    )
+
+
 def is_outreach_truth_correction(
     connection: sqlite3.Connection,
     application_id: str,
@@ -152,7 +189,7 @@ def is_outreach_truth_correction(
         return False
     previous = connection.execute(
         """
-        SELECT from_state, to_state, payload_json
+        SELECT rowid AS event_rowid, from_state, to_state, payload_json
         FROM events
         WHERE application_id = ? AND rowid < ?
         ORDER BY rowid DESC
@@ -175,25 +212,24 @@ def is_outreach_truth_correction(
         return False
     if not isinstance(previous_payload, dict):
         return False
-    if correction_from == "submitted":
-        if (
-            previous_payload.get("route_id") != route_id
-            or previous_payload.get("provider_id") != provider_id
-            or previous_payload.get("channel") != "recruiting_outreach"
-            or all(
-                previous_payload.get(key)
-                for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
-            )
-        ):
-            return False
-    elif (
+    if (
         previous_payload.get("route_id") != route_id
         or previous_payload.get("provider_id") != provider_id
         or previous_payload.get("channel") != "recruiting_outreach"
-        or (
-            "evidence_sha256" in previous_payload
-            and previous_payload.get("evidence_sha256") != evidence_sha256
-        )
+    ):
+        return False
+    if correction_from == "submitted" and all(
+        previous_payload.get(key)
+        for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
+    ):
+        return False
+    if correction_from == "email_sent" and (
+        "evidence_sha256" in previous_payload
+        and previous_payload.get("evidence_sha256") != evidence_sha256
+    ):
+        return False
+    if correction_from == "email_sent" and _has_authoritative_submission_before(
+        connection, application_id, previous
     ):
         return False
     return _has_immutable_outreach_delivery(
@@ -2596,21 +2632,24 @@ class Ledger:
             if first_state != "discovered" and not external_origin:
                 raise FenceError("application event chain lacks a valid origin")
             previous = first_state
-            correction_rows = {
-                int(event["event_rowid"])
-                for event in rows[1:]
-                if is_outreach_truth_correction(
-                    self.connection, str(application["id"]), event
-                )
-            }
-            has_outreach_correction = bool(correction_rows)
-            ever_submitted = first_state == "submitted" and not has_outreach_correction
+            ever_submitted = first_state == "submitted"
             submission_attempted = first_state in {"submitted", "submit_unknown"}
             for index, event in enumerate(rows[1:], start=1):
                 to_state = str(event["to_state"])
                 if str(event["from_state"]) != previous:
                     raise FenceError("application event chain is discontinuous")
                 paired_correction = False
+                if to_state == "submitted" and index + 2 < len(rows):
+                    next_event = rows[index + 1]
+                    paired_correction = (
+                        str(next_event["from_state"]) == "submitted"
+                        and str(next_event["to_state"]) == "email_sent"
+                        and is_outreach_truth_correction(
+                            self.connection,
+                            str(application["id"]),
+                            rows[index + 2],
+                        )
+                    )
                 if previous == "submit_unknown" and to_state == "submitted":
                     payload = json.loads(str(event["payload_json"]))
                     if not isinstance(payload, dict):
@@ -2626,10 +2665,8 @@ class Ledger:
                         )
                     )
                     if index + 1 < len(rows):
-                        paired_correction = is_outreach_truth_correction(
-                            self.connection,
-                            str(application["id"]),
-                            rows[index + 1],
+                        paired_correction = paired_correction or is_outreach_truth_correction(
+                            self.connection, str(application["id"]), rows[index + 1]
                         )
                     if (
                         not has_gmail_confirmation
@@ -2670,7 +2707,6 @@ class Ledger:
                 ever_submitted = ever_submitted or (
                     to_state == "submitted"
                     and not paired_correction
-                    and not has_outreach_correction
                 )
                 submission_attempted = submission_attempted or to_state in {
                     "submitted", "submit_unknown"
@@ -3886,7 +3922,7 @@ class Ledger:
             ):
                 continue
             event = self.connection.execute(
-                "SELECT from_state, to_state, payload_json FROM events "
+                "SELECT rowid AS event_rowid, from_state, to_state, payload_json FROM events "
                 "WHERE application_id = ? ORDER BY rowid DESC LIMIT 1",
                 (application_id,),
             ).fetchone()
@@ -3901,31 +3937,30 @@ class Ledger:
             from_state = str(event["from_state"])
             to_state = str(event["to_state"])
             if current == "submitted":
-                if (
-                    (from_state, to_state) != ("submit_unknown", "submitted")
-                    or payload.get("route_id") != route_id
-                    or payload.get("provider_id") != provider_id
-                    or payload.get("channel") != "recruiting_outreach"
-                    or all(
-                        payload.get(key)
-                        for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
-                    )
-                ):
-                    continue
-                correction_from = "submitted"
-            elif (from_state, to_state) == ("submitted", "email_sent"):
-                if (
-                    payload.get("route_id") != route_id
-                    or payload.get("provider_id") != provider_id
-                    or payload.get("channel") != "recruiting_outreach"
-                    or (
-                        "evidence_sha256" in payload
-                        and payload.get("evidence_sha256") != evidence_sha256
-                    )
-                ):
-                    continue
-                correction_from = "email_sent"
+                correction_from, expected = "submitted", ("submit_unknown", "submitted")
             else:
+                correction_from, expected = "email_sent", ("submitted", "email_sent")
+            if (
+                (from_state, to_state) != expected
+                or payload.get("route_id") != route_id
+                or payload.get("provider_id") != provider_id
+                or payload.get("channel") != "recruiting_outreach"
+            ):
+                continue
+            if correction_from == "submitted" and all(
+                payload.get(key)
+                for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
+            ):
+                continue
+            if correction_from == "email_sent" and (
+                (
+                    "evidence_sha256" in payload
+                    and payload.get("evidence_sha256") != evidence_sha256
+                )
+                or _has_authoritative_submission_before(
+                    self.connection, application_id, event
+                )
+            ):
                 continue
             self._append_event(
                 application_id,
