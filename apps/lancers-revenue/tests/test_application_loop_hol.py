@@ -109,7 +109,198 @@ def _ineligible_decision(project_id: str) -> dict[str, object]:
     }
 
 
+class _FakeLocator:
+    def __init__(self, *, text: str = "", attributes: dict[str, str] | None = None, children: dict[str, object] | None = None):
+        self._text = text
+        self._attributes = attributes or {}
+        self._children = children or {}
+
+    def count(self) -> int:
+        return 1
+
+    def nth(self, index: int) -> "_FakeLocator":
+        if index != 0:
+            raise AssertionError(index)
+        return self
+
+    def inner_text(self) -> str:
+        return self._text
+
+    def get_attribute(self, name: str) -> str | None:
+        return self._attributes.get(name)
+
+    def locator(self, selector: str) -> "_FakeLocator":
+        return self._children[selector]  # type: ignore[return-value]
+
+
+class _FakeProposalPage:
+    def __init__(self, *, project_id: str, heading_text: str, project_href: str | None = None):
+        proposal_id = "27808988"
+        heading_href = f"/work/proposal/{proposal_id}"
+        card_heading = _FakeLocator(
+            text=heading_text,
+            attributes={"href": heading_href},
+        )
+        card = _FakeLocator(
+            attributes={"id": f"js-list-item-{proposal_id}"},
+            children={"a.p-simpleProposal-list__heading-title": card_heading},
+        )
+        self.url = "https://www.lancers.jp/mypage/proposals"
+        self._locators = {
+            f'a[href="/work/detail/{project_id}"]': _FakeLocator(
+                attributes={"href": project_href or f"/work/detail/{project_id}"},
+            ),
+            f'a[href^="/work/proposals/{project_id}/"][href$="?ref=mypage_control"]': _FakeLocator(
+                text="提案をみる",
+                attributes={
+                    "href": f"/work/proposals/{project_id}/keiodaisuke?ref=mypage_control"
+                },
+            ),
+            'meta[property="og:url"]': _FakeLocator(
+                attributes={
+                    "content": f"https://www.lancers.jp/work/proposals/{project_id}/keiodaisuke"
+                },
+            ),
+            "a.p-simpleProposal-list__heading-title": _FakeLocator(
+                text=heading_text,
+                attributes={"href": heading_href},
+            ),
+            f"div#js-list-item-{proposal_id}": card,
+        }
+
+    def locator(self, selector: str) -> _FakeLocator:
+        return self._locators[selector]
+
+    def goto(self, url: str, **_kwargs: object) -> None:
+        self.url = url
+
+
+class _FakeBrowser:
+    def __init__(self, page: _FakeProposalPage):
+        self.contexts = [self]
+        self._page = page
+
+    def new_page(self) -> _FakeProposalPage:
+        return self._page
+
+
 class ApplicationLoopHolTests(unittest.TestCase):
+    def test_default_proposal_reader_accepts_mutable_display_name(self):
+        application_loop = _load_deployed_loop()
+        project_id = "5585503"
+        page = _FakeProposalPage(
+            project_id=project_id,
+            heading_text="SNS・AI業務設計室 さんの提案",
+        )
+
+        self.assertEqual(
+            application_loop.application_tick._default_proposal_reader(page, project_id),
+            {"proposal_id": "27808988", "project_id": project_id},
+        )
+
+    def test_default_proposal_reader_rejects_malformed_heading(self):
+        application_loop = _load_deployed_loop()
+        project_id = "5585503"
+        page = _FakeProposalPage(project_id=project_id, heading_text="提案")
+
+        self.assertEqual(
+            application_loop.application_tick._default_proposal_reader(page, project_id),
+            {},
+        )
+
+    def test_run_live_tick_reconciles_target_pending_descriptor_only(self):
+        application_loop = _load_deployed_loop()
+        application_tick = application_loop.application_tick
+        other_project_id = "5585496"
+        target_project_id = "5586112"
+        markers = {
+            project_id: hashlib.sha256(
+                f"lancers:application:{project_id}".encode()
+            ).hexdigest()
+            for project_id in (other_project_id, target_project_id)
+        }
+        state = {
+            "fingerprints": list(markers.values()),
+            "pending": {
+                markers[other_project_id]: {
+                    "proposal_id": "27800001",
+                    "content_sha256": hashlib.sha256(b"other").hexdigest(),
+                    "amount_minor": 110000,
+                    "delivery_due_on": "2026-09-01",
+                    "project_id": other_project_id,
+                },
+                markers[target_project_id]: {
+                    "proposal_id": None,
+                    "content_sha256": hashlib.sha256(b"target").hexdigest(),
+                    "amount_minor": 98000,
+                    "delivery_due_on": "2026-09-10",
+                    "project_id": target_project_id,
+                },
+            },
+        }
+        receipts = []
+        page = _FakeProposalPage(project_id=target_project_id, heading_text="unused")
+        browser = _FakeBrowser(page)
+        remaining_pending = None
+
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "application.json"
+            state_path.write_text(json.dumps(state, sort_keys=True), encoding="utf-8")
+            with patch.object(
+                application_tick,
+                "_production_account_ready",
+                return_value=True,
+            ), patch.object(
+                application_tick,
+                "read_pending_descriptor",
+                return_value={
+                    "project_id": other_project_id,
+                    "amount_minor": 110000,
+                    "delivery_due_on": "2026-09-01",
+                },
+            ), patch.object(
+                application_tick,
+                "read_pending_descriptors",
+                create=True,
+                return_value=[
+                    {
+                        "project_id": other_project_id,
+                        "amount_minor": 110000,
+                        "delivery_due_on": "2026-09-01",
+                    },
+                    {
+                        "project_id": target_project_id,
+                        "amount_minor": 98000,
+                        "delivery_due_on": "2026-09-10",
+                    },
+                ],
+            ):
+                result = application_tick.run_live_tick(
+                    project_id=target_project_id,
+                    proposal_text="pending reconciliation",
+                    proposed_amount_minor=98000,
+                    delivery_due_on="2026-09-10",
+                    state_path=state_path,
+                    browser_factory=lambda _url: browser,
+                    ledger_writer=receipts.append,
+                    now=lambda: "2026-08-13T12:00:00Z",
+                    submitter_override=lambda *_args: self.fail("pending_submit"),
+                    readback_override=lambda _proposal_id, project_id: {
+                        "proposal_id": "27808988",
+                        "project_id": project_id,
+                    },
+                )
+            remaining_pending = json.loads(state_path.read_text(encoding="utf-8"))["pending"]
+
+        self.assertTrue(result.ok)
+        self.assertFalse(result.submitted)
+        self.assertTrue(result.application_verified)
+        self.assertEqual(result.project_id, target_project_id)
+        self.assertEqual(result.provider_proposal_id, "27808988")
+        self.assertEqual(len(receipts), 1)
+        self.assertEqual(receipts[0]["opportunity_external_id"], target_project_id)
+        self.assertEqual(remaining_pending.keys(), {markers[other_project_id]})
+
     def test_default_discovery_query_targets_g1_revenue_lane(self):
         application_loop = _load_deployed_loop()
         queries = []
