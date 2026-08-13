@@ -129,15 +129,14 @@ applications and offers and choose among verified outcomes later.
 Owner-declared application history is authoritative even when an old external
 application has no ATS receipt in the local ledger. OpenAI, Anthropic,
 Cursor/Anysphere, and Palantir have owner-declared manual applications for Japan
-roles. Job Hunter must persist a location-scoped manual-application fence for their
-company aliases: every Tokyo, Japan, or `Remote - Japan` requisition is suppressed
-across role/URL/ATS aliases and reported as already handled by the owner. This is not
-a company-wide pause. A distinct overseas requisition or Global/APAC Remote role may
-be applied to automatically when its official posting explicitly permits employing
-or contracting a Japan resident, the candidate satisfies its authorization/location
-requirements, and it is not an alias of the manually applied Japan requisition.
-Ambiguous location or requisition identity fails closed for these four companies.
-URL-only and title-only dedup remains in force for every employer.
+roles. The existing daily-agent prompt carries one short location rule: skip Tokyo,
+Japan, and `Remote - Japan` requisitions from those four companies as already handled
+by the owner. This is not a company-wide pause. A distinct overseas requisition or
+Global/APAC Remote role may be applied to automatically when its official posting
+explicitly permits employing or contracting a Japan resident, the candidate satisfies
+its authorization/location requirements, and it is not the same requisition. An
+ambiguous location or requisition identity is skipped. Existing URL, company-role,
+and JD-fingerprint ledger dedup remains authoritative for exact duplicates.
 
 ### 5.2 Minimal human-only boundary
 
@@ -686,7 +685,7 @@ The tracker exposes:
 - source, role-family, resume variant, and segment Pareto;
 - baseline/candidate strategy, 20% holdout, and rollback state;
 - last healthy daily/inbox/learning/guardian runs.
-- owner-declared location-scoped manual-application fences and their source evidence;
+- owner-declared Japan-role suppression and its prompt decision evidence;
 - remote-job discovery volume, eligible remote roles, applications, and outcomes.
 
 `summary.v2`, Telegram, and the local Career surface are projections of the same
@@ -860,6 +859,21 @@ The recommended architecture keeps the current SQLite ledger, durable Telegram
 outbox, stable release launcher, Gmail CLI, and existing CloakBrowser as the control
 plane. It does not install another scheduler, browser, tracker database, or web app.
 
+The Japan-role rule is intentionally prompt-only. Add one compact policy block to
+the existing daily application prompt and one contract test. Do not add a database
+table, migration, alias engine, policy service, or new configuration surface. The
+existing ledger continues to prevent exact URL/company-role/JD-fingerprint duplicates;
+the prompt decides only this owner-declared location exception:
+
+1. OpenAI, Anthropic, Cursor/Anysphere, or Palantir plus Tokyo, Japan, or
+   `Remote - Japan` means skip as already handled by the owner.
+2. A distinct overseas or Global/APAC Remote requisition remains eligible only when
+   the official posting explicitly allows employment or contracting from Japan.
+3. Ambiguous location, resident eligibility, or requisition identity means skip.
+
+This is the smallest useful implementation. Add deterministic persistence only if a
+real canonical run proves that the prompt violates this rule.
+
 | Source | Verified value | Decision |
 |---|---|---|
 | [MadsLorentzen/ai-job-search](https://github.com/MadsLorentzen/ai-job-search) | MIT; discovery, fit evaluation, drafter-reviewer CV/cover-letter loop, PDF/ATS inspection, Gmail outcomes, interview prep | Keep the existing pinned fork for LinkedIn/Freehire discovery. Audit the local `82a60300` fork against upstream `45d55a74`; selectively port verified upstream improvements rather than replacing the control plane. |
@@ -926,13 +940,14 @@ has independently inspected and adopted it.
   authoring; post-change verification completed with 203 tests green.
 - [x] **O2-04B** — Keep reviewable work committed and pushed on the dedicated branch;
   keep this file as progress SSOT and leave the five-phase master spec untouched.
+- [ ] **O2-05P — current slice** — Add the compact Japan-role rule above to the
+  existing daily application prompt and one contract test. Prove the four-company
+  Japan case is skipped, a distinct explicitly Japan-eligible overseas/Global/APAC
+  Remote case is allowed, and ambiguity is skipped. No new state store or service.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
-  unmatched rows dedup-fenced; persist location-scoped manual-application fences for
-  OpenAI, Anthropic, Cursor/Anysphere, and Palantir; prove Japan/Remote-Japan aliases
-  are suppressed while a distinct eligible overseas or Global/APAC Remote requisition
-  is not company-blocked; build from the pushed green commit; atomically activate the
+  unmatched rows dedup-fenced; build from the pushed green commit; atomically activate the
   reproducible stable release; load daily/inbox/learning without touching the shared
   browser; run Guardian health
   gates and observe one real canonical cycle. The Guardian LaunchAgent itself closes
