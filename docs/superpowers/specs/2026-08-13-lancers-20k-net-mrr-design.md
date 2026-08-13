@@ -856,16 +856,29 @@ pre/post一致、pending 0、fingerprints 19、verified receipts 14である。G
 Lancersの売上入口は二つあるが、別々の収益pipelineではない。
 
 1. **応募surface**: 10 query rotation → planner → submit → official proposal readback。14件の
-   `application_verified`がある。30分ownerはcanonical exact releaseで動くが、最新実tickは17件取得後に
-   `planner_failed`、応募0、exit 1である。根因と修正境界は9.9を正本とする。
+   `application_verified`がある。30分ownerはcanonical exact release `295749ad…`でenabledであり、最新実tickは
+   query `LinkedIn`、observed 2、eligible 0、submitted 0、exit 0である。現在応募していない直接理由はloop停止ではなく、
+   そのtickに公開証拠・価格・margin・safetyを満たす案件が0件だったためである。
 2. **Storefront surface**: 自社商品`SNS AI workflow`を公開し、inbound inquiry/orderを受ける。canonical
    listing receipt `1338233`はpublishedだが、公式画面は受付中6件、同一content group 6件、最新実行は
    `listing_readback_mismatch`である。
 
 両surfaceの後は同じSales / Contract → Fulfillment → Finance laneへ合流する。しかしledgerの実イベントは
 現在`application_verified=14`だけで、ContractReceipt、WorkEvent、DeliveryReceipt、PaymentReceiptは0件である。
-`work-sync`は5分でenabledだが`observed_working_count=0 / emitted_count=0`を反復する。したがって応募柱は
-proposal receiptまで、storefront柱はlisting公開までしか働いておらず、どちらも受注・納品・入金を作っていない。
+exact-release `work-sync`は5分でenabledで、公式message APIからboard 1、required reply 1を観測する。しかし
+application receiptまたはstorefront contractへの公式correlationは0であり、現行ownerは本文をhash化して観測するだけで
+分類・返信・offer送信を行わない。したがって応募柱はproposal receiptまで、storefront柱はlisting公開までしか働かず、
+どちらも受注・納品・入金を作っていない。
+
+公式board `9024494` / message `58918062`をread-onlyで本文まで実測した。buyerはフィギュアのリペイント・カスタムの
+過去制作写真を要求しており、目標商品である月額SNS content operationsとは一致しない。これは過去の広すぎる応募から
+発生したout-of-scope返信であり、存在しない制作実績を捏造して返してはならない。現行loopが`required_reply=1`を
+検出し続けながら進まない根因は、Sales laneが本文のbusiness intentとevidence gapを分類し、honest declineまたは
+target向けclarificationへ遷移させるaction boundaryをまだ持たないことにある。
+
+Lancers公式「受注・報酬受け取りの流れ」は、プロジェクト方式を「応募 → 質問・相談と提案内容のすり合わせ →
+選ばれて受注確定 → 発注者の仮払い → 作業・納品 → 報酬支払」と説明する
+（https://www.lancers.jp/help/beginner/lancer）。現状は最初の応募receiptだけを閉じており、公式フロー上も売上ではない。
 
 sourceはLife Manager `origin/main`、immutable exact-SHA release、repo外runtime stateへ分離済みであり、三canonical ownerは
 exact release `295749ad…`へ収束済みである。一方、repo外mutable `listing_tick.py`を30分ごとにpublish modeで動かす
@@ -1132,7 +1145,9 @@ release pathに揃い、それぞれ1800秒、300秒、300秒でenabled、`RunAt
 公式snapshotは`board_count=1 / required_reply_count=1 / unread_count=0 / application_board_count=0 /
 storefront_contract_candidate_count=0`である。board `9024494`、message `58918062`は観測できたがdetailは`with={}`
 で、14 ApplicationReceiptまたはservice item contractへの公式相関がない。これは返信を見つけた事実であって、
-契約・売上の証拠ではない。G4Cがmodelで本文を分類する前に自動返信せず、unknownとして保持する。
+契約・売上の証拠ではない。本文のread-only実測ではフィギュアのリペイント実績写真を求めるout-of-scope inquiryであり、
+月額SNS運用の商談ではない。G4Cが本文を分類し、公開・保有する実績だけでgroundingできる返信を作るまで自動返信しない。
+このentityの正しい次状態は`portfolio_evidence_missing / out_of_scope`であり、売上見込みへ数えない。
 
 ## 10. 段階的 acceptance gate
 
@@ -1201,16 +1216,21 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 機械的に再検証する。
 次の直列TODOは以下であり、一度に先頭一件だけを実装する。
 
+売上がまだ発生しない原因は、観測基盤の不足ではなく、customer-facing conversion pathが未完成だからである。
+直近作業はruntime散在、pending HOL、planner contract、公式readback、exact-release deploymentを直し、応募を安全に
+再開できる状態を作った。しかしこれは売上入口のmechanicsであり、buyerが買う商品、返信、契約、納品、支払を完成させて
+いない。今後は新しいcrawler、scheduler、DB、worktree ownerを増やさず、既存三ownerとshared ledgerへ下表を一件ずつ足す。
+
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
 | 完了 | Storefront read-only inventory | exact releaseから公式6 listing、canonical `1338228`、単一content groupを確定。mutation 0、state/ledger不変 | 完了 |
 | 完了 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じた | 完了 |
-| 1 | Storefront offer alignment | 6件を公開のまま、同一copyを異なるICP/query入口へ分化し、各listingの料金表を月額¥98k–¥398k offerへ揃える。非公開・削除はしない | 1–2日 |
-| 2 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
-| 3 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
-| 4 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
-| 5 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
-| 6 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、net MRRを計算する | 2–4日 |
+| 1 | Storefront offer alignment | 6件を公開のまま、同一copyを異なるICP/query入口へ分化し、各listingの料金表を月額¥98k–¥398k offerへ揃える。公式FAQ 909の既存編集経路だけを使い、非公開・削除・再publishはしない | 1–2日 |
+| 2 | G4B ContractReceipt source | 既存work-syncでcompleteなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 1–2日 |
+| 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
+| 4 | G4C Sales / Contract actions | 既存work-syncでbuyer本文をtarget / clarification / out-of-scopeへ分類し、保有証拠だけで一問clarification、honest decline、月額offerを送る。送信後は公式message/contract readbackを必須にする | 1–3日 |
+| 5 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
+| 6 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
