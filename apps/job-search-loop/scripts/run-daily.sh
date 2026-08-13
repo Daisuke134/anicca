@@ -209,11 +209,6 @@ refresh_summary() {
     --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
     --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
     --day "$JAPAN_DAY"
-  "$JOB_SEARCH_PYTHON" -m job_search_loop.quota record \
-    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-    --day "$JAPAN_DAY" \
-    --reason "hourly_pass_complete" \
-    --output "$EVIDENCE/quota-deficit.json"
   if [[ "$deliver_report" == "1" ]]; then
     set +e
     "$JOB_SEARCH_PYTHON" -m job_search_loop.daily_reporting deliver \

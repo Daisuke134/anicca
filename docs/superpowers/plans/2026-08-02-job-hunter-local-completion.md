@@ -10,9 +10,8 @@
 work. O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
-daily outcome reporting is complete. O2-05U1 removes the measured global
-ten-application stop and per-bucket submission caps; O2-05U2 is now the active slice
-and removes the remaining fixed-ten search/recovery target before activation.
+daily outcome reporting and O2-05U unlimited eligible applications are complete.
+O2-05B shared-browser cutover is now the active slice before activation.
 O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
 mail, and learning lanes are disabled and unloaded and must not be described as
 healthy or complete.
@@ -23,13 +22,12 @@ unloaded; the last daily evidence is from 2026-08-08. The active release is
 `932ae25e...`, which still leases `job-search:dais` on a separate browser currently
 listening on `127.0.0.1:49167`, can restart that browser after an attach failure, and
 contains the old technical progress copy. Do not load that stale release. O2-05N is
-complete. O2-05U1 removes the fixed daily and portfolio submission caps. The two
-remaining behavioral blockers before activation are O2-05U2, which removes the old
-fixed-ten search/recovery target, and O2-05B, which binds the
-daily lane to the existing `interactive:dais` browser at `127.0.0.1:9222` and removes
-restart behavior.
-Immediately after O2-05U and O2-05B are pushed, build/activate once and load
-daily/inbox/learning. O2-06 through O2-12 improve and prove the live loop; they must
+complete. O2-05U removes the fixed daily/portfolio submission caps and fixed-ten
+search/recovery target. The only remaining behavioral blocker before activation is
+O2-05B, which binds the daily lane to the existing `interactive:dais` browser at
+`127.0.0.1:9222` and removes restart behavior. Immediately after O2-05B is pushed,
+build/activate once and load daily/inbox/learning. O2-06 through O2-12 improve and
+prove the live loop; they must
 not delay turning the application loop on.
 
 **Execution rule from this point:** no test-first/TDD ceremony and no separate
@@ -1308,15 +1306,22 @@ performs the real E2E, and records the milestone.
   normal application path. Focused checks pass `5/5`, related suites pass `71/71`,
   the full Job Hunter suite passes `581/581` in `35.299s`, and shell syntax, compile,
   and diff checks pass.
-- [ ] **O2-05U2 — remove the fixed-ten search/recovery target** — Keep portfolio
+- [x] **O2-05U2 — remove the fixed-ten search/recovery target** — Keep portfolio
   buckets only for priority ordering and outcome analysis. Replace the legacy quota
   deficit/recovery contract that searches toward a fixed 2/5/3 total with continuous
   discovery of eligible backlog, while preserving historical immutable quota rows.
   New evidence reports confirmed count and eligible backlog, never a deficit to ten.
-  Add no scheduler, service, table, migration, or second queue.
-- [ ] **O2-05U — unlimited eligible applications before launchd load** — Close when
-  O2-05U1 and O2-05U2 are both pushed and verified. Preserve the current queue,
-  ledger, evidence, duplicate requisition fences, JPY 7M floor,
+  The live quota recorder is deleted; historical immutable quota rows remain readable
+  but cannot stop discovery. Every wake now emits an active plan across `9` existing
+  sources, `18` queries, and all three ranking buckets regardless of confirmed count.
+  Focused/related verification passes `27/27`; the full Job Hunter suite passes
+  `576/576` in `42.162s`; shell syntax, compile, and diff checks pass. An isolated copy
+  of the real ledger produced plan version `2`, status `active`, `9` sources, `18`
+  queries, all three buckets, and no fixed deficit. No scheduler, service, table,
+  migration, or second queue was added.
+- [x] **O2-05U — unlimited eligible applications before launchd load** — O2-05U1 and
+  O2-05U2 are both verified. Preserve the current queue, ledger, evidence, duplicate
+  requisition fences, JPY 7M floor,
   truth/authorization gates, receipt requirement, and per-wake safety budget. When a
   wake cannot finish every eligible role, persist the remainder and continue on the
   next wake without owner approval. Historical immutable quota rows remain readable;

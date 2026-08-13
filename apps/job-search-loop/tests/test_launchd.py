@@ -122,7 +122,7 @@ class LaunchdTests(unittest.TestCase):
         self.assertNotIn("daily_slot_count", script)
         self.assertNotIn("CONFIRMED_COUNT", script)
         self.assertNotIn("daily_quota_reached", script)
-        self.assertIn("job_search_loop.quota", script)
+        self.assertNotIn("job_search_loop.quota", script)
         self.assertIn('--identity "job-search:dais"', script)
 
     def test_daily_shell_leases_browser_and_registers_release_before_runner(self):
