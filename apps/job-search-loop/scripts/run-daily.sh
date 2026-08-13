@@ -293,6 +293,12 @@ JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
   --fence "$JOB_SEARCH_BROWSER_FENCE" \
   --holder-pid "$$"
 JOB_SEARCH_BROWSER_LEASED=1
+"$JOB_SEARCH_PYTHON" -m job_search_loop.browser_pages open \
+  --owner-receipt "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+  --ownership-receipt "$EVIDENCE/page-ownership.json" \
+  --owned-page "$EVIDENCE/owned-page.json" \
+  >"$EVIDENCE/page-open.json"
+chmod 600 "$EVIDENCE/page-open.json"
 (
   TRAPEXIT() { :; }
   exec "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \

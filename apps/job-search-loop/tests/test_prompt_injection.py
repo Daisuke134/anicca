@@ -155,10 +155,10 @@ class PromptInjectionTests(unittest.TestCase):
             "Every active official posting is an application candidate",
             "Work on one role through an application receipt before selecting another",
             "exact current questions",
-            "PageOwnership",
+            "deterministic daily driver",
             "Never select or navigate `pages[0]`",
-            "Operate only that registered page",
-            "Target.closeTarget",
+            "Operate only the exact `target_id`",
+            "Never create",
         ):
             self.assertIn(phrase, contract)
         self.assertLess(

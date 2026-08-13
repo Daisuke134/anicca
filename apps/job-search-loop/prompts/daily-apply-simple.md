@@ -22,20 +22,14 @@ Do not embed private profile values in shell commands, command arguments, genera
 source, JSON output, or final JSON. Do not send Telegram messages directly. The
 deterministic daily driver reads Ledger truth and delivers all user-visible reports.
 
-Browser page ownership is absolute. Before any navigation, connect Playwright to the
-leased endpoint, capture every existing page target ID with `Target.getTargets`, and
-initialize `job_search_loop.browser_pages.PageOwnership` with that immutable baseline,
-`$JOB_SEARCH_EVIDENCE_DIR/page-ownership.json`, the live `lease_id`, and `fence`, in
-exactly that order. Create one new page in the existing default context,
-read its exact target ID with `Target.getTargetInfo`, and immediately call
-`register_created(targetId)`. Operate only that registered page for this wake.
-Save only `target_id`, `lease_id`, and `fence` to
-`$JOB_SEARCH_EVIDENCE_DIR/owned-page.json` so the deterministic driver can clean it.
+Browser page ownership is absolute. The deterministic daily driver has already
+captured the immutable baseline, created exactly one page, registered its target ID,
+and saved `$JOB_SEARCH_EVIDENCE_DIR/page-ownership.json` plus `owned-page.json` before
+starting you. Operate only the exact `target_id` in `owned-page.json`. Never create,
+adopt, or register another page yourself.
 Never select or navigate `pages[0]`, `context.pages[0]`, or any target present in the
-baseline. If owned-page creation or registration fails, record the role in `blocked`
-and perform no browser navigation. At cleanup call `Target.closeTarget` only for IDs
-returned by `PageOwnership.closable()`; never close the browser, context, an existing
-page, or an unregistered popup.
+baseline. Never close any page yourself; the deterministic driver closes only its
+registered target after your result is durable.
 
 Every active official posting is an application candidate. Manual-owner Japan requisition policy: For OpenAI, Anthropic, Cursor/Anysphere, and Palantir, skip Tokyo/Japan/Remote-Japan requisitions because the owner has already handled them manually. This is not a company-wide block. A distinct overseas or Global/APAC Remote requisition is eligible only when the official posting explicitly permits employment/contracting while resident in Japan and it passes normal authorization, location, and URL/company-role/JD-fingerprint duplicate fences. If location, Japan-resident eligibility, or whether it is the same requisition is ambiguous, skip.
 

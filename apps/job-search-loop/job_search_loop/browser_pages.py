@@ -120,16 +120,59 @@ def cleanup_registered_page(
     raise RuntimeError("owned page did not close")
 
 
+def open_registered_page(
+    *, owner_path: Path, ownership_path: Path, owned_page_path: Path
+) -> dict[str, object]:
+    owner = json.loads(owner_path.read_text(encoding="utf-8"))
+    endpoint = str(owner.get("endpoint") or "").rstrip("/")
+    lease_id = owner.get("lease_id")
+    fence = owner.get("fence")
+    if (
+        endpoint != "http://127.0.0.1:9222"
+        or not isinstance(lease_id, str)
+        or not lease_id
+        or not isinstance(fence, int)
+        or fence <= 0
+    ):
+        raise ValueError("browser owner does not authorize page creation")
+    current = json.load(urllib.request.urlopen(f"{endpoint}/json/list", timeout=5))
+    baseline = {str(item["id"]) for item in current if item.get("id")}
+    ownership = PageOwnership(baseline, ownership_path, lease_id, fence)
+    target = ""
+    try:
+        request = urllib.request.Request(
+            f"{endpoint}/json/new?about:blank", data=b"", method="PUT"
+        )
+        created = json.load(urllib.request.urlopen(request, timeout=5))
+        target = str(created.get("id") or "")
+        if not target or target in baseline:
+            raise RuntimeError("browser did not create one new page")
+        ownership.register_created(target)
+        owned = {"target_id": target, "lease_id": lease_id, "fence": fence}
+        temporary = owned_page_path.with_name(f".{owned_page_path.name}.{os.getpid()}.tmp")
+        temporary.write_text(json.dumps(owned, sort_keys=True) + "\n", encoding="utf-8")
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, owned_page_path)
+        return {"status": "ready", "created_count": 1}
+    except Exception:
+        if target:
+            try:
+                urllib.request.urlopen(f"{endpoint}/json/close/{target}", timeout=5).read()
+            except Exception:
+                pass
+        raise
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("cleanup", nargs="?")
+    parser.add_argument("action", choices=("open", "cleanup"))
     parser.add_argument("--owner-receipt", type=Path, required=True)
     parser.add_argument("--ownership-receipt", type=Path, required=True)
     parser.add_argument("--owned-page", type=Path, required=True)
     args = parser.parse_args()
-    print(json.dumps(cleanup_registered_page(
-        owner_path=args.owner_receipt,
-        ownership_path=args.ownership_receipt,
+    function = open_registered_page if args.action == "open" else cleanup_registered_page
+    print(json.dumps(function(
+        owner_path=args.owner_receipt, ownership_path=args.ownership_receipt,
         owned_page_path=args.owned_page,
     ), sort_keys=True))
 

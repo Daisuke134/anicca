@@ -1178,6 +1178,26 @@ ledger, evidence, or submitted artifacts.
   Focused checks pass `31/31`, the full Job Hunter suite passes `575/575`, and shell
   syntax, compile, and diff checks pass. A release-backed third wake is the active
   O2-05/O2-12 gate to prove deterministic cleanup in production.
+- The third real daily wake resolved active release `1647cf64d...`, exited `0`, and
+  sent its natural report with Telegram message ID `16411`; it submitted `0` because
+  ElevenLabs still lacked fill-contract-accepted grounding facts. All `5` baseline
+  pages remained present. The model first created one blank page but failed before
+  registering its target, then created and registered another. The registered target
+  was already closed when the EXIT cleanup checked it; the one unregistered blank
+  target remained. A concurrent non-Job-Hunter Lancers login page also appeared and
+  was preserved. After matching the blank target to the failed Job Hunter creation,
+  only that blank page was closed; the exact `5` baseline pages plus the unrelated
+  Lancers page remained. This proves cleanup after registration but exposes a gap
+  between model-driven creation and registration. The final minimal design removes
+  page creation from the model entirely: after acquiring the lease, the deterministic
+  daily driver uses Chrome's native local endpoint to capture the baseline, create
+  exactly one blank page, immediately register and privately persist it, and only then
+  starts the application agent. Any failure after creation closes that exact target.
+  The agent can only use the prepared target and cannot create/adopt/close pages.
+  Focused checks pass `31/31`, the full suite passes `575/575`, and shell syntax,
+  compile, and diff checks pass. Release-backed real native open→cleanup canary is the
+  final active page gate; another costly application wake is not required to exercise
+  the same deterministic functions.
 
 ## 11. Ponytail OSS reuse decision
 

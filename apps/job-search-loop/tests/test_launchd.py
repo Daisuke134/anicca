@@ -130,10 +130,12 @@ class LaunchdTests(unittest.TestCase):
         self.assertIn(beat, script)
         self.assertIn("TRAPEXIT", script)
         self.assertIn("job_search_loop.browser_pages cleanup", script)
+        self.assertIn("job_search_loop.browser_pages open", script)
         self.assertLess(
             script.index("job_search_loop.browser_pages cleanup"),
             script.index("job_search_loop.browser_owner release"),
         )
+        self.assertLess(script.index("job_search_loop.browser_pages open"), script.index(runner))
         self.assertLess(script.index(acquire), script.index(runner))
         self.assertLess(script.index("TRAPEXIT"), script.index(runner))
 
