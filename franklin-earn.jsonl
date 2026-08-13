@@ -4325,3 +4325,6 @@
 {"ts":1786605112,"source":"cook","task":"explore: Solana paid API marketplace USDC per request","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSR6JUHQ2FD1B88B908E4C56"}
 {"ts":1786605758,"source":"cook","task":"explore: Solana paid compute API USDC per call marketplace","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSR6XOC6F5F1D64A71754DA1"}
 {"ts":1786606278,"source":"cook","task":"explore: Solana low minimum USDC yield farming APY best rates","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSR78R9BD256161EB61F4F69"}
+{"ts":1786608207,"source":"cook","task":"explore: Solana on-chain microtask platform paid compute API marketplace","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSR8E5JY8AD8AAF5AF034020"}
+{"ts":1786608336,"source":"cook","task":"explore: Solana microtask platform paying USDC per completed task API","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSR8GXAY8127F121393B461A"}
+{"ts":1786608973,"source":"cook","task":"explore: Solana paid microtask API platform USDC per task","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSR8UM3QAB15C30A15A04EB2"}
