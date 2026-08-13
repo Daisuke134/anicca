@@ -994,7 +994,7 @@ schema SSOTを追加しない。
    これにより自然言語safety judgmentをregexへ戻さず、実測した同一modelのinstruction missを送信前に独立拒否する。
 4. deterministic codeは、全ID一対一、quoteが公開descriptionの指定sectionに完全一致、日本語、priceが観測budget内、
    fee・AI・外注・refund、70% margin、date、proposal safety、duplicate claim、公式submit/readbackだけを検証する。
-5. errorは`planner_runner_failed`、`planner_contract_incomplete`、`planner_grounding_failed`、
+5. errorは`planner_runner_failed`、`planner_contract_incomplete`、`planner_contract_invalid`、
    `safety_rejected`、`no_eligible_project`を区別し、
    expected/returned count、runner status/error classだけをsanitized logへ出す。cookie、prompt本文、proposal本文、buyer identityは出さない。
    raw evidenceは成功時削除、失敗時はexisting planner rootに最新一runだけ残し、次tickのresetで置換する。
@@ -1009,9 +1009,10 @@ Ponytail比較では、promptだけにregex語彙を追記する案は新しい�
 primary一callだけの案も、実測で週次MTG必須をeligibleにしたため棄却する。採用案は通常一call、eligible発生時だけ
 既存Terra routeの一安全callを払い、新しいserviceを作らず三つのfailure boundaryを閉じる。
 
-soft targetはapplication production 1 file / 55〜80 changed LOC、canonical deploy/manifest 2 files / 25〜40 LOC、
-合計3 files / 95〜120 LOC、既存static schemaを変更せず、new dependency 0、new service/state/DB 0である。
-ユーザー指示に従い新しいtest fileやRED-first作業は作らない。検証は保存済み17件相当のdirect contract check、既存suite、
+soft targetはapplication production 1 file / 75〜110 changed LOC、installer 1 file / 25〜40 LOC、既存test 2 filesの
+期待値更新を含む合計4 files / 150〜220 changed LOC、既存static schemaを変更せず、new dependency 0、
+new service/state/DB 0である。ユーザー指示に従い新しいtest fileやRED-first作業は作らない。直接実装後、
+旧semantic-regex期待をmodel safety境界へ置換し、保存済み17件相当のdirect contract check、既存suite、
 fresh Sol adversarial review一回、submissionなしreal tick、eligibleが実在する後続tickの公式ApplicationReceiptで行う。
 
 acceptanceは、(a) 同一17件で17/17 decision、(b) regex false rejectionなし、(c) `5585701`をconditional Terra safety callが
