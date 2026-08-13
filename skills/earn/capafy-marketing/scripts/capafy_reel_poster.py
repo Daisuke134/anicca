@@ -255,7 +255,11 @@ class RawCdpBrowser:
         for _ in range(40):
             time.sleep(3); self._guard()
             evidence = self._eval("(()=>{const d=document.querySelector('[role=dialog]');return {dialog_exists:!!d,text:(d&&d.textContent)||''}})()") or {}
-            if resolve_share_progress(bool(evidence.get("dialog_exists")), str(evidence.get("text", ""))) == "complete":
+            text = str(evidence.get("text", ""))
+            normalized = text.casefold()
+            if any(marker in normalized for marker in ("投稿をシェアできませんでした", "couldn't share post", "your post couldn't be shared")):
+                raise BrowserChallenge("Instagram rejected the share")
+            if resolve_share_progress(bool(evidence.get("dialog_exists")), text) == "complete":
                 self._shot("shared"); return
         self._shot("share-timeout")
         raise RuntimeError("share completion unavailable")
