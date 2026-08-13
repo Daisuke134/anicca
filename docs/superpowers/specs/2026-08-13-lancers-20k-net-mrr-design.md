@@ -399,6 +399,11 @@ AI活用、継続依頼、長期、月額
 coverage比較の一次結果は、無query 20件（¥98,000以上6件だがSNS中心ではない）、`SNS運用`
 13件/6件、`SNS投稿`17件/1件、`コンテンツ制作`4件/1件、`LinkedIn`2件/1件、`月額`8件/4件である。
 ここで分母はnormalized件数、後者は予算上限¥98,000以上の件数であり、qualified件数や収益ではない。
+G1 default query接続はTDDで実装済みである。REDはdefault discoveryが`None`を受けることを再現し、
+GREENはdefaultで`SNS運用`、明示overrideで指定queryをそのまま渡すことを確認する。production差分は
+`application_loop.py`の定数と既存call boundaryだけで、status、adapter、state、ledger、schema、submitは
+変更しない。統合後のmechanical verificationはapplication 10 tests、installer 2 tests、agent-runner
+15 testsがPASSする。次はこのcanonical main SHAをimmutable normal releaseへdeployしてofficial wakeを一回行う。
 
 projected net gross margin は proposal 時点の JPY 見積で次の式に固定する。
 

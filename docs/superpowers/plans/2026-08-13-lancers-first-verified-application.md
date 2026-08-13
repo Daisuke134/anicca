@@ -519,10 +519,10 @@ The first two normal wakes prove the loop runs but both scan the all-category ne
 20/20 ineligible. Read-only comparison proves `SNS運用` returns 13 normalized rows including 6 with a
 budget maximum of at least ¥98,000. Follow Ponytail: do not build a multi-query aggregator in G1.
 
-- [ ] Add one regression proving a default `run_loop()` discovery call uses `query="SNS運用"`, while an explicit `query` argument remains unchanged.
-- [ ] Run the focused test and observe RED because the current default passes `query=None`.
-- [ ] In `skills/earn/lancers/scripts/application_loop.py`, set the G1 default query to `SNS運用` at the existing discovery call boundary. Do not change `status.py`, the adapter, state, ledger, schema, or submit logic.
-- [ ] Run Lancers application tests, installer tests, and agent-runner tests; commit and push through canonical main.
+- [x] Add one regression proving a default `run_loop()` discovery call uses `query="SNS運用"`, while an explicit `query` argument remains unchanged.
+- [x] Run the focused test and observe RED because the current default passes `query=None`.
+- [x] In `skills/earn/lancers/scripts/application_loop.py`, set the G1 default query to `SNS運用` at the existing discovery call boundary. Do not change `status.py`, the adapter, state, ledger, schema, or submit logic.
+- [x] Run Lancers application tests, installer tests, and agent-runner tests; commit through canonical integration.
 - [ ] Disable/unload the official job only for exact-SHA deployment, install the new immutable normal release, then enable/kick exactly once and verify at most one external submit.
 
 Soft target: 2 files, <=15 handwritten LOC. Query rotation, cross-query dedupe, pagination, and ranking remain G3 work after a real receipt/funnel signal.
