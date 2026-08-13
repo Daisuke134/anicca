@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** G1 acquisition lane は検証済みcanonical releaseで稼働中。最初のqualified案件と`ApplicationReceipt`を待つ
+**状態:** G1 acquisition lane はTask 6Cのexact-SHA deploy待ちで停止中。公式proposal `27808988`を再送せず`ApplicationReceipt`へ確定してから再開する
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -137,8 +137,8 @@ flowchart LR
 |---|---|---|
 | 応募（過去 baseline） | `application_verified` が 11 件 | 公式応募 ID の readback を観測した**過去の baseline measurement**であり、現在値ではない。再測定するまで current report に `application_verified=11` と表示しない |
 | 作業・納品・支払 | `WorkEvent`、`DeliveryReceipt`、`PaymentReceipt` は記録なし。記録された baseline ledger revenue は **¥0** だが PaymentReceipt source completeness は未確認 | source completeness がない記録なしは MRR の 0 を証明せず、active recurring contract の受入証拠もない |
-| 現在の pending | project `5585496`（¥250,000）と project `5586112`（¥10,000）がともに `proposal_id=null` | 両方を readback-only quarantine とし、blind resend しない。どちらも他 entity の進行を止めない |
-| application launchd incident | Task2 source が Task3 safety gate より先に schedule され、launchd が自動実行された。その review 前の実行で、二つ目の null-ID pending project `5586112`（¥10,000）が作成された | verified incident として application launchd は blocker 修正まで disabled。再送・自動 discovery を停止し、まず semantic evidence/schema を修正する |
+| 現在の pending | project `5585496`（¥250,000）、`5586112`（¥10,000）、`5585503`（¥98,000）がすべて `proposal_id=null` | 3件を readback-only quarantine とし、blind resend しない。`5585503` は公式DOM上のproposal ID `27808988`を確認済みだが、ledgerへのreceipt化前なのでpendingとして扱う |
+| application launchd incident | Task2 source が Task3 safety gate より先に schedule され、launchd が自動実行された。その review 前の実行で、二つ目の null-ID pending project `5586112`（¥10,000）が作成された | verified incidentとして記録する。現在のjobはTask 6C exact-SHA deployとreceipt検証までdisabled / unloadedである |
 | storefront | duplicate listing が 6 件。canonical receipt ID は `1338233` | 重複表示は販売実績ではなく、readback と重複排除の問題 |
 | storefront observability | 4 状態を合算し、合計を `unprocessed` として表示 | `partial 6/6 official_timestamp_missing` という誤解を生む |
 | storefront 最新実行 | `listing_readback_mismatch` を観測 | 不一致に成功アイコンを付けてはならない |
@@ -677,37 +677,36 @@ multi-account、別 marketplace は開始しない。
 
 ### 10.1 現在地、残TODO、時間境界
 
-現在、G0 の設計、canonical acquisition runtime、pending 全件 reconcile、semantic ICP/margin gate、
-一 tick 一応募上限、exact-SHA installer、planner isolation、許可された adversarial review 1/1 は完了する。
-`5585496` と `5586112` は readback-only で reconcile され、blind resend されず、state/ledger は不変である。
-Codex strict schema が要求する `qualification.cost_source_version.type=string` も正本 schema に追加され、
-focused test、Lancers 11 tests、agent-runner 15 tests は通る。provider-only検証時点ではapplication launchdをdisabled / unloadedに保つ。
-provider-only planner 検証も完了し、公開20案件を入力した Codex/Luna の一回目で provider schema が受理され、
-20 decisions（eligible 0、ineligible 20）が元の strict schema にも error 0 で適合する。これは応募を
-行わない検証であり、application state と terminal state の hash は不変である。eligible 0 は失敗ではなく、
-現在の公開 snapshot に G1 hard gate を満たす案件がなかったことを意味する。
-canonical feature branch は専用 integration worktree で conflict なく main に統合され、統合commit上で
-application 9 tests、installer 2 tests、agent-runner 15 tests がすべて通り、canonical main へ push される。
-canonical main commit `b05900b48f58b0f29ecf1fe387f2f864685b0de8` は normal mode の immutable release として
-installされ、deployment manifest、plist、13 filesのhashは同じSHAへ一致する。install後もapplication、
-terminal、ledgerのhashと`application_verified=11`は不変で、install完了時点ではlaunchdをdisabled / unloadedに保つ。
-そのreleaseをofficial launchd ownerで一回だけenable / bootstrap / kickし、run 1、exit 0、stderr 0で
-`observed_count=20`、`eligible_count=0`、`submitted=false`、`verified_count=0`、
-`reason=no_eligible_project`を得る。二つのpending、fingerprints、application / terminal / ledger hash、
-`application_verified=11`は不変である。launchdは同じreleaseを30分間隔で実行するenabled状態に残り、
-追加のmanual wakeは行わない。次のautomatic actionは将来tickで新しいqualified案件を待つことである。
+G0の設計、canonical acquisition runtime、semantic ICP/margin gate、一tick一応募上限、exact-SHA
+installer、planner isolation、許可されたadversarial review 1/1は完了している。商用ICP releaseの最初の
+正常wakeは`observed=13, eligible=0`、次のwakeはproject `5585503`を唯一のeligibleとして一度だけ
+provider境界へ進めた。公式read-only DOMではown proposal URL、card ID、proposal ID `27808988`を確認したが、
+runtimeはURL username `keiodaisuke`と可変display name `SNS・AI業務設計室`の一致を要求したためreadbackを
+空にした。さらに複数pending時に対象projectではなくsorted先頭descriptorの金額・納期を使う第二の照合不具合があった。
+
+Task 6C commit `37410365dce1f513bfef6ada5379f88aa9f44308` は、構造的なproject/proposal/card検証を維持したまま
+username/display-name一致だけを除去し、pending descriptorを対象`project_id`で選ぶ。null-ID pendingから
+公式readback ID `27808988`を受けてreceipt化する回帰を含み、Lancers 18 tests、installer 2 tests、
+agent-runner 15 tests、py_compile、diff checkが通る。production変更は`application_tick.py`の11 additions /
+2 deletionsであり、新規state、DB、service、manual proposal adoptionは追加しない。
+
+本番は現在、deployed SHA `dfd45e7e9a593aaeaa1b216ce2009a53fbf2feb2`の`reconcile-only` mode、
+application launchdはdisabled / unloadedである。stateはfingerprints 19、pending 3件、ledgerは
+`application_verified=11`であり、`5585496`、`5586112`、`5585503`のledger rowはない。Task 6Cをmainへ
+統合してexact SHA releaseとしてdeployするまで、discoveryとsubmitを再開しない。
 
 G1 の残TODOは次の直列順序だけである。途中で失敗した場合は次へ進まず、同じ Luna implementer に
 最小 RED を戻す。fresh adversarial review は既に 1/1 を消化しているため追加しない。
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | automatic acquisition E2Eを閉じる | 将来tickでqualified案件を得た場合だけ、公式proposal IDと一件の`ApplicationReceipt`を記録 | qualified案件待ち＋10–25分 |
-| 2 | G1を閉じる | state/ledger/receipt、deployed SHA、reportを検証し、一時worktreeを削除 | 10–20分 |
+| 1 | Task 6Cをmainへ統合・exact-SHA deploy | cleanなorigin/main到達commitを`reconcile-only`でinstallし、installed hashesとscheduler disabledを確認 | 5–10分 |
+| 2 | pendingを再送せずreconcile | official launchd ownerを一回だけ起動し、`5585503 → 27808988`、¥98,000、due date一致、`ApplicationReceipt`正確に1件を確認 | 5–15分 |
+| 3 | normal acquisitionを再開 | 同じcanonical releaseをnormal modeでinstallし、30分schedulerをON、最初のbounded tickと重複応募なしを確認 | 5–15分 |
+| 4 | G1を閉じる | state/ledger/receipt、deployed SHA、reportを検証し、一時worktreeを削除 | 10–20分 |
 
-残る技術作業はqualified案件が現れた後 **約20–45分**を base とする。現在のsnapshotには対象がないため、
-gateを弱めず、30分 scheduled tickで新規案件を待つ。G1の暦時間は案件供給に依存し、待機を実装失敗や
-売上として数えない。
+残るG1技術作業は **約25–60分**をbaseとする。公式proposalは既に存在するため、現在のG1完了は新規案件供給を
+待たずreadback修正の本番検証で閉じられる。これは応募receiptの完了であり、受注・納品・入金の証明ではない。
 
 G1 後は G2→G3→G4→G5→G6→G7 を一つずつ閉じる。4 lane の実装・実E2Eは集中作業で
 best 5日、base 10日、worst 20日以上を計画値とする。これは入金時間ではない。buyer acceptance、
@@ -756,12 +755,12 @@ schema不適合ではfail closedし、blind retryやgate緩和を行わない。
 
 | lane | activation | schedule / bound | ONにする条件 |
 |---|---|---|---|
-| Acquisition | **ON** | 30分tick。G1は最大1応募/tick | exact canonical release、tests、review 1/1、provider-only検証、read-only reconcile、正常wake完了 |
+| Acquisition | **PAUSED** | 再開後は30分tick。G1は最大1応募/tick | Task 6C exact-SHA deploy、`5585503`の一意なreceipt、normal mode再install後にON |
 | Sales / Contract | OFF | 実装時にreply SLAを満たすbounded tick | 最初の一意な`ApplicationReceipt`を得て、reply分類・offer・公式contract readbackをTDD実装後 |
 | Fulfillment | OFF | active contractだけをbounded claim | 最初の`ContractReceipt`を得て、固定scope・QA・revision cap・delivery readbackをTDD実装後 |
 | Finance | OFF | payment/payout eventをbounded claim | `DeliveryReceipt`を得て、PaymentReceipt・fee/cost・bank reconciliationをTDD実装後 |
 
-Acquisitionは現在の保守boundで継続scanする。最初の公式proposal IDと`ApplicationReceipt`が得られた後も
+AcquisitionはTask 6C acceptance後に保守boundで継続scanする。最初の公式proposal IDと`ApplicationReceipt`が得られた後も
 停止せず、G3のcapacity規則が実測で有効になるまで最大1応募/tickを維持する。将来boundを上げる場合も、
 最初の3 active recurring contractsと実測capacityを根拠にし、単に応募件数を増やすためには上げない。
 後段laneは上流receiptが一件もない状態で空回しさせず、各activation gateを一つずつ閉じてからONにする。
