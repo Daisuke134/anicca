@@ -70,6 +70,7 @@ class AtsReadinessTests(unittest.TestCase):
                         {"tag": "input", "type": "file", "label": "Resume", "required": True},
                         {"tag": "button", "text": "Yes", "group_label": "Where are you currently located?", "required": True},
                         {"tag": "textarea", "label": "Additional Information", "group_label": "Where are you currently located?", "required": False},
+                        {"tag": "input", "type": "radio", "label": "Social media (LinkedIn)", "required": False},
                         {"tag": "button", "text": "Submit Application"},
                     ],
                 }
@@ -80,13 +81,16 @@ class AtsReadinessTests(unittest.TestCase):
             answers={
                 "email": {"value": "candidate@example.test", "fact_ids": ["profile.email"]},
                 "location": {"value": "Tokyo, Japan", "fact_ids": ["profile.base"]},
+                "linkedin": {"value": "https://linkedin.example/candidate", "fact_ids": ["profile.linkedin"]},
             },
             resume_path="/private/resume.pdf",
             resume_sha256="a" * 64,
         )
 
         self.assertNotIn("location", [action.get("field_key") for action in plan["actions"]])
+        self.assertNotIn("linkedin", [action.get("field_key") for action in plan["actions"]])
         self.assertIn("Where are you currently located?", plan["blockers"])
+        self.assertNotIn("Social media (LinkedIn)", plan["blockers"])
 
     def test_required_group_labels_fill_verified_contact_and_block_unknowns_once(self):
         from job_search_loop.ats import build_non_submit_fill_plan
@@ -201,6 +205,14 @@ class AtsReadinessTests(unittest.TestCase):
             def upload_matches(self, frame_index, control_index, path):
                 return self.uploads[(frame_index, control_index)] == path
 
+            def select(self, frame_index, control_index, value):
+                self.values[(frame_index, control_index)] = value
+                return True
+
+            def check(self, frame_index, control_index):
+                self.values[(frame_index, control_index)] = True
+                return True
+
             def screenshot(self, path):
                 Path(path).write_bytes(b"pre-submit-image")
 
@@ -220,6 +232,8 @@ class AtsReadinessTests(unittest.TestCase):
                         "controls": [
                             {"tag": "input", "type": "text", "label": "First Name", "required": True},
                             {"tag": "input", "type": "email", "label": "Email", "required": True},
+                            {"tag": "input", "role": "combobox", "group_label": "How did you hear about us?", "required": True},
+                            {"tag": "input", "type": "checkbox", "label": "I confirm", "required": True},
                             {"tag": "input", "type": "file", "label": "Resume/CV", "required": True},
                             {"tag": "button", "type": "submit", "text": "Submit Application"},
                         ],
@@ -231,6 +245,8 @@ class AtsReadinessTests(unittest.TestCase):
                 answers={
                     "first_name": {"value": "Daisuke", "fact_ids": ["profile.first_name"]},
                     "email": {"value": "candidate@example.test", "fact_ids": ["profile.email"]},
+                    "application_source": {"value": "Job board", "fact_ids": ["source.job_board"]},
+                    "attestation": {"value": "true", "fact_ids": ["profile.attestation"]},
                 },
                 resume_path=str(resume),
                 resume_sha256=resume_sha256,
@@ -254,6 +270,8 @@ class AtsReadinessTests(unittest.TestCase):
             self.assertEqual(receipt["answers"][0]["question"], "First Name")
             self.assertEqual(receipt["answers"][0]["answer"], "Daisuke")
             self.assertEqual(receipt["answers"][0]["fact_ids"], ["profile.first_name"])
+            self.assertEqual(receipt["answers"][2]["answer"], "Job board")
+            self.assertEqual(receipt["answers"][3]["answer"], "true")
             self.assertRegex(receipt["plan_sha256"], r"^[0-9a-f]{64}$")
             self.assertRegex(receipt["screenshot_sha256"], r"^[0-9a-f]{64}$")
             self.assertEqual(receipt_path.stat().st_mode & 0o777, 0o600)

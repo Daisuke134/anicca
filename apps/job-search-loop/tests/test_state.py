@@ -28,6 +28,16 @@ class StateTests(unittest.TestCase):
             canonical_url("https://boards.greenhouse.io/acme/jobs/1?gh_jid=2"),
         )
 
+    def test_ashby_job_and_application_urls_share_one_identity(self):
+        from job_search_loop.state import canonical_application_url, canonical_url
+
+        job = "https://jobs.ashbyhq.com/acme/role"
+        self.assertNotEqual(canonical_url(job), canonical_url(f"{job}/application"))
+        self.assertEqual(
+            canonical_application_url(job),
+            canonical_application_url(f"{job}/application"),
+        )
+
     def test_forbidden_transition(self):
         with self.assertRaises(InvalidTransition):
             validate_transition("discovered", "submitted")

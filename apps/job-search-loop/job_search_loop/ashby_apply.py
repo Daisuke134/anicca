@@ -172,10 +172,22 @@ def extract_fields(page: Any) -> list[dict[str, Any]]:
 def build_actions(
     fields: list[dict[str, Any]],
     *,
-    answer_map: dict[str, dict[str, Any]],
+    answer_map: Any,
     resume_path: str,
     resume_sha256: str,
 ) -> dict[str, Any]:
+    if isinstance(answer_map, list):
+        answer_map = {
+            item["question"]: {
+                "answer": item["answer"],
+                "fact_ids": item["fact_ids"],
+            }
+            for item in answer_map
+            if isinstance(item, dict)
+            and all(key in item for key in ("question", "answer", "fact_ids"))
+        }
+    if not isinstance(answer_map, dict):
+        raise ValueError("answer map must be an object or grounded answer list")
     if isinstance(answer_map.get("answers"), dict):
         answer_map = answer_map["answers"]
     answers = {_normalized(key).casefold(): value for key, value in answer_map.items()}

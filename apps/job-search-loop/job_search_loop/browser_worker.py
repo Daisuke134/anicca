@@ -170,6 +170,18 @@ def run_worker(
                 evidence_dir=evidence_dir,
                 telemetry=telemetry,
             )
+            dossier = pre_submit.get("claim_ready_dossier")
+            if isinstance(dossier, dict):
+                route = next(
+                    (
+                        item
+                        for item in route_materialization
+                        if item.get("url_sha256") == dossier.get("url_sha256")
+                    ),
+                    None,
+                )
+                if route is not None and route.get("application_id"):
+                    dossier = {**dossier, "application_id": route["application_id"]}
         result = {
             "status": str(pre_submit.get("status") or "pending_verification"),
             "executor": str(pre_submit.get("executor") or "none"),
@@ -181,6 +193,7 @@ def run_worker(
             "continued_after_failure": bool(
                 pre_submit.get("continued_after_failure")
             ),
+            "claim_ready_dossier": dossier if prefilter_result is not None else None,
             "route_materialization": route_materialization
             if prefilter_result is not None
             else [],

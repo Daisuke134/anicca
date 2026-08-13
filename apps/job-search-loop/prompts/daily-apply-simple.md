@@ -7,7 +7,8 @@ does not describe the current page.
 Use the existing CloakBrowser owner endpoint from
 `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, the private profile at `$JOB_SEARCH_PROFILE`,
 the deterministic discovery result at `$JOB_SEARCH_PREFILTER_RESULT`, the candidate
-queue at `$JOB_SEARCH_CANDIDATE_QUEUE`, and the Job Hunter modules in
+queue at `$JOB_SEARCH_CANDIDATE_QUEUE`, the deterministic non-submit result at
+`$JOB_SEARCH_PRE_SUBMIT_RESULT`, and the Job Hunter modules in
 the installed release. `$JOB_SEARCH_SUBMIT_ENABLED` is `1`. The Ashby CLI module is
 `$JOB_SEARCH_ASHBY_APPLY_MODULE`; its `apply` mode fills and performs one fenced
 semantic Submit while returning the exact request and authoritative confirmation
@@ -106,16 +107,22 @@ For each selected role:
    application certification, answer Yes with fact
    `ordinary_truthful_application_attestation_20260807`. Do not search prior run
    directories for either answer.
-   After a deterministic non-submit fill produces a claim-ready ATS snapshot and fill
-   receipt, create the missing Ledger fence only with:
+   Read `$JOB_SEARCH_PRE_SUBMIT_RESULT` before opening or filling a candidate. When it
+   contains `claim_ready_dossier`, use its exact application ID, company, title,
+   official URL, bucket, resume, ATS snapshot, fill receipt, and grounded answers.
+   Do not repeat inspect or fill for that dossier. Create the missing Ledger fence only
+   with:
    `$JOB_SEARCH_PYTHON -m job_search_loop.submission_prepare --ledger
    "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" --application-id APPLICATION_ID
    --company COMPANY --title ROLE --official-url OFFICIAL_URL
    --japan-day YYYY-MM-DD --portfolio-bucket BUCKET --resume EXACT_RESUME_PDF
    --snapshot ATS_SNAPSHOT_JSON --fill-receipt FILL_RECEIPT_JSON --answers
    ASHBY_ANSWERS_JSON --output "$JOB_SEARCH_EVIDENCE_DIR/submission-prepare.json"`.
-   Pass the exact ready artifact produced by Ashby `answers`; do not reshape it with
-   `jq`, generate a second answers file, or inspect Ledger with direct SQL.
+   Pass the dossier's exact grounded answers file, or the exact ready artifact produced
+   by Ashby `answers` when no deterministic dossier exists. Do not reshape either with
+   `jq`, generate a second answers file, or inspect Ledger with direct SQL. For Ashby,
+   pass the same dossier answers file to `apply`; it accepts the grounded answer list
+   and refills the new owned application page before the single fenced Submit.
    Omit `--application-id` when it does not exist; the three official posting fields
    then materialize the canonical application and route idempotently before claiming.
    Read `application_id`, `intent_id`, and `fence` from that receipt. Never create

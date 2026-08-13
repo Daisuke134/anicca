@@ -142,6 +142,9 @@ class LaunchdTests(unittest.TestCase):
         terminal_filter = "job_search_loop.candidate_routes filter"
         self.assertIn(terminal_filter, script)
         self.assertLess(script.index(terminal_filter), script.index(runner))
+        pre_submit = "job_search_loop.browser_worker run"
+        self.assertIn(pre_submit, script)
+        self.assertLess(script.index(pre_submit), script.index(runner))
 
     def test_healthcheck_covers_scheduler_ledger_and_private_state(self):
         root = Path(__file__).parents[1]

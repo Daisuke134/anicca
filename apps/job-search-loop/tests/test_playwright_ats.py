@@ -79,7 +79,10 @@ class PlaywrightAtsTests(unittest.TestCase):
             {"full_name", "first_name", "last_name", "email", "phone", "linkedin", "github", "location"},
         )
         self.assertEqual(answers["full_name"]["fact_ids"], ["profile.name"])
-        self.assertEqual(answers["location"]["fact_ids"], ["profile.base"])
+        self.assertEqual(
+            answers["location"]["fact_ids"],
+            ["profile.current_location_20260807"],
+        )
         self.assertNotIn("nationality", answers)
         self.assertNotIn("work_authorization", answers)
 
@@ -166,7 +169,11 @@ class PlaywrightAtsTests(unittest.TestCase):
             visited.append(candidate["official_url"])
             if len(visited) == 1:
                 return {"claim_ready": False, "blockers": ["phone"]}
-            return {"claim_ready": True, "blockers": []}
+            return {
+                "claim_ready": True,
+                "blockers": [],
+                "claim_ready_dossier": {"application_id": "app-2"},
+            }
 
         result = attempt_ranked_candidates(
             [
@@ -189,6 +196,7 @@ class PlaywrightAtsTests(unittest.TestCase):
         self.assertEqual(len(result["attempt_audit"]), 2)
         self.assertEqual(result["attempt_audit"][0]["outcome"], "blocked")
         self.assertEqual(result["attempt_audit"][1]["outcome"], "claim_ready")
+        self.assertEqual(result["claim_ready_dossier"]["application_id"], "app-2")
         self.assertNotIn("official_url", result["attempt_audit"][0])
         self.assertTrue(result["continued_after_failure"])
 

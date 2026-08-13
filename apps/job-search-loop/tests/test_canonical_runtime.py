@@ -343,7 +343,7 @@ raise SystemExit(0)
                 for call in calls
                 if call[:3] == ["-m", "job_search_loop.browser_worker", "run"]
             ]
-            self.assertEqual(browser_worker_calls, [])
+            self.assertEqual(len(browser_worker_calls), 1)
             terra_results = list(
                 (root / "state" / "evidence").glob("daily-*/terra-plan-result.json")
             )
@@ -361,7 +361,7 @@ raise SystemExit(0)
             self.assertEqual(len(self._daily_reporting_calls(calls)), 0)
             encoded = json.dumps(calls)
             self.assertIn("job_search_loop.browser_owner", encoded)
-            self.assertNotIn("job_search_loop.browser_worker", encoded)
+            self.assertIn("job_search_loop.browser_worker", encoded)
             summaries = list((root / "state" / "evidence").glob("daily-*/summary.json"))
             self.assertEqual(len(summaries), 1)
             self.assertEqual(

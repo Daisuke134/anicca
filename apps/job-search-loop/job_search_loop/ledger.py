@@ -15,7 +15,12 @@ from typing import Any, Iterator, Mapping
 from .ats import evaluate_snapshot
 from .dedup import company_role_key
 from .portfolio import PORTFOLIO_LIMITS
-from .state import canonical_job_id, canonical_url, validate_transition
+from .state import (
+    canonical_application_url,
+    canonical_job_id,
+    canonical_url,
+    validate_transition,
+)
 from .telemetry import Telemetry
 
 
@@ -2965,7 +2970,9 @@ class Ledger:
         ).fetchone()
         if application_before_claim is None:
             raise KeyError(application_id)
-        if canonical_url(snapshot["url"]) != str(application_before_claim["canonical_url"]):
+        if canonical_application_url(snapshot["url"]) != canonical_application_url(
+            str(application_before_claim["canonical_url"])
+        ):
             raise ValueError("ATS snapshot URL does not match the application")
         if fill_receipt_path is None or fill_receipt_sha256 is None:
             raise ValueError("claim-ready fill receipt is required")
@@ -3003,9 +3010,9 @@ class Ledger:
             ).fetchone()
             if application is None:
                 raise KeyError(application_id)
-            if canonical_url(str(fill_receipt.get("job_url") or "")) != str(
-                application["canonical_url"]
-            ):
+            if canonical_application_url(
+                str(fill_receipt.get("job_url") or "")
+            ) != canonical_application_url(str(application["canonical_url"])):
                 raise ValueError("fill receipt URL does not match the application")
             existing = self.connection.execute(
                 "SELECT * FROM submit_intents WHERE application_id = ?",

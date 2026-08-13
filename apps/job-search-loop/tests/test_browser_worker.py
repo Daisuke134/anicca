@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import tempfile
@@ -79,7 +80,7 @@ class BrowserWorkerTests(unittest.TestCase):
         self.assertLess(fixture_branch, model_call)
         self.assertIn('mv "$ROUTE_FIXTURE_REQUEST" "$EVIDENCE/route-fixture-request.json"', script)
 
-    def test_live_daily_apply_is_one_natural_language_terra_agent(self):
+    def test_live_daily_prepares_claim_ready_evidence_before_one_agent(self):
         script = (
             Path(__file__).parents[1] / "scripts" / "run-daily.sh"
         ).read_text(encoding="utf-8")
@@ -87,7 +88,11 @@ class BrowserWorkerTests(unittest.TestCase):
         live_path = script[fixture_end:]
         self.assertIn("--task-class application-lane-agent", live_path)
         self.assertIn('prompts/daily-apply-simple.md', live_path)
-        self.assertNotIn("job_search_loop.browser_worker run", live_path)
+        self.assertIn("job_search_loop.browser_worker run", live_path)
+        self.assertLess(
+            live_path.index("job_search_loop.browser_worker run"),
+            live_path.index("--task-class application-lane-agent"),
+        )
         self.assertNotIn("--task-class composition-agent", live_path)
         self.assertNotIn("--task-class job-search-terra-high", live_path)
         self.assertEqual(live_path.count('"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER"'), 1)
@@ -181,11 +186,16 @@ class BrowserWorkerTests(unittest.TestCase):
                 calls.append(kwargs)
                 return {
                     "status": "pending_verification",
-                    "blocked": ["no_ranking_ready_candidate"],
+                    "blocked": ["pre_submit_claim_ready_no_submit"],
                     "attempted_count": 3,
                     "executor": "browser-use-0.13.7",
                     "attempt_audit": [{"candidate_index": 1, "outcome": "blocked"}],
                     "continued_after_failure": True,
+                    "claim_ready_dossier": {
+                        "url_sha256": hashlib.sha256(
+                            b"https://jobs.ashbyhq.com/example/role"
+                        ).hexdigest(),
+                    },
                 }
 
             result = run_worker(
@@ -205,13 +215,17 @@ class BrowserWorkerTests(unittest.TestCase):
             )
 
             self.assertEqual(len(calls), 1)
-            self.assertEqual(result["blocked"], ["no_ranking_ready_candidate"])
+            self.assertEqual(result["blocked"], ["pre_submit_claim_ready_no_submit"])
             self.assertEqual(result["attempted_count"], 3)
             self.assertEqual(result["executor"], "browser-use-0.13.7")
             self.assertTrue(result["continued_after_failure"])
             self.assertEqual(result["attempt_audit"][0]["outcome"], "blocked")
             self.assertEqual(len(result["route_materialization"]), 1)
             self.assertIn("application_id", result["route_materialization"][0])
+            self.assertEqual(
+                result["claim_ready_dossier"]["application_id"],
+                result["route_materialization"][0]["application_id"],
+            )
             receipt = json.loads(
                 (root / "worker-receipt.json").read_text(encoding="utf-8")
             )

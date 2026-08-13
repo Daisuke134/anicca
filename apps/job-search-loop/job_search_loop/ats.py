@@ -82,9 +82,15 @@ def _field_key(control: dict[str, Any]) -> str | None:
         and role == "combobox"
     ):
         return "location"
-    if tag in {"input", "textarea"} and ("linkedin" in group_label or "linkedin" in text):
+    is_text_entry = tag in {"input", "textarea"} and control_type not in {
+        "checkbox",
+        "file",
+        "radio",
+        "submit",
+    }
+    if is_text_entry and ("linkedin" in group_label or "linkedin" in text):
         return "linkedin"
-    if tag in {"input", "textarea"} and ("github" in group_label or "github" in text):
+    if is_text_entry and ("github" in group_label or "github" in text):
         return "github"
     if "when can you start" in group_label or "available to start" in group_label:
         return "start_date"
@@ -92,6 +98,10 @@ def _field_key(control: dict[str, Any]) -> str | None:
         return "work_authorization"
     if "sponsorship" in group_label:
         return "sponsorship"
+    if "how did you hear" in group_label:
+        return "application_source"
+    if "tokyo office" in group_label and "days per week" in group_label:
+        return "tokyo_office"
     if control_type == "checkbox" and label.startswith("i confirm"):
         return "attestation"
     return None
@@ -285,6 +295,31 @@ def execute_non_submit_fill_plan(
                 {
                     "question": action.get("question"),
                     "answer": value,
+                    "fact_ids": action.get("fact_ids", []),
+                }
+            )
+            verified_count += 1
+        elif kind == "select":
+            value = action.get("answer")
+            if not isinstance(value, str) or not adapter.select(
+                frame_index, control_index, value
+            ):
+                raise RuntimeError("selected value verification failed")
+            answers.append(
+                {
+                    "question": action.get("question"),
+                    "answer": value,
+                    "fact_ids": action.get("fact_ids", []),
+                }
+            )
+            verified_count += 1
+        elif kind == "check":
+            if not adapter.check(frame_index, control_index):
+                raise RuntimeError("checked value verification failed")
+            answers.append(
+                {
+                    "question": action.get("question"),
+                    "answer": action.get("answer"),
                     "fact_ids": action.get("fact_ids", []),
                 }
             )

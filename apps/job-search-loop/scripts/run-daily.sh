@@ -315,6 +315,30 @@ chmod 600 "$EVIDENCE/page-open.json"
     --holder-pid "$$"
 ) >/dev/null 2>&1 &
 JOB_SEARCH_BROWSER_BEAT_PID=$!
+export JOB_SEARCH_PRE_SUBMIT_RESULT="$EVIDENCE/pre-submit-result.json"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.browser_worker run \
+  --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
+  --owner-receipt "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+  --holder-pid "$$" \
+  --run-id "$RUN_ID" \
+  --lock "$JOB_SEARCH_STATE_ROOT/browser-worker.lock" \
+  --worker-receipt "$EVIDENCE/pre-submit-worker-receipt.json" \
+  --prefilter-result "$JOB_SEARCH_PREFILTER_RESULT" \
+  --profile "$JOB_SEARCH_PROFILE" \
+  --materials-root "$JOB_SEARCH_MATERIALS_ROOT" \
+  --evidence-dir "$EVIDENCE/pre-submit" \
+  --application-ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --output "$JOB_SEARCH_PRE_SUBMIT_RESULT" \
+  >"$EVIDENCE/pre-submit-runner.json"
+PRE_SUBMIT_RC=$?
+set -e
+if [[ "$PRE_SUBMIT_RC" -ne 0 ]]; then
+  "$JOB_SEARCH_JQ" -n \
+    '{status:"unavailable",claim_ready_dossier:null,submitted:[],submit_unknown:[],blocked:["pre_submit_worker_unavailable"]}' \
+    >"$JOB_SEARCH_PRE_SUBMIT_RESULT"
+fi
+chmod 600 "$JOB_SEARCH_PRE_SUBMIT_RESULT" "$EVIDENCE/pre-submit-runner.json"
 set +e
 /usr/bin/env -u JOB_SEARCH_PRIVATE_ENV \
   "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \

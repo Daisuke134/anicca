@@ -163,6 +163,19 @@ class AshbyApplyTests(unittest.TestCase):
             resume_sha256="a" * 64,
         )
         self.assertEqual(plan["status"], "ready")
+        grounded_list = [
+            {"question": question, **answer}
+            for question, answer in result["answers"].items()
+        ]
+        self.assertEqual(
+            build_actions(
+                fields,
+                answer_map=grounded_list,
+                resume_path="/private/resume.pdf",
+                resume_sha256="a" * 64,
+            )["status"],
+            "ready",
+        )
 
     def test_profile_grounding_rejects_unknown_fact_id_for_custom_question(self):
         module = importlib.import_module("job_search_loop.ashby_apply")

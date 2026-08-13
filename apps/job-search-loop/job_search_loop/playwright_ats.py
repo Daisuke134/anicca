@@ -23,7 +23,7 @@ CONTROL_SELECTOR = (
 EXECUTOR = "cloakbrowser-cdp"
 
 
-def _private_write(path: Path, value: dict[str, Any]) -> None:
+def _private_write(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
     try:
@@ -73,7 +73,7 @@ def grounded_profile_answers(profile: dict[str, Any]) -> dict[str, dict[str, Any
     if isinstance(base, str) and base.strip():
         answers["location"] = {
             "value": base.strip(),
-            "fact_ids": ["profile.base"],
+            "fact_ids": ["profile.current_location_20260807"],
         }
     phone = candidate.get("phone")
     phone_status = candidate.get("phone_status")
@@ -86,6 +86,36 @@ def grounded_profile_answers(profile: dict[str, Any]) -> dict[str, dict[str, Any
         answers["phone"] = {
             "value": phone.strip(),
             "fact_ids": ["profile.phone"],
+        }
+    known_fact_ids = {
+        str(item.get("id"))
+        for item in profile.get("facts", [])
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
+    verified = {
+        "work_authorization": (
+            "Yes",
+            "legal_japan_work_authorization_20260730",
+        ),
+        "sponsorship": (
+            "No",
+            "legal_no_japan_sponsorship_required_20260806",
+        ),
+        "attestation": (
+            "true",
+            "ordinary_truthful_application_attestation_20260807",
+        ),
+        "application_source": ("Job board", "application_source_job_board_20260807"),
+        "tokyo_office": ("Yes", "availability_tokyo_office_three_days_20260806"),
+    }
+    for key, (value, fact_id) in verified.items():
+        if fact_id in known_fact_ids:
+            answers[key] = {"value": value, "fact_ids": [fact_id]}
+    start_date = candidate.get("start_date")
+    if isinstance(start_date, str) and start_date.strip():
+        answers["start_date"] = {
+            "value": start_date.strip(),
+            "fact_ids": ["profile.start_date"],
         }
     return answers
 
@@ -127,6 +157,7 @@ def attempt_ranked_candidates(
 ) -> dict[str, Any]:
     blocked: list[str] = []
     attempt_audit: list[dict[str, Any]] = []
+    claim_ready_dossier: dict[str, Any] | None = None
     attempted_count = 0
     for index, candidate in enumerate(candidates, start=1):
         attempted_count += 1
@@ -145,6 +176,9 @@ def attempt_ranked_candidates(
             blocked.append(f"candidate_{index}:error:{type(error).__name__}")
             continue
         if receipt.get("claim_ready") is True:
+            dossier = receipt.get("claim_ready_dossier")
+            if isinstance(dossier, dict):
+                claim_ready_dossier = dossier
             audit["outcome"] = "claim_ready"
             attempt_audit.append(audit)
             blocked.append("pre_submit_claim_ready_no_submit")
@@ -160,6 +194,7 @@ def attempt_ranked_candidates(
         "attempt_audit": attempt_audit,
         "continued_after_failure": len(attempt_audit) > 1
         and attempt_audit[0]["outcome"] != "claim_ready",
+        "claim_ready_dossier": claim_ready_dossier,
     }
 
 
@@ -242,6 +277,39 @@ class PlaywrightFillAdapter:
     def upload_matches(self, frame_index: int, control_index: int, path: str) -> bool:
         value = self._control(frame_index, control_index).input_value()
         return Path(value.replace("\\", "/")).name == Path(path).name
+
+    def select(self, frame_index: int, control_index: int, value: str) -> bool:
+        frame = self.page.frames[frame_index]
+        labeled = frame.get_by_label(value, exact=True)
+        if labeled.count() == 1 and labeled.get_attribute("type") in {
+            "radio",
+            "checkbox",
+        }:
+            labeled.check()
+            return labeled.is_checked()
+        control = self._control(frame_index, control_index)
+        if control.evaluate("node => node.tagName.toLowerCase()") == "select":
+            control.select_option(label=value)
+            return control.locator("option:checked").inner_text().strip() == value
+        if control.get_attribute("role") == "combobox":
+            control.fill(value)
+            option = frame.get_by_role("option", name=value, exact=True)
+            if option.count():
+                option.first.click()
+            else:
+                control.press("ArrowDown")
+                control.press("Enter")
+            return bool(control.input_value().strip())
+        control.click()
+        return any(
+            control.get_attribute(name) in {"true", "checked", "selected", "on"}
+            for name in ("aria-checked", "aria-pressed", "data-state")
+        )
+
+    def check(self, frame_index: int, control_index: int) -> bool:
+        control = self._control(frame_index, control_index)
+        control.check()
+        return control.is_checked()
 
     def screenshot(self, path: str) -> None:
         self.page.screenshot(path=path, full_page=True)
@@ -343,12 +411,34 @@ def run_pre_submit(
                         screenshot_path=evidence_dir / f"pre-submit-{digest}.png",
                         receipt_path=evidence_dir / f"fill-receipt-{digest}.json",
                     )
+                    answers_path = evidence_dir / f"employer-answers-{digest}.json"
+                    _private_write(answers_path, receipt["answers"])
+                    claim_ready = receipt["status"] == "claim_ready"
                     return {
-                        "claim_ready": receipt["status"] == "claim_ready",
+                        "claim_ready": claim_ready,
                         "blockers": [
                             f"pre_submit_blocked:{item}"
                             for item in receipt.get("blockers", [])
                         ],
+                        "claim_ready_dossier": (
+                            {
+                                "company": str(candidate.get("company") or ""),
+                                "title": str(candidate.get("title") or ""),
+                                "official_url": url,
+                                "url_sha256": digest,
+                                "portfolio_bucket": str(
+                                    candidate.get("portfolio_bucket") or "adjacent"
+                                ),
+                                "resume_path": routed["resume_path"],
+                                "snapshot_path": str(snapshot_path),
+                                "fill_receipt_path": str(
+                                    evidence_dir / f"fill-receipt-{digest}.json"
+                                ),
+                                "answers_path": str(answers_path),
+                            }
+                            if claim_ready
+                            else None
+                        ),
                     }
 
                 return {**attempt_ranked_candidates(candidates, attempt), "executor": EXECUTOR}

@@ -81,6 +81,18 @@ def canonical_url(value: str) -> str:
     )
 
 
+def canonical_application_url(value: str) -> str:
+    normalized = canonical_url(value)
+    parsed = urlsplit(normalized)
+    path = parsed.path
+    if (parsed.hostname or "") in {
+        "jobs.ashbyhq.com",
+        "app.ashbyhq.com",
+    } and path.endswith("/application"):
+        path = path[: -len("/application")] or "/"
+    return urlunsplit((parsed.scheme, parsed.netloc, path, parsed.query, ""))
+
+
 def canonical_job_id(company: str, title: str, url: str) -> str:
     identity = "\n".join(
         (_normalize_text(company), _normalize_text(title), canonical_url(url))
