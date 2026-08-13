@@ -18,6 +18,8 @@ back from disk. A CLI precondition failure is a data-preparation failure, not a
 reason to inspect implementation code.
 Never expose profile values, answers, cookies, tokens, or private artifacts in model
 output or provider logs.
+Never read, print, search for, or enumerate `.env`, `$JOB_SEARCH_PRIVATE_ENV`,
+`~/.openclaw/.env`, credential files, browser cookies, or any other secret store.
 Do not embed private profile values in shell commands, command arguments, generated
 source, JSON output, or final JSON. Do not send Telegram messages directly. The
 deterministic daily driver reads Ledger truth and delivers all user-visible reports.

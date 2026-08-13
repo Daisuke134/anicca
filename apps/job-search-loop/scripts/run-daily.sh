@@ -309,7 +309,8 @@ chmod 600 "$EVIDENCE/page-open.json"
 ) >/dev/null 2>&1 &
 JOB_SEARCH_BROWSER_BEAT_PID=$!
 set +e
-"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
+/usr/bin/env -u JOB_SEARCH_PRIVATE_ENV \
+  "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class application-lane-agent \
   --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-apply-simple.md" \
   --schema "$JOB_SEARCH_APP_ROOT/schemas/pass-result.v1.schema.json" \
