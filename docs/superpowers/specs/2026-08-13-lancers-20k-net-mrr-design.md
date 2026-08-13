@@ -3,10 +3,14 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** 設計承認済み。実装計画・実装・ランタイム移行はこの仕様の後段
+**状態:** G1 acquisition lane は検証済みcanonical releaseで稼働中。最初のqualified案件と`ApplicationReceipt`を待つ
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
+
+この文書をLancers money loopの**設計・acceptance gate・完了証拠・現在地・残TODOの唯一の正本**とする。
+各TODOは一件ずつ実行し、完了証拠をこの文書へ反映してcommit/pushしてから次へ進む。実行時の件数・
+金額・receiptの事実は外部runtime stateとappend-only ledgerを権威とし、この文書へ推測値を転記しない。
 
 実行の基本形は、各 entity の business state を一本の直線として保持し、実行だけを
 4 つの revenue lane に並列化する構成である。entity ごとの常駐 loop/process/cron や、
