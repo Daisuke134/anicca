@@ -27009,3 +27009,10 @@
 {"ts":1786624284,"wake_id":"00MSRHYWZ92113D3BC3E374863","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana on-chain microtasks paid USDC platform freelancers AI agents [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake ("}
 {"ts":1786624414,"wake_id":"00MSRI1PC97D89CD42A6084574","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786624545,"wake_id":"00MSRI4I6606AE2AFC4937492D","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana highest APY yield vault USDC automatic deposit [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates sur"}
+{"ts":1786624678,"wake_id":"00MSRI7CH14D207F383B774855","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786624807,"wake_id":"00MSRIA4I7598A439D5DD84F20","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786624936,"wake_id":"00MSRICVSIA77DC08A53FB4E2F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786625064,"wake_id":"00MSRIFMA8AFEB19B0486243A2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786625191,"wake_id":"00MSRIICSJ449EDC2FCD964893","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786625322,"wake_id":"00MSRIL5FB2BB83A7F54F745C5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786625451,"wake_id":"00MSRINXGZC48C67CF86F54712","kind":"narrate","sleep_s":120,"model":"auto"}
