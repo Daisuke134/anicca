@@ -327,8 +327,9 @@ SHA を記録する、(4) その後にだけ application service を enable す�
 行った場合も、service enable 前に byte-for-byte で canonical repo に反映する。merge/deploy の検証後
 は temporary worktree を削除するが、runtime state はこの source migration のために移動・削除しない。
 application launchd は verified incident の blocker、canonicalization、safe deployment、provider-only検証、
-最初の正常wakeを順に閉じた後、検証済みreleaseでenabledにする。現在は30分tickでenabledであり、
-qualified案件がないtickは外部送信せず`no_eligible_project`で終了する。
+最初の正常wakeを順に閉じた後だけ検証済みreleaseでenabledにする。現在はTask 6Cの本番acceptance待ちで
+disabled / unloadedであり、receipt検証後に30分tickを再開する。qualified案件がないtickは外部送信せず
+`no_eligible_project`で終了する。
 
 ### 4.7 ideal canonical folder tree
 
@@ -432,10 +433,10 @@ schema JSON parse、diff checkがPASSし、application stateとledger hashは不
 
 canonical main `8487560899dfbf17b129e815b25148feea633293`をnormal immutable releaseとして
 原子的にdeployし、13 filesのmanifest hash一致後にofficial wakeを一回行う。run 1、exit 0、stderr 0、
-`observed=13`、`eligible=0`、`submitted=false`、`no_eligible_project`で終了し、二つのpending、
+`observed=13`、`eligible=0`、`submitted=false`、`no_eligible_project`で終了し、このwake時点の二つのpending、
 application/terminal/ledger hash、`application_verified=11`は不変である。保存済み同一snapshotで
 runtime-validだったeligible候補は既存claim/pendingではないため、差は重複filterではなくfresh planner
-decisionである。Acquisitionは同releaseでenabledを維持し、次のbounded tickを実行する。
+decisionである。この時点ではAcquisitionを同releaseでenabledに維持し、次のbounded tickを実行した。
 
 次のofficial wakeは`observed=13`、`eligible=1`でproject `5585503`（¥98,000）をsubmit境界へ進め、
 stateへ一意claim/pendingを一件追加するが、公式ID readbackを閉じられず`submission_uncertain`になる。
