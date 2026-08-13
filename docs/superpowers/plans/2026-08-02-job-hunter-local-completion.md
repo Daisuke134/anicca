@@ -24,10 +24,11 @@ exit `0`; corrected daily reports are delivered and all health gates pass.
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
 unloaded. They are now loaded. The pushed source commit
-`d854a4ce18a4e00d411bbc04fd03437df631099e` is now the active immutable release.
+`9c18e355e6d52bdfb390d0a28946fee05b3f23a9` is now the active immutable release.
 It contains O2-05N natural reporting, O2-05U unlimited eligible applications, and
 O2-05B binding to the existing `interactive:dais` browser at `127.0.0.1:9222` with no
-restart fallback. Release `4f10d92a4...` is the rollback target. Three real daily
+restart fallback, plus the first O2-06 salary-policy correction. Release
+`d854a4ce18a4e00d411bbc04fd03437df631099e` is the rollback target. Three real daily
 wakes proved discovery and processing, natural failure reporting, and safe browser
 ownership. All current health gates pass.
 O2-06 through O2-12 improve and prove the live loop; they must
@@ -1480,7 +1481,21 @@ performs the real E2E, and records the milestone.
   roles that can employ or contract a Japan resident, including eligible distinct
   overseas/remote requisitions from the four manually fenced companies; prove
   discovery and ranking with real official-job logs rather than adding a second
-  scheduler or browser.
+  scheduler or browser. **Salary-policy slice complete:** production strategy,
+  ranking, knockout, recovery-plan, model replay, and private profile now agree on
+  JPY 7M minimum, JPY 10M target, JPY 30M+ stretch, and no upper cap. Source commit
+  `9c18e355e6d52bdfb390d0a28946fee05b3f23a9` is pushed and active; its archive has
+  SHA-256 `9d29a0c97aa0297dd4ad8e5e60b62ba88a8d07c05f1bef49fd9d8fa96adc28f5`,
+  `267` entries, and no private state. The full suite passes `577/577`. Real runtime
+  plan evidence at
+  `~/.local/state/anicca/job-search/evidence/o2-06-policy-20260814-0135/recovery-plan.json`
+  contains `compensation_floor_jpy_7000000` plus the Japan/APAC remote query segment.
+  Active production evaluation rejects JPY 6.9M, accepts JPY 7M, JPY 10M, JPY 30M,
+  and JPY 100M, proving the floor and the absence of an upper cap. Activation retained
+  the healthy prior release and preserved shared-browser PID `22279`, UUID
+  `2ac269b0-350a-49a4-971e-9a0556aed50d`, and all six baseline page IDs. Remaining
+  in O2-06: prove travel/clearance behavior and salary/remote segmentation against
+  real current official postings during a live daily wake.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
