@@ -248,6 +248,50 @@ def _reconcile_pending(descriptor: Mapping[str, object], state_path: Path) -> Ap
     blocked = (project_id,) if _provider_terminal_blocked(result) else ()
     return _batch_summary(result, 1, 1, verified, blocked, unresolved_project_id=None if verified or blocked else project_id, submitted=result.submitted)
 
+def run_reconcile_only(state_path: Path, output_stream: Optional[TextIO] = None) -> dict[str, object]:
+    try:
+        descriptors = application_tick.shared.read_pending_descriptors(Path(state_path))
+    except Exception:
+        result = {
+            "ok": False,
+            "platform": PLATFORM,
+            "submitted": False,
+            "application_verified": False,
+            "reconciled_project_ids": [],
+            "verified_project_ids": [],
+            "unresolved_project_ids": [],
+            "error": "state_invalid",
+        }
+        if output_stream is not None:
+            output_stream.write(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n")
+            output_stream.flush()
+        return result
+
+    reconciled_project_ids = []
+    verified_project_ids = []
+    unresolved_project_ids = []
+    for descriptor in descriptors:
+        project_id = descriptor["project_id"]
+        reconciled_project_ids.append(project_id)
+        result = _reconcile_pending(descriptor, Path(state_path))
+        if _provider_verified(result):
+            verified_project_ids.append(project_id)
+        else:
+            unresolved_project_ids.append(project_id)
+    summary = {
+        "ok": not unresolved_project_ids,
+        "platform": PLATFORM,
+        "submitted": False,
+        "application_verified": bool(verified_project_ids),
+        "reconciled_project_ids": reconciled_project_ids,
+        "verified_project_ids": verified_project_ids,
+        "unresolved_project_ids": unresolved_project_ids,
+    }
+    if output_stream is not None:
+        output_stream.write(json.dumps(summary, ensure_ascii=False, separators=(",", ":")) + "\n")
+        output_stream.flush()
+    return summary
+
 def _submit(fn: Callable[..., object], row: Mapping[str, object], proposal: str, amount: int, due: str, state_path: Path) -> object:
     values = {"project_id": str(row["external_id"]), "proposal_text": proposal, "proposed_amount_minor": amount, "delivery_due_on": due, "state_path": state_path}
     try:
@@ -372,10 +416,11 @@ run_application_loop = run_loop
 run_once = run_loop
 
 def main(argv: Optional[Sequence[str]] = None, *, discovery: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, now: Optional[Callable[[], object]] = None, clock: Optional[Callable[[], object]] = None, stdout: Optional[TextIO] = None) -> int:
-    parser = argparse.ArgumentParser(allow_abbrev=False); parser.add_argument("--json", action="store_true", required=True); parser.add_argument("--state-path", default=str(DEFAULT_STATE_PATH)); args = parser.parse_args(list(argv) if argv is not None else None)
-    result = run_loop(discoverer=discovery, planner=planner, submitter=submitter, clock=clock or now, state_path=Path(args.state_path), output_stream=sys.stdout if stdout is None else stdout)
+    parser = argparse.ArgumentParser(allow_abbrev=False); parser.add_argument("--json", action="store_true", required=True); parser.add_argument("--reconcile-only", action="store_true"); parser.add_argument("--state-path", default=str(DEFAULT_STATE_PATH)); args = parser.parse_args(list(argv) if argv is not None else None)
+    output_stream = sys.stdout if stdout is None else stdout
+    result = run_reconcile_only(Path(args.state_path), output_stream=output_stream) if args.reconcile_only else run_loop(discoverer=discovery, planner=planner, submitter=submitter, clock=clock or now, state_path=Path(args.state_path), output_stream=output_stream)
     return 0 if result["ok"] else 1
 
-__all__ = ["AGENT_RUNNER", "AGENT_RUNNER_PATH", "ApplicationLoopResult", "DEFAULT_EVIDENCE_DIR", "DEFAULT_EVIDENCE_ROOT", "DEFAULT_STATE_PATH", "PLANNER_SCHEMA", "SCHEMA_PATH", "application_tick", "build_planner_prompt", "invoke_planner", "main", "run_application_loop", "run_loop", "run_once", "status", "validate_decisions"]
+__all__ = ["AGENT_RUNNER", "AGENT_RUNNER_PATH", "ApplicationLoopResult", "DEFAULT_EVIDENCE_DIR", "DEFAULT_EVIDENCE_ROOT", "DEFAULT_STATE_PATH", "PLANNER_SCHEMA", "SCHEMA_PATH", "application_tick", "build_planner_prompt", "invoke_planner", "main", "run_application_loop", "run_loop", "run_once", "run_reconcile_only", "status", "validate_decisions"]
 
 if __name__ == "__main__": raise SystemExit(main())
