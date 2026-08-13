@@ -3022,14 +3022,6 @@ class Ledger:
             if existing is None and current_state != "materials_ready":
                 return None
             stored_bucket = portfolio_bucket or "legacy_unallocated"
-            if portfolio_bucket is not None:
-                bucket_count = self.connection.execute(
-                    "SELECT COUNT(*) AS count FROM daily_slots "
-                    "WHERE japan_day = ? AND portfolio_bucket = ?",
-                    (japan_day, portfolio_bucket),
-                ).fetchone()
-                if int(bucket_count["count"]) >= PORTFOLIO_LIMITS[portfolio_bucket]:
-                    return None
             used = {
                 int(row["slot"])
                 for row in self.connection.execute(
@@ -3037,11 +3029,7 @@ class Ledger:
                     (japan_day,),
                 ).fetchall()
             }
-            slot = next((candidate for candidate in range(1, 11) if candidate not in used), None)
-            if slot is None and user_authorized_overflow:
-                slot = max(used, default=10) + 1
-            if slot is None:
-                return None
+            slot = max(used, default=0) + 1
             claimed_at = _now()
             intent = SubmitIntent(
                 intent_id=(

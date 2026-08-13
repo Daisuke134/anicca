@@ -211,12 +211,12 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(telemetry.spans[0].attributes, {"application.id": self.application_id})
         self.assertNotIn("resume", json.dumps(telemetry.spans[0].attributes))
 
-    def test_daily_portfolio_enforces_two_five_three_bucket_caps(self):
+    def test_daily_portfolio_buckets_do_not_cap_submissions(self):
         self.assertIn("portfolio_bucket", inspect.signature(self.ledger.claim_submission).parameters)
         limits = {"dream": 2, "strong_fit": 5, "adjacent": 3}
         for day_index, (bucket, limit) in enumerate(limits.items(), start=1):
             japan_day = f"2026-08-0{day_index}"
-            for index in range(limit):
+            for index in range(limit + 1):
                 application_id = self.ledger.add_application(
                     f"{bucket}-{index}",
                     "AI Role",
@@ -232,20 +232,9 @@ class LedgerTests(unittest.TestCase):
                         portfolio_bucket=bucket,
                     )
                 )
-            overflow_id = self.ledger.add_application(
-                f"{bucket}-overflow",
-                "AI Role",
-                f"https://jobs.example.com/{bucket}-overflow",
-            )
-            self._ready(overflow_id)
-            self.assertIsNone(
-                self._claim(
-                    self.ledger,
-                    overflow_id,
-                    japan_day,
-                    f"{bucket}-overflow-hash",
-                    portfolio_bucket=bucket,
-                )
+            self.assertEqual(
+                self.ledger.daily_slot_count(japan_day),
+                limit + 1,
             )
 
     def test_duplicate_job_returns_same_application(self):
@@ -520,7 +509,7 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(len(self.ledger.events(self.application_id)), 3)
 
-    def test_daily_quota_allows_ten_and_blocks_eleventh(self):
+    def test_daily_submission_slots_have_no_ten_application_cap(self):
         for index in range(10):
             application_id = self.ledger.add_application(
                 f"Company {index}",
@@ -539,10 +528,10 @@ class LedgerTests(unittest.TestCase):
             "Company 11", "AI Product Engineer", "https://jobs.example.com/quota-11"
         )
         self._ready(eleventh_id)
-        self.assertIsNone(
-            self._claim(self.ledger, eleventh_id, "2026-07-28", "hash-11")
-        )
-        self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 10)
+        eleventh = self._claim(self.ledger, eleventh_id, "2026-07-28", "hash-11")
+        self.assertIsNotNone(eleventh)
+        self.assertEqual(eleventh.slot, 11)
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 11)
 
     def test_explicit_user_authorization_claims_one_overflow_slot_with_reason(self):
         for index in range(10):
@@ -705,7 +694,7 @@ class LedgerTests(unittest.TestCase):
             [(1, "legacy-hash", "not_submitted")],
         )
 
-    def test_concurrent_claims_never_exceed_ten(self):
+    def test_concurrent_claims_all_get_unique_unbounded_slots(self):
         ids = [self.application_id]
         for index in range(1, 20):
             ids.append(
@@ -741,7 +730,11 @@ class LedgerTests(unittest.TestCase):
         for thread in threads:
             thread.join()
         self.ledger = Ledger(self.db)
-        self.assertEqual(sum(value is not None for value in results), 10)
+        self.assertEqual(sum(value is not None for value in results), 20)
+        self.assertEqual(
+            sorted(value.slot for value in results if value is not None),
+            list(range(1, 21)),
+        )
 
     def test_snapshot_hash_mismatch_cannot_claim_or_consume_slot(self):
         self._ready()

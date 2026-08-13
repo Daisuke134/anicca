@@ -290,29 +290,21 @@ raise SystemExit(0)
         else:
             self.assertIn("予期しない問題", message)
 
-    def test_daily_full_quota_exits_without_browser_or_model(self):
+    def test_daily_with_ten_confirmed_still_runs_normal_application_path(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            result, calls = self._run_daily_with_fake_python(root, 10, 99)
+            result, calls = self._run_daily_with_fake_python(root, 10, 0)
 
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(self._failure_calls(calls), [])
-            self.assertEqual(len(self._release_calls(calls)), 0)
+            self.assertEqual(len(self._release_calls(calls)), 1)
             self.assertEqual(len(self._daily_reporting_calls(calls)), 1)
             encoded = json.dumps(calls)
-            self.assertNotIn("job_search_loop.browser_owner", encoded)
-            self.assertNotIn("agent_runner.py", encoded)
-            summaries = list((root / "state" / "evidence").glob("daily-*/summary.json"))
-            self.assertEqual(len(summaries), 1)
-            self.assertEqual(
-                json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
-                "daily_quota_reached",
-            )
-            projection = root / "state" / "summary.v2.json"
-            self.assertTrue(projection.is_file())
-            self.assertEqual(projection.stat().st_mode & 0o777, 0o600)
+            self.assertIn("job_search_loop.browser_owner", encoded)
+            self.assertIn("agent_runner.py", encoded)
+            self.assertNotIn("daily_quota_reached", encoded)
 
-    def test_daily_two_slots_consumed_still_runs_toward_ten(self):
+    def test_daily_with_prior_submissions_runs_normal_application_path(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             result, calls = self._run_daily_with_fake_python(root, 2, 0)

@@ -115,13 +115,13 @@ class LaunchdTests(unittest.TestCase):
             script.index("job_search_loop.inbox mark"),
         )
 
-    def test_daily_shell_skips_model_when_submission_quota_is_full(self):
+    def test_daily_shell_has_no_application_count_stop(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
-        self.assertIn("confirmed_daily_count", script)
+        self.assertNotIn("confirmed_daily_count", script)
         self.assertNotIn("daily_slot_count", script)
-        self.assertIn('if [[ "$CONFIRMED_COUNT" -ge "10" ]]', script)
-        self.assertIn("daily_quota_reached", script)
+        self.assertNotIn("CONFIRMED_COUNT", script)
+        self.assertNotIn("daily_quota_reached", script)
         self.assertIn("job_search_loop.quota", script)
         self.assertIn('--identity "job-search:dais"', script)
 

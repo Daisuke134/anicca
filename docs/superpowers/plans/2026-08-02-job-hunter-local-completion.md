@@ -10,8 +10,9 @@
 work. O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
-daily outcome reporting is complete. O2-05U is now the active slice and removes the
-measured global ten-application stop and per-bucket submission caps before activation.
+daily outcome reporting is complete. O2-05U1 removes the measured global
+ten-application stop and per-bucket submission caps; O2-05U2 is now the active slice
+and removes the remaining fixed-ten search/recovery target before activation.
 O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
 mail, and learning lanes are disabled and unloaded and must not be described as
 healthy or complete.
@@ -22,8 +23,9 @@ unloaded; the last daily evidence is from 2026-08-08. The active release is
 `932ae25e...`, which still leases `job-search:dais` on a separate browser currently
 listening on `127.0.0.1:49167`, can restart that browser after an attach failure, and
 contains the old technical progress copy. Do not load that stale release. O2-05N is
-complete. The two remaining behavioral blockers before activation are O2-05U, which
-removes the fixed daily and portfolio application caps, and O2-05B, which binds the
+complete. O2-05U1 removes the fixed daily and portfolio submission caps. The two
+remaining behavioral blockers before activation are O2-05U2, which removes the old
+fixed-ten search/recovery target, and O2-05B, which binds the
 daily lane to the existing `interactive:dais` browser at `127.0.0.1:9222` and removes
 restart behavior.
 Immediately after O2-05U and O2-05B are pushed, build/activate once and load
@@ -31,10 +33,9 @@ daily/inbox/learning. O2-06 through O2-12 improve and prove the live loop; they 
 not delay turning the application loop on.
 
 **Execution rule from this point:** no test-first/TDD ceremony and no separate
-adversarial reviewer. The primary owns one next item, its design, acceptance criteria,
-spec state, and completion decision; Luna implements that bounded item; the primary
-directly inspects the finished diff, performs the smallest real verification, updates
-this spec, commits, pushes, and moves to the next item.
+adversarial reviewer or implementation subagent. The primary directly owns and
+executes one next item: design, implementation, diff inspection, verification, spec
+state, completion decision, commit, and push.
 
 ## 0. Clean runtime consolidation gate (O2-05C)
 
@@ -1166,14 +1167,10 @@ smallest relevant checks are run after implementation.
 
 Execution ownership is fixed for every remaining slice. The primary Codex controller
 alone writes and changes this running spec, task briefs, task order, acceptance
-criteria, and completion state. Luna receives a bounded, already-decided code task;
-Luna edits only its assigned production/test files, runs the exact requested commands,
-and returns raw evidence; it does not author, reinterpret, or update the spec or plan.
-The primary controller
-directly inspects the diff, decides any correction, updates this spec itself, commits,
-pushes, performs the real E2E, and records the milestone. Subagent-written spec text
-is never completion evidence until the primary has independently inspected and
-adopted it.
+criteria, and completion state. Per the current owner instruction, no implementation
+subagent or separate reviewer is used. The primary controller directly implements,
+inspects the diff, decides any correction, updates this spec itself, commits, pushes,
+performs the real E2E, and records the milestone.
 
 - [x] **O2-01** — Recreate and measure the missing dedicated branch/worktree; preserve
   unrelated main changes; measure launchd, browser, Gmail, release, tests, resumes,
@@ -1302,11 +1299,24 @@ adopted it.
   full Job Hunter suite passes `581/581` in `35.037s`; compile and diff checks pass.
   The natural-language completion report is acknowledged by Telegram message ID
   `16306`; pushed implementation commit: `2b219f5d9`.
-- [ ] **O2-05U — unlimited eligible applications before launchd load** — Remove the
-  `confirmed_daily_count >= 10` early stop, the ordinary `1..10` slot ceiling, and
+- [x] **O2-05U1 — remove submission count enforcement** — Removed the
+  `confirmed_daily_count >= 10` early stop, ordinary `1..10` slot ceiling, and
   dream/strong-fit/adjacent submission ceilings from the existing execution path.
-  Keep those buckets only for priority ordering and outcome analysis. Preserve the
-  current queue, ledger, evidence, duplicate requisition fences, JPY 7M floor,
+  A normal eleventh application now receives slot `11`; 20 concurrent claims all
+  receive unique slots `1..20`; every old portfolio limit plus one succeeds; and a
+  production-shaped daily run with ten confirmed applications continues into the
+  normal application path. Focused checks pass `5/5`, related suites pass `71/71`,
+  the full Job Hunter suite passes `581/581` in `35.299s`, and shell syntax, compile,
+  and diff checks pass.
+- [ ] **O2-05U2 — remove the fixed-ten search/recovery target** — Keep portfolio
+  buckets only for priority ordering and outcome analysis. Replace the legacy quota
+  deficit/recovery contract that searches toward a fixed 2/5/3 total with continuous
+  discovery of eligible backlog, while preserving historical immutable quota rows.
+  New evidence reports confirmed count and eligible backlog, never a deficit to ten.
+  Add no scheduler, service, table, migration, or second queue.
+- [ ] **O2-05U — unlimited eligible applications before launchd load** — Close when
+  O2-05U1 and O2-05U2 are both pushed and verified. Preserve the current queue,
+  ledger, evidence, duplicate requisition fences, JPY 7M floor,
   truth/authorization gates, receipt requirement, and per-wake safety budget. When a
   wake cannot finish every eligible role, persist the remainder and continue on the
   next wake without owner approval. Historical immutable quota rows remain readable;
