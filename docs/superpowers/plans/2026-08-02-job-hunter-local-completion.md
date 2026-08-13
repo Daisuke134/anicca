@@ -734,7 +734,8 @@ after bounded recovery fails.
   `origin/docs/job-hunter-spec-20260805` remains `66ab20d07ca7c310e53d2008707cb982a116ca16`
   with 364 commits after `2099a29da61345a120d2f68a819d7b854dcebd83`. Target-only
   commits `8f928c2e7` and `b3a69f9f0` replayed in order; integration tip before this
-  status update is `8141db51bbc4fcd7cf6da86e72be39d1c0c017a7`.
+  status update is `8141db51bbc4fcd7cf6da86e72be39d1c0c017a7`; the pushed O2-02
+  verification commit is `c7c65e3ffb7307d929fa6a5425f0cab5c76e9dc5`.
 - Rebase conflicts were limited to shared runner files: `runtime/agent-runner/agent_runner.py`
   retained current-main application-intent browser-route isolation and donor
   repeatable-agent credential stripping; `runtime/agent-runner/config.json` retained
