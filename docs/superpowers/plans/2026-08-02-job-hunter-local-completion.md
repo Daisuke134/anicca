@@ -1822,6 +1822,22 @@ performs the real E2E, and records the milestone.
   generic accessibility alert or an actual form error, and correct only that classifier
   or entry-control path. Then release and rerun the existing loop; receipt truth remains
   unchanged.
+
+  **Generic-alert classifier slice complete in pushed source:** the stored redacted
+  snapshot proves the sole trigger was one `role=alert` span of length `44` and SHA-256
+  prefix `45c2b56ed99be4a3`; it matched none of `required`, `invalid`, `please`, `error`,
+  `closed`, `unavailable`, `loading`, or `apply`. Commit `8c4953224` therefore removes
+  only the blanket “any non-empty alert” condition and retains the existing explicit
+  validation-language regex. A regression proves a generic accessibility announcement
+  cannot hide a real Apply entry. Focused tests pass `4/4`; compilation, diff checks,
+  and the complete suite pass `582/582`. Reclassification of the stored Salesforce
+  snapshot changes from false `validation_error` to truthful `unknown`, because that
+  final alternate page contains no Apply control.
+
+  **Immediate next slice:** build and activate the pushed classifier release, rerun the
+  real daily lane, and verify the NVIDIA Workday Apply entry is no longer hidden by a
+  generic aria-live alert. Continue only through the exact owned page and record a
+  submission solely from an authoritative receipt.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
