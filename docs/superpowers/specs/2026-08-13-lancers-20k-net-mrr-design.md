@@ -690,6 +690,24 @@ soft targetはhandwritten reporter 320 LOC以下、既存outbox snapshotを除�
 installer/launchd 2 files、test 2 filesである。application loop、marketplace ledger schema、新DB、新service、
 report envelope framework、CloudEvents、ML/agent compositionは作らない。
 
+G2 implementationはLunaがTDDで実装し、reporter 320 LOC、focused tests 12件、installerを含むLancers
+統合30件、agent-runner 15件、compile、diff checkがPASSする。canonical releaseは15 filesとなり、既存
+report labelはexact release内のreporterを指し、`StartInterval=300`、`RunAtLoad`なしでrenderされる。
+installerはlaunchctlを呼ばず、application schedulerの設定・state・ledger・listingを変更しない。
+
+許可されたfresh adversarial review 1/1は、(1) application `ok:false`でもsuccess iconになれる、
+(2) reporter実行時刻をsource観測時刻として表示できる、(3) Telegram provider ID `0 / -1 / error`を
+deliveredにできる、の三つをHIGHとして反証した。同じLunaが各REDを観測し、completeにはapplication
+`ok is True`を必須化、`source_observed_at`はapplication JSON内のtimezone付きRFC3339だけを採用、
+provider IDは正の十進整数/文字列だけを受理するよう最小修正した。二回目のreviewは行わず、primaryが
+focused 12 / Lancers 30 / runner 15、320 LOC ceiling、compile/diff checkを再検証する。
+
+本番acceptance前の状態は、reporter disabled / unloaded、application enabled、application pending 0、
+ledger application receipts 14、公式storefront受付中6 / 受付休止中0 / 非表示0 / 下書き0である。
+次はこの実装をcanonical mainへ統合し、exact-SHA install後もreporterを停止したままnotifier interceptionで
+実snapshotを検査する。そこでsource truth、warning icon、dedupe、state/ledger/listing不変を確認してから、
+既存report ownerを一回だけenable / kickする。
+
 ## 10. 段階的 acceptance gate
 
 各 gate は、その前段の証拠が揃った後にだけ開ける。以下は実装ファイルの手順ではなく、
