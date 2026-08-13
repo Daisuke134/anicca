@@ -826,7 +826,9 @@ after bounded recovery fails.
   Job Hunter suite `573/573` in `44.626s`; compile and diff checks pass. The real
   ledger SHA-256 and mtime/size were identical before and after verification. O2-05
   remains unchecked: real-ledger repair, Gmail audit, release activation, LaunchAgent
-  load, Guardian runtime checks, and a real canonical cycle are still pending.
+  load, Guardian runtime checks, and a real canonical cycle are still pending. The
+  completion milestone was delivered through the canonical Job Hunter Telegram
+  outbox with message ID `15995`.
 - The same ledger has 25 `submit_unknown` applications: 24 Ashby and one Cursor;
   22 are agent-owned and three are owner-imported. None has a stored authoritative
   confirmation. All have clicked-phase fences; 17 reached `request_started` and
