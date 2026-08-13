@@ -2329,6 +2329,32 @@ performs the real E2E, and records the milestone.
   deterministic pre-submit. Then continue from the authenticated application wizard
   to truthful field/material completion; job Submit remains forbidden until the
   existing intent and verification gates are satisfied.
+
+  Exact-Apply release and twelfth real wake are complete. Pushed commit
+  `ba3b487ae4d6f2085acbad87569b822fac0553f5` built twice to byte-identical archive
+  SHA-256 `bef5976fcd3cf75da49ae1b80aa3da6d25261dd13cd947f5efc37f8d55e08f82`
+  with `267` entries and is active with
+  `4bd18eb33337a4702af088bbc7328387240984c6` as rollback. Real wake
+  `daily-20260814-064806` produces two private redacted Workday account receipts, one
+  for each ranking-ready NVIDIA role. Both have `status=sign_in_clicked`,
+  `browser_action_count=6`, `created=false`, and `secret_values_returned=false`, and
+  both reach the exact `/apply/applyManually` route with `21` structural controls.
+  This closes deterministic Apply, Apply Manually, and native Sign In entry.
+
+  The resulting official Workday surface reports that the email/password is wrong or
+  the account is locked. The current private NVIDIA credential is therefore not an
+  authenticated application session and must not be retried. No submit intent,
+  request start, receipt, or submit-unknown was created. Telegram sent message ID
+  `16770`; cleanup closed exactly one owned page, restored all seven pre-existing page
+  IDs, and left production Ledger byte-identical at SHA-256
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  **Immediate next slice:** perform one official NVIDIA Workday password-reset request
+  using the verified application email, then consume only the trusted tenant reset
+  message through `gog`. Keep the reset URL/token and new password private, update the
+  existing `workday-accounts.json` atomically, and verify native sign-in before
+  returning to the application wizard. Do not retry the stale password or click job
+  Submit.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
