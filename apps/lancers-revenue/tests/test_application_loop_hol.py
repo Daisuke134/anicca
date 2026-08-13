@@ -110,6 +110,47 @@ def _ineligible_decision(project_id: str) -> dict[str, object]:
 
 
 class ApplicationLoopHolTests(unittest.TestCase):
+    def test_normal_tick_submits_only_first_ranked_eligible_project(self):
+        application_loop = _load_deployed_loop()
+        submitter_project_ids = []
+        opportunities = [_opportunity("6000001"), _opportunity("6000002")]
+
+        def discoverer(**kwargs):
+            return {"ok": True, "error": None, "opportunities": opportunities}
+
+        def planner(prompt, evidence):
+            return {
+                "decisions": [
+                    _eligible_decision("6000001"),
+                    _eligible_decision("6000002"),
+                ]
+            }
+
+        def submitter(**kwargs):
+            submitter_project_ids.append(kwargs["project_id"])
+            return {
+                "ok": True,
+                "submitted": True,
+                "application_verified": True,
+                "project_id": kwargs["project_id"],
+                "provider_proposal_id": f"proposal-{kwargs['project_id']}",
+            }
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = application_loop.run_loop(
+                state_path=root / "application.json",
+                evidence_root=root / "evidence",
+                discoverer=discoverer,
+                planner=planner,
+                submitter=submitter,
+                clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
+            )
+
+        self.assertEqual(submitter_project_ids, ["6000001"])
+        self.assertEqual(result["eligible_count"], 2)
+        self.assertEqual(result["verified_count"], 1)
+
     def test_reconcile_only_reconciles_every_pending_application_without_discovery_or_submit(self):
         application_loop = _load_deployed_loop()
         project_ids = ["5585496", "5586112"]
