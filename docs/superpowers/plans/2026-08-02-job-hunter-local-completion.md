@@ -7,10 +7,10 @@
 **Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Status:** O2-03 reproducible release validation and O2-05P regional prompt fence
-are complete; O2-05A1 authoritative submission preservation is complete. O2-05
-through O2-12 remain open. Resume baseline is accepted. Autonomous application,
-mail, and learning lanes are disabled and unloaded and must not be described as
-healthy or complete.
+are complete; O2-05A1 authoritative submission preservation is complete and
+O2-05A2 is the active slice. O2-05 through O2-12 remain open. Resume baseline is
+accepted. Autonomous application, mail, and learning lanes are disabled and
+unloaded and must not be described as healthy or complete.
 
 ## 1. Done condition
 
@@ -123,6 +123,13 @@ Once base resumes and candidate facts are accepted, Job Hunter:
 
 There is no routine `Apply / Skip / Edit` approval gate. The user may have many
 applications and offers and choose among verified outcomes later.
+
+Every enabled daily wake must perform real job-hunting work: refresh official-job
+discovery, evaluate new eligible roles, and apply autonomously to every truthful,
+non-duplicate role that passes this spec. A day with zero confirmed applications is
+not silently treated as success. The daily Telegram report states what was searched,
+which roles were rejected and why, what remains blocked, and the next automatic
+action. Job Hunter never claims an application without an authoritative receipt.
 
 Owner-declared application history is authoritative even when an old external
 application has no ATS receipt in the local ledger. OpenAI, Anthropic,
@@ -546,6 +553,12 @@ not presented as tappable mobile links.
 
 ### 7.1 Reporting cadence
 
+Every externally meaningful action is observable in natural Japanese. The user does
+not need to inspect logs or ask whether Job Hunter is working. High-frequency
+no-change polls remain local to avoid notification spam; the first daily wake and
+end-of-day digest still prove that discovery, evaluation, application, and reply
+tracking ran.
+
 - **First daily wake:** one `🌅 今日の求人活動` digest with current pipeline,
   prioritized roles, salary/location, and the actions Job Hunter will take.
 - **Application work begins:** one `🔎 応募準備中` update only after an eligible
@@ -738,6 +751,35 @@ CloakBrowser owner, Telegram outbox, stale leases, and uncertain side effects. I
 repairs only deterministic pre-side-effect failures and sends one low-noise alert
 after bounded recovery fails.
 
+### 9.1 Canonical ownership and one-system layout
+
+Job Hunter has one source repository, one installed release pointer, one private
+configuration root, one mutable state root, and one launchd namespace:
+
+| Responsibility | Canonical location |
+|---|---|
+| Source and tests | `life-manager/apps/job-search-loop/` |
+| Git remote | `https://github.com/Daisuke134/life-manager` |
+| Active immutable release | `~/.local/share/anicca/job-search/current` |
+| Private profile and credentials | `~/.config/anicca/job-search/` |
+| Ledger, outbox, evidence, and checkpoints | `~/.local/state/anicca/job-search/` |
+| Thin stable launchers | `~/.local/libexec/anicca/job-search/` |
+| macOS registration | `~/Library/LaunchAgents/ai.anicca.job-search-*.plist` |
+
+`daily`, `inbox`, `learning`, `guardian`, and the browser owner are lanes of this one
+Job Hunter. They share the same active release, ledger, profile, and Telegram outbox;
+they are not independent agents or competing truths. No Job Hunter launcher or
+runtime configuration may depend on `profitable-claude`, a feature worktree, a donor
+branch, or a second scheduler/browser stack.
+
+The standard macOS separation of source, secrets, mutable state, installed release,
+and LaunchAgents is retained for security and rollback. Operationally they remain one
+movable product: install/status/export/import commands must resolve these canonical
+roots rather than introducing a new store. Release retention keeps only the active
+release and one verified last-known-good rollback release after activation evidence
+is durable. Cleanup never removes the active target, rollback target, private config,
+ledger, evidence, or submitted artifacts.
+
 ## 10. Current verified state
 
 - The dedicated worktree was clean before the O2-02 ledger update at pre-task target
@@ -860,6 +902,17 @@ after bounded recovery fails.
   GREEN. After free space recovered, the unchanged pushed regional-fence source ran
   the complete Job Hunter suite successfully: `569/569` in `32.338s`. O2-05P is
   complete.
+- The 2026-08-13 canonical-layout audit proves every installed lane resolves the
+  same `~/.local/share/anicca/job-search/current` pointer, currently release
+  `f9642b2f3e2e520affdea9b847ae428706d89607`. The pushed development branch is
+  `feat/job-hunter-local-completion-20260802` at `e14ce16ebd1f4f31c5162930b58c075fb4ae4d6c`
+  before the active O2-05A2 implementation. No installed launcher or private config
+  references `profitable-claude`; the only matching text is a canonical-runtime test
+  that forbids such a reference. The installed share contains `171` release
+  directories, `64` artifact files, and `13` stale staging directories (`736M`
+  total). These are historical build outputs, not running Job Hunters. Safe retention
+  cleanup remains part of O2-12; autonomous daily, inbox, and learning lanes remain
+  disabled and absent, so the system is still not operationally complete.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -1050,7 +1103,12 @@ evidence until the primary has independently inspected and adopted it.
   experiments, promotion, and rollback; deliver the learning report to Telegram.
 - [ ] **O2-12** — Keep `ai.anicca.job-search-daily` as the CloakBrowser owner, make
   daily/inbox/learning/guardian healthy, and prove Job Hunter closes only pages it
-  created without disturbing shared tabs or contexts.
+  created without disturbing shared tabs or contexts. Prove all lanes resolve the
+  same pushed Life Manager release and the same ledger/outbox, expose one canonical
+  status view, and apply the verified retention rule so only the active and one
+  last-known-good release remain. Remove only unreferenced historical release/build/
+  staging outputs; never touch private config, state, application evidence, submitted
+  artifacts, or shared browser data.
 
 ## 13. Final end-to-end state
 
