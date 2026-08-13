@@ -659,6 +659,21 @@ class ApplicationLoopHolTests(unittest.TestCase):
             self.assertEqual(submitted, ["6000001"] if accepted else [], name)
             self.assertEqual(result.get("verified_count"), 1 if accepted else 0, name)
 
+    def test_ongoing_operation_request_pair_accepts_40_char_proximity_in_either_order(self):
+        application_loop = _load_deployed_loop()
+        forward = "SNSアカウントの全投稿を含む運用を安定して継続できる体制づくりの検討を依頼したいと考えています。"
+        self.assertEqual((len(forward), forward.index("運用"), forward.index("依頼")), (49, 15, 36))
+        cases = (
+            ("forward_21_char_gap", forward, []),
+            ("reverse", "SNSの長期継続案件として、専門家へ依頼し、月次のアカウント運用を予定します。", []),
+            ("bare_request", "SNSの長期継続案件として、専門家へ依頼します。", ["planner_failed"]),
+        )
+        for name, evidence, expected in cases:
+            row = _opportunity("6000001")
+            row["description"] = "依頼主の業種: 情報通信業\n依頼概要: " + evidence
+            decision = _eligible_decision(qualification=_qualification(ongoing_sns_outsourcing_evidence=evidence))
+            self.assertEqual(application_loop.validate_decisions([row], {"decisions": [decision]}, datetime(2026, 8, 13, tzinfo=timezone.utc)), expected, name)
+
     def test_qualification_cost_source_version_is_typed_for_codex_schema(self):
         schema = json.loads((REPO_ROOT / "skills/gig-work/schemas/application_decisions.schema.json").read_text(encoding="utf-8"))
         leaf = schema["properties"]["decisions"]["items"]["properties"]["qualification"]["properties"]["cost_source_version"]
