@@ -152,6 +152,13 @@ def decimal_value(row, field, line_number):
     except (KeyError, InvalidOperation, TypeError, ValueError):
         raise ValueError(f"EARN_LEDGER line {line_number}: {field} is malformed")
 
+def paid_orders_value(orders, gross, has_explicit, value):
+    if gross < 0:
+        return None
+    if has_explicit:
+        return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+    return int(gross > 0) if orders == 1 else None
+
 def derive_earn_money(path):
     if not os.path.isfile(path):
         raise ValueError(f"EARN_LEDGER is missing: {path}")
@@ -180,7 +187,7 @@ def derive_earn_money(path):
                 orders = decimal_value(row, "orders", line_number)
                 if orders != orders.to_integral_value() or orders < 0:
                     raise ValueError(f"EARN_LEDGER line {line_number}: orders is malformed")
-                candidate = (int(ts), date, line_number, int(orders), decimal_value(row, "gross_usd", line_number))
+                candidate = (int(ts), date, line_number, int(orders), decimal_value(row, "gross_usd", line_number), "paid_orders" in row, row.get("paid_orders"))
                 if (source, date) not in sales or candidate[:3] >= sales[(source, date)][:3]:
                     sales[(source, date)] = candidate
             else:
@@ -193,9 +200,18 @@ def derive_earn_money(path):
         raise ValueError("EARN_LEDGER has no capafy-payout rows")
     latest_sales = max(sales.values(), key=lambda row: row[:3])
     latest_payout = max(payouts.values(), key=lambda row: row[:3])
+    paid_orders = 0
+    paid_orders_known = True
+    for row in sales.values():
+        paid = paid_orders_value(row[3], row[4], row[5], row[6])
+        if paid is None:
+            paid_orders_known = False
+        elif paid_orders_known:
+            paid_orders += paid
     return {
         "orders": sum(row[3] for row in sales.values()),
         "gross": sum((row[4] for row in sales.values()), Decimal("0")),
+        "paid_orders": paid_orders if paid_orders_known else None,
         "last_sales_date": latest_sales[1],
         "pending": latest_payout[3],
         "realized": latest_payout[4],
@@ -233,7 +249,7 @@ if os.path.exists(key_gate):
 report = {
     "ts": int(now.timestamp()), "date": today.isoformat(),
     "goal_a": {"blocked_free_streak_days": streak, "required": 7, "pass": goal_a_pass},
-    "goal_b": {"last_sales_date": last_sales_date, "orders": orders, "gross_usd": gross,
+    "goal_b": {"last_sales_date": last_sales_date, "orders": orders, "paid_orders": earn_money["paid_orders"], "gross_usd": gross,
                "reconcile_age_hours": reconcile_age_h, "fresh": goal_b_ok},
     "goal_c": {"lifecycle_status": lifecycle.get("status", "unknown"),
                "capability": lifecycle.get("capability", "none"),
@@ -336,6 +352,7 @@ if experiment_products:
 independent = {
     "inventory": inventory,
     "orders": earn_money["orders"],
+    "paid_orders": earn_money["paid_orders"],
     "gross_usd": earn_money["gross"],
     "pending_usd": earn_money["pending"],
     "realized_usd": earn_money["realized"],

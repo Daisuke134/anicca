@@ -171,6 +171,65 @@ def test_projection_folds_money_inventory_account_urls_and_latest_metrics() -> N
     assert result["listing_url"] == "https://capafy.ai/agent/4866150011"
 
 
+def test_projection_counts_paid_orders_without_attributing_zero_dollar_orders() -> None:
+    sales_rows = [
+        {"ts": 1785888000, "source": "capafy-sales", "date": "2026-08-05", "orders": 1, "gross_usd": 0.0},
+        {"ts": 1786147200, "source": "capafy-sales", "date": "2026-08-08", "orders": 1, "gross_usd": 9.99},
+        {"ts": 1786320000, "source": "capafy-sales", "date": "2026-08-10", "orders": 1, "gross_usd": 0.0},
+        {"ts": 1786492800, "source": "capafy-sales", "date": "2026-08-12", "orders": 1, "gross_usd": 0.0},
+    ]
+    events = fixture_events() + [
+        stored(event, f"2026-08-{index + 5:02d}T12:00:00Z")
+        for index, row in enumerate(sales_rows)
+        for event in sync.events_from_sales_rows([row])
+    ]
+
+    result = projection.project_company(events)
+
+    assert result["orders"] == 5
+    assert result["paid_orders"] == 2
+    assert result["gross_usd"] == "19.98"
+
+
+def test_projection_marks_multi_order_batch_paid_count_unknown() -> None:
+    event = sync.events_from_sales_rows(
+        [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 2, "gross_usd": 19.98}]
+    )[0]
+
+    result = projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])
+
+    assert result["orders"] == 3
+    assert result["gross_usd"] == "29.97"
+    assert result["paid_orders"] is None
+
+
+def test_projection_uses_explicit_paid_orders_for_multi_order_batch() -> None:
+    event = sync.events_from_sales_rows(
+        [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 2, "gross_usd": 19.98}]
+    )[0] | {"metrics": {"orders": 2, "paid_orders": 1}}
+
+    result = projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])
+
+    assert result["paid_orders"] == 2
+
+
+@pytest.mark.parametrize("paid_orders", [True, -1, 1.0, "1", None])
+def test_projection_fails_closed_for_invalid_explicit_paid_orders(paid_orders: object) -> None:
+    event = sync.events_from_sales_rows(
+        [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 1, "gross_usd": 9.99}]
+    )[0] | {"metrics": {"orders": 1, "paid_orders": paid_orders}}
+
+    assert projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])["paid_orders"] is None
+
+
+def test_projection_fails_closed_for_negative_gross_order_batch() -> None:
+    event = sync.events_from_sales_rows(
+        [{"ts": 1786579200, "source": "capafy-sales", "date": "2026-08-13", "orders": 1, "gross_usd": -1.0}]
+    )[0]
+
+    assert projection.project_company(fixture_events() + [stored(event, "2026-08-13T12:00:00Z")])["paid_orders"] is None
+
+
 def test_projection_sources_report_mixed_fresh_stale_unknown_and_stable_id() -> None:
     reference = "2026-08-02T12:00:00Z"
     events = []
@@ -403,6 +462,7 @@ def test_parity_gate_accepts_equivalent_sources_and_rejects_contradiction() -> N
         for field in (
             "inventory",
             "orders",
+            "paid_orders",
             "gross_usd",
             "pending_usd",
             "realized_usd",
@@ -425,6 +485,15 @@ def test_parity_gate_accepts_equivalent_sources_and_rejects_contradiction() -> N
     ]
 
 
+def test_parity_gate_compares_paid_orders_and_fails_closed_when_missing() -> None:
+    assert projection.parity_errors({"paid_orders": 2}, {"paid_orders": 1}) == [
+        "paid_orders mismatch: projection=2 source=1"
+    ]
+    assert projection.parity_errors({}, {"paid_orders": 0}) == [
+        "paid_orders missing: projection=<missing> source=0"
+    ]
+
+
 def test_parity_gate_compares_incident_retry_at_by_canonical_utc_second() -> None:
     incident = {
         "incident_id": "capafy-marketer-20260807T045052Z-deadbeef",
@@ -434,11 +503,12 @@ def test_parity_gate_compares_incident_retry_at_by_canonical_utc_second() -> Non
         "next_retry_at": "2026-08-07T04:50:52Z",
     }
     independent = {
+        "paid_orders": 0,
         "incident": incident
         | {"next_retry_at": "2026-08-07T13:50:52.266822+09:00"}
     }
 
-    assert projection.parity_errors({"incident": incident}, independent) == []
+    assert projection.parity_errors({"paid_orders": 0, "incident": incident}, independent) == []
 
 
 @pytest.mark.parametrize(
@@ -454,6 +524,7 @@ def test_parity_gate_fails_closed_for_invalid_incident_retry_at(
     projected_retry_at: str | None, independent_retry_at: str | None
 ) -> None:
     projected = {
+        "paid_orders": 0,
         "incident": {
             "incident_id": "capafy-marketer-20260807T045052Z-deadbeef",
             "owner": "marketer",
@@ -463,6 +534,7 @@ def test_parity_gate_fails_closed_for_invalid_incident_retry_at(
         }
     }
     independent = {
+        "paid_orders": 0,
         "incident": projected["incident"]
         | {"next_retry_at": independent_retry_at}
     }
@@ -495,7 +567,7 @@ def test_parity_gate_rejects_non_rfc3339_incident_retry_at(
     }
 
     assert projection.parity_errors(
-        {"incident": incident}, {"incident": dict(incident)}
+        {"paid_orders": 0, "incident": incident}, {"paid_orders": 0, "incident": dict(incident)}
     ) == [
         f"incident mismatch: projection={incident!r} source={incident!r}"
     ]
@@ -517,7 +589,7 @@ def test_parity_gate_fails_closed_when_incident_required_key_is_missing(
     incident.pop(missing_key)
 
     assert projection.parity_errors(
-        {"incident": incident}, {"incident": dict(incident)}
+        {"paid_orders": 0, "incident": incident}, {"paid_orders": 0, "incident": dict(incident)}
     ) == [
         f"incident mismatch: projection={incident!r} source={incident!r}"
     ]
@@ -539,7 +611,18 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
         tmp,
     ):
         directory.mkdir(parents=True, exist_ok=True)
-    ledger.write_text("\n".join(json.dumps(event) for event in fixture_events()) + "\n")
+    sales_rows = [
+        {"ts": 1785888000, "source": "capafy-sales", "date": "2026-08-05", "orders": 1, "gross_usd": 0.0},
+        {"ts": 1786147200, "source": "capafy-sales", "date": "2026-08-08", "orders": 1, "gross_usd": 9.99},
+        {"ts": 1786320000, "source": "capafy-sales", "date": "2026-08-10", "orders": 1, "gross_usd": 0.0},
+        {"ts": 1786492800, "source": "capafy-sales", "date": "2026-08-12", "orders": 1, "gross_usd": 0.0},
+    ]
+    canonical_events = fixture_events() + [
+        stored(event, f"{row['date']}T12:00:00Z")
+        for row in sales_rows
+        for event in sync.events_from_sales_rows([row])
+    ]
+    ledger.write_text("\n".join(json.dumps(event) for event in canonical_events) + "\n")
     earn_ledger = home / "anicca/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
     earn_ledger.write_text(
         "\n".join(
@@ -547,6 +630,7 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
             for row in (
                 {"ts": 1782172800, "source": "capafy-sales", "date": "2026-06-23", "orders": 9, "gross_usd": 1.11},
                 {"ts": 1782172800, "source": "capafy-sales", "date": "2026-06-23", "orders": 1, "gross_usd": 9.99},
+                *sales_rows,
                 {"ts": 1784330227, "source": "capafy-payout", "date": "2026-07-18", "balance_payout_usd": 77.0, "total_payout_usd": 66.0},
                 {"ts": 1784330227, "source": "capafy-payout", "date": "2026-07-18", "balance_payout_usd": 8.0, "total_payout_usd": 0.0},
             )
@@ -633,11 +717,12 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
 
     assert clean.returncode == 0, clean.stderr
     report = json.loads(clean.stdout)
-    assert report["goal_b"]["orders"] == 1
-    assert report["goal_b"]["gross_usd"] == 9.99
+    assert report["goal_b"]["orders"] == 5
+    assert report["goal_b"]["paid_orders"] == 2
+    assert report["goal_b"]["gross_usd"] == 19.98
     assert report["company_state"]["pending_usd"] == "8.00"
     assert report["company_state"]["realized_usd"] == "0.00"
-    expected = projection.project_company(fixture_events(), reference_time=datetime.now(timezone.utc))
+    expected = projection.project_company(canonical_events, reference_time=datetime.now(timezone.utc))
     assert report["company_state"] == expected
     assert json.loads((tmp_path / "site/company/state.json").read_text()) == expected
     assert "wrong-legacy-value" not in sent.read_text()

@@ -197,6 +197,14 @@ def validate_outcome(data: dict) -> list[str]:
             for value in metrics.values()
         ):
             errors.append("metrics must contain non-negative integer values")
+        if "paid_orders" not in data:
+            errors.append("paid_orders is required")
+        elif data["paid_orders"] is not None and (
+            isinstance(data["paid_orders"], bool)
+            or not isinstance(data["paid_orders"], int)
+            or data["paid_orders"] < 0
+        ):
+            errors.append("paid_orders must be a non-negative integer or null")
         if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(data.get("projection_id") or "")):
             errors.append("projection_id must be sha256:<64 lowercase hex>")
         if not data.get("last_event_id"):
@@ -351,6 +359,11 @@ def render_outcome(data: dict) -> str:
         marketing = data["marketing"]
         orders = int(data.get("orders") or 0)
         order_word = "order" if orders == 1 else "orders"
+        paid_text = (
+            f"{data['paid_orders']} paid"
+            if data["paid_orders"] is not None
+            else "paid count unavailable"
+        )
         session = (
             "The posting session is established."
             if account.get("session_established")
@@ -371,7 +384,7 @@ def render_outcome(data: dict) -> str:
                 f"{'draft' if inventory['draft'] == 1 else 'drafts'}, "
                 f"{inventory['rejected']} rejected."
             ),
-            f"Sales: {orders} lifetime {order_word} / {_money(data['gross_usd'])} gross.",
+            f"Sales: {orders} lifetime {order_word} / {paid_text} / {_money(data['gross_usd'])} gross.",
             *_money_lines(data)[1:],
             (
                 f"Instagram @{account['handle']} — Lifecycle: "

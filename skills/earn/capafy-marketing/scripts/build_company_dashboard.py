@@ -33,6 +33,7 @@ PROJECTION_FIELDS = {
     "cost_usd",
     "contribution_usd",
     "orders",
+    "paid_orders",
     "account",
     "marketing",
     "metrics",
@@ -127,6 +128,11 @@ def render_html(projection: dict) -> str:
     marketing = projection["marketing"]
     metrics = projection["metrics"]
     sources = projection["sources"]
+    paid_text = (
+        f"{projection['paid_orders']} paid"
+        if projection["paid_orders"] is not None
+        else "paid count unavailable"
+    )
     short_id = projection["projection_id"].removeprefix("sha256:")[:12]
     metric_cards = "".join(
         f'<div class="metric"><span>{html.escape(label)}</span><strong>{metrics.get(field, "—")}</strong></div>'
@@ -220,7 +226,7 @@ def render_html(projection: dict) -> str:
     <div class="metric"><span>Contribution</span><strong>{_money(projection['contribution_usd'])}</strong></div>
   </section>
   <section class="grid" aria-label="Business state">
-    <div class="panel"><h2>Sales & inventory</h2><p><strong>{projection['orders']}</strong> lifetime orders</p><p>{inv['online']} online · {inv['under_review']} under review · {inv['draft']} draft · {inv['rejected']} rejected</p></div>
+    <div class="panel"><h2>Sales & inventory</h2><p>{projection['orders']} lifetime orders · {paid_text}</p><p>{inv['online']} online · {inv['under_review']} under review · {inv['draft']} draft · {inv['rejected']} rejected</p></div>
     <div class="panel"><h2>Instagram owner</h2><p><strong>@{html.escape(account['handle'])}</strong></p><p>{html.escape(str(account['lifecycle_status']))} · {html.escape(str(account['capability']))}</p><p class="muted">Session: {'verified' if account['session_established'] else 'not verified'} · Account: {html.escape(str(account['account_status']))}</p></div>
     <div class="panel"><h2>Public evidence</h2><p>{_link(marketing.get('public_post_url'), 'Open the verified Reel')}</p><p>{_link(projection.get('listing_url'), 'Open the Capafy skill')}</p><p>{_link(marketing.get('campaign_url'), 'Open the attributed campaign')}</p></div>
   </section>
