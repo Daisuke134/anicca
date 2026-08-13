@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** G1 acquisition E2E完了。G2 truthful reporting E2E完了。acquisitionは30分、reporterは5分のexact-SHA bounded loopとして稼働中
+**状態:** G3B.3 planner contract recovery完了。acquisition・reporter・work-syncは同一exact-SHA bounded loopとして稼働中
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -1021,6 +1021,27 @@ acceptanceは、(a) 同一17件で17/17 decision、(b) regex false rejectionな�
 (f) failureにsanitized stage/count、(g) verified submitがない限りapplication state/ledger不変、
 (h) canonical deploy entrypointが三ownerをmanifestと同じexact main SHAへactivateし不一致時nonzero、の全てである。
 
+#### 完了証拠
+
+実装はprimary Solが直接行い、production/test/schema実装subagentは使用していない。implementation
+`573e7f0e18c7838942b01ed2b445e7a538166fac`、activation verification correction
+`15aa37984d250b26fa9244657de0ae0e2f52d089`、zsh nounset correctionを含むcanonical main / deployed exact releaseは
+`295749ad7865bb5612ce7124beba13fb1d16a59c`である。fresh Sol adversarial reviewは許可された一回だけ実施し、
+installerのnot-loaded error分類とProgramArguments scope検証というImportant二件を修正した。追加reviewは行わず、
+primaryがfocused 17、Lancers 46、agent-runner 15、installer 2、py_compile、zsh syntax、plist lint、diff checkを再検証した。
+
+submission-free exact-release検証では公開`SNS投稿`17件に対してLunaが17件を入力と同順・同一ID集合で返した。
+project `5585701`は改善後のprimary判断でineligibleとなった。以前の誤ったeligible decisionを同じ公開rowへ強制投入した
+独立Terra安全検証も`safe_to_submit=false`、`reason=live_interaction_required`、公開descriptionへの完全一致quoteで拒否し、
+deterministic outcomeは`rejected`である。この検証でapplication、ledger、listingのhashは変化していない。
+
+canonical installerをactivation modeで実行し、manifest、application、telegram-report、work-syncのProgramArgumentsと
+WorkingDirectoryを全てexact release `295749ad…`へ収束した。配備前後のapplication
+`e26ac5c5…`、ledger `7a58d8fb…`、listing `db22b6ba…` hashは一致する。その後、既存application launchdを
+一回だけkickした実money tickはquery `LinkedIn`、observed 2、eligible 0、submitted false、
+`reason=no_eligible_project`、exit 0、stderr 0で終了した。pending 0、fingerprints 19、ApplicationReceipt 14は不変、
+planner evidence rootは削除済み、Python orphanは0である。G3B.3は完了し、次のactive sliceはStorefront offer alignmentである。
+
 ### 9.7 G4A canonical Sales / Contract source
 
 次の一件は、応募数やlisting数を増やすことではなく、二つの入口から来た買い手の反応を同じ公式sourceで
@@ -1172,8 +1193,8 @@ process/lockなしである。official launchd ownerの最初のnormal wakeはru
 stateはfingerprints 19 / pending 0、ledgerは14 receiptのまま変わらず、launchdはenabled / loadedである。
 
 G1とG2は完了した。G2のfresh adversarial reviewは許可された1/1だけで、追加reviewは行わない。
-役割は固定する。primary Solだけが調査、設計判断、spec、implementation plan、acceptance、deployを所有する。
-Luna/Terraはprimaryが完成させたplanに基づくproduction/test実装とコマンド実行だけを所有し、spec/planを書かない。
+役割は固定する。primary Solが調査、設計判断、spec、implementation plan、production/test実装、acceptance、deployを所有する。
+Luna/Terraはproduction runtime内部のplanner/safety judgmentとしてのみ使い、coding implementerには使わない。
 RED-first TDDは行わず、直接実装後に最小regressionと既存suiteで検証する。
 reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_FIRSTは同じLunaへ一度返した後、primaryが
 機械的に再検証する。
@@ -1182,13 +1203,13 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
 | 完了 | Storefront read-only inventory | exact releaseから公式6 listing、canonical `1338228`、単一content groupを確定。mutation 0、state/ledger不変 | 完了 |
-| 1 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じる | 0.5–1日 |
-| 2 | Storefront offer alignment | canonical `1338228`を選び、duplicateを一件ずつ整理し、¥10k–¥30k手順書を月額¥98k–¥398k offerへの入口または同scopeへ揃える | 1–2日 |
-| 3 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
-| 4 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
-| 5 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
-| 6 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
-| 7 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、net MRRを計算する | 2–4日 |
+| 完了 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じた | 完了 |
+| 1 | Storefront offer alignment | canonical `1338228`を選び、duplicateを一件ずつ整理し、¥10k–¥30k手順書を月額¥98k–¥398k offerへの入口または同scopeへ揃える | 1–2日 |
+| 2 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
+| 3 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
+| 4 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
+| 5 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
+| 6 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、net MRRを計算する | 2–4日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
