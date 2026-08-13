@@ -4,7 +4,7 @@
 
 **Goal:** Keep the one current Marketing recovery incident authoritative once its exact browser-owned row is already `session_failed`, and prevent the 60-second outcome monitor from notifying that unresolved incident again.
 
-**Architecture:** Reuse the existing incident record, lifecycle state, handoff, canonical event store, hourly Japanese report, and account-manager schedule. When the lifecycle incident already maps to exactly one browser-owned `session_failed` registry row, the account manager hands that exact recovery result back before browser/model provisioning; reauthentication belongs to Item 9c. The outcome monitor reserves one deterministic delivery key before any Telegram call and treats any existing unresolved reservation as terminal; strict one-line sender evidence is required. No new daemon, database, delivery ledger, model route, or account action is added.
+**Architecture:** Reuse the existing incident record, lifecycle state, canonical event store, hourly Japanese report, and account-manager schedule. When the lifecycle incident already maps to exactly one browser-owned `session_failed` registry row, the account manager persists the bounded recovery result and exits before handoff, browser, or model provisioning; the existing incident is already authoritative and reauthentication belongs to Item 9c. Other paths keep the existing handoff. The outcome monitor reserves one deterministic delivery key before any Telegram call and treats any existing unresolved reservation as terminal; strict one-line sender evidence is required. No new daemon, database, delivery ledger, model route, or account action is added.
 
 **Tech Stack:** Bash, existing Python incident/lifecycle CLIs, launchd, shell fixtures.
 
@@ -34,11 +34,11 @@
 **Interfaces:** Consume the lifecycle's existing `incident_id`, the exact registry row carrying that incident, and the existing handoff session-recovery contract. Produce the existing `replacement_waiting` result with `session_recovery=true`, stable reason `active Instagram browser tab is missing`, the exact retired handle, bounded future RFC3339 retry, and a plain repair detail.
 
 - [ ] After lifecycle snapshot, resolve exactly one `session_failed` browser-owned registry row whose `incident_id` equals the lifecycle incident. Zero or multiple matches do not take the recovery shortcut and fail closed to the existing generic technical path.
-- [ ] For that exact match, write the existing stable session-recovery `replacement_waiting` result and hand it off before browser lease, provisioning prompt, or model execution. Item 9c owns the next account mutation.
+- [ ] For that exact match, write the stable session-recovery `replacement_waiting` result and exit `1` before handoff, browser lease, provisioning prompt, or model execution. Calling the current handoff would fingerprint the fixed recovery reason, reopen an older incident, rewrite lifecycle ownership, and recursively wake the manager. Item 9c owns the next account mutation.
 - [ ] Do not retire another row, wake the manager recursively, create another incident fingerprint, or send a second failure Telegram. The handoff remains the sole incident writer.
 - [ ] Preserve successful account-created, malformed-row, missing-credential, failed-verifier, lock, sender-recovery, and challenge behavior.
 - [ ] Synchronize the sender fixture with `TELEGRAM_SENT=true MSGID=<digits>`; this is a stale fixture repair, not a production weakening.
-- [ ] Add one regression with a pre-existing session-recovery incident and retired row: the manager reuses that incident, preserves its delivery receipt, and calls no browser, agent, recursive manager wake, or Telegram. Add the ambiguous-match fail-closed counterexample.
+- [ ] Add one regression with a pre-existing session-recovery incident and retired row: two manager passes preserve that incident, lifecycle, delivery receipt, account registry, and event state while calling no handoff, browser, agent, recursive manager wake, or Telegram. Add the ambiguous-match fail-closed counterexample.
 
 ## Task 2: Make the outcome monitor at-most-once
 
