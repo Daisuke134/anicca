@@ -882,6 +882,46 @@ readback mismatch 15で、末尾は連続mismatch、launchd last exitは1であ�
 変更せず6件のID、URL、title、status、public hashをinventoryし、canonical候補が一意な場合だけ後続のadopt/archive
 判断へ進む。再publish、delete、archiveはinventory sliceに含めない。
 
+### 9.8 Storefront inventoryの実測境界
+
+G4A完了後のread-only DOM probeで、受付中6件の公式IDは連番
+`1338228, 1338229, 1338230, 1338231, 1338232, 1338233`、titleは全件
+`SNS投稿業務を整理しAI活用の手順書とチェックリストを作成します`と確認した。管理対象の正しい境界は
+`.p-project-plan-myplan__stores .p-project-plan-myplan__store`で、各container内の
+`.p-project-plan-myplan__store-content-over-title-link`が一意なtitle/ID sourceである。
+
+旧readerのpage全体`a[href^="/menu/detail/"]`は、管理対象6件に加え、別領域
+`.p-project-plan-myplan__update-hint`のおすすめID `1335076`と`1326580`も全state pageで拾う。
+inventoryはこのglobal selectorを再利用しない。公式anchor countは受付中6、受付休止中0、非表示0、下書き0で、
+各stateのcontainer row数と一致しなければsource incompleteとする。
+
+6件すべてを旧`_production_public_reader`で読むと`listing_readback_mismatch`になる。ID `1338233`の公開pageを
+field別に実測すると、title、subtitle、description、notice、3 planのdescription、価格
+`¥10,000 / ¥20,000 / ¥30,000`、納期`3 / 5 / 7日`はlocal product JSONと一致する。一方、公開tagは
+local 3 tags + industryだけでなく`投稿代行 / AI代行 / java ai`を含む7件であり、旧readerのexact tag配列が
+全pageをfalse mismatchにする。またID `1338233`の`og:url`は自身を指すがcanonical linkは元ID
+`1338228`を指す。inventoryはprovider public truthを抽出・hashし、local expected値との一致をhardcodeしない。
+
+現在のStorefront商品は月額content operations packではなく、単発またはLancers継続期間選択付きの
+AI活用手順書で、価格は¥10k/¥20k/¥30kである。これはStorefrontが公開されていても、3.3の
+Founding ¥98k / Standard ¥198k / Premium ¥398k recurring offerと一致しない。G7のMRRへ寄与するには、
+inventory後に一意なcanonical listingを選び、低単価diagnosticを月額offerへ明示接続するか、月額scope/priceへ
+置換する必要がある。listing数と低単価spot売上をnet MRRに数えない。
+
+Storefront inventoryは新しいdaemon、launchd label、DB、state fileを追加しない。canonical releaseに
+`listing_inventory.py`を一つ追加し、既存`work_sync.py`の120秒parent watchdogと
+`application_tick.py`のaccount/browser helperを再利用する。exact releaseから一回だけ実行し、次をsanitized
+JSONへ出す。
+
+- 四状態のofficial countsと、管理containerから得た全listing ID/title/status/public URL
+- 各public pageのHTTP/route、canonical URL、og URL、plan price/delivery、provider-visible field setのhash
+- 同一content hash群とcanonical target ID。ただしarchive/adopt/delete対象の判断・mutationはしない
+
+message、buyer identity、cookie、token、browser payload、seller private dataは出さない。paginationは公式countへ
+達するまでboundedに読み、count mismatch、duplicate ID、route drift、public HTTP/ID不一致、deadlineはfail closedする。
+live acceptanceは6 official rows、6 public readbacks、one JSON、exit 0、stderr/orphan 0、application/listing/ledger
+hash不変である。
+
 ### 9.7 G4A canonical Sales / Contract source
 
 次の一件は、応募数やlisting数を増やすことではなく、二つの入口から来た買い手の反応を同じ公式sourceで
@@ -1041,12 +1081,13 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 
 | 順序 | 残TODO | 完了条件 | 作業時間の目安 |
 |---|---|---|---:|
-| 1 | Storefront read-only inventory | 公式6 listingのID/URL/title/status/public hashを保存し、canonical候補の一意性とmismatch原因を確定する。publish/archive/deleteは0 | 0.5–1日 |
-| 2 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
-| 3 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
-| 4 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
-| 5 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
-| 6 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、net MRRを計算する | 2–4日 |
+| 1 | Storefront read-only inventory | 公式6 listingのID/URL/title/status/public field hash、canonical target、content groupを確定する。publish/archive/deleteは0 | 0.5–1日 |
+| 2 | Storefront offer alignment | 一意canonical listingを選び、¥10k–¥30k手順書を月額¥98k–¥398k offerへの入口または同scopeへ揃える。mutationは別途一件ずつ公式readbackする | 1–2日 |
+| 3 | G4B ContractReceipt source | completeなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する | 1–2日 |
+| 4 | G3C capacity quota | authoritative active contract receiptを接続し、tick/day quotaと100% capを適用 | 1–2日 |
+| 5 | G4C Sales / Contract actions | modelによるbuyer reply分類→一問clarification→月額offer→公式contract receiptを実装 | 1–3日 |
+| 6 | G5 Fulfillment lane | active contractを入力として制作→QA→納品→公式delivery readbackを実装 | 2–4日 |
+| 7 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、net MRRを計算する | 2–4日 |
 
 G1で閉じたのは応募receiptであり、受注・納品・入金の証明ではない。
 
