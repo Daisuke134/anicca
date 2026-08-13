@@ -25,10 +25,11 @@ answer-artifact reuse, terminal-candidate filtering, and the canonical `claim_re
 bridge through the existing `browser_worker` path. The Workday account-creation fix is
 now pushed, released, and proven in a real wake: the credential process filled only the
 registered wake-owned page, returned no secret, and reached the tenant login screen.
-The measured next blocker is narrower: the same private tool supports account creation
-but not the two-field Workday login form. The next slice adds login mode to that same
-tool and reruns the existing daily LaunchAgent without claiming an application until an
-authoritative receipt exists.
+The measured two-field Workday login blocker is now closed in pushed source by the same
+private tool, with no new service or browser. That source is verified but not yet in the
+active immutable release. The next slice builds and activates it, then reruns the
+existing daily LaunchAgent without claiming an application until an authoritative
+receipt exists.
 
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
@@ -1619,11 +1620,22 @@ performs the real E2E, and records the milestone.
   PID `22279`, UUID `2ac269b0-350a-49a4-971e-9a0556aed50d`, and the exact six original
   page IDs.
 
-  **Immediate next slice:** extend the same Workday credential module with a login mode
-  that requires the registered owned page and same tenant, fills only email/password,
-  clicks the stable Workday sign-in control, and returns only a redacted receipt. Do not
-  add a service, adapter, database, browser, or scheduler. Rebuild, activate, and rerun
-  the real daily lane. Until an authoritative ATS or Gmail receipt exists, the system
+  **Workday login slice complete in pushed source:** commit `b9e838ca6` extends the
+  same private credential module and prompt. The implementation is grounded in the
+  real wake's `/login` artifact—exactly one email input, password input, and submit
+  button—and fixed OSS patterns from
+  [AutoApply](https://github.com/AbhishekMandapmalvi/AutoApply/tree/053071ba1bba5733b522d78c3d645002d817e55a)
+  for Workday `email`, `password`, and `signInSubmitButton`. It classifies the form
+  before filling any secret, requires the same registered owned page and tenant, allows
+  login only on a `/login` path with no confirmation-password control, requires one
+  stable sign-in submit control, and returns only `sign_in_clicked`, action count, and
+  hashes. Account creation remains unchanged. Focused verification passes `19/19`; the
+  full Job Hunter suite passes `579/579` in `30.526s`; Python compilation and diff checks
+  pass. No application receipt is claimed.
+
+  **Immediate next slice:** build and activate one immutable release from this pushed
+  source and rerun the real daily lane. Preserve the shared browser and inspect the next
+  authoritative Workday state. Until an ATS or Gmail receipt exists, the system
   continues reporting zero confirmed applications.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
