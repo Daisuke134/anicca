@@ -1198,6 +1198,21 @@ ledger, evidence, or submitted artifacts.
   compile, and diff checks pass. Release-backed real native open→cleanup canary is the
   final active page gate; another costly application wake is not required to exercise
   the same deterministic functions.
+- Active release `16f0f0495...` then passed the real native page canary under browser
+  fence `201`: baseline `6` pages (the original five plus the unrelated Lancers page)
+  became `7`, the one new target was exactly the driver-created target, cleanup closed
+  exactly `1`, and the page set returned byte-for-byte to the same `6`. Browser PID
+  `22279`, one context, all baseline pages, and the unrelated page were preserved; the
+  lease was released. Release, ledger, Gmail, and schedule health then passed, with
+  all three lanes loaded and last exit `0`. Telegram outbox health alone found `15`
+  historical notifications left in `send_started` after 2026-08-06/07 delivery
+  timeouts. They have no Telegram ACK and must never be blind-retried. O2-05 closes
+  this final observable fault by adding explicit terminal `delivery_unknown`: it
+  retains the original payload/fence/timestamps, requires no message ID, refuses
+  claims/retries, and is healthy only after an explicit completion timestamp. One
+  current natural report will tell the owner that those historical notification
+  deliveries are unknown; it does not alter application receipts or claim delivery.
+  Focused checks pass `16/16`, full Job Hunter `576/576`, compile and diff checks pass.
 
 ## 11. Ponytail OSS reuse decision
 

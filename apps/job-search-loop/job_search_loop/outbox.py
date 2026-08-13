@@ -96,6 +96,16 @@ class Outbox:
         if changed != 1:
             raise DeliveryUncertain("outbox fence mismatch")
 
+    def mark_delivery_unknown(self, event_key: str, fence: str) -> None:
+        changed = self.connection.execute(
+            "UPDATE outbox SET status='delivery_unknown',completed_at=? "
+            "WHERE event_key=? AND fence=? AND status='send_started' "
+            "AND telegram_message_id IS NULL",
+            (_now(), event_key, fence),
+        ).rowcount
+        if changed != 1:
+            raise DeliveryUncertain("outbox fence mismatch")
+
     def payload(self, event_key: str) -> str:
         row = self.connection.execute(
             "SELECT payload FROM outbox WHERE event_key=?", (event_key,)

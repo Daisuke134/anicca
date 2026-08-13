@@ -372,6 +372,10 @@ class OperationsTests(unittest.TestCase):
             outbox.mark_send_started(row, claim)
             with self.assertRaises(DeliveryUncertain):
                 outbox.claim(row)
+            outbox.mark_delivery_unknown(row, claim)
+            self.assertEqual(outbox.status(row)["status"], "delivery_unknown")
+            with self.assertRaises(DeliveryUncertain):
+                outbox.claim(row)
             outbox.close()
 
     def test_summary_contains_counts_without_pii(self):

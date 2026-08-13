@@ -215,9 +215,10 @@ def telegram_outbox_health(database: Path) -> dict[str, Any]:
                 if not timestamp_columns.issubset(columns):
                     reasons.append("telegram_outbox_timestamps_missing")
                 rows = connection.execute(
-                    "SELECT status,fence,telegram_message_id,payload,event_key FROM outbox"
+                    "SELECT status,fence,telegram_message_id,payload,event_key,"
+                    "send_started_at,completed_at FROM outbox"
                 ).fetchall()
-                allowed = {"pending", "claimed", "send_started", "sent"}
+                allowed = {"pending", "claimed", "send_started", "delivery_unknown", "sent"}
                 message_ids: list[str] = []
                 for row in rows:
                     status_value = str(row["status"])
@@ -231,6 +232,11 @@ def telegram_outbox_health(database: Path) -> dict[str, Any]:
                     elif status_value in {"claimed", "send_started"} and (not fence or message_id is not None):
                         reasons.append("telegram_outbox_row_invalid")
                     elif status_value == "sent" and (not fence or not message_id):
+                        reasons.append("telegram_outbox_row_invalid")
+                    elif status_value == "delivery_unknown" and (
+                        not fence or message_id is not None
+                        or not row["send_started_at"] or not row["completed_at"]
+                    ):
                         reasons.append("telegram_outbox_row_invalid")
                     if status_value == "send_started":
                         uncertain_count += 1

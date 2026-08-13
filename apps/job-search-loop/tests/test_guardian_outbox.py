@@ -57,5 +57,17 @@ class GuardianTelegramOutboxTests(unittest.TestCase):
         report = telegram_outbox_health(self.path)
         self.assertIn("telegram_outbox_timestamps_missing", report["reasons"])
 
+    def test_explicit_delivery_unknown_is_terminal_and_healthy(self):
+        self.connection.execute(
+            "INSERT INTO outbox VALUES('x','secret','delivery_unknown','f',NULL,?, ?, ?, ?)",
+            ("2026-08-05T11:00:00+00:00", "2026-08-05T11:00:01+00:00",
+             "2026-08-05T11:00:02+00:00", "2026-08-05T12:00:00+00:00"),
+        )
+        self.connection.commit()
+        report = telegram_outbox_health(self.path)
+        self.assertEqual(report["status"], "healthy")
+        self.assertEqual(report["counts"]["delivery_unknown"], 1)
+        self.assertEqual(report["uncertain_count"], 0)
+
 
 if __name__ == "__main__": unittest.main()
