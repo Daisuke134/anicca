@@ -418,6 +418,18 @@ default queryが本番で効いたことと、外部作用がゼロだったこ�
 truthful contractへの置換である。資格decisionはstate/receiptへ永続化されないためmigrationは不要だが、
 schema、prompt、runtimeは一つのexact-SHA releaseとして原子的にdeployする。
 
+Task 6BのTDD実装は完了する。検索結果13件のうち予算通過カードだけを対象に公式detailを取得し、
+6件をenrichする。detail取得/必須欄不一致は6件で、各rowのteaserを維持してfail-closedし、他rowを
+止めない。qualificationは`commercial_buyer_evidence`と`ongoing_sns_outsourcing_evidence`へ原子的に
+置換し、旧staff fieldはschema/runtimeで拒否する。実provider-onlyの同一snapshotではCodex/Lunaが
+13 decisions中1件をeligibleとし、元schemaとruntime validationはerror 0、完全一致semantic evidence、
+observed budget、¥98,000 minimum、fee 20% allowance、70% marginはすべて通る。実引用内の改行を跨ぐ
+`運用`と`依頼`は40文字以内・双方向だけを認め、bareな`依頼`は拒否する。
+
+mechanical verificationはLancers 15 tests、installer 2 tests、agent-runner 15 tests、py_compile、
+schema JSON parse、diff checkがPASSし、application stateとledger hashは不変である。次の外部作用は、
+このschema/prompt/runtimeを同一canonical main SHAとしてdeployしたofficial wake一回だけである。
+
 projected net gross margin は proposal 時点の JPY 見積で次の式に固定する。
 
 ```text
