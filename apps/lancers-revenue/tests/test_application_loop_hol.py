@@ -663,8 +663,11 @@ class ApplicationLoopHolTests(unittest.TestCase):
         application_loop = _load_deployed_loop()
         forward = "SNSアカウントの全投稿を含む運用を安定して継続できる体制づくりの検討を依頼したいと考えています。"
         self.assertEqual((len(forward), forward.index("運用"), forward.index("依頼")), (49, 15, 36))
+        newline = "SNSアカウントの継続運用を長期に安定して継続するための体制を\n依頼したいです。"
+        self.assertEqual((newline.index("依頼") - newline.index("運用") - 2, newline.count("\n")), (19, 1))
         cases = (
             ("forward_21_char_gap", forward, []),
+            ("forward_newline_19_char_gap", newline, []),
             ("reverse", "SNSの長期継続案件として、専門家へ依頼し、月次のアカウント運用を予定します。", []),
             ("bare_request", "SNSの長期継続案件として、専門家へ依頼します。", ["planner_failed"]),
         )
