@@ -18,28 +18,27 @@ fix is deployed and its report retry is acknowledged. The same wake exposed a
 baseline-page navigation violation; deterministic driver-owned page creation and
 cleanup are deployed and proven on the real shared browser. O2-06 is now active.
 O2-06 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
-mail, and learning lanes are enabled and loaded. They completed one real wake with
-exit `0`; corrected daily reports are delivered and all health gates pass. The first
-O2-06 live application wake exposed and closed provider private-environment access,
-deterministic Ashby standard-answer generation, normalized answer-artifact reuse, and
-terminal-candidate reprocessing. These four source fixes are pushed but not yet in the
-active immutable release. The split between Ashby's ready fill artifact and the
-existing canonical `claim_ready` receipt is now closed in pushed source by reusing the
-existing `browser_worker` pre-submit path; no adapter, queue, database, browser, or
-scheduler was added. The next slice builds and activates one immutable release from
-this pushed source, triggers the real daily lane, and observes whether a newly eligible
-non-terminal posting reaches one authoritative application receipt.
+mail, and learning lanes are enabled and loaded. They completed real wakes with exit
+`0`; natural daily reports are delivered and all health gates pass. The active release
+already contains private-environment isolation, deterministic Ashby answers, direct
+answer-artifact reuse, terminal-candidate filtering, and the canonical `claim_ready`
+bridge through the existing `browser_worker` path. The latest pushed source additionally
+closes the measured Workday account-creation blocker: the credential process now fills
+only the registered wake-owned page and returns no secret value. That source is verified
+but not yet activated or proven in a real wake. The next slice builds and activates one
+immutable release, triggers the existing daily LaunchAgent, and observes the next real
+Workday state without claiming an application until an authoritative receipt exists.
 
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
 unloaded. They are now loaded. The pushed source commit
-`9c18e355e6d52bdfb390d0a28946fee05b3f23a9` is now the active immutable release.
-It contains O2-05N natural reporting, O2-05U unlimited eligible applications, and
-O2-05B binding to the existing `interactive:dais` browser at `127.0.0.1:9222` with no
-restart fallback, plus the first O2-06 salary-policy correction. Release
-`d854a4ce18a4e00d411bbc04fd03437df631099e` is the rollback target. Three real daily
-wakes proved discovery and processing, natural failure reporting, and safe browser
-ownership. All current health gates pass.
+`01590d5524e684bc8659d487f9d31ba0b9bb59bf` is now the active immutable release.
+It contains O2-05N natural reporting, O2-05U unlimited eligible applications, O2-05B
+binding to the existing `interactive:dais` browser at `127.0.0.1:9222` with no restart
+fallback, the first O2-06 salary-policy correction, terminal filtering, and the Ashby
+claim-ready bridge. Release `9c18e355e6d52bdfb390d0a28946fee05b3f23a9`
+is the rollback target. Real daily wakes proved discovery, adaptive application work,
+natural reporting, and safe browser ownership. All current health gates pass.
 O2-06 through O2-12 improve and prove the live loop; they must
 not delay turning the application loop on.
 
@@ -1578,12 +1577,25 @@ performs the real E2E, and records the milestone.
   passes daily, inbox, and learning with last exit `0`, fresh evidence, Ledger and
   interview-prep integrity `ok`.
 
-  **Immediate next slice:** extend the existing Workday credential tool so it attaches
-  to the already owned page and fills/verifies account email/password controls inside
-  the tool process. It must return only a redacted receipt, never a password or private
-  value, and must not create, close, or adopt any page. Then rerun the real daily lane.
-  Until an authoritative ATS or Gmail receipt exists, the system continues reporting
-  zero confirmed applications.
+  **Workday private credential slice complete in pushed source:** commit `691a01bb0`
+  extends the existing credential module instead of adding a service, adapter, queue,
+  database, browser, or scheduler. It reuses the stable Workday
+  `data-automation-id` controls observed in pinned
+  [ApplyPilot](https://github.com/ApplyPilot/ApplyPilot/tree/718a9f057d40765b9f7ab2160b1fe20689a556fd),
+  attaches only to the exact page registered by the current browser lease, verifies the
+  Workday tenant, fills and verifies email/password inside the tool process, handles the
+  optional consent control, and clicks Create Account. The returned and persisted
+  receipt contains hashes and action counts only; it returns neither email nor password.
+  The existing ensure-only CLI remains compatible. Focused verification passes `19/19`;
+  the complete Job Hunter suite passes `579/579`, Python compilation and diff checks
+  pass, and the three-file change is pushed. It is not yet an application receipt.
+
+  **Immediate next slice:** build and activate one immutable release from the pushed
+  source, trigger the existing `ai.anicca.job-search-daily` LaunchAgent, and observe the
+  real Workday continuation. Preserve the exact shared-browser PID, UUID, context, and
+  baseline page set. If the next screen requires email verification or another action,
+  record that exact blocker and solve only that next step. Until an authoritative ATS
+  or Gmail receipt exists, the system continues reporting zero confirmed applications.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
