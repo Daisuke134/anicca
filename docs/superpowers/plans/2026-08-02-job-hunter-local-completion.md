@@ -6,8 +6,8 @@
 **Original base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`
 **Current origin/main integration base:** `15aa37984d250b26fa9244657de0ae0e2f52d089`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Status:** O2-05C runtime consolidation is the active gate before further feature
-work. O2-03 reproducible release validation and O2-05P regional prompt fence
+**Status:** O2-05 runtime consolidation and live-loop revival are complete. O2-03
+reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
 daily outcome reporting and O2-05U unlimited eligible applications are complete.
@@ -15,22 +15,21 @@ O2-05B shared-browser cutover, current `origin/main` integration, reproducible r
 build, isolated validation, atomic activation, and the first real three-lane wake are
 complete. The live wake exposed one daily Telegram result-shape mismatch; the source
 fix is deployed and its report retry is acknowledged. The same wake exposed a
-baseline-page navigation violation; its minimal ownership prompt fix is complete and
-release activation plus a second real wake are now active.
-O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
+baseline-page navigation violation; deterministic driver-owned page creation and
+cleanup are deployed and proven on the real shared browser. O2-06 is now active.
+O2-06 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
 mail, and learning lanes are enabled and loaded. They completed one real wake with
-exit `0`, and the corrected daily report was delivered. O2-05 remains open until the
-next daily wake proves created-page-only operation and post-wake health.
+exit `0`; corrected daily reports are delivered and all health gates pass.
 
 **Activation cutline:** the prior measured reason Job Hunter was not applying was that
 `ai.anicca.job-search-daily`, `inbox`, and `learning` were explicitly disabled and
 unloaded. They are now loaded. The pushed source commit
-`fb2f4d289695ffc8de968097903ba6923cf969e7` is now the active immutable release.
+`d854a4ce18a4e00d411bbc04fd03437df631099e` is now the active immutable release.
 It contains O2-05N natural reporting, O2-05U unlimited eligible applications, and
 O2-05B binding to the existing `interactive:dais` browser at `127.0.0.1:9222` with no
-restart fallback. Healthy `932ae25e...` is the rollback release. The first real wake
-proved discovery and processing; its daily report contract mismatch is the current
-load gate being corrected without stopping the hourly schedule.
+restart fallback. Release `4f10d92a4...` is the rollback target. Three real daily
+wakes proved discovery and processing, natural failure reporting, and safe browser
+ownership. All current health gates pass.
 O2-06 through O2-12 improve and prove the live loop; they must
 not delay turning the application loop on.
 
@@ -1457,7 +1456,7 @@ performs the real E2E, and records the milestone.
   all `13` pre-existing CDP target IDs, including all `5` page IDs; no page was created
   or closed. Completion is
   acknowledged by Telegram message ID `16338`; pushed commit: `c02919968`.
-- [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
+- [x] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
   unmatched rows dedup-fenced; complete O2-05N, O2-05U, and O2-05B; build from the
@@ -1465,8 +1464,16 @@ performs the real E2E, and records the milestone.
   daily/inbox/learning without touching the shared browser; run Guardian health
   gates and observe one real canonical cycle. Release build, isolated-copy checks,
   Gmail read preflight, and atomic activation of `fb2f4d...` are complete; individual
-  lane load and live observation remain. The Guardian LaunchAgent itself closes in
-  O2-07.
+  lane load and live observation are complete. Final active release is
+  `d854a4ce18a4e00d411bbc04fd03437df631099e`; release, ledger, Gmail, Telegram
+  outbox, and schedule health are all healthy. Daily/inbox/learning are loaded with
+  last exit `0`; the browser remains PID `22279` with the same UUID. Real native
+  page ownership canary created exactly one page and restored the exact baseline.
+  Three real daily reports were acknowledged by Telegram IDs `16379`, `16396`, and
+  `16411`; historical outbox uncertainty was reported at `16432` and terminalized
+  without retry, and completion was acknowledged at `16436`. No live application was
+  confirmed during these wakes, so O2-05 claims zero new applications. The Guardian
+  LaunchAgent itself closes in O2-07.
 - [ ] **O2-06** — Complete the JPY 7M floor / JPY 10M target / JPY 30M stretch policy,
   travel-positive policy, clearance non-rejection contract, and mandatory remote-job
   segment. Reuse pinned OSS/public ATS sources for Japan-remote and globally remote
