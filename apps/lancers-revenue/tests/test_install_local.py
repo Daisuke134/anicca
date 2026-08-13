@@ -104,6 +104,11 @@ class InstallLocalTests(unittest.TestCase):
             self.assertEqual(plist["ProcessType"], "Background")
             self.assertEqual(plist["Umask"], 63)
             self.assertNotIn("RunAtLoad", plist)
+            self.assertEqual(
+                plist["EnvironmentVariables"]["PATH"],
+                f"{os.environ['HOME']}/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+            )
+            self.assertNotIn("__LANCERS_", str(plist))
 
             state_root = root / "reconcile/state"
             for path in state_root.rglob("*"):

@@ -9,6 +9,7 @@ LAUNCH_AGENT_DIR="${LANCERS_LAUNCH_AGENT_DIR:?LANCERS_LAUNCH_AGENT_DIR is requir
 STATE_ROOT="${LANCERS_STATE_ROOT:?LANCERS_STATE_ROOT is required}"
 INSTALL_MODE="${LANCERS_INSTALL_MODE:?LANCERS_INSTALL_MODE is required}"
 LABEL="ai.anicca.lancers-revenue-application"
+RUNTIME_PATH="${LANCERS_RUNTIME_PATH:-${HOME}/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin}"
 
 fail() {
   print -u2 -- "install-local: $1"
@@ -139,13 +140,13 @@ PLIST_TEMP="$(mktemp "$LAUNCH_AGENT_DIR/.${LABEL}.plist.XXXXXX")"
 "$PYTHON_BIN" - "$TEMPLATE" "$PLIST_TEMP" "$PYTHON_BIN" \
   "$RELEASE_PATH/skills/earn/lancers/scripts/application_loop.py" \
   "$STATE_ROOT/application.json" "$STATE_ROOT/logs/application.out.log" \
-  "$STATE_ROOT/logs/application.err.log" "$RELEASE_PATH" "$INSTALL_MODE" <<'PY'
+  "$STATE_ROOT/logs/application.err.log" "$RELEASE_PATH" "$INSTALL_MODE" "$RUNTIME_PATH" <<'PY'
 import os
 import plistlib
 import sys
 from pathlib import Path
 
-template, output, python_bin, loop_path, state_path, stdout_path, stderr_path, working_dir, mode = sys.argv[1:]
+template, output, python_bin, loop_path, state_path, stdout_path, stderr_path, working_dir, mode, runtime_path = sys.argv[1:]
 value = plistlib.loads(Path(template).read_bytes())
 arguments = [python_bin, loop_path, "--json"]
 if mode == "reconcile-only":
@@ -155,6 +156,7 @@ value["ProgramArguments"] = arguments
 value["WorkingDirectory"] = working_dir
 value["StandardOutPath"] = stdout_path
 value["StandardErrorPath"] = stderr_path
+value["EnvironmentVariables"]["PATH"] = runtime_path
 Path(output).write_bytes(plistlib.dumps(value, fmt=plistlib.FMT_XML, sort_keys=False))
 os.chmod(output, 0o644)
 PY
