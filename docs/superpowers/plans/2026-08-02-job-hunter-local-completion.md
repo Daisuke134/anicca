@@ -1706,12 +1706,20 @@ performs the real E2E, and records the milestone.
   in authoritative Job Hunter ownership evidence, so it remains untouched; Job Hunter
   must not guess ownership or close it.
 
-  **Immediate next slice:** replace the observer's ambient current-page lookup with the
-  exact target registered by the current browser owner, ownership receipt, and
-  owned-page receipt. Observation fails closed on every mismatch and never falls back
-  to a baseline page or unregistered popup. Then build, activate, and rerun the real
-  daily lane. Until an ATS or Gmail receipt exists, the system reports zero confirmed
-  applications.
+  **Exact-page observer slice complete in pushed source:** commit `83c8c33f8` removes
+  the ambient current-page lookup. The existing `registered_created_target` contract
+  now validates the owner, ownership, and owned-page receipts before CDP attachment;
+  the observer then resolves exactly one matching target and fails closed if it is
+  absent or duplicated. The prompt supplies the two existing private evidence paths.
+  A focused test proves that a later decoy/baseline page is not observed. Focused
+  verification passes `18/18`; Python compilation, diff checks, and the complete suite
+  pass twice with exit `0`. No service, adapter, database, browser, scheduler, or
+  fallback was added.
+
+  **Immediate next slice:** build and activate an immutable release from the pushed
+  exact-page source, then rerun the real daily lane. Verify the registered target is the
+  only observed page, browser PID/UUID and all unrelated pages remain unchanged, and
+  only an authoritative ATS/Gmail receipt may create a submitted claim.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
