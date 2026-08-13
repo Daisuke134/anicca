@@ -6,7 +6,11 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
+import signal
+import sqlite3
+import subprocess
 import sys
 from typing import Any, Callable, Mapping, Optional, Sequence
 from urllib.parse import quote, urlencode
@@ -27,6 +31,7 @@ def _load(name: str, path: Path) -> Any:
 application_tick = _load("anicca_lancers_work_sync_tick", HERE / "application_tick.py")
 CDP_URL, DEFAULT_STATE_PATH = application_tick.CDP_URL, application_tick.DEFAULT_STATE_PATH
 MAX_BOARD_PAGES = MAX_MESSAGE_PAGES = 20
+TICK_TIMEOUT_SECONDS = 120
 
 
 class SourceFailure(RuntimeError): pass
@@ -44,6 +49,24 @@ def _digest(value: Any) -> str:
     except (TypeError, ValueError):
         raise SourceFailure("provider_response_invalid") from None
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _verified_proposals(state_path: Path) -> set[str]:
+    ledger = Path(state_path).with_name("marketplace-ledger.sqlite3")
+    if not ledger.is_file(): raise SourceFailure("application_receipts_unavailable")
+    connection = None
+    try:
+        connection = sqlite3.connect(ledger.resolve().as_uri() + "?mode=ro", uri=True)
+        rows = connection.execute("SELECT external_id FROM marketplace_events WHERE platform=? AND event_type=?", ("lancers", "application_verified")).fetchall()
+        values = [_id(row[0]) for row in rows]
+    except (IndexError, TypeError, SourceFailure, sqlite3.Error, OSError):
+        raise SourceFailure("application_receipts_unavailable") from None
+    finally:
+        if connection is not None:
+            try: connection.close()
+            except sqlite3.Error: pass
+    if len(values) != len(set(values)): raise SourceFailure("application_receipts_conflict")
+    return set(values)
 
 
 def _fetch(page: Any, path: str) -> Any:
@@ -81,7 +104,7 @@ def _messages(fetch: Callable[[str], Any], board_id: str) -> list[dict[str, str]
     return sorted(({"message_id": _id(row["id"]), "content_sha256": _digest(row)} for row in _pages(fetch, route, check, MAX_MESSAGE_PAGES, ("duplicate_message_id", "message_cursor_stalled", "message_page_limit_reached"))), key=lambda row: row["message_id"])
 
 
-def _snapshot(fetch: Callable[[str], Any]) -> dict[str, Any]:
+def _snapshot(fetch: Callable[[str], Any], verified_proposals: set[str]) -> dict[str, Any]:
     def check(board: Mapping[str, Any]) -> tuple[str, str]:
         board_id = _id(board.get("id")); unread = board.get("unread_count")
         if not isinstance(board.get("is_required_reply"), bool) or isinstance(unread, bool) or not isinstance(unread, int) or unread < 0 or "modified" not in board: raise SourceFailure("provider_response_invalid")
@@ -105,7 +128,7 @@ def _snapshot(fetch: Callable[[str], Any]) -> dict[str, Any]:
         proposal, job, contract = relations
         messages = _messages(fetch, board_id)
         replies += int(board["is_required_reply"]); unread += board["unread_count"]
-        applications += int(proposal is not None); storefront += int(contract is not None)
+        applications += int(proposal in verified_proposals); storefront += int(contract is not None)
         output.append({"board_id": board_id, "content_sha256": _digest({"board": board, "detail": detail}), "message_ids": [row["message_id"] for row in messages], "messages": messages})
     return {"ok": True, "logged_in": True, "source_complete": True, "board_count": len(boards), "required_reply_count": replies, "unread_count": unread, "application_board_count": applications, "storefront_contract_candidate_count": storefront, "boards": sorted(output, key=lambda row: row["board_id"])}
 
@@ -127,13 +150,14 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
     logged_in = False
     result = _failed("observer_unavailable")
     try:
+        verified_proposals = _verified_proposals(Path(state_path))
         with application_tick.account_lock(Path(state_path).with_name("work-sync.json")):
             browser = (browser_factory or application_tick._default_browser_factory)(CDP_URL)
             page = application_tick._new_owned_page(browser)
             if not application_tick._production_account_ready(page):
                 raise SourceFailure("account_unavailable")
             logged_in = True
-            result = _snapshot(lambda path: _fetch(page, path))
+            result = _snapshot(lambda path: _fetch(page, path), verified_proposals)
     except SourceFailure as error:
         result = _failed(str(error), logged_in)
     except Exception as error:
@@ -144,12 +168,50 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
     return result
 
 
-def main(argv: Optional[Sequence[str]] = None, *, output_stream: Any = None, browser_factory: Optional[Callable[[str], Any]] = None) -> int:
+def _watchdog(command: Sequence[str], timeout: float) -> dict[str, Any]:
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        _kill_group(process)
+        try:
+            process.communicate(timeout=1)
+        except subprocess.TimeoutExpired:
+            try:
+                process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                pass
+        return _failed("tick_timeout")
+    _kill_group(process)
+    if stderr or len(stdout.splitlines()) != 1:
+        return _failed("worker_failed")
+    try: result = json.loads(stdout)
+    except (TypeError, ValueError): return _failed("worker_failed")
+    if not isinstance(result, Mapping) or type(result.get("ok")) is not bool:
+        return _failed("worker_failed")
+    if process.returncode != (0 if result["ok"] else 1):
+        return _failed("worker_failed")
+    return result
+
+
+def _kill_group(process: subprocess.Popen[str]) -> None:
+    try: os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError: return
+    try: process.wait(timeout=1)
+    except subprocess.TimeoutExpired:
+        try: os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError: pass
+        try: process.wait(timeout=1)
+        except subprocess.TimeoutExpired: pass
+
+
+def main(argv: Optional[Sequence[str]] = None, *, output_stream: Any = None, browser_factory: Optional[Callable[[str], Any]] = None, worker_command: Optional[Sequence[str]] = None, timeout: float = TICK_TIMEOUT_SECONDS) -> int:
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument("--json", action="store_true", required=True)
     parser.add_argument("--state-path", default=str(DEFAULT_STATE_PATH))
+    parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
-    result = run_tick(state_path=Path(args.state_path), browser_factory=browser_factory)
+    result = run_tick(state_path=Path(args.state_path), browser_factory=browser_factory) if args.worker else _watchdog(worker_command or [sys.executable, str(Path(__file__).resolve()), "--worker", "--json", "--state-path", args.state_path], timeout)
     output = output_stream or sys.stdout
     output.write(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n")
     output.flush()
