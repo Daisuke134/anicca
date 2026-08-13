@@ -952,7 +952,7 @@ inventory後のprimary実測ではinventory reporter processは残存せず、ap
 
 #### 一次証拠と実際の根因
 
-最新のofficial application ownerはquery `SNS投稿`から17件を取得したが、`planner_failed`、応募0、exit 1で終了した。
+planner contract recovery前のofficial application ownerはquery `SNS投稿`から17件を取得したが、`planner_failed`、応募0、exit 1で終了した。
 同一release、同一runner、同一model、同一公開入力をsubmissionなしで再現すると、providerは38秒、rc 0、schema validで
 終了した一方、17件中9件のdecisionだけを返した。provider reported usageはinput 14,676、output 1,909、reasoning 976、
 API equivalent estimate USD 0.02613である。静的schemaはarrayを最大40件にするだけで、入力17件と出力17件の
