@@ -9,7 +9,7 @@ import pytest
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "capafy_ig_session_verify.py"
 HANDLE = "capafy.skills25042"
-OWNER = {"path": "/accounts/edit/", "username": HANDLE, "profile_hrefs": [f"/{HANDLE}/"]}
+OWNER = {"origin": "https://www.instagram.com", "hostname": "www.instagram.com", "path": "/accounts/edit/", "username": HANDLE}
 PAGE = {"id": "target", "type": "page", "url": "about:blank"}
 SEAM = """#!/usr/bin/env python3
 import json,os,sys
@@ -21,7 +21,7 @@ print(json.dumps(value))
 """
 
 
-def run_verify(tmp_path, *, pages, evidence=OWNER, current=True, registry_port=9555, live_port=9555, credential=HANDLE):
+def run_verify(tmp_path, *, pages, evidence=OWNER, current=True, registry_port=9555, live_port=9555, credential=HANDLE, created="created-target", target_id=None):
     tmp_path.mkdir(parents=True, exist_ok=True)
     seam, accounts, secret, log = (tmp_path / name for name in ("cdp.py", "accounts.json", "credential.json", "calls"))
     seam.write_text(SEAM); seam.chmod(0o755)
@@ -29,7 +29,8 @@ def run_verify(tmp_path, *, pages, evidence=OWNER, current=True, registry_port=9
     secret.write_text(json.dumps({"username": credential, "pw": "fixture"}))
     command = [sys.executable, str(SCRIPT), "--accounts", str(accounts), "--handle", HANDLE, "--port", str(live_port)]
     command += ["--current-session"] if current else ["--credential", str(secret)]
-    env = {**os.environ, "CAPAFY_IG_CDP_COMMAND": str(seam), "CAPAFY_IG_SESSION_VERIFY_TEST_SEAM": "1", "CAPAFY_TEST_CDP_LOG": str(log), "FIXTURE": json.dumps({"pages": pages, "evidence": evidence, "created": "created-target"})}
+    if target_id is not None: command += ["--target-id", target_id]
+    env = {**os.environ, "CAPAFY_IG_CDP_COMMAND": str(seam), "CAPAFY_IG_SESSION_VERIFY_TEST_SEAM": "1", "CAPAFY_TEST_CDP_LOG": str(log), "FIXTURE": json.dumps({"pages": pages, "evidence": evidence, "created": created})}
     result = subprocess.run(command, text=True, capture_output=True, env=env, check=False)
     return result, log.read_text().splitlines() if log.exists() else []
 
@@ -51,9 +52,11 @@ def test_current_session_creates_one_target_when_none_is_reusable(tmp_path):
 @pytest.mark.parametrize("evidence", [
     {**OWNER, "path": "/accounts/login/"},
     {**OWNER, "path": "/challenge/ABC/"},
-    {"path": "/accounts/edit/", "username": "capafy.someone_else", "profile_hrefs": ["/capafy.someone_else/"]},
-    {"path": ["malformed"], "username": HANDLE, "profile_hrefs": [f"/{HANDLE}/"]},
-    {"path": "/accounts/edit/", "username": "", "profile_hrefs": []},
+    {**OWNER, "username": "capafy.someone_else", "profile_hrefs": [f"/{HANDLE}/"]},
+    {**OWNER, "path": ["malformed"]},
+    {**OWNER, "username": ""},
+    {**OWNER, "origin": "https://evil.example", "hostname": "evil.example"},
+    {**OWNER, "path": f"/{HANDLE}/"},
 ])
 def test_current_session_rejects_untrusted_owner_evidence(tmp_path, evidence):
     result, _ = run_verify(tmp_path, pages=[PAGE], evidence=evidence)
@@ -65,6 +68,14 @@ def test_current_session_rejects_malformed_cdp_and_ignores_stale_registry_port(t
     live, _ = run_verify(tmp_path / "live", pages=[PAGE], registry_port=9554)
     assert bad.returncode != 0 and not bad.stdout
     assert live.returncode == 0, live.stderr
+
+
+@pytest.mark.parametrize("invalid", ["", "123"])
+def test_current_session_rejects_blank_or_numeric_existing_created_and_injected_targets(tmp_path, invalid):
+    existing, _ = run_verify(tmp_path / "existing", pages=[{**PAGE, "id": invalid}])
+    created, _ = run_verify(tmp_path / "created", pages=[], created=invalid)
+    injected, _ = run_verify(tmp_path / "injected", pages=[PAGE], target_id=invalid)
+    assert existing.returncode != 0 and created.returncode != 0 and injected.returncode != 0
 
 
 def test_new_account_keeps_exact_port_credential_and_owner_requirements(tmp_path):

@@ -41,11 +41,13 @@ case "$MODE" in dry|live) ;; *) printf 'invalid CAPAFY_MARKETING_MODE=%s\n' "$MO
 mkdir -p "$STATE_DIR"
 browser_leased=0
 identity=""
-cleanup(){
+release_browser(){
   if [ "$browser_leased" = "1" ] && [ -n "$identity" ]; then
+    browser_leased=0
     bash "$GUARD" release "$identity" >/dev/null 2>&1 || true
   fi
 }
+cleanup(){ release_browser; }
 trap cleanup EXIT
 # Crash recovery: delivery may succeed immediately before lifecycle bookkeeping.
 # Reconcile that exact receipt without creating or sharing a second Reel.
@@ -61,6 +63,16 @@ if [ -f "$RESULT" ] && [ -f "$STATE" ] && [ "$(python3 -c 'import json,sys;print
     CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 0 recovery || exit $?
     rm -f "$RESULT"; exit 0
   fi
+fi
+if [ -f "$RESULT" ] && [ "$(python3 - "$RESULT" <<'PY'
+import json,sys
+try: d=json.load(open(sys.argv[1])); print(str(d.get("result")=="replacement_waiting" and d.get("session_recovery") is True).lower())
+except Exception: print("false")
+PY
+)" = true ]; then
+  CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 1 recovery; recovery_rc=$?
+  [ "$recovery_rc" -le 1 ] || exit "$recovery_rc"
+  rm -f "$RESULT"; exit 0
 fi
 rm -f "$RESULT" "$CANDIDATE"
 fail(){
@@ -78,6 +90,7 @@ path,handle,detail=sys.argv[1:]
 retry=datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(minutes=5)
 json.dump({"result":"replacement_waiting","session_recovery":True,"reason":"active Instagram browser tab is missing","handle":handle,"repair_detail":detail,"next_retry_at":retry.isoformat(timespec="seconds").replace("+00:00","Z")},open(path,"w"))
 PY
+  release_browser
   CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 1 controller
   exit $?
 }
@@ -115,7 +128,7 @@ import json,sys
 d=json.loads(sys.argv[1]); expected=sys.argv[2].lstrip("@").lower(); port=sys.argv[3]
 if d.get("verified") is not True or d.get("handle")!=expected or d.get("session_owner")!="browser": raise SystemExit(2)
 tid=d.get("target_id")
-if not isinstance(tid,str) or not tid or tid==port: raise SystemExit(2)
+if not isinstance(tid,str) or tid!=tid.strip() or not tid or tid.isdecimal() or tid==port: raise SystemExit(2)
 print(tid)
 PY
 )" || session_recovery_fail "The leased browser returned malformed exact-owner proof for @$handle."

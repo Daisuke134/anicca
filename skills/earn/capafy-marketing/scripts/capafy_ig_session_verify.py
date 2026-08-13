@@ -14,12 +14,17 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 
-HOSTS = {"instagram.com", "www.instagram.com"}
+CANONICAL_HOST = "www.instagram.com"
+CANONICAL_ORIGIN = f"https://{CANONICAL_HOST}"
 EDIT_URL = "https://www.instagram.com/accounts/edit/"
 
 
 def handle(value: object) -> str:
     return str(value or "").strip().lstrip("@").lower()
+
+
+def opaque_target(value: object) -> str | None:
+    return value if isinstance(value, str) and value == value.strip() and value and not value.isdecimal() else None
 
 
 def cdp_call(port: int):
@@ -47,7 +52,7 @@ def cdp_call(port: int):
             cdp.navigate(payload["target_id"], EDIT_URL); time.sleep(float(os.environ.get("CAPAFY_IG_SESSION_VERIFY_WAIT_SECONDS", "3")))
             return None
         if operation == "evidence":
-            return cdp.evaluate(payload["target_id"], """(()=>{const u=document.querySelector('input[name="username"]');return {path:location.pathname,username:u&&u.value,profile_hrefs:[...document.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')).filter(Boolean)}})()""")
+            return cdp.evaluate(payload["target_id"], """(()=>{const u=document.querySelector('input[name="username"]');return {origin:location.origin,hostname:location.hostname,path:location.pathname,username:u&&u.value}})()""")
         raise ValueError("unknown CDP operation")
     return call
 
@@ -84,28 +89,24 @@ def main() -> int:
                 raise ValueError("malformed CDP target")
             if page.get("type") != "page":
                 continue
-            target_id, url = page.get("id"), page.get("url")
-            if not isinstance(target_id, str) or not target_id or not isinstance(url, str):
+            target_id, url = opaque_target(page.get("id")), page.get("url")
+            if target_id is None or not isinstance(url, str):
                 raise ValueError("malformed CDP page")
             targets.append((target_id, url))
         known_ids = {target_id for target_id, _ in targets}
-        if args.target_id:
-            if os.environ.get("CAPAFY_IG_SESSION_VERIFY_TEST_SEAM") != "1" or args.target_id not in known_ids:
+        if args.target_id is not None:
+            target_id = opaque_target(args.target_id)
+            if os.environ.get("CAPAFY_IG_SESSION_VERIFY_TEST_SEAM") != "1" or target_id not in known_ids:
                 raise ValueError("untrusted target injection")
-            target_id = args.target_id
         else:
-            target_id = next((target_id for target_id, url in targets if urlparse(url).hostname in HOSTS or urlparse(url).scheme == "about" and urlparse(url).path == "blank"), None) or call("create")
-        if not isinstance(target_id, str) or not target_id:
+            target_id = next((target_id for target_id, url in targets if urlparse(url).hostname == CANONICAL_HOST or urlparse(url).scheme == "about" and urlparse(url).path == "blank"), None) or opaque_target(call("create"))
+        if target_id is None:
             raise ValueError("malformed target id")
         call("navigate", target_id=target_id)
         evidence = call("evidence", target_id=target_id)
-        if not isinstance(evidence, dict) or not isinstance(evidence.get("path"), str) or not evidence["path"].lower().startswith("/accounts/edit"):
+        if not isinstance(evidence, dict) or evidence.get("origin") != CANONICAL_ORIGIN or evidence.get("hostname") != CANONICAL_HOST or evidence.get("path") != "/accounts/edit/":
             raise ValueError("not an authenticated account page")
-        username, hrefs = handle(evidence.get("username")), evidence.get("profile_hrefs")
-        if username and username != expected or not isinstance(hrefs, list) or any(not isinstance(href, str) for href in hrefs):
-            raise ValueError("owner proof unavailable")
-        profile_match = any(urlparse(href).path.rstrip("/").lower() == f"/{expected}" for href in hrefs)
-        if username != expected and not profile_match:
+        if not isinstance(evidence.get("username"), str) or handle(evidence["username"]) != expected:
             raise ValueError("owner proof unavailable")
     except Exception:
         raise SystemExit("current Instagram session could not be verified")

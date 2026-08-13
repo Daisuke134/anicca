@@ -26,10 +26,13 @@ print("" if value is None else value)
 PY
 }
 send_receipt(){
-  local response id
-  response="$(bash "$SENDER" "$1" 2>&1)" || return 1
-  id="$(printf '%s\n' "$response"|sed -nE 's/.*MSGID=([0-9]+).*/\1/p'|tail -1)"
-  [ -n "$id" ] || return 1; printf '%s' "$id"
+  local output response id rc
+  output="$(mktemp -t capafy-telegram.XXXXXX)" || return 1
+  bash "$SENDER" "$1" >"$output" 2>&1; rc=$?
+  if [ "$rc" -eq 0 ] && [ "$(awk 'END {print NR}' "$output")" = 1 ]; then response="$(cat "$output")"; fi
+  rm -f "$output"
+  [[ "${response:-}" =~ ^TELEGRAM_SENT=true\ MSGID=([0-9]+)$ ]] || return 1
+  id="${BASH_REMATCH[1]}"; printf '%s' "$id"
 }
 record_terminal(){
   python3 - "$TERMINAL" "$1" "$2" <<'PY'
@@ -64,6 +67,14 @@ if len(matches)!=1: raise SystemExit(2)
 print(matches[0].get("status") or "")
 PY
 }
+replacement_matches(){
+  python3 - "$LIFECYCLE_STATE" "$1" <<'PY'
+import json,sys
+try: state=json.load(open(sys.argv[1]))
+except Exception: state={}
+print(str(state.get("replacement_requested") is True and state.get("incident_id")==sys.argv[2]).lower())
+PY
+}
 incident(){
   local reason="$1" lifecycle="$2" retry="$3" replace_handle="${4:-}" recovery="${5:-false}" fingerprint raw id payload body msg existing_key existing_retry delivery_key row_state
   fingerprint="$(printf '%s' "$reason"|shasum -a 256|awk '{print $1}')"
@@ -77,6 +88,8 @@ incident(){
     if [ "$row_state" != session_failed ]; then
       python3 "$LIFECYCLE" retire --accounts "$ACCOUNTS" --handle "$replace_handle" \
         --reason "$reason" --incident-id "$id" >/dev/null || return 2
+    fi
+    if [ "$(replacement_matches "$id")" != true ]; then
       python3 "$LIFECYCLE" request-replacement --state "$LIFECYCLE_STATE" \
         --handle "$replace_handle" --reason "$reason" --incident-id "$id" >/dev/null || return 2
       "$KICKSTART" kickstart "gui/$(id -u)/ai.anicca.capafy-ig-account-manager" >/dev/null 2>&1 || return 2
@@ -86,7 +99,7 @@ incident(){
       --reason "$reason" --incident-id "$id" >/dev/null 2>&1 || true
     python3 "$LIFECYCLE" request-replacement --state "$LIFECYCLE_STATE" \
       --handle "$replace_handle" --reason "$reason" --incident-id "$id" >/dev/null || return 2
-    "$KICKSTART" kickstart -k "gui/$(id -u)/ai.anicca.capafy-ig-account-manager" >/dev/null 2>&1 || true
+    "$KICKSTART" kickstart "gui/$(id -u)/ai.anicca.capafy-ig-account-manager" >/dev/null 2>&1 || true
   fi
   payload="$(python3 - "$id" "$reason" "$lifecycle" "$retry" <<'PY'
 import json,sys
@@ -95,12 +108,18 @@ PY
 )"
   printf '%s' "$payload"|python3 "$OUTCOME" transition-incident >/dev/null || return 2
   [ -z "$existing_key" ] || return 1
-  body="Capafy Marketer incident $id: $reason. $lifecycle. Next automatic action: $retry. Evidence: $EVIDENCE_DIR. Human action required: none."
-  msg="$(send_receipt "$body")" || return 2
   delivery_key="$(printf 'capafy-marketing-direct-failure:%s:%s' "$id" "$reason"|shasum -a 256|awk '{print $1}')"
-  payload="$(python3 - "$id" "$delivery_key" "$msg" <<'PY'
+  payload="$(python3 - "$id" "$delivery_key" <<'PY'
 import json,sys
-print(json.dumps({"incident_id":sys.argv[1],"phase":"unresolved","terminal_message_key":sys.argv[2],"telegram_message_id":int(sys.argv[3])}))
+print(json.dumps({"incident_id":sys.argv[1],"phase":"unresolved","terminal_message_key":sys.argv[2]}))
+PY
+)"
+  printf '%s' "$payload"|python3 "$OUTCOME" transition-incident >/dev/null || return 2
+  body="Capafy Marketer incident $id: $reason. $lifecycle. Next automatic action: $retry. Evidence: $EVIDENCE_DIR. Human action required: none."
+  msg="$(send_receipt "$body")" || return 1
+  payload="$(python3 - "$id" "$msg" <<'PY'
+import json,sys
+print(json.dumps({"incident_id":sys.argv[1],"phase":"unresolved","telegram_message_id":int(sys.argv[2])}))
 PY
 )"
   printf '%s' "$payload"|python3 "$OUTCOME" transition-incident >/dev/null || return 2
