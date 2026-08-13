@@ -12,6 +12,7 @@ SCRIPTS = SCRIPT.parent
 sys.path.insert(0, str(SCRIPTS))
 
 import capafy_event_adapters as event_adapters
+import capafy_event_store as event_store
 import capafy_outcome
 
 
@@ -271,6 +272,133 @@ def test_changed_unresolved_retry_schedule_is_a_new_occurrence(tmp_path: Path, m
     assert first["phase_timestamps"]["unresolved"] == "2026-08-03T07:01:00Z"
     assert second["phase_timestamps"]["unresolved"] == "2026-08-03T07:02:00Z"
     assert same["phase_timestamps"]["unresolved"] == "2026-08-03T07:02:00Z"
+
+
+def test_same_retry_schedule_recurrence_and_semantic_change_get_new_identity(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CAPAFY_OUTCOME_STATE_DIR", str(tmp_path))
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    evidence = tmp_path / "evidence"
+
+    def writer(current: dict) -> None:
+        event_store.append_event(
+            ledger,
+            event_adapters.event_from_incident(current),
+            current,
+            evidence,
+        )
+
+    record = capafy_outcome.start_incident(
+        owner="capafy-marketer",
+        summary="sync failed",
+        fingerprint="sync-failed",
+        repair_result_path=None,
+        event_writer=writer,
+    )
+    incident_id = record["incident_id"]
+    for phase in ("repair_started", "repaired"):
+        record = capafy_outcome.transition_incident(
+            {"incident_id": incident_id, "phase": phase}, event_writer=writer
+        )
+    retry_at = "2026-08-13T01:00:00Z"
+    record = capafy_outcome.transition_incident(
+        {
+            "incident_id": incident_id,
+            "phase": "unresolved",
+            "repair_summary": "first retry",
+            "next_retry_at": retry_at,
+        },
+        event_writer=writer,
+    )
+    first_unresolved = event_adapters.event_from_incident(record)["event_id"]
+
+    for phase in ("repair_started", "repaired"):
+        record = capafy_outcome.transition_incident(
+            {"incident_id": incident_id, "phase": phase}, event_writer=writer
+        )
+    record = capafy_outcome.transition_incident(
+        {
+            "incident_id": incident_id,
+            "phase": "unresolved",
+            "repair_summary": "second retry has a new semantic result",
+            "next_retry_at": retry_at,
+        },
+        event_writer=writer,
+    )
+    second_unresolved = event_adapters.event_from_incident(record)["event_id"]
+    replay = capafy_outcome.transition_incident(
+        {
+            "incident_id": incident_id,
+            "phase": "unresolved",
+            "repair_summary": "second retry has a new semantic result",
+            "next_retry_at": retry_at,
+        },
+        event_writer=writer,
+    )
+
+    assert first_unresolved != second_unresolved
+    assert event_store.append_event(
+        ledger,
+        event_adapters.event_from_incident(replay),
+        replay,
+        evidence,
+    ).appended is False
+
+
+def test_retry_schedule_is_canonical_and_invalid_retry_reuses_persisted_value(
+    tmp_path: Path, monkeypatch
+) -> None:
+    incident = incident_record("unresolved")
+    incident["next_retry_at"] = "2026-08-13T01:00:00Z"
+    path = tmp_path / "capafy-incidents" / f"{incident['incident_id']}.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(incident), encoding="utf-8")
+    previous = event_adapters.event_from_incident(incident)
+
+    monkeypatch.setenv("CAPAFY_OUTCOME_STATE_DIR", str(tmp_path))
+    same_instant = capafy_outcome.transition_incident(
+        {
+            "incident_id": incident["incident_id"],
+            "phase": "unresolved",
+            "next_retry_at": "2026-08-13T10:00:00+09:00",
+        }
+    )
+    prose_retry = capafy_outcome.transition_incident(
+        {
+            "incident_id": incident["incident_id"],
+            "phase": "unresolved",
+            "next_retry_at": "the next repair cycle",
+        }
+    )
+
+    assert same_instant["next_retry_at"] == "2026-08-13T01:00:00Z"
+    assert prose_retry["next_retry_at"] == "2026-08-13T01:00:00Z"
+    assert event_adapters.event_from_incident(same_instant) == previous
+    assert event_adapters.event_from_incident(prose_retry) == previous
+
+
+def test_legacy_same_phase_semantic_change_gets_occurrence_identity(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CAPAFY_OUTCOME_STATE_DIR", str(tmp_path))
+    incident = incident_record("unresolved")
+    incident.pop("phase_occurrences", None)
+    path = tmp_path / "capafy-incidents" / f"{incident['incident_id']}.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(incident), encoding="utf-8")
+    first_id = event_adapters.event_from_incident(incident)["event_id"]
+
+    changed = capafy_outcome.transition_incident(
+        {
+            "incident_id": incident["incident_id"],
+            "phase": "unresolved",
+            "repair_summary": "semantic retry detail changed",
+            "next_retry_at": incident["next_retry_at"],
+        }
+    )
+
+    assert event_adapters.event_from_incident(changed)["event_id"] != first_id
 
 
 def test_verified_incident_cannot_transition_back_to_unresolved(

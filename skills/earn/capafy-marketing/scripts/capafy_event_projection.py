@@ -35,6 +35,7 @@ SOURCE_EVENT_TYPES = {
     "marketing": {"content.published", "content.measured", "experiment.activated", "experiment.configured", "experiment.measured", "experiment.stopped"},
     "cost": {"cost.measured"},
 }
+INCIDENT_PHASE_ORDER = {"detected": 0, "repair_started": 1, "unresolved": 1, "repaired": 2, "verified": 3}
 
 
 def _canonical(value: Any) -> bytes:
@@ -162,7 +163,7 @@ def project_company(events: list[dict], reference_time: str | datetime | None = 
     accounts: dict[str, tuple[int, dict]] = {}
     content_snapshots: dict[str, dict] = {}
     latest_publication: dict | None = None
-    incident_states: dict[str, tuple[int, dict]] = {}
+    incident_states: dict[str, tuple[tuple[datetime, int, int], dict]] = {}
     experiment_states: dict[str, tuple[int, dict]] = {}
 
     for index, event in enumerate(events):
@@ -191,7 +192,15 @@ def project_company(events: list[dict], reference_time: str | datetime | None = 
         if event["event_type"] == "content.measured":
             content_snapshots[entity["id"]] = event
         if event["event_type"].startswith("incident."):
-            incident_states[entity["id"]] = (index, event)
+            phase = str(event["status"]["after"] or "")
+            chronology = (
+                _utc(event["occurred_at"]),
+                INCIDENT_PHASE_ORDER.get(phase, -1),
+                index,
+            )
+            prior = incident_states.get(entity["id"])
+            if prior is None or chronology >= prior[0]:
+                incident_states[entity["id"]] = (chronology, event)
         if entity["type"] == "experiment" and event["event_type"].startswith("experiment."):
             experiment_states[entity["id"]] = (index, event)
 

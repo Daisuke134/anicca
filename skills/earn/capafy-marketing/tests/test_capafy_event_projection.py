@@ -343,6 +343,42 @@ def test_verified_incident_is_not_active_but_unresolved_incident_is() -> None:
     assert projection.project_company(base + [unresolved, verified])["incident"] is None
 
 
+def test_incident_projection_uses_business_chronology_not_append_order() -> None:
+    historical_later = {
+        "schema_version": 1,
+        "incident_id": "capafy-company-20260808T003008Z-e465c6a6",
+        "owner": "company",
+        "phase": "detected",
+        "phase_timestamps": {"detected": "2026-08-08T00:30:08Z"},
+        "summary": "The company projection needs reconciliation.",
+    }
+    current_earlier = {
+        "schema_version": 1,
+        "incident_id": "capafy-marketer-20260803T070010Z-99b1374a",
+        "owner": "marketer",
+        "phase": "unresolved",
+        "phase_timestamps": {"unresolved": "2026-08-03T07:00:10Z"},
+        "summary": "The marketer retry remains unresolved.",
+        "next_retry_at": "2026-08-07T04:50:52Z",
+    }
+    appended_later = stored(
+        adapters.event_from_incident(historical_later), "2026-08-13T10:00:00Z"
+    )
+    appended_earlier = stored(
+        adapters.event_from_incident(current_earlier), "2026-08-13T10:00:01Z"
+    )
+
+    result = projection.project_company([appended_later, appended_earlier])
+
+    assert result["incident"] == {
+        "incident_id": historical_later["incident_id"],
+        "owner": "company",
+        "summary": historical_later["summary"],
+        "phase": "detected",
+        "next_retry_at": None,
+    }
+
+
 def test_project_cli_reads_validated_jsonl(tmp_path: Path) -> None:
     ledger = tmp_path / "events.jsonl"
     ledger.write_text(

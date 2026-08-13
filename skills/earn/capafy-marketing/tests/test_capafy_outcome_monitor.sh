@@ -146,6 +146,7 @@ echo "(D) FAIL reports blocker and next retry"
 setup_case
 seed_incident
 retry='2026-08-01T18:00:00+09:00'
+canonical_retry='2026-08-01T09:00:00Z'
 printf '%s' "$(python3 - "$INCIDENT_ID" "$retry" <<'PY'
 import json, sys
 print(json.dumps({"incident_id": sys.argv[1], "phase": "unresolved", "repair_summary": "One clean reattach still returned ChallengeRequired", "next_retry_at": sys.argv[2]}))
@@ -157,7 +158,7 @@ body="$(cat "$FAKE_MESSAGES")"
 assert_eq "FAIL report exits zero" "$rc" "0"
 assert_has "FAIL contains attempted repair" "$body" "One clean reattach"
 assert_has "FAIL contains remaining blocker" "$body" "Instagram challenge remains"
-assert_has "FAIL contains next retry" "$body" "$retry"
+assert_has "FAIL contains canonical next retry" "$body" "$canonical_retry"
 rm -rf "$CASE_DIR"
 
 echo "(E) missing message id never marks delivery complete"
