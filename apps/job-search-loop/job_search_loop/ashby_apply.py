@@ -24,6 +24,8 @@ STANDARD_PROFILE_ANSWERS = {
     "full name": ("name", "profile.name"),
     "email": ("application_email", "profile.application_email"),
     "email address": ("application_email", "profile.application_email"),
+    "location": ("base", "profile.current_location_20260807"),
+    "link to your linkedin": ("linkedin_url", "profile.linkedin_url"),
     "phone number": ("phone", "profile.phone"),
     "preferred name (if applicable)": ("preferred_name", "profile.preferred_name"),
     "when can you start a new role?": ("start_date", "profile.start_date"),
@@ -66,6 +68,9 @@ def generate_grounded_answers(
         elif "currently located" in key:
             answer = _normalized(candidate.get("base"))
             fact_id = "profile.current_location_20260807"
+        elif "how did you hear" in key and "Job board" in field.get("options", []):
+            answer = "Job board"
+            fact_id = "application_source_job_board_20260807"
         elif "authorized to work" in key:
             answer = "Yes"
             fact_id = "legal_japan_work_authorization_20260730"

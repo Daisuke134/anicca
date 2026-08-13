@@ -86,11 +86,14 @@ For each selected role:
    that private credential capability is genuinely unavailable, keep only that role
    pre-click and immediately continue to the next eligible official ATS role.
    For Ashby, the command contract is fixed. `inspect` requires `--endpoint`, `--url`,
-   and `--output`. Both `fill` and `verify` additionally require one private
+   and `--output`. Immediately run `answers` with that `--inspect-result`,
+   `--profile "$JOB_SEARCH_PROFILE"`, and a private `--output`; use that exact artifact
+   for `fill`. Never hand-build standard identity, contact, location, LinkedIn, or
+   application-source answers with `jq` or shell. Both `fill` and `verify` require one private
    `--answers` JSON, one exact `--resume` PDF, and `--profile`. `apply` requires all
    of those plus `--ledger`, the existing `--intent-id`, and its integer `--fence`.
    Do not invoke `fill`, `verify`, or `apply` until every required argument exists.
-   Reuse a prior answer only when its question has the same meaning and its fact is
+   Reuse a prior non-standard answer only when its question has the same meaning and its fact is
    still present in the private profile; otherwise report the exact missing fact and
    keep the intent pre-click. Never use a wildcard as `--resume` and never invent an
    intent ID or fence.

@@ -109,10 +109,13 @@ class AshbyApplyTests(unittest.TestCase):
                 "phone": "+81-00-0000-0000",
                 "phone_status": "verified",
                 "base": "Tokyo, Japan",
+                "linkedin_url": "https://www.linkedin.com/in/candidate",
                 "start_date": "2026-12-01",
             },
             "facts": [
                 {"id": "profile.current_location_20260807", "claim": "Tokyo, Japan"},
+                {"id": "profile.linkedin_url", "claim": "Verified LinkedIn URL"},
+                {"id": "application_source_job_board_20260807", "claim": "Official job board"},
                 {"id": "legal_japan_work_authorization_20260730", "claim": "Authorized"},
                 {"id": "legal_no_japan_sponsorship_required_20260806", "claim": "No sponsorship"},
                 {"id": "availability_tokyo_office_three_days_20260806", "claim": "Available five days"},
@@ -126,6 +129,9 @@ class AshbyApplyTests(unittest.TestCase):
             ("Resume", "upload", True),
             ("Phone Number", "fill", True),
             ("Where are you currently located?", "fill", True),
+            ("Location", "fill", True),
+            ("Link to your LinkedIn", "fill", True),
+            ("How did you hear about ElevenLabs?", "select", True),
             ("When can you start a new role?", "fill", True),
             ("Are you authorized to work in the country where the job is located?", "select", True),
             ("Will you now or in the future require sponsorship for employment visa status in this country?", "select", True),
@@ -134,7 +140,7 @@ class AshbyApplyTests(unittest.TestCase):
             ("I hereby certify that the answers given by me are true and correct.", "check", True),
         ]
         fields = [
-            {"field_path": f"field-{index}", "question": question, "control": control, "required": required, "options": ["Yes", "No"] if control == "select" else []}
+            {"field_path": f"field-{index}", "question": question, "control": control, "required": required, "options": (["Job board", "Other"] if "How did you hear" in question else ["Yes", "No"]) if control == "select" else []}
             for index, (question, control, required) in enumerate(questions)
         ]
 
@@ -143,10 +149,13 @@ class AshbyApplyTests(unittest.TestCase):
         self.assertEqual(result["status"], "ready")
         self.assertEqual(result["missing_required"], [])
         self.assertNotIn("Additional Information", result["answers"])
-        self.assertEqual(result["answers"][questions[7][0]]["answer"], "Yes")
-        self.assertEqual(result["answers"][questions[8][0]]["answer"], "No")
-        self.assertEqual(result["answers"][questions[9][0]]["answer"], "Yes")
-        self.assertEqual(result["answers"][questions[11][0]]["answer"], "true")
+        self.assertEqual(result["answers"]["Location"]["answer"], "Tokyo, Japan")
+        self.assertEqual(result["answers"]["Link to your LinkedIn"]["fact_ids"], ["profile.linkedin_url"])
+        self.assertEqual(result["answers"]["How did you hear about ElevenLabs?"]["answer"], "Job board")
+        self.assertEqual(result["answers"][questions[10][0]]["answer"], "Yes")
+        self.assertEqual(result["answers"][questions[11][0]]["answer"], "No")
+        self.assertEqual(result["answers"][questions[12][0]]["answer"], "Yes")
+        self.assertEqual(result["answers"][questions[14][0]]["answer"], "true")
         plan = build_actions(
             fields,
             answer_map=result,
