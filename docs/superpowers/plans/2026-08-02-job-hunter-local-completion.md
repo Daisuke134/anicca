@@ -569,6 +569,15 @@ not presented as tappable mobile links.
 All reports are event-deduped and store the Telegram message ID in the same durable
 outbox/ledger chain as the event being reported.
 
+The canonical Job Hunter sender is `job_search_loop.telegram` with
+`~/.config/anicca/job-search/telegram.env` and the durable Job Hunter outbox. The
+private target key is `JOB_SEARCH_TELEGRAM_CHAT_ID`. The generic shared
+`send-telegram.sh` expects a different target key and is not evidence that Job Hunter
+delivery is broken. A real diagnostic milestone sent through the canonical path is
+stored as event `job-search-spec:regional-fence:53d673a04`, status `sent`, Telegram
+message ID `15940`. Future Job Hunter milestone reports use this path and record the
+returned message ID.
+
 ### 7.2 Confirmed application
 
 ```text
@@ -904,19 +913,22 @@ and outbox bookkeeping.
 
 ## 12. Execution order and remaining TODO
 
-Each item closes RED → GREEN → real verification → this spec update → commit/push
-before the next item begins.
+Each item closes direct implementation → focused verification → one adversarial
+review → real verification → this spec update → commit/push before the next item
+begins. Per the owner's current instruction, remaining Job Hunter slices do not add
+a TDD/RED ceremony. Existing tests are retained and the smallest relevant checks are
+run after implementation.
 
 Execution ownership is fixed for every remaining slice. The primary Codex controller
 alone writes and changes this running spec, task briefs, task order, acceptance
-criteria, and completion state. Luna receives one already-decided code task, edits
-only its assigned production/test files, runs the exact requested commands, and
-returns raw evidence in a task report; it does not author, reinterpret, or update the
-spec or plan. A fresh reviewer is read-only and may only challenge the supplied
-contract and evidence. After review, the primary controller decides the correction,
-updates this spec itself, commits, pushes, performs the real E2E, and records the
-milestone. Subagent-written spec text is never completion evidence until the primary
-has independently inspected and adopted it.
+criteria, and completion state. Luna receives a bounded, already-decided code task;
+Terra receives only a context-heavy implementation task. Each edits only its assigned
+production/test files, runs the exact requested commands, and returns raw evidence;
+neither authors, reinterprets, or updates the spec or plan. Exactly one adversarial
+reviewer is used after implementation and is read-only. The primary controller then
+decides any correction, updates this spec itself, commits, pushes, performs the real
+E2E, and records the milestone. Subagent-written spec text is never completion
+evidence until the primary has independently inspected and adopted it.
 
 - [x] **O2-01** — Recreate and measure the missing dedicated branch/worktree; preserve
   unrelated main changes; measure launchd, browser, Gmail, release, tests, resumes,
@@ -956,6 +968,10 @@ has independently inspected and adopted it.
   focused verification plus adversarial review. Free sufficient Mac mini disk space
   without deleting protected/private state, rerun the complete Job Hunter suite, and
   mark complete only on `569/569`. No new state store or service.
+- [x] **O2-05T — canonical Telegram-path diagnosis** — Prove the working Job Hunter
+  sender reads `JOB_SEARCH_TELEGRAM_CHAT_ID`, sends through the durable outbox, and
+  stores the provider acknowledgement. Real message ID: `15940`. No code change was
+  needed; the failed attempt used the wrong generic sender contract.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
@@ -964,7 +980,7 @@ has independently inspected and adopted it.
   browser; run Guardian health
   gates and observe one real canonical cycle. The Guardian LaunchAgent itself closes
   in O2-07.
-- [ ] **O2-06** — TDD the JPY 7M floor / JPY 10M target / JPY 30M stretch policy,
+- [ ] **O2-06** — Complete the JPY 7M floor / JPY 10M target / JPY 30M stretch policy,
   travel-positive policy, clearance non-rejection contract, and mandatory remote-job
   segment. Reuse pinned OSS/public ATS sources for Japan-remote and globally remote
   roles that can employ or contract a Japan resident, including eligible distinct
