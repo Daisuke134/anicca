@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.ai/schemas/marketplace/event-v1.json",
+  "title": "MarketplaceEvent",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ApplicationIntent"
+    },
+    {
+      "$ref": "#/$defs/ApplicationReceipt"
+    },
+    {
+      "$ref": "#/$defs/WorkEvent"
+    },
+    {
+      "$ref": "#/$defs/DeliveryIntent"
+    },
+    {
+      "$ref": "#/$defs/DeliveryReceipt"
+    }
+  ],
+  "$defs": {
+    "schema_version": {
+      "const": 1
+    },
+    "record_type": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{1,31}$(?![\\s\\S])"
+    },
+    "non_empty_string": {
+      "type": "string",
+      "minLength": 1
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!\\s)[^\\u0000-\\u001F\\u007F-\\u009F]*[^\\s\\u0000-\\u001F\\u007F-\\u009F]$(?![\\s\\S])"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!\\s)[^\\u0000-\\u001F\\u007F-\\u009F]*[^\\s\\u0000-\\u001F\\u007F-\\u009F]$(?![\\s\\S])"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$(?![\\s\\S])"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$(?![\\s\\S])"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "non_negative_minor": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "ApplicationIntent": {
+      "title": "MarketplaceApplicationIntent",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "opportunity_external_id",
+        "proposal_text",
+        "proposed_amount_minor",
+        "currency",
+        "content_sha256",
+        "idempotency_key",
+        "created_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schema_version"
+        },
+        "record_type": {
+          "const": "application_intent"
+        },
+        "platform": {
+          "$ref": "#/$defs/platform"
+        },
+        "opportunity_external_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "proposal_text": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "proposed_amount_minor": {
+          "$ref": "#/$defs/non_negative_minor"
+        },
+        "currency": {
+          "$ref": "#/$defs/currency"
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "idempotency_key": {
+          "$ref": "#/$defs/idempotency_key"
+        },
+        "created_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    },
+    "ApplicationReceipt": {
+      "title": "MarketplaceApplicationReceipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "opportunity_external_id",
+        "application_external_id",
+        "status",
+        "content_sha256",
+        "idempotency_key",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schema_version"
+        },
+        "record_type": {
+          "const": "application_receipt"
+        },
+        "platform": {
+          "$ref": "#/$defs/platform"
+        },
+        "opportunity_external_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "application_external_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "status": {
+          "enum": [
+            "submitted",
+            "verified",
+            "rejected",
+            "withdrawn"
+          ]
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "idempotency_key": {
+          "$ref": "#/$defs/idempotency_key"
+        },
+        "observed_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    },
+    "WorkEvent": {
+      "title": "MarketplaceWorkEvent",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "event_type",
+        "external_id",
+        "parent_external_id",
+        "content_sha256",
+        "occurred_at",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schema_version"
+        },
+        "record_type": {
+          "const": "work_event"
+        },
+        "platform": {
+          "$ref": "#/$defs/platform"
+        },
+        "event_type": {
+          "enum": [
+            "opportunity_seen",
+            "application_submitted",
+            "application_verified",
+            "message_received",
+            "order_awarded",
+            "artifact_verified",
+            "delivery_submitted",
+            "delivery_verified",
+            "payment_received",
+            "withdrawal_verified"
+          ]
+        },
+        "external_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "parent_external_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/identifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "observed_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    },
+    "DeliveryIntent": {
+      "title": "MarketplaceDeliveryIntent",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "work_external_id",
+        "artifact_path",
+        "artifact_sha256",
+        "message",
+        "content_sha256",
+        "idempotency_key",
+        "created_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schema_version"
+        },
+        "record_type": {
+          "const": "delivery_intent"
+        },
+        "platform": {
+          "$ref": "#/$defs/platform"
+        },
+        "work_external_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "artifact_path": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "artifact_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "message": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "idempotency_key": {
+          "$ref": "#/$defs/idempotency_key"
+        },
+        "created_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    },
+    "DeliveryReceipt": {
+      "title": "MarketplaceDeliveryReceipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "work_external_id",
+        "delivery_external_id",
+        "status",
+        "artifact_sha256",
+        "idempotency_key",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schema_version"
+        },
+        "record_type": {
+          "const": "delivery_receipt"
+        },
+        "platform": {
+          "$ref": "#/$defs/platform"
+        },
+        "work_external_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "delivery_external_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "status": {
+          "enum": [
+            "submitted",
+            "verified",
+            "rejected"
+          ]
+        },
+        "artifact_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "idempotency_key": {
+          "$ref": "#/$defs/idempotency_key"
+        },
+        "observed_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    }
+  }
+}

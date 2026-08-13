@@ -89,6 +89,15 @@
         {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
+    "application-intent-planner": {
+      "route": "luna-medium-isolated-application-intent",
+      "token_reservation": 24576,
+      "timeout_seconds": 180,
+      "candidates": [
+        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
+      ]
+    },
     "diagnostic-agent": {
       "route": "terra-medium-decision",
       "token_reservation": 32768,
