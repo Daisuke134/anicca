@@ -1,12 +1,16 @@
 import json
+import importlib.util
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
+import pytest
 
 
 SCRIPT = Path(__file__).parents[1] / "capafy_earn_reconcile.py"
 DAILY = SCRIPT.parent / "capafy-loop-daily.sh"
+CANONICAL_SYNC = SCRIPT.parents[2] / "earn/capafy-marketing/scripts/capafy_event_sync.py"
 
 
 def _fixtures(tmp_path: Path) -> tuple[Path, Path]:
@@ -30,9 +34,11 @@ def _sync_stub(tmp_path: Path, exit_code: int) -> tuple[Path, Path]:
     return stub, calls
 
 
-def _run(tmp_path: Path, sync_exit: int, seed: list[dict] | None = None) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
+def _run(tmp_path: Path, sync_exit: int, seed: list[dict] | None = None, payout_payload: dict | None = None, sync_path: Path | None = None) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
     sales, payout = _fixtures(tmp_path)
-    sync, calls = _sync_stub(tmp_path, sync_exit)
+    if payout_payload is not None:
+        payout.write_text(json.dumps(payout_payload))
+    sync, calls = (sync_path, tmp_path / "sync-calls.jsonl") if sync_path else _sync_stub(tmp_path, sync_exit)
     source_ledger = tmp_path / "capafy-earn-ledger.jsonl"
     event_ledger = tmp_path / "capafy-revenue-events.jsonl"
     environment = os.environ.copy()
@@ -91,6 +97,36 @@ def test_authoritative_fixture_upserts_stale_rows_and_keeps_zero_dollar_orders(t
     assert json.loads(second.stdout)["lifetime_gross_usd"] == 19.98
 
 
+def test_canonical_sync_same_day_retry_is_idempotent(tmp_path: Path) -> None:
+    first, ledger, _ = _run(tmp_path, 0, sync_path=CANONICAL_SYNC)
+    time.sleep(1.1)
+    second, _, _ = _run(tmp_path, 0, sync_path=CANONICAL_SYNC)
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 0, second.stderr
+    assert len((tmp_path / "capafy-revenue-events.jsonl").read_text().splitlines()) == 6
+
+
+def test_payout_failure_preserves_previous_source_evidence(tmp_path: Path) -> None:
+    first, ledger, calls = _run(tmp_path, 0)
+    before, sync_before = ledger.read_bytes(), calls.read_bytes()
+    assert first.returncode == 0
+    for payload in ({"code": 503, "message": "unavailable"}, {"data": []}):
+        failed, _, calls_after = _run(tmp_path, 0, payout_payload=payload)
+        assert failed.returncode != 0 and "payout" in failed.stderr
+        assert ledger.read_bytes() == before and calls_after.read_bytes() == sync_before
+
+
+def test_sales_window_failure_does_not_return_partial_rows() -> None:
+    spec = importlib.util.spec_from_file_location("reconcile", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    module._date_windows = lambda _: iter([("2026-08-01", "2026-08-07"), ("2026-08-08", "2026-08-13")])
+    module._get = lambda path, token: {"code": 503, "message": "window unavailable"} if "2026-08-08" in path else {"code": 0, "data": {"data": [{"date": "2026-08-01", "orders": 1, "revenue": 1.0}]}}
+    with pytest.raises(RuntimeError, match="sales window"):
+        module.fetch_sales("token", 14)
+
+
 def test_daily_reconciles_before_cap_full_builder_return(tmp_path: Path) -> None:
     _fixtures(tmp_path)
     home = tmp_path / "home"
@@ -128,7 +164,8 @@ def test_reconcile_syncs_money_after_source_ledger_write(tmp_path: Path) -> None
 
     assert result.returncode == 0, result.stderr
     arguments = json.loads(calls.read_text().splitlines()[0])
-    assert arguments[:3] == ["sync-money", "--money-ledger", str(source_ledger)]
+    assert arguments[:2] == ["sync-money", "--money-ledger"]
+    assert arguments[2] != str(source_ledger)
     assert "--cost-log" in arguments
     assert "--ledger" in arguments
     assert "--evidence-dir" in arguments

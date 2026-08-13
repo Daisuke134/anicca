@@ -34,6 +34,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -70,27 +71,45 @@ def _date_windows(lookback_days: int):
         cur = end + dt.timedelta(days=1)
 
 
+def _sales_rows(raw: object) -> list:
+    if isinstance(raw, dict) and raw.get("code", 0) != 0:
+        raise RuntimeError("sales response returned an error")
+    raw = raw.get("data", {}).get("data") if isinstance(raw, dict) else raw
+    if not isinstance(raw, list) or any(not isinstance(d, dict) or not isinstance(d.get("date"), str) for d in raw):
+        raise RuntimeError("sales response has malformed data")
+    return [d for d in raw if float(d.get("orders", 0) or 0) > 0 or float(d.get("revenue", 0) or 0) > 0]
+
+
 def fetch_sales(token: str, lookback_days: int) -> list:
     """Return dated order aggregates, including zero-dollar orders, deduped by date."""
     seen = {}
     for s, e in _date_windows(lookback_days):
         try:
-            resp = _get(f"/agent/sales/trend?startDate={s}&endDate={e}", token)
-        except Exception:
-            continue
-        if resp.get("code", 0) != 0:
-            continue
-        days = (resp.get("data") or {}).get("data")
-        if not isinstance(days, list):
-            continue
-        for d in days:
-            date = d.get("date")
-            if not date:
-                continue
-            if float(d.get("orders", 0) or 0) <= 0 and float(d.get("revenue", 0) or 0) <= 0:
-                continue
-            seen[date] = d
+            for day in _sales_rows(_get(f"/agent/sales/trend?startDate={s}&endDate={e}", token)):
+                seen[day["date"]] = day
+        except Exception as exc:
+            raise RuntimeError(f"sales window {s}..{e} failed: {exc}") from exc
     return [seen[k] for k in sorted(seen)]
+
+
+def _payout_snapshot(raw: object) -> dict:
+    required = ("balancePayout", "balancePending", "balanceConfirmed", "totalPayout")
+    data = raw.get("data", raw) if isinstance(raw, dict) and raw.get("code", 0) == 0 else None
+    if not isinstance(data, dict) or any(field not in data for field in required):
+        raise RuntimeError("payout response has malformed balance fields")
+    try:
+        [float(data[field]) for field in required]
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("payout response has malformed balance fields") from exc
+    return data
+
+
+def _canonical_money_ledger(rows: list, source: str) -> str:
+    fd, path = tempfile.mkstemp(prefix="capafy-money-", suffix=".jsonl", dir=os.path.dirname(source) or ".")
+    rows = [{**r, "ts": _date_to_ts(r["date"])} if isinstance(r, dict) and r.get("source") == "capafy-payout" and r.get("date") else r for r in rows]
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write("".join((r.get("_raw") if isinstance(r, dict) and "_raw" in r else json.dumps(r, ensure_ascii=False)) + "\n" for r in rows))
+    return path
 
 
 def load_rows(path: str) -> list:
@@ -143,32 +162,31 @@ def main() -> int:
     args = ap.parse_args()
 
     lookback = 90 if args.backfill else args.lookback_days
+    token = ""
 
     # --- gather server truth (live or injected) ---
-    if args.sales_json:
-        raw = json.load(open(args.sales_json))
-        days = raw.get("data", {}).get("data") if isinstance(raw, dict) else raw
-        sales = [d for d in (days or []) if d.get("date") and (float(d.get("orders", 0) or 0) > 0 or float(d.get("revenue", 0) or 0) > 0)]
-        sales.sort(key=lambda d: d["date"])
-    else:
-        token = _token()
-        if not token:
-            print(json.dumps({"ok": False, "reason": "no_access_token"}))
-            return 1
-        sales = fetch_sales(token, lookback)
+    try:
+        if args.sales_json:
+            sales = _sales_rows(json.load(open(args.sales_json)))
+            sales.sort(key=lambda d: d["date"])
+        else:
+            token = _token()
+            if not token:
+                print(json.dumps({"ok": False, "reason": "no_access_token"}))
+                return 1
+            sales = fetch_sales(token, lookback)
+    except Exception as exc:
+        print(f"sales read failed: {exc}", file=sys.stderr)
+        return 1
 
-    if args.payout_json:
-        praw = json.load(open(args.payout_json))
-        payout = praw.get("data", praw) if isinstance(praw, dict) else {}
-    else:
-        try:
-            payout = _get("/agent/developer/payout-info", token).get("data", {})
-        except Exception:
-            payout = {}
-    # payout-info returns an OBJECT; a payout-RECORD fixture (list) or any non-object is treated
-    # as "no snapshot data" rather than crashing (keeps the reconcile safe under the loop test seam).
-    if not isinstance(payout, dict):
-        payout = {}
+    try:
+        if args.payout_json:
+            payout = _payout_snapshot(json.load(open(args.payout_json)))
+        else:
+            payout = _payout_snapshot(_get("/agent/developer/payout-info", token))
+    except Exception as exc:
+        print(f"payout read failed: {exc}", file=sys.stderr)
+        return 1
 
     # --- merge into ledger (idempotent by (source,date)) ---
     existing = load_rows(args.ledger)
@@ -232,12 +250,13 @@ def main() -> int:
         os.path.abspath(os.path.join(HERE, "../../earn/capafy-marketing/scripts/capafy_event_sync.py")),
     )
     if not (os.environ.get("CAPAFY_TEST") == "1" and "CAPAFY_EVENT_SYNC" not in os.environ):
+        sync_ledger = _canonical_money_ledger(new_rows, args.ledger)
         sync_command = [
             sys.executable,
             event_sync,
             "sync-money",
             "--money-ledger",
-            args.ledger,
+            sync_ledger,
             "--cost-log",
             os.environ.get(
                 "CAPAFY_EVENT_COST_LOG",
@@ -254,13 +273,19 @@ def main() -> int:
                 os.path.expanduser("~/.openclaw/state/capafy-revenue-evidence"),
             ),
         ]
-        synced = subprocess.run(sync_command, capture_output=True, text=True, check=False)
-        if synced.returncode != 0:
-            print(
-                f"event sync failed rc={synced.returncode}: {synced.stderr.strip()}",
-                file=sys.stderr,
-            )
-            return 1
+        try:
+            synced = subprocess.run(sync_command, capture_output=True, text=True, check=False)
+            if synced.returncode != 0:
+                print(
+                    f"event sync failed rc={synced.returncode}: {synced.stderr.strip()}",
+                    file=sys.stderr,
+                )
+                return 1
+        finally:
+            try:
+                os.unlink(sync_ledger)
+            except OSError:
+                pass
 
     sale_rows = [r for r in new_rows if isinstance(r, dict) and r.get("source") == "capafy-sales"]
     lifetime_gross = round(sum(float(r.get("gross_usd", 0)) for r in sale_rows), 2)
