@@ -214,7 +214,7 @@ def known_tenants(store_path: Path) -> list[str]:
     return sorted(tenants)
 
 
-def _wait_visible(page: Any, selector: str) -> None:
+def _wait_visible(page: Any, selector: str, stage: str) -> None:
     waiter = getattr(page, "wait_for_selector", None)
     if not callable(waiter):
         page.wait_for_timeout(1_000)
@@ -223,8 +223,20 @@ def _wait_visible(page: Any, selector: str) -> None:
         waiter(selector, state="visible", timeout=20_000)
     except Exception as error:
         if error.__class__.__name__ == "TimeoutError":
-            raise WorkdayCredentialError("Workday account surface did not load") from error
+            raise WorkdayCredentialError(
+                f"Workday account surface did not load:{stage}"
+            ) from error
         raise
+
+
+def _single_visible(control: Any) -> Any | None:
+    count = control.count()
+    if count == 1:
+        return control if control.is_visible() else None
+    if not hasattr(control, "nth"):
+        return None
+    visible = [control.nth(index) for index in range(count) if control.nth(index).is_visible()]
+    return visible[0] if len(visible) == 1 else None
 
 
 def _advance_application_entry(page: Any) -> int:
@@ -240,7 +252,8 @@ def _advance_application_entry(page: Any) -> int:
         ),
     ):
         control = page.locator(selector)
-        if control.count() != 1 or not control.is_visible():
+        control = _single_visible(control)
+        if control is None:
             continue
         try:
             control.click(timeout=5_000)
@@ -249,7 +262,11 @@ def _advance_application_entry(page: Any) -> int:
                 raise
             control.click(timeout=15_000, force=True)
         actions += 1
-        _wait_visible(page, next_selector)
+        _wait_visible(
+            page,
+            next_selector,
+            "manual_choice" if actions == 1 else "native_chooser",
+        )
     return actions
 
 
@@ -260,11 +277,12 @@ def _advance_native_auth(page: Any) -> int:
         '[data-automation-id="signInLink"]',
     ):
         control = page.locator(selector)
-        if control.count() != 1 or not control.is_visible():
+        control = _single_visible(control)
+        if control is None:
             continue
         control.click(timeout=5_000)
-        _wait_visible(page, '[data-automation-id="email"]')
-        _wait_visible(page, '[data-automation-id="password"]')
+        _wait_visible(page, '[data-automation-id="email"]', "email_form")
+        _wait_visible(page, '[data-automation-id="password"]', "password_form")
         return 1
     return 0
 
@@ -322,6 +340,7 @@ def fill_account_creation(
         _wait_visible(
             page,
             '[data-automation-id="jobPostingApplyButton"], [data-automation-id="applyManually"], [data-automation-id="adventureButton"], [data-automation-id="createAccountLink"], [data-automation-id="SignInWithEmailButton"], [data-automation-id="signInLink"], [data-automation-id="email"]',
+            "job_surface",
         )
         entry_actions = _advance_application_entry(page)
         entry_actions += _advance_native_auth(page)

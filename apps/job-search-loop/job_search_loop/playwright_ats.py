@@ -393,8 +393,22 @@ def run_pre_submit(
                                 evidence_dir / f"workday-account-{digest}.json",
                                 credential_receipt,
                             )
-                        except WorkdayCredentialError:
-                            provider_blockers.append("workday_native_auth_unavailable")
+                        except WorkdayCredentialError as error:
+                            stage = next(
+                                (
+                                    value
+                                    for value in (
+                                        "job_surface",
+                                        "manual_choice",
+                                        "native_chooser",
+                                        "email_form",
+                                        "password_form",
+                                    )
+                                    if str(error).endswith(f":{value}")
+                                ),
+                                "native_auth",
+                            )
+                            provider_blockers.append(f"workday_{stage}_unavailable")
                     else:
                         page.locator("input[type=file]").first.wait_for(
                             state="attached", timeout=20_000
