@@ -8,10 +8,10 @@
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Status:** O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
-legacy-v0 repair are complete. O2-05 is the active slice; O2-05 through O2-12
-remain open. Resume baseline is accepted. Autonomous application, mail, and
-learning lanes are disabled and unloaded and must not be described as healthy or
-complete.
+legacy-v0 repair are complete. O2-05R natural wake/error reporting is the active
+slice inside O2-05; O2-05 through O2-12 remain open. Resume baseline is accepted.
+Autonomous application, mail, and learning lanes are disabled and unloaded and
+must not be described as healthy or complete.
 
 ## 1. Done condition
 
@@ -943,6 +943,45 @@ ledger, evidence, or submitted artifacts.
   The natural-Japanese correction report was delivered through the canonical
   Telegram outbox with message ID `16085`. This repairs truth only; it does not
   claim that autonomous application has restarted.
+- The next O2-05 production audit safely closed the one stale submission claim. Its
+  durable click phase was `clicked` and transport phase `request_started`, so it
+  could not truthfully become `not_submitted` or be retried. A private immutable-copy
+  rehearsal first moved it to `submit_unknown`, rebuilt all `57` projections and
+  `summary.v2`, and made Guardian healthy. A mode-`600` real-ledger backup was then
+  stored at
+  `~/.local/state/anicca/job-search/backups/ledger-pre-o2-05-stale-20260813T120229Z.sqlite3`
+  with SHA-256 `fc074d2d7b5f790f7b1e067ad520ca9e84d71529be527d21d8efd3dc187425ae`,
+  integrity `ok`, `57` applications, `256` events, and one active claim. The real
+  transition produced `submit_unknown`, zero active claims, `31` total
+  `submit_unknown`, valid `57`-row projection, integrity `ok`, zero foreign-key
+  violations, and Guardian healthy.
+- The production Gmail confirmation reconciler then read the real account with an
+  empty audit checkpoint. It checked `10` confirmation-shaped threads and `14`
+  messages; all `14` were blocked as `no_exact_uncertain_application`, exact
+  reconciliations were `0`, and the existing single confirmation receipt was
+  unchanged. Therefore no uncertain row was promoted or retried. Private evidence is
+  under
+  `~/.local/state/anicca/job-search/evidence/o2-05-gmail-audit-20260813T120301Z/`.
+  The natural-Japanese report was delivered through the canonical Telegram outbox
+  with message ID `16093`.
+- The pushed commit `932ae25e719c5c6d8bf4fc967575762299b8360a` built twice into
+  byte-identical 269-entry archives with SHA-256
+  `ec9137631fbb54ac820556f21d9340dd52f6b75bd6c763e13009d043a129c3e1` and no
+  private state. The installed candidate is entirely read-only; its route suite
+  passes `21/21`, agent-runner suite `18/18`, and ledger health is healthy. Atomic
+  activation changed `current` from
+  `f9642b2f3e2e520affdea9b847ae428706d89607` to `932ae25e719c5c6d8bf4fc967575762299b8360a`
+  and retained the old release as `previous`; release health is healthy with four
+  stable launchers. Browser PID and the exact tab-ID-set hash were unchanged.
+- Activation preflight found a user-visible blocker before loading launchd. The
+  current daily wake messages expose internal run IDs, model/provider names,
+  `CloakBrowser`, `ATS`, and `Submit`; an unhandled pre-run failure can also exit
+  without a natural-language Telegram explanation. O2-05R fixes only the existing
+  `run-daily.sh` and its existing runtime test. It reuses the durable outbox, removes
+  technical copy, classifies limit/safety/unexpected stops in natural Japanese,
+  guarantees one best-effort failure report for every nonzero daily exit after wake,
+  and never claims an unconfirmed application. Daily/inbox/learning remain disabled
+  until that reviewed release is activated.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -1100,12 +1139,24 @@ evidence until the primary has independently inspected and adopted it.
   legacy-v0 shape. A forged reason plus channel/extra-key fixture must produce zero
   corrections and leave Guardian unhealthy. No second review cycle is added; the
   primary closes this correction with isolated-copy and full-suite verification.
+- [ ] **O2-05R — natural wake and failure reporting before launchd load** — Reuse the
+  current durable Telegram outbox in `run-daily.sh`; add no service, database, or
+  scheduler. Replace the three technical progress messages with concise natural
+  Japanese containing no run ID, model/provider, browser implementation, ATS,
+  runner, exit-code, bounded/none, or raw hash language. A processing-limit stop,
+  safety/evidence verification stop, or other nonzero exit sends exactly one
+  understandable explanation, states that unconfirmed jobs are not treated as
+  applied, and names the next automatic action. An unexpected pre-run failure after
+  wake uses the same best-effort report. Existing fake-runtime tests inspect the
+  actual Telegram message arguments for the success, limit, verification-failure,
+  and unexpected-failure paths. The browser lease cleanup and original exit status
+  remain intact.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
   can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
   with the real Gmail reconciler, promoting only authoritative matches and keeping
   unmatched rows dedup-fenced; build from the pushed green commit; atomically activate the
-  reproducible stable release; load daily/inbox/learning without touching the shared
-  browser; run Guardian health
+  reproducible stable release; complete O2-05R; load daily/inbox/learning without
+  touching the shared browser; run Guardian health
   gates and observe one real canonical cycle. The Guardian LaunchAgent itself closes
   in O2-07.
 - [ ] **O2-06** — Complete the JPY 7M floor / JPY 10M target / JPY 30M stretch policy,
