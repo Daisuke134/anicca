@@ -37,8 +37,8 @@
             "type": ["object", "null"],
             "additionalProperties": false,
             "required": [
-              "small_b2b_evidence",
-              "sns_staff_evidence",
+              "commercial_buyer_evidence",
+              "ongoing_sns_outsourcing_evidence",
               "expected_platform_fee_jpy",
               "expected_ai_cost_jpy",
               "expected_subcontractor_cost_jpy",
@@ -46,8 +46,8 @@
               "cost_source_version"
             ],
             "properties": {
-              "small_b2b_evidence": {"type": "string", "minLength": 4, "maxLength": 240},
-              "sns_staff_evidence": {"type": "string", "minLength": 4, "maxLength": 240},
+              "commercial_buyer_evidence": {"type": "string", "minLength": 4, "maxLength": 240},
+              "ongoing_sns_outsourcing_evidence": {"type": "string", "minLength": 4, "maxLength": 240},
               "expected_platform_fee_jpy": {"type": "integer", "minimum": 0},
               "expected_ai_cost_jpy": {"type": "integer", "minimum": 0},
               "expected_subcontractor_cost_jpy": {"type": "integer", "minimum": 0},
