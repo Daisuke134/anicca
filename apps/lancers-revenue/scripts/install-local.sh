@@ -223,15 +223,19 @@ if [[ "$ACTIVATE" == "1" ]]; then
   [[ -n "$LAUNCHCTL_BIN" && -x "$LAUNCHCTL_BIN" ]] || fail "launchctl is unavailable"
   DOMAIN="gui/$(id -u)"
   activate_owner() {
-    local label="$1" plist="$2" program="$3" target="$DOMAIN/$label" loaded
+    local label="$1" plist="$2" program="$3" target="$DOMAIN/$label" loaded arguments working
     "$LAUNCHCTL_BIN" enable "$target"
-    if "$LAUNCHCTL_BIN" print "$target" >/dev/null 2>&1; then
+    if loaded="$("$LAUNCHCTL_BIN" print "$target" 2>&1)"; then
       "$LAUNCHCTL_BIN" bootout "$target"
+    elif [[ "$loaded" != *"Could not find service \"$label\" in domain for user gui:"* ]]; then
+      fail "$label loaded-state check failed"
     fi
     "$LAUNCHCTL_BIN" bootstrap "$DOMAIN" "$plist"
     loaded="$("$LAUNCHCTL_BIN" print "$target")"
-    [[ "$loaded" == *"$program"* ]] || fail "$label does not run the exact release program"
-    [[ "$loaded" == *"working directory = $RELEASE_PATH"* ]] || fail "$label does not use the exact release working directory"
+    arguments="$(print -r -- "$loaded" | awk '/^[[:space:]]*arguments = \{$/{found=1; next} found && /^[[:space:]]*\}$/{exit} found{sub(/^[[:space:]]*/, ""); print}')"
+    working="$(print -r -- "$loaded" | awk -F' = ' '/^[[:space:]]*working directory = /{print $2; exit}')"
+    print -r -- "$arguments" | grep -Fqx -- "$program" || fail "$label does not run the exact release program"
+    [[ "$working" == "$RELEASE_PATH" ]] || fail "$label does not use the exact release working directory"
   }
   activate_owner "$LABEL" "$PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/application_loop.py"
   activate_owner "$REPORT_LABEL" "$REPORT_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/telegram_report.py"
