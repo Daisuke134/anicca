@@ -4,15 +4,15 @@
 **Worktree:** `/Users/anicca/Projects/.worktrees/life-manager/job-hunter-local-completion-20260802`
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Original base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`
-**Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
+**Current origin/main integration base:** `15aa37984d250b26fa9244657de0ae0e2f52d089`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Status:** O2-05C runtime consolidation is the active gate before further feature
 work. O2-03 reproducible release validation and O2-05P regional prompt fence
 are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
 legacy-v0 repair and O2-05R natural error reporting are complete. O2-05N natural
 daily outcome reporting and O2-05U unlimited eligible applications are complete.
-O2-05B shared-browser cutover is complete. Current `origin/main` integration and one
-new release activation are now the active steps before launchd load.
+O2-05B shared-browser cutover and current `origin/main` integration are complete. One
+new release activation is now the active step before launchd load.
 O2-05 through O2-12 remain open. Resume baseline is accepted. Autonomous application,
 mail, and learning lanes are disabled and unloaded and must not be described as
 healthy or complete.
@@ -27,8 +27,8 @@ complete. O2-05U removes the fixed daily/portfolio submission caps and fixed-ten
 search/recovery target. O2-05B binds the daily lane to the existing
 `interactive:dais` browser at `127.0.0.1:9222`, removes restart behavior, and excludes
 the legacy browser label from the installer. No behavioral blocker remains before
-activation. Integrate current `origin/main`, build/activate once, and load
-daily/inbox/learning. O2-06 through O2-12 improve and
+activation. Build/activate once, then load daily/inbox/learning. O2-06 through O2-12
+improve and
 prove the live loop; they must
 not delay turning the application loop on.
 
@@ -1330,6 +1330,12 @@ performs the real E2E, and records the milestone.
   new reporting describes confirmed count and eligible backlog, never a fixed target
   or deficit to ten. Add no scheduler, service, table, or second queue. Completion is
   acknowledged by Telegram message ID `16330`; final pushed commit: `7eaaf85cf`.
+- [x] **O2-05I — integrate current origin/main before activation** — Rebased all `406`
+  dedicated Job Hunter commits from pre-rebase tip `a8b7297e9` onto current
+  `origin/main` `15aa37984`; the replay completed with zero conflicts and the branch is
+  `0` behind / `406` ahead. The unlimited-search and `interactive:dais` contracts remain
+  present. Post-rebase verification passes Job Hunter `574/574` in `41.378s` and the
+  shared agent runner `18/18` in `1.218s`.
 - [x] **O2-05B — use only the existing shared CloakBrowser** — Route every normal
   daily acquisition to registry identity `interactive:dais` on the measured
   `127.0.0.1:9222` daily-driver. A busy, unavailable, or failed attach never starts or
