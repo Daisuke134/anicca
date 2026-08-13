@@ -25,9 +25,12 @@ deterministic daily driver reads Ledger truth and delivers all user-visible repo
 Browser page ownership is absolute. Before any navigation, connect Playwright to the
 leased endpoint, capture every existing page target ID with `Target.getTargets`, and
 initialize `job_search_loop.browser_pages.PageOwnership` with that immutable baseline,
-the live `lease_id`, and `fence`. Create one new page in the existing default context,
+`$JOB_SEARCH_EVIDENCE_DIR/page-ownership.json`, the live `lease_id`, and `fence`, in
+exactly that order. Create one new page in the existing default context,
 read its exact target ID with `Target.getTargetInfo`, and immediately call
 `register_created(targetId)`. Operate only that registered page for this wake.
+Save only `target_id`, `lease_id`, and `fence` to
+`$JOB_SEARCH_EVIDENCE_DIR/owned-page.json` so the deterministic driver can clean it.
 Never select or navigate `pages[0]`, `context.pages[0]`, or any target present in the
 baseline. If owned-page creation or registration fails, record the role in `blocked`
 and perform no browser navigation. At cleanup call `Target.closeTarget` only for IDs

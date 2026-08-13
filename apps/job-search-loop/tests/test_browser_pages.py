@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from job_search_loop.browser_pages import PageOwnership
+from job_search_loop.browser_pages import PageOwnership, registered_created_target
 
 
 class PageOwnershipTests(unittest.TestCase):
@@ -77,6 +77,22 @@ class PageClosureTests(unittest.IsolatedAsyncioTestCase):
                 session.calls,
                 [("Target.closeTarget", {"targetId": "job-tab"})],
             )
+
+    def test_driver_cleanup_accepts_only_matching_created_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            receipt = Path(directory) / "pages.json"
+            ownership = PageOwnership({"human-tab"}, receipt, "lease-1", 7)
+            ownership.register_created("job-tab")
+            value = __import__("json").loads(receipt.read_text())
+            self.assertEqual(registered_created_target(
+                {"lease_id": "lease-1", "fence": 7}, value,
+                {"target_id": "job-tab", "lease_id": "lease-1", "fence": 7},
+            ), "job-tab")
+            with self.assertRaises(ValueError):
+                registered_created_target(
+                    {"lease_id": "lease-1", "fence": 7}, value,
+                    {"target_id": "human-tab", "lease_id": "lease-1", "fence": 7},
+                )
 
 
 if __name__ == "__main__":

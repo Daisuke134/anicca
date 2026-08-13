@@ -1158,6 +1158,26 @@ ledger, evidence, or submitted artifacts.
   `pages[0]`, `context.pages[0]`, baseline navigation, and unregistered cleanup are
   explicitly forbidden. A second real daily wake must produce an ownership receipt
   and preserve the complete baseline page-ID set before O2-05/O2-12 can close.
+- The second real daily wake resolved active release `02f8592e3...`, exited `0`, and
+  preserved all `5` baseline page IDs while creating exactly one new registered page
+  under ownership fence `199`. It submitted `0`: ElevenLabs Account Executive - Japan
+  remained pre-click because the Ashby fill contract rejected the available grounded
+  answers, and Salesforce Deployment Strategist remained pre-click because Workday
+  authentication did not complete. Both reasons were sent naturally by the canonical
+  daily report with Telegram message ID `16396`. Daily runs `2`, inbox runs `6`, and
+  learning runs `1`, all with last exit `0`; the ledger remained healthy with `57`
+  applications, `257` events, and zero active claims. The model correctly avoided all
+  baseline pages but forgot to close its registered page. The target in
+  `owned-page.json` was cryptographically present in the ownership receipt, absent
+  from the baseline, and the only new page; closing only that target restored the
+  exact `5`-page baseline. The deterministic daily EXIT path now performs this cleanup
+  before releasing the browser lease. It closes only when raw target ID,
+  created-target hash, absence from baseline hashes, lease ID, fence, owner receipt,
+  and endpoint all agree; otherwise it closes nothing. The prompt also provides the
+  exact four-argument `PageOwnership` constructor and owned-page receipt contract.
+  Focused checks pass `31/31`, the full Job Hunter suite passes `575/575`, and shell
+  syntax, compile, and diff checks pass. A release-backed third wake is the active
+  O2-05/O2-12 gate to prove deterministic cleanup in production.
 
 ## 11. Ponytail OSS reuse decision
 

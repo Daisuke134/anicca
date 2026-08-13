@@ -90,6 +90,12 @@ TRAPEXIT() {
     wait "$JOB_SEARCH_BROWSER_BEAT_PID" >/dev/null 2>&1 || true
   fi
   if [[ "$JOB_SEARCH_BROWSER_LEASED" == "1" ]]; then
+    "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_pages cleanup \
+      --owner-receipt "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+      --ownership-receipt "$EVIDENCE/page-ownership.json" \
+      --owned-page "$EVIDENCE/owned-page.json" \
+      >"$EVIDENCE/page-cleanup.json" 2>/dev/null || true
+    [[ ! -f "$EVIDENCE/page-cleanup.json" ]] || chmod 600 "$EVIDENCE/page-cleanup.json"
     "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner release \
       --identity "interactive:dais" \
       --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
