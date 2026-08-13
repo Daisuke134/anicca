@@ -1838,6 +1838,40 @@ performs the real E2E, and records the milestone.
   real daily lane, and verify the NVIDIA Workday Apply entry is no longer hidden by a
   generic aria-live alert. Continue only through the exact owned page and record a
   submission solely from an authoritative receipt.
+
+  Classifier release and live proof are complete. Pushed source commit
+  `c3a70e72850dbe109c7699c9058e1b31045f5284` built twice to identical archive
+  SHA-256 `d269f8246952057565296efb5f43e5c6137e39efd2d482cf40d1b508ed98554f`
+  with `267` entries. The extracted runtime passes `580/580`; the release is active
+  with `bef728012a3d9ff803b437f664fa639d859b4323` as rollback, and activation changed no
+  browser identity or page.
+
+  Real launchd wake `daily-20260814-035803` exited `0` and proves the false validation
+  is gone. On fenced target `6ADB2B6F6422A6D559A51BF6548A1D4F`, the same NVIDIA
+  Workday route now classified as `account_auth` with `20` controls and continued the
+  formal route. The lane then tried NVIDIA `Physical AI and Simulation Solution
+  Architect`, Salesforce `AI Native Delivery Consultant`, and Adobe `Principal Product
+  Marketing Manager` on that same owned target.
+
+  No authoritative receipt or request-start evidence exists. The first NVIDIA route
+  required an unavailable SSO authentication route; the second exposed no usable
+  account form before submission. Salesforce and Adobe exposed no semantic Apply
+  control after bounded inspection. Telegram sent message ID `16605`; all three privacy
+  scans are clean. Cleanup closed exactly the owned page and restored the same seven
+  pre-existing pages and browser UUID
+  `2ac269b0-350a-49a4-971e-9a0556aed50d`.
+
+  Production Ledger remains byte-identical at SHA-256
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a` with `60`
+  applications, `260` events, `30` intents, `6` submitted, and `31` submit-unknown;
+  SQLite integrity is `ok`.
+
+  **Immediate next slice:** inspect the public NVIDIA Workday account-auth structure and
+  existing private credential tool contract without printing page content or secrets.
+  Distinguish tenant email/password auth from employer-only SSO, then add only the
+  deterministic supported path. If the tenant is truly SSO-only, reject that route and
+  continue to the next eligible non-SSO ATS rather than repeatedly spending a wake on
+  it.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
