@@ -266,6 +266,17 @@ def is_outreach_truth_correction(
     route_id, provider_id, evidence_sha256 = (
         payload.get(key) for key in ("route_id", "provider_id", "evidence_sha256")
     )
+    previous_channel_bound = (
+        previous_payload.get("channel") == "recruiting_outreach"
+        and "reason" not in previous_payload
+    )
+    previous_legacy_v0 = (
+        set(previous_payload) == {
+            "route_id", "provider_id", "evidence_sha256", "reason"
+        }
+        and previous_payload.get("reason") == OUTREACH_TRUTH_CORRECTION_REASON
+        and previous_payload.get("evidence_sha256") == evidence_sha256
+    )
     if (
         payload.get("reason") != (
             OUTREACH_TRUTH_RESTORATION_REASON
@@ -276,9 +287,10 @@ def is_outreach_truth_correction(
         ))
         or previous_payload.get("route_id") != route_id
         or previous_payload.get("provider_id") != provider_id
-        or previous_payload.get("channel") != "recruiting_outreach"
+        or not (previous_channel_bound or previous_legacy_v0)
         or (
-            "evidence_sha256" in previous_payload
+            previous_channel_bound
+            and "evidence_sha256" in previous_payload
             and previous_payload.get("evidence_sha256") != evidence_sha256
         )
         or not _has_immutable_route_delivery(
@@ -4036,7 +4048,22 @@ class Ledger:
                 (from_state, to_state) != expected
                 or payload.get("route_id") != route_id
                 or payload.get("provider_id") != provider_id
-                or payload.get("channel") != "recruiting_outreach"
+                or not (
+                    payload.get("channel") == "recruiting_outreach"
+                    and "reason" not in payload
+                    or (
+                        set(payload) == {
+                            "route_id", "provider_id", "evidence_sha256", "reason"
+                        }
+                        and payload.get("reason") == OUTREACH_TRUTH_CORRECTION_REASON
+                        and payload.get("evidence_sha256") == evidence_sha256
+                    )
+                )
+                or (
+                    payload.get("channel") == "recruiting_outreach"
+                    and "evidence_sha256" in payload
+                    and payload.get("evidence_sha256") != evidence_sha256
+                )
             ):
                 continue
             if correction_from == "submitted" and _is_authoritative_submission_event(

@@ -6,7 +6,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from job_search_loop.guardian import ledger_health
-from job_search_loop.ledger import FenceError, Ledger
+from job_search_loop.ledger import (
+    OUTREACH_TRUTH_CORRECTION_REASON,
+    FenceError,
+    Ledger,
+)
 from job_search_loop.route_executor import execute_next_message_route
 from job_search_loop.summary import build_summary_v2
 
@@ -324,6 +328,130 @@ class RouteExecutorTests(unittest.TestCase):
             ],
         )
         self.assertEqual(summary_value["ats_progress"]["confirmed_adapters"], [])
+
+    def test_reconciliation_corrects_legacy_v0_outreach_payload(self):
+        for state in ("qualified", "materials_ready", "submit_claimed", "submitted"):
+            self.ledger.transition(self.application_id, state)
+        route_id = self._route(
+            "recruiting_outreach", "talent@example.test", 4, "outreach_only"
+        )
+        evidence_sha256 = hashlib.sha256(b"legacy-v0 outreach receipt").hexdigest()
+        provider_id = "gmail:legacy-v0-outreach"
+        self._deliver_route(
+            route_id,
+            fence=75,
+            provider_id=provider_id,
+            evidence_sha256=evidence_sha256,
+        )
+        route = self.ledger.application_routes(self.application_id)[0]
+        with self.ledger._transaction():
+            self.ledger._project_delivered_application_route_in_transaction(
+                row={**route, "recipient_acceptance": "accepts_applications"},
+                provider_id=provider_id,
+                evidence_sha256=evidence_sha256,
+            )
+            self.ledger._append_event(
+                self.application_id,
+                "submitted",
+                "email_sent",
+                {
+                    "route_id": route_id,
+                    "provider_id": provider_id,
+                    "evidence_sha256": evidence_sha256,
+                    "reason": OUTREACH_TRUTH_CORRECTION_REASON,
+                },
+            )
+            self.ledger.connection.execute(
+                "UPDATE applications SET current_state = 'email_sent' WHERE id = ?",
+                (self.application_id,),
+            )
+
+        before_event_count = self.ledger.connection.execute(
+            "SELECT COUNT(*) FROM events"
+        ).fetchone()[0]
+        route_before = self.ledger.application_routes(self.application_id)[0]
+        route_events_before = self.ledger.application_route_events(route_id)
+
+        first = self.ledger.reconcile_delivered_application_routes()
+        first_event_count = self.ledger.connection.execute(
+            "SELECT COUNT(*) FROM events"
+        ).fetchone()[0]
+        second = self.ledger.reconcile_delivered_application_routes()
+        second_event_count = self.ledger.connection.execute(
+            "SELECT COUNT(*) FROM events"
+        ).fetchone()[0]
+        summary = next(
+            row
+            for row in self.ledger.event_summary_rows()
+            if row["application_id"] == self.application_id
+        )
+
+        self.assertEqual(first["outreach_correction_count"], 1)
+        self.assertEqual(second["outreach_correction_count"], 0)
+        self.assertEqual(first_event_count, before_event_count + 1)
+        self.assertEqual(second_event_count, first_event_count)
+        self.assertEqual(self.ledger.current_state(self.application_id), "submit_unknown")
+        self.assertFalse(summary["ever_submitted"])
+        self.assertNotIn("confirmed_application", summary["positive_funnel_stages"])
+        self.assertEqual(self.ledger.application_routes(self.application_id)[0], route_before)
+        self.assertEqual(self.ledger.application_route_events(route_id), route_events_before)
+        self.assertEqual(ledger_health(self.ledger.path)["status"], "healthy")
+
+    def test_reconciliation_rejects_hybrid_reason_channel_outreach_payload(self):
+        for state in ("qualified", "materials_ready", "submit_claimed", "submitted"):
+            self.ledger.transition(self.application_id, state)
+        route_id = self._route(
+            "recruiting_outreach", "talent@example.test", 4, "outreach_only"
+        )
+        evidence_sha256 = hashlib.sha256(b"hybrid forged outreach receipt").hexdigest()
+        provider_id = "gmail:hybrid-forged-outreach"
+        self._deliver_route(
+            route_id,
+            fence=76,
+            provider_id=provider_id,
+            evidence_sha256=evidence_sha256,
+        )
+        route = self.ledger.application_routes(self.application_id)[0]
+        with self.ledger._transaction():
+            self.ledger._project_delivered_application_route_in_transaction(
+                row={**route, "recipient_acceptance": "accepts_applications"},
+                provider_id=provider_id,
+                evidence_sha256=evidence_sha256,
+            )
+            self.ledger._append_event(
+                self.application_id,
+                "submitted",
+                "email_sent",
+                {
+                    "route_id": route_id,
+                    "provider_id": provider_id,
+                    "evidence_sha256": evidence_sha256,
+                    "reason": "forged",
+                    "channel": "recruiting_outreach",
+                    "extra": "accepted",
+                },
+            )
+            self.ledger.connection.execute(
+                "UPDATE applications SET current_state = 'email_sent' WHERE id = ?",
+                (self.application_id,),
+            )
+
+        before_event_count = self.ledger.connection.execute(
+            "SELECT COUNT(*) FROM events"
+        ).fetchone()[0]
+        first = self.ledger.reconcile_delivered_application_routes()
+        second = self.ledger.reconcile_delivered_application_routes()
+
+        self.assertEqual(first["outreach_correction_count"], 0)
+        self.assertEqual(second["outreach_correction_count"], 0)
+        self.assertEqual(
+            self.ledger.connection.execute("SELECT COUNT(*) FROM events").fetchone()[0],
+            before_event_count,
+        )
+        self.assertEqual(self.ledger.current_state(self.application_id), "email_sent")
+        with self.assertRaises(FenceError):
+            self.ledger.event_summary_rows()
+        self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
 
     def test_reconciliation_repairs_every_legacy_outreach_chain_append_only(self):
         first_id, first_route, first_evidence = self._seed_legacy_outreach(

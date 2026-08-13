@@ -7,10 +7,11 @@
 **Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Status:** O2-03 reproducible release validation and O2-05P regional prompt fence
-are complete; O2-05A1 authoritative submission preservation is complete and
-O2-05A2 is the active slice. O2-05 through O2-12 remain open. Resume baseline is
-accepted. Autonomous application, mail, and learning lanes are disabled and
-unloaded and must not be described as healthy or complete.
+are complete; O2-05A1 authoritative submission preservation and O2-05A2 deployed
+legacy-v0 repair are complete. O2-05 is the active slice; O2-05 through O2-12
+remain open. Resume baseline is accepted. Autonomous application, mail, and
+learning lanes are disabled and unloaded and must not be described as healthy or
+complete.
 
 ## 1. Done condition
 
@@ -913,6 +914,35 @@ ledger, evidence, or submitted artifacts.
   total). These are historical build outputs, not running Job Hunters. Safe retention
   cleanup remains part of O2-12; autonomous daily, inbox, and learning lanes remain
   disabled and absent, so the system is still not operationally complete.
+- O2-05A2 is complete. The reviewed two-file change accepts the exact four-key
+  deployed legacy-v0 outreach correction only when route, provider, evidence hash,
+  reason, and immutable delivered outreach route agree. The adversarial review
+  reproduced one Important hybrid bypass: `channel=recruiting_outreach` previously
+  allowed a forged `reason` plus extra keys to enter the normal channel-bound path.
+  The final predicate permits the normal path only when `reason` is absent; any
+  payload containing `reason` must match the exact legacy-v0 shape. The forged
+  hybrid fixture now yields zero corrections, remains `email_sent`, and leaves
+  Guardian unhealthy. Primary verification passes the five focused lifecycle cases
+  `5/5`, route suite `21/21`, full Job Hunter suite `575/575` in `30.683s`, compile,
+  and diff checks.
+- A fresh SQLite backup of the real ledger rehearsed the production code with no
+  source mutation: first reconciliation corrected exactly `5`, replay corrected
+  `0`, events changed `251 -> 256`, `email_sent` changed `5 -> 0`, and
+  `submit_unknown` changed `25 -> 30`; routes `40`, route events `78`, outcomes `9`,
+  and applications `57` were unchanged. All `57` event projections rebuilt into
+  `summary.v2`, integrity was `ok`, foreign-key violations were `0`, and Guardian's
+  only remaining reason was the separately scoped `stale_submission_claim`.
+  Daily/inbox/learning were disabled and absent and no process held the ledger.
+  Before the real append-only repair, a private mode-`600` backup was stored at
+  `~/.local/state/anicca/job-search/backups/ledger-pre-o2-05a2-20260813T115800Z.sqlite3`
+  with SHA-256 `c3593f6b6fdb462ebff03c7dfd00c4b3263d4295a92dbcb83f08e10f32945d90`,
+  integrity `ok`, `57` applications, and `251` events. The real repair then produced
+  the same `5` corrections and `0` on replay, the same invariant counts, integrity
+  `ok`, zero foreign-key violations, and post-repair ledger SHA-256
+  `0c50bd54db57509e5298de5ff4e7005a7f19d1be23a50a3870d82fb284926af4`.
+  The natural-Japanese correction report was delivered through the canonical
+  Telegram outbox with message ID `16085`. This repairs truth only; it does not
+  claim that autonomous application has restarted.
 
 ## 11. Ponytail OSS reuse decision
 
@@ -1043,7 +1073,7 @@ evidence until the primary has independently inspected and adopted it.
   reply-after-restoration, with submitted truth, replay idempotency, and Guardian
   health preserved. No second adversarial-review cycle is added; the primary closes
   the reviewed correction with focused and full verification.
-- [ ] **O2-05A2 — current slice: repair the five deployed legacy-v0 rows** — A
+- [x] **O2-05A2 — repair the five deployed legacy-v0 rows** — A
   read-only immutable-copy rehearsal of the real ledger returned zero corrections
   and Guardian unhealthy, so no production mutation was attempted. The five rows are
   not the original `channel=recruiting_outreach` regression fixture: a prior deployed
