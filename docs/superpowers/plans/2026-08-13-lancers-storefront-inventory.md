@@ -29,7 +29,7 @@ Luna/Terra owns production/test implementation and commands only. Primary owns t
 
 Four files are necessary because executable source and exact-release ownership cannot be separated. No plist changes; no owner is added.
 
-## Direct implementation
+## Task 1: Implement the exact-release inventory command
 
 Do not run a RED-first phase. Implement the fixed contract, then add only the minimal regressions.
 
@@ -76,11 +76,13 @@ After direct implementation, test:
 
 Run focused tests, all `apps/lancers-revenue` tests, agent-runner tests, release Python compile, plist lint, installer exact-release tests, JSON one-line parse, diff check, and the static mutation guard. Commit and push only the feature branch.
 
-## One adversarial review
+## Task 2: Primary review and live acceptance
+
+### One adversarial review
 
 Use one fresh Sol reviewer exactly once. It must try to disprove management-container scoping, count/pagination completeness, public ID/og integrity, secret/raw-body exclusion, GET-only behavior, process deadline/orphan cleanup, exact-release inclusion, and absence of a new scheduler. Critical/Important findings return once to the same implementer; primary mechanically verifies the correction without a second review.
 
-## Live acceptance
+### Live acceptance
 
 After the reviewed commit is on main, install the exact main release. Do not reload or alter application/report/work-sync schedules merely to run inventory. Execute the exact-release inventory command once while existing owners are idle, using the real browser and state root. Accept only when:
 
