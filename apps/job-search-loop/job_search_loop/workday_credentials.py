@@ -214,11 +214,30 @@ def known_tenants(store_path: Path) -> list[str]:
     return sorted(tenants)
 
 
+def _wait_visible(page: Any, selector: str) -> None:
+    waiter = getattr(page, "wait_for_selector", None)
+    if not callable(waiter):
+        page.wait_for_timeout(1_000)
+        return
+    try:
+        waiter(selector, state="visible", timeout=20_000)
+    except Exception as error:
+        if error.__class__.__name__ == "TimeoutError":
+            raise WorkdayCredentialError("Workday account surface did not load") from error
+        raise
+
+
 def _advance_application_entry(page: Any) -> int:
     actions = 0
-    for selector in (
-        '[data-automation-id="jobPostingApplyButton"]',
-        '[data-automation-id="applyManually"], [data-automation-id="adventureButton"]',
+    for selector, next_selector in (
+        (
+            '[data-automation-id="jobPostingApplyButton"]',
+            '[data-automation-id="applyManually"], [data-automation-id="adventureButton"]',
+        ),
+        (
+            '[data-automation-id="applyManually"], [data-automation-id="adventureButton"]',
+            '[data-automation-id="createAccountLink"], [data-automation-id="SignInWithEmailButton"], [data-automation-id="signInLink"], [data-automation-id="email"]',
+        ),
     ):
         control = page.locator(selector)
         if control.count() != 1 or not control.is_visible():
@@ -230,7 +249,7 @@ def _advance_application_entry(page: Any) -> int:
                 raise
             control.click(timeout=15_000, force=True)
         actions += 1
-        page.wait_for_timeout(1_000)
+        _wait_visible(page, next_selector)
     return actions
 
 
@@ -244,7 +263,8 @@ def _advance_native_auth(page: Any) -> int:
         if control.count() != 1 or not control.is_visible():
             continue
         control.click(timeout=5_000)
-        page.wait_for_timeout(1_000)
+        _wait_visible(page, '[data-automation-id="email"]')
+        _wait_visible(page, '[data-automation-id="password"]')
         return 1
     return 0
 
@@ -299,6 +319,10 @@ def fill_account_creation(
 
     verify_password = page.locator('[data-automation-id="verifyPassword"]')
     if verify_password.count() == 0 and "/login" not in urlsplit(page.url).path:
+        _wait_visible(
+            page,
+            '[data-automation-id="jobPostingApplyButton"], [data-automation-id="applyManually"], [data-automation-id="adventureButton"], [data-automation-id="createAccountLink"], [data-automation-id="SignInWithEmailButton"], [data-automation-id="signInLink"], [data-automation-id="email"]',
+        )
         entry_actions = _advance_application_entry(page)
         entry_actions += _advance_native_auth(page)
         verify_password = page.locator('[data-automation-id="verifyPassword"]')
