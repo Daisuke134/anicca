@@ -327,8 +327,57 @@ merge/push する、(3) exact main commit SHA から release artifact を instal
 SHA を記録する、(4) その後にだけ application service を enable する、である。repo 外で hotfix を
 行った場合も、service enable 前に byte-for-byte で canonical repo に反映する。merge/deploy の検証後
 は temporary worktree を削除するが、runtime state はこの source migration のために移動・削除しない。
-現在の application launchd は verified incident の blocker が解消されるまで disabled のままとし、
-canonicalization と safe deployment を application service の再有効化・E2E より先に置く。
+application launchd は verified incident の blocker、canonicalization、safe deployment、provider-only検証、
+最初の正常wakeを順に閉じた後、検証済みreleaseでenabledにする。現在は30分tickでenabledであり、
+qualified案件がないtickは外部送信せず`no_eligible_project`で終了する。
+
+### 4.7 ideal canonical folder tree
+
+以下を最終的な最小treeとする。`[planned]`以外は現在存在する。laneごとのDB、queue、service package、
+project別folderは追加せず、4 laneは同じLancers adapter、marketplace-core、ledgerを再利用する。
+
+```text
+life-manager/
+├── apps/lancers-revenue/
+│   ├── launchd/
+│   │   ├── ai.anicca.lancers-revenue-application.plist
+│   │   ├── ai.anicca.lancers-revenue-sales.plist             [planned G4]
+│   │   ├── ai.anicca.lancers-revenue-fulfillment.plist       [planned G5]
+│   │   └── ai.anicca.lancers-revenue-finance.plist           [planned G6]
+│   ├── scripts/
+│   │   └── install-local.sh
+│   └── tests/
+│       ├── test_application_loop_hol.py
+│       └── test_install_local.py
+├── skills/earn/lancers/scripts/
+│   ├── lancers_adapter.py
+│   ├── status.py
+│   ├── application_loop.py
+│   ├── application_tick.py
+│   ├── sales_loop.py                                         [planned G4]
+│   ├── fulfillment_loop.py                                   [planned G5]
+│   └── finance_loop.py                                       [planned G6]
+├── skills/_shared/marketplace-core/
+│   ├── schemas/
+│   │   ├── opportunity.schema.json
+│   │   └── event.schema.json
+│   └── scripts/
+│       ├── application_transaction.py
+│       ├── contracts.py
+│       └── ledger.py
+├── skills/gig-work/schemas/
+│   └── application_decisions.schema.json
+├── runtime/agent-runner/
+│   ├── agent_runner.py
+│   ├── token_budget.py
+│   └── config.json
+└── docs/superpowers/
+    ├── specs/2026-08-13-lancers-20k-net-mrr-design.md
+    └── plans/2026-08-13-lancers-first-verified-application.md
+```
+
+後続laneのtestは、実装時に既存`apps/lancers-revenue/tests/`へ各lane一つの最小E2E regressionとして
+追加する。先に空file、抽象base class、共通orchestratorを作らない。
 
 ## 5. Acquisition の設計判断
 
