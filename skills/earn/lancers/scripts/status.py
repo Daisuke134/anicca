@@ -277,6 +277,46 @@ def parse_search_html(html: str) -> List[Dict[str, object]]:
     return cards
 
 
+class _DetailParser(HTMLParser):
+    _LABELS = {"依頼主の業種", "依頼概要"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._depth = self._dl_depth = 0; self._label = self._capture = None; self.values: Dict[str, str] = {}
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
+        del attrs; self._depth += 1
+        if tag == "dl": self._dl_depth = self._depth
+        elif self._dl_depth and tag in {"dt", "dd"}: self._capture = (tag, self._depth, [])
+        elif tag == "br" and self._capture: self._capture[2].append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._capture is not None and self._capture[1] == self._depth:
+            kind, _depth, chunks = self._capture; text = _clean_text("".join(chunks))
+            if kind == "dt": self._label = text if text in self._LABELS else None
+            elif text and self._label is not None: self.values[self._label] = text; self._label = None
+            self._capture = None
+        if tag == "dl" and self._dl_depth == self._depth: self._dl_depth = 0
+        self._depth = max(0, self._depth - 1)
+
+    def handle_data(self, data: str) -> None:
+        if self._capture: self._capture[2].append(data)
+
+
+def parse_detail_html(html: str) -> Dict[str, str]:
+    if not isinstance(html, str):
+        _fail("lancers_response_invalid")
+    parser = _DetailParser()
+    try:
+        parser.feed(html)
+        parser.close()
+    except (MemoryError, KeyboardInterrupt, SystemExit):
+        raise
+    except Exception:
+        _fail("lancers_response_invalid")
+    return parser.values
+
+
 def _query(value: object) -> Optional[str]:
     if value is None:
         return None
@@ -305,7 +345,14 @@ def _timeout(value: object) -> float:
     return parsed
 
 
-def fetch_public_html(*, query: Optional[str], limit: int, timeout: float) -> str:
+def _canonical_detail_url(value: object) -> str:
+    if not isinstance(value, str): _fail("lancers_invalid_argument")
+    parsed, origin = urllib.parse.urlsplit(value.strip()), urllib.parse.urlsplit(_ENDPOINT)
+    if (parsed.scheme, parsed.netloc) != (origin.scheme, origin.netloc) or parsed.query or parsed.fragment or parsed.username or parsed.password or _DETAIL_RE.fullmatch(parsed.path) is None: _fail("lancers_invalid_argument")
+    return f"{origin.scheme}://{origin.netloc}{parsed.path}"
+
+
+def fetch_public_html(*, query: Optional[str], limit: int, timeout: float, _detail_url: Optional[str] = None) -> str:
     """Fetch one bounded public page with no cookies or auth headers."""
 
     query = _query(query)
@@ -315,17 +362,22 @@ def fetch_public_html(*, query: Optional[str], limit: int, timeout: float) -> st
     if query is not None:
         params.append(("keyword", query))
     encoded = urllib.parse.urlencode(params, encoding="utf-8", errors="strict")
+    if _detail_url is not None:
+        _detail_url = _canonical_detail_url(_detail_url)
+    url = _detail_url or _ENDPOINT + "?" + encoded
     request = urllib.request.Request(
-        _ENDPOINT + "?" + encoded,
+        url,
         headers={"User-Agent": _USER_AGENT, "Accept": "text/html,application/xhtml+xml"},
         method="GET",
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             status = getattr(response, "status", 200)
-            final_url = getattr(response, "geturl", lambda: _ENDPOINT)()
+            final_url = getattr(response, "geturl", lambda: url)()
             if isinstance(final_url, str) and "/user/login" in final_url:
                 _fail("lancers_provider_blocked")
+            if _detail_url is not None and _canonical_detail_url(final_url) != _detail_url:
+                _fail("lancers_http_error")
             if status in {401, 403, 429}:
                 _fail("lancers_provider_blocked")
             if not isinstance(status, int) or status < 200 or status >= 300:
@@ -354,6 +406,28 @@ def fetch_public_html(*, query: Optional[str], limit: int, timeout: float) -> st
     except UnicodeDecodeError:
         _fail("lancers_response_invalid")
     return ""
+
+
+def _enrich_cards(cards: Sequence[Dict[str, object]], timeout: float) -> tuple[int, int]:
+    enriched = failed = 0
+    for card in cards:
+        try:
+            maximum = card.get("budget_max")
+            if card.get("currency") != "JPY" or not isinstance(maximum, str) or not maximum.isdecimal() or int(maximum) < 98000:
+                continue
+            fields = parse_detail_html(fetch_public_html(query=None, limit=1, timeout=timeout, _detail_url=_canonical_detail_url(card.get("url"))))
+            industry, overview = fields.get("依頼主の業種"), fields.get("依頼概要")
+            if not industry or not overview:
+                raise ValueError
+            text = f"依頼主の業種: {industry}\n依頼概要: {overview}"
+            if len(text) > 2000: raise ValueError
+            card["description"] = text
+            enriched += 1
+        except (MemoryError, KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            failed += 1
+    return enriched, failed
 
 
 def _load_adapter() -> Any:
@@ -409,6 +483,7 @@ def run_discovery(
         # returned observation bounded even when the provider sends a larger
         # page than requested.
         cards = cards[:limit]
+        enriched, failed = _enrich_cards(cards, timeout)
         observation = _now() if observed_at is None else observed_at() if callable(observed_at) else observed_at
         observation = _validate_observed_at(observation)
         adapter = _load_adapter()
@@ -420,6 +495,8 @@ def run_discovery(
             "provider_count": len(cards),
             "normalized_count": len(normalized),
             "rejected_count": len(rejected),
+            "detail_enriched_count": enriched,
+            "detail_failed_count": failed,
             "opportunities": normalized,
         }
         if not normalized:

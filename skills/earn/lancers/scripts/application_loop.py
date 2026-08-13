@@ -28,11 +28,13 @@ DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json
 DEFAULT_EVIDENCE_ROOT = Path.home() / ".local/state/anicca/lancers/planner"
 DEFAULT_EVIDENCE_DIR = DEFAULT_EVIDENCE_ROOT
 DECISION_FIELDS = frozenset({"request_id", "eligibility", "reason_codes", "proposal_text", "price_jpy", "deliver_date", "qualification"})
-QUALIFICATION_FIELDS = frozenset({"small_b2b_evidence", "sns_staff_evidence", "expected_platform_fee_jpy", "expected_ai_cost_jpy", "expected_subcontractor_cost_jpy", "expected_revision_refund_allowance_jpy", "cost_source_version"})
+QUALIFICATION_FIELDS = frozenset({"commercial_buyer_evidence", "ongoing_sns_outsourcing_evidence", "expected_platform_fee_jpy", "expected_ai_cost_jpy", "expected_subcontractor_cost_jpy", "expected_revision_refund_allowance_jpy", "cost_source_version"})
 QUALIFICATION_COST_FIELDS = ("expected_platform_fee_jpy", "expected_ai_cost_jpy", "expected_subcontractor_cost_jpy", "expected_revision_refund_allowance_jpy")
-SMALL_B2B_SIGNAL_RE = re.compile(r"(?:B2B|BtoB|法人|企業向け|事業者向け)", re.IGNORECASE)
-SMALL_BUSINESS_SIGNAL_RE = re.compile(r"(?:小規模|中小|少人数|スタートアップ|ベンチャー|個人事業|代表)")
-SNS_STAFF_SIGNAL_RE = re.compile(r"(?:専任(?:担当者|スタッフ)?(?:が)?(?:不在|いない|なし)|担当者(?:が)?(?:不在|いない|なし)|一人|1名|代表(?:者)?(?:または|と)?少人数.*兼務|少人数.*兼務|初めて(?:の)?SNS担当(?:募集)?|初のSNS担当(?:募集)?)")
+JAPANESE_TEXT_RE = re.compile(r"[ぁ-ゖァ-ヺ一-龯]")
+COMMERCIAL_BUYER_SIGNAL_RE = re.compile(r"依頼主の業種[:：]\s*\S{2,}")
+SNS_SCOPE_SIGNAL_RE = re.compile(r"(?:SNS|Instagram|インスタ|X(?:運用|投稿)|Twitter|LinkedIn|Facebook|TikTok)", re.IGNORECASE)
+ONGOING_SCOPE_SIGNAL_RE = re.compile(r"(?:継続|長期|月額|毎月|定期|運用)")
+OUTSOURCING_SIGNAL_RE = re.compile(r"(?:外注|外部委託|業務委託|委託|外部パートナー|担当者募集|運用代行|代行.{0,12}(?:依頼|募集|お願い)|運用.{0,12}(?:依頼|募集|お願い))")
 PUBLIC_FIELDS = ("schema_version", "record_type", "platform", "external_id", "title", "description", "url", "category", "budget_type", "budget_min_minor", "budget_max_minor", "currency", "buyer_external_id", "observed_at")
 DATE_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 ID_RE = re.compile(r"^[0-9]+$")
@@ -107,8 +109,8 @@ def _snapshot(rows: Sequence[Mapping[str, object]], today: date) -> dict[str, ob
     return {"tick_date": today.isoformat(), "opportunities": result}
 
 PLANNER_RULES = ("Lancersの公開案件だけを読み、全案件を一対一でeligible/ineligibleに分類する。ブラウザ・認証・外部操作はできない。"
-    "eligibleは日本語の小規模B2B案件で、公開title/description/categoryからsmall_b2b_evidenceとsns_staff_evidenceを各4〜240文字の完全一致抜粋で返す。"
-    "sns_staff_evidenceは専任担当者不在、代表者または少人数チームのSNS兼務、初めてのSNS担当採用のいずれかの公開事実を示すこと。純粋な不明はineligible。"
+    "eligibleは日本語の商用組織案件で、公開descriptionの公式依頼主の業種行からcommercial_buyer_evidence、依頼概要からSNS/channel・継続scope・外部委任を同時に示すongoing_sns_outsourcing_evidenceを各4〜240文字の完全一致抜粋で返す。"
+    "commercial_buyer_evidenceは依頼主の業種: で始まる空でない一行、ongoing_sns_outsourcing_evidenceはSNS/channel・継続・外部委任を全て示すこと。純粋な不明、個人趣味、単発投稿はineligible。"
     "eligibleは買い手宛て自然な日本語200〜3000文字、観測されたJPY予算内の整数価格、98000円以上、翌日から60日以内の実在日を返し、qualificationには4コストとcost_source_versionを指定する。"
     "expected_platform_fee_jpyは価格の20%切上げ以上、他コストは非負整数、cost_source_versionはlancers-g1-conservative-v1とする。"
     "提案文には買い手の課題、最初の30日間の納品物、チャネル数・投稿本数・修正回数上限、価格・納期、継続範囲、確認質問をちょうど1つ含める。"
@@ -151,16 +153,12 @@ def _valid_observed_budget(row: object) -> bool:
     minimum, maximum = row.get("budget_min_minor"), row.get("budget_max_minor")
     return not any(value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0) for value in (minimum, maximum)) and not (minimum is not None and maximum is not None and minimum > maximum)
 
-def _normalize_evidence(value: str) -> str:
-    return re.sub(r"\s+", "", value).casefold()
-
 def _valid_qualification_evidence(qualification: Mapping[str, object], public_text: str) -> bool:
-    small_b2b, sns_staff = qualification.get("small_b2b_evidence"), qualification.get("sns_staff_evidence")
-    if any(not isinstance(item, str) or not 4 <= len(item) <= 240 or item not in public_text for item in (small_b2b, sns_staff)):
+    commercial, ongoing = qualification.get("commercial_buyer_evidence"), qualification.get("ongoing_sns_outsourcing_evidence")
+    if any(not isinstance(item, str) or not 4 <= len(item) <= 240 or item not in public_text for item in (commercial, ongoing)):
         return False
-    normalized_small = _normalize_evidence(small_b2b)
-    normalized_sns = _normalize_evidence(sns_staff)
-    return bool(SMALL_B2B_SIGNAL_RE.search(normalized_small) and SMALL_BUSINESS_SIGNAL_RE.search(normalized_small) and SNS_STAFF_SIGNAL_RE.search(normalized_sns))
+    overview = re.search(r"(?:^|\n)依頼概要[:：](.*)", public_text, re.S)
+    return bool(JAPANESE_TEXT_RE.search(public_text) and commercial in public_text.splitlines() and COMMERCIAL_BUYER_SIGNAL_RE.fullmatch(commercial) and overview and ongoing in overview.group(1) and all(pattern.search(ongoing) for pattern in (SNS_SCOPE_SIGNAL_RE, ONGOING_SCOPE_SIGNAL_RE, OUTSOURCING_SIGNAL_RE)))
 
 def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) -> dict[str, Mapping[str, object]]:
     try:
@@ -179,7 +177,7 @@ def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) 
             elif not isinstance(qualification, Mapping) or set(qualification) != QUALIFICATION_FIELDS: raise ValueError
             else:
                 public_row = rows_by_id[project_id]
-                public_text = " ".join(public_row[key] for key in ("title", "description", "category") if isinstance(public_row.get(key), str))
+                public_text = public_row.get("description") if isinstance(public_row.get("description"), str) else ""
                 if not _valid_qualification_evidence(qualification, public_text): raise ValueError
                 if qualification.get("cost_source_version") != "lancers-g1-conservative-v1": raise ValueError
                 costs = [qualification.get(key) for key in QUALIFICATION_COST_FIELDS]
