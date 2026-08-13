@@ -33,12 +33,12 @@
 
 **Interfaces:** Consume the lifecycle's existing `incident_id`, the exact registry row carrying that incident, and the existing handoff session-recovery contract. Produce the existing `replacement_waiting` result with `session_recovery=true`, stable reason `active Instagram browser tab is missing`, the exact retired handle, bounded future RFC3339 retry, and a plain repair detail.
 
-- [ ] After lifecycle snapshot, count all `session_failed` browser-owned registry rows whose `incident_id` equals the lifecycle incident before validating the handle. Only one raw candidate with a valid Capafy handle may shortcut; zero, multiple, or one invalid candidate fails closed to the existing generic technical path.
-- [ ] For that exact match, write the stable session-recovery `replacement_waiting` result and exit `1` before handoff, browser lease, provisioning prompt, or model execution. Calling the current handoff would fingerprint the fixed recovery reason, reopen an older incident, rewrite lifecycle ownership, and recursively wake the manager. Item 9c owns the next account mutation.
-- [ ] Do not retire another row, wake the manager recursively, create another incident fingerprint, or send a second failure Telegram. The handoff remains the sole incident writer.
-- [ ] Preserve successful account-created, malformed-row, missing-credential, failed-verifier, lock, sender-recovery, and challenge behavior.
-- [ ] Synchronize the sender fixture with `TELEGRAM_SENT=true MSGID=<digits>`; this is a stale fixture repair, not a production weakening.
-- [ ] Add one regression with a pre-existing session-recovery incident and retired row: two manager passes preserve that incident, lifecycle, delivery receipt, account registry, and event state while calling no handoff, browser, agent, recursive manager wake, or Telegram. Add the ambiguous-match fail-closed counterexample.
+- [x] After lifecycle snapshot, count all `session_failed` browser-owned registry rows whose `incident_id` equals the lifecycle incident before validating the handle. Only one raw candidate with a valid Capafy handle may shortcut; zero, multiple, or one invalid candidate fails closed to the existing generic technical path.
+- [x] For that exact match, write the stable session-recovery `replacement_waiting` result and exit `1` before handoff, browser lease, provisioning prompt, or model execution. Calling the current handoff would fingerprint the fixed recovery reason, reopen an older incident, rewrite lifecycle ownership, and recursively wake the manager. Item 9c owns the next account mutation.
+- [x] Do not retire another row, wake the manager recursively, create another incident fingerprint, or send a second failure Telegram. The handoff remains the sole incident writer on non-shortcut paths.
+- [x] Preserve successful account-created, malformed-row, missing-credential, failed-verifier, lock, sender-recovery, and challenge behavior.
+- [x] Synchronize the sender fixture with `TELEGRAM_SENT=true MSGID=<digits>`; this is a stale fixture repair, not a production weakening.
+- [x] Add one regression with a pre-existing session-recovery incident and retired row: two manager passes preserve that incident, lifecycle, delivery receipt, account registry, and event state while calling no handoff, browser, agent, recursive manager wake, or Telegram. Add the ambiguous-match fail-closed counterexample.
 
 ## Task 2: Make the outcome monitor at-most-once
 
@@ -48,12 +48,12 @@
 
 **Interfaces:** Consume the existing rendered envelope/delivery key and incident `terminal_message_key`. Produce the same incident transition and numeric `telegram_message_id`; no new receipt store is introduced.
 
-- [ ] Determine closure versus unresolved before the send boundary.
-- [ ] For unresolved incidents, any existing non-empty terminal reservation means already notified/reserved; exit zero even if repair text or retry changes the newly rendered key.
-- [ ] For a first unresolved notification, persist the key before Telegram. For a closure, reserve its distinct closure key on the current phase before Telegram. Replay after sender failure/crash never invokes Telegram twice.
-- [ ] Accept only exactly one line `TELEGRAM_SENT=true MSGID=<digits>` with sender exit zero; reject substrings, false markers, blank IDs, and multiline output.
-- [ ] Closure business verification is independent from Telegram delivery. After reserving, a sender failure still completes the incident to `verified` with explicit `telegram_delivery_status=reserved_unconfirmed`, no fabricated message ID, and a nonzero monitor exit; replay stays silent and the hourly Japanese report is the completeness path. Strict sender success records the numeric ID and `telegram_delivery_status=confirmed`. Unresolved sender failure remains reserved/unresolved. Event-store conflicts remain fatal.
-- [ ] Add regressions for changed-retry existing reservation, first-send failure then replay, spoofed/multiline output, and strict success. Preserve verified stale-sidecar silence and repair closure semantics.
+- [x] Determine closure versus unresolved before the send boundary.
+- [x] For unresolved incidents, any existing non-empty terminal reservation means already notified/reserved; exit zero even if repair text or retry changes the newly rendered key.
+- [x] For a first unresolved notification, persist the key before Telegram. For a closure, reserve its distinct closure key on the current phase before Telegram. Replay after sender failure/crash never invokes Telegram twice.
+- [x] Accept only exactly one line `TELEGRAM_SENT=true MSGID=<digits>` with sender exit zero; reject substrings, false markers, blank IDs, and multiline output.
+- [x] Closure business verification is independent from Telegram delivery. After reserving, a sender failure still completes the incident to `verified` with explicit `telegram_delivery_status=reserved_unconfirmed`, no fabricated message ID, and a nonzero monitor exit; replay stays silent and the hourly Japanese report is the completeness path. Strict sender success records the numeric ID and `telegram_delivery_status=confirmed`. Unresolved sender failure remains reserved/unresolved. Event-store conflicts remain fatal.
+- [x] Add regressions for changed-retry existing reservation, first-send failure then replay, spoofed/multiline output, and strict success. Preserve verified stale-sidecar silence and repair closure semantics.
 
 ## Direct verification
 
@@ -77,3 +77,10 @@ The implementer commits and pushes an isolated branch. Exactly one fresh read-on
 2. Parent kickstarts only the existing account manager. The exact existing recovery row short-circuits before model/browser work and preserves the current incident without creating a fourth incident or another Telegram; manager lock releases.
 3. Two outcome-monitor wakes preserve both existing incident delivery IDs, add no message or duplicate event, and exit zero.
 4. Immediate account-manager replay adds no row, incident, event, recursive wake, or Telegram. Structural browser login remains separate Item 9c; this slice does not claim Marketing health.
+
+## Implementation result
+
+- Closed in feature commits `9311e393d`, `d857c5b3f`, and `01516c44f`; merged and deployed as `2be3c430d`.
+- Parent verification: manager `78/78`, outcome monitor `54/54`, controller `71/71`, Marketing outcome `37/37`, pytest `31 passed`, shell syntax and diff check PASS.
+- The only fresh Sol adversarial review returned `rethink` after reproducing valid-plus-invalid row ambiguity and a closure stuck in `repaired` after sender failure. The same Luna correction counts raw rows before handle validation and closes verified business evidence with `confirmed` or `reserved_unconfirmed` delivery status. Parent reran both counterexamples successfully; no second reviewer was used.
+- Production account manager was temporarily booted out after the old code created four active incidents and Telegram IDs `16102`, `16103`, `16113`, and `16123`. After bootstrap with the merged code, two manager runs and two monitor wakes kept the 10-row account registry SHA-256 `3a1dbb9dc338bd1b26d745a162a4a0fef5ba5be42c2e11ed964bfbc6f4ea4f92`, 417-row event ledger SHA-256 `580de5e5b0c1d88f2ff9a717c3fdcae2e1bbec282d40a542268b17c8594e7e96`, four incident identities, and all four message IDs unchanged. No browser lease, manager lock, or new agent evidence remained. Item 9c owns structural browser reauthentication; no Marketing recovery or revenue is claimed here.
