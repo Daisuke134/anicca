@@ -12,6 +12,15 @@ cat >"$T/bin/browser" <<'SH'
 #!/usr/bin/env bash
 echo http://127.0.0.1:9555
 SH
+cat >"$T/bin/verify" <<'SH'
+#!/usr/bin/env bash
+echo "$*" >>"$VERIFY_CALLS"
+case "${VERIFY_MODE:-owner}" in
+ mismatch) exit 2;;
+ numeric) echo '{"verified":true,"handle":"capafy.skills25042","session_owner":"browser","target_id":"123"}';;
+ *) echo '{"verified":true,"handle":"capafy.skills25042","session_owner":"browser","target_id":"verified-target"}';;
+esac
+SH
 cat >"$T/bin/runner" <<'SH'
 #!/usr/bin/env bash
 echo "$*" >>"$RUN_CALLS"; cat >/dev/null
@@ -41,28 +50,37 @@ esac
 SH
 cat >"$T/bin/sender" <<'SH'
 #!/usr/bin/env bash
-echo "$1" >>"$MESSAGES"; echo MSGID=8001
+echo call >>"$SEND_CALLS"
+case "${SENDER_MODE:-ok}" in
+ fail) exit 1;;
+ spoof) printf 'noise TELEGRAM_SENT=true MSGID=8001\n';;
+ multiline) printf 'TELEGRAM_SENT=true MSGID=8001\nextra\n';;
+ *) echo "$1" >>"$MESSAGES"; echo TELEGRAM_SENT=true MSGID=8001;;
+esac
 SH
 cat >"$T/bin/launchctl" <<'SH'
 #!/usr/bin/env bash
 echo "$*" >>"$KICKS"
+echo wake >>"$ORDER"
 SH
 cat >"$T/bin/guard" <<'SH'
 #!/usr/bin/env bash
 echo "$*" >>"$GUARD_CALLS"
+echo "$1" >>"$ORDER"
 SH
 chmod +x "$T/bin/"*
 case_setup(){
  C="$T/$1"; mkdir -p "$C/home/.cloak" "$C/state"; echo '[]' >"$C/accounts"
- : >"$C/runs"; : >"$C/posts"; : >"$C/messages"; : >"$C/kicks"; : >"$C/guard.calls"
+ : >"$C/runs"; : >"$C/posts"; : >"$C/messages"; : >"$C/kicks"; : >"$C/guard.calls"; : >"$C/verify.calls"; : >"$C/send.calls"; : >"$C/order"
  MEDIA="$C/reel.mp4"; printf '\0\0\0\30ftypmp42fixture' >"$MEDIA"
  export HOME="$C/home" CAPAFY_IG_ACCOUNTS_FILE="$C/accounts" CAPAFY_IG_LIFECYCLE_STATE="$C/state/lifecycle.json" CAPAFY_OUTCOME_STATE_DIR="$C/state"
  export CAPAFY_MARKETING_RESULT="$C/state/result.json" CAPAFY_CREATIVE_CANDIDATE="$C/state/candidate.json" CAPAFY_RUN_AGENT="$T/bin/runner" CAPAFY_REEL_POSTER="$T/bin/poster"
  export CAPAFY_LISTING_SELECTOR="$T/bin/selector" SELECT_CALLS="$C/select.calls"; : >"$SELECT_CALLS"
  export CAPAFY_MARKETING_BROWSER="$T/bin/browser" CAPAFY_TELEGRAM_SENDER="$T/bin/sender" CAPAFY_LAUNCHCTL="$T/bin/launchctl" CAPAFY_IG_LIFECYCLE="$LIFECYCLE"
  export CAPAFY_BROWSER_GUARD="$T/bin/guard" GUARD_CALLS="$C/guard.calls"
- export CAPAFY_IG_TID=tab-1 CAPAFY_MARKETING_MODE=live RUN_CALLS="$C/runs" POST_CALLS="$C/posts" MESSAGES="$C/messages" KICKS="$C/kicks" MEDIA
- unset CANDIDATE_MODE POSTER_MODE
+ export CAPAFY_IG_SESSION_VERIFY="$T/bin/verify" VERIFY_CALLS="$C/verify.calls" CAPAFY_IG_SESSION_VERIFY_TEST_SEAM=1
+ export CAPAFY_IG_TID=tab-1 CAPAFY_MARKETING_MODE=live RUN_CALLS="$C/runs" POST_CALLS="$C/posts" MESSAGES="$C/messages" KICKS="$C/kicks" SEND_CALLS="$C/send.calls" ORDER="$C/order" MEDIA
+ unset CANDIDATE_MODE POSTER_MODE VERIFY_MODE SENDER_MODE
 }
 active(){ python3 - "$CAPAFY_IG_ACCOUNTS_FILE" <<'PY'
 import json,sys
@@ -74,6 +92,11 @@ eq "needed does not call creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 0; eq "n
 case_setup immediate; active; export CAPAFY_MARKETING_MODE=dry POSTER_MODE=dry; bash "$DAILY" >/dev/null 2>&1
 eq "verified session immediately calls creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 1; has "immediate probe reaches poster" "$POST_CALLS" "--expected-capability publish_probe"
 eq "immediate probe selects from seller inventory" "$(wc -l <"$SELECT_CALLS" | tr -d ' ')" 1
+has "immediate probe uses verifier target" "$POST_CALLS" "--tid verified-target"
+case_setup numeric_target; active; export VERIFY_MODE=numeric; bash "$DAILY" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "numeric verifier target fails terminal" || bad "numeric verifier target accepted"
+eq "numeric verifier target reaches no selector" "$(wc -l <"$SELECT_CALLS" | tr -d ' ')" 0
+eq "numeric verifier target releases browser lease" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
 case_setup foreign; active; export CANDIDATE_MODE=foreign; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "foreign public listing refused" || bad "foreign public listing accepted"; eq "foreign listing not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
 eq "foreign failure releases browser lease" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
@@ -101,4 +124,67 @@ case_setup unverified; active; export POSTER_MODE=unverified; bash "$DAILY" >/de
 [ "$rc" -ne 0 ] && ok "missing owner proof fails terminal" || bad "missing owner proof accepted"; recorded_unverified="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("last_public_reel_url") or "")' "$CAPAFY_IG_LIFECYCLE_STATE" 2>/dev/null || true)"; [ -z "$recorded_unverified" ] && ok "unverified owner records no Reel" || bad "unverified owner recorded Reel"
 case_setup challenge; active; export POSTER_MODE=challenge; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "poster challenge fails terminal" || bad "challenge accepted"; eq "poster challenge retires account" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))[0]["status"])' "$CAPAFY_IG_ACCOUNTS_FILE")" session_failed; eq "poster challenge wakes manager" "$(wc -l <"$KICKS" | tr -d ' ')" 1
+if grep -Fq -- '-k' "$KICKS"; then bad "challenge avoids kill kickstart"; else ok "challenge avoids kill kickstart"; fi
+case_setup owner_mismatch; active; python3 - "$CAPAFY_IG_ACCOUNTS_FILE" <<'PY'
+import json,sys
+p=sys.argv[1]; rows=json.load(open(p)); rows.append({"handle":"capafy.other","status":"session_failed","session_owner":"browser","browser_identity":"instagram:other","port":9556,"created":"2026-07-01"}); json.dump(rows,open(p,"w"))
+PY
+export VERIFY_MODE=mismatch; bash "$DAILY" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "owner mismatch fails terminal" || bad "owner mismatch accepted"
+eq "owner mismatch calls no selector" "$(wc -l <"$SELECT_CALLS" | tr -d ' ')" 0
+eq "owner mismatch calls no creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 0
+eq "owner mismatch calls no poster" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
+eq "owner mismatch releases lease once" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
+eq "owner mismatch retires only active row" "$(python3 -c 'import json,sys;rows=json.load(open(sys.argv[1]));print(rows[0]["status"]+":"+rows[1]["status"])' "$CAPAFY_IG_ACCOUNTS_FILE")" "session_failed:session_failed"
+eq "owner mismatch requests replacement" "$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1]))["replacement_requested"]).lower())' "$CAPAFY_IG_LIFECYCLE_STATE")" true
+eq "owner mismatch wakes only account manager once" "$(wc -l <"$KICKS" | tr -d ' ')" 1
+if grep -Fq -- '-k' "$KICKS"; then bad "owner mismatch avoids kill kickstart"; else ok "owner mismatch avoids kill kickstart"; fi
+eq "owner mismatch releases before manager wake" "$(tr '\n' ' ' <"$ORDER" | sed 's/ $//')" "release wake"
+incident="$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json')"
+eq "owner mismatch creates one incident" "$(printf '%s\n' "$incident"|wc -l|tr -d ' ')" 1
+eq "owner mismatch reserves failure delivery before send" "$(python3 -c 'import json,sys;print(str(bool(json.load(open(sys.argv[1])).get("terminal_message_key"))).lower())' "$incident")" true
+eq "owner mismatch stores numeric Telegram id after strict success" "$(python3 -c 'import json,sys;print(str(isinstance(json.load(open(sys.argv[1])).get("telegram_message_id"),int)).lower())' "$incident")" true
+retry="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["next_retry_at"])' "$incident")"
+python3 - "$retry" <<'PY' && ok "owner mismatch sets future aware retry" || bad "owner mismatch sets future aware retry"
+import datetime,sys
+value=datetime.datetime.fromisoformat(sys.argv[1].replace("Z","+00:00")); raise SystemExit(0 if value.tzinfo and value>datetime.datetime.now(datetime.timezone.utc) else 1)
+PY
+events_before="$(wc -l <"$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" | tr -d ' ')"; messages_before="$(wc -l <"$MESSAGES" | tr -d ' ')"
+bash "$DAILY" >/dev/null 2>&1; replay_rc=$?
+eq "owner mismatch replay is contained" "$replay_rc" 0
+eq "owner mismatch replay creates no incident" "$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json'|wc -l|tr -d ' ')" 1
+eq "owner mismatch replay adds no canonical event" "$(wc -l <"$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" | tr -d ' ')" "$events_before"
+eq "owner mismatch replay sends no second failure Telegram" "$(wc -l <"$MESSAGES" | tr -d ' ')" "$messages_before"
+eq "owner mismatch replay adds no manager wake" "$(wc -l <"$KICKS" | tr -d ' ')" 1
+case_setup partial_recovery; active; python3 - "$CAPAFY_IG_ACCOUNTS_FILE" "$CAPAFY_MARKETING_RESULT" <<'PY'
+import json,sys
+accounts,result=sys.argv[1:]
+rows=json.load(open(accounts)); rows[0]["status"]="session_failed"; json.dump(rows,open(accounts,"w"))
+json.dump({"result":"replacement_waiting","session_recovery":True,"handle":"capafy.skills25042","reason":"active Instagram browser tab is missing","repair_detail":"replay repair","next_retry_at":"2026-08-13T00:00:00Z"},open(result,"w"))
+PY
+bash "$DAILY" >/dev/null 2>&1; eq "partial recovery replay is contained" "$?" 0
+eq "partial recovery requests missing replacement" "$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1]))["replacement_requested"]).lower())' "$CAPAFY_IG_LIFECYCLE_STATE")" true
+eq "partial recovery wakes manager once" "$(wc -l <"$KICKS" | tr -d ' ')" 1
+python3 - "$CAPAFY_MARKETING_RESULT" <<'PY'
+import json,sys
+json.dump({"result":"replacement_waiting","session_recovery":True,"handle":"capafy.skills25042","reason":"active Instagram browser tab is missing","repair_detail":"replay repair","next_retry_at":"2026-08-13T00:00:00Z"},open(sys.argv[1],"w"))
+PY
+bash "$DAILY" >/dev/null 2>&1; eq "matched partial recovery replay is contained" "$?" 0
+eq "matched partial recovery replay does not wake again" "$(wc -l <"$KICKS" | tr -d ' ')" 1
+eq "matched partial recovery replay does not resend direct failure" "$(wc -l <"$SEND_CALLS" | tr -d ' ')" 1
+for malformed_sender in spoof multiline; do
+ case_setup "sender_$malformed_sender"; active; export VERIFY_MODE=mismatch SENDER_MODE="$malformed_sender"; bash "$DAILY" >/dev/null 2>&1; rc=$?
+ [ "$rc" -ne 0 ] && ok "$malformed_sender receipt fails terminal" || bad "$malformed_sender receipt accepted"
+ sender_incident="$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json')"
+ eq "$malformed_sender receipt reserves exactly once key" "$(python3 -c 'import json,sys;print(str(bool(json.load(open(sys.argv[1])).get("terminal_message_key"))).lower())' "$sender_incident")" true
+ eq "$malformed_sender receipt stores no Telegram id" "$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1])).get("telegram_message_id") is None).lower())' "$sender_incident")" true
+done
+case_setup sender_at_most_once; active; export VERIFY_MODE=mismatch SENDER_MODE=fail; bash "$DAILY" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "sender failure fails terminal" || bad "sender failure accepted"
+sender_incident="$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json')"
+eq "sender failure keeps pre-send reservation" "$(python3 -c 'import json,sys;print(str(bool(json.load(open(sys.argv[1])).get("terminal_message_key"))).lower())' "$sender_incident")" true
+eq "sender failure calls sender once" "$(wc -l <"$SEND_CALLS" | tr -d ' ')" 1
+export SENDER_MODE=ok; bash "$DAILY" >/dev/null 2>&1; eq "reserved sender replay is contained" "$?" 0
+eq "reserved sender replay never retries sender" "$(wc -l <"$SEND_CALLS" | tr -d ' ')" 1
+if rg -F -- 'kickstart -k' "$DAILY" "$ROOT/skills/earn/capafy-marketing/capafy-marketing-handoff.sh" >/dev/null; then bad "changed handoff paths contain no kill kickstart"; else ok "changed handoff paths contain no kill kickstart"; fi
 echo "=== test_capafy_marketing_controller: $P passed $F failed ==="; [ "$F" -eq 0 ]
