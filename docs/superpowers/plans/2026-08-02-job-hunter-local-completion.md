@@ -2197,6 +2197,32 @@ performs the real E2E, and records the milestone.
   **Immediate next slice:** build, activate, and run the exact native-login release.
   Require a redacted Workday account receipt or consume only the next finite stage
   code.
+
+  Exact native-login release and eighth real wake are complete. Pushed commit
+  `2c79b6d777e5e2598c5cacda74950109d129ac99` built twice to byte-identical archive
+  SHA-256 `07b9bf547d43dd895bb53bd4695a9cd97271c25ec48cb998ee8a0c816571d745`
+  with `267` entries and is active with
+  `d9cf79bbbff0af6e8985ad28be34b7ac0983f3f5` as rollback. Real wake
+  `daily-20260814-060138` still reports native-auth unavailable. The exact accessible
+  role locator resolves no control in the helper's attached Workday page, while the
+  structural production snapshot consistently shows the DOM element
+  `<button>Sign In</button>`. No submit intent, request start, receipt, or
+  submit-unknown was created.
+
+  Telegram sent message ID `16728`; cleanup closed exactly one owned page, restored
+  all seven pre-existing page IDs, and left production Ledger byte-identical at
+  SHA-256 `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  **Current native-DOM slice complete in pushed source:** commit `e447d5894` retains
+  stable automation IDs and the accessible-role locator, then adds only the exact DOM
+  fallback `button:text-is("Sign In")`. It selects the last visible exact match;
+  Google/SSO labels remain excluded. Exact email/password controls remain mandatory
+  after the click. Compilation and diff checks pass, focused tests pass `14/14`, and
+  the full suite passes `585/585`.
+
+  **Immediate next slice:** build, activate, and run the exact native-DOM release.
+  Require a redacted Workday account receipt or consume only the next finite stage
+  code.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
