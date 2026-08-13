@@ -6,11 +6,11 @@
 **Original base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`
 **Authoritative O2-02 integration base (locked):** `4fcddb65b9a353565e2a5fcefb56e1271dbfbf1d`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Status:** O2-03 reproducible release-candidate validation is complete from
-production/history tip `fb267a27bdb5eaf38db6ed72071625dbceee3ba9`. This is the latest
-committed evidence parent for this spec update; the enclosing spec commit is
-intentionally not named inside itself. O2-05 through O2-12 remain open. Resume
-baseline is accepted. O2-05 diagnosis is current. Autonomous application, mail, and
+**Status:** O2-03 reproducible release validation is complete; O2-05A1 remains in
+review-fix with one Important truth-boundary finding open. The latest committed
+evidence parent for this spec update is `d4bb180a5617af1860dc8ead5cc3d7514e46304e`;
+the enclosing spec commit is intentionally not named inside itself. O2-05 through
+O2-12 remain open. Resume baseline is accepted. Autonomous application, mail, and
 learning lanes are disabled and unloaded and must not be described as healthy or
 complete.
 
@@ -800,8 +800,8 @@ after bounded recovery fails.
   receipts. Repair must append evidence-bound corrections for every qualifying row,
   preserve the delivery receipts, and be idempotent. It must not retain the current
   one-application hard-code.
-- O2-05A1 code-only evidence now covers that repair contract without changing the
-  real ledger: a focused production-shaped regression seeds two non-hard-coded
+- O2-05A1 code tip `d40f3aebff975e44f03f0927e29251e934fe2104` improves that repair
+  contract without changing the real ledger: a focused production-shaped regression seeds two non-hard-coded
   application IDs, the legacy `discovered -> qualified -> materials_ready ->
   submit_claimed -> submitted -> email_sent` chain, immutable delivered
   `recruiting_outreach`/`outreach_only` route evidence, and the old false
@@ -814,9 +814,17 @@ after bounded recovery fails.
   shape; forged or unbound preceding events fail closed. An authoritative Gmail/Ashby
   `submitted` immediately before outreach blocks email-shaped correction, and
   per-event pairing keeps genuine submissions before or after an unrelated correction
-  in `ever_submitted`. The focused route tests pass `15/15`, the complete Job Hunter
+  in `ever_submitted`. However, scoped adversarial re-review remains FAIL with one
+  Important finding: existing canonical/alternate ATS receipts and external imports
+  are authoritative submission shapes too, but the current guard recognizes only
+  Gmail and the special Ashby browser receipt. A later outreach can therefore demote
+  a real ATS/imported application, and ATS route replay can then break idempotency.
+  O2-05A1 is not complete until both production-shaped cases preserve submitted truth
+  across two reconciliation runs and Guardian remains healthy. The currently passing
+  focused route tests are `15/15`, the complete Job Hunter
   suite passes `568/568`, and the complete
-  agent-runner suite passes `18/18`. O2-05 remains unchecked: real-ledger repair,
+  agent-runner suite passes `18/18`; these GREEN suites are insufficient completion
+  evidence while the review finding is open. O2-05 remains unchecked: real-ledger repair,
   Gmail audit, release activation, LaunchAgent load, Guardian runtime checks, and a
   real canonical cycle are still pending.
 - The same ledger has 25 `submit_unknown` applications: 24 Ashby and one Cursor;
