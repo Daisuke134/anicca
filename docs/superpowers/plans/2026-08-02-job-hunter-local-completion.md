@@ -10,8 +10,9 @@
 production/history tip `fb267a27bdb5eaf38db6ed72071625dbceee3ba9`. This is the latest
 committed evidence parent for this spec update; the enclosing spec commit is
 intentionally not named inside itself. O2-05 through O2-12 remain open. Resume
-baseline is accepted. Audit is current. Autonomous application, mail, and learning
-lanes are stopped and must not be described as healthy or complete.
+baseline is accepted. O2-05 diagnosis is current. Autonomous application, mail, and
+learning lanes are disabled and unloaded and must not be described as healthy or
+complete.
 
 ## 1. Done condition
 
@@ -785,6 +786,33 @@ after bounded recovery fails.
   the bundled healthcheck passed for daily/inbox/learning with SQLite integrity
   `ok`, fresh evidence, and `last_exit=0`. The real `current` symlink, profile,
   ledger, browser, and LaunchAgents were not touched.
+- O2-05 read-only diagnosis found that `ai.anicca.job-search-daily`, `-inbox`, and
+  `-learning` are disabled and absent from the user launchd domain even though their
+  valid plists and immutable stable launchers remain installed. Browser, Camofox,
+  and observability are still loaded; repair must not restart or replace them. The
+  current symlink and `active-release.json` consistently point to immutable release
+  `f9642b2f3e2e520affdea9b847ae428706d89607`, so the old `current release is not
+  active` log line is historical rather than the present failure.
+- The private ledger passes SQLite integrity but has five agent-owned applications
+  with the exact legacy chain `submit_claimed -> submitted -> email_sent`. Each has
+  one immutable delivered `recruiting_outreach` route marked `outreach_only`; the
+  five associated `confirmed_application` outcomes are therefore not application
+  receipts. Repair must append evidence-bound corrections for every qualifying row,
+  preserve the delivery receipts, and be idempotent. It must not retain the current
+  one-application hard-code.
+- The same ledger has 25 `submit_unknown` applications: 24 Ashby and one Cursor;
+  22 are agent-owned and three are owner-imported. None has a stored authoritative
+  confirmation. All have clicked-phase fences; 17 reached `request_started` and
+  eight remain `pre_request`. Thirteen have valid pre-submit fill receipts whose
+  `submit_clicked` value is false. Absence of a Gmail/ATS receipt is not proof of
+  submission or non-submission, so the live reconciliation audits every row against
+  Gmail, promotes only an exact authoritative match, and keeps every unmatched row
+  `submit_unknown` and dedup-fenced rather than retrying it.
+- O2-05 uses the existing release builder, activation module, stable launchers,
+  plists, Gmail reconciler, and Guardian health commands. It adds no scheduler,
+  browser, tracker, or production fake. It loads only daily/inbox/learning and runs
+  Guardian health gates in this slice; creation and completion of the dedicated
+  Guardian LaunchAgent remains O2-07, matching the mandated O2 order.
 - Current owner-declared company pauses for OpenAI, Anthropic, and Cursor remain
   authoritative, and the mandatory Japan/global-remote discovery segment remains in
   the O2-06 contract. The JPY 7M floor / JPY 10M target / JPY 30M stretch policy is
@@ -854,11 +882,14 @@ before the next item begins.
 - [x] **O2-04B** — Keep reviewable work committed and pushed on the dedicated branch;
   keep this file as progress SSOT and leave the five-phase master spec untouched.
 - [ ] **O2-05** — Repair the invalid event history/projection so an email-route event
-  can never regress `submitted` to `email_sent`; reconcile all 25 `submit_unknown`
-  rows without duplicate applications; persist owner-declared company pauses for
-  OpenAI, Anthropic, and Cursor and prove every role/URL alias is suppressed; build
-  from the pushed green commit; atomically activate the reproducible stable release;
-  load daily/inbox/learning/guardian; then run and observe one real canonical cycle.
+  can never regress `submitted` to `email_sent`; audit all 25 `submit_unknown` rows
+  with the real Gmail reconciler, promoting only authoritative matches and keeping
+  unmatched rows dedup-fenced; persist owner-declared company pauses for OpenAI,
+  Anthropic, and Cursor and prove every role/URL alias is suppressed; build from the
+  pushed green commit; atomically activate the reproducible stable release; load
+  daily/inbox/learning without touching the shared browser; run Guardian health
+  gates and observe one real canonical cycle. The Guardian LaunchAgent itself closes
+  in O2-07.
 - [ ] **O2-06** — TDD the JPY 7M floor / JPY 10M target / JPY 30M stretch policy,
   travel-positive policy, clearance non-rejection contract, and mandatory remote-job
   segment. Reuse pinned OSS/public ATS sources for Japan-remote and globally remote
