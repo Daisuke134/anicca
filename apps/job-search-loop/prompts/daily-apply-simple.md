@@ -22,7 +22,9 @@ Do not embed private profile values in shell commands, command arguments, genera
 source, JSON output, or final JSON. Do not send Telegram messages directly. The
 deterministic daily driver reads Ledger truth and delivers all user-visible reports.
 
-Every active official posting is an application candidate. Ranking, compensation,
+Every active official posting is an application candidate. Manual-owner Japan requisition policy: For OpenAI, Anthropic, Cursor/Anysphere, and Palantir, skip Tokyo/Japan/Remote-Japan requisitions because the owner has already handled them manually. This is not a company-wide block. A distinct overseas or Global/APAC Remote requisition is eligible only when the official posting explicitly permits employment/contracting while resident in Japan and it passes normal authorization, location, and URL/company-role/JD-fingerprint duplicate fences. If location, Japan-resident eligibility, or whether it is the same requisition is ambiguous, skip.
+
+Ranking, compensation,
 location, experience, and skills gaps determine order only; they do not create a
 no-application outcome. Prefer Tokyo, Japan-remote, USD 100,000-class compensation,
 and strong-fit AI/agent, solutions, forward-deployed, product, and technical-business

@@ -30,6 +30,52 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("portfolio_bucket=", prompt)
         self.assertIn("2 dream, 5 strong-fit, and 3 adjacent", prompt)
 
+    def test_daily_prompt_has_manual_owner_japan_requisition_policy(self):
+        root = Path(__file__).parents[1]
+        prompt = (root / "prompts" / "daily-apply-simple.md").read_text(
+            encoding="utf-8"
+        )
+        policy = (
+            "Manual-owner Japan requisition policy: "
+            "For OpenAI, Anthropic, Cursor/Anysphere, and Palantir, skip "
+            "Tokyo/Japan/Remote-Japan requisitions because the owner has already "
+            "handled them manually. This is not a company-wide block. A distinct "
+            "overseas or Global/APAC Remote requisition is eligible only when the "
+            "official posting explicitly permits employment/contracting while resident "
+            "in Japan and it passes normal authorization, location, and "
+            "URL/company-role/JD-fingerprint duplicate fences. If location, "
+            "Japan-resident eligibility, or whether it is the same requisition is "
+            "ambiguous, skip."
+        )
+        normalized_prompt = " ".join(prompt.split())
+        normalized_policy = " ".join(policy.split())
+        opening = "Every active official posting is an application candidate."
+        closing = "Ranking, compensation,"
+        self.assertEqual(normalized_prompt.count(normalized_policy), 1)
+        self.assertEqual(
+            normalized_prompt.count(
+                f"{opening} {normalized_policy} {closing}"
+            ),
+            1,
+        )
+        normalized_lower = normalized_prompt.lower()
+        self.assertNotIn(
+            "do not skip tokyo/japan/remote-japan requisitions",
+            normalized_lower,
+        )
+        self.assertNotIn(
+            "apply to tokyo/japan/remote-japan requisitions even when",
+            normalized_lower,
+        )
+
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        runner_block = (
+            '"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \\\n'
+            '  --task-class application-lane-agent \\\n'
+            '  --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-apply-simple.md"'
+        )
+        self.assertEqual(script.count(runner_block), 1)
+
     def test_daily_runtime_consumes_durable_recovery_plan(self):
         root = Path(__file__).parents[1]
         prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
