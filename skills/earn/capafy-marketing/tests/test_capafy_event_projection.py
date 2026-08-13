@@ -780,7 +780,7 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
         ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
     )
     assert duplicate.returncode == 0, duplicate.stderr
-    assert sent.read_text().count("Capafy — Consolidated company state") == 1
+    assert sent.read_text().count("Capafy 朝レポート") == 1
 
     earn_ledger.write_text(earn_ledger.read_text().replace("9.99", "999.00"))
     mismatch = subprocess.run(
@@ -789,7 +789,7 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
 
     assert mismatch.returncode == 3
     assert "gross_usd mismatch" in mismatch.stderr
-    assert sent.read_text().count("Capafy — Consolidated company state") == 1
+    assert sent.read_text().count("Capafy 朝レポート") == 1
     incidents = list((state / "capafy-incidents").glob("*.json"))
     assert len(incidents) == 1
 
@@ -805,15 +805,17 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
     assert incident["phase"] == "verified"
     assert incident["verification"]["projection_parity_verified"] is True
     message = sent.read_text()
-    assert message.count("Capafy — Consolidated company state") == 2
-    assert "Capafy incident resolved — no action needed" in message
+    assert message.count("Capafy 朝レポート") == 1
+    assert message.count("Capafy イベントレポート") == 1
+    assert "修復: 直前の問題は解決済み。現在対応が必要な問題はありません。" in message
     assert json.loads((tmp_path / "site/company/state.json").read_text()) == recovered_report["company_state"]
 
     recovered_retry = subprocess.run(
         ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
     )
     assert recovered_retry.returncode == 0, recovered_retry.stderr
-    assert sent.read_text().count("Capafy — Consolidated company state") == 2
+    assert sent.read_text().count("Capafy 朝レポート") == 1
+    assert sent.read_text().count("Capafy イベントレポート") == 1
     incident_events = [
         json.loads(line)
         for line in ledger.read_text().splitlines()
