@@ -2116,6 +2116,34 @@ performs the real E2E, and records the milestone.
   **Immediate next slice:** build, activate, and run the exact accessible-role
   release. Require a redacted Workday account receipt or consume only the next finite
   stage code.
+
+  Accessible-role release and fifth real wake are complete. Pushed commit
+  `55283e2a92de883db6ac0cf3245f04802d2ed376` built twice to byte-identical archive
+  SHA-256 `c8cb1f22e2aa7b992c89dbfe81f6d2abdab3ebff9f1c9f175c2c2e19035aa78b`
+  with `267` entries and is active with
+  `5c9030b23012d3cc4efde7ee371ed8e5c4a063dc` as rollback. Real wake
+  `daily-20260814-053649` advances both NVIDIA attempts beyond manual choice and now
+  reports `workday_native_auth_unavailable`. The post-manual snapshots remain on the
+  job route and contain the job-page header Sign In control. Therefore the native
+  selector wait is being satisfied by a pre-existing header control before the
+  manual-click navigation commits; the account chooser itself is not yet inspected.
+  No submit intent, request start, receipt, or submit-unknown was created.
+
+  Telegram sent message ID `16702`; cleanup closed exactly one owned page, restored
+  all seven pre-existing page IDs, and left production Ledger byte-identical at
+  SHA-256 `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  **Apply-route slice complete in pushed source:** commit `15122e736` waits for the
+  Workday `/apply/` route commit after the exact manual action and only then waits for
+  native auth controls. This prevents the persistent job-page header Sign In from
+  satisfying the account-chooser precondition. Existing exact selectors, bounded
+  twenty-second timeout, no-SSO rule, and no-Submit contract remain unchanged.
+  Compilation and diff checks pass, focused tests pass `14/14`, and the full suite
+  passes `585/585`.
+
+  **Immediate next slice:** build, activate, and run the exact apply-route release.
+  Require a redacted Workday account receipt or consume only the next finite stage
+  code.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
