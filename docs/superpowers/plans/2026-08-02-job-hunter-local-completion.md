@@ -2144,6 +2144,32 @@ performs the real E2E, and records the milestone.
   **Immediate next slice:** build, activate, and run the exact apply-route release.
   Require a redacted Workday account receipt or consume only the next finite stage
   code.
+
+  Apply-route release and sixth real wake are complete. Pushed commit
+  `edc7b66b67aed9afbdad7acec414ffd24cfdfd56` built twice to byte-identical archive
+  SHA-256 `91c6999a0741f5da8ae7a37c114e9ba7bc97bda337f94f42f518c1501d315f98`
+  with `267` entries and is active with
+  `55283e2a92de883db6ac0cf3245f04802d2ed376` as rollback. Real wake
+  `daily-20260814-054718` still reports `workday_native_auth_unavailable`, while the
+  exact manual-action stage remains resolved. The current native chooser exposes an
+  exact non-SSO `Sign In` button without the legacy automation IDs; the existing
+  selector set therefore returns no action and later sees no form. No submit intent,
+  request start, receipt, or submit-unknown was created.
+
+  Telegram sent message ID `16709`; cleanup closed exactly one owned page, restored
+  all seven pre-existing page IDs, and left production Ledger byte-identical at
+  SHA-256 `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  **Native exact-Sign-In slice complete in pushed source:** commit `fc2a07d70`
+  preserves the three stable native automation IDs and adds an exact accessible
+  button-name fallback `Sign In`. Exact matching excludes `Sign In with Google`, so
+  optional SSO remains untouched. After the click, the existing bounded exact
+  email/password waits remain mandatory before any credential fill. Compilation and
+  diff checks pass, focused tests pass `14/14`, and the full suite passes `585/585`.
+
+  **Immediate next slice:** build, activate, and run the exact native Sign In release.
+  Require a redacted Workday account receipt or consume only the next finite stage
+  code.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, and section 7 Telegram cadence. Every application report binds
   compensation, location, fit reason, official URL, exact resume, cover letter or
