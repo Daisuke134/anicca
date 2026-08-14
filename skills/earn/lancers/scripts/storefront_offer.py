@@ -113,14 +113,12 @@ def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, An
     if not active: return {"superseded_active_count": 0, "status_effect_count": 0}
     listing_id = active[0]; path = f"/myplan/{listing_id}/setting"
     paused = page.locator('label[for="ProjectPlanStatusFormStatusPaused"]')
-    if paused.count() != 1: raise OfferError("setting_form_changed")
+    if paused.count() != 1: raise OfferError("setting_status_control_missing")
     paused.click(timeout=5_000)
-    if not _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').is_checked(): raise OfferError("setting_form_changed")
-    form = page.locator(f'form[action="{path}"]')
-    if form.count() != 1: raise OfferError("setting_form_changed")
+    if not _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').is_checked(): raise OfferError("setting_status_selection_failed")
     try:
         with page.expect_response(lambda response: urlsplit(response.url).path == path and response.request.method == "POST", timeout=10_000) as submitted:
-            form.evaluate("form => form.submit()")
+            page.evaluate("path => { const forms=[...document.forms].filter(form=>form.getAttribute('action')===path); if(forms.length!==1) throw new Error('setting_form_missing'); forms[0].submit(); }", path)
     except Exception: raise OfferError("setting_submission_uncertain") from None
     if not 200 <= submitted.value.status < 400: raise OfferError("setting_submission_rejected")
     page.wait_for_timeout(1_000)
