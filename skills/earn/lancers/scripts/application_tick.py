@@ -745,10 +745,17 @@ def _production_submitter(
         body = _visible_one(form.locator('textarea#ProposalDescription[name="data[Proposal][description]"]'))
         amount = _visible_one(page.locator('#FeeApp input[type="number"][step="1000"][max="100000000"]'))
         due = _visible_one(page.locator('#FeeApp input[type="text"]'))
+        ai_use = _visible_one(form.locator('input#ProposalAiDeclarationAiDeclaration1[name="data[ProposalAiDeclaration][ai_declaration]"][value="1"][required]'))
+        ai_use_label = _visible_one(form.locator('label[for="ProposalAiDeclarationAiDeclaration1"]'))
+        if " ".join(ai_use_label.inner_text().split()) != "生成AIを使用している / 使用するが、著作権の侵害がなく、修正の要望も対応できる":
+            raise RuntimeError("proposal_form_changed")
         if not isinstance(proposal_text, str) or not proposal_text or not isinstance(proposed_amount_minor, int) or isinstance(proposed_amount_minor, bool) or proposed_amount_minor <= 0 or _iso_date(delivery_due_on) != delivery_due_on:
             raise RuntimeError("financial_terms_required")
         milestone = _milestone_form_contract(page)
         body.fill(proposal_text)
+        ai_use_label.click()
+        if not ai_use.is_checked():
+            raise RuntimeError("proposal_form_changed")
         amount.fill(str(proposed_amount_minor))
         due.fill(delivery_due_on.replace("-", "年", 1).replace("-", "月", 1) + "日")
         for control in (amount, due):
