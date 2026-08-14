@@ -1694,9 +1694,9 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
 | canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
-| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `caacf57122154a9c9e6577cc667bae3a55517e0c` | manifest 21 files、owner 4本exact release一致・exit 0、writable file 0 |
-| Apply | launchd enabled、30分、累計`application_verified=26`、fingerprint 42、pending 0 | discovery→能力外claim→最大3探索turn→応募→公式proposal ID→ApplicationReceiptが実稼働 |
-| Apply latest reconcile | project `5584041`、¥70,000、納期`2026-08-21`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812830`へ確定。pending 1→0 | blind resend 0、receipt exactly 1 |
+| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `7cfe4ecf246f7f153ce3cb888facfa3718e5c43c` | manifest 21 files、owner 4本exact release一致、writable file 0 |
+| Apply | launchd enabled、30分、累計`application_verified=29`、fingerprint 48、pending 0 | 全public detail→semantic bid/no-bid→最大3探索turn→最大1応募→公式proposal ID→ApplicationReceiptが実稼働 |
+| Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
 | capacity | exact release `621e13b39…`はfresh `contracts.json`とJapan dayのApplicationReceiptを読むG3C gateを稼働。live decisionは当日0件・active contract 0でallow | 10件到達を作るための不要応募はせず、自然到達時の`daily_quota_reached`を継続観測する |
 | Sales source | Work Sync live kickはexit 0。2026-08-15の公式再観測ではboard `9024494`の最新messageは`58931455`、seller-last、`is_required_reply=false`。project working 0、monthly contract 0、monthly offer 0 | reply transport、intent、公式message ID readback、handled dedupeは稼働。現在送るべきbuyer actionも承諾すべきofferもなく、effect 0が正しい |
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
@@ -2074,7 +2074,9 @@ category label list、keyword、DOM別parserは増やさない。
 **PLAN SIZE:** production 1 file、約6–10行。新request、model、schemaは0。
 
 **DONE EVIDENCE:** public probeでwriting `5586553`の応募質問と、transcription `5586221`の「文字起こしと整文」の両方がplanner
-descriptionへ入る。次のexact owner proposalは見えている全必須scopeを明示し、未提示inputを提供済みと仮定しない。
+descriptionへ入る。exact ownerは次の`5586218`でeligibleを19件中1件まで絞り、一度だけsubmitする。次wakeはsubmit 0で公式proposal ID
+`27812863`を取得し、pending 1→0、ApplicationReceipt 28→29となる。公式own-proposalは「第462回～第463回」の音声を正確に
+文字起こしし、その後読みやすく整文すると全必須scopeを明示し、未提示の文字起こし原稿を提供済みと仮定しない。
 
 production release `a20eaad4a345cffbef9be10870a2ef05535d170b`の最初のowner wakeは、旧2件停止を越えて
 `observed=21 / eligible=8`へ進み、先頭`5586766`を公式`provider_terminal_blocked`としてsubmit 0でclaimした。
