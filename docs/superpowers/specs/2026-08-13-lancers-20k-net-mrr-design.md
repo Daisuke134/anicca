@@ -1987,6 +1987,34 @@ atomic追加する。default ownerだけ最大3 discovery/planner turnを行い�
 immutable releaseのwritable fileは0である。最初のpositive candidateでは同じIDの公式detail readbackがfunding・amount・scope・dueを
 確認した後だけContractReceiptを一意発行し、Paid queueへ昇格する。
 
+### 18.11 Apply conversion qualityの先頭slice
+
+**USER OUTCOME:** 応募数を増やすのではなく、buyerが「このsellerなら全scopeを完遂できる」と判断できる案件へだけ応募し、
+返信・選定・ContractReceiptへ進む確率を上げる。
+
+**CURRENT OBSERVATION:** 認証済み公式`/mypage/proposals`を100件表示で直接観測すると、応募26件は募集中22、選定中3、
+cancel 1、進行中0である。多くは締切前なので落選26件とは断定しない。一方、応募対象にはB2B SNS運用だけでなく、営業closer、
+経理、倉庫robot、blockchain game economy、英語native必須、動画編集、物理figure塗装等が含まれ、Work Syncのbuyer-last 0、
+公式contract candidate 0である。
+
+**ROOT CAUSE:** 現行plannerは`submit_required`と`hard_prohibited`の二択である。違法・物理・必須live等のhard prohibitionでなければ、
+全必須scopeを実際に完遂できるか、買い手にcredible fitを示せるか、scopeと報酬が採算に合うかにかかわらずsubmitへ送る。
+Coconalaの同じ二択contractを、より広いLancers keyword検索面へそのまま適用した差分が原因であり、柔軟性ではなくnormalなbid/no-bidが
+欠落している。Lancers公式lancer guideも、依頼内容、残り時間、依頼金額を確認し「提案できるか検討」するよう求める。
+
+**NEXT DIRECT ACTION:** 既存plannerへLancers固有の`skip_not_fit`を1つ追加する。案件全文から、現在の自律delivery systemが
+全必須成果物を正直に完成できず一部scopeしか対応できない、未保有の個人経験・属性を選定理由として必須要求される、またはscope・
+期限・報酬から正のmarginで完遂できない時だけ選ぶ。keyword、title category、経験語の単独一致、固定最低価格で判断しない。
+理由は短いsemantic reasonと公開本文の連続exact excerptを返し、proposal・price・dateはnullにする。validated
+`skip_not_fit`は既存application fingerprintへdurable claimし、同じ案件を次wakeで再応募しない。default ownerの最大3探索turnと
+一tick最大1応募は維持する。shared Coconala schemaは変更せず、Lancersのruntime schemaだけ拡張する。
+
+**PLAN SIZE:** production 1 file、約25–35行。新schema、DB、service、scheduler、keyword listは0。
+
+**DONE EVIDENCE:** exact-release Application owner自身がofficial public sourceを読み、not-fit candidateを外部effect 0でclaimし、
+同wake内にfit candidateがあれば最大1件だけ公式proposal IDとApplicationReceiptへ進む。not-fitだけなら正直なno-opでexit 0。
+次wakeの同project duplicate effect 0、pending/state valid、既存receipt不変、Telegramは「能力・採算が合わず見送り」と自然文投影する。
+
 production release `a20eaad4a345cffbef9be10870a2ef05535d170b`の最初のowner wakeは、旧2件停止を越えて
 `observed=21 / eligible=8`へ進み、先頭`5586766`を公式`provider_terminal_blocked`としてsubmit 0でclaimした。
 fingerprintは31→41、pendingは0、ApplicationReceiptは25であり、plannerが検証した能力外とprovider受付不能を次wakeで
