@@ -112,7 +112,9 @@ def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, An
     active = [listing_id for listing_id in listing_ids if _setting_status(page, listing_id) == "active"]
     if not active: return {"superseded_active_count": 0, "status_effect_count": 0}
     listing_id = active[0]
-    _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').check()
+    paused = page.locator('label[for="ProjectPlanStatusFormStatusPaused"]')
+    if paused.count() != 1: raise OfferError("setting_form_changed")
+    paused.click(timeout=5_000)
     save = page.get_by_role("button", name="保存", exact=True)
     if save.count() != 1: raise OfferError("setting_form_changed")
     try: save.click(timeout=5_000, no_wait_after=True)
@@ -202,7 +204,7 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
             if apply and result.get("ok") is True and result.get("aligned") is True: _write_receipt(Path(state_path), product)
     except OfferError as error: result = {"ok": False, "logged_in": logged_in, "error": str(error)}
     except Exception as error:
-        print(f"storefront_offer:{type(error).__name__}:{error}", file=sys.stderr)
+        print(f"storefront_offer:{type(error).__name__}", file=sys.stderr)
         result = {"ok": False, "logged_in": logged_in, "error": "account_lock_busy" if "LockBusy" in type(error).__name__ else "offer_unavailable"}
     finally:
         try:
