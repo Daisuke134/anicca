@@ -295,6 +295,8 @@ def _contract_sources(page: Any) -> dict[str, int]:
         raise SourceFailure("contract_source_unavailable")
     monthly_ids = []
     for href in monthly["hrefs"]:
+        if href == "/monthly_work_contracts/lancer/offers":
+            continue
         match = re.fullmatch(r"/monthly_work_contracts/lancer/([0-9]+)", str(href or ""))
         if match is None:
             raise SourceFailure("contract_source_unavailable")

@@ -94,7 +94,7 @@ class WorkSyncTests(unittest.TestCase):
                 if self.url.endswith("/mypage/proposals/all/working"):
                     rows = [{"href": "/work/detail/7", "status": "進行中"}]
                     return rows * (2 if self.duplicate else 1)
-                return {"empty": False, "hrefs": ["/monthly_work_contracts/lancer/9"]}
+                return {"empty": False, "hrefs": ["/monthly_work_contracts/lancer/offers", "/monthly_work_contracts/lancer/9"]}
 
         self.assertEqual(sync._contract_sources(Page()), {"project_working_count": 1, "monthly_contract_count": 1})
         with self.assertRaisesRegex(sync.SourceFailure, "contract_source_conflict"):
