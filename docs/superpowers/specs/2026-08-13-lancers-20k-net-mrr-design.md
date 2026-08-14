@@ -1694,8 +1694,8 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
 | canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
-| installed release | `deployment.json`とBrowser、Application、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `9045bfeace618ed2e1fabf92d4ea87e201fb406e` | owner 5本exact release一致、manifest 21 files一致、release writable file 0 |
-| production browser | launchd `ai.anicca.lancers-revenue-browser`が専用profileとloopback`:9227`をPID `88340`でsole ownership。RunAtLoad、KeepAlive、exact working directoryを確認 | CDP endpoint live。応答不能Lancers targetを作るE2Eでもtimeout→close→一回retryで12.59秒復帰、targetはabout:blank一枚へ戻る |
+| installed release | `deployment.json`とBrowser、Application、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `8a8350f93dde36b469c07f6c07b133f93007431c` | owner 5本exact release一致、manifest 21 files一致、release writable file 0 |
+| production browser | launchd `ai.anicca.lancers-revenue-browser`が専用profileとloopback`:9227`をPID `22242`でsole ownership。RunAtLoad、KeepAlive、exact working directoryを確認 | CDP endpoint live。応答不能Lancers targetを作るE2Eでもtimeout→close→一回retryで12.59秒復帰、targetはabout:blank一枚へ戻る |
 | Apply | launchd enabled、30分、累計`application_verified=30`、fingerprint 98、pending 0 | recovery後のproduction ownerは公開20件、eligible 0、`no_eligible_project`、submit 0、exit 0。application/ledgerは応募effectなし |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
 | capacity | recovery後のWork Syncがfresh `contracts.json`を再生成し、source complete、active contract 0 | Application gateは再びallow。契約0でもstale sourceを無視して応募しないfail-closed contractを維持 |
@@ -2359,12 +2359,18 @@ offerが届き、sellerは「仕事内容」「月額報酬」を確認し、不
 FAQ https://www.lancers.jp/faq/M0002/807 は承諾時に契約開始・仮払い完了、承諾期限3日とする。公式empty pageにはpositive detail/formが
 存在しないため、未観測selectorで承諾effectを先に実装しない。
 
-**NEXT DIRECT ACTION:** 既存`_contract_sources`が同じowned pageでoffer一覧もGETする。exact empty markerとnumeric detail hrefを相互検証し、
+**NEXT DIRECT ACTION:** 完了。既存`_contract_sources`が同じowned pageでoffer一覧もGETする。exact empty markerとnumeric detail hrefを相互検証し、
 `incoming_monthly_offer_count`とsanitized `incoming_monthly_offers[{provider_id,detail_path}]`を既存`contracts.json`へ保存する。
 nonemptyなのにexact href 0、duplicate ID、empty markerとの矛盾はsource failureとし0に変換しない。Telegramはincoming offer countを表示する。
 provider POST、click、承諾intent、ledger appendはこのsliceでは0。
 
 **PLAN SIZE:** production 2 files、約25–40行。既存`work_sync.py`と`telegram_report.py`だけ。新DB、schema、service、scheduler、test fileは0。
 
-**DONE EVIDENCE:** 未完。production owner二回wakeでoffer source complete 0、reply 0、contract 0、state/ledger不変、Telegram自然文、
-second-wake duplicate effect 0を確認する。positive offerの条件判断・承諾・active/funded readbackは次sliceに残す。
+**DONE EVIDENCE:** commit / exact release `8a8350f93dde36b469c07f6c07b133f93007431c`。manifest 21 files一致、writable 0、
+Browser / Application / Storefront / Work Sync / Telegramの5 ownerは同じimmutable working directoryへ収束する。Work Sync production ownerは
+二回連続exit 0で、公式incoming monthly offer 0、sanitized rows `[]`、reply 0、contract 0、finance source completeを返す。
+Application、receipt ledger、Sales stateのSHA-256は二wake前後で一致する。
+
+Telegram ownerは「公式会話1件 / 返信必要0件 / 未読0件 / 月額オファー0件 / 契約候補0件」をprovider message ID `18812`へ
+自然文配信する。同一snapshotのsecond wakeはoutbox `1182→1182`、enqueue / attempted / deliveredすべて0である。positive offerの
+条件判断・承諾・active/funded readbackは、未観測のformを推測してclickせず次sliceに残す。
