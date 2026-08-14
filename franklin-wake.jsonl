@@ -27714,3 +27714,10 @@
 {"ts":1786715702,"wake_id":"00MST0EB70565C6A914C20465C","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786715833,"wake_id":"00MST0H4LT5F325ECBBA604F86","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
 {"ts":1786715962,"wake_id":"00MST0JVYEFD4439E946A24DAA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786716092,"wake_id":"00MST0MOATD981DEADE7EC4E67","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786716220,"wake_id":"00MST0PFD52543563CBDB44127","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786716351,"wake_id":"00MST0S7U8D18C0BED2E7A4B27","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786716482,"wake_id":"00MST0V0XYCD38AB41D6A84A4A","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana developer bounty platforms paying USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced fo"}
+{"ts":1786716611,"wake_id":"00MST0XSVB3FDA7409A89B4AB0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786716740,"wake_id":"00MST10KLG8B68E518420C4EB4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786716868,"wake_id":"00MST13AYKE69EA8B20BED4D9F","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
