@@ -2121,3 +2121,25 @@ idempotency conflictになるため、event keyのformat namespaceだけを`huma
 ContractReceipt・PaymentReceiptがない状態を受注・売上として表示しない。直後の同一snapshot wakeはoutbox件数
 `1168→1168`、`enqueued=0 / attempted=0 / delivered=0`、exit 0で、同じ自然文を再送しない。四ownerは同じrelease、
 manifest 21 files、immutable writable file 0である。このsliceは完了し、次の先頭はbuyer-last/ContractReceiptの実event観測である。
+
+### 18.16 Storefront demand receipt
+
+**USER OUTCOME:** 公開しているだけのStorefrontを売上loopと呼ばず、検索表示→詳細閲覧→お気に入り→相談→注文のどこで止まるかを
+各owner wakeの公式値で追い、一度に一変数だけ改善できる。
+
+**CURRENT OBSERVATION:** public page `https://www.lancers.jp/menu/detail/1338228`はcanonical title、3価格、spot/3か月/6か月route、
+お気に入り0を返す。認証済み公式`/myplan`のcanonical cardはtooltip labelと値を
+`検索結果の表示人数=1 / パッケージの閲覧人数=0 / お気に入り=0 / 相談数=0 / 注文数=0 / 満足=0 / 残念=0`として返す。
+既存Storefront ownerは同じcardを公式inventory確認に使うが、content alignment後の`listing.json`へ需要counterを保存しない。
+そのため7日後のkeep/revertをowner自身のdurable before/afterで判断できない。
+
+**NEXT DIRECT ACTION:** 新crawler、analytics service、DB、schedulerを作らず、既存Storefront ownerの同じ認証pageから売上funnelに必要な
+最初の5値だけをexact tooltip labelで読む。non-negative integer、canonical listing ID、一意labelを検証し、既存`listing.json` receiptへ
+`demand`としてatomic保存する。満足/残念は最初の注文後に必要になる品質指標で、現在のvisibility bottleneckには追加しない。
+readback failureは古いcomplete receiptを上書きせず、外部変更を増やさない。
+
+**PLAN SIZE:** production 1 file、約20–30行。既存browser、account lock、receipt writerを再利用する。
+
+**DONE EVIDENCE:** exact Storefront owner自身がcanonical listing `1338228`を公式readbackし、`listing.json`へ
+`search_impressions=1 / detail_views=0 / favorites=0 / inquiries=0 / orders=0`と新しい`observed_at`を保存する。
+content/status effectは0、public contentと3価格/3routeは一致、次wakeもcounter同値なら外部mutation 0である。
