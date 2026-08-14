@@ -451,6 +451,7 @@ def _source_error(error: BaseException) -> str:
 
 
 def collect_snapshot(*, application_log: Path, state_path: Path, ledger_database: Path, storefront: object = None, storefront_log: Path = STOREFRONT_LOG, now: object = None, ledger_events: object = None) -> dict[str, object]:
+    del storefront_log
     observed = read_last_json(application_log)
     source_time = _source_timestamp(observed)
     events = ledger_events
@@ -460,15 +461,11 @@ def collect_snapshot(*, application_log: Path, state_path: Path, ledger_database
         except Exception:
             events = ()
     verified, official = _verified(events)
-    latest_storefront = read_last_json(storefront_log)
     if storefront is None:
         try:
             storefront = read_storefront(Path(state_path))
         except Exception as error:
             storefront = {"error": _source_error(error)}
-    if isinstance(latest_storefront, Mapping) and isinstance(latest_storefront.get("error"), str):
-        storefront = dict(storefront) if isinstance(storefront, Mapping) else {}
-        storefront["error"] = latest_storefront["error"]
     return build_snapshot(application=observed, pending_count=_pending_count(Path(state_path)), cumulative_verified=verified, storefront=storefront, source_observed_at=source_time, official_readback_observed_at=official)
 
 

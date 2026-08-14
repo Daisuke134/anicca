@@ -1530,6 +1530,8 @@ blind resendなしのread-only reconcileで公式proposal ID `27810514`を取得
 discover→judge→proposal→submit→official readback→ledgerはliveで実証済みである。
 reporterは古いapplication tickだけを読むと、reconcile後も`submission_uncertain`を残すため、validated stateの
 `pending=0`を優先してこのstale blockerを消す。receipt累計15、pending 0、blocker noneを状態変化として一度だけ送る。
+同様に、現在の公式storefront readが成功した時は古いmutation logの`listing_readback_mismatch`で上書きしない。
+現在の公式sourceが失敗した時だけstorefront blockerを出す。
 
 次の先頭TODOは、同じprojectのbuyer replyを公式sourceから検知し、reply一件をclaimして月額offerを送り、
 公式contract IDをreadbackするSales laneである。応募だけでは売上ではなく、ContractReceipt、DeliveryReceipt、
