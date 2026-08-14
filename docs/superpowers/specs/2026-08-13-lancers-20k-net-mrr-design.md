@@ -1520,3 +1520,15 @@ LinkedIn=2、B2Bマーケティング=0、AI活用=1、継続依頼=19、長期=
 `hard_prohibited`またはprovider上の候補不在を具体的に報告することである。応募は売上ではない。
 残るmoney loopは、reply検知→月額offer/contract readback→bounded fulfillment→delivery readback→
 PaymentReceipt/fee/cost/bank reconciliationの順で、一件の上流receiptを得るたび一laneずつONにする。
+
+実装・本番E2Eはexact release `4fba401baa257532b6d1e675fc7ed97c2db0233f`で完了する。
+Application・Telegram reporting・Work syncの3 ownerはこの同一releaseへ収束する。最初のkickは
+`X運用`の公開候補0件を正直に返す。fallback導入後のkickは次検索面で`observed=2 / submit_required=2`、
+project `5586109`を最大一件だけprovider境界へ送り、同tickのreadbackは`submission_uncertain`となる。
+blind resendなしのread-only reconcileで公式proposal ID `27810514`を取得し、pendingは`1→0`、
+`ApplicationReceipt/application_verified`は`14→15`となる。これによりApplication laneの
+discover→judge→proposal→submit→official readback→ledgerはliveで実証済みである。
+
+次の先頭TODOは、同じprojectのbuyer replyを公式sourceから検知し、reply一件をclaimして月額offerを送り、
+公式contract IDをreadbackするSales laneである。応募だけでは売上ではなく、ContractReceipt、DeliveryReceipt、
+PaymentReceiptの順に後段を閉じるまでMRRは増えたと報告しない。
