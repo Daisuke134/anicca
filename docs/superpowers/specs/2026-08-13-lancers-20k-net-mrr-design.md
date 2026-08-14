@@ -1693,8 +1693,8 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
-| canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じspec更新へ収束し、installed production commit `829824532eae871bc86835bbd087f60b40fc6ae0`はその到達可能な直前runtime release | specだけが先行し、production code bytesのbranch forkなし |
-| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `829824532eae871bc86835bbd087f60b40fc6ae0` | manifest 21 files、owner 4本exact release一致・exit 0 |
+| canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
+| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `caacf57122154a9c9e6577cc667bae3a55517e0c` | manifest 21 files、owner 4本exact release一致・exit 0、writable file 0 |
 | Apply | launchd enabled、30分、累計`application_verified=26`、fingerprint 42、pending 0 | discovery→能力外claim→最大3探索turn→応募→公式proposal ID→ApplicationReceiptが実稼働 |
 | Apply latest reconcile | project `5584041`、¥70,000、納期`2026-08-21`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812830`へ確定。pending 1→0 | blind resend 0、receipt exactly 1 |
 | capacity | exact release `621e13b39…`はfresh `contracts.json`とJapan dayのApplicationReceiptを読むG3C gateを稼働。live decisionは当日0件・active contract 0でallow | 10件到達を作るための不要応募はせず、自然到達時の`daily_quota_reached`を継続観測する |
@@ -1981,10 +1981,11 @@ atomic追加する。default ownerだけ最大3 discovery/planner turnを行い�
 
 **PLAN SIZE:** production 1 file、約15–25行。spec以外のsupport fileは0。既存state JSONへ後方互換なfieldを1つ追加する。
 
-**DONE EVIDENCE:** exact-release Work Sync owner自身がexit 0で公式sourceを観測し、`contracts.json`が
-`source_complete=true`、count整合、sanitized `contract_candidates`（現在は空配列）をatomic保存する。application state、receipt ledger、
-provider effectは変化0。最初のpositive candidateでは同じIDの公式detail readbackがfunding・amount・scope・dueを確認した後だけ
-ContractReceiptを一意発行し、Paid queueへ昇格する。
+**DONE EVIDENCE:** exact-release `caacf57122154a9c9e6577cc667bae3a55517e0c`のWork Sync owner自身がexit 0で公式sourceを観測し、
+`contracts.json`を`source_complete=true`、project 0、monthly 0、Storefront 0、count 0、sanitized
+`contract_candidates=[]`としてatomic保存する。Application stateとreceipt ledgerのSHA-256は前後一致し、provider effectは0、
+immutable releaseのwritable fileは0である。最初のpositive candidateでは同じIDの公式detail readbackがfunding・amount・scope・dueを
+確認した後だけContractReceiptを一意発行し、Paid queueへ昇格する。
 
 production release `a20eaad4a345cffbef9be10870a2ef05535d170b`の最初のowner wakeは、旧2件停止を越えて
 `observed=21 / eligible=8`へ進み、先頭`5586766`を公式`provider_terminal_blocked`としてsubmit 0でclaimした。
