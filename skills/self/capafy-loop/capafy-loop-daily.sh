@@ -22,6 +22,8 @@ if [ "${CAPAFY_LOOP_REPORTING_PROBE_ONLY:-0}" = "1" ]; then
 fi
 RUN_AGENT="${CAPAFY_RUN_AGENT:-$SCRIPT_DIR/../../earn/marketing-engine/run_agent.sh}"
 PUBLISH_LIST="${CAPAFY_PUBLISH_LIST:-$HOME/.openclaw/skills/capafy-autopublish/vendor/capafy-publisher/packager.py}"
+PORTFOLIO_REFRESH="${CAPAFY_PORTFOLIO_REFRESH:-$SCRIPT_DIR/../../earn/capafy-marketing/scripts/capafy_portfolio.py}"
+PORTFOLIO_STATE="${CAPAFY_PORTFOLIO_STATE:-$HOME/.openclaw/state/capafy-portfolio.json}"
 LOG="$HOME/.openclaw/logs/capafy-loop-daily.log"
 mkdir -p "$(dirname "$LOG")"
 echo "=== capafy-loop-daily run $(date '+%F %T %Z') ===" >>"$LOG"
@@ -56,6 +58,12 @@ print(len(a),count("online"),count("review_rejected"),count("draft"),sum(not x["
   exit 1
 fi
 IFS=$'\t' read -r INVENTORY_TOTAL ONLINE_COUNT REJECTED_COUNT DRAFT_COUNT NEVER_ONLINE_COUNT <<<"$INVENTORY_COUNTS"
+PORTFOLIO_COMMAND=refresh
+[ -f "$PORTFOLIO_STATE" ] || PORTFOLIO_COMMAND=snapshot
+if ! printf '%s' "$INVENTORY_READBACK" | python3 "$PORTFOLIO_REFRESH" "$PORTFOLIO_COMMAND" --inventory-json - --output "$PORTFOLIO_STATE" >>"$LOG" 2>&1; then
+  echo "=== capafy-loop-daily blocked: portfolio status refresh failed ===" >>"$LOG"
+  exit 1
+fi
 unset CAPAFY_BLOCK_NEW_AGENT
 if [ "$NEVER_ONLINE_COUNT" -ge 5 ]; then
   export CAPAFY_BLOCK_NEW_AGENT=1

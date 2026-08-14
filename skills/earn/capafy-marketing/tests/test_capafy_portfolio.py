@@ -21,6 +21,8 @@ def inventory_agents() -> list[dict]:
             "desc": f"Description {index}",
             "agentType": "run_online" if index < 25 else "download",
             "agentStatus": status,
+            "hasOnlineVersion": status == "online",
+            "latestAgentVersionId": str(2000000000 + index),
             "updatedAt": 1785000000000 + index,
             "sales": None,
         }
@@ -50,6 +52,10 @@ def test_snapshot_preserves_all_rows_unknown_sales_and_no_business_judgment() ->
         "rejected": 1,
     }
     assert all(product["platform_sales"] is None for product in snapshot["products"])
+    assert [
+        (p["agent_status"], p["has_online_version"], p["latest_agent_version_id"])
+        for p in snapshot["products"]
+    ] == [(a["agentStatus"], a["hasOnlineVersion"], a["latestAgentVersionId"]) for a in inventory_agents()]
     assert all(product["decision"] == "unaudited" for product in snapshot["products"])
     assert all(product["purchase_model"] == "undecided" for product in snapshot["products"])
     assert all(product["recurring_mechanism"] is None for product in snapshot["products"])
@@ -174,6 +180,8 @@ def test_refresh_preserves_audit_fields_and_adds_new_product_unaudited() -> None
             "desc": "Buyer-run Download kit",
             "agentType": "download",
             "agentStatus": "under_review",
+            "hasOnlineVersion": False,
+            "latestAgentVersionId": "2085626386737000000",
             "updatedAt": 1785626386737,
             "sales": None,
         }
@@ -201,6 +209,22 @@ def test_refresh_preserves_audit_fields_and_adds_new_product_unaudited() -> None
         "draft": 1,
         "rejected": 1,
     }
+    assert portfolio.validate_snapshot(refreshed) == []
+
+
+def test_refresh_upgrades_legacy_registry_with_remote_identity() -> None:
+    agents = inventory_agents()
+    existing = portfolio.build_snapshot(
+        agents, company_projection(), "2026-08-02T12:00:00Z"
+    )
+    for product in existing["products"]:
+        for field in portfolio.REMOTE_IDENTITY_FIELDS:
+            product.pop(field)
+
+    refreshed = portfolio.refresh_snapshot(
+        existing, agents, company_projection(), "2026-08-02T13:00:00Z"
+    )
+
     assert portfolio.validate_snapshot(refreshed) == []
 
 

@@ -211,10 +211,8 @@ def test_daily_reconciles_before_full_first_version_queue_action_selection(tmp_p
         "from pathlib import Path\n"
         "calls=Path(os.environ['INVENTORY_CALLS']); calls.write_text(str(int(calls.read_text())+1) if calls.exists() else '1')\n"
         "Path(os.environ['ORDER_MARKER']).write_text('ready' if Path(os.environ['CAPAFY_RECONCILE_LEDGER']).exists() else 'missing')\n"
-        "agents=[{'agentStatus':'online','hasOnlineVersion':True} for _ in range(21)]\n"
-        "agents += [{'agentStatus':'review_rejected','hasOnlineVersion':False} for _ in range(5)]\n"
-        "agents += [{'agentStatus':'review_rejected','hasOnlineVersion':True} for _ in range(4)]\n"
-        "agents += [{'agentStatus':'draft','hasOnlineVersion':True} for _ in range(2)]\n"
+        "statuses=[('online',True)]*21+[('review_rejected',False)]*5+[('review_rejected',True)]*4+[('draft',True)]*2\n"
+        "agents=[{'agentId':str(1000000000+i),'agentStatus':s,'hasOnlineVersion':v,'latestAgentVersionId':str(2000000000+i),'updatedAt':1785000000000+i} for i,(s,v) in enumerate(statuses)]\n"
         "print(json.dumps({'agents':{'list':agents}})); raise SystemExit(int(os.environ.get('INVENTORY_EXIT','0')))\n"
     )
     guard_probe = tmp_path / "guard-probe.py"
@@ -263,6 +261,7 @@ def test_daily_reconciles_before_full_first_version_queue_action_selection(tmp_p
         "SYNC_CALLS": str(calls),
         "CAPAFY_RUN_AGENT": str(runner),
         "CAPAFY_PUBLISH_LIST": str(publish_list),
+        "CAPAFY_PORTFOLIO_STATE": str(tmp_path / "portfolio.json"),
         "CAPAFY_PUBLISHER_ROOT": str(Path.home() / ".openclaw/skills/capafy-autopublish/vendor/capafy-publisher"),
         "RUN_AGENT_MARKER": str(tmp_path / "run-agent-marker"),
         "GUARD_PROBE": str(guard_probe),
@@ -299,6 +298,9 @@ def test_daily_reconciles_before_full_first_version_queue_action_selection(tmp_p
     assert "capafy_packaging_decision.py" in prompt
     assert "missing economics must end as no_op or failure" in prompt
     assert (tmp_path / "inventory-calls").read_text() == "1"
+    synced = json.loads((tmp_path / "portfolio.json").read_text())
+    assert len(synced["products"]) == 32
+    assert sum(not p["has_online_version"] for p in synced["products"]) == 5
 
     Path(env["RUN_AGENT_MARKER"]).unlink()
     env["INVENTORY_EXIT"] = "7"

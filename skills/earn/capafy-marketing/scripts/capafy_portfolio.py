@@ -28,6 +28,9 @@ TOP_FIELDS = {
 }
 PRODUCT_FIELDS = {
     "agent_id",
+    "agent_status",
+    "has_online_version",
+    "latest_agent_version_id",
     "name",
     "description",
     "product_type",
@@ -56,6 +59,12 @@ STATUSES = {
     "review_rejected": "rejected",
     "rejected": "rejected",
     "banned": "rejected",
+    "offline": "rejected",
+}
+REMOTE_IDENTITY_FIELDS = {
+    "agent_status",
+    "has_online_version",
+    "latest_agent_version_id",
 }
 RECURRING = {
     "repeated_workflow",
@@ -133,15 +142,30 @@ def build_snapshot(
     agents: list[dict], company_projection: dict, observed_at: str
 ) -> dict:
     products = []
-    for agent in agents:
+    for index, agent in enumerate(agents):
         agent_id = str(agent.get("agentId") or "")
-        status = STATUSES.get(str(agent.get("agentStatus") or ""))
+        agent_status = str(agent.get("agentStatus") or "")
+        status = STATUSES.get(agent_status)
+        has_online_version = agent.get("hasOnlineVersion")
+        latest_agent_version_id = agent.get("latestAgentVersionId")
         updated_at = int(agent.get("updatedAt") or 0)
-        if not agent_id or status is None or updated_at <= 0:
-            continue
+        if (
+            not agent_id
+            or status is None
+            or type(has_online_version) is not bool
+            or (
+                latest_agent_version_id is not None
+                and (not isinstance(latest_agent_version_id, str) or not latest_agent_version_id)
+            )
+            or updated_at <= 0
+        ):
+            raise ValueError(f"inventory row {index} has invalid remote identity")
         products.append(
             {
                 "agent_id": agent_id,
+                "agent_status": agent_status,
+                "has_online_version": has_online_version,
+                "latest_agent_version_id": latest_agent_version_id,
                 "name": str(agent.get("name") or ""),
                 "description": str(agent.get("desc") or ""),
                 "product_type": str(agent.get("agentType") or "unknown"),
@@ -190,10 +214,22 @@ def refresh_snapshot(
     observed_at: str,
 ) -> dict:
     """Refresh remote facts while preserving cited governance for matching products."""
+    refreshed = build_snapshot(agents, company_projection, observed_at)
+    refreshed_by_id = {
+        product["agent_id"]: product for product in refreshed["products"]
+    }
+    if isinstance(existing, dict) and isinstance(existing.get("products"), list):
+        for product in existing["products"]:
+            if not isinstance(product, dict):
+                continue
+            remote = refreshed_by_id.get(product.get("agent_id"))
+            if remote is None:
+                continue
+            for field in REMOTE_IDENTITY_FIELDS:
+                product.setdefault(field, remote[field])
     existing_errors = validate_snapshot(existing)
     if existing_errors:
         raise ValueError("existing portfolio is invalid: " + "; ".join(existing_errors))
-    refreshed = build_snapshot(agents, company_projection, observed_at)
     governed_by_id = {
         product["agent_id"]: product for product in existing["products"]
     }
@@ -237,7 +273,7 @@ def validate_snapshot(snapshot: dict) -> list[str]:
             errors.append(f"{prefix} must be an object")
             continue
         extra = sorted(set(product) - PRODUCT_FIELDS)
-        missing = sorted(PRODUCT_FIELDS - set(product))
+        missing = sorted((PRODUCT_FIELDS - REMOTE_IDENTITY_FIELDS) - set(product))
         if extra:
             errors.append(f"{prefix} unsupported fields: {', '.join(extra)}")
         if missing:
@@ -255,6 +291,16 @@ def validate_snapshot(snapshot: dict) -> list[str]:
             errors.append(f"{prefix}.observed_status is invalid")
         else:
             calculated[status] += 1
+        if REMOTE_IDENTITY_FIELDS & set(product):
+            if product.get("agent_status") not in STATUSES:
+                errors.append(f"{prefix}.agent_status is invalid")
+            if type(product.get("has_online_version")) is not bool:
+                errors.append(f"{prefix}.has_online_version must be boolean")
+            version_id = product.get("latest_agent_version_id")
+            if version_id is not None and (
+                not isinstance(version_id, str) or not version_id
+            ):
+                errors.append(f"{prefix}.latest_agent_version_id is invalid")
         if not _utc(product.get("updated_at")):
             errors.append(f"{prefix}.updated_at is invalid")
         public_url = product.get("public_url")
@@ -332,7 +378,10 @@ def _atomic_write(path: Path, snapshot: dict) -> None:
 
 def _load_inventory(args: argparse.Namespace) -> list[dict]:
     if args.inventory_json:
-        payload = json.loads(args.inventory_json.read_text(encoding="utf-8"))
+        if str(args.inventory_json) == "-":
+            payload = json.load(sys.stdin)
+        else:
+            payload = json.loads(args.inventory_json.read_text(encoding="utf-8"))
     else:
         completed = subprocess.run(
             [sys.executable, "packager.py", "publish-list"],

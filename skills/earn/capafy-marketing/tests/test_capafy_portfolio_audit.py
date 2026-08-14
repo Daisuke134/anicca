@@ -118,6 +118,8 @@ def residual_snapshot() -> dict:
             "desc": "Create a bounded buyer-run image brief.",
             "agentType": "download",
             "agentStatus": "under_review",
+            "hasOnlineVersion": False,
+            "latestAgentVersionId": "2085631800000000000",
             "updatedAt": 1785631800000,
             "sales": None,
         }
