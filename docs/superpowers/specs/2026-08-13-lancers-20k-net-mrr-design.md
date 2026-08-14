@@ -1311,8 +1311,9 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 完了 | G4C verified offer grounding | canonical storefront productと公式応募条件をsales contextへ接続し、価格・納期質問の公式値をdeterministic検査。実proposalとread-only compositionで混同0を確認 | 完了 |
 | 完了 | G3A.1 claimed-only query fallback | default queryが既処理案件だけを返した場合も次queryへ進む。liveで別query 19件→eligible 13→最大1応募→公式receiptを確認 | 完了 |
 | 完了 | G3B.4 application capability priority | Coconalaと同じくfeasibilityをpriorityより先に確定し、完成動画制作必須を`video_or_animation`、企画・構成・台本だけを応募可能として実案件で確認した。Application ownerを再開し、納品可能案件の公式receiptまで確認 | 完了 |
-| 1 | G4B ContractReceipt source | 公式browser/frontend通信から注文・仮払いsourceを先に実装し、現在0件をlive確認する。最初のcompleteなofficial contractだけをschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 2–4時間 |
-| 2 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
+| 完了 | G4B.1 official Contract source | 既存Work Syncからproject進行中、月額契約、storefront `serviceItemContract`を読み、現在0件を`source_complete=true`でlive確認。source failureを0件と混同しない | 完了 |
+| 条件待ち | G4B.2 ContractReceipt promotion | 最初のpositive sourceが持つ実ID・金額・仮払いstatus・detail URLをreadbackし、一意receiptへ昇格する。observerは5分ごとに継続する | provider positive検知時に即実行 |
+| 1 | G3C capacity quota | G4B.1のauthoritative countをdurable snapshotへ保存し、初期3社cap、tick/day quota、100% capをApplicationへ適用する | 2–4時間 |
 | 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
 | 5 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
 
@@ -1673,3 +1674,15 @@ project/listing相関、pagination、dedup、receipt bookkeepingだけを扱う�
 完了条件は、公式sourceの現在0件をlive E2Eで確認すること、source failureを0件に偽装しないこと、実provider shapeに
 基づくpositive fixtureを一意receiptへ変換できること、既存Sales replyとApplication state/ledgerを壊さないこと、三ownerを
 同一exact releaseへ再配備することである。これを閉じた後、同じofficial active contract countをG3C capacityへ接続する。
+
+公式一次資料は、projectではランサー承諾とclient仮払い後に仕事開始、packageではclient仮払い後に仕事開始、
+monthlyではoffer時に仮払いされランサー承諾で契約成立と説明する。sourceはseller accountの
+`/mypage/proposals/all/working`、`/monthly_work_contracts/lancer`、message API board detailの
+`with.serviceItemContract`である。`契約書管理`は電子契約書一覧であり、受注sourceには使わない。
+
+production exact release `03d831a217e90740ed5a65cbc7f7e99eb733fce6`のWork Sync live E2Eはexit 0、
+`source_complete=true`、`project_working_count=0`、`monthly_contract_count=0`、
+`storefront_contract_candidate_count=0`、`contract_candidate_count=0`、required reply 0を返す。
+公式monthly pageの`/offers` navigationをcontract detailと誤認した初回failureは、公式hrefと表示名を実測して除外した。
+application stateとledgerは前後不変、ApplicationReceiptは18、pending 0である。G4B.1は完了し、G4B.2はpositive
+sourceを5分observerが検知した時に実shapeで閉じる。active engineeringはG3C capacity snapshotへ進む。
