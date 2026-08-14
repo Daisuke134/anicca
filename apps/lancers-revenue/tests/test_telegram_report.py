@@ -146,6 +146,13 @@ class TelegramReportTests(unittest.TestCase):
         self.assertIn("blocker none", message)
         self.assertIn("売上: unknown", message)
         self.assertNotIn("売上: 14", message)
+    def test_reconciled_application_does_not_keep_stale_submission_blocker(self):
+        report = _load_report()
+        message = report.render_snapshot(_snapshot(report, {
+            "observed_count": 2, "eligible_count": 2, "submitted": False,
+            "verified_count": 0, "error": "submission_uncertain",
+        }, pending=0, verified=15))
+        self.assertIn("cumulative verified 15 / pending 0 / blocker none", message)
     def test_storefront_states_are_separate_and_mismatch_is_warning(self):
         report = _load_report()
         message = report.render_snapshot(_snapshot(report, {"observed_count": 1}, storefront={

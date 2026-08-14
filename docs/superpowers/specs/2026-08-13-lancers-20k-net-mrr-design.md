@@ -1528,6 +1528,8 @@ project `5586109`を最大一件だけprovider境界へ送り、同tickのreadba
 blind resendなしのread-only reconcileで公式proposal ID `27810514`を取得し、pendingは`1→0`、
 `ApplicationReceipt/application_verified`は`14→15`となる。これによりApplication laneの
 discover→judge→proposal→submit→official readback→ledgerはliveで実証済みである。
+reporterは古いapplication tickだけを読むと、reconcile後も`submission_uncertain`を残すため、validated stateの
+`pending=0`を優先してこのstale blockerを消す。receipt累計15、pending 0、blocker noneを状態変化として一度だけ送る。
 
 次の先頭TODOは、同じprojectのbuyer replyを公式sourceから検知し、reply一件をclaimして月額offerを送り、
 公式contract IDをreadbackするSales laneである。応募だけでは売上ではなく、ContractReceipt、DeliveryReceipt、
