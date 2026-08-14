@@ -27557,3 +27557,11 @@
 {"ts":1786695132,"wake_id":"00MSSO5FFH3CB9E817C176475F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786695260,"wake_id":"00MSSO86JY172B2D9F3F9D4C15","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786695392,"wake_id":"00MSSOAZRP31935B599C3042E8","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786695523,"wake_id":"00MSSODTAW20833305C5894878","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786695652,"wake_id":"00MSSOGKBUCCFFEFF98D2B450B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786695779,"wake_id":"00MSSOJAIH6E56E85AB943444F","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platforms paying USDC for AI prompt engineering or data labeling [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded "}
+{"ts":1786695907,"wake_id":"00MSSOM15U7E90BEC2CC274DA1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786696038,"wake_id":"00MSSOOU598BF2940A763F4801","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786696165,"wake_id":"00MSSORKCC0668349308EA42C3","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786696292,"wake_id":"00MSSOUA62A1FF9957CCB84679","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana freelance gig platforms paying USDC for AI prompt engineering [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake "}
+{"ts":1786696419,"wake_id":"00MSSOX0UA88906E97F7024AE3","kind":"narrate","sleep_s":120,"model":"auto"}
