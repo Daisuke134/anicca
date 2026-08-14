@@ -317,6 +317,20 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(len(calls), len(clock_calls))
         self.assertTrue(all(call["limit"] == 20 for call in calls))
 
+    def test_default_discovery_skips_a_query_containing_only_claimed_projects(self):
+        application_loop = _load_deployed_loop(); calls = []
+        responses = [
+            {"ok": True, "error": None, "opportunities": [_opportunity("5583089")]},
+            {"ok": True, "error": None, "opportunities": [_opportunity("5587000")]},
+        ]
+        def discover(**kwargs):
+            calls.append(kwargs["query"])
+            return responses.pop(0)
+        with patch.object(application_loop.status, "run_discovery", side_effect=discover), patch.object(application_loop.application_tick, "state_has_claim", side_effect=lambda _path, project_id: project_id == "5583089"):
+            result = application_loop._run_default_discovery(datetime(2026, 8, 13, 3, 0, tzinfo=timezone.utc), 20.0, Path("/tmp/application.json"))
+        self.assertEqual(calls, list(application_loop.DISCOVERY_QUERIES[:2]))
+        self.assertEqual(result["opportunities"][0]["external_id"], "5587000")
+
     def test_empty_normalized_discovery_is_noop_but_other_errors_fail(self):
         application_loop = _load_deployed_loop()
         for payload in (

@@ -124,14 +124,21 @@ def _discovery_query(value: object) -> str:
     except (TypeError, ValueError, OverflowError, OSError):
         return DEFAULT_DISCOVERY_QUERY
 
-def _run_default_discovery(tick_value: object, timeout: float) -> Mapping[str, object]:
+def _run_default_discovery(tick_value: object, timeout: float, state_path: Path) -> Mapping[str, object]:
     first = _discovery_query(tick_value)
     start = DISCOVERY_QUERIES.index(first)
     last: Mapping[str, object] = {"ok": False, "error": "no_normalized_opportunities", "opportunities": []}
     for offset in range(len(DISCOVERY_QUERIES)):
         query = DISCOVERY_QUERIES[(start + offset) % len(DISCOVERY_QUERIES)]
         last = status.run_discovery(query=query, limit=MAX_OPPORTUNITIES, timeout=timeout)
-        if last.get("ok") is True or last.get("error") != "no_normalized_opportunities":
+        if last.get("ok") is True:
+            opportunities = last.get("opportunities")
+            if isinstance(opportunities, Sequence) and not isinstance(opportunities, (str, bytes, bytearray)):
+                try: remaining, _ = _filter_claimed_rows(opportunities, state_path)
+                except Exception: return last
+                if not remaining: continue
+            return last
+        if last.get("error") != "no_normalized_opportunities":
             return last
     return last
 
@@ -431,7 +438,7 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
         if evidence is not None:
             try:
                 source = discoverer or discovery
-                observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else _run_default_discovery(tick_value, timeout)
+                observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else _run_default_discovery(tick_value, timeout, Path(state_path))
             except Exception: observed = None
             if observed is None: result = ApplicationLoopResult(False, error="discovery_failed")
             elif not isinstance(observed, Mapping): result = ApplicationLoopResult(False, error="discovery_failed")
