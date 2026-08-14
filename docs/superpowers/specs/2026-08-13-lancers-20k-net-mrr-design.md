@@ -1694,14 +1694,14 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
 | canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
-| installed release | `deployment.json`とBrowser、Application、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `8a8350f93dde36b469c07f6c07b133f93007431c` | owner 5本exact release一致、manifest 21 files一致、release writable file 0 |
+| installed release | `deployment.json`とBrowser、Application、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `add41af43515bbacfa29da94733aa4a3b534912e` | owner 5本exact release一致、manifest 21 files一致、release writable file 0 |
 | production browser | launchd `ai.anicca.lancers-revenue-browser`が専用profileとloopback`:9227`をPID `22242`でsole ownership。RunAtLoad、KeepAlive、exact working directoryを確認 | CDP endpoint live。応答不能Lancers targetを作るE2Eでもtimeout→close→一回retryで12.59秒復帰、targetはabout:blank一枚へ戻る |
-| Apply | launchd enabled、30分、累計`application_verified=30`、fingerprint 98、pending 0 | recovery後のproduction ownerは公開20件、eligible 0、`no_eligible_project`、submit 0、exit 0。application/ledgerは応募effectなし |
+| Apply | launchd enabled、30分、累計`application_verified=30`、fingerprint 99、pending 0 | seller proof接続後のproduction ownerはBUYMA外部accountの商品画像加工・出品案件`5575002`を正直に見送り、全query既処理で`duplicate_project`、submit 0、exit 0。application/ledgerは応募effectなし |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
 | capacity | recovery後のWork Syncがfresh `contracts.json`を再生成し、source complete、active contract 0 | Application gateは再びallow。契約0でもstale sourceを無視して応募しないfail-closed contractを維持 |
 | Sales source | Work Sync production ownerは2連続wakeでexit 0。board `9024494`一件、required reply 0、unread 0、project/monthly/Storefront contract 0、`no_reply_required` | reply effect 0、sales/application/ledger不変。現在送るべきbuyer actionはない |
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
-| Storefront canonical | 公式inventoryは`published=1 / paused=5 / hidden=0 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式paused readback。`listing.json`も月額SNS商品`1338228`へ更新 | ¥98,000 / ¥198,000 / ¥398,000、画像、spot/3か月/6か月routeは公開page一致。second wake `status_effect_count=0` |
+| Storefront canonical | 公式inventoryは`published=1 / paused=0 / hidden=5 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式archived readback。public profile料金表もcanonical一件だけ | ¥98,000 / ¥198,000 / ¥398,000、画像、portfolio `743964`、spot/3か月/6か月routeは公開page一致。連続wake `status_effect_count=0` |
 | Storefront demand | canonical `1338228`は2連続production wakeで`action=unchanged / aligned=true / status_effect_count=0`。公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0` | owner exit 0、duplicate mutation 0、各wake後owned tab 0。7日需要実験を欠測なしで再開 |
 | Reporting | recovery後のfresh snapshotをprovider message ID `18746`へ配信。公開20、適合0、応募0、累計30、Storefront需要、会話1、契約0、入出金0、net MRR 0円を自然文表示 | owner exit 0。同一snapshot second wakeはoutbox 1181→1181、enqueue 0 |
 | Paid | ledger eventは`application_verified` 30件だけ。raw CDPで公式`/mypage/payment`を再観測し、入出金履歴0、残高0円を確認。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、positive payment rowのproduction effect/readbackは未完成。現在net MRR 0円は公式empty sourceで確定 |
@@ -1892,6 +1892,7 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 | 完了 | **Storefront canonical convergence**: productでcanonical `1338228`とsuperseded `1338229–1338233`を宣言し、一wake一mutation、presend exact-ID再観測、POST、公式status readback、canonical receiptを持つ独立30分ownerを追加。旧5件をpausedへ収束 | release `cb9ed535d…`、公式`published 1 / paused 5`、receipt `1338228`、second wake `action=unchanged / status_effect_count=0`、owner exit 0 | 完了 |
 | 完了 | **Apply acquisition outcome診断**: 10 query公式件数を分離し、validator通過済み能力外を既存claimへ保存、Coconala同様にdefault wake最大3探索turnへ進めた。Lancersのrequired生成AI宣言value 1も正直に選択する | release `829824532…`、`observed 21 / eligible 8`、provider block submit 0、次候補`5584041`一回送信、proposal `27812830`、receipt 26、pending 0、blind resend 0 | 完了 |
 | 完了 | **production browser owner recovery**: manual PID任せをやめ、既存profileと`:9227`をsole reproducible ownerへ束ねる。attach timeout時は専用profileのLancers targetだけをcloseして一度retry | release `65a08a957…`、browser PID=launchd PID `29096`、login ready。Application / Storefront / Work Sync exit 0、Storefront/Work Sync second wake effect 0、self-heal E2E 12.59秒、state/ledger不変 | 完了 |
+| 完了 | **seller proof + public catalog convergence**: 公開portfolio `743964`とpackage `1338228`をApplication判断へ接続し、旧商品5件を受付休止から公式非表示へ収束 | release `add41af43…`、no-fit送信0、旧5件archived、public料金表1件、連続Storefront wake effect 0、Application/ledger/contracts不変 | 完了 |
 | 1 | **Negotiate / Contract completion**: Coconalaのsemantic reply contractを再利用し、Apply選定、Storefront相談への返信、client-originated月額offer、仮払い済みactive contractの各公式shapeを同じSales ownerへ接続する。Lancers sellerから月額offerを作らない。イベントがない時は正常no-op | real event到着時にmessage/offer/contract exact ID、ContractReceipt、次wake duplicate reply/offer承諾 0。存在しないbuyerへのeffect 0 | 1–3日 + buyer event待ち |
 | 2 | **Paid fulfillment stage**: funded active contractだけを有限queueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
 | 3 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
@@ -2474,3 +2475,9 @@ canonical `1338228`は変更しない。
 
 **DONE EVIDENCE:** 5 ownerが同一exact release、旧5件が公式`archived`、public profile料金表がcanonical一件だけ、連続wakeの
 `status_effect_count=0`、Application state・receipt ledger・contract snapshot不変。
+
+**DONE:** production exact release `add41af43515bbacfa29da94733aa4a3b534912e`へ5 ownerを収束した。既存Storefront ownerが
+`1338229→1338230→1338231→1338232→1338233`を各wake一件ずつ`POST /myplan/<id>/setting` 302で非表示へ変更し、同じ公式settingで
+全5件`archived`、canonical `1338228`だけ`active`を確認した。後続2 wakeは`action=unchanged / superseded_visible_count=0 /
+status_effect_count=0 / exit 0`である。未ログインpublic profileを別経路で再取得し、料金表はcanonical一件、portfolio一件だけを表示する。
+Application state、ApplicationReceipt ledger、contract snapshotのSHA-256は前後一致し、listing receiptだけが最新観測時刻へ更新された。
