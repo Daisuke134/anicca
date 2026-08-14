@@ -2057,6 +2057,25 @@ expected option/labelが欠ける場合は従来どおりfail closedする。
 **DONE EVIDENCE:** exact-release owner自身が`5586221`のprovider formを通過し、最大1submit後に公式proposal IDをreadbackするか、
 providerが返す次の具体的blockerだけを報告する。AI fieldあり案件ではvalue 1のchecked readbackを維持する。
 
+### 18.14 category横断のfull-scope detail
+
+**CURRENT OBSERVATION:** category別AI field修正後、exact ownerは`5586221`へ一度だけsubmitし、次wake submit 0で公式proposal ID
+`27812861`をreadbackする。pending 1→0、ApplicationReceipt 27→28、exit 0、immutable writable file 0である。しかし公式own-proposalは
+「文字起こし原稿をもとに整文」と書き、公開依頼の必須scope「音声から文字起こし＋整文」の前半を提供済みinputと誤認する。
+
+**ROOT CAUSE:** categoryごとにmain detailのprovider labelが異なる。writingは`依頼詳細`、transcriptionは`依頼の目的・背景`である。
+現`_DetailParser`は3 labelのwhitelistなので、後者はindustry以外を取得できずteaserへfallbackする。個別labelを追加し続けるとcategory
+拡張ごとに同じ欠落を再発する。
+
+**NEXT DIRECT ACTION:** public detailの全`dt/dd` pairを、非空・label 120文字以内の同一構造として取得し、industryを含めprovider順に
+`label: value`で連結する。2,000文字head+tail、8MiB body cap、same-origin、timeout、HTML text cleaningは維持する。空detailだけfailし、
+category label list、keyword、DOM別parserは増やさない。
+
+**PLAN SIZE:** production 1 file、約6–10行。新request、model、schemaは0。
+
+**DONE EVIDENCE:** public probeでwriting `5586553`の応募質問と、transcription `5586221`の「文字起こしと整文」の両方がplanner
+descriptionへ入る。次のexact owner proposalは見えている全必須scopeを明示し、未提示inputを提供済みと仮定しない。
+
 production release `a20eaad4a345cffbef9be10870a2ef05535d170b`の最初のowner wakeは、旧2件停止を越えて
 `observed=21 / eligible=8`へ進み、先頭`5586766`を公式`provider_terminal_blocked`としてsubmit 0でclaimした。
 fingerprintは31→41、pendingは0、ApplicationReceiptは25であり、plannerが検証した能力外とprovider受付不能を次wakeで
