@@ -1641,3 +1641,10 @@ installer、py_compileが通ることに加え、公式公開本文を入力し�
 `video_or_animation`へ分類し、文章だけの動画台本controlを`submit_required`へ分類することである。その後だけ
 canonical mainのexact releaseを三ownerへ配備し、Application ownerを再enableして一回kickする。一tick最大一応募、
 durable claim、official readback、Sales/Telegram/Work Syncとの同一SHAは変更しない。
+
+実装commit `9ba34d40ec50e39c251edcf7ca1cb868cfdf5285`はproduction 1 fileのprompt 3行と既存test
+1件だけを変更する。公式公開detailを同commitのisolated exact releaseから再取得してplannerへ渡した結果、
+`5586413`は`video_or_animation`と原文引用、`5579721`も`video_or_animation`と原文引用を返す。
+完成動画の編集・生成を依頼範囲外と明記した企画・構成・台本だけのcontrolは`submit_required`を返す。
+Lancers 49 tests、agent-runner 15 tests、installer 2 tests、py_compile、diff checkは通る。
+Application ownerは本番exact release配備と実tick確認までdisabledのままである。
