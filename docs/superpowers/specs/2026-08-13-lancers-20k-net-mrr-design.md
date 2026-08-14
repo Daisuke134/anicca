@@ -224,12 +224,16 @@ acquisition は補助機能ではなく、最初に動かす **first-class prima
 ### 4.1 四つの lane を並列に実行する architecture
 
 business state は entity ごとに直線で進むが、実行は lane ごとの scheduled loop に分ける。
-各 loop は**一つの shared durable ledger/queue**だけを読む。lane や project ごとに queue、
-resident process、cron、browser lock を増やさない。
+各 lane は自分の state、receipt、provider resource identityを所有する。一つのshared business queueや
+account-wide browser mutexを四laneの必須境界にしない。handoffはimmutable receipt identityで行い、reportは
+各laneのreceiptをread-only projectionする。
 
 ```mermaid
 flowchart TB
-  Q[(一つの shared durable ledger / queue)]
+  AR[(Apply receipts)]
+  SR[(Sales receipts)]
+  DR[(Delivery receipts)]
+  PR[(Payment receipts)]
 
   subgraph L[独立して schedule される revenue lane loop]
     A[Acquisition tick<br/>owned state を scan<br/>bounded claim → 1 verified transition → exit]
@@ -238,26 +242,25 @@ flowchart TB
     P[Payment / finance tick<br/>owned state を scan<br/>bounded claim → 1 verified transition → exit]
   end
 
-  Q <--> A
-  Q <--> S
-  Q <--> F
-  Q <--> P
+  A --> AR --> S
+  S --> SR --> F
+  F --> DR --> P
+  P --> PR
 
-  A --> X[[一つの Lancers account / browser lock]]
-  S --> X
-  F --> X
-  P --> X
-  X --> Y[event-key + lease + fencing<br/>intent → effect → official readback → receipt]
-  Y --> Q
-
-  E[entity の straight state<br/>observed → application_verified<br/>→ contract_active → delivery_verified<br/>→ payment_received → net MRR] -. persisted state .-> Q
-  C[control plane<br/>supervisor / health / natural-language report] -. observe only .-> Q
+  E[各provider resource内のfence<br/>event key + intent + official readback] -. protects .-> A
+  E -. protects .-> S
+  E -. protects .-> F
+  E -. protects .-> P
+  C[control plane<br/>health / natural-language report] -. read only .-> AR
+  C -. read only .-> SR
+  C -. read only .-> DR
+  C -. read only .-> PR
 ```
 
-read/plan は lane・project をまたいで論理的に重なってよい。ただし一つの Lancers account に
-対する browser/provider mutation は共有 lock の境界で直列化し、event key、lease、fencing、
-intent/effect/readback/receipt の契約を一つの action envelope として守る。公式 readback が
-返らない遷移は verified transition ではない。
+read/planだけでなく、別provider resourceを所有するlaneの通常actionも独立して進めてよい。同一project、thread、listing、
+contractへの重複effectだけをexact provider ID、event key、intent、lease、freshness、official readbackで防ぐ。browser restartや
+認証更新のようにsession全体を実際に変更する操作だけは短いshared guardを許可する。providerの明示制限、429、session破損、
+実測lock contentionがない限りaccount-wide serializationを追加しない。公式readbackが返らない遷移はverified transitionではない。
 
 #### state ownership と handoff
 
@@ -273,12 +276,12 @@ official receipt を飛ばして次の state、金額、MRR を作らない。
 
 #### scheduling、idempotency、backpressure
 
-- 四つの lane はそれぞれ独立した scheduled tick とし、各 tick は一つの shared ledger/queue を scan して、その lane が所有する state だけを bounded batch で claim する。
+- 四つの lane はそれぞれ独立した scheduled tick とし、各 tick は自laneのstate/receiptだけをbounded batchでclaimする。
 - claim には lease と fencing を付け、各 entity は一 tick につき高々一つの verified transition だけを実行し、readback・receipt・ledger を永続化してから process が終了する。bounded batch は一つの lane の遅延や失敗が全体の queue を占有しないための上限である。
 - buyer の返信、deadline、payment、次の review を待つときは `waiting_for` と `next_tick_at` を durable state に保存する。sleep、常駐待機、数日間続く straight-shot process は使わず、future tick が再開する。
 - intent の一意 event key と at-most-once action envelope、authoritative readback、receipt の一意 key で再実行を冪等にする。不確実な effect は blind resend せず、read-only reconcile に戻す。
 - 一つの entity の失敗はその entity だけを quarantine する。一つの lane の tick が失敗しても他 lane は bulkhead の内側で継続し、acquisition が capacity backpressure で pause しても sales・fulfillment・finance は停止しない。
-- capacity は acquisition の claim/admit 上限として扱い、active contract が予約した draft-equivalent を超える応募を受け付けない。capacity/browser lock の待ち時間は観測対象であり、未測定の並列 mutation worker は追加しない。
+- capacity は acquisition の claim/admit 上限として扱い、active contract が予約した draft-equivalent を超える応募を受け付けない。resource-local fenceの待ち時間は観測対象にし、未測定のworker poolやaccount-wide limiterは追加しない。
 
 #### control plane と storefront の境界
 
@@ -1238,7 +1241,7 @@ storefront_contract_candidate_count=0`である。board `9024494`、message `589
 
 | Gate | 受入条件 | 必須証拠 |
 |---|---|---|
-| G0 定義 | MRR 式、商品境界、4 lane、shared ledger、per-entity straight state、serialized browser effect boundary、receipt 順序、安全不変条件がこの仕様と一致する | 仕様レビュー記録 |
+| G0 定義 | MRR 式、商品境界、4 lane、lane-local state/receipt、per-entity straight state、resource-local effect fence、receipt 順序、安全不変条件がこの仕様と一致する | 仕様レビュー記録 |
 | G0.5 canonical source / safe deployment | source/schema/test/launchd template/spec/plan を canonical Life Manager repo に揃え、tests と許可された一回の fresh adversarial review を通し、main に merge/push した exact commit SHA の release artifact を install して manifest/deployed SHA を記録する。worktree/feature branch/untracked `~/.local` source は実行せず、その後にだけ application service を enable する。runtime state、secret、browser session、append-only ledger、evidence は移動・削除しない | test result、レビュー記録、main commit、artifact manifest、deployed SHA、service enable の順序、runtime state 不変の確認 |
 | G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
 | G2 truthful acquisition | **完了。** storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | exact release `d63dfd1…`、Telegram message ID `15922`、同一状態の再kick 0送信 |
@@ -1328,8 +1331,6 @@ net MRR USD 20,000 は best 2–4か月、base 4–9か月、worst 9か月以上
 
 ```mermaid
 flowchart LR
-  Q[(shared durable ledger / queue)]
-
   subgraph L[独立scheduled lane]
     A[Acquisition\n検索→審査→応募→ApplicationReceipt]
     S[Sales / Contract\n返信→提案→承認→ContractReceipt]
@@ -1337,32 +1338,26 @@ flowchart LR
     M[Finance\n支払→照合→PaymentReceipt→net MRR]
   end
 
-  Q --> A --> Q
-  Q --> S --> Q
-  Q --> F --> Q
-  Q --> M --> Q
+  A --> AR[(ApplicationReceipt)] --> S
+  S --> CR[(ContractReceipt)] --> F
+  F --> DR[(DeliveryReceipt)] --> M
+  M --> PR[(PaymentReceipt)]
 
-  A -. entity handoff .-> S
-  S -. entity handoff .-> F
-  F -. entity handoff .-> M
-
-  B[one account/browser mutation lock] --- A
-  B --- S
-  B --- F
-  B --- M
-
-  C[control plane\nhealth / self-heal / natural-language report] -. observe .-> Q
+  C[control plane\nhealth / self-heal / natural-language report] -. read only .-> AR
+  C -. read only .-> CR
+  C -. read only .-> DR
+  C -. read only .-> PR
 ```
 
 entity の business state は `discovered → applied → contract_active → delivered → paid` の直線である。
-実行は上図の4 laneが独立tickで同じqueueをscanするため並列であり、projectごとの常駐loopも、
+実行は上図の4 laneが独立tickで自laneのstate/receiptをscanするため並列であり、projectごとの常駐loopも、
 全工程を待ち続けるgiant passも作らない。
 
 ### 10.2 continuous activation policy
 
 `nonstop` は、一つのprocessが常駐して無制限に応募し続ける意味ではない。各laneは短いscheduled tickで
-起動し、shared ledgerからbounded件数だけを処理し、公式readbackとreceiptを保存して終了する。
-対象がないtickは何も送信せず正常終了し、次tickを待つ。provider不確実性、capacity超過、lock競合、
+起動し、自laneのstateからbounded件数だけを処理し、公式readbackとreceiptを保存して終了する。
+対象がないtickは何も送信せず正常終了し、次tickを待つ。provider不確実性、capacity超過、resource fence競合、
 schema不適合ではfail closedし、blind retryやgate緩和を行わない。
 
 | lane | activation | schedule / bound | ONにする条件 |
@@ -1751,16 +1746,21 @@ flowchart LR
   B[Lane 2: Storefront<br/>商品→需要観測→相談<br/>一変数改善]
   N[Lane 3: Negotiate / Reply<br/>buyer-last→返信/見積/月額offer<br/>ContractReceipt]
   P[Lane 4: Paid<br/>funded work→制作/QA/納品/検収<br/>PaymentReceipt→銀行照合]
-  Q[(shared receipt ledger<br/>lane-local state namespace)]
+  AR[(Apply state / receipts)]
+  BR[(Storefront state / receipts)]
+  NR[(Negotiate state / receipts)]
+  PR[(Paid state / receipts)]
   R[$10K net MRR<br/>同じ式で$20Kへ拡張]
   C[Control plane<br/>自然言語report / health / self-heal]
 
-  A --> Q
-  B --> Q
-  Q --> N --> Q
-  Q --> P --> Q
-  P --> R
-  C -. read only .-> Q
+  A --> AR --> N
+  B --> BR --> N
+  N --> NR --> P
+  P --> PR --> R
+  C -. read only projection .-> AR
+  C -. read only projection .-> BR
+  C -. read only projection .-> NR
+  C -. read only projection .-> PR
 ```
 
 四laneはそれぞれ別owner、別schedule、別lane-local state、別provider resource identityを持ち、他laneの完了を待たずにwakeする。
@@ -1768,9 +1768,22 @@ flowchart LR
 `Apply/Storefront → Negotiate → Paid`という公式receipt依存があり、Paidは仮払い済みContractReceiptなしに仕事を始めない。
 依存をprocess待機にせずdurable stateへ置くことで、lane自体は止まらない。
 
-source取得、model判断、成果物制作は並列でよい。同一Lancers account/browserへの外部effectと直後readbackだけは短い
-account-wide lockで直列化する。同じprovider pageへ同時submitすることを「並列性」と呼ばない。shared ledger/outboxは
-四laneが同じfileを無秩序に上書きする場所ではなく、exact event keyとappend-only receiptでhandoffとdedupeを行う意図的な共有境界である。
+source取得、model判断、成果物制作だけでなく、別project、別thread、別listing、別contractを所有する通常actionも独立して
+進める。防ぐ対象はaccount全体の同時利用ではなく、同じprovider resourceへの重複effectである。各laneはowner-specific tabと
+lane-local stateを持ち、同一resourceだけをexact ID、event/action intent、freshness、official readbackでfenceする。browser restartや
+認証更新のようなsession-wide mutation以外にaccount-wide lockを要求しない。429、session破損、providerの明示制限を実測した時だけ
+最小のshared limiterを追加する。
+
+Coconalaのproduction truthも単一shared business ledgerではない。Applyは`applied.jsonl`、Storefrontは`shuppin.jsonl`、
+Negotiateは`connector-outbox.sqlite3`、Paidは`paid-progress.jsonl`等をlane-localに所有する。共通の
+`telegram-outbox.sqlite3`は通知transportでありbusiness queueではない。Lancersもこのcontractをcopyし、既存
+`marketplace-ledger.sqlite3`をimmutable receipt event storeとして再利用してよいが、全laneが待つ共有mutable queueにはしない。
+handoffは`ApplicationReceipt → ContractReceipt → DeliveryReceipt → PaymentReceipt`のidentityで行い、reportingだけがread-onlyで
+横断projectする。
+
+現行LancersにはApplication、Work Sync、Storefront観測が同じ`account_lock` helperを使う箇所がある。これはprovider規則ではなく
+既存implementation detailである。競合が収益を止めていない間はlock除去だけのrefactorをTODOにせず、今後のNegotiate/Paidを
+wake-wide lockへ入れない。Coconala Paidに残るsend→直後readbackのlegacy lockも四lane共通ruleとしてcopyしない。
 
 ### 18.4 ApplyとStorefrontから$10Kへ進むgame plan
 
@@ -1818,6 +1831,19 @@ capacityを増やす。初期獲得配分70/30はApplyに25 receipt、Storefront
 標準message envelopeはtransport非依存にする。現在はTelegram、open-source/cloud版は同じ`human_message`をEmailへ送れる。
 transportごとにbusiness判断やmessage本文を再実装しない。
 
+money summaryは二つの時間軸を混ぜず、次の四値を同時に表示する。新しいDBや計算serviceは作らず、公式
+`PaymentReceipt`のread-only projectionだけで計算する。
+
+```text
+今月入金総額 = received_atが当月の全PaymentReceipt gross（継続 + 単発）
+今月net revenue = 同じreceipt集合のgross - provider fee - AI cost - subcontract cost - refund
+今月単発売上 = 同じ当月集合のうちone-off PaymentReceipt
+現在net MRR = 対象service periodのrecurring PaymentReceiptだけを既存net MRR式で集計
+```
+
+proposal額、listing価格、未受領offerはどの値にも入れない。source completenessがない場合は`0`ではなく`不明`とする。
+当月入金とservice-period MRRは基準日が異なるため、一方から他方を差し引いて推計しない。
+
 ```text
 [Lancers][応募] 📨 1件の応募を公式確認しました
 「〇〇運用支援」へ150,000円、納期9月30日で応募し、Lancersの提案ID 12345を確認しました。
@@ -1829,7 +1855,7 @@ transportごとにbusiness判断やmessage本文を再実装しない。
 
 [Lancers][Paid] 🎉 入金を確認しました
 月額Standard契約の198,000円を受領しました。Lancers手数料、AI原価、返金を差し引いたnetは確認済み金額です。
-銀行入金との照合差額は0円です。今月のLancers net MRRは累計○円です。
+銀行入金との照合差額は0円です。今月入金総額は○円（継続○円・単発○円）、今月net revenueは○円、現在net MRRは○円です。
 ```
 
 すべてのwake、見送り、失敗、effect、readbackはdurable eventとして残す。Telegramは各laneのwakeごとに一つの自然文へ
@@ -1840,11 +1866,11 @@ transportごとにbusiness判断やmessage本文を再実装しない。
 | 順序 | 一件の作業 | 完了証拠 | 実装目安 |
 |---:|---|---|---:|
 | 1 | **exact-release + G3C収束**: `5586573 → 27812628`のreadback-only reconcileは完了。G3C behavior commit `db597450…`を含む最新mainをimmutable releaseへinstallし、Application/Work Sync/Telegramを同一SHAへ揃える | 新しいJapan dayで10件到達時に`daily_quota_reached`、owner 3本同一SHA、重複応募0。旧releaseで直前日11件まで進んだ事実を隠さない | 1–2時間 |
-| 2 | **Negotiate / Reply completion**: Coconalaのsingle semantic judgement、全buyer-last有限queue、outbox、presend freshness、official readbackを既存Work Syncへcopy。Lancers固有のreply/estimate/monthly-offer/accept flowだけ公式画面から差し替える | 最初のreal reply/offer effect、公式message/offer ID、仮払い済みactive contract ID、ContractReceipt、次wake duplicate 0 | 1–3日 + buyer応答時間 |
+| 2 | **Negotiate / Reply completion**: Coconalaのsingle semantic judgement、全buyer-last有限queue、lane-local outbox、presend freshness、official readbackを既存Work Syncへcopy。Lancers固有のreply/estimate/monthly-offer/accept flowだけ公式画面から差し替え、wake-wide/account-wide lockを追加しない | 最初のreal reply/offer effect、公式message/offer ID、仮払い済みactive contract ID、ContractReceipt、次wake duplicate 0 | 1–3日 + buyer応答時間 |
 | 3 | **Storefront completion**: canonical listingを`1338228`へ統一し、旧mutable ownerを廃止。exact-release owner一つでinventory/counter観測し、需要証拠がある時だけ一商品一変数を改善 | state/product/plist/loaded ownerが同一ID/SHA、public before/after、second-wake mutation 0 | 0.5–1.5日 |
 | 4 | **Paid fulfillment stage**: funded active contractだけをqueueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
 | 5 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
-| 6 | **four-lane human reporting**: Apply / Storefront / Negotiate / Paidのeffect/readback/blocked/failedとreceipt funnelを自然文へ投影。Telegram transport failureをlane failureや売上へ混ぜない | every-wake human message、個別effect/failure即時通知、receipt count、pending/blocker、revenue unknown/verified、exact-key dedupe | 0.5–1日 |
+| 6 | **four-lane human reporting**: Apply / Storefront / Negotiate / Paidのeffect/readback/blocked/failedとreceipt funnelを自然文へ投影。Telegram transport failureをlane failureや売上へ混ぜず、当月入金総額・当月net revenue・単発売上・現在net MRRを別表示する | every-wake human message、個別effect/failure即時通知、receipt count、pending/blocker、四つのrevenue値のunknown/verified、exact-key dedupe | 0.5–1日 |
 | 7 | **payment後だけself-improvement**: Apply/Storefront別にinquiry→contract→delivery→payment→retention→net marginを帰属し、一度に一変数だけkeep/revert | 実PaymentReceipt cohort、conversion/margin比較、変更前後の公式outcome | 継続運用 |
 
 実装の集中時間はbest 5日、base 10日、worst 20日以上である。これはbuyer応答・検収・provider payoutの待ち時間を含まない。
@@ -1865,3 +1891,6 @@ worst 9か月以上または未達とする。最大の不確実性はcodeでは
 - Coconala Negotiate: `reply_detector.py`、`requested_estimate.py`、`telegram_report.py`のsingle semantic judgement、有限queue、official readback、自然言語every-wake reportをcopyする。
 - Coconala Paid: `paid_direct.py`、`delivery_queue.py`、formal delivery browserのresume、thread-local failure、delivery readbackをcopyする。
 - Coconala Storefront directは現時点でproduction owner未稼働のため、成功コードとしてcopyしない。
+- Coconala current SSOT `P0-four-lane-parallel`はlane固有ID/page/stateでの独立実行を要求し、account-wide serializationを要件にしない。Replyはwake-wide common CDP lockを除去済みで、同一wakeは`reply-detector.lock`、同一effectはconnector outbox CASで保護する。
+- Coconalaのlane truth storeはApply=`applied.jsonl`、Storefront=`shuppin.jsonl`、Negotiate=`connector-outbox.sqlite3`、Paid=`paid-progress.jsonl`で分離され、共通`telegram-outbox.sqlite3`は通知transportである。
+- Lancers公式FAQにはproject方式、仮払い、package取引のbusiness lifecycleはあるが、同一accountの別resource actionをaccount-wide lockで直列化する要件は確認できない。未確認のprovider制限をarchitecture requirementにしない。
