@@ -2344,3 +2344,27 @@ production Work Sync ownerは同releaseで二回連続exit 0、公式board 1、r
 schemaは`reply / wait / stop`の三形を受け、`wait`とnon-null bodyの矛盾を拒否する。既存reply intent/readback focused checkとinstaller
 3件はPASSする。既知の旧`contract_candidates`期待値一件は今回のdiff外でFAILを維持し、Done根拠に使わない。positive real buyer/offerの
 effect→公式readback→次wake duplicate 0は、§18.6 Negotiate / Contract本体の残TODOとして残る。
+
+### 18.25 Negotiate / Contract slice 2 — incoming monthly offer source
+
+**USER OUTCOME:** clientが月額offerを送った最初の5分wakeで見落とさず、offer 0とsource不明を混同せず、承諾前に公式条件を読む対象を
+exact provider IDで次actionへ渡す。
+
+**CURRENT OBSERVATION:** ログイン済みproduction `/monthly_work_contracts/lancer/offers`はHTTP 200、exact empty marker
+「申請されたオファーはありません」を返す。`work_sync.py`は`/monthly_work_contracts/lancer`のactive contractだけを読み、offer一覧を
+訪問しないため、将来client offerが届いても現行snapshotは`contract 0`のまま見落とす。
+
+**FIRST-SOURCE BOUNDARY:** Lancers公式lancer guide https://www.lancers.jp/monthly_work_contracts/guide/lancer は、合意後にclientから
+offerが届き、sellerは「仕事内容」「月額報酬」を確認し、不一致なら断って詳細を確認、一致時は「承認する」で契約締結すると説明する。
+FAQ https://www.lancers.jp/faq/M0002/807 は承諾時に契約開始・仮払い完了、承諾期限3日とする。公式empty pageにはpositive detail/formが
+存在しないため、未観測selectorで承諾effectを先に実装しない。
+
+**NEXT DIRECT ACTION:** 既存`_contract_sources`が同じowned pageでoffer一覧もGETする。exact empty markerとnumeric detail hrefを相互検証し、
+`incoming_monthly_offer_count`とsanitized `incoming_monthly_offers[{provider_id,detail_path}]`を既存`contracts.json`へ保存する。
+nonemptyなのにexact href 0、duplicate ID、empty markerとの矛盾はsource failureとし0に変換しない。Telegramはincoming offer countを表示する。
+provider POST、click、承諾intent、ledger appendはこのsliceでは0。
+
+**PLAN SIZE:** production 2 files、約25–40行。既存`work_sync.py`と`telegram_report.py`だけ。新DB、schema、service、scheduler、test fileは0。
+
+**DONE EVIDENCE:** 未完。production owner二回wakeでoffer source complete 0、reply 0、contract 0、state/ledger不変、Telegram自然文、
+second-wake duplicate effect 0を確認する。positive offerの条件判断・承諾・active/funded readbackは次sliceに残す。

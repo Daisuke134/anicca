@@ -284,7 +284,7 @@ def _listing_demand(path: Path) -> Optional[dict[str, int]]:
 def _sales_snapshot(path: Path) -> Optional[dict[str, object]]:
     try: value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, TypeError, ValueError): return None
-    keys = ("board_count", "unread_count", "required_reply_count", "application_board_count", "contract_candidate_count")
+    keys = ("board_count", "unread_count", "required_reply_count", "application_board_count", "incoming_monthly_offer_count", "contract_candidate_count")
     if not isinstance(value, Mapping) or value.get("source_complete") is not True: return None
     result: dict[str, object] = {key: _int(value.get(key)) for key in keys}
     result["reply_status"] = value.get("reply_status") if isinstance(value.get("reply_status"), str) else None
@@ -382,7 +382,8 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
     demand = store.get("demand") if isinstance(store.get("demand"), Mapping) else {}
     funnel = " / ".join(f"{label}{count(demand.get(key))}" for key, label in _DEMAND_LABELS)
     sales_line = (f"交渉: 公式会話{count(sales.get('board_count'))} / 返信必要{count(sales.get('required_reply_count'))} / "
-                  f"未読{count(sales.get('unread_count'))} / 契約候補{count(sales.get('contract_candidate_count'))}。")
+                  f"未読{count(sales.get('unread_count'))} / 月額オファー{count(sales.get('incoming_monthly_offer_count'))} / "
+                  f"契約候補{count(sales.get('contract_candidate_count'))}。")
     sales_next = {
         "no_reply_required": "今は相手からの返信・仮払いを待っています。",
         "seller_last": "こちらからの返信は済んでおり、次の相手の返答を待っています。",
