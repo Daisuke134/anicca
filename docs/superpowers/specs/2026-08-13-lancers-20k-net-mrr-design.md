@@ -1309,9 +1309,9 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 完了 | Storefront canonical offer alignment | exact release `ec825526…`のcanonical skillから`1338228`だけを画像あり、specific ICP、月額SNS deliverable、¥98k–¥398k、native 3/6ヶ月routeへ揃えた。再applyはunchanged、他5件とstate/ledger不変。更新直後funnel baselineは0、検索反映は最大24時間で継続観測 | 完了 |
 | 完了 | G4C fenced Sales reply | 既存work-syncでbuyer-last一件だけをclaimし、Coconalaの返信contractでhonest declineを生成。送信前fence、公式message ID、本文readback、blind resend 0をlive確認 | 完了 |
 | 完了 | G4C verified offer grounding | canonical storefront productと公式応募条件をsales contextへ接続し、価格・納期質問の公式値をdeterministic検査。実proposalとread-only compositionで混同0を確認 | 完了 |
-| 1 | G3A.1 claimed-only query fallback | default queryが既処理案件だけを返した場合も次queryへ進み、30分tickを`duplicate_project`だけで捨てない。明示query/injected sourceは一回のまま | 1日 |
-| 2 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
-| 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
+| 完了 | G3A.1 claimed-only query fallback | default queryが既処理案件だけを返した場合も次queryへ進む。liveで別query 19件→eligible 13→最大1応募→公式receiptを確認 | 完了 |
+| 1 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
+| 2 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
 | 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
 | 5 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
 
@@ -1603,3 +1603,11 @@ claim filterで0件になって`duplicate_project`を返す。このため別que
 未処理が1件でもあれば従来どおりそのresultを返す。全件claimedなら次の既存queryへ進む。全10queryが空またはclaimed
 の場合だけ最後のno-op resultを返す。explicit queryとinjected discovererは一回だけ、provider errorは即時終了、
 一tick最大一応募、planner、claim、readback、ledger contractは変更しない。
+
+production exact release `ad773841c28faf7f2db7fa1130efdd2f57f9e553`の最初のkickは、claimed済み
+project `5583089`しかないqueryを終了点にせず次queryへ進む。次queryから公開19件を取得し13件を
+`submit_required`と判断、project `5586413`を一件だけprovider境界へ送る。送信前stateは金額¥5,000、
+納期`2026-08-17`、proposal ID nullをdurable pendingとして保持する。同tickは`submission_uncertain`で終了するが、
+次のowner kickはsubmit 0のreadback-only reconciliationで公式proposal ID `27810707`を取得する。
+pendingは1→0、ApplicationReceiptは15→16、fingerprintは21→22となる。これによりclaimed-only fallback、
+一tick一応募、blind resend 0、公式readback、append-only ledgerをliveで確認する。
