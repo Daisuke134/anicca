@@ -1893,7 +1893,32 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 最初の入金はbest 1–3週、base 3–8週、worst 8週以上、$10K net MRRはbest 2–4か月、base 4–9か月、
 worst 9か月以上または未達とする。最大の不確実性はcodeではなく、商品価格でbuyerが契約し継続するconversion/retentionである。
 
-### 18.7 一次証拠
+### 18.7 Storefront first demand experiment
+
+公式counterはcanonical `1338228`が`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`である。現在は購入率ではなく
+検索・推薦cardから詳細pageへ到達するvisibility/clickが先頭funnel blockerなので、最初の一変数は価格ではなくtitleとする。
+
+Lancers自身が同categoryで推薦する公式listingを比較すると、`1229687`は「低価格でInstagram運用代行し、集客につなげます」
+で満足116件、`1257166`は「運用代行・丸投げOK」「集客、売上、フォロワー」で満足114件、`1325483`は
+「更新が止まっている企業様へ」で満足53件である。作業名だけでなくbuyer problemまたは正直なoutcomeをtitle前半へ置く
+共通patternがある。`1234379`の薬機法対応というniche proofも満足47件だが、未保有資格を模倣しない。
+
+decisionは`change`、changed fieldは`title`、beforeは
+「小規模B2B企業向けにSNS投稿企画と月次コンテンツ制作を代行します」、proposedは
+「B2B企業のSNS更新を止めず見込み客に伝わる投稿を毎月制作します」とする。価格、scope、画像、説明、category、
+auto-tagは変えない。hypothesisは、buyer problemと安全なbenefitを検索語`B2B / SNS / 投稿 / 制作`と同時に示すことで
+7日以内の公式閲覧countを増やすこと。ownerはpublic before→一回save→public exact readbackを行い、次wakeはmutation 0とする。
+7日後に閲覧が増えなければ、titleをkeepと推定せず次の一変数を判断する。
+
+一次証拠:
+
+- Lancers公式category: https://www.lancers.jp/menu/browse/online_marketing/social_marketing/social_content
+- Lancers公式listing `1229687`: https://www.lancers.jp/menu/detail/1229687
+- Lancers公式listing `1257166`: https://www.lancers.jp/menu/detail/1257166
+- Lancers公式listing `1325483`: https://www.lancers.jp/menu/detail/1325483
+- Lancers公式listing `1234379`: https://www.lancers.jp/menu/detail/1234379
+
+### 18.8 一次証拠
 
 - Lancers「プロジェクト方式とは」: https://www.lancers.jp/faq/C1004/169
 - Lancers「仮払いって何ですか」: https://www.lancers.jp/faq/C1013/332
