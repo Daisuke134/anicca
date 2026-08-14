@@ -1311,7 +1311,7 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 完了 | G4C verified offer grounding | canonical storefront productと公式応募条件をsales contextへ接続し、価格・納期質問の公式値をdeterministic検査。実proposalとread-only compositionで混同0を確認 | 完了 |
 | 完了 | G3A.1 claimed-only query fallback | default queryが既処理案件だけを返した場合も次queryへ進む。liveで別query 19件→eligible 13→最大1応募→公式receiptを確認 | 完了 |
 | 完了 | G3B.4 application capability priority | Coconalaと同じくfeasibilityをpriorityより先に確定し、完成動画制作必須を`video_or_animation`、企画・構成・台本だけを応募可能として実案件で確認した。Application ownerを再開し、納品可能案件の公式receiptまで確認 | 完了 |
-| 1 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
+| 1 | G4B ContractReceipt source | 公式browser/frontend通信から注文・仮払いsourceを先に実装し、現在0件をlive確認する。最初のcompleteなofficial contractだけをschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 2–4時間 |
 | 2 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
 | 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
 | 5 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
@@ -1543,8 +1543,8 @@ PaymentReceiptの順に後段を閉じるまでMRRは増えたと報告しない
 ### 17.1 G4C Sales reply action
 
 公式一次資料のseller flowは、client相談→seller回答/見積→client注文・仮払い→作業開始→納品→検収である。
-したがって`serviceItemContract`が0件のままContractReceipt readerを先に推測実装する順序は循環であり棄却する。
-現在の公式message APIで確認済みのbuyer-lastを先に進め、実注文後のprovider payloadからG4Bを実装する。
+Sales replyを先にlive実証した後は、実注文を停止点にしない。公式browser画面、frontend request、response shapeを
+read-onlyで調べ、現在0件を正しく返すContract sourceを先に実装する。推測したpayloadやfake contractは使わない。
 
 G4Cは新scheduler、別service、別DBを作らず、既存5分work-sync ownerへ次だけを追加する。
 
@@ -1591,8 +1591,8 @@ terminal blockとして拒否したため応募0、exit 0である。次の30分
 provider message ID `17028`で、ApplicationReceipt累計15、pending 0、storefront受付中6、売上unknownを正直に報告する。
 
 現在はAcquisitionが30分ごと、Sales source/actionが5分ごと、owner reportが5分ごとに同じexact releaseで稼働する。
-応募・listing・返信は売上ではない。次のstate transitionはbuyerの注文・仮払いによる実`serviceItemContract`であり、
-それが0件の間にContractReceiptのstatus shapeを推測実装しない。最初の実payloadを観測したtickでG4Bを開始する。
+応募・listing・返信は売上ではない。次のstate transitionはbuyerの注文・仮払いによる実`serviceItemContract`である。
+receiptは実contractが出るまで作らないが、公式source reader、empty-source completeness、validation、dedupは先に実装する。
 
 ### 17.3 G3A.1 claimed-only query fallback
 
@@ -1647,11 +1647,29 @@ durable claim、official readback、Sales/Telegram/Work Syncとの同一SHAは�
 `5586413`は`video_or_animation`と原文引用、`5579721`も`video_or_animation`と原文引用を返す。
 完成動画の編集・生成を依頼範囲外と明記した企画・構成・台本だけのcontrolは`submit_required`を返す。
 Lancers 49 tests、agent-runner 15 tests、installer 2 tests、py_compile、diff checkは通る。
-canonical main / production exact releaseは`cd5c82bde51b5fbdfd439a99f621dfe9f654b0a4`である。
+検証済みbehavior commitは`cd5c82bde51b5fbdfd439a99f621dfe9f654b0a4`であり、現在のproduction exact SHAは
+runtime `deployment.json`を配備正本とする。
 Application、Work Sync、Telegram reportingは同じreleaseへ収束し、三ownerともenabledである。最初のlive tickは
 project `5586452`を選び、同tickは`submission_uncertain`でdurable pendingを保持した。次kickはsubmit 0の
 readback-only reconciliationで公式proposal ID `27810937`を取得し、pendingは1→0、ApplicationReceiptは
 17→18となる。公式proposalはブロックチェーン経済システムの設計・wallet接続・transaction処理・backend連携・
 test environment導入を¥900,000、納期`2026-10-09`で提案し、架空の経験・portfolioを主張しない。
 Work Syncはboard 1、required reply 0、complete contract candidate 0、exit 0で、owner Telegramはprovider
-message ID `17184`にreceipt累計18、pending 0、売上unknownを送る。G3B.4は完了し、先頭TODOは実注文後のG4Bである。
+message ID `17184`にreceipt累計18、pending 0、売上unknownを送る。G3B.4は完了し、先頭TODOはG4B公式sourceの
+先行実装である。
+
+### 17.5 G4B Contract source先行実装
+
+外部注文を捏造せず、注文待ちも停止点にしない。CloakBrowserのseller accountで公式注文・仕事管理画面を開き、
+frontendが実際に使うread-only requestとresponse contractを確認する。GitHub上の既存Lancers client実装と公式資料も
+比較し、安定した公式sourceを一つ選ぶ。現在0件は`source_complete=true / contract_count=0`で正常終了し、login失効、
+pagination不完了、型欠損はunknown/failureとして0件と混同しない。
+
+既存5分Work Sync owner、CDP session、account lock、watchdog、shared marketplace ledgerを再利用する。
+新scheduler、新DB、contract判断用AI、HTML keyword判定は作らない。deterministic codeは公式ID、金額、status、
+project/listing相関、pagination、dedup、receipt bookkeepingだけを扱う。公式active/paid-before-work条件を満たすcontractだけを
+一意な`ContractReceipt`へappendし、同じcontractの再観測はno-opにする。raw buyer本文、氏名、token、cookieは保存しない。
+
+完了条件は、公式sourceの現在0件をlive E2Eで確認すること、source failureを0件に偽装しないこと、実provider shapeに
+基づくpositive fixtureを一意receiptへ変換できること、既存Sales replyとApplication state/ledgerを壊さないこと、三ownerを
+同一exact releaseへ再配備することである。これを閉じた後、同じofficial active contract countをG3C capacityへ接続する。
