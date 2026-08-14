@@ -1484,3 +1484,32 @@ lane ごとの productive progress を測る。測定で read-only collection �
 または revision cost が 70% margin を壊すなら、この商品仮説が間違っている。応募数を増やして
 隠さず、実支払・retention・revision cost を観測し、G4〜G6 を開けない理由として報告する。
 self-improvement は最初の実支払後、一変数ずつ行う。
+
+## 17. Coconala application parity（現在の先頭TODO）
+
+Lancersの応募数が止まった直接原因はsubmit/readbackではなく、Coconalaにない独自の事前審査である。
+旧plannerは最大20案件の全件にB2B業種引用、継続SNS外注引用、¥98,000最低価格、予測粗利70%、
+独立した二回目のAI safety判定を要求し、一件の欠落・型違いでbatch全体を破棄した。実測直近20 tickは
+`observed=184 / submitted=0`で、`no_eligible_project=12`、`planner_contract_invalid=5`、
+`planner_failed=3`である。
+
+正本は、実収益を記録したCoconala production
+`/Users/anicca/profitable-claude/skills/gig-work/scripts/application_planner.py`のcontractとする。
+Lancers固有差分は公開snapshot、応募DOM、公式proposal readbackだけに限定する。
+
+1. planner判断は`submit_required`または`hard_prohibited`の二択とする。
+2. hard prohibition class、原文引用、proposalのnull規則はCoconalaと同一にする。動画・animationは
+   全面禁止ではなく、案件全体で制作が必須なら`video_or_animation`で拒否する。
+3. 低予算、単発、弱いportfolio、曖昧scope、継続性不足、分野実績不足は拒否理由にしない。
+4. 既知のbudget最大だけを価格上限にし、一律の最低価格、B2B/SNS限定、予測粗利gateを応募前から外す。
+5. plannerが一部IDを省略しても、返った正しい判断をbatch全体ごと捨てない。未知ID、重複ID、型不正は拒否する。
+6. plannerの並び順を実行順として使い、既存の一tick最大一応募、durable claim、readback-only pending、
+   公式proposal ID照合、append-only ApplicationReceiptは変更しない。
+7. 二回目のAI safety verifierは削除する。hard prohibitionを同じplanner contractで一回だけ判断し、
+   deterministic validatorがclass・原文引用・価格上限・日付・proposal leakを検証する。
+
+このsliceの完了条件はexact releaseへdeploy後、既存launchdを一回kickし、公開案件を観測して、
+`submit_required`があれば最大一件が公式proposal IDまで確定すること、なければ全件の
+`hard_prohibited`またはprovider上の候補不在を具体的に報告することである。応募は売上ではない。
+残るmoney loopは、reply検知→月額offer/contract readback→bounded fulfillment→delivery readback→
+PaymentReceipt/fee/cost/bank reconciliationの順で、一件の上流receiptを得るたび一laneずつONにする。

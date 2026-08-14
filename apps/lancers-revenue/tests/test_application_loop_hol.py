@@ -60,52 +60,29 @@ def _proposal_text(price: int = 250000) -> str:
     )
 
 
-def _qualification(
-    *,
-    commercial_buyer_evidence: str = "依頼主の業種: 情報通信業",
-    ongoing_sns_outsourcing_evidence: str = "SNS運用を毎月、外部委託でお願いしたいです。",
-    expected_platform_fee_jpy: int = 50000,
-    expected_ai_cost_jpy: int = 2000,
-    expected_subcontractor_cost_jpy: int = 0,
-    expected_revision_refund_allowance_jpy: int = 7000,
-) -> dict[str, object]:
-    return {
-        "commercial_buyer_evidence": commercial_buyer_evidence,
-        "ongoing_sns_outsourcing_evidence": ongoing_sns_outsourcing_evidence,
-        "expected_platform_fee_jpy": expected_platform_fee_jpy,
-        "expected_ai_cost_jpy": expected_ai_cost_jpy,
-        "expected_subcontractor_cost_jpy": expected_subcontractor_cost_jpy,
-        "expected_revision_refund_allowance_jpy": expected_revision_refund_allowance_jpy,
-        "cost_source_version": "lancers-g1-conservative-v1",
-    }
-
-
 def _eligible_decision(
     project_id: str = "6000001",
     *,
     price_jpy: int = 250000,
-    qualification: dict[str, object] | None = None,
 ) -> dict[str, object]:
     return {
         "request_id": project_id,
-        "eligibility": "eligible",
-        "reason_codes": ["public_scope_fit"],
+        "business_class": "submit_required",
+        "reason_codes": [],
         "proposal_text": _proposal_text(price_jpy),
         "price_jpy": price_jpy,
         "deliver_date": "2026-08-20",
-        "qualification": qualification or _qualification(),
     }
 
 
 def _ineligible_decision(project_id: str) -> dict[str, object]:
     return {
         "request_id": project_id,
-        "eligibility": "ineligible",
-        "reason_codes": ["claimed_project"],
+        "business_class": "hard_prohibited",
+        "reason_codes": ["mandatory_human_presence", "SNS運用"],
         "proposal_text": None,
         "price_jpy": None,
         "deliver_date": None,
-        "qualification": None,
     }
 
 
@@ -448,26 +425,22 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(result["eligible_count"], 2)
         self.assertEqual(result["verified_count"], 1)
         with tempfile.TemporaryDirectory() as directory:
-            incomplete = application_loop.run_loop(
+            partial = application_loop.run_loop(
                 state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence",
                 discoverer=discoverer, planner=lambda *_args: {"decisions": [_eligible_decision("6000001")]},
-                safety_verifier=lambda *_args: self.fail("safety_called"), submitter=lambda **_kwargs: self.fail("submitter_called"),
+                safety_verifier=lambda *_args: self.fail("safety_called"), submitter=submitter,
                 clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
             )
-        self.assertEqual(incomplete["error"], "planner_contract_incomplete")
-        self.assertEqual((incomplete["planner_expected_count"], incomplete["planner_returned_count"]), (2, 1))
-        self.assertNotIn(opportunities[0]["description"], json.dumps(incomplete, ensure_ascii=False))
+        self.assertNotIn("error", partial)
 
-    def test_normal_tick_prioritizes_projected_net_and_keeps_ties_stable(self):
+    def test_normal_tick_preserves_coconala_planner_order(self):
         application_loop = _load_deployed_loop()
         project_ids = ["6000001", "6000002", "6000003"]
         opportunities = [_opportunity(project_id) for project_id in project_ids]
-        generic_evidence = "SNS運用を継続し、外部委託でお願いしたいです。"
-        opportunities[0]["description"] = f"依頼主の業種: 情報通信業\n依頼概要: {generic_evidence}"
         decisions = [
-            _eligible_decision("6000001", price_jpy=250000, qualification=_qualification(ongoing_sns_outsourcing_evidence=generic_evidence, expected_ai_cost_jpy=1000, expected_revision_refund_allowance_jpy=4000)),
+            _eligible_decision("6000003", price_jpy=230000),
+            _eligible_decision("6000001", price_jpy=250000),
             _eligible_decision("6000002", price_jpy=220000),
-            _eligible_decision("6000003", price_jpy=230000, qualification=_qualification(expected_ai_cost_jpy=1000, expected_revision_refund_allowance_jpy=5000)),
         ]
         submitted = []
 
@@ -485,10 +458,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
             result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, safety_verifier=_approved_safety, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
 
         self.assertEqual(result["eligible_count"], 3)
-        self.assertEqual(submitted, ["6000001"])
-        ties = [(opportunities[1], _eligible_decision("6000002")), (opportunities[2], _eligible_decision("6000003"))]
-        self.assertEqual(application_loop._eligible_rank(ties[0]), application_loop._eligible_rank(ties[1]))
-        self.assertEqual([row["external_id"] for row, _ in sorted(ties, key=application_loop._eligible_rank)], ["6000002", "6000003"])
+        self.assertEqual(submitted, ["6000003"])
 
     def test_reconcile_only_reconciles_every_pending_application_without_discovery_or_submit(self):
         application_loop = _load_deployed_loop()
@@ -577,20 +547,11 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 "decisions": [
                     {
                         "request_id": "6000001",
-                        "eligibility": "eligible",
-                        "reason_codes": ["public_scope_fit"],
+                        "business_class": "submit_required",
+                        "reason_codes": [],
                         "proposal_text": proposal_text,
                         "price_jpy": 250000,
                         "deliver_date": "2026-08-20",
-                        "qualification": {
-                            "commercial_buyer_evidence": "依頼主の業種: 情報通信業",
-                            "ongoing_sns_outsourcing_evidence": "SNS運用を毎月、外部委託でお願いしたいです。",
-                            "expected_platform_fee_jpy": 50000,
-                            "expected_ai_cost_jpy": 2000,
-                            "expected_subcontractor_cost_jpy": 0,
-                            "expected_revision_refund_allowance_jpy": 7000,
-                            "cost_source_version": "lancers-g1-conservative-v1",
-                        },
                     }
                 ]
             }
@@ -658,42 +619,16 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(result["verified_provider_proposal_ids"], ["9000001"])
         self.assertEqual(result["unresolved_project_id"], "5585496")
 
-    def test_rejects_projected_margin_below_seventy_percent_before_submit(self):
+    def test_low_price_feasible_work_is_submitted_without_margin_gate(self):
         application_loop = _load_deployed_loop()
         submitter_project_ids = []
         opportunities = [_opportunity("6000001", budget_min_minor=98000)]
-        proposal_text = (
-            "公開された要件を踏まえ、業務改善のためのWebシステムを整備し、少人数の担当者がSNSを兼務する状況でも作業が滞らない状態を目指します。"
-            "最初の30日で現状整理、画面設計、試作、動作確認、引き継ぎ資料を納品します。"
-            "対象チャネルは2つ、月8本、修正は2回までとし、価格は98000円、納期は2026-08-20です。"
-            "毎月の運用支援と改善提案を継続範囲に含めます。現在の優先チャネルはこの2つでよろしいでしょうか？"
-        )
 
         def discoverer(**kwargs):
             return {"ok": True, "error": None, "opportunities": opportunities}
 
         def planner(prompt, evidence):
-            return {
-                "decisions": [
-                    {
-                        "request_id": "6000001",
-                        "eligibility": "eligible",
-                        "reason_codes": ["public_scope_fit"],
-                        "proposal_text": proposal_text,
-                        "price_jpy": 98000,
-                        "deliver_date": "2026-08-20",
-                        "qualification": {
-                            "commercial_buyer_evidence": "依頼主の業種: 情報通信業",
-                            "ongoing_sns_outsourcing_evidence": "SNS運用を毎月、外部委託でお願いしたいです。",
-                            "expected_platform_fee_jpy": 19600,
-                            "expected_ai_cost_jpy": 2000,
-                            "expected_subcontractor_cost_jpy": 0,
-                            "expected_revision_refund_allowance_jpy": 7801,
-                            "cost_source_version": "lancers-g1-conservative-v1",
-                        },
-                    }
-                ]
-            }
+            return {"decisions": [_eligible_decision(price_jpy=1)]}
 
         def submitter(**kwargs):
             submitter_project_ids.append(kwargs["project_id"])
@@ -727,11 +662,10 @@ class ApplicationLoopHolTests(unittest.TestCase):
                     ),
                 )
 
-        self.assertEqual(result.get("error"), "planner_contract_invalid")
-        self.assertEqual((result["planner_expected_count"], result["planner_returned_count"]), (1, 1))
-        self.assertEqual(submitter_project_ids, [])
+        self.assertNotIn("error", result)
+        self.assertEqual(submitter_project_ids, ["6000001"])
 
-    def test_rejects_semantically_empty_public_evidence_before_submit(self):
+    def test_hard_prohibition_requires_exact_public_evidence(self):
         application_loop = _load_deployed_loop()
         submitter_project_ids = []
         opportunities = [_opportunity("6000001")]
@@ -739,17 +673,11 @@ class ApplicationLoopHolTests(unittest.TestCase):
         def discoverer(**kwargs):
             return {"ok": True, "error": None, "opportunities": opportunities}
 
+        invalid = _ineligible_decision("6000001")
+        invalid["reason_codes"][1] = "公開本文にない捏造引用"
+
         def planner(prompt, evidence):
-            return {
-                "decisions": [
-                    _eligible_decision(
-                        qualification=_qualification(
-                            commercial_buyer_evidence="依頼主の業種: 情報通信業",
-                            ongoing_sns_outsourcing_evidence="SNS運用",
-                        )
-                    )
-                ]
-            }
+            return {"decisions": [invalid]}
 
         def submitter(**kwargs):
             submitter_project_ids.append(kwargs["project_id"])
@@ -777,14 +705,13 @@ class ApplicationLoopHolTests(unittest.TestCase):
                     evidence_root=root / "evidence",
                     discoverer=discoverer,
                     planner=planner,
-                    safety_verifier=_rejected_safety,
                     submitter=submitter,
                     clock=lambda: datetime(
                         2026, 8, 13, 12, 0, tzinfo=timezone.utc
                     ),
                 )
 
-        self.assertEqual(result.get("reason"), "safety_rejected")
+        self.assertEqual(result.get("error"), "planner_contract_invalid")
         self.assertEqual(submitter_project_ids, [])
 
     def test_claimed_pending_projects_are_excluded_before_planning_even_over_batch_limit(self):
@@ -856,41 +783,24 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(submitter_project_ids, ["6000001"])
         self.assertEqual(result["verified_project_ids"], ["6000001"])
 
-    def test_schema_and_runtime_share_eligibility_contract_matrix(self):
+    def test_schema_and_runtime_share_coconala_business_contract(self):
         application_loop = _load_deployed_loop()
         schema = json.loads(
             Path(application_loop.SCHEMA_PATH).read_text(encoding="utf-8")
         )
         validator = jsonschema.Draft202012Validator(schema)
         row = _opportunity("6000001", budget_min_minor=98000)
-        valid_eligible = _eligible_decision(
-            price_jpy=98000,
-            qualification=_qualification(
-                expected_platform_fee_jpy=19600,
-                expected_revision_refund_allowance_jpy=7000,
-            ),
-        )
-        valid_ineligible = _ineligible_decision("6000001")
-        eligible_without_qualification = copy.deepcopy(valid_eligible)
-        eligible_without_qualification["qualification"] = None
-        eligible_with_low_price = copy.deepcopy(valid_eligible)
-        eligible_with_low_price["price_jpy"] = 1
-        eligible_with_old_staff_contract = copy.deepcopy(valid_eligible)
-        qualification = eligible_with_old_staff_contract["qualification"]
-        assert isinstance(qualification, dict)
-        qualification.pop("commercial_buyer_evidence")
-        qualification.pop("ongoing_sns_outsourcing_evidence")
-        qualification["small_b2b_evidence"] = "小規模法人向けの業務改善"
-        qualification["sns_staff_evidence"] = "少人数の担当者がSNSを兼務"
-        ineligible_with_qualification = copy.deepcopy(valid_ineligible)
-        ineligible_with_qualification["qualification"] = _qualification()
+        valid_submit = _eligible_decision(price_jpy=1)
+        valid_prohibited = _ineligible_decision("6000001")
+        submit_with_reason = copy.deepcopy(valid_submit)
+        submit_with_reason["reason_codes"] = ["weak_portfolio"]
+        prohibited_without_evidence = copy.deepcopy(valid_prohibited)
+        prohibited_without_evidence["reason_codes"] = ["mandatory_human_presence"]
         cases = (
-            ("eligible_valid", valid_eligible, True, []),
-            ("eligible_without_qualification", eligible_without_qualification, False, ["planner_failed"]),
-            ("eligible_with_low_price", eligible_with_low_price, False, ["planner_failed"]),
-            ("eligible_with_old_staff_contract", eligible_with_old_staff_contract, False, ["planner_failed"]),
-            ("ineligible_valid", valid_ineligible, True, []),
-            ("ineligible_with_qualification", ineligible_with_qualification, False, ["planner_failed"]),
+            ("submit_low_price_valid", valid_submit, True, []),
+            ("submit_reason_forbidden", submit_with_reason, True, ["planner_failed"]),
+            ("hard_prohibited_valid", valid_prohibited, True, []),
+            ("hard_prohibited_evidence_required", prohibited_without_evidence, True, ["planner_failed"]),
         )
 
         for name, decision, schema_expected, runtime_expected in cases:
@@ -905,61 +815,38 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 name,
             )
 
-    def test_commercial_ongoing_contract_rejects_staff_proxy_and_one_off_before_submit(self):
+    def test_single_and_non_b2b_feasible_work_remains_submit_required(self):
         application_loop = _load_deployed_loop()
         staff_proxy = _opportunity("6000001")
         staff_proxy["description"] = "依頼主の業種: 情報通信業\n依頼概要: 少人数の担当者がSNSを兼務しています。"
         one_off = _opportunity("6000001")
         one_off["description"] = "依頼主の業種: 情報通信業\n依頼概要: SNS投稿を1回お願いします。"
-        cases = (
-            ("commercial_ongoing", _opportunity("6000001"), _eligible_decision(), True),
-            ("staff_proxy", staff_proxy, _eligible_decision(qualification=_qualification(ongoing_sns_outsourcing_evidence="少人数の担当者がSNSを兼務しています。")), False),
-            ("one_off", one_off, _eligible_decision(qualification=_qualification(ongoing_sns_outsourcing_evidence="SNS投稿を1回お願いします。")), False),
-        )
+        cases = (("staff_proxy", staff_proxy), ("one_off", one_off))
 
-        for name, opportunity, decision, accepted in cases:
+        for name, opportunity in cases:
             submitted = []
 
             def discoverer(**_kwargs):
                 return {"ok": True, "error": None, "opportunities": [opportunity]}
 
             def planner(*_args):
-                return {"decisions": [decision]}
+                return {"decisions": [_eligible_decision()]}
 
             def submitter(**kwargs):
                 submitted.append(kwargs["project_id"])
                 return {"ok": True, "submitted": True, "application_verified": True, "project_id": kwargs["project_id"], "provider_proposal_id": "9000010"}
 
             with tempfile.TemporaryDirectory() as directory, patch.object(application_loop.application_tick, "read_pending_descriptor", return_value=None), patch.object(application_loop.application_tick, "state_has_claim", return_value=False):
-                verifier = _approved_safety if accepted else _rejected_safety
-                result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, safety_verifier=verifier, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
+                result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
 
-            self.assertEqual(submitted, ["6000001"] if accepted else [], name)
-            self.assertEqual(result.get("verified_count"), 1 if accepted else 0, name)
-            self.assertEqual(result.get("reason") if not accepted else None, "safety_rejected" if not accepted else None, name)
+            self.assertEqual(submitted, ["6000001"], name)
+            self.assertEqual(result.get("verified_count"), 1, name)
 
-    def test_ongoing_operation_request_pair_accepts_40_char_proximity_in_either_order(self):
-        application_loop = _load_deployed_loop()
-        forward = "SNSアカウントの全投稿を含む運用を安定して継続できる体制づくりの検討を依頼したいと考えています。"
-        self.assertEqual((len(forward), forward.index("運用"), forward.index("依頼")), (49, 15, 36))
-        newline = "SNSアカウントの継続運用を長期に安定して継続するための体制を\n依頼したいです。"
-        self.assertEqual((newline.index("依頼") - newline.index("運用") - 2, newline.count("\n")), (19, 1))
-        cases = (
-            ("forward_21_char_gap", forward, []),
-            ("forward_newline_19_char_gap", newline, []),
-            ("reverse", "SNSの長期継続案件として、専門家へ依頼し、月次のアカウント運用を予定します。", []),
-            ("bare_request", "SNSの長期継続案件として、専門家へ依頼します。", []),
-        )
-        for name, evidence, expected in cases:
-            row = _opportunity("6000001")
-            row["description"] = "依頼主の業種: 情報通信業\n依頼概要: " + evidence
-            decision = _eligible_decision(qualification=_qualification(ongoing_sns_outsourcing_evidence=evidence))
-            self.assertEqual(application_loop.validate_decisions([row], {"decisions": [decision]}, datetime(2026, 8, 13, tzinfo=timezone.utc)), expected, name)
-
-    def test_qualification_cost_source_version_is_typed_for_codex_schema(self):
+    def test_schema_has_no_lancers_only_qualification_gate(self):
         schema = json.loads((REPO_ROOT / "skills/gig-work/schemas/application_decisions.schema.json").read_text(encoding="utf-8"))
-        leaf = schema["properties"]["decisions"]["items"]["properties"]["qualification"]["properties"]["cost_source_version"]
-        self.assertEqual(leaf, {"type": "string", "const": "lancers-g1-conservative-v1"})
+        properties = schema["properties"]["decisions"]["items"]["properties"]
+        self.assertNotIn("qualification", properties)
+        self.assertEqual(properties["business_class"]["enum"], ["submit_required", "hard_prohibited"])
 
 
 if __name__ == "__main__":
