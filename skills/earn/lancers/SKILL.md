@@ -10,11 +10,15 @@ listing count, proposals, forecasts, and unpaid contracts are not revenue.
 
 ## Architecture
 
-- Acquisition: `scripts/application_loop.py` discovers, qualifies, applies at most once per tick, and requires an official proposal ID.
-- Storefront: `scripts/storefront_offer.py` inspects or aligns one existing canonical package. It never creates listings or edits a batch.
-- Sales source: `scripts/work_sync.py` reads official boards and messages without sending.
-- Reporting: `scripts/telegram_report.py` reports state changes from the canonical owners and ledger.
+- Apply: `scripts/application_loop.py` discovers, judges, applies at most once per tick, and requires an official proposal ID.
+- Storefront: `scripts/storefront_offer.py` owns one canonical package, its official inventory, demand counters, and one-variable improvements.
+- Negotiate / Reply: `scripts/work_sync.py` owns buyer-last messages, replies, estimates, monthly offers, and funded ContractReceipt handoff.
+- Paid: owns funded work, requirements, production, QA, delivery, payment, provider settlement, and bank reconciliation. This owner is not implemented yet.
+- Reporting: `scripts/telegram_report.py` is the four-lane control plane, not a fifth revenue lane. It renders every wake, effect, skip, blocker, failure, official readback, and verified payment in natural Japanese.
 - Product: `products/monthly-sns-content-ops-v1.json` is the single offer definition. Its image is in `assets/`.
+
+The exact four-lane ownership, Coconala copy boundary, Telegram human-message contract, $10K plan, and active TODO order live only in the
+design SSOT §18. Do not add a fifth lane or duplicate those rules here.
 
 Do not add another scheduler, DB, state file, checkout, browser profile, or mutable runtime copy. Deploy only an immutable commit reachable
 from `origin/main`. Preserve provider-native spot/3-month/6-month contract routes.

@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** Applyは公式ApplicationReceipt 24件まで稼働。契約候補0、Storefront split-brain、Fulfillment/Finance未実装のためnet MRRは未発生
+**状態:** Applyは公式ApplicationReceipt 25件まで稼働。契約候補0、Storefront split-brain、Paid未完成のためnet MRRは未発生
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -1697,21 +1697,21 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
-| canonical Git | worktree、`origin/feat/lancers-quality-gate`、`origin/main`はすべて`db5974509206702fecb51b5b3319e72127f22d85`、ahead/behind 0/0、dirty 0 | source正本は一つ |
+| canonical Git | production code正本`origin/main`は`db5974509206702fecb51b5b3319e72127f22d85`。`feat/lancers-quality-gate`は同code上にspec/skill更新だけを保持 | production codeのbranch forkはない。spec/skill commitはpush後にmainへ収束する |
 | installed release | `deployment.json`とApplication/Work Sync/Telegramのargvは`d703b1b83c33d96fa9d94c555474f8929173745e` | canonical sourceより1 commit古い |
-| Apply | launchd enabled、30分、累計`application_verified=24`、日本日付の当日receipt 10、fingerprint 31 | discovery→応募→公式proposal ID→ApplicationReceiptは実稼働 |
-| Apply current tick | project `5586573`、¥50,000、納期`2026-08-21`、proposal ID nullのpending 1。owner last exit 1、`submission_uncertain` | blind resendせず次wakeで公式readback-only reconcileが必要 |
+| Apply | launchd enabled、30分、累計`application_verified=25`、fingerprint 31 | discovery→応募→公式proposal ID→ApplicationReceiptは実稼働 |
+| Apply latest reconcile | project `5586573`、¥50,000、納期`2026-08-21`はsubmit 0のreadback-onlyで公式proposal ID `27812628`へ確定。pending 1→0 | blind resend 0、receipt exactly 1 |
 | capacity | HEAD `db597450…`にはfresh `contracts.json`と当日10件quotaを使うG3C gateがある。installed `d703b1…`にはない | gateはcode completeだがproduction未反映。pending解消後も旧runtimeは追加応募し得る |
 | Sales source | Work Sync enabled、5分、latest exit 0。board 1、required reply 0、公式contract sourceは`source_complete=true` | 監視は稼働、現在buyer actionなし |
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
 | Storefront canonical | product JSONと公開pageの正本は`1338228`。公開pageは月額SNS商品、¥98,000 / ¥198,000 / ¥398,000 | 売れる入口のcontentは公開済み |
 | Storefront split-brain | `listing.json`は旧商品`1338233`。旧Storefront plistもmutable `listing_tick.py`と旧productを指し、launchdはdisabled/unloaded。`1338233`公開pageは別のAI業務設計商品 | state、owner、公開canonicalが不一致。Storefront loopは稼働していない |
 | Reporting | Telegram owner enabled、5分、latest launchd exit 0。大半はdelivery済みだが最新pending snapshotは`delivery_uncertain` | money truthは概ね見えるが、通知成功を売上やlane成功にしない |
-| Fulfillment / Finance | ledger eventは`application_verified` 24件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | 納品と入金のproduction ownerは未完成。net MRRは未発生 |
+| Paid | ledger eventは`application_verified` 25件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、入金のproduction ownerは未完成。net MRRは未発生 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
 
-応募数の不足が現在の主因ではない。一日10件、累計24件の公式応募receiptがあるのに、公式contract candidateは0件である。
+応募数の不足が現在の主因ではない。日本日付の直前一日は11件、累計25件の公式応募receiptがあるのに、公式contract candidateは0件である。
 売上になる境界は応募ではなく、buyerが選ぶ／相談する、sellerが正しいreply・見積を返す、buyerが仮払いする、sellerが
 契約を承諾する、納品・検収が終わる、支払・payout・銀行入金が照合される、の後段である。
 
@@ -1725,47 +1725,63 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 2. **Storefront acquisition:** canonical商品は公開されているが、durable stateと唯一のscheduled ownerが別listingを指すため、観測→一変数改善→公式readbackの反復loopになっていない。
 3. **Revenue completion:** funded contractから制作・QA・公式納品・検収・PaymentReceipt・fee/cost/payout・bank matchへ進むFulfillment/Finance ownerがない。
 
-### 18.3 採用する最小architecture
+### 18.3 Coconala four-lane parityを採用する
 
-Coconalaで実収益を持つdirect loopのcontractだけをcopyする。LancersのURL、DOM、status、form、feeはLancers公式画面から
-差し替える。Coconalaの巨大shell、selector、Storefront未完部分、新scheduler、新DB、project別loopはcopyしない。
+LancersもCoconalaと同じ四つのuser-facing lane名とownershipを使う。
+
+1. **Apply** — 公開募集の発見、model判断、応募、公式ApplicationReceipt
+2. **Storefront** — 商品在庫、公開状態、需要counter、相談獲得、一商品一変数改善
+3. **Negotiate / Reply** — 全buyer-last、返信、質問、見積、月額offer、仮払い済みContractReceipt
+4. **Paid** — funded work、要件、制作、QA、納品、検収、PaymentReceipt、fee/cost/payout、銀行照合
+
+Reporting、health、self-heal、self-improvementはcontrol planeであり第五laneにしない。Financeも独立user-facing laneへ
+増やさず、Coconalaと同様にPaidの後半stageとして所有する。
+
+Coconalaでproduction実証されたdirect owner contractをcopyする。具体的にはlane-local scheduler/state、有限queue、
+single semantic judgement、durable intent/outbox、presend freshness、official readback、exact-ID dedupe、thread/entity-local
+failure、every-wake human reportである。LancersのURL、DOM、status、form、feeだけをLancers公式画面から差し替える。
+
+Coconalaの巨大shell、provider固有selector、古いHermes callsite、新scheduler、新DB、project別loopはcopyしない。
+Coconala Storefront directはまだproduction未稼働なので、Storefrontのコードを成功例として丸ごとcopyしない。Lancersで既に
+公開済みのcanonical商品`1338228`と公式inventory/counterを使い、同じlane contractだけをcopyする。
 
 ```mermaid
 flowchart LR
-  subgraph ACQ[Lane 1: Acquisition / 独立tick]
-    A[Apply<br/>公開案件→model判断→応募<br/>ApplicationReceipt]
-    B[Storefront<br/>商品公開→閲覧/相談→一変数改善]
-  end
-
-  Q[(一つの shared ledger / queue)]
-  S[Lane 2: Sales / Contract<br/>全buyer-last→reply/見積/月額offer<br/>仮払い済みContractReceipt]
-  F[Lane 3: Fulfillment<br/>要件→制作→QA→公式納品<br/>DeliveryReceipt]
-  P[Lane 4: Finance<br/>検収/支払→fee/cost/payout<br/>銀行照合→PaymentReceipt]
+  A[Lane 1: Apply<br/>募集→判断→応募<br/>ApplicationReceipt]
+  B[Lane 2: Storefront<br/>商品→需要観測→相談<br/>一変数改善]
+  N[Lane 3: Negotiate / Reply<br/>buyer-last→返信/見積/月額offer<br/>ContractReceipt]
+  P[Lane 4: Paid<br/>funded work→制作/QA/納品/検収<br/>PaymentReceipt→銀行照合]
+  Q[(shared receipt ledger<br/>lane-local state namespace)]
   R[$10K net MRR<br/>同じ式で$20Kへ拡張]
-  C[Control plane<br/>truthful report / health / self-heal]
+  C[Control plane<br/>自然言語report / health / self-heal]
 
   A --> Q
   B --> Q
-  Q --> S --> Q
-  Q --> F --> Q
+  Q --> N --> Q
   Q --> P --> Q
   P --> R
   C -. read only .-> Q
 ```
 
-entityは`discovered/inquiry → application_or_listing_source → contract_active → delivery_verified → payment_received → bank_matched`
-の直線で進む。実行は4 laneが別々の短いscheduled tickとして並列に走る。buyerや支払を一つのprocessが待ち続けず、
-`waiting_for`と`next_tick_at`を保存して終了し、次wakeが再開する。一つのaccountへ外部作用する瞬間だけ共有browser lockで直列化する。
+四laneはそれぞれ別owner、別schedule、別lane-local state、別provider resource identityを持ち、他laneの完了を待たずにwakeする。
+対象がなければ正常no-opで終了し、次wakeへ進む。ただし「完全に依存0」ではない。entityのbusiness stateには
+`Apply/Storefront → Negotiate → Paid`という公式receipt依存があり、Paidは仮払い済みContractReceiptなしに仕事を始めない。
+依存をprocess待機にせずdurable stateへ置くことで、lane自体は止まらない。
 
-### 18.4 ApplyとStorefrontはどう稼ぐか
+source取得、model判断、成果物制作は並列でよい。同一Lancers account/browserへの外部effectと直後readbackだけは短い
+account-wide lockで直列化する。同じprovider pageへ同時submitすることを「並列性」と呼ばない。shared ledger/outboxは
+四laneが同じfileを無秩序に上書きする場所ではなく、exact event keyとappend-only receiptでhandoffとdedupeを行う意図的な共有境界である。
 
-| 入口 | buyer獲得 | 同じ後段へのhandoff | 現在の状態 |
+### 18.4 ApplyとStorefrontから$10Kへ進むgame plan
+
+| pillar | buyer獲得 | Negotiateへのhandoff | 初期の$10K責任 |
 |---|---|---|---|
-| Apply | 公開案件をmodelが能力・禁止事項・条件から柔軟に判断し、最大一件/tickで応募 | 公式proposal ID付きApplicationReceipt→Sales | 稼働。24 receipt、現在pending 1。ただし契約0 |
-| Storefront | buyerが公開packageを見て相談/見積依頼。閲覧→相談→注文の実counterから商品を一変数ずつ改善 | listing/product identity付きinquiry→Sales | 商品`1338228`は公開。owner/state splitのためloop未稼働 |
+| Apply | 公開案件をmodelが能力・禁止事項・条件から柔軟に判断して応募。返信後、案件scopeに合う月額継続を提案する | proposal ID、project条件、buyer conversation | 70%。1 Founding + 4 Standard + 2 Premium = ¥1,686,000 gross MRR |
+| Storefront | buyerが公開packageを見て相談/見積依頼。閲覧→相談→注文の実counterから商品を一変数ずつ改善 | listing/product/version、inquiry、選択tier | 30%。1 Founding + 1 Standard + 1 Premium = ¥694,000 gross MRR |
+| 合計 | 二入口は独立してbuyerを獲得する | 同じNegotiateとPaidへ合流 | 2 Founding + 5 Standard + 3 Premium = ¥2,380,000 gross MRR |
 
-入口は二つでも商品、Sales、Fulfillment、Financeは一つである。応募案件用の公式proposal条件とStorefront用3 tierを混ぜず、
-Salesがsource identityから正しい価格・scope・納期を選ぶ。
+入口は二つでもNegotiateとPaidは共通である。応募案件用の公式proposal条件とStorefront用3 tierを混ぜず、
+Negotiateがsource identityから正しい価格・scope・納期を選ぶ。
 
 最初の$10Kは応募件数ではなく、次の実測式で閉じる。
 
@@ -1776,28 +1792,66 @@ net_mrr_usd = recorded_fx(
 )
 ```
 
-計画用mixは`2 Founding + 5 Standard + 3 Premium = ¥2,380,000 gross MRR`である。これは$10K netの証拠ではない。
-`¥2,380,000 - 実fee/cost/refund >= 10,000 USD × recorded USDJPY`を満たす場合だけ到達とする。不足なら同じ商品tierで
-Standard/Premium契約を追加する。最初は48 capacity units、Founding 3社までとし、最初の支払・制作時間・revision原価を
-測る前に10契約を同時受注しない。
+このmixは$10K netの証拠ではない。70% net marginなら`¥2,380,000 × 0.70 = ¥1,666,000 net`であり、
+記録済みUSDJPYが166.6以下なら$10Kを超える。実marginまたはFXが条件を満たさなければ、同じtierでStandard/Premiumを
+一件ずつ追加する。最初は48 capacity units、Founding 3社まででdelivery時間、revision、実原価を測り、実PaymentReceipt後に
+capacityを増やす。初期獲得配分70/30はApplyに25 receipt、Storefrontにinquiry実績0という現在の証拠から置く。
+最初の10件の実payment cohortで、より高い`contract conversion × retention × net margin / owner time`を出したpillarへ配分を移す。
 
-### 18.5 残TODO — この順序だけを使う
+### 18.5 Telegram-first human experience
+
+四laneの各wakeは内部でraw code、provider response、timing、hash、receiptを構造化保存する。一方、Telegramへは人が一読で
+「何を見たか、何をしたか、公式確認できたか、何をしなかったかと理由、次に何をするか、収益はいくらか」が分かる
+自然な日本語を送る。raw error codeだけの通知、成功していないeffectへの✅、proposal/listing価格を売上として表示することを禁止する。
+
+| icon | 人への意味 | 使用条件 |
+|---|---|---|
+| `✅` | 正常に観測し、安全に終了 | failureなし。effect 0でも正常no-opなら可 |
+| `📨` | 応募を公式確認 | provider proposal IDのreadback後だけ |
+| `🛍️` | Storefrontを観測・改善 | public before/afterまたは正直なno-change |
+| `💬` | 返信・見積・offerを公式確認 | seller-side message/offer ID readback後だけ |
+| `🛠️` | funded workを制作・納品 | ContractReceiptがあり、作業/納品stageを正確に表示 |
+| `⚠️` | 不確実・確認待ち・部分失敗 | blind retryせず、行わなかったeffectと次のreadbackを明記 |
+| `🚫` | 能力外・禁止条件で実行しない | modelの根拠を自然文で説明 |
+| `🎉` | 実収益 | received PaymentReceipt、実fee/cost、bank match後だけ |
+
+標準message envelopeはtransport非依存にする。現在はTelegram、open-source/cloud版は同じ`human_message`をEmailへ送れる。
+transportごとにbusiness判断やmessage本文を再実装しない。
+
+```text
+[Lancers][応募] 📨 1件の応募を公式確認しました
+「〇〇運用支援」へ150,000円、納期9月30日で応募し、Lancersの提案ID 12345を確認しました。
+今回は他の5件には、能力外または既応募のため送信していません。次回も新しい募集を確認します。
+
+[Lancers][交渉] ⚠️ 送信結果を確認中です
+買い手の質問へ返信した可能性がありますが、公式メッセージIDをまだ確認できません。
+同じ返信は再送せず、次回は公式履歴の確認だけを行います。ユーザー操作は不要です。
+
+[Lancers][Paid] 🎉 入金を確認しました
+月額Standard契約の198,000円を受領しました。Lancers手数料、AI原価、返金を差し引いたnetは確認済み金額です。
+銀行入金との照合差額は0円です。今月のLancers net MRRは累計○円です。
+```
+
+すべてのwake、見送り、失敗、effect、readbackはdurable eventとして残す。Telegramは各laneのwakeごとに一つの自然文へ
+集約し、個別effectと重大failureは即時通知する。同じreceiptや同じfailureを再送しない。Emailへ移行してもこの契約を変えない。
+
+### 18.6 残TODO — この順序だけを使う
 
 | 順序 | 一件の作業 | 完了証拠 | 実装目安 |
 |---:|---|---|---:|
-| 1 | **exact-release + G3C収束**: pending `5586573`をownerのreadback-onlyで閉じ、`db597450…`をimmutable releaseへinstall。Application/Work Sync/Telegramを同一SHAへ揃える | proposal IDまたは正直なpending継続、当日10件で`daily_quota_reached`、owner 3本同一SHA、重複応募0 | 1–2時間 |
-| 2 | **Sales / Contract completion**: Coconalaのsingle semantic judgement、全buyer-last有限queue、outbox、presend freshness、official readbackを既存Work Syncへ移植。Lancers固有のreply/estimate/monthly-offer/accept flowだけ実測して接続 | 最初のreal reply/offer effect、公式message/offer ID、仮払い済みactive contract ID、ContractReceipt、次wake duplicate 0 | 1–3日 + buyer応答時間 |
-| 3 | **Storefront reconciliation**: canonical listingを`1338228`へ統一し、旧mutable ownerを廃止。exact-release owner一つでinventory/counter観測し、需要証拠がある時だけ一商品一変数を改善 | state/product/plist/loaded ownerが同一ID/SHA、public before/after、second-wake mutation 0 | 0.5–1.5日 |
-| 4 | **Fulfillment**: funded active contractだけをqueueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
-| 5 | **Finance**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
-| 6 | **truthful reporting convergence**: 4 laneのeffect/readback/blocked/failedとreceipt funnelを一つの自然文へ投影。Telegram transport failureをlane failureや売上へ混ぜない | 各ownerのcurrent source time、receipt count、pending/blocker、revenue unknown/verified、state-change dedupe | 0.5–1日 |
+| 1 | **exact-release + G3C収束**: `5586573 → 27812628`のreadback-only reconcileは完了。G3C behavior commit `db597450…`を含む最新mainをimmutable releaseへinstallし、Application/Work Sync/Telegramを同一SHAへ揃える | 新しいJapan dayで10件到達時に`daily_quota_reached`、owner 3本同一SHA、重複応募0。旧releaseで直前日11件まで進んだ事実を隠さない | 1–2時間 |
+| 2 | **Negotiate / Reply completion**: Coconalaのsingle semantic judgement、全buyer-last有限queue、outbox、presend freshness、official readbackを既存Work Syncへcopy。Lancers固有のreply/estimate/monthly-offer/accept flowだけ公式画面から差し替える | 最初のreal reply/offer effect、公式message/offer ID、仮払い済みactive contract ID、ContractReceipt、次wake duplicate 0 | 1–3日 + buyer応答時間 |
+| 3 | **Storefront completion**: canonical listingを`1338228`へ統一し、旧mutable ownerを廃止。exact-release owner一つでinventory/counter観測し、需要証拠がある時だけ一商品一変数を改善 | state/product/plist/loaded ownerが同一ID/SHA、public before/after、second-wake mutation 0 | 0.5–1.5日 |
+| 4 | **Paid fulfillment stage**: funded active contractだけをqueueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
+| 5 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
+| 6 | **four-lane human reporting**: Apply / Storefront / Negotiate / Paidのeffect/readback/blocked/failedとreceipt funnelを自然文へ投影。Telegram transport failureをlane failureや売上へ混ぜない | every-wake human message、個別effect/failure即時通知、receipt count、pending/blocker、revenue unknown/verified、exact-key dedupe | 0.5–1日 |
 | 7 | **payment後だけself-improvement**: Apply/Storefront別にinquiry→contract→delivery→payment→retention→net marginを帰属し、一度に一変数だけkeep/revert | 実PaymentReceipt cohort、conversion/margin比較、変更前後の公式outcome | 継続運用 |
 
 実装の集中時間はbest 5日、base 10日、worst 20日以上である。これはbuyer応答・検収・provider payoutの待ち時間を含まない。
 最初の入金はbest 1–3週、base 3–8週、worst 8週以上、$10K net MRRはbest 2–4か月、base 4–9か月、
 worst 9か月以上または未達とする。最大の不確実性はcodeではなく、商品価格でbuyerが契約し継続するconversion/retentionである。
 
-### 18.6 一次証拠
+### 18.7 一次証拠
 
 - Lancers「プロジェクト方式とは」: https://www.lancers.jp/faq/C1004/169
 - Lancers「仮払いって何ですか」: https://www.lancers.jp/faq/C1013/332
@@ -1806,3 +1860,8 @@ worst 9か月以上または未達とする。最大の不確実性はcodeでは
 - canonical Storefront公開page: https://www.lancers.jp/menu/detail/1338228
 - split-brain側の旧公開page: https://www.lancers.jp/menu/detail/1338233
 - GitHub code searchではLancers `serviceItemContract`の外部OSS実装は見つからず、現行Life Manager sourceだけである。provider selector/routeは公式frontend実測を正本にする。
+- Coconala four-lane current SSOT: `/Users/operator/profitable-claude/docs/loop-engineering/26-gig-loop-asis-tobe-plan.md` §T
+- Coconala Apply: `application_direct.py`のlane-local owner、instant receipt report、exact outbox dispatchをcopyする。
+- Coconala Negotiate: `reply_detector.py`、`requested_estimate.py`、`telegram_report.py`のsingle semantic judgement、有限queue、official readback、自然言語every-wake reportをcopyする。
+- Coconala Paid: `paid_direct.py`、`delivery_queue.py`、formal delivery browserのresume、thread-local failure、delivery readbackをcopyする。
+- Coconala Storefront directは現時点でproduction owner未稼働のため、成功コードとしてcopyしない。
