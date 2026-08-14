@@ -1693,16 +1693,16 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
-| canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じspec更新へ収束し、installed production commit `1f47f4bcf50d7a69ab8dbe8bf04bbede25a47489`はその到達可能な直前runtime release | specだけが先行し、production code bytesのbranch forkなし |
-| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `1f47f4bcf50d7a69ab8dbe8bf04bbede25a47489` | manifest 21 files、owner 4本exact release一致・exit 0 |
-| Apply | launchd enabled、30分、累計`application_verified=25`、fingerprint 31 | discovery→応募→公式proposal ID→ApplicationReceiptは実稼働 |
-| Apply latest reconcile | project `5586573`、¥50,000、納期`2026-08-21`はsubmit 0のreadback-onlyで公式proposal ID `27812628`へ確定。pending 1→0 | blind resend 0、receipt exactly 1 |
+| canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じspec更新へ収束し、installed production commit `829824532eae871bc86835bbd087f60b40fc6ae0`はその到達可能な直前runtime release | specだけが先行し、production code bytesのbranch forkなし |
+| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `829824532eae871bc86835bbd087f60b40fc6ae0` | manifest 21 files、owner 4本exact release一致・exit 0 |
+| Apply | launchd enabled、30分、累計`application_verified=26`、fingerprint 42、pending 0 | discovery→能力外claim→最大3探索turn→応募→公式proposal ID→ApplicationReceiptが実稼働 |
+| Apply latest reconcile | project `5584041`、¥70,000、納期`2026-08-21`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812830`へ確定。pending 1→0 | blind resend 0、receipt exactly 1 |
 | capacity | exact release `621e13b39…`はfresh `contracts.json`とJapan dayのApplicationReceiptを読むG3C gateを稼働。live decisionは当日0件・active contract 0でallow | 10件到達を作るための不要応募はせず、自然到達時の`daily_quota_reached`を継続観測する |
 | Sales source | Work Sync live kickはexit 0。2026-08-15の公式再観測ではboard `9024494`の最新messageは`58931455`、seller-last、`is_required_reply=false`。project working 0、monthly contract 0、monthly offer 0 | reply transport、intent、公式message ID readback、handled dedupeは稼働。現在送るべきbuyer actionも承諾すべきofferもなく、effect 0が正しい |
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
 | Storefront canonical | 公式inventoryは`published=1 / paused=5 / hidden=0 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式paused readback。`listing.json`も月額SNS商品`1338228`へ更新 | ¥98,000 / ¥198,000 / ¥398,000、画像、spot/3か月/6か月routeは公開page一致。second wake `status_effect_count=0` |
 | Storefront demand | canonical `1338228`の公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`。公式category/winnerを比較し、titleだけをbuyer problem先頭へ変更した | exact ownerは`action=updated / changed_field=title / aligned=true`、次wakeは`action=unchanged / status_effect_count=0`。現在は7日観測中で売上効果未確定 |
-| Reporting | Storefront収束時は`enqueued=1 / attempted=1 / delivered=1`。title変更後はcount snapshotが同じため`enqueued=0 / attempted=0 / delivered=0`、いずれもexit 0 | 通知成功やdedupeを売上やlane成功にせず、状態変化だけ送信 |
+| Reporting | 最新応募後は`enqueued=1 / attempted=1 / delivered=1`、provider message ID `18368`、exit 0 | receipt 26/pending 0は正しいが、`G2 owner snapshot`やraw `unknown`が残り自然言語UXは未完 |
 | Paid | ledger eventは`application_verified` 25件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、入金のproduction ownerは未完成。net MRRは未発生 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
@@ -1884,8 +1884,8 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 | 完了 | **Storefront canonical convergence**: productでcanonical `1338228`とsuperseded `1338229–1338233`を宣言し、一wake一mutation、presend exact-ID再観測、POST、公式status readback、canonical receiptを持つ独立30分ownerを追加。旧5件をpausedへ収束 | release `cb9ed535d…`、公式`published 1 / paused 5`、receipt `1338228`、second wake `action=unchanged / status_effect_count=0`、owner exit 0 | 完了 |
 | 条件待ち | **Negotiate / Reply positive-event acceptance**: 既存Work Syncはbuyer-last一件のintent→model reply→POST→公式message ID/body readback→handled dedupeをproduction実証済み。Applyのclient選定/仮払い、Storefrontのseller見積回答→client仮払い、月額報酬のclient-originated offer→seller承諾は、最初の実eventの公式shapeで最小追加する。存在しないbuyerへfake effectを作らず、他の安全なTODOを止めない | 最初のreal reply/estimate/accept effect、公式message/estimate/contract ID、仮払い済みactive contract、ContractReceipt、次wake duplicate 0 | buyer event到着後 |
 | 観測中 | **Storefront demand loop #1**: 公式counterとcategory競合を観測し、Coconalaのwinner imitation contractを再利用。buyer problemを前半へ置くtitleだけを変更し、他fieldを固定した | release `1f47f4bcf…`、receipt product v2、public exact title、`action=updated`、second wake `unchanged`、mutation 0。7日後の閲覧countでkeep/revert/次変数を決める | 7日観測 |
-| 1 | **Apply acquisition outcome診断**: Storefrontを待つ間も30分ownerを止めず、各queryの公式provider件数、normalize後件数、既応募除外、model判断、送信結果を分離する。直近`observed=2 / eligible=0`がmarket不足、query coverage、既応募、model判断のどこで生じたかを実測し、最初の実blockerだけを最小修正する | 10 queryの公式件数とfunnel、最大1応募/tick維持、既応募再送0、eligibleがあれば公式proposal IDとApplicationReceipt、なければ正直なno-op | 0.5–1日 |
-| 2 | **Paid fulfillment stage**: funded active contractだけをqueueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
+| 完了 | **Apply acquisition outcome診断**: 10 query公式件数を分離し、validator通過済み能力外を既存claimへ保存、Coconala同様にdefault wake最大3探索turnへ進めた。Lancersのrequired生成AI宣言value 1も正直に選択する | release `829824532…`、`observed 21 / eligible 8`、provider block submit 0、次候補`5584041`一回送信、proposal `27812830`、receipt 26、pending 0、blind resend 0 | 完了 |
+| 1 | **Paid fulfillment stage**: funded active contractだけをqueueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
 | 3 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
 | 4 | **four-lane human reporting**: Apply / Storefront / Negotiate / Paidのeffect/readback/blocked/failedとreceipt funnelを自然文へ投影。Telegram transport failureをlane failureや売上へ混ぜず、当月入金総額・当月net revenue・単発売上・現在net MRRを別表示する | every-wake human message、個別effect/failure即時通知、receipt count、pending/blocker、四つのrevenue値のunknown/verified、exact-key dedupe | 0.5–1日 |
 | 5 | **payment後だけself-improvement**: Apply/Storefront別にinquiry→contract→delivery→payment→retention→net marginを帰属し、一度に一変数だけkeep/revert | 実PaymentReceipt cohort、conversion/margin比較、変更前後の公式outcome | 継続運用 |
@@ -1973,3 +1973,9 @@ value 0=`生成AIを使用していない / 使用しない`、value 1=`生成AI
 要望も対応できる`の二択が未選択であることを確認した。route、canonical、proposal textarea、amount、due date、form actionは
 既存contractと一致する。Life Managerは生成AIを使うため、次の最小sliceは既存submitterで公式value 1のexact labelだけを選択し、
 checkedをpresend検証する。変更は`application_tick.py` 1 file、6–12行で、新field/schema/state/serviceを作らない。
+
+このsliceは完了した。release `829824532eae871bc86835bbd087f60b40fc6ae0`は公式value 1のexact required controlと
+labelを検証して選択する。production ownerは`5584041`を一回だけ送信し、¥70,000・納期`2026-08-21`・proposal ID
+nullのpendingを保存した。次wakeはsubmit 0のreadback-onlyで公式proposal `27812830`を確認し、pending 1→0、
+ApplicationReceipt 25→26、fingerprint 41→42、owner exit 0である。Work Syncの直後再観測はsource complete、
+required reply 0、active project/monthly/storefront contract candidate 0であり、次の売上境界は実buyer選定・仮払いである。
