@@ -27616,3 +27616,10 @@
 {"ts":1786702800,"wake_id":"00MSSSPSBO57CE62251D06481C","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786702932,"wake_id":"00MSSSSLO5F465A86C68534601","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786703064,"wake_id":"00MSSSVFNSCD1D6B988FD44DCC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786703195,"wake_id":"00MSSSY961B0966560475F448E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786703323,"wake_id":"00MSST0ZMK5AF62FBE10374C8B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786703448,"wake_id":"00MSST3OFY5FA49346A9CD4BC8","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paying USDC for data labeling or annotation [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake"}
+{"ts":1786703576,"wake_id":"00MSST6EYK37991B90B980423B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786703704,"wake_id":"00MSST95OVB2CCFB5FBFC64E66","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786703837,"wake_id":"00MSSTC0KD41DB6C339ED84012","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786703967,"wake_id":"00MSSTESRZ9629A131718D4D41","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
