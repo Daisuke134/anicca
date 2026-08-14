@@ -2038,6 +2038,25 @@ detail取得失敗は件数へ明示し、teaser fallbackを維持する。新br
 **DONE EVIDENCE:** public detail probeで`5586553`の`依頼詳細`、応募条件、質問、面談がplanner descriptionへ含まれる。
 exact-release ownerはfull detailを読んでskipまたはfitを判断し、max 1 proposal、official ID readback、duplicate effect 0を維持する。
 
+### 18.13 category別proposal formのAI declaration
+
+**CURRENT OBSERVATION:** full-detail exact ownerは19件を読み、eligible 2まで絞るが、最優先project `5586221`で
+`proposal_form_changed`、submit 0、pending 0、receipt 27のまま終了する。公式protected detailは募集中、exact proposal link 3本、
+正常なform action・amount・due controlを持つ。read-onlyで同じ`_production_prepare`も成功する。
+
+**ROOT CAUSE:** `5586221`は文字起こし・整文categoryで、proposal formに`ProposalAiDeclaration` fieldが存在しない。
+現submitterは全categoryでAI declaration option value 1とexact labelを無条件要求するため、prepare後・intent保存前に正常formを拒否する。
+一方、project `5584041`のライティングformでは同fieldがrequiredであり、AI使用を正直にvalue 1で申告する必要がある。
+
+**NEXT DIRECT ACTION:** form内に`data[ProposalAiDeclaration][ai_declaration]`が1件以上存在する時だけ、既存exact value 1、required、
+label text、checked readbackを要求する。fieldが0件ならproviderがそのcategoryで申告を要求していないため何も追加しない。fieldがあるのに
+expected option/labelが欠ける場合は従来どおりfail closedする。
+
+**PLAN SIZE:** production 1 file、約6–10行。category listや別submitterは作らない。
+
+**DONE EVIDENCE:** exact-release owner自身が`5586221`のprovider formを通過し、最大1submit後に公式proposal IDをreadbackするか、
+providerが返す次の具体的blockerだけを報告する。AI fieldあり案件ではvalue 1のchecked readbackを維持する。
+
 production release `a20eaad4a345cffbef9be10870a2ef05535d170b`の最初のowner wakeは、旧2件停止を越えて
 `observed=21 / eligible=8`へ進み、先頭`5586766`を公式`provider_terminal_blocked`としてsubmit 0でclaimした。
 fingerprintは31→41、pendingは0、ApplicationReceiptは25であり、plannerが検証した能力外とprovider受付不能を次wakeで
