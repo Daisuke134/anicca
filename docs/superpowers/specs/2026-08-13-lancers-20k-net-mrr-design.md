@@ -1310,8 +1310,9 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 完了 | G4C fenced Sales reply | 既存work-syncでbuyer-last一件だけをclaimし、Coconalaの返信contractでhonest declineを生成。送信前fence、公式message ID、本文readback、blind resend 0をlive確認 | 完了 |
 | 完了 | G4C verified offer grounding | canonical storefront productと公式応募条件をsales contextへ接続し、価格・納期質問の公式値をdeterministic検査。実proposalとread-only compositionで混同0を確認 | 完了 |
 | 完了 | G3A.1 claimed-only query fallback | default queryが既処理案件だけを返した場合も次queryへ進む。liveで別query 19件→eligible 13→最大1応募→公式receiptを確認 | 完了 |
-| 1 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
-| 2 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
+| 1 | G3B.4 application capability priority | Coconalaと同じくfeasibilityをpriorityより先に確定し、完成動画制作必須を`video_or_animation`、企画・構成・台本だけを応募可能として実案件で確認する。検証後だけApplication ownerを再開する | 2–4時間 |
+| 2 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
+| 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
 | 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
 | 5 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
 
@@ -1611,3 +1612,32 @@ project `5583089`しかないqueryを終了点にせず次queryへ進む。次qu
 次のowner kickはsubmit 0のreadback-only reconciliationで公式proposal ID `27810707`を取得する。
 pendingは1→0、ApplicationReceiptは15→16、fingerprintは21→22となる。これによりclaimed-only fallback、
 一tick一応募、blind resend 0、公式readback、append-only ledgerをliveで確認する。
+
+### 17.4 G3B.4 application capability priority
+
+公式`/mypage/proposals`は応募17件、公式work-syncはcompleteな`serviceItemContract` 0件を示す。
+応募機構は動くが、直近二件は収益候補ではなく納品不能な誤応募である。project `5586413`はAI映像・音声・
+字幕・BGM/効果音を含む完成ショート動画と動画生成経験を必須とし、proposal `27810707`はその制作を約束した。
+project `5579721`はPremiere Proによるカット、テロップ、BGM/SE、animation、色・音調整、thumbnailを必須とし、
+proposal `27810811`はその全工程を約束した。後者は公式機能で撤回済み、前者はproviderが撤回不能と返す。
+append-only ApplicationReceiptは事実として残し、契約・売上には数えない。前者へbuyer replyが来た場合はSales laneが
+能力外を正直に訂正し、受注しない。
+
+根因はsubmit/readback、検索件数、価格gateではない。同じplanner prompt内でhard prohibitionと
+`AI・高報酬を優先`を並べたため、modelがpriorityをfeasibilityより強く解釈した。Application ownerは追加誤応募を
+防ぐため一時disabled/unloadedとし、Sales source/actionとTelegram reportingは継続する。
+
+Ponytailの最小修正は新しいclassifier、regex、AI verifier、DB、schedulerを追加しない。
+既存Coconalaの単一planner判断をそのまま明確化し、次の順序だけを固定する。
+
+1. 案件全体から納品可能性を先に確定し、その後だけrecurring、AI、web、高報酬を順位付けする。
+2. hard prohibition必須案件を、継続・AI・高報酬・低予算・簡単そうという理由で`submit_required`へ変えない。
+3. 完成動画そのものの生成・編集・書き出しが必須なら`video_or_animation`とする。
+4. 企画、構成、台本、文章だけで完成動画制作が不要なら動画語を含んでも応募可能とする。
+5. mechanical keyword ruleではなく案件全体を読み、hard prohibitionの原文引用を返す。
+
+完了条件はproduction 1 fileのprompt差分と既存test 1 fileの最小regression、Lancers suite、agent-runner suite、
+installer、py_compileが通ることに加え、公式公開本文を入力したexact plannerが`5586413`と`5579721`を
+`video_or_animation`へ分類し、文章だけの動画台本controlを`submit_required`へ分類することである。その後だけ
+canonical mainのexact releaseを三ownerへ配備し、Application ownerを再enableして一回kickする。一tick最大一応募、
+durable claim、official readback、Sales/Telegram/Work Syncとの同一SHAは変更しない。
