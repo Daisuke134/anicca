@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** Applyは公式ApplicationReceipt 25件、Storefrontはcanonical 1件へ収束。契約候補0、Paid未完成のためnet MRRは未発生
+**状態:** Applyは公式ApplicationReceipt 30件、Storefrontはcanonical 1件へ収束。現在はproduction browser attach停止、契約候補0、Paid未完成のためnet MRRは未発生
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -1695,19 +1695,20 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 |---|---|---|
 | canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
 | installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `ec01da31dbc4c8adf18d418f771b1a80277bbffa` | manifest 21 files、owner 4本exact release一致、writable file 0 |
-| Apply | launchd enabled、30分、累計`application_verified=30`、fingerprint 80、pending 0 | 新slotでproject `5585080`へ一度だけ送信し、次wake readback-onlyで公式proposal ID `27812869`、ApplicationReceipt exactly 1を取得 |
+| production browser | `127.0.0.1:9227`のChromium PIDはLISTENし、公式画面も認証済み。しかしprocessはlaunchd ownerを持たず、Playwright CDPはWebSocket接続後10秒でattach timeout。loop由来targetが14枚残る | 現在の最上位runtime blocker。Lancersの429、401、403、logoutではなく、manual browser processとPlaywright attach/target lifecycleの不整合 |
+| Apply | launchd enabled、30分、累計`application_verified=30`、fingerprint 97、pending 0 | 最後の公式receiptはproject `5585080`→proposal `27812869`。直近4 wakeはfresh `contracts.json`を得られず`capacity_source_unavailable`、外部送信0 |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
-| capacity | exact release `621e13b39…`はfresh `contracts.json`とJapan dayのApplicationReceiptを読むG3C gateを稼働。live decisionは当日0件・active contract 0でallow | 10件到達を作るための不要応募はせず、自然到達時の`daily_quota_reached`を継続観測する |
-| Sales source | Work Sync live kickはexit 0。2026-08-15の公式再観測ではboard `9024494`の最新messageは`58931455`、seller-last、`is_required_reply=false`。project working 0、monthly contract 0、monthly offer 0 | reply transport、intent、公式message ID readback、handled dedupeは稼働。現在送るべきbuyer actionも承諾すべきofferもなく、effect 0が正しい |
+| capacity | gateは15分以内のfresh `contracts.json`を要求する。Work Sync停止によりsnapshotが期限切れとなり、Applicationは安全にfail closed | browser recovery後にofficial source completeを更新するまでApplyを再開しない設計が正しい |
+| Sales source | Work Syncは5分ownerだが直近8 wakeが`observer_unavailable`、launchd last exit 1。Originなしraw CDPで公式APIをread-only確認するとboard `9024494`が一件、`is_required_reply=false`、未読0。公式画面はproject working 0、monthly contract 0 | buyer actionは現在0。ただしowner自身の観測は停止中であり「Sales稼働中」とは判定しない |
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
 | Storefront canonical | 公式inventoryは`published=1 / paused=5 / hidden=0 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式paused readback。`listing.json`も月額SNS商品`1338228`へ更新 | ¥98,000 / ¥198,000 / ¥398,000、画像、spot/3か月/6か月routeは公開page一致。second wake `status_effect_count=0` |
-| Storefront demand | canonical `1338228`の公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`。公式category/winnerを比較し、titleだけをbuyer problem先頭へ変更した | exact ownerが同じ5値を`listing.json`へdurable保存。連続2 wakeとも`action=unchanged / status_effect_count=0`。現在は7日観測中で売上効果未確定 |
-| Reporting | 最新応募receiptは`enqueued=1 / attempted=1 / delivered=1`、provider message ID `18507`、exit 0 | 公式確認1、累計30、pending 0、Storefront需要、会話/契約、履歴0・残高0・今月入金0・net MRR 0を自然文表示 |
-| Paid | ledger eventは`application_verified` 29件だけ。公式`/mypage/payment`はsource complete、入出金履歴0、残高0、received gross 0。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、positive payment rowのproduction effect/readbackは未完成。現在net MRR 0は公式empty sourceで確定 |
+| Storefront demand | raw CDPでcanonical `1338228`を公式再観測し、`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`。ownerは直近3 wakeが`offer_unavailable / logged_in=false`、last exit 1 | listing自体は公開中だが、30分ownerはbrowser attachで停止。7日需要実験の継続観測も回復まで欠測する |
+| Reporting | 最新配信はprovider message ID `18628`。応募累計30、会話1、契約0、公式入出金履歴0、残高0円、net MRR 0円を自然文表示し、Storefront取得不能を⚠️で明示 | Telegram ownerは5分でexit 0。ただしupstream停止中はstale/unknownを報告するcontrol planeであり、revenue ownerの代替ではない |
+| Paid | ledger eventは`application_verified` 30件だけ。raw CDPで公式`/mypage/payment`を再観測し、入出金履歴0、残高0円を確認。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、positive payment rowのproduction effect/readbackは未完成。現在net MRR 0円は公式empty sourceで確定 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
 
-応募数の不足が現在の主因ではない。累計26件の公式応募receiptがあるのに、公式contract candidateは0件である。
+応募数の不足が現在の主因ではない。累計30件の公式応募receiptがあるのに、公式contract candidateは0件である。
 売上になる境界は応募ではなく、buyerが選ぶ／相談する、sellerが正しいreply・見積を返す、buyerが仮払いする、sellerが
 契約を承諾する、納品・検収が終わる、支払・payout・銀行入金が照合される、の後段である。
 
@@ -1715,11 +1716,12 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 検収、月額契約はclient offer時に仮払いしてseller承諾で成立する。したがってApplicationReceipt、listing公開、proposal金額を
 収益へ昇格させない。
 
-現在の直接ボトルネックは次の三つである。
+現在の直接ボトルネックは次の四つである。
 
-1. **Storefront acquisition:** split-brainと重複5件は解消し、最初のtitle一変数実験も公式readbackまで閉じた。しかし公式funnelはまだ`表示1→閲覧0→相談0→注文0`で、7日観測前に需要改善を証明できない。
-2. **Sales conversion:** buyer-lastを読む/返信するtransportはあるが、購入意思→route別の見積/選定/client-originated月額offer→仮払い済みactive contract→ContractReceiptはpositive event待ちである。現在のseller-lastへfake返信・fake見積は作らない。
-3. **Revenue completion:** funded contractから制作・QA・公式納品・検収・PaymentReceipt・fee/cost/payout・bank matchへ進むFulfillment/Finance ownerがない。
+1. **Runtime availability:** manual ChromiumはHTTP endpointだけ生き、Playwright ownerがattachできない。Work SyncとStorefrontはexit 1、capacity snapshotが15分を超えたApplyもfail closedしており、現在は三つのrevenue ownerが外部action 0である。
+2. **Storefront acquisition:** split-brainと重複5件は解消したが、公式funnelは`表示1→閲覧0→相談0→注文0`であり、需要がまだない。
+3. **Sales conversion:** buyer-lastを読む/返信するtransportはあるが、購入意思→route別の見積/選定/client-originated月額offer→仮払い済みactive contract→ContractReceiptはpositive event待ちである。現在のseller-lastへfake返信・fake見積は作らない。
+4. **Revenue completion:** funded contractから制作・QA・公式納品・検収・PaymentReceipt・fee/cost/payout・bank matchへ進むPaid ownerがない。
 
 ### 18.3 Coconala four-lane parityを採用する
 
@@ -1743,25 +1745,32 @@ Coconala Storefront directはまだproduction未稼働なので、Storefrontの�
 
 ```mermaid
 flowchart LR
-  A[Lane 1: Apply<br/>募集→判断→応募<br/>ApplicationReceipt]
-  B[Lane 2: Storefront<br/>商品→需要観測→相談<br/>一変数改善]
-  N[Lane 3: Negotiate / Reply<br/>buyer-last→返信/見積/client offer承諾<br/>ContractReceipt]
-  P[Lane 4: Paid<br/>funded work→制作/QA/納品/検収<br/>PaymentReceipt→銀行照合]
-  AR[(Apply state / receipts)]
-  BR[(Storefront state / receipts)]
-  NR[(Negotiate state / receipts)]
-  PR[(Paid state / receipts)]
-  R[$10K net MRR<br/>同じ式で$20Kへ拡張]
+  W[独立scheduler<br/>対象なしは正常no-op]
+  A[Lane 1: Apply<br/>30分wake<br/>募集→判断→応募]
+  B[Lane 2: Storefront<br/>30分wake<br/>公開→需要観測→一変数改善]
+  N[Lane 3: Negotiate / Reply<br/>5分wake<br/>buyer-last→返信/見積/offer承諾]
+  P[Lane 4: Paid<br/>bounded wake<br/>制作→QA→納品→入金照合]
+  AR[(ApplicationReceipt)]
+  IR[(Inquiry / Order identity)]
+  CR[(ContractReceipt<br/>仮払い済み)]
+  DR[(DeliveryReceipt)]
+  PR[(PaymentReceipt<br/>bank matched)]
+  R[$10K net MRR<br/>¥2.38M gross mixを実測]
   C[Control plane<br/>自然言語report / health / self-heal]
 
+  W -. independent wake .-> A
+  W -. independent wake .-> B
+  W -. independent wake .-> N
+  W -. independent wake .-> P
   A --> AR --> N
-  B --> BR --> N
-  N --> NR --> P
-  P --> PR --> R
-  C -. read only projection .-> AR
-  C -. read only projection .-> BR
-  C -. read only projection .-> NR
-  C -. read only projection .-> PR
+  B --> IR --> N
+  N --> CR --> P
+  P --> DR --> PR --> R
+  C -. read-only projection .-> AR
+  C -. read-only projection .-> IR
+  C -. read-only projection .-> CR
+  C -. read-only projection .-> DR
+  C -. read-only projection .-> PR
 ```
 
 四laneはそれぞれ別owner、別schedule、別lane-local state、別provider resource identityを持ち、他laneの完了を待たずにwakeする。
@@ -1823,7 +1832,7 @@ net_mrr_usd = recorded_fx(
 このmixは$10K netの証拠ではない。70% net marginなら`¥2,380,000 × 0.70 = ¥1,666,000 net`であり、
 記録済みUSDJPYが166.6以下なら$10Kを超える。実marginまたはFXが条件を満たさなければ、同じtierでStandard/Premiumを
 一件ずつ追加する。最初は48 capacity units、Founding 3社まででdelivery時間、revision、実原価を測り、実PaymentReceipt後に
-capacityを増やす。初期獲得配分70/30はApplyに25 receipt、Storefrontにinquiry実績0という現在の証拠から置く。
+capacityを増やす。初期獲得配分70/30はApplyに30 receipt、Storefrontにinquiry実績0という現在の証拠から置く。
 最初の10件の実payment cohortで、より高い`contract conversion × retention × net margin / owner time`を出したpillarへ配分を移す。
 
 ### 18.5 Telegram-first human experience
@@ -1882,15 +1891,16 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 |---:|---|---|---:|
 | 完了 | **exact-release + G3C収束**: main/feature/current/installed/3 ownerを`621e13b39…`へ統一。Application live tickは`observed=2 / eligible=0 / submitted=false / no_eligible_project`、state/ledger/listing不変、pending 0、orphan 0。Work Syncはofficial source complete、reply 0。Telegramは同一snapshot送信0 | manifest bytes一致、release writable 0、owner 3本exit 0、G3C current decision allow。自然にJapan day 10件へ達した時の`daily_quota_reached`だけ継続観測 | 完了 |
 | 完了 | **Storefront canonical convergence**: productでcanonical `1338228`とsuperseded `1338229–1338233`を宣言し、一wake一mutation、presend exact-ID再観測、POST、公式status readback、canonical receiptを持つ独立30分ownerを追加。旧5件をpausedへ収束 | release `cb9ed535d…`、公式`published 1 / paused 5`、receipt `1338228`、second wake `action=unchanged / status_effect_count=0`、owner exit 0 | 完了 |
-| 条件待ち | **Negotiate / Reply positive-event acceptance**: 既存Work Syncはbuyer-last一件のintent→model reply→POST→公式message ID/body readback→handled dedupeをproduction実証済み。Applyのclient選定/仮払い、Storefrontのseller見積回答→client仮払い、月額報酬のclient-originated offer→seller承諾は、最初の実eventの公式shapeで最小追加する。存在しないbuyerへfake effectを作らず、他の安全なTODOを止めない | 最初のreal reply/estimate/accept effect、公式message/estimate/contract ID、仮払い済みactive contract、ContractReceipt、次wake duplicate 0 | buyer event到着後 |
-| 観測中 | **Storefront demand loop #1**: 公式counterとcategory競合を観測し、Coconalaのwinner imitation contractを再利用。buyer problemを前半へ置くtitleだけを変更し、他fieldを固定した | release `1f47f4bcf…`、receipt product v2、public exact title、`action=updated`、second wake `unchanged`、mutation 0。7日後の閲覧countでkeep/revert/次変数を決める | 7日観測 |
 | 完了 | **Apply acquisition outcome診断**: 10 query公式件数を分離し、validator通過済み能力外を既存claimへ保存、Coconala同様にdefault wake最大3探索turnへ進めた。Lancersのrequired生成AI宣言value 1も正直に選択する | release `829824532…`、`observed 21 / eligible 8`、provider block submit 0、次候補`5584041`一回送信、proposal `27812830`、receipt 26、pending 0、blind resend 0 | 完了 |
-| 1 | **Paid fulfillment stage**: funded active contractだけをqueueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
+| 0 | **production browser owner recovery**: manual PID任せをやめ、既存profileと`:9227`をsole reproducible ownerへ束ねる。loop由来stale target/dialogを安全に閉じ、Playwright attach、owner cleanup、target上限を同じ起動契約で回復する | `/json/version`だけでなく`connect_over_cdp`成功。Application / Storefront / Work Syncが同じexact releaseで各exit 0、fresh official source、次wake duplicate effect 0。429/logout/ledger mutation 0 | 0.5–1日 |
+| 1 | **Negotiate / Contract completion**: Coconalaのsemantic reply contractを再利用し、Apply選定、Storefront相談/見積、client-originated月額offer、仮払い済みactive contractの各公式shapeを同じSales ownerへ接続する。イベントがない時は正常no-op | real event到着時にmessage/estimate/offer/contract exact ID、ContractReceipt、次wake duplicate reply/offer 0。存在しないbuyerへのeffect 0 | 1–3日 + buyer event待ち |
+| 2 | **Paid fulfillment stage**: funded active contractだけを有限queueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
 | 3 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
-| 4 | **four-lane human reporting**: Apply / Storefront / Negotiate / Paidのeffect/readback/blocked/failedとreceipt funnelを自然文へ投影。Telegram transport failureをlane failureや売上へ混ぜず、当月入金総額・当月net revenue・単発売上・現在net MRRを別表示する | every-wake human message、個別effect/failure即時通知、receipt count、pending/blocker、四つのrevenue値のunknown/verified、exact-key dedupe | 0.5–1日 |
+| 4 | **four-lane human reporting completion**: 既存のApply / Storefront / Negotiate / Finance自然文をPaid receiptまで拡張し、transport failureをlane failureや売上へ混ぜず、当月入金総額・当月net revenue・単発売上・現在net MRRを別表示する | every-wake human message、個別effect/failure即時通知、receipt count、pending/blocker、四つのrevenue値のunknown/verified、exact-key dedupe | 0.5–1日 |
+| 並行観測 | **Storefront demand loop #1**: browser回復後に公式counterを欠測なく観測し、Coconalaのwinner imitation contractを再利用。buyer problemを前半へ置くtitle以外を固定する | 7日後の閲覧countでkeep/revert。次は一変数だけ変更し、public before/after、second wake mutation 0 | 7日観測 |
 | 5 | **payment後だけself-improvement**: Apply/Storefront別にinquiry→contract→delivery→payment→retention→net marginを帰属し、一度に一変数だけkeep/revert | 実PaymentReceipt cohort、conversion/margin比較、変更前後の公式outcome | 継続運用 |
 
-実装の集中時間はbest 5日、base 10日、worst 20日以上である。これはbuyer応答・検収・provider payoutの待ち時間を含まない。
+実装の集中時間はbest 6日、base 12日、worst 20日以上である。これはbuyer応答・検収・provider payoutの待ち時間を含まない。
 最初の入金はbest 1–3週、base 3–8週、worst 8週以上、$10K net MRRはbest 2–4か月、base 4–9か月、
 worst 9か月以上または未達とする。最大の不確実性はcodeではなく、商品価格でbuyerが契約し継続するconversion/retentionである。
 
