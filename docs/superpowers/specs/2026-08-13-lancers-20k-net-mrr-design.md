@@ -1962,3 +1962,14 @@ atomic追加する。default ownerだけ最大3 discovery/planner turnを行い�
 一tick最大1応募、durable pending、公式proposal readback、ApplicationReceiptは変更しない。変更targetはproduction 1 file
 35–55行と本節だけである。acceptanceは実ownerで新queryへ進み、最大1件だけ公式proposal ID/receiptを得るか、3 turn全てを
 正直なno-opで閉じ、次wakeで同じhard-prohibited案件を再評価せず、duplicate external effect 0であることとする。
+
+production release `a20eaad4a345cffbef9be10870a2ef05535d170b`の最初のowner wakeは、旧2件停止を越えて
+`observed=21 / eligible=8`へ進み、先頭`5586766`を公式`provider_terminal_blocked`としてsubmit 0でclaimした。
+fingerprintは31→41、pendingは0、ApplicationReceiptは25であり、plannerが検証した能力外とprovider受付不能を次wakeで
+再評価しない。次wakeは`5584041`へ進んだが、submit前に`proposal_form_changed`で停止した。
+
+公式応募formのread-only実測で、従来fieldに加えて`data[ProposalAiDeclaration][ai_declaration]`がrequiredになり、
+value 0=`生成AIを使用していない / 使用しない`、value 1=`生成AIを使用している / 使用するが、著作権の侵害がなく、修正の
+要望も対応できる`の二択が未選択であることを確認した。route、canonical、proposal textarea、amount、due date、form actionは
+既存contractと一致する。Life Managerは生成AIを使うため、次の最小sliceは既存submitterで公式value 1のexact labelだけを選択し、
+checkedをpresend検証する。変更は`application_tick.py` 1 file、6–12行で、新field/schema/state/serviceを作らない。
