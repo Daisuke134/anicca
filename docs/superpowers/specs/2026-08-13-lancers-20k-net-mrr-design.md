@@ -2271,3 +2271,25 @@ eligible 1を見つけ、project `5585080`へ¥10,000、納期`2026-08-21`のint
 ApplicationReceipt 29→30、fingerprint 78→80、exit 0になる。Work Syncは直後もboard 1、reply required 0、contract candidate 0、
 finance complete zero、effect 0である。Telegram ownerは公式確認1件、累計30件、pending 0と全funnelをprovider message ID `18507`へ配信する。
 次の収益境界はbuyer reply/選定/仮払いによるpositive contract candidateであり、応募額¥10,000を売上へ計上しない。
+
+### 18.23 Production browser recovery
+
+**USER OUTCOME:** rebootや長時間稼働後もLancers専用browserが一つのreproducible ownerから復帰し、壊れたloop-owned tab一枚で
+Apply、Storefront、Negotiateの全laneが停止しない。
+
+**CURRENT OBSERVATION:** `127.0.0.1:9227`のmanual Chromium PIDはHTTP endpointと認証済み公式画面を返す一方、Playwright
+`connect_over_cdp`はWebSocket接続後10秒で毎回timeoutする。14 targetへOriginなしCDP `Runtime.evaluate`を送ると、Storefront edit 4枚、
+working 2枚、profile 1枚、detail 3枚、signup 1枚の合計11枚が2秒以内に応答せず、3枚だけが応答する。既存
+`_cleanup_stale_targets`はlogin/reminder routeだけを閉じるため、この壊れたLancers targetを回収しない。応答不能11枚だけをcloseすると、
+同じPID、同じprofile、同じlogin sessionのままPlaywright attachは0.61秒で成功し、application、contracts、ledger hashは不変である。
+fresh一時profileでは現行最小flagと正常job-search flagの両方が0.4秒以内にattachできるため、missing flag単独説は棄却する。
+
+**NEXT DIRECT ACTION:** Coconala隣接の正常job-search owner contractを再利用し、既存Lancers installerから専用profile、loopback
+`:9227`、`RunAtLoad + KeepAlive`のbrowser plistを生成・activationする。attach timeout時だけ、既存stdlib CDP inventory/close helperで
+専用profile内のLancers targetを閉じて一度だけretryする。新browser framework、DB、monitor、schedulerは作らない。
+
+**PLAN SIZE:** production 3 files、約40–70行。既存`application_tick.py`、installer、12行plistのみ。新test fileは作らず、既存installer
+2件、Application focused 19件、isolated Chromium、production三owner E2Eで検証する。
+
+**DONE EVIDENCE:** 未完。sole browser launchd PID、Playwright attach、公式account ready、Application / Storefront / Work Sync exit 0、
+fresh `contracts.json`、次wake duplicate effect 0、state/ledger差分をproductionで確認してから完了へ更新する。
