@@ -382,7 +382,7 @@ def _jst_day(value: object) -> str:
 
 
 def enqueue_snapshot(database: Path, snapshot: Mapping[str, object], now: object) -> bool:
-    key = f"lancers:g2:{_jst_day(now)}:{semantic_hash(snapshot)}"
+    key = f"lancers:human:v1:{_jst_day(now)}:{semantic_hash(snapshot)}"
     try:
         return bool(outbox.enqueue(Path(database), key, render_snapshot(snapshot), _timestamp(now) or "unknown"))
     except outbox.IdempotencyConflict:
