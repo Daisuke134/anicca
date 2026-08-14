@@ -346,16 +346,21 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
             result["contract_candidates"] += result.pop("storefront_contract_candidates")
             result["contract_candidates"].sort(key=lambda row: (row["source_kind"], row["provider_id"]))
             result["contract_candidate_count"] = len(result["contract_candidates"])
+            result["reply_action"] = _sales_action(page, Path(state_path), private_boards, verified_proposals)
             _write_state(Path(state_path).with_name("contracts.json"), {
                 "source_complete": True,
                 "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "board_count": result["board_count"],
+                "unread_count": result["unread_count"],
+                "required_reply_count": result["required_reply_count"],
+                "application_board_count": result["application_board_count"],
+                "reply_status": result["reply_action"]["status"],
                 "project_working_count": result["project_working_count"],
                 "monthly_contract_count": result["monthly_contract_count"],
                 "storefront_contract_candidate_count": result["storefront_contract_candidate_count"],
                 "contract_candidate_count": result["contract_candidate_count"],
                 "contract_candidates": result["contract_candidates"],
             })
-            result["reply_action"] = _sales_action(page, Path(state_path), private_boards, verified_proposals)
     except SourceFailure as error:
         result = _failed(str(error), logged_in)
     except Exception as error:

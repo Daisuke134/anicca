@@ -281,6 +281,15 @@ def _listing_demand(path: Path) -> Optional[dict[str, int]]:
     result = {key: _int(demand.get(key)) for key, _label in _DEMAND_LABELS}
     return result if all(value is not None for value in result.values()) else None
 
+def _sales_snapshot(path: Path) -> Optional[dict[str, object]]:
+    try: value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError): return None
+    keys = ("board_count", "unread_count", "required_reply_count", "application_board_count", "contract_candidate_count")
+    if not isinstance(value, Mapping) or value.get("source_complete") is not True: return None
+    result: dict[str, object] = {key: _int(value.get(key)) for key in keys}
+    result["reply_status"] = value.get("reply_status") if isinstance(value.get("reply_status"), str) else None
+    return result if all(result.get(key) is not None for key in (*keys, "reply_status")) else None
+
 def _parse_storefront(page: object) -> dict[str, int]:
     if getattr(page, "url", None) != "https://www.lancers.jp/myplan":
         raise RuntimeError("storefront_route_invalid")
@@ -320,7 +329,8 @@ def read_storefront(state_path: Path = STATE, *, browser_factory: Optional[Calla
 def build_snapshot(*, application: object, pending_count: object, cumulative_verified: object,
                    storefront: object, source_observed_at: object,
                    official_readback_observed_at: object = None,
-                   provider_event_time: object = None, blocker: object = None) -> dict[str, object]:
+                   provider_event_time: object = None, blocker: object = None,
+                   sales: object = None) -> dict[str, object]:
     app = application if isinstance(application, Mapping) else {}
     stages = {key: _int(app.get(key)) for key in ("observed_count", "eligible_count", "verified_count")}
     stages["submitted"] = (0 if isinstance(app, Mapping) and app.get("submitted") is False else 1) if isinstance(app, Mapping) and isinstance(app.get("submitted"), bool) else None
@@ -336,7 +346,7 @@ def build_snapshot(*, application: object, pending_count: object, cumulative_ver
         resolved_blocker = str(store["error"])
     return {
         "application": stages, "pending": pending, "cumulative_verified": verified,
-        "storefront": store, "blocker": resolved_blocker or None,
+        "storefront": store, "sales": dict(sales) if isinstance(sales, Mapping) else None, "blocker": resolved_blocker or None,
         "source_observed_at": _timestamp(source_observed_at),
         "official_readback_observed_at": _timestamp(official_readback_observed_at),
         "provider_event_time": _timestamp(provider_event_time),
@@ -348,6 +358,7 @@ def build_snapshot(*, application: object, pending_count: object, cumulative_ver
 def render_snapshot(snapshot: Mapping[str, object]) -> str:
     app = snapshot.get("application") if isinstance(snapshot.get("application"), Mapping) else {}
     store = snapshot.get("storefront") if isinstance(snapshot.get("storefront"), Mapping) else {}
+    sales = snapshot.get("sales") if isinstance(snapshot.get("sales"), Mapping) else {}
     verified = app.get("verified_count") if type(app.get("verified_count")) is int else None
     pending = snapshot.get("pending") if type(snapshot.get("pending")) is int else None
     blocker = snapshot.get("blocker") if isinstance(snapshot.get("blocker"), str) else None
@@ -363,6 +374,14 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
     states = " / ".join(f"{label}{count(store.get(key))}" for key, label, _href in _LABELS)
     demand = store.get("demand") if isinstance(store.get("demand"), Mapping) else {}
     funnel = " / ".join(f"{label}{count(demand.get(key))}" for key, label in _DEMAND_LABELS)
+    sales_line = (f"交渉: 公式会話{count(sales.get('board_count'))} / 返信必要{count(sales.get('required_reply_count'))} / "
+                  f"未読{count(sales.get('unread_count'))} / 契約候補{count(sales.get('contract_candidate_count'))}。")
+    sales_next = {
+        "no_reply_required": "今は相手からの返信・仮払いを待っています。",
+        "seller_last": "こちらからの返信は済んでおり、次の相手の返答を待っています。",
+        "reply_verified": "必要な返信を公式確認しました。次の相手の返答を待っています。",
+        "reply_uncertain": "返信結果を確認中です。同じ返信は再送せず、次回は公式履歴だけを確認します。",
+    }.get(sales.get("reply_status"), "公式の交渉状態を取得できませんでした。次回もう一度確認します。")
     reason = {
         "submission_uncertain": "応募結果の公式確認を待っています。同じ応募は再送せず、次回は公式履歴だけを確認します。",
         "account_lock_busy": "別のLancers処理が動作中のため、今回は公式画面の確認を見送りました。次回もう一度確認します。",
@@ -373,12 +392,13 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
             f"応募: 公開案件は{count(app.get('observed_count'))}確認し、適合候補は{count(app.get('eligible_count'))}、{sent_text}。"
             f"公式確認は{count(verified)}、累計{count(snapshot.get('cumulative_verified'))}、確認待ちは{count(pending)}です。\n"
             f"出品: {states}。需要: {funnel}。\n"
+            f"{sales_line}{sales_next}\n"
             "収益: 公式の入金記録はまだこのレポートに接続されていないため、売上とAI処理費は集計していません。応募額と出品価格は売上に含めません。\n"
             f"次: {reason}")
 
 
 def semantic_hash(snapshot: Mapping[str, object]) -> str:
-    value = {key: snapshot.get(key) for key in ("application", "pending", "cumulative_verified", "storefront", "blocker", "actual_ai_cost", "complete")}
+    value = {key: snapshot.get(key) for key in ("application", "pending", "cumulative_verified", "storefront", "sales", "blocker", "actual_ai_cost", "complete")}
     value["storefront"] = {key: value["storefront"].get(key) for key, _label, _href in _LABELS} | {"error": value["storefront"].get("error"), "demand": value["storefront"].get("demand")} if isinstance(value["storefront"], Mapping) else None
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
@@ -490,7 +510,7 @@ def collect_snapshot(*, application_log: Path, state_path: Path, ledger_database
         except Exception as error:
             storefront = {"error": _source_error(error)}
     if isinstance(storefront, Mapping): storefront = dict(storefront) | {"demand": _listing_demand(Path(state_path).with_name("listing.json"))}
-    return build_snapshot(application=observed, pending_count=_pending_count(Path(state_path)), cumulative_verified=verified, storefront=storefront, source_observed_at=source_time, official_readback_observed_at=official)
+    return build_snapshot(application=observed, pending_count=_pending_count(Path(state_path)), cumulative_verified=verified, storefront=storefront, sales=_sales_snapshot(Path(state_path).with_name("contracts.json")), source_observed_at=source_time, official_readback_observed_at=official)
 
 
 def _default_notifier(message: str) -> SendResult:

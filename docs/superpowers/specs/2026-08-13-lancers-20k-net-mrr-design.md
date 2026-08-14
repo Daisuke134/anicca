@@ -2206,3 +2206,23 @@ Storefront snapshot、human message、semantic hashへ加える。receipt不正�
 **DONE EVIDENCE:** exact release `ac52228477a2a4b4aa7dd72dcb48611268154ba0`のTelegram ownerはStorefront四状態に加え、
 検索表示1、詳細閲覧0、お気に入り0、相談0、注文0を自然文でprovider message ID `18484`へ配信し、exit 0になる。
 直後の同一snapshotはoutbox `1171→1171`、`enqueued=0 / attempted=0 / delivered=0`で、counterが変化した時だけ一件送る。
+
+### 18.20 Negotiate / Contract reporting
+
+**USER OUTCOME:** buyerから返事が来ているか、loopが返信したか、契約・仮払い候補があるかを、Application/Storefrontと同じTelegramで
+自然に確認できる。返信不要0件をfailureと呼ばず、buyer-lastやuncertainを見落とさない。
+
+**CURRENT OBSERVATION:** exact Work Sync ownerは公式sourceからboard 1、unread 0、required reply 0、reply action
+`no_reply_required`、contract candidate 0を返す。しかしdurable `contracts.json`はcontract count/candidatesだけを保存し、会話件数、未読、
+返信必要、reply actionを捨てる。Telegram ownerはこのstateを読まず、交渉laneを表示しない。
+
+**NEXT DIRECT ACTION:** Work Syncの同じsuccessful wakeで既存`_sales_action`後に、board count、unread count、required reply count、
+application board count、sanitized reply statusを既存`contracts.json`へ追加する。Telegramは同じstate directoryからstrict readし、
+会話・返信必要・未読・契約候補を人向け文章へ投影する。reply effect、provider route、intent/dedupe、DB、schedulerは変更しない。
+source不正または欠損時は0へ変換せず「公式状態を取得できませんでした」と表示する。
+
+**PLAN SIZE:** production 2 files、約25–40行。新service、launchd、schema、DBは0。
+
+**DONE EVIDENCE:** exact Work Sync ownerがboard 1、unread 0、required reply 0、`no_reply_required`、contract candidate 0を
+`contracts.json`へ保存し、effect 0、exit 0になる。exact Telegram ownerが「公式会話1件、返信が必要な会話0件、未読0件、
+契約候補0件。今は相手からの返信・仮払い待ち」と自然文で配信し、同一snapshotの次wakeはenqueue 0である。
