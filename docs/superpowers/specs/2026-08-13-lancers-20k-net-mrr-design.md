@@ -1703,11 +1703,11 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | Storefront canonical | 公式inventoryは`published=1 / paused=5 / hidden=0 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式paused readback。`listing.json`も月額SNS商品`1338228`へ更新 | ¥98,000 / ¥198,000 / ¥398,000、画像、spot/3か月/6か月routeは公開page一致。second wake `status_effect_count=0` |
 | Storefront demand | canonical `1338228`の公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`。公式category/winnerを比較し、titleだけをbuyer problem先頭へ変更した | exact ownerは`action=updated / changed_field=title / aligned=true`、次wakeは`action=unchanged / status_effect_count=0`。現在は7日観測中で売上効果未確定 |
 | Reporting | 最新応募後は`enqueued=1 / attempted=1 / delivered=1`、provider message ID `18368`、exit 0 | receipt 26/pending 0は正しいが、`G2 owner snapshot`やraw `unknown`が残り自然言語UXは未完 |
-| Paid | ledger eventは`application_verified` 25件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、入金のproduction ownerは未完成。net MRRは未発生 |
+| Paid | ledger eventは`application_verified` 26件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、入金のproduction ownerは未完成。net MRRは未発生 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
 
-応募数の不足が現在の主因ではない。日本日付の直前一日は11件、累計25件の公式応募receiptがあるのに、公式contract candidateは0件である。
+応募数の不足が現在の主因ではない。累計26件の公式応募receiptがあるのに、公式contract candidateは0件である。
 売上になる境界は応募ではなく、buyerが選ぶ／相談する、sellerが正しいreply・見積を返す、buyerが仮払いする、sellerが
 契約を承諾する、納品・検収が終わる、支払・payout・銀行入金が照合される、の後段である。
 
