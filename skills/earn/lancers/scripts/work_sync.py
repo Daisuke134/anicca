@@ -134,6 +134,7 @@ def _pages(fetch: Callable[[str], Any], route: Callable[[Optional[str]], str], c
             identity, _ = check(row)
             if identity in seen: raise SourceFailure(errors[0])
             seen.add(identity); rows.append(row)
+        if len(page) < 20: return rows
         next_cursor = check(page[-1])[1]
         if next_cursor == cursor: raise SourceFailure(errors[1])
         cursor = next_cursor
