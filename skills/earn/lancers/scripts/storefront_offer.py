@@ -109,14 +109,11 @@ def _setting_status(page: Any, listing_id: str) -> str:
 def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, Any]:
     active = [listing_id for listing_id in listing_ids if _setting_status(page, listing_id) == "active"]
     if not active: return {"superseded_active_count": 0, "status_effect_count": 0}
-    listing_id = active[0]; path = f"/myplan/{listing_id}/setting"
+    listing_id = active[0]
     _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').check()
     save = page.get_by_role("button", name="保存", exact=True)
     if save.count() != 1: raise OfferError("setting_form_changed")
-    with page.expect_response(lambda response: urlsplit(response.url).path == path and response.request.method == "POST", timeout=20_000) as submitted:
-        save.click()
-    if not 200 <= submitted.value.status < 400: raise OfferError("setting_submission_uncertain")
-    try: page.wait_for_load_state("domcontentloaded", timeout=20_000)
+    try: save.click(timeout=20_000)
     except Exception: pass
     if _setting_status(page, listing_id) != "paused": raise OfferError("setting_submission_uncertain")
     return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id}
