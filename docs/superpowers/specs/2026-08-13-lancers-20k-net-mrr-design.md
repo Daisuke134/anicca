@@ -2374,3 +2374,53 @@ Application、receipt ledger、Sales stateのSHA-256は二wake前後で一致す
 Telegram ownerは「公式会話1件 / 返信必要0件 / 未読0件 / 月額オファー0件 / 契約候補0件」をprovider message ID `18812`へ
 自然文配信する。同一snapshotのsecond wakeはoutbox `1182→1182`、enqueue / attempted / deliveredすべて0である。positive offerの
 条件判断・承諾・active/funded readbackは、未観測のformを推測してclickせず次sliceに残す。
+
+### 18.26 Application conversion audit — portfolio proof is the first blocker
+
+**USER OUTCOME:** 応募件数だけを増やさず、clientが公式画面で確認できる実績証拠と一致する案件へ応募し、
+`ApplicationReceipt → buyer reply → contract`の転換率を上げる。
+
+**CURRENT OBSERVATION:** 公式応募一覧には現在29案件が残り、状態は募集中24、選定中4、キャンセル1、作業中0である。
+canonical ledgerにはApplicationReceiptが30件ある。差分1件はproject `5579721` / proposal `27810811`で、公式proposal detailは404、
+parent projectは再募集中であり、契約ではない。選定中4件はYouTube運営、LP制作、物理フィギュア塗装、市場調査で、proposal IDは
+`27808073 / 27803083 / 27803069 / 27799702`。契約・仮払い・PaymentReceiptはいずれも0である。
+
+公式profile `https://www.lancers.jp/profile/keiodaisuke`は実績・評価0で、公式`/myportfolio`は「新規作成」だけを表示し、
+portfolio item 0である。Lancers公式「提案を投稿しよう」
+https://www.lancers.jp/help/guide/lancer/project/3 は、clientが提案者のprofileを必ず閲覧し、特にportfolioを最も重視するため、
+過去作品・実績が一つでもあれば提案前に登録するよう明記する。同「提案をつくろう」
+https://www.lancers.jp/help/guide/lancer/project/2 は、依頼内容とずれた提案は当選から遠ざかり、予算・納品物・scheduleを明確にするよう求める。
+
+直近のApplication owner実wakeはexact release `8a8350f93dde36b469c07f6c07b133f93007431c`でexit 0、公開19件を確認したが、
+全件既処理のため`duplicate_project`、新規応募0、pending 0、receipt 30のままである。これは送信故障ではない。
+
+**ROOT CAUSE:** 現plannerは公開案件本文と汎用能力だけで応募可否を決め、公式profile/portfolioに存在するseller proofを入力に持たない。
+そのため物理塗装、動画編集、一般事務、低単価記事など、現在の公開商品と証拠が一致しない過去応募が混ざった。30件で契約0は
+Sales laneの送信故障ではなく、buyerが選ぶ前のcredibility/fit不足が先頭blockerである。Coconalaの4-lane contractは再利用するが、
+Coconalaの応募量だけを先にコピーしても同じ低転換を増幅する。
+
+```mermaid
+flowchart LR
+  J[新着案件] --> F[商品・能力・証拠との適合]
+  F -->|一致| A[案件固有の提案]
+  F -->|不一致| S[安全に見送る]
+  P[公式profile] --> F
+  O[公式portfolio] --> F
+  A --> R[公式ApplicationReceipt]
+  R --> B[buyerがprofileとportfolioを確認]
+  B --> C[選定・契約・仮払い]
+  C --> D[納品]
+  D --> M[入金・net revenue]
+```
+
+**NEXT DIRECT ACTION:** 新framework、DB、scheduler、monitorを作らない。既存の本物のSNS・AI業務設計成果物から、秘密・顧客情報・
+未達実績を含まない一件だけを選び、既存Lancers browser ownerで公式portfolioへ公開する。公開後はprofile側のitem表示をreadbackし、
+Application plannerへ公式profile/portfolioのsanitized seller proofを渡す。modelは案件ごとに「全必須scopeをこの証拠でcredibleに完遂できるか」を
+判断し、証拠と商品が一致しない案件は応募しない。portfolioが0のまま応募quotaだけを増やさない。
+
+**PLAN SIZE:** 最初のsliceは既存成果物選定、公式portfolio form実測、1件公開、public profile readbackのみ。新production service 0、
+新DB 0、既存scheduler変更0。続くplanner接続は既存Application 1 file、約15–30行をsoft targetとする。
+
+**DONE EVIDENCE:** portfolio item 1件がpublic profileに表示され、title・説明・画像/URLが本物の成果物と一致し、未達売上や架空client実績を
+含まない。次のApplication owner wakeはそのseller proofを入力に持ち、provider effectは引き続き最大1件、公式proposal ID readback、
+next-wake duplicate 0を維持する。buyer replyまたは契約が出るまでApplicationReceiptを売上と呼ばない。
