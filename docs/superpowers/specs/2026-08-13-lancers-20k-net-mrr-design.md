@@ -1307,9 +1307,9 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 完了 | Storefront read-only inventory | exact releaseから公式6 listing、canonical `1338228`、単一content groupを確定。mutation 0、state/ledger不変 | 完了 |
 | 完了 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じた | 完了 |
 | 完了 | Storefront canonical offer alignment | exact release `ec825526…`のcanonical skillから`1338228`だけを画像あり、specific ICP、月額SNS deliverable、¥98k–¥398k、native 3/6ヶ月routeへ揃えた。再applyはunchanged、他5件とstate/ledger不変。更新直後funnel baselineは0、検索反映は最大24時間で継続観測 | 完了 |
-| 1 | G4B ContractReceipt source | 既存work-syncでcompleteなofficial `serviceItemContract`だけをschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 1–2日 |
-| 2 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
-| 3 | G4C Sales / Contract actions | 既存work-syncでbuyer本文をtarget / clarification / out-of-scopeへ分類し、保有証拠だけで一問clarification、honest decline、月額offerを送る。送信後は公式message/contract readbackを必須にする | 1–3日 |
+| 1 | G4C Sales reply action | 既存work-syncでbuyer-last一件だけをclaimし、Coconalaの返信contractで直接回答・一問clarification・honest declineを作る。送信前fence、公式message ID、本文readbackを必須にする | 1日 |
+| 2 | G4B ContractReceipt source | G4C後に初めて観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 1–2日 |
+| 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
 | 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
 | 5 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
 
@@ -1536,3 +1536,22 @@ reporterは古いapplication tickだけを読むと、reconcile後も`submission
 次の先頭TODOは、同じprojectのbuyer replyを公式sourceから検知し、reply一件をclaimして月額offerを送り、
 公式contract IDをreadbackするSales laneである。応募だけでは売上ではなく、ContractReceipt、DeliveryReceipt、
 PaymentReceiptの順に後段を閉じるまでMRRは増えたと報告しない。
+
+### 17.1 G4C Sales reply action
+
+公式一次資料のseller flowは、client相談→seller回答/見積→client注文・仮払い→作業開始→納品→検収である。
+したがって`serviceItemContract`が0件のままContractReceipt readerを先に推測実装する順序は循環であり棄却する。
+現在の公式message APIで確認済みのbuyer-lastを先に進め、実注文後のprovider payloadからG4Bを実装する。
+
+G4Cは新scheduler、別service、別DBを作らず、既存5分work-sync ownerへ次だけを追加する。
+
+1. boardとmessageの公式`is_required_reply=true`をbuyer-lastの根拠にし、一tick最大一件だけ扱う。
+2. Coconala productionの局所優先contractをコピーする。最新の質問へ直接答え、検証済み事実だけを使い、
+   不明点は一問まで、不要なCTA・価格・納期・実績を作らない。能力外の必須作業はhonest declineする。
+3. 返信本文は送信前にowner-only atomic stateへ保存する。POST開始後は公式readbackだけを行い、blind resendしない。
+4. 公式frontendと同じ`POST /v1/message_api/boards/{boardId}/messages`へ`description`と
+   `rich_description`をmultipart送信し、positive message IDと同じID・本文のGET readbackだけを成功とする。
+5. raw buyer本文、氏名、cookie、tokenはsnapshot・ledger・reportへ出さない。出力はboard/message ID、status、hashだけである。
+
+最小差分はproduction 1 file、schema 1 file、installer 1 file、spec 1 fileである。既存work-syncのlock、
+watchdog、CDP session、pagination、exact-release installerを再利用する。
