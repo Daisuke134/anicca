@@ -2187,3 +2187,21 @@ exact public source requirementは変更しない。
 `0c975066f904dd9928baa22b064fe0144afd3771`のApplication ownerは残るno-effect案件をclaimして次queryへ進み、合計43件を確認、
 eligible 0、submit 0、pending 0、receipt 29、fingerprint 63→78、exit 0の正直なno-opで閉じる。Telegram ownerは同じ状態を
 「今回の確認を安全に完了」「43件確認、適合候補0、新しい応募0、累計29、確認待ち0」と自然文でprovider message ID `18481`へ配信する。
+
+### 18.19 Storefront funnel reporting
+
+**USER OUTCOME:** Telegramだけで、Storefrontが公開中かだけでなく、検索表示→詳細閲覧→お気に入り→相談→注文のどこで止まるかを
+人の言葉で理解できる。
+
+**CURRENT OBSERVATION:** Storefront ownerは公式5 counterを`listing.json.demand`へ保存するが、Telegram snapshotは`/myplan`の
+公開/休止/非表示/下書きcountだけを読み、需要funnelを表示しない。現在は公開1件でも`search_impressions=1 / detail_views=0 /
+favorites=0 / inquiries=0 / orders=0`であり、先頭の売上blockerは相談や注文ではなく詳細pageへのclick 0である。
+
+**NEXT DIRECT ACTION:** 既存Telegram ownerが同じstate directoryのcanonical listing receiptをstrict readし、5 counterを既存
+Storefront snapshot、human message、semantic hashへ加える。receipt不正または未接続時は0とせず「取得できませんでした」と表示する。
+新browser read、DB、service、schedulerは作らない。
+
+**PLAN SIZE:** production 1 file、約15–25行。既存outboxとdaily semantic dedupeを維持する。
+
+**DONE EVIDENCE:** exact Telegram ownerの実messageがStorefront四状態に加え、検索表示1、詳細閲覧0、お気に入り0、相談0、注文0を
+自然文で表示する。counterが同じ次wakeはenqueue 0、変化時だけ一件送る。

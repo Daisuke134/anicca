@@ -29,6 +29,7 @@ STOREFRONT_LOG = STATE.parent / "logs/storefront.stdout.log"
 TARGET = "0000000000"
 TOKYO = ZoneInfo("Asia/Tokyo")
 _LABELS = (("published", "受付中", "/myplan"), ("paused", "受付休止中", "/myplan/paused"), ("hidden", "非表示", "/myplan/archived"), ("draft", "下書き", "/myplan/draft"))
+_DEMAND_LABELS = (("search_impressions", "検索表示"), ("detail_views", "詳細閲覧"), ("favorites", "お気に入り"), ("inquiries", "相談"), ("orders", "注文"))
 _LANCERS_ORIGIN = "https://www.lancers.jp"
 _INVENTORY_STORE_SELECTOR = ".p-project-plan-myplan__stores .p-project-plan-myplan__store"
 _INVENTORY_TITLE_SELECTOR = ".p-project-plan-myplan__store-content-over-title-link"
@@ -268,7 +269,17 @@ def _storefront_counts(value: object) -> dict[str, object]:
         value_for_key = value.get(key, value.get(label))
         counts[key] = _int(value_for_key)
     counts["error"] = value.get("error") if isinstance(value.get("error"), str) else None
+    demand = value.get("demand")
+    counts["demand"] = {key: _int(demand.get(key)) for key, _label in _DEMAND_LABELS} if isinstance(demand, Mapping) else None
     return counts
+
+def _listing_demand(path: Path) -> Optional[dict[str, int]]:
+    try: value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError): return None
+    demand = value.get("demand") if isinstance(value, Mapping) and value.get("record_type") == "listing_receipt" and value.get("platform") == "lancers" and value.get("status") == "published" else None
+    if not isinstance(demand, Mapping) or set(demand) != {key for key, _label in _DEMAND_LABELS}: return None
+    result = {key: _int(demand.get(key)) for key, _label in _DEMAND_LABELS}
+    return result if all(value is not None for value in result.values()) else None
 
 def _parse_storefront(page: object) -> dict[str, int]:
     if getattr(page, "url", None) != "https://www.lancers.jp/myplan":
@@ -350,6 +361,8 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
     sent = app.get("submitted")
     sent_text = f"{sent}件を新しく送信" if type(sent) is int and sent else "新しい応募は送信していません"
     states = " / ".join(f"{label}{count(store.get(key))}" for key, label, _href in _LABELS)
+    demand = store.get("demand") if isinstance(store.get("demand"), Mapping) else {}
+    funnel = " / ".join(f"{label}{count(demand.get(key))}" for key, label in _DEMAND_LABELS)
     reason = {
         "submission_uncertain": "応募結果の公式確認を待っています。同じ応募は再送せず、次回は公式履歴だけを確認します。",
         "account_lock_busy": "別のLancers処理が動作中のため、今回は公式画面の確認を見送りました。次回もう一度確認します。",
@@ -359,14 +372,14 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
     return (f"[Lancers][応募・出品] {icon} {headline}\n"
             f"応募: 公開案件は{count(app.get('observed_count'))}確認し、適合候補は{count(app.get('eligible_count'))}、{sent_text}。"
             f"公式確認は{count(verified)}、累計{count(snapshot.get('cumulative_verified'))}、確認待ちは{count(pending)}です。\n"
-            f"出品: {states}。\n"
+            f"出品: {states}。需要: {funnel}。\n"
             "収益: 公式の入金記録はまだこのレポートに接続されていないため、売上とAI処理費は集計していません。応募額と出品価格は売上に含めません。\n"
             f"次: {reason}")
 
 
 def semantic_hash(snapshot: Mapping[str, object]) -> str:
     value = {key: snapshot.get(key) for key in ("application", "pending", "cumulative_verified", "storefront", "blocker", "actual_ai_cost", "complete")}
-    value["storefront"] = {key: value["storefront"].get(key) for key, _label, _href in _LABELS} | {"error": value["storefront"].get("error")} if isinstance(value["storefront"], Mapping) else None
+    value["storefront"] = {key: value["storefront"].get(key) for key, _label, _href in _LABELS} | {"error": value["storefront"].get("error"), "demand": value["storefront"].get("demand")} if isinstance(value["storefront"], Mapping) else None
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
@@ -476,6 +489,7 @@ def collect_snapshot(*, application_log: Path, state_path: Path, ledger_database
             storefront = read_storefront(Path(state_path))
         except Exception as error:
             storefront = {"error": _source_error(error)}
+    if isinstance(storefront, Mapping): storefront = dict(storefront) | {"demand": _listing_demand(Path(state_path).with_name("listing.json"))}
     return build_snapshot(application=observed, pending_count=_pending_count(Path(state_path)), cumulative_verified=verified, storefront=storefront, source_observed_at=source_time, official_readback_observed_at=official)
 
 
