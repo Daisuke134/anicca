@@ -3,6 +3,7 @@ import hashlib
 import io
 import importlib.util
 import json
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -867,6 +868,23 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertIn("完成動画そのものの生成・編集・書き出しが必須ならvideo_or_animation", prompt)
         self.assertIn("企画・構成・台本・文章だけで完成動画制作が不要ならvideo_or_animationではない", prompt)
         self.assertIn("hard prohibition必須案件を継続・AI・高報酬・低予算・簡単そうという理由でsubmit_requiredへ変えない", prompt)
+
+    def test_capacity_uses_fresh_official_snapshot_and_japan_day_receipts(self):
+        application_loop = _load_deployed_loop()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); state = root / "application.json"
+            (root / "contracts.json").write_text(json.dumps({"source_complete": True, "observed_at": "2026-08-14T03:30:00Z", "project_working_count": 0, "monthly_contract_count": 0, "storefront_contract_candidate_count": 0, "contract_candidate_count": 0}))
+            connection = sqlite3.connect(root / "marketplace-ledger.sqlite3")
+            connection.execute("CREATE TABLE marketplace_events (platform TEXT, event_type TEXT, occurred_at TEXT)")
+            connection.executemany("INSERT INTO marketplace_events VALUES ('lancers','application_verified',?)", [("2026-08-14T01:00:00Z",)] * 9)
+            connection.commit(); connection.close()
+            now = datetime(2026, 8, 14, 3, 35, tzinfo=timezone.utc)
+
+            self.assertIsNone(application_loop._capacity_reason(state, now))
+            connection = sqlite3.connect(root / "marketplace-ledger.sqlite3"); connection.execute("INSERT INTO marketplace_events VALUES ('lancers','application_verified','2026-08-14T02:00:00Z')"); connection.commit(); connection.close()
+            self.assertEqual(application_loop._capacity_reason(state, now), "daily_quota_reached")
+            snapshot = json.loads((root / "contracts.json").read_text()); snapshot.update(project_working_count=1, contract_candidate_count=1); (root / "contracts.json").write_text(json.dumps(snapshot))
+            self.assertEqual(application_loop._capacity_reason(state, now), "capacity_details_required")
 
     def test_schema_has_no_lancers_only_qualification_gate(self):
         schema = json.loads((REPO_ROOT / "skills/gig-work/schemas/application_decisions.schema.json").read_text(encoding="utf-8"))

@@ -2,12 +2,13 @@
 """Run one browserless-planned, at-most-one Lancers application tick."""
 from __future__ import annotations
 
-import argparse, inspect, json, os, re, shutil, subprocess, sys, uuid
+import argparse, inspect, json, os, re, shutil, sqlite3, subprocess, sys, uuid
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 import importlib.util
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Sequence, TextIO
+from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 SKILLS_ROOT = HERE.parents[2]
@@ -362,6 +363,28 @@ def _filter_claimed_rows(rows: Sequence[Mapping[str, object]], state_path: Path)
             first_claimed = project_id
     return remaining, first_claimed
 
+def _capacity_reason(state_path: Path, tick_value: object) -> Optional[str]:
+    try:
+        now = tick_value if isinstance(tick_value, datetime) else datetime.fromisoformat(str(tick_value).replace("Z", "+00:00"))
+        if now.tzinfo is None or now.utcoffset() is None: raise ValueError
+        snapshot = json.loads(Path(state_path).with_name("contracts.json").read_text(encoding="utf-8"))
+        observed = datetime.fromisoformat(str(snapshot["observed_at"]).replace("Z", "+00:00"))
+        keys = ("project_working_count", "monthly_contract_count", "storefront_contract_candidate_count")
+        counts = [snapshot[key] for key in keys]
+        if snapshot.get("source_complete") is not True or observed.tzinfo is None or any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in counts) or snapshot.get("contract_candidate_count") != sum(counts): raise ValueError
+        age = now.astimezone(timezone.utc) - observed.astimezone(timezone.utc)
+        if age < timedelta(minutes=-1) or age > timedelta(minutes=15): raise ValueError
+        if sum(counts): return "capacity_details_required"
+        database = Path(state_path).with_name("marketplace-ledger.sqlite3")
+        connection = sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)
+        try: rows = connection.execute("SELECT occurred_at FROM marketplace_events WHERE platform=? AND event_type=?", (PLATFORM, "application_verified")).fetchall()
+        finally: connection.close()
+        japan = ZoneInfo("Asia/Tokyo"); japan_day = now.astimezone(japan).date()
+        used = sum(datetime.fromisoformat(str(row[0]).replace("Z", "+00:00")).astimezone(japan).date() == japan_day for row in rows)
+        return "daily_quota_reached" if used >= 10 else None
+    except Exception:
+        return "capacity_source_unavailable"
+
 def _provider_verified(result: ApplicationLoopResult) -> bool:
     return result.error is None and result.ok and (result.application_verified or result.reason in {"duplicate_project", "provider_reconciled"})
 
@@ -429,10 +452,15 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
             if output_stream is not None: _emit(pending_result, output_stream)
             return pending_result.to_dict()
         quarantined_project_id = pending_result.unresolved_project_id or pending_result.project_id
+    try: tick_value = (clock or now or (lambda: datetime.now(timezone.utc)))()
+    except Exception: tick_value = None
+    capacity_reason = _capacity_reason(Path(state_path), tick_value) if submitter is None and discoverer is None and discovery is None and query is None else None
+    if capacity_reason is not None:
+        result = ApplicationLoopResult(True, reason=capacity_reason, unresolved_project_id=quarantined_project_id)
+        if output_stream is not None: _emit(result, output_stream)
+        return result.to_dict()
     root = Path(evidence_root if evidence_root is not None else evidence_dir or DEFAULT_EVIDENCE_ROOT); result = ApplicationLoopResult(False, error="planner_runner_failed"); cleanup_failed = False; evidence: Optional[Path] = None
     try:
-        try: tick_value = (clock or now or (lambda: datetime.now(timezone.utc)))()
-        except Exception: tick_value = None
         try:
             _reset(root); evidence = root / f"run-{uuid.uuid4().hex}"; evidence.mkdir(mode=0o700, exist_ok=False); os.chmod(evidence, 0o700)
         except Exception: evidence = None
