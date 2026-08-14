@@ -388,6 +388,7 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
         "seller_last": "こちらからの返信は済んでおり、次の相手の返答を待っています。",
         "reply_verified": "必要な返信を公式確認しました。次の相手の返答を待っています。",
         "reply_uncertain": "返信結果を確認中です。同じ返信は再送せず、次回は公式履歴だけを確認します。",
+        "no_reply_needed": "最新の相手メッセージは返信不要と判断し、不要な送信をしていません。",
     }.get(sales.get("reply_status"), "公式の交渉状態を取得できませんでした。次回もう一度確認します。")
     finance = sales.get("finance") if isinstance(sales.get("finance"), Mapping) else {}
     revenue = (f"収益: 公式入出金履歴{count(finance.get('payment_history_count'))}、口座残高{finance.get('account_balance_jpy')}円、"
