@@ -111,18 +111,21 @@ def _setting_status(page: Any, listing_id: str) -> str:
 def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, Any]:
     active = [listing_id for listing_id in listing_ids if _setting_status(page, listing_id) == "active"]
     if not active: return {"superseded_active_count": 0, "status_effect_count": 0}
-    listing_id = active[0]
+    listing_id = active[0]; path = f"/myplan/{listing_id}/setting"
     paused = page.locator('label[for="ProjectPlanStatusFormStatusPaused"]')
     if paused.count() != 1: raise OfferError("setting_form_changed")
     paused.click(timeout=5_000)
     if not _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').is_checked(): raise OfferError("setting_form_changed")
     save = page.get_by_role("button", name="保存", exact=True)
     if save.count() != 1: raise OfferError("setting_form_changed")
-    try: save.evaluate("button => button.click()")
+    try:
+        with page.expect_response(lambda response: urlsplit(response.url).path == path and response.request.method == "POST", timeout=10_000) as submitted:
+            save.evaluate("button => button.click()")
     except Exception: raise OfferError("setting_submission_uncertain") from None
+    if not 200 <= submitted.value.status < 400: raise OfferError("setting_submission_rejected")
     page.wait_for_timeout(1_000)
     if _setting_status(page, listing_id) != "paused": raise OfferError("setting_submission_uncertain")
-    return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id}
+    return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id, "response_status": submitted.value.status}
 
 
 def _write_receipt(state_path: Path, product: Mapping[str, Any]) -> None:
