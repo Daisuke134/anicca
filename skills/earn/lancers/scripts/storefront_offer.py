@@ -260,7 +260,11 @@ def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path) -> dic
     _field(page, 'textarea[name="content"]').fill(item["description"])
     uploads = page.locator('input[type="file"]')
     if uploads.count() != 2 or uploads.nth(0).get_attribute("accept") != ".jpg,.jpeg,.png,.gif": raise OfferError("portfolio_form_changed")
-    uploads.nth(0).set_input_files(str(image))
+    with page.expect_response(lambda response: urlsplit(response.url).path == "/api/v1/file/add", timeout=20_000) as registered:
+        with page.expect_response(lambda response: response.request.method == "PUT" and urlsplit(response.url).hostname == "upload-lancers-jp.s3.ap-northeast-1.amazonaws.com", timeout=20_000) as uploaded:
+            uploads.nth(0).set_input_files(str(image))
+    if registered.value.status != 200 or uploaded.value.status != 200: raise OfferError("portfolio_image_upload_failed")
+    page.wait_for_selector('form img[alt="Image Preview"]', state="visible", timeout=5_000)
     selects = page.locator("select")
     if selects.count() != 5: raise OfferError("portfolio_form_changed")
     selects.nth(0).select_option(label=item["category"])
