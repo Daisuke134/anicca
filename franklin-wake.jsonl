@@ -27528,3 +27528,11 @@
 {"ts":1786691391,"wake_id":"00MSSLX8WL361F6660A8A04AD8","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786691521,"wake_id":"00MSSM011LFA8B18507A5E4D24","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786691651,"wake_id":"00MSSM2T6FFECF786C2FA4429C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786691781,"wake_id":"00MSSM5M3JB21C5598EADA4C45","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid API marketplace microtasks USDC prompt engineering earning [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wak"}
+{"ts":1786691908,"wake_id":"00MSSM8C3L64D42C9925904CE9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786692038,"wake_id":"00MSSMB4DC9D612F28706F41B4","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786692165,"wake_id":"00MSSMDTQJ515C400A0D904D91","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786692292,"wake_id":"00MSSMGK24FCB83AB33309405F","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786692418,"wake_id":"00MSSMJ9HNA6E4E9B681D74AE3","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786692548,"wake_id":"00MSSMM1C84ABFAFD2ECD84DA9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786692676,"wake_id":"00MSSMOSFK7A3358306F344288","kind":"narrate","sleep_s":120,"model":"auto"}
