@@ -4385,3 +4385,4 @@
 {"ts":1786672134,"source":"cook","task":"explore: Solana bounty platform paying USDC for bug reports no upfront cost","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSSAGCXR8971E086D1EB4A44"}
 {"ts":1786672909,"source":"cook","task":"explore: Solana microtask platform pay USDC for small tasks no upfront capital","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSSAWZ3F7AF4BE69E73E4C1E"}
 {"ts":1786673289,"source":"cook","task":"explore: Solana DeFi protocol paying USDC for providing liquidity with low capital minimum","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSSB54MVCB7053AEB1C74E9B"}
+{"ts":1786674062,"source":"cook","task":"explore: Solana microtask platform paying USDC for small tasks without upfront capital","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSSBLNK53C0B1D2FE8394634"}
