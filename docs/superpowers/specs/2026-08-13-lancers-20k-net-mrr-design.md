@@ -1702,8 +1702,8 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
 | Storefront canonical | 公式inventoryは`published=1 / paused=5 / hidden=0 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式paused readback。`listing.json`も月額SNS商品`1338228`へ更新 | ¥98,000 / ¥198,000 / ¥398,000、画像、spot/3か月/6か月routeは公開page一致。second wake `status_effect_count=0` |
 | Storefront demand | canonical `1338228`の公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`。公式category/winnerを比較し、titleだけをbuyer problem先頭へ変更した | exact ownerは`action=updated / changed_field=title / aligned=true`、次wakeは`action=unchanged / status_effect_count=0`。現在は7日観測中で売上効果未確定 |
-| Reporting | 最新応募後は`enqueued=1 / attempted=1 / delivered=1`、provider message ID `18368`、exit 0 | receipt 26/pending 0は正しいが、`G2 owner snapshot`やraw `unknown`が残り自然言語UXは未完 |
-| Paid | ledger eventは`application_verified` 26件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、入金のproduction ownerは未完成。net MRRは未発生 |
+| Reporting | 最新応募後は`enqueued=1 / attempted=1 / delivered=1`、provider message ID `18441`、exit 0 | receipt 29/pending 0は正しいが、`G2 owner snapshot`、`blocker none`、raw `unknown`が残り自然言語UXは未完 |
+| Paid | ledger eventは`application_verified` 29件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、入金のproduction ownerは未完成。net MRRは未発生 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
 
@@ -2094,3 +2094,26 @@ labelを検証して選択する。production ownerは`5584041`を一回だけ�
 nullのpendingを保存した。次wakeはsubmit 0のreadback-onlyで公式proposal `27812830`を確認し、pending 1→0、
 ApplicationReceipt 25→26、fingerprint 41→42、owner exit 0である。Work Syncの直後再観測はsource complete、
 required reply 0、active project/monthly/storefront contract candidate 0であり、次の売上境界は実buyer選定・仮払いである。
+
+### 18.15 Telegram natural-language projection
+
+**USER OUTCOME:** Lancers loopが何を確認し、何を実行し、何を待っていて、実収益が確定したかを、内部実装を知らない人が
+Telegramだけで理解できる。正常no-op、確認待ち、failure、実receiptを混同しない。
+
+**CURRENT OBSERVATION:** exact Telegram ownerは最新ApplicationReceipt後に`enqueued=1 / attempted=1 / delivered=1`で終了し、
+provider message ID `18441`を取得する。transportは動作する。しかし本文は`Lancers G2 owner snapshot`、`acquisition`、
+`application receipts`、`blocker none`、`unknown`をそのまま表示し、応募1件の公式確認、現在返信待ち、公開Storefront数、
+未確定売上という人の判断に必要な意味へ翻訳していない。snapshot sourceはApplyとStorefrontだけで、Work SyncやPaymentReceiptを
+まだ入力として持たない。
+
+**NEXT DIRECT ACTION:** 新service、DB、scheduler、transportを作らず、既存`render_snapshot`だけを自然な日本語へ変える。
+ApplicationReceipt増分があれば`📨`、正常no-opは`✅`、pendingまたはsource failureは`⚠️`を使う。確認件数、適合件数、送信件数、
+公式確認件数、累計、確認待ち、Storefront四状態を文章化する。内部blocker codeは既知の人向け理由へ変換し、未知codeもcode自体を
+送らず「公式確認を完了できなかったため次回再確認する」とする。PaymentReceipt source未接続中は売上0と推測せず、
+「まだ公式入金を集計できない」と明示する。sourceがない交渉件数を作らない。
+
+**PLAN SIZE:** production 1 file、約25–40行。semantic hash、outbox、dedupe、delivery、state、ledgerは変更しない。
+
+**DONE EVIDENCE:** 同じexact Telegram owner自身の実wakeがprovider positive message IDを返し、実配信本文にraw `G2`、`owner`、
+`blocker`、`unknown`を含まない。ApplicationReceipt 29、pending 0、Storefront `受付中1 / 受付休止中5 / 非表示0 / 下書き0`を
+正しく表示し、ContractReceipt・PaymentReceiptがない状態を受注・売上として表示しない。同一snapshotの次wakeはenqueue 0である。

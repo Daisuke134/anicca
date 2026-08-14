@@ -334,24 +334,34 @@ def build_snapshot(*, application: object, pending_count: object, cumulative_ver
     }
 
 
-def _shown(value: object) -> str:
-    return str(value) if type(value) is int or isinstance(value, str) else "unknown"
-
-
 def render_snapshot(snapshot: Mapping[str, object]) -> str:
     app = snapshot.get("application") if isinstance(snapshot.get("application"), Mapping) else {}
     store = snapshot.get("storefront") if isinstance(snapshot.get("storefront"), Mapping) else {}
-    icon = "✅" if snapshot.get("complete") is True else "⚠️"
-    blocker = snapshot.get("blocker") or "none"
-    states = " / ".join(f"{label}{_shown(store.get(key))}件" for key, label, _href in _LABELS)
-    return (f"{icon} Lancers G2 owner snapshot\n"
-            f"acquisition: observed {_shown(app.get('observed_count'))} / qualified {_shown(app.get('eligible_count'))} / submitted {_shown(app.get('submitted'))} / newly verified {_shown(app.get('verified_count'))}\n"
-            f"application receipts: cumulative verified {_shown(snapshot.get('cumulative_verified'))} / pending {_shown(snapshot.get('pending'))} / blocker {blocker}\n"
-            f"storefront official counts: {states}\n"
-            f"source_observed_at: {_shown(snapshot.get('source_observed_at'))}\n"
-            f"official_readback_observed_at: {_shown(snapshot.get('official_readback_observed_at'))}\n"
-            f"provider event time: {_shown(snapshot.get('provider_event_time'))}\n"
-            f"売上: unknown\nAI処理費: unknown (meter未接続)")
+    verified = app.get("verified_count") if type(app.get("verified_count")) is int else None
+    pending = snapshot.get("pending") if type(snapshot.get("pending")) is int else None
+    blocker = snapshot.get("blocker") if isinstance(snapshot.get("blocker"), str) else None
+    incomplete = any(type(app.get(key)) is not int for key in ("observed_count", "eligible_count", "submitted", "verified_count")) or pending is None
+    icon = "📨" if verified else ("⚠️" if blocker or incomplete or store.get("error") else "✅")
+    headline = f"{verified}件の応募を公式確認しました" if verified else ("確認が必要な項目があります" if icon == "⚠️" else "今回の確認を安全に完了しました")
+
+    def count(value: object) -> str:
+        return f"{value}件" if type(value) is int else "取得できませんでした"
+
+    sent = app.get("submitted")
+    sent_text = f"{sent}件を新しく送信" if type(sent) is int and sent else "新しい応募は送信していません"
+    states = " / ".join(f"{label}{count(store.get(key))}" for key, label, _href in _LABELS)
+    reason = {
+        "submission_uncertain": "応募結果の公式確認を待っています。同じ応募は再送せず、次回は公式履歴だけを確認します。",
+        "account_lock_busy": "別のLancers処理が動作中のため、今回は公式画面の確認を見送りました。次回もう一度確認します。",
+        "storefront_readback_failed": "出品状態を公式画面で確認できませんでした。変更せず、次回もう一度確認します。",
+        "listing_readback_mismatch": "出品変更後の公式状態が一致しませんでした。追加変更せず、次回もう一度確認します。",
+    }.get(blocker, "公式確認を完了できない項目がありました。外部操作を増やさず、次回もう一度確認します。") if blocker else "新しい案件と公式応募結果を次回も確認します。"
+    return (f"[Lancers][応募・出品] {icon} {headline}\n"
+            f"応募: 公開案件は{count(app.get('observed_count'))}確認し、適合候補は{count(app.get('eligible_count'))}、{sent_text}。"
+            f"公式確認は{count(verified)}、累計{count(snapshot.get('cumulative_verified'))}、確認待ちは{count(pending)}です。\n"
+            f"出品: {states}。\n"
+            "収益: 公式の入金記録はまだこのレポートに接続されていないため、売上とAI処理費は集計していません。応募額と出品価格は売上に含めません。\n"
+            f"次: {reason}")
 
 
 def semantic_hash(snapshot: Mapping[str, object]) -> str:
