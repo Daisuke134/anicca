@@ -276,16 +276,19 @@ if [[ "$ACTIVATE" == "1" ]]; then
   DOMAIN="gui/$(id -u)"
   activate_owner() {
     local label="$1" plist="$2" program="$3"
-    local target="$DOMAIN/$label" loaded arguments working
+    local target="$DOMAIN/$label" loaded arguments working attempt
     "$LAUNCHCTL_BIN" enable "$target"
     if loaded="$("$LAUNCHCTL_BIN" print "$target" 2>&1)"; then
       "$LAUNCHCTL_BIN" bootout "$target"
+      for attempt in {1..40}; do
+        "$LAUNCHCTL_BIN" print "$target" >/dev/null 2>&1 || break
+        sleep 0.1
+      done
+      "$LAUNCHCTL_BIN" print "$target" >/dev/null 2>&1 && fail "$label did not boot out"
     elif [[ "$loaded" != *"Could not find service \"$label\" in domain for user gui:"* ]]; then
       fail "$label loaded-state check failed"
     fi
-    "$LAUNCHCTL_BIN" bootstrap "$DOMAIN" "$plist" \
-      || "$LAUNCHCTL_BIN" print "$target" >/dev/null \
-      || fail "$label bootstrap failed"
+    "$LAUNCHCTL_BIN" bootstrap "$DOMAIN" "$plist"
     loaded="$("$LAUNCHCTL_BIN" print "$target")"
     arguments="$(print -r -- "$loaded" | awk '/^[[:space:]]*arguments = \{$/{found=1; next} found && /^[[:space:]]*\}$/{exit} found{sub(/^[[:space:]]*/, ""); print}')"
     working="$(print -r -- "$loaded" | awk -F' = ' '/^[[:space:]]*working directory = /{print $2; exit}')"
