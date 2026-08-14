@@ -2227,3 +2227,25 @@ source不正または欠損時は0へ変換せず「公式状態を取得でき�
 required reply 0、`no_reply_required`、contract candidate 0を`contracts.json`へ保存し、effect 0、exit 0になる。Telegram ownerは
 「公式会話1件、返信必要0件、未読0件、契約候補0件。今は相手からの返信・仮払い待ち」とprovider message ID `18491`へ配信する。
 直後の同一snapshotはoutbox `1172→1172`、enqueue 0、exit 0である。
+
+### 18.21 Finance zero-source projection
+
+**USER OUTCOME:** 「売上不明」だけで止まらず、Lancers公式入出金sourceがcompleteで空なら今月入金と現在MRRを正直に0と表示する。
+入出金履歴が現れたら提案額や残高から推測せず、実rowをPaymentReceiptへ読むまでnetを確定しない。
+
+**CURRENT OBSERVATION:** 認証済み公式`/mypage/payment`はHTTP 200、exact heading `入出金履歴`、
+`現在のランサーズ口座残高 0円`、empty state `履歴はありません`、説明`ランサーズ口座に入金・出金の履歴があると表示されます`、
+table 0を返す。公式説明はclient仮払い・支払確定からlancer報酬獲得まで全てのお金の履歴を閲覧できると明記する。
+現Telegramはこのsourceを読まず、常に売上未接続と表示する。
+
+**NEXT DIRECT ACTION:** 既存Work Sync browserのsuccessful Sales処理後に同pageをGETし、exact route、amount block、empty heading/説明、
+table 0を検証する。emptyかつbalance 0の時だけ`finance.source_complete=true / payment_history_count=0 /
+account_balance_jpy=0 / received_gross_jpy=0`を既存`contracts.json`へ保存する。positive row、selector変化、balance conflictは0へ変換せず
+`source_complete=false / finance_detail_readback_required`とする。Telegramは今月入金0円、現在net MRR 0円を表示し、AI原価未接続のため
+今月net revenueは未集計と明示する。
+
+**PLAN SIZE:** production 2 files、約25–40行。既存browser/state/reportを再利用し、新Paid service、launchd、DBは0。
+
+**DONE EVIDENCE:** exact Work Sync ownerのread-only wakeが公式payment pageからcomplete zeroをdurable保存し、effect 0、exit 0になる。
+exact Telegram ownerが公式入出金履歴0件、口座残高0円、今月入金0円、現在net MRR 0円、今月net revenue未集計を自然文配信し、
+同一snapshotの次wakeはenqueue 0である。

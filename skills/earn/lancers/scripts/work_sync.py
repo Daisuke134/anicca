@@ -316,6 +316,21 @@ def _contract_sources(page: Any) -> dict[str, Any]:
     return {"project_working_count": len(project_ids), "monthly_contract_count": len(monthly_ids), "contract_candidates": candidates}
 
 
+def _finance_source(page: Any) -> dict[str, Any]:
+    path = "/mypage/payment"
+    response = page.goto("https://www.lancers.jp" + path, wait_until="domcontentloaded", timeout=20_000)
+    if response is None or response.status != 200 or urlsplit(str(page.url)).path != path: raise SourceFailure("finance_source_unavailable")
+    amount = page.locator("dl.p-mypage-payment__amount")
+    text = " ".join(amount.inner_text().split()) if amount.count() == 1 else ""
+    match = re.fullmatch(r"現在のランサーズ口座残高 ([0-9][0-9,]*) 円", text)
+    if match is None: raise SourceFailure("finance_source_unavailable")
+    balance = int(match.group(1).replace(",", ""))
+    empty = page.get_by_text("履歴はありません", exact=True).count() == 1 and page.get_by_text("ランサーズ口座に入金・出金の履歴があると表示されます", exact=True).count() == 1
+    if empty and page.locator("table").count() == 0 and balance == 0:
+        return {"source_complete": True, "payment_history_count": 0, "account_balance_jpy": 0, "received_gross_jpy": 0}
+    return {"source_complete": False, "error": "finance_detail_readback_required"}
+
+
 def _cleanup(page: Any, browser: Any) -> bool:
     try: page_ok = page is None or bool(application_tick._close_owned_page(page))
     except Exception: page_ok = False
@@ -347,6 +362,7 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
             result["contract_candidates"].sort(key=lambda row: (row["source_kind"], row["provider_id"]))
             result["contract_candidate_count"] = len(result["contract_candidates"])
             result["reply_action"] = _sales_action(page, Path(state_path), private_boards, verified_proposals)
+            result["finance"] = _finance_source(page)
             _write_state(Path(state_path).with_name("contracts.json"), {
                 "source_complete": True,
                 "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -355,6 +371,7 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
                 "required_reply_count": result["required_reply_count"],
                 "application_board_count": result["application_board_count"],
                 "reply_status": result["reply_action"]["status"],
+                "finance": result["finance"],
                 "project_working_count": result["project_working_count"],
                 "monthly_contract_count": result["monthly_contract_count"],
                 "storefront_contract_candidate_count": result["storefront_contract_candidate_count"],
