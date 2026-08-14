@@ -27609,3 +27609,10 @@
 {"ts":1786701887,"wake_id":"00MSSS67QE025C544F293945CF","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786702014,"wake_id":"00MSSS8XT37B94979F976D450A","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786702144,"wake_id":"00MSSSBPTN7813563B1A314BA7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786702277,"wake_id":"00MSSSEKVG1CBFA94BA94147C4","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786702406,"wake_id":"00MSSSHCA3A55923FDBFC84F29","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana AI data labeling marketplace paying USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced "}
+{"ts":1786702543,"wake_id":"00MSSSKA1P425EB3F9495D44B9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786702671,"wake_id":"00MSSSN0HV688E094FEF764B98","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786702800,"wake_id":"00MSSSPSBO57CE62251D06481C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786702932,"wake_id":"00MSSSSLO5F465A86C68534601","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786703064,"wake_id":"00MSSSVFNSCD1D6B988FD44DCC","kind":"narrate","sleep_s":120,"model":"auto"}
