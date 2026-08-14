@@ -87,7 +87,8 @@ def _public(page: Any, product: Mapping[str, Any]) -> dict[str, Any]:
     has_image = image.count() >= 1 and all("photo-film" not in str(image.nth(index).get_attribute("src") or "") for index in range(image.count()))
     observed = {"title": _text(page, "h1"), "subtitle": _text(page, ".l-page-header__heading-description"), "description": _text(page, "#body + .p-project-plan-markdown"), "notice": _text(page, "#notice_for_sale + .c-text"), "plans": plans}
     expected = {"title": product["public_title"], "subtitle": product["subtitle"], "description": " ".join(product["description"].split()), "notice": " ".join(product["notice"].split()), "plans": [{key: plan[key] for key in ("description", "price_jpy", "delivery_days")} for plan in product["plans"]]}
-    return {"ok": True, "logged_in": True, "listing_external_id": listing_id, "canonical_url": public_url, "aligned": observed == expected and has_image, "has_image": has_image, "prices_jpy": [plan["price_jpy"] for plan in plans], "delivery_days": [plan["delivery_days"] for plan in plans], "contract_routes": {"spot": 3, "three_month": 3, "six_month": 3}}
+    mismatched = [key for key in expected if observed[key] != expected[key]] + ([] if has_image else ["image"])
+    return {"ok": True, "logged_in": True, "listing_external_id": listing_id, "canonical_url": public_url, "aligned": not mismatched, "mismatched_fields": mismatched, "has_image": has_image, "prices_jpy": [plan["price_jpy"] for plan in plans], "delivery_days": [plan["delivery_days"] for plan in plans], "contract_routes": {"spot": 3, "three_month": 3, "six_month": 3}}
 
 
 def _field(page: Any, selector: str) -> Any:
@@ -146,9 +147,8 @@ def _write_receipt(state_path: Path, product: Mapping[str, Any]) -> None:
 
 def _step(page: Any, label: str) -> None:
     values = [item for item in page.get_by_text(label, exact=True).all() if item.is_visible()]
-    chosen = next((item for item in values if "clickable" in str(item.get_attribute("class") or "")), values[0] if len(values) == 1 else None)
-    if chosen is None: raise OfferError("form_changed")
-    chosen.click()
+    if len(values) != 1: raise OfferError("form_changed")
+    values[0].click()
 
 
 def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]:
@@ -160,6 +160,11 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     page.goto(edit_url, wait_until="domcontentloaded", timeout=30_000)
     if page.url != edit_url: raise OfferError("edit_route_invalid")
     page.wait_for_selector('[name="ProjectPlanForm.title"]', state="visible", timeout=5_000)
+    if before["mismatched_fields"] == ["title"]:
+        _field(page, '[name="ProjectPlanForm.title"]').fill(product["title_stem"])
+        _step(page, "保存"); page.wait_for_url(f"**/myplan/{listing_id}/edit/complete", timeout=30_000)
+        try: return _public(page, product) | reconciliation | {"action": "updated", "changed_field": "title"}
+        except OfferError: raise OfferError("publication_uncertain") from None
     _field(page, '[name="ProjectPlanForm.title"]').fill(product["title_stem"])
     _field(page, '[name="ProjectPlanForm.subtitle"]').fill(product["subtitle"])
     _field(page, '[name="___main_category_id"]').select_option(label=product["category"])
