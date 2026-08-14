@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 from typing import Any, Callable, Mapping, Optional, Sequence
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlsplit
 
 HERE = Path(__file__).resolve().parent
 SKILLS_ROOT = HERE.parents[2]
@@ -269,6 +269,41 @@ def _snapshot(fetch: Callable[[str], Any], verified_proposals: set[str], private
     return {"ok": True, "logged_in": True, "source_complete": True, "board_count": len(boards), "required_reply_count": replies, "unread_count": unread, "application_board_count": applications, "storefront_contract_candidate_count": storefront, "boards": sorted(output, key=lambda row: row["board_id"])}
 
 
+def _contract_sources(page: Any) -> dict[str, int]:
+    def visit(path: str) -> None:
+        page.goto(f"https://www.lancers.jp{path}", wait_until="domcontentloaded", timeout=20_000)
+        parsed = urlsplit(str(page.url))
+        if (parsed.scheme, parsed.netloc, parsed.path, parsed.query, parsed.fragment) != ("https", "www.lancers.jp", path, "", ""):
+            raise SourceFailure("contract_source_unavailable")
+
+    visit("/mypage/proposals/all/working")
+    projects = page.evaluate("""() => [...document.querySelectorAll("li.p-mypage-work__media.c-media-job")].map(card => ({href: card.querySelector('a.c-link.c-link--black')?.getAttribute('href'), status: card.querySelector('.c-media-job__status--active')?.innerText?.trim()}))""")
+    if not isinstance(projects, list) or not all(isinstance(row, Mapping) for row in projects):
+        raise SourceFailure("contract_source_unavailable")
+    project_ids = []
+    for row in projects:
+        match = re.fullmatch(r"/work/detail/([0-9]+)", str(row.get("href") or ""))
+        if match is None or row.get("status") != "進行中":
+            raise SourceFailure("contract_source_unavailable")
+        project_ids.append(match.group(1))
+    if len(project_ids) != len(set(project_ids)):
+        raise SourceFailure("contract_source_conflict")
+
+    visit("/monthly_work_contracts/lancer")
+    monthly = page.evaluate("""() => ({empty: document.body.innerText.includes("申請された契約はありません"), hrefs: [...document.querySelectorAll('a[href^="/monthly_work_contracts/lancer/"]')].map(a => a.getAttribute('href'))})""")
+    if not isinstance(monthly, Mapping) or not isinstance(monthly.get("hrefs"), list):
+        raise SourceFailure("contract_source_unavailable")
+    monthly_ids = []
+    for href in monthly["hrefs"]:
+        match = re.fullmatch(r"/monthly_work_contracts/lancer/([0-9]+)", str(href or ""))
+        if match is None:
+            raise SourceFailure("contract_source_unavailable")
+        monthly_ids.append(match.group(1))
+    if len(monthly_ids) != len(set(monthly_ids)) or not monthly_ids and monthly.get("empty") is not True:
+        raise SourceFailure("contract_source_conflict")
+    return {"project_working_count": len(project_ids), "monthly_contract_count": len(monthly_ids)}
+
+
 def _cleanup(page: Any, browser: Any) -> bool:
     try: page_ok = page is None or bool(application_tick._close_owned_page(page))
     except Exception: page_ok = False
@@ -295,6 +330,8 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
             logged_in = True
             private_boards: list[Any] = []
             result = _snapshot(lambda path: _fetch(page, path), verified_proposals, private_boards)
+            result.update(_contract_sources(page))
+            result["contract_candidate_count"] = result["storefront_contract_candidate_count"] + result["project_working_count"] + result["monthly_contract_count"]
             result["reply_action"] = _sales_action(page, Path(state_path), private_boards, verified_proposals)
     except SourceFailure as error:
         result = _failed(str(error), logged_in)

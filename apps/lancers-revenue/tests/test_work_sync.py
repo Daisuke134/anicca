@@ -84,6 +84,22 @@ class WorkSyncTests(unittest.TestCase):
         self.assertNotIn("order_awarded", rendered)
         self.assertNotIn("ledger", rendered)
 
+    def test_official_contract_sources_are_bounded_and_fail_closed(self):
+        sync = _load()
+        class Page:
+            url = ""
+            def __init__(self, duplicate=False): self.duplicate = duplicate
+            def goto(self, url, **_kwargs): self.url = url
+            def evaluate(self, _script):
+                if self.url.endswith("/mypage/proposals/all/working"):
+                    rows = [{"href": "/work/detail/7", "status": "進行中"}]
+                    return rows * (2 if self.duplicate else 1)
+                return {"empty": False, "hrefs": ["/monthly_work_contracts/lancer/9"]}
+
+        self.assertEqual(sync._contract_sources(Page()), {"project_working_count": 1, "monthly_contract_count": 1})
+        with self.assertRaisesRegex(sync.SourceFailure, "contract_source_conflict"):
+            sync._contract_sources(Page(duplicate=True))
+
     def test_duplicate_and_malformed_sources_fail_closed(self):
         sync = _load()
         fetch, _ = _fetcher(duplicate_message=True)
@@ -96,7 +112,12 @@ class WorkSyncTests(unittest.TestCase):
     def test_cleanup_failure_returns_one_stable_nonzero_json_result(self):
         sync = _load(); fetch, _ = _fetcher()
         class Page:
-            def evaluate(self, _script, path): return {"ok": True, "body": fetch(path)}
+            url = ""
+            def goto(self, url, **_kwargs): self.url = url
+            def evaluate(self, _script, path=None):
+                if path is not None: return {"ok": True, "body": fetch(path)}
+                if self.url.endswith("/mypage/proposals/all/working"): return []
+                return {"empty": True, "hrefs": []}
             def close(self): raise RuntimeError("Page.handleJavaScriptDialog: No dialog is showing")
         class Browser:
             def __init__(self):
