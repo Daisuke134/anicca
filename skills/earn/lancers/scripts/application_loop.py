@@ -363,6 +363,17 @@ def _filter_claimed_rows(rows: Sequence[Mapping[str, object]], state_path: Path)
             first_claimed = project_id
     return remaining, first_claimed
 
+def _claim_hard_prohibited(decisions: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
+    project_ids = [project_id for project_id, decision in decisions.items() if decision.get("business_class") == "hard_prohibited"]
+    if not project_ids:
+        return
+    if any(ID_RE.fullmatch(project_id) is None for project_id in project_ids):
+        raise ValueError
+    with application_tick.account_lock(Path(state_path)):
+        claims, pending = application_tick.shared._read_state(Path(state_path))
+        claims.update(application_tick._application_marker(project_id) for project_id in project_ids)
+        application_tick.shared._write_state(Path(state_path), claims, pending)
+
 def _capacity_reason(state_path: Path, tick_value: object) -> Optional[str]:
     try:
         now = tick_value if isinstance(tick_value, datetime) else datetime.fromisoformat(str(tick_value).replace("Z", "+00:00"))
@@ -415,6 +426,8 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     returned = len(planned.get("decisions")) if isinstance(planned, Mapping) and isinstance(planned.get("decisions"), list) else None
     try: decisions = _validate(rows, planned, today)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
+    try: _claim_hard_prohibited(decisions, state_path)
+    except Exception: return _batch_summary(ApplicationLoopResult(False, error="state_invalid"), observed_count, 0, (), ())
     rows_by_id = {str(row["external_id"]): row for row in rows}
     eligible = [(rows_by_id[project_id], decision) for project_id, decision in decisions.items() if decision.get("business_class") == "submit_required"]
     if not eligible:
@@ -465,25 +478,35 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
             _reset(root); evidence = root / f"run-{uuid.uuid4().hex}"; evidence.mkdir(mode=0o700, exist_ok=False); os.chmod(evidence, 0o700)
         except Exception: evidence = None
         if evidence is not None:
-            try:
-                source = discoverer or discovery
-                observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else _run_default_discovery(tick_value, timeout, Path(state_path))
-            except Exception: observed = None
-            if observed is None: result = ApplicationLoopResult(False, error="discovery_failed")
-            elif not isinstance(observed, Mapping): result = ApplicationLoopResult(False, error="discovery_failed")
-            else:
-                error, opportunities = observed.get("error"), observed.get("opportunities", [])
-                if observed.get("ok") is not True and not (error == "no_normalized_opportunities" and "opportunities" in observed and not opportunities):
-                    clean_error = error if isinstance(error, str) and re.fullmatch(r"[A-Za-z0-9._:-]{1,256}", error or "") else "discovery_failed"
-                    result = ApplicationLoopResult(False, error=clean_error)
-                elif error is not None and error != "no_normalized_opportunities":
-                    result = ApplicationLoopResult(False, error=error if isinstance(error, str) and re.fullmatch(r"[A-Za-z0-9._:-]{1,256}", error) else "discovery_failed")
-                elif isinstance(opportunities, (str, bytes, bytearray)) or not isinstance(opportunities, Sequence): result = ApplicationLoopResult(False, error="discovery_failed")
-                elif not opportunities: result = ApplicationLoopResult(True, reason="no_eligible_project")
+            source = discoverer or discovery
+            turns = 3 if source is None and query is None else 1
+            observed_total = 0
+            for turn in range(turns):
+                turn_evidence = evidence
+                if turns > 1:
+                    turn_evidence = evidence / f"turn-{turn + 1}"
+                    turn_evidence.mkdir(mode=0o700, exist_ok=False)
+                try:
+                    observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else _run_default_discovery(tick_value, timeout, Path(state_path))
+                except Exception: observed = None
+                if observed is None or not isinstance(observed, Mapping): result = ApplicationLoopResult(False, error="discovery_failed")
                 else:
-                    try: today = _tick_date(tick_value)
-                    except Exception: result = ApplicationLoopResult(False, error="planner_contract_invalid")
-                    else: result = _plan_and_submit(opportunities, today, evidence, planner, safety_verifier, submitter, Path(state_path))
+                    error, opportunities = observed.get("error"), observed.get("opportunities", [])
+                    if observed.get("ok") is not True and not (error == "no_normalized_opportunities" and "opportunities" in observed and not opportunities):
+                        clean_error = error if isinstance(error, str) and re.fullmatch(r"[A-Za-z0-9._:-]{1,256}", error or "") else "discovery_failed"
+                        result = ApplicationLoopResult(False, error=clean_error)
+                    elif error is not None and error != "no_normalized_opportunities":
+                        result = ApplicationLoopResult(False, error=error if isinstance(error, str) and re.fullmatch(r"[A-Za-z0-9._:-]{1,256}", error) else "discovery_failed")
+                    elif isinstance(opportunities, (str, bytes, bytearray)) or not isinstance(opportunities, Sequence): result = ApplicationLoopResult(False, error="discovery_failed")
+                    elif not opportunities: result = ApplicationLoopResult(True, reason="no_eligible_project")
+                    else:
+                        try: today = _tick_date(tick_value)
+                        except Exception: result = ApplicationLoopResult(False, error="planner_contract_invalid")
+                        else: result = _plan_and_submit(opportunities, today, turn_evidence, planner, safety_verifier, submitter, Path(state_path))
+                observed_total += result.observed_count or 0
+                result = replace(result, observed_count=observed_total)
+                if result.reason != "no_eligible_project":
+                    break
     finally:
         if result.error not in RETAIN_EVIDENCE_ERRORS:
             try:
