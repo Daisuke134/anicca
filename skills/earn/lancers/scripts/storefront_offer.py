@@ -155,7 +155,7 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     before = _public(page, product)
     reconciliation = _reconcile_superseded(page, product["superseded_listing_ids"])
     if reconciliation["status_effect_count"]: return before | reconciliation | {"action": "paused_superseded"}
-    if before["aligned"]: return before | {"action": "unchanged"}
+    if before["aligned"]: return before | reconciliation | {"action": "unchanged"}
     listing_id = product["listing_external_id"]; edit_url = f"{ORIGIN}/myplan/{listing_id}/edit"
     page.goto(edit_url, wait_until="domcontentloaded", timeout=30_000)
     if page.url != edit_url: raise OfferError("edit_route_invalid")
@@ -195,7 +195,7 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     save = page.get_by_role("button", name="保存する", exact=True)
     if save.count() != 1: raise OfferError("form_changed")
     save.click(); page.wait_for_url(f"**/myplan/{listing_id}/edit/complete", timeout=30_000)
-    try: return _public(page, product) | {"action": "updated"}
+    try: return _public(page, product) | reconciliation | {"action": "updated"}
     except OfferError: raise OfferError("publication_uncertain") from None
 
 
