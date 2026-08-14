@@ -2112,7 +2112,8 @@ ApplicationReceipt増分があれば`📨`、正常no-opは`✅`、pendingまた
 送らず「公式確認を完了できなかったため次回再確認する」とする。PaymentReceipt source未接続中は売上0と推測せず、
 「まだ公式入金を集計できない」と明示する。sourceがない交渉件数を作らない。
 
-**PLAN SIZE:** production 1 file、約25–40行。semantic hash、outbox、dedupe、delivery、state、ledgerは変更しない。
+**PLAN SIZE:** production 1 file、約25–40行。semantic hash、outbox、delivery、state、ledgerは変更しない。旧本文と同じsnapshot keyが
+idempotency conflictになるため、event keyのformat namespaceだけを`human:v1`へ一度切り替え、同じ自然文snapshotは従来どおり重複送信しない。
 
 **DONE EVIDENCE:** 同じexact Telegram owner自身の実wakeがprovider positive message IDを返し、実配信本文にraw `G2`、`owner`、
 `blocker`、`unknown`を含まない。ApplicationReceipt 29、pending 0、Storefront `受付中1 / 受付休止中5 / 非表示0 / 下書き0`を
