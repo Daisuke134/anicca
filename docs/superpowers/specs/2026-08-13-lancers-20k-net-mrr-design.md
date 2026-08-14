@@ -2169,3 +2169,19 @@ invalid decisionはclaim、submit、receiptを一切行わず、そのwakeだけ
 **DONE EVIDENCE:** 保存済み同一16判断は15 valid / 1 isolated invalidとなる。exact ownerの次wakeはinvalid entityへeffect 0のまま、
 別のvalid candidateを最大1件だけ送るか、providerの次の具体的blockerを返す。pending intent、公式proposal ID readback、
 ApplicationReceipt、次wake duplicate effect 0を維持する。
+
+### 18.18 Public evidence whitespace normalization
+
+**CURRENT OBSERVATION:** decision isolation releaseの実wakeは最初の16判断から15件を安全に処理し、fingerprintを48→63へ進める。
+project `5586662`の`submit_required`は不可能な日付`1444-14-14`のため正しくeffect 0で除外される。次turnで同projectは
+`skip_not_fit`になり、公式質問3行を根拠にするが、公式public textは項目間に空行2つ、model quoteは改行1つであるため、
+文字列の意味と順序が同一でもexact byte substringに失敗する。結果はsubmit 0、pending 0、receipt 29、stateはvalid no-effect claimだけ更新する。
+
+**NEXT DIRECT ACTION:** 公開excerptとpublic textのwhitespaceだけをcollapseして連続一致を確認する。文字、語順、句読点は補正せず、
+`商品撮影業務`を`商品撮影など`へ変えるような言い換えは引き続きinvalidとする。hard/skipのbusiness判断、class、price/date、
+exact public source requirementは変更しない。
+
+**PLAN SIZE:** production 1 file、約3–5行。model call、retry、keyword、regex fallbackは0。
+
+**DONE EVIDENCE:** 保存済みturn-2の3行quoteはvalidになり、前wakeの言い換えquoteはinvalidのままである。exact ownerはこのno-effect案件を
+claimした後、同wakeの残turnで別queryへ進み、最大1件のfit応募または正直なno-opを返す。

@@ -222,6 +222,9 @@ def _valid_observed_budget(row: object) -> bool:
     minimum, maximum = row.get("budget_min_minor"), row.get("budget_max_minor")
     return not any(value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0) for value in (minimum, maximum)) and not (minimum is not None and maximum is not None and minimum > maximum)
 
+def _public_excerpt(excerpt: str, public_text: str) -> bool:
+    return " ".join(excerpt.split()) in " ".join(public_text.split())
+
 def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) -> dict[str, Mapping[str, object]]:
     try:
         if not isinstance(json.loads(SCHEMA_PATH.read_text(encoding="utf-8")), Mapping) or not isinstance(value, Mapping): raise ValueError
@@ -237,12 +240,12 @@ def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) 
                 if proposal is not None or price is not None or due is not None or len(reasons) < 2 or reasons[0] not in HARD_PROHIBITION_CLASSES: raise ValueError
                 public_row = rows_by_id[project_id]
                 public_text = "\n".join(str(public_row.get(key) or "") for key in ("title", "description", "category"))
-                if not 1 <= len(reasons[1]) <= 200 or reasons[1] not in public_text: raise ValueError
+                if not 1 <= len(reasons[1]) <= 200 or not _public_excerpt(reasons[1], public_text): raise ValueError
             elif business_class == "skip_not_fit":
                 if proposal is not None or price is not None or due is not None or len(reasons) < 2: raise ValueError
                 public_row = rows_by_id[project_id]
                 public_text = "\n".join(str(public_row.get(key) or "") for key in ("title", "description", "category"))
-                if not 1 <= len(reasons[0]) <= 120 or not 1 <= len(reasons[1]) <= 200 or reasons[1] not in public_text: raise ValueError
+                if not 1 <= len(reasons[0]) <= 120 or not 1 <= len(reasons[1]) <= 200 or not _public_excerpt(reasons[1], public_text): raise ValueError
             elif reasons or not _safe_proposal(proposal, expected) or isinstance(price, bool) or not isinstance(price, int) or price < 1 or not _valid_date(due, today): raise ValueError
             found[project_id] = decision
         for row in rows:
