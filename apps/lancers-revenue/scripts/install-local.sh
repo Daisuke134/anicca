@@ -283,7 +283,9 @@ if [[ "$ACTIVATE" == "1" ]]; then
     elif [[ "$loaded" != *"Could not find service \"$label\" in domain for user gui:"* ]]; then
       fail "$label loaded-state check failed"
     fi
-    "$LAUNCHCTL_BIN" bootstrap "$DOMAIN" "$plist"
+    "$LAUNCHCTL_BIN" bootstrap "$DOMAIN" "$plist" \
+      || "$LAUNCHCTL_BIN" print "$target" >/dev/null \
+      || fail "$label bootstrap failed"
     loaded="$("$LAUNCHCTL_BIN" print "$target")"
     arguments="$(print -r -- "$loaded" | awk '/^[[:space:]]*arguments = \{$/{found=1; next} found && /^[[:space:]]*\}$/{exit} found{sub(/^[[:space:]]*/, ""); print}')"
     working="$(print -r -- "$loaded" | awk -F' = ' '/^[[:space:]]*working directory = /{print $2; exit}')"
