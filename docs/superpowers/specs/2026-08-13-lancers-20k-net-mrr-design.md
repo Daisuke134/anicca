@@ -1693,7 +1693,7 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
-| canonical Git | production正本`origin/main`、`feat/lancers-quality-gate`、current worktreeは`621e13b393f39f3cfdff2ae5e8f615ccefc4ac84`で一致 | code/spec/skillのbranch forkはない |
+| canonical Git | installed production commit `621e13b393f39f3cfdff2ae5e8f615ccefc4ac84`は`origin/main` reachable。以後のmain差分はproduction実測を記録する本specだけ | runtime archive bytesのbranch forkはなく、evidence-only commitのため再releaseしない |
 | installed release | `deployment.json`、Application、Work Sync、Telegramのargv/working directoryはimmutable `621e13b393f39f3cfdff2ae5e8f615ccefc4ac84` | manifest 21 filesのbytes一致、writable file 0、owner 3本exact release一致 |
 | Apply | launchd enabled、30分、累計`application_verified=25`、fingerprint 31 | discovery→応募→公式proposal ID→ApplicationReceiptは実稼働 |
 | Apply latest reconcile | project `5586573`、¥50,000、納期`2026-08-21`はsubmit 0のreadback-onlyで公式proposal ID `27812628`へ確定。pending 1→0 | blind resend 0、receipt exactly 1 |
