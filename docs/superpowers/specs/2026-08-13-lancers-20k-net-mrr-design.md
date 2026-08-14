@@ -537,8 +537,8 @@ pure unknown を G1 の qualified に変える質問は送らない。
 | `application_verified` | reply monitoring に移る |
 | `buyer_replied` | 5 分以内に内容を classify する |
 | `clarification_required` | 質問は一問だけ送る |
-| `monthly_offer_possible` | 月額 plan proposal を送る |
-| `offer_received` | scope と money を公式画面で確認する |
+| `commercial_intent` | Applyならproposal選定/仮払いを待ち、Storefront相談なら見積回答を送り、月額化ならclientへ公式月額offerを依頼する |
+| `client_offer_received` | client-originated offerのscope、money、仮払いを公式画面で確認し、条件が合う時だけ承諾する |
 | `contract_active` | fulfillment lane を開始する |
 | `lost` | 理由を記録する |
 | `submission_uncertain` | 当該 job を quarantine し、公式再読みに限定する |
@@ -1518,7 +1518,7 @@ LinkedIn=2、B2Bマーケティング=0、AI活用=1、継続依頼=19、長期=
 このsliceの完了条件はexact releaseへdeploy後、既存launchdを一回kickし、公開案件を観測して、
 `submit_required`があれば最大一件が公式proposal IDまで確定すること、なければ全件の
 `hard_prohibited`またはprovider上の候補不在を具体的に報告することである。応募は売上ではない。
-残るmoney loopは、reply検知→月額offer/contract readback→bounded fulfillment→delivery readback→
+残るmoney loopは、reply検知→route別見積/仮払い/contract readback→bounded fulfillment→delivery readback→
 PaymentReceipt/fee/cost/bank reconciliationの順で、一件の上流receiptを得るたび一laneずつONにする。
 
 実装・本番E2Eはexact release `4fba401baa257532b6d1e675fc7ed97c2db0233f`で完了する。
@@ -1533,8 +1533,9 @@ reporterは古いapplication tickだけを読むと、reconcile後も`submission
 同様に、現在の公式storefront readが成功した時は古いmutation logの`listing_readback_mismatch`で上書きしない。
 現在の公式sourceが失敗した時だけstorefront blockerを出す。
 
-次の先頭TODOは、同じprojectのbuyer replyを公式sourceから検知し、reply一件をclaimして月額offerを送り、
-公式contract IDをreadbackするSales laneである。応募だけでは売上ではなく、ContractReceipt、DeliveryReceipt、
+次の先頭TODOは、同じprojectのbuyer replyを公式sourceから検知してreply一件をclaimし、Applyならclientのproposal選定/仮払い、
+Storefrontならseller見積回答→client仮払い、月額報酬ならclient-originated offer→seller承諾を公式readbackして、
+contract IDを確定するSales laneである。応募だけでは売上ではなく、ContractReceipt、DeliveryReceipt、
 PaymentReceiptの順に後段を閉じるまでMRRは増えたと報告しない。
 
 ### 17.1 G4C Sales reply action
@@ -1716,7 +1717,7 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 
 現在の直接ボトルネックは次の三つである。
 
-1. **Sales conversion:** buyer-lastを読む/返信するtransportはあるが、購入意思→Lancers固有の見積/月額offer→仮払い済みactive contract→ContractReceiptを閉じていない。
+1. **Sales conversion:** buyer-lastを読む/返信するtransportはあるが、購入意思→route別の見積/選定/client-originated月額offer→仮払い済みactive contract→ContractReceiptを閉じていない。
 2. **Storefront acquisition:** canonical商品は公開されているが、durable stateと唯一のscheduled ownerが別listingを指すため、観測→一変数改善→公式readbackの反復loopになっていない。
 3. **Revenue completion:** funded contractから制作・QA・公式納品・検収・PaymentReceipt・fee/cost/payout・bank matchへ進むFulfillment/Finance ownerがない。
 
@@ -1726,7 +1727,7 @@ LancersもCoconalaと同じ四つのuser-facing lane名とownershipを使う。
 
 1. **Apply** — 公開募集の発見、model判断、応募、公式ApplicationReceipt
 2. **Storefront** — 商品在庫、公開状態、需要counter、相談獲得、一商品一変数改善
-3. **Negotiate / Reply** — 全buyer-last、返信、質問、見積、月額offer、仮払い済みContractReceipt
+3. **Negotiate / Reply** — 全buyer-last、返信、質問、Storefront見積、client offer確認/承諾、仮払い済みContractReceipt
 4. **Paid** — funded work、要件、制作、QA、納品、検収、PaymentReceipt、fee/cost/payout、銀行照合
 
 Reporting、health、self-heal、self-improvementはcontrol planeであり第五laneにしない。Financeも独立user-facing laneへ
@@ -1744,7 +1745,7 @@ Coconala Storefront directはまだproduction未稼働なので、Storefrontの�
 flowchart LR
   A[Lane 1: Apply<br/>募集→判断→応募<br/>ApplicationReceipt]
   B[Lane 2: Storefront<br/>商品→需要観測→相談<br/>一変数改善]
-  N[Lane 3: Negotiate / Reply<br/>buyer-last→返信/見積/月額offer<br/>ContractReceipt]
+  N[Lane 3: Negotiate / Reply<br/>buyer-last→返信/見積/client offer承諾<br/>ContractReceipt]
   P[Lane 4: Paid<br/>funded work→制作/QA/納品/検収<br/>PaymentReceipt→銀行照合]
   AR[(Apply state / receipts)]
   BR[(Storefront state / receipts)]
@@ -1836,7 +1837,7 @@ capacityを増やす。初期獲得配分70/30はApplyに25 receipt、Storefront
 | `✅` | 正常に観測し、安全に終了 | failureなし。effect 0でも正常no-opなら可 |
 | `📨` | 応募を公式確認 | provider proposal IDのreadback後だけ |
 | `🛍️` | Storefrontを観測・改善 | public before/afterまたは正直なno-change |
-| `💬` | 返信・見積・offerを公式確認 | seller-side message/offer ID readback後だけ |
+| `💬` | 返信・見積・offer承諾を公式確認 | seller-side message/estimate IDまたはaccepted client offer/contract IDのreadback後だけ |
 | `🛠️` | funded workを制作・納品 | ContractReceiptがあり、作業/納品stageを正確に表示 |
 | `⚠️` | 不確実・確認待ち・部分失敗 | blind retryせず、行わなかったeffectと次のreadbackを明記 |
 | `🚫` | 能力外・禁止条件で実行しない | modelの根拠を自然文で説明 |
@@ -1880,7 +1881,7 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 | 順序 | 一件の作業 | 完了証拠 | 実装目安 |
 |---:|---|---|---:|
 | 1 | **exact-release + G3C収束**: `5586573 → 27812628`のreadback-only reconcileは完了。G3C behavior commit `db597450…`を含む最新mainをimmutable releaseへinstallし、Application/Work Sync/Telegramを同一SHAへ揃える | 新しいJapan dayで10件到達時に`daily_quota_reached`、owner 3本同一SHA、重複応募0。旧releaseで直前日11件まで進んだ事実を隠さない | 1–2時間 |
-| 2 | **Negotiate / Reply completion**: Coconalaのsingle semantic judgement、全buyer-last有限queue、lane-local outbox、presend freshness、official readbackを既存Work Syncへcopy。Lancers固有のreply/estimate/monthly-offer/accept flowだけ公式画面から差し替え、wake-wide/account-wide lockを追加しない | 最初のreal reply/offer effect、公式message/offer ID、仮払い済みactive contract ID、ContractReceipt、次wake duplicate 0 | 1–3日 + buyer応答時間 |
+| 2 | **Negotiate / Reply completion**: Coconalaのsingle semantic judgement、全buyer-last有限queue、lane-local outbox、presend freshness、official readbackを既存Work Syncへcopy。Applyのclient選定/仮払い、Storefrontのseller見積回答→client仮払い、月額報酬のclient-originated offer→seller承諾というLancers公式directionへ差し替え、wake-wide/account-wide lockを追加しない | 最初のreal reply/estimate/accept effect、公式message/estimate/contract ID、仮払い済みactive contract、ContractReceipt、次wake duplicate 0 | 1–3日 + buyer応答時間 |
 | 3 | **Storefront completion**: canonical listingを`1338228`へ統一し、旧mutable ownerを廃止。exact-release owner一つでinventory/counter観測し、需要証拠がある時だけ一商品一変数を改善 | state/product/plist/loaded ownerが同一ID/SHA、public before/after、second-wake mutation 0 | 0.5–1.5日 |
 | 4 | **Paid fulfillment stage**: funded active contractだけをqueueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
 | 5 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
@@ -1897,6 +1898,7 @@ worst 9か月以上または未達とする。最大の不確実性はcodeでは
 - Lancers「仮払いって何ですか」: https://www.lancers.jp/faq/C1013/332
 - Lancers「パッケージ取引全体の流れ」: https://www.lancers.jp/faq/S000/852
 - Lancers「月額報酬の契約手続き」: https://www.lancers.jp/faq/M0002/825
+- Lancers月額報酬の公式directionは、clientが「月額報酬」を選び、内容・金額を入力して仮払い付きofferを送り、lancerが承諾して契約成立する。Coconalaのseller-originated offer effectをそのままcopyしない。
 - Lancers利用規約: https://www.lancers.jp/help/terms — 第8条は自動提案機能を利用した提案を想定し、第31条は人為的な高負荷accessと大量message送信を禁止する。
 - canonical Storefront公開page: https://www.lancers.jp/menu/detail/1338228
 - split-brain側の旧公開page: https://www.lancers.jp/menu/detail/1338233
