@@ -11,7 +11,7 @@ listing count, proposals, forecasts, and unpaid contracts are not revenue.
 ## Architecture
 
 - Apply: `scripts/application_loop.py` discovers, judges, applies at most once per tick, and requires an official proposal ID.
-- Storefront: `scripts/storefront_offer.py` owns one canonical package, its official inventory, demand counters, and one-variable improvements.
+- Storefront: `scripts/storefront_offer.py` owns one canonical package, one matching public portfolio proof, official inventory, demand counters, and one-variable improvements.
 - Negotiate / Reply: `scripts/work_sync.py` owns buyer-last messages, replies, Storefront estimates, client-offer verification/acceptance, and funded ContractReceipt handoff.
 - Paid: owns funded work, requirements, production, QA, delivery, payment, provider settlement, and bank reconciliation. This owner is not implemented yet.
 - Reporting: `scripts/telegram_report.py` is the four-lane control plane, not a fifth revenue lane. It renders every wake, effect, skip, blocker, failure, official readback, and verified payment in natural Japanese.
@@ -33,7 +33,7 @@ python3 skills/earn/lancers/scripts/storefront_offer.py --apply
 ```
 
 `--inspect` is read-only. `--apply` makes at most one official mutation per wake: it first pauses one explicitly declared
-`superseded_listing_ids` entry, then aligns only `listing_external_id`. It writes the canonical listing receipt only after official
+`superseded_listing_ids` entry, then aligns only `listing_external_id`, then creates the declared portfolio only when the offer is already aligned. It writes the canonical listing receipt only after official
 status/public readback. If readback is incomplete, the next wake re-observes before any effect; never repeat a blind save. Product changes
 require updating the design SSOT first.
 
