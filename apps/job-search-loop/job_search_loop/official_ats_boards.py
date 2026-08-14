@@ -15,6 +15,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 TOKEN_RE = re.compile(r"[A-Za-z0-9+#.-]{2,}")
 STOPWORDS = {"and", "or", "the", "from", "with", "job", "jobs", "hiring"}
+JAPAN_LOCATION_RE = re.compile(r"\b(?:japan|tokyo)\b|日本|東京", re.IGNORECASE)
 
 
 class _NoRedirect(HTTPRedirectHandler):
@@ -265,10 +266,39 @@ def search_official_boards(
         )
         if terms and score == 0:
             continue
-        ranked.append((score, int(row.get("posted_at_ms", 0)), row))
-    ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        salary = row.get("compensation")
+        verified_target = (
+            isinstance(salary, dict)
+            and salary.get("currency") == "USD"
+            and isinstance(salary.get("min"), int)
+            and salary["min"] >= 100_000
+        ) or (
+            isinstance(salary, dict)
+            and salary.get("currency") == "JPY"
+            and isinstance(salary.get("min"), int)
+            and salary["min"] >= 7_000_000
+        )
+        japan_location = bool(
+            JAPAN_LOCATION_RE.search(
+                " ".join(
+                    [
+                        str(row.get("location", "")),
+                        *[str(value) for value in row.get("secondary_locations", [])],
+                    ]
+                )
+            )
+        )
+        ranked.append(
+            (
+                1 if japan_location and verified_target else 0,
+                score,
+                int(row.get("posted_at_ms", 0)),
+                row,
+            )
+        )
+    ranked.sort(key=lambda item: (item[0], item[1], item[2]), reverse=True)
     results = []
-    for _, _, row in ranked[:max_results]:
+    for _, _, _, row in ranked[:max_results]:
         compact = dict(row)
         description = compact.get("description")
         if isinstance(description, str):

@@ -2483,8 +2483,38 @@ The prompt-only cleanup is pushed as commit
   Focused checks pass `28/28`; the complete source suite passes `590/590` in
   `71.504s`. This is discovery/ranking evidence, not an application receipt.
 
-  **Immediate next slice:** push and activate this official-compensation release,
-  then run the real daily launchd lane. It must either route the current verified
+  Source commit `4760949b27a7f6697e6b5448de62e53850286880` is pushed and active.
+  Two builds are byte-identical at archive SHA-256
+  `77d1f4fc5a9d8c21b0ba5922188b24c0840ed8b49c76aab725da5c567140c6d2`
+  with `267` entries. The archive checksum passes and its installed functional
+  suite passes `588/588`; `a14717682d6cc9cea2fa1bb152a6e4f7c3cb9382` is the
+  rollback release. Activation changed neither the shared-browser page set nor the
+  production Ledger SHA-256
+  `4ebff5aa8c08a46a9a5812c345cc4c52b3eebc1fcce1494760e406c495361e1a`.
+
+  Fresh active-release wake `daily-20260814-092843` examined `457` current
+  candidates. It blocked `412` for unverified compensation, produced zero
+  `ranking_ready` candidates, created no submit intent or receipt, exited `0`, and
+  sent the natural result as Telegram message ID `16945`. It closed only its owned
+  page and preserved the exact shared-browser page set and Ledger hash. The preceding
+  `daily-20260814-085559` began before activation and therefore correctly remains
+  evidence of the prior release, not the new salary gate.
+
+  The active wake exposed a discovery-order bottleneck: the official cache contains
+  the verified Perplexity Tokyo USD 140,000–165,000 posting, but the existing
+  query-score-only top-25 cap omits it. The next minimal source change keeps the same
+  provider and cap while ranking an exact Japan/Tokyo location plus verified
+  JPY-floor/USD-six-figure salary ahead of unverified results. It adds no service,
+  scheduler, browser, or database.
+
+  That ordering change is now source-verified. Both the primary AI/Japan query and
+  the remote-from-Japan dream query retain the exact Perplexity Tokyo posting inside
+  their bounded top `25`, including the official USD 140,000–165,000 salary object.
+  Focused checks pass `29/29`; the complete source suite passes `591/591` in
+  `43.578s`.
+
+  **Immediate next slice:** verify, push, and activate the official-result ordering
+  change, then run the real daily launchd lane. It must route the current verified
   candidate through the normal duplicate/manual-company/experience/material gates or
   report its exact natural-language blocker. After the NVIDIA account cooldown,
   perform one fresh sign-in using the reset private credential; if it remains locked,

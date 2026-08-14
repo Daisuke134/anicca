@@ -151,6 +151,47 @@ class OfficialAtsBoardsTests(unittest.TestCase):
 
         self.assertEqual(len(rows[0]["description"]), 500)
 
+    def test_prioritizes_verified_target_salary_in_japan_before_result_cap(self):
+        jobs = [
+            {
+                "title": f"AI Engineer {index}",
+                "jobUrl": f"https://jobs.ashbyhq.com/acme/{index}",
+                "location": "Remote US",
+                "descriptionPlain": "AI remote engineering",
+                "isListed": True,
+            }
+            for index in range(30)
+        ]
+        jobs.append(
+            {
+                "title": "AI Customer Success",
+                "jobUrl": "https://jobs.ashbyhq.com/acme/tokyo",
+                "location": "Tokyo",
+                "descriptionPlain": "AI customer success",
+                "isListed": True,
+                "compensation": {
+                    "summaryComponents": [
+                        {
+                            "compensationType": "Salary",
+                            "interval": "1 YEAR",
+                            "currencyCode": "USD",
+                            "minValue": 140000,
+                            "maxValue": 165000,
+                        }
+                    ]
+                },
+            }
+        )
+
+        rows = search_official_boards(
+            "AI remote",
+            boards=[{"company": "Acme", "ats": "ashby", "slug": "acme"}],
+            request=lambda *_args, **_kwargs: {"jobs": jobs},
+            max_results=25,
+        )
+
+        self.assertEqual(rows[0]["url"], "https://jobs.ashbyhq.com/acme/tokyo")
+
 
 if __name__ == "__main__":
     unittest.main()
