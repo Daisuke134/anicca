@@ -97,7 +97,9 @@ def _field(page: Any, selector: str) -> Any:
 
 
 def _setting_status(page: Any, listing_id: str) -> str:
-    path = f"/myplan/{listing_id}/setting"; page.goto(ORIGIN + path, wait_until="domcontentloaded", timeout=30_000)
+    path = f"/myplan/{listing_id}/setting"
+    try: page.goto(ORIGIN + path, wait_until="domcontentloaded", timeout=20_000)
+    except Exception: raise OfferError("setting_readback_unavailable") from None
     if urlsplit(str(page.url)).path != path: raise OfferError("setting_route_invalid")
     fields = page.locator('[name="data[ProjectPlanStatusForm][status]"]')
     if fields.count() != 3: raise OfferError("setting_readback_invalid")
@@ -113,8 +115,9 @@ def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, An
     _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').check()
     save = page.get_by_role("button", name="保存", exact=True)
     if save.count() != 1: raise OfferError("setting_form_changed")
-    try: save.click(timeout=20_000)
+    try: save.click(timeout=5_000, no_wait_after=True)
     except Exception: pass
+    page.wait_for_timeout(1_000)
     if _setting_status(page, listing_id) != "paused": raise OfferError("setting_submission_uncertain")
     return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id}
 
