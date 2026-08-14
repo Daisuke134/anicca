@@ -247,7 +247,7 @@ def _snapshot(fetch: Callable[[str], Any], verified_proposals: set[str], private
         return board_id, _id(board["modified"])
     boards = _pages(fetch, lambda cursor: f"/v1/message_api/boards/?{urlencode({'limit': 20, **({'modified': cursor} if cursor else {})})}", check, MAX_BOARD_PAGES, ("duplicate_board_id", "board_cursor_stalled", "board_page_limit_reached"))
 
-    output, replies, unread, applications, storefront = [], 0, 0, 0, 0
+    output, storefront_contracts, replies, unread, applications = [], [], 0, 0, 0
     for board in boards:
         board_id = _id(board["id"])
         detail = fetch(f"/v1/message_api/boards/{quote(board_id, safe='')}")
@@ -265,12 +265,14 @@ def _snapshot(fetch: Callable[[str], Any], verified_proposals: set[str], private
         raw_messages = _message_rows(fetch, board_id); messages = _messages(raw_messages)
         if private_boards is not None: private_boards.append((board, detail, raw_messages))
         replies += int(board["is_required_reply"]); unread += board["unread_count"]
-        applications += int(proposal in verified_proposals); storefront += int(contract is not None)
+        applications += int(proposal in verified_proposals)
+        if contract is not None:
+            storefront_contracts.append({"source_kind": "storefront", "provider_id": contract, "board_id": board_id, "detail_path": f"/v1/message_api/boards/{board_id}", "funding_status": "requires_detail_readback"})
         output.append({"board_id": board_id, "content_sha256": _digest({"board": board, "detail": detail}), "message_ids": [row["message_id"] for row in messages], "messages": messages})
-    return {"ok": True, "logged_in": True, "source_complete": True, "board_count": len(boards), "required_reply_count": replies, "unread_count": unread, "application_board_count": applications, "storefront_contract_candidate_count": storefront, "boards": sorted(output, key=lambda row: row["board_id"])}
+    return {"ok": True, "logged_in": True, "source_complete": True, "board_count": len(boards), "required_reply_count": replies, "unread_count": unread, "application_board_count": applications, "storefront_contract_candidate_count": len(storefront_contracts), "storefront_contract_candidates": storefront_contracts, "boards": sorted(output, key=lambda row: row["board_id"])}
 
 
-def _contract_sources(page: Any) -> dict[str, int]:
+def _contract_sources(page: Any) -> dict[str, Any]:
     def visit(path: str) -> None:
         page.goto(f"https://www.lancers.jp{path}", wait_until="domcontentloaded", timeout=20_000)
         parsed = urlsplit(str(page.url))
@@ -304,7 +306,14 @@ def _contract_sources(page: Any) -> dict[str, int]:
         monthly_ids.append(match.group(1))
     if len(monthly_ids) != len(set(monthly_ids)) or not monthly_ids and monthly.get("empty") is not True:
         raise SourceFailure("contract_source_conflict")
-    return {"project_working_count": len(project_ids), "monthly_contract_count": len(monthly_ids)}
+    candidates = [
+        {"source_kind": "project", "provider_id": project_id, "board_id": None, "detail_path": f"/work/detail/{project_id}", "funding_status": "requires_detail_readback"}
+        for project_id in project_ids
+    ] + [
+        {"source_kind": "monthly", "provider_id": contract_id, "board_id": None, "detail_path": f"/monthly_work_contracts/lancer/{contract_id}", "funding_status": "requires_detail_readback"}
+        for contract_id in monthly_ids
+    ]
+    return {"project_working_count": len(project_ids), "monthly_contract_count": len(monthly_ids), "contract_candidates": candidates}
 
 
 def _cleanup(page: Any, browser: Any) -> bool:
@@ -334,7 +343,9 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
             private_boards: list[Any] = []
             result = _snapshot(lambda path: _fetch(page, path), verified_proposals, private_boards)
             result.update(_contract_sources(page))
-            result["contract_candidate_count"] = result["storefront_contract_candidate_count"] + result["project_working_count"] + result["monthly_contract_count"]
+            result["contract_candidates"] += result.pop("storefront_contract_candidates")
+            result["contract_candidates"].sort(key=lambda row: (row["source_kind"], row["provider_id"]))
+            result["contract_candidate_count"] = len(result["contract_candidates"])
             _write_state(Path(state_path).with_name("contracts.json"), {
                 "source_complete": True,
                 "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -342,6 +353,7 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
                 "monthly_contract_count": result["monthly_contract_count"],
                 "storefront_contract_candidate_count": result["storefront_contract_candidate_count"],
                 "contract_candidate_count": result["contract_candidate_count"],
+                "contract_candidates": result["contract_candidates"],
             })
             result["reply_action"] = _sales_action(page, Path(state_path), private_boards, verified_proposals)
     except SourceFailure as error:
