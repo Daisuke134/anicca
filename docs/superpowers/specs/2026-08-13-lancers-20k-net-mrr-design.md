@@ -1892,7 +1892,7 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 | 完了 | **Storefront canonical convergence**: productでcanonical `1338228`とsuperseded `1338229–1338233`を宣言し、一wake一mutation、presend exact-ID再観測、POST、公式status readback、canonical receiptを持つ独立30分ownerを追加。旧5件をpausedへ収束 | release `cb9ed535d…`、公式`published 1 / paused 5`、receipt `1338228`、second wake `action=unchanged / status_effect_count=0`、owner exit 0 | 完了 |
 | 完了 | **Apply acquisition outcome診断**: 10 query公式件数を分離し、validator通過済み能力外を既存claimへ保存、Coconala同様にdefault wake最大3探索turnへ進めた。Lancersのrequired生成AI宣言value 1も正直に選択する | release `829824532…`、`observed 21 / eligible 8`、provider block submit 0、次候補`5584041`一回送信、proposal `27812830`、receipt 26、pending 0、blind resend 0 | 完了 |
 | 完了 | **production browser owner recovery**: manual PID任せをやめ、既存profileと`:9227`をsole reproducible ownerへ束ねる。attach timeout時は専用profileのLancers targetだけをcloseして一度retry | release `65a08a957…`、browser PID=launchd PID `29096`、login ready。Application / Storefront / Work Sync exit 0、Storefront/Work Sync second wake effect 0、self-heal E2E 12.59秒、state/ledger不変 | 完了 |
-| 1 | **Negotiate / Contract completion**: Coconalaのsemantic reply contractを再利用し、Apply選定、Storefront相談/見積、client-originated月額offer、仮払い済みactive contractの各公式shapeを同じSales ownerへ接続する。イベントがない時は正常no-op | real event到着時にmessage/estimate/offer/contract exact ID、ContractReceipt、次wake duplicate reply/offer 0。存在しないbuyerへのeffect 0 | 1–3日 + buyer event待ち |
+| 1 | **Negotiate / Contract completion**: Coconalaのsemantic reply contractを再利用し、Apply選定、Storefront相談への返信、client-originated月額offer、仮払い済みactive contractの各公式shapeを同じSales ownerへ接続する。Lancers sellerから月額offerを作らない。イベントがない時は正常no-op | real event到着時にmessage/offer/contract exact ID、ContractReceipt、次wake duplicate reply/offer承諾 0。存在しないbuyerへのeffect 0 | 1–3日 + buyer event待ち |
 | 2 | **Paid fulfillment stage**: funded active contractだけを有限queueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
 | 3 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
 | 4 | **four-lane human reporting completion**: 既存のApply / Storefront / Negotiate / Finance自然文をPaid receiptまで拡張し、transport failureをlane failureや売上へ混ぜず、当月入金総額・当月net revenue・単発売上・現在net MRRを別表示する | every-wake human message、個別effect/failure即時通知、receipt count、pending/blocker、四つのrevenue値のunknown/verified、exact-key dedupe | 0.5–1日 |
@@ -2305,3 +2305,35 @@ SIGKILLし、同じprofileをlaunchd ownerへ引き継いだ。cookie、credenti
 9件FAILであり、全suite greenとは判定しない。9件は今回のdiffに含まれない`status`、`telegram_report`、`work_sync`の現行production
 shapeに対して旧文字列・旧件数・旧object shapeを期待するtest driftである。browser recoveryのDone根拠には使わず、上記のfocused
 21件とproduction owner自身のeffect/readback/second-wake/self-healだけを使う。収益TODOより先にtest置換作業へ広げない。
+
+### 18.24 Negotiate / Contract slice 1 — semantic buyer-last
+
+**USER OUTCOME:** buyerの質問、辞退、感謝、購入意思を自然言語で理解し、必要な返信だけを5分ownerが送り、合意できた月額案件は
+clientの公式offerへ進む。不要な返信、fake見積、seller-originated月額offerを作らない。
+
+**CURRENT OBSERVATION:** production Work Syncは公式board `9024494`一件、required reply 0、unread 0、incoming monthly offer 0、
+active contract 0を返す。ログイン済み実画面の`/monthly_work_contracts/lancer/offers`は「申請されたオファーはありません」、
+`/monthly_work_contracts/lancer`は「申請された契約はありません」である。現在の`work_sync.py`はbuyer-lastなら常に一件返信し、
+価格・納期質問を本文keyword regexで判定するため、Coconala current contractのsemantic `reply / wait / stop`より狭く、感謝・辞退にも
+不要な返信を作り得る。
+
+**FIRST-SOURCE BOUNDARY:** Lancers公式FAQ
+https://www.lancers.jp/faq/M0002/825 はclientがプロフィール/メッセージから月額報酬を選び、内容・月額・支払方法を入力して
+仮払い付きofferを送り、lancerは「承諾」または「お断り」すると定義する。https://www.lancers.jp/faq/M0002/807 は
+仕事内容と月額を事前合意し、client offerをlancerが承諾した時点で契約開始・仮払い完了、その後は月末支払確定と定義する。
+https://www.lancers.jp/faq/M0002/879 は合意項目をscope、volume、frequency、conditions、初月/翌月以降の金額とする。
+したがってCoconalaのseller-side `send_estimate` effectはコピーせず、single semantic judgement、intent、presend再観測、official
+message readback、dedupeだけをコピーする。
+
+**NEXT DIRECT ACTION:** 既存`reply_composition.schema.json`をLancers Salesの最小semantic contractへ拡張し、modelへrole付き累積会話、
+verified proposal、canonical product、上記公式月額directionを渡す。modelは`reply / wait / stop`と本文/uncertaintyを返す。deterministic
+codeはID、role、hash、intent、fresh readbackだけを守り、価格・納期keyword regexを削除する。`wait / stop`はprovider effect 0で同じ
+buyer messageをhandledへ閉じ、uncertaintyはhandledにせずthread-local retryとする。新DB、service、scheduler、seller estimate actionは0。
+
+**PLAN SIZE:** production 2 files、約30–50行。既存`work_sync.py`と既存schemaだけを変更する。Telegramに新status文が必要な場合だけ
+既存formatter 1 fileへ2行以内を追加する。新file、新test、fixture matrixは作らず、保存済み実conversationのread-only model実行と
+production no-op wakeで確認する。
+
+**DONE EVIDENCE:** 未完。保存済みbuyer-last conversationをsemantic runnerへ通し、必要な返信ではgrounded body、感謝/辞退ではeffect 0、
+uncertaintyではsend 0を確認する。その後exact releaseのWork Sync ownerをwakeし、現在のseller-last/offer 0でexit 0、reply 0、
+contracts snapshot fresh、次wake duplicate effect 0、application/ledger不変を確認する。

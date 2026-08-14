@@ -1,13 +1,30 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["reply_body"],
+  "required": ["next_action", "reply_body", "uncertainty"],
   "additionalProperties": false,
   "properties": {
-    "reply_body": {
+    "next_action": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 1000
+      "enum": ["reply", "wait", "stop"]
+    },
+    "reply_body": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "minLength": 1, "maxLength": 1000}
+      ]
+    },
+    "uncertainty": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"next_action": {"const": "reply"}}},
+      "then": {"properties": {"reply_body": {"type": "string", "minLength": 1}}},
+      "else": {"properties": {"reply_body": {"type": "null"}}}
+    }
+  ]
 }

@@ -39,8 +39,6 @@ application_tick = _load("anicca_lancers_work_sync_tick", HERE / "application_ti
 CDP_URL, DEFAULT_STATE_PATH = application_tick.CDP_URL, application_tick.DEFAULT_STATE_PATH
 MAX_BOARD_PAGES = MAX_MESSAGE_PAGES = 20
 TICK_TIMEOUT_SECONDS = 120
-PRICE_QUESTION = re.compile(r"価格|値段|金額|料金|見積|いくら")
-DUE_QUESTION = re.compile(r"納期|いつ|何日|期間")
 
 
 class SourceFailure(RuntimeError): pass
@@ -106,30 +104,29 @@ def _proposal_context(page: Any, detail: Mapping[str, Any], verified_proposals: 
     return {"proposal_id": proposal_id, "project_id": value.get("project_id"), "price_jpy": int(amount_digits), "delivery_due_on": due, "proposal_text": text.strip()}
 
 
-def _compose_reply(board: Mapping[str, Any], messages: Sequence[Mapping[str, Any]], state_path: Path, grounding: Optional[Mapping[str, Any]] = None) -> str:
+def _compose_reply(board: Mapping[str, Any], messages: Sequence[Mapping[str, Any]], state_path: Path, grounding: Optional[Mapping[str, Any]] = None) -> Optional[str]:
     conversation = []
     for row in sorted(messages, key=lambda item: int(_id(item.get("id"))))[-20:]:
         body = row.get("description")
         if not isinstance(body, str) or not body.strip() or len(body) > 10000: raise SourceFailure("provider_response_invalid")
         conversation.append({"side": "buyer" if row.get("is_required_reply") is True else "seller", "body": body[:4000]})
-    prompt = """Lancersの購入前会話へ、今すぐ送信できる日本語返信を1件作る。Coconalaで実運用する返信規則をそのまま使う。\n必須:\n- 最新のbuyer発言の質問・依頼へ冒頭から直接答え、明示された質問を省略しない。\n- verified_proposalがある応募threadでは、その価格・納期・提案本文だけを応募条件の正本にする。canonical_productは関連するstorefront相談だけに使い、応募条件と混ぜない。\n- 会話とgroundingにある検証済み事実だけを使う。価格、納期、実績、対応能力を作らない。答えに必要な未確定事項だけ質問を1つまで含める。\n- 最新発言への回答だけで完結するならCTA、見積り、納期、質問を自発的に追加しない。購入を催促しない。\n- 動画/animation制作、物理/現地作業、必須の顔・声・電話/live call、AI明示禁止、違法危険、未保有の法的資格、虚偽属性が依頼全体に必須なら、代替提案や質問を付けず正直かつ丁寧に辞退する。フィギュアの塗装・リペイント・カスタムは物理作業である。辞退時は「対応できません」を明言し、実績がないという説明だけで終えない。単語が出ただけ、任意作業、難しさ、低予算、実績不足では辞退しない。\n- 外部連絡先、内部用語、未依頼の成果物を含めない。1000文字以内。schemaどおりreply_bodyだけを返す。\nCONTEXT:\n""" + json.dumps({"board": {"title": board.get("title"), "description": board.get("description")}, "conversation": conversation, "grounding": grounding or {}}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    prompt = """Lancersの購入前会話を判断する。Coconalaで実運用するsingle semantic judgementを使う。\n必須:\n- next_actionは、相手へ今返す必要がある時だけreply、感謝・了解・seller返答待ちなど返信不要ならwait、明確な辞退・連絡停止ならstop。迷いがあればuncertaintyへ書き、返信本文を作らない。\n- replyでは最新buyer発言の質問・依頼へ冒頭から直接答え、明示された質問を省略しない。\n- verified_proposalがある応募threadでは、その価格・納期・提案本文だけを応募条件の正本にする。canonical_productは関連するstorefront相談だけに使い、応募条件と混ぜない。\n- 会話とgroundingにある検証済み事実だけを使う。価格、納期、実績、対応能力を作らない。必要な未確定事項だけ質問を1つまで含める。\n- Lancers月額報酬はclientがscope、volume、frequency、conditions、初月と翌月以降の金額を合意後、仮払い付き公式offerを送り、sellerが承諾して始まる。条件が具体的に合意済みでbuyerが購入意思を示した時だけ、clientへ公式offer送付を依頼する。sellerがofferを送れると書かない。\n- 最新発言への回答だけで完結するならCTA、見積り、納期、質問を自発的に追加しない。購入を催促しない。\n- 必須能力外なら、代替提案や質問を付けず正直かつ丁寧に辞退する。単語が出ただけ、任意作業、難しさ、低予算、実績不足では辞退しない。\n- 外部連絡先、内部用語、未依頼の成果物を含めない。reply_bodyは1000文字以内。wait/stopではreply_bodyをnullにする。\nCONTEXT:\n""" + json.dumps({"board": {"title": board.get("title"), "description": board.get("description")}, "conversation": conversation, "grounding": grounding or {}}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     with tempfile.TemporaryDirectory(prefix=".lancers-reply-", dir=state_path.parent) as temporary:
         evidence = Path(temporary) / "evidence"
         completed = subprocess.run([sys.executable, str(AGENT_RUNNER), "--task-class", "composition-agent", "--prompt-stdin", "--schema", str(REPLY_SCHEMA), "--evidence-dir", str(evidence), "--task-label", "lancers-sales-reply", "--loop", "lancers-sales", "--workdir", str(SKILLS_ROOT.parent)], input=prompt, text=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=90, check=False)
         if completed.returncode != 0: raise SourceFailure("reply_composer_failed")
         try:
             summary = json.loads((evidence / "summary.json").read_text(encoding="utf-8")); result_path = Path(str(summary["result_path"])).resolve(); result_path.relative_to(evidence.resolve())
-            result = json.loads(result_path.read_text(encoding="utf-8")); body = result.get("reply_body") if isinstance(result, Mapping) else None
+            result = json.loads(result_path.read_text(encoding="utf-8"))
         except (OSError, KeyError, TypeError, ValueError): raise SourceFailure("reply_composer_failed") from None
+    if not isinstance(result, Mapping) or result.get("next_action") not in {"reply", "wait", "stop"} or not isinstance(result.get("uncertainty"), list): raise SourceFailure("reply_contract_invalid")
+    if result["uncertainty"]: raise SourceFailure("reply_semantic_uncertain")
+    body = result.get("reply_body")
+    if result["next_action"] != "reply":
+        if body is not None: raise SourceFailure("reply_contract_invalid")
+        return None
     if not isinstance(body, str) or not body.strip() or len(body.strip()) > 1000: raise SourceFailure("reply_contract_invalid")
-    body = body.strip(); proposal = grounding.get("verified_proposal") if isinstance(grounding, Mapping) else None
-    if isinstance(proposal, Mapping) and conversation:
-        latest = conversation[-1]["body"]; price, due = proposal.get("price_jpy"), proposal.get("delivery_due_on")
-        price_variants = (str(price), f"{price:,}") if isinstance(price, int) else ()
-        due_variants = (str(due), str(due).replace("-", "/"), str(due).replace("-", "年", 1).replace("-", "月", 1) + "日") if isinstance(due, str) else ()
-        if PRICE_QUESTION.search(latest) and not any(value in body for value in price_variants): raise SourceFailure("reply_contract_invalid")
-        if DUE_QUESTION.search(latest) and not any(value in body for value in due_variants): raise SourceFailure("reply_contract_invalid")
-    return body
+    return body.strip()
 
 
 def _verified_proposals(state_path: Path) -> set[str]:
@@ -228,6 +225,10 @@ def _sales_action(page: Any, state_path: Path, boards: Sequence[tuple[Mapping[st
     if event_key in state["handled"]: return {"status": "already_handled", "board_id": board_id}
     grounding = {"canonical_product": _product_context(), "verified_proposal": _proposal_context(page, detail, verified_proposals or set())}
     body = _compose_reply(board, rows, state_path, grounding)
+    if body is None:
+        handled = list(dict.fromkeys([*state["handled"], event_key]))[-1000:]
+        _write_state(path, {"handled": handled, "pending": None})
+        return {"status": "no_reply_needed", "board_id": board_id}
     pending = {"board_id": board_id, "event_key": event_key, "reply_body": body, "content_sha256": _digest(body), "provider_message_id": None}
     _write_state(path, {"handled": state["handled"], "pending": pending})
     provider_id = _post_reply(page, board_id, body); pending["provider_message_id"] = provider_id
