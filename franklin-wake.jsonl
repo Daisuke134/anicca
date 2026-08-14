@@ -27907,3 +27907,11 @@
 {"ts":1786740881,"wake_id":"00MSTFDZLVA8C7CEB93858470C","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786741010,"wake_id":"00MSTFGR3BCFD9C4701B9B440E","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786741137,"wake_id":"00MSTFJHGVD045A717A9C54203","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786741272,"wake_id":"00MSTFMD3RFDEB02CEF1C04526","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786741403,"wake_id":"00MSTFP6MF4B9249D502594E36","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786741537,"wake_id":"00MSTFS1HA94B76FBE2FF64A65","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana autonomous USDC micro-trading bots platform earn [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates s"}
+{"ts":1786741668,"wake_id":"00MSTFUV5UAE3421437A5B4B84","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786741802,"wake_id":"00MSTFXQ1E0BF9D12469DA4791","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786741930,"wake_id":"00MSTG0H9WB5BB513D81ED4E58","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786742073,"wake_id":"00MSTG3JFC859AF555C9B745DA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786742202,"wake_id":"00MSTG6B5QE95D970214054A14","kind":"narrate","sleep_s":120,"model":"auto"}
