@@ -1694,7 +1694,7 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
 | canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
-| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `7cfe4ecf246f7f153ce3cb888facfa3718e5c43c` | manifest 21 files、owner 4本exact release一致、writable file 0 |
+| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `a28e8c519c61fe163abb58321aae250a863bd6f0` | manifest 21 files、owner 4本exact release一致、writable file 0 |
 | Apply | launchd enabled、30分、累計`application_verified=29`、fingerprint 48、pending 0 | 全public detail→semantic bid/no-bid→最大3探索turn→最大1応募→公式proposal ID→ApplicationReceiptが実稼働 |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
 | capacity | exact release `621e13b39…`はfresh `contracts.json`とJapan dayのApplicationReceiptを読むG3C gateを稼働。live decisionは当日0件・active contract 0でallow | 10件到達を作るための不要応募はせず、自然到達時の`daily_quota_reached`を継続観測する |
@@ -1702,7 +1702,7 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
 | Storefront canonical | 公式inventoryは`published=1 / paused=5 / hidden=0 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式paused readback。`listing.json`も月額SNS商品`1338228`へ更新 | ¥98,000 / ¥198,000 / ¥398,000、画像、spot/3か月/6か月routeは公開page一致。second wake `status_effect_count=0` |
 | Storefront demand | canonical `1338228`の公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`。公式category/winnerを比較し、titleだけをbuyer problem先頭へ変更した | exact ownerは`action=updated / changed_field=title / aligned=true`、次wakeは`action=unchanged / status_effect_count=0`。現在は7日観測中で売上効果未確定 |
-| Reporting | 最新応募後は`enqueued=1 / attempted=1 / delivered=1`、provider message ID `18441`、exit 0 | receipt 29/pending 0は正しいが、`G2 owner snapshot`、`blocker none`、raw `unknown`が残り自然言語UXは未完 |
+| Reporting | natural-language releaseの実wakeは`enqueued=1 / attempted=1 / delivered=1`、provider message ID `18453`、exit 0。直後の同一snapshot wakeはenqueue 0 | receipt 29/pending 0、Storefront 1/5/0/0、収益未集計を自然な日本語で表示。raw内部code 0、同一message重複0 |
 | Paid | ledger eventは`application_verified` 29件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、入金のproduction ownerは未完成。net MRRは未発生 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
@@ -2115,6 +2115,9 @@ ApplicationReceipt増分があれば`📨`、正常no-opは`✅`、pendingまた
 **PLAN SIZE:** production 1 file、約25–40行。semantic hash、outbox、delivery、state、ledgerは変更しない。旧本文と同じsnapshot keyが
 idempotency conflictになるため、event keyのformat namespaceだけを`human:v1`へ一度切り替え、同じ自然文snapshotは従来どおり重複送信しない。
 
-**DONE EVIDENCE:** 同じexact Telegram owner自身の実wakeがprovider positive message IDを返し、実配信本文にraw `G2`、`owner`、
-`blocker`、`unknown`を含まない。ApplicationReceipt 29、pending 0、Storefront `受付中1 / 受付休止中5 / 非表示0 / 下書き0`を
-正しく表示し、ContractReceipt・PaymentReceiptがない状態を受注・売上として表示しない。同一snapshotの次wakeはenqueue 0である。
+**DONE EVIDENCE:** exact release `a28e8c519c61fe163abb58321aae250a863bd6f0`のTelegram owner自身が実wakeし、provider message ID
+`18453`、exit 0、`enqueued=1 / attempted=1 / delivered=1`を返す。実配信本文にraw `G2`、`owner`、`blocker`、`unknown`を
+含まず、ApplicationReceipt 29、pending 0、Storefront `受付中1 / 受付休止中5 / 非表示0 / 下書き0`を正しく表示する。
+ContractReceipt・PaymentReceiptがない状態を受注・売上として表示しない。直後の同一snapshot wakeはoutbox件数
+`1168→1168`、`enqueued=0 / attempted=0 / delivered=0`、exit 0で、同じ自然文を再送しない。四ownerは同じrelease、
+manifest 21 files、immutable writable file 0である。このsliceは完了し、次の先頭はbuyer-last/ContractReceiptの実event観測である。
