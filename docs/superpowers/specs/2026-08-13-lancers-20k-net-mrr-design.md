@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** G3B.3 planner contract recovery完了。acquisition・reporter・work-syncは同一exact-SHA bounded loopとして稼働中
+**状態:** G4C fenced Sales replyの最初のlive E2E完了。acquisition・reporter・work-syncは同一exact-SHA bounded loopとして稼働中
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -1307,7 +1307,8 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 完了 | Storefront read-only inventory | exact releaseから公式6 listing、canonical `1338228`、単一content groupを確定。mutation 0、state/ledger不変 | 完了 |
 | 完了 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じた | 完了 |
 | 完了 | Storefront canonical offer alignment | exact release `ec825526…`のcanonical skillから`1338228`だけを画像あり、specific ICP、月額SNS deliverable、¥98k–¥398k、native 3/6ヶ月routeへ揃えた。再applyはunchanged、他5件とstate/ledger不変。更新直後funnel baselineは0、検索反映は最大24時間で継続観測 | 完了 |
-| 1 | G4C Sales reply action | 既存work-syncでbuyer-last一件だけをclaimし、Coconalaの返信contractで直接回答・一問clarification・honest declineを作る。送信前fence、公式message ID、本文readbackを必須にする | 1日 |
+| 完了 | G4C fenced Sales reply | 既存work-syncでbuyer-last一件だけをclaimし、Coconalaの返信contractでhonest declineを生成。送信前fence、公式message ID、本文readback、blind resend 0をlive確認 | 完了 |
+| 1 | G4C verified offer grounding | canonical storefront productと公式応募条件をsales contextへ接続し、target buyerへscope・価格・納期を捏造せず月額offer/一問clarificationとして返す | 1日 |
 | 2 | G4B ContractReceipt source | G4C後に初めて観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 1–2日 |
 | 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
 | 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
@@ -1555,3 +1556,15 @@ G4Cは新scheduler、別service、別DBを作らず、既存5分work-sync owner�
 
 最小差分はproduction 1 file、schema 1 file、installer 1 file、spec 1 fileである。既存work-syncのlock、
 watchdog、CDP session、pagination、exact-release installerを再利用する。
+
+最初のlive actionはexact release `dc0a48fd1cb44e0436d88124c8c8c8b1cf965797`で完了する。公式board
+`9024494`のbuyer-last message `58918062`はフィギュアの物理的なリペイント実績を求めるout-of-scope問い合わせである。
+read-only compositionで「実績なし」だけの曖昧な返信を検出したため、物理作業は対応不能と明言するCoconala型の
+honest-decline contractへ修正してからownerをONにした。POSTは公式message ID `58931455`を返した。直後の公式GETは
+20件未満の最初のpageをさらにpaginateして既出messageを重複検出したため、送信済みfenceを保持しblind resendせず、
+providerの短pageを終端とする実挙動へ修正した。次tickはPOST 0で同じID・本文をreadbackし、`pending=null`、
+`handled=[9024494:58918062]`、`required_reply_count=0`、exit 0となる。application stateとledgerのSHAは前後不変である。
+
+これはSales transportとhonest declineの実証であり、受注・売上ではない。現在の先頭ボトルネックは、target inquiryへ
+canonical productまたは公式ApplicationReceiptのscope・価格・納期をgroundingするsourceがSales promptにないことである。
+次sliceは新しいplanner/serviceを作らず、既存storefront product JSONと公式proposal readbackを同じwork-sync contextへ渡す。
