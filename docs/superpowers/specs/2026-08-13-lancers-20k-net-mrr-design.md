@@ -1568,3 +1568,16 @@ providerの短pageを終端とする実挙動へ修正した。次tickはPOST 0�
 これはSales transportとhonest declineの実証であり、受注・売上ではない。現在の先頭ボトルネックは、target inquiryへ
 canonical productまたは公式ApplicationReceiptのscope・価格・納期をgroundingするsourceがSales promptにないことである。
 次sliceは新しいplanner/serviceを作らず、既存storefront product JSONと公式proposal readbackを同じwork-sync contextへ渡す。
+
+### 17.2 G4C verified offer grounding
+
+Salesはcanonical `monthly-sns-content-ops-v1.json`の3 tierだけをstorefront商品のscope・価格・納期として使う。
+応募threadでは`with.proposal.id`が既存ApplicationReceiptの公式proposal ID集合に含まれる場合だけ
+`/work/proposal/{proposal_id}`をread-onlyで開き、安定した`契約金額 (税抜) :`、`予定納期 :`、`提案文 :`、
+`依頼番号:`を取得する。job IDがある場合は依頼番号も一致させる。応募threadではこの公式proposalを優先し、
+storefront tierを混ぜない。価格または納期を質問された返信は、model生成後に公式値を含むことをdeterministicに検査する。
+
+実ページでproposal `27810514`はproject `5586109`、価格¥150,000、納期`2026-08-21`、提案本文292文字へ
+相関する。read-only compositionへ「提案金額と納期に変更はありませんか？」を入力すると、
+「150,000円、2026年8月21日で変更なし」と返り、¥98,000 storefront tierを混ぜない。
+raw proposal本文とbuyer会話は一時promptだけに存在し、state、snapshot、ledger、reportへ保存しない。

@@ -8,6 +8,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import sqlite3
 import subprocess
@@ -20,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 SKILLS_ROOT = HERE.parents[2]
 AGENT_RUNNER = SKILLS_ROOT / "agent-runner" / "agent_runner.py"
 REPLY_SCHEMA = SKILLS_ROOT / "gig-work" / "schemas" / "reply_composition.schema.json"
+PRODUCT_PATH = HERE.parent / "products" / "monthly-sns-content-ops-v1.json"
 
 
 def _load(name: str, path: Path) -> Any:
@@ -36,6 +38,8 @@ application_tick = _load("anicca_lancers_work_sync_tick", HERE / "application_ti
 CDP_URL, DEFAULT_STATE_PATH = application_tick.CDP_URL, application_tick.DEFAULT_STATE_PATH
 MAX_BOARD_PAGES = MAX_MESSAGE_PAGES = 20
 TICK_TIMEOUT_SECONDS = 120
+PRICE_QUESTION = re.compile(r"価格|値段|金額|料金|見積|いくら")
+DUE_QUESTION = re.compile(r"納期|いつ|何日|期間")
 
 
 class SourceFailure(RuntimeError): pass
@@ -77,13 +81,37 @@ def _write_sales_state(path: Path, value: Mapping[str, Any]) -> None:
         except FileNotFoundError: pass
 
 
-def _compose_reply(board: Mapping[str, Any], messages: Sequence[Mapping[str, Any]], state_path: Path) -> str:
+def _product_context() -> Mapping[str, Any]:
+    try: value = json.loads(PRODUCT_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError): raise SourceFailure("product_context_invalid") from None
+    if not isinstance(value, Mapping) or not isinstance(value.get("plans"), list): raise SourceFailure("product_context_invalid")
+    return {key: value.get(key) for key in ("product_id", "title_stem", "description", "notice", "plans")}
+
+
+def _proposal_context(page: Any, detail: Mapping[str, Any], verified_proposals: set[str]) -> Optional[Mapping[str, Any]]:
+    with_value = detail.get("with")
+    if not isinstance(with_value, Mapping) or not isinstance(with_value.get("proposal"), Mapping): return None
+    proposal_id = _id(with_value["proposal"].get("id"))
+    if proposal_id not in verified_proposals: raise SourceFailure("proposal_receipt_unverified")
+    page.goto(f"https://www.lancers.jp/work/proposal/{quote(proposal_id, safe='')}", wait_until="domcontentloaded", timeout=20_000)
+    value = page.evaluate("""() => { const terms={}; for (const node of document.querySelectorAll("dt")) terms[node.innerText.trim()]=node.nextElementSibling?.innerText?.trim(); const label=[...document.querySelectorAll("em")].find(node=>node.innerText.trim()==="提案文 :"); return {path:location.pathname, amount:terms["契約金額 (税抜) :"], due:terms["予定納期 :"], project_id:terms["依頼番号:"], proposal_text:label?.parentElement?.nextElementSibling?.innerText?.trim()}; }""")
+    if not isinstance(value, Mapping) or value.get("path") != f"/work/proposal/{proposal_id}": raise SourceFailure("proposal_terms_unavailable")
+    amount_text, due_text, text = value.get("amount"), value.get("due"), value.get("proposal_text")
+    amount_digits = "".join(character for character in str(amount_text) if character.isdigit())
+    due = str(due_text).replace("/", "-")
+    if not amount_digits or int(amount_digits) <= 0 or len(due) != 10 or not isinstance(text, str) or not text.strip() or len(text) > 10000: raise SourceFailure("proposal_terms_unavailable")
+    job = with_value.get("job"); expected_project = _id(job.get("id")) if isinstance(job, Mapping) and job.get("id") is not None else None
+    if expected_project is not None and str(value.get("project_id")) != expected_project: raise SourceFailure("proposal_terms_conflict")
+    return {"proposal_id": proposal_id, "project_id": value.get("project_id"), "price_jpy": int(amount_digits), "delivery_due_on": due, "proposal_text": text.strip()}
+
+
+def _compose_reply(board: Mapping[str, Any], messages: Sequence[Mapping[str, Any]], state_path: Path, grounding: Optional[Mapping[str, Any]] = None) -> str:
     conversation = []
     for row in sorted(messages, key=lambda item: int(_id(item.get("id"))))[-20:]:
         body = row.get("description")
         if not isinstance(body, str) or not body.strip() or len(body) > 10000: raise SourceFailure("provider_response_invalid")
         conversation.append({"side": "buyer" if row.get("is_required_reply") is True else "seller", "body": body[:4000]})
-    prompt = """Lancersの購入前会話へ、今すぐ送信できる日本語返信を1件作る。Coconalaで実運用する返信規則をそのまま使う。\n必須:\n- 最新のbuyer発言の質問・依頼へ冒頭から直接答え、明示された質問を省略しない。\n- 会話と案件にある検証済み事実だけを使う。価格、納期、実績、対応能力を作らない。答えに必要な未確定事項だけ質問を1つまで含める。\n- 最新発言への回答だけで完結するならCTA、見積り、納期、質問を自発的に追加しない。購入を催促しない。\n- 動画/animation制作、物理/現地作業、必須の顔・声・電話/live call、AI明示禁止、違法危険、未保有の法的資格、虚偽属性が依頼全体に必須なら、代替提案や質問を付けず正直かつ丁寧に辞退する。フィギュアの塗装・リペイント・カスタムは物理作業である。辞退時は「対応できません」を明言し、実績がないという説明だけで終えない。単語が出ただけ、任意作業、難しさ、低予算、実績不足では辞退しない。\n- 外部連絡先、内部用語、未依頼の成果物を含めない。1000文字以内。schemaどおりreply_bodyだけを返す。\nCONTEXT:\n""" + json.dumps({"board": {"title": board.get("title"), "description": board.get("description")}, "conversation": conversation}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    prompt = """Lancersの購入前会話へ、今すぐ送信できる日本語返信を1件作る。Coconalaで実運用する返信規則をそのまま使う。\n必須:\n- 最新のbuyer発言の質問・依頼へ冒頭から直接答え、明示された質問を省略しない。\n- verified_proposalがある応募threadでは、その価格・納期・提案本文だけを応募条件の正本にする。canonical_productは関連するstorefront相談だけに使い、応募条件と混ぜない。\n- 会話とgroundingにある検証済み事実だけを使う。価格、納期、実績、対応能力を作らない。答えに必要な未確定事項だけ質問を1つまで含める。\n- 最新発言への回答だけで完結するならCTA、見積り、納期、質問を自発的に追加しない。購入を催促しない。\n- 動画/animation制作、物理/現地作業、必須の顔・声・電話/live call、AI明示禁止、違法危険、未保有の法的資格、虚偽属性が依頼全体に必須なら、代替提案や質問を付けず正直かつ丁寧に辞退する。フィギュアの塗装・リペイント・カスタムは物理作業である。辞退時は「対応できません」を明言し、実績がないという説明だけで終えない。単語が出ただけ、任意作業、難しさ、低予算、実績不足では辞退しない。\n- 外部連絡先、内部用語、未依頼の成果物を含めない。1000文字以内。schemaどおりreply_bodyだけを返す。\nCONTEXT:\n""" + json.dumps({"board": {"title": board.get("title"), "description": board.get("description")}, "conversation": conversation, "grounding": grounding or {}}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     with tempfile.TemporaryDirectory(prefix=".lancers-reply-", dir=state_path.parent) as temporary:
         evidence = Path(temporary) / "evidence"
         completed = subprocess.run([sys.executable, str(AGENT_RUNNER), "--task-class", "composition-agent", "--prompt-stdin", "--schema", str(REPLY_SCHEMA), "--evidence-dir", str(evidence), "--task-label", "lancers-sales-reply", "--loop", "lancers-sales", "--workdir", str(SKILLS_ROOT.parent)], input=prompt, text=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=90, check=False)
@@ -93,7 +121,14 @@ def _compose_reply(board: Mapping[str, Any], messages: Sequence[Mapping[str, Any
             result = json.loads(result_path.read_text(encoding="utf-8")); body = result.get("reply_body") if isinstance(result, Mapping) else None
         except (OSError, KeyError, TypeError, ValueError): raise SourceFailure("reply_composer_failed") from None
     if not isinstance(body, str) or not body.strip() or len(body.strip()) > 1000: raise SourceFailure("reply_contract_invalid")
-    return body.strip()
+    body = body.strip(); proposal = grounding.get("verified_proposal") if isinstance(grounding, Mapping) else None
+    if isinstance(proposal, Mapping) and conversation:
+        latest = conversation[-1]["body"]; price, due = proposal.get("price_jpy"), proposal.get("delivery_due_on")
+        price_variants = (str(price), f"{price:,}") if isinstance(price, int) else ()
+        due_variants = (str(due), str(due).replace("-", "/"), str(due).replace("-", "年", 1).replace("-", "月", 1) + "日") if isinstance(due, str) else ()
+        if PRICE_QUESTION.search(latest) and not any(value in body for value in price_variants): raise SourceFailure("reply_contract_invalid")
+        if DUE_QUESTION.search(latest) and not any(value in body for value in due_variants): raise SourceFailure("reply_contract_invalid")
+    return body
 
 
 def _verified_proposals(state_path: Path) -> set[str]:
@@ -171,7 +206,7 @@ def _readback(rows: Sequence[Mapping[str, Any]], board_id: str, body: str, provi
     return None
 
 
-def _sales_action(page: Any, state_path: Path, boards: Sequence[tuple[Mapping[str, Any], Mapping[str, Any], Sequence[Mapping[str, Any]]]]) -> dict[str, Any]:
+def _sales_action(page: Any, state_path: Path, boards: Sequence[tuple[Mapping[str, Any], Mapping[str, Any], Sequence[Mapping[str, Any]]]], verified_proposals: Optional[set[str]] = None) -> dict[str, Any]:
     path = state_path.with_name("sales.json"); state = _sales_state(path); pending = state["pending"]
     if pending is not None:
         try: board_id, body = _id(pending.get("board_id")), str(pending["reply_body"]); provider_id = pending.get("provider_message_id")
@@ -186,11 +221,12 @@ def _sales_action(page: Any, state_path: Path, boards: Sequence[tuple[Mapping[st
 
     candidate = next(((board, detail, rows) for board, detail, rows in boards if board.get("is_required_reply") is True and rows), None)
     if candidate is None: return {"status": "no_reply_required"}
-    board, _detail, rows = candidate; latest = max(rows, key=lambda row: int(_id(row.get("id"))))
+    board, detail, rows = candidate; latest = max(rows, key=lambda row: int(_id(row.get("id"))))
     if latest.get("is_required_reply") is not True: return {"status": "seller_last"}
     board_id, message_id = _id(board.get("id")), _id(latest.get("id")); event_key = f"{board_id}:{message_id}"
     if event_key in state["handled"]: return {"status": "already_handled", "board_id": board_id}
-    body = _compose_reply(board, rows, state_path)
+    grounding = {"canonical_product": _product_context(), "verified_proposal": _proposal_context(page, detail, verified_proposals or set())}
+    body = _compose_reply(board, rows, state_path, grounding)
     pending = {"board_id": board_id, "event_key": event_key, "reply_body": body, "content_sha256": _digest(body), "provider_message_id": None}
     _write_sales_state(path, {"handled": state["handled"], "pending": pending})
     provider_id = _post_reply(page, board_id, body); pending["provider_message_id"] = provider_id
@@ -259,7 +295,7 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
             logged_in = True
             private_boards: list[Any] = []
             result = _snapshot(lambda path: _fetch(page, path), verified_proposals, private_boards)
-            result["reply_action"] = _sales_action(page, Path(state_path), private_boards)
+            result["reply_action"] = _sales_action(page, Path(state_path), private_boards, verified_proposals)
     except SourceFailure as error:
         result = _failed(str(error), logged_in)
     except Exception as error:
