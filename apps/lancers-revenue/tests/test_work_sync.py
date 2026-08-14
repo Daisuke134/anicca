@@ -144,6 +144,25 @@ class WorkSyncTests(unittest.TestCase):
             time.sleep(0.1)
             with self.assertRaises(ProcessLookupError): os.kill(child_pid, 0)
 
+    def test_sales_reply_is_fenced_verified_and_not_posted_twice(self):
+        sync = _load(); posted = []
+        buyer = {"id": 9, "board_id": 7, "description": "フィギュアの塗装を依頼できますか", "modified": "2026-08-13T00:00:00Z", "is_required_reply": True, "send_user": {"id": 3}}
+        seller = {"id": 10, "board_id": 7, "description": "申し訳ありませんが、物理的な塗装作業には対応しておりません。", "modified": "2026-08-13T00:01:00Z", "is_required_reply": False, "send_user": {"id": 4}}
+        board = {"id": 7, "title": "相談", "description": "塗装", "is_required_reply": True}
+        class Page:
+            def evaluate(self, _script, value):
+                posted.append(value)
+                return {"ok": True, "body": {"id": 10}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(sync, "_compose_reply", return_value=seller["description"]), patch.object(sync, "_message_rows", return_value=[seller, buyer]):
+            state_path = Path(directory) / "application.json"
+            first = sync._sales_action(Page(), state_path, [(board, {"id": 7}, [buyer])])
+            second = sync._sales_action(Page(), state_path, [(board, {"id": 7}, [buyer])])
+            state = json.loads((Path(directory) / "sales.json").read_text())
+        self.assertEqual(first["status"], "reply_verified")
+        self.assertEqual(second["status"], "already_handled")
+        self.assertEqual(len(posted), 1)
+        self.assertEqual(state, {"handled": ["7:9"], "pending": None})
+
 
 if __name__ == "__main__":
     unittest.main()

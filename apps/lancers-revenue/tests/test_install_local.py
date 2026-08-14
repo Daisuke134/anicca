@@ -30,6 +30,7 @@ RELEASE_FILES = (
     "skills/_shared/marketplace-core/schemas/event.schema.json",
     "skills/_shared/marketplace-core/schemas/opportunity.schema.json",
     "skills/gig-work/schemas/application_decisions.schema.json",
+    "skills/gig-work/schemas/reply_composition.schema.json",
     "skills/agent-runner/agent_runner.py",
     "skills/agent-runner/token_budget.py",
     "skills/agent-runner/config.json",

@@ -76,6 +76,7 @@ git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   skills/_shared/marketplace-core/schemas/event.schema.json \
   skills/_shared/marketplace-core/schemas/opportunity.schema.json \
   skills/gig-work/schemas/application_decisions.schema.json \
+  skills/gig-work/schemas/reply_composition.schema.json \
   runtime/agent-runner/agent_runner.py \
   runtime/agent-runner/token_budget.py \
   runtime/agent-runner/config.json | tar -xf - -C "$STAGING"
