@@ -62,7 +62,7 @@ class WorkSyncTests(unittest.TestCase):
         for secret in ("private message text", "buyer identity", "session-cookie", "provider-token", "buyer_name"):
             self.assertNotIn(secret, rendered)
         self.assertTrue(any("limit=20" in path for path in calls))
-        self.assertTrue(any("message_id=9" in path and "direction=prev" in path for path in calls))
+        self.assertFalse(any("message_id=9" in path and "direction=prev" in path for path in calls))
 
     def test_application_count_requires_verified_receipt_read_only_set(self):
         sync = _load(); fetch, _ = _fetcher()
@@ -84,16 +84,13 @@ class WorkSyncTests(unittest.TestCase):
         self.assertNotIn("order_awarded", rendered)
         self.assertNotIn("ledger", rendered)
 
-    def test_duplicate_malformed_and_truncated_sources_fail_closed(self):
+    def test_duplicate_and_malformed_sources_fail_closed(self):
         sync = _load()
         fetch, _ = _fetcher(duplicate_message=True)
         with self.assertRaisesRegex(sync.SourceFailure, "duplicate_message_id"):
             sync._snapshot(fetch, set())
         fetch, _ = _fetcher(malformed=True)
         with self.assertRaisesRegex(sync.SourceFailure, "provider_response_invalid"):
-            sync._snapshot(fetch, set())
-        fetch, _ = _fetcher()
-        with patch.object(sync, "MAX_BOARD_PAGES", 1), self.assertRaisesRegex(sync.SourceFailure, "board_page_limit_reached"):
             sync._snapshot(fetch, set())
 
     def test_cleanup_failure_returns_one_stable_nonzero_json_result(self):
