@@ -1698,10 +1698,10 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | Apply | launchd enabled、30分、累計`application_verified=25`、fingerprint 31 | discovery→応募→公式proposal ID→ApplicationReceiptは実稼働 |
 | Apply latest reconcile | project `5586573`、¥50,000、納期`2026-08-21`はsubmit 0のreadback-onlyで公式proposal ID `27812628`へ確定。pending 1→0 | blind resend 0、receipt exactly 1 |
 | capacity | exact release `621e13b39…`はfresh `contracts.json`とJapan dayのApplicationReceiptを読むG3C gateを稼働。live decisionは当日0件・active contract 0でallow | 10件到達を作るための不要応募はせず、自然到達時の`daily_quota_reached`を継続観測する |
-| Sales source | Work Sync live kickはexit 0。board 1、required reply 0、unread 0、公式contract sourceは`source_complete=true` | 監視は稼働、現在buyer actionなし、reply effect 0 |
+| Sales source | Work Sync live kickはexit 0。2026-08-15の公式再観測ではboard `9024494`の最新messageは`58931455`、seller-last、`is_required_reply=false`。project working 0、monthly contract 0、monthly offer 0 | reply transport、intent、公式message ID readback、handled dedupeは稼働。現在送るべきbuyer actionも承諾すべきofferもなく、effect 0が正しい |
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
 | Storefront canonical | product JSONと公開pageの正本は`1338228`。公開pageは月額SNS商品、¥98,000 / ¥198,000 / ¥398,000 | 売れる入口のcontentは公開済み |
-| Storefront split-brain | `listing.json`は旧商品`1338233`。旧Storefront plistもmutable `listing_tick.py`と旧productを指し、launchdはdisabled/unloaded。`1338233`公開pageは別のAI業務設計商品 | state、owner、公開canonicalが不一致。Storefront loopは稼働していない |
+| Storefront split-brain | 公式`/myplan`は受付中6件を返し、`1338228`、`1338233`ほか複数listingが同時公開。`listing.json`は旧商品`1338233`、spec/productの正本は`1338228`。旧Storefront plistはmutable `listing_tick.py`を指しdisabled/unloaded | 一商品一正本でなく、state、owner、公開canonicalが不一致。現在の先頭実actionボトルネック |
 | Reporting | Telegram owner live kickはexit 0。同じ状態を`enqueued=0 / attempted=0 / delivered=0`でdedupe | 通知成功を売上やlane成功にせず、同一snapshotを再送しない |
 | Paid | ledger eventは`application_verified` 25件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、入金のproduction ownerは未完成。net MRRは未発生 |
 
@@ -1717,8 +1717,8 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 
 現在の直接ボトルネックは次の三つである。
 
-1. **Sales conversion:** buyer-lastを読む/返信するtransportはあるが、購入意思→route別の見積/選定/client-originated月額offer→仮払い済みactive contract→ContractReceiptを閉じていない。
-2. **Storefront acquisition:** canonical商品は公開されているが、durable stateと唯一のscheduled ownerが別listingを指すため、観測→一変数改善→公式readbackの反復loopになっていない。
+1. **Storefront acquisition:** 受付中6件へ分裂し、durable stateと唯一のscheduled ownerも別listingを指す。観測→一変数改善→公式readbackの反復loopになっていない。
+2. **Sales conversion:** buyer-lastを読む/返信するtransportはあるが、購入意思→route別の見積/選定/client-originated月額offer→仮払い済みactive contract→ContractReceiptはpositive event待ちである。現在のseller-lastへfake返信・fake見積は作らない。
 3. **Revenue completion:** funded contractから制作・QA・公式納品・検収・PaymentReceipt・fee/cost/payout・bank matchへ進むFulfillment/Finance ownerがない。
 
 ### 18.3 Coconala four-lane parityを採用する
@@ -1881,8 +1881,8 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 | 順序 | 一件の作業 | 完了証拠 | 実装目安 |
 |---:|---|---|---:|
 | 完了 | **exact-release + G3C収束**: main/feature/current/installed/3 ownerを`621e13b39…`へ統一。Application live tickは`observed=2 / eligible=0 / submitted=false / no_eligible_project`、state/ledger/listing不変、pending 0、orphan 0。Work Syncはofficial source complete、reply 0。Telegramは同一snapshot送信0 | manifest bytes一致、release writable 0、owner 3本exit 0、G3C current decision allow。自然にJapan day 10件へ達した時の`daily_quota_reached`だけ継続観測 | 完了 |
-| 1 | **Negotiate / Reply completion**: Coconalaのsingle semantic judgement、全buyer-last有限queue、lane-local outbox、presend freshness、official readbackを既存Work Syncへcopy。Applyのclient選定/仮払い、Storefrontのseller見積回答→client仮払い、月額報酬のclient-originated offer→seller承諾というLancers公式directionへ差し替え、wake-wide/account-wide lockを追加しない | 最初のreal reply/estimate/accept effect、公式message/estimate/contract ID、仮払い済みactive contract、ContractReceipt、次wake duplicate 0 | 1–3日 + buyer応答時間 |
-| 2 | **Storefront completion**: canonical listingを`1338228`へ統一し、旧mutable ownerを廃止。exact-release owner一つでinventory/counter観測し、需要証拠がある時だけ一商品一変数を改善 | state/product/plist/loaded ownerが同一ID/SHA、public before/after、second-wake mutation 0 | 0.5–1.5日 |
+| 条件待ち | **Negotiate / Reply positive-event acceptance**: 既存Work Syncはbuyer-last一件のintent→model reply→POST→公式message ID/body readback→handled dedupeをproduction実証済み。Applyのclient選定/仮払い、Storefrontのseller見積回答→client仮払い、月額報酬のclient-originated offer→seller承諾は、最初の実eventの公式shapeで最小追加する。存在しないbuyerへfake effectを作らず、他の安全なTODOを止めない | 最初のreal reply/estimate/accept effect、公式message/estimate/contract ID、仮払い済みactive contract、ContractReceipt、次wake duplicate 0 | buyer event到着後 |
+| 1 | **Storefront completion**: 受付中6件の公式inventory・public content・需要counterを比較し、canonical listingを一つへ統一する。旧mutable ownerを廃止し、exact-release owner一つで観測し、需要証拠がある時だけ一商品一変数を改善 | state/product/plist/loaded ownerが同一ID/SHA、public before/after、重複listing 0、second-wake mutation 0 | 0.5–1.5日 |
 | 3 | **Paid fulfillment stage**: funded active contractだけをqueueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
 | 4 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
 | 5 | **four-lane human reporting**: Apply / Storefront / Negotiate / Paidのeffect/readback/blocked/failedとreceipt funnelを自然文へ投影。Telegram transport failureをlane failureや売上へ混ぜず、当月入金総額・当月net revenue・単発売上・現在net MRRを別表示する | every-wake human message、個別effect/failure即時通知、receipt count、pending/blocker、四つのrevenue値のunknown/verified、exact-key dedupe | 0.5–1日 |
