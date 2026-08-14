@@ -27321,3 +27321,10 @@
 {"ts":1786664587,"wake_id":"00MSS5YQR59BDBBC5FC5384518","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786664729,"wake_id":"00MSS61SLU81C416310F734CB2","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786664879,"wake_id":"00MSS650935799A31B929F43CB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786665016,"wake_id":"00MSS67XLX27DA81D82D34497D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786665149,"wake_id":"00MSS6AS1160C27195F6294EB2","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786665275,"wake_id":"00MSS6DHPM2ED1C96CB2A54E6A","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana high APY yield vault low fee [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the mode"}
+{"ts":1786665403,"wake_id":"00MSS6G8M61C62AFB4F89E4591","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786665537,"wake_id":"00MSS6J45JF7A1F675AD9D469C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786665666,"wake_id":"00MSS6LV79FDC068C34D8B4E68","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786665796,"wake_id":"00MSS6ONRU12EFB840AEE242B1","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}

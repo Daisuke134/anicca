@@ -4374,3 +4374,4 @@
 {"ts":1786660928,"source":"cook","task":"explore: solana microtask platform pay per API call USDC no upfront deposit","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSS3S6DZ37658CD3709F4709"}
 {"ts":1786661572,"source":"cook","task":"explore: Solana paid API inference microservice USDC per request marketplace","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSS45YLR0152E9B2E39B4734"}
 {"ts":1786661977,"source":"cook","task":"explore: Solana marketplace for microtasks paid in USDC API call per request platform","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSS4EL4N749D4D30D8F34CC4"}
+{"ts":1786665282,"source":"cook","task":"explore: Solana high APY yield vault low fee","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSS6DHPM2ED1C96CB2A54E6A"}
