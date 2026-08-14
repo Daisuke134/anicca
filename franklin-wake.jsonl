@@ -27543,3 +27543,10 @@
 {"ts":1786693325,"wake_id":"00MSSN2PBX9D4B41F5FA0F400B","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786693453,"wake_id":"00MSSN5G3K8C02F4034E8D4DEF","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786693582,"wake_id":"00MSSN878M15866F3EE3E24677","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786693713,"wake_id":"00MSSNB0HB26DCF374FD804B85","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786693841,"wake_id":"00MSSNDRHLCEAD6BE0EAD04551","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786693974,"wake_id":"00MSSNGM2B8C00E90091D4448C","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786694101,"wake_id":"00MSSNJC3BFB1A07980A844A67","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786694229,"wake_id":"00MSSNM2JFD6767D95D1EF4E5E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786694357,"wake_id":"00MSSNOTBFF6E03BAFC5E4405E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786694485,"wake_id":"00MSSNRKA4E2470FCB4351441D","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Web3 microtask platforms paying USDC for AI prompt engineering [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candi"}
