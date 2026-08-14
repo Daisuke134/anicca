@@ -201,7 +201,9 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
             logged_in = True; result = _apply(page, product, image) if apply else _public(page, product) | {"action": "inspect"}
             if apply and result.get("ok") is True and result.get("aligned") is True: _write_receipt(Path(state_path), product)
     except OfferError as error: result = {"ok": False, "logged_in": logged_in, "error": str(error)}
-    except Exception as error: result = {"ok": False, "logged_in": logged_in, "error": "account_lock_busy" if "LockBusy" in type(error).__name__ else "offer_unavailable"}
+    except Exception as error:
+        print(f"storefront_offer:{type(error).__name__}:{error}", file=sys.stderr)
+        result = {"ok": False, "logged_in": logged_in, "error": "account_lock_busy" if "LockBusy" in type(error).__name__ else "offer_unavailable"}
     finally:
         try:
             closed = page is None or bool(tick._close_owned_page(page))
