@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.anicca.lancers-revenue-storefront</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__LANCERS_PYTHON__</string>
+    <string>__LANCERS_STOREFRONT__</string>
+    <string>--apply</string>
+    <string>--product</string>
+    <string>__LANCERS_STOREFRONT_PRODUCT__</string>
+    <string>--state-path</string>
+    <string>__LANCERS_APPLICATION_STATE__</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict><key>PATH</key><string>__LANCERS_RUNTIME_PATH__</string></dict>
+  <key>WorkingDirectory</key>
+  <string>__LANCERS_RELEASE_ROOT__</string>
+  <key>StartInterval</key>
+  <integer>1800</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>Umask</key>
+  <integer>63</integer>
+  <key>StandardOutPath</key>
+  <string>__LANCERS_STOREFRONT_STDOUT__</string>
+  <key>StandardErrorPath</key>
+  <string>__LANCERS_STOREFRONT_STDERR__</string>
+</dict>
+</plist>

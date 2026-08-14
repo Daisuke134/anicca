@@ -12,6 +12,7 @@ ACTIVATE="${LANCERS_ACTIVATE:?LANCERS_ACTIVATE is required}"
 LABEL="ai.anicca.lancers-revenue-application"
 REPORT_LABEL="ai.anicca.lancers-revenue-telegram-report"
 WORK_SYNC_LABEL="ai.anicca.lancers-revenue-work-sync"
+STOREFRONT_LABEL="ai.anicca.lancers-revenue-storefront"
 RUNTIME_PATH="${LANCERS_RUNTIME_PATH:-${HOME}/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin}"
 
 fail() {
@@ -50,11 +51,13 @@ CHECK_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/lancers-install-check.XXXXXX")"
 PLIST_TEMP=""
 REPORT_PLIST_TEMP=""
 WORK_SYNC_PLIST_TEMP=""
+STOREFRONT_PLIST_TEMP=""
 
 cleanup() {
   [[ -z "$PLIST_TEMP" || ! -e "$PLIST_TEMP" ]] || rm -f "$PLIST_TEMP"
   [[ -z "$REPORT_PLIST_TEMP" || ! -e "$REPORT_PLIST_TEMP" ]] || rm -f "$REPORT_PLIST_TEMP"
   [[ -z "$WORK_SYNC_PLIST_TEMP" || ! -e "$WORK_SYNC_PLIST_TEMP" ]] || rm -f "$WORK_SYNC_PLIST_TEMP"
+  [[ -z "$STOREFRONT_PLIST_TEMP" || ! -e "$STOREFRONT_PLIST_TEMP" ]] || rm -f "$STOREFRONT_PLIST_TEMP"
   [[ ! -e "$STAGING" ]] || rm -rf "$STAGING"
   [[ ! -e "$CHECK_ROOT" ]] || rm -rf "$CHECK_ROOT"
 }
@@ -202,6 +205,27 @@ mv -f "$WORK_SYNC_PLIST_TEMP" "$WORK_SYNC_PLIST_PATH"
 WORK_SYNC_PLIST_TEMP=""
 "$PLUTIL_BIN" -lint "$WORK_SYNC_PLIST_PATH" >/dev/null
 
+STOREFRONT_TEMPLATE="$SCRIPT_DIR/../launchd/$STOREFRONT_LABEL.plist"
+STOREFRONT_PLIST_PATH="$LAUNCH_AGENT_DIR/$STOREFRONT_LABEL.plist"
+STOREFRONT_PLIST_TEMP="$(mktemp "$LAUNCH_AGENT_DIR/.${STOREFRONT_LABEL}.plist.XXXXXX")"
+"$PYTHON_BIN" - "$STOREFRONT_TEMPLATE" "$STOREFRONT_PLIST_TEMP" "$PYTHON_BIN" \
+  "$RELEASE_PATH/skills/earn/lancers/scripts/storefront_offer.py" \
+  "$RELEASE_PATH/skills/earn/lancers/products/monthly-sns-content-ops-v1.json" \
+  "$STATE_ROOT/application.json" "$STATE_ROOT/logs/storefront.stdout.log" \
+  "$STATE_ROOT/logs/storefront.stderr.log" "$RELEASE_PATH" "$RUNTIME_PATH" <<'PY'
+import os, plistlib, sys
+from pathlib import Path
+template, output, python_bin, storefront, product, state, stdout, stderr, release, runtime = sys.argv[1:]
+value = plistlib.loads(Path(template).read_bytes())
+value["ProgramArguments"] = [python_bin, storefront, "--apply", "--product", product, "--state-path", state]
+value["WorkingDirectory"] = release; value["StandardOutPath"] = stdout; value["StandardErrorPath"] = stderr
+value["EnvironmentVariables"]["PATH"] = runtime
+Path(output).write_bytes(plistlib.dumps(value, fmt=plistlib.FMT_XML, sort_keys=False)); os.chmod(output, 0o644)
+PY
+mv -f "$STOREFRONT_PLIST_TEMP" "$STOREFRONT_PLIST_PATH"
+STOREFRONT_PLIST_TEMP=""
+"$PLUTIL_BIN" -lint "$STOREFRONT_PLIST_PATH" >/dev/null
+
 REPORT_TEMPLATE="$SCRIPT_DIR/../launchd/$REPORT_LABEL.plist"
 REPORT_PLIST_PATH="$LAUNCH_AGENT_DIR/$REPORT_LABEL.plist"
 REPORT_PLIST_TEMP="$(mktemp "$LAUNCH_AGENT_DIR/.${REPORT_LABEL}.plist.XXXXXX")"
@@ -246,11 +270,12 @@ if [[ "$ACTIVATE" == "1" ]]; then
   activate_owner "$LABEL" "$PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/application_loop.py"
   activate_owner "$REPORT_LABEL" "$REPORT_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/telegram_report.py"
   activate_owner "$WORK_SYNC_LABEL" "$WORK_SYNC_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/work_sync.py"
+  activate_owner "$STOREFRONT_LABEL" "$STOREFRONT_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/storefront_offer.py"
 fi
 
 INSTALLED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 "$PYTHON_BIN" - "$STATE_ROOT/deployment.json" "$RELEASE_PATH" "$RELEASE_SHA" \
-  "$INSTALL_MODE" "$INSTALLED_AT" "$LABEL" "$REPORT_LABEL" "$WORK_SYNC_LABEL" <<'PY'
+  "$INSTALL_MODE" "$INSTALLED_AT" "$LABEL" "$REPORT_LABEL" "$WORK_SYNC_LABEL" "$STOREFRONT_LABEL" <<'PY'
 import hashlib
 import json
 import os
@@ -258,7 +283,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-manifest_path, release_path, deployed_sha, mode, installed_at, label, report_label, work_sync_label = sys.argv[1:]
+manifest_path, release_path, deployed_sha, mode, installed_at, label, report_label, work_sync_label, storefront_label = sys.argv[1:]
 release = Path(release_path)
 files = {}
 for path in sorted(path for path in release.rglob("*") if path.is_file()):
@@ -271,6 +296,7 @@ manifest = {
     "launchd_label": label,
     "report_launchd_label": report_label,
     "work_sync_launchd_label": work_sync_label,
+    "storefront_launchd_label": storefront_label,
     "mode": mode,
 }
 target = Path(manifest_path)

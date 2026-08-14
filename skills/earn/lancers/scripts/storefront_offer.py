@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import sys
+import tempfile
+from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence
 from urllib.parse import urlsplit
 
@@ -37,6 +41,8 @@ def _product(path: Path) -> tuple[dict[str, Any], Path]:
     tags, plans = value.get("tags"), value.get("plans")
     if not isinstance(tags, list) or not 1 <= len(tags) <= 5 or len(set(tags)) != len(tags) or not all(isinstance(tag, str) and tag.strip() for tag in tags): raise OfferError("product_invalid")
     if not isinstance(plans, list) or len(plans) != 3: raise OfferError("product_invalid")
+    superseded = value.get("superseded_listing_ids")
+    if not isinstance(superseded, list) or len(superseded) != len(set(superseded)) or any(not isinstance(item, str) or re.fullmatch(r"[0-9]+", item) is None for item in superseded) or value["listing_external_id"] in superseded: raise OfferError("product_invalid")
     for plan in plans:
         if not isinstance(plan, dict) or not isinstance(plan.get("description"), str) or not 1 <= len(plan["description"]) <= 80 or plan.get("delivery_days") not in {1,2,3,4,5,6,7,10,14,21,30,45,60,75,90} or type(plan.get("price_jpy")) is not int or plan["price_jpy"] < 1000: raise OfferError("product_invalid")
     image = (path.parent / value["image_path"]).resolve()
@@ -90,6 +96,46 @@ def _field(page: Any, selector: str) -> Any:
     return field
 
 
+def _setting_status(page: Any, listing_id: str) -> str:
+    path = f"/myplan/{listing_id}/setting"; page.goto(ORIGIN + path, wait_until="domcontentloaded", timeout=30_000)
+    if urlsplit(str(page.url)).path != path: raise OfferError("setting_route_invalid")
+    fields = page.locator('[name="data[ProjectPlanStatusForm][status]"]')
+    if fields.count() != 3: raise OfferError("setting_readback_invalid")
+    checked = [fields.nth(index).get_attribute("value") for index in range(3) if fields.nth(index).is_checked()]
+    if len(checked) != 1 or checked[0] not in {"active", "paused", "archived"}: raise OfferError("setting_readback_invalid")
+    return str(checked[0])
+
+
+def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, Any]:
+    active = [listing_id for listing_id in listing_ids if _setting_status(page, listing_id) == "active"]
+    if not active: return {"superseded_active_count": 0, "status_effect_count": 0}
+    listing_id = active[0]; path = f"/myplan/{listing_id}/setting"
+    _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').check()
+    save = page.get_by_role("button", name="保存", exact=True)
+    if save.count() != 1: raise OfferError("setting_form_changed")
+    with page.expect_response(lambda response: urlsplit(response.url).path == path and response.request.method == "POST", timeout=20_000) as submitted:
+        save.click()
+    if not 200 <= submitted.value.status < 400: raise OfferError("setting_submission_uncertain")
+    try: page.wait_for_load_state("domcontentloaded", timeout=20_000)
+    except Exception: pass
+    if _setting_status(page, listing_id) != "paused": raise OfferError("setting_submission_uncertain")
+    return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id}
+
+
+def _write_receipt(state_path: Path, product: Mapping[str, Any]) -> None:
+    path = state_path.with_name("listing.json"); path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    digest = hashlib.sha256(json.dumps(product, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    value = {"record_type": "listing_receipt", "schema_version": 1, "platform": "lancers", "product_id": product["product_id"], "product_version": product["product_version"], "listing_external_id": product["listing_external_id"], "public_url": f"{ORIGIN}/menu/detail/{product['listing_external_id']}", "status": "published", "content_sha256": digest, "idempotency_key": f"lancers:listing:{product['product_id']}:v{product['product_version']}", "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+    fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle: json.dump(value, handle, ensure_ascii=False, sort_keys=True, separators=(",", ":")); handle.write("\n")
+        os.replace(temporary, path); path.chmod(0o600)
+    finally:
+        try: os.unlink(temporary)
+        except FileNotFoundError: pass
+
+
 def _step(page: Any, label: str) -> None:
     values = [item for item in page.get_by_text(label, exact=True).all() if item.is_visible()]
     chosen = next((item for item in values if "clickable" in str(item.get_attribute("class") or "")), values[0] if len(values) == 1 else None)
@@ -99,6 +145,8 @@ def _step(page: Any, label: str) -> None:
 
 def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]:
     before = _public(page, product)
+    reconciliation = _reconcile_superseded(page, product["superseded_listing_ids"])
+    if reconciliation["status_effect_count"]: return before | reconciliation | {"action": "paused_superseded"}
     if before["aligned"]: return before | {"action": "unchanged"}
     listing_id = product["listing_external_id"]; edit_url = f"{ORIGIN}/myplan/{listing_id}/edit"
     page.goto(edit_url, wait_until="domcontentloaded", timeout=30_000)
@@ -151,6 +199,7 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
             browser = tick._default_browser_factory(tick.CDP_URL); page = tick._new_owned_page(browser)
             if not tick._production_account_ready(page): raise OfferError("account_unavailable")
             logged_in = True; result = _apply(page, product, image) if apply else _public(page, product) | {"action": "inspect"}
+            if apply and result.get("ok") is True and result.get("aligned") is True: _write_receipt(Path(state_path), product)
     except OfferError as error: result = {"ok": False, "logged_in": logged_in, "error": str(error)}
     except Exception as error: result = {"ok": False, "logged_in": logged_in, "error": "account_lock_busy" if "LockBusy" in type(error).__name__ else "offer_unavailable"}
     finally:

@@ -2,6 +2,13 @@
   "product_id": "monthly-sns-content-ops-v1",
   "product_version": 1,
   "listing_external_id": "1338228",
+  "superseded_listing_ids": [
+    "1338229",
+    "1338230",
+    "1338231",
+    "1338232",
+    "1338233"
+  ],
   "title_stem": "小規模B2B企業向けにSNS投稿企画と月次コンテンツ制作を代行し",
   "subtitle": "企画・投稿案・画像指示・月次カレンダー・レポートまで毎月まとめて納品します",
   "category": "Web集客・マーケティング",
