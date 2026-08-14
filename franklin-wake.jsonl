@@ -27889,3 +27889,14 @@
 {"ts":1786738803,"wake_id":"00MSTE5GGTDB1C718DF6B549F1","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786738932,"wake_id":"00MSTE87EE68AF22BFC7C14A8B","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana microtask platform paid per API request USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfa"}
 {"ts":1786739065,"wake_id":"00MSTEB2BH2D9B577BE13E444A","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786739194,"wake_id":"00MSTEDTKB9D338A8747EA4492","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid microtask marketplace API USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for t"}
+{"ts":1786739324,"wake_id":"00MSTEGMJZDB790F7776DA4811","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786739394,"wake_id":"00MSTEI4IR565D559490664D1E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786739520,"wake_id":"00MSTEKT67E276024E3D3846C8","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786739645,"wake_id":"00MSTENI8OCDB2B8D53DC44E7C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786739774,"wake_id":"00MSTEQ9J2E70951EBEF304F5E","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786739901,"wake_id":"00MSTESZHJ2BE4B4CBBAB14F58","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786739967,"wake_id":"00MSTEUEHB4240E16AFF92430B","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786740033,"wake_id":"00MSTEVT6U07B0187D388041A6","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786740099,"wake_id":"00MSTEX7XE29863BB5B3994165","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786740227,"wake_id":"00MSTEZYLXFA3EF5238C444FA9","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana marketplace for paid AI API calls USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced fo"}
