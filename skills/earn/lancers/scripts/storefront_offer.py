@@ -18,6 +18,13 @@ from urllib.parse import urlsplit
 HERE = Path(__file__).resolve().parent
 DEFAULT_PRODUCT = HERE.parent / "products" / "monthly-sns-content-ops-v1.json"
 ORIGIN = "https://www.lancers.jp"
+DEMAND_LABELS = {
+    "検索結果の表示人数": "search_impressions",
+    "パッケージの閲覧人数": "detail_views",
+    "お気に入り": "favorites",
+    "相談数": "inquiries",
+    "注文数": "orders",
+}
 
 
 class OfferError(RuntimeError): pass
@@ -91,6 +98,25 @@ def _public(page: Any, product: Mapping[str, Any]) -> dict[str, Any]:
     return {"ok": True, "logged_in": True, "listing_external_id": listing_id, "canonical_url": public_url, "aligned": not mismatched, "mismatched_fields": mismatched, "has_image": has_image, "prices_jpy": [plan["price_jpy"] for plan in plans], "delivery_days": [plan["delivery_days"] for plan in plans], "contract_routes": {"spot": 3, "three_month": 3, "six_month": 3}}
 
 
+def _demand(page: Any, listing_id: str) -> dict[str, int]:
+    page.goto(f"{ORIGIN}/myplan", wait_until="domcontentloaded", timeout=20_000)
+    card = page.locator(f'.p-project-plan-myplan__store-content-over-title-link[href="/menu/detail/{listing_id}"]')
+    if card.count() != 1: raise OfferError("demand_readback_invalid")
+    scores = card.locator("xpath=ancestor::*[contains(concat(' ',normalize-space(@class),' '),' p-project-plan-myplan__store ')][1]").locator(".p-project-plan-myplan__store-content-score")
+    result: dict[str, int] = {}
+    for score in scores.all():
+        labels = score.locator(".c-tooltip__text")
+        if labels.count() != 1: continue
+        key = DEMAND_LABELS.get(" ".join(str(labels.text_content() or "").split()))
+        if key is None: continue
+        values = score.locator(".p-project-plan-myplan__store-content-score-text")
+        text = "" if values.count() != 1 else "".join(values.inner_text().split())
+        if key in result or re.fullmatch(r"[0-9]+", text) is None: raise OfferError("demand_readback_invalid")
+        result[key] = int(text)
+    if set(result) != set(DEMAND_LABELS.values()): raise OfferError("demand_readback_invalid")
+    return result
+
+
 def _field(page: Any, selector: str) -> Any:
     field = page.locator(selector)
     if field.count() != 1: raise OfferError("form_changed")
@@ -131,10 +157,10 @@ def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, An
     return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id, "responses": observed}
 
 
-def _write_receipt(state_path: Path, product: Mapping[str, Any]) -> None:
+def _write_receipt(state_path: Path, product: Mapping[str, Any], demand: Mapping[str, int]) -> None:
     path = state_path.with_name("listing.json"); path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
     digest = hashlib.sha256(json.dumps(product, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    value = {"record_type": "listing_receipt", "schema_version": 1, "platform": "lancers", "product_id": product["product_id"], "product_version": product["product_version"], "listing_external_id": product["listing_external_id"], "public_url": f"{ORIGIN}/menu/detail/{product['listing_external_id']}", "status": "published", "content_sha256": digest, "idempotency_key": f"lancers:listing:{product['product_id']}:v{product['product_version']}", "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+    value = {"record_type": "listing_receipt", "schema_version": 1, "platform": "lancers", "product_id": product["product_id"], "product_version": product["product_version"], "listing_external_id": product["listing_external_id"], "public_url": f"{ORIGIN}/menu/detail/{product['listing_external_id']}", "status": "published", "content_sha256": digest, "idempotency_key": f"lancers:listing:{product['product_id']}:v{product['product_version']}", "demand": dict(demand), "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
         os.fchmod(fd, 0o600)
@@ -212,7 +238,9 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
             browser = tick._default_browser_factory(tick.CDP_URL); page = tick._new_owned_page(browser)
             if not tick._production_account_ready(page): raise OfferError("account_unavailable")
             logged_in = True; result = _apply(page, product, image) if apply else _public(page, product) | {"action": "inspect"}
-            if apply and result.get("ok") is True and result.get("aligned") is True: _write_receipt(Path(state_path), product)
+            if result.get("ok") is True and result.get("aligned") is True:
+                result["demand"] = _demand(page, product["listing_external_id"])
+                if apply: _write_receipt(Path(state_path), product, result["demand"])
     except OfferError as error: result = {"ok": False, "logged_in": logged_in, "error": str(error)}
     except Exception as error:
         print(f"storefront_offer:{type(error).__name__}", file=sys.stderr)
