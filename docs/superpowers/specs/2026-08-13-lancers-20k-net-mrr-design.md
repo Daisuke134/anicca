@@ -2015,6 +2015,29 @@ Coconalaの同じ二択contractを、より広いLancers keyword検索面へそ�
 同wake内にfit candidateがあれば最大1件だけ公式proposal IDとApplicationReceiptへ進む。not-fitだけなら正直なno-opでexit 0。
 次wakeの同project duplicate effect 0、pending/state valid、既存receipt不変、Telegramは「能力・採算が合わず見送り」と自然文投影する。
 
+### 18.12 Apply判断へfull public detailを渡す
+
+**CURRENT OBSERVATION:** semantic bid gateの最初のproduction wakeは16件を観測し、eligible 3、no-effect claimを少なくとも3件追加し、
+project `5586553`へ¥8,000・納期3日で一度だけ応募する。次wakeはsubmit 0の公式readbackでproposal ID `27812849`を取得し、
+pending 1→0、ApplicationReceipt 26→27となる。proposal一覧cardの`当選`labelと異なり、authoritative proposal detailは依頼状態
+`募集中`・撤回可能、Contract source 0であるため、awardや売上には昇格しない。
+
+応募先の公式full detailは1記事¥2,200、競合25件、応募時の個人質問、面談を要求するが、送信proposalは質問へ回答せずgenericな
+記事制作だけを提案する。捏造はないがbuyer requirementを満たさず、$10Kへの期待値も低い。
+
+**ROOT CAUSE:** `status.py`はbudget maxが¥98,000以上のcardだけをdetail fetchし、detail parserも旧label`依頼概要`だけを読む。
+現DOMは`依頼詳細`であり、低価格cardはsearch teaserだけがplannerへ渡る。今回のfull detailは1,686文字、必須質問は924文字目から
+存在するため、model判断ではなく入力欠落である。
+
+**NEXT DIRECT ACTION:** 既存のbounded public GETを全cardへ適用し、`依頼詳細`をprimary、`依頼概要`を互換fallbackとして読む。
+本文が2,000文字以内なら全文、超える時だけ冒頭1,400文字と末尾600文字を保持して、成果物と末尾の応募条件・注意事項を同時に渡す。
+detail取得失敗は件数へ明示し、teaser fallbackを維持する。新browser、crawler、model call、keyword filterは作らない。
+
+**PLAN SIZE:** production 1 file、約6–10行。既存最大20件、timeout、body cap、same-origin URL validationを維持する。
+
+**DONE EVIDENCE:** public detail probeで`5586553`の`依頼詳細`、応募条件、質問、面談がplanner descriptionへ含まれる。
+exact-release ownerはfull detailを読んでskipまたはfitを判断し、max 1 proposal、official ID readback、duplicate effect 0を維持する。
+
 production release `a20eaad4a345cffbef9be10870a2ef05535d170b`の最初のowner wakeは、旧2件停止を越えて
 `observed=21 / eligible=8`へ進み、先頭`5586766`を公式`provider_terminal_blocked`としてsubmit 0でclaimした。
 fingerprintは31→41、pendingは0、ApplicationReceiptは25であり、plannerが検証した能力外とprovider受付不能を次wakeで
