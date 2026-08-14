@@ -1694,14 +1694,14 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
 | canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
-| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `a28e8c519c61fe163abb58321aae250a863bd6f0` | manifest 21 files、owner 4本exact release一致、writable file 0 |
+| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `f589cd974a2b24b108768e4665c8da62103bc164` | manifest 21 files、owner 4本exact release一致、writable file 0 |
 | Apply | launchd enabled、30分、累計`application_verified=29`、fingerprint 48、pending 0 | 全public detail→semantic bid/no-bid→最大3探索turn→最大1応募→公式proposal ID→ApplicationReceiptが実稼働 |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
 | capacity | exact release `621e13b39…`はfresh `contracts.json`とJapan dayのApplicationReceiptを読むG3C gateを稼働。live decisionは当日0件・active contract 0でallow | 10件到達を作るための不要応募はせず、自然到達時の`daily_quota_reached`を継続観測する |
 | Sales source | Work Sync live kickはexit 0。2026-08-15の公式再観測ではboard `9024494`の最新messageは`58931455`、seller-last、`is_required_reply=false`。project working 0、monthly contract 0、monthly offer 0 | reply transport、intent、公式message ID readback、handled dedupeは稼働。現在送るべきbuyer actionも承諾すべきofferもなく、effect 0が正しい |
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
 | Storefront canonical | 公式inventoryは`published=1 / paused=5 / hidden=0 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式paused readback。`listing.json`も月額SNS商品`1338228`へ更新 | ¥98,000 / ¥198,000 / ¥398,000、画像、spot/3か月/6か月routeは公開page一致。second wake `status_effect_count=0` |
-| Storefront demand | canonical `1338228`の公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`。公式category/winnerを比較し、titleだけをbuyer problem先頭へ変更した | exact ownerは`action=updated / changed_field=title / aligned=true`、次wakeは`action=unchanged / status_effect_count=0`。現在は7日観測中で売上効果未確定 |
+| Storefront demand | canonical `1338228`の公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`。公式category/winnerを比較し、titleだけをbuyer problem先頭へ変更した | exact ownerが同じ5値を`listing.json`へdurable保存。連続2 wakeとも`action=unchanged / status_effect_count=0`。現在は7日観測中で売上効果未確定 |
 | Reporting | natural-language releaseの実wakeは`enqueued=1 / attempted=1 / delivered=1`、provider message ID `18453`、exit 0。直後の同一snapshot wakeはenqueue 0 | receipt 29/pending 0、Storefront 1/5/0/0、収益未集計を自然な日本語で表示。raw内部code 0、同一message重複0 |
 | Paid | ledger eventは`application_verified` 29件だけ。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、入金のproduction ownerは未完成。net MRRは未発生 |
 
@@ -2140,6 +2140,8 @@ readback failureは古いcomplete receiptを上書きせず、外部変更を増
 
 **PLAN SIZE:** production 1 file、約20–30行。既存browser、account lock、receipt writerを再利用する。
 
-**DONE EVIDENCE:** exact Storefront owner自身がcanonical listing `1338228`を公式readbackし、`listing.json`へ
-`search_impressions=1 / detail_views=0 / favorites=0 / inquiries=0 / orders=0`と新しい`observed_at`を保存する。
-content/status effectは0、public contentと3価格/3routeは一致、次wakeもcounter同値なら外部mutation 0である。
+**DONE EVIDENCE:** exact release `f589cd974a2b24b108768e4665c8da62103bc164`のStorefront owner自身がcanonical listing
+`1338228`を公式readbackし、`listing.json`へ`search_impressions=1 / detail_views=0 / favorites=0 / inquiries=0 / orders=0`と
+新しい`observed_at`を保存する。public content、画像、価格`98000 / 198000 / 398000`、納期各30日、spot/3か月/6か月各3routeは
+一致する。連続2 wakeとも`action=unchanged / status_effect_count=0`、exit 0で、second wakeのstderr増分と外部mutationは0である。
+このsliceは完了した。title変更後7日までは別fieldを変更せず、同じreceipt seriesで検索表示→詳細閲覧の変化を判断する。
