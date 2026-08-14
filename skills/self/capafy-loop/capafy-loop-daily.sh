@@ -120,6 +120,12 @@ skip the browser work this pass and say so), and release it when done."
 
 EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/capafy-marketplace/$(date +%s)-$$"
 BUILDER_RESULT="${CAPAFY_BUILDER_RESULT:-$HOME/.openclaw/state/capafy-builder-result.json}"
+CAPAFY_PORTFOLIO="${CAPAFY_PORTFOLIO:-$HOME/.openclaw/state/capafy-portfolio.json}"
+CAPAFY_PACKAGING_REMOTE="${CAPAFY_PACKAGING_REMOTE:-$EVIDENCE_DIR/capafy-packaging-remote.json}"
+CAPAFY_PACKAGING_DECISION="${CAPAFY_PACKAGING_DECISION:-$EVIDENCE_DIR/capafy-packaging-decision.json}"
+CAPAFY_PACKAGING_VALIDATED="${CAPAFY_PACKAGING_VALIDATED:-$EVIDENCE_DIR/capafy-packaging-validated-portfolio.json}"
+CAPAFY_PACKAGING_SCRIPT="${CAPAFY_PACKAGING_SCRIPT:-$SCRIPT_DIR/../../earn/capafy-marketing/scripts/capafy_packaging_decision.py}"
+export CAPAFY_PORTFOLIO CAPAFY_PACKAGING_REMOTE CAPAFY_PACKAGING_DECISION CAPAFY_PACKAGING_VALIDATED CAPAFY_PACKAGING_SCRIPT
 rm -f "$BUILDER_RESULT"
 PROMPT="$PROMPT
 ★★ DETERMINISTIC TERMINAL HANDOFF — THIS OVERRIDES STEP3/STEP5 REPORTING AND SELF-FIX OWNERSHIP ★★
@@ -130,6 +136,8 @@ exactly one JSON object to $BUILDER_RESULT:
   no-op:     {\"result\":\"no-op\",\"reason\":\"<bounded truthful reason>\"}
   failure:   {\"result\":\"failure\",\"reason\":\"<exact terminal blocker>\"}
 Writing submitted is only a candidate claim; the caller independently re-reads Capafy's remote status."
+PROMPT="$PROMPT
+PACKAGING CONTRACT: optimize_packaging must target one numeric existing agent_id. Read fresh authenticated publish-remote-status into $CAPAFY_PACKAGING_REMOTE, use capafy_packaging_decision_prompt.py with $CAPAFY_PORTFOLIO and that target, and write its exact JSON decision to $CAPAFY_PACKAGING_DECISION. Choose from buyer value shape: recurring changing input = subscription; value proportional to actions/results = usage; one bounded deliverable = one_time; combined recurring and metered/bounded value = hybrid. Validate without changing the live portfolio: python3 $CAPAFY_PACKAGING_SCRIPT --portfolio $CAPAFY_PORTFOLIO --decision $CAPAFY_PACKAGING_DECISION --remote-json $CAPAFY_PACKAGING_REMOTE --output $CAPAFY_PACKAGING_VALIDATED. Every price, unit, fee, model cost, and contribution field needs exact evidence; missing economics must end as no_op or failure, never an injected model or price."
 if [ -n "$CAPACITY_CONSTRAINT" ]; then
   PROMPT="$PROMPT
 $CAPACITY_CONSTRAINT This trailing constraint overrides any earlier addAgent option. Never omit the existing agent_id when repairing or resubmitting a rejected Agent.

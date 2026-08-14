@@ -292,6 +292,12 @@ def test_daily_reconciles_before_full_first_version_queue_action_selection(tmp_p
         assert forbidden not in prompt
     assert "Creating a new Agent" in prompt and "it is never mandatory" in prompt
     assert "Do not assume a purchase model, delivery mode, price, trial, or cap" in prompt
+    assert "recurring changing input = subscription" in prompt
+    assert "value proportional to actions/results = usage" in prompt
+    assert "one bounded deliverable = one_time" in prompt
+    assert "combined recurring and metered/bounded value = hybrid" in prompt
+    assert "capafy_packaging_decision.py" in prompt
+    assert "missing economics must end as no_op or failure" in prompt
     assert (tmp_path / "inventory-calls").read_text() == "1"
 
     Path(env["RUN_AGENT_MARKER"]).unlink()

@@ -14,6 +14,10 @@ FIXER="${CAPAFY_SELF_FIX:-$HERE/../self-fix.sh}"
 EVENT_ADAPTER="${CAPAFY_EVENT_ADAPTER:-$HERE/../../earn/capafy-marketing/scripts/capafy_event_adapters.py}"
 EVENT_LEDGER="${CAPAFY_EVENT_LEDGER:-$STATE/capafy-revenue-events.jsonl}"
 EVENT_EVIDENCE_DIR="${CAPAFY_EVENT_EVIDENCE_DIR:-$STATE/capafy-revenue-evidence}"
+PACKAGING_SCRIPT="${CAPAFY_PACKAGING_SCRIPT:-$HERE/../../earn/capafy-marketing/scripts/capafy_packaging_decision.py}"
+PACKAGING_PORTFOLIO="${CAPAFY_PORTFOLIO:-$STATE/capafy-portfolio.json}"
+PACKAGING_DECISION="${CAPAFY_PACKAGING_DECISION:-$STATE/capafy-packaging-decision.json}"
+PACKAGING_REMOTE="${CAPAFY_PACKAGING_REMOTE:-$STATE/capafy-packaging-remote.json}"
 TERMINAL="$STATE/capafy-builder-terminal.json"
 mkdir -p "$STATE"
 
@@ -122,6 +126,37 @@ PY
   FULL_QUEUE_ACTION="$ACTION_RESULT"
   FULL_QUEUE_TARGET="$(read_result_field target)"
   FULL_QUEUE_REASON="$(read_result_field reason)"
+  if [ "$FULL_QUEUE_ACTION" = "optimize_packaging" ]; then
+    if ! PACKAGING_PROOF="$(python3 - "$PACKAGING_SCRIPT" "$PACKAGING_PORTFOLIO" "$PACKAGING_DECISION" "$PACKAGING_REMOTE" "$FULL_QUEUE_TARGET" 2>&1 <<'PY'
+import json, sys
+from pathlib import Path
+
+script, portfolio_path, decision_path, remote_path = map(Path, sys.argv[1:5])
+target = sys.argv[5]
+try:
+    sys.path.insert(0, str(script.parent))
+    import capafy_packaging_decision as packaging
+    portfolio = json.loads(portfolio_path.read_text())
+    decision = json.loads(decision_path.read_text())
+    remote = json.loads(remote_path.read_text())
+    if decision.get("agent_id") != target:
+        raise ValueError("packaging decision agent_id must equal action target")
+    errors = packaging.validate_decision(portfolio, decision, remote)
+    if errors:
+        raise ValueError("; ".join(errors))
+    print(" ".join(
+        f"{key}={decision[key]}"
+        for key in ("purchase_model", "gross_usd", "cost_usd", "contribution_usd")
+    ))
+except (OSError, ValueError, json.JSONDecodeError, ImportError) as exc:
+    print(str(exc))
+    raise SystemExit(2)
+PY
+)"; then
+      start_failure "Builder packaging decision is invalid or lacks exact economics: $PACKAGING_PROOF"; exit $?
+    fi
+    FULL_QUEUE_REASON="$FULL_QUEUE_REASON; verified_packaging=$PACKAGING_PROOF"
+  fi
 fi
 
 money_json(){

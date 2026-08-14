@@ -37,6 +37,7 @@ setup_case(){
   export CAPAFY_EVENT_EVIDENCE_DIR="$STATE/capafy-revenue-evidence"
   export COUNT MESSAGES FIX_CALLS
   unset CAPAFY_BLOCK_NEW_AGENT
+  unset CAPAFY_PORTFOLIO CAPAFY_PACKAGING_DECISION CAPAFY_PACKAGING_REMOTE CAPAFY_PACKAGING_SCRIPT
   unset FAIL_FIRST_SEND
 }
 
@@ -142,6 +143,46 @@ do
   eq "invalid full-queue result sends no success report" "$(cat "$COUNT")" "1"
   rm -rf "$T"
 done
+
+packaging_fixtures(){
+  python3 - "$1" "$2" "$3" "${4:-0}" <<'PY'
+import json, sys
+from pathlib import Path
+sys.path.insert(0, str(Path.cwd() / "skills/earn/capafy-marketing/tests"))
+import test_capafy_packaging_decision as fixture
+portfolio, decision, remote = fixture.snapshot(), fixture.decision(), fixture.remote()
+if sys.argv[4] == "1": decision.pop("cost_usd")
+for path, value in zip(sys.argv[1:4], (portfolio, decision, remote)):
+    Path(path).write_text(json.dumps(value))
+PY
+}
+
+echo "(J) optimize_packaging requires the existing exact-economics validator"
+setup_case
+export CAPAFY_BLOCK_NEW_AGENT=1
+CAPAFY_PORTFOLIO="$T/portfolio.json"; CAPAFY_PACKAGING_DECISION="$T/decision.json"; CAPAFY_PACKAGING_REMOTE="$T/packaging-remote.json"
+CAPAFY_PACKAGING_SCRIPT="$ROOT/skills/earn/capafy-marketing/scripts/capafy_packaging_decision.py"
+export CAPAFY_PORTFOLIO CAPAFY_PACKAGING_DECISION CAPAFY_PACKAGING_REMOTE CAPAFY_PACKAGING_SCRIPT
+packaging_fixtures "$CAPAFY_PORTFOLIO" "$CAPAFY_PACKAGING_DECISION" "$CAPAFY_PACKAGING_REMOTE"
+printf '%s\n' '{"result":"optimize_packaging","target":"5051239796","reason":"selected from buyer value shape and exact economics"}' > "$CANDIDATE"
+bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; rc=$?
+eq "evidence-backed packaging exits zero" "$rc" "0"
+has "packaging model is recorded" "$(cat "$STATE/capafy-builder-terminal.json")" 'purchase_model=subscription'
+has "packaging contribution is recorded" "$(cat "$STATE/capafy-builder-terminal.json")" 'contribution_usd=4.01'
+rm -rf "$T"
+
+echo "(K) absent packaging economics fail closed"
+setup_case
+export CAPAFY_BLOCK_NEW_AGENT=1
+CAPAFY_PORTFOLIO="$T/portfolio.json"; CAPAFY_PACKAGING_DECISION="$T/decision.json"; CAPAFY_PACKAGING_REMOTE="$T/packaging-remote.json"
+CAPAFY_PACKAGING_SCRIPT="$ROOT/skills/earn/capafy-marketing/scripts/capafy_packaging_decision.py"
+export CAPAFY_PORTFOLIO CAPAFY_PACKAGING_DECISION CAPAFY_PACKAGING_REMOTE CAPAFY_PACKAGING_SCRIPT
+packaging_fixtures "$CAPAFY_PORTFOLIO" "$CAPAFY_PACKAGING_DECISION" "$CAPAFY_PACKAGING_REMOTE" 1
+printf '%s\n' '{"result":"optimize_packaging","target":"5051239796","reason":"economics incomplete"}' > "$CANDIDATE"
+bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "missing economics returns nonzero" || bad "missing economics returns nonzero" "rc=$rc"
+[ ! -f "$STATE/capafy-builder-terminal.json" ] && ok "missing economics records no success terminal" || bad "missing economics records no success terminal" "terminal exists"
+rm -rf "$T"
 
 echo "=== capafy builder outcome: $PASS passed $FAIL failed ==="
 [ "$FAIL" -eq 0 ] || exit 1
