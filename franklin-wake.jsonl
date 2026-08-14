@@ -27507,3 +27507,10 @@
 {"ts":1786688676,"wake_id":"00MSSKB2923673A194080A47FD","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786688806,"wake_id":"00MSSKDUE65CBA893C4D284C06","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786688937,"wake_id":"00MSSKGNEG9327FCE25CA04D7A","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana AI microtask platforms paying USDC for prompt engineering [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (can"}
+{"ts":1786689069,"wake_id":"00MSSKJGUO5729B410EABC4EE1","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786689195,"wake_id":"00MSSKM6BH32710EAB74B1419C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786689324,"wake_id":"00MSSKOY3DF3A48C681B374F2C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786689459,"wake_id":"00MSSKRTQEC960BD57EC1A4D9A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786689587,"wake_id":"00MSSKUKV656CC0E0001D840A3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786689716,"wake_id":"00MSSKXC4Z7F08E73C796C48C1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786689844,"wake_id":"00MSSL030D7EF93875345B45DB","kind":"narrate","sleep_s":120,"model":"auto"}
