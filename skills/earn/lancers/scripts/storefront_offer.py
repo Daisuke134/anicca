@@ -115,10 +115,11 @@ def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, An
     paused = page.locator('label[for="ProjectPlanStatusFormStatusPaused"]')
     if paused.count() != 1: raise OfferError("setting_form_changed")
     paused.click(timeout=5_000)
+    if not _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').is_checked(): raise OfferError("setting_form_changed")
     save = page.get_by_role("button", name="保存", exact=True)
     if save.count() != 1: raise OfferError("setting_form_changed")
-    try: save.click(timeout=5_000, no_wait_after=True)
-    except Exception: pass
+    try: save.evaluate("button => button.click()")
+    except Exception: raise OfferError("setting_submission_uncertain") from None
     page.wait_for_timeout(1_000)
     if _setting_status(page, listing_id) != "paused": raise OfferError("setting_submission_uncertain")
     return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id}
