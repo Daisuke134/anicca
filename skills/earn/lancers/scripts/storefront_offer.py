@@ -141,14 +141,14 @@ def _setting_status(page: Any, listing_id: str) -> str:
 
 
 def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, Any]:
-    active = [listing_id for listing_id in listing_ids if _setting_status(page, listing_id) == "active"]
-    if not active: return {"superseded_active_count": 0, "status_effect_count": 0}
-    listing_id = active[0]
-    if _setting_status(page, listing_id) != "active": return {"superseded_active_count": len(active) - 1, "status_effect_count": 0}
-    paused = page.locator('label[for="ProjectPlanStatusFormStatusPaused"]')
-    if paused.count() != 1: raise OfferError("setting_status_control_missing")
-    paused.click(timeout=5_000)
-    if not _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').is_checked(): raise OfferError("setting_status_selection_failed")
+    visible = [listing_id for listing_id in listing_ids if _setting_status(page, listing_id) != "archived"]
+    if not visible: return {"superseded_visible_count": 0, "status_effect_count": 0}
+    listing_id = visible[0]
+    if _setting_status(page, listing_id) == "archived": return {"superseded_visible_count": len(visible) - 1, "status_effect_count": 0}
+    archived = page.locator('label[for="ProjectPlanStatusFormStatusArchived"]')
+    if archived.count() != 1: raise OfferError("setting_status_control_missing")
+    archived.click(timeout=5_000)
+    if not _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="archived"]').is_checked(): raise OfferError("setting_status_selection_failed")
     save = page.get_by_role("button", name="保存", exact=True)
     if save.count() != 1: raise OfferError("setting_form_changed")
     observed: list[dict[str, Any]] = []
@@ -156,10 +156,10 @@ def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, An
     try: save.click(force=True, no_wait_after=True, timeout=5_000)
     except Exception: raise OfferError("setting_submission_uncertain") from None
     page.wait_for_timeout(2_000)
-    if _setting_status(page, listing_id) != "paused":
+    if _setting_status(page, listing_id) != "archived":
         print("storefront_offer:non_get=" + json.dumps(observed, separators=(",", ":")), file=sys.stderr)
         raise OfferError("setting_submission_uncertain")
-    return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id, "responses": observed}
+    return {"superseded_visible_count": len(visible) - 1, "status_effect_count": 1, "hidden_listing_id": listing_id, "responses": observed}
 
 
 def _write_receipt(state_path: Path, product: Mapping[str, Any], demand: Mapping[str, int]) -> None:
@@ -185,7 +185,7 @@ def _step(page: Any, label: str) -> None:
 def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]:
     before = _public(page, product)
     reconciliation = _reconcile_superseded(page, product["superseded_listing_ids"])
-    if reconciliation["status_effect_count"]: return before | reconciliation | {"action": "paused_superseded"}
+    if reconciliation["status_effect_count"]: return before | reconciliation | {"action": "hidden_superseded"}
     if before["aligned"]: return before | reconciliation | {"action": "unchanged"}
     listing_id = product["listing_external_id"]; edit_url = f"{ORIGIN}/myplan/{listing_id}/edit"
     page.goto(edit_url, wait_until="domcontentloaded", timeout=30_000)
