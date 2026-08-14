@@ -278,8 +278,6 @@ def parse_search_html(html: str) -> List[Dict[str, object]]:
 
 
 class _DetailParser(HTMLParser):
-    _LABELS = {"依頼主の業種", "依頼概要", "依頼詳細"}
-
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self._depth = self._dl_depth = 0; self._label = self._capture = None; self.values: Dict[str, str] = {}
@@ -293,7 +291,7 @@ class _DetailParser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if self._capture is not None and self._capture[1] == self._depth:
             kind, _depth, chunks = self._capture; text = _clean_text("".join(chunks))
-            if kind == "dt": self._label = text if text in self._LABELS else None
+            if kind == "dt": self._label = text if text and len(text) <= 120 else None
             elif text and self._label is not None: self.values[self._label] = text; self._label = None
             self._capture = None
         if tag == "dl" and self._dl_depth == self._depth: self._dl_depth = 0
@@ -413,10 +411,9 @@ def _enrich_cards(cards: Sequence[Dict[str, object]], timeout: float) -> tuple[i
     for card in cards:
         try:
             fields = parse_detail_html(fetch_public_html(query=None, limit=1, timeout=timeout, _detail_url=_canonical_detail_url(card.get("url"))))
-            industry, overview = fields.get("依頼主の業種"), fields.get("依頼詳細") or fields.get("依頼概要")
-            if not industry or not overview:
+            if not fields:
                 raise ValueError
-            text = f"依頼主の業種: {industry}\n依頼詳細: {overview}"
+            text = "\n".join(f"{label}: {value}" for label, value in fields.items())
             if len(text) > 2000: text = text[:1390] + "\n[…]\n" + text[-600:]
             card["description"] = text
             enriched += 1
