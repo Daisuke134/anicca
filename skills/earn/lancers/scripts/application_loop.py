@@ -27,31 +27,28 @@ DISCOVERY_QUERIES = (
     "B2Bマーケティング", "AI活用", "継続依頼", "長期", "月額",
 )
 PLANNER_TASK_CLASS = "application-intent-planner"
-SAFETY_TASK_CLASS = "diagnostic-agent"
 PLANNER_TIMEOUT_SECONDS = 180
 DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json"
 DEFAULT_EVIDENCE_ROOT = Path.home() / ".local/state/anicca/lancers/planner"
 DEFAULT_EVIDENCE_DIR = DEFAULT_EVIDENCE_ROOT
-DECISION_FIELDS = frozenset({"request_id", "eligibility", "reason_codes", "proposal_text", "price_jpy", "deliver_date", "qualification"})
-QUALIFICATION_FIELDS = frozenset({"commercial_buyer_evidence", "ongoing_sns_outsourcing_evidence", "expected_platform_fee_jpy", "expected_ai_cost_jpy", "expected_subcontractor_cost_jpy", "expected_revision_refund_allowance_jpy", "cost_source_version"})
-QUALIFICATION_COST_FIELDS = ("expected_platform_fee_jpy", "expected_ai_cost_jpy", "expected_subcontractor_cost_jpy", "expected_revision_refund_allowance_jpy")
-JAPANESE_TEXT_RE = re.compile(r"[ぁ-ゖァ-ヺ一-龯]")
+DECISION_FIELDS = frozenset({"request_id", "business_class", "reason_codes", "proposal_text", "price_jpy", "deliver_date"})
+BUSINESS_CLASSES = frozenset({"submit_required", "hard_prohibited"})
+HARD_PROHIBITION_CLASSES = {
+    "video_or_animation": "video editing/production, live-action filming, AI video, animation, or MV",
+    "physical_or_onsite": "on-site work or physical making/assembly/cleaning/repair/cooking/sewing/woodwork/model making/packing/shipping/delivery/receipt",
+    "mandatory_human_presence": "human face appearance/performance/voice recording/phone support/mandatory live call or mandatory video interview",
+    "explicit_ai_prohibition": "explicit prohibition on AI use",
+    "illegal_or_unsafe": "illegal or unsafe work",
+    "missing_legal_qualification": "legally required qualification that Kosuke does not hold",
+    "mandatory_attribute_fabrication": "mandatory personal attribute that cannot be answered truthfully without fabrication",
+}
 PUBLIC_FIELDS = ("schema_version", "record_type", "platform", "external_id", "title", "description", "url", "category", "budget_type", "budget_min_minor", "budget_max_minor", "currency", "buyer_external_id", "observed_at")
 DATE_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 ID_RE = re.compile(r"^[0-9]+$")
 KANA_RE = re.compile(r"[ぁ-ゖァ-ヺ]")
 FORBIDDEN_TERMS = ("receipt", "gate", "agent", "model", "browser", "token", "prompt", "internal id", "レシート", "ゲート", "エージェント", "モデル", "ブラウザ", "トークン", "プロンプト", "内部ID")
 FORBIDDEN_RE = re.compile("|".join(re.escape(term).replace(r"\ ", r"[ _]") for term in FORBIDDEN_TERMS), re.IGNORECASE)
-RETAIN_EVIDENCE_ERRORS = frozenset({"planner_runner_failed", "planner_contract_incomplete", "planner_contract_invalid", "safety_check_failed"})
-SAFETY_SCHEMA = {
-    "type": "object", "additionalProperties": False,
-    "required": ["safe_to_submit", "reason", "blocker_evidence"],
-    "properties": {
-        "safe_to_submit": {"type": "boolean"},
-        "reason": {"enum": ["approved", "live_interaction_required", "physical_presence_required", "personal_identity_required", "recording_required", "other_policy_blocker", "uncertain"]},
-        "blocker_evidence": {"type": ["string", "null"], "maxLength": 240},
-    },
-}
+RETAIN_EVIDENCE_ERRORS = frozenset({"planner_runner_failed", "planner_contract_invalid"})
 
 def _load(name: str, path: Path) -> Any:
     spec = importlib.util.spec_from_file_location(name, path)
@@ -139,16 +136,16 @@ def _snapshot(rows: Sequence[Mapping[str, object]], today: date) -> dict[str, ob
         result.append(compact)
     return {"tick_date": today.isoformat(), "opportunities": result}
 
-PLANNER_RULES = ("Lancersの公開案件だけを読み、全案件を一対一でeligible/ineligibleに分類する。ブラウザ・認証・外部操作はできない。"
-    "eligibleは日本語の商用組織案件で、公開descriptionの公式依頼主の業種行からcommercial_buyer_evidence、依頼概要からSNS/channel・継続scope・外部委任を同時に示すongoing_sns_outsourcing_evidenceを各4〜240文字の完全一致抜粋で返す。"
-    "commercial_buyer_evidenceは依頼主の業種: で始まる空でない一行、ongoing_sns_outsourcing_evidenceはSNS/channel・継続・外部委任を全て示すこと。純粋な不明、個人趣味、単発投稿はineligible。"
-    "eligibleは買い手宛て自然な日本語200〜3000文字、観測されたJPY予算内の整数価格、98000円以上、翌日から60日以内の実在日を返し、qualificationには4コストとcost_source_versionを指定する。"
-    "expected_platform_fee_jpyは価格の20%切上げ以上、他コストは非負整数、cost_source_versionはlancers-g1-conservative-v1とする。"
-    "提案文には買い手の課題、最初の30日間の納品物、チャネル数・投稿本数・修正回数上限、価格・納期、継続範囲、確認質問をちょうど1つ含める。"
-    "物理出席、ライブ通話・講義、本人固有の調査、AI禁止、声や顔の収録、実写動画編集はineligibleとし、提案・価格・納期・qualificationをnullにする。"
-    "例: 商用組織が継続的なSNS運用の外部委託先を明示的に探し、金額とscope条件を満たす案件はeligibleになり得る。"
-    "例: 週次ミーティング、Zoom面談、ライブ通話、現地参加、本人の声・顔の収録など同期的な本人義務がある案件は、予算とSNS scopeが合ってもineligibleとする。"
-    "提案文には次の語を含めない: " + ", ".join(FORBIDDEN_TERMS) + "。送信・受注・納品・支払済みと主張せず、指定スキーマのJSONだけを返す。\nSNAPSHOT:\n")
+PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent plannerである。ブラウザ・認証・外部操作はできない。"
+    "各案件を実際の公開内容全体から自分で判断し、指定schemaのJSONだけを返す。応募可能ならsubmit_required、reason_codesは空、買い手向けの具体的な日本語proposalを200〜3000文字、正直な価格、現実的な納期で返す。"
+    "hard_prohibitedは案件全体が次のいずれかを必須とする場合だけ使う: "
+    + "; ".join(f"{key}={value}" for key, value in HARD_PROHIBITION_CLASSES.items()) + "。"
+    "hard_prohibitedではreason_codes[0]を正確なclass key、reason_codes[1]をtitle・description・categoryのいずれかに連続して存在する200文字以内の原文引用にし、proposal・price・dateはnullにする。任意・推奨・否定・引用中の単語だけで拒否しない。"
+    "経験の不確実さ、弱いportfolio、低予算、難易度、広いまたは曖昧なscope、単発、継続性不足、Adobe実績不明、任意の相談は拒否理由ではない。正確な同分野実績がなくても、確認済みの転用可能な能力と案件固有の実行planで応募し、未作成物はplanと明示して捏造しない。"
+    "優先順は、定期購入・保守・運用、次にsystem・automation・AI・web・高報酬、次にその他の非同期作業。実行可能な低優先案件を省略しない。submit_requiredを先に並べ、強い順に返す。"
+    "既知のbudget_max_minorを超えない。budgetが応相談・未定でも拒否しない。一律の最低価格や固定上限を設けない。競争力とscopeに合う価格、実行可能な最短納期を選ぶ。"
+    "live call・video meeting・顔出し・音声収録を自発的に約束せず、任意ならLancersメッセージと文書による非同期確認を提案する。必須ならhard_prohibitedにする。"
+    "提案文には次の語を含めない: " + ", ".join(FORBIDDEN_TERMS) + "。送信・受注・納品・支払済みと主張しない。\nSNAPSHOT:\n")
 
 def build_planner_prompt(rows: Sequence[Mapping[str, object]], today: date) -> str:
     return PLANNER_RULES + json.dumps(_snapshot(rows, _tick_date(today)), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -171,7 +168,8 @@ def _planner_runtime_schema(prompt: str, evidence_dir: Path) -> Path:
     ids = [row["external_id"] for row in snapshot["opportunities"]]
     schema = json.loads(PLANNER_SCHEMA.read_text(encoding="utf-8"))
     decisions = schema["properties"]["decisions"]
-    decisions["minItems"] = decisions["maxItems"] = len(ids)
+    decisions["minItems"] = 1
+    decisions["maxItems"] = len(ids)
     decisions["items"]["properties"]["request_id"]["enum"] = ids
     path = Path(evidence_dir) / "planner-runtime.schema.json"
     path.write_text(json.dumps(schema, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
@@ -201,45 +199,30 @@ def _valid_observed_budget(row: object) -> bool:
     minimum, maximum = row.get("budget_min_minor"), row.get("budget_max_minor")
     return not any(value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0) for value in (minimum, maximum)) and not (minimum is not None and maximum is not None and minimum > maximum)
 
-def _valid_qualification_evidence(qualification: Mapping[str, object], public_text: str) -> bool:
-    commercial, ongoing = qualification.get("commercial_buyer_evidence"), qualification.get("ongoing_sns_outsourcing_evidence")
-    if any(not isinstance(item, str) or not 4 <= len(item) <= 240 or item not in public_text for item in (commercial, ongoing)):
-        return False
-    overview = re.search(r"(?:^|\n)依頼概要[:：](.*)", public_text, re.S)
-    industry = re.fullmatch(r"依頼主の業種[:：]\s*\S.*", commercial)
-    return bool(JAPANESE_TEXT_RE.search(public_text) and commercial in public_text.splitlines() and industry and overview and ongoing in overview.group(1))
-
 def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) -> dict[str, Mapping[str, object]]:
     try:
         if not isinstance(json.loads(SCHEMA_PATH.read_text(encoding="utf-8")), Mapping) or not isinstance(value, Mapping): raise ValueError
         decisions = value.get("decisions")
-        if set(value) != {"decisions"} or not isinstance(decisions, list) or len(decisions) != len(rows) or len(decisions) > MAX_OPPORTUNITIES: raise ValueError
+        if set(value) != {"decisions"} or not isinstance(decisions, list) or not decisions or len(decisions) > len(rows): raise ValueError
         expected = [str(row["external_id"]) for row in rows]; rows_by_id = {str(row["external_id"]): row for row in rows}; found: dict[str, Mapping[str, object]] = {}
         for decision in decisions:
             if not isinstance(decision, Mapping) or set(decision) != DECISION_FIELDS: raise ValueError
-            project_id, eligibility, reasons = decision.get("request_id"), decision.get("eligibility"), decision.get("reason_codes")
-            if not isinstance(project_id, str) or project_id not in expected or project_id in found or eligibility not in ("eligible", "ineligible") or not isinstance(reasons, list) or any(not isinstance(reason, str) or not reason for reason in reasons) or (eligibility == "ineligible" and not reasons): raise ValueError
-            proposal, price, due, qualification = decision.get("proposal_text"), decision.get("price_jpy"), decision.get("deliver_date"), decision.get("qualification")
-            if eligibility == "ineligible":
-                if proposal is not None or price is not None or due is not None or qualification is not None: raise ValueError
-            elif not _safe_proposal(proposal, expected) or isinstance(price, bool) or not isinstance(price, int) or price < 98000 or not _valid_date(due, today): raise ValueError
-            elif not isinstance(qualification, Mapping) or set(qualification) != QUALIFICATION_FIELDS: raise ValueError
-            else:
+            project_id, business_class, reasons = decision.get("request_id"), decision.get("business_class"), decision.get("reason_codes")
+            if not isinstance(project_id, str) or project_id not in expected or project_id in found or business_class not in BUSINESS_CLASSES or not isinstance(reasons, list) or any(not isinstance(reason, str) or not reason.strip() for reason in reasons) or len(set(reasons)) != len(reasons): raise ValueError
+            proposal, price, due = decision.get("proposal_text"), decision.get("price_jpy"), decision.get("deliver_date")
+            if business_class == "hard_prohibited":
+                if proposal is not None or price is not None or due is not None or len(reasons) < 2 or reasons[0] not in HARD_PROHIBITION_CLASSES: raise ValueError
                 public_row = rows_by_id[project_id]
-                public_text = public_row.get("description") if isinstance(public_row.get("description"), str) else ""
-                if not _valid_qualification_evidence(qualification, public_text): raise ValueError
-                if qualification.get("cost_source_version") != "lancers-g1-conservative-v1": raise ValueError
-                costs = [qualification.get(key) for key in QUALIFICATION_COST_FIELDS]
-                if any(isinstance(cost, bool) or not isinstance(cost, int) or cost < 0 for cost in costs): raise ValueError
-                if qualification["expected_platform_fee_jpy"] < (price * 20 + 99) // 100: raise ValueError
-                if 10 * (price - sum(costs)) < 7 * price: raise ValueError
+                public_text = "\n".join(str(public_row.get(key) or "") for key in ("title", "description", "category"))
+                if not 1 <= len(reasons[1]) <= 200 or reasons[1] not in public_text: raise ValueError
+            elif reasons or not _safe_proposal(proposal, expected) or isinstance(price, bool) or not isinstance(price, int) or price < 1 or not _valid_date(due, today): raise ValueError
             found[project_id] = decision
-        if set(found) != set(expected): raise ValueError
         for row in rows:
             if not _valid_observed_budget(row): raise ValueError
-            minimum, maximum = row.get("budget_min_minor"), row.get("budget_max_minor")
-            decision, price = found[str(row["external_id"])], found[str(row["external_id"])].get("price_jpy")
-            if decision["eligibility"] == "eligible" and (row.get("currency") != "JPY" or minimum is None or maximum is None or price < minimum or price > maximum): raise ValueError
+        for project_id, decision in found.items():
+            row, price = rows_by_id[project_id], decision.get("price_jpy")
+            maximum = row.get("budget_max_minor")
+            if decision["business_class"] == "submit_required" and (row.get("currency") != "JPY" or (maximum is not None and price > maximum)): raise ValueError
         return found
     except Exception: raise ValueError from None
 
@@ -377,38 +360,6 @@ def _batch_summary(
     success = result.ok if ok is None else ok
     return replace(result, ok=success, submitted=any(item.submitted for item in verified) if submitted is None else submitted, observed_count=observed_count, eligible_count=eligible_count, verified_count=len(verified), provider_terminal_blocked_count=len(blocked), verified_project_ids=verified_projects, verified_provider_proposal_ids=verified_proposals, provider_terminal_blocked_project_ids=tuple(blocked), unresolved_project_id=unresolved_project_id)
 
-def _eligible_rank(item: tuple[Mapping[str, object], Mapping[str, object]]) -> tuple[int]:
-    decision = item[1]
-    qualification = decision["qualification"]
-    projected_net_jpy = decision["price_jpy"] - sum(qualification[name] for name in QUALIFICATION_COST_FIELDS)
-    return (-projected_net_jpy,)
-
-def _safety_prompt(row: Mapping[str, object], decision: Mapping[str, object]) -> str:
-    policy = ("次の公開Lancers案件と応募判断をread-onlyで独立審査する。週次MTG、Zoom面談、ライブ通話、現地参加、本人固有の身元・声・顔、収録が必須なら拒否する。"
-        "safe_to_submit=trueは同期的な本人義務がなく明確に安全な場合だけ。拒否時blocker_evidenceは公開descriptionから240文字以内の完全一致引用、曖昧ならreason=uncertain。指定JSONだけを返す。\n")
-    payload = {"public_opportunity": {key: row.get(key) for key in PUBLIC_FIELDS}, "primary_decision": decision}
-    return policy + json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-
-def _default_safety_verifier(prompt: str, evidence_dir: Path) -> Mapping[str, object]:
-    schema_path = evidence_dir.parent / "safety.schema.json"
-    schema_path.write_text(json.dumps(SAFETY_SCHEMA, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    os.chmod(schema_path, 0o600)
-    return _invoke_agent(prompt, evidence_dir, SAFETY_TASK_CLASS, schema_path, "lancers-submission-safety")
-
-def _safety_outcome(row: Mapping[str, object], decision: Mapping[str, object], evidence: Path, verifier: Optional[Callable[..., object]]) -> str:
-    try:
-        value = (verifier or _default_safety_verifier)(_safety_prompt(row, decision), evidence / "safety")
-        if not isinstance(value, Mapping) or set(value) != {"safe_to_submit", "reason", "blocker_evidence"}: raise ValueError
-        safe, reason, blocker = value["safe_to_submit"], value["reason"], value["blocker_evidence"]
-        if safe is True and reason == "approved" and blocker is None: return "approved"
-        description = row.get("description")
-        rejected = reason in set(SAFETY_SCHEMA["properties"]["reason"]["enum"]) - {"approved", "uncertain"}
-        if safe is False and rejected and isinstance(blocker, str) and blocker and isinstance(description, str) and blocker in description:
-            return "rejected"
-    except Exception:
-        pass
-    return "failed"
-
 def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence: Path, planner: Optional[Callable[..., object]], safety_verifier: Optional[Callable[..., object]], submitter: Optional[Callable[..., object]], state_path: Path) -> ApplicationLoopResult:
     observed_count = len(rows)
     try:
@@ -420,24 +371,12 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     try: planned = (planner or _default_planner)(prompt, evidence)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_runner_failed", planner_expected_count=len(rows)), observed_count, 0, (), ())
     returned = len(planned.get("decisions")) if isinstance(planned, Mapping) and isinstance(planned.get("decisions"), list) else None
-    if returned != len(rows):
-        return _batch_summary(ApplicationLoopResult(False, error="planner_contract_incomplete", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
     try: decisions = _validate(rows, planned, today)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
-    eligible = [
-        (row, decisions[str(row["external_id"])])
-        for row in rows
-        if decisions[str(row["external_id"])].get("eligibility") == "eligible"
-    ]
-    eligible = sorted(eligible, key=_eligible_rank)
+    rows_by_id = {str(row["external_id"]): row for row in rows}
+    eligible = [(rows_by_id[project_id], decision) for project_id, decision in decisions.items() if decision.get("business_class") == "submit_required"]
     if not eligible:
         return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project"), observed_count, 0, (), ())
-    row, decision = eligible[0]
-    safety = _safety_outcome(row, decision, evidence, safety_verifier)
-    if safety == "rejected":
-        return _batch_summary(ApplicationLoopResult(True, reason="safety_rejected", project_id=str(row["external_id"])), observed_count, len(eligible), (), ())
-    if safety != "approved":
-        return _batch_summary(ApplicationLoopResult(False, error="safety_check_failed", project_id=str(row["external_id"])), observed_count, len(eligible), (), ())
     verified, blocked = [], []
     for row, decision in eligible[:1]:
         project_id, proposal = str(row["external_id"]), str(decision["proposal_text"])
