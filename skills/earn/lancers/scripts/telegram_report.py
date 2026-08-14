@@ -319,6 +319,8 @@ def build_snapshot(*, application: object, pending_count: object, cumulative_ver
     store = _storefront_counts(storefront)
     store_ok = all(_int(store.get(key)) is not None for key, _label, _href in _LABELS)
     resolved_blocker = blocker if isinstance(blocker, str) and blocker else (reason if isinstance(reason, str) and reason != "no_eligible_project" else None)
+    if resolved_blocker == "submission_uncertain" and pending == 0:
+        resolved_blocker = None
     if not resolved_blocker and store.get("error"):
         resolved_blocker = str(store["error"])
     return {
