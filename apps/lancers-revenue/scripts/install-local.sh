@@ -13,6 +13,7 @@ LABEL="ai.anicca.lancers-revenue-application"
 REPORT_LABEL="ai.anicca.lancers-revenue-telegram-report"
 WORK_SYNC_LABEL="ai.anicca.lancers-revenue-work-sync"
 STOREFRONT_LABEL="ai.anicca.lancers-revenue-storefront"
+BROWSER_LABEL="ai.anicca.lancers-revenue-browser"
 RUNTIME_PATH="${LANCERS_RUNTIME_PATH:-${HOME}/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin}"
 
 fail() {
@@ -52,12 +53,14 @@ PLIST_TEMP=""
 REPORT_PLIST_TEMP=""
 WORK_SYNC_PLIST_TEMP=""
 STOREFRONT_PLIST_TEMP=""
+BROWSER_PLIST_TEMP=""
 
 cleanup() {
   [[ -z "$PLIST_TEMP" || ! -e "$PLIST_TEMP" ]] || rm -f "$PLIST_TEMP"
   [[ -z "$REPORT_PLIST_TEMP" || ! -e "$REPORT_PLIST_TEMP" ]] || rm -f "$REPORT_PLIST_TEMP"
   [[ -z "$WORK_SYNC_PLIST_TEMP" || ! -e "$WORK_SYNC_PLIST_TEMP" ]] || rm -f "$WORK_SYNC_PLIST_TEMP"
   [[ -z "$STOREFRONT_PLIST_TEMP" || ! -e "$STOREFRONT_PLIST_TEMP" ]] || rm -f "$STOREFRONT_PLIST_TEMP"
+  [[ -z "$BROWSER_PLIST_TEMP" || ! -e "$BROWSER_PLIST_TEMP" ]] || rm -f "$BROWSER_PLIST_TEMP"
   [[ ! -e "$STAGING" ]] || rm -rf "$STAGING"
   [[ ! -e "$CHECK_ROOT" ]] || rm -rf "$CHECK_ROOT"
 }
@@ -247,6 +250,26 @@ mv -f "$REPORT_PLIST_TEMP" "$REPORT_PLIST_PATH"
 REPORT_PLIST_TEMP=""
 "$PLUTIL_BIN" -lint "$REPORT_PLIST_PATH" >/dev/null
 
+CHROMIUM_BIN="${LANCERS_CHROMIUM_BIN:-$(ls -d "$HOME"/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium(N) | sort -V | tail -1)}"
+[[ -x "$CHROMIUM_BIN" ]] || fail "CloakBrowser Chromium is unavailable"
+BROWSER_TEMPLATE="$SCRIPT_DIR/../launchd/$BROWSER_LABEL.plist"
+BROWSER_PLIST_PATH="$LAUNCH_AGENT_DIR/$BROWSER_LABEL.plist"
+BROWSER_PLIST_TEMP="$(mktemp "$LAUNCH_AGENT_DIR/.${BROWSER_LABEL}.plist.XXXXXX")"
+"$PYTHON_BIN" - "$BROWSER_TEMPLATE" "$BROWSER_PLIST_TEMP" "$CHROMIUM_BIN" \
+  "$STATE_ROOT/browser-profile" "$STATE_ROOT/logs/browser.out.log" \
+  "$STATE_ROOT/logs/browser.err.log" "$RELEASE_PATH" <<'PY'
+import os, plistlib, sys
+from pathlib import Path
+template, output, chromium, profile, stdout, stderr, release = sys.argv[1:]
+value = plistlib.loads(Path(template).read_bytes())
+value["ProgramArguments"] = [chromium, "--no-first-run", "--no-default-browser-check", "--remote-debugging-address=127.0.0.1", "--remote-allow-origins=*", "--remote-debugging-port=9227", f"--user-data-dir={profile}", "about:blank"]
+value["WorkingDirectory"] = release; value["StandardOutPath"] = stdout; value["StandardErrorPath"] = stderr
+Path(output).write_bytes(plistlib.dumps(value, fmt=plistlib.FMT_XML, sort_keys=False)); os.chmod(output, 0o644)
+PY
+mv -f "$BROWSER_PLIST_TEMP" "$BROWSER_PLIST_PATH"
+BROWSER_PLIST_TEMP=""
+"$PLUTIL_BIN" -lint "$BROWSER_PLIST_PATH" >/dev/null
+
 if [[ "$ACTIVATE" == "1" ]]; then
   LAUNCHCTL_BIN="${LANCERS_LAUNCHCTL:-$(command -v launchctl || true)}"
   [[ -n "$LAUNCHCTL_BIN" && -x "$LAUNCHCTL_BIN" ]] || fail "launchctl is unavailable"
@@ -267,6 +290,7 @@ if [[ "$ACTIVATE" == "1" ]]; then
     print -r -- "$arguments" | grep -Fqx -- "$program" || fail "$label does not run the exact release program"
     [[ "$working" == "$RELEASE_PATH" ]] || fail "$label does not use the exact release working directory"
   }
+  activate_owner "$BROWSER_LABEL" "$BROWSER_PLIST_PATH" "$CHROMIUM_BIN"
   activate_owner "$LABEL" "$PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/application_loop.py"
   activate_owner "$REPORT_LABEL" "$REPORT_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/telegram_report.py"
   activate_owner "$WORK_SYNC_LABEL" "$WORK_SYNC_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/work_sync.py"
@@ -275,7 +299,7 @@ fi
 
 INSTALLED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 "$PYTHON_BIN" - "$STATE_ROOT/deployment.json" "$RELEASE_PATH" "$RELEASE_SHA" \
-  "$INSTALL_MODE" "$INSTALLED_AT" "$LABEL" "$REPORT_LABEL" "$WORK_SYNC_LABEL" "$STOREFRONT_LABEL" <<'PY'
+  "$INSTALL_MODE" "$INSTALLED_AT" "$LABEL" "$REPORT_LABEL" "$WORK_SYNC_LABEL" "$STOREFRONT_LABEL" "$BROWSER_LABEL" <<'PY'
 import hashlib
 import json
 import os
@@ -283,7 +307,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-manifest_path, release_path, deployed_sha, mode, installed_at, label, report_label, work_sync_label, storefront_label = sys.argv[1:]
+manifest_path, release_path, deployed_sha, mode, installed_at, label, report_label, work_sync_label, storefront_label, browser_label = sys.argv[1:]
 release = Path(release_path)
 files = {}
 for path in sorted(path for path in release.rglob("*") if path.is_file()):
@@ -297,6 +321,7 @@ manifest = {
     "report_launchd_label": report_label,
     "work_sync_launchd_label": work_sync_label,
     "storefront_launchd_label": storefront_label,
+    "browser_launchd_label": browser_label,
     "mode": mode,
 }
 target = Path(manifest_path)
