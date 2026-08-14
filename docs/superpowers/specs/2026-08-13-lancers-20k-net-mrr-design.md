@@ -1785,6 +1785,20 @@ handoffは`ApplicationReceipt → ContractReceipt → DeliveryReceipt → Paymen
 既存implementation detailである。競合が収益を止めていない間はlock除去だけのrefactorをTODOにせず、今後のNegotiate/Paidを
 wake-wide lockへ入れない。Coconala Paidに残るsend→直後readbackのlegacy lockも四lane共通ruleとしてcopyしない。
 
+#### verified session / rate boundary
+
+Lancers利用規約第8条は自動提案機能を利用した提案にも会員が正確性と責任を負うことを明記する。ただし、これは任意の外部browser
+automationを包括的に許可する文ではない。同規約第31条は、人為的な高負荷accessとmessage機能による大量送信を禁止する。
+したがって安全contractはglobal mutexではなく、短いscheduled tick、bounded page/request count、応募最大1件/tick、有限reply queue、
+同一effectのexact-ID dedupe、429時の当該lane backoffである。rate limit探索を目的とするstress testは行わない。
+
+同じproduction login sessionへowner-specific tabを4枚だけ作り、`/mypage/proposals`、`/myplan`、
+`/mypage/proposals/all/working`、`/monthly_work_contracts/lancer`を同時にread-only GETした実測は、四画面ともHTTP 200、
+same-origin維持、login redirect 0である。作成したtabは全てcloseし、既存tab数へ戻した。retained production logsでは
+provider由来の429、401、403、`session_expired`、`login_required`は0件であり、自前`account_lock_busy`は5件ある。
+これは必要なbounded four-lane read concurrencyをsessionが処理でき、観測済みcontentionがproviderではなくlocal lockにある証拠である。
+別resourceへの同時writeを無制限に安全と証明するものではないため、外部effectはlane quotaとresource-local fenceを維持する。
+
 ### 18.4 ApplyとStorefrontから$10Kへ進むgame plan
 
 | pillar | buyer獲得 | Negotiateへのhandoff | 初期の$10K責任 |
@@ -1883,6 +1897,7 @@ worst 9か月以上または未達とする。最大の不確実性はcodeでは
 - Lancers「仮払いって何ですか」: https://www.lancers.jp/faq/C1013/332
 - Lancers「パッケージ取引全体の流れ」: https://www.lancers.jp/faq/S000/852
 - Lancers「月額報酬の契約手続き」: https://www.lancers.jp/faq/M0002/825
+- Lancers利用規約: https://www.lancers.jp/help/terms — 第8条は自動提案機能を利用した提案を想定し、第31条は人為的な高負荷accessと大量message送信を禁止する。
 - canonical Storefront公開page: https://www.lancers.jp/menu/detail/1338228
 - split-brain側の旧公開page: https://www.lancers.jp/menu/detail/1338233
 - GitHub code searchではLancers `serviceItemContract`の外部OSS実装は見つからず、現行Life Manager sourceだけである。provider selector/routeは公式frontend実測を正本にする。
@@ -1894,3 +1909,4 @@ worst 9か月以上または未達とする。最大の不確実性はcodeでは
 - Coconala current SSOT `P0-four-lane-parallel`はlane固有ID/page/stateでの独立実行を要求し、account-wide serializationを要件にしない。Replyはwake-wide common CDP lockを除去済みで、同一wakeは`reply-detector.lock`、同一effectはconnector outbox CASで保護する。
 - Coconalaのlane truth storeはApply=`applied.jsonl`、Storefront=`shuppin.jsonl`、Negotiate=`connector-outbox.sqlite3`、Paid=`paid-progress.jsonl`で分離され、共通`telegram-outbox.sqlite3`は通知transportである。
 - Lancers公式FAQにはproject方式、仮払い、package取引のbusiness lifecycleはあるが、同一accountの別resource actionをaccount-wide lockで直列化する要件は確認できない。未確認のprovider制限をarchitecture requirementにしない。
+- production CDP read-only verificationは四lane相当のprotected routeを同時取得し、HTTP 200が4/4、login redirect 0、owned tab残存0。retained logsはprovider 429/401/403/session-expired/login-required 0、自前account-lock contention 5件である。
