@@ -288,6 +288,13 @@ def _sales_snapshot(path: Path) -> Optional[dict[str, object]]:
     if not isinstance(value, Mapping) or value.get("source_complete") is not True: return None
     result: dict[str, object] = {key: _int(value.get(key)) for key in keys}
     result["reply_status"] = value.get("reply_status") if isinstance(value.get("reply_status"), str) else None
+    finance = value.get("finance")
+    if isinstance(finance, Mapping) and finance.get("source_complete") is True:
+        numbers = {key: _int(finance.get(key)) for key in ("payment_history_count", "account_balance_jpy", "received_gross_jpy")}
+        result["finance"] = {"source_complete": True, **numbers} if all(item is not None for item in numbers.values()) else None
+    elif isinstance(finance, Mapping) and finance.get("source_complete") is False:
+        result["finance"] = {"source_complete": False}
+    else: result["finance"] = None
     return result if all(result.get(key) is not None for key in (*keys, "reply_status")) else None
 
 def _parse_storefront(page: object) -> dict[str, int]:
@@ -382,6 +389,11 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
         "reply_verified": "必要な返信を公式確認しました。次の相手の返答を待っています。",
         "reply_uncertain": "返信結果を確認中です。同じ返信は再送せず、次回は公式履歴だけを確認します。",
     }.get(sales.get("reply_status"), "公式の交渉状態を取得できませんでした。次回もう一度確認します。")
+    finance = sales.get("finance") if isinstance(sales.get("finance"), Mapping) else {}
+    revenue = (f"収益: 公式入出金履歴{count(finance.get('payment_history_count'))}、口座残高{finance.get('account_balance_jpy')}円、"
+               f"今月入金{finance.get('received_gross_jpy')}円、現在net MRR 0円です。今月net revenueとAI処理費はまだ集計していません。"
+               if finance.get("source_complete") is True else
+               "収益: 公式の入出金記録を完全に確認できていないため、売上とAI処理費は集計していません。応募額と出品価格は売上に含めません。")
     reason = {
         "submission_uncertain": "応募結果の公式確認を待っています。同じ応募は再送せず、次回は公式履歴だけを確認します。",
         "account_lock_busy": "別のLancers処理が動作中のため、今回は公式画面の確認を見送りました。次回もう一度確認します。",
@@ -393,7 +405,7 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
             f"公式確認は{count(verified)}、累計{count(snapshot.get('cumulative_verified'))}、確認待ちは{count(pending)}です。\n"
             f"出品: {states}。需要: {funnel}。\n"
             f"{sales_line}{sales_next}\n"
-            "収益: 公式の入金記録はまだこのレポートに接続されていないため、売上とAI処理費は集計していません。応募額と出品価格は売上に含めません。\n"
+            f"{revenue}\n"
             f"次: {reason}")
 
 
