@@ -2450,3 +2450,27 @@ plannerはportfolio title/description、package scope/plans/exclusionsだけを�
 **DONE EVIDENCE:** planner promptのSELLER_PROOFが公式ID `743964 / 1338228`とpublic内容に一致し、物理作業・動画完成品・有人営業など
 証拠外の案件をcredible fitとして扱わない。production Application ownerは同じ最大1件、公式proposal ID、pending reconciliation、
 daily quotaを維持し、次のfresh candidateで具体的な応募または正直なno-fitを返す。
+
+**DONE:** exact release `a7430de331506e725ec1861bd3b30c245741ba7f`のproduction Application ownerへ、公式profile、portfolio
+`743964`、canonical package `1338228`のsanitized seller proofを接続した。公開BUYMA案件`5575002`は外部account上の商品画像加工・
+出品作業を必須とするため`skip_not_fit`となり、ownerは送信0、pending 0、ApplicationReceipt 30、exit 0で終了した。見送りclaim後に
+全queryを再走査して既処理案件だけとなった最終結果は`duplicate_project`であり、応募故障ではない。新HTTP、browser、DB、scheduler、
+外部作用は増やしていない。
+
+### 18.28 Public seller catalog convergence
+
+**USER OUTCOME:** buyerが公式profileを見た時、購入できるcanonical商品とそのportfolioだけが一貫して表示され、試作中に作った旧商品を
+現行offerと誤認しない。
+
+**CURRENT OBSERVATION:** 公式public profileは自己紹介、portfolio `743964`、canonical package `1338228`に整合する。一方、内部inventoryが
+`published 1 / paused 5`でも、public profileの料金表は旧`1338229–1338233`を含む6件を表示する。認証済み公式settingを実測するとstatusは
+`active=受付中 / paused=受付休止中 / archived=非表示`であり、受付休止はpublic catalogから消す操作ではない。
+
+**NEXT DIRECT ACTION:** 新service、DB、schedulerを作らず、既存Storefront ownerのsuperseded reconciliationだけを変更する。旧5件のうち
+`archived`でない最初の一件をfresh official readbackし、一wake一件だけ`非表示`へ保存し、同じsettingで`archived`をreadbackする。
+canonical `1338228`は変更しない。
+
+**PLAN SIZE:** production 1 file、約10–15行。既存status form、account lock、scheduler、browser、official readbackを再利用する。
+
+**DONE EVIDENCE:** 5 ownerが同一exact release、旧5件が公式`archived`、public profile料金表がcanonical一件だけ、連続wakeの
+`status_effect_count=0`、Application state・receipt ledger・contract snapshot不変。
