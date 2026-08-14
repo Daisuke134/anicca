@@ -236,7 +236,9 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
 
 def _portfolio(page: Any, product: Mapping[str, Any]) -> dict[str, Any] | None:
     title = product["portfolio"]["title_stem"] + "ました"
-    page.goto(f"{ORIGIN}/myportfolio", wait_until="domcontentloaded", timeout=20_000)
+    with page.expect_response(lambda response: response.request.method == "GET" and urlsplit(response.url).path == "/api/v1/me/portfolio", timeout=20_000) as loaded:
+        page.goto(f"{ORIGIN}/myportfolio", wait_until="domcontentloaded", timeout=20_000)
+    if loaded.value.status != 200: raise OfferError("portfolio_readback_invalid")
     matches = []
     for link in page.locator('a[href*="portfolio"]').all():
         if " ".join(str(link.inner_text() or "").split()) == title:
