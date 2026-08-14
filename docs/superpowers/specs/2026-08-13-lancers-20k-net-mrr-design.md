@@ -1308,9 +1308,9 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 完了 | G3B.3 planner contract recovery | 17/17 dynamic contract、conditional Terra safety veto、semantic/model境界、sanitized failure、real tick、canonical deployによる三owner同一SHAを閉じた | 完了 |
 | 完了 | Storefront canonical offer alignment | exact release `ec825526…`のcanonical skillから`1338228`だけを画像あり、specific ICP、月額SNS deliverable、¥98k–¥398k、native 3/6ヶ月routeへ揃えた。再applyはunchanged、他5件とstate/ledger不変。更新直後funnel baselineは0、検索反映は最大24時間で継続観測 | 完了 |
 | 完了 | G4C fenced Sales reply | 既存work-syncでbuyer-last一件だけをclaimし、Coconalaの返信contractでhonest declineを生成。送信前fence、公式message ID、本文readback、blind resend 0をlive確認 | 完了 |
-| 1 | G4C verified offer grounding | canonical storefront productと公式応募条件をsales contextへ接続し、target buyerへscope・価格・納期を捏造せず月額offer/一問clarificationとして返す | 1日 |
-| 2 | G4B ContractReceipt source | G4C後に初めて観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 1–2日 |
-| 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
+| 完了 | G4C verified offer grounding | canonical storefront productと公式応募条件をsales contextへ接続し、価格・納期質問の公式値をdeterministic検査。実proposalとread-only compositionで混同0を確認 | 完了 |
+| 1 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
+| 2 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
 | 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
 | 5 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
 
@@ -1581,3 +1581,13 @@ storefront tierを混ぜない。価格または納期を質問された返信�
 相関する。read-only compositionへ「提案金額と納期に変更はありませんか？」を入力すると、
 「150,000円、2026年8月21日で変更なし」と返り、¥98,000 storefront tierを混ぜない。
 raw proposal本文とbuyer会話は一時promptだけに存在し、state、snapshot、ledger、reportへ保存しない。
+
+productionはexact release `6fc0c7f06794890013e5d96a9d387e953c003226`へ収束する。deploy後のwork-syncは
+公式board 1、required reply 0、pending 0、`reply_action=no_reply_required`、exit 0で、handled済みthreadを再送しない。
+同releaseのapplication ownerをkickしたslotは公開候補1件をqualifiedとしたが、project `5583089`をproviderが
+terminal blockとして拒否したため応募0、exit 0である。次の30分slotは別queryへrotationする。owner Telegramは
+provider message ID `17028`で、ApplicationReceipt累計15、pending 0、storefront受付中6、売上unknownを正直に報告する。
+
+現在はAcquisitionが30分ごと、Sales source/actionが5分ごと、owner reportが5分ごとに同じexact releaseで稼働する。
+応募・listing・返信は売上ではない。次のstate transitionはbuyerの注文・仮払いによる実`serviceItemContract`であり、
+それが0件の間にContractReceiptのstatus shapeを推測実装しない。最初の実payloadを観測したtickでG4Bを開始する。
