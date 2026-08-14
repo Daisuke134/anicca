@@ -2424,3 +2424,29 @@ Application plannerへ公式profile/portfolioのsanitized seller proofを渡す�
 **DONE EVIDENCE:** portfolio item 1件がpublic profileに表示され、title・説明・画像/URLが本物の成果物と一致し、未達売上や架空client実績を
 含まない。次のApplication owner wakeはそのseller proofを入力に持ち、provider effectは引き続き最大1件、公式proposal ID readback、
 next-wake duplicate 0を維持する。buyer replyまたは契約が出るまでApplicationReceiptを売上と呼ばない。
+
+**PORTFOLIO DONE:** exact release `75cddb3205886774456495ee89453c5b9a9eb268`のStorefront ownerがportfolioを一件作成し、
+公式ID `743964`、public URL `https://www.lancers.jp/profile/keiodaisuke/portfolio_popup/743964`を返す。公開title、subtitle、
+自主制作であること、未達の顧客実績・売上効果を示さないこと、生成AI利用、canonical package `1338228`、cover画像を公式detailで確認する。
+readback hydration修正後のexact release `7a46786793f612b092bde5a5af0fff9aaf6a6855`では連続2 wakeが
+`action=unchanged / portfolio_effect_count=0 / status_effect_count=0 / exit 0`で、duplicate portfolio・listing mutationはいずれも0。
+Application、ledger、contractsのSHA-256は前後一致する。途中の実blockerはStorefrontとportfolioのcategory taxonomy差、
+二段category、非同期画像upload、React一覧hydrate、実URL`portfolio_popup`であり、各々公式DOM/APIを実測して最小修正した。
+
+### 18.27 Application seller-proof binding
+
+**USER OUTCOME:** 新規応募が、実際の公開profile・portfolio・canonical packageで証明できる仕事だけを対象にし、buyerへ架空実績を示さない。
+
+**CURRENT OBSERVATION:** public seller proofはprofile `keiodaisuke`、portfolio `743964`、package `1338228`として公式readbackできる。
+一方、Application planner inputは案件snapshotと汎用能力文だけで、このseller proofを含まない。したがってmodelは「技術的に納品可能」と
+「このsellerとして選ばれるcredible evidenceがある」を分離できず、過去30件に公開商品と関係の薄い案件が混ざった。
+
+**NEXT DIRECT ACTION:** product JSONに公式portfolio IDを固定し、既存Application promptへ同productからsanitized seller proofを一つ追加する。
+plannerはportfolio title/description、package scope/plans/exclusionsだけを公開実績として使い、未掲載の顧客実績、評価、売上、専門職歴を主張しない。
+案件の全必須scopeがseller proofと確認済み能力にgroundできる場合だけ応募する。新HTTP、browser read、DB、model call、schedulerは追加しない。
+
+**PLAN SIZE:** production 2 files、約20–35行。既存product JSONと`application_loop.py`だけ。provider effect/readback/state/ledgerは変更しない。
+
+**DONE EVIDENCE:** planner promptのSELLER_PROOFが公式ID `743964 / 1338228`とpublic内容に一致し、物理作業・動画完成品・有人営業など
+証拠外の案件をcredible fitとして扱わない。production Application ownerは同じ最大1件、公式proposal ID、pending reconciliation、
+daily quotaを維持し、次のfresh candidateで具体的な応募または正直なno-fitを返す。
