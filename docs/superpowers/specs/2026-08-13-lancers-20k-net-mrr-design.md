@@ -1310,9 +1310,9 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 完了 | G4C fenced Sales reply | 既存work-syncでbuyer-last一件だけをclaimし、Coconalaの返信contractでhonest declineを生成。送信前fence、公式message ID、本文readback、blind resend 0をlive確認 | 完了 |
 | 完了 | G4C verified offer grounding | canonical storefront productと公式応募条件をsales contextへ接続し、価格・納期質問の公式値をdeterministic検査。実proposalとread-only compositionで混同0を確認 | 完了 |
 | 完了 | G3A.1 claimed-only query fallback | default queryが既処理案件だけを返した場合も次queryへ進む。liveで別query 19件→eligible 13→最大1応募→公式receiptを確認 | 完了 |
-| 1 | G3B.4 application capability priority | Coconalaと同じくfeasibilityをpriorityより先に確定し、完成動画制作必須を`video_or_animation`、企画・構成・台本だけを応募可能として実案件で確認する。検証後だけApplication ownerを再開する | 2–4時間 |
-| 2 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
-| 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
+| 完了 | G3B.4 application capability priority | Coconalaと同じくfeasibilityをpriorityより先に確定し、完成動画制作必須を`video_or_animation`、企画・構成・台本だけを応募可能として実案件で確認した。Application ownerを再開し、納品可能案件の公式receiptまで確認 | 完了 |
+| 1 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
+| 2 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
 | 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
 | 5 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
 
@@ -1647,4 +1647,11 @@ durable claim、official readback、Sales/Telegram/Work Syncとの同一SHAは�
 `5586413`は`video_or_animation`と原文引用、`5579721`も`video_or_animation`と原文引用を返す。
 完成動画の編集・生成を依頼範囲外と明記した企画・構成・台本だけのcontrolは`submit_required`を返す。
 Lancers 49 tests、agent-runner 15 tests、installer 2 tests、py_compile、diff checkは通る。
-Application ownerは本番exact release配備と実tick確認までdisabledのままである。
+canonical main / production exact releaseは`cd5c82bde51b5fbdfd439a99f621dfe9f654b0a4`である。
+Application、Work Sync、Telegram reportingは同じreleaseへ収束し、三ownerともenabledである。最初のlive tickは
+project `5586452`を選び、同tickは`submission_uncertain`でdurable pendingを保持した。次kickはsubmit 0の
+readback-only reconciliationで公式proposal ID `27810937`を取得し、pendingは1→0、ApplicationReceiptは
+17→18となる。公式proposalはブロックチェーン経済システムの設計・wallet接続・transaction処理・backend連携・
+test environment導入を¥900,000、納期`2026-10-09`で提案し、架空の経験・portfolioを主張しない。
+Work Syncはboard 1、required reply 0、complete contract candidate 0、exit 0で、owner Telegramはprovider
+message ID `17184`にreceipt累計18、pending 0、売上unknownを送る。G3B.4は完了し、先頭TODOは実注文後のG4Bである。
