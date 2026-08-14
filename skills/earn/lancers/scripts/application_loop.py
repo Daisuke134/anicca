@@ -177,6 +177,7 @@ PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent planne
     "hard_prohibitedは案件全体が次のいずれかを必須とする場合だけ使う: "
     + "; ".join(f"{key}={value}" for key, value in HARD_PROHIBITION_CLASSES.items()) + "。"
     "hard_prohibitedではreason_codes[0]を正確なclass key、reason_codes[1]をtitle・description・categoryのいずれかに連続して存在する200文字以内の原文引用にし、proposal・price・dateはnullにする。任意・推奨・否定・引用中の単語だけで拒否しない。"
+    "reason_codes[1]は公開原文から一文字も足さずcopyし、長い引用に自信がなければ判断根拠を直接示す短い連続原文を使う。"
     "hard prohibitionではないが、全必須scopeの一部しか対応できない、選定に必須の個人経験・属性を正直に示せない、またはscope・期限・報酬から正のmarginで完遂できない場合はskip_not_fitとする。reason_codes[0]は短いsemantic reason、reason_codes[1]はtitle・description・categoryのいずれかに連続して存在する200文字以内の根拠原文、proposal・price・dateはnullにする。"
     "案件全体から納品可能性をpriorityより先に確定する。完成動画そのものの生成・編集・書き出しが必須ならvideo_or_animation、企画・構成・台本・文章だけで完成動画制作が不要ならvideo_or_animationではない。機械的なkeyword ruleは使わない。"
     "経験の不確実さ、弱いportfolio、低予算、難易度、広いまたは曖昧なscope、単発、継続性不足、Adobe実績不明、任意の相談を単独のkeyword ruleでskipしない。正確な同分野実績がなくても、確認済みの転用可能な能力で全必須scopeを完遂できるなら案件固有の実行planで応募し、未作成物はplanと明示して捏造しない。"
