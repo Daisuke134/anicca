@@ -53,7 +53,8 @@ def _product(path: Path) -> tuple[dict[str, Any], Path]:
     for plan in plans:
         if not isinstance(plan, dict) or not isinstance(plan.get("description"), str) or not 1 <= len(plan["description"]) <= 80 or plan.get("delivery_days") not in {1,2,3,4,5,6,7,10,14,21,30,45,60,75,90} or type(plan.get("price_jpy")) is not int or plan["price_jpy"] < 1000: raise OfferError("product_invalid")
     portfolio = value.get("portfolio")
-    if not isinstance(portfolio, dict) or set(portfolio) != {"title_stem", "subtitle", "category", "subcategory", "description", "duration_value", "duration_unit", "order_index", "generated_ai"}: raise OfferError("product_invalid")
+    if not isinstance(portfolio, dict) or set(portfolio) != {"external_id", "title_stem", "subtitle", "category", "subcategory", "description", "duration_value", "duration_unit", "order_index", "generated_ai"}: raise OfferError("product_invalid")
+    if not isinstance(portfolio["external_id"], str) or re.fullmatch(r"[0-9]+", portfolio["external_id"]) is None: raise OfferError("product_invalid")
     if not isinstance(portfolio["title_stem"], str) or not 1 <= len(portfolio["title_stem"] + "ました") <= 50 or not isinstance(portfolio["subtitle"], str) or len(portfolio["subtitle"]) > 60 or any(not isinstance(portfolio[key], str) or not portfolio[key].strip() for key in ("category", "subcategory")) or not isinstance(portfolio["description"], str) or not 1 <= len(portfolio["description"]) <= 1000: raise OfferError("product_invalid")
     if type(portfolio["duration_value"]) is not int or not 1 <= portfolio["duration_value"] <= 999 or portfolio["duration_unit"] not in {"時間", "日", "週", "ヶ月", "年"} or type(portfolio["order_index"]) is not int or not 0 <= portfolio["order_index"] <= 9999 or type(portfolio["generated_ai"]) is not bool: raise OfferError("product_invalid")
     image = (path.parent / value["image_path"]).resolve()
@@ -248,7 +249,7 @@ def _portfolio(page: Any, product: Mapping[str, Any]) -> dict[str, Any] | None:
     href = matches[0].get_attribute("href") or ""
     parsed = urlsplit(href)
     found = re.fullmatch(r"/profile/[^/?#\s]+/portfolio_popup/([0-9]+)", parsed.path)
-    if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or found is None: raise OfferError("portfolio_readback_invalid")
+    if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or found is None or found.group(1) != product["portfolio"]["external_id"]: raise OfferError("portfolio_readback_invalid")
     return {"portfolio_external_id": found.group(1), "portfolio_url": ORIGIN + parsed.path}
 
 
