@@ -32,8 +32,10 @@ python3 skills/earn/lancers/scripts/storefront_offer.py --inspect
 python3 skills/earn/lancers/scripts/storefront_offer.py --apply
 ```
 
-`--inspect` is read-only. `--apply` may update only the listing ID declared in the product JSON and saves at most once. If save succeeds
-but readback is incomplete, reconcile with `--inspect`; never repeat a blind save. Product changes require updating the design SSOT first.
+`--inspect` is read-only. `--apply` makes at most one official mutation per wake: it first pauses one explicitly declared
+`superseded_listing_ids` entry, then aligns only `listing_external_id`. It writes the canonical listing receipt only after official
+status/public readback. If readback is incomplete, the next wake re-observes before any effect; never repeat a blind save. Product changes
+require updating the design SSOT first.
 
 ## Money truth
 
