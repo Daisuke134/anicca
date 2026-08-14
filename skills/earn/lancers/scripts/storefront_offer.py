@@ -112,6 +112,7 @@ def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, An
     active = [listing_id for listing_id in listing_ids if _setting_status(page, listing_id) == "active"]
     if not active: return {"superseded_active_count": 0, "status_effect_count": 0}
     listing_id = active[0]
+    if _setting_status(page, listing_id) != "active": return {"superseded_active_count": len(active) - 1, "status_effect_count": 0}
     paused = page.locator('label[for="ProjectPlanStatusFormStatusPaused"]')
     if paused.count() != 1: raise OfferError("setting_status_control_missing")
     paused.click(timeout=5_000)
@@ -119,7 +120,7 @@ def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, An
     save = page.get_by_role("button", name="保存", exact=True)
     if save.count() != 1: raise OfferError("setting_form_changed")
     observed: list[dict[str, Any]] = []
-    page.on("response", lambda response: observed.append({"method": response.request.method, "path": urlsplit(response.url).path, "status": response.status}) if response.request.method != "GET" else None)
+    page.on("response", lambda response: observed.append({"method": response.request.method, "path": urlsplit(response.url).path, "status": response.status}) if response.request.method != "GET" and urlsplit(response.url).hostname == "www.lancers.jp" else None)
     try: save.click(force=True, no_wait_after=True, timeout=5_000)
     except Exception: raise OfferError("setting_submission_uncertain") from None
     page.wait_for_timeout(2_000)
