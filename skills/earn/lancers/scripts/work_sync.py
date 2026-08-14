@@ -280,6 +280,19 @@ def _contract_sources(page: Any) -> dict[str, Any]:
         if (parsed.scheme, parsed.netloc, parsed.path, parsed.query, parsed.fragment) != ("https", "www.lancers.jp", path, "", ""):
             raise SourceFailure("contract_source_unavailable")
 
+    visit("/monthly_work_contracts/lancer/offers")
+    offers = page.evaluate("""() => ({empty: document.body.innerText.includes("申請されたオファーはありません"), hrefs: [...document.querySelectorAll('a[href^="/monthly_work_contracts/lancer/offers/"]')].map(a => a.getAttribute('href'))})""")
+    if not isinstance(offers, Mapping) or not isinstance(offers.get("empty"), bool) or not isinstance(offers.get("hrefs"), list):
+        raise SourceFailure("monthly_offer_source_unavailable")
+    raw_offer_ids = []
+    for href in offers["hrefs"]:
+        match = re.fullmatch(r"/monthly_work_contracts/lancer/offers/([0-9]+)", str(href or ""))
+        if match is None: raise SourceFailure("monthly_offer_source_unavailable")
+        raw_offer_ids.append(match.group(1))
+    offer_ids = list(dict.fromkeys(raw_offer_ids))
+    if bool(offer_ids) == offers["empty"]:
+        raise SourceFailure("monthly_offer_source_conflict")
+
     visit("/mypage/proposals/all/working")
     projects = page.evaluate("""() => [...document.querySelectorAll("li.p-mypage-work__media.c-media-job")].map(card => ({href: card.querySelector('a.c-link.c-link--black')?.getAttribute('href'), status: card.querySelector('.c-media-job__status--active')?.innerText?.trim()}))""")
     if not isinstance(projects, list) or not all(isinstance(row, Mapping) for row in projects):
@@ -314,7 +327,8 @@ def _contract_sources(page: Any) -> dict[str, Any]:
         {"source_kind": "monthly", "provider_id": contract_id, "board_id": None, "detail_path": f"/monthly_work_contracts/lancer/{contract_id}", "funding_status": "requires_detail_readback"}
         for contract_id in monthly_ids
     ]
-    return {"project_working_count": len(project_ids), "monthly_contract_count": len(monthly_ids), "contract_candidates": candidates}
+    incoming = [{"provider_id": offer_id, "detail_path": f"/monthly_work_contracts/lancer/offers/{offer_id}"} for offer_id in offer_ids]
+    return {"incoming_monthly_offer_count": len(incoming), "incoming_monthly_offers": incoming, "project_working_count": len(project_ids), "monthly_contract_count": len(monthly_ids), "contract_candidates": candidates}
 
 
 def _finance_source(page: Any) -> dict[str, Any]:
@@ -375,6 +389,8 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
                 "finance": result["finance"],
                 "project_working_count": result["project_working_count"],
                 "monthly_contract_count": result["monthly_contract_count"],
+                "incoming_monthly_offer_count": result["incoming_monthly_offer_count"],
+                "incoming_monthly_offers": result["incoming_monthly_offers"],
                 "storefront_contract_candidate_count": result["storefront_contract_candidate_count"],
                 "contract_candidate_count": result["contract_candidate_count"],
                 "contract_candidates": result["contract_candidates"],
