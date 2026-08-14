@@ -27602,3 +27602,10 @@
 {"ts":1786700941,"wake_id":"00MSSRLXSL4EB99F10509641E3","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786701069,"wake_id":"00MSSROOI639F8AF09A0E94C65","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786701198,"wake_id":"00MSSRRG98DEE60F32B12D4B09","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786701329,"wake_id":"00MSSRU99H2813032308E84836","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786701495,"wake_id":"00MSSRXT1K84B1D10CCDCA4A71","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786701627,"wake_id":"00MSSS0MM9E786E2E1B19445C1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786701756,"wake_id":"00MSSS3EIN2A73D94F2C5046E5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786701887,"wake_id":"00MSSS67QE025C544F293945CF","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786702014,"wake_id":"00MSSS8XT37B94979F976D450A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786702144,"wake_id":"00MSSSBPTN7813563B1A314BA7","kind":"narrate","sleep_s":120,"model":"auto"}
