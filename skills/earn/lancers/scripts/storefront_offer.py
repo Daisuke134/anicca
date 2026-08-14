@@ -52,6 +52,10 @@ def _product(path: Path) -> tuple[dict[str, Any], Path]:
     if not isinstance(superseded, list) or len(superseded) != len(set(superseded)) or any(not isinstance(item, str) or re.fullmatch(r"[0-9]+", item) is None for item in superseded) or value["listing_external_id"] in superseded: raise OfferError("product_invalid")
     for plan in plans:
         if not isinstance(plan, dict) or not isinstance(plan.get("description"), str) or not 1 <= len(plan["description"]) <= 80 or plan.get("delivery_days") not in {1,2,3,4,5,6,7,10,14,21,30,45,60,75,90} or type(plan.get("price_jpy")) is not int or plan["price_jpy"] < 1000: raise OfferError("product_invalid")
+    portfolio = value.get("portfolio")
+    if not isinstance(portfolio, dict) or set(portfolio) != {"title_stem", "subtitle", "description", "duration_value", "duration_unit", "order_index", "generated_ai"}: raise OfferError("product_invalid")
+    if not isinstance(portfolio["title_stem"], str) or not 1 <= len(portfolio["title_stem"] + "ました") <= 50 or not isinstance(portfolio["subtitle"], str) or len(portfolio["subtitle"]) > 60 or not isinstance(portfolio["description"], str) or not 1 <= len(portfolio["description"]) <= 1000: raise OfferError("product_invalid")
+    if type(portfolio["duration_value"]) is not int or not 1 <= portfolio["duration_value"] <= 999 or portfolio["duration_unit"] not in {"時間", "日", "週", "ヶ月", "年"} or type(portfolio["order_index"]) is not int or not 0 <= portfolio["order_index"] <= 9999 or type(portfolio["generated_ai"]) is not bool: raise OfferError("product_invalid")
     image = (path.parent / value["image_path"]).resolve()
     if not image.is_file() or image.suffix.lower() not in {".png", ".jpg", ".jpeg", ".gif"}: raise OfferError("product_invalid")
     value["public_title"] = value["title_stem"] + "ます"
@@ -230,6 +234,55 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     except OfferError: raise OfferError("publication_uncertain") from None
 
 
+def _portfolio(page: Any, product: Mapping[str, Any]) -> dict[str, Any] | None:
+    title = product["portfolio"]["title_stem"] + "ました"
+    page.goto(f"{ORIGIN}/myportfolio", wait_until="domcontentloaded", timeout=20_000)
+    matches = []
+    for link in page.locator('a[href*="portfolio"]').all():
+        if " ".join(str(link.inner_text() or "").split()) == title:
+            matches.append(link)
+    if not matches: return None
+    if len(matches) != 1: raise OfferError("portfolio_readback_invalid")
+    href = matches[0].get_attribute("href") or ""
+    found = re.search(r"/portfolio/(?:detail/)?([0-9]+)(?:$|[/?#])", href)
+    if found is None: raise OfferError("portfolio_readback_invalid")
+    return {"portfolio_external_id": found.group(1), "portfolio_url": ORIGIN + urlsplit(href).path}
+
+
+def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]:
+    existing = _portfolio(page, product)
+    if existing is not None: return existing | {"portfolio_effect_count": 0}
+    item = product["portfolio"]
+    page.goto(f"{ORIGIN}/myportfolio/add", wait_until="domcontentloaded", timeout=20_000)
+    if urlsplit(str(page.url)).path != "/myportfolio/add": raise OfferError("portfolio_form_changed")
+    _field(page, 'textarea[name="title"]').fill(item["title_stem"])
+    _field(page, 'textarea[name="subtitle"]').fill(item["subtitle"])
+    _field(page, 'textarea[name="content"]').fill(item["description"])
+    uploads = page.locator('input[type="file"]')
+    if uploads.count() != 2 or uploads.nth(0).get_attribute("accept") != ".jpg,.jpeg,.png,.gif": raise OfferError("portfolio_form_changed")
+    uploads.nth(0).set_input_files(str(image))
+    selects = page.locator("select")
+    if selects.count() != 5: raise OfferError("portfolio_form_changed")
+    selects.nth(0).select_option(label=product["category"])
+    selects.nth(1).select_option(label=product["industry"])
+    _field(page, 'input[placeholder="10"]').fill(str(item["duration_value"]))
+    selects.nth(2).select_option(item["duration_unit"])
+    _field(page, 'input[placeholder="50,000"]').fill(str(product["plans"][0]["price_jpy"]))
+    selects.nth(3).select_option(str(product["listing_external_id"]))
+    checks = page.locator('input[type="checkbox"]')
+    if checks.count() < 3: raise OfferError("portfolio_form_changed")
+    if item["generated_ai"] and not checks.nth(0).is_checked(): checks.nth(0).check()
+    selects.nth(4).select_option("public")
+    _field(page, 'input[label="10"]').fill(str(item["order_index"]))
+    save = page.get_by_role("button", name="保存", exact=True)
+    if save.count() != 1: raise OfferError("portfolio_form_changed")
+    try: save.click(); page.wait_for_timeout(2_000)
+    except Exception: raise OfferError("portfolio_submission_uncertain") from None
+    observed = _portfolio(page, product)
+    if observed is None: raise OfferError("portfolio_submission_uncertain")
+    return observed | {"portfolio_effect_count": 1}
+
+
 def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
     tick = browser = page = None; logged_in = False; result: dict[str, Any] = {"ok": False, "error": "offer_unavailable"}
     try:
@@ -238,6 +291,10 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
             browser = tick._default_browser_factory(tick.CDP_URL); page = tick._new_owned_page(browser)
             if not tick._production_account_ready(page): raise OfferError("account_unavailable")
             logged_in = True; result = _apply(page, product, image) if apply else _public(page, product) | {"action": "inspect"}
+            if apply and result.get("action") == "unchanged":
+                portfolio = _ensure_portfolio(page, product, image)
+                result |= portfolio
+                if portfolio["portfolio_effect_count"]: result["action"] = "portfolio_created"
             if result.get("ok") is True and result.get("aligned") is True:
                 result["demand"] = _demand(page, product["listing_external_id"])
                 if apply: _write_receipt(Path(state_path), product, result["demand"])
