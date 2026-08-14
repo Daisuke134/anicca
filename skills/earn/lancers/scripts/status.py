@@ -278,7 +278,7 @@ def parse_search_html(html: str) -> List[Dict[str, object]]:
 
 
 class _DetailParser(HTMLParser):
-    _LABELS = {"依頼主の業種", "依頼概要"}
+    _LABELS = {"依頼主の業種", "依頼概要", "依頼詳細"}
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -412,15 +412,12 @@ def _enrich_cards(cards: Sequence[Dict[str, object]], timeout: float) -> tuple[i
     enriched = failed = 0
     for card in cards:
         try:
-            maximum = card.get("budget_max")
-            if card.get("currency") != "JPY" or not isinstance(maximum, str) or not maximum.isdecimal() or int(maximum) < 98000:
-                continue
             fields = parse_detail_html(fetch_public_html(query=None, limit=1, timeout=timeout, _detail_url=_canonical_detail_url(card.get("url"))))
-            industry, overview = fields.get("依頼主の業種"), fields.get("依頼概要")
+            industry, overview = fields.get("依頼主の業種"), fields.get("依頼詳細") or fields.get("依頼概要")
             if not industry or not overview:
                 raise ValueError
-            text = f"依頼主の業種: {industry}\n依頼概要: {overview}"
-            if len(text) > 2000: raise ValueError
+            text = f"依頼主の業種: {industry}\n依頼詳細: {overview}"
+            if len(text) > 2000: text = text[:1390] + "\n[…]\n" + text[-600:]
             card["description"] = text
             enriched += 1
         except (MemoryError, KeyboardInterrupt, SystemExit):
