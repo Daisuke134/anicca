@@ -244,9 +244,10 @@ def _portfolio(page: Any, product: Mapping[str, Any]) -> dict[str, Any] | None:
     if not matches: return None
     if len(matches) != 1: raise OfferError("portfolio_readback_invalid")
     href = matches[0].get_attribute("href") or ""
-    found = re.search(r"/portfolio/(?:detail/)?([0-9]+)(?:$|[/?#])", href)
-    if found is None: raise OfferError("portfolio_readback_invalid")
-    return {"portfolio_external_id": found.group(1), "portfolio_url": ORIGIN + urlsplit(href).path}
+    parsed = urlsplit(href)
+    found = re.fullmatch(r"/profile/[^/?#\s]+/portfolio_popup/([0-9]+)", parsed.path)
+    if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or found is None: raise OfferError("portfolio_readback_invalid")
+    return {"portfolio_external_id": found.group(1), "portfolio_url": ORIGIN + parsed.path}
 
 
 def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]:
