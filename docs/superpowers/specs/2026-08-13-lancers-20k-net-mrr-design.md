@@ -2145,3 +2145,27 @@ readback failureは古いcomplete receiptを上書きせず、外部変更を増
 新しい`observed_at`を保存する。public content、画像、価格`98000 / 198000 / 398000`、納期各30日、spot/3か月/6か月各3routeは
 一致する。連続2 wakeとも`action=unchanged / status_effect_count=0`、exit 0で、second wakeのstderr増分と外部mutationは0である。
 このsliceは完了した。title変更後7日までは別fieldを変更せず、同じreceipt seriesで検索表示→詳細閲覧の変化を判断する。
+
+### 18.17 Planner decision isolation
+
+**USER OUTCOME:** modelが20案件中1件のno-effect理由を不正に返しても、安全な別案件への応募loop全体を止めない。
+
+**CURRENT OBSERVATION:** exact Application ownerの実wakeは公開案件20件、未claim 16件をplannerへ渡し、16判断を受け取るが、
+`planner_contract_invalid`、submit 0、state/ledger不変でexit 1になる。保存したproduction evidenceと同じ公式queryを1件ずつvalidatorへ
+通すと15件はvalidで、project `5585443`だけがinvalidである。公式本文は
+`各ハイブランド店舗でのリサーチや商品撮影業務`だが、modelはexact quoteに`各ハイブランド店舗でのリサーチや商品撮影など`を返す。
+応募可能な`5586662`と`5586803`は価格上限、納期、proposalを含めvalidである。
+
+**ROOT CAUSE:** runtimeは全decisionを一括validateし、1 entityのsemantic evidence不一致をbatch全体のfailureへ昇格する。
+これは「一entity failureは他entityへ波及させない」という共通lane contractに反する。promptは既にexact excerptを要求しており、
+同じmodelを再実行しても別の言い換えが起きうる。
+
+**NEXT DIRECT ACTION:** top-level shapeとduplicate request IDはbatch failureのまま維持し、各decisionを既存validatorへ個別に通す。
+invalid decisionはclaim、submit、receiptを一切行わず、そのwakeだけ除外する。1件以上validならvalid集合で既存no-effect claimと最大1応募を
+続行し、全件invalidだけを`planner_contract_invalid`にする。keyword、quote補正、regex fallback、追加model callは作らない。
+
+**PLAN SIZE:** production 1 file、約8–12行。schema、prompt、state、DB、schedulerは変更しない。
+
+**DONE EVIDENCE:** 保存済み同一16判断は15 valid / 1 isolated invalidとなる。exact ownerの次wakeはinvalid entityへeffect 0のまま、
+別のvalid candidateを最大1件だけ送るか、providerの次の具体的blockerを返す。pending intent、公式proposal ID readback、
+ApplicationReceipt、次wake duplicate effect 0を維持する。

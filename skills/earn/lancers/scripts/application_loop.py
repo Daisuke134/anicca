@@ -432,7 +432,15 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     try: planned = (planner or _default_planner)(prompt, evidence)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_runner_failed", planner_expected_count=len(rows)), observed_count, 0, (), ())
     returned = len(planned.get("decisions")) if isinstance(planned, Mapping) and isinstance(planned.get("decisions"), list) else None
-    try: decisions = _validate(rows, planned, today)
+    try:
+        items = planned.get("decisions") if isinstance(planned, Mapping) and set(planned) == {"decisions"} else None
+        request_ids = [item.get("request_id") if isinstance(item, Mapping) else None for item in items] if isinstance(items, list) else []
+        if not items or len(request_ids) != len(set(request_ids)): raise ValueError
+        decisions = {}
+        for item in items:
+            try: decisions.update(_validate(rows, {"decisions": [item]}, today))
+            except Exception: continue
+        if not decisions: raise ValueError
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
     try: _claim_no_effect(decisions, state_path)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="state_invalid"), observed_count, 0, (), ())
