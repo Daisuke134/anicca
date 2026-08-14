@@ -33,7 +33,7 @@ DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json
 DEFAULT_EVIDENCE_ROOT = Path.home() / ".local/state/anicca/lancers/planner"
 DEFAULT_EVIDENCE_DIR = DEFAULT_EVIDENCE_ROOT
 DECISION_FIELDS = frozenset({"request_id", "business_class", "reason_codes", "proposal_text", "price_jpy", "deliver_date"})
-BUSINESS_CLASSES = frozenset({"submit_required", "hard_prohibited"})
+BUSINESS_CLASSES = frozenset({"submit_required", "skip_not_fit", "hard_prohibited"})
 HARD_PROHIBITION_CLASSES = {
     "video_or_animation": "video editing/production, live-action filming, AI video, animation, or MV",
     "physical_or_onsite": "on-site work or physical making/assembly/cleaning/repair/cooking/sewing/woodwork/model making/packing/shipping/delivery/receipt",
@@ -156,12 +156,14 @@ def _snapshot(rows: Sequence[Mapping[str, object]], today: date) -> dict[str, ob
     return {"tick_date": today.isoformat(), "opportunities": result}
 
 PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent plannerである。ブラウザ・認証・外部操作はできない。"
-    "各案件を実際の公開内容全体から自分で判断し、指定schemaのJSONだけを返す。応募可能ならsubmit_required、reason_codesは空、買い手向けの具体的な日本語proposalを200〜3000文字、正直な価格、現実的な納期で返す。"
+    "確認済みのdelivery能力は、非同期のresearch、文章作成・編集・翻訳、digital content設計、code・software・data・AI automation、利用可能なtoolで生成できるdigital artifactである。未提示の個人職歴、雇用経験、資格、電話営業、常駐staff稼働、専用hardwareや外部credentialを能力として仮定しない。"
+    "各案件を実際の公開内容全体から自分で判断し、指定schemaのJSONだけを返す。現在の自律delivery systemが全必須成果物を正直に完成でき、買い手にcredible fitを示し、scope・期限・報酬から正のmarginで完遂できる場合だけsubmit_requiredとする。reason_codesは空、買い手向けの具体的な日本語proposalを200〜3000文字、正直な価格、現実的な納期で返す。"
     "hard_prohibitedは案件全体が次のいずれかを必須とする場合だけ使う: "
     + "; ".join(f"{key}={value}" for key, value in HARD_PROHIBITION_CLASSES.items()) + "。"
     "hard_prohibitedではreason_codes[0]を正確なclass key、reason_codes[1]をtitle・description・categoryのいずれかに連続して存在する200文字以内の原文引用にし、proposal・price・dateはnullにする。任意・推奨・否定・引用中の単語だけで拒否しない。"
+    "hard prohibitionではないが、全必須scopeの一部しか対応できない、選定に必須の個人経験・属性を正直に示せない、またはscope・期限・報酬から正のmarginで完遂できない場合はskip_not_fitとする。reason_codes[0]は短いsemantic reason、reason_codes[1]はtitle・description・categoryのいずれかに連続して存在する200文字以内の根拠原文、proposal・price・dateはnullにする。"
     "案件全体から納品可能性をpriorityより先に確定する。完成動画そのものの生成・編集・書き出しが必須ならvideo_or_animation、企画・構成・台本・文章だけで完成動画制作が不要ならvideo_or_animationではない。機械的なkeyword ruleは使わない。"
-    "経験の不確実さ、弱いportfolio、低予算、難易度、広いまたは曖昧なscope、単発、継続性不足、Adobe実績不明、任意の相談は拒否理由ではない。正確な同分野実績がなくても、確認済みの転用可能な能力と案件固有の実行planで応募し、未作成物はplanと明示して捏造しない。"
+    "経験の不確実さ、弱いportfolio、低予算、難易度、広いまたは曖昧なscope、単発、継続性不足、Adobe実績不明、任意の相談を単独のkeyword ruleでskipしない。正確な同分野実績がなくても、確認済みの転用可能な能力で全必須scopeを完遂できるなら案件固有の実行planで応募し、未作成物はplanと明示して捏造しない。"
     "納品可能性を確定した後の優先順は、定期購入・保守・運用、次にsystem・automation・AI・web・高報酬、次にその他の非同期作業。hard prohibition必須案件を継続・AI・高報酬・低予算・簡単そうという理由でsubmit_requiredへ変えない。実行可能な低優先案件を省略しない。submit_requiredを先に並べ、強い順に返す。"
     "既知のbudget_max_minorを超えない。budgetが応相談・未定でも拒否しない。一律の最低価格や固定上限を設けない。競争力とscopeに合う価格、実行可能な最短納期を選ぶ。"
     "live call・video meeting・顔出し・音声収録を自発的に約束せず、任意ならLancersメッセージと文書による非同期確認を提案する。必須ならhard_prohibitedにする。"
@@ -191,6 +193,7 @@ def _planner_runtime_schema(prompt: str, evidence_dir: Path) -> Path:
     decisions["minItems"] = 1
     decisions["maxItems"] = len(ids)
     decisions["items"]["properties"]["request_id"]["enum"] = ids
+    decisions["items"]["properties"]["business_class"]["enum"] = sorted(BUSINESS_CLASSES)
     path = Path(evidence_dir) / "planner-runtime.schema.json"
     path.write_text(json.dumps(schema, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     os.chmod(path, 0o600)
@@ -235,6 +238,11 @@ def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) 
                 public_row = rows_by_id[project_id]
                 public_text = "\n".join(str(public_row.get(key) or "") for key in ("title", "description", "category"))
                 if not 1 <= len(reasons[1]) <= 200 or reasons[1] not in public_text: raise ValueError
+            elif business_class == "skip_not_fit":
+                if proposal is not None or price is not None or due is not None or len(reasons) < 2: raise ValueError
+                public_row = rows_by_id[project_id]
+                public_text = "\n".join(str(public_row.get(key) or "") for key in ("title", "description", "category"))
+                if not 1 <= len(reasons[0]) <= 120 or not 1 <= len(reasons[1]) <= 200 or reasons[1] not in public_text: raise ValueError
             elif reasons or not _safe_proposal(proposal, expected) or isinstance(price, bool) or not isinstance(price, int) or price < 1 or not _valid_date(due, today): raise ValueError
             found[project_id] = decision
         for row in rows:
@@ -363,8 +371,8 @@ def _filter_claimed_rows(rows: Sequence[Mapping[str, object]], state_path: Path)
             first_claimed = project_id
     return remaining, first_claimed
 
-def _claim_hard_prohibited(decisions: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
-    project_ids = [project_id for project_id, decision in decisions.items() if decision.get("business_class") == "hard_prohibited"]
+def _claim_no_effect(decisions: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
+    project_ids = [project_id for project_id, decision in decisions.items() if decision.get("business_class") in {"hard_prohibited", "skip_not_fit"}]
     if not project_ids:
         return
     if any(ID_RE.fullmatch(project_id) is None for project_id in project_ids):
@@ -426,7 +434,7 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     returned = len(planned.get("decisions")) if isinstance(planned, Mapping) and isinstance(planned.get("decisions"), list) else None
     try: decisions = _validate(rows, planned, today)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
-    try: _claim_hard_prohibited(decisions, state_path)
+    try: _claim_no_effect(decisions, state_path)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="state_invalid"), observed_count, 0, (), ())
     rows_by_id = {str(row["external_id"]): row for row in rows}
     eligible = [(rows_by_id[project_id], decision) for project_id, decision in decisions.items() if decision.get("business_class") == "submit_required"]
