@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** Applyは公式ApplicationReceipt 30件、Storefrontはcanonical 1件へ収束。現在はproduction browser attach停止、契約候補0、Paid未完成のためnet MRRは未発生
+**状態:** Applyは公式ApplicationReceipt 30件、Storefrontはcanonical 1件、production browserはsole ownerへ収束。契約候補0、Paid未完成のためnet MRRは未発生
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -1694,16 +1694,16 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
 | canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
-| installed release | `deployment.json`とApplication、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `ec01da31dbc4c8adf18d418f771b1a80277bbffa` | manifest 21 files、owner 4本exact release一致、writable file 0 |
-| production browser | `127.0.0.1:9227`のChromium PIDはLISTENし、公式画面も認証済み。しかしprocessはlaunchd ownerを持たず、Playwright CDPはWebSocket接続後10秒でattach timeout。loop由来targetが14枚残る | 現在の最上位runtime blocker。Lancersの429、401、403、logoutではなく、manual browser processとPlaywright attach/target lifecycleの不整合 |
-| Apply | launchd enabled、30分、累計`application_verified=30`、fingerprint 97、pending 0 | 最後の公式receiptはproject `5585080`→proposal `27812869`。直近4 wakeはfresh `contracts.json`を得られず`capacity_source_unavailable`、外部送信0 |
+| installed release | `deployment.json`とBrowser、Application、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `65a08a9577220f38a7820814c31ef370750da929` | owner 5本exact release一致、release writable file 0 |
+| production browser | launchd `ai.anicca.lancers-revenue-browser`が専用profileとloopback`:9227`をPID `29096`でsole ownership。RunAtLoad、KeepAlive、exact working directoryを確認 | Playwright attach 0.96秒、login ready。応答不能Lancers targetを作るE2Eでもtimeout→close→一回retryで12.59秒復帰、targetはabout:blank一枚へ戻る |
+| Apply | launchd enabled、30分、累計`application_verified=30`、fingerprint 98、pending 0 | recovery後のproduction ownerは公開20件、eligible 0、`no_eligible_project`、submit 0、exit 0。application/ledgerは応募effectなし |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
-| capacity | gateは15分以内のfresh `contracts.json`を要求する。Work Sync停止によりsnapshotが期限切れとなり、Applicationは安全にfail closed | browser recovery後にofficial source completeを更新するまでApplyを再開しない設計が正しい |
-| Sales source | Work Syncは5分ownerだが直近8 wakeが`observer_unavailable`、launchd last exit 1。Originなしraw CDPで公式APIをread-only確認するとboard `9024494`が一件、`is_required_reply=false`、未読0。公式画面はproject working 0、monthly contract 0 | buyer actionは現在0。ただしowner自身の観測は停止中であり「Sales稼働中」とは判定しない |
+| capacity | recovery後のWork Syncがfresh `contracts.json`を再生成し、source complete、active contract 0 | Application gateは再びallow。契約0でもstale sourceを無視して応募しないfail-closed contractを維持 |
+| Sales source | Work Sync production ownerは2連続wakeでexit 0。board `9024494`一件、required reply 0、unread 0、project/monthly/Storefront contract 0、`no_reply_required` | reply effect 0、sales/application/ledger不変。現在送るべきbuyer actionはない |
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
 | Storefront canonical | 公式inventoryは`published=1 / paused=5 / hidden=0 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式paused readback。`listing.json`も月額SNS商品`1338228`へ更新 | ¥98,000 / ¥198,000 / ¥398,000、画像、spot/3か月/6か月routeは公開page一致。second wake `status_effect_count=0` |
-| Storefront demand | raw CDPでcanonical `1338228`を公式再観測し、`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0`。ownerは直近3 wakeが`offer_unavailable / logged_in=false`、last exit 1 | listing自体は公開中だが、30分ownerはbrowser attachで停止。7日需要実験の継続観測も回復まで欠測する |
-| Reporting | 最新配信はprovider message ID `18628`。応募累計30、会話1、契約0、公式入出金履歴0、残高0円、net MRR 0円を自然文表示し、Storefront取得不能を⚠️で明示 | Telegram ownerは5分でexit 0。ただしupstream停止中はstale/unknownを報告するcontrol planeであり、revenue ownerの代替ではない |
+| Storefront demand | canonical `1338228`は2連続production wakeで`action=unchanged / aligned=true / status_effect_count=0`。公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0` | owner exit 0、duplicate mutation 0、各wake後owned tab 0。7日需要実験を欠測なしで再開 |
+| Reporting | recovery後のfresh snapshotをprovider message ID `18746`へ配信。公開20、適合0、応募0、累計30、Storefront需要、会話1、契約0、入出金0、net MRR 0円を自然文表示 | owner exit 0。同一snapshot second wakeはoutbox 1181→1181、enqueue 0 |
 | Paid | ledger eventは`application_verified` 30件だけ。raw CDPで公式`/mypage/payment`を再観測し、入出金履歴0、残高0円を確認。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、positive payment rowのproduction effect/readbackは未完成。現在net MRR 0円は公式empty sourceで確定 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
@@ -1716,12 +1716,11 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 検収、月額契約はclient offer時に仮払いしてseller承諾で成立する。したがってApplicationReceipt、listing公開、proposal金額を
 収益へ昇格させない。
 
-現在の直接ボトルネックは次の四つである。
+現在の直接ボトルネックは次の三つである。
 
-1. **Runtime availability:** manual ChromiumはHTTP endpointだけ生き、Playwright ownerがattachできない。Work SyncとStorefrontはexit 1、capacity snapshotが15分を超えたApplyもfail closedしており、現在は三つのrevenue ownerが外部action 0である。
-2. **Storefront acquisition:** split-brainと重複5件は解消したが、公式funnelは`表示1→閲覧0→相談0→注文0`であり、需要がまだない。
-3. **Sales conversion:** buyer-lastを読む/返信するtransportはあるが、購入意思→route別の見積/選定/client-originated月額offer→仮払い済みactive contract→ContractReceiptはpositive event待ちである。現在のseller-lastへfake返信・fake見積は作らない。
-4. **Revenue completion:** funded contractから制作・QA・公式納品・検収・PaymentReceipt・fee/cost/payout・bank matchへ進むPaid ownerがない。
+1. **Storefront acquisition:** split-brainと重複5件は解消したが、公式funnelは`表示1→閲覧0→相談0→注文0`であり、需要がまだない。
+2. **Sales conversion:** buyer-lastを読む/返信するtransportはあるが、購入意思→route別の見積/選定/client-originated月額offer→仮払い済みactive contract→ContractReceiptはpositive event待ちである。現在のseller-lastへfake返信・fake見積は作らない。
+3. **Revenue completion:** funded contractから制作・QA・公式納品・検収・PaymentReceipt・fee/cost/payout・bank matchへ進むPaid ownerがない。
 
 ### 18.3 Coconala four-lane parityを採用する
 
@@ -1892,7 +1891,7 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 | 完了 | **exact-release + G3C収束**: main/feature/current/installed/3 ownerを`621e13b39…`へ統一。Application live tickは`observed=2 / eligible=0 / submitted=false / no_eligible_project`、state/ledger/listing不変、pending 0、orphan 0。Work Syncはofficial source complete、reply 0。Telegramは同一snapshot送信0 | manifest bytes一致、release writable 0、owner 3本exit 0、G3C current decision allow。自然にJapan day 10件へ達した時の`daily_quota_reached`だけ継続観測 | 完了 |
 | 完了 | **Storefront canonical convergence**: productでcanonical `1338228`とsuperseded `1338229–1338233`を宣言し、一wake一mutation、presend exact-ID再観測、POST、公式status readback、canonical receiptを持つ独立30分ownerを追加。旧5件をpausedへ収束 | release `cb9ed535d…`、公式`published 1 / paused 5`、receipt `1338228`、second wake `action=unchanged / status_effect_count=0`、owner exit 0 | 完了 |
 | 完了 | **Apply acquisition outcome診断**: 10 query公式件数を分離し、validator通過済み能力外を既存claimへ保存、Coconala同様にdefault wake最大3探索turnへ進めた。Lancersのrequired生成AI宣言value 1も正直に選択する | release `829824532…`、`observed 21 / eligible 8`、provider block submit 0、次候補`5584041`一回送信、proposal `27812830`、receipt 26、pending 0、blind resend 0 | 完了 |
-| 0 | **production browser owner recovery**: manual PID任せをやめ、既存profileと`:9227`をsole reproducible ownerへ束ねる。loop由来stale target/dialogを安全に閉じ、Playwright attach、owner cleanup、target上限を同じ起動契約で回復する | `/json/version`だけでなく`connect_over_cdp`成功。Application / Storefront / Work Syncが同じexact releaseで各exit 0、fresh official source、次wake duplicate effect 0。429/logout/ledger mutation 0 | 0.5–1日 |
+| 完了 | **production browser owner recovery**: manual PID任せをやめ、既存profileと`:9227`をsole reproducible ownerへ束ねる。attach timeout時は専用profileのLancers targetだけをcloseして一度retry | release `65a08a957…`、browser PID=launchd PID `29096`、login ready。Application / Storefront / Work Sync exit 0、Storefront/Work Sync second wake effect 0、self-heal E2E 12.59秒、state/ledger不変 | 完了 |
 | 1 | **Negotiate / Contract completion**: Coconalaのsemantic reply contractを再利用し、Apply選定、Storefront相談/見積、client-originated月額offer、仮払い済みactive contractの各公式shapeを同じSales ownerへ接続する。イベントがない時は正常no-op | real event到着時にmessage/estimate/offer/contract exact ID、ContractReceipt、次wake duplicate reply/offer 0。存在しないbuyerへのeffect 0 | 1–3日 + buyer event待ち |
 | 2 | **Paid fulfillment stage**: funded active contractだけを有限queueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
 | 3 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
@@ -1900,7 +1899,7 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 | 並行観測 | **Storefront demand loop #1**: browser回復後に公式counterを欠測なく観測し、Coconalaのwinner imitation contractを再利用。buyer problemを前半へ置くtitle以外を固定する | 7日後の閲覧countでkeep/revert。次は一変数だけ変更し、public before/after、second wake mutation 0 | 7日観測 |
 | 5 | **payment後だけself-improvement**: Apply/Storefront別にinquiry→contract→delivery→payment→retention→net marginを帰属し、一度に一変数だけkeep/revert | 実PaymentReceipt cohort、conversion/margin比較、変更前後の公式outcome | 継続運用 |
 
-実装の集中時間はbest 6日、base 12日、worst 20日以上である。これはbuyer応答・検収・provider payoutの待ち時間を含まない。
+残る実装の集中時間はbest 5日、base 11日、worst 19日以上である。これはbuyer応答・検収・provider payoutの待ち時間を含まない。
 最初の入金はbest 1–3週、base 3–8週、worst 8週以上、$10K net MRRはbest 2–4か月、base 4–9か月、
 worst 9か月以上または未達とする。最大の不確実性はcodeではなく、商品価格でbuyerが契約し継続するconversion/retentionである。
 
@@ -2291,5 +2290,18 @@ fresh一時profileでは現行最小flagと正常job-search flagの両方が0.4�
 **PLAN SIZE:** production 3 files、約40–70行。既存`application_tick.py`、installer、12行plistのみ。新test fileは作らず、既存installer
 2件、Application focused 19件、isolated Chromium、production三owner E2Eで検証する。
 
-**DONE EVIDENCE:** 未完。sole browser launchd PID、Playwright attach、公式account ready、Application / Storefront / Work Sync exit 0、
-fresh `contracts.json`、次wake duplicate effect 0、state/ledger差分をproductionで確認してから完了へ更新する。
+**DONE EVIDENCE:** exact release `65a08a9577220f38a7820814c31ef370750da929`へBrowser、Application、Storefront、Work Sync、
+Telegramの5 ownerが収束する。browser PID `29096`はlaunchd PIDと一致し、Playwright attach 0.96秒、公式account ready、release writable
+file 0である。Work Syncは2連続exit 0、reply 0、契約0、finance complete zero。Storefrontは2連続exit 0、`unchanged`、
+`status_effect_count=0`、公式counter `1→0→0→0→0`。Applicationは公開20、eligible 0、submit 0、pending 0、exit 0。
+Telegramはprovider message ID `18746`へfresh自然文を配信し、second wakeはoutbox 1181→1181、enqueue 0である。
+
+専用browserに公式`/mypage`の応答不能targetを一枚作るproduction self-heal E2Eでは、最初のattach timeout後に既存helperが
+Lancers targetをcloseし、一度だけretryして12.59秒でaccount readyへ復帰する。targetはabout:blank一枚へ戻り、application、contracts、
+ledger hashは前後一致する。manual PID 67110はSIGTERMを無視したため、3 revenue owner停止・port/profile確認後にexact PIDだけを
+SIGKILLし、同じprofileをlaunchd ownerへ引き継いだ。cookie、credential、receipt、ledgerの削除は0である。
+
+今回の変更境界に対応するinstaller 2件とApplication 19件は21/21 PASSする。repository全体のlegacy discoverは51件中42件PASS、
+9件FAILであり、全suite greenとは判定しない。9件は今回のdiffに含まれない`status`、`telegram_report`、`work_sync`の現行production
+shapeに対して旧文字列・旧件数・旧object shapeを期待するtest driftである。browser recoveryのDone根拠には使わず、上記のfocused
+21件とproduction owner自身のeffect/readback/second-wake/self-healだけを使う。収益TODOより先にtest置換作業へ広げない。
