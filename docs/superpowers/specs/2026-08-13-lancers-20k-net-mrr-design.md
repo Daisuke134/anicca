@@ -1963,6 +1963,29 @@ atomic追加する。default ownerだけ最大3 discovery/planner turnを行い�
 35–55行と本節だけである。acceptanceは実ownerで新queryへ進み、最大1件だけ公式proposal ID/receiptを得るか、3 turn全てを
 正直なno-opで閉じ、次wakeで同じhard-prohibited案件を再評価せず、duplicate external effect 0であることとする。
 
+### 18.10 Paid handoffの先頭slice
+
+**USER OUTCOME:** 最初の契約が発生したwakeでPaidが見落とさず、仮払い確認前に制作せず、同じ公式contract identityを次stageへ渡す。
+
+**CURRENT OBSERVATION:** `work_sync.py`はproject進行中ID、月額契約ID、Storefront `serviceItemContract` IDを公式sourceから取得するが、
+件数へ変換した後にIDを捨てる。durable `contracts.json`は`source_complete`と4種類のcountだけであり、Paidはpositive contractを
+再特定できない。現在の公式sourceはproject 0、月額0、Storefront candidate 0である。
+
+**FIRST-SOURCE BOUNDARY:** Lancers公式FAQはprojectを「提案選択後に正式開始し、依頼金額を仮払い」、月額報酬を
+「client offer時に仮払いし、seller承諾で契約成立」と定義する。一方、`/mypage/proposals/all/working`の`進行中`表示だけでは
+個別projectの仮払い完了・金額・納期を完全readbackできない。したがって一覧IDをContractReceiptやfunded workへ直接昇格しない。
+
+**NEXT DIRECT ACTION:** 既存Work Sync snapshotだけを拡張し、`contract_candidates`へsource kind、公式entity ID、関連board ID、
+公式detail path、`funding_status=requires_detail_readback`を保存する。countは同じ配列から導出し、source failure時は従来どおり
+古いcomplete snapshotを上書きしない。新DB、新scheduler、空のPaid serviceは作らない。
+
+**PLAN SIZE:** production 1 file、約15–25行。spec以外のsupport fileは0。既存state JSONへ後方互換なfieldを1つ追加する。
+
+**DONE EVIDENCE:** exact-release Work Sync owner自身がexit 0で公式sourceを観測し、`contracts.json`が
+`source_complete=true`、count整合、sanitized `contract_candidates`（現在は空配列）をatomic保存する。application state、receipt ledger、
+provider effectは変化0。最初のpositive candidateでは同じIDの公式detail readbackがfunding・amount・scope・dueを確認した後だけ
+ContractReceiptを一意発行し、Paid queueへ昇格する。
+
 production release `a20eaad4a345cffbef9be10870a2ef05535d170b`の最初のowner wakeは、旧2件停止を越えて
 `observed=21 / eligible=8`へ進み、先頭`5586766`を公式`provider_terminal_blocked`としてsubmit 0でclaimした。
 fingerprintは31→41、pendingは0、ApplicationReceiptは25であり、plannerが検証した能力外とprovider受付不能を次wakeで
