@@ -1309,8 +1309,9 @@ reviewは実装後のfresh Sol adversarial verifier一回だけであり、FIX_F
 | 完了 | Storefront canonical offer alignment | exact release `ec825526…`のcanonical skillから`1338228`だけを画像あり、specific ICP、月額SNS deliverable、¥98k–¥398k、native 3/6ヶ月routeへ揃えた。再applyはunchanged、他5件とstate/ledger不変。更新直後funnel baselineは0、検索反映は最大24時間で継続観測 | 完了 |
 | 完了 | G4C fenced Sales reply | 既存work-syncでbuyer-last一件だけをclaimし、Coconalaの返信contractでhonest declineを生成。送信前fence、公式message ID、本文readback、blind resend 0をlive確認 | 完了 |
 | 完了 | G4C verified offer grounding | canonical storefront productと公式応募条件をsales contextへ接続し、価格・納期質問の公式値をdeterministic検査。実proposalとread-only compositionで混同0を確認 | 完了 |
-| 1 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
-| 2 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
+| 1 | G3A.1 claimed-only query fallback | default queryが既処理案件だけを返した場合も次queryへ進み、30分tickを`duplicate_project`だけで捨てない。明示query/injected sourceは一回のまま | 1日 |
+| 2 | G4B ContractReceipt source | 最初に観測したcompleteなofficial `serviceItemContract`をschema/ledgerへ一意記録し、欠損・unknownを拒否する。新scheduler/DBは作らない | 実注文後1–2日 |
+| 3 | G3C capacity quota | authoritative active contract receiptを接続し、初期3社cap、tick/day quota、100% capを適用する | 1–2日 |
 | 4 | G5 Fulfillment lane | active contractと固定scopeを入力として制作→QA→納品→公式delivery readbackを実装する。仮払い前は作業しない | 2–4日 |
 | 5 | G6 Finance lane | payment/payout/cost/bankを公式receiptで照合し、初めてnet MRRを計上する | 2–4日 |
 
@@ -1591,3 +1592,14 @@ provider message ID `17028`で、ApplicationReceipt累計15、pending 0、storef
 現在はAcquisitionが30分ごと、Sales source/actionが5分ごと、owner reportが5分ごとに同じexact releaseで稼働する。
 応募・listing・返信は売上ではない。次のstate transitionはbuyerの注文・仮払いによる実`serviceItemContract`であり、
 それが0件の間にContractReceiptのstatus shapeを推測実装しない。最初の実payloadを観測したtickでG4Bを開始する。
+
+### 17.3 G3A.1 claimed-only query fallback
+
+live tickは現在slotの公開候補1件`5583089`を取得したが、そのprojectは直前tickでprovider terminal blockとして
+durable claim済みである。現行default discoveryはproviderが1件以上返した時点でquery fallbackを終了し、その後の
+claim filterで0件になって`duplicate_project`を返す。このため別queryに未処理案件があっても30分tickを失う。
+
+修正は既存`_run_default_discovery`だけで行う。各queryの正常結果を既存`_filter_claimed_rows`へread-onlyで通し、
+未処理が1件でもあれば従来どおりそのresultを返す。全件claimedなら次の既存queryへ進む。全10queryが空またはclaimed
+の場合だけ最後のno-op resultを返す。explicit queryとinjected discovererは一回だけ、provider errorは即時終了、
+一tick最大一応募、planner、claim、readback、ledger contractは変更しない。
