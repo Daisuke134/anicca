@@ -856,6 +856,18 @@ class ApplicationLoopHolTests(unittest.TestCase):
             self.assertEqual(submitted, ["6000001"], name)
             self.assertEqual(result.get("verified_count"), 1, name)
 
+    def test_prompt_checks_delivery_capability_before_business_priority(self):
+        application_loop = _load_deployed_loop()
+        prompt = application_loop.build_planner_prompt(
+            [_opportunity("6000001")],
+            datetime(2026, 8, 13, tzinfo=timezone.utc),
+        )
+
+        self.assertLess(prompt.index("納品可能性をpriorityより先に確定"), prompt.index("納品可能性を確定した後の優先順"))
+        self.assertIn("完成動画そのものの生成・編集・書き出しが必須ならvideo_or_animation", prompt)
+        self.assertIn("企画・構成・台本・文章だけで完成動画制作が不要ならvideo_or_animationではない", prompt)
+        self.assertIn("hard prohibition必須案件を継続・AI・高報酬・低予算・簡単そうという理由でsubmit_requiredへ変えない", prompt)
+
     def test_schema_has_no_lancers_only_qualification_gate(self):
         schema = json.loads((REPO_ROOT / "skills/gig-work/schemas/application_decisions.schema.json").read_text(encoding="utf-8"))
         properties = schema["properties"]["decisions"]["items"]["properties"]
