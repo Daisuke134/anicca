@@ -1507,6 +1507,13 @@ Lancers固有差分は公開snapshot、応募DOM、公式proposal readbackだけ
    公式proposal ID照合、append-only ApplicationReceiptは変更しない。
 7. 二回目のAI safety verifierは削除する。hard prohibitionを同じplanner contractで一回だけ判断し、
    deterministic validatorがclass・原文引用・価格上限・日付・proposal leakを検証する。
+8. productionの既定discoveryは30分slotの検索語が0件なら次の検索語へ順にfallbackし、候補を得た時点で
+   plannerへ渡す。全10語が空、またはprovider errorの時だけ候補なし／失敗とする。明示queryと注入sourceは
+   一回だけ呼び、testやoperator指定の境界を変えない。
+
+Live read-only実測の公開候補数は`SNS運用=13、SNS投稿=17、コンテンツ制作=4、X運用=0、
+LinkedIn=2、B2Bマーケティング=0、AI活用=1、継続依頼=19、長期=20、月額=10`である。
+最初のexact-release tickが`observed=0`だったのは`X運用`slotであり、market全体が空だったためではない。
 
 このsliceの完了条件はexact releaseへdeploy後、既存launchdを一回kickし、公開案件を観測して、
 `submit_required`があれば最大一件が公式proposal IDまで確定すること、なければ全件の
