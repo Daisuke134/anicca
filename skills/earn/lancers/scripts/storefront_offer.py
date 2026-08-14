@@ -111,21 +111,22 @@ def _setting_status(page: Any, listing_id: str) -> str:
 def _reconcile_superseded(page: Any, listing_ids: Sequence[str]) -> dict[str, Any]:
     active = [listing_id for listing_id in listing_ids if _setting_status(page, listing_id) == "active"]
     if not active: return {"superseded_active_count": 0, "status_effect_count": 0}
-    listing_id = active[0]; path = f"/myplan/{listing_id}/setting"
+    listing_id = active[0]
     paused = page.locator('label[for="ProjectPlanStatusFormStatusPaused"]')
     if paused.count() != 1: raise OfferError("setting_status_control_missing")
     paused.click(timeout=5_000)
     if not _field(page, '[name="data[ProjectPlanStatusForm][status]"][value="paused"]').is_checked(): raise OfferError("setting_status_selection_failed")
     save = page.get_by_role("button", name="保存", exact=True)
     if save.count() != 1: raise OfferError("setting_form_changed")
-    try:
-        with page.expect_response(lambda response: urlsplit(response.url).path == path and response.request.method == "POST", timeout=10_000) as submitted:
-            save.click(force=True, no_wait_after=True, timeout=5_000)
+    observed: list[dict[str, Any]] = []
+    page.on("response", lambda response: observed.append({"method": response.request.method, "path": urlsplit(response.url).path, "status": response.status}) if response.request.method != "GET" else None)
+    try: save.click(force=True, no_wait_after=True, timeout=5_000)
     except Exception: raise OfferError("setting_submission_uncertain") from None
-    if not 200 <= submitted.value.status < 400: raise OfferError("setting_submission_rejected")
-    page.wait_for_timeout(1_000)
-    if _setting_status(page, listing_id) != "paused": raise OfferError("setting_submission_uncertain")
-    return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id, "response_status": submitted.value.status}
+    page.wait_for_timeout(2_000)
+    if _setting_status(page, listing_id) != "paused":
+        print("storefront_offer:non_get=" + json.dumps(observed, separators=(",", ":")), file=sys.stderr)
+        raise OfferError("setting_submission_uncertain")
+    return {"superseded_active_count": len(active) - 1, "status_effect_count": 1, "paused_listing_id": listing_id, "responses": observed}
 
 
 def _write_receipt(state_path: Path, product: Mapping[str, Any]) -> None:
