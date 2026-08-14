@@ -1945,3 +1945,20 @@ production ownerはこの一変数effectを完了した。immutable release `1f4
 - Coconalaのlane truth storeはApply=`applied.jsonl`、Storefront=`shuppin.jsonl`、Negotiate=`connector-outbox.sqlite3`、Paid=`paid-progress.jsonl`で分離され、共通`telegram-outbox.sqlite3`は通知transportである。
 - Lancers公式FAQにはproject方式、仮払い、package取引のbusiness lifecycleはあるが、同一accountの別resource actionをaccount-wide lockで直列化する要件は確認できない。未確認のprovider制限をarchitecture requirementにしない。
 - production CDP read-only verificationは四lane相当のprotected routeを同時取得し、HTTP 200が4/4、login redirect 0、owned tab残存0。retained logsはprovider 429/401/403/session-expired/login-required 0、自前account-lock contention 5件である。
+
+### 18.9 Apply hard-prohibited progression
+
+公式public searchを10 queryで再測定すると、normalized候補は`SNS運用13 / SNS投稿17 / コンテンツ制作2 /
+X運用0 / LinkedIn2 / B2Bマーケティング0 / AI活用2 / 継続依頼18 / 長期20 / 月額10`であり、market不足ではない。
+直近default wakeはclaimed-onlyのLinkedInを越え、`AI活用`の未claim案件`5580524`で止まる。この案件は保険営業者限定の
+Zoom interviewで、modelの`hard_prohibited`は正しいが、そのoutcomeをdurable claimへ保存しないため次wakeも同じ案件を
+未処理として再評価し、次queryへ進まない。
+
+Coconala Direct Applyは`hard_prohibited / duplicate_fenced / failed_transient`をsafe no-effect outcomeとして保持し、
+一wake最大3 parent turnまで既存cursorを進める。Lancersもcontractだけをcopyする。新しいstate、DB、schedulerは作らず、
+既存`application.json.fingerprints`へvalidator通過済み`hard_prohibited` projectの同じapplication markerをaccount lock下で
+atomic追加する。default ownerだけ最大3 discovery/planner turnを行い、empty、all-claimed、または全件hard-prohibitedなら次queryへ
+進む。effect候補、provider error、planner error、pending/uncertain、capacity stopでは即終了する。explicit queryとinjected source、
+一tick最大1応募、durable pending、公式proposal readback、ApplicationReceiptは変更しない。変更targetはproduction 1 file
+35–55行と本節だけである。acceptanceは実ownerで新queryへ進み、最大1件だけ公式proposal ID/receiptを得るか、3 turn全てを
+正直なno-opで閉じ、次wakeで同じhard-prohibited案件を再評価せず、duplicate external effect 0であることとする。
