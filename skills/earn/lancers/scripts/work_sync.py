@@ -14,6 +14,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Optional, Sequence
 from urllib.parse import quote, urlencode, urlsplit
 
@@ -68,7 +69,7 @@ def _sales_state(path: Path) -> dict[str, Any]:
     return {"handled": list(value["handled"]), "pending": value["pending"]}
 
 
-def _write_sales_state(path: Path, value: Mapping[str, Any]) -> None:
+def _write_state(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, mode=0o700, exist_ok=True); path.parent.chmod(0o700)
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
@@ -216,7 +217,7 @@ def _sales_action(page: Any, state_path: Path, boards: Sequence[tuple[Mapping[st
         verified = _readback(rows, board_id, body, provider_id if isinstance(provider_id, str) else None)
         if verified is None: return {"status": "reply_uncertain", "board_id": board_id, "content_sha256": _digest(body)}
         event_key = str(pending.get("event_key")); handled = list(dict.fromkeys([*state["handled"], event_key]))[-1000:]
-        _write_sales_state(path, {"handled": handled, "pending": None})
+        _write_state(path, {"handled": handled, "pending": None})
         return {"status": "reply_verified", "board_id": board_id, "provider_message_id": verified, "content_sha256": _digest(body)}
 
     candidate = next(((board, detail, rows) for board, detail, rows in boards if board.get("is_required_reply") is True and rows), None)
@@ -228,14 +229,14 @@ def _sales_action(page: Any, state_path: Path, boards: Sequence[tuple[Mapping[st
     grounding = {"canonical_product": _product_context(), "verified_proposal": _proposal_context(page, detail, verified_proposals or set())}
     body = _compose_reply(board, rows, state_path, grounding)
     pending = {"board_id": board_id, "event_key": event_key, "reply_body": body, "content_sha256": _digest(body), "provider_message_id": None}
-    _write_sales_state(path, {"handled": state["handled"], "pending": pending})
+    _write_state(path, {"handled": state["handled"], "pending": pending})
     provider_id = _post_reply(page, board_id, body); pending["provider_message_id"] = provider_id
-    _write_sales_state(path, {"handled": state["handled"], "pending": pending})
+    _write_state(path, {"handled": state["handled"], "pending": pending})
     readback_rows = _message_rows(lambda route: _fetch(page, route), board_id)
     verified = _readback(readback_rows, board_id, body, provider_id)
     if verified is None: return {"status": "reply_uncertain", "board_id": board_id, "provider_message_id": provider_id, "content_sha256": _digest(body)}
     handled = list(dict.fromkeys([*state["handled"], event_key]))[-1000:]
-    _write_sales_state(path, {"handled": handled, "pending": None})
+    _write_state(path, {"handled": handled, "pending": None})
     return {"status": "reply_verified", "board_id": board_id, "provider_message_id": verified, "content_sha256": _digest(body)}
 
 
@@ -334,6 +335,14 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
             result = _snapshot(lambda path: _fetch(page, path), verified_proposals, private_boards)
             result.update(_contract_sources(page))
             result["contract_candidate_count"] = result["storefront_contract_candidate_count"] + result["project_working_count"] + result["monthly_contract_count"]
+            _write_state(Path(state_path).with_name("contracts.json"), {
+                "source_complete": True,
+                "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "project_working_count": result["project_working_count"],
+                "monthly_contract_count": result["monthly_contract_count"],
+                "storefront_contract_candidate_count": result["storefront_contract_candidate_count"],
+                "contract_candidate_count": result["contract_candidate_count"],
+            })
             result["reply_action"] = _sales_action(page, Path(state_path), private_boards, verified_proposals)
     except SourceFailure as error:
         result = _failed(str(error), logged_in)
