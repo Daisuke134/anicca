@@ -2722,3 +2722,20 @@ production ownerは最大1応募、公式proposal readback、next-wake duplicate
 **DONE:** commit `c3259e92efe07892421a1ccd3e6a10a6a5744df8`をorigin/mainへpushし、5 ownerを同じexact releaseへreloadした。
 直接checkは同予算・同発注率で`提案3件 → 30件 → 不明`を確認した。production Application wakeは約90秒でbounded終了し、
 `no_eligible_project / observed 0 / submitted false / exit 0`。pending 0、重複応募0、provider failure 0である。
+
+### 18.39 Seller trust and capability alignment
+
+**USER OUTCOME:** buyerがproposalからseller profileへ移動した時、応募scopeと実在する能力証拠が一致し、最初の有償契約を判断できる。
+
+**CURRENT OBSERVATION:** public profile `keiodaisuke`は料金表29,800円とSNS portfolioを公開するが、subtitleとdescriptionはSNS運用・AI手順書だけで、
+Python/API/system automation応募に使う公開software proof `https://github.com/Daisuke134/life-manager`を表示しない。公式profile checklistはさらに
+プロフィール写真、ビジネス経験、本人確認、機密保持確認、電話確認を未完として表示する。本人確認・電話・資格・顧客成果は自動生成できず、捏造しない。
+
+**NEXT DIRECT ACTION:** 既存canonical productへseller profileのpublic subtitle/descriptionだけを追加し、既存Storefront ownerがlisting/portfolio mutation 0の
+wakeで一回だけ保存する。内容はSNS制作に加え、Python、API、scheduler、worker、Postgres、object storage、Telegram reporting、公式readbackを持つ
+MIT公開Life Managerを実装証拠として明示する。保存前にpublic profileを読み、保存後はbuyer-visible public profileの完全一致で閉じる。
+
+**PLAN SIZE:** production data 1 file、production code 1 file / 約30行、SSOT 1 section。新lane、scheduler、DB、state、receipt type、model callは0。
+
+**DONE EVIDENCE:** Storefront owner自身の`profile_updated / profile_effect_count 1`、public profile exact subtitle/software URL、次wake
+`profile_aligned true / profile_effect_count 0`。listing `1338228`、価格、portfolio、Application state、contracts、ledgerは不変。
