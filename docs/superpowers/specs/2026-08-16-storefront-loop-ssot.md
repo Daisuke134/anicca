@@ -56,6 +56,8 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The loop is operational but functionally stuck: `storefront_direct.py` hardcodes service `91000001`, field `FAQ`, and the `FAQ_ABSENT` guard. The official listing already has an FAQ, so it repeatedly returns a correct no-op and cannot select the next improvement.
 - The scorecard already ranks the next actionable hypothesis as service `91000001`, field `image`, current score `0`, metric `views_to_inquiry`. The executor does not consume that backlog.
 - Eleven official services are listed. The 20-slot quota is capacity, never authority to create nine more. A new service requires distinct demand evidence, owned capability evidence, and available delivery capacity.
+- Clean Storefront commits are pushed on `feat/storefront-loop`: `d65f13bf9` imports the dedicated owner, `2854097ad` selects the scorecard hypothesis, and `b655a83d0` closes an active-experiment no-op before the LLM judge. Storefront tests are `22 passed`.
+- Real pass `storefront-selector-live-b655a83d0` read the official inventory and eight competitor sources, then failed at `official_analytics_tab_open_failed`. The failure exposed that `origin/main` still has the obsolete fixed-`:9222`, tokenless CDP helpers while the installed release uses the fenced environment-selected `:9223` token/generation contract. The failed Storefront-only contexts were verified by task ID and released; no Apply, Negotiate, or Paid lease was changed.
 
 ## 5. Acceptance criteria
 
@@ -122,11 +124,13 @@ Verification: GitHub `main` contains this file; local worktree list has no `stor
 
 ### S1 — Integrate Storefront-only production code and replace the fixed FAQ selector
 
-- Import only `storefront_direct.py`, `listing_inventory.py`, `gig_paths.py`, Storefront config/schema/plist, and Storefront tests into the clean `main`-based branch; reuse the existing shared browser, runner, and Telegram outbox.
-- Read the official catalog and `storefront-catalog-scorecard.json`.
-- Select the first eligible backlog item under a one-active-experiment fence.
-- Persist hypothesis ID, listing version, field, baseline, success metric, evidence, and guard reason.
-- Return a truthful no-op only when no eligible hypothesis exists.
+- [x] Import only `storefront_direct.py`, `listing_inventory.py`, `gig_paths.py`, Storefront config/schema/plist, Telegram outbox dependency, and Storefront tests into the clean `main`-based branch.
+- [x] Read the official catalog and `storefront-catalog-scorecard.json`.
+- [x] Select the first eligible backlog item under a one-active-experiment fence.
+- [x] Persist hypothesis ID, listing version, field, baseline, success metric, evidence, and guard reason.
+- [x] Bypass the LLM judge when an active experiment makes the prepared hypothesis non-executable; close a truthful guarded no-op instead.
+- [ ] Restore the already-proven fenced CDP helper dependency from the installed production release/history into clean main provenance; do not redesign it and do not restart another owner.
+- [ ] Re-run the real Storefront pass and prove `91000001/image`, effect/readback/duplicate=`0/0/0`, Telegram receipt, and released lease.
 
 Verification: isolated selector check chooses `91000001/image` from the current scorecard; a real scheduled pass records that exact prepared hypothesis without touching other loops.
 
