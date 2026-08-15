@@ -4,6 +4,19 @@
 
 ---
 
+## Web調査・crawlの正本
+
+- 通常のURL本文取得: `crwl crawl URL -o markdown-fit`
+- 意味抽出・ページへの質問: `crwl crawl URL -q '質問'`
+  - 無料local既定: Ollama `qwen2.5:1.5b`
+  - 設定: `~/.crawl4ai/global.yml` の `DEFAULT_LLM_PROVIDER: ollama/qwen2.5:1.5b`
+  - model/providerが無ければagent自身が `ollama pull qwen2.5:1.5b` と設定を行い、実測して続行する
+- HTML/parser fallback: `scrapy fetch URL` またはScrapy Spider
+- login・JS・bot判定画面: 既存CloakBrowser persistent profile
+- 一経路の失敗を「調査不能」にしない。上記を順に実測し、取得元URLと核心文を残す
+
+---
+
 ## 最重要ルール（必ず最初に読むこと）
 
 ### 0. Aniccaの前提（最重要）
