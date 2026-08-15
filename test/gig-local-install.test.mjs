@@ -19,21 +19,13 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTALLER = join(REPO_ROOT, "skills", "earn", "gig", "install-local.sh");
 const EXPECTED_LABELS = [
-  "ai.anicca.gig-auditor",
-  "ai.anicca.gig-core-healthcheck",
   "ai.anicca.hf-gig-apply-direct",
   "ai.anicca.hf-gig-auditor",
   "ai.anicca.hf-gig-browser",
-  "ai.anicca.hf-gig-core-healthcheck",
   "ai.anicca.hf-gig-daily-report",
-  "ai.anicca.hf-gig-gmail-watch",
   "ai.anicca.hf-gig-paid-direct",
-  "ai.anicca.hf-gig-pass",
   "ai.anicca.hf-gig-reply-detector",
-  "ai.anicca.hf-gig-reply-push",
-  "ai.anicca.hf-gig-selfimprove-verify",
   "ai.anicca.hf-gig-storefront-direct",
-  "ai.anicca.hf-gig-weekly-report",
 ];
 const REVENUE_LABELS = [
   "ai.anicca.hf-gig-storefront-direct",
@@ -89,7 +81,7 @@ function digest(path) {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
 
-test("fresh macOS install renders all launchd units and is idempotent", () => {
+test("fresh macOS install renders only canonical launchd units and is idempotent", () => {
   const { home, runtime } = fixture();
   const first = install({
     home,
@@ -190,7 +182,7 @@ test("Linux install derives services and timers from the launchd templates", () 
     services,
     EXPECTED_LABELS.map((label) => `${label}.service`).sort(),
   );
-  assert.equal(timers.length, 12);
+  assert.equal(timers.length, 6);
   assert.deepEqual(result.units.sort(), EXPECTED_LABELS);
 
   for (const name of files) {
@@ -248,6 +240,11 @@ test("three-input onboarding passes doctor and starts four owners with Telegram 
   assert.equal(started.status, 0, `${started.stdout}\n${started.stderr}`);
   const result = JSON.parse(started.stdout);
   assert.deepEqual(result.owners, REVENUE_LABELS);
+  assert.deepEqual(result.support_owners.sort(), [
+    "ai.anicca.hf-gig-auditor",
+    "ai.anicca.hf-gig-browser",
+    "ai.anicca.hf-gig-daily-report",
+  ]);
   assert.equal(result.telegram_message_id, "fixture-ack");
   const status = run(["status", "--scheduler", "launchd"]);
   assert.equal(status.status, 0, status.stderr);

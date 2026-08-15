@@ -21,6 +21,7 @@ from typing import Any
 GIG_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = GIG_DIR.parents[2]
 TEMPLATE_DIR = GIG_DIR / "launchd"
+REGISTRY_PATH = GIG_DIR / "config" / "launchd" / "agents" / "gig.json"
 LOGIN_URL = "https://coconala.com/login"
 REVENUE_LABELS = (
     "ai.anicca.hf-gig-storefront-direct",
@@ -29,6 +30,28 @@ REVENUE_LABELS = (
     "ai.anicca.hf-gig-paid-direct",
 )
 BROWSER_LABEL = "ai.anicca.hf-gig-browser"
+
+
+def load_canonical_labels() -> tuple[str, ...]:
+    try:
+        registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+        labels = registry["canonical_labels"]
+        agents = registry["agents"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as error:
+        raise SystemExit(f"invalid Gig launchd registry: {REGISTRY_PATH}") from error
+    if (
+        not isinstance(labels, list)
+        or not labels
+        or any(not isinstance(label, str) or not label for label in labels)
+        or len(labels) != len(set(labels))
+        or set(labels) != set(agents)
+        or any(agents[label].get("desired_state") != "enabled" for label in labels)
+    ):
+        raise SystemExit(f"invalid canonical Gig label set: {REGISTRY_PATH}")
+    return tuple(labels)
+
+
+CANONICAL_LABELS = load_canonical_labels()
 
 
 def parser() -> argparse.ArgumentParser:
@@ -119,10 +142,15 @@ def load_templates(
         "/opt/homebrew/bin/python3": python3,
     }
     units: list[dict[str, Any]] = []
-    for template in sorted(TEMPLATE_DIR.glob("*.plist")):
+    for label in CANONICAL_LABELS:
+        template = TEMPLATE_DIR / f"{label}.plist"
+        if not template.is_file():
+            raise SystemExit(f"missing canonical Gig template: {template}")
         value = replace_markers(
             plistlib.loads(template.read_bytes()), replacements
         )
+        if value.get("Label") != label:
+            raise SystemExit(f"Gig template label mismatch: {template}")
         encoded = json.dumps(value, ensure_ascii=False)
         if "__LIFE_MANAGER_" in encoded or "__HOME__" in encoded:
             raise SystemExit(f"unresolved template marker: {template}")
@@ -192,11 +220,11 @@ def doctor(runtime: Path) -> dict[str, Any]:
         receipt = json.loads(
             (runtime / "state" / "gig-install.json").read_text(encoding="utf-8")
         )
-        checks["four_owners_rendered"] = all(
-            label in receipt.get("units", []) for label in REVENUE_LABELS
+        checks["canonical_owners_rendered"] = (
+            set(receipt.get("units", [])) == set(CANONICAL_LABELS)
         )
     except (OSError, json.JSONDecodeError, TypeError):
-        checks["four_owners_rendered"] = False
+        checks["canonical_owners_rendered"] = False
     return {
         "status": "ok" if all(checks.values()) else "login_required",
         "effect": 0,
@@ -239,7 +267,7 @@ def install_receipt(runtime: Path) -> dict[str, Any]:
 
 
 def lifecycle_status(scheduler: str) -> dict[str, str]:
-    labels = (BROWSER_LABEL, *REVENUE_LABELS)
+    labels = CANONICAL_LABELS
     states: dict[str, str] = {}
     if scheduler == "launchd":
         domain = f"gui/{os.getuid()}"
@@ -265,7 +293,7 @@ def lifecycle_status(scheduler: str) -> dict[str, str]:
 
 
 def stop_scheduler(scheduler: str) -> None:
-    labels = (BROWSER_LABEL, *REVENUE_LABELS)
+    labels = CANONICAL_LABELS
     if scheduler == "launchd":
         domain = f"gui/{os.getuid()}"
         for label in labels:
@@ -498,7 +526,7 @@ def main() -> int:
             states = lifecycle_status(scheduler)
             print(json.dumps({
                 "status": "running" if all(
-                    states[label] in {"running", "loaded"} for label in REVENUE_LABELS
+                    states[label] in {"running", "loaded"} for label in CANONICAL_LABELS
                 ) else "stopped",
                 "effect": 0, "owners": states,
             }, ensure_ascii=False, sort_keys=True))
@@ -507,7 +535,9 @@ def main() -> int:
             stop_scheduler(scheduler)
             print(json.dumps({
                 "status": "stopped", "owners": list(REVENUE_LABELS),
-                "browser_owner": BROWSER_LABEL,
+                "support_owners": [
+                    label for label in CANONICAL_LABELS if label not in REVENUE_LABELS
+                ],
             }, ensure_ascii=False, sort_keys=True))
             return 0
         state_dir = Path(str(receipt.get("state_dir", ""))).resolve()
@@ -565,10 +595,7 @@ def main() -> int:
 
     units = load_templates(home, runtime, state_dir)
     if arguments.command == "start":
-        selected = [
-            value for value in units
-            if value.get("Label") in {BROWSER_LABEL, *REVENUE_LABELS}
-        ]
+        selected = units
         if scheduler == "launchd":
             labels = render_launchd(selected, home, True)
             domain = f"gui/{os.getuid()}"
@@ -592,7 +619,10 @@ def main() -> int:
         )
         print(json.dumps({
             "status": "started", "owners": list(REVENUE_LABELS),
-            "browser_owner": BROWSER_LABEL, "telegram_message_id": message_id,
+            "support_owners": [
+                label for label in CANONICAL_LABELS if label not in REVENUE_LABELS
+            ],
+            "telegram_message_id": message_id,
         }, ensure_ascii=False, sort_keys=True))
         return 0
 

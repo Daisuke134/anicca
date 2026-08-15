@@ -4,9 +4,9 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 PLIST = ROOT / "skills/earn/gig/launchd/ai.anicca.hf-gig-apply-direct.plist"
-REGISTRY = ROOT / "config/launchd/agents/gig.json"
+REGISTRY = ROOT / "skills/earn/gig/config/launchd/agents/gig.json"
 
 # Production pass 1785282568-41648 stopped at one application because B0/B1
 # consumed two shared calls and B2 could use only five more. B2 now owns a
