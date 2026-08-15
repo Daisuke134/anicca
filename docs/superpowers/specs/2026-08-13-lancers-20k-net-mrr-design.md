@@ -2637,3 +2637,9 @@ profile headerのexact label `発注率`とnumeric percentを取得し、`_plan_
 **DONE EVIDENCE:** public search cardからbuyer usernameを正しく保持し、公式profileとauthenticated detailの双方で同じ発注率72%を読む。
 複数候補はknown rate降順、unknownは元順序を維持し、一候補だけのtickは追加profile request 0。production ownerは引き続き一wake最大一応募、
 公式proposal ID readback、pending reconciliation、daily/capacity quota、next-wake duplicate effect 0を維持する。
+
+**DONE:** exact release `83671e5b9f73ff151a034f55a8557854098cb3f3`はpublic search cardのbuyerを表示名ではなく公式usernameで保持し、
+cookie-free official profileから`mottomotto=72%`、`gambagentenkaiki=95%`を取得する。同予算の実行確認は95→10→unknown、異なる予算は
+Coconalaと同じく高予算を先にした。hard reject、固定rate gate、二回目model、browser、state、ledgerは追加していない。production Application ownerの
+初回wakeは公開6件を観測したが全件durable claim済みで`duplicate_project 5586723 / submitted false / exit 0`、pending 0、receipt 31、
+application stateとledgerのSHA-256は前後一致した。したがって重複応募0を保ったまま、次のfresh複数候補でrankingが自動適用される。
