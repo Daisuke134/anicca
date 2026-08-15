@@ -114,7 +114,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; disabled immutable release is `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| English signed redirect | Local contract GREEN; production not deployed | `apps/api` now accepts one fixed ElevenLabs offer, verifies a 32-byte-minimum HMAC over offer/placement/locale/experiment/variant, appends an `affiliate_click` to existing Postgres `ops_events`, and redirects only after persistence succeeds. The focused normal/forged-signature/DB-failure suite passes 3/3. Production secret, target URL, signed-link minting, deploy, and live DB/browser readback remain open, so E0 is not claimed |
+| English signed redirect | Local contract GREEN; staging variables configured; code not deployed | `apps/api` accepts one fixed ElevenLabs offer, verifies a 32-byte-minimum HMAC over offer/placement/locale/experiment/variant, appends an `affiliate_click` to existing Postgres `ops_events`, and redirects only after persistence succeeds. The focused normal/forged-signature/DB-failure suite passes 3/3. `affiliate redirect init|mint` stores a non-overwriting secret in the mode-0600 private MD and deterministically mints placement URLs; its fresh-file, signature, permission, and idempotency checks pass. Railway staging API has non-empty secret and allowed-host target variables set through stdin with deploy suppressed. Code deploy and live DB/browser readback remain open, so E0 is not claimed |
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
@@ -793,10 +793,10 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    passes the audience, website, traffic, region, channel, payout, and policy
    eligibility gate; read back at least two real applications. Activate only an
    actually authenticated offer with current terms and an executable link.
-8. **PARTIAL — local signed redirect passes 3/3; production proof is next.** Implement the signed redirect/sub-ID service and verify click → provider
+8. **PARTIAL — local signed redirect and minting pass; staging deploy proof is next.** Implement the signed redirect/sub-ID service and verify click → provider
    report joining before producing content at scale. Remaining: mint a signed
-   first-placement URL from the private MD secret, configure Railway with the
-   secret and fixed ElevenLabs target, deploy, open it in an anonymous browser,
+   first-placement URL from the private MD secret, deploy the already-configured
+   staging API, open it in an anonymous browser,
    read back the Postgres click receipt, and compare the provider custom-link
    metric without treating a click as money.
 9. **PENDING.** Extract Writer research/localization/publication contracts behind shared

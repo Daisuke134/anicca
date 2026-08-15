@@ -82,6 +82,18 @@ reference, and returns status only. Run it before every signup/reset submission;
 after fresh login repeat with `--verification VERIFIED_LOGIN`. Never pass a
 password on the affiliate CLI command line.
 
+Initialize the signed redirect secret in the same private Markdown SSOT, then
+mint one stable URL per admitted placement:
+
+```bash
+skills/affiliate/affiliate redirect init
+skills/affiliate/affiliate redirect mint --offer elevenlabs \
+  --placement article-1 --locale en --experiment e0 --variant control
+```
+
+`init` never overwrites an existing valid secret. `mint` prints only the signed
+public redirect URL; the secret stays in the mode-0600 Git-external Markdown.
+
 The committed bootstrap manifest pins PBS CPython `3.14.7+20260814` for macOS
 arm64 by immutable URL and SHA-256. The installer verifies and extracts the same
 held artifact, validates the full runtime tree, and atomically activates it
