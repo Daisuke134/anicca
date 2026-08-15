@@ -68,6 +68,13 @@ $0.00"""
         cards = MODULE.extract_cards(text)
         self.assertEqual(MODULE.parse_cards(cards)["clicks"], 1)
 
+    def test_report_schema_requires_commission_key_and_attribution_fields(self):
+        text = "\n".join(aliases[0] for aliases in MODULE.COMMISSION_FIELDS.values())
+        fields = MODULE.present_fields(text, MODULE.COMMISSION_FIELDS)
+        self.assertIn("commission_key", fields)
+        self.assertIn("sub_id_1", fields)
+        self.assertNotIn("transaction_id", fields)
+
 
 if __name__ == "__main__":
     unittest.main()

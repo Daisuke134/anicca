@@ -153,6 +153,7 @@ email-verification, partnership, and program-terms bootstrap:
 
 ```bash
 skills/affiliate/affiliate revenue observe
+skills/affiliate/affiliate revenue capture
 ```
 
 The observer extracts rendered bilingual metric cards, preserves the immutable
@@ -160,6 +161,11 @@ initial `BASELINE_ONLY` values and timestamp, reports later deltas, keeps
 unavailable approved/reversed amounts as `null`, and returns the browser to
 ElevenLabs home so the existing provider wake continues to work. The initial
 total is never retroactively assigned to a placement.
+
+`revenue capture` reads the rendered PartnerStack Commission Report and Payouts
+surfaces, verifies their real field schemas, and writes a mode-0600 raw rendered
+artifact plus a sanitized hash receipt under Git-external state. An empty report
+is recorded as `EMPTY`; it is never replaced by fixtures or counted as money.
 
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:

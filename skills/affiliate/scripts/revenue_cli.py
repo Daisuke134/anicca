@@ -30,6 +30,41 @@ LABELS = {
     "earnings_per_click_minor": ("クリックあたりの収益", "Earnings per click"),
 }
 
+COMMISSION_FIELDS = {
+    "created_at": ("作成日", "Created at"),
+    "partnership": ("パートナーシップ", "Partnership"),
+    "team_member": ("チームメンバー", "Team member"),
+    "offer_name": ("オファー名", "Offer name"),
+    "status": ("コミッションステータス", "Commission status"),
+    "customer_name": ("顧客名", "Customer name"),
+    "customer_email": ("顧客のメールアドレス", "Customer email"),
+    "customer_key": ("顧客キー", "Customer key"),
+    "customer_location": ("お客様の所在地", "Customer location"),
+    "product_key": ("プロダクトキー", "Product key"),
+    "action": ("アクション", "Action"),
+    "sub_id_1": ("サブID 1", "Sub ID 1"),
+    "sub_id_2": ("サブID 2", "Sub ID 2"),
+    "sub_id_3": ("サブID 3", "Sub ID 3"),
+    "shared_id": ("共有ID", "Shared ID"),
+    "clicked_at": ("日付をクリック", "Click date"),
+    "click_location": ("場所をクリック", "Click location"),
+    "link": ("リンク", "Link"),
+    "referrer_page": ("リファラーページ", "Referrer page"),
+    "landing_page": ("ランディングページ", "Landing page"),
+    "commission_amount": ("コミッション", "Commission"),
+    "commission_key": ("コミッション・キー", "Commission key"),
+    "target_type": ("ターゲット・タイプ", "Target type"),
+}
+
+PAYOUT_FIELDS = {
+    "earned_at": ("獲得済み", "Earned"),
+    "program": ("プログラム", "Program"),
+    "source": ("ソース", "Source"),
+    "status": ("コミッションステータス", "Commission status"),
+    "available_at": ("利用可能予定日", "Available on"),
+    "amount": ("金額", "Amount"),
+}
+
 
 def parse_value(key, value):
     compact = value.strip().replace(",", "")
@@ -100,6 +135,87 @@ def build_receipt(metrics, previous, observed_at):
     }
 
 
+def present_fields(text, schema):
+    found = []
+    for key, aliases in schema.items():
+        if not any(alias in text for alias in aliases):
+            raise RevenueError("provider report schema is incomplete")
+        found.append(key)
+    return found
+
+
+def navigate_text(ws, request_id, url, ready_markers):
+    cdp_call(ws, request_id, "Page.navigate", {"url": url})
+    expression = "({url:location.href,text:(document.body&&document.body.innerText)||''})"
+    for offset in range(1, 61):
+        result = cdp_call(ws, request_id + offset, "Runtime.evaluate", {
+            "expression": expression, "returnByValue": True,
+        })
+        page = result.get("result", {}).get("value", {})
+        if any(marker in page.get("text", "") for marker in ready_markers):
+            return page
+        if "Sign in to PartnerStack" in page.get("text", ""):
+            raise RevenueError("PartnerStack authentication is required")
+        time.sleep(0.5)
+    raise RevenueError("PartnerStack report did not become ready")
+
+
+def capture_reports(args):
+    pages = [item for item in read_json(f"http://{args.cdp_host}:{args.cdp_port}/json/list") if item.get("type") == "page"]
+    if len(pages) != 1:
+        raise RevenueError(f"expected one provider tab, found {len(pages)}")
+    ws = create_connection(
+        f"ws://{args.cdp_host}:{args.cdp_port}/devtools/page/{pages[0]['id']}",
+        timeout=20, max_size=None, suppress_origin=True,
+    )
+    try:
+        cdp_call(ws, 1, "Page.enable")
+        commissions = navigate_text(
+            ws, 10, "https://dash.partnerstack.com/reporting/commission_performance",
+            ("コミッション・レポート", "Commission report"),
+        )
+        payouts = navigate_text(
+            ws, 100, "https://dash.partnerstack.com/payouts/rewards",
+            ("コミッションおよび引き出し", "Commissions and withdrawals"),
+        )
+    finally:
+        try:
+            cdp_call(ws, 200, "Page.navigate", {"url": "https://elevenlabs.io/app/home"})
+        finally:
+            ws.close()
+    observed_at = datetime.now(timezone.utc).isoformat()
+    artifact = {
+        "schema_version": 1,
+        "receipt_type": "PARTNERSTACK_RENDERED_REPORT_ARTIFACT",
+        "observed_at": observed_at,
+        "commission_url": commissions["url"],
+        "commission_text": commissions["text"],
+        "payout_url": payouts["url"],
+        "payout_text": payouts["text"],
+    }
+    artifact_hash = hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest()
+    state = args.state.expanduser()
+    artifact_path = state / "provider-reports" / "partnerstack" / f"{artifact_hash}.json"
+    atomic_write(artifact_path, artifact)
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "PARTNERSTACK_REPORT_CAPTURE",
+        "provider": "elevenlabs",
+        "currency_display": "USD",
+        "commission_fields": present_fields(commissions["text"], COMMISSION_FIELDS),
+        "payout_fields": present_fields(payouts["text"], PAYOUT_FIELDS),
+        "generic_transaction_id_available": False,
+        "provider_transaction_key": "commission_key",
+        "attribution_keys": ["sub_id_1", "sub_id_2", "sub_id_3", "shared_id", "clicked_at", "link"],
+        "commission_row_state": "EMPTY" if ("結果は見つかりませんでした" in commissions["text"] or "No results found" in commissions["text"]) else "ROWS_PRESENT",
+        "payout_row_state": "EMPTY" if ("0 to 0" in payouts["text"] or "0件中0" in payouts["text"]) else "ROWS_PRESENT",
+        "rendered_artifact_sha256": artifact_hash,
+        "observed_at": observed_at,
+    }
+    atomic_write(state / "provider-reports" / "partnerstack" / "latest.json", receipt)
+    return receipt
+
+
 def observe(args):
     pages = [item for item in read_json(f"http://{args.cdp_host}:{args.cdp_port}/json/list") if item.get("type") == "page"]
     if len(pages) != 1:
@@ -144,12 +260,12 @@ def observe(args):
 
 def main():
     parser = argparse.ArgumentParser(prog="affiliate revenue")
-    parser.add_argument("command", choices=("observe",))
+    parser.add_argument("command", choices=("observe", "capture"))
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--cdp-port", type=int, default=9324)
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     args = parser.parse_args()
-    result = observe(args)
+    result = observe(args) if args.command == "observe" else capture_reports(args)
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0
 

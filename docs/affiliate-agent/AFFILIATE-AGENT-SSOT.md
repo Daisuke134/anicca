@@ -139,7 +139,7 @@ techniques do not merge the ledgers.
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
 | Mac-local runtime | Release `2ca7876aa5aa06cf38c4352736d25e77326a5bcc` is installed and the authenticated local publication/revenue-observation paths are GREEN | The installed publisher reconciled the English Affiliate article and X placement without duplication. The installed revenue observer then read PartnerStack, preserved the initial one-click baseline, emitted zero post-baseline delta and zero revenue, left unavailable approved/reversed amounts `null`, and returned CDP `9324` to ElevenLabs home. Both browser owners run and the loop is owned on a 600-second interval. This proves publication and honest aggregate observation, not attributable click, commission, or revenue |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
-| ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview | The current rendered aggregate is one total click, zero signups, zero paid signups, `$0.00` revenue, `$0.00` pending commission, and `$0.00` paid commission. Because no pre-publication baseline exists, the one click is `BASELINE_ONLY`, not attributed to the X placement or counted as money. Approved and reversed amounts remain unknown until transaction-level reports expose them |
+| ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview, Commission Report, and Payouts surfaces | The current aggregate is one baseline click and zero signups/revenue/pending/paid. `revenue capture` live-read 23 commission fields and six payout fields, identified `commission_key` rather than a generic transaction ID, confirmed sub-ID 1–3/shared-ID/click/link attribution fields, and stored a mode-0600 rendered artifact with SHA-256 `272ad0e27844e03739403241050f87c6a8157c7c1f053292e1b053c777128460`. Both reports are genuinely `EMPTY`; approved/reversed remain unknown rather than zero |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
@@ -831,10 +831,10 @@ regressions relevant to that step.
   later observations store deltas without overwriting its timestamp or values.
 - [x] **A12.2** Make `affiliate revenue observe` replay-safe and prove two live
   observations return the provider browser to ElevenLabs home.
-- [ ] **A12.3** Inspect the rendered PartnerStack Commissions and Reports surfaces;
+- [x] **A12.3** Inspect the rendered PartnerStack Commissions and Reports surfaces;
   record which transaction ID, click/sub-ID, currency, status, and dates actually
   exist, leaving absent fields `null`.
-- [ ] **A12.4** Add one transaction-report capture command that stores the raw
+- [x] **A12.4** Add one transaction-report capture command that stores the raw
   download or rendered artifact hash outside Git.
 - [ ] **A12.5** Normalize real rows into `pending|approved|reversed|paid` without
   treating overview totals or unknown values as transactions.
