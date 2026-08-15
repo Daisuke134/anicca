@@ -1010,6 +1010,16 @@ run/job IDs, increments `attempt`, and continues the unresolved login rather tha
 creating a second effect. Focused provider/job checks now pass 4/4. A14.4 remains
 open until the installed repair reaches authenticated `APPLICATION_PENDING`.
 
+The repaired login advanced through the email stage and exposed a real provider
+error. Sanitized DOM inspection proved the private MD Login field contained a
+description rather than an email (`@` count zero), so Impact rejected the
+username/password pair; the new password itself is not blamed. The harness adds
+`programs store-login`, which reads an authorized login only from stdin,
+atomically changes the named mode-0600 MD section, preserves its password and
+other sections, and never prints the value. Focused credential/provider/job
+checks pass 6/6. The official Gmail reset recipient is the next authorized input;
+fresh reset and login readback are still required before A14.4 closes.
+
 #### D. Earn the first externally approved commission
 
 - [ ] **A15.1** Keep ElevenLabs active and poll HubSpot/Impact; never resubmit the

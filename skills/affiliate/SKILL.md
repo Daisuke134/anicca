@@ -266,6 +266,18 @@ reference, and returns status only. Run it before every signup/reset submission;
 after fresh login repeat with `--verification VERIFIED_LOGIN`. Never pass a
 password on the affiliate CLI command line.
 
+If an imported account has a stale or descriptive Login field, replace it from
+an authenticated owner source through stdin without rewriting its password:
+
+```bash
+AUTHORIZED_LOGIN_SOURCE | skills/affiliate/affiliate programs store-login \
+  --id hubspot-impact --label Impact
+```
+
+`store-login` atomically updates only the named mode-0600 Markdown section and
+returns state, never the login value. Browser automation must not guess an email
+or reuse a password as a username.
+
 When an approved program delegates reporting to a separate network dashboard,
 bootstrap a separate login section without reusing the program password:
 

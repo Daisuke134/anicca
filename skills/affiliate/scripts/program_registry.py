@@ -169,9 +169,34 @@ def store_credential(program, label, markdown_path, verification, source_label=N
     }
 
 
+def store_login(label, markdown_path, login):
+    if not login or len(login) > 320 or any(character.isspace() for character in login):
+        raise ValueError("login must be one non-empty token")
+    markdown_path = markdown_path.expanduser()
+    text = markdown_path.read_text(encoding="utf-8")
+    section = re.search(rf"(?ms)^## {re.escape(label)}\n.*?(?=^## |\Z)", text)
+    if section is None or not re.search(r"(?m)^- Login: .*$", section.group()):
+        raise ValueError("private credential section is missing")
+    updated_section = re.sub(
+        r"(?m)^- Login: .*$", "- Login: " + login, section.group(), count=1,
+    )
+    updated = text[:section.start()] + updated_section + text[section.end():]
+    fd, temporary = tempfile.mkstemp(prefix=".affiliate-credentials.", dir=markdown_path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(updated)
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, markdown_path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+    if login not in markdown_path.read_text(encoding="utf-8"):
+        raise ValueError("private Markdown login readback mismatch")
+    return {"label": label, "private_markdown_login_state": "VERIFIED_NONEMPTY"}
+
+
 def main():
     parser = argparse.ArgumentParser(prog="affiliate programs")
-    parser.add_argument("command", choices=("list", "next", "credential", "store-credential"))
+    parser.add_argument("command", choices=("list", "next", "credential", "store-credential", "store-login"))
     parser.add_argument("--decision", action="append", default=[])
     parser.add_argument("--id")
     parser.add_argument("--label")
@@ -194,13 +219,17 @@ def main():
         programs = [item for item in programs if item["decision"] in args.decision]
     if args.id:
         programs = [item for item in programs if item["id"] == args.id]
-    if args.command in ("credential", "store-credential"):
+    if args.command in ("credential", "store-credential", "store-login"):
         if len(programs) != 1:
             return 3
         if args.credential_ref:
             programs[0] = {**programs[0], "credential_ref": args.credential_ref}
         if args.command == "credential":
             result = credential_state(programs[0])
+        elif args.command == "store-login":
+            if not args.label:
+                raise ValueError("--label is required")
+            result = store_login(args.label, args.private_markdown, sys.stdin.readline().strip())
         else:
             if not args.label:
                 raise ValueError("--label is required")
