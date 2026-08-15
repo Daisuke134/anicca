@@ -28148,3 +28148,10 @@
 {"ts":1786772611,"wake_id":"00MSTYA2MF565BE84323CB448E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786772742,"wake_id":"00MSTYCVI6154032C3C970480C","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786772870,"wake_id":"00MSTYFMEBC17B5BBD3B2849E8","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786773004,"wake_id":"00MSTYIHQVEB02CA66BB024CF2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786773134,"wake_id":"00MSTYLAALD2F2FA65FBE04E7A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786773260,"wake_id":"00MSTYNZF1806B3079DF7B4FE8","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786773391,"wake_id":"00MSTYQSQDEE7F27CB59B8483B","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana paid data API marketplace USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the mo"}
+{"ts":1786773519,"wake_id":"00MSTYTJIGC610BA4A48D64478","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786773647,"wake_id":"00MSTYWA91CC73DFA6BD624954","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786773780,"wake_id":"00MSTYZ4YZ6B1E187EE9564AEB","kind":"narrate","sleep_s":120,"model":"auto"}
