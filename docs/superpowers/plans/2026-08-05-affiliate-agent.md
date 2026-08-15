@@ -429,9 +429,13 @@ account-handle readback, and encrypted session persistence are live-proven.
 Live provider discovery receipt: HubSpot's official Impact flow created an
 account, verified the authorized Japanese mobile number, selected
 Japan/Tokyo/USD, and completed the truthful creator/company/website/editorial
-profile to 50%. Impact issued a verification meta tag for `aniccaai.com`.
-HubSpot remains `WEBSITE_OWNERSHIP_PENDING`; no application, approval, tracking
-link, commission, or payout is claimed yet.
+profile. The exact verification meta tag shipped through `anicca-products` PR
+391; Netlify run `31891497648` passed build, deploy, and the production
+money-path smoke; public HTML returned the tag; and Impact rendered
+`aniccaai.com — Connected`. The one-shot final submission rendered
+`HubSpot, Inc. application — In Review — You will be notified once there is a
+response.` HubSpot is `APPLICATION_PENDING`; no approval, tracking link,
+commission, or payout is claimed.
 
 - [ ] **Step 5: Run clean-state E2E on the current macOS host**
 
