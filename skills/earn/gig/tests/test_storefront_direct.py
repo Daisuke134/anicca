@@ -358,6 +358,41 @@ def test_safe_noop_normalizes_non_effect_service_metadata(tmp_path):
     assert guarded["decision"] == "no_op" and guarded["service_id"] is None
 
 
+def test_prepares_top_scorecard_gap_without_overwriting_active_experiment(tmp_path):
+    scorecard = tmp_path / "scorecard.json"
+    scorecard.write_text(json.dumps({"priority_backlog": [
+        {"priority": 1, "service_id": "4330368", "field": "image", "before": 0,
+         "success_metric": "views_to_inquiry", "reason": "verified gap"},
+    ]}))
+    effects = tmp_path / "effects.jsonl"
+    effects.write_text(json.dumps({
+        "status": "accepted", "effect": 1, "service_id": "4330368",
+        "changed_field": "FAQ", "experiment_key": "faq-live",
+    }) + "\n")
+    outcomes = tmp_path / "outcomes.jsonl"
+    outcomes.write_text(json.dumps({"experiment_key": "faq-live", "terminal": False}) + "\n")
+
+    prepared = direct._prepare_next_hypothesis(
+        scorecard, effects, outcomes,
+        [{"service_id": "4330368", "service_version_sha256": "a" * 64}], 123,
+    )
+
+    assert prepared == {
+        "version": 1,
+        "hypothesis_key": "storefront:hypothesis:v1:d30b705abbc087cb5bb65a021efb111bed9f513431d67a6960c976e9215596ef",
+        "prepared_at_epoch": 123,
+        "service_id": "4330368",
+        "service_version_sha256": "a" * 64,
+        "field": "image",
+        "before": 0,
+        "success_metric": "views_to_inquiry",
+        "reason": "verified gap",
+        "executable": False,
+        "guard_reason": "active_experiment_measurement_open",
+        "active_experiment_key": "faq-live",
+    }
+
+
 def test_presend_guard_rejects_a_stale_faq_absence():
     judgement = {"decision": "change", "service_id": direct.TARGET_SERVICE_ID,
                  "changed_field": "FAQ", "before_value": "FAQ_ABSENT"}
