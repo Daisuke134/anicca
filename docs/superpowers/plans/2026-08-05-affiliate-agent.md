@@ -117,7 +117,7 @@ Execution checkpoint:
   compile/shell syntax, and 30 related regression tests. Its checkboxes remain
   open until fresh review, worktree-diff audit, live-provider boundary proof, and
   a collection-safe full-suite command; the process-boundary test uses a fake provider.
-- 15 atomic checks are closed and 148 remain open. The increase records canonical
+- 16 atomic checks are closed and 147 remain open. The increase records canonical
   repo convergence and public-proof work that previously existed only as prose;
   it is not implementation regression.
 - The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
@@ -345,7 +345,7 @@ Assert that a second install changes no pinned artifact, an unsupported OS fails
 closed, every download is checksummed, secrets never enter logs/git, and an
 interrupted install resumes from the last receipted step.
 
-- [ ] **Step 2: Write RED authority and profile-isolation tests**
+- [x] **Step 2: Write RED authority and profile-isolation tests**
 
 Assert EN and JA never share cookies/storage, absent authority remains explicit,
 authorized inbox OTP is scoped to one login intent, and CAPTCHA/KYC/contract

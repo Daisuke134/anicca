@@ -108,7 +108,7 @@ techniques do not merge the ledgers.
 | Task | State | Receipt |
 |---|---|---|
 | R0 canonical convergence | Complete and disabled at `20710be047e01c10e01826ed809bb57b626ac49d` | Canonical skill and installer pass twice at 3/3; archived verifier 10/10; commission regression 6/6; manifests cover ten legacy files plus one archived parser dependency; remote SHA, immutable release bytes, valid JSON receipt, `current` symlink, untouched legacy state, and zero launchd owners all pass |
-| F0 current-Mac bootstrap | RED contract complete; production installer absent | `test_bootstrap.py` has three stdlib tests covering macOS fail-closed behavior, pinned checksums, idempotency, atomic partial-receipt resume, duplicate prevention, and secret non-persistence. All three fail only because `bootstrap/install.sh` does not exist |
+| F0 current-Mac bootstrap | RED contracts complete; production tools absent | Three bootstrap tests cover macOS fail-closed behavior, pinned checksums, idempotency, atomic partial-receipt resume, duplicate prevention, and secret non-persistence. Four authority/profile tests cover intent-scoped Keychain references, explicit external challenges, EN/JA storage isolation, protected ports, and idempotent provisioning. All seven fail only because their three production entrypoints do not exist |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
 
