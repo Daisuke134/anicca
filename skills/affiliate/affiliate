@@ -1,10 +1,11 @@
 #!/bin/sh
 set -eu
 
-if [ "${1:-}" != "provider" ]; then
-  echo "usage: affiliate provider inspect ..." >&2
+if [ "${1:-}" != "provider" ] && [ "${1:-}" != "programs" ]; then
+  echo "usage: affiliate {provider|programs} ..." >&2
   exit 2
 fi
+group=$1
 shift
 if [ -n "${AFFILIATE_PYTHON:-}" ]; then
   python_bin=$AFFILIATE_PYTHON
@@ -14,4 +15,8 @@ else
   echo "affiliate: python3 is required; run bootstrap/install.sh" >&2
   exit 1
 fi
-exec "$python_bin" "$(dirname "$0")/scripts/provider_cli.py" "$@"
+case "$group" in
+  provider) script=provider_cli.py ;;
+  programs) script=program_registry.py ;;
+esac
+exec "$python_bin" "$(dirname "$0")/scripts/$script" "$@"

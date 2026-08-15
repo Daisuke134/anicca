@@ -52,6 +52,26 @@ a real state change returns `changed=true` and a deterministic `transition_id`;
 an unchanged retry returns `next_action=NO_STATE_CHANGE`. Downstream actions
 must deduplicate on `transition_id`.
 
+Use the versioned English program research before any application:
+
+```bash
+skills/affiliate/affiliate programs list
+skills/affiliate/affiliate programs next --decision READY_NO_REVIEW
+skills/affiliate/affiliate programs credential --id hubspot-impact
+```
+
+The registry stores only official-source eligibility and the latest receipted
+application decision. Execute its `next_action`, then require authenticated
+rendered readback before changing application or tracking-link state. Never
+bulk-apply past an audience, content, fit, or traffic gate.
+
+Provider passwords are never committed. Each program binds to a fixed
+`keychain://service/account` reference. `programs credential` is the admission
+gate: only a non-empty Keychain value is `VERIFIED_NONEMPTY`; a present but empty
+item is `MISSING_OR_EMPTY` and login stays disabled. Impact uses
+`keychain://ai.anicca.affiliate.provider.impact/primary`. After official recovery,
+write the new value there and prove a fresh-tab login before resuming Grammarly.
+
 The committed bootstrap manifest pins PBS CPython `3.14.7+20260814` for macOS
 arm64 by immutable URL and SHA-256. The installer verifies and extracts the same
 held artifact, validates the full runtime tree, and atomically activates it

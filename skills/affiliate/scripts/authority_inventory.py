@@ -104,7 +104,7 @@ def keychain_readback(secret_ref):
                 parsed.path[1:],
                 "-w",
             ],
-            stdout=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
             timeout=10,
@@ -113,7 +113,7 @@ def keychain_readback(secret_ref):
         )
     except (OSError, subprocess.TimeoutExpired):
         return False
-    return result.returncode == 0
+    return result.returncode == 0 and bool(result.stdout.strip())
 
 
 def main():
