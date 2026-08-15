@@ -9,6 +9,7 @@ import os
 import plistlib
 import shlex
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -19,10 +20,22 @@ from typing import Any
 GIG_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = GIG_DIR.parents[2]
 TEMPLATE_DIR = GIG_DIR / "launchd"
+LOGIN_URL = "https://coconala.com/login"
+REVENUE_LABELS = (
+    "ai.anicca.hf-gig-storefront-direct",
+    "ai.anicca.hf-gig-apply-direct",
+    "ai.anicca.hf-gig-reply-detector",
+    "ai.anicca.hf-gig-paid-direct",
+)
+BROWSER_LABEL = "ai.anicca.hf-gig-browser"
 
 
 def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser()
+    value.add_argument(
+        "command", nargs="?", choices=("install", "setup", "doctor", "start"),
+        default="install",
+    )
     value.add_argument(
         "--scheduler",
         choices=("auto", "launchd", "systemd", "none"),
@@ -32,6 +45,17 @@ def parser() -> argparse.ArgumentParser:
         "--no-enable",
         action="store_true",
         help="render units without loading or enabling them",
+    )
+    value.add_argument("--work-profile", default="")
+    value.add_argument("--marketplace-profile", default="")
+    value.add_argument("--report-chat", default="")
+    value.add_argument(
+        "--auth-state", default="",
+        help=argparse.SUPPRESS,
+    )
+    value.add_argument(
+        "--openclaw", default="/opt/homebrew/bin/openclaw",
+        help=argparse.SUPPRESS,
     )
     return value
 
@@ -117,8 +141,87 @@ def load_templates(
         # never the public template or install receipt.
         if os.environ.get("GIG_REPORT_CHAT"):
             environment["GIG_REPORT_CHAT"] = os.environ["GIG_REPORT_CHAT"]
+        if os.environ.get("ANICCA_JOB_PROFILE"):
+            environment["ANICCA_JOB_PROFILE"] = os.environ["ANICCA_JOB_PROFILE"]
+        if os.environ.get("GIG_MARKETPLACE_PROFILE"):
+            environment["CDP_DAILY_DRIVER_PROFILE"] = os.environ["GIG_MARKETPLACE_PROFILE"]
         units.append(value)
     return units
+
+
+def onboarding_path(runtime: Path) -> Path:
+    return runtime / "state" / "gig-onboarding.json"
+
+
+def read_onboarding(runtime: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(onboarding_path(runtime).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise SystemExit("run install-local.sh setup first") from error
+    if not isinstance(value, dict):
+        raise SystemExit("invalid onboarding receipt")
+    return value
+
+
+def apply_onboarding(value: dict[str, Any]) -> None:
+    os.environ["ANICCA_JOB_PROFILE"] = str(value["work_profile"])
+    os.environ["GIG_MARKETPLACE_PROFILE"] = str(value["marketplace_profile"])
+    os.environ["GIG_REPORT_CHAT"] = str(value["report_chat"])
+
+
+def doctor(runtime: Path) -> dict[str, Any]:
+    value = read_onboarding(runtime)
+    checks: dict[str, bool] = {}
+    try:
+        profile = json.loads(Path(value["work_profile"]).read_text(encoding="utf-8"))
+        checks["work_profile"] = isinstance(profile, dict) and bool(profile)
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        checks["work_profile"] = False
+    checks["marketplace_profile"] = Path(
+        str(value.get("marketplace_profile", ""))
+    ).is_dir()
+    try:
+        auth = json.loads(Path(value["auth_state"]).read_text(encoding="utf-8"))
+        checks["official_login"] = isinstance(auth, dict) and bool(auth)
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        checks["official_login"] = False
+    checks["report_destination"] = bool(str(value.get("report_chat", "")).strip())
+    try:
+        receipt = json.loads(
+            (runtime / "state" / "gig-install.json").read_text(encoding="utf-8")
+        )
+        checks["four_owners_rendered"] = all(
+            label in receipt.get("units", []) for label in REVENUE_LABELS
+        )
+    except (OSError, json.JSONDecodeError, TypeError):
+        checks["four_owners_rendered"] = False
+    return {
+        "status": "ok" if all(checks.values()) else "login_required",
+        "effect": 0,
+        "checks": checks,
+        "login_url": LOGIN_URL,
+    }
+
+
+def send_daily_report(state_dir: Path, target: str, openclaw: str) -> str:
+    command = [
+        sys.executable, str(GIG_DIR / "scripts" / "telegram_report.py"), "daily",
+        "--gig-dir", str(state_dir),
+        "--telegram-database", str(state_dir / "telegram-outbox.sqlite3"),
+        "--connector-database", str(state_dir / "connector-outbox.sqlite3"),
+        "--target", target, "--openclaw", openclaw,
+    ]
+    completed = subprocess.run(command, check=False, capture_output=True, text=True)
+    if completed.returncode:
+        raise SystemExit(f"Telegram daily report failed: {completed.stderr.strip()}")
+    with sqlite3.connect(state_dir / "telegram-outbox.sqlite3") as connection:
+        row = connection.execute(
+            "SELECT message_id FROM telegram_reports "
+            "WHERE kind='daily' AND state='sent' ORDER BY report_id DESC LIMIT 1"
+        ).fetchone()
+    if not row or not row[0]:
+        raise SystemExit("Telegram daily report has no provider receipt")
+    return str(row[0])
 
 
 def render_launchd(
@@ -299,6 +402,14 @@ def main() -> int:
     if scheduler == "auto":
         scheduler = "launchd" if sys.platform == "darwin" else "systemd"
 
+    if arguments.command in {"doctor", "start"}:
+        onboarding = read_onboarding(runtime)
+        apply_onboarding(onboarding)
+        diagnosis = doctor(runtime)
+        if arguments.command == "doctor" or diagnosis["status"] != "ok":
+            print(json.dumps(diagnosis, ensure_ascii=False, sort_keys=True))
+            return 0 if diagnosis["status"] == "ok" else 2
+
     state_dir, adopted = select_state_dir(home, runtime)
     state_dir.mkdir(parents=True, exist_ok=True)
     (runtime / "logs").mkdir(parents=True, exist_ok=True)
@@ -306,11 +417,62 @@ def main() -> int:
     os.chmod(state_dir, 0o700)
     os.chmod(runtime / "logs", 0o700)
 
+    if arguments.command == "setup":
+        missing = [
+            flag for flag, value in (
+                ("--work-profile", arguments.work_profile),
+                ("--marketplace-profile", arguments.marketplace_profile),
+                ("--report-chat", arguments.report_chat),
+            ) if not str(value).strip()
+        ]
+        if missing:
+            raise SystemExit("setup requires " + ", ".join(missing))
+        onboarding = {
+            "version": 1,
+            "work_profile": str(Path(arguments.work_profile).expanduser().resolve()),
+            "marketplace_profile": str(
+                Path(arguments.marketplace_profile).expanduser().resolve()
+            ),
+            "auth_state": str(Path(
+                arguments.auth_state
+                or home / ".cloak/vault/gig-daily-driver/auth-state.json"
+            ).expanduser().resolve()),
+            "report_chat": str(arguments.report_chat).strip(),
+            "openclaw": str(Path(arguments.openclaw).expanduser()),
+        }
+        apply_onboarding(onboarding)
+        atomic_write(
+            onboarding_path(runtime),
+            (json.dumps(onboarding, ensure_ascii=False, sort_keys=True) + "\n").encode(),
+            0o600,
+        )
+
     units = load_templates(home, runtime, state_dir)
+    if arguments.command == "start":
+        selected = [
+            value for value in units
+            if value.get("Label") in {BROWSER_LABEL, *REVENUE_LABELS}
+        ]
+        if scheduler == "launchd":
+            labels = render_launchd(selected, home, True)
+        elif scheduler == "systemd":
+            labels = render_systemd(selected, home, True)
+        else:
+            raise SystemExit("start requires launchd or systemd")
+        message_id = send_daily_report(
+            state_dir, str(onboarding["report_chat"]), str(onboarding["openclaw"])
+        )
+        print(json.dumps({
+            "status": "started", "owners": list(REVENUE_LABELS),
+            "browser_owner": BROWSER_LABEL, "telegram_message_id": message_id,
+        }, ensure_ascii=False, sort_keys=True))
+        return 0
+
+    enable = not arguments.no_enable and arguments.command == "install"
     if scheduler == "launchd":
-        labels = render_launchd(units, home, not arguments.no_enable)
+        labels = render_launchd(units, home, enable)
     elif scheduler == "systemd":
-        labels = render_systemd(units, home, not arguments.no_enable)
+        labels = render_systemd(units, home, enable)
     else:
         labels = []
 
@@ -321,7 +483,7 @@ def main() -> int:
         "state_dir": str(state_dir),
         "adopted_legacy_state": adopted,
         "scheduler": scheduler,
-        "enabled": not arguments.no_enable and scheduler != "none",
+        "enabled": enable and scheduler != "none",
         "units": labels,
     }
     atomic_write(
@@ -329,6 +491,12 @@ def main() -> int:
         (json.dumps(receipt, ensure_ascii=False, sort_keys=True) + "\n").encode(),
         0o600,
     )
+    if arguments.command == "setup":
+        receipt.update({
+            "status": "login_required",
+            "login_url": LOGIN_URL,
+            "next_command": "skills/earn/gig/install-local.sh doctor",
+        })
     print(json.dumps(receipt, ensure_ascii=False, sort_keys=True))
     return 0
 

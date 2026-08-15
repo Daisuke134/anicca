@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -33,6 +34,12 @@ const EXPECTED_LABELS = [
   "ai.anicca.hf-gig-selfimprove-verify",
   "ai.anicca.hf-gig-storefront-direct",
   "ai.anicca.hf-gig-weekly-report",
+];
+const REVENUE_LABELS = [
+  "ai.anicca.hf-gig-storefront-direct",
+  "ai.anicca.hf-gig-apply-direct",
+  "ai.anicca.hf-gig-reply-detector",
+  "ai.anicca.hf-gig-paid-direct",
 ];
 
 function fixture() {
@@ -199,4 +206,49 @@ test("Linux install derives services and timers from the launchd templates", () 
       assert.equal(text.includes(REPO_ROOT), true);
     }
   }
+});
+
+test("three-input onboarding passes doctor and starts four owners with Telegram ACK", () => {
+  const { root, home, runtime } = fixture();
+  const profile = join(root, "work-profile.json");
+  const marketplace = join(home, ".cloak", "profiles", "gig-daily-driver");
+  const authState = join(home, ".cloak", "vault", "gig-daily-driver", "auth-state.json");
+  const fakeBin = join(root, "bin");
+  const schedulerLog = join(root, "launchctl.log");
+  mkdirSync(marketplace, { recursive: true });
+  mkdirSync(dirname(authState), { recursive: true });
+  mkdirSync(fakeBin, { recursive: true });
+  writeFileSync(profile, '{"name":"fixture"}\n');
+  writeFileSync(authState, '{"cookies":[{"name":"session"}]}\n');
+  writeFileSync(join(fakeBin, "launchctl"), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$FAKE_LOG"\n');
+  writeFileSync(join(fakeBin, "openclaw"), '#!/bin/sh\nprintf \'{"messageId":"fixture-ack"}\\n\'\n');
+  chmodSync(join(fakeBin, "launchctl"), 0o755);
+  chmodSync(join(fakeBin, "openclaw"), 0o755);
+  const env = {
+    ...process.env,
+    HOME: home,
+    LIFE_MANAGER_HOME: runtime,
+    GIG_LAUNCH_AGENT_DIR: join(home, "Library", "LaunchAgents"),
+    PATH: `${fakeBin}:${process.env.PATH}`,
+    FAKE_LOG: schedulerLog,
+  };
+  const run = (args) => spawnSync("bash", [INSTALLER, ...args], {
+    cwd: REPO_ROOT, encoding: "utf8", env, timeout: 30_000,
+  });
+  const setup = run([
+    "setup", "--scheduler", "launchd", "--work-profile", profile,
+    "--marketplace-profile", marketplace, "--report-chat", "fixture-chat",
+    "--auth-state", authState, "--openclaw", join(fakeBin, "openclaw"),
+  ]);
+  assert.equal(setup.status, 0, setup.stderr);
+  const diagnosis = run(["doctor", "--scheduler", "launchd"]);
+  assert.equal(diagnosis.status, 0, diagnosis.stderr);
+  assert.equal(JSON.parse(diagnosis.stdout).effect, 0);
+  const started = run(["start", "--scheduler", "launchd"]);
+  assert.equal(started.status, 0, `${started.stdout}\n${started.stderr}`);
+  const result = JSON.parse(started.stdout);
+  assert.deepEqual(result.owners, REVENUE_LABELS);
+  assert.equal(result.telegram_message_id, "fixture-ack");
+  const launches = readFileSync(schedulerLog, "utf8");
+  for (const label of REVENUE_LABELS) assert.equal(launches.includes(label), true);
 });

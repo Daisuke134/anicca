@@ -41,6 +41,26 @@ and customer evidence are not canonical source and must never be added here.
 
 ## Local install
 
+New users provide only three private values. The command stores references in
+`$LIFE_MANAGER_HOME/state/gig-onboarding.json` with mode `0600`; it does not copy
+the work profile, browser session, cookies, or credentials into Git.
+
+```bash
+skills/earn/gig/install-local.sh setup \
+  --work-profile "$HOME/.config/anicca/job-search/profile.json" \
+  --marketplace-profile "$HOME/.cloak/profiles/gig-daily-driver" \
+  --report-chat YOUR_TELEGRAM_CHAT_ID
+
+# Complete the returned official Coconala login URL once, then:
+skills/earn/gig/install-local.sh doctor
+skills/earn/gig/install-local.sh start
+```
+
+`doctor` is read-only and reports `effect: 0`. `start` loads the dedicated
+browser plus Storefront, Apply, Negotiate, and Paid owners, then succeeds only
+after the existing natural-language daily reporter records a Telegram provider
+message ID.
+
 The repository root `install.sh` prepares the Gig state boundary without
 enabling marketplace schedulers. To render and enable the host scheduler after
 the controlled parity gate:
