@@ -209,7 +209,9 @@ def playwright_click_text(host, port, expected_url, allowed_text):
                 raise ProviderError("expected exactly one Playwright provider page")
             matches = []
             for text in allowed_text:
-                locator = pages[0].get_by_role("button", name=text, exact=True)
+                locator = pages[0].get_by_role(
+                    "button", name=re.compile(rf"^{re.escape(text)}$", re.IGNORECASE),
+                )
                 matches.extend(locator.nth(index) for index in range(locator.count()))
             if len(matches) != 1:
                 raise ProviderError("expected exactly one Playwright semantic control")

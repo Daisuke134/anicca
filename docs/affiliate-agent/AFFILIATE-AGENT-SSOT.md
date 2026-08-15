@@ -1073,6 +1073,10 @@ Therefore direct DOM activation is rejected as the production primitive. The
 next repair reuses the existing `playwright-cli`/Playwright browser interaction
 mechanism for the exact unique role/name control while preserving CDP `9327`,
 the original job ID, and all credential/receipt boundaries.
+The first installed Playwright attempt then failed closed at zero matches because
+the playbook rendered `Sign in` while the accessible name was `Sign In`. The
+matcher keeps anchored full-name equality and ignores case only; it does not
+admit partial text, multiple controls, or a generic first-button fallback.
 
 ### A14–E1 remaining implementation map
 
