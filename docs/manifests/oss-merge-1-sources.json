@@ -77,17 +77,17 @@
         "skills/agent-runner/agent_runner.py": "ea32d3446d0efb9eccb3046e87cf9e99c7190edcf0b659e270a37aae689824ae"
       },
       "absorbed_files": [
-        {"source": "skills/agent-runner/agent_runner.py", "target": "runtime/agent-runner/agent_runner.py", "sha256": "6bb6cd0b173844af430694f90b8a39c896c190f569698f7afa6f47ec1f63d471"},
+        {"source": "skills/agent-runner/agent_runner.py", "target": "runtime/agent-runner/agent_runner.py", "sha256": "6f04bf9ddb7048988df6c756ae5ddf2da3d50fd558d4f7fed93a1069c67e3af9"},
         {"source": "skills/agent-runner/config.json", "target": "runtime/agent-runner/config.json", "sha256": "ae91bb03ed9146e3c40a7fcb56185080db86f4533c0ede6dec7d346f60492cf9"},
         {"source": "skills/agent-runner/context_packet.py", "target": "runtime/agent-runner/context_packet.py", "sha256": "4e2c17ac3b29eb6d7428f1006f30c5e7b6261de347ec913508b8e292cd6a0d0e"},
         {"source": "skills/agent-runner/token_budget.py", "target": "runtime/agent-runner/token_budget.py", "sha256": "f25a4dc2c22506d4847a90693e3171f03e0e63edf5506f4d67174574b51fbc4e"},
         {"source": "skills/agent-runner/usage_report.py", "target": "runtime/agent-runner/usage_report.py", "sha256": "a58e26ef7f8c53bfacac4c276dca5afc7d479fdeb14d10cd03389eb0e77ea0a1"},
-        {"source": "skills/agent-runner/tests/test_prompt_fail_closed.py", "target": "runtime/agent-runner/tests/test_prompt_fail_closed.py", "sha256": "175961a8f6dee55de540cbb5691b0da4746f09bebc8226d56acaf788e2811209"},
+        {"source": "skills/agent-runner/tests/test_prompt_fail_closed.py", "target": "runtime/agent-runner/tests/test_prompt_fail_closed.py", "sha256": "db86babf6be801089c7074c8a48ab201d62f8c067ef3b7c30ab18c6fde34a679"},
         {"source": "skills/agent-runner/tests/test_token_budget.py", "target": "runtime/agent-runner/tests/test_token_budget.py", "sha256": "868f1af984ab27eda8af462b6a121c339ed93e826a742ee65d840c87d3b459e0"},
         {"source": "skills/agent-runner/tests/test_usage_report.py", "target": "runtime/agent-runner/tests/test_usage_report.py", "sha256": "f10b1ca746093386acd1a45d0b0d0eae3e0603938ac90df8da2d34799fb88295"}
       ],
       "absorbed_roots": [
-        {"source": "skills/gig-work", "target": "skills/earn/gig", "files": 554, "inventory_sha256": "f9bf262bba529e9a38381d11816731195b9dad443ebe981fc45fc177c7a95201"},
+        {"source": "skills/gig-work", "target": "skills/earn/gig", "files": 553, "inventory_sha256": "02a280ae2c8003c70a332b4c886736bda0e6314335ac25f99bcbbce559f3a152"},
         {"source": "skills/music-score-omr", "target": "skills/music-score-omr", "files": 2, "inventory_sha256": "2a60d388a2c29ac8d70fa48328c18cb88527b8348a300a812ec6c9b2a7c02485"}
       ]
     },

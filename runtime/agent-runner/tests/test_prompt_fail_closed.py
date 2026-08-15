@@ -57,7 +57,7 @@ class PromptFailClosedTest(unittest.TestCase):
             "timeout_seconds": 5,
         }), encoding="utf-8")
 
-    def run_runner(self, prompt_text, use_stdin=False):
+    def run_runner(self, prompt_text, use_stdin=False, timeout_seconds=None):
         evidence = self.root / "evidence"
         env = os.environ.copy()
         env["PATH"] = f"{self.bin}:{env['PATH']}"
@@ -68,6 +68,8 @@ class PromptFailClosedTest(unittest.TestCase):
             "--schema", str(self.schema), "--evidence-dir", str(evidence),
             "--task-label", "x23", "--loop", "x23", "--workdir", str(self.root),
         ]
+        if timeout_seconds is not None:
+            command.extend(["--timeout-seconds", str(timeout_seconds)])
         if use_stdin:
             command.append("--prompt-stdin")
             proc = subprocess.run(command, env=env, text=True,
@@ -105,7 +107,9 @@ class PromptFailClosedTest(unittest.TestCase):
         self.assert_rejected_before_spend(proc, evidence)
 
     def test_real_prompt_still_reaches_the_provider(self):
-        proc, _ = self.run_runner("Return the bounded contract JSON only.\n")
+        proc, _ = self.run_runner(
+            "Return the bounded contract JSON only.\n", timeout_seconds=1
+        )
         self.assertTrue(
             self.marker.exists(),
             f"regression: real prompt never launched provider. stderr={proc.stderr}",

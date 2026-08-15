@@ -283,7 +283,7 @@ def heartbeat(task, token=None, generation=None):
             # callers propagate: application_parent's LeaseHandle raises
             # lease_command_failed:{reason} from the returned JSON, and its stderr is
             # captured but never read. No caller string-matches "lease_not_found"
-            # exactly (grepped ~/anicca + ~/profitable-claude, 2026-08-08), so
+            # exactly (verified across the accepted callers), so
             # extending the string is safe -- and if any residual clobberer remains,
             # the mtime in the parent-error evidence pinpoints the overwrite.
             try:

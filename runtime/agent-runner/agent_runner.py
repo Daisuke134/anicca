@@ -911,6 +911,7 @@ def run() -> int:
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--candidate-profile")
     parser.add_argument("--escalation-reason")
+    parser.add_argument("--timeout-seconds", type=int)
     parsed = parser.parse_args()
 
     if parsed.task_class == "composition-agent" and not parsed.prompt_stdin:
@@ -947,7 +948,19 @@ def run() -> int:
             ]
             if not candidates:
                 raise ValueError("selected provider is not a candidate for task class")
-        timeout_seconds = int(task_config.get("timeout_seconds", config["timeout_seconds"]))
+        configured_timeout_seconds = int(
+            task_config.get("timeout_seconds", config["timeout_seconds"])
+        )
+        if configured_timeout_seconds < 1:
+            raise ValueError("configured timeout must be positive")
+        if parsed.timeout_seconds is not None and parsed.timeout_seconds < 1:
+            raise ValueError("explicit timeout must be positive")
+        timeout_seconds = min(
+            configured_timeout_seconds,
+            parsed.timeout_seconds
+            if parsed.timeout_seconds is not None
+            else configured_timeout_seconds,
+        )
         route = str(task_config.get("route") or f"{parsed.task_class}:configured")
         escalation_reason = (
             parsed.escalation_reason.strip()
