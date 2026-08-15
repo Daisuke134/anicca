@@ -137,7 +137,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Release `6e6b17ace88e7b6eb113f6802575a5354923d18d` is installed and the authenticated local publication/revenue-observation paths are GREEN | The installed publisher reconciles the English Affiliate article and X placement without duplication. A live source wake completed `observe → capture → reconcile` as `NO_TRANSACTIONS`; the immediate repeat returned `COOLDOWN`. The existing launchd owner was then kickstarted, read `AUTHENTICATED + COOLDOWN`, exited `0`, and retained its 600-second ownership. This proves hourly money reconciliation is wired into the real local loop, not attributable click, commission, or revenue |
+| Mac-local runtime | Release `e4176c8a83832d10c880b379b3d99c3294b241ec` is installed and the authenticated local publication/revenue/Telegram paths are GREEN | The existing 600-second launchd owner wrote a semantic event to its append-only outbox before using the existing OpenClaw Telegram transport, stored real provider `messageId=20279`, and exited `0`. A second real kickstart returned `NO_PENDING`, retained one sent row, and exited `0`. This proves installed delivery and stable-UUID dedupe, not attributable click, commission, or revenue |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview, Commission Report, and Payouts surfaces | The current aggregate is one baseline click and zero signups/revenue/pending/paid. `revenue capture` live-read 23 commission fields and six payout fields. The current PartnerStack bundle, SHA-256 `be00e11924a35f20b84dee69ae741ae65204f07d3350a3266ad73501e96d867f`, proves the provider row keys use `reward_key`, `reward_status`, and explicit sub-ID/click/link fields even though the UI says Commission key. DOM absence was rejected as row evidence; installed release `329cbfc45` captured official JSON `row_count=0`, the empty Payouts surface, `NO_LIVE_ROWS`, and a mode-0600 artifact at SHA-256 `dce77f0083b0f92e29a67ccf99e417e11fe6307009bdfe98bf2d5fc77b39154d`. Approved/reversed remain unknown rather than zero |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
@@ -856,23 +856,23 @@ regressions relevant to that step.
 
 #### B. Make the owner experience observable on Telegram
 
-- [ ] **A13.1** Define one owner-readable event containing what happened, public
+- [x] **A13.1** Define one owner-readable event containing what happened, public
   URL, provider/program, money state, gross/net/cost, recovery, and next job.
-- [ ] **A13.2** Add an append-only outbox before network send so a crash cannot lose
+- [x] **A13.2** Add an append-only outbox before network send so a crash cannot lose
   a milestone.
-- [ ] **A13.3** Send through the existing Life Manager Telegram transport and save
+- [x] **A13.3** Send through the existing Life Manager Telegram transport and save
   provider `messageId`; never create a second Telegram runtime.
-- [ ] **A13.4** Deduplicate by stable event UUID and retry a failed send without
+- [x] **A13.4** Deduplicate by stable event UUID and retry a failed send without
   duplicating the underlying publication or money transition.
 - [ ] **A13.5** Prove real messages for `PLACEMENT_LIVE`, `CLICK_DELTA`,
   `COMMISSION_PENDING`, `COMMISSION_APPROVED`, `SELF_HEALED`, and `BLOCKED`.
 
-Implementation checkpoint: the canonical Skill now creates one semantic owner
-event, writes it before network send, reuses `openclaw message send --json`,
-extracts the returned provider message ID, and suppresses an already-sent stable
-UUID. A focused local regression proves append-before-send and one-call replay.
-A13.1–A13.4 remain open until the immutable installed release delivers and
-replays one real canary; no dry-run output closes these tasks.
+Installed proof: immutable release `e4176c8a83832d10c880b379b3d99c3294b241ec`
+created one real `REVENUE_RECONCILED` outbox row before sending, stored Telegram
+`messageId=20279`, and exited `0`. A second real launchd kickstart produced
+`NO_PENDING`, kept the sent ledger at one row, and exited `0`. The remaining
+A13.5 event types wait for their real external states; no synthetic click or
+commission message counts.
 
 #### C. Make the loop repair itself instead of requiring Codex
 
@@ -1015,8 +1015,10 @@ replays one real canary; no dry-run output closes these tasks.
     status changes are append-only and customer PII is excluded from normalized
     rows. Approved and reversed stay `null`. Add a real non-empty transaction and
     placement attribution before DONE; estimates remain out.
-13. **PENDING.** Send owner-readable Telegram transitions through the durable
-    outbox with action, public URL, blocker/self-heal, money state, cost, and next job.
+13. **PARTIAL.** Durable owner-readable Telegram delivery is live with append-before-
+    send, stable-UUID dedupe, and provider message-ID receipts. The real empty-report
+    transition is proven; click, commission, self-heal, and blocked variants close
+    only when those external states actually occur.
 14. **PENDING.** Add same-job crash resume, ambiguous-write dedupe, login recovery,
     selector-drift repair, provider/channel quarantine, watchdog, and cost caps.
 15. **PENDING — Gate E1.** Run unattended until one non-test approved English
