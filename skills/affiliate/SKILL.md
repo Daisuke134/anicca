@@ -35,9 +35,9 @@ F0 provides four deterministic, non-publishing primitives:
   macOS browser app from held no-follow file descriptors without launching it;
   generic executable admission remains fail-closed.
 
-The committed bootstrap manifest intentionally contains no artifact yet. Its
-default run therefore fails closed until current-host runtime/browser admission
-records a real URL and SHA-256. The current Mac has a receipted CloakBrowser app,
-but pinned Python installation remains open. Keychain readback, authenticated-session
-discovery, account-handle verification, launchd, publication, and revenue all
-remain disabled.
+The committed bootstrap manifest pins PBS CPython `3.14.7+20260814` for macOS
+arm64 by immutable URL and SHA-256. The installer verifies and extracts the same
+held artifact, validates the full runtime tree, and atomically activates it
+without changing PATH or the system Python. The current Mac also has a receipted
+CloakBrowser app. Keychain readback, authenticated-session discovery,
+account-handle verification, launchd, publication, and revenue remain disabled.

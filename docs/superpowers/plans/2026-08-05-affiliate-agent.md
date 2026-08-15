@@ -361,9 +361,9 @@ touch or restart existing money loops.
 
 Progress receipt: the pinned-artifact installer, checksum gate, atomic resume
 receipt, and intent-scoped `keychain://` reference contract pass 5/5 focused
-tests. This step remains open because the current-host runtime/browser artifact
-has not been admitted into `manifest.lock`, and no Keychain value has been read
-back through the contract.
+tests. The current-host runtime and browser are now admitted and live-receipted;
+this step remains open only because no Keychain value has been read back through
+the contract.
 
 Current-host browser-admission sub-slice: accept only an explicit macOS app
 capability request, hold the bundle tree through no-following file descriptors,
@@ -377,7 +377,7 @@ live-inventoried CloakBrowser Chromium `145.0.7632.109` twice with byte-identica
 receipt SHA-256 `9b4ca7ffc18dc10b83576c812d7c6805ed444e0b685287f7e0cd29f5a2d92f4c` and
 binary SHA-256 `79ddf7e7a7be8087319390ed79266387f6499b8a2e45ccfbaa724d7e7fff6b79`.
 The browser never launched, and Affiliate launchd owner count remained zero.
-Pinned Python runtime admission and Keychain readback keep Step 3 open.
+Keychain readback keeps Step 3 open.
 
 Pinned-runtime decision: directly install Astral python-build-standalone CPython
 `3.14.7+20260814` for macOS arm64. Its artifact SHA-256
@@ -388,6 +388,16 @@ verified `python/` tree to an immutable staging directory, execute only the
 verified `python/bin/python3.14` for a version/ssl/sqlite smoke check, and
 atomically activate it inside Affiliate data. Do not add uv, Homebrew, pyenv,
 or a new test suite.
+
+Pinned-runtime live receipt: pushed source
+`eb1df8c05c5b1eb73ed8a20ad93000abace6e139` installed as the disabled immutable
+release. The exact artifact hash matched; the verified tree activated at the
+hash-suffixed immutable path; Python `3.14.7`, OpenSSL `3.5.7`, and SQLite
+`3.53.1` ran in an allowlisted `-I -B` environment. Two normal reruns and two
+hostile `PYTHONHOME`/`PYTHONPATH` reruns preserved receipt SHA-256
+`5677a0ecfc6d648fa8595856a29597231493891701355b22d8b37f8c3d4f757a`, tree
+SHA-256 `bcf2489a4b32fc9cd76b0845aa7c05a7b030c088177048f55d78ae5e8a290243`,
+and the runtime inode. Affiliate launchd owner count remained zero.
 
 - [ ] **Step 4: Implement semantic capability inventory and browser provisioning**
 
