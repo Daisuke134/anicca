@@ -49,8 +49,9 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 
 ## 4. Current verified state
 
-- Public code is in repository `Daisuke134/life-manager`, worktree `.worktrees/storefront-revenue-os`, branch `fix/storefront-revenue-os`, HEAD `d150e4b1d`. It is not merged to `main` and is 19 commits ahead of `origin/main`.
-- That branch also contains Paid changes. The whole branch is forbidden from merge. Storefront-owned changes must be extracted from a fresh `origin/main` integration branch after the Paid owner decides its four Paid commits.
+- The historical implementation is in worktree `.worktrees/storefront-revenue-os`, branch `fix/storefront-revenue-os`, current HEAD `b8f15537a`. The four accidental Paid changes were reverted by `06e9ac0dc`, `1a6894b6f`, `5beb42ce2`, and `b8f15537a`; the branch remains forbidden from whole-branch merge.
+- Latest `main` contains this Storefront SSOT and shared browser/outbox runtime, but not the Coconala Storefront production entrypoint. Active integration therefore uses clean worktree `.worktrees/storefront-main`, branch `feat/storefront-loop`, based on `origin/main`, and imports only the Storefront dependency closure.
+- Paid is intentionally stopped by its owner. Storefront integration does not change its plist, release, process, project state, artifacts, receipts, or restart state.
 - Launchd label `ai.anicca.hf-gig-storefront-direct` runs `storefront_direct.py --effect` every 1800 seconds. The latest observed pass completed normally with `official_services_read=11`, `competitor_evidence_count=8`, `effect/readback/duplicate=0/0/0`, released lease, and deduped Telegram reporting.
 - The loop is operational but functionally stuck: `storefront_direct.py` hardcodes service `4330368`, field `FAQ`, and the `FAQ_ABSENT` guard. The official listing already has an FAQ, so it repeatedly returns a correct no-op and cannot select the next improvement.
 - The scorecard already ranks the next actionable hypothesis as service `4330368`, field `image`, current score `0`, metric `views_to_inquiry`. The executor does not consume that backlog.
@@ -119,8 +120,9 @@ Only the first unfinished item is active.
 
 Verification: GitHub `main` contains this file; local worktree list has no `storefront-loop-ssot` entry.
 
-### S1 — Replace the fixed FAQ experiment selector
+### S1 — Integrate Storefront-only production code and replace the fixed FAQ selector
 
+- Import only `storefront_direct.py`, `listing_inventory.py`, `gig_paths.py`, Storefront config/schema/plist, and Storefront tests into the clean `main`-based branch; reuse the existing shared browser, runner, and Telegram outbox.
 - Read the official catalog and `storefront-catalog-scorecard.json`.
 - Select the first eligible backlog item under a one-active-experiment fence.
 - Persist hypothesis ID, listing version, field, baseline, success metric, evidence, and guard reason.
@@ -163,7 +165,7 @@ Verification: reconcile ledger totals against official browser screens and real 
 
 ### S6 — Production integration and cleanup
 
-- Let the Paid owner decide `ff5b96a8e`, `0bba80549`, `6ed25b976`, and `d150e4b1d`; never carry them implicitly into Storefront.
+- Preserve the completed reverts of `ff5b96a8e`, `0bba80549`, `6ed25b976`, and `d150e4b1d`; never carry the original Paid changes into Storefront.
 - Create a fresh integration branch from latest `origin/main` and bring only Storefront-owned files/commits with audited provenance.
 - Add explicit ownership boundaries for Storefront vs Negotiate/Paid/Apply.
 - Prove legacy Hermes/gig-pass shell paths have zero launchd, installer, import, subprocess, symlink, and documentation authority. Preserve immutable state/ledgers; remove only obsolete executable code and regenerateable artifacts.
