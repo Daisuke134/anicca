@@ -614,6 +614,20 @@ def main() -> int:
             )
         else:
             raise SystemExit("start requires launchd or systemd")
+        receipt = install_receipt(runtime)
+        receipt.update({
+            "repo_root": str(REPO_ROOT),
+            "runtime_home": str(runtime),
+            "state_dir": str(state_dir),
+            "scheduler": scheduler,
+            "enabled": True,
+            "units": labels,
+        })
+        atomic_write(
+            runtime / "state" / "gig-install.json",
+            (json.dumps(receipt, ensure_ascii=False, sort_keys=True) + "\n").encode(),
+            0o600,
+        )
         message_id = send_daily_report(
             state_dir, str(onboarding["report_chat"]), str(onboarding["openclaw"])
         )
