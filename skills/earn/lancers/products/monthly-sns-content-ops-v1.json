@@ -57,7 +57,7 @@
     "generated_ai": true
   },
   "software_portfolio": {
-    "external_id": "",
+    "external_id": "743987",
     "title_stem": "AI・API連携の自動運用システムを設計・実装し",
     "subtitle": "scheduler・worker・Postgres・通知・公式readbackを一つのrepoで実装",
     "category": "AI・システム開発・運用",
