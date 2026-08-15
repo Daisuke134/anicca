@@ -2766,3 +2766,27 @@ Telegram reporting/official readback、MIT公開repo名`Daisuke134/life-manager`
 portfolio `743964`は不変で、Application、contracts、ledger SHA-256も不変だった。listing receiptだけproduct version 5へ進んだ。
 直後のsecond Storefront wakeは`action=unchanged / profile_aligned true / profile_effect_count 0 / portfolio_effect_count 0 /
 status_effect_count 0 / exit 0`で、重複save 0である。本人確認、電話、NDA、写真、顧客実績は自動生成していない。
+
+### 18.40 Contract trust boundary
+
+**CURRENT OBSERVATION:** Lancers公式本人確認画面は、本人確認済みmarkが提案選定と提案可能案件を増やし、報酬出金にも必須と明記する。
+完了には本人のマイナンバーカードと暗証番号、または運転免許証等の本人確認書類が必要である。機密保持確認は本人確認完了後に住所・氏名を表示して
+本人が署名・同意する。電話確認は登録済み番号から専用dialへ約30秒発信し、発信者番号一致を確認する。現在はいずれも未完である。
+
+**DECISION:** codeは身分証、暗証番号、署名、本人発信を生成・代行しない。このtrust不足をApplication、Storefront、Reply、Work Sync停止理由にはせず、
+official buyer reply/offerを処理し続ける。本人確認完了後は同じ公式画面でNDAと電話markを再観測する。架空のverified markはreportしない。
+
+### 18.41 Coconala proposal price-speed parity
+
+**USER OUTCOME:** 評価0のsellerが、納品可能な案件で最初のpaid proofを取りやすいproposalを出す。
+
+**CURRENT OBSERVATION:** Coconala production plannerは、能力・scope・budgetを満たした後に「競合より少し安く、速く、品質を具体的に示す」を使う。
+Lancersは本文の狭い具体予算と最短納期を既に使うが、価格は「競争力とscopeに合う」までで、低価格方向が明示されない。public profileは登録直後・評価0、
+累計ApplicationReceipt 31、ContractReceipt 0であり、最初の選定では実績のある競合と同価格を取る根拠がない。
+
+**NEXT DIRECT ACTION:** Coconalaのproven sentenceだけを既存Lancers plannerへ移し、scopeと正のmarginを守りながら競合より少し安い価格、
+実行可能な最短納期を選ばせる。固定discount率、最低価格、category rule、二回目model、価格parserは追加しない。
+
+**PLAN SIZE:** production 1 file / 1文、SSOT 1 section。schema、state、ledger、scheduler、browser、submitterは変更0。
+
+**DONE EVIDENCE:** compile、exact release deploy、production owner exit 0。一wake最大1応募、daily 10件、公式proposal readback、duplicate effect 0を維持する。
