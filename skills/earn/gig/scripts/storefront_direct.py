@@ -39,7 +39,7 @@ DEFAULT_TELEGRAM_DATABASE = Path.home() / "gig" / "telegram-outbox.sqlite3"
 DEFAULT_TELEGRAM_RECEIPTS = Path.home() / "gig" / "telegram-delivery-receipts"
 STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
-    "analytics.jsonl", "outcomes.jsonl",
+    "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl",
 )
 TARGET_SERVICE_ID = "91000001"
 JUDGEMENT_FIELDS = {
@@ -336,6 +336,48 @@ def _next_hypothesis(scorecard_path: Path, experiment: dict) -> dict | None:
         str(row.get("service_id")) == str(experiment.get("service_id"))
         and row.get("field") == experiment.get("changed_field")
     )), None)
+
+
+def _prepare_next_hypothesis(
+    scorecard_path: Path, effects_path: Path, outcomes_path: Path,
+    contracts: list[dict], now: int,
+) -> dict | None:
+    try:
+        backlog = json.loads(scorecard_path.read_text(encoding="utf-8"))["priority_backlog"]
+    except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_scorecard_invalid") from error
+    if not isinstance(backlog, list):
+        raise RuntimeError("storefront_scorecard_invalid")
+    effects = ([json.loads(line) for line in effects_path.read_text(encoding="utf-8").splitlines() if line]
+               if effects_path.exists() else [])
+    outcomes = ([json.loads(line) for line in outcomes_path.read_text(encoding="utf-8").splitlines() if line]
+                if outcomes_path.exists() else [])
+    terminal = {row.get("experiment_key") for row in outcomes if row.get("terminal") is True}
+    active = next((row for row in effects if row.get("status") == "accepted"
+                   and row.get("effect") == 1 and row.get("experiment_key") not in terminal), None)
+    completed = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
+                 for row in effects if row.get("status") == "accepted" and row.get("effect") == 1}
+    versions = {str(row["service_id"]): row["service_version_sha256"] for row in contracts}
+    candidate = next((row for row in backlog if isinstance(row, dict)
+                      and str(row.get("service_id")) in versions
+                      and (str(row.get("service_id")), str(row.get("field")).lower()) not in completed), None)
+    if candidate is None:
+        return None
+    identity = json.dumps(candidate, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {
+        "version": 1,
+        "hypothesis_key": "storefront:hypothesis:v1:" + hashlib.sha256(identity.encode()).hexdigest(),
+        "prepared_at_epoch": now,
+        "service_id": str(candidate["service_id"]),
+        "service_version_sha256": versions[str(candidate["service_id"])],
+        "field": str(candidate["field"]),
+        "before": candidate.get("before"),
+        "success_metric": candidate.get("success_metric"),
+        "reason": str(candidate.get("reason") or ""),
+        "executable": active is None,
+        "guard_reason": None if active is None else "active_experiment_measurement_open",
+        "active_experiment_key": active.get("experiment_key") if active else None,
+    }
 
 
 def _close_outcome(
@@ -1090,6 +1132,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),
                 getattr(args, "scorecard", DEFAULT_SCORECARD), int(time.time()),
             )
+            next_hypothesis = _prepare_next_hypothesis(
+                getattr(args, "scorecard", DEFAULT_SCORECARD),
+                args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
+                validated_contracts, int(time.time()),
+            )
+            if next_hypothesis is not None:
+                _append_key_once(
+                    args.state_dir / "prepared-hypotheses.jsonl", "hypothesis_key", next_hypothesis,
+                )
             row = _receipt(
                 pass_id,
                 status="completed",
@@ -1112,6 +1163,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 recovered_effect=bool(pending_effect and pending_effect["recovered"]),
                 analytics_snapshot_key=analytics["snapshot_key"],
                 outcome=outcome,
+                next_hypothesis=next_hypothesis,
                 lease={
                     "task": task,
                     "context_id": lease.get("context_id"),
