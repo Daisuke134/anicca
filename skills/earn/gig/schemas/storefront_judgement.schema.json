@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "service_id",
+    "changed_field",
+    "before_value",
+    "proposed_value",
+    "hypothesis",
+    "competitor_evidence_paths",
+    "capability_evidence_paths",
+    "success_metric",
+    "observation_window_days",
+    "no_op_reason",
+    "experiment_key",
+    "uncertainty"
+  ],
+  "properties": {
+    "decision": {"type": "string", "enum": ["change", "no_op"]},
+    "service_id": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^[0-9]+$", "maxLength": 32}
+      ]
+    },
+    "changed_field": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "enum": ["FAQ"]}
+      ]
+    },
+    "before_value": {"type": ["string", "null"], "maxLength": 4000},
+    "proposed_value": {"type": ["string", "null"], "maxLength": 4000},
+    "hypothesis": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "competitor_evidence_paths": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {"type": "string", "minLength": 1, "maxLength": 2048}
+    },
+    "capability_evidence_paths": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {"type": "string", "minLength": 1, "maxLength": 2048}
+    },
+    "success_metric": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "enum": ["inquiries", "purchases", "views_to_inquiry", "views_to_purchase"]}
+      ]
+    },
+    "observation_window_days": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "integer", "enum": [7, 14]}
+      ]
+    },
+    "no_op_reason": {"type": ["string", "null"], "maxLength": 1000},
+    "experiment_key": {"type": ["string", "null"], "maxLength": 128},
+    "uncertainty": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    }
+  }
+}

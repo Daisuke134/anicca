@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.anicca.hf-gig-storefront-direct</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/python3</string>
+    <string>__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/storefront_direct.py</string>
+    <string>--effect</string>
+  </array>
+  <key>StartInterval</key><integer>1800</integer>
+  <key>ProcessType</key><string>Background</string>
+  <key>ThrottleInterval</key><integer>60</integer>
+  <key>WorkingDirectory</key><string>__HOME__</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>HOME</key><string>__HOME__</string>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>ANICCA_PASS_TOKEN_BUDGET</key><string>4194304</string>
+    <key>ANICCA_LOOP_DAILY_TOKEN_BUDGET</key><string>33554432</string>
+    <key>ANICCA_BUDGET_DAILY_SCOPE</key><string>gig-storefront-direct</string>
+    <key>ANICCA_BUDGET_REQUIRED</key><string>1</string>
+    <key>ANICCA_TOKEN_BUDGET_LEDGER</key><string>__HOME__/.local/state/anicca/telemetry/token-budget.jsonl</string>
+    <key>GIG_OPERATOR_BRAKE_FILE</key><string>__HOME__/.openclaw/state/gig-work/storefront.operator.brake</string>
+    <key>CLOAK_CONTEXT_LEASES_FILE</key><string>__HOME__/.cloak/vault/gig-leases.json</string>
+    <key>CLOAK_CDP_BASE_URL</key><string>http://127.0.0.1:9223</string>
+    <key>CDP_DAILY_DRIVER_PORT</key><string>9223</string>
+    <key>CDP_DAILY_DRIVER_PROFILE</key><string>__HOME__/.cloak/profiles/gig-daily-driver</string>
+  </dict>
+  <key>StandardOutPath</key><string>__HOME__/.openclaw/logs/gig-storefront-direct-launchd.out.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/.openclaw/logs/gig-storefront-direct-launchd.err.log</string>
+</dict></plist>
