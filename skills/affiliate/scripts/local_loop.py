@@ -17,6 +17,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from types import SimpleNamespace
 
+from job_journal import JobStateError, start_effect, verify_effect
 from provider_cli import ProviderError, observe, poll
 
 
@@ -157,6 +158,15 @@ def flush_telegram(state, event, runner=subprocess.run):
     if not openclaw:
         return {"state": "TRANSPORT_UNAVAILABLE", "sent": 0, "message_id": None}
     row = pending[0]
+    try:
+        job = start_effect(
+            state, "TELEGRAM_SEND", row["event_uuid"],
+            {"channel": "telegram", "event_uuid": row["event_uuid"],
+             "body_sha256": hashlib.sha256(row["body"].encode()).hexdigest()},
+            {"state": "NOT_SENT", "event_uuid": row["event_uuid"]}, 60,
+        )
+    except JobStateError:
+        return {"state": "RECONCILE_REQUIRED", "sent": 0, "message_id": None}
     completed = runner(
         [openclaw, "message", "send", "--channel", "telegram", "--target", "8547730585",
          "--message", row["body"], "--json"],
@@ -173,6 +183,9 @@ def flush_telegram(state, event, runner=subprocess.run):
         "event_uuid": row["event_uuid"], "message_id": message_id,
         "sent_at": int(time.time()),
     }, ("event_uuid",))
+    verify_effect(state, job["job_id"], {
+        "state": "SENT", "event_uuid": row["event_uuid"], "message_id": message_id,
+    })
     return {"state": "SENT", "sent": 1, "message_id": message_id}
 
 

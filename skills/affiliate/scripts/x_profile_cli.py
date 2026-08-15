@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from websocket import create_connection
 
+from job_journal import JobStateError, start_effect, verify_effect
 from provider_cli import ProviderError, atomic_write, cdp_call, click, query_node, read_json
 
 
@@ -159,6 +160,10 @@ def apply(args, config):
         request_id = set_control(ws, request_id, "input[name='displayName']", config["display_name"])
         request_id = set_control(ws, request_id, "textarea[name='description']", config["bio"])
         request_id = set_control(ws, request_id, "input[name='url']", config["url"])
+        job = start_effect(
+            args.state, "X_PROFILE_SAVE", config["handle"], config,
+            {key: before.get(key) for key in ("name", "handle", "bio", "url", "rendered_url")}, 300,
+        )
         click(ws, request_id, "button[data-testid='Profile_Save_Button']:not([disabled])")
         time.sleep(2)
     finally:
@@ -166,6 +171,9 @@ def apply(args, config):
     after = inspect(args, config)
     if not matches(after, config):
         raise XProfileError("X profile save readback mismatch")
+    verify_effect(args.state, job["job_id"], {
+        key: after.get(key) for key in ("name", "handle", "bio", "url", "rendered_url")
+    })
     return after, True
 
 
@@ -175,6 +183,7 @@ def main():
     parser.add_argument("--locale", default="en")
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--cdp-port", type=int, default=9326)
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     parser.add_argument(
         "--receipt", type=Path,
         default=Path("~/.local/state/life-manager/affiliate/x-profile-en.json"),
@@ -202,6 +211,6 @@ def main():
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except (XProfileError, ProviderError, OSError, ValueError, KeyError, json.JSONDecodeError):
+    except (XProfileError, ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
         print("affiliate x: failed closed", file=sys.stderr)
         sys.exit(1)

@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from websocket import create_connection
+from job_journal import JobStateError, start_effect, verify_effect
 
 
 class ProviderError(Exception):
@@ -232,6 +233,12 @@ def resume(args):
     if before["state"] == "SIGN_IN_REQUIRED":
         base = f"http://{args.cdp_host}:{args.cdp_port}"
         target = choose_target(read_json(f"{base}/json/list"), playbook)
+        state = getattr(args, "state", args.receipt.expanduser().parent / "affiliate-state").expanduser()
+        job = start_effect(
+            state, "PROVIDER_LOGIN", args.provider,
+            {"operation": "submit_login", "provider": args.provider},
+            {key: before.get(key) for key in ("state", "url", "rendered_text_sha256")}, 300,
+        )
         submit_login(args, playbook, target)
         submitted = True
         for _ in range(20):
@@ -239,6 +246,10 @@ def resume(args):
             after = observe(args)
             if after["state"] != "SIGN_IN_REQUIRED":
                 break
+        if after["state"] == "AUTHENTICATED":
+            verify_effect(state, job["job_id"], {
+                key: after.get(key) for key in ("state", "url", "rendered_text_sha256")
+            })
     else:
         after = before
     receipt = {
@@ -299,6 +310,7 @@ def main():
     parser.add_argument("--cdp-port", required=True, type=int)
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--receipt", required=True, type=Path)
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     parser.add_argument(
         "--private-markdown", type=Path,
         default=Path("~/.config/anicca/affiliate-credentials.md"),
@@ -320,6 +332,6 @@ def main():
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except (ProviderError, OSError, ValueError, KeyError, json.JSONDecodeError):
+    except (ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
         print("affiliate provider: failed closed", file=sys.stderr)
         sys.exit(1)

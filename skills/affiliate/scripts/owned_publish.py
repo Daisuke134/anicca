@@ -13,6 +13,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+from job_journal import JobStateError, start_effect, verify_effect
 from provider_cli import atomic_write
 
 
@@ -135,7 +136,19 @@ def publish(args):
             raise PublishError("git index contains a non-publication target")
         git(root, "commit", "-m", f"feat(blog): publish {args.slug}")
     commit = git(root, "rev-parse", "HEAD")
+    ref = f"refs/heads/{args.branch}"
+    remote_row = git(root, "ls-remote", args.remote, ref)
+    remote_head = remote_row.split()[0] if remote_row else None
+    job = start_effect(
+        state, "OWNED_GIT_PUSH", args.slug,
+        {"content_sha256": artifact["content_sha256"], "commit": commit,
+         "remote": args.remote, "branch": args.branch},
+        {"remote": args.remote, "branch": args.branch, "head": remote_head}, 300,
+    )
     git(root, "push", args.remote, f"HEAD:refs/heads/{args.branch}")
+    verify_effect(state, job["job_id"], {
+        "state": "DELIVERED", "remote": args.remote, "branch": args.branch, "head": commit,
+    })
     receipt.update(state="DELIVERED", commit=commit, remote=args.remote, branch=args.branch)
     atomic_write(receipt_path, receipt)
     live = fetch_readback(artifact, args.base_url)
@@ -163,6 +176,6 @@ def main():
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except (PublishError, OSError, ValueError, KeyError, json.JSONDecodeError):
+    except (PublishError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
         print("affiliate owned: failed closed", file=sys.stderr)
         raise SystemExit(1)

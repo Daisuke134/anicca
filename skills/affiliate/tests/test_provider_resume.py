@@ -3,11 +3,13 @@ import importlib.util
 import json
 import tempfile
 import unittest
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "provider_cli.py"
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("provider_cli", SCRIPT)
 provider_cli = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(provider_cli)

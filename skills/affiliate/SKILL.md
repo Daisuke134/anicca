@@ -189,6 +189,13 @@ recorded in `telegram-sent.jsonl` with the provider `messageId`. Stable event
 UUIDs suppress repeated empty-report/status notifications across later wakes;
 tracking links and customer PII are never included.
 
+Every supported external mutation is wrapped by `scripts/job_journal.py`.
+Immediately before provider login submit, X profile save, X post publish, owned
+Git push, or Telegram send, the adapter persists a mode-0600 job containing
+`run_id`, `job_id`, `state`, `attempt`, `action_fingerprint`, `cooldown`, and the
+last verified external object. Only a semantic readback changes it from
+`EFFECT_STARTED` to `VERIFIED`; an unresolved effect refuses a blind retry.
+
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:
 

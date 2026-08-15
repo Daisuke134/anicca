@@ -893,6 +893,24 @@ commission message counts.
 - [ ] **A14.8** Induce one isolated recoverable failure and prove the live loop
   reports, repairs, resumes, and completes without owner action.
 
+A14.1 implementation basis and checkpoint:
+
+- [Temporal Workflow Execution](https://docs.temporal.io/workflow-execution): a
+  workflow is identified by Workflow ID and Run ID; persisted state and event
+  history let execution recover and resume from its latest state.
+- [AWS Builders' Library — Making retries safe with idempotent APIs](https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/):
+  AWS prefers a unique caller-provided request identifier and retains the
+  original request parameters so retries preserve intent.
+- [AWS Step Functions redrive（日本語）](https://docs.aws.amazon.com/ja_jp/step-functions/latest/dg/redrive-executions.html):
+  redrive keeps the same execution identity/input, preserves successful steps,
+  and resumes from the failed step.
+- The canonical Skill now copy+tweaks the Writer publication guard into one
+  secret-refusing `job_journal.py`. Provider login submit, X profile save, X post
+  publish, owned Git push, and Telegram send write all seven required fields
+  before mutation and set `VERIFIED` only after real readback. A focused check
+  proves the unresolved-effect gate and append-only transition history. A14.1
+  remains open until an installed real mutation produces the same receipt.
+
 #### D. Earn the first externally approved commission
 
 - [ ] **A15.1** Keep ElevenLabs active and poll HubSpot/Impact; never resubmit the

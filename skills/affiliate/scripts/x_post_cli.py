@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
+from job_journal import JobStateError, start_effect, verify_effect
 from provider_cli import ProviderError, atomic_write, cdp_call, click, query_node, read_json
 from x_profile_cli import XProfileError, choose_x_target, connect, inspect, load_config
 
@@ -147,12 +148,23 @@ def publish(args):
                 request_id = live_readback(ws, request_id, candidate, text)
                 public_url = candidate
         if not public_url:
+            job = start_effect(
+                state_root, "X_POST_PUBLISH", args.placement,
+                {"placement_id": args.placement, "content_sha256": fingerprint},
+                {"state": "NOT_FOUND", "handle": config["handle"], "timeline_rows": len(rows)}, 3600,
+            )
             fence = {
                 "schema_version": 1,
                 "receipt_type": "X_POST_EFFECT_FENCE",
                 "placement_id": args.placement,
                 "content_sha256": fingerprint,
                 "phase": "effect-possible",
+                "run_id": job["run_id"],
+                "job_id": job["job_id"],
+                "attempt": job["attempt"],
+                "action_fingerprint": job["action_fingerprint"],
+                "cooldown": job["cooldown"],
+                "last_verified_external_object": job["last_verified_external_object"],
                 "effect_started_at": datetime.now(timezone.utc).isoformat(),
             }
             atomic_write(receipt_path, fence)
@@ -192,6 +204,10 @@ def publish(args):
         "observed_at": datetime.now(timezone.utc).isoformat(),
     }
     atomic_write(receipt_path, receipt)
+    if "job" in locals():
+        verify_effect(state_root, job["job_id"], {
+            "state": "LIVE", "public_url": public_url, "content_sha256": fingerprint,
+        })
     return receipt
 
 
@@ -214,6 +230,6 @@ def main():
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except (XPostError, XProfileError, ProviderError, OSError, ValueError, KeyError, json.JSONDecodeError):
+    except (XPostError, XProfileError, ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
         print("affiliate x post: failed closed", file=sys.stderr)
         raise SystemExit(1)
