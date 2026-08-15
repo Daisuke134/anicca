@@ -160,6 +160,62 @@ def navigate_text(ws, request_id, url, ready_markers):
     raise RevenueError("PartnerStack report did not become ready")
 
 
+def cdp_call_collect(ws, request_id, method, params, events):
+    ws.send(json.dumps({"id": request_id, "method": method, "params": params or {}}))
+    while True:
+        message = json.loads(ws.recv())
+        if message.get("method"):
+            events.append(message)
+        if message.get("id") == request_id:
+            if "error" in message:
+                raise RevenueError(f"CDP {method} failed")
+            return message.get("result", {})
+
+
+def capture_commission_rows(args):
+    pages = [item for item in read_json(f"http://{args.cdp_host}:{args.cdp_port}/json/list") if item.get("type") == "page"]
+    if len(pages) != 1:
+        raise RevenueError(f"expected one provider tab, found {len(pages)}")
+    ws = create_connection(
+        f"ws://{args.cdp_host}:{args.cdp_port}/devtools/page/{pages[0]['id']}",
+        timeout=20, max_size=None, suppress_origin=True,
+    )
+    events = []
+    try:
+        cdp_call_collect(ws, 1, "Network.enable", {}, events)
+        cdp_call_collect(ws, 2, "Page.enable", {}, events)
+        cdp_call_collect(ws, 3, "Page.navigate", {
+            "url": "https://dash.partnerstack.com/reporting/commission_performance",
+        }, events)
+        request_id = None
+        for attempt in range(20):
+            time.sleep(0.5)
+            cdp_call_collect(ws, 10 + attempt, "Runtime.evaluate", {
+                "expression": "document.readyState", "returnByValue": True,
+            }, events)
+            for event in events:
+                if event.get("method") != "Network.responseReceived":
+                    continue
+                response = event.get("params", {}).get("response", {})
+                url = response.get("url", "").split("?", 1)[0]
+                if "/api/v2/stats/commission_report/" in url and not url.endswith("/summary"):
+                    request_id = event["params"]["requestId"]
+            if request_id:
+                break
+        if not request_id:
+            raise RevenueError("PartnerStack commission response was not observed")
+        result = cdp_call_collect(ws, 100, "Network.getResponseBody", {"requestId": request_id}, events)
+        rows = json.loads(result.get("body", ""))
+        if not isinstance(rows, list):
+            raise RevenueError("PartnerStack commission response is not a list")
+        return rows
+    finally:
+        try:
+            cdp_call_collect(ws, 200, "Page.navigate", {"url": "https://elevenlabs.io/app/home"}, events)
+        finally:
+            ws.close()
+
+
 def capture_reports(args):
     pages = [item for item in read_json(f"http://{args.cdp_host}:{args.cdp_port}/json/list") if item.get("type") == "page"]
     if len(pages) != 1:
@@ -183,6 +239,7 @@ def capture_reports(args):
             cdp_call(ws, 200, "Page.navigate", {"url": "https://elevenlabs.io/app/home"})
         finally:
             ws.close()
+    commission_rows = capture_commission_rows(args)
     observed_at = datetime.now(timezone.utc).isoformat()
     artifact = {
         "schema_version": 1,
@@ -190,6 +247,7 @@ def capture_reports(args):
         "observed_at": observed_at,
         "commission_url": commissions["url"],
         "commission_text": commissions["text"],
+        "commission_rows": commission_rows,
         "payout_url": payouts["url"],
         "payout_text": payouts["text"],
     }
@@ -207,7 +265,8 @@ def capture_reports(args):
         "generic_transaction_id_available": False,
         "provider_transaction_key": "commission_key",
         "attribution_keys": ["sub_id_1", "sub_id_2", "sub_id_3", "shared_id", "clicked_at", "link"],
-        "commission_row_state": "EMPTY" if ("結果は見つかりませんでした" in commissions["text"] or "No results found" in commissions["text"]) else "ROWS_PRESENT",
+        "commission_row_count": len(commission_rows),
+        "commission_row_state": "EMPTY" if not commission_rows else "ROWS_PRESENT",
         "payout_row_state": "EMPTY" if ("0 to 0" in payouts["text"] or "0件中0" in payouts["text"]) else "ROWS_PRESENT",
         "rendered_artifact_sha256": artifact_hash,
         "observed_at": observed_at,
