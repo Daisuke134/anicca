@@ -379,6 +379,16 @@ binary SHA-256 `79ddf7e7a7be8087319390ed79266387f6499b8a2e45ccfbaa724d7e7fff6b79
 The browser never launched, and Affiliate launchd owner count remained zero.
 Pinned Python runtime admission and Keychain readback keep Step 3 open.
 
+Pinned-runtime decision: directly install Astral python-build-standalone CPython
+`3.14.7+20260814` for macOS arm64. Its artifact SHA-256
+`423717c485b9ee7822590b9d973c1b5fb2cda0fe43448ab82a3d44f823bd329c`
+matches the independent release `SHA256SUMS`, GitHub asset digest, and uv's
+fixed download catalog. Reuse the existing manifest downloader, extract the
+verified `python/` tree to an immutable staging directory, execute only the
+verified `python/bin/python3.14` for a version/ssl/sqlite smoke check, and
+atomically activate it inside Affiliate data. Do not add uv, Homebrew, pyenv,
+or a new test suite.
+
 - [ ] **Step 4: Implement semantic capability inventory and browser provisioning**
 
 Discover existing authorized identities and sessions, create locale-isolated
