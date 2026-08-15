@@ -2698,6 +2698,10 @@ presend再観測、公式proposal readbackは変更しない。Coconalaの速い
 **DONE EVIDENCE:** plist lint、exact release deploy、loaded ownerのinterval 300、production wake exit 0。candidateがなければhealthy no-op、
 candidateがあれば最大1件だけ公式proposal IDへ閉じる。state pending 0、next-wake duplicate submit 0、provider 429/session failure 0を確認する。
 
+**DONE:** commit `72c1eca9237121100d229c42850da07a38f63851`をorigin/mainへpushし、5 ownerを同一exact releaseへreloadした。
+loaded Application ownerは`run interval = 300 seconds`で、production wakeは公開6件を観測し`duplicate_project 5586723 / submitted false /
+exit 0`。stateとledgerのSHA-256は不変、pending 0、provider 429/session failure 0だった。
+
 ### 18.38 First-review conversion ranking parity
 
 **USER OUTCOME:** 評価0の新規sellerが、納品可能な候補の中で最初の有償契約を取りやすい案件へ先に応募する。
@@ -2714,3 +2718,7 @@ candidateがあれば最大1件だけ公式proposal IDへ閉じる。state pendi
 
 **DONE EVIDENCE:** compile、exact release deploy、同予算・同buyer qualityの複数eligibleで公式提案数の少ない候補が先、unknownは元順序を維持。
 production ownerは最大1応募、公式proposal readback、next-wake duplicate effect 0を維持する。
+
+**DONE:** commit `c3259e92efe07892421a1ccd3e6a10a6a5744df8`をorigin/mainへpushし、5 ownerを同じexact releaseへreloadした。
+直接checkは同予算・同発注率で`提案3件 → 30件 → 不明`を確認した。production Application wakeは約90秒でbounded終了し、
+`no_eligible_project / observed 0 / submitted false / exit 0`。pending 0、重複応募0、provider failure 0である。
