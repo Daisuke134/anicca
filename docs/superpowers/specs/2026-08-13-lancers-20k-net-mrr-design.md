@@ -2540,3 +2540,21 @@ active contract readback shapeを持たない。GitHub code searchにも既存cl
 **NEXT DIRECT ACTION:** 既存5分observerが最初のoffer IDを検知したwakeで、そのexact detail URLをread-only取得し、scope、初月/翌月金額、
 支払・仮払い表示、期限、accept/decline formを実測する。会話で合意したcanonical product/verified proposal条件と一致する場合だけdurable intent→
 fresh presend→一回承認→active contract exact ID/funding readback→ContractReceipt。timeout/unknownはeffect 0またはreadback-onlyで、blind accept 0。
+
+### 18.32 Application competition evidence
+
+**CURRENT OBSERVATION:** AI/API PoC `5586377`は応募時に公式提案数126件、再観測時129件である。現Application snapshotはbuyer scope、
+budget、categoryを渡すが、公式proposal countを捨てるため、modelは同じcredible fitでも競争3件と129件を区別できない。
+
+**FIRST-SOURCE BOUNDARY:** public detail HTMLは`tableSummary__col--worksNum`内にexact label `提案数`とnumeric countを表示する。
+既存public GETはこのHTMLを取得済みであり、新requestや認証は不要である。
+
+**NEXT DIRECT ACTION:** 既存`_DetailParser`でこの一つの公式summary fieldだけを取得し、既存detail description末尾へ`提案数: N件`として渡す。
+hard thresholdやkeyword filterは作らず、modelがscope、seller proof、価格、納期、競争を案件全体で比較する。提案数の少なさだけで能力外案件へ応募しない。
+
+**PLAN SIZE:** production 1 file、約15行。schema、adapter、network、state、ledger、schedulerは変更しない。
+
+**DONE EVIDENCE:** `5586377`のsame public HTMLからnumeric proposal countを取得し、normal discoveryのplanner snapshotへ保持する。
+
+**DONE:** current public detailを再取得し、公式`提案数: 130件`を取得した。同じ既存detail GETを通るenrichmentは成功1/失敗0で、
+Applicationのnormal planner snapshotにもexact fieldを保持する。hard threshold、追加request、schema、state、ledger、scheduler変更は0である。
