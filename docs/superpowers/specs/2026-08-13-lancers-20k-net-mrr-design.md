@@ -2499,3 +2499,12 @@ URL・title・説明・licenseだけを追加する。modelは固定whitelistで
 
 **DONE EVIDENCE:** production planner inputがpublic repositoryの正確なURLと説明を含み、実測した未処理software案件を観測する。ownerは
 最大一応募、公式proposal ID、pending reconciliation、daily quotaを維持する。能力外・低margin・証拠不一致なら送信0を正常結果とする。
+
+**PRODUCTION EVIDENCE:** exact release `3fd41da5dbf287ece790da21b7a2f683b84d8c92`のApplication ownerは、固定queryでは未観測だった
+AI/API PoC `5586377`を`Python` queryから適合一件として選んだ。一回送信後はdurable pendingで停止し、次wakeはsubmit 0のreadback-onlyで
+公式proposal `27813129`へ確定した。pending 1→0、ApplicationReceipt 30→31、blind resend 0である。提案は公開Life Manager sourceを
+顧客実績ではなく制作例として正直に示し、補助金情報収集→構造化→match→将来API化のscopeにgroundする。
+
+**FIRST REAL BLOCKER:** provider構造化予算は10–20万円だが、本文はPoC予算10–15万円程度と具体化する。plannerは広いstructured maxを
+使って18万円で提案した。今後は新しい価格parserを作らず、modelへ「本文の狭い具体予算をproviderの広い帯より優先する」と一文だけ追加する。
+proposal額を売上には数えず、現在の契約・入金は0のままである。
