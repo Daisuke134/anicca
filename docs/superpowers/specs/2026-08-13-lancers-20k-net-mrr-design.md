@@ -2481,3 +2481,21 @@ canonical `1338228`は変更しない。
 全5件`archived`、canonical `1338228`だけ`active`を確認した。後続2 wakeは`action=unchanged / superseded_visible_count=0 /
 status_effect_count=0 / exit 0`である。未ログインpublic profileを別経路で再取得し、料金表はcanonical一件、portfolio一件だけを表示する。
 Application state、ApplicationReceipt ledger、contract snapshotのSHA-256は前後一致し、listing receiptだけが最新観測時刻へ更新された。
+
+### 18.29 Application capability coverage — public software proof
+
+**USER OUTCOME:** SNS案件だけでなく、実際に納品できるAI・software・automation案件も公開成果物にgroundして見つけ、案件ごとに柔軟に応募する。
+
+**CURRENT OBSERVATION:** GitHub公式APIとraw READMEで`https://github.com/Daisuke134/life-manager`はpublic、MIT、default branch mainであり、
+API、scheduler、worker、Postgres、object store、Telegram reporting、receipt付き外部action loopの実sourceを公開する。一方、Applicationの
+seller proofはSNS portfolio/packageだけで、検索語もSNS中心である。公式Lancers検索のread-only実測では`Python`に未処理4件、
+`システム開発`に未処理2件があり、AI/API PoC上限20万円、CRM/マーケ基盤PM上限300万円を現queryが安定して観測しない。
+
+**NEXT DIRECT ACTION:** 新classifier、category table、DB、schedulerを作らない。既存Applicationのseller proofへ公式public repositoryの
+URL・title・説明・licenseだけを追加する。modelは固定whitelistではなく案件全体と公開sourceを照合する。10 queryの総数を増やさず、
+低シグナルの`LinkedIn / 継続依頼 / 長期`を実測済み`Python / システム開発 / ChatGPT`へ置換する。
+
+**PLAN SIZE:** production 1 file、約10–20行。Storefront product/receipt、Application effect、state、ledger、browser、schedulerは変更しない。
+
+**DONE EVIDENCE:** production planner inputがpublic repositoryの正確なURLと説明を含み、実測した未処理software案件を観測する。ownerは
+最大一応募、公式proposal ID、pending reconciliation、daily quotaを維持する。能力外・低margin・証拠不一致なら送信0を正常結果とする。

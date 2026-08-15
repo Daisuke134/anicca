@@ -25,9 +25,13 @@ PLATFORM = "lancers"
 MAX_OPPORTUNITIES = 20
 DEFAULT_DISCOVERY_QUERY = "SNS運用"
 DISCOVERY_QUERIES = (
-    "SNS運用", "SNS投稿", "コンテンツ制作", "X運用", "LinkedIn",
-    "B2Bマーケティング", "AI活用", "継続依頼", "長期", "月額",
+    "SNS運用", "SNS投稿", "コンテンツ制作", "X運用", "Python",
+    "B2Bマーケティング", "AI活用", "システム開発", "ChatGPT", "月額",
 )
+PUBLIC_SOFTWARE_PROOF = {
+    "source_url": "https://github.com/Daisuke134/life-manager", "title": "Life Manager", "license": "MIT",
+    "description": "API、scheduler、worker、Postgres、object store、Telegram reporting、公式readback付き外部action loopを同一repositoryで実装したMIT公開のpersonal managerです。",
+}
 PLANNER_TASK_CLASS = "application-intent-planner"
 PLANNER_TIMEOUT_SECONDS = 180
 DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json"
@@ -145,9 +149,10 @@ def _run_default_discovery(tick_value: object, timeout: float, state_path: Path)
     return last
 
 def _seller_proof() -> dict[str, object]:
-    product = json.loads(PRODUCT_PATH.read_text(encoding="utf-8")); portfolio = product["portfolio"]
+    product = json.loads(PRODUCT_PATH.read_text(encoding="utf-8")); portfolio = product["portfolio"]; software = PUBLIC_SOFTWARE_PROOF
     ids = (product["listing_external_id"], portfolio["external_id"])
     strings = (product["title_stem"], product["description"], product["notice"], portfolio["title_stem"], portfolio["description"])
+    if not isinstance(software, Mapping) or set(software) != {"source_url", "title", "description", "license"} or software.get("source_url") != "https://github.com/Daisuke134/life-manager" or any(not isinstance(software.get(key), str) or not software[key].strip() for key in ("title", "description", "license")): raise ValueError
     if any(not isinstance(value, str) or not value.strip() for value in ids + strings) or any(ID_RE.fullmatch(value) is None for value in ids): raise ValueError
     plans = [{key: plan[key] for key in ("description", "delivery_days", "price_jpy")} for plan in product["plans"]]
     return {
@@ -156,6 +161,7 @@ def _seller_proof() -> dict[str, object]:
         "portfolio_title": portfolio["title_stem"] + "ました", "portfolio_description": portfolio["description"],
         "package_id": ids[0], "package_url": f"https://www.lancers.jp/menu/detail/{ids[0]}",
         "package_title": product["title_stem"] + "ます", "package_scope": product["description"], "package_exclusions": product["notice"], "plans": plans,
+        "public_software_proof": dict(software),
     }
 
 def _snapshot(rows: Sequence[Mapping[str, object]], today: date) -> dict[str, object]:
@@ -172,7 +178,7 @@ def _snapshot(rows: Sequence[Mapping[str, object]], today: date) -> dict[str, ob
 
 PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent plannerである。ブラウザ・認証・外部操作はできない。"
     "確認済みのdelivery能力は、非同期のresearch、文章作成・編集・翻訳、digital content設計、code・software・data・AI automation、利用可能なtoolで生成できるdigital artifactである。未提示の個人職歴、雇用経験、資格、電話営業、常駐staff稼働、専用hardwareや外部credentialを能力として仮定しない。"
-    "SNAPSHOTのseller_proofは現在のLancers公開profile、portfolio、packageで買い手が確認できる証拠であり、能力の固定whitelistではない。portfolioとpackageが案件scopeに合う時は具体的に活用し、未掲載の顧客実績、評価、売上効果、専門職歴を捏造しない。転用可能な確認済み能力で完遂できても公開証拠との距離が大きく買い手にcredible fitを示せない案件はskip_not_fitにする。"
+    "SNAPSHOTのseller_proofは現在のLancers公開profile、portfolio、packageとMIT公開source codeで買い手が確認できる証拠であり、能力の固定whitelistではない。案件scopeに合う証拠だけを具体的に活用し、未掲載の顧客実績、評価、売上効果、専門職歴を捏造しない。転用可能な確認済み能力で完遂できても公開証拠との距離が大きく買い手にcredible fitを示せない案件はskip_not_fitにする。"
     "各案件を実際の公開内容全体から自分で判断し、指定schemaのJSONだけを返す。現在の自律delivery systemが全必須成果物を正直に完成でき、買い手にcredible fitを示し、scope・期限・報酬から正のmarginで完遂できる場合だけsubmit_requiredとする。reason_codesは空、買い手向けの具体的な日本語proposalを200〜3000文字、正直な価格、現実的な納期で返す。"
     "hard_prohibitedは案件全体が次のいずれかを必須とする場合だけ使う: "
     + "; ".join(f"{key}={value}" for key, value in HARD_PROHIBITION_CLASSES.items()) + "。"
