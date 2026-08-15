@@ -110,7 +110,7 @@ def _report_message(row: dict) -> str:
         "Codex::: 🏪 ココナラ Storefront hourly",
         f"✅ 公式出品 {int(row.get('official_services_read') or 0)}件 / 競合証拠 {int(row.get('competitor_evidence_count') or 0)}件",
         f"📊 actionable {int(row.get('actionable') or 0)} / effect {effect} / readback {int(row.get('readback') or 0)} / duplicate {int(row.get('duplicate') or 0)}",
-        f"📚 出品contract追加 {contract_delta}件",
+        f"📚 出品contract {int(row.get('listing_contracts_total') or 0)}件 / 今回追加 {contract_delta}件",
         f"🧪 次候補 {hypothesis.get('service_id') or 'なし'} / {hypothesis.get('field') or 'なし'} / 実行可能 {str(bool(hypothesis.get('executable'))).lower()}",
         f"🛡️ fence {hypothesis.get('guard_reason') or row.get('reason') or 'なし'}",
         f"🔧 次の一手: {next_action}",
@@ -1371,6 +1371,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 listing_contract_count += int(_append_key_once(
                     args.state_dir / "listing-contracts.jsonl", "contract_key", contract,
                 ))
+            listing_contract_total = sum(
+                1 for line in (args.state_dir / "listing-contracts.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            )
             accepted_effect = 0
             accepted_readback = 0
             if pending_effect is not None:
@@ -1439,6 +1443,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 official_services_read=observed,
                 offer_contracts_appended=contract_count,
                 listing_contracts_appended=listing_contract_count,
+                listing_contracts_total=listing_contract_total,
                 competitor_evidence_count=len(competitor_manifest["sources"]),
                 inventory_content_sha256=inventory.get("content_sha256"),
                 judgement_path=str(judgement_path),
