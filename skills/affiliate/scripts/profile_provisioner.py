@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 
 
-LOCALES = (("en", 9324), ("ja", 9325), ("x-en", 9326))
+LOCALES = (("en", 9324), ("ja", 9325), ("x-en", 9326), ("impact-en", 9327))
 
 
 class ProvisionError(Exception):

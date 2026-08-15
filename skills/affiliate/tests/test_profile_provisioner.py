@@ -57,14 +57,14 @@ class ProfileProvisionerRedTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads(receipt.read_text(encoding="utf-8"))
             self.assertEqual(payload["status"], "READY")
-            self.assertEqual(set(payload["locales"]), {"en", "ja", "x-en"})
+            self.assertEqual(set(payload["locales"]), {"en", "ja", "x-en", "impact-en"})
 
             records = payload["locales"]
-            names = ("en", "ja", "x-en")
+            names = ("en", "ja", "x-en", "impact-en")
             paths = [self.receipt_locale_path(root, records[locale]) for locale in names]
             ports = [int(records[locale]["cdp_port"]) for locale in names]
-            self.assertEqual(len(set(paths)), 3)
-            self.assertEqual(len(set(ports)), 3)
+            self.assertEqual(len(set(paths)), 4)
+            self.assertEqual(len(set(ports)), 4)
             self.assertTrue(PROTECTED_PORTS.isdisjoint(ports))
             for path in paths:
                 self.assertTrue(path.is_dir())

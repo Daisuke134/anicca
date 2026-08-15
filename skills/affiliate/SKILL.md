@@ -39,10 +39,10 @@ The first provider CLI slice is live:
 
 ```bash
 skills/affiliate/affiliate provider inspect \
-  --provider hubspot-impact --cdp-port 9223 --receipt "$RECEIPT"
+  --provider hubspot-impact --cdp-port 9327 --receipt "$RECEIPT"
 ```
 
-It attaches read-only to the existing task browser, selects exactly one
+It attaches read-only to the dedicated `impact-en:9327` browser, selects exactly one
 origin/title/path-bound tab, maps rendered text through the versioned provider
 playbook, and writes an atomic sanitized receipt. Unknown UI never becomes an
 approval. The current slice observes status only; it cannot submit or publish.
@@ -63,7 +63,7 @@ It reads the mode-0600 Git-external Markdown, clears and fills the named control
 through CDP, submits at most once per invocation, and requires rendered readback.
 Credentials never enter stdout, receipts, Git, selectors, or command arguments.
 
-Install the local release and its two launchd owners:
+Install the local release and its four launchd owners:
 
 ```bash
 skills/affiliate/scripts/install-release.sh

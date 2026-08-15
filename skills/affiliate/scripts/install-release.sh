@@ -100,7 +100,7 @@ fi
 /usr/bin/plutil -insert excluded_mutable_paths -json '["state"]' "$RECEIPT_STAGE"
 if [[ "$INSTALL_LAUNCHD" == "1" ]]; then
   /usr/bin/plutil -insert launchd_owners -json \
-    '["ai.anicca.affiliate-browser","ai.anicca.affiliate-x-browser","ai.anicca.affiliate-loop"]' "$RECEIPT_STAGE"
+    '["ai.anicca.affiliate-browser","ai.anicca.affiliate-impact-browser","ai.anicca.affiliate-x-browser","ai.anicca.affiliate-loop"]' "$RECEIPT_STAGE"
 else
   /usr/bin/plutil -insert launchd_owners -array "$RECEIPT_STAGE"
 fi
@@ -130,6 +130,7 @@ LAUNCH_AGENTS="$HOME_ROOT/Library/LaunchAgents"
 LOG_DIR="$HOME_ROOT/.local/state/life-manager/affiliate/logs"
 mkdir -p "$LAUNCH_AGENTS" "$LOG_DIR"
 BROWSER_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-browser.plist"
+IMPACT_BROWSER_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-impact-browser.plist"
 X_BROWSER_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-x-browser.plist"
 LOOP_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-loop.plist"
 cat > "$BROWSER_PLIST" <<EOF
@@ -141,6 +142,17 @@ cat > "$BROWSER_PLIST" <<EOF
 <key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>AFFILIATE_BROWSER_PROFILE</key><string>$PROFILE_ROOT/en</string><key>AFFILIATE_CDP_PORT</key><string>9324</string></dict>
 <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>30</integer>
 <key>StandardOutPath</key><string>$LOG_DIR/browser.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/browser.err.log</string>
+</dict></plist>
+EOF
+cat > "$IMPACT_BROWSER_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>ai.anicca.affiliate-impact-browser</string>
+<key>ProgramArguments</key><array><string>$CLOAK_PYTHON</string><string>$CURRENT/scripts/local_browser.py</string></array>
+<key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>AFFILIATE_BROWSER_PROFILE</key><string>$PROFILE_ROOT/impact-en</string><key>AFFILIATE_CDP_PORT</key><string>9327</string><key>AFFILIATE_START_URL</key><string>https://app.impact.com/login.user</string></dict>
+<key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>30</integer>
+<key>StandardOutPath</key><string>$LOG_DIR/impact-browser.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/impact-browser.err.log</string>
 </dict></plist>
 EOF
 cat > "$X_BROWSER_PLIST" <<EOF
@@ -165,8 +177,8 @@ cat > "$LOOP_PLIST" <<EOF
 <key>StandardOutPath</key><string>$LOG_DIR/loop.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/loop.err.log</string>
 </dict></plist>
 EOF
-/usr/bin/plutil -lint "$BROWSER_PLIST" "$X_BROWSER_PLIST" "$LOOP_PLIST" >/dev/null
-for label in ai.anicca.affiliate-loop ai.anicca.affiliate-x-browser ai.anicca.affiliate-browser; do
+/usr/bin/plutil -lint "$BROWSER_PLIST" "$IMPACT_BROWSER_PLIST" "$X_BROWSER_PLIST" "$LOOP_PLIST" >/dev/null
+for label in ai.anicca.affiliate-loop ai.anicca.affiliate-x-browser ai.anicca.affiliate-impact-browser ai.anicca.affiliate-browser; do
   /bin/launchctl bootout "gui/$(id -u)/$label" >/dev/null 2>&1 || true
 done
 
@@ -188,6 +200,14 @@ for attempt in {1..30}; do
     break
   fi
   [[ "$attempt" != "30" ]] || die "affiliate browser CDP did not become ready"
+  sleep 1
+done
+bootstrap_agent "$IMPACT_BROWSER_PLIST"
+for attempt in {1..30}; do
+  if /usr/bin/curl -fsS --max-time 2 "http://127.0.0.1:9327/json/version" >/dev/null 2>&1; then
+    break
+  fi
+  [[ "$attempt" != "30" ]] || die "affiliate Impact browser CDP did not become ready"
   sleep 1
 done
 bootstrap_agent "$X_BROWSER_PLIST"

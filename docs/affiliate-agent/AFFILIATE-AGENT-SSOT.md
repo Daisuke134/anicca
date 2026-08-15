@@ -867,6 +867,10 @@ regressions relevant to that step.
 - [ ] **A13.5** Prove real messages for `PLACEMENT_LIVE`, `CLICK_DELTA`,
   `COMMISSION_PENDING`, `COMMISSION_APPROVED`, `SELF_HEALED`, and `BLOCKED`.
 
+`SELF_HEALED` is live-proven with Telegram `messageId=20298`; `BLOCKED` is
+live-proven with `messageId=20305`. The other four event classes remain bound to
+their real external states.
+
 Installed proof: immutable release `e4176c8a83832d10c880b379b3d99c3294b241ec`
 created one real `REVENUE_RECONCILED` outbox row before sending, stored Telegram
 `messageId=20279`, and exited `0`. A second real launchd kickstart produced
@@ -923,6 +927,13 @@ installed process 2 recovered the same job through the real public timeline and
 returned its original status URL. A second read-only timeline pass found exactly
 one matching URL, so no duplicate publish occurred; A14.2 is DONE. A14.3 remains
 open for application-side ambiguity even though X publication is now proven.
+
+Impact recovery incident: the prior Skill example incorrectly named protected
+CDP `9223` as HubSpot/Impact. Live inspection proved that port is controlled by
+another earning loop, so Affiliate stopped using it; no application, publication,
+or payment mutation occurred. The canonical release now provisions isolated
+`impact-en:9327` under `ai.anicca.affiliate-impact-browser`. Only that owner may
+perform future Impact recovery and application readback.
 
 #### D. Earn the first externally approved commission
 
