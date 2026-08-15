@@ -137,7 +137,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Release `329cbfc45270069b98e7c2b86ffc9713c02fc8e5` is installed and the authenticated local publication/revenue-observation paths are GREEN | The installed publisher reconciled the English Affiliate article and X placement without duplication. The installed revenue commands preserve the one-click baseline, read the official PartnerStack commission-report JSON as an empty array, run the bundle-backed normalizer as `NO_LIVE_ROWS`, capture the rendered Payouts surface as empty, and return CDP `9324` to ElevenLabs home. Both browser owners run and the loop is owned on a 600-second interval. This proves publication and honest report observation, not attributable click, commission, or revenue |
+| Mac-local runtime | Release `e687b5754cba5c9161cd22d7ff20f814316d62d8` is installed and the authenticated local publication/revenue-observation paths are GREEN | The installed publisher reconciles the English Affiliate article and X placement without duplication. Installed revenue commands preserve the one-click baseline, capture the official PartnerStack report, normalize it as `NO_LIVE_ROWS`, and reconcile the same source twice as zero transitions without creating money. Both browser owners run and the loop is owned on a 600-second interval. This proves publication and honest report/ledger behavior, not attributable click, commission, or revenue |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview, Commission Report, and Payouts surfaces | The current aggregate is one baseline click and zero signups/revenue/pending/paid. `revenue capture` live-read 23 commission fields and six payout fields. The current PartnerStack bundle, SHA-256 `be00e11924a35f20b84dee69ae741ae65204f07d3350a3266ad73501e96d867f`, proves the provider row keys use `reward_key`, `reward_status`, and explicit sub-ID/click/link fields even though the UI says Commission key. DOM absence was rejected as row evidence; installed release `329cbfc45` captured official JSON `row_count=0`, the empty Payouts surface, `NO_LIVE_ROWS`, and a mode-0600 artifact at SHA-256 `dce77f0083b0f92e29a67ccf99e417e11fe6307009bdfe98bf2d5fc77b39154d`. Approved/reversed remain unknown rather than zero |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
@@ -841,7 +841,7 @@ regressions relevant to that step.
   normalizer is implemented for `pending|hold|approved|scheduled|declined|paid`,
   preserves raw provider status, excludes customer PII, and currently reports
   `NO_LIVE_ROWS`; this item closes only after a real non-empty row is normalized.
-- [ ] **A12.6** Make repeated imports idempotent by provider transaction ID plus
+- [x] **A12.6** Make repeated imports idempotent by provider transaction ID plus
   source hash; a status change appends a transition rather than rewriting history.
 - [ ] **A12.7** Join a provider row to placement/click/sub-ID when supported; store
   an explicit unmatched receipt when the provider exposes no join key.
@@ -999,10 +999,11 @@ regressions relevant to that step.
     revenue/pending/paid. Source and installed release replays both observed zero
     delta and returned the provider browser to ElevenLabs home. The installed
     report capture also proved zero commission rows through the official JSON
-    response and zero payout rows through rendered readback. Approved and
-    reversed stay `null`. Add non-empty transaction normalization, idempotent
-    ledger transitions, and later-delta attribution before DONE; estimates remain
-    out.
+    response and zero payout rows through rendered readback. The installed
+    reconciler replayed the same source twice with zero appended transitions;
+    status changes are append-only and customer PII is excluded from normalized
+    rows. Approved and reversed stay `null`. Add a real non-empty transaction and
+    placement attribution before DONE; estimates remain out.
 13. **PENDING.** Send owner-readable Telegram transitions through the durable
     outbox with action, public URL, blocker/self-heal, money state, cost, and next job.
 14. **PENDING.** Add same-job crash resume, ambiguous-write dedupe, login recovery,
