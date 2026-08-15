@@ -2821,3 +2821,22 @@ https://www.lancers.jp/lp/beginner/l/03
 `source_complete=true / exit 0`で再観測した。続くApplication ownerは公開候補2件を読み、既応募project `5577746`を
 `duplicate_project / submitted false / exit 0`で閉じた。application state SHA-256 `9cb19876…fe48`とledger SHA-256
 `abdb58d0…eb6`は前後一致し、重複proposal 0である。次のfresh eligible proposalからbuyer-first contractが適用される。
+
+### 18.43 Public software portfolio proof
+
+**USER OUTCOME:** AI/API案件のbuyerが、profileを開いた時に応募文だけでなく公開制作物で実装能力を確認できる。
+
+**CURRENT OBSERVATION:** public profile本文はLife ManagerのPython、API、scheduler、worker、Postgres、object storage、Telegram reporting、
+official readbackを記載するが、portfolioはSNS制作例1件だけである。公式AI/API proposalは競合133件、account実績0件であり、公開proofの差が大きい。
+
+**FIRST SOURCE:** Lancers公式portfolio formは「制作物をビジュアルに見せることで、クライアントがあなたを選びやすくなる」と説明し、
+AI・システム開発・運用 / AI自動化・エージェント開発を公式categoryとして提供する。公式beginner guideもprofile充実と案件固有proofを受注actionに置く。
+
+**NEXT DIRECT ACTION:** 既存Storefront owner、既存portfolio form、既存の安全なworkflow assetを再利用し、MIT公開Life Managerの
+software portfolioを1件だけ作る。新listing、画像生成、DB、schedulerは作らない。顧客実績、売上効果、未実装機能は記載しない。
+初回作成後にofficial portfolio IDをproduct SSOTへ固定し、次wakeはmutation 0にする。
+
+**PLAN SIZE:** production 2 files、約25–40行。既存portfolio helperをitem単位へ一般化するだけで、新abstract layerは作らない。
+
+**DONE EVIDENCE:** production Storefront owner自身が1回createし、public profileにexact title/category/descriptionをreadbackする。
+続くwakeはportfolio effect 0。Application、contracts、ledgerは不変とする。
