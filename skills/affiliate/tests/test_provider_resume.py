@@ -16,6 +16,25 @@ SPEC.loader.exec_module(provider_cli)
 
 
 class ProviderResumeTest(unittest.TestCase):
+    def test_semantic_click_activates_exact_node_directly(self):
+        socket = object()
+        with (
+            patch.object(provider_cli, "query_node_by_text", return_value=(42, 7)),
+            patch.object(provider_cli, "cdp_call", side_effect=(
+                {"object": {"objectId": "button-object"}}, {},
+            )) as call,
+        ):
+            result = provider_cli.click_text(socket, 1, "button", ["Sign in"])
+        self.assertEqual(result, 9)
+        self.assertEqual(call.call_args_list[1].args[3]["objectId"], "button-object")
+        self.assertIn("this.click()", call.call_args_list[1].args[3]["functionDeclaration"])
+
+    def test_extracts_one_code_without_exposing_message(self):
+        self.assertEqual(
+            provider_cli.extract_six_digit_codes(None, "Your code is 654321".encode()),
+            {"654321"},
+        )
+
     def test_impact_login_advances_through_email_and_password_stages(self):
         args = argparse.Namespace(
             cdp_host="127.0.0.1", cdp_port=9327,

@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+import sqlite3
 import sys
 import tempfile
 import time
@@ -187,7 +188,12 @@ def query_node_by_text(ws, request_id, selector, allowed_text):
 
 def click_text(ws, request_id, selector, allowed_text):
     node_id, request_id = query_node_by_text(ws, request_id, selector, allowed_text)
-    return click_node(ws, request_id, node_id)
+    resolved = cdp_call(ws, request_id, "DOM.resolveNode", {"nodeId": node_id})
+    cdp_call(ws, request_id + 1, "Runtime.callFunctionOn", {
+        "objectId": resolved["object"]["objectId"],
+        "functionDeclaration": "function () { this.scrollIntoView({block: 'center'}); this.click(); }",
+    })
+    return request_id + 2
 
 
 def wait_for_selector(ws, request_id, selector, attempts=20):
@@ -224,6 +230,42 @@ def read_login_credentials(path, section_name):
         return value
 
     return field("Login"), field("Password")
+
+
+def extract_six_digit_codes(text, attributed_body):
+    candidates = set(re.findall(r"(?<!\d)\d{6}(?!\d)", text or ""))
+    if attributed_body:
+        raw = bytes(attributed_body)
+        for encoding in ("utf-8", "utf-16-le", "utf-16-be"):
+            decoded = raw.decode(encoding, errors="ignore")
+            candidates.update(re.findall(r"(?<!\d)\d{6}(?!\d)", decoded))
+    return candidates
+
+
+def read_recent_messages_code(database, sender, max_age_seconds=600):
+    database = database.expanduser()
+    if not database.is_file():
+        raise ProviderError("macOS Messages database is unavailable")
+    cutoff = int((time.time() - 978307200 - max_age_seconds) * 1_000_000_000)
+    uri = f"file:{database}?mode=ro"
+    with sqlite3.connect(uri, uri=True) as connection:
+        rows = connection.execute(
+            """SELECT m.text, m.attributedBody
+               FROM message AS m JOIN handle AS h ON h.ROWID = m.handle_id
+               WHERE h.id = ? AND m.is_from_me = 0 AND m.date >= ?
+               ORDER BY m.date DESC LIMIT 10""",
+            (sender, cutoff),
+        ).fetchall()
+    candidates = set()
+    for text, attributed_body in rows:
+        candidates.update(extract_six_digit_codes(text, attributed_body))
+    if len(candidates) != 1:
+        raise ProviderError("expected exactly one recent device verification code")
+    return candidates.pop()
+
+
+def is_authenticated_state(state):
+    return state in {"AUTHENTICATED", "APPLICATION_PENDING", "APPROVED", "REJECTED"}
 
 
 def submit_login(args, playbook, target):
@@ -330,14 +372,14 @@ def resume(args):
             after = observe(args)
             if after["state"] != "SIGN_IN_REQUIRED":
                 break
-        if after["state"] == "AUTHENTICATED":
+        if is_authenticated_state(after["state"]):
             verify_effect(state, job["job_id"], {
                 key: after.get(key) for key in ("state", "url", "rendered_text_sha256")
             })
     else:
         after = before
         state = getattr(args, "state", args.receipt.expanduser().parent / "affiliate-state").expanduser()
-        if after["state"] == "AUTHENTICATED":
+        if is_authenticated_state(after["state"]):
             reconcile_effect(state, "PROVIDER_LOGIN", args.provider, {
                 key: after.get(key) for key in ("state", "url", "rendered_text_sha256")
             })
@@ -346,6 +388,65 @@ def resume(args):
         "receipt_type": "PROVIDER_RESUME",
         "previous_state": before["state"],
         "submitted": submitted,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    atomic_write(args.receipt.expanduser(), receipt)
+    return receipt
+
+
+def verify_device(args):
+    root = Path(__file__).resolve().parents[1]
+    playbook = load_playbook(root, args.provider)
+    verification = playbook.get("device_verification")
+    if not verification:
+        raise ProviderError("provider device verification automation is unsupported")
+    before = observe(args)
+    if before["state"] != "DEVICE_VERIFICATION_REQUIRED":
+        raise ProviderError("device verification page is unavailable")
+    code = read_recent_messages_code(
+        args.messages_database, verification["messages_sender"],
+        verification.get("max_age_seconds", 600),
+    )
+    target = choose_target(
+        read_json(f"http://{args.cdp_host}:{args.cdp_port}/json/list"), playbook,
+    )
+    state = args.state.expanduser()
+    job = start_effect(
+        state, "PROVIDER_DEVICE_VERIFY", args.provider,
+        {"operation": "verify_device", "provider": args.provider},
+        {key: before.get(key) for key in ("state", "url", "rendered_text_sha256")}, 300,
+    )
+    ws = create_connection(
+        f"ws://{args.cdp_host}:{args.cdp_port}/devtools/page/{target['id']}",
+        timeout=20, max_size=None, suppress_origin=True,
+    )
+    try:
+        cdp_call(ws, 1, "DOM.enable")
+        request_id = focus_and_type(ws, 2, verification["code_selector"], code)
+        code = None
+        click_text(
+            ws, request_id, verification["submit_selector"],
+            verification["submit_text_any"],
+        )
+    finally:
+        code = None
+        ws.close()
+    after = None
+    for _ in range(20):
+        time.sleep(1)
+        after = observe(args)
+        if after["state"] != "DEVICE_VERIFICATION_REQUIRED":
+            break
+    if after is None or not is_authenticated_state(after["state"]):
+        raise ProviderError("device verification outcome is ambiguous")
+    verify_effect(state, job["job_id"], {
+        key: after.get(key) for key in ("state", "url", "rendered_text_sha256")
+    })
+    receipt = {
+        **after,
+        "receipt_type": "PROVIDER_DEVICE_VERIFICATION",
+        "previous_state": before["state"],
+        "submitted": True,
         "observed_at": datetime.now(timezone.utc).isoformat(),
     }
     atomic_write(args.receipt.expanduser(), receipt)
@@ -443,12 +544,18 @@ def poll(args, receipt):
             "observed_at": datetime.now(timezone.utc).isoformat(),
         })
         atomic_write(path, receipt)
+    if receipt["state"] in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
+        reconcile_effect(args.state.expanduser(), "PROVIDER_APPLICATION", args.provider, {
+            key: receipt.get(key) for key in ("state", "url", "rendered_text_sha256")
+        })
     return receipt
 
 
 def main():
     parser = argparse.ArgumentParser(prog="affiliate provider")
-    parser.add_argument("command", choices=("inspect", "poll", "resume", "reset-password"))
+    parser.add_argument(
+        "command", choices=("inspect", "poll", "resume", "reset-password", "verify-device"),
+    )
     parser.add_argument("--provider", required=True)
     parser.add_argument("--cdp-port", required=True, type=int)
     parser.add_argument("--cdp-host", default="127.0.0.1")
@@ -458,10 +565,16 @@ def main():
         "--private-markdown", type=Path,
         default=Path("~/.config/anicca/affiliate-credentials.md"),
     )
+    parser.add_argument(
+        "--messages-database", type=Path,
+        default=Path("~/Library/Messages/chat.db"),
+    )
     args = parser.parse_args()
 
     if args.command == "reset-password":
         receipt = reset_password(args)
+    elif args.command == "verify-device":
+        receipt = verify_device(args)
     elif args.command == "resume":
         receipt = resume(args)
     else:

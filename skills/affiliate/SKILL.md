@@ -63,6 +63,19 @@ It reads the mode-0600 Git-external Markdown, clears and fills the named control
 through CDP, submits at most once per invocation, and requires rendered readback.
 Credentials never enter stdout, receipts, Git, selectors, or command arguments.
 
+Impact device verification is also a provider command, not an owner task:
+
+```bash
+skills/affiliate/affiliate provider verify-device \
+  --provider hubspot-impact --cdp-port 9327 \
+  --receipt ~/.local/state/life-manager/affiliate/providers/hubspot-impact-device.json
+```
+
+It reads only inbound messages from the playbook-bound sender in the local
+macOS Messages database, requires exactly one six-digit code newer than ten
+minutes, submits it once, and retains neither the code nor message contents.
+Missing, stale, or ambiguous codes fail closed.
+
 Recover an expired Impact account only in its dedicated browser. Save the new
 credential before the provider mutation, then require a fresh authenticated
 application readback:
