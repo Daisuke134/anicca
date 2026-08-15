@@ -57,6 +57,8 @@ def _product(path: Path) -> tuple[dict[str, Any], Path]:
     if not isinstance(portfolio["external_id"], str) or re.fullmatch(r"[0-9]+", portfolio["external_id"]) is None: raise OfferError("product_invalid")
     if not isinstance(portfolio["title_stem"], str) or not 1 <= len(portfolio["title_stem"] + "ました") <= 50 or not isinstance(portfolio["subtitle"], str) or len(portfolio["subtitle"]) > 60 or any(not isinstance(portfolio[key], str) or not portfolio[key].strip() for key in ("category", "subcategory")) or not isinstance(portfolio["description"], str) or not 1 <= len(portfolio["description"]) <= 1000: raise OfferError("product_invalid")
     if type(portfolio["duration_value"]) is not int or not 1 <= portfolio["duration_value"] <= 999 or portfolio["duration_unit"] not in {"時間", "日", "週", "ヶ月", "年"} or type(portfolio["order_index"]) is not int or not 0 <= portfolio["order_index"] <= 9999 or type(portfolio["generated_ai"]) is not bool: raise OfferError("product_invalid")
+    profile = value.get("seller_profile")
+    if not isinstance(profile, dict) or set(profile) != {"public_path", "subtitle", "description"} or re.fullmatch(r"/profile/[A-Za-z0-9_-]+", str(profile.get("public_path") or "")) is None or not isinstance(profile.get("subtitle"), str) or not 1 <= len(profile["subtitle"]) <= 60 or not isinstance(profile.get("description"), str) or not 1 <= len(profile["description"]) <= 2000: raise OfferError("product_invalid")
     image = (path.parent / value["image_path"]).resolve()
     if not image.is_file() or image.suffix.lower() not in {".png", ".jpg", ".jpeg", ".gif"}: raise OfferError("product_invalid")
     value["public_title"] = value["title_stem"] + "ます"
@@ -120,6 +122,27 @@ def _demand(page: Any, listing_id: str) -> dict[str, int]:
         result[key] = int(text)
     if set(result) != set(DEMAND_LABELS.values()): raise OfferError("demand_readback_invalid")
     return result
+
+
+def _profile(page: Any, product: Mapping[str, Any], apply: bool) -> dict[str, Any]:
+    expected = product["seller_profile"]; path = expected["public_path"]
+    response = page.goto(ORIGIN + path, wait_until="domcontentloaded", timeout=20_000)
+    if response is None or response.status != 200 or urlsplit(str(page.url)).path != path: raise OfferError("profile_readback_invalid")
+    subtitles = {" ".join(text.split()) for text in page.locator(".p-profile-media__sub-title-link").all_inner_texts() if text.strip()}
+    descriptions = page.locator("p.p-profile-introduction__text")
+    if len(subtitles) != 1 or descriptions.count() != 1: raise OfferError("profile_readback_invalid")
+    aligned = subtitles == {" ".join(expected["subtitle"].split())} and " ".join(descriptions.inner_text().split()) == " ".join(expected["description"].split())
+    if aligned or not apply: return {"profile_aligned": aligned, "profile_effect_count": 0}
+    page.goto(ORIGIN + "/mypage/profile", wait_until="domcontentloaded", timeout=20_000)
+    if urlsplit(str(page.url)).path != "/mypage/profile": raise OfferError("profile_form_changed")
+    _field(page, "#UserProfileSubTitle").fill(expected["subtitle"]); _field(page, "#UserProfileDescription").fill(expected["description"])
+    save = page.get_by_role("button", name="保存する", exact=True)
+    if save.count() != 1: raise OfferError("profile_form_changed")
+    try:
+        with page.expect_response(lambda value: value.request.method == "POST" and urlsplit(value.url).path == "/mypage/profile", timeout=20_000) as saved: save.click()
+    except Exception: raise OfferError("profile_submission_uncertain") from None
+    if saved.value.status not in {200, 302} or not _profile(page, product, False)["profile_aligned"]: raise OfferError("profile_submission_uncertain")
+    return {"profile_aligned": True, "profile_effect_count": 1}
 
 
 def _field(page: Any, selector: str) -> Any:
@@ -310,6 +333,9 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
                 portfolio = _ensure_portfolio(page, product, image)
                 result |= portfolio
                 if portfolio["portfolio_effect_count"]: result["action"] = "portfolio_created"
+                else:
+                    profile = _profile(page, product, True); result |= profile
+                    if profile["profile_effect_count"]: result["action"] = "profile_updated"
             if result.get("ok") is True and result.get("aligned") is True:
                 result["demand"] = _demand(page, product["listing_external_id"])
                 if apply: _write_receipt(Path(state_path), product, result["demand"])
