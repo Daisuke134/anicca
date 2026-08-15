@@ -57,7 +57,8 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The scorecard already ranks the next actionable hypothesis as service `91000001`, field `image`, current score `0`, metric `views_to_inquiry`. The executor does not consume that backlog.
 - Eleven official services are listed. The 20-slot quota is capacity, never authority to create nine more. A new service requires distinct demand evidence, owned capability evidence, and available delivery capacity.
 - Clean Storefront commits are pushed on `feat/storefront-loop`: `d65f13bf9` imports the dedicated owner, `2854097ad` selects the scorecard hypothesis, and `b655a83d0` closes an active-experiment no-op before the LLM judge. Storefront tests are `22 passed`.
-- Real pass `storefront-selector-live-b655a83d0` read the official inventory and eight competitor sources, then failed at `official_analytics_tab_open_failed`. The failure exposed that `origin/main` still has the obsolete fixed-`:9222`, tokenless CDP helpers while the installed release uses the fenced environment-selected `:9223` token/generation contract. The failed Storefront-only contexts were verified by task ID and released; no Apply, Negotiate, or Paid lease was changed.
+- Real pass `storefront-selector-live-b655a83d0` exposed that `origin/main` had obsolete fixed-`:9222`, tokenless CDP helpers. Commit `a695e79e4` restores the byte-identical installed fenced runtime and its existing tests; 40 focused checks pass.
+- Real pass `storefront-selector-live-a695e79e4` then completed with official/competitor `11/8`, effect/readback/duplicate `0/0/0`, next hypothesis `91000001/image`, metric `views_to_inquiry`, Telegram `deduped/20073`, and lease released. The hypothesis is prepared but non-executable while the FAQ experiment remains active; the measurement window is not a TODO and does not block building the image adapter now.
 
 ## 5. Acceptance criteria
 
@@ -129,8 +130,8 @@ Verification: GitHub `main` contains this file; local worktree list has no `stor
 - [x] Select the first eligible backlog item under a one-active-experiment fence.
 - [x] Persist hypothesis ID, listing version, field, baseline, success metric, evidence, and guard reason.
 - [x] Bypass the LLM judge when an active experiment makes the prepared hypothesis non-executable; close a truthful guarded no-op instead.
-- [ ] Restore the already-proven fenced CDP helper dependency from the installed production release/history into clean main provenance; do not redesign it and do not restart another owner.
-- [ ] Re-run the real Storefront pass and prove `91000001/image`, effect/readback/duplicate=`0/0/0`, Telegram receipt, and released lease.
+- [x] Restore the already-proven fenced CDP helper dependency from the installed production release/history into clean main provenance; do not redesign it and do not restart another owner.
+- [x] Re-run the real Storefront pass and prove `91000001/image`, effect/readback/duplicate=`0/0/0`, Telegram receipt, and released lease.
 
 Verification: isolated selector check chooses `91000001/image` from the current scorecard; a real scheduled pass records that exact prepared hypothesis without touching other loops.
 
