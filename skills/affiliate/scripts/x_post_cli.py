@@ -44,6 +44,17 @@ def placement_path(state_root, placement):
     return state_root / "x-posts" / f"{placement}.json"
 
 
+def require_live_owned_article(state_root, text):
+    url = re.findall(r"https://[^\s]+", text)[0].rstrip(".,)")
+    slug = urlparse(url).path.removeprefix("/blog/")
+    try:
+        receipt = json.loads((state_root / "owned-publications" / f"{slug}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise XPostError("owned publication receipt is unavailable") from error
+    if receipt.get("state") != "LIVE" or receipt.get("public_url") != url:
+        raise XPostError("owned article is not live")
+
+
 def evaluate(ws, request_id, expression):
     result = cdp_call(ws, request_id, "Runtime.evaluate", {
         "expression": expression, "returnByValue": True,
@@ -90,12 +101,13 @@ def live_readback(ws, request_id, url, text):
 def publish(args):
     root = Path(__file__).resolve().parents[1]
     config = load_config(root, "en")
-    profile = inspect(args, config)
-    if profile["handle"].lower() != config["handle"].lower():
-        raise XPostError("authenticated X identity mismatch")
     text = validate_content(args.content.read_text(encoding="utf-8"))
     fingerprint = content_fingerprint(text)
     state_root = args.state.expanduser()
+    require_live_owned_article(state_root, text)
+    profile = inspect(args, config)
+    if profile["handle"].lower() != config["handle"].lower():
+        raise XPostError("authenticated X identity mismatch")
     receipt_path = placement_path(state_root, args.placement)
     if receipt_path.is_file():
         existing = json.loads(receipt_path.read_text(encoding="utf-8"))

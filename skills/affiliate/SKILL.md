@@ -135,6 +135,19 @@ stores no tracking URL in its receipt. `owned publish` independently requires th
 matching `PASS` receipt and later reads both disclosure markers and the exact link
 back from production HTML.
 
+After the owned article has a `LIVE` receipt, build and publish its disclosed X
+artifact:
+
+```bash
+skills/affiliate/affiliate content build-x
+skills/affiliate/affiliate x post publish \
+  --content ~/.local/state/life-manager/affiliate/x-content/elevenlabs-en-1.txt \
+  --placement elevenlabs-en-1
+```
+
+Both commands require the exact owned publication receipt to be `LIVE`; the X
+publisher rechecks it before opening the composer.
+
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:
 

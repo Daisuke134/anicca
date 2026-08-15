@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -24,6 +25,20 @@ class XPostContractTest(unittest.TestCase):
             MODULE.validate_content("Read https://aniccaai.com/blog/voice-workflows")
         with self.assertRaises(MODULE.XPostError):
             MODULE.validate_content("#ad https://example.com/not-owned")
+
+    def test_live_owned_article_receipt_is_required(self):
+        text = "Affiliate link: https://aniccaai.com/blog/voice-workflows"
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            with self.assertRaises(MODULE.XPostError):
+                MODULE.require_live_owned_article(state, text)
+            path = state / "owned-publications" / "voice-workflows.json"
+            path.parent.mkdir()
+            path.write_text(json.dumps({
+                "state": "LIVE",
+                "public_url": "https://aniccaai.com/blog/voice-workflows",
+            }))
+            self.assertIsNone(MODULE.require_live_owned_article(state, text))
 
 
 if __name__ == "__main__":

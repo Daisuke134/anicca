@@ -4,8 +4,10 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -159,14 +161,52 @@ def policy(state, private_markdown):
     return {key: receipt[key] for key in ("artifact_id", "slug", "content_sha256", "decision")}
 
 
+def build_x(state):
+    slug = "elevenlabs-plans-for-solo-creators"
+    publication_path = state / "owned-publications" / f"{slug}.json"
+    try:
+        publication = json.loads(publication_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ContentError("live owned publication receipt is unavailable") from error
+    url = f"https://aniccaai.com/blog/{slug}"
+    if publication.get("state") != "LIVE" or publication.get("public_url") != url:
+        raise ContentError("owned article is not live")
+    text = (
+        "Choosing an AI voice plan? Compare commercial rights, real monthly usage, "
+        "cloning needs, and correction time before upgrading.\n\n"
+        "Affiliate link: my evidence-based ElevenLabs plan guide:\n"
+        f"{url}"
+    )
+    if len(text) > 280:
+        raise ContentError("X artifact exceeds the platform limit")
+    target = state / "x-content" / "elevenlabs-en-1.txt"
+    target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
+    temporary_path = Path(temporary)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(text + "\n")
+        os.replace(temporary_path, target)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+    return {
+        "artifact_id": "elevenlabs-x-en-1",
+        "placement": "elevenlabs-en-1",
+        "content_sha256": hashlib.sha256(text.encode()).hexdigest(),
+        "state": "READY_FOR_X_PUBLICATION",
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(prog="affiliate content")
-    parser.add_argument("command", choices=("build", "build-foundation", "policy"))
+    parser.add_argument("command", choices=("build", "build-foundation", "build-x", "policy"))
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     parser.add_argument("--private-markdown", type=Path, default=Path("~/.config/anicca/affiliate-credentials.md"))
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    if args.command == "policy":
+    if args.command == "build-x":
+        result = build_x(args.state.expanduser())
+    elif args.command == "policy":
         result = policy(args.state.expanduser(), args.private_markdown.expanduser())
     elif args.command == "build-foundation":
         result = build_foundation(root, args.state.expanduser())
