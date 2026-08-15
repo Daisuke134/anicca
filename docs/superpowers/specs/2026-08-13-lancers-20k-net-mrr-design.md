@@ -2748,3 +2748,7 @@ exact 8 fieldを検証し、そのrequired属性だけをbrowser DOMから外す
 二回目wakeでも公式profile POST 0、public/form旧値、business state全SHA不変だった。保存buttonはoverlayされていないが`js-no-double-click`であり、
 通常clickのactionability retry中にtimeoutする。同じStorefront ownerの既存save経路で実証済みのforce click + no-wait-afterだけを再利用し、
 official `/mypage/profile` POST responseとbuyer-visible readbackは引き続き必須とする。
+
+三回目wakeはPOST前に`profile_form_changed`で停止した。installed exact releaseで同じ順序をread-only再現すると、route、public selector、field count、
+invalid exact 8 ID、save buttonは一致した。唯一のtiming依存値はCSS layout由来の`offsetParent`である。安全guardをpresentation上の非表示から、
+providerのexact 8 ID、empty value、invalid count 8へ変更する。別ID、入力済みfield、追加invalidが一つでもあれば保存しない。
