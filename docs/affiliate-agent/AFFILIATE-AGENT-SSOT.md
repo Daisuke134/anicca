@@ -15,6 +15,40 @@ live verification, revenue gates, tenantization, and scale work.
 
 ## 0. Objective
 
+Anicca is the company; Life Manager is the product, autonomous agent, and
+canonical repository. Life Manager manages physical, mental, and financial
+health. Affiliate Agent is one financial-health unit. It improves verified net
+position through external affiliate receipts while preserving fees, reversals,
+cost, concentration, cash timing, and policy risk. It never equates content,
+clicks, estimates, pending commission, or GMV with earned money.
+
+Canonical production ownership is reserved in the Life Manager repository at
+`skills/affiliate/` with its redirect/API boundary at `apps/api/`. The runtime
+tree is not present there until Task R0 imports and verifies it. The old
+`/Users/anicca/profitable-claude/skills/affiliate` tree is migration evidence,
+not a production home. Mutable state lives under
+`${LIFE_MANAGER_STATE_HOME:-~/.local/state/life-manager}/affiliate/`; credentials,
+sessions, provider exports, and ledgers never enter Git.
+
+```mermaid
+flowchart LR
+  O[Authorized owner] --> LM[Life Manager]
+  LM --> P[Physical Health]
+  LM --> M[Mental Health]
+  LM --> F[Financial Health]
+  F --> H[Money-loop harness]
+  H --> G[Gig Work]
+  H --> A[Affiliate]
+  H --> W[Writer]
+  H --> N[Future earning loops]
+  G --> L[Separate verified ledgers]
+  A --> L
+  W --> L
+  N --> L
+  L --> C[CFO projection]
+  C --> T[Telegram and product UI]
+```
+
 Build one Affiliate Agent inside Life Manager's financial organ that launches in
 English first, then operates isolated Japanese and admitted additional-language
 market pods. Spanish is the first expansion candidate after English and Japanese;
@@ -506,7 +540,40 @@ for production behavior: they already supply launchd ownership, same-run
 reconciliation, public readback, durable receipts, and Telegram delivery patterns.
 Their interfaces are reused while their ledgers remain isolated.
 
-### 7.1 Crawling and scraping substrate
+### 7.1 Closest end-to-end OSS and public-claim gate
+
+No inspected OSS project closes the whole chain from lawful account authority to
+an externally approved recurring income receipt. The nearest reusable systems
+are complementary, not substitutes for the Affiliate Agent:
+
+| Project | Closest proven boundary | Missing money boundary | Decision |
+|---|---|---|---|
+| [Nerfed-Lab/forage](https://github.com/Nerfed-Lab/forage) | MIT autonomous cycle, budgets, ledger, evolution, and Gumroad listing; cloned suite passed 39 tests | Its measured revenue remains `0.0`; Stripe/crypto payout and external receipt ingest remain TODO | Copy the economic-agent cycle and budget/ledger tests, not an earnings claim |
+| [diptobiswas/agentwork](https://github.com/diptobiswas/agentwork) | Closest marketplace shape: agent profiles, gigs, escrow contract, and on-chain settlement vocabulary | Observed public market had one active agent, zero gigs, and `$0` earned; production recipient lookup remains TODO; no root license | Pattern only; do not copy unlicensed code or call escrow capability revenue |
+| [coinbase/x402-paid-api-starter](https://github.com/coinbase/x402) | Closest real settlement substrate: idempotent transaction/settlement receipts; relevant cloned slice passed 13 tests | It does not acquire customers, publish, or choose profitable work | Reuse receipt/settlement patterns for an x402 loop, not as Affiliate Agent |
+| [paraggit/affiliate-automation](https://github.com/paraggit/affiliate-automation) | Closest licensed affiliate code: MIT provider abstraction, persistence, retry, content, scheduling; audited suite passed 41 tests | Interactive confirmation; no program application, commission reconciliation, payout, or public ledger | Selective code reuse behind our deterministic queue/browser/receipt contracts |
+| [No Human in the Loop](https://nohumanintheloop.com/) | Self-reported real-world precedent: zero approvals and `$2,152` from 74 Gumroad copies | Public GitHub is a static two-file site, not a reproducible harness/ledger, and has no reusable license | Evidence that generic “world's first money loop” is unsafe |
+
+Until a public proof gate closes, README language is only: “We are building an
+open-source, receipt-verified affiliate earning loop.” The qualified claim “To
+our knowledge, Life Manager is the first open-source, receipt-verified agent loop
+that autonomously operates affiliate marketing from authorized account bootstrap
+through settled commission” becomes eligible only when all of these exist:
+
+1. canonical public Life Manager source and reproducible macOS installation;
+2. a live E1 commission and later payout receipt, redacted and content-addressed;
+3. a privacy-safe append-only ledger separating gross, net, pending, approved,
+   reversed, paid, currency, cost, and payout;
+4. an independent verifier that replays receipt hashes and ledger invariants;
+5. a public prior-art registry with search date, routes, repositories, licenses,
+   code/tests inspected, and explicit uncertainty;
+6. no secret, tax, bank, customer, session, or provider-internal identifier in
+   the public projection.
+
+This gate permits a qualified prior-art statement, never a guaranteed-income or
+generic “world's first money-printing loop” claim.
+
+### 7.2 Crawling and scraping substrate
 
 “Every platform” is implemented as one typed `CrawlerAdapter` registry, not one
 fragile scraper pretending every site has the same access model. Every adapter
@@ -558,45 +625,51 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 ## 9. Ordered implementation backlog
 
-1. Make one narrow English vertical slice run unattended on the current Mac:
+1. Converge legacy Affiliate source into `life-manager/skills/affiliate` from a
+   clean worktree; prove hash/behavior parity, isolate mutable state, and leave
+   every existing live loop untouched until receipted cutover.
+2. Make one narrow English vertical slice run unattended on the current Mac:
    resume Kit/Amazon/provider state, acquire one executable offer, research one
    buyer problem, publish one owned placement plus eligible X distribution through
    the browser, verify the public result, reconcile clicks/commission, and report
    every transition to Telegram.
-2. Create the minimum Agent schema and append-only Affiliate ledger required by
+3. Create the minimum Agent schema and append-only Affiliate ledger required by
    that live slice; add invariants for
    unknown, pending, approved, reversed, and paid money.
-3. Implement the semantic browser harness, typed action grammar, leases,
+4. Implement the semantic browser harness, typed action grammar, leases,
    screenshots/DOM hashes, download capture, postcondition checks, ambiguous-side-
    effect dedupe, playbook cache, selector-drift recovery, and crash resume.
-4. Implement the `CrawlerAdapter` registry and `SourceCapture` contract. Wire the
+5. Implement the `CrawlerAdapter` registry and `SourceCapture` contract. Wire the
    already-installed CRWL/gh routes first, then the audited X public fallback,
    PRAW, and one-item Apify canaries; every route must distinguish empty, auth,
    rate-limit, parser, policy, and upstream failure.
-5. Make account discovery/signup/login/recovery/profile setup first-class states.
+6. Make account discovery/signup/login/recovery/profile setup first-class states.
    Verify `@selawmqt`, rebrand it in English, and prove identity after every write.
-6. Apply to/read back at least two English candidate programs through their
+7. Apply to/read back at least two English candidate programs through their
    websites; activate only an
    actually authenticated offer with current terms and an executable link.
-7. Implement the signed redirect/sub-ID service and verify click → provider
+8. Implement the signed redirect/sub-ID service and verify click → provider
    report joining before producing content at scale.
-8. Extract Writer research/localization/publication contracts behind shared
+9. Extract Writer research/localization/publication contracts behind shared
    interfaces without changing the Writer revenue ledger.
-9. Add English Affiliate manifests for browser-published X and owned articles;
+10. Add English Affiliate manifests for browser-published X and owned articles;
    keep clip/slideshow/video renderers as format adapters.
-10. Add the fail-closed policy/disclosure gate and official-source freshness TTL.
-11. Keep the English local daily loop running until it reconciles a real approved
-   commission; only then provision the separate Japanese canary.
-12. Enable mature-cohort learning only after ten comparable placements; promote
+11. Add the fail-closed policy/disclosure gate and official-source freshness TTL.
+12. Close English E0, then unlock only a separate budget-capped Japanese canary
+    while the English local daily loop continues toward its first approved
+    commission and E1. Japanese production scale still waits for its own J0/J1.
+13. Enable mature-cohort learning only after ten comparable placements; promote
    net commission as the deepest reward when available.
-13. Add provider/channel quarantine, same-run recovery, health reporting, and
+14. Add provider/channel quarantine, same-run recovery, health reporting, and
    launchd ownership.
-14. Scale content and providers only after the first approved commission and
+15. Scale content and providers only after the first approved commission and
     positive unit economics.
-15. Only after the local Agent proves positive unit economics, package its proven
+16. After A3, publish the privacy-safe proof ledger, independent verifier, and
+    prior-art registry; only then unlock qualified README/site “first” language.
+17. Only after the local Agent proves positive unit economics, package its proven
     dependencies, credential-intake contract, isolated profiles, installer, and
     recovery checks for one-command operator-owned installations.
-16. Add Spanish only through L0, then rank every later locale by executable-offer
+18. Add Spanish only through L0, then rank every later locale by executable-offer
     density × observed qualified intent × confirmed net payout minus acquisition,
     compliance, support, and account-risk cost. Population and translation volume
     are not admission criteria.
@@ -723,7 +796,7 @@ without changing the architecture.
   Affiliate-specific durable outbox, snapshot parity, and dedupe remain unbuilt.
 - No production Affiliate placement, organic click, approved commission, paid
   payout, hourly/daily launchd wake, or crash-recovery E2E exists yet.
-- `ai.anicca.affiliate-hourly` and `ai.anicca.affiliate-daily` are not registered
+- `ai.anicca.affiliate-reconcile` and `ai.anicca.affiliate-daily` are not registered
   in the user launchd domain, and no `affiliate-core` tmux session exists.
 - `$10k`, `$10M`, and `$100M` are outcome gates. There is no honest date or
   probability forecast until live cohorts and partner capacity are measured.

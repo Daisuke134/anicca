@@ -5,7 +5,7 @@
 
 **Goal:** Build and launch an English-first, receipt-backed Affiliate Agent that autonomously researches, publishes, attributes, reconciles, repairs, and improves; unlock an isolated Japanese pod only after English public E2E is proven, then admit Spanish and later locales only through independent evidence and revenue gates.
 
-**Architecture:** The existing `profitable-claude/skills/affiliate` runtime is migrated into a hybrid Agent: Terra-high observes and plans through a semantic CloakBrowser website harness, while a deterministic Python/SQLite kernel owns bootstrap, policy, budgets, idempotency, receipts, money, recovery, and Telegram delivery. The Life Manager service owns the public placement redirect and durable click ingest. Writer/Gig/shared-browser contracts are reused by interface, but every money/state ledger remains isolated.
+**Architecture:** The legacy `/Users/anicca/profitable-claude/skills/affiliate` runtime is characterized and migrated into canonical `life-manager/skills/affiliate`. Terra-high observes and plans through a semantic CloakBrowser website harness, while a deterministic Python/SQLite kernel owns bootstrap, policy, budgets, idempotency, receipts, money, recovery, and Telegram delivery. `apps/api` owns the public placement redirect and durable click ingest. Writer/Gig/shared-browser contracts are reused by interface, but every money/state ledger remains isolated.
 
 **Tech Stack:** pinned Python runtime, SQLite, pytest, Bash/launchd/systemd, Node.js ESM, Express, PostgreSQL/Prisma, Vitest/Supertest, CloakBrowser/CDP, CRWL, audited public-object adapters, optional Crawlee Python for durable crawls, and rendered-browser/download evidence. Postiz and external publishing APIs are excluded.
 
@@ -13,7 +13,9 @@
 
 - Canonical design: `docs/superpowers/specs/2026-08-05-affiliate-agent-design.md`.
 - Product context: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`.
-- Runtime changes belong in `/Users/anicca/profitable-claude`; API and documentation changes belong in `/Users/anicca/anicca-project`.
+- Runtime, API, and documentation changes belong to the canonical Life Manager
+  monorepo. Legacy `/Users/anicca/profitable-claude` is read-only migration input.
+- Mutable runtime truth belongs under `${LIFE_MANAGER_STATE_HOME:-~/.local/state/life-manager}/affiliate/` and installed immutable releases under `~/.local/share/life-manager/affiliate/`; neither may be committed.
 - Execute in isolated `.worktrees/affiliate-agent-*` worktrees created with `superpowers:using-git-worktrees`; never edit a dirty primary checkout.
 - Use TDD for every behavior change: RED, minimal GREEN, focused suite, commit, push.
 - Bootstrap a pinned runtime on the current macOS host; do not depend on
@@ -67,18 +69,44 @@
 
 ## Remaining-work index
 
-All checkboxes are initially open. A checkbox closes only with the command or
+Unchecked boxes are remaining work. A checkbox closes only with the command or
 external receipt named in that step; prose updates alone do not close work.
 
+Canonical start-to-finish order:
+
+1. converge source into the clean canonical Life Manager worktree and receipt
+   legacy equivalence without stopping any live loop;
+2. close the F2 model/process boundary and deterministic typed-action kernel;
+3. inventory authorized accounts, provision the isolated English browser, and
+   preserve OTP/KYC/contract challenges as durable resumable states;
+4. make one English provider offer executable from ownership, current terms,
+   eligible channel, payout, and tracking-link receipts;
+5. implement evidence acquisition, policy/disclosure, useful content, browser
+   publication, public readback, signed redirect, and click lineage;
+6. reconcile provider transactions through pending, approved, reversed, and
+   paid, then emit the same snapshot to Telegram and Life Manager;
+7. install and kickstart launchd, crash it at controlled boundaries, and prove
+   same-run recovery without duplicate external actions;
+8. close English E0 with a live placement/click—never with a fixture or dry run;
+   E0 may unlock only a separate, capped Japanese canary while English continues;
+9. close English E1 with the first externally approved commission, then operate
+   daily until four positive weeks and three consecutive receipted USD
+   10,000-equivalent gross months close A3;
+10. publish a privacy-safe proof ledger and only then enable qualified “first”
+    language in README and `aniccaai.com/life-manager`;
+11. promote the Japanese canary, then admit Spanish/later pods only through their
+    own identity, provider, disclosure, canary, ledger, and net-economics gates;
+12. package the proven macOS runtime for one-command clean-device installation,
+    then tenant isolation and staged diversified scale.
+
 Execution-order override: prove the smallest revenue-bearing English vertical
-slice on the current Mac before completing generic scratch-host portability.
-Reuse the already present runtime and browser capabilities, adding only the
-minimum ledger, authority, browser receipts, durable resume, Telegram outbox,
-provider adapter, publication, attribution, and reconciliation needed for a real
-commission. Task F0 remains required for later distribution but is not the first
-runtime milestone. The new milestone order is Local E0 (public placement and
-provider click) → Local E1 (first approved external commission) → stable local
-daily operation → F0 portable bootstrap → tenant isolation and distribution.
+slice on the current Mac before generic scratch-host portability. F0 supplies
+only the minimum current-host authority/profile/runtime bootstrap needed by that
+slice. Task 18 later packages the already-proven runtime for a scratch device.
+The milestone order is R0 canonical convergence → current-host F0 → Local E0
+(public placement and provider click) → Local E1 (first approved external
+commission) → stable local daily operation → Task 18 portability → tenant
+isolation and distribution.
 
 Execution checkpoint:
 
@@ -89,11 +117,13 @@ Execution checkpoint:
   compile/shell syntax, and 30 related regression tests. Its checkboxes remain
   open until fresh review, worktree-diff audit, live-provider boundary proof, and
   a collection-safe full-suite command; the process-boundary test uses a fake provider.
-- 7 atomic checks are closed and 142 remain open.
+- 7 atomic checks are closed and 155 remain open. The increase records canonical
+  repo convergence and public-proof work that previously existed only as prose;
+  it is not implementation regression.
 - The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
   attributed external commission, production launchd wake, or Telegram delivery
   receipt has been claimed.
-- `ai.anicca.affiliate-hourly` and `ai.anicca.affiliate-daily` are not registered;
+- `ai.anicca.affiliate-reconcile` and `ai.anicca.affiliate-daily` are not registered;
   `affiliate-core` tmux is absent. The runtime worktree also contains three
   tracked `__pycache__` deletions whose ownership must be audited before F2 closes.
 - A passing unit test closes only its software check. It cannot close a live
@@ -101,13 +131,14 @@ Execution checkpoint:
 
 | Phase | Tasks | Exit evidence |
 |---|---:|---|
-| P0 Local money slice | minimum parts of F2-F6 and 1-13 | Current-Mac unattended application-to-publication-to-reconciliation loop with Telegram receipts |
+| P-1 Canonical convergence | R0 | One canonical Life Manager production source, immutable install receipt, legacy parity, no live-loop interference |
+| P0 Local money slice | F0 and minimum parts of F2-F6 and 1-13 | Current-Mac unattended application-to-publication-to-reconciliation loop with Telegram receipts |
 | P1 Truth foundation | 2-5 | Typed Affiliate ledger, provider normalization, deployed redirect contract, click sync |
 | P2 Useful production | 6-8 | Evidence/policy pass, locale-isolated manifests, receipted English public placement |
 | P3 Closed loop | 9-13 | Commission reconciliation, learning, recovery, reports, launchd |
-| P4 Real E2E and first money | 14-16 | Live HTTPS redirect, English E0/E1, stable local daily loop, then isolated Japanese canary |
-| P5 Initial business | 17 | Four positive weeks and three qualifying $10k months |
-| P6 Portability and decentralized scale | F0, 18-19 | One-command scratch-host package, tenant-isolated recipe, and staged network gates through $10M net, then an explicitly receipted $100M horizon |
+| P4 Real E2E and first money | 14-16J | Live HTTPS redirect; English E0 unlocks a capped Japanese canary while English proceeds to E1; each locale closes its own receipts |
+| P5 Initial business and proof | 17, 17P | Four positive weeks, three qualifying $10k months, privacy-safe public ledger, qualified claim gate |
+| P6 Portability and decentralized scale | 18-19 | One-command scratch-host package, tenant-isolated recipe, and staged network gates through $10M net, then an explicitly receipted $100M horizon |
 
 ### Implementation-entry blockers
 
@@ -117,7 +148,7 @@ receipts or fail-closed owners; business outcomes remain later live gates:
 1. fresh F2 review plus a non-importing full test collector;
 2. ownership audit for the three tracked `__pycache__` deletions;
 3. canonical runtime root, branch, and entrypoint receipt;
-4. scratch-host bootstrap receipt plus browser ownership/readback for English
+4. current-host F0 authority/profile receipt plus browser ownership/readback for English
    `@selawmqt`; Postiz state is irrelevant and must not be queried;
 5. shared browser/profile/credential ownership map with no stop/restart of
    unrelated money loops;
@@ -139,7 +170,7 @@ recipe with this Agent's own external receipts.
 
 ## File map
 
-### Runtime repository: `profitable-claude`
+### Canonical Life Manager runtime: `skills/affiliate`
 
 | Path | Responsibility |
 |---|---|
@@ -175,7 +206,7 @@ recipe with this Agent's own external receipts.
 | `skills/affiliate/launchd/*.plist` | Production worker definitions |
 | `skills/affiliate/tests/` | Unit, contract, recovery, and fixture tests |
 
-### API repository: `anicca-project`
+### Canonical Life Manager API: `apps/api`
 
 | Path | Responsibility |
 |---|---|
@@ -211,16 +242,69 @@ state, auth, a browser profile, or a branch never execute concurrently.
 
 ---
 
+### Task R0: Converge the Affiliate runtime into the canonical Life Manager repo
+
+**Files:**
+- Import after equivalence inventory: `skills/affiliate/**`
+- Import only proven shared dependencies: `skills/_shared/browser/**`, `lib/telegram_outbox.py`
+- Create: `skills/affiliate/tests/test_repository_ownership.py`
+- Update: `.gitignore`
+
+**Interfaces:**
+- Consumes read-only legacy source and state from
+  `/Users/anicca/profitable-claude/skills/affiliate`.
+- Produces one `RepositoryOwnershipReceipt` containing legacy/source commit,
+  artifact hashes, canonical target commit, excluded mutable paths, and the one
+  permitted launchd owner set.
+
+- [ ] **Step 1: Write a failing ownership test**
+
+Assert that production entrypoints resolve under the canonical Life Manager
+checkout, mutable state resolves under `LIFE_MANAGER_STATE_HOME`, and no launchd
+plist calls the legacy repository.
+
+- [ ] **Step 2: Inventory legacy code, state, and live owners read-only**
+
+Hash entrypoints, tests, lessons, watermark, queue/posted state, plist targets,
+tmux state, and dependency imports. Do not stop, restart, delete, or edit any
+running money loop.
+
+- [ ] **Step 3: Import the smallest behavior-equivalent source slice**
+
+Copy code and tests required by the Affiliate loop into `skills/affiliate`.
+Migrate mutable artifacts append-only into `${LIFE_MANAGER_STATE_HOME}/affiliate`;
+commit neither secrets nor state. Reuse shared code only when its regression test
+passes from the canonical repo.
+
+- [ ] **Step 4: Prove legacy/canonical parity before cutover**
+
+Run both entrypoints against the same immutable fixture snapshot and compare
+normalized outputs and receipt hashes. Any unexplained difference blocks cutover.
+
+- [ ] **Step 5: Install an immutable canonical release without enabling it**
+
+Install the exact pushed commit at
+`~/.local/share/life-manager/affiliate/releases/<git_sha>` and atomically prepare
+`current`; do not register or kickstart launchd until Task 13.
+
+- [ ] **Step 6: Commit, push, and record repository ownership**
+
+Record canonical remote/branch/commit, imported legacy commit/hash, excluded
+state paths, and pending launchd cutover. Only then may later tasks modify runtime
+behavior.
+
+---
+
 ### Task F0: Bootstrap the Agent from a clean state on the current macOS computer
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/bootstrap/install.sh`
-- Create: `profitable-claude/skills/affiliate/bootstrap/manifest.lock`
-- Create: `profitable-claude/skills/affiliate/scripts/authority_inventory.py`
-- Create: `profitable-claude/skills/affiliate/scripts/profile_provisioner.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_bootstrap.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_authority_inventory.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_profile_provisioner.py`
+- Create: `skills/affiliate/bootstrap/install.sh`
+- Create: `skills/affiliate/bootstrap/manifest.lock`
+- Create: `skills/affiliate/scripts/authority_inventory.py`
+- Create: `skills/affiliate/scripts/profile_provisioner.py`
+- Test: `skills/affiliate/tests/test_bootstrap.py`
+- Test: `skills/affiliate/tests/test_authority_inventory.py`
+- Test: `skills/affiliate/tests/test_profile_provisioner.py`
 
 **Interfaces:**
 - Produces: `MachineCapabilityReceipt`, `AuthorityReceipt`, and isolated EN/JA
@@ -270,13 +354,13 @@ git push
 
 ### Task F1: Characterize and migrate the legacy Affiliate loop without losing truth
 
-**Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/legacy_migration.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_legacy_migration.py`
-- Preserve until Task 11: `profitable-claude/skills/affiliate/run.sh`
-- Preserve until Task 11: `profitable-claude/skills/affiliate/affiliate-cli.sh`
-- Preserve: `profitable-claude/skills/affiliate/measure_commission.py`
-- Preserve: `profitable-claude/skills/affiliate/state/`
+**Legacy files already implemented in the source repo and imported by R0:**
+- `/Users/anicca/profitable-claude/skills/affiliate/scripts/legacy_migration.py`
+- `/Users/anicca/profitable-claude/skills/affiliate/tests/test_legacy_migration.py`
+- `/Users/anicca/profitable-claude/skills/affiliate/run.sh`
+- `/Users/anicca/profitable-claude/skills/affiliate/affiliate-cli.sh`
+- `/Users/anicca/profitable-claude/skills/affiliate/measure_commission.py`
+- `/Users/anicca/profitable-claude/skills/affiliate/state/`
 
 **Interfaces:**
 - Produces: `LegacyInventory` and a content-addressed migration receipt; Task 11
@@ -357,11 +441,11 @@ git push
 ### Task F2: Build the Terra Agent brain and receipt-gated model boundary
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/config/model-routing.json`
-- Create: `profitable-claude/skills/affiliate/runtime/model-runner.sh`
-- Create: `profitable-claude/skills/affiliate/scripts/agent_brain.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_model_runner.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_agent_brain.py`
+- Create: `skills/affiliate/config/model-routing.json`
+- Create: `skills/affiliate/runtime/model-runner.sh`
+- Create: `skills/affiliate/scripts/agent_brain.py`
+- Test: `skills/affiliate/tests/test_model_runner.py`
+- Test: `skills/affiliate/tests/test_agent_brain.py`
 
 **Interfaces:**
 - Produces: `make_context_packet(state) -> ContextPacket` and `propose_action(packet) -> ActionProposal`.
@@ -441,13 +525,13 @@ git push
 ### Task F3: Create the prompt provenance registry and licensed seed pack
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/prompt_registry.py`
-- Create: `profitable-claude/skills/affiliate/config/prompt-seeds.json`
-- Create: `profitable-claude/skills/affiliate/prompts/system.md`
-- Create: `profitable-claude/skills/affiliate/prompts/research.md`
-- Create: `profitable-claude/skills/affiliate/prompts/content.md`
-- Create: `profitable-claude/skills/affiliate/prompts/recovery.md`
-- Test: `profitable-claude/skills/affiliate/tests/test_prompt_registry.py`
+- Create: `skills/affiliate/scripts/prompt_registry.py`
+- Create: `skills/affiliate/config/prompt-seeds.json`
+- Create: `skills/affiliate/prompts/system.md`
+- Create: `skills/affiliate/prompts/research.md`
+- Create: `skills/affiliate/prompts/content.md`
+- Create: `skills/affiliate/prompts/recovery.md`
+- Test: `skills/affiliate/tests/test_prompt_registry.py`
 
 **Interfaces:**
 - Produces: immutable `PromptVersion`, active role mapping, mutation proposal, and rollback hash.
@@ -506,12 +590,12 @@ git push
 ### Task F4: Build the semantic CloakBrowser tool harness
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/browser_harness.py`
-- Create: `profitable-claude/skills/affiliate/config/browser-tools.json`
-- Test: `profitable-claude/skills/affiliate/tests/test_browser_harness.py`
-- Reuse: `profitable-claude/skills/_shared/browser/ensure_browser.sh`
-- Reuse: `profitable-claude/skills/_shared/browser/scripts/cdp_context_lease.py`
-- Reuse: `profitable-claude/skills/_shared/browser/scripts/scout.py`
+- Create: `skills/affiliate/scripts/browser_harness.py`
+- Create: `skills/affiliate/config/browser-tools.json`
+- Test: `skills/affiliate/tests/test_browser_harness.py`
+- Reuse: `skills/_shared/browser/ensure_browser.sh`
+- Reuse: `skills/_shared/browser/scripts/cdp_context_lease.py`
+- Reuse: `skills/_shared/browser/scripts/scout.py`
 
 **Interfaces:**
 - Produces: `observe`, `navigate`, `act`, `download`, `verify`, and `BrowserReceipt`.
@@ -576,13 +660,12 @@ git push
 ### Task F5: Journal every meaningful action and deliver natural-language Telegram receipts
 
 **Files:**
-- Create: `profitable-claude/lib/telegram_outbox.py`
-- Modify: `profitable-claude/skills/gig-work/scripts/telegram_outbox.py`
-- Create: `profitable-claude/skills/affiliate/scripts/action_events.py`
-- Create: `profitable-claude/skills/affiliate/scripts/telegram_report.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_action_events.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_telegram_outbox.py`
-- Regression: `profitable-claude/skills/gig-work/tests/test_telegram_outbox.py`
+- Create: `lib/telegram_outbox.py`
+- Create: `skills/affiliate/scripts/action_events.py`
+- Create: `skills/affiliate/scripts/telegram_report.py`
+- Test: `skills/affiliate/tests/test_action_events.py`
+- Test: `skills/affiliate/tests/test_telegram_outbox.py`
+- Test: `skills/affiliate/tests/test_legacy_gig_telegram_contract.py`
 
 **Interfaces:**
 - Produces: `ActionEvent`, `enqueue_event()`, immediate/digest delivery, and provider `message_id`.
@@ -659,13 +742,13 @@ normal operation; no eligible queue item waits for a reply.
 
 ```bash
 python3 -m pytest skills/affiliate/tests/test_action_events.py skills/affiliate/tests/test_telegram_outbox.py -q
-python3 -m pytest skills/gig-work/tests/test_telegram_outbox.py skills/gig-work/tests/test_telegram_reporting.py -q
+python3 -m pytest skills/affiliate/tests/test_legacy_gig_telegram_contract.py -q
 ```
 
 - [ ] **Step 7: Commit and push**
 
 ```bash
-git add lib/telegram_outbox.py skills/gig-work/scripts/telegram_outbox.py skills/affiliate
+git add lib/telegram_outbox.py skills/affiliate
 git commit -m "feat(affiliate): report every semantic action to Telegram"
 git push
 ```
@@ -674,11 +757,11 @@ git push
 ### Task F6: Implement the durable work queue and bounded replanner
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/work_queue.py`
-- Create: `profitable-claude/skills/affiliate/scripts/planner.py`
-- Create: `profitable-claude/skills/affiliate/scripts/action_guard.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_work_queue.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_planner.py`
+- Create: `skills/affiliate/scripts/work_queue.py`
+- Create: `skills/affiliate/scripts/planner.py`
+- Create: `skills/affiliate/scripts/action_guard.py`
+- Test: `skills/affiliate/tests/test_work_queue.py`
+- Test: `skills/affiliate/tests/test_planner.py`
 
 **Interfaces:**
 - Produces: `WorkItem`, `claim_next()`, `complete()`, `wait()`, `resume_expired()`, and `AgentPlan`.
@@ -752,35 +835,30 @@ git push
 ### Task 1: Establish isolated baselines and the Affiliate skill root
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/SKILL.md`
-- Create: `profitable-claude/skills/affiliate/config/providers.json`
-- Test: `profitable-claude/skills/affiliate/tests/test_skill_contract.py`
+- Create: `skills/affiliate/SKILL.md`
+- Create: `skills/affiliate/config/providers.json`
+- Test: `skills/affiliate/tests/test_skill_contract.py`
 
 **Interfaces:**
 - Consumes: Writer Agent canonical paths and the design spec.
 - Produces: the only Affiliate runtime root and provider schema version `1`.
 
-- [ ] **Step 1: Create clean worktrees from current pushed canonical branches**
+- [ ] **Step 1: Create one clean worktree from the pushed canonical Life Manager branch**
 
 ```bash
-cd /Users/anicca/profitable-claude
-git fetch --all --prune
-git worktree add .worktrees/affiliate-agent-runtime -b feature/affiliate-agent-runtime origin/main
 cd /Users/anicca/anicca-project
 git fetch --all --prune
-git worktree add .worktrees/affiliate-agent-api -b feature/affiliate-agent-api origin/dev
+git worktree add .worktrees/affiliate-agent -b feature/affiliate-agent canonical/main
 ```
 
 - [ ] **Step 2: Record baseline status and test results**
 
 ```bash
-git -C /Users/anicca/profitable-claude/.worktrees/affiliate-agent-runtime status --short
-python3 -m pytest /Users/anicca/profitable-claude/.worktrees/affiliate-agent-runtime/skills/writer-agent/tests -q
-git -C /Users/anicca/anicca-project/.worktrees/affiliate-agent-api status --short
-npm --prefix /Users/anicca/anicca-project/.worktrees/affiliate-agent-api/apps/api test -- --run
+git -C /Users/anicca/anicca-project/.worktrees/affiliate-agent status --short
+npm --prefix /Users/anicca/anicca-project/.worktrees/affiliate-agent/apps/api test -- --run
 ```
 
-Expected: both worktrees are clean and existing suites pass before Affiliate edits.
+Expected: the worktree is clean and existing suites pass before Affiliate edits.
 
 - [ ] **Step 3: Write the failing identity test**
 
@@ -818,9 +896,9 @@ git push -u origin feature/affiliate-agent-runtime
 ### Task 2: Implement canonical contracts and the immutable Affiliate ledger
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/contracts.py`
-- Create: `profitable-claude/skills/affiliate/scripts/ledger.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_ledger.py`
+- Create: `skills/affiliate/scripts/contracts.py`
+- Create: `skills/affiliate/scripts/ledger.py`
+- Test: `skills/affiliate/tests/test_ledger.py`
 
 **Interfaces:**
 - Produces: `AffiliateLedger`, account/offer/placement/click/commission/payout append methods, and `snapshot()`.
@@ -884,14 +962,14 @@ git push
 ### Task 3: Build generic provider connectors and verified playbooks
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/providers/base.py`
-- Create: `profitable-claude/skills/affiliate/scripts/providers/api_connector.py`
-- Create: `profitable-claude/skills/affiliate/scripts/providers/browser_connector.py`
-- Create: `profitable-claude/skills/affiliate/scripts/providers/report_connector.py`
-- Create: `profitable-claude/skills/affiliate/scripts/providers/recipe_registry.py`
-- Create: `profitable-claude/skills/affiliate/config/provider-playbooks/amazon-jp.json`
-- Create: `profitable-claude/skills/affiliate/config/provider-playbooks/rakuten-jp.json`
-- Test: `profitable-claude/skills/affiliate/tests/test_providers.py`
+- Create: `skills/affiliate/scripts/providers/base.py`
+- Create: `skills/affiliate/scripts/providers/api_connector.py`
+- Create: `skills/affiliate/scripts/providers/browser_connector.py`
+- Create: `skills/affiliate/scripts/providers/report_connector.py`
+- Create: `skills/affiliate/scripts/providers/recipe_registry.py`
+- Create: `skills/affiliate/config/provider-playbooks/amazon-jp.json`
+- Create: `skills/affiliate/config/provider-playbooks/rakuten-jp.json`
+- Test: `skills/affiliate/tests/test_providers.py`
 
 **Interfaces:**
 - Produces: connector protocol, candidate/verified/retired `ProviderRecipe`, `read_account()`,
@@ -953,14 +1031,14 @@ git push
 ### Task 4: Build the public placement redirect and internal click API
 
 **Files:**
-- Modify: `anicca-project/apps/api/prisma/schema.prisma`
-- Create: `anicca-project/apps/api/prisma/migrations/20260805090000_affiliate_click_attribution/migration.sql`
-- Create: `anicca-project/apps/api/src/services/affiliateClickService.js`
-- Create: `anicca-project/apps/api/src/routes/affiliate/index.js`
-- Create: `anicca-project/apps/api/src/routes/affiliate/click.js`
-- Create: `anicca-project/apps/api/src/routes/affiliate/internal.js`
-- Test: `anicca-project/apps/api/src/routes/affiliate/__tests__/click.test.js`
-- Modify: `anicca-project/apps/api/src/routes/index.js`
+- Modify: `apps/api/prisma/schema.prisma`
+- Create: `apps/api/prisma/migrations/20260805090000_affiliate_click_attribution/migration.sql`
+- Create: `apps/api/src/services/affiliateClickService.js`
+- Create: `apps/api/src/routes/affiliate/index.js`
+- Create: `apps/api/src/routes/affiliate/click.js`
+- Create: `apps/api/src/routes/affiliate/internal.js`
+- Test: `apps/api/src/routes/affiliate/__tests__/click.test.js`
+- Modify: `apps/api/src/routes/index.js`
 
 **Interfaces:**
 - Produces: placement create/disable, cursor click reads, and `GET /api/affiliate/c/:token`.
@@ -1019,8 +1097,8 @@ git push -u origin feature/affiliate-agent-api
 ### Task 5: Connect runtime placement creation and click ingestion
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/click_sync.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_click_sync.py`
+- Create: `skills/affiliate/scripts/click_sync.py`
+- Test: `skills/affiliate/tests/test_click_sync.py`
 
 **Interfaces:**
 - Produces: `create_placement()` and `sync_clicks(cursor)`.
@@ -1065,14 +1143,14 @@ git push
 ### Task 6: Implement official evidence packs and fail-closed policy
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/config/policy-rules.json`
-- Create: `profitable-claude/skills/affiliate/config/crawler-adapters.json`
-- Create: `profitable-claude/skills/affiliate/scripts/crawler_registry.py`
-- Create: `profitable-claude/skills/affiliate/scripts/source_capture.py`
-- Create: `profitable-claude/skills/affiliate/scripts/evidence.py`
-- Create: `profitable-claude/skills/affiliate/scripts/policy.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_crawler_registry.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_evidence_policy.py`
+- Create: `skills/affiliate/config/policy-rules.json`
+- Create: `skills/affiliate/config/crawler-adapters.json`
+- Create: `skills/affiliate/scripts/crawler_registry.py`
+- Create: `skills/affiliate/scripts/source_capture.py`
+- Create: `skills/affiliate/scripts/evidence.py`
+- Create: `skills/affiliate/scripts/policy.py`
+- Test: `skills/affiliate/tests/test_crawler_registry.py`
+- Test: `skills/affiliate/tests/test_evidence_policy.py`
 
 **Interfaces:**
 - Produces: `SourceCapture`, `CrawlerAdapterReceipt`, `EvidencePack`,
@@ -1130,10 +1208,10 @@ git push
 ### Task 7: Build locale-isolated content manifests and the Writer bridge
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/content.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_content.py`
-- Reuse by interface: `profitable-claude/skills/writer-agent/scripts/publication_contract.py`
-- Reuse by interface: `profitable-claude/skills/writer-agent/scripts/artifact_attribution.py`
+- Create: `skills/affiliate/scripts/content.py`
+- Create: `skills/affiliate/scripts/writer_bridge.py`
+- Test: `skills/affiliate/tests/test_content.py`
+- Test: `skills/affiliate/tests/test_legacy_writer_contract.py`
 
 **Interfaces:**
 - Produces: immutable `ContentManifest` and Writer input bundle.
@@ -1170,8 +1248,7 @@ contract/version/hash. Never read or write Writer money/topic state.
 
 ```bash
 python3 -m pytest skills/affiliate/tests/test_content.py -q
-bash skills/writer-agent/tests/editorial-citation-contract.sh
-bash skills/writer-agent/tests/cta-publication-boundary.sh
+python3 -m pytest skills/affiliate/tests/test_legacy_writer_contract.py -q
 ```
 
 - [ ] **Step 5: Commit and push**
@@ -1185,8 +1262,8 @@ git push
 ### Task 8: Publish owned and X placements through the browser with public readback
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/publisher.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_publisher.py`
+- Create: `skills/affiliate/scripts/publisher.py`
+- Test: `skills/affiliate/tests/test_publisher.py`
 
 **Interfaces:**
 - Produces: `PublishIntent`, provider publish receipt, and `PublicReadback`.
@@ -1226,7 +1303,7 @@ ledger before retry. X account identity must match the leased profile receipt.
 
 ```bash
 python3 -m pytest skills/affiliate/tests/test_publisher.py -q
-bash skills/writer-agent/tests/platform-dispatch-isolation.sh
+python3 -m pytest skills/affiliate/tests/test_legacy_writer_contract.py -q
 ```
 
 - [ ] **Step 5: Commit and push**
@@ -1240,8 +1317,8 @@ git push
 ### Task 9: Reconcile conversions, commissions, reversals, and payouts
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/reconcile.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_reconcile.py`
+- Create: `skills/affiliate/scripts/reconcile.py`
+- Test: `skills/affiliate/tests/test_reconcile.py`
 
 **Interfaces:**
 - Produces: `matched`, `unmatched`, `conflict`, and cursor receipts.
@@ -1286,9 +1363,9 @@ git push
 ### Task 10: Implement allocation and bounded learning
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/allocator.py`
-- Create: `profitable-claude/skills/affiliate/scripts/learning.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_learning.py`
+- Create: `skills/affiliate/scripts/allocator.py`
+- Create: `skills/affiliate/scripts/learning.py`
+- Test: `skills/affiliate/tests/test_learning.py`
 
 **Interfaces:**
 - Produces: allocation, experiment assignment, and `KEEP|REVERT|INCONCLUSIVE`.
@@ -1332,12 +1409,12 @@ git push
 ### Task 11: Implement durable orchestration, waits, and recovery
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/orchestrator.py`
-- Create: `profitable-claude/skills/affiliate/scripts/recovery.py`
-- Modify after migration parity: `profitable-claude/skills/affiliate/run.sh`
-- Modify after migration parity: `profitable-claude/skills/affiliate/affiliate-cli.sh`
-- Test: `profitable-claude/skills/affiliate/tests/test_orchestrator.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_recovery.py`
+- Create: `skills/affiliate/scripts/orchestrator.py`
+- Create: `skills/affiliate/scripts/recovery.py`
+- Modify after migration parity: `skills/affiliate/run.sh`
+- Modify after migration parity: `skills/affiliate/affiliate-cli.sh`
+- Test: `skills/affiliate/tests/test_orchestrator.py`
+- Test: `skills/affiliate/tests/test_recovery.py`
 
 **Interfaces:**
 - Produces: `hourly_wake()`, `daily_wake()`, `resume(run_id)`, legal transitions, and quarantines.
@@ -1352,7 +1429,7 @@ def test_crash_after_publish_receipt_resumes_without_repost(harness):
     with pytest.raises(SimulatedCrash):
         harness.daily()
     harness.resume()
-    assert harness.postiz.create_calls == 1
+    assert harness.browser.publish_calls == 1
     assert harness.state == "MEASURE"
 
 def test_auth_failure_quarantines_one_account(harness):
@@ -1398,8 +1475,8 @@ git push
 ### Task 12: Generate one money-first Web/Telegram snapshot
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/scripts/report.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_report.py`
+- Create: `skills/affiliate/scripts/report.py`
+- Test: `skills/affiliate/tests/test_report.py`
 
 **Interfaces:**
 - Produces: `latest.json`, `index.html`, Telegram text, and one semantic SHA-256.
@@ -1441,11 +1518,10 @@ git push
 ### Task 13: Install and verify launchd ownership
 
 **Files:**
-- Create: `profitable-claude/skills/affiliate/launchd/ai.anicca.affiliate-hourly.plist`
-- Create: `profitable-claude/skills/affiliate/launchd/ai.anicca.affiliate-daily.plist`
-- Create: `profitable-claude/skills/affiliate/launchd/ai.anicca.affiliate-report.plist`
-- Create: `profitable-claude/skills/affiliate/scripts/install.sh`
-- Test: `profitable-claude/skills/affiliate/tests/test_launchd_wiring.py`
+- Create: `skills/affiliate/launchd/ai.anicca.affiliate-reconcile.plist`
+- Create: `skills/affiliate/launchd/ai.anicca.affiliate-daily.plist`
+- Create: `skills/affiliate/scripts/install.sh`
+- Test: `skills/affiliate/tests/test_launchd_wiring.py`
 
 **Interfaces:**
 - Produces: installed labels, locks, logs, status receipts, and immediate kickstart.
@@ -1458,7 +1534,10 @@ def test_plists_use_canonical_root_and_run_at_load():
     for path in PLISTS:
         payload = plistlib.loads(path.read_bytes())
         assert payload["RunAtLoad"] is True
-        assert "/skills/affiliate/" in " ".join(payload["ProgramArguments"])
+        command = " ".join(payload["ProgramArguments"])
+        assert "/.local/share/life-manager/affiliate/current/" in command
+        assert "/.worktrees/" not in command
+        assert "/profitable-claude/" not in command
         assert payload["StandardOutPath"] != payload["StandardErrorPath"]
 ```
 
@@ -1487,9 +1566,9 @@ git push
 
 ```bash
 bash skills/affiliate/scripts/install.sh
-launchctl kickstart -k gui/$(id -u)/ai.anicca.affiliate-hourly
+launchctl kickstart -k gui/$(id -u)/ai.anicca.affiliate-reconcile
 launchctl kickstart -k gui/$(id -u)/ai.anicca.affiliate-daily
-launchctl print gui/$(id -u)/ai.anicca.affiliate-hourly
+launchctl print gui/$(id -u)/ai.anicca.affiliate-reconcile
 launchctl print gui/$(id -u)/ai.anicca.affiliate-daily
 ```
 
@@ -1499,8 +1578,8 @@ duplicate placement is produced.
 ### Task 14: Deploy the redirect and prove live HTTPS click E2E
 
 **Files:**
-- Modify only if evidence requires: `anicca-project/railway.toml`
-- Update: `anicca-project/docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`
+- Modify only if evidence requires: `apps/api/railway.toml`
+- Update: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`
 
 **Interfaces:**
 - Produces: deployment hash, placement receipt, click receipt, and `302` readback.
@@ -1511,7 +1590,7 @@ duplicate placement is produced.
 ```bash
 git fetch --all --prune
 git log -1 --format=%H
-git push origin HEAD:dev
+git push canonical HEAD:dev
 ```
 
 - [ ] **Step 2: Verify Railway's exact deployment commit and health**
@@ -1541,8 +1620,8 @@ No token, credential, raw IP, or personal identifier enters git.
 ### Task 15: Execute English E0, then unlock an isolated Japanese canary
 
 **Files:**
-- Runtime state: `profitable-claude/skills/affiliate/state/` (gitignored)
-- Update: `anicca-project/docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`
+- Runtime state: `${LIFE_MANAGER_STATE_HOME}/affiliate/`
+- Update: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`
 
 **Interfaces:**
 - Produces: one live English decision asset with policy, publish, readback,
@@ -1606,7 +1685,7 @@ without duplicate. Do not stop an unrelated production loop.
 
 ```bash
 python3 -m pytest skills/affiliate/tests -q
-python3 -m pytest skills/writer-agent/tests -q
+python3 -m pytest skills/affiliate/tests/test_legacy_writer_contract.py -q
 ```
 
 - [ ] **Step 8: Close E0 and read back the Japanese canary identity**
@@ -1617,7 +1696,7 @@ authorized Japanese account in a separate browser profile. If required identity
 authority is unavailable, record `EXTERNAL_CHALLENGE`; never fabricate it.
 English credentials, history, cohorts, experiments, and budgets are not copied.
 
-- [ ] **Step 9: Record sanitized receipts, commit, and push both repositories**
+- [ ] **Step 9: Record sanitized receipts, commit, and push the canonical repository**
 
 English E0 closes independently. Japanese J0 remains open until its later public
 readback and click lineage. Revenue remains unknown until an external transaction.
@@ -1626,7 +1705,7 @@ readback and click lineage. Revenue remains unknown until an external transactio
 
 **Files:**
 - Runtime receipt state only.
-- Update: `anicca-project/docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`.
+- Update: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`.
 
 **Interfaces:**
 - Produces: transaction, commission, attribution/unmatched, and payout-state receipts.
@@ -1661,7 +1740,7 @@ time without secrets.
 
 **Files:**
 - Runtime state: locale-isolated Japanese provider, identity, and ledger rows.
-- Update: `anicca-project/docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`.
+- Update: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`.
 
 - [ ] **Step 1: Read back Japanese identity and one executable offer**
 
@@ -1693,7 +1772,7 @@ experiments, and budgets cannot cross.
 
 **Files:**
 - Runtime ledgers/reports only.
-- Update gate rows: `anicca-project/docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`.
+- Update gate rows: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`.
 
 **Interfaces:**
 - Produces: four positive weeks, then three qualifying $10k months.
@@ -1729,12 +1808,57 @@ A month passes only with complete approved/reversal state and visible net.
 Generate gross, approved, paid, reversal, fee, net, unmatched, concentration,
 uptime, and manual-intervention evidence; commit/push the SSOT summary.
 
+### Task 17P: Publish the proof ledger and gate product claims
+
+**Files:**
+- Create after E1: `skills/affiliate/scripts/public_ledger.py`
+- Test: `skills/affiliate/tests/test_public_ledger.py`
+- Create: `docs/affiliate-agent/PRIOR-ART-REGISTRY.md`
+- Modify only after this task passes: `README.md`
+- Modify only after this task passes: `apps/landing` Life Manager route
+
+**Interfaces:**
+- Produces a privacy-safe, append-only public financial projection and a
+  reproducible prior-art/claim receipt.
+- Consumes only content-addressed external money receipts and public-safe runtime
+  health; secrets and private identifiers are denied fields.
+
+- [ ] **Step 1: Write failing redaction, ledger-invariant, and claim-gate tests**
+
+Assert that pending is not earned, reversals are visible, net is derived from
+receipts, every public row resolves to a redacted hash, and “first” wording is
+disabled when any proof prerequisite is absent.
+
+- [ ] **Step 2: Build the public projection and independent verifier**
+
+Export aggregate gross/net/pending/approved/reversed/paid/cost/currency without
+credentials, bank/tax data, customer IDs, session material, or provider-private
+identifiers. Ship a verifier that recomputes hashes and invariants.
+
+- [ ] **Step 3: Freeze the prior-art registry from reproducible evidence**
+
+Record CRWL/`gh` search routes, query scope, inspected commit, license, code/tests
+executed, money boundary, missing boundary, and remaining uncertainty for every
+material predecessor.
+
+- [ ] **Step 4: Close the public proof gate with live receipts**
+
+Require canonical public source, reproducible macOS install, E1 approved receipt,
+payout receipt when available, public ledger, verifier, and zero secret leak.
+An external-money wait keeps the claim disabled; it is not replaced by a mock.
+
+- [ ] **Step 5: Update README and `aniccaai.com/life-manager` with qualified copy**
+
+Use “We are building…” before the gate. After it closes, permit only the
+time-scoped “To our knowledge…” affiliate-loop claim linked to the registry and
+ledger. Never promise income or claim a generic world-first money loop.
+
 ### Task 18: Package the proven recipe for operator-owned installations
 
 **Files:**
-- Create after A3: `profitable-claude/skills/affiliate/scripts/tenant_contract.py`
-- Test after A3: `profitable-claude/skills/affiliate/tests/test_tenant_contract.py`
-- Create after A3: `anicca-project/docs/affiliate-agent/OPERATOR-INSTALL-CONTRACT.md`
+- Create after A3: `skills/affiliate/scripts/tenant_contract.py`
+- Test after A3: `skills/affiliate/tests/test_tenant_contract.py`
+- Create after A3: `docs/affiliate-agent/OPERATOR-INSTALL-CONTRACT.md`
 
 **Interfaces:**
 - Produces: isolated accounts, state, disclosure identity, payout ownership, spend cap, and report.
@@ -1768,10 +1892,10 @@ accounts without original-Agent state access.
 ### Task 19: Scale a diversified network from $10k through $10M to the $100M horizon
 
 **Files:**
-- Extend after A3: `profitable-claude/skills/affiliate/scripts/allocator.py`
-- Extend after A3: `profitable-claude/skills/affiliate/scripts/report.py`
-- Test: `profitable-claude/skills/affiliate/tests/test_scale_controller.py`
-- Update: `anicca-project/docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`
+- Extend after A3: `skills/affiliate/scripts/allocator.py`
+- Extend after A3: `skills/affiliate/scripts/report.py`
+- Test: `skills/affiliate/tests/test_scale_controller.py`
+- Update: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`
 
 **Interfaces:**
 - Produces: budget-capped pod creation, staged promotion, rollback, and network receipts.
@@ -1827,12 +1951,11 @@ receipt exists, the report must say `HORIZON_OPEN`, never “achieved” or “e
 ## Final verification commands
 
 ```bash
-cd /Users/anicca/profitable-claude/.worktrees/affiliate-agent-runtime
+cd /Users/anicca/anicca-project/.worktrees/affiliate-agent
 /usr/bin/python3 -m compileall -q skills/affiliate/scripts
 python3 -m pytest skills/affiliate/tests -q
-python3 -m pytest skills/writer-agent/tests -q
+python3 -m pytest skills/affiliate/tests/test_legacy_writer_contract.py -q
 
-cd /Users/anicca/anicca-project/.worktrees/affiliate-agent-api
 npm --prefix apps/api test -- --run
 
 git status --short

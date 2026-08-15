@@ -4,9 +4,16 @@ Status: approved for implementation planning
 
 Canonical product context: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`
 
-Runtime repository: `/Users/anicca/profitable-claude`
+Canonical repository: `https://github.com/Daisuke134/life-manager`
 
-Life Manager API repository: `/Users/anicca/anicca-project`
+Production source: `skills/affiliate/` and `apps/api/` in the same Life Manager
+monorepo. `/Users/anicca/profitable-claude/skills/affiliate` is legacy migration
+input only, never a second production owner.
+
+Mutable state: `${LIFE_MANAGER_STATE_HOME:-~/.local/state/life-manager}/affiliate/`.
+Installed releases: `~/.local/share/life-manager/affiliate/releases/<git_sha>/`
+with an atomic `current` symlink. Git never owns credentials, browser sessions,
+provider downloads, queues, receipts, or money state.
 
 ## 1. Goal
 
@@ -28,10 +35,48 @@ commission across a diversified network. USD 100,000,000 monthly net is retained
 as a separately receipted horizon, not a forecast. None is promised by software
 completion.
 
-### 1.1 Measured legacy runtime
+### 1.1 Life Manager product boundary
 
-The production repository already contains `skills/affiliate`; it is the
-canonical migration target. Read-only inspection on 2026-08-05 found:
+Anicca is the company. Life Manager is the product, autonomous agent, and
+canonical repository. An assistant waits for a request; Life Manager continuously
+observes authorized state, chooses a bounded action, executes it, verifies the
+external result, repairs failures, learns from receipts, and explains the next
+action. It manages three health organs:
+
+```mermaid
+flowchart TD
+  LM[Life Manager<br/>AI that manages a life] --> PH[Physical Health]
+  LM --> MH[Mental Health]
+  LM --> FH[Financial Health]
+  FH --> PC[Financial portfolio controller]
+  PC --> C[Shared money-loop contract]
+  C --> G[Gig Work<br/>Coconala and marketplaces]
+  C --> A[Affiliate Agent]
+  C --> W[Writer and paid publishing]
+  C --> X[x402 and future earning loops]
+  G --> CFO[Verified financial projection]
+  A --> CFO
+  W --> CFO
+  X --> CFO
+  CFO --> UX[Telegram and Life Manager UI]
+```
+
+Financial Health optimizes verified net position, not gross revenue or activity.
+Income, fees, reversals, liabilities, cash timing, concentration, policy risk,
+and operating cost remain visible. Each loop owns an append-only ledger; the CFO
+layer reads projections and never merges or rewrites source ledgers.
+
+The common contract is extracted only where Affiliate and an existing earning
+loop both prove the same need: typed work item, authority receipt, policy/budget
+gate, idempotent action intent, external readback, money receipt, recovery state,
+learning decision, and owner-language event. Loop-specific provider, content,
+and marketplace behavior stays behind adapters.
+
+### 1.2 Measured legacy runtime
+
+The legacy repository contains `skills/affiliate`; the canonical Life Manager
+repo does not own it until Task R0 imports and verifies it. Read-only inspection
+on 2026-08-05 found:
 
 - the tmux core reports `DEAD`;
 - its last pass and last-start markers are dated 2026-07-12;
@@ -226,21 +271,24 @@ not the whole architecture.
 
 ## 5. System boundaries
 
-Two repositories participate:
+One canonical Life Manager monorepo participates:
 
-| Repository | Responsibility |
+| Boundary | Responsibility |
 |---|---|
-| `profitable-claude` | Affiliate runtime, provider adapters, research, content manifests, policy, publication orchestration, reconciliation, learning, recovery, launchd, reports |
-| `anicca-project` | Public signed redirect, durable click ingest, internal placement/click API, Life Manager integration |
+| `skills/affiliate/` | Affiliate runtime, provider adapters, research, content manifests, policy, publication orchestration, reconciliation, learning, recovery, launchd, reports |
+| `apps/api/` | Public signed redirect, durable click ingest, internal placement/click API, Life Manager integration |
+| `${LIFE_MANAGER_STATE_HOME}/affiliate/` | Git-excluded mutable queue, ledger, receipts, browser/profile references, reports, and recovery state |
+| `~/.local/share/life-manager/affiliate/` | Immutable installed releases and atomic current/rollback pointers |
 
-The Affiliate Agent reuses Writer Agent patterns from
-`profitable-claude/skills/writer-agent`, including typed SQLite ledgers,
-publication contracts, same-run recovery, claim/opportunity evidence stores,
-attribution, reports, and launchd installers. It does not import Writer money
-rows or modify Writer's revenue semantics.
+The Affiliate Agent reuses receipted Writer Agent patterns captured from the
+legacy runtime—typed SQLite ledgers, publication contracts, same-run recovery,
+claim/opportunity evidence stores, attribution, reports, and launchd installers—
+through canonical Affiliate compatibility tests. It does not keep a runtime
+import to a non-existent Life Manager `skills/writer-agent` tree, import Writer
+money rows, or modify Writer's revenue semantics.
 
 It also reuses the shared CloakBrowser/CDP lease and recovery tools under
-`profitable-claude/skills/_shared/browser`, plus the at-most-once Telegram
+`skills/_shared/browser`, plus the at-most-once Telegram
 outbox and natural-language event envelope patterns already proven by Gig Work.
 The legacy `skills/affiliate` scripts become compatibility wrappers during the
 migration and are removed from scheduling only after state-parity receipts.
@@ -309,6 +357,29 @@ flowchart TD
   D -->|KEEP| B
   D -->|REVERT| R
 ```
+
+The macOS ownership and release path is:
+
+```mermaid
+flowchart LR
+  GH[Canonical Life Manager commit] --> I[Checksum install]
+  I --> REL[Immutable release by git SHA]
+  REL --> CUR[Atomic current pointer]
+  L5[launchd reconcile<br/>every 5 minutes] --> CUR
+  LD[launchd daily<br/>one primary asset at most] --> CUR
+  CUR --> Q[Durable Affiliate queue]
+  Q --> S[State and append-only ledger]
+  S --> TG[Telegram projection]
+  S --> UI[Life Manager projection]
+  BAD[Failed release or wake] --> RB[Rollback pointer]
+  RB --> CUR
+```
+
+`launchd` wakes work; it does not contain business logic. Both jobs claim the
+same durable queue with leases and idempotency keys. The five-minute job resumes,
+reconciles, ingests receipts, and flushes the outbox. The daily job may create at
+most one primary decision asset after measuring mature cohorts. A crash restarts
+the same `run_id`; it never creates a fresh publish intent.
 
 ### 6.1 Agent action protocol
 
