@@ -5,9 +5,9 @@ description: Builds, runs, and migrates the Life Manager Affiliate Agent across 
 
 # Life Manager Affiliate Skill
 
-status: `BOOTSTRAP_IN_PROGRESS`
+status: `LOCAL_RUNTIME_READY`
 legacy_migration: `MIGRATION_ONLY`
-execution: `DISABLED`
+execution: `MACOS_LOCAL_ONLY`
 
 The canonical source is this `skills/affiliate` directory in the Life Manager
 repository. `legacy/` contains byte-preserved evidence only; archived files are
@@ -18,10 +18,10 @@ Mutable state lives at
 Installed data lives at
 `${LIFE_MANAGER_DATA_HOME:-$HOME/.local/share/life-manager}/affiliate`.
 
-Live affiliate execution is blocked until the later E0/provider/browser/
-publisher receipt gates are satisfied. This migration shell may verify and
-install an immutable disabled release, but it does not register launchd jobs,
-publish content, or claim revenue.
+The runtime follows the proven Coconala boundary: an immutable release, mutable
+append-only receipts outside Git, an isolated browser profile, and launchd-owned
+local wakes. It does not use Railway or an Anicca API redirect. Public content
+uses an authenticated provider tracking link directly; clicks are not revenue.
 
 F0 provides four deterministic, non-publishing primitives:
 
@@ -51,6 +51,21 @@ Use `provider poll` with the same arguments in a loop. The first observation or
 a real state change returns `changed=true` and a deterministic `transition_id`;
 an unchanged retry returns `next_action=NO_STATE_CHANGE`. Downstream actions
 must deduplicate on `transition_id`.
+
+Install the local release and its two launchd owners:
+
+```bash
+skills/affiliate/scripts/install-release.sh
+skills/affiliate/affiliate loop wake
+skills/affiliate/affiliate loop placement --placement article-1 --locale en
+```
+
+`ai.anicca.affiliate-browser` owns the isolated English profile on CDP `9324`.
+`ai.anicca.affiliate-loop` wakes every 30 minutes. Receipts live under
+`~/.local/state/life-manager/affiliate`; provider passwords and the executable
+ElevenLabs link remain only in the mode-0600 private Markdown. The current wake
+proves local readiness only. Publication, provider click readback, commission,
+and payout stay separate later gates.
 
 Use the versioned English program research before any application:
 
@@ -82,22 +97,11 @@ reference, and returns status only. Run it before every signup/reset submission;
 after fresh login repeat with `--verification VERIFIED_LOGIN`. Never pass a
 password on the affiliate CLI command line.
 
-Initialize the signed redirect secret in the same private Markdown SSOT, then
-mint one stable URL per admitted placement:
-
-```bash
-skills/affiliate/affiliate redirect init
-skills/affiliate/affiliate redirect mint --offer elevenlabs \
-  --placement article-1 --locale en --experiment e0 --variant control
-```
-
-`init` never overwrites an existing valid secret. `mint` prints only the signed
-public redirect URL; the secret stays in the mode-0600 Git-external Markdown.
-
 The committed bootstrap manifest pins PBS CPython `3.14.7+20260814` for macOS
 arm64 by immutable URL and SHA-256. The installer verifies and extracts the same
 held artifact, validates the full runtime tree, and atomically activates it
 without changing PATH or the system Python. The current Mac also has a receipted
 CloakBrowser app. Affiliate-only Keychain readback is live-proven; an unverified
-reference is never `AUTHORIZED`. Authenticated provider/mail/X session discovery,
-account-handle verification, launchd, publication, and revenue remain disabled.
+reference is never `AUTHORIZED`. Authenticated X account-handle verification,
+publication, provider commission readback, and revenue remain gated; launchd and
+the isolated local browser are owned by this installed skill.

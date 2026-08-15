@@ -58,7 +58,7 @@ class RepositoryOwnershipTests(unittest.TestCase):
         self.assertIn("name: affiliate\n", text)
         self.assertIn("description:", text)
         self.assertIn("MIGRATION_ONLY", text)
-        self.assertIn("DISABLED", text)
+        self.assertIn("MACOS_LOCAL_ONLY", text)
         self.assertIn("LIFE_MANAGER_STATE_HOME", text)
         self.assertIn("LIFE_MANAGER_DATA_HOME", text)
 
@@ -156,6 +156,7 @@ class RepositoryOwnershipTests(unittest.TestCase):
                     "LIFE_MANAGER_DATA_HOME": str(data_home),
                     "LIFE_MANAGER_STATE_HOME": str(state_home),
                     "LIFE_MANAGER_RELEASE_SHA": commit,
+                    "AFFILIATE_INSTALL_LAUNCHD": "0",
                 }
             )
             install_script = fixture_skill / "scripts" / "install-release.sh"
@@ -179,7 +180,7 @@ class RepositoryOwnershipTests(unittest.TestCase):
             # immutable release and receipt.
             receipt = next((state_home / "affiliate").glob("*.json"))
             receipt_data = json.loads(receipt.read_text(encoding="utf-8"))
-            self.assertEqual(receipt_data["status"], "DISABLED")
+            self.assertEqual(receipt_data["status"], "LOCAL_RELEASE_ONLY")
             self.assertEqual(receipt_data["canonical_sha"], commit)
             self.assertEqual(receipt_data["release_path"], str(release))
             self.assertEqual(

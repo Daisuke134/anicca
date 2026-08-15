@@ -82,8 +82,13 @@ fi
 
 RECEIPT="$AFFILIATE_STATE/ownership-${HEAD_SHA}.json"
 RECEIPT_STAGE="$AFFILIATE_STATE/.ownership-${HEAD_SHA}.$$"
+INSTALL_LAUNCHD="${AFFILIATE_INSTALL_LAUNCHD:-1}"
 /usr/bin/plutil -create xml1 "$RECEIPT_STAGE"
-/usr/bin/plutil -insert status -string "DISABLED" "$RECEIPT_STAGE"
+if [[ "$INSTALL_LAUNCHD" == "1" ]]; then
+  /usr/bin/plutil -insert status -string "LOCAL_READY" "$RECEIPT_STAGE"
+else
+  /usr/bin/plutil -insert status -string "LOCAL_RELEASE_ONLY" "$RECEIPT_STAGE"
+fi
 /usr/bin/plutil -insert canonical_sha -string "$HEAD_SHA" "$RECEIPT_STAGE"
 /usr/bin/plutil -insert release_path -string "$RELEASE" "$RECEIPT_STAGE"
 /usr/bin/plutil -insert legacy_source_commit -string \
@@ -91,9 +96,14 @@ RECEIPT_STAGE="$AFFILIATE_STATE/.ownership-${HEAD_SHA}.$$"
 /usr/bin/plutil -insert artifact_hashes -json \
   '["legacy/SHA256SUMS","legacy/DEPENDENCIES.sha256"]' "$RECEIPT_STAGE"
 /usr/bin/plutil -insert missing_dependency_inventory -string \
-  "UNAVAILABLE until E0/provider/browser/publisher receipts" "$RECEIPT_STAGE"
+  "publisher and commission reconciliation remain gated" "$RECEIPT_STAGE"
 /usr/bin/plutil -insert excluded_mutable_paths -json '["state"]' "$RECEIPT_STAGE"
-/usr/bin/plutil -insert launchd_owners -array "$RECEIPT_STAGE"
+if [[ "$INSTALL_LAUNCHD" == "1" ]]; then
+  /usr/bin/plutil -insert launchd_owners -json \
+    '["ai.anicca.affiliate-browser","ai.anicca.affiliate-loop"]' "$RECEIPT_STAGE"
+else
+  /usr/bin/plutil -insert launchd_owners -array "$RECEIPT_STAGE"
+fi
 /usr/bin/plutil -convert json "$RECEIPT_STAGE"
 if [[ -e "$RECEIPT" ]]; then
   cmp -s "$RECEIPT_STAGE" "$RECEIPT" \
@@ -105,4 +115,49 @@ else
   RECEIPT_STAGE=""
 fi
 
-printf 'installed disabled affiliate release %s\n' "$HEAD_SHA"
+if [[ "$INSTALL_LAUNCHD" != "1" ]]; then
+  printf 'installed local affiliate release without launchd %s\n' "$HEAD_SHA"
+  exit 0
+fi
+
+CLOAK_PYTHON="$HOME_ROOT/.openclaw/skills/_shared/venv-cloak/bin/python"
+[[ -x "$CLOAK_PYTHON" ]] || die "CloakBrowser Python is unavailable"
+PROFILE_ROOT="$HOME_ROOT/.cloak/profiles/affiliate"
+"$CLOAK_PYTHON" "$RELEASE/scripts/profile_provisioner.py" --root "$PROFILE_ROOT" \
+  --receipt "$AFFILIATE_STATE/browser-profiles.json"
+
+LAUNCH_AGENTS="$HOME_ROOT/Library/LaunchAgents"
+LOG_DIR="$HOME_ROOT/.local/state/life-manager/affiliate/logs"
+mkdir -p "$LAUNCH_AGENTS" "$LOG_DIR"
+BROWSER_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-browser.plist"
+LOOP_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-loop.plist"
+cat > "$BROWSER_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>ai.anicca.affiliate-browser</string>
+<key>ProgramArguments</key><array><string>$CLOAK_PYTHON</string><string>$CURRENT/scripts/local_browser.py</string></array>
+<key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>AFFILIATE_BROWSER_PROFILE</key><string>$PROFILE_ROOT/en</string><key>AFFILIATE_CDP_PORT</key><string>9324</string></dict>
+<key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>30</integer>
+<key>StandardOutPath</key><string>$LOG_DIR/browser.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/browser.err.log</string>
+</dict></plist>
+EOF
+cat > "$LOOP_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>ai.anicca.affiliate-loop</string>
+<key>ProgramArguments</key><array><string>/bin/sh</string><string>$CURRENT/affiliate</string><string>loop</string><string>wake</string></array>
+<key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
+<key>RunAtLoad</key><true/><key>StartInterval</key><integer>1800</integer><key>ThrottleInterval</key><integer>60</integer>
+<key>StandardOutPath</key><string>$LOG_DIR/loop.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/loop.err.log</string>
+</dict></plist>
+EOF
+/usr/bin/plutil -lint "$BROWSER_PLIST" "$LOOP_PLIST" >/dev/null
+for label in ai.anicca.affiliate-loop ai.anicca.affiliate-browser; do
+  /bin/launchctl bootout "gui/$(id -u)/$label" >/dev/null 2>&1 || true
+done
+/bin/launchctl bootstrap "gui/$(id -u)" "$BROWSER_PLIST"
+/bin/launchctl bootstrap "gui/$(id -u)" "$LOOP_PLIST"
+
+printf 'installed local affiliate release %s\n' "$HEAD_SHA"

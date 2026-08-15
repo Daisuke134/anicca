@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-if [ "${1:-}" != "provider" ] && [ "${1:-}" != "programs" ] && [ "${1:-}" != "redirect" ]; then
-  echo "usage: affiliate {provider|programs|redirect} ..." >&2
+if [ "${1:-}" != "provider" ] && [ "${1:-}" != "programs" ] && [ "${1:-}" != "loop" ]; then
+  echo "usage: affiliate {provider|programs|loop} ..." >&2
   exit 2
 fi
 group=$1
@@ -18,6 +18,6 @@ fi
 case "$group" in
   provider) script=provider_cli.py ;;
   programs) script=program_registry.py ;;
-  redirect) script=redirect_cli.py ;;
+  loop) script=local_loop.py ;;
 esac
 exec "$python_bin" "$(dirname "$0")/scripts/$script" "$@"

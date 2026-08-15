@@ -114,7 +114,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; disabled immutable release is `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| English signed redirect | Local contract GREEN; staging variables configured; code not deployed | `apps/api` accepts one fixed ElevenLabs offer, verifies a 32-byte-minimum HMAC over offer/placement/locale/experiment/variant, appends an `affiliate_click` to existing Postgres `ops_events`, and redirects only after persistence succeeds. The focused normal/forged-signature/DB-failure suite passes 3/3. `affiliate redirect init|mint` stores a non-overwriting secret in the mode-0600 private MD and deterministically mints placement URLs; its fresh-file, signature, permission, and idempotency checks pass. Railway staging API has non-empty secret and allowed-host target variables set through stdin with deploy suppressed. Code deploy and live DB/browser readback remain open, so E0 is not claimed |
+| Mac-local runtime | Implemented in canonical source; live installation verification is next | Copies the current Coconala boundary: immutable release, isolated EN CloakBrowser profile on CDP `9324`, append-only local JSONL receipts, a non-overlapping wake lock, and two launchd owners. Railway/API redirect code is removed; public placements use the provider tracking link directly |
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
@@ -128,7 +128,7 @@ live autonomous operation.
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`; HubSpot/Impact is `APPLICATION_PENDING + AUTH_RECOVERY_PROVIDER_DEFECT`; Kit is `APPLICATION_REJECTED`; Systeme.io is `EXTERNAL_CHALLENGE` at visible reCAPTCHA; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | ElevenLabs credential recovery, isolated fresh login, active-account readback, owned default link, anonymous redirect, and attribution-cookie creation are proven. No commission, approved transaction, reversal, or payout is claimed yet |
 | Publication | Browser publisher is planned only | No Affiliate JA/EN placement has an action receipt plus public readback |
-| Attribution | Design and API tasks remain open | No live redirect click is joined to an ASP transaction |
+| Attribution | Local placement receipts and direct provider-link resolution are implemented | No public placement or provider-side click/commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | The shared Life Manager allowlist target delivered a real Affiliate milestone with provider `messageId=7639`; the older F1 path failed because it did not use this resolved target | Reuse the validated target contract and build the Affiliate durable outbox/dedupe layer; delivery identity is no longer unknown |
 | Autonomous operation | Queue, browser harness, recovery, launchd, and reports remain open | No-human-loop behavior is not yet achieved |
@@ -153,8 +153,9 @@ independent work below:
    publish useful non-affiliate English foundation content before links exist;
 5. rebrand and verify `@selawmqt` as the English identity, add the required
    disclosure, and build relevant organic distribution without claiming results;
-6. implement the redirect/sub-ID boundary, append-only money ledger, policy gate,
-   public readback, Telegram outbox, browser recovery, and launchd packaging;
+6. implement direct provider-link placement receipts, the append-only money
+   ledger, policy gate, public readback, Telegram outbox, browser recovery, and
+   launchd packaging on the operator's Mac;
 7. prepare provider-specific placements as unpublished intents, then attach only
    an approved, owned, executable tracking link after an E-1 receipt exists.
 
@@ -174,7 +175,7 @@ owner, and independent work selected for the same wake.
 | The owned site does not yet present a deep affiliate-relevant English content body | Approval and conversion weakness | Publish evidence-led B2B SaaS/creator workflows and comparison foundations before another fit-sensitive application |
 | `agent-browser 0.27.0` hung against the live multi-tab CloakBrowser | Tool-path failure, not browser incapability | Use the live-proven raw-CDP path now; retain the failure receipt and replace only when a candidate passes the same live postcondition |
 | Provider signup/login/OTP/contract/application writes are not yet fully exposed by `affiliate provider` | Product implementation gap | Turn every successful operator action into an idempotent semantic playbook and CLI state |
-| Signed click redirect is locally implemented, but minting, production configuration/deploy, provider reconciliation, and the Affiliate money ledger are open | Revenue-truth implementation gap | Deploy and prove one live click receipt before publication scale; no click or estimate may be reported as commission |
+| Redirect, click join, provider reconciliation, and Affiliate ledger are unbuilt | Revenue-truth implementation gap | Build before scaling publication; no click or estimate may be reported as commission |
 | No first-party CTR, conversion, approval, reversal, or payout cohort exists | Learning uncertainty | Do not fabricate best/base/worst revenue forecasts; collect the first live 30-day cohort |
 | Scratch-Mac dependency installation is incomplete | Packaging gap, not current-Mac money blocker | Finish only after the current Mac closes a positive-unit-economics local slice |
 
@@ -492,7 +493,7 @@ flowchart TB
   JA --> F
   ES --> F
   NX --> F
-  F --> RD[Signed redirect and provider sub-ID]
+  F --> RD[Direct provider link + local receipt]
   RD --> L
 ```
 
@@ -518,7 +519,7 @@ canary. Translation alone can never authorize publication.
 | Content studio | Produces an English article, X thread/post, X Article, carousel, slideshow, or video; the later Japanese pod uses independent evidence, identity, and localization rather than mixed-language reuse |
 | Policy gate | Fail-closed for missing disclosure, unverified claims, prohibited categories, self-dealing, stale price, broken link, or unregistered surface |
 | Browser publisher | Observe semantically, execute one typed action, then require before/after URL and observation hashes, expected identity, external object URL/ID when visible, screenshot hash, and fresh public readback. Before retrying an ambiguous publish, search the ledger and live account for the content fingerprint |
-| Attribution | Agent-owned redirect records click ID, content, placement, offer, language, and experiment before redirecting to the signed affiliate URL |
+| Attribution | Agent records content, placement, offer, language, and experiment locally, publishes the provider tracking link directly, and reconciles only provider-side click/commission receipts |
 | Receipt reconciler | Navigates provider dashboards and downloaded reports through the browser, hashes the source artifact, and joins transaction/sub-ID rows to clicks. Unknown is never zero; pending, approved, reversed, and paid remain distinct |
 | Learner | Promotes a tactic only from mature cohorts and deepest common signal: net commission → approved orders → qualified leads → clicks → engagement |
 | Recovery controller | Same `run_id`, artifact hash, placement, and publication intent resume after failure; exponential retry obeys provider `Retry-After` |
@@ -675,9 +676,6 @@ are complementary, not substitutes for the Affiliate Agent:
 | [diptobiswas/agentwork](https://github.com/diptobiswas/agentwork) | Closest marketplace shape: agent profiles, gigs, escrow contract, and on-chain settlement vocabulary | Observed public market had one active agent, zero gigs, and `$0` earned; production recipient lookup remains TODO; no root license | Pattern only; do not copy unlicensed code or call escrow capability revenue |
 | [coinbase/x402-paid-api-starter](https://github.com/coinbase/x402) | Closest real settlement substrate: idempotent transaction/settlement receipts; relevant cloned slice passed 13 tests | It does not acquire customers, publish, or choose profitable work | Reuse receipt/settlement patterns for an x402 loop, not as Affiliate Agent |
 | [paraggit/affiliate-automation](https://github.com/paraggit/affiliate-automation) | Closest licensed affiliate code: MIT provider abstraction, persistence, retry, content, scheduling; audited suite passed 41 tests | Interactive confirmation; no program application, commission reconciliation, payout, or public ledger | Selective code reuse behind our deterministic queue/browser/receipt contracts |
-| [ElevenLabs Affiliate Partner Guide](https://elevenlabs.io/affiliate-partner-guide) | Official guide says custom links can be created for names/social handles/products, up to 100 links are supported, links are active immediately, and Google Ads with affiliate links are prohibited | It does not expose arbitrary per-click sub-IDs or an exact click-to-commission join | Use one provider custom link per admitted placement/cohort and keep the finer click ID in the owned signed redirect |
-| [PartnerStack: Creating custom referral links](https://support.partnerstack.com/hc/en-us/articles/360009476833-Creating-custom-referral-links) | Official help says each custom link has its own approved destination and customization, and only company-configured destinations preserve tracking | Not every program enables custom links | Never append an invented destination/sub-ID; use only provider-rendered approved links and verify link metrics |
-| [calculator-thailand affiliate redirect](https://github.com/henriklmadsen-alt/calculator-thailand/blob/1b834a951303ec577c16e4e40359767308b947f2/app/affiliate-redirect.mjs) | OSS pattern uses a fixed partner allowlist, sanitized attribution fields, append-only redirect events, and no-store/noindex 302 responses | Local JSONL is not durable on Railway and its redirect is unsigned | Copy the allowlist/header/event pattern; replace ephemeral JSONL with existing Postgres and add HMAC verification |
 | [No Human in the Loop](https://nohumanintheloop.com/) | Self-reported real-world precedent: zero approvals and `$2,152` from 74 Gumroad copies | Public GitHub is a static two-file site, not a reproducible harness/ledger, and has no reusable license | Evidence that generic “world's first money loop” is unsafe |
 
 Until a public proof gate closes, README language is only: “We are building an
@@ -793,12 +791,11 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    passes the audience, website, traffic, region, channel, payout, and policy
    eligibility gate; read back at least two real applications. Activate only an
    actually authenticated offer with current terms and an executable link.
-8. **PARTIAL — local signed redirect and minting pass; staging deploy proof is next.** Implement the signed redirect/sub-ID service and verify click → provider
-   report joining before producing content at scale. Remaining: mint a signed
-   first-placement URL from the private MD secret, deploy the already-configured
-   staging API, open it in an anonymous browser,
-   read back the Postgres click receipt, and compare the provider custom-link
-   metric without treating a click as money.
+8. **IN PROGRESS — local-only runtime implemented.** Install the immutable release,
+   prove both launchd owners and isolated CDP `9324`, create the first local
+   placement receipt, then publish with the executable provider link and join
+   provider-side click/commission readback. Do not deploy Affiliate code or
+   secrets to Railway, and do not count a local click as money.
 9. **PENDING.** Extract Writer research/localization/publication contracts behind shared
    interfaces without changing the Writer revenue ledger.
 10. **PENDING.** Add English Affiliate manifests for browser-published X and owned articles;
