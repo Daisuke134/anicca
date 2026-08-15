@@ -1694,16 +1694,16 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
 | canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
-| installed release | `deployment.json`とBrowser、Application、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `add41af43515bbacfa29da94733aa4a3b534912e` | owner 5本exact release一致、manifest 21 files一致、release writable file 0 |
+| installed release | `deployment.json`とBrowser、Application、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `e192d126067a35e5dc36378048d4f1ed0dc0ffcf` | owner 5本exact release一致、manifest 21 files一致、release writable file 0 |
 | production browser | launchd `ai.anicca.lancers-revenue-browser`が専用profileとloopback`:9227`をPID `22242`でsole ownership。RunAtLoad、KeepAlive、exact working directoryを確認 | CDP endpoint live。応答不能Lancers targetを作るE2Eでもtimeout→close→一回retryで12.59秒復帰、targetはabout:blank一枚へ戻る |
-| Apply | launchd enabled、30分、累計`application_verified=30`、fingerprint 99、pending 0 | seller proof接続後のproduction ownerはBUYMA外部accountの商品画像加工・出品案件`5575002`を正直に見送り、全query既処理で`duplicate_project`、submit 0、exit 0。application/ledgerは応募effectなし |
+| Apply | launchd enabled、30分、累計`application_verified=31`、fingerprint 106、pending 0 | software proof/query拡張後、AI/API PoC `5586377`を一回送信しproposal `27813129`へ公式確定。次wakeは未処理3件以上を見送り、submit 0、exit 0 |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
 | capacity | recovery後のWork Syncがfresh `contracts.json`を再生成し、source complete、active contract 0 | Application gateは再びallow。契約0でもstale sourceを無視して応募しないfail-closed contractを維持 |
 | Sales source | Work Sync production ownerは2連続wakeでexit 0。board `9024494`一件、required reply 0、unread 0、project/monthly/Storefront contract 0、`no_reply_required` | reply effect 0、sales/application/ledger不変。現在送るべきbuyer actionはない |
 | Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
 | Storefront canonical | 公式inventoryは`published=1 / paused=0 / hidden=5 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式archived readback。public profile料金表もcanonical一件だけ | ¥98,000 / ¥198,000 / ¥398,000、画像、portfolio `743964`、spot/3か月/6か月routeは公開page一致。連続wake `status_effect_count=0` |
 | Storefront demand | canonical `1338228`は2連続production wakeで`action=unchanged / aligned=true / status_effect_count=0`。公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0` | owner exit 0、duplicate mutation 0、各wake後owned tab 0。7日需要実験を欠測なしで再開 |
-| Reporting | recovery後のfresh snapshotをprovider message ID `18746`へ配信。公開20、適合0、応募0、累計30、Storefront需要、会話1、契約0、入出金0、net MRR 0円を自然文表示 | owner exit 0。同一snapshot second wakeはoutbox 1181→1181、enqueue 0 |
+| Reporting | healthy no-opを✅でprovider message ID `18896`へ配信。公開19、適合0、応募0、累計31、Storefront需要、会話1、契約0、入出金0、net MRR 0円を自然文表示 | owner exit 0。同一snapshot second wakeはoutbox 1188→1188、enqueue / send 0 |
 | Paid | ledger eventは`application_verified` 30件だけ。raw CDPで公式`/mypage/payment`を再観測し、入出金履歴0、残高0円を確認。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、positive payment rowのproduction effect/readbackは未完成。現在net MRR 0円は公式empty sourceで確定 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
@@ -2517,3 +2517,8 @@ Application最終reason `duplicate_project`をblockerとして扱い、冒頭を
 provider_reconciled / daily_quota_reached / capacity_details_required`だけをhealthy outcomeとして扱う。source failure、submission uncertain、
 pending、storefront mismatchは引き続きwarningにする。完了証拠は同じproduction snapshotが✅、件数31、pending 0、売上0を自然文表示し、
 次wake同一snapshot送信0となること。
+
+**DONE:** exact release `e192d126067a35e5dc36378048d4f1ed0dc0ffcf`のTelegram ownerは同じhealthy snapshotを✅
+「今回の確認を安全に完了しました」とrenderし、provider message ID `18896`で配信した。本文はApplicationReceipt累計31、pending 0、
+Storefront受付中1/非表示5、会話1、返信必要0、offer/contract 0、公式入出金0、net MRR 0円を分離する。直後のsecond wakeはoutbox
+`1188→1188`、enqueue 0、send 0、exit 0である。
