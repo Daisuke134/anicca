@@ -1,55 +1,99 @@
 #!/usr/bin/env python3
-"""Close the surplus tabs the apply loop leaves behind on the daily-driver.
+"""Close surplus tabs owned by one loop on the daily-driver.
 
 Each 応募 opens a Coconala tab and nothing closes it. Fifteen-plus live tabs starved the machine
 (free pages ~62MB, load average past 21) and Chromium died, which blinds the whole gig loop.
-Keeping one Coconala tab alive preserves the session cookies the loop drives; everything past that
-is garbage.
+Keeping one owned Coconala tab alive preserves the loop's working page. Foreign and unregistered
+tabs are never touched.
 
 Deterministic bookkeeping only — which page to visit stays the agent's call.
 
-    python3 cdp_tab_gc.py            # keep 1 coconala tab + 1 other, close the rest
-    python3 cdp_tab_gc.py --keep 2   # keep 2 coconala tabs
+    python3 cdp_tab_gc.py --owner gig-pass
+    python3 cdp_tab_gc.py --owner gig-pass --keep 2
 """
+import argparse
 import json
+import os
 import sys
 import urllib.request
 
-CDP = "http://127.0.0.1:9222"
-KEEP_COCONALA = 2 if "--keep" in sys.argv and sys.argv[-1] == "2" else 1
+import target_ownership
+
+
+def _cdp_base():
+    return os.environ.get("CLOAK_CDP_BASE_URL", "http://127.0.0.1:9222").rstrip("/")
 
 
 def _get(path):
-    return json.loads(urllib.request.urlopen(f"{CDP}{path}", timeout=8).read())
+    return json.loads(urllib.request.urlopen(f"{_cdp_base()}{path}", timeout=8).read())
 
 
-def main():
+def select_doomed_target_ids(tabs, owner, keep_coconala=1):
+    owned_ids = target_ownership.targets_for_owner(owner)
+    pages = [
+        tab
+        for tab in tabs
+        if tab.get("type") == "page" and tab.get("id") in owned_ids
+    ]
+    coconala = [
+        tab for tab in pages if "coconala.com" in (tab.get("url") or "")
+    ]
+    blanks = [
+        tab
+        for tab in pages
+        if (tab.get("url") or "").startswith(("chrome://newtab", "about:blank"))
+    ]
+    doomed = coconala[keep_coconala:] + blanks
+    seen = set()
+    return [
+        tab["id"]
+        for tab in doomed
+        if tab.get("id") and not (tab["id"] in seen or seen.add(tab["id"]))
+    ]
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--owner", default=os.environ.get("CLOAK_BROWSER_OWNER"))
+    parser.add_argument("--keep", type=int, default=1)
+    args = parser.parse_args(argv)
+    try:
+        owner = target_ownership.require_owner(args.owner)
+    except ValueError as error:
+        print(json.dumps({"ok": False, "reason": str(error)}))
+        return 2
+
     try:
         tabs = _get("/json/list")
     except Exception as e:
         print(json.dumps({"ok": False, "reason": f"cdp_unreachable: {e}"}))
         return 0  # never crash the pass — the browser guard handles a dead browser
 
-    pages = [t for t in tabs if t.get("type") == "page"]
-    coconala = [t for t in pages if "coconala.com" in (t.get("url") or "")]
-    blanks = [t for t in pages if (t.get("url") or "").startswith(("chrome://newtab", "about:blank"))]
-
-    doomed = coconala[KEEP_COCONALA:] + blanks
-    # keep at least one page alive so the browser never ends up with zero tabs
-    if len(doomed) >= len(pages):
-        doomed = doomed[1:]
+    owned_ids = target_ownership.targets_for_owner(owner)
+    owned_pages = [
+        tab
+        for tab in tabs
+        if tab.get("type") == "page" and tab.get("id") in owned_ids
+    ]
+    doomed_ids = select_doomed_target_ids(tabs, owner, max(0, args.keep))
 
     closed = 0
-    for t in doomed:
+    for target_id in doomed_ids:
         try:
-            urllib.request.urlopen(f"{CDP}/json/close/{t['id']}", timeout=8).read()
+            urllib.request.urlopen(
+                f"{_cdp_base()}/json/close/{target_id}", timeout=8
+            ).read()
+            target_ownership.release_target(target_id, owner)
             closed += 1
         except Exception:
             pass
 
     print(json.dumps({
-        "ok": True, "pages_before": len(pages), "closed": closed,
-        "pages_after": len(pages) - closed, "coconala_kept": min(len(coconala), KEEP_COCONALA),
+        "ok": True,
+        "owner": owner,
+        "owned_pages_before": len(owned_pages),
+        "closed": closed,
+        "owned_pages_after": len(owned_pages) - closed,
     }))
     return 0
 

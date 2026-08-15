@@ -11,8 +11,12 @@
       "id": "life-manager",
       "repository": "https://github.com/Daisuke134/life-manager.git",
       "commit": "3aaf13ce1ed9581b1a4db0e92c760003d7bfda9b",
+      "additional_commits": [
+        "5976727d5",
+        "4cef42f73"
+      ],
       "disposition": "canonical",
-      "scope": "Base tree for the self-contained public repository."
+      "scope": "Base tree for the self-contained public repository, including the accepted fenced browser lease, hidden-target ownership, timeout, and stale-holder recovery contracts."
     },
     {
       "id": "life-manager-v0",
