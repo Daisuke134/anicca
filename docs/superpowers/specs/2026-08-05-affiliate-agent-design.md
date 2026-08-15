@@ -17,6 +17,9 @@ clicks and commissions, repair failures, and reallocate effort from external
 receipts without routine human or Codex operation. After English Gate E0 it may
 launch a Japanese pod with a separate social identity, provider/account receipts,
 content history, attribution cohorts, experiments, and money reporting.
+Spanish is the first later-locale candidate. It and every subsequent locale enter
+only through a separate identity, browser, provider/link, native evidence,
+disclosure, canary, attribution, and budget gate; translation alone is not entry.
 
 The first commercial gate is three consecutive months at USD 10,000 equivalent
 gross affiliate commission with gross, net, reversals, fees, and currencies
@@ -49,7 +52,8 @@ commission watermark as newly attributed revenue.
 |---|---|---|
 | Runtime | Legacy core/tmux is absent; hourly and daily launchd services are not registered | Two launchd owners wake one durable queue and resume the same work without duplicate side effects |
 | Agent brain | F2 is pushed and focused tests pass; only fake-provider process replay exists | Terra proposes one typed action and a live allowlisted provider boundary returns a verification receipt |
-| Offers | No English account, approval, terms, or executable link is read back | At least one English offer is `EXECUTABLE` from current ownership, terms, channel, destination, and tracking-link receipts |
+| Offers | Kit has a receipted application in `APPLICATION_PENDING`; no English approval, payout setup, terms ownership, or executable link is read back | At least one English offer is `EXECUTABLE` from current ownership, terms, channel, destination, and tracking-link receipts |
+| Research acquisition | CRWL and `gh` work; public X profile fallback works; `x-search-cdp` currently has no logged-in X tab; the existing TikTok combined test cannot collect because it imports deleted `rss_parser` | Every admitted platform has a typed adapter, live readback, immutable source hash, parser version, bounded pagination, and explicit empty/auth/rate-limit/parser/policy/upstream state |
 | Publishing | English X login is verified as `@selawmqt`, currently named `sela` with 128 mixed JA/EN historical posts and 0 followers; no Affiliate placement exists; X warns that website scripting can trigger permanent suspension | The Agent rebrands and operates `@selawmqt` through its isolated browser, then proves identity, disclosure, owned conversion page, action receipt, public readback, redirect, and durable click lineage. Postiz and external publishing APIs are prohibited |
 | Money | No new approved Affiliate commission exists | Provider transactions append pending/approved/reversed/paid receipts and join by strongest available attribution key |
 | Telegram | The shared Life Manager target delivered Affiliate milestone `messageId=7639`; Affiliate outbox/dedupe and Web snapshot parity are not implemented | Immediate events and hourly/daily/weekly summaries deliver at-most-once from the same snapshot as Life Manager |
@@ -133,7 +137,10 @@ learning; it must not promise a particular income.
 - Official-source evidence, disclosure and policy gates, self-repair, bounded
   learning, reporting, and staged scaling.
 - Strict account/locale isolation: no account publishes both English and
-  Japanese, and no attribution cohort or experiment crosses locale identities.
+  Japanese or any later language, and no attribution cohort or experiment crosses
+  locale identities.
+- A typed crawling registry for CRWL, `gh`, public X, Reddit, Apify platform
+  actors, optional Crawlee/Scrapy fallback, and rendered authenticated pages.
 
 ### 3.2 Excluded from the first implementation
 
@@ -249,8 +256,9 @@ hashes provider reports, reconciles money, reports to Telegram, and survives
 reboot/UI drift. Missing legal identity, KYC, tax, payout, CAPTCHA, or contractual
 consent becomes `EXTERNAL_CHALLENGE`; it is never fabricated or bypassed.
 
-External service APIs and Postiz are prohibited. Internal SQLite/local HTTP and
-the Agent-owned signed redirect remain valid implementation boundaries.
+External publishing APIs and Postiz are prohibited. Read-only research APIs and
+managed scrapers may enter only through the receipted crawling registry. Internal
+SQLite/local HTTP and the Agent-owned signed redirect remain valid boundaries.
 
 Ubuntu and other-host packaging are excluded from the first revenue loop. They
 begin only after the macOS Agent produces a live public placement, attributed
@@ -262,12 +270,14 @@ flowchart TD
 
   subgraph Tools[Allowlisted observation and action tools]
     C[CRWL public web]
+    CA[Typed crawler adapters]
     CB[CloakBrowser and CDP lease]
     WEB[Provider and publisher websites]
     REP[Rendered reports and downloads]
   end
 
   C --> B
+  CA --> B
   CB --> B
   WEB --> B
   REP --> B
@@ -321,6 +331,11 @@ successful only after a fresh DOM/API/public readback receipt.
 ### 6.2 Browser harness
 
 - Public pages use `crwl` first.
+- Durable multi-page/JS research uses the audited Crawlee Python substrate only
+  when CRWL cannot satisfy the measured requirement. Platform adapters normalize
+  sources and expose explicit empty/auth/rate-limit/parser/policy/upstream states.
+- GitHub inspection uses `gh` plus a full clone; README-only evaluation is not
+  reusable evidence.
 - Authenticated pages use CloakBrowser through a task-owned CDP lease.
 - Account identities that must not share cookies use dedicated persistent
   profiles; the Agent verifies the active identity before side effects.
@@ -403,6 +418,8 @@ payload/content SHA-256 where applicable.
 
 | Record | Required identity and purpose |
 |---|---|
+| `source_capture` | platform, locale, URL/object ID, author, capture route/time, raw artifact hash, parser version, evidence class |
+| `crawler_adapter_receipt` | adapter/version, input hash, bounded pagination, output hashes, explicit success/failure class, live-readback evidence |
 | `provider_account` | provider, account ID, country, auth state, observed time, receipt hash |
 | `offer` | provider offer ID and stable logical product identity |
 | `offer_snapshot` | price, currency, commission terms, cookie/attribution terms, geo, allowed channels, restrictions, availability, expiry, official source hash |

@@ -1,6 +1,6 @@
 # Affiliate Agent — Revenue, Runtime, and Architecture SSOT
 
-Last updated: 2026-08-06 JST
+Last updated: 2026-08-15 JST
 
 Implementation SSOT:
 
@@ -16,21 +16,26 @@ live verification, revenue gates, tenantization, and scale work.
 ## 0. Objective
 
 Build one Affiliate Agent inside Life Manager's financial organ that launches in
-English first and later operates isolated English and Japanese market pods. It
+English first, then operates isolated Japanese and admitted additional-language
+market pods. Spanish is the first expansion candidate after English and Japanese;
+it is not admitted merely because it has many speakers. The Agent
 continuously discovers lawful offers, publishes useful evidence-led content,
 attributes clicks and conversions, records external commission
 receipts, repairs interrupted runs, and reallocates effort without daily human or
 Codex operation.
 
-English and Japanese never share one social identity, publication history,
-attribution cohort, or experiment. English is first. The verified English X
+No two locale pods share one social identity, browser profile, affiliate link,
+publication history, attribution cohort, experiment, or operating budget.
+English is first. The verified English X
 identity is now `sela` / `@selawmqt`, logged in through the isolated
 `capafy-mkt-provision` CloakBrowser profile; legacy `@aniccaen` is not an active
 X username. Postiz and every external publishing API are out of scope by product
 decision. The Agent itself must provision an isolated browser profile, recover or
 establish the authorized user account, configure the profile, publish through the
 rendered website, and verify the public result. A dedicated Japanese canary is
-admitted only after English Gate E0 and uses a different browser profile.
+admitted only after English Gate E0 and uses a different browser profile. Spanish
+and every later locale must pass the Locale Admission Gate in section 8 rather
+than being created as blind translations.
 
 “End to end” is proved first on the current macOS host. The first graduation
 condition is not portability: it is one unattended local run covering authorized
@@ -193,6 +198,21 @@ not a claim about the current runtime.
     [X automation rules](https://help.x.com/en/rules-and-policies/x-automation),
     “Use non-API-based forms of automation, such as scripting the X website” may
     result in permanent suspension.
+15. Awin's Spanish publisher page describes the real money state transition:
+    tracked sales first appear pending, the advertiser validates them, and only
+    approved commissions become payable. It also states there is no global
+    minimum follower count, while each advertiser controls admission.
+    Source: [Awin España — Afiliados](https://www.awin.com/es/afiliados).
+16. Hotmart exposes products by format, niche, language, and popularity and says
+    affiliates are paid for attributed sales. This proves multi-language offer
+    supply, not that a translated campaign will convert or be approved.
+    Source: [Hotmart Affiliates](https://hotmart.com/en/affiliates), “Sign up.
+    Pick a product. Start promoting.”
+17. Kit's current official page states “50% commission for 12 months” and a
+    further “10-20% recurring revenue beyond 12 months when you earn status.” It
+    also says commissions are held for 31 days for refunds. The Agent models the
+    hold and status tiers instead of treating a click or pending sale as cash.
+    Source: [Kit Affiliate Program](https://kit.com/affiliate).
 
 Creator revenue screenshots and claims found on X are market signals only. They
 never enter earnings or train a prompt as a winner without a matching external
@@ -220,7 +240,23 @@ Every external playbook stores `source_url`, author, capture time, claim type,
 evidence grade, checked provider terms, `COPY|TWEAK|REJECT`, and reason. A prompt
 is never promoted merely because its author reports income.
 
-### 2.2 Aggressive but bounded revenue policy
+### 2.2 Continuous best-practice intake
+
+The Agent searches official program pages with CRWL, creator cases and platform
+discussion through authenticated browser/X collectors, and GitHub through `gh`
+plus raw files. A source becomes executable knowledge only after:
+
+1. capture with URL, immutable content hash, author, language, and evidence grade;
+2. exact claim extraction and provider-policy cross-check;
+3. license classification as `COPY_CODE`, `COPY_PATTERN`, or `NO_REUSE`;
+4. one causal hypothesis and one-variable canary in exactly one locale pod;
+5. promotion only from this Agent's mature external click/commission receipts.
+
+Popularity, stars, screenshots, author income claims, estimates, and prompt scores
+are discovery signals. They never become revenue, conversion truth, or an
+auto-promoted winner.
+
+### 2.3 Aggressive but bounded revenue policy
 
 “Aggressive” means faster evidence collection, more creative variation, quicker
 offer replacement, and higher capacity only after positive net receipts. It does
@@ -277,32 +313,42 @@ days of live cohorts, each conversion input and revenue forecast remains
 ## 4. Architecture
 
 ```mermaid
-flowchart LR
-  S[English opportunity scout] --> V[Offer and account verifier]
-  V --> P[Portfolio allocator]
-  P --> E[Evidence pack]
-  E --> C[English decision-asset studio]
-  C --> G[Policy and disclosure gate]
-  G --> D[Channel adapters]
-  D --> X[X and X Articles]
-  D --> A[Owned articles]
-  D --> N[Approved owned publishers]
-  X --> T[Redirect and attribution]
-  A --> T
-  N --> T
-  T --> R[ASP and payment receipts]
-  R --> L[Experiment learner]
-  L --> P
-  P -. English E0 unlocks .-> J[Isolated Japanese canary pod]
-  H[Recovery controller] --> V
-  H --> C
-  H --> D
-  H --> R
+flowchart TB
+  BP[CRWL + X/TikTok + GitHub evidence scout] --> SR[Provenance and license registry]
+  SR --> PC[Playbook compiler]
+  PC --> K[Shared deterministic kernel]
+
+  subgraph KERNEL[Shared truth and recovery]
+    K --> Q[Durable queue and state machine]
+    Q --> B[Browser authority and action receipts]
+    B --> L[Attribution and commission ledger]
+    L --> H[Self-healer and experiment learner]
+    H --> TG[Owner-language Telegram events]
+  end
+
+  K --> EN[English pod]
+  K --> JA[Japanese pod]
+  K -. Locale Admission Gate .-> ES[Spanish pod]
+  K -. later .-> NX[Next locale pod]
+
+  EN --> F[Offer → evidence → decision asset → distribution]
+  JA --> F
+  ES --> F
+  NX --> F
+  F --> RD[Signed redirect and provider sub-ID]
+  RD --> L
 ```
 
 This is one durable Agent with specialized workers, not independent agents with
 separate truth. PostgreSQL/SQLite state and append-only receipts are canonical;
 prompts and browser sessions are replaceable executors.
+
+The kernel is shared code, not shared market state. Each locale pod owns its
+identity, browser storage, provider membership, executable links, disclosures,
+evidence pack, experiments, ledger partition, and budget. A useful English asset
+may seed a hypothesis for Japanese or Spanish, but the destination pod must
+re-research native intent, terms, claims, alternatives, and wording before a
+canary. Translation alone can never authorize publication.
 
 ### 4.1 Components
 
@@ -319,10 +365,13 @@ prompts and browser sessions are replaceable executors.
 | Receipt reconciler | Navigates provider dashboards and downloaded reports through the browser, hashes the source artifact, and joins transaction/sub-ID rows to clicks. Unknown is never zero; pending, approved, reversed, and paid remain distinct |
 | Learner | Promotes a tactic only from mature cohorts and deepest common signal: net commission → approved orders → qualified leads → clicks → engagement |
 | Recovery controller | Same `run_id`, artifact hash, placement, and publication intent resume after failure; exponential retry obeys provider `Retry-After` |
+| Best-practice scout | Captures official terms, first-person cases, platform signals, and OSS code with provenance, license, evidence grade, TTL, and `COPY_CODE|COPY_PATTERN|NO_REUSE` disposition |
+| Locale pod controller | Creates or resumes one isolated identity/provider/content/ledger slice only after the Locale Admission Gate; prevents cross-locale cookies, links, claims, and learning leakage |
 
 ### 4.2 Canonical records
 
-`provider_account`, `offer`, `offer_snapshot`, `external_playbook_intake`,
+`source_capture`, `crawler_adapter_receipt`, `provider_account`, `offer`,
+`offer_snapshot`, `external_playbook_intake`,
 `channel_eligibility_receipt`, `experience_claim_receipt`, `evidence_claim`, `content_unit`,
 `placement`, `publish_intent`, `public_readback`, `click`, `conversion`,
 `commission_receipt`, `experiment`, `policy_decision`, `wait_state`, and
@@ -395,12 +444,17 @@ stateDiagram-v2
 
 Cadence:
 
-- hourly: offer/price/link health, failed-intent resume, click ingest;
+- every 5 minutes: reconcile leases and ambiguous side effects, resume failed
+  intents, ingest receipts, and flush the Telegram outbox; it does not create a
+  new article every five minutes;
+- hourly: offer/price/link/account health and provider/application polling;
 - daily during launch: measure prior English cohorts, verify terms, choose one
   reader problem, produce at most one English primary decision asset, derive
   compliant distribution, perform public readback, and reconcile reports;
 - 24/72 hours and 7/30 days: cohort measurement and learning;
-- weekly: provider mix, reversals, net margin, concentration, and policy audit.
+- weekly: provider mix, reversals, net margin, concentration, and policy audit;
+- monthly: close currency/reversal/payout truth and decide whether a locale or
+  provider has earned more budget.
 
 Platform publication windows block only that placement. Every wait has a retry
 time and durable owner; “wait for next schedule” is invalid.
@@ -431,30 +485,54 @@ Reuse from the existing system:
   reporting; its Postiz publisher is explicitly not reused;
 - Life Manager financial ledgers: verified money semantics and reporting.
 
-OSS inspected:
+Repository audit result: no inspected repository proves an autonomous affiliate
+loop from account/application through an externally approved commission. We do
+not fork a repository and call it the product. We copy only the following proven,
+licensed parts into the existing local runtime:
 
-- [ricky-affiliate-agent](https://github.com/sujalmanpara/ricky-affiliate-agent)
-  provides Amazon extraction, category creative generation, disclosure, and
-  posting. Port only non-Postiz research/prompt shapes after license verification;
-  it lacks durable attribution and commission reconciliation.
-- [amazon-affiliate-automation-pipeline](https://github.com/haramhussain110/amazon-affiliate-automation-pipeline)
-  demonstrates bestseller → ASIN link → short video, but its posting is manual
-  and it has no revenue learner.
-- [affiliate-agents](https://github.com/anacgr05/affiliate-agents) demonstrates
-  CEO/portfolio/product/critic/writer role decomposition with PostgreSQL, Redis,
-  and Celery. Its human approval and content-centered flow do not provide the
-  external money reconciliation required here.
-- [affiliate-agent-niche-scout](https://github.com/stay4ever/affiliate-agent-niche-scout),
-  [content-creator](https://github.com/stay4ever/affiliate-agent-content-creator),
-  and [performance-analyst](https://github.com/stay4ever/affiliate-agent-performance-analyst)
-  provide useful scout/content/analysis role boundaries, but not one durable
-  queue, shared ledger, or provider-receipt loop.
-- [autonomous-marketing-agent](https://github.com/abandini/autonomous-marketing-agent)
-  documents orchestration, scheduling, recovery, and learning patterns. Its
-  revenue claims and licensing must be verified before any code reuse.
-- `ai-affiliate-generator` is a generic Next.js scaffold, and
-  `Amazon-Affiliate-Automation-Tool` is primarily a SaaS promotion README.
-  Neither is an implementation base.
+| Repository | Measured truth | Decision |
+|---|---|---|
+| [BlockRunAI/Franklin](https://github.com/BlockRunAI/Franklin) | Apache-2.0 source; durable goals/scheduler, wallet budget, resumable sessions, task event logs, lost-task detection, and Telegram control. Its README says it **spends** money toward work; it does not reconcile affiliate income | `COPY_PATTERN`: bounded goals, cost caps, durable task lifecycle, evidence challenge. Do not import its wallet/trading subsystem or treat spend as earnings |
+| [paraggit/affiliate-automation](https://github.com/paraggit/affiliate-automation) | MIT file; provider abstraction, retry/backoff, persistence, tests, content and Twitter scheduling. Runtime still asks `Start scheduler?`; no commission or payout ingest exists | `COPY_CODE` selectively: provider protocol, retry, and tests. Replace interactive scheduler and API publisher with our queue/browser/receipt kernel |
+| [stay4ever role agents](https://github.com/stay4ever) | MIT files and small tested scout/content/analyst packages. Niche scores and performance examples use estimates or caller-supplied data | `COPY_CODE` selectively: role/tool schemas and disclosure template. Never import estimated traffic, CVR, or benchmark revenue as truth |
+| [anacgr05/affiliate-agents](https://github.com/anacgr05/affiliate-agents) | Role graph, PostgreSQL/Redis/Celery/SSE and explicit human approval; no license file and no external commission reconciler | `COPY_PATTERN` only: critic/feedback state boundaries; do not copy code or human gate |
+| [ricky-affiliate-agent](https://github.com/sujalmanpara/ricky-affiliate-agent) | Amazon → 15 images → Postiz. No license file despite README saying MIT; code warns “Commissions won't be tracked to your account” when the tag is absent | `NO_REUSE` as a base; Postiz and untracked output violate the product/revenue contract |
+| [amazon-affiliate-automation-pipeline](https://github.com/haramhussain110/amazon-affiliate-automation-pipeline) | Five-file, unlicensed content pipeline; README says videos are “ready to check and post manually” and “I'm not auto-posting anything” | `NO_REUSE` as a base; at most reimplement the ASIN→video idea after provider-policy verification |
+| [autonomous-marketing-agent](https://github.com/abandini/autonomous-marketing-agent) | No license file; scheduler/recovery shapes coexist with mock approvals and hard-coded revenue/conversion payloads | `NO_REUSE` code; retain only the abstract recovery vocabulary |
+| [awesome-OpenClaw-Money-Maker](https://github.com/BlockRunAI/awesome-OpenClaw-Money-Maker) | A catalog, not an executable system; README says “These are potential earnings, not guarantees” | Discovery index only; every linked project receives its own code/license/money audit |
+
+Local Writer/Gig loops are more valuable than any inspected affiliate repository
+for production behavior: they already supply launchd ownership, same-run
+reconciliation, public readback, durable receipts, and Telegram delivery patterns.
+Their interfaces are reused while their ledgers remain isolated.
+
+### 7.1 Crawling and scraping substrate
+
+“Every platform” is implemented as one typed `CrawlerAdapter` registry, not one
+fragile scraper pretending every site has the same access model. Every adapter
+returns normalized `SourceCapture` records with URL/object ID, platform, locale,
+author, captured time, raw artifact hash, parser version, access route, and
+readback class. Empty results are distinguishable from auth, rate-limit, parser,
+policy, and upstream failures.
+
+| Surface | Primary route | Clone/code evidence | Runtime decision |
+|---|---|---|---|
+| Public web and linked articles | Existing `crwl crawl`; Scrapy only for parser/HTML fallback | [Scrapy](https://github.com/scrapy/scrapy) is BSD-licensed; cloned retry, robots, and throttle suites passed 90 tests with 14 environment skips | Reuse the installed CLI first. Do not add a framework for a one-page fetch |
+| Durable multi-page/JS crawl | Crawlee Python `HttpCrawler`/`PlaywrightCrawler` with persistent `RequestQueue`, session pool, robots delay, `Retry-After`, and backoff | [Crawlee Python](https://github.com/apify/crawlee-python) is Apache-2.0; cloned queue/session/throttle suites passed 338 tests with 2 memory-storage skips, and its official `HttpCrawler` example fetched `crawlee.dev` with 1 finished/0 failed | `COPY_CODE`/dependency only when a durable crawl is actually required; this is the shared substrate, not the Agent brain |
+| X search and logged-in pages | Existing `x-search-cdp` on the exact daily-driver tab; CloakBrowser semantic read for authenticated articles | Local code drives the rendered tweet DOM. Current probe returned `no logged-in x.com tab`, so this route is not presently healthy | Repair/re-provision the authorized tab inside the Agent; never launch a duplicate browser silently |
+| Public X tweet/profile fallback | `x-tweet-fetcher`: FxTwitter → Nitter → browser fallback, normalized schema and SQLite dedupe | [x-tweet-fetcher](https://github.com/ythx-101/x-tweet-fetcher) is MIT; 97 tests passed and live `@selawmqt` profile readback matched 128 posts, 0 followers, 27 following | Adopt for read-only public objects. X Articles still require a browser; no posting capability |
+| X private-API fallback | None in production | [Twscrape](https://github.com/vladkens/twscrape) is MIT and 192 cloned tests passed, but it rotates accounts and consumes X internal GraphQL operations; fixture success does not prove live account safety | `NO_REUSE` initially. It may enter an isolated research canary only after a live/policy/account-risk review |
+| TikTok | `clockworks/tiktok-scraper` and task-specific Apify Actors via their fetched input schemas | Existing code calls the Actor and normalizes videos/slideshows, but its current combined test file cannot collect because it still imports deleted `rss_parser`; old `drawrowfly/tiktok-scraper` is unlicensed and stale | Managed Actor adapter remains the candidate, but production admission requires a fresh one-item live dataset receipt and a repaired focused contract test |
+| Instagram, Facebook, YouTube, Google Search/Trends/Maps | Task-specific Apify Actor selected by the local `apify-ultimate-scraper` registry | Actor IDs and input discovery exist locally; Actor implementation code is not assumed open source | Fetch actor schema, run a bounded live canary, hash dataset/schema, then admit. Never claim code reuse when only a hosted Actor is used |
+| Reddit | PRAW with authorized read-only OAuth; public HTML through CRWL only as fallback | [PRAW](https://github.com/praw-dev/praw) is BSD-licensed; cloned auth/read-only/rate-limit unit slice passed 34 tests | Adopt official client semantics; do not use unauthenticated bulk-scraper repos as the primary route |
+| GitHub | `gh` API/search plus raw files, then clone candidate repositories | GitHub CLI returned repositories and full clones supplied the code/license/test evidence in this audit | Already canonical; README alone never closes an audit |
+| Amazon, Rakuten, A8, afb, PartnerStack and ASP dashboards | Official product/program API when explicitly allowed; otherwise isolated CloakBrowser rendered pages and report downloads | Affiliate-specific public scrapers either lack licenses, omit posting/revenue, or bypass the authenticated ownership state required by the ledger | Never substitute product scraping for provider approval, tracking-link ownership, or commission reconciliation |
+
+Adapter selection follows a fixed ladder: official/authenticated interface →
+installed CRWL → licensed public-object adapter → Crawlee/Scrapy → rendered
+CloakBrowser. A failed route emits evidence and advances only to an allowed
+fallback. It never rotates stolen accounts, bypasses challenges, or turns a parser
+failure into an empty market signal.
 
 No external prompt or source is copied unless its license permits reuse. Public
 workflow ideas are reimplemented against our own contracts and evidence.
@@ -468,6 +546,7 @@ workflow ideas are reimplemented against our own contracts and evidence.
 | E1 | First non-test English approved commission joined end-to-end |
 | J-1 | After E0, Japanese provider/account ownership and one executable offer are independently read back |
 | J0/J1 | Japanese public placement/click lineage, then approved commission, each closed independently of English |
+| L0 | Any later locale has a separate identity/browser/provider/link/disclosure, at least one executable offer, native evidence review, and a receipted canary; Spanish is the first expansion candidate |
 | A2 | Four revenue-positive weeks, positive net margin, zero manual execution |
 | A3 | Three consecutive months at $10,000 gross affiliate commission with net, reversals, and attribution reported separately |
 | A4 | Diversified scale: no provider, offer, or channel exceeds 40% of net commission |
@@ -490,29 +569,37 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 3. Implement the semantic browser harness, typed action grammar, leases,
    screenshots/DOM hashes, download capture, postcondition checks, ambiguous-side-
    effect dedupe, playbook cache, selector-drift recovery, and crash resume.
-4. Make account discovery/signup/login/recovery/profile setup first-class states.
+4. Implement the `CrawlerAdapter` registry and `SourceCapture` contract. Wire the
+   already-installed CRWL/gh routes first, then the audited X public fallback,
+   PRAW, and one-item Apify canaries; every route must distinguish empty, auth,
+   rate-limit, parser, policy, and upstream failure.
+5. Make account discovery/signup/login/recovery/profile setup first-class states.
    Verify `@selawmqt`, rebrand it in English, and prove identity after every write.
-5. Apply to/read back at least two English candidate programs through their
+6. Apply to/read back at least two English candidate programs through their
    websites; activate only an
    actually authenticated offer with current terms and an executable link.
-6. Implement the signed redirect/sub-ID service and verify click → provider
+7. Implement the signed redirect/sub-ID service and verify click → provider
    report joining before producing content at scale.
-7. Extract Writer research/localization/publication contracts behind shared
+8. Extract Writer research/localization/publication contracts behind shared
    interfaces without changing the Writer revenue ledger.
-8. Add English Affiliate manifests for browser-published X and owned articles;
+9. Add English Affiliate manifests for browser-published X and owned articles;
    keep clip/slideshow/video renderers as format adapters.
-9. Add the fail-closed policy/disclosure gate and official-source freshness TTL.
-10. Keep the English local daily loop running until it reconciles a real approved
+10. Add the fail-closed policy/disclosure gate and official-source freshness TTL.
+11. Keep the English local daily loop running until it reconciles a real approved
    commission; only then provision the separate Japanese canary.
-11. Enable mature-cohort learning only after ten comparable placements; promote
+12. Enable mature-cohort learning only after ten comparable placements; promote
    net commission as the deepest reward when available.
-12. Add provider/channel quarantine, same-run recovery, health reporting, and
+13. Add provider/channel quarantine, same-run recovery, health reporting, and
    launchd ownership.
-13. Scale content and providers only after the first approved commission and
+14. Scale content and providers only after the first approved commission and
     positive unit economics.
-14. Only after the local Agent proves positive unit economics, package its proven
+15. Only after the local Agent proves positive unit economics, package its proven
     dependencies, credential-intake contract, isolated profiles, installer, and
     recovery checks for one-command operator-owned installations.
+16. Add Spanish only through L0, then rank every later locale by executable-offer
+    density × observed qualified intent × confirmed net payout minus acquisition,
+    compliance, support, and account-risk cost. Population and translation volume
+    are not admission criteria.
 
 ## 10. Rejected designs
 
@@ -598,14 +685,16 @@ without changing the architecture.
   commissions, withhold payout, or terminate a program. Quarantine and portfolio
   diversification limit damage; they cannot erase this uncertainty.
 
-- No English affiliate program application, approval, account ownership, or
-  executable tracking link has been read back for this Agent.
+- Kit has one receipted application and remains `APPLICATION_PENDING`; no English
+  program approval, account ownership, payout setup, or executable tracking link
+  has been read back for this Agent.
 - English X ownership/login is resolved as `sela` / `@selawmqt`; legacy
   `@aniccaen` is inactive. The account has 128 mixed-language historical posts
   and 0 followers, so rebranding and audience acquisition are required and
   organic distribution power remains unproven.
 - No browser-published Affiliate X placement or owned conversion page exists yet.
-- Amazon JP and Rakuten remain `AUTH_REQUIRED`; acceptance is unknown.
+- Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED`;
+  Associates/affiliate acceptance is unknown.
 - English total addressable market and the claim that it is larger than Japanese
   are not quantified by the collected primary sources.
 - No first-party audience baseline exists yet: qualified impressions, clicks,
@@ -615,9 +704,18 @@ without changing the architecture.
 - The Smart Passive Income result is a first-person case with an established
   audience and relationship; its causal contribution cannot be isolated and its
   outcome is not transferable by prompt copying.
-- Inspected OSS repositories show useful role/adapter patterns but no verified
-  autonomous $10k/month receipt loop. Several have low adoption or unresolved
-  license metadata, so code copying is disabled until license verification.
+- Inspected OSS repositories show useful role/adapter/runtime patterns but no
+  verified autonomous approved-commission loop. Code reuse is limited to actual
+  compatible license files; README license claims and popularity are insufficient.
+- The current `x-search-cdp` probe has no logged-in X tab. Public profile fallback
+  works, but authenticated X search/article collection remains unhealthy until the
+  Agent restores and verifies the exact daily-driver tab.
+- The existing TikTok Apify adapter has implementation code, but its combined
+  test module imports a deleted `rss_parser`; it needs a focused test and live
+  one-item Actor receipt before Affiliate production use.
+- Spanish has official multi-language program supply, but no first-party account,
+  audience, executable offer, native canary, or unit economics. It remains a
+  candidate pod, not a proven second-largest or next-most-profitable market.
 - F2 has a pushed implementation and root-verified focused tests, but lacks fresh
   review, live model/provider boundary proof, a clean worktree audit, and a
   collection-safe all-tests command.

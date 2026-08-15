@@ -3,11 +3,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build and launch an English-first, receipt-backed Affiliate Agent that autonomously researches, publishes, attributes, reconciles, repairs, and improves; unlock an isolated Japanese pod only after English public E2E is proven.
+**Goal:** Build and launch an English-first, receipt-backed Affiliate Agent that autonomously researches, publishes, attributes, reconciles, repairs, and improves; unlock an isolated Japanese pod only after English public E2E is proven, then admit Spanish and later locales only through independent evidence and revenue gates.
 
 **Architecture:** The existing `profitable-claude/skills/affiliate` runtime is migrated into a hybrid Agent: Terra-high observes and plans through a semantic CloakBrowser website harness, while a deterministic Python/SQLite kernel owns bootstrap, policy, budgets, idempotency, receipts, money, recovery, and Telegram delivery. The Life Manager service owns the public placement redirect and durable click ingest. Writer/Gig/shared-browser contracts are reused by interface, but every money/state ledger remains isolated.
 
-**Tech Stack:** pinned Python runtime, SQLite, pytest, Bash/launchd/systemd, Node.js ESM, Express, PostgreSQL/Prisma, Vitest/Supertest, CloakBrowser/CDP, CRWL, and rendered-browser/download evidence. Postiz and external platform APIs are excluded.
+**Tech Stack:** pinned Python runtime, SQLite, pytest, Bash/launchd/systemd, Node.js ESM, Express, PostgreSQL/Prisma, Vitest/Supertest, CloakBrowser/CDP, CRWL, audited public-object adapters, optional Crawlee Python for durable crawls, and rendered-browser/download evidence. Postiz and external publishing APIs are excluded.
 
 ## Global Constraints
 
@@ -19,6 +19,13 @@
 - Bootstrap a pinned runtime on the current macOS host; do not depend on
   an ambient `/usr/bin/python3`. Existing launchd remains untouched until cutover.
 - Pin and checksum every non-system runtime dependency.
+- Before every coding/design slice, search external URLs with CRWL, GitHub with
+  `gh` plus a full clone, and docs with Context7. README-only inspection cannot
+  justify reuse; inspect implementation, tests, current commit, and license.
+- All research acquisition routes implement the typed `CrawlerAdapter` contract.
+  Prefer official/authenticated interfaces, then installed CRWL, licensed
+  public-object adapters, Crawlee/Scrapy, and finally rendered CloakBrowser.
+  Empty, auth, rate-limit, parser, policy, and upstream failures remain distinct.
 - `unknown`, `pending`, `approved`, `reversed`, and `paid` are distinct; unknown is never zero.
 - Money uses integer minor units and ISO-4217 currency. Conversion is a derived receipted view.
 - Test, dry-run, estimated, self-funded, and creator-claimed amounts never enter revenue.
@@ -145,6 +152,8 @@ recipe with this Agent's own external receipts.
 | `skills/affiliate/scripts/ledger.py` | Affiliate-only SQLite and receipts |
 | `skills/affiliate/scripts/agent_brain.py` | Bounded context packet and one-action Terra turn |
 | `skills/affiliate/scripts/prompt_registry.py` | Licensed/public-pattern provenance and prompt versions |
+| `skills/affiliate/scripts/crawler_registry.py` | Typed CRWL/gh/X/Reddit/Apify/Crawlee adapter selection and failure classes |
+| `skills/affiliate/scripts/source_capture.py` | Immutable normalized source artifacts, hashes, parser versions, and provenance |
 | `skills/affiliate/scripts/browser_harness.py` | Semantic CloakBrowser/CDP observation/action/verification |
 | `skills/affiliate/scripts/action_events.py` | Natural-language action envelopes |
 | `skills/affiliate/scripts/telegram_report.py` | Immediate/digest reporting and message receipts |
@@ -1057,15 +1066,33 @@ git push
 
 **Files:**
 - Create: `profitable-claude/skills/affiliate/config/policy-rules.json`
+- Create: `profitable-claude/skills/affiliate/config/crawler-adapters.json`
+- Create: `profitable-claude/skills/affiliate/scripts/crawler_registry.py`
+- Create: `profitable-claude/skills/affiliate/scripts/source_capture.py`
 - Create: `profitable-claude/skills/affiliate/scripts/evidence.py`
 - Create: `profitable-claude/skills/affiliate/scripts/policy.py`
+- Test: `profitable-claude/skills/affiliate/tests/test_crawler_registry.py`
 - Test: `profitable-claude/skills/affiliate/tests/test_evidence_policy.py`
 
 **Interfaces:**
-- Produces: `EvidencePack`, `PolicyDecision`, and `evaluate()`.
-- Consumes: CRWL/provider bodies, hashes, TTL, disclosure, and channel rules.
+- Produces: `SourceCapture`, `CrawlerAdapterReceipt`, `EvidencePack`,
+  `PolicyDecision`, and `evaluate()`.
+- Consumes: CRWL/gh/public-X/PRAW/Apify/Crawlee bodies, hashes, parser versions,
+  TTL, disclosure, and channel rules.
 
-- [ ] **Step 1: Write failing freshness and disclosure tests**
+- [ ] **Step 1: Write failing adapter/failure-class tests**
+
+Assert route order, immutable raw hash, parser version, bounded pagination,
+idempotent recapture, and explicit `EMPTY|AUTH|RATE_LIMIT|PARSER|POLICY|UPSTREAM`
+failure. No adapter may silently launch a duplicate browser or rotate accounts.
+
+- [ ] **Step 2: Run RED and implement the minimum audited routes**
+
+Wire installed CRWL and `gh` first, then read-only `x-tweet-fetcher` and PRAW.
+Apify actors require fetched schema plus one-item live dataset receipt before
+admission. Add Crawlee only for a measured durable multi-page/JS need.
+
+- [ ] **Step 3: Write failing freshness and disclosure tests**
 
 ```python
 def test_stale_price_fails_closed():
@@ -1079,22 +1106,22 @@ def test_disclosure_must_precede_first_affiliate_cta():
     assert "disclosure_after_cta" in decision.reasons
 ```
 
-- [ ] **Step 2: Run RED and implement exact claim-to-source binding**
+- [ ] **Step 4: Run RED and implement exact claim-to-source binding**
 
 ```bash
 python3 -m pytest skills/affiliate/tests/test_evidence_policy.py -q
 ```
 
-- [ ] **Step 3: Implement locale/channel disclosures and category quarantine**
+- [ ] **Step 5: Implement locale/channel disclosures and category quarantine**
 
 Include JA/EN general disclosure, Amazon statement, channel allowlists, prohibited
 brand bidding, unsafe-category default denial, and source freshness. A model
 cannot override deterministic failure.
 
-- [ ] **Step 4: Run GREEN, commit, and push**
+- [ ] **Step 6: Run GREEN, live-read one source per admitted route, commit, and push**
 
 ```bash
-python3 -m pytest skills/affiliate/tests/test_evidence_policy.py -q
+python3 -m pytest skills/affiliate/tests/test_crawler_registry.py skills/affiliate/tests/test_evidence_policy.py -q
 git add skills/affiliate
 git commit -m "feat(affiliate): gate evidence claims and disclosures"
 git push
