@@ -815,7 +815,10 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
             "--ignore-user-config", "--json",
             "--output-schema", str(provider_schema_path), "-o", str(result_path),
         ])
-        if args.task_class in ("composition-agent", "diagnostic-agent"):
+        for image in getattr(args, "image", []) or []:
+            command.extend(["--image", str(image)])
+        if (args.task_class in ("composition-agent", "diagnostic-agent")
+                or getattr(args, "read_only", False)):
             command.extend(["--sandbox", "read-only"])
         else:
             command.append("--dangerously-bypass-approvals-and-sandbox")
@@ -825,11 +828,14 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
         ])
         return command
     if provider in CLAUDE_PROVIDERS:
+        if getattr(args, "image", None):
+            raise ValueError("image inputs require the codex provider")
         command = [
             executable, "--model", model, "--no-session-persistence",
             "--output-format", "json",
         ]
-        if args.task_class in ("composition-agent", "diagnostic-agent"):
+        if (args.task_class in ("composition-agent", "diagnostic-agent")
+                or getattr(args, "read_only", False)):
             command.extend(["--tools", ""])
         command.append("-p")
         if not prompt_via_stdin:
@@ -910,8 +916,11 @@ def run() -> int:
     parser.add_argument("--loop", default="unattributed")
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--candidate-profile")
+    parser.add_argument("--candidate-model")
     parser.add_argument("--escalation-reason")
     parser.add_argument("--timeout-seconds", type=int)
+    parser.add_argument("--image", action="append", type=Path, default=[])
+    parser.add_argument("--read-only", action="store_true")
     parsed = parser.parse_args()
 
     if parsed.task_class == "composition-agent" and not parsed.prompt_stdin:
@@ -921,6 +930,8 @@ def run() -> int:
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
         schema = json.loads(parsed.schema.read_text(encoding="utf-8"))
+        if any(path.is_symlink() or not path.is_file() for path in parsed.image):
+            raise ValueError("image input must be an existing regular file")
         prompt = sys.stdin.read() if parsed.prompt_stdin else parsed.prompt_file.read_text(encoding="utf-8")
         # Fail closed before any provider process starts. Billing begins at
         # launch, not at a usable answer: capafy was charged $0.135 on both
@@ -948,6 +959,14 @@ def run() -> int:
             ]
             if not candidates:
                 raise ValueError("selected provider is not a candidate for task class")
+        selected_model = str(parsed.candidate_model or "").strip()
+        if selected_model:
+            candidates = [
+                candidate for candidate in candidates
+                if candidate.get("model") == selected_model
+            ]
+            if not candidates:
+                raise ValueError("selected model is not a candidate for task class")
         configured_timeout_seconds = int(
             task_config.get("timeout_seconds", config["timeout_seconds"])
         )

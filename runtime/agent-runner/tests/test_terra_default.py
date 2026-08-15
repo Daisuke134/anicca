@@ -21,6 +21,11 @@ class TerraDefaultTest(unittest.TestCase):
                         {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
                         {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
                     ]
+                if name == "escalation-agent":
+                    expected = [
+                        {"provider": "codex", "model": "gpt-5.6-sol", "effort": "medium"},
+                        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
+                    ]
                 self.assertEqual(candidates, expected)
 
 

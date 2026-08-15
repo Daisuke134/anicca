@@ -8,6 +8,27 @@ from agent_runner import command_for
 
 
 class CodexSchemaCompatibilityTest(unittest.TestCase):
+    def test_paid_read_only_image_contract_reaches_codex(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            schema_path = root / "schema.json"
+            schema = {"type": "object"}
+            schema_path.write_text(json.dumps(schema), encoding="utf-8")
+            image = root / "candidate.png"
+            image.write_bytes(b"fixture")
+            command = command_for(
+                "codex", "codex", {},
+                {"model": "gpt-5.6-sol", "effort": "medium"},
+                argparse.Namespace(
+                    schema=schema_path, task_class="escalation-agent",
+                    workdir=root, image=[image], read_only=True,
+                ),
+                "Inspect the bounded paid artifact.", schema,
+                root / "result.json", 60, None,
+            )
+            self.assertEqual(command[command.index("--image") + 1], str(image))
+            self.assertEqual(command[command.index("--sandbox") + 1], "read-only")
+
     def test_codex_receives_supported_schema_copy_while_local_schema_stays_strict(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
