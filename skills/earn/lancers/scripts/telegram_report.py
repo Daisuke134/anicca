@@ -288,6 +288,10 @@ def _sales_snapshot(path: Path) -> Optional[dict[str, object]]:
     if not isinstance(value, Mapping) or value.get("source_complete") is not True: return None
     result: dict[str, object] = {key: _int(value.get(key)) for key in keys}
     result["reply_status"] = value.get("reply_status") if isinstance(value.get("reply_status"), str) else None
+    pipeline = value.get("proposal_pipeline")
+    pipeline_keys = ("current_count", "receipt_count", "unlisted_receipt_count", "open_count", "selecting_count", "canceled_count", "ended_count", "working_count", "unknown_count")
+    parsed_pipeline = {key: _int(pipeline.get(key)) for key in pipeline_keys} if isinstance(pipeline, Mapping) else None
+    result["proposal_pipeline"] = parsed_pipeline if parsed_pipeline and all(item is not None for item in parsed_pipeline.values()) else None
     finance = value.get("finance")
     if isinstance(finance, Mapping) and finance.get("source_complete") is True:
         numbers = {key: _int(finance.get(key)) for key in ("payment_history_count", "account_balance_jpy", "received_gross_jpy")}
@@ -385,6 +389,11 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
     sales_line = (f"交渉: 公式会話{count(sales.get('board_count'))} / 返信必要{count(sales.get('required_reply_count'))} / "
                   f"未読{count(sales.get('unread_count'))} / 月額オファー{count(sales.get('incoming_monthly_offer_count'))} / "
                   f"契約候補{count(sales.get('contract_candidate_count'))}。")
+    pipeline = sales.get("proposal_pipeline") if isinstance(sales.get("proposal_pipeline"), Mapping) else {}
+    pipeline_line = (f"提案状況: 現在一覧{count(pipeline.get('current_count'))} / 募集中{count(pipeline.get('open_count'))} / "
+                     f"選定中{count(pipeline.get('selecting_count'))} / キャンセル{count(pipeline.get('canceled_count'))} / "
+                     f"進行中{count(pipeline.get('working_count'))} / 終了{count(pipeline.get('ended_count'))} / その他{count(pipeline.get('unknown_count'))}。"
+                     f"累計receiptから現在一覧にない提案は{count(pipeline.get('unlisted_receipt_count'))}です。")
     sales_next = {
         "no_reply_required": "今は相手からの返信・仮払いを待っています。",
         "seller_last": "こちらからの返信は済んでおり、次の相手の返答を待っています。",
@@ -407,7 +416,7 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
             f"応募: 公開案件は{count(app.get('observed_count'))}確認し、適合候補は{count(app.get('eligible_count'))}、{sent_text}。"
             f"公式確認は{count(verified)}、累計{count(snapshot.get('cumulative_verified'))}、確認待ちは{count(pending)}です。\n"
             f"出品: {states}。需要: {funnel}。\n"
-            f"{sales_line}{sales_next}\n"
+            f"{pipeline_line}\n{sales_line}{sales_next}\n"
             f"{revenue}\n"
             f"次: {reason}")
 

@@ -2563,3 +2563,19 @@ Applicationのnormal planner snapshotにもexact fieldを保持する。hard thr
 公式working 0、返信必要0、monthly offer 0、入出金0を更新した。続くApplication ownerは10 queryを順に探す既存default discoveryを実行し、
 `no_eligible_project / observed_count 0 / exit 0`で終了した。ApplicationReceipt 31、fingerprints 107、pending 0は不変で、重複送信0である。
 したがって現在の応募側blockerは実行故障ではなく、公開中の未処理・納品可能案件がそのwakeに0件だったことである。
+
+### 18.33 Application conversion funnel
+
+**CURRENT OBSERVATION:** authenticated official `/mypage/proposals/limit:100/sort:Proposal.id/direction:DESC`は現在提案30件を表示する。
+stable proposal row `li.p-mypage-work__media.c-media-job`の公式statusは、募集中25、選定中4、キャンセル1、進行中/終了0である。
+ledgerのApplicationReceiptは31件で、proposal `27810811` / project `5579721`はreceipt後にofficial proposal detailが404となり、current一覧にもない。
+30件の大半はまだ募集終了前であり、契約0を30件すべての確定失注とは扱わない。一方、初期応募には現在のgateなら送らない動画編集、物理制作、
+native属性必須などが含まれ、旧selection qualityも0 conversionの一因である。
+
+**NEXT DIRECT ACTION:** 新service、DB、scheduler、modelを作らず、既存Work Syncが同じ公式proposal一覧を一wake一GETで読む。
+current、open、selecting、canceled、ended、working、unknownと、ledger receiptからcurrent一覧へ残らない件数だけを`contracts.json`へ保存する。
+Telegramは累計receiptとcurrent funnelを分離して自然文表示し、募集中を失注、proposal額を売上と呼ばない。
+
+**PLAN SIZE:** production 2 files、約40–60行。外部effect、Application state/ledger、schema、schedulerは変更しない。
+
+**DONE EVIDENCE:** production Work Syncが公式30 = 25 + 4 + 1を完全に読み、Telegramが同じ件数と契約0を表示する。
