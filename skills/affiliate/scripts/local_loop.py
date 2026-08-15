@@ -34,6 +34,24 @@ def append(path, value):
         os.fsync(stream.fileno())
 
 
+def append_unique(path, value, identity):
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with path.open("a+", encoding="utf-8") as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        stream.seek(0)
+        for line in stream:
+            try:
+                existing = json.loads(line)
+            except ValueError:
+                continue
+            if all(existing.get(key) == value[key] for key in identity):
+                return False
+        stream.write(json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+        return True
+
+
 def elevenlabs_link(path):
     if not path.is_file() or path.stat().st_mode & 0o077:
         return None
@@ -98,7 +116,10 @@ def placement(args):
         "status": "TRACKING_LINK_VERIFIED",
         "ts": int(time.time()),
     }
-    append(state / "placements.jsonl", receipt)
+    created = append_unique(
+        state / "placements.jsonl", receipt, ("provider", "locale", "placement")
+    )
+    receipt["deduplicated"] = not created
     print(link if args.print_url else json.dumps(receipt, sort_keys=True, separators=(",", ":")))
     return 0
 
