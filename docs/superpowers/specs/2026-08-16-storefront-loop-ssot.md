@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: active specification. This document owns Storefront only.
+Status: INCOMPLETE. The runner is wired and observable, but the Storefront revenue function is not complete. This document owns Storefront only.
 
 ## 1. Overview
 
@@ -115,7 +115,7 @@ Only the first unfinished item is active.
 ### S0 — Split and publish the Storefront SSOT
 
 - [x] Create this Storefront-only spec from the latest Life Manager `origin/main`.
-- [ ] Push it to `main`, then remove its temporary documentation worktree and branch.
+- [x] Push it to `main`, then remove its temporary documentation worktree and branch.
 
 Verification: GitHub `main` contains this file; local worktree list has no `storefront-loop-ssot` entry.
 
