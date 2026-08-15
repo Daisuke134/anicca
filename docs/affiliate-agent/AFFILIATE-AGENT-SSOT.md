@@ -1052,6 +1052,14 @@ Source now contains direct semantic DOM activation, bounded Messages OTP intake,
 only until this repair is committed, installed, and the installed CLI reads the
 same authenticated state; it does not require another login or another OTP.
 
+Installed release `af3c2918b` then reproduced the real restart boundary instead
+of assuming browser-session persistence: Impact returned `SIGN_IN_REQUIRED`.
+The installed resume failed closed before submit because the provider changed
+the first-stage semantic control from `Next` to `Continue`; the original
+`PROVIDER_LOGIN` job remains unresolved with the same identity. The smallest
+A14.5 repair is the observed `Continue` allowlist addition in the Impact
+playbook. No selector, credential, scheduler, or publisher is redesigned.
+
 ### A14–E1 remaining implementation map
 
 This is the ordered file-level plan. Later rows do not start before the earlier

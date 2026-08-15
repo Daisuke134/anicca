@@ -10,7 +10,7 @@
     "credential_section": "Impact",
     "username_selector": "input[type='email'],input[type='text']",
     "username_submit_selector": "button",
-    "username_submit_text_any": ["次へ", "Next"],
+    "username_submit_text_any": ["次へ", "Next", "Continue"],
     "password_selector": "input[type='password']",
     "password_submit_selector": "button,input[type='submit']",
     "password_submit_text_any": ["サインイン", "Sign in", "Log in"],
