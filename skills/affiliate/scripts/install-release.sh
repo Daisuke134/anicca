@@ -149,7 +149,7 @@ cat > "$LOOP_PLIST" <<EOF
 <key>Label</key><string>ai.anicca.affiliate-loop</string>
 <key>ProgramArguments</key><array><string>/bin/sh</string><string>$CURRENT/affiliate</string><string>loop</string><string>wake</string></array>
 <key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
-<key>RunAtLoad</key><true/><key>StartInterval</key><integer>1800</integer><key>ThrottleInterval</key><integer>60</integer>
+<key>RunAtLoad</key><true/><key>StartInterval</key><integer>600</integer><key>ThrottleInterval</key><integer>60</integer>
 <key>StandardOutPath</key><string>$LOG_DIR/loop.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/loop.err.log</string>
 </dict></plist>
 EOF

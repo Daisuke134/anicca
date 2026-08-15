@@ -67,12 +67,15 @@ def elevenlabs_link(path):
     return link if parsed.scheme == "https" and parsed.hostname == "try.elevenlabs.io" else None
 
 
-def browser_ready(port):
-    try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=3) as response:
-            return response.status == 200
-    except OSError:
-        return False
+def browser_ready(port, attempts=15):
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=3) as response:
+                return response.status == 200
+        except OSError:
+            if attempt + 1 < attempts:
+                time.sleep(2)
+    return False
 
 
 def wake(args):
