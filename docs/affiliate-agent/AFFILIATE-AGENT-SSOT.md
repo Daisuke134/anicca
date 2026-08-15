@@ -197,6 +197,32 @@ research, publication recovery, reconciliation, and Telegram reporting MUST run
 independently of the desktop application. The desktop then becomes an
 observation/steering surface rather than the process owner.
 
+### 1.2.4 Credential-first provider preflight
+
+Before opening any provider signup, the Agent MUST execute this order and
+receipt status metadata only, never a secret value:
+
+1. inventory the Git-external mode-0600
+   `~/.config/anicca/affiliate-credentials.md` for an existing login,
+   verification state, application state, and tracking link;
+2. inspect authorized browser profiles for an already authenticated account and
+   read back the provider identity;
+3. when a local credential exists, attempt one isolated fresh login from the MD;
+   Keychain is only an optional mirror and never the sole recovery source;
+4. when the account exists but login fails, use official recovery and write the
+   replacement to the private MD before reset submission;
+5. create a new account only after credential inventory and provider account
+   discovery both prove that no reusable account exists;
+6. when an active affiliate account or executable link exists, reuse and verify
+   it instead of submitting another application.
+
+This preflight explains the current provider routing. Impact has an existing
+application but broken recovery and an open provider ticket. Systeme.io has an
+existing credential but a visible reCAPTCHA checkpoint. ElevenLabs had an
+existing account and was the shortest unblocked route to the first executable
+English offer. Its recovery closed E-1; it was not chosen because existing
+credentials were ignored or because ElevenLabs is a mandatory final niche.
+
 ### 1.3 R0 legacy inventory
 
 The legacy source is clean within its own `skills/affiliate` path and contains
@@ -721,26 +747,26 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 ## 9. Ordered implementation backlog
 
-1. Converge legacy Affiliate source into `life-manager/skills/affiliate` from a
+1. **DONE — canonical convergence.** Converge legacy Affiliate source into `life-manager/skills/affiliate` from a
    clean worktree; prove hash/behavior parity, isolate mutable state, and leave
    every existing live loop untouched until receipted cutover.
-2. Make one narrow English vertical slice run unattended on the current Mac:
+2. **IN PROGRESS — English vertical slice.** Make one narrow English vertical slice run unattended on the current Mac:
    preserve the Kit rejection, resume Amazon/provider state, acquire one
    executable offer, research one
    buyer problem, publish one owned placement plus eligible X distribution through
    the browser, verify the public result, reconcile clicks/commission, and report
    every transition to Telegram.
-3. Create the minimum Agent schema and append-only Affiliate ledger required by
+3. **PENDING.** Create the minimum Agent schema and append-only Affiliate ledger required by
    that live slice; add invariants for
    unknown, pending, approved, reversed, and paid money.
-4. Implement the semantic browser harness, typed action grammar, leases,
+4. **PARTIAL — inspect/poll and credential persistence only.** Implement the semantic browser harness, typed action grammar, leases,
    screenshots/DOM hashes, download capture, postcondition checks, ambiguous-side-
    effect dedupe, playbook cache, selector-drift recovery, and crash resume.
-5. Implement the `CrawlerAdapter` registry and `SourceCapture` contract. Wire the
+5. **PENDING.** Implement the `CrawlerAdapter` registry and `SourceCapture` contract. Wire the
    already-installed CRWL/gh routes first, then the audited X public fallback,
    PRAW, and one-item Apify canaries; every route must distinguish empty, auth,
    rate-limit, parser, policy, and upstream failure.
-6. Make account discovery/signup/login/recovery/profile setup first-class states.
+6. **PARTIAL — credential-first preflight and ElevenLabs recovery are live-proven.** Make account discovery/signup/login/recovery/profile setup first-class states.
    Ship them as one reusable `affiliate provider` CLI inside the Affiliate skill,
    including dependency admission, vault references, browser-profile selection,
    signup, login, OTP/challenge resume, contractual-consent receipt, profile and
@@ -759,32 +785,32 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    the initial or changed state emits one deterministic `transition_id`, while an
    unchanged retry emits `NO_STATE_CHANGE`. This is the idempotency boundary for
    the later approval-to-tracking-link action; no launchd owner is installed yet.
-7. Discover all current English candidates and apply to every program that
+7. **IN PROGRESS — ElevenLabs active; Impact pending; Kit rejected; Notion paused.** Discover all current English candidates and apply to every program that
    passes the audience, website, traffic, region, channel, payout, and policy
    eligibility gate; read back at least two real applications. Activate only an
    actually authenticated offer with current terms and an executable link.
-8. Implement the signed redirect/sub-ID service and verify click → provider
+8. **NEXT.** Implement the signed redirect/sub-ID service and verify click → provider
    report joining before producing content at scale.
-9. Extract Writer research/localization/publication contracts behind shared
+9. **PENDING.** Extract Writer research/localization/publication contracts behind shared
    interfaces without changing the Writer revenue ledger.
-10. Add English Affiliate manifests for browser-published X and owned articles;
+10. **PENDING.** Add English Affiliate manifests for browser-published X and owned articles;
    keep clip/slideshow/video renderers as format adapters.
-11. Add the fail-closed policy/disclosure gate and official-source freshness TTL.
-12. Close English E0, then unlock only a separate budget-capped Japanese canary
+11. **PENDING.** Add the fail-closed policy/disclosure gate and official-source freshness TTL.
+12. **PENDING.** Close English E0, then unlock only a separate budget-capped Japanese canary
     while the English local daily loop continues toward its first approved
     commission and E1. Japanese production scale still waits for its own J0/J1.
-13. Enable mature-cohort learning only after ten comparable placements; promote
+13. **PENDING.** Enable mature-cohort learning only after ten comparable placements; promote
    net commission as the deepest reward when available.
-14. Add provider/channel quarantine, same-run recovery, health reporting, and
+14. **PENDING.** Add provider/channel quarantine, same-run recovery, health reporting, and
    launchd ownership.
-15. Scale content and providers only after the first approved commission and
+15. **PENDING.** Scale content and providers only after the first approved commission and
     positive unit economics.
-16. After A3, publish the privacy-safe proof ledger, independent verifier, and
+16. **PENDING.** After A3, publish the privacy-safe proof ledger, independent verifier, and
     prior-art registry; only then unlock qualified README/site “first” language.
-17. Only after the local Agent proves positive unit economics, package its proven
+17. **PENDING.** Only after the local Agent proves positive unit economics, package its proven
     dependencies, credential-intake contract, isolated profiles, installer, and
     recovery checks for one-command operator-owned installations.
-18. Add Spanish only through L0, then rank every later locale by executable-offer
+18. **PENDING.** Add Spanish only through L0, then rank every later locale by executable-offer
     density × observed qualified intent × confirmed net payout minus acquisition,
     compliance, support, and account-risk cost. Population and translation volume
     are not admission criteria.
