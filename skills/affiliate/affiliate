@@ -19,6 +19,13 @@ case "$group" in
   provider) script=provider_cli.py ;;
   programs) script=program_registry.py ;;
   loop) script=local_loop.py ;;
-  x) script=x_profile_cli.py ;;
+  x)
+    if [ "${1:-}" = "post" ]; then
+      shift
+      script=x_post_cli.py
+    else
+      script=x_profile_cli.py
+    fi
+    ;;
 esac
 exec "$python_bin" "$(dirname "$0")/scripts/$script" "$@"

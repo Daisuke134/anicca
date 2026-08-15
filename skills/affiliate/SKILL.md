@@ -81,6 +81,21 @@ transition ID, and requires `AUTHENTICATED` before publication readiness. It
 still proves readiness only: publication, provider click readback, commission,
 and payout stay separate later gates.
 
+Publish an already approved English X artifact only through the dedicated
+Affiliate browser:
+
+```bash
+skills/affiliate/affiliate x post publish \
+  --content "$ARTIFACT" --placement elevenlabs-en-1
+```
+
+The command verifies `@selawmqt` on CDP `9326`, requires an explicit affiliate
+disclosure and one owned `aniccaai.com/blog/` CTA, persists an effect-possible
+fence before clicking, reconciles an identical timeline post on retry, and only
+returns `LIVE` after an exact post-page readback. It never prints the post body
+or a provider tracking link. A content policy decision and live owned article
+remain prerequisites; the command does not generate or approve copy.
+
 Use the versioned English program research before any application:
 
 ```bash

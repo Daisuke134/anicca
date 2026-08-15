@@ -1,0 +1,30 @@
+import importlib.util
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+SCRIPT = Path(__file__).parents[1] / "scripts" / "x_post_cli.py"
+sys.path.insert(0, str(SCRIPT.parent))
+SPEC = importlib.util.spec_from_file_location("affiliate_x_post", SCRIPT)
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+
+class XPostContractTest(unittest.TestCase):
+    def test_disclosure_owned_url_and_stable_placement_are_required(self):
+        text = "My notes on voice workflows. Affiliate link: https://aniccaai.com/blog/voice-workflows"
+        self.assertEqual(MODULE.validate_content(text), text)
+        self.assertEqual(MODULE.content_fingerprint(text), MODULE.content_fingerprint(text))
+        with tempfile.TemporaryDirectory() as root:
+            expected = Path(root) / "x-posts" / "elevenlabs-en-1.json"
+            self.assertEqual(MODULE.placement_path(Path(root), "elevenlabs-en-1"), expected)
+        with self.assertRaises(MODULE.XPostError):
+            MODULE.validate_content("Read https://aniccaai.com/blog/voice-workflows")
+        with self.assertRaises(MODULE.XPostError):
+            MODULE.validate_content("#ad https://example.com/not-owned")
+
+
+if __name__ == "__main__":
+    unittest.main()
