@@ -1356,7 +1356,8 @@ def _source_census_visual_inputs(
         rendered: list[Path] = []
         if copied.suffix.casefold() == ".pdf":
             prefix = visual_dir / f"source-{index:04d}-page"
-            _run(["pdftoppm", "-png", "-r", "150", str(copied), str(prefix)], "file_builder")
+            _run(["pdftoppm", "-png", "-scale-to", "2000", str(copied), str(prefix)],
+                 "file_builder")
             rendered = sorted(visual_dir.glob(f"{prefix.name}-*.png"),
                               key=lambda path: int(path.stem.rsplit("-", 1)[1]))
             if not rendered:
