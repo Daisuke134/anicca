@@ -43,11 +43,13 @@ def read_json(url):
 
 def choose_target(targets, playbook):
     wanted = playbook["target"]
+    url_parts = wanted.get("url_contains_any", [wanted.get("url_contains", "")])
+    title_parts = wanted.get("title_contains_any", [wanted.get("title_contains", "")])
     matches = [
         item for item in targets
         if item.get("type") == "page"
-        and wanted["url_contains"] in item.get("url", "")
-        and wanted["title_contains"] in item.get("title", "")
+        and any(part in item.get("url", "") for part in url_parts)
+        and any(part in item.get("title", "") for part in title_parts)
     ]
     if len(matches) != 1:
         raise ProviderError(f"expected one provider tab, found {len(matches)}")
@@ -110,6 +112,31 @@ def focus_and_type(ws, request_id, selector, value):
             const setter = Object.getOwnPropertyDescriptor(
                 HTMLInputElement.prototype, 'value'
             ).set;
+            setter.call(this, '');
+            this.dispatchEvent(new Event('input', {bubbles: true}));
+            this.dispatchEvent(new Event('change', {bubbles: true}));
+        }""",
+    })
+    cdp_call(ws, request_id + 2, "DOM.focus", {"nodeId": node_id})
+    cdp_call(ws, request_id + 3, "Input.insertText", {"text": value})
+    return request_id + 4
+
+
+def query_nodes(ws, request_id, selector):
+    document = cdp_call(ws, request_id, "DOM.getDocument", {"depth": 1})
+    result = cdp_call(
+        ws, request_id + 1, "DOM.querySelectorAll",
+        {"nodeId": document["root"]["nodeId"], "selector": selector},
+    )
+    return result.get("nodeIds", []), request_id + 2
+
+
+def focus_and_type_node(ws, request_id, node_id, value):
+    resolved = cdp_call(ws, request_id, "DOM.resolveNode", {"nodeId": node_id})
+    cdp_call(ws, request_id + 1, "Runtime.callFunctionOn", {
+        "objectId": resolved["object"]["objectId"],
+        "functionDeclaration": """function () {
+            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
             setter.call(this, '');
             this.dispatchEvent(new Event('input', {bubbles: true}));
             this.dispatchEvent(new Event('change', {bubbles: true}));
@@ -268,6 +295,60 @@ def resume(args):
     return receipt
 
 
+def reset_password(args):
+    root = Path(__file__).resolve().parents[1]
+    playbook = load_playbook(root, args.provider)
+    reset = playbook.get("password_reset")
+    if not reset:
+        raise ProviderError("provider password reset automation is unsupported")
+    target = choose_target(read_json(f"http://{args.cdp_host}:{args.cdp_port}/json/list"), playbook)
+    page = evaluate(args.cdp_host, args.cdp_port, target["id"])
+    parsed = urlparse(page["url"])
+    if parsed.path != reset["path"]:
+        raise ProviderError("provider password reset page is unavailable")
+    _, password = read_login_credentials(args.private_markdown, reset["credential_section"])
+    state = args.state.expanduser()
+    ws = create_connection(
+        f"ws://{args.cdp_host}:{args.cdp_port}/devtools/page/{target['id']}",
+        timeout=20, max_size=None, suppress_origin=True,
+    )
+    try:
+        cdp_call(ws, 1, "DOM.enable")
+        nodes, request_id = query_nodes(ws, 2, reset["password_selector"])
+        if len(nodes) != 2:
+            raise ProviderError("expected exactly two password reset fields")
+        for node_id in nodes:
+            request_id = focus_and_type_node(ws, request_id, node_id, password)
+        job = start_effect(
+            state, "PROVIDER_PASSWORD_RESET", args.provider,
+            {"operation": "password_reset", "provider": args.provider},
+            {"state": "RESET_FORM", "url": page["url"], "password_fields": len(nodes)}, 900,
+        )
+        click(ws, request_id, reset["submit_selector"])
+    finally:
+        ws.close()
+    after = None
+    for _ in range(20):
+        time.sleep(1)
+        target = choose_target(read_json(f"http://{args.cdp_host}:{args.cdp_port}/json/list"), playbook)
+        after = evaluate(args.cdp_host, args.cdp_port, target["id"])
+        if urlparse(after["url"]).path != reset["path"]:
+            break
+    if after is None or urlparse(after["url"]).path == reset["path"]:
+        raise ProviderError("provider password reset outcome is ambiguous")
+    verify_effect(state, job["job_id"], {
+        "state": "PASSWORD_RESET_ACCEPTED", "url": after["url"],
+        "rendered_text_sha256": hashlib.sha256(after["text"].encode()).hexdigest(),
+    })
+    receipt = {
+        "schema_version": 1, "receipt_type": "PROVIDER_PASSWORD_RESET",
+        "provider": args.provider, "state": "PASSWORD_RESET_ACCEPTED",
+        "url": after["url"], "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    atomic_write(args.receipt.expanduser(), receipt)
+    return receipt
+
+
 def poll(args, receipt):
     path = args.receipt.expanduser()
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -310,7 +391,7 @@ def poll(args, receipt):
 
 def main():
     parser = argparse.ArgumentParser(prog="affiliate provider")
-    parser.add_argument("command", choices=("inspect", "poll", "resume"))
+    parser.add_argument("command", choices=("inspect", "poll", "resume", "reset-password"))
     parser.add_argument("--provider", required=True)
     parser.add_argument("--cdp-port", required=True, type=int)
     parser.add_argument("--cdp-host", default="127.0.0.1")
@@ -322,7 +403,9 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.command == "resume":
+    if args.command == "reset-password":
+        receipt = reset_password(args)
+    elif args.command == "resume":
         receipt = resume(args)
     else:
         receipt = observe(args)

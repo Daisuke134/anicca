@@ -3,8 +3,20 @@
   "provider": "hubspot-impact",
   "allowed_origins": ["https://app.impact.com"],
   "target": {
-    "url_contains": "/secure/member/home/",
-    "title_contains": "HubSpot, Inc."
+    "url_contains_any": ["/secure/member/home/", "/login.user", "/password/change.ihtml"],
+    "title_contains_any": ["HubSpot, Inc.", "impact.com"]
+  },
+  "login": {
+    "credential_section": "Impact",
+    "username_selector": "input[type='email'],input[type='text']",
+    "password_selector": "input[type='password']",
+    "submit_selector": "button[type='submit'],input[type='submit']"
+  },
+  "password_reset": {
+    "credential_section": "Impact",
+    "path": "/password/change.ihtml",
+    "password_selector": "input[type='password']",
+    "submit_selector": "button[type='submit'],input[type='submit']"
   },
   "states": [
     {
@@ -15,6 +27,12 @@
         "You will be notified once there is a response."
       ],
       "next_action": "POLL_APPLICATION"
+    },
+    {
+      "state": "SIGN_IN_REQUIRED",
+      "url_contains": "/login.user",
+      "all_text": [],
+      "next_action": "RESUME_CREDENTIAL"
     }
   ],
   "fallback_state": "UNKNOWN_RENDERED_STATE",

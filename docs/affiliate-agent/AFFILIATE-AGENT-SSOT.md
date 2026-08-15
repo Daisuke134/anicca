@@ -935,6 +935,16 @@ or payment mutation occurred. The canonical release now provisions isolated
 `impact-en:9327` under `ai.anicca.affiliate-impact-browser`. Only that owner may
 perform future Impact recovery and application readback.
 
+A14.4 current evidence: dedicated `impact-en:9327` redirected the application
+home request to `login.user`, proving auth expiry. Gmail contains only ticket
+`868262` acknowledgement, not a human support reply. The latest official reset
+email has one exact reset anchor, and the isolated browser reached the genuine
+`app.impact.com/password/change.ihtml` form with exactly two password fields and
+one submit control. The versioned `provider reset-password` command now requires
+that exact state, reads only the pre-saved mode-0600 MD credential, journals the
+mutation, and requires redirect readback. A14.4 stays open until reset, fresh
+login, and `APPLICATION_PENDING` readback all succeed live.
+
 #### D. Earn the first externally approved commission
 
 - [ ] **A15.1** Keep ElevenLabs active and poll HubSpot/Impact; never resubmit the

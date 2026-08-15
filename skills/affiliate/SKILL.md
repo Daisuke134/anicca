@@ -63,6 +63,27 @@ It reads the mode-0600 Git-external Markdown, clears and fills the named control
 through CDP, submits at most once per invocation, and requires rendered readback.
 Credentials never enter stdout, receipts, Git, selectors, or command arguments.
 
+Recover an expired Impact account only in its dedicated browser. Save the new
+credential before the provider mutation, then require a fresh authenticated
+application readback:
+
+```bash
+python3 -c 'import secrets; print("A!" + secrets.token_urlsafe(36))' | \
+  skills/affiliate/affiliate programs store-credential \
+  --id hubspot-impact --label Impact --verification SAVED_BEFORE_SUBMIT
+skills/affiliate/affiliate provider reset-password \
+  --provider hubspot-impact --cdp-port 9327 \
+  --receipt ~/.local/state/life-manager/affiliate/providers/hubspot-impact-password-reset.json
+skills/affiliate/affiliate provider resume \
+  --provider hubspot-impact --cdp-port 9327 \
+  --receipt ~/.local/state/life-manager/affiliate/providers/hubspot-impact.json
+```
+
+`reset-password` requires the exact official reset page, exactly two password
+fields, and the versioned submit control. It journals the effect before submit
+and never prints the password. Redirect to a different provider page proves only
+reset acceptance; `resume` must still prove the authenticated application state.
+
 Install the local release and its four launchd owners:
 
 ```bash
