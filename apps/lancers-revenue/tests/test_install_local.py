@@ -117,7 +117,7 @@ class InstallLocalTests(unittest.TestCase):
             self.assertIn("--json", arguments)
             self.assertIn("--reconcile-only", arguments)
             self.assertEqual(plist["Label"], "ai.anicca.lancers-revenue-application")
-            self.assertEqual(plist["StartInterval"], 1800)
+            self.assertEqual(plist["StartInterval"], 300)
             self.assertEqual(plist["ProcessType"], "Background")
             self.assertEqual(plist["Umask"], 63)
             self.assertNotIn("RunAtLoad", plist)

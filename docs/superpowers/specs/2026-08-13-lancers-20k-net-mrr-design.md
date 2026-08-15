@@ -2672,3 +2672,28 @@ product version 4のlisting receipt、next-wake `action=unchanged / effect 0`。
 public detailとowner readbackの双方で29,800/198,000/398,000円、status active、portfolio `743964`、cover一枚を確認した。listing receiptは
 product version 4へ進み、Application、contracts、ledgerのSHA-256は不変である。直後のsecond wakeは`action=unchanged / aligned=true /
 status_effect_count=0 / portfolio_effect_count=0 / exit 0`で、重複save・画像追加・別listing作成は0だった。
+
+### 18.37 Application fresh-opportunity latency
+
+**USER OUTCOME:** 納品可能な新着案件を、品質・重複防止・日次capacityを壊さず、競合より早く発見して応募する。
+
+**CURRENT OBSERVATION:** production Application ownerは30分wakeだが、current codeは一wake内で10 queryを順にfallbackし、
+最大3回plannerを動かす。一queryを5時間待つ旧説明は現行実装には当てはまらない。2026-08-15の公式実tickは公開6件を観測し、
+全件既処理のため`duplicate_project 5586723 / submitted false / exit 0`となり、Application stateとledgerのSHA-256は不変だった。
+累計ApplicationReceiptは31件、pending 0、当日receipt 1、active contract 0である。Coconala production Applyは60秒wakeだが、
+Lancersは一wakeで複数のpublic search/detail GETとmodel判断を行うため、60秒をそのままコピーしない。Lancers retained logsの
+provider 429 / 401 / 403 / session failureは0である。
+
+Lancers公式「提案をつくろう」は、依頼とのずれを当選阻害とし、予算・納品物・scheduleの明示を推奨する。
+https://www.lancers.jp/help/guide/lancer/project/2
+現行plannerは公開依頼全体、verified seller proof、正直な価格、実行可能な最短納期を一回で判断し、この要件を維持する。
+Lancers利用規約第31条の人為的高負荷・大量message禁止に対し、stress test、無制限送信、daily cap撤廃は行わない。
+
+**NEXT DIRECT ACTION:** 新scheduler、queue、DB、crawler、parallel browserを作らず、既存Application ownerの`StartInterval`だけを
+1800秒から300秒へ短縮する。一wake最大1応募、一日10ApplicationReceipt、active contract時のAcquisition backpressure、exact-ID dedupe、
+presend再観測、公式proposal readbackは変更しない。Coconalaの速いwakeというproven contractだけをcopyし、Lancersの重いtickへ5分で適応する。
+
+**PLAN SIZE:** production config 1 file / 1行、SSOT 1 section。application code、prompt、schema、state、ledger、browser lock、他laneは変更0。
+
+**DONE EVIDENCE:** plist lint、exact release deploy、loaded ownerのinterval 300、production wake exit 0。candidateがなければhealthy no-op、
+candidateがあれば最大1件だけ公式proposal IDへ閉じる。state pending 0、next-wake duplicate submit 0、provider 429/session failure 0を確認する。
