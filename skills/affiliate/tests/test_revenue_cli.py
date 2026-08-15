@@ -13,6 +13,17 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RevenueCliTest(unittest.TestCase):
+    def test_classifies_tax_and_provider_setup_without_bank_data(self):
+        readiness = MODULE.payout_readiness(
+            "納税登録が必要\n出金するための税金情報を記入する\n"
+            "口座振替、PayPal、Stripeからお選びください"
+        )
+        self.assertEqual(readiness, {
+            "payout_readiness": "PAYOUT_BLOCKED_BY_TAX_SETUP",
+            "tax_information_state": "REQUIRED",
+            "payment_provider_state": "SELECTION_REQUIRED",
+        })
+
     def test_japanese_overview_values_preserve_unknown_money_states(self):
         cards = {
             "クリック数": "1", "登録数": "0", "有料会員登録": "0",

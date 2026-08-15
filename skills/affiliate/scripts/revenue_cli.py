@@ -77,6 +77,35 @@ PAYOUT_FIELDS = {
     "amount": ("金額", "Amount"),
 }
 
+TAX_REQUIRED_MARKERS = (
+    "納税登録が必要", "出金するための税金情報を記入する",
+    "tax information is required", "complete your tax information",
+)
+PROVIDER_SELECTION_MARKERS = (
+    "口座振替、PayPal、Stripeからお選びください",
+    "choose from direct deposit, PayPal, or Stripe",
+    "connect provider",
+)
+
+
+def payout_readiness(text):
+    folded = text.casefold()
+    tax_required = any(marker.casefold() in folded for marker in TAX_REQUIRED_MARKERS)
+    provider_selection = any(
+        marker.casefold() in folded for marker in PROVIDER_SELECTION_MARKERS
+    )
+    if tax_required:
+        state = "PAYOUT_BLOCKED_BY_TAX_SETUP"
+    elif provider_selection:
+        state = "PAYMENT_PROVIDER_SELECTION_REQUIRED"
+    else:
+        state = "UNKNOWN"
+    return {
+        "payout_readiness": state,
+        "tax_information_state": "REQUIRED" if tax_required else "UNKNOWN",
+        "payment_provider_state": "SELECTION_REQUIRED" if provider_selection else "UNKNOWN",
+    }
+
 
 def parse_value(key, value):
     compact = value.strip().replace(",", "")
@@ -415,6 +444,7 @@ def capture_reports(args):
         "commission_row_state": "EMPTY" if not commission_rows else "ROWS_PRESENT",
         "normalizer_state": "NO_LIVE_ROWS" if not commission_rows else "NORMALIZED",
         "payout_row_state": "EMPTY" if ("0 to 0" in payouts["text"] or "0件中0" in payouts["text"]) else "ROWS_PRESENT",
+        **payout_readiness(payouts["text"]),
         "rendered_artifact_sha256": artifact_hash,
         "observed_at": observed_at,
     }
