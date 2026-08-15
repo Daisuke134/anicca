@@ -687,6 +687,10 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    classifies only known rendered markers, and emits an atomic sanitized
    receipt. HubSpot/Impact is the first versioned playbook; submit/resume remains
    separate until duplicate-side-effect protection is implemented.
+   `affiliate provider poll` now turns that observation into durable loop state:
+   the initial or changed state emits one deterministic `transition_id`, while an
+   unchanged retry emits `NO_STATE_CHANGE`. This is the idempotency boundary for
+   the later approval-to-tracking-link action; no launchd owner is installed yet.
 7. Apply to/read back at least two English candidate programs through their
    websites; activate only an
    actually authenticated offer with current terms and an executable link.

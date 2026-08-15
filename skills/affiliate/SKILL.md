@@ -47,6 +47,11 @@ origin/title/path-bound tab, maps rendered text through the versioned provider
 playbook, and writes an atomic sanitized receipt. Unknown UI never becomes an
 approval. The current slice observes status only; it cannot submit or publish.
 
+Use `provider poll` with the same arguments in a loop. The first observation or
+a real state change returns `changed=true` and a deterministic `transition_id`;
+an unchanged retry returns `next_action=NO_STATE_CHANGE`. Downstream actions
+must deduplicate on `transition_id`.
+
 The committed bootstrap manifest pins PBS CPython `3.14.7+20260814` for macOS
 arm64 by immutable URL and SHA-256. The installer verifies and extracts the same
 held artifact, validates the full runtime tree, and atomically activates it

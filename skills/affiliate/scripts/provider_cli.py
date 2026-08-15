@@ -2,12 +2,14 @@
 """Read a provider page through an existing CDP browser and emit a receipt."""
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
 import re
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -102,23 +104,16 @@ def atomic_write(path, payload):
         temporary_path.unlink(missing_ok=True)
 
 
-def main():
-    parser = argparse.ArgumentParser(prog="affiliate provider")
-    parser.add_argument("command", choices=("inspect",))
-    parser.add_argument("--provider", required=True)
-    parser.add_argument("--cdp-port", required=True, type=int)
-    parser.add_argument("--cdp-host", default="127.0.0.1")
-    parser.add_argument("--receipt", required=True, type=Path)
-    args = parser.parse_args()
-
+def observe(args):
     root = Path(__file__).resolve().parents[1]
     playbook = load_playbook(root, args.provider)
     base = f"http://{args.cdp_host}:{args.cdp_port}"
     target = choose_target(read_json(f"{base}/json/list"), playbook)
     page = evaluate(args.cdp_host, args.cdp_port, target["id"])
     state, next_action, markers = classify(playbook, page)
-    receipt = {
+    return {
         "schema_version": 1,
+        "receipt_type": "PROVIDER_OBSERVATION",
         "provider": args.provider,
         "state": state,
         "next_action": next_action,
@@ -127,7 +122,62 @@ def main():
         "matched_markers": markers,
         "rendered_text_sha256": hashlib.sha256(page["text"].encode()).hexdigest(),
     }
-    atomic_write(args.receipt.expanduser(), receipt)
+
+
+def poll(args, receipt):
+    path = args.receipt.expanduser()
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    lock_path = path.with_name(path.name + ".lock")
+    with lock_path.open("a+", encoding="utf-8") as lock:
+        os.chmod(lock_path, 0o600)
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        previous = None
+        if path.exists():
+            previous = json.loads(path.read_text(encoding="utf-8"))
+            if previous.get("provider") != args.provider:
+                raise ProviderError("provider receipt mismatch")
+            if previous.get("receipt_type") != "PROVIDER_POLL_STATE":
+                previous = None
+        previous_state = previous.get("state") if previous else None
+        changed = previous_state != receipt["state"]
+        sequence = (previous.get("sequence", 0) if previous else 0) + int(changed)
+        material = "\0".join((
+            args.provider,
+            previous_state or "NONE",
+            receipt["state"],
+            receipt["rendered_text_sha256"],
+        ))
+        receipt.update({
+            "receipt_type": "PROVIDER_POLL_STATE",
+            "changed": changed,
+            "previous_state": previous_state,
+            "provider_next_action": receipt["next_action"],
+            "next_action": receipt["next_action"] if changed else "NO_STATE_CHANGE",
+            "sequence": sequence,
+            "transition_id": (
+                hashlib.sha256(material.encode()).hexdigest()
+                if changed else previous.get("transition_id")
+            ),
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+        })
+        atomic_write(path, receipt)
+    return receipt
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="affiliate provider")
+    parser.add_argument("command", choices=("inspect", "poll"))
+    parser.add_argument("--provider", required=True)
+    parser.add_argument("--cdp-port", required=True, type=int)
+    parser.add_argument("--cdp-host", default="127.0.0.1")
+    parser.add_argument("--receipt", required=True, type=Path)
+    args = parser.parse_args()
+
+    receipt = observe(args)
+    if args.command == "poll":
+        receipt = poll(args, receipt)
+    else:
+        atomic_write(args.receipt.expanduser(), receipt)
     print(json.dumps(receipt, sort_keys=True, separators=(",", ":")))
     return 0
 
