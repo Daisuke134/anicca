@@ -22,9 +22,9 @@ position through external affiliate receipts while preserving fees, reversals,
 cost, concentration, cash timing, and policy risk. It never equates content,
 clicks, estimates, pending commission, or GMV with earned money.
 
-Canonical production ownership is reserved in the Life Manager repository at
-`skills/affiliate/` with its redirect/API boundary at `apps/api/`. The runtime
-tree is not present there until Task R0 imports and verifies it. The old
+Canonical ownership is the Life Manager repository at `skills/affiliate/`.
+The local proof phase has no Affiliate runtime, redirect, secret, or ledger in
+`apps/api/` or Railway. The old
 `/Users/anicca/profitable-claude/skills/affiliate` tree is migration evidence,
 not a production home. Mutable state lives under
 `${LIFE_MANAGER_STATE_HOME:-~/.local/state/life-manager}/affiliate/`; credentials,
@@ -82,6 +82,26 @@ browser/profile provisioning, and minimal operator credential intake remain Agen
 states in that later packaging phase; they are not allowed to delay the local
 money loop.
 
+### 0.1 Delivery order: Local → OSS → Cloud
+
+```mermaid
+flowchart LR
+  L[1. Local Mac<br/>real commission] --> O[2. Open source<br/>one-command install]
+  O --> C[3. Cloud web app<br/>phone-only users]
+```
+
+The local Mac is the economic laboratory and first production runtime. Code may
+be public throughout development, but the project MUST NOT market the loop as a
+working money printer until Gate E1 has an external approved commission receipt.
+The OSS graduation gate is one scratch-Mac install reproducing the proven local
+flow without copying mutable state. The cloud/web-app phase starts only after A2:
+four revenue-positive weeks, positive net margin, and zero manual execution.
+
+Cloud is a deployment target for the same state machine, not a second design.
+It replaces local launchd with a tenant scheduler and local browser profiles with
+isolated remote browser workers while preserving the same provider adapters,
+action receipts, money states, policy gate, learner, and Telegram/product report.
+
 The machine cannot guarantee $10,000, $10,000,000, or $100,000,000 revenue. It guarantees
 measurable attempts, honest receipts, bounded experiments, compliance gates, and
 same-run recovery. Revenue targets are gates, not claims or forecasts.
@@ -110,11 +130,11 @@ techniques do not merge the ledgers.
 
 | Task | State | Receipt |
 |---|---|---|
-| R0 canonical convergence | Complete; current disabled release is `615206fd98fb555b0aada794454dd63e1cc95260` | Canonical skill and installer pass twice at 3/3; archived verifier 10/10; commission regression 6/6; manifests cover ten legacy files plus one archived parser dependency; remote SHA, immutable release bytes, valid JSON receipt, `current` symlink, untouched legacy state, and zero launchd owners all pass |
-| F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; disabled immutable release is `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
+| R0 canonical convergence | Complete; historical disabled release was `615206fd98fb555b0aada794454dd63e1cc95260` | Canonical skill and installer pass twice at 3/3; archived verifier 10/10; commission regression 6/6; manifests cover ten legacy files plus one archived parser dependency; remote SHA, immutable release bytes, valid JSON receipt, `current` symlink, untouched legacy state, and zero launchd owners all pass |
+| F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Implemented in canonical source; live installation verification is next | Copies the current Coconala boundary: immutable release, isolated EN CloakBrowser profile on CDP `9324`, append-only local JSONL receipts, a non-overlapping wake lock, and two launchd owners. Railway/API redirect code is removed; public placements use the provider tracking link directly |
+| Mac-local runtime | Release `941da44ce40f729a075918938d451e9dc9a2a228` is installed | `ai.anicca.affiliate-browser` is running, isolated EN CDP `9324` returned Chrome `145.0.7632.109`, and `ai.anicca.affiliate-loop` completed with exit code `0`. The first real placement receipt did not complete, so the local foundation remains `PARTIAL`, not GREEN |
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
@@ -123,15 +143,15 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Legacy core still reports `DEAD` | No hourly/daily Affiliate Agent wake has completed |
+| Runtime | Canonical local launchd browser and loop are installed; the first loop process exited `0` | A full research → publish → provider reconciliation wake has not completed; a process exit is not economic success |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
-| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`; HubSpot/Impact is `APPLICATION_PENDING + AUTH_RECOVERY_PROVIDER_DEFECT`; Kit is `APPLICATION_REJECTED`; Systeme.io is `EXTERNAL_CHALLENGE` at visible reCAPTCHA; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | ElevenLabs credential recovery, isolated fresh login, active-account readback, owned default link, anonymous redirect, and attribution-cookie creation are proven. No commission, approved transaction, reversal, or payout is claimed yet |
+| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`; HubSpot/Impact is `APPLICATION_PENDING + AUTH_RECOVERY_PROVIDER_DEFECT`; Kit is `APPLICATION_REJECTED`; Systeme.io is `EXTERNAL_CHALLENGE` at visible reCAPTCHA; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | ElevenLabs credential recovery, isolated fresh login, active-account readback, owned default link, anonymous link traversal, and attribution-cookie creation are proven. No commission, approved transaction, reversal, or payout is claimed yet |
 | Publication | Browser publisher is planned only | No Affiliate JA/EN placement has an action receipt plus public readback |
 | Attribution | Local placement receipts and direct provider-link resolution are implemented | No public placement or provider-side click/commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | The shared Life Manager allowlist target delivered a real Affiliate milestone with provider `messageId=7639`; the older F1 path failed because it did not use this resolved target | Reuse the validated target contract and build the Affiliate durable outbox/dedupe layer; delivery identity is no longer unknown |
-| Autonomous operation | Queue, browser harness, recovery, launchd, and reports remain open | No-human-loop behavior is not yet achieved |
+| Autonomous operation | launchd ownership and isolated browser are live; queue, publisher, reconciliation, recovery, and reports remain open | No-human-loop money behavior is not yet achieved |
 
 ### 1.2.1 Active execution contract: provider review is never passive wait
 
@@ -175,7 +195,7 @@ owner, and independent work selected for the same wake.
 | The owned site does not yet present a deep affiliate-relevant English content body | Approval and conversion weakness | Publish evidence-led B2B SaaS/creator workflows and comparison foundations before another fit-sensitive application |
 | `agent-browser 0.27.0` hung against the live multi-tab CloakBrowser | Tool-path failure, not browser incapability | Use the live-proven raw-CDP path now; retain the failure receipt and replace only when a candidate passes the same live postcondition |
 | Provider signup/login/OTP/contract/application writes are not yet fully exposed by `affiliate provider` | Product implementation gap | Turn every successful operator action into an idempotent semantic playbook and CLI state |
-| Redirect, click join, provider reconciliation, and Affiliate ledger are unbuilt | Revenue-truth implementation gap | Build before scaling publication; no click or estimate may be reported as commission |
+| First placement receipt, provider reconciliation, and Affiliate money ledger are incomplete | Revenue-truth implementation gap | Fix the local receipt boundary before publication; no click or estimate may be reported as commission |
 | No first-party CTR, conversion, approval, reversal, or payout cohort exists | Learning uncertainty | Do not fabricate best/base/worst revenue forecasts; collect the first live 30-day cohort |
 | Scratch-Mac dependency installation is incomplete | Packaging gap, not current-Mac money blocker | Finish only after the current Mac closes a positive-unit-economics local slice |
 
@@ -194,10 +214,11 @@ allowed. Git commits, pushed branches, this SSOT, and runtime receipts are the
 durable recovery boundary; they preserve progress but do not guarantee that an
 in-flight command continues.
 
-After the Affiliate launchd owner is installed and live-proven, provider polling,
-research, publication recovery, reconciliation, and Telegram reporting MUST run
-independently of the desktop application. The desktop then becomes an
-observation/steering surface rather than the process owner.
+The Affiliate browser and wake launchd owners are installed and live-proven.
+Provider polling, research, publication recovery, reconciliation, and Telegram
+reporting are not yet wired into that wake, so desktop independence is still a
+product gate rather than a completed behavior. After wiring, the desktop becomes
+an observation/steering surface rather than the process owner.
 
 ### 1.2.4 Credential-first provider preflight
 
@@ -238,18 +259,19 @@ absent or moved, while the source also hardcodes one macOS user, Homebrew paths,
 port 9225, and a Japanese browser profile. These gaps are recorded as
 `UNAVAILABLE`, never silently replaced or reported as parity.
 
-No Affiliate launchd service, tmux session, process, or open file is currently
-live. Two old launchd plists exist only as disabled artifacts. R0 therefore
+At the R0 inventory checkpoint, no Affiliate launchd service, tmux session,
+process, or open file was live, and two old launchd plists were disabled
+artifacts. R0 therefore
 preserves the ten files byte-for-byte under canonical `skills/affiliate/legacy`,
 receipts the archived verifier parser separately in `DEPENDENCIES.sha256`, and
 adds a relocatable but non-executing skill shell. The focused installer test
 proves immutable install, idempotency, stale-symlink repair, valid JSON receipt,
-launchd non-interference, and fail-closed detection of a modified release. The
-disabled release is installed from pushed SHA
+launchd non-interference, and fail-closed detection of a modified release. That
+historical disabled release was installed from pushed SHA
 `615206fd98fb555b0aada794454dd63e1cc95260` under
 `~/.local/share/life-manager/affiliate/releases/`; its private ownership receipt
-is under `~/.local/state/life-manager/affiliate/`. Live behavior parity and
-cutover remain open until later provider/browser/publisher receipts.
+is under `~/.local/state/life-manager/affiliate/`. The later local release and
+launchd state are reported in section 1.1; publisher and money parity remain open.
 
 ### 1.4 No-dry-run equivalence rule
 
@@ -258,7 +280,7 @@ cutover remain open until later provider/browser/publisher receipts.
 | Unit/fixture test | Local contract behavior | Live login, publication, click, conversion, or revenue |
 | CloakBrowser login page | Page reachability and observed auth state | Affiliate approval or account ownership |
 | Fake browser/fixture response | Adapter parsing | A public X/article placement |
-| `test=true` redirect click | Deployed redirect and click persistence | Organic buyer intent or commission |
+| Local placement/link check | Placement schema and provider-link resolution | Organic buyer intent or commission |
 | Provider report fixture | Reconciliation arithmetic | External approved or paid commission |
 | Legacy commission watermark | Historical unattributed aggregate | New Agent revenue or placement attribution |
 
@@ -271,23 +293,26 @@ external receipt exists.
 
 ```mermaid
 flowchart TD
-  W[launchd wake] --> Q[Claim one durable work item]
-  Q --> O[Terra observes browser pages, CRWL, downloads]
-  O --> A[Propose exactly one typed action]
-  A --> G{Policy, evidence, budget, idempotency gate}
-  G -->|Fail| R[Wait, repair, or local quarantine]
-  G -->|Pass| E[Execute one allowlisted browser action]
-  E --> V[Read back the real external result]
-  V --> T[Append receipt and owner-language Telegram event]
-  T --> M[Reconcile click, transaction, commission, reversal]
-  M --> L[KEEP or REVERT one measured variable]
-  L --> Q
-  R --> Q
+  W[10-minute wake] --> N[Resume next unfinished job]
+  N --> R[Research demand and offers]
+  R --> C[Create one useful asset]
+  C --> P[Publish by isolated browser]
+  P --> V[Verify public result]
+  V --> M[Read provider money state]
+  M --> L[Learn: keep or change one variable]
+  L --> T[Report to Telegram]
+  T --> W
+  V -->|Failed| H[Self-heal and resume same job]
+  H --> N
 ```
 
-The model is the planner and diagnostician. Deterministic code remains the money,
-permission, idempotency, and evidence kernel. This is the target architecture,
-not a claim about the current runtime.
+Ten minutes is the default coordination wake. Provider polling, posting, and
+research each retain their own policy/rate-limit cooldown, so a wake does not
+imply an external action every ten minutes. Every job is durable; a crash resumes
+the same job and ambiguous publication is read back before any retry. The model
+plans and diagnoses, while deterministic code owns money states, permission,
+idempotency, budgets, and evidence. This is the target, not a current revenue
+claim.
 
 ## 2. Evidence-backed constraints
 
@@ -733,7 +758,7 @@ workflow ideas are reimplemented against our own contracts and evidence.
 | Gate | Verifiable completion |
 |---|---|
 | E-1 | English provider auth and ownership readback for one executable offer on the dedicated English identity |
-| E0 | One English placement has public readback, a working redirect, and a provider click/sub-ID receipt; this unlocks a separate Japanese canary |
+| E0 | One English placement has public readback, an executable direct provider/custom link, and a provider click receipt; this unlocks a separate Japanese canary |
 | E1 | First non-test English approved commission joined end-to-end |
 | J-1 | After E0, Japanese provider/account ownership and one executable offer are independently read back |
 | J0/J1 | Japanese public placement/click lineage, then approved commission, each closed independently of English |
@@ -743,82 +768,89 @@ workflow ideas are reimplemented against our own contracts and evidence.
 | A4 | Diversified scale: no provider, offer, or channel exceeds 40% of net commission |
 | A5 | $10,000,000 cumulative or monthly target is defined explicitly and then met only by external receipts; never inferred from traffic |
 | A6 | $100,000,000 monthly net remains `HORIZON_OPEN` until one externally settled month passes FX, reversal, cost, concentration, policy, partner-capacity, and tenant-isolation audits; GMV and forecasts do not count |
+| OSS1 | After E1, one clean macOS user installs the public repository with one command and reaches the same pre-publication state without copying credentials, sessions, or mutable receipts |
+| C1 | After A2 and OSS1, one isolated cloud tenant reproduces the same state machine, browser action receipts, money ledger, recovery, and report without weakening policy or tenant isolation |
 
 Best/base/worst planning is computed only after 30 days of real funnel data.
 Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 ## 9. Ordered implementation backlog
 
-1. **DONE — canonical convergence.** Converge legacy Affiliate source into `life-manager/skills/affiliate` from a
-   clean worktree; prove hash/behavior parity, isolate mutable state, and leave
-   every existing live loop untouched until receipted cutover.
-2. **IN PROGRESS — English vertical slice.** Make one narrow English vertical slice run unattended on the current Mac:
-   preserve the Kit rejection, resume Amazon/provider state, acquire one
-   executable offer, research one
-   buyer problem, publish one owned placement plus eligible X distribution through
-   the browser, verify the public result, reconcile clicks/commission, and report
-   every transition to Telegram.
-3. **PENDING.** Create the minimum Agent schema and append-only Affiliate ledger required by
-   that live slice; add invariants for
-   unknown, pending, approved, reversed, and paid money.
-4. **PARTIAL — inspect/poll and credential persistence only.** Implement the semantic browser harness, typed action grammar, leases,
-   screenshots/DOM hashes, download capture, postcondition checks, ambiguous-side-
-   effect dedupe, playbook cache, selector-drift recovery, and crash resume.
-5. **PENDING.** Implement the `CrawlerAdapter` registry and `SourceCapture` contract. Wire the
-   already-installed CRWL/gh routes first, then the audited X public fallback,
-   PRAW, and one-item Apify canaries; every route must distinguish empty, auth,
-   rate-limit, parser, policy, and upstream failure.
-6. **PARTIAL — credential-first preflight and ElevenLabs recovery are live-proven.** Make account discovery/signup/login/recovery/profile setup first-class states.
-   Ship them as one reusable `affiliate provider` CLI inside the Affiliate skill,
-   including dependency admission, vault references, browser-profile selection,
-   signup, login, OTP/challenge resume, contractual-consent receipt, profile and
-   channel setup, ownership verification, one-shot submission, and rendered
-   readback. Before each provider adapter, search official CLI/API support and
-   licensed GitHub implementations; reuse inspected code when it closes the same
-   postcondition, otherwise cache the live semantic-browser playbook. Verify
-   `@selawmqt`, rebrand it in English, and prove identity after every write.
-   The first shipped command is `affiliate provider inspect`: it uses the
-   working raw-CDP path after `agent-browser 0.27.0` hung against the live
-   multi-tab CloakBrowser, selects one origin/title/path-bound provider tab,
-   classifies only known rendered markers, and emits an atomic sanitized
-   receipt. HubSpot/Impact is the first versioned playbook; submit/resume remains
-   separate until duplicate-side-effect protection is implemented.
-   `affiliate provider poll` now turns that observation into durable loop state:
-   the initial or changed state emits one deterministic `transition_id`, while an
-   unchanged retry emits `NO_STATE_CHANGE`. This is the idempotency boundary for
-   the later approval-to-tracking-link action; no launchd owner is installed yet.
-7. **IN PROGRESS — ElevenLabs active; Impact pending; Kit rejected; Notion paused.** Discover all current English candidates and apply to every program that
-   passes the audience, website, traffic, region, channel, payout, and policy
-   eligibility gate; read back at least two real applications. Activate only an
-   actually authenticated offer with current terms and an executable link.
-8. **IN PROGRESS — local-only runtime implemented.** Install the immutable release,
-   prove both launchd owners and isolated CDP `9324`, create the first local
-   placement receipt, then publish with the executable provider link and join
-   provider-side click/commission readback. Do not deploy Affiliate code or
-   secrets to Railway, and do not count a local click as money.
-9. **PENDING.** Extract Writer research/localization/publication contracts behind shared
-   interfaces without changing the Writer revenue ledger.
-10. **PENDING.** Add English Affiliate manifests for browser-published X and owned articles;
-   keep clip/slideshow/video renderers as format adapters.
-11. **PENDING.** Add the fail-closed policy/disclosure gate and official-source freshness TTL.
-12. **PENDING.** Close English E0, then unlock only a separate budget-capped Japanese canary
-    while the English local daily loop continues toward its first approved
-    commission and E1. Japanese production scale still waits for its own J0/J1.
-13. **PENDING.** Enable mature-cohort learning only after ten comparable placements; promote
-   net commission as the deepest reward when available.
-14. **PENDING.** Add provider/channel quarantine, same-run recovery, health reporting, and
-   launchd ownership.
-15. **PENDING.** Scale content and providers only after the first approved commission and
-    positive unit economics.
-16. **PENDING.** After A3, publish the privacy-safe proof ledger, independent verifier, and
-    prior-art registry; only then unlock qualified README/site “first” language.
-17. **PENDING.** Only after the local Agent proves positive unit economics, package its proven
-    dependencies, credential-intake contract, isolated profiles, installer, and
-    recovery checks for one-command operator-owned installations.
-18. **PENDING.** Add Spanish only through L0, then rank every later locale by executable-offer
-    density × observed qualified intent × confirmed net payout minus acquisition,
-    compliance, support, and account-risk cost. Population and translation volume
-    are not admission criteria.
+### Phase A — Current Mac earns the first real commission
+
+1. **DONE.** Converge the canonical skill, private state boundary, immutable
+   release, and legacy evidence without touching the earning Coconala runtime.
+2. **IN PROGRESS.** Finish the Railway rollback and delete the two Affiliate-only
+   staging variables; prove no Affiliate code or secret remains in Railway.
+3. **IN PROGRESS.** Fix the failed local `placement_ready` receipt, then prove the
+   installed release, both launchd owners, CDP `9324`, wake lock, restart, and
+   append-only local receipts from the installed artifact rather than source.
+4. **PENDING.** Change the coordination cadence from 30 minutes to 10 minutes;
+   keep provider, research, and publication cooldowns independent and bounded.
+5. **PARTIAL.** Complete credential-first signup/login/recovery/application states.
+   ElevenLabs is active, Impact is pending, Kit is rejected, and provider writes
+   still need exact-once semantic browser playbooks.
+6. **PENDING.** Rebrand and verify English `@selawmqt`; bind its isolated profile,
+   disclosure, public URL, screenshot/DOM receipt, and duplicate-post fence.
+7. **PENDING.** Implement the source scout using CRWL, `gh`, official sources, and
+   authenticated X readback; every capture stores provenance, license, locale,
+   freshness, and failure class.
+8. **PENDING.** Reuse Writer research/editorial contracts and the existing browser
+   publisher without merging Writer revenue or modifying its live loop.
+9. **PENDING.** Publish useful non-affiliate English foundation content on the
+   owned site so provider applications and readers see a real editorial surface.
+10. **PENDING.** Create one ElevenLabs buyer-problem evidence pack, comparison,
+    disclosed article, local placement intent, and provider custom/direct link.
+11. **PENDING.** Pass the policy gate, publish the article by browser, require
+    public readback, then distribute one matching disclosed X post and read it back.
+12. **PENDING.** Reconcile provider clicks and transactions into local money states:
+    `unknown`, `pending`, `approved`, `reversed`, and `paid`; estimates remain out.
+13. **PENDING.** Send owner-readable Telegram transitions through the durable
+    outbox with action, public URL, blocker/self-heal, money state, cost, and next job.
+14. **PENDING.** Add same-job crash resume, ambiguous-write dedupe, login recovery,
+    selector-drift repair, provider/channel quarantine, watchdog, and cost caps.
+15. **PENDING — Gate E1.** Run unattended until one non-test approved English
+    commission is joined from public placement to provider receipt.
+
+### Phase B — Local profitability and multilingual pods
+
+16. **PENDING.** Run at least ten comparable English placements; change one
+    variable per canary and allocate by net commission, never engagement alone.
+17. **PENDING.** Add only eligible English B2B/creator providers so no provider,
+    offer, or channel exceeds 40% of net commission.
+18. **PENDING.** After English E0, create an isolated Japanese identity, browser,
+    provider/link, native evidence pack, disclosure, ledger cohort, and J0/J1 canary.
+19. **PENDING.** After English and Japanese proof, admit Spanish through the same
+    L0 gate; later languages are ranked by executable offers and observed net value,
+    not population or translation volume.
+20. **PENDING — Gate A2.** Achieve four revenue-positive weeks, positive net margin,
+    zero manual execution, and receipted recovery from at least one real failure.
+21. **PENDING — Gate A3.** Reach three externally receipted months at $10,000 gross
+    commission while reporting net profit, reversals, costs, and concentration.
+
+### Phase C — Open-source reproducibility
+
+22. **PENDING.** Remove machine-specific paths and package only proven dependencies,
+    provider contracts, browser profiles, state migrations, and rollback logic.
+23. **PENDING.** Ship one-command macOS install, credential intake, health check,
+    update, uninstall, and local privacy-safe proof ledger.
+24. **PENDING — Gate OSS1.** On a clean macOS user, install from the public repo and
+    reproduce the pre-publication state without copying sessions, secrets, or receipts.
+25. **PENDING.** Publish the independent verifier and prior-art registry; describe
+    observed earnings precisely and avoid unqualified “world's first” claims.
+
+### Phase D — Cloud/web app for phone-only users
+
+26. **PENDING after A2 + OSS1.** Replace launchd with a durable tenant scheduler and
+    local profiles with isolated remote browser workers; keep the same job/state API.
+27. **PENDING.** Add encrypted tenant credentials, per-tenant provider consent,
+    budgets, audit receipts, browser leases, data deletion, and account-risk controls.
+28. **PENDING.** Build the Life Manager web/mobile UX for onboarding, goal setting,
+    provider status, actions, earnings, blockers, self-heals, and Telegram linking.
+29. **PENDING — Gate C1.** One cloud tenant reproduces the local E1 lineage without
+    cross-tenant state, credential, browser, link, or ledger leakage.
+30. **PENDING.** Pilot phone-only users, compare cloud unit economics with local,
+    then scale only cohorts that remain compliant and net-profitable.
 
 ## 10. Rejected designs
 
@@ -846,8 +878,9 @@ without changing the architecture.
 ### 11.1 Cleared implementation decisions
 
 - All external platform operations are browser-only. Postiz and third-party
-  publishing/affiliate APIs are neither prerequisites nor fallbacks. Internal
-  local HTTP/SQLite interfaces and the owned redirect remain allowed.
+  publishing APIs are neither prerequisites nor fallbacks. Provider tracking
+  links are used directly; local JSONL/SQLite interfaces may coordinate state,
+  but the local proof phase owns no public redirect service.
 - Rebranding, account creation/recovery, program application, dashboard scraping,
   report download, and payout reconciliation are Agent states, not manual setup.
 - Architecture is one durable portfolio Agent with specialized role prompts and
@@ -944,8 +977,9 @@ without changing the architecture.
 - Telegram target and provider delivery are resolved by live `messageId=7639`;
   Affiliate-specific durable outbox, snapshot parity, and dedupe remain unbuilt.
 - No production Affiliate placement, organic click, approved commission, paid
-  payout, hourly/daily launchd wake, or crash-recovery E2E exists yet.
-- `ai.anicca.affiliate-reconcile` and `ai.anicca.affiliate-daily` are not registered
-  in the user launchd domain, and no `affiliate-core` tmux session exists.
+  payout, full 10-minute money wake, or crash-recovery E2E exists yet.
+- `ai.anicca.affiliate-browser` and `ai.anicca.affiliate-loop` are registered;
+  separate legacy `affiliate-reconcile`, `affiliate-daily`, and `affiliate-core`
+  owners are deliberately not required by the new single local orchestrator.
 - `$10k`, `$10M`, and `$100M` are outcome gates. There is no honest date or
   probability forecast until live cohorts and partner capacity are measured.
