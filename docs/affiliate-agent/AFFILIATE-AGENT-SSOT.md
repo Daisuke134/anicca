@@ -1369,6 +1369,204 @@ without changing the architecture.
 
 ## 11. Visible uncertainties and blocked proof
 
+### 11.0 Audit checkpoint and complete uncertainty register
+
+This register is the implementation gate. It was produced from three independent
+read-only audits (runner portability, stage observability, and every Affiliate
+CLI contract), direct code inspection, launchd/CDP/runtime receipt readback, one
+full local Affiliate suite (`37/37`), and one isolated read-only structured model
+canary. No post, application, login, payment, profile, or provider state was
+changed by the audit.
+
+The canary proves current Codex auth and `gpt-5.6-terra` medium entitlement: the
+pinned d150 runner returned schema-valid JSON in six seconds. It also proves why
+the model cannot run on every ten-minute tick: the trivial call consumed 16,457
+provider-reported tokens with an API-equivalent estimate of `$0.041555`, budget
+admission was disabled, and some raw evidence files were mode `0644`. Frequent
+wakes therefore reconcile deterministically; a model call is admitted only for
+a due judgment or bounded diagnosis after budget and privacy gates pass.
+
+#### Runner and local-runtime uncertainties
+
+| ID | State | Uncertainty / observed answer | Closure condition |
+|---|---|---|---|
+| U01 | CLEARED | Runner provenance is GitHub `Daisuke134/life-manager@d150e4b1…`; the five runtime files byte-match that commit | Vendor the pinned commit, license, and SHA manifest; never treat a writable release directory as source |
+| U02 | CLEARED | d150 and canonical `main` diverge; `agent_runner.py` and `config.json` differ, while three support files match | Base Affiliate on d150 and review later main changes explicitly; no blind latest-main copy |
+| U03 | CLEARED | Current Codex auth plus Terra-medium structured output works read-only | Preserve a sanitized installed canary receipt; it is capability proof, not economic proof |
+| U04 | OPEN-BEFORE-CODE | Terra-high strategy and one-use Sol escalation are not configured or live-proven | Add Affiliate task classes, prove each route read-only, and record model/effort/route |
+| U05 | OPEN-BEFORE-CODE | Interactive PATH resolves Codex `0.147.0`; launchd PATH resolves `0.145.0` | Pin absolute executable, version, and hash in machine capability and model-call receipts |
+| U06 | OPEN-BEFORE-CODE | d150 inherits most parent environment and restores the real HOME inside Codex | Replace with an allowlisted environment and isolated Affiliate `CODEX_HOME`; prove forbidden secrets are absent |
+| U07 | OPEN-BEFORE-CODE | Runner result/stdout/stderr/attempt ledgers can be `0644` | Force directories `0700`, files `0600`, atomic writes, and install/readback checks |
+| U08 | OPEN-BEFORE-CODE | Runner validation ignores `enum`, `additionalProperties`, limits, and several JSON Schema constraints | Add complete domain validation proving exactly one allowlisted action and rejecting unknown fields/tools |
+| U09 | OPEN-BEFORE-CODE | Context packet defaults to 8 KiB and truncates without secret filtering | Define measured Affiliate context cap, provenance selection, and key/value redaction before model input |
+| U10 | OPEN-BEFORE-CODE | Budget is disabled; candidate fallback conflicts with pass-limit reservation | Set mandatory Affiliate daily/pass/scope budgets and either fix fallback admission or fail into a durable wait |
+| U11 | CLEARED | Every-ten-minute model invocation is economically and contextually wasteful | Ten-minute deterministic reconcile; model only for due judgment/diagnosis; persist next model due-time |
+| U12 | OPEN-BEFORE-CODE | Budget day uses `Asia/Tokyo`, even for English campaigns | Set explicit owner billing timezone and keep locale publication time separate |
+| U13 | OPEN-BEFORE-CODE | Current Mac meets requirements, but clean-Mac cert, CLI, timezone DB, and auth references are unproven | Extend machine capability receipt and later reproduce on a clean arm64 macOS user |
+| U14 | OPEN-BEFORE-CODE | Authority for self-modifying code repair is undefined | Routine Agent executes tools only; code repair uses one isolated Sol escalation, clean worktree, bounded diff, verification, install receipt, and rollback |
+
+#### Tool and money-contract uncertainties
+
+| ID | State | Uncertainty / observed answer | Closure condition |
+|---|---|---|---|
+| U15 | OPEN-BEFORE-CODE | Signup, application submit, Terms acceptance, and provider affiliate-link creation have no CLI implementation | Convert each successful canary into a semantic fenced tool with fresh rendered readback |
+| U16 | OPEN-BEFORE-CODE | Provider playbooks cover only ElevenLabs and HubSpot/Impact | Add a playbook only after an executable provider passes official terms/channel/receipt gates |
+| U17 | OPEN-BEFORE-CODE | Recovery covers configured login, Impact reset form, and one SMS path; reset request, email link/OTP, CAPTCHA and broader 2FA do not | Implement authorized inbox paths; classify CAPTCHA/KYC as `EXTERNAL_CHALLENGE`, never bypass |
+| U18 | OPEN-BEFORE-CODE | Program registry is a static priority table; `next_action` is text and never dispatched | Model selects from a fresh candidate snapshot and writes constraints, reason, hypothesis, budget, and lineage receipt |
+| U19 | OPEN-BEFORE-CODE | Source capture has two fixed plans; failures raise without a receipt; authenticated X/Reddit discovery is absent | Persist failed-source attempts and add discovery tools only behind observed buyer-intent need |
+| U20 | OPEN-BEFORE-CODE | Three content campaigns are fixed templates with no model/prompt/variant lineage | Treat them as few-shot examples; model writes source-bound artifacts with prompt/model/version/cost receipts |
+| U21 | OPEN-BEFORE-CODE | Policy has five fixed checks; prerequisite failures disappear before a receipt; provider/channel rules are not dynamic | Persist prerequisite failure and combine deterministic disclosure/link gates with fresh provider/locale policy evidence |
+| U22 | OPEN-BEFORE-CODE | Owned readback compresses HTTP, deploy lag, title, marker, and link mismatch into `None` | Return typed status, HTTP code, failed marker/link class, response hash, attempt, and retry due-time |
+| U23 | OPEN-BEFORE-CODE | X failures lack durable typed receipts; current X home is not a fresh `@selawmqt` semantic identity proof | Add identity/composer/effect/readback/short-link failure classes and account-risk quarantine signals |
+| U24 | OPEN-BEFORE-CODE | Revenue transition identity includes the timestamp-varying source artifact hash, so the same future transaction can duplicate across captures | Deduplicate by provider transaction identity plus economic state; source hashes remain lineage, not transition identity |
+| U25 | OPEN-BEFORE-CODE | Revenue cycle collapses observe/capture/reconcile failures into one state | Persist command/stage, timeout, return code, redacted error hash, source lineage, and retry due-time |
+| U26 | OPEN-BEFORE-CODE | Aggregate click `1` is baseline-only; qualified impressions and placement-level provider clicks do not exist | Add placement/sub-ID cohort observations; never infer attribution from aggregate totals |
+| U27 | OPEN-BEFORE-CODE | `loop placement --print-url` can expose the private referral URL | Remove the flag from production contract and reject secret-bearing stdout/log fields |
+| U28 | OPEN-BEFORE-CODE | Private Markdown can update before a later Keychain failure, with no rollback receipt | Make the two-store operation resumable/reconcilable and report partial state without secret values |
+| U29 | OPEN-BEFORE-CODE | Owned publisher requires a machine-specific clean landing worktree path | Add an explicit connector capability receipt and configured local root; never guess or scan arbitrary repositories |
+| U30 | OPEN-BEFORE-CODE | Commands named `inspect`/`observe` can navigate or write receipts | Mark every tool contract as `READ_LOCAL`, `READ_EXTERNAL`, or `WRITE_EXTERNAL`; the Agent uses the declared effect class |
+| U31 | DEFERRED-BY-GATE | Japanese profile `9325` exists but has no launchd owner/listener | Add it only after English E0 and the locale admission gate |
+| U32 | OPEN-BEFORE-CODE | No Affiliate core-health/watchdog owner is installed | Add health inside the single Affiliate ownership graph without creating a second business scheduler |
+
+#### Observability, healing, and learning uncertainties
+
+| ID | State | Uncertainty / observed answer | Closure condition |
+|---|---|---|---|
+| U33 | OPEN-BEFORE-CODE | No canonical `RunReceipt` joins scheduler occurrence to terminal state | Persist wake/run ID, release SHA, timing, stage, and terminal state |
+| U34 | OPEN-BEFORE-CODE | No common `ToolAttemptReceipt` spans all tools | Persist stage/tool/attempt, redacted input fingerprint, preconditions, timing, outcome, failure, retry, effect certainty, postcondition, and usage |
+| U35 | OPEN-BEFORE-CODE | Job journal fences individual effects but cannot enumerate unfinished pipeline stages or causal parents | Add append-only stage trajectory, unresolved enumeration, durable due-time, repair history, and quarantine |
+| U36 | OPEN-BEFORE-CODE | Broad exceptions erase root cause | Use typed top-level classes `AUTH/SOURCE/BROWSER/POLICY/AMBIGUOUS_EFFECT/DISK/OWNER` with network/timeout/parser/selector/identity/readback/transport subtypes |
+| U37 | OPEN-BEFORE-CODE | No current healer implementation exists | Implement diagnose → one allowlisted repair → postcondition → `SELF_HEALED` or quarantine |
+| U38 | OPEN-BEFORE-CODE | Browser logs contain repeated EPIPE but no run/job/port/operation correlation | Add browser owner health and structured operation IDs; prove whether EPIPE causes or merely follows auth loss |
+| U39 | OPEN-BEFORE-CODE | Telegram outbox is durable, but canonical wake events omit send result and failure subtype | Append enqueue/attempt/provider message ID/delivery result to the same causal trajectory |
+| U40 | OPEN-BEFORE-CODE | No Experiment, Cohort, Outcome, or Learning receipt exists | Add one-variable hypothesis, exposure, click, commission states, cost, maturity, allocation, promote/revert, and learner version |
+| U41 | OPEN-BEFORE-CODE | Model/token/content/browser costs do not join placement economics | Record provider-reported usage and cost basis separately from actual cash cost; compute net only from comparable bases |
+| U42 | OPEN-BEFORE-CODE | Failed/rejected attempts are not uniformly durable, creating survivorship bias | Persist every admitted attempt and terminal reason, including no-effect and policy rejection |
+| U43 | OPEN-PROOF | No installed wake has completed research → decision → build → policy → owned/X readback → revenue → Telegram | Existing ElevenAgents job MUST be the first installed autonomous trajectory; no third manual campaign first |
+| U44 | OPEN-PROOF | Same-job self-heal is proven in individual adapters, not across the whole Agent pipeline | Inject one isolated recoverable fault and require diagnosis, repair, resume, effect dedupe, and Telegram proof |
+
+#### Live-only and irreducible uncertainties
+
+| ID | State | Uncertainty / observed answer | Closure condition |
+|---|---|---|---|
+| U45 | LIVE-OPEN | ElevenLabs and Impact sessions are currently signed out despite nonempty stored credentials | Installed Agent restores each authorized session and re-reads program/application state |
+| U46 | LIVE-OPEN | ElevenAgents article is public HTTP `200` but its Agent receipt remains `DELIVERED`; X artifact is absent | Autonomous wake reconciles `LIVE`, creates X artifact, publishes once, and reads the status back |
+| U47 | LIVE-OPEN | No real post-baseline click exists | Provider reports one attributable organic click; self-clicks/tests do not count |
+| U48 | LIVE-OPEN | No non-empty commission row has tested dedupe, status transition, or placement join | One real provider transaction replays twice without duplication and preserves pending/approved/reversed/paid lineage |
+| U49 | EXTERNAL | Payout is blocked by truthful tax registration and payment-provider selection | Authorized legal/tax/payment data completes provider readback; Agent never fabricates it |
+| U50 | EXTERNAL | HubSpot/Impact remains `APPLICATION_PENDING` | Authenticated provider or authorized email supplies a deduplicated approval/rejection transition |
+| U51 | EXTERNAL | Kit rejection lists possible causes but no applicant-specific cause | Materially improve audience/site/promotion evidence before any new application; unchanged retry forbidden |
+| U52 | LIVE-OPEN | X reach, throttling, suspension, and browser-enforcement risk are unknown | Observe real account/channel receipts and quarantine on defined policy/reach failures; risk cannot be eliminated |
+| U53 | LIVE-OPEN | Approval rate, conversion, reversal, payout delay, net commission, and provider capacity are unknown | Mature first-party cohorts and settlement receipts, not creator claims, supply these values |
+| U54 | LIVE-OPEN | Time and traffic required for `$10k/month` are unknowable before unit economics | Ten mature placements, three providers, four profitable unattended weeks, then three consecutive `$10k` months |
+| U55 | DEFERRED-BY-GATE | Japanese provider acceptance, executable links, account identity, and native cohort are unproven | Start after English E0 with isolated browser/provider/content/ledger and J0/J1 canary |
+| U56 | DEFERRED-BY-GATE | Spanish and later locales have no owned identity, offer, or cohort | Admit only after English/Japanese proof and the same locale gate |
+| U57 | IRREDUCIBLE | CAPTCHA, biometric checks, KYC, tax attestations, contracts, and unavailable OTP ownership cannot be invented | Record `EXTERNAL_CHALLENGE`, continue independent work, resume only with authorized evidence |
+| U58 | LIVE-OPEN | Prices, terms, allowed channels, UI, and tracking behavior can change after capture | TTL-bound official evidence, pre-write observation, post-write readback, and provider quarantine |
+
+No implementation starts while any `OPEN-BEFORE-CODE` item lacks an explicit
+contract in the focused autonomous-loop spec. `OPEN-PROOF` items close only with
+installed real trajectories. `LIVE-OPEN` and `EXTERNAL` items remain visible and
+must never be converted to zero, success, or a forecast.
+
+### 11.0.1 Focused autonomous-loop specification — Core 6
+
+#### 1. Overview
+
+The next slice makes the installed Affiliate loop, rather than Codex, the owner
+of the existing ElevenAgents unfinished job. The model chooses one due action
+from redacted receipts; typed Skill tools execute it; every attempt, observation,
+effect, repair, and outcome joins one durable trajectory. This slice exists
+because a polling launchd job and manually successful CLIs are not an Agent.
+
+#### 2. Acceptance criteria
+
+1. A ten-minute wake performs deterministic health/reconciliation without a
+   model call when no judgment is due.
+2. A due judgment invokes the pinned, sanitized runner under mandatory budget,
+   explicit model/effort, isolated home, complete ActionProposal validation, and
+   mode-0600 evidence.
+3. Every admitted tool writes a `ToolAttemptReceipt`, including prerequisite and
+   no-effect failures, before the Agent chooses another action.
+4. The revenue importer replays the same non-empty provider transaction without
+   duplicating its economic transition.
+5. The existing ElevenAgents job advances autonomously from `DELIVERED` to owned
+   `LIVE`, X `LIVE`, revenue observation, and Telegram delivery with one causal
+   run/job lineage.
+6. Current ElevenLabs auth loss invokes the authorized recovery tool or produces
+   a typed external challenge; it never stops independent healthy work.
+7. One isolated recoverable failure produces diagnosis, one allowlisted repair,
+   postcondition readback, same-job resume, and `SELF_HEALED` without duplicate
+   publication.
+8. Referral URLs, passwords, auth material, raw customer data, and provider
+   private identifiers never appear in model context, stdout, logs, Git, or
+   Telegram.
+
+#### 3. As-Is / To-Be
+
+| Surface | As-Is | To-Be |
+|---|---|---|
+| Scheduler | launchd calls fixed poll/revenue code every 600 seconds | Same single launchd owner reconciles due-times, then invokes the model only for a due decision |
+| Brain | No runtime model decision | One pinned Affiliate runner returns exactly one validated allowlisted action or durable wait |
+| Tools | Strong individual CLIs, many manual-only, several missing | Effect-classified typed tools with common attempt receipts and semantic postconditions |
+| State | Per-effect jobs and scattered stage receipts | One append-only run/stage/tool/repair/outcome trajectory with causal IDs |
+| Failure | Broad exceptions and missing failure receipts | Typed failure taxonomy, bounded retry, quarantine, and healthy-lane continuation |
+| Learning | No selection/outcome lineage or comparable cohorts | Candidate decision, experiment, placement, exposure, money, cost, maturity, and allocation lineage |
+| Owner UX | Limited BLOCKED/revenue messages | Telegram reports action, public URL, exact money state, recovery, and next due job from the same trajectory |
+
+#### 4. Test matrix
+
+| # | To-Be | Minimal test / live proof | Cover |
+|---:|---|---|---|
+| 1 | No model when nothing is due | `test_wake_without_due_judgment_skips_runner` | OK |
+| 2 | One schema-valid action | `test_action_proposal_rejects_unknown_or_multiple_tools` | OK |
+| 3 | Sanitized private runner | `test_runner_env_context_and_evidence_exclude_secrets` | OK |
+| 4 | Mandatory budgets | `test_model_admission_fails_closed_without_complete_budget` | OK |
+| 5 | Common attempt receipts | `test_every_stage_persists_success_and_failure_attempt` | OK |
+| 6 | Same transaction is exact-once | `test_repeated_capture_does_not_duplicate_commission_transition` | OK |
+| 7 | Same unfinished stage resumes | `test_restart_resumes_same_pipeline_job` | OK |
+| 8 | Healthy lanes continue | `test_quarantined_provider_does_not_block_other_due_work` | OK |
+| 9 | Owned ambiguous readback is typed | `test_owned_readback_distinguishes_http_marker_and_link_failure` | OK |
+| 10 | X effect is exact-once | Existing timeline reconciliation regression plus installed public readback | OK |
+| 11 | Telegram shares causal identity | `test_delivery_receipt_joins_run_job_and_event_uuid` | OK |
+| 12 | Full Agent trajectory | Installed ElevenAgents `DELIVERED → LIVE → X LIVE → revenue → Telegram` | OK |
+| 13 | Self-heal | Installed induced recoverable fault with same-job repair and no duplicate effect | OK |
+
+| E2E item | Value |
+|---|---|
+| UI change | None in Life Manager UI; real provider, owned-site, X, and Telegram surfaces change |
+| Conclusion | Maestro not required. Real browser/public/provider/Telegram E2E is required because the product boundary is outside iOS |
+
+#### 5. Boundaries
+
+- This slice MUST NOT add cloud hosting, Temporal Server, LangGraph runtime, a
+  second scheduler, a runtime multi-agent swarm, Postiz, or a third campaign.
+- It MUST NOT activate Japanese/Spanish lanes, complete tax/KYC with invented
+  data, or count clicks/model output/tests as money.
+- It MUST NOT touch Coconala profiles, ports, locks, ledgers, prompts, credentials,
+  Telegram namespace, or launchd labels.
+- Subagents are for development-time read-only research. The production Affiliate
+  runtime remains one Agent, one ownership graph, and one economic ledger.
+
+#### 6. Execution steps
+
+1. Pin and vendor the d150 runner snapshot with license/SHA provenance.
+2. Close U04–U14: routing, binary, privacy, schema, context, budget, timezone,
+   machine capability, and repair authority contracts.
+3. Add common Run/ToolAttempt/StageTrajectory and typed failure schemas.
+4. Fix revenue transition identity and remove secret-bearing placement output.
+5. Add missing application/Terms/link and auth recovery tool contracts needed by
+   current approved/pending providers.
+6. Add typed failure receipts to source, policy, owned, X, revenue, Telegram, and
+   browser-owner boundaries.
+7. Connect the existing tools to one Affiliate decision prompt and allowlist.
+8. Replace fixed `wake()` orchestration while retaining one launchd scheduler and
+   deterministic due-time admission.
+9. Run the minimal matrix, install the immutable release, and verify ownership,
+   permissions, budget, and read-only model boundary.
+10. Let the installed loop close the existing ElevenAgents trajectory.
+11. Inject and recover one isolated fault; update receipts and this SSOT.
+
 ### 11.1 Cleared implementation decisions
 
 - All external platform operations are browser-only. Postiz and third-party
@@ -1440,8 +1638,9 @@ without changing the architecture.
   `@aniccaen` is inactive. The account has 128 mixed-language historical posts
   and 0 followers, so rebranding and audience acquisition are required and
   organic distribution power remains unproven.
-- One disclosed owned article and one browser-published Affiliate X placement are
-  live and public-readback verified. No post-baseline organic click exists yet.
+- Two disclosed owned articles are public; the first article and one Affiliate X
+  placement have Agent `LIVE` readback. The second article is HTTP `200` but its
+  receipt remains `DELIVERED`, and no post-baseline organic click exists yet.
 - Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED`;
   Associates/affiliate acceptance is unknown.
 - English total addressable market and the claim that it is larger than Japanese
@@ -1466,9 +1665,9 @@ without changing the architecture.
 - Spanish has official multi-language program supply, but no first-party account,
   audience, executable offer, native canary, or unit economics. It remains a
   candidate pod, not a proven second-largest or next-most-profitable market.
-- F2 has a pushed implementation and root-verified focused tests, but lacks fresh
-  review, live model/provider boundary proof, a clean worktree audit, and a
-  collection-safe all-tests command.
+- The earlier F2 design is not accepted as the current Agent brain. The audit
+  proves the d150 runner can call Terra-medium read-only, but U04–U14 remain the
+  privacy, schema, budget, routing, and portability gates for the new slice.
 - Affiliate Telegram append-before-send, stable-UUID dedupe, provider message-ID
   receipt, `SELF_HEALED`, and `BLOCKED` are live-proven. Real `CLICK_DELTA`,
   `COMMISSION_PENDING`, and `COMMISSION_APPROVED` wait for those external states.
