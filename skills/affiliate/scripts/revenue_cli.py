@@ -401,7 +401,7 @@ def capture_reports(args):
         cdp_call(ws, 1, "Page.enable")
         payout_summary = navigate_text(
             ws, 10, "https://dash.partnerstack.com/payouts",
-            ("コミッションおよび引き出し", "Commissions and withdrawals"),
+            ("利用可能資金合計", "Total available funds"),
         )
         commissions = navigate_text(
             ws, 100, "https://dash.partnerstack.com/reporting/commission_performance",
