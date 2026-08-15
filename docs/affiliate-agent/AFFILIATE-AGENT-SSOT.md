@@ -999,6 +999,17 @@ and the replacement credential is now `VERIFIED_NONEMPTY` in both the mode-0600
 private MD and its Keychain mirror. Live submit and authenticated readback remain
 the next A14.4 proof.
 
+The reset then completed live as `PASSWORD_RESET_ACCEPTED` and redirected to the
+official login page with the same reset job verified. Fresh login exposed a
+second real drift: Impact renders email → semantic `Next` → password → semantic
+`Sign in`, while the first playbook expected both fields at once. The command
+filled only email, never clicked Next, and left the write-ahead login job at
+`EFFECT_STARTED`. The repair adds localized semantic button matching, a bounded
+password-stage wait, and `resume_effect`: the next process keeps the original
+run/job IDs, increments `attempt`, and continues the unresolved login rather than
+creating a second effect. Focused provider/job checks now pass 4/4. A14.4 remains
+open until the installed repair reaches authenticated `APPLICATION_PENDING`.
+
 #### D. Earn the first externally approved commission
 
 - [ ] **A15.1** Keep ElevenLabs active and poll HubSpot/Impact; never resubmit the

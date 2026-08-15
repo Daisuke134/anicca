@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from websocket import create_connection
-from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
+from job_journal import JobStateError, reconcile_effect, resume_effect, start_effect, verify_effect
 
 
 class ProviderError(Exception):
@@ -149,6 +149,10 @@ def focus_and_type_node(ws, request_id, node_id, value):
 
 def click(ws, request_id, selector):
     node_id, request_id = query_node(ws, request_id, selector)
+    return click_node(ws, request_id, node_id)
+
+
+def click_node(ws, request_id, node_id):
     box = cdp_call(ws, request_id, "DOM.getBoxModel", {"nodeId": node_id})
     content = box["model"]["content"]
     x = (content[0] + content[2]) / 2
@@ -158,6 +162,45 @@ def click(ws, request_id, selector):
             "type": event_type, "x": x, "y": y, "button": "left", "clickCount": 1,
         })
         request_id += 1
+    return request_id + 1
+
+
+def query_node_by_text(ws, request_id, selector, allowed_text):
+    nodes, request_id = query_nodes(ws, request_id, selector)
+    allowed = {" ".join(value.split()).casefold() for value in allowed_text}
+    matches = []
+    for node_id in nodes:
+        resolved = cdp_call(ws, request_id, "DOM.resolveNode", {"nodeId": node_id})
+        result = cdp_call(ws, request_id + 1, "Runtime.callFunctionOn", {
+            "objectId": resolved["object"]["objectId"],
+            "functionDeclaration": "function () { return (this.innerText || this.value || '').trim(); }",
+            "returnByValue": True,
+        })
+        request_id += 2
+        value = result.get("result", {}).get("value", "")
+        if " ".join(value.split()).casefold() in allowed:
+            matches.append(node_id)
+    if len(matches) != 1:
+        raise ProviderError("expected exactly one semantic login control")
+    return matches[0], request_id
+
+
+def click_text(ws, request_id, selector, allowed_text):
+    node_id, request_id = query_node_by_text(ws, request_id, selector, allowed_text)
+    return click_node(ws, request_id, node_id)
+
+
+def wait_for_selector(ws, request_id, selector, attempts=20):
+    expression = f"document.querySelector({json.dumps(selector)}) !== null"
+    for _ in range(attempts):
+        result = cdp_call(ws, request_id, "Runtime.evaluate", {
+            "expression": expression, "returnByValue": True,
+        })
+        request_id += 1
+        if result.get("result", {}).get("value") is True:
+            return request_id
+        time.sleep(0.25)
+    raise ProviderError("next login stage did not render")
 
 
 def read_login_credentials(path, section_name):
@@ -197,8 +240,20 @@ def submit_login(args, playbook, target):
     try:
         cdp_call(ws, 1, "DOM.enable")
         request_id = focus_and_type(ws, 2, login["username_selector"], username)
+        if login.get("username_submit_text_any"):
+            request_id = click_text(
+                ws, request_id, login["username_submit_selector"],
+                login["username_submit_text_any"],
+            )
+            request_id = wait_for_selector(ws, request_id, login["password_selector"])
         request_id = focus_and_type(ws, request_id, login["password_selector"], password)
-        click(ws, request_id, login["submit_selector"])
+        if login.get("password_submit_text_any"):
+            click_text(
+                ws, request_id, login["password_submit_selector"],
+                login["password_submit_text_any"],
+            )
+        else:
+            click(ws, request_id, login["submit_selector"])
     finally:
         ws.close()
 
@@ -261,11 +316,13 @@ def resume(args):
         base = f"http://{args.cdp_host}:{args.cdp_port}"
         target = choose_target(read_json(f"{base}/json/list"), playbook)
         state = getattr(args, "state", args.receipt.expanduser().parent / "affiliate-state").expanduser()
-        job = start_effect(
-            state, "PROVIDER_LOGIN", args.provider,
-            {"operation": "submit_login", "provider": args.provider},
-            {key: before.get(key) for key in ("state", "url", "rendered_text_sha256")}, 300,
-        )
+        job = resume_effect(state, "PROVIDER_LOGIN", args.provider)
+        if job is None:
+            job = start_effect(
+                state, "PROVIDER_LOGIN", args.provider,
+                {"operation": "submit_login", "provider": args.provider},
+                {key: before.get(key) for key in ("state", "url", "rendered_text_sha256")}, 300,
+            )
         submit_login(args, playbook, target)
         submitted = True
         for _ in range(20):
