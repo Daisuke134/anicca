@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1220" height="1016" viewBox="0 0 1220 1016">
+  <image xlink:href="hero-background-v1.png" x="0" y="0" width="1220" height="1016" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="44" y="44" width="646" height="928" rx="32" fill="#020c20" fill-opacity="0.72"/>
+  <g font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif">
+    <text x="86" y="142" fill="#69e7ff" font-size="38" font-weight="700">画像認識PoC開発</text>
+    <text x="82" y="258" fill="#ffffff" font-size="70" font-weight="700">Python / OpenCV</text>
+    <text x="82" y="354" fill="#ffffff" font-size="64" font-weight="700">検証して実装します</text>
+    <text x="86" y="458" fill="#d8e9ff" font-size="34" font-weight="600">テスト結果・実行手順付き</text>
+    <text x="86" y="510" fill="#d8e9ff" font-size="34" font-weight="600">サンプル画像で動作確認</text>
+    <rect x="78" y="610" width="572" height="248" rx="24" fill="#051737" fill-opacity="0.92" stroke="#2cd4ff" stroke-width="3"/>
+    <text x="112" y="674" fill="#8be9ff" font-size="29" font-weight="700">固定環境・全7画像で受入確認</text>
+    <text x="112" y="758" fill="#ffffff" font-size="48" font-weight="700">TP 30  |  FP 0  |  FN 0</text>
+    <text x="112" y="817" fill="#b7cbe8" font-size="22">※公開中の実納品実績に基づく数値</text>
+  </g>
+</svg>
