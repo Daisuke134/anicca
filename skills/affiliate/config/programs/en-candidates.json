@@ -24,7 +24,7 @@
       "commission": "22% of qualifying subscription payments for 12 months",
       "next_action": "OPEN_AUTHORIZED_AFFILIATE_FLOW_AND_CLASSIFY_RENDERED_STATE",
       "evidence": "Join thousands of creators, publishers, bloggers, and influencers",
-      "credential_ref": null
+      "credential_ref": "keychain://ai.anicca.affiliate.provider.elevenlabs/primary"
     },
     {
       "id": "grammarly",

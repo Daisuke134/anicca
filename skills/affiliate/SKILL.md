@@ -58,6 +58,9 @@ Use the versioned English program research before any application:
 skills/affiliate/affiliate programs list
 skills/affiliate/affiliate programs next --decision READY_NO_REVIEW
 skills/affiliate/affiliate programs credential --id hubspot-impact
+python3 -c 'import secrets; print("A!" + secrets.token_hex(24))' | \
+  skills/affiliate/affiliate programs store-credential \
+  --id elevenlabs --label ElevenLabs
 ```
 
 The registry stores only official-source eligibility and the latest receipted
@@ -65,12 +68,19 @@ application decision. Execute its `next_action`, then require authenticated
 rendered readback before changing application or tracking-link state. Never
 bulk-apply past an audience, content, fit, or traffic gate.
 
-Provider passwords are never committed. Each program binds to a fixed
-`keychain://service/account` reference. `programs credential` is the admission
-gate: only a non-empty Keychain value is `VERIFIED_NONEMPTY`; a present but empty
-item is `MISSING_OR_EMPTY` and login stays disabled. Impact uses
+Provider passwords are never committed. The mode-0600 Git-external local
+`~/.config/anicca/affiliate-credentials.md` is the recovery SSOT and is written
+before any signup/reset submit. Each program may also bind to a fixed
+`keychain://service/account` mirror. `programs credential` checks that mirror:
+only a non-empty value is `VERIFIED_NONEMPTY`; a present but empty item is
+`MISSING_OR_EMPTY` and login stays disabled. Impact uses
 `keychain://ai.anicca.affiliate.provider.impact/primary`. After official recovery,
 write the new value there and prove a fresh-tab login before resuming Grammarly.
+`store-credential` reads the secret only from stdin, writes the Git-external
+mode-0600 private Markdown first, then mirrors it to the fixed program Keychain
+reference, and returns status only. Run it before every signup/reset submission;
+after fresh login repeat with `--verification VERIFIED_LOGIN`. Never pass a
+password on the affiliate CLI command line.
 
 The committed bootstrap manifest pins PBS CPython `3.14.7+20260814` for macOS
 arm64 by immutable URL and SHA-256. The installer verifies and extracts the same
