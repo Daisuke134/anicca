@@ -2744,3 +2744,7 @@ MIT公開Life Managerを実装証拠として明示する。保存前にpublic p
 public profileとlogged-in formは旧値のまま、Application、contracts、ledger、listing receiptのSHA-256も不変である。公式formは未使用で非表示の
 時間単価row 1〜4を空欄のまま`required`にしており、`form.checkValidity()`はその8 fieldだけをinvalidと返す。修正は保存直前にinvalid ID、非表示、
 exact 8 fieldを検証し、そのrequired属性だけをbrowser DOMから外す。visibleまたは別fieldがinvalidなら保存せず`profile_form_changed`とする。
+
+二回目wakeでも公式profile POST 0、public/form旧値、business state全SHA不変だった。保存buttonはoverlayされていないが`js-no-double-click`であり、
+通常clickのactionability retry中にtimeoutする。同じStorefront ownerの既存save経路で実証済みのforce click + no-wait-afterだけを再利用し、
+official `/mypage/profile` POST responseとbuyer-visible readbackは引き続き必須とする。
