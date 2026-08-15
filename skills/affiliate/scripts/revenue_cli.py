@@ -399,17 +399,21 @@ def capture_reports(args):
     )
     try:
         cdp_call(ws, 1, "Page.enable")
+        payout_summary = navigate_text(
+            ws, 10, "https://dash.partnerstack.com/payouts",
+            ("コミッションおよび引き出し", "Commissions and withdrawals"),
+        )
         commissions = navigate_text(
-            ws, 10, "https://dash.partnerstack.com/reporting/commission_performance",
+            ws, 100, "https://dash.partnerstack.com/reporting/commission_performance",
             ("コミッション・レポート", "Commission report"),
         )
         payouts = navigate_text(
-            ws, 100, "https://dash.partnerstack.com/payouts/rewards",
+            ws, 200, "https://dash.partnerstack.com/payouts/rewards",
             ("コミッションおよび引き出し", "Commissions and withdrawals"),
         )
     finally:
         try:
-            cdp_call(ws, 200, "Page.navigate", {"url": "https://elevenlabs.io/app/home"})
+            cdp_call(ws, 300, "Page.navigate", {"url": "https://elevenlabs.io/app/home"})
         finally:
             ws.close()
     commission_rows = capture_commission_rows(args)
@@ -425,6 +429,8 @@ def capture_reports(args):
         "normalized_commissions": normalized_rows,
         "payout_url": payouts["url"],
         "payout_text": payouts["text"],
+        "payout_summary_url": payout_summary["url"],
+        "payout_summary_text": payout_summary["text"],
     }
     artifact_hash = hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest()
     state = args.state.expanduser()
@@ -444,7 +450,7 @@ def capture_reports(args):
         "commission_row_state": "EMPTY" if not commission_rows else "ROWS_PRESENT",
         "normalizer_state": "NO_LIVE_ROWS" if not commission_rows else "NORMALIZED",
         "payout_row_state": "EMPTY" if ("0 to 0" in payouts["text"] or "0件中0" in payouts["text"]) else "ROWS_PRESENT",
-        **payout_readiness(payouts["text"]),
+        **payout_readiness(payout_summary["text"]),
         "rendered_artifact_sha256": artifact_hash,
         "observed_at": observed_at,
     }
