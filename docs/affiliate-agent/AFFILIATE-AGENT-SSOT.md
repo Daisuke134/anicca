@@ -137,7 +137,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Release `90025a3551d75aa1110af63ead8dbd9d93eedc77` is installed and the authenticated local publication path is GREEN | The installed publisher reconciled the English Affiliate article to `LIVE`, built the 245-character disclosed X artifact, verified `@selawmqt` on CDP `9326`, and reconciled the one real X effect to `X_POST_PUBLIC_READBACK` without a duplicate click. Both browser owners run and the loop is owned on a 600-second interval. This proves owned article and X publication, not provider click, commission, or revenue |
+| Mac-local runtime | Release `2ca7876aa5aa06cf38c4352736d25e77326a5bcc` is installed and the authenticated local publication/revenue-observation paths are GREEN | The installed publisher reconciled the English Affiliate article and X placement without duplication. The installed revenue observer then read PartnerStack, preserved the initial one-click baseline, emitted zero post-baseline delta and zero revenue, left unavailable approved/reversed amounts `null`, and returned CDP `9324` to ElevenLabs home. Both browser owners run and the loop is owned on a 600-second interval. This proves publication and honest aggregate observation, not attributable click, commission, or revenue |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview | The current rendered aggregate is one total click, zero signups, zero paid signups, `$0.00` revenue, `$0.00` pending commission, and `$0.00` paid commission. Because no pre-publication baseline exists, the one click is `BASELINE_ONLY`, not attributed to the X placement or counted as money. Approved and reversed amounts remain unknown until transaction-level reports expose them |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
@@ -827,9 +827,9 @@ regressions relevant to that step.
 
 #### A. Close revenue truth for the live ElevenLabs placement
 
-- [ ] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
+- [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
   later observations store deltas without overwriting its timestamp or values.
-- [ ] **A12.2** Make `affiliate revenue observe` replay-safe and prove two live
+- [x] **A12.2** Make `affiliate revenue observe` replay-safe and prove two live
   observations return the provider browser to ElevenLabs home.
 - [ ] **A12.3** Inspect the rendered PartnerStack Commissions and Reports surfaces;
   record which transaction ID, click/sub-ID, currency, status, and dates actually
@@ -991,10 +991,12 @@ regressions relevant to that step.
     and the fixed installed release reconciled the first effect without duplication.
 12. **PARTIAL.** PartnerStack account/email/team/partnership/program-terms bootstrap
     is complete and the rendered overview is accessible. `revenue observe` records
-    bilingual dashboard cards with the first aggregate as `BASELINE_ONLY`: one
-    total click, zero signups, zero paid signups, and zero revenue/pending/paid.
-    Approved and reversed stay `null`. Add transaction-level report ingestion and
-    later-delta attribution before DONE; estimates remain out.
+    bilingual dashboard cards and preserves the first aggregate and timestamp as
+    immutable baseline: one total click, zero signups, zero paid signups, and zero
+    revenue/pending/paid. Source and installed release replays both observed zero
+    delta and returned the provider browser to ElevenLabs home. Approved and
+    reversed stay `null`. Add transaction-level report ingestion and later-delta
+    attribution before DONE; estimates remain out.
 13. **PENDING.** Send owner-readable Telegram transitions through the durable
     outbox with action, public URL, blocker/self-heal, money state, cost, and next job.
 14. **PENDING.** Add same-job crash resume, ambiguous-write dedupe, login recovery,
