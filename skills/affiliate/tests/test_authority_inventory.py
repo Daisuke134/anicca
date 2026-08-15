@@ -110,7 +110,7 @@ class AuthorityInventoryRedTests(unittest.TestCase):
             exact = self.run_inventory(script, exact_request, exact_receipt, bundle)
             self.assertEqual(exact.returncode, 0, exact.stderr)
             authorized = json.loads(exact_receipt.read_text(encoding="utf-8"))
-            self.assertEqual(authorized["status"], "AUTHORIZED")
+            self.assertEqual(authorized["status"], "REFERENCE_BOUND")
             self.assertEqual(authorized["intent_id"], intent_id)
             self.assertEqual(authorized["capability"], capability)
             self.assertEqual(authorized["secret_ref"], "keychain://affiliate/account")
@@ -205,7 +205,10 @@ class AuthorityInventoryRedTests(unittest.TestCase):
             )
             malformed = self.run_inventory(script, exact_request, malformed_receipt, malformed_bundle)
             self.assertNotEqual(malformed.returncode, 0)
-            self.assertFalse(malformed_receipt.exists())
+            self.assertEqual(
+                json.loads(malformed_receipt.read_text(encoding="utf-8"))["status"],
+                "IN_PROGRESS",
+            )
             self.assertNotIn(secret, malformed.stdout)
             self.assertNotIn(secret, malformed.stderr)
 

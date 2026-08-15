@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import json
 import os
+import pwd
 import re
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -19,12 +22,23 @@ class InputError(Exception):
 
 def load_object(path):
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        value = json.loads(path.read_bytes().decode("utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
         raise InputError
     if not isinstance(value, dict):
         raise InputError
     return value
+
+
+def load_request(path):
+    try:
+        raw = path.read_bytes()
+        value = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        raise InputError
+    if not isinstance(value, dict):
+        raise InputError
+    return value, hashlib.sha256(raw).hexdigest()
 
 
 def required_text(value, key):
@@ -72,13 +86,44 @@ def write_receipt(path, value):
             temporary_path.unlink()
 
 
+def keychain_readback(secret_ref):
+    parsed = urlparse(secret_ref)
+    try:
+        home = pwd.getpwuid(os.getuid()).pw_dir
+    except (KeyError, OSError):
+        return False
+    environment = {"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C", "HOME": home}
+    try:
+        result = subprocess.run(
+            [
+                "/usr/bin/security",
+                "find-generic-password",
+                "-s",
+                parsed.netloc,
+                "-a",
+                parsed.path[1:],
+                "-w",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            timeout=10,
+            check=False,
+            env=environment,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--request", required=True, type=Path)
     parser.add_argument("--bundle", type=Path)
     parser.add_argument("--receipt", required=True, type=Path)
     args = parser.parse_args()
-    request = load_object(args.request)
+    write_receipt(args.receipt, {"status": "IN_PROGRESS"})
+    request, request_sha256 = load_request(args.request)
     intent_id = required_text(request, "intent_id")
     capability = required_text(request, "capability")
     challenge = request.get("external_challenge")
@@ -89,9 +134,16 @@ def main():
     if challenge is not None:
         write_receipt(
             args.receipt,
-            {"status": "EXTERNAL_CHALLENGE", "challenge": challenge},
+            {
+                "status": "EXTERNAL_CHALLENGE",
+                "challenge": challenge,
+                "request_sha256": request_sha256,
+            },
         )
         return 0
+    require_readback = request.get("require_readback", False)
+    if not isinstance(require_readback, bool):
+        raise InputError
 
     matches = []
     if args.bundle is not None:
@@ -111,14 +163,34 @@ def main():
         raise InputError
 
     if len(matches) == 1:
+        if require_readback and not keychain_readback(matches[0]):
+            write_receipt(
+                args.receipt,
+                {
+                    "status": "EXTERNAL_CHALLENGE",
+                    "challenge": "KEYCHAIN_ACCESS_REQUIRED",
+                    "intent_id": intent_id,
+                    "capability": capability,
+                    "secret_ref": matches[0],
+                    "request_sha256": request_sha256,
+                },
+            )
+            return 0
         result = {
-            "status": "AUTHORIZED",
+            "status": "AUTHORIZED" if require_readback else "REFERENCE_BOUND",
             "intent_id": intent_id,
             "capability": capability,
             "secret_ref": matches[0],
+            "request_sha256": request_sha256,
         }
+        if require_readback:
+            result["readback_status"] = "VERIFIED_PRESENT"
     else:
-        result = {"status": "EXTERNAL_CHALLENGE", "challenge": "AUTHORITY_REQUIRED"}
+        result = {
+            "status": "EXTERNAL_CHALLENGE",
+            "challenge": "AUTHORITY_REQUIRED",
+            "request_sha256": request_sha256,
+        }
     write_receipt(args.receipt, result)
     return 0
 
