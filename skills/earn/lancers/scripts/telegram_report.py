@@ -393,7 +393,7 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
     pipeline_line = (f"提案状況: 現在一覧{count(pipeline.get('current_count'))} / 募集中{count(pipeline.get('open_count'))} / "
                      f"選定中{count(pipeline.get('selecting_count'))} / キャンセル{count(pipeline.get('canceled_count'))} / "
                      f"進行中{count(pipeline.get('working_count'))} / 終了{count(pipeline.get('ended_count'))} / その他{count(pipeline.get('unknown_count'))}。"
-                     f"累計receiptから現在一覧にない提案は{count(pipeline.get('unlisted_receipt_count'))}です。")
+                     f"累計の公式応募から現在一覧にない提案は{count(pipeline.get('unlisted_receipt_count'))}です。")
     sales_next = {
         "no_reply_required": "今は相手からの返信・仮払いを待っています。",
         "seller_last": "こちらからの返信は済んでおり、次の相手の返答を待っています。",
@@ -539,7 +539,9 @@ def collect_snapshot(*, application_log: Path, state_path: Path, ledger_database
 
 def _default_notifier(message: str) -> SendResult:
     try:
-        completed = subprocess.run(["openclaw", "message", "send", "--channel", "telegram", "--target", TARGET, "--message", message, "--json"], capture_output=True, text=True, timeout=60, check=False)
+        idempotency_key = "lancers-report:" + hashlib.sha256(message.encode("utf-8")).hexdigest()
+        params = json.dumps({"channel": "telegram", "to": TARGET, "message": message, "idempotencyKey": idempotency_key}, ensure_ascii=False, separators=(",", ":"))
+        completed = subprocess.run(["openclaw", "gateway", "call", "send", "--timeout", "60000", "--params", params, "--json"], capture_output=True, text=True, timeout=70, check=False)
         payload = json.loads(completed.stdout) if completed.returncode == 0 else {}
         return SendResult(True, _provider_id(payload), "receipt_missing")
     except OSError:
