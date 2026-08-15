@@ -13,6 +13,7 @@ from pathlib import Path
 
 from websocket import create_connection
 
+from local_loop import append_unique
 from provider_cli import atomic_write, cdp_call, read_json
 
 
@@ -193,6 +194,33 @@ def normalize_commission_row(row, currency="USD"):
     }
 
 
+def build_transition(row, source_hash, observed_at):
+    identity = {
+        "provider": "elevenlabs",
+        "provider_transaction_id": row["provider_transaction_id"],
+        "provider_status": row["provider_status"],
+        "gross_commission_minor": row["gross_commission_minor"],
+        "source_artifact_sha256": source_hash,
+    }
+    transition_id = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+    return {
+        "schema_version": 1,
+        "receipt_type": "COMMISSION_TRANSITION",
+        "transition_id": transition_id,
+        **identity,
+        "status": row["status"],
+        "currency": row["currency"],
+        "reversal_minor": row["reversal_minor"],
+        "net_commission_minor": row["net_commission_minor"],
+        "created_at": row["created_at"],
+        "offer": row["offer"],
+        "target_type": row["target_type"],
+        "action": row["action"],
+        "attribution": row["attribution"],
+        "observed_at": observed_at,
+    }
+
+
 def navigate_text(ws, request_id, url, ready_markers):
     cdp_call(ws, request_id, "Page.navigate", {"url": url})
     expression = "({url:location.href,text:(document.body&&document.body.innerText)||''})"
@@ -327,6 +355,39 @@ def capture_reports(args):
     return receipt
 
 
+def reconcile(args):
+    state = args.state.expanduser()
+    latest_path = state / "provider-reports" / "partnerstack" / "latest.json"
+    latest = json.loads(latest_path.read_text(encoding="utf-8"))
+    source_hash = latest["rendered_artifact_sha256"]
+    artifact_path = state / "provider-reports" / "partnerstack" / f"{source_hash}.json"
+    artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+    if hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest() != source_hash:
+        raise RevenueError("provider report artifact hash mismatch")
+    normalized = [normalize_commission_row(row) for row in artifact.get("commission_rows", [])]
+    if normalized != artifact.get("normalized_commissions"):
+        raise RevenueError("stored commission normalization mismatch")
+    appended = 0
+    for row in normalized:
+        transition = build_transition(row, source_hash, latest["observed_at"])
+        appended += int(append_unique(
+            state / "commission-ledger.jsonl", transition, ("transition_id",),
+        ))
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "COMMISSION_RECONCILIATION",
+        "provider": "elevenlabs",
+        "source_artifact_sha256": source_hash,
+        "source_rows": len(normalized),
+        "appended_transitions": appended,
+        "replayed_transitions": len(normalized) - appended,
+        "money_state": "NO_TRANSACTIONS" if not normalized else "TRANSACTIONS_RECONCILED",
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    atomic_write(state / "provider-reports" / "partnerstack" / "reconciliation-latest.json", receipt)
+    return receipt
+
+
 def observe(args):
     pages = [item for item in read_json(f"http://{args.cdp_host}:{args.cdp_port}/json/list") if item.get("type") == "page"]
     if len(pages) != 1:
@@ -371,12 +432,17 @@ def observe(args):
 
 def main():
     parser = argparse.ArgumentParser(prog="affiliate revenue")
-    parser.add_argument("command", choices=("observe", "capture"))
+    parser.add_argument("command", choices=("observe", "capture", "reconcile"))
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--cdp-port", type=int, default=9324)
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     args = parser.parse_args()
-    result = observe(args) if args.command == "observe" else capture_reports(args)
+    if args.command == "observe":
+        result = observe(args)
+    elif args.command == "capture":
+        result = capture_reports(args)
+    else:
+        result = reconcile(args)
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0
 

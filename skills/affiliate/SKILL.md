@@ -154,6 +154,7 @@ email-verification, partnership, and program-terms bootstrap:
 ```bash
 skills/affiliate/affiliate revenue observe
 skills/affiliate/affiliate revenue capture
+skills/affiliate/affiliate revenue reconcile
 ```
 
 The observer extracts rendered bilingual metric cards, preserves the immutable
@@ -169,6 +170,9 @@ is recorded as `EMPTY`; it is never replaced by fixtures or counted as money.
 The authenticated report JSON is the row-count authority. Its provider-native
 `reward_key`, raw status, amount, and attribution fields are normalized inside
 the private artifact; customer name and email never enter the normalized ledger.
+`revenue reconcile` verifies the source artifact hash and appends one stable
+transition per provider key, raw status, amount, and source hash. Replaying the
+same report is a no-op; a later provider status creates a new append-only event.
 
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:

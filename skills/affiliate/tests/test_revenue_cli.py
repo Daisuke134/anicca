@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -86,6 +87,13 @@ $0.00"""
         self.assertEqual(normalized["status"], "approved")
         self.assertEqual(normalized["net_commission_minor"], 2250)
         self.assertNotIn("customer_email", normalized)
+
+        transition = MODULE.build_transition(normalized, "source-hash", "observed")
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = Path(directory) / "ledger.jsonl"
+            self.assertTrue(MODULE.append_unique(ledger, transition, ("transition_id",)))
+            self.assertFalse(MODULE.append_unique(ledger, transition, ("transition_id",)))
+            self.assertEqual(len(ledger.read_text().splitlines()), 1)
 
 
 if __name__ == "__main__":
