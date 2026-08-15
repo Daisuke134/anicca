@@ -1369,6 +1369,8 @@ class CdpParentEffects:
             first_page: dict[str, object] | None = None
             first_screenshot = b""
             pages_walked = 0
+            cards_seen = 0
+            has_next_page = False
             truncated = False
             while True:
                 try:
@@ -1455,6 +1457,7 @@ class CdpParentEffects:
                 urls = page.get("offer_urls")
                 if not isinstance(urls, list):
                     raise ParentContractError("official_readback_offer_urls_missing")
+                cards_seen += len(urls)
                 for offer_url in urls:
                     if expected_ids and expected_ids.issubset(observed):
                         break
@@ -1489,6 +1492,7 @@ class CdpParentEffects:
                 next_url = _strict_next_page(
                     str(page.get("url") or ""), page.get("next_href"), path=_APPLIED_OFFERS_PATH
                 )
+                has_next_page = next_url is not None
                 if next_url is None:
                     break
                 if pages_walked >= max_pages:
@@ -1513,6 +1517,8 @@ class CdpParentEffects:
             )
         payload = {
             "source": "code_owned_cdp_readback",
+            "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+            "pass_id": self.pass_id,
             "url": _APPLIED_OFFERS_URL,
             "urls": [_APPLIED_OFFERS_URL],
             "title": first_page.get("title"),
@@ -1520,7 +1526,13 @@ class CdpParentEffects:
             "not_found": False,
             "request_ids": sorted(observed, key=int),
             "expected_ids": sorted(expected_ids, key=int),
+            "expected_request_ids": sorted(expected_ids, key=int),
+            "applied_page_absent_request_ids": sorted(expected_ids - observed, key=int),
             "pages_walked": pages_walked,
+            "cards_seen": cards_seen,
+            "has_next_page": has_next_page,
+            "missing_count": len(expected_ids - observed),
+            "unresolved_count": 0,
             "body_sample": first_page.get("body") or "",
         }
         return payload, first_screenshot

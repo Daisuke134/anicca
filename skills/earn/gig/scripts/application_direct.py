@@ -237,6 +237,10 @@ def _validate_parent_result(
         request_ids: set[str] = set()
         absent_ids: set[str] = set()
         urls: set[str] = set()
+        observed_at: list[str] = []
+        pages_walked = 0
+        cards_seen = 0
+        has_next_page = False
         valid = True
         for path in readback_files:
             payload = _load(path)
@@ -258,15 +262,28 @@ def _validate_parent_result(
             }
             request_ids.update(observed_ids)
             absent_ids.update(expected_ids - observed_ids)
+            if isinstance(payload.get("observed_at"), str):
+                observed_at.append(payload["observed_at"])
+            pages_walked += int(payload.get("pages_walked") or 0)
+            cards_seen += int(payload.get("cards_seen") or 0)
+            has_next_page = has_next_page or payload.get("has_next_page") is True
             for value in payload.get("urls") or [payload.get("url")]:
                 if isinstance(value, str) and value:
                     urls.add(value)
         _atomic_json(run_dir / "code-applied-readback.json", {
             "source": "code_owned_cdp_readback",
+            "observed_at": max(observed_at, default=None),
+            "pass_id": pass_id,
             "observed": valid,
             "not_found": not valid,
             "request_ids": sorted(request_ids),
+            "expected_request_ids": sorted(request_ids | absent_ids),
             "applied_page_absent_request_ids": sorted(absent_ids - request_ids),
+            "pages_walked": pages_walked,
+            "cards_seen": cards_seen,
+            "has_next_page": has_next_page,
+            "missing_count": len(absent_ids - request_ids),
+            "unresolved_count": 0,
             "urls": sorted(urls),
             "url": sorted(urls)[0] if urls else None,
         })
