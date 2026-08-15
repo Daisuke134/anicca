@@ -42,12 +42,12 @@
       "id": "notion",
       "priority": 4,
       "network": "PartnerStack",
-      "decision": "APPLY_NOW",
+      "decision": "PROGRAM_PAUSED",
       "program_url": "https://www.notion.com/affiliates",
       "terms_url": "https://app.notion.com/p/Marketing-Program-Participant-Terms-c17a5869de9b4a22b91c610585b8ceca",
       "commission": "Up to $50 per activated signup plus 20% of year-one revenue",
-      "next_action": "APPLY_ON_EXISTING_PARTNERSTACK_ACCOUNT_AND_READ_BACK_STATE",
-      "evidence": "AI influencers & content creators",
+      "next_action": "DO_NOT_APPLY_UNTIL_NOTION_REOPENS_NEW_AFFILIATE_ADMISSION",
+      "evidence": "Live PartnerStack application says Notion stopped accepting new affiliates and all applications will be auto-declined for the time being",
       "credential_ref": null
     },
     {
