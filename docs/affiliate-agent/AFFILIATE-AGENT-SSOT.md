@@ -1,6 +1,6 @@
 # Affiliate Agent — Revenue, Runtime, and Architecture SSOT
 
-Last updated: 2026-08-15 JST
+Last updated: 2026-08-16 JST
 
 Implementation SSOT:
 
@@ -129,6 +129,71 @@ live autonomous operation.
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | The shared Life Manager allowlist target delivered a real Affiliate milestone with provider `messageId=7639`; the older F1 path failed because it did not use this resolved target | Reuse the validated target contract and build the Affiliate durable outbox/dedupe layer; delivery identity is no longer unknown |
 | Autonomous operation | Queue, browser harness, recovery, launchd, and reports remain open | No-human-loop behavior is not yet achieved |
+
+### 1.2.1 Active execution contract: provider review is never passive wait
+
+A pending provider review blocks only that provider's executable tracking link.
+It does not block the Affiliate Agent project or the rest of the English funnel.
+While HubSpot/Impact remains `APPLICATION_PENDING`, the Agent MUST continue all
+independent work below:
+
+1. poll the authenticated Impact page and authorized Gmail for a state change,
+   preserving one deterministic transition ID and never resubmitting the same
+   application;
+2. discover every current English B2B SaaS and creator/productivity program,
+   read its official terms, inspect official CLI/API and licensed OSS support,
+   and create a current eligibility receipt;
+3. apply immediately to every program that passes the eligibility gate; do not
+   bulk-apply to programs whose audience, traffic minimum, region, channel,
+   website-content, payout, or policy requirements are not yet satisfied;
+4. make `aniccaai.com` an accessible, content-rich owned acquisition surface and
+   publish useful non-affiliate English foundation content before links exist;
+5. rebrand and verify `@selawmqt` as the English identity, add the required
+   disclosure, and build relevant organic distribution without claiming results;
+6. implement the redirect/sub-ID boundary, append-only money ledger, policy gate,
+   public readback, Telegram outbox, browser recovery, and launchd packaging;
+7. prepare provider-specific placements as unpublished intents, then attach only
+   an approved, owned, executable tracking link after an E-1 receipt exists.
+
+The Agent MUST NOT report “waiting for approval” as the run result while any item
+above is executable. A wait receipt is valid only for the provider-specific
+application work item and MUST name the external reason, next poll time, durable
+owner, and independent work selected for the same wake.
+
+### 1.2.2 Current hard blockers, non-blockers, and honest struggles
+
+| Condition | Class | Consequence and required action |
+|---|---|---|
+| HubSpot/Impact has not approved or rejected the application | External blocker for HubSpot link only | Continue polling with dedupe; execute the rest of the funnel and apply to other eligible programs |
+| No provider has returned an owned executable tracking link | Hard blocker for E-1, E0, and real commission | Expand the qualified provider portfolio while improving the owned site and application evidence |
+| Kit rejected the submitted application without naming one applicant-specific cause | Closed negative receipt | Do not reapply unchanged; first make audience fit, accessible content, and organic promotion evidence materially stronger |
+| `@selawmqt` has zero followers and mixed historical language | Acquisition weakness, not implementation blocker | Rebrand future output to English, preserve history, publish useful material, and measure qualified reach honestly |
+| The owned site does not yet present a deep affiliate-relevant English content body | Approval and conversion weakness | Publish evidence-led B2B SaaS/creator workflows and comparison foundations before another fit-sensitive application |
+| `agent-browser 0.27.0` hung against the live multi-tab CloakBrowser | Tool-path failure, not browser incapability | Use the live-proven raw-CDP path now; retain the failure receipt and replace only when a candidate passes the same live postcondition |
+| Provider signup/login/OTP/contract/application writes are not yet fully exposed by `affiliate provider` | Product implementation gap | Turn every successful operator action into an idempotent semantic playbook and CLI state |
+| Redirect, click join, provider reconciliation, and Affiliate ledger are unbuilt | Revenue-truth implementation gap | Build before scaling publication; no click or estimate may be reported as commission |
+| No first-party CTR, conversion, approval, reversal, or payout cohort exists | Learning uncertainty | Do not fabricate best/base/worst revenue forecasts; collect the first live 30-day cohort |
+| Scratch-Mac dependency installation is incomplete | Packaging gap, not current-Mac money blocker | Finish only after the current Mac closes a positive-unit-economics local slice |
+
+The most difficult part is not text generation. It is obtaining lawful provider
+authority, preserving identity across browser recovery, proving every external
+side effect exactly once, and joining a real provider transaction back to the
+exact public placement without inventing revenue. Those are the harness defects
+the implementation must close.
+
+### 1.2.3 Desktop continuity and durable ownership
+
+During an active local Codex execution, the operator MUST NOT force-quit the
+ChatGPT/Codex desktop application because active local tool execution is not
+guaranteed to survive process termination. Closing or minimizing a window is
+allowed. Git commits, pushed branches, this SSOT, and runtime receipts are the
+durable recovery boundary; they preserve progress but do not guarantee that an
+in-flight command continues.
+
+After the Affiliate launchd owner is installed and live-proven, provider polling,
+research, publication recovery, reconciliation, and Telegram reporting MUST run
+independently of the desktop application. The desktop then becomes an
+observation/steering surface rather than the process owner.
 
 ### 1.3 R0 legacy inventory
 
@@ -658,7 +723,8 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    clean worktree; prove hash/behavior parity, isolate mutable state, and leave
    every existing live loop untouched until receipted cutover.
 2. Make one narrow English vertical slice run unattended on the current Mac:
-   resume Kit/Amazon/provider state, acquire one executable offer, research one
+   preserve the Kit rejection, resume Amazon/provider state, acquire one
+   executable offer, research one
    buyer problem, publish one owned placement plus eligible X distribution through
    the browser, verify the public result, reconcile clicks/commission, and report
    every transition to Telegram.
@@ -691,8 +757,9 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    the initial or changed state emits one deterministic `transition_id`, while an
    unchanged retry emits `NO_STATE_CHANGE`. This is the idempotency boundary for
    the later approval-to-tracking-link action; no launchd owner is installed yet.
-7. Apply to/read back at least two English candidate programs through their
-   websites; activate only an
+7. Discover all current English candidates and apply to every program that
+   passes the audience, website, traffic, region, channel, payout, and policy
+   eligibility gate; read back at least two real applications. Activate only an
    actually authenticated offer with current terms and an executable link.
 8. Implement the signed redirect/sub-ID service and verify click → provider
    report joining before producing content at scale.
@@ -779,10 +846,11 @@ without changing the architecture.
 
 ### 11.3 Can only be learned from live canaries
 
-- The English niche is fixed to B2B SaaS and creator/productivity software, with
-  Kit, HubSpot, and Semrush as the first browser-verified application candidates.
-  Live canaries still determine which approved offer, content format, cadence,
-  and acquisition path produces the highest approved net commission.
+- The English niche is fixed to B2B SaaS and creator/productivity software.
+  HubSpot is the first pending browser-verified application; Kit is a rejected
+  receipt and Semrush remains unqualified until its current audience/site gate is
+  satisfied. Live canaries determine which approved offer, content format,
+  cadence, and acquisition path produces the highest approved net commission.
 - Actual reach throttling/suspension rate, UI-drift rate, provider approval rate,
   CTR, partner conversion, reversal/refund rate, payout delay, and unit economics.
 - Time and capacity required for the first approved commission, $10k/month, and
@@ -819,8 +887,9 @@ without changing the architecture.
   are not quantified by the collected primary sources.
 - No first-party audience baseline exists yet: qualified impressions, clicks,
   email subscribers, conversion rate, reversal rate, and payout delay are unknown.
-- Kit, HubSpot, and Semrush are candidate economics, not guaranteed acceptance,
-  allowed-channel approval, or realized payout.
+- HubSpot and every newly discovered program are candidate economics until
+  approval, allowed-channel ownership, executable-link readback, and realized
+  payout. Kit is already rejected; Semrush is not yet an eligible application.
 - The Smart Passive Income result is a first-person case with an established
   audience and relationship; its causal contribution cannot be isolated and its
   outcome is not transferable by prompt copying.
