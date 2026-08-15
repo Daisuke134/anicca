@@ -152,15 +152,38 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Canonical local launchd browser and loop are installed; the first loop process exited `0` | A full research → publish → provider reconciliation wake has not completed; a process exit is not economic success |
+| Runtime | Immutable local release `83300a89c` and four Affiliate launchd owners are installed. The loop wakes every 600 seconds and exits `0` | Current `wake()` only checks link/browser/provider, runs hourly revenue reconciliation when authenticated, writes receipts, and flushes limited Telegram events. It does not yet autonomously research, choose, build, publish, or repair |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED + AUTHENTICATED`; HubSpot/Impact is authenticated `APPLICATION_PENDING`; Kit is `APPLICATION_REJECTED`; Notion is `PROGRAM_PAUSED`; Systeme.io is `EXTERNAL_CHALLENGE` at visible reCAPTCHA; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | ElevenLabs is the only currently executable earning offer. HubSpot cannot issue a link until approval. No commission, approved transaction, reversal, or payout is claimed yet |
-| Publication | The first English owned Affiliate article and matching disclosed `@selawmqt` X post each have action receipts plus public readback | Provider click readback and every Japanese placement remain unproven |
+| Publication | The first English owned Affiliate article and matching disclosed `@selawmqt` X post are live. The second ElevenAgents article deploy succeeded and serves HTTP `200`; its Agent receipt still needs `DELIVERED → LIVE` reconciliation before X distribution | The second X placement, provider click readback, and every Japanese placement remain unproven |
 | Attribution | Local placement receipts and direct provider-link resolution are implemented | No public placement or provider-side click/commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
-| Telegram | The shared Life Manager allowlist target delivered a real Affiliate milestone with provider `messageId=7639`; the older F1 path failed because it did not use this resolved target | Reuse the validated target contract and build the Affiliate durable outbox/dedupe layer; delivery identity is no longer unknown |
-| Autonomous operation | launchd ownership and isolated browser are live; queue, publisher, reconciliation, recovery, and reports remain open | No-human-loop money behavior is not yet achieved |
+| Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, and `BLOCKED` are live-proven | `PLACEMENT_LIVE`, `CLICK_DELTA`, and commission events remain bound to their real external transitions |
+| Autonomous operation | launchd ownership, isolated browsers, provider/revenue polling, receipts, and limited Telegram reporting are live | Research, model-led selection, content build/policy, owned/X publication, auth recovery, quarantine, and watchdog are CLI-only or absent. No-human-loop money behavior is not yet achieved |
+
+### 1.2.0 Audited executable boundary
+
+The installed scheduler currently invokes only `affiliate loop wake`. Code audit
+shows that `local_loop.wake()` owns the wake lock, private-link check, CDP `9324`
+health, ElevenLabs observe/poll, hourly `revenue observe → capture → reconcile`,
+event receipts, and Telegram flush. Latest installed wakes detect
+`SIGN_IN_REQUIRED` and stop after reporting; they do not invoke auth recovery.
+
+The following are valid Affiliate Skill tools but are not yet called by the
+scheduled loop: program selection/application, source capture, campaign build,
+policy gate, placement intent, owned publication/readback, X build/publication,
+and provider repair. Manual live canaries exist only to discover real fields,
+states, and postconditions. A canary is complete only after its behavior becomes
+an idempotent tool and the model-led loop can select and execute that tool from a
+durable unfinished job.
+
+The target architecture copy+tweaks the live Coconala immutable-release pattern:
+one explicit owner per lane, the shared schema-validating agent runner, separate
+browser ownership/fencing, append-only action trajectories, bounded healer,
+durable Telegram outbox, and official settlement receipt hierarchy. Affiliate
+uses its own prompts, connector, profiles, ports, ledgers, event keys, and money
+schema; it never imports Coconala DOM selectors, sessions, locks, or credentials.
 
 ### 1.2.1 Active execution contract: provider review is never passive wait
 
@@ -198,7 +221,7 @@ owner, and independent work selected for the same wake.
 | Condition | Class | Consequence and required action |
 |---|---|---|
 | HubSpot/Impact has not approved or rejected the application | External blocker for HubSpot link only | Continue polling with dedupe; execute the rest of the funnel and apply to other eligible programs |
-| ElevenLabs has returned the first owned executable tracking link, but no disclosed public placement or provider transaction exists | Acquisition and revenue blocker, not authority blocker | Build the first useful disclosed owned placement, verify public readback and click attribution, then reconcile the first external transaction without counting clicks as money |
+| ElevenLabs has executable default and ElevenAgents product links plus two disclosed owned articles, but no post-baseline click or provider transaction | Acquisition and revenue blocker, not authority blocker | Reconcile the second article to `LIVE`, let the loop publish its X placement, then measure real provider clicks and transactions without counting clicks as money |
 | Kit rejected the submitted application without naming one applicant-specific cause | Closed negative receipt | Do not reapply unchanged; first make audience fit, accessible content, and organic promotion evidence materially stronger |
 | `@selawmqt` has zero followers and mixed historical language | Acquisition weakness, not implementation blocker | Rebrand future output to English, preserve history, publish useful material, and measure qualified reach honestly |
 | The owned site does not yet present a deep affiliate-relevant English content body | Approval and conversion weakness | Publish evidence-led B2B SaaS/creator workflows and comparison foundations before another fit-sensitive application |
@@ -224,9 +247,9 @@ durable recovery boundary; they preserve progress but do not guarantee that an
 in-flight command continues.
 
 The Affiliate browser and wake launchd owners are installed and live-proven.
-Provider polling, research, publication recovery, reconciliation, and Telegram
-reporting are not yet wired into that wake, so desktop independence is still a
-product gate rather than a completed behavior. After wiring, the desktop becomes
+Provider and revenue polling plus limited Telegram reporting are wired into the
+wake; research, model-led selection, publication, and recovery are not. Desktop
+independence is therefore still a product gate. After wiring, the desktop becomes
 an observation/steering surface rather than the process owner.
 
 ### 1.2.4 Credential-first provider preflight
