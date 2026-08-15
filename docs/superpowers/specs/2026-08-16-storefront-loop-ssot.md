@@ -60,6 +60,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - Real pass `storefront-selector-live-b655a83d0` exposed that `origin/main` had obsolete fixed-`:9222`, tokenless CDP helpers. Commit `a695e79e4` restores the byte-identical installed fenced runtime and its existing tests; 40 focused checks pass.
 - Real pass `storefront-selector-live-a695e79e4` then completed with official/competitor `11/8`, effect/readback/duplicate `0/0/0`, next hypothesis `4330368/image`, metric `views_to_inquiry`, Telegram `deduped/20073`, and lease released. The hypothesis is prepared but non-executable while the FAQ experiment remains active; the measurement window is not a TODO and does not block building the image adapter now.
 - Commits `1a13109d0` and `0244e1660` add the verified 1220x1016 OpenCV hero asset/contract and the fenced multipart publication adapter. The asset regenerates to the exact contract SHA; the isolated seller form produced one blob preview and exact field `data[UploadedFile][n1][image_files]` without submitting. Forty-two focused checks pass. Real pass `storefront-image-fence-live-0244e1660` preserved the active-experiment fence with public image count `0`, effect/readback/duplicate `0/0/0`, and no residual Storefront lease.
+- Commit `e53a70689` binds the official VBA listing version, JPY6,000 base, JPY3,000 add-on, JPY5,000 maintenance, required inputs and two inquiry answer patterns into the runtime contract ledger. Real loop runs appended `1` then replayed `0`. Commit `3649a0bb9` reports official/competitor counts, contract inventory, selected hypothesis and fence in natural Japanese; real Telegram delivery is `sent/20425`.
 
 ## 5. Acceptance criteria
 
@@ -149,9 +150,10 @@ Verification: official browser DOM and screenshot show the expected images; effe
 
 ### S3 — Generalize supported listing contracts
 
-- Make image, title/outcome, body/scope, package/add-ons, FAQ and price adapters consume the same versioned contract.
-- Add a VBA inquiry playbook covering clarification, supported implementation styles, required sample/input, scope boundary, tier, revision rule, delivery, and recurring maintenance path.
-- Pass the exact service contract/version to Negotiate; do not implement replies in Storefront.
+- [ ] Make image, title/outcome, body/scope, package/add-ons, FAQ and price adapters consume the same versioned contract.
+- [x] Add the first VBA inquiry playbook covering implementation-style questions, lookup/transfer questions, required samples and clarifications, delivery, add-on and recurring maintenance facts.
+- [x] Bind the VBA playbook to the exact official service version and emit it once to the append-only Storefront contract ledger; replay appends zero.
+- [ ] Add the remaining owned service contracts and pass the exact contract/version in the immutable Negotiate handoff; do not implement replies in Storefront.
 
 Verification: one existing service per adapter can be rendered and diffed without publishing; the production change remains one selected field on one service.
 
