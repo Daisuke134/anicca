@@ -280,10 +280,12 @@ def parse_search_html(html: str) -> List[Dict[str, object]]:
 class _DetailParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self._depth = self._dl_depth = 0; self._label = self._capture = None; self.values: Dict[str, str] = {}
+        self._depth = self._dl_depth = self._proposal_div_depth = 0; self._label = self._capture = None; self._proposal_chunks: list[str] = []; self.values: Dict[str, str] = {}
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
-        del attrs; self._depth += 1
+        classes = set((dict(attrs).get("class") or "").split()); self._depth += 1
+        if self._proposal_div_depth and tag == "div": self._proposal_div_depth += 1
+        elif tag == "div" and "tableSummary__col--worksNum" in classes: self._proposal_div_depth = 1; self._proposal_chunks = []
         if tag == "dl": self._dl_depth = self._depth
         elif self._dl_depth and tag in {"dt", "dd"}: self._capture = (tag, self._depth, [])
         elif tag == "br" and self._capture: self._capture[2].append("\n")
@@ -294,11 +296,17 @@ class _DetailParser(HTMLParser):
             if kind == "dt": self._label = text if text and len(text) <= 120 else None
             elif text and self._label is not None: self.values[self._label] = text; self._label = None
             self._capture = None
+        if tag == "div" and self._proposal_div_depth:
+            self._proposal_div_depth -= 1
+            if not self._proposal_div_depth:
+                match = re.search(r"(?:^|\s)提案数\s*([0-9][0-9,]*)件(?:\s|$)", _clean_text("".join(self._proposal_chunks)))
+                if match: self.values["提案数"] = f"{int(match.group(1).replace(',', ''))}件"
         if tag == "dl" and self._dl_depth == self._depth: self._dl_depth = 0
         self._depth = max(0, self._depth - 1)
 
     def handle_data(self, data: str) -> None:
         if self._capture: self._capture[2].append(data)
+        if self._proposal_div_depth: self._proposal_chunks.append(data)
 
 
 def parse_detail_html(html: str) -> Dict[str, str]:
