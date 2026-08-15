@@ -2386,10 +2386,16 @@ def main() -> int:
             gig_dir=args.gig_dir,
         )
         key = f"gig:telegram:hourly:v1:{moment.astimezone(JST):%Y%m%d%H}"
-        result = _dispatch_message(
-            outbox=outbox, event_key=key, kind="hourly", message=message,
-            transport=transport, now_epoch=now_epoch,
-        )
+        try:
+            result = _dispatch_message(
+                outbox=outbox, event_key=key, kind="hourly", message=message,
+                transport=transport, now_epoch=now_epoch,
+            )
+        except TelegramOutboxError:
+            # The first closed-hour snapshot owns this hour key. Later ledger
+            # movement is reported next hour, never as a duplicate digest.
+            print(json.dumps({"sent": 0, "delivery_unknown": 0}, separators=(",", ":")))
+            return 0
     elif args.command == "daily":
         moment = datetime.now(timezone.utc)
         envelope = daily_envelope(

@@ -87,7 +87,7 @@
         {"source": "skills/agent-runner/tests/test_usage_report.py", "target": "runtime/agent-runner/tests/test_usage_report.py", "sha256": "f10b1ca746093386acd1a45d0b0d0eae3e0603938ac90df8da2d34799fb88295"}
       ],
       "absorbed_roots": [
-        {"source": "skills/gig-work", "target": "skills/earn/gig", "files": 553, "inventory_sha256": "b91c479c9715f966b0e706609cc65e9b1c4265b0c0b69f46d90a4dc4c4b9db21"},
+        {"source": "skills/gig-work", "target": "skills/earn/gig", "files": 553, "inventory_sha256": "42d72f0b2f690f6aa0202351bc9159ff58063b96d9d2094ff1299ff7147eee70"},
         {"source": "skills/music-score-omr", "target": "skills/music-score-omr", "files": 2, "inventory_sha256": "2a60d388a2c29ac8d70fa48328c18cb88527b8348a300a812ec6c9b2a7c02485"}
       ]
     },
