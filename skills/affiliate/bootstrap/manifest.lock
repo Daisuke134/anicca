@@ -1,0 +1,3 @@
+# Life Manager Affiliate bootstrap manifest.
+# Current-host artifact URLs and hashes are selected by later capability inventory.
+# Format: name<TAB>version<TAB>file:// or https:// URL<TAB>lowercase SHA-256.

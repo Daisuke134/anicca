@@ -46,7 +46,7 @@ class AuthorityInventoryRedTests(unittest.TestCase):
             receipt_missing = root / "missing-receipt.json"
             receipt_mismatch = root / "mismatch-receipt.json"
             intent_id = "affiliate-login-001"
-            capability = "affiliate-account"
+            capability = "inbox_otp"
             self.write_json(request, {"intent_id": intent_id, "capability": capability})
             self.write_json(
                 bundle,
@@ -83,7 +83,7 @@ class AuthorityInventoryRedTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             intent_id = "affiliate-login-001"
-            capability = "affiliate-account"
+            capability = "inbox_otp"
             secret = "authority-secret-sentinel"
             bundle = root / "bundle.json"
             self.write_json(
@@ -113,6 +113,49 @@ class AuthorityInventoryRedTests(unittest.TestCase):
             self.assertEqual(authorized["status"], "AUTHORIZED")
             self.assertEqual(authorized["intent_id"], intent_id)
             self.assertEqual(authorized["capability"], capability)
+            self.assertEqual(authorized["secret_ref"], "keychain://affiliate/account")
+
+            captcha_request = root / "reused-captcha-request.json"
+            self.write_json(
+                captcha_request,
+                {
+                    "intent_id": intent_id,
+                    "capability": capability,
+                    "external_challenge": "CAPTCHA",
+                },
+            )
+            replaced = self.run_inventory(script, captcha_request, exact_receipt, bundle)
+            self.assertEqual(replaced.returncode, 0, replaced.stderr)
+            replaced_receipt = json.loads(exact_receipt.read_text(encoding="utf-8"))
+            self.assertEqual(replaced_receipt["status"], "EXTERNAL_CHALLENGE")
+            self.assertEqual(replaced_receipt["challenge"], "CAPTCHA")
+            self.assertNotIn("secret_ref", replaced_receipt)
+
+            malformed_challenge_bundle = root / "malformed-challenge-bundle.json"
+            self.write_json(
+                malformed_challenge_bundle,
+                {
+                    "authorities": [
+                        {
+                            "intent_id": intent_id,
+                            "capability": capability,
+                            "secret_ref": "keychain://affiliate/account?token=" + secret,
+                        }
+                    ]
+                },
+            )
+            malformed_challenge = self.run_inventory(
+                script, captcha_request, exact_receipt, malformed_challenge_bundle
+            )
+            self.assertEqual(malformed_challenge.returncode, 0, malformed_challenge.stderr)
+            malformed_challenge_receipt = json.loads(
+                exact_receipt.read_text(encoding="utf-8")
+            )
+            self.assertEqual(malformed_challenge_receipt["status"], "EXTERNAL_CHALLENGE")
+            self.assertEqual(malformed_challenge_receipt["challenge"], "CAPTCHA")
+            self.assertNotIn("secret_ref", malformed_challenge_receipt)
+            self.assertNotIn(secret, malformed_challenge.stdout)
+            self.assertNotIn(secret, malformed_challenge.stderr)
 
             other_request = root / "other-request.json"
             other_receipt = root / "other-receipt.json"
@@ -145,6 +188,26 @@ class AuthorityInventoryRedTests(unittest.TestCase):
                     challenge_receipt = json.loads(receipt.read_text(encoding="utf-8"))
                     self.assertEqual(challenge_receipt["status"], "EXTERNAL_CHALLENGE")
                     self.assertEqual(challenge_receipt["challenge"], challenge)
+
+            malformed_bundle = root / "malformed-bundle.json"
+            malformed_receipt = root / "malformed-receipt.json"
+            self.write_json(
+                malformed_bundle,
+                {
+                    "authorities": [
+                        {
+                            "intent_id": intent_id,
+                            "capability": capability,
+                            "secret_ref": "keychain://affiliate/account?token=" + secret,
+                        }
+                    ]
+                },
+            )
+            malformed = self.run_inventory(script, exact_request, malformed_receipt, malformed_bundle)
+            self.assertNotEqual(malformed.returncode, 0)
+            self.assertFalse(malformed_receipt.exists())
+            self.assertNotIn(secret, malformed.stdout)
+            self.assertNotIn(secret, malformed.stderr)
 
             for output in (exact.stdout, exact.stderr, other.stdout, other.stderr):
                 self.assertNotIn(secret, output)

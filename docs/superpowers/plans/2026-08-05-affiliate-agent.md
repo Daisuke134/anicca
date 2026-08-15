@@ -357,11 +357,22 @@ Install the exact runtime/browser dependencies, create state/log/download roots,
 configure secret redaction and OS key storage, and emit hashes/versions. Do not
 touch or restart existing money loops.
 
+Progress receipt: the pinned-artifact installer, checksum gate, atomic resume
+receipt, and intent-scoped `keychain://` reference contract pass 5/5 focused
+tests. This step remains open because the current-host runtime/browser artifact
+has not been admitted into `manifest.lock`, and no Keychain value has been read
+back through the contract.
+
 - [ ] **Step 4: Implement semantic capability inventory and browser provisioning**
 
 Discover existing authorized identities and sessions, create locale-isolated
 profiles, verify the account handle after login/recovery, and persist only
 encrypted session material plus sanitized receipts.
+
+Progress receipt: EN/JA real-directory provisioning, deterministic isolated
+ports, idempotency, typed external-challenge handling, and secret redaction pass
+4/4 focused tests. This step remains open until authorized-session discovery,
+account-handle readback, and encrypted session persistence are live-proven.
 
 - [ ] **Step 5: Run clean-state E2E on the current macOS host**
 

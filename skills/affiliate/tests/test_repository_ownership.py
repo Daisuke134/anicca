@@ -69,6 +69,8 @@ class RepositoryOwnershipTests(unittest.TestCase):
             and "legacy" not in path.relative_to(SKILL_ROOT).parts
             and "tests" not in path.relative_to(SKILL_ROOT).parts
             and "state" not in path.relative_to(SKILL_ROOT).parts
+            and "__pycache__" not in path.relative_to(SKILL_ROOT).parts
+            and path.suffix != ".pyc"
         )
         for path in active_files:
             body = path.read_text(encoding="utf-8")
