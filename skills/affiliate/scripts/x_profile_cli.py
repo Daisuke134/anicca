@@ -108,6 +108,24 @@ def set_control(ws, request_id, selector, value):
     return request_id + 2
 
 
+def wait_for_edit_controls(ws, request_id):
+    expression = """Boolean(
+      document.querySelector("input[name='displayName']") &&
+      document.querySelector("textarea[name='description']") &&
+      document.querySelector("input[name='url']") &&
+      document.querySelector("button[data-testid='Profile_Save_Button']")
+    )"""
+    for _ in range(20):
+        result = cdp_call(ws, request_id, "Runtime.evaluate", {
+            "expression": expression, "returnByValue": True,
+        })
+        request_id += 1
+        if result.get("result", {}).get("value") is True:
+            return request_id
+        time.sleep(0.5)
+    raise XProfileError("X profile edit controls did not become ready")
+
+
 def inspect(args, config):
     target = choose_x_target(args.cdp_host, args.cdp_port)
     ws = connect(args, target)
@@ -137,7 +155,7 @@ def apply(args, config):
     ws = connect(args, target)
     try:
         request_id = navigate(ws, 1, "https://x.com/settings/profile")
-        time.sleep(2)
+        request_id = wait_for_edit_controls(ws, request_id)
         request_id = set_control(ws, request_id, "input[name='displayName']", config["display_name"])
         request_id = set_control(ws, request_id, "textarea[name='description']", config["bio"])
         request_id = set_control(ws, request_id, "input[name='url']", config["url"])

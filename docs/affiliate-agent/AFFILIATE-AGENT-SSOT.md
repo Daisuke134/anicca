@@ -121,7 +121,7 @@ techniques do not merge the ledgers.
 | ElevenLabs | The official affiliate entry reached ElevenLabs signup. The authorized email passed Arkose, the existing account was recovered through the official email reset, and a storage-isolated fresh login loaded `/app/home` from the Git-external private Markdown credential. Activating the rendered CTA immediately returned `You have an active affiliate account` and a default PartnerStack link. A separate anonymous browser context followed that link to `elevenlabs.io` with PartnerStack referral query parameters and three referral cookies | `ACTIVE_LINK_VERIFIED`; retain the exact link only in private runtime state, forbid paid search on ElevenLabs product terms as rendered by the authenticated UI, and build the first useful disclosed owned placement |
 | Rakuten Affiliate | CDP rendered the public home page with `ログイン`; approval state is not observable | `AUTH_REQUIRED`, keep the provider adapter dormant |
 | Postiz | A Japanese integration exists, but the product decision excludes Postiz | Do not read, connect, or use it in the Agent; this is not a blocker |
-| X identity | User screenshot, authenticated browser, and public CRWL readback agree on `sela` / `@selawmqt`: 128 posts, 27 following, 0 followers, with mixed historical JA/EN Anicca posts. Stored credentials produced a real `auth_token`, `/home`, and profile link `/selawmqt`. X rejected legacy `@aniccaen` as inactive | Reuse `@selawmqt` as the English identity, then make its display name, bio, disclosure, and all future posts English-only before E0; preserve historical posts and never use Japanese `@aniccaxxx` or the shared daily-driver |
+| X identity | Dedicated Affiliate CDP `9326` and authenticated `whoami` prove `@selawmqt`: 128 posts, 27 following, 0 followers. The semantic profile command changed the public name to `sela | AI Tools`, added an English practical-AI bio with affiliate-link disclosure, set `aniccaai.com`, and a second apply returned `changed=false + matches_config=true`. X rejected legacy `@aniccaen` as inactive | Preserve mixed historical posts, keep all future posts English-only, and never use Japanese `@aniccaxxx` or shared daily-driver `@diceai0`; the first post still requires a duplicate-post fence and public readback |
 | X publication | No Affiliate placement exists. X's April 2026 rules warn that scripted website automation may permanently suspend an account | The user-selected implementation is browser-only. Enforce identity, disclosure, duplicate prevention, public readback, action caps, and immediate account quarantine; never describe this lane as platform-approved or evade challenges |
 | clip loop | launchd is installed, last exit code is 0, and logs show production/posting through 2026-08-01 | Not banned. Reuse its publisher, renderer, attribution, and scoring contracts |
 | recent clip runs | Contract reports `skipped`; older stderr shows Telegram DNS delivery failures | Diagnose scheduler/business gates separately from platform health |
@@ -795,8 +795,10 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    playbook, and its state poll is wired into each 10-minute source wake with a
    stable transition ID. Impact is pending and Kit is rejected. Impact status
    polling and any future provider write still require exact-once semantic playbooks.
-6. **PENDING.** Rebrand and verify English `@selawmqt`; bind its isolated profile,
-   disclosure, public URL, screenshot/DOM receipt, and duplicate-post fence.
+6. **PARTIAL.** Rebrand and verify English `@selawmqt`; its isolated `x-en:9326`
+   launchd owner, English name/bio, disclosure, URL, semantic apply, idempotent DOM
+   readback, and receipt are live. The first publisher slice must add the
+   duplicate-post fence and post-level public readback before this item is DONE.
 7. **PENDING.** Implement the source scout using CRWL, `gh`, official sources, and
    authenticated X readback; every capture stores provenance, license, locale,
    freshness, and failure class.
