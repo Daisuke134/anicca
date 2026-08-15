@@ -59,6 +59,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - Clean Storefront commits are pushed on `feat/storefront-loop`: `d65f13bf9` imports the dedicated owner, `2854097ad` selects the scorecard hypothesis, and `b655a83d0` closes an active-experiment no-op before the LLM judge. Storefront tests are `22 passed`.
 - Real pass `storefront-selector-live-b655a83d0` exposed that `origin/main` had obsolete fixed-`:9222`, tokenless CDP helpers. Commit `a695e79e4` restores the byte-identical installed fenced runtime and its existing tests; 40 focused checks pass.
 - Real pass `storefront-selector-live-a695e79e4` then completed with official/competitor `11/8`, effect/readback/duplicate `0/0/0`, next hypothesis `4330368/image`, metric `views_to_inquiry`, Telegram `deduped/20073`, and lease released. The hypothesis is prepared but non-executable while the FAQ experiment remains active; the measurement window is not a TODO and does not block building the image adapter now.
+- Commits `1a13109d0` and `0244e1660` add the verified 1220x1016 OpenCV hero asset/contract and the fenced multipart publication adapter. The asset regenerates to the exact contract SHA; the isolated seller form produced one blob preview and exact field `data[UploadedFile][n1][image_files]` without submitting. Forty-two focused checks pass. Real pass `storefront-image-fence-live-0244e1660` preserved the active-experiment fence with public image count `0`, effect/readback/duplicate `0/0/0`, and no residual Storefront lease.
 
 ## 5. Acceptance criteria
 
@@ -137,10 +138,12 @@ Verification: isolated selector check chooses `4330368/image` from the current s
 
 ### S2 — Execute and verify the first real listing improvement
 
-- Build the buyer-facing image set from verified capability and the listing contract.
-- Mutate only service `4330368` image fields through the existing authenticated browser path.
-- Read the official page back with exact service identity, version/hash, image count and duplicate guard.
-- Roll back to the last known-good listing version if readback disagrees.
+- [x] Build the first buyer-facing hero from verified capability and bind its dimensions, claims and SHA in a machine-readable contract.
+- [x] Implement the authenticated multipart image adapter for only service `4330368`, including exact precondition, non-image field delta guard, durable intent and recovery.
+- [x] Add official public readback for exact service identity, listing version, unique service image IDs and image count.
+- [x] Prove with the real active experiment that the adapter remains fenced: image count `0`, effect/readback/duplicate `0/0/0`.
+- [ ] On the first eligible Storefront wake, publish the prepared image, require image count `1`, effect/readback/duplicate `1/1/0`, then rerun and require no duplicate. Eligibility is external state, not a waiting TODO; all executable harness work continues below.
+- [ ] Roll back to the last known-good listing version if the first eligible public readback disagrees.
 
 Verification: official browser DOM and screenshot show the expected images; effect=1, readback=1, duplicate=0; a second execution is idempotent.
 
