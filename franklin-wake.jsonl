@@ -28197,3 +28197,10 @@
 {"ts":1786779071,"wake_id":"00MSU24J2U66E9CD1B0AED4578","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786779207,"wake_id":"00MSU27G2KC9B4150B26D54E67","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786779340,"wake_id":"00MSU2AAEQ46A1758C12044807","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786779475,"wake_id":"00MSU2D76OA03286F7FB1D450F","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana AI inference paid API marketplace [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the"}
+{"ts":1786779609,"wake_id":"00MSU2G1X59C7E8631F6F74AA7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786779739,"wake_id":"00MSU2IUCB49978E0E8D0942AA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786779866,"wake_id":"00MSU2LKLX75353AAF70F144AF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786780000,"wake_id":"00MSU2OFT4778C26060C264F32","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786780130,"wake_id":"00MSU2R85G47032029FEE34F36","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786780265,"wake_id":"00MSU2U4KQ1BA096C2BAB54B12","kind":"narrate","sleep_s":120,"model":"auto"}
