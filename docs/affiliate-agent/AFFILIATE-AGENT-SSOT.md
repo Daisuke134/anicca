@@ -137,7 +137,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Four Affiliate-owned launchd jobs isolate the loop, ElevenLabs browser, X browser, and Impact browser. Release `018bcc643163da2979b75f1116a7193a9c5bc693` is installed. It retains the original Impact login job across restart and resumes either email or password stage, but its DOM `click()` does not activate Impact's enabled Sign In submit control | Process-boundary resume and X publish reconciliation remain live-proven without duplication. Replace only the failed semantic activation with the already live-proven Playwright role-click primitive, then read back the existing application; attributable click, commission, and payout remain open |
+| Mac-local runtime | Four Affiliate-owned launchd jobs isolate the loop, ElevenLabs browser, X browser, and Impact browser. Release `3f441f2be26b08f4cbe40e412ad241c6aeccf5b8` is installed. It retained the original Impact login run/job IDs across restart, resumed the rendered intermediate stage, used an exact anchored case-insensitive Playwright role click, and reached authenticated `APPLICATION_PENDING` | Impact replay returned `submitted=false` on the authenticated page and the original login job is `VERIFIED`; no reset, duplicate application, or new job occurred. Process-boundary resume, selector-drift repair, X publish reconciliation, and provider auth recovery are live-proven. Attributable click, commission, and payout remain open |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview, Commission Report, and Payouts surfaces | The current aggregate is one baseline click and zero signups/revenue/pending/paid. `revenue capture` live-read 23 commission fields and six payout fields. The current PartnerStack bundle, SHA-256 `be00e11924a35f20b84dee69ae741ae65204f07d3350a3266ad73501e96d867f`, proves the provider row keys use `reward_key`, `reward_status`, and explicit sub-ID/click/link fields even though the UI says Commission key. DOM absence was rejected as row evidence; installed release `329cbfc45` captured official JSON `row_count=0`, the empty Payouts surface, `NO_LIVE_ROWS`, and a mode-0600 artifact at SHA-256 `dce77f0083b0f92e29a67ccf99e417e11fe6307009bdfe98bf2d5fc77b39154d`. Approved/reversed remain unknown rather than zero |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
@@ -948,9 +948,9 @@ commission message counts.
 - [x] **A14.2** Resume the same unfinished job after process crash or Mac restart.
 - [ ] **A14.3** For ambiguous publish/application outcomes, search public/provider
   state first and reconcile the existing effect before any retry.
-- [ ] **A14.4** Detect expired login, invoke the credential/recovery Skill, verify a
+- [x] **A14.4** Detect expired login, invoke the credential/recovery Skill, verify a
   fresh authenticated page, then resume the original job.
-- [ ] **A14.5** Detect selector drift from semantic expected-state failure, capture
+- [x] **A14.5** Detect selector drift from semantic expected-state failure, capture
   sanitized evidence, let the fixing agent patch the smallest adapter/playbook,
   run its minimal regression, install the new release, and resume the same job.
 - [ ] **A14.6** Quarantine only the failing provider/channel after repeated auth,
@@ -1077,6 +1077,14 @@ The first installed Playwright attempt then failed closed at zero matches becaus
 the playbook rendered `Sign in` while the accessible name was `Sign In`. The
 matcher keeps anchored full-name equality and ignores case only; it does not
 admit partial text, multiple controls, or a generic first-button fallback.
+
+Installed release `3f441f2be` closes both recovery gates. Its Playwright role
+click moved the same browser to `/secure/member/home/mview.ihtml`; bounded
+read-only replay matched `HubSpot, Inc. application`, `In Review`, and the
+provider notification marker. Final normal `provider resume` returned
+`submitted=false` and reconciled the original login run/job identity to
+`VERIFIED` at attempt 13 without creating a second application or login job.
+A14.4 and A14.5 are DONE.
 
 ### A14–E1 remaining implementation map
 
