@@ -994,6 +994,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, inventory_path.parent, int(time.time()),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
             )
+            next_hypothesis = _prepare_next_hypothesis(
+                getattr(args, "scorecard", DEFAULT_SCORECARD),
+                args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
+                validated_contracts, int(time.time()),
+            )
             pending_effect = None
             recovery = _pending_recovery(args.state_dir, own_page)
             if recovery is not None:
@@ -1031,13 +1036,25 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 }
             else:
                 capability_paths = {str(Path(path).resolve()) for path in args.capability_evidence}
-                judgement = _guard_judgement(
-                    _invoke_judge(
+                if next_hypothesis is not None and not next_hypothesis["executable"]:
+                    raw_judgement = {
+                        "decision": "no_op", "service_id": None, "changed_field": None,
+                        "before_value": None, "proposed_value": None,
+                        "hypothesis": str(next_hypothesis["reason"]),
+                        "competitor_evidence_paths": [], "capability_evidence_paths": [],
+                        "success_metric": None, "observation_window_days": None,
+                        "no_op_reason": str(next_hypothesis["guard_reason"]),
+                        "experiment_key": None, "uncertainty": [],
+                    }
+                else:
+                    raw_judgement = _invoke_judge(
                         runner=args.runner, schema=args.schema, workdir=args.workdir,
                         evidence_dir=inventory_path.parent / "judge", own_page=own_page,
                         manifest=competitor_manifest, capability_paths=capability_paths,
                         timeout_seconds=args.timeout_seconds,
-                    ),
+                    )
+                judgement = _guard_judgement(
+                    raw_judgement,
                     own_page=own_page, competitor_manifest=competitor_manifest,
                     capability_paths=capability_paths, evidence_dir=inventory_path.parent,
                     effects_path=args.state_dir / "effects.jsonl", minimum_epoch=minimum_epoch,
@@ -1131,11 +1148,6 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, analytics,
                 getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),
                 getattr(args, "scorecard", DEFAULT_SCORECARD), int(time.time()),
-            )
-            next_hypothesis = _prepare_next_hypothesis(
-                getattr(args, "scorecard", DEFAULT_SCORECARD),
-                args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
-                validated_contracts, int(time.time()),
             )
             if next_hypothesis is not None:
                 _append_key_once(
