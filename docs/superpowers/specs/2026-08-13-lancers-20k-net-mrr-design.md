@@ -2865,3 +2865,16 @@ GitHub source proofだけを渡し、Lancers内のsoftware portfolio identityを
 official ID、Lancers URL、title、descriptionを保持する。Work Syncはsource complete、contract 0、payment 0を再観測した。続くApplicationは
 既応募project `5577746`を`duplicate_project / submitted false / exit 0`で閉じ、application state `9cb19876…fe48`とledger
 `abdb58d0…eb6`は前後一致した。次のfresh AI/API proposalからLancers内のsoftware proofを利用できる。
+
+### 18.45 Storefront AI market evidence
+
+**CURRENT OBSERVATION:** official package search `AI自動化`は3,046件、1ページ60件で、AI system/app 435、AI automation/agent 401、
+AI consulting 333件を表示する。organic上位の初期価格は概ね10,000〜50,000円で、PR枠と実績保有sellerが混在する。広いAI自動化listingを
+もう1件作るだけでは差別化にならない。current SNS listing `1338228`はsearch impression 1、detail 0、inquiry/order 0である。
+
+**DECISION:** 新しいgeneric AI listing、second Storefront scheduler、広告購入は作らない。software portfolio `743987`をApplyとprofile相談の
+proofとして先に使い、最初のbuyer inquiryまたはcontractで実需要のscopeを得てから、一商品・一変数でpackage化する。現時点の次の収益境界は
+buyer selection/reply/fundingであり、Work Syncを5分ごとに継続する。
+
+**REPORT EVIDENCE:** current Telegram ownerは同じhealthy revenue snapshotをstate-change dedupeし、enqueue 0、delivery 0、exit 0で閉じた。
+通知badge 5のDOMはnotification page上のbuyer event、contract、paymentを示さず、売上signalには使わない。
