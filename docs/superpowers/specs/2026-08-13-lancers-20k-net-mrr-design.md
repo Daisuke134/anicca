@@ -2579,3 +2579,15 @@ Telegramは累計receiptとcurrent funnelを分離して自然文表示し、募
 **PLAN SIZE:** production 2 files、約40–60行。外部effect、Application state/ledger、schema、schedulerは変更しない。
 
 **DONE EVIDENCE:** production Work Syncが公式30 = 25 + 4 + 1を完全に読み、Telegramが同じ件数と契約0を表示する。
+
+### 18.34 Telegram delivery idempotency
+
+**CURRENT OBSERVATION:** proposal funnel追加後のreportはoutboxへ一件enqueueしたが、旧`openclaw message send`のfixed 10秒gateway timeoutで
+callerは`receipt_missing`となった。Gateway一次logは同時刻にtarget chatへのprovider message ID `19057`成功を記録し、outboxは正しく
+`delivery_uncertain`でblind retryを止めた。これはbusiness lane failureではなく、送信済み後にACKを失うtransport境界である。
+
+**NEXT DIRECT ACTION:** repo内でlive-provenの`openclaw gateway call send --timeout 60000`をそのまま再利用する。message SHAからstable
+`idempotencyKey`を作り、positive top-level `messageId`だけをdelivery receiptにする。旧uncertain rowはGateway一次logのexact IDでreconcileし、
+再送しない。人向け本文から内部語`receipt`を除く。
+
+**PLAN SIZE:** production 1 file、約5–10行。Telegram token、raw Bot API、新queue、新retry、新serviceは0。
