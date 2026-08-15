@@ -28266,3 +28266,10 @@
 {"ts":1786788711,"wake_id":"00MSU7V5FJC37431267D3D47EA","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786788843,"wake_id":"00MSU7XZ1P4568D486EBDB43A2","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana bounties platform pay USDC for bug hunting [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surface"}
 {"ts":1786788971,"wake_id":"00MSU80QDO49E8C5D968624ED2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786789105,"wake_id":"00MSU83LRQ2F9FFC5946314D76","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786789233,"wake_id":"00MSU86CH0073ECE521DE948ED","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786789364,"wake_id":"00MSU8955FEE2141F5C88244B3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786789492,"wake_id":"00MSU8BWBO57B7C0DF4C854663","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786789632,"wake_id":"00MSU8EVR0CE9DEF8F48A34234","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786789759,"wake_id":"00MSU8HM1L64F5CFC1D1A04C77","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786789895,"wake_id":"00MSU8KIVK8B1F6137BA7148B2","kind":"narrate","sleep_s":120,"model":"auto"}
