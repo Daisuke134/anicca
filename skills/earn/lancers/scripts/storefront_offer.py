@@ -143,7 +143,7 @@ def _profile(page: Any, product: Mapping[str, Any], apply: bool) -> dict[str, An
     save = page.get_by_role("button", name="保存する", exact=True)
     if save.count() != 1: raise OfferError("profile_form_changed")
     try:
-        with page.expect_response(lambda value: value.request.method == "POST" and urlsplit(value.url).path == "/mypage/profile", timeout=20_000) as saved: save.click(force=True, no_wait_after=True, timeout=5_000)
+        with page.expect_response(lambda value: value.request.method == "POST" and urlsplit(value.url).path == "/mypage/profile", timeout=20_000) as saved: save.click(force=True, timeout=20_000)
     except Exception: raise OfferError("profile_submission_uncertain") from None
     if saved.value.status not in {200, 302} or not _profile(page, product, False)["profile_aligned"]: raise OfferError("profile_submission_uncertain")
     return {"profile_aligned": True, "profile_effect_count": 1}
