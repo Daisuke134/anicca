@@ -96,6 +96,18 @@ returns `LIVE` after an exact post-page readback. It never prints the post body
 or a provider tracking link. A content policy decision and live owned article
 remain prerequisites; the command does not generate or approve copy.
 
+Refresh the versioned ElevenLabs evidence plan without an LLM-dependent parser:
+
+```bash
+skills/affiliate/affiliate sources capture --plan elevenlabs-en
+```
+
+The admitted routes are installed CRWL for official web pages and `gh api` for
+the official SDK. Raw artifacts and deduplicated receipts stay under the
+Git-external Affiliate state root. Each receipt binds locale, evidence class,
+license, parser version, body hash, observation time, and expiry; adapter failure
+is fail-closed rather than converted into an empty source.
+
 Use the versioned English program research before any application:
 
 ```bash

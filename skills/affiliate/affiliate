@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-if [ "${1:-}" != "provider" ] && [ "${1:-}" != "programs" ] && [ "${1:-}" != "loop" ] && [ "${1:-}" != "x" ]; then
-  echo "usage: affiliate {provider|programs|loop|x} ..." >&2
+if [ "${1:-}" != "provider" ] && [ "${1:-}" != "programs" ] && [ "${1:-}" != "loop" ] && [ "${1:-}" != "x" ] && [ "${1:-}" != "sources" ]; then
+  echo "usage: affiliate {provider|programs|loop|x|sources} ..." >&2
   exit 2
 fi
 group=$1
@@ -19,6 +19,7 @@ case "$group" in
   provider) script=provider_cli.py ;;
   programs) script=program_registry.py ;;
   loop) script=local_loop.py ;;
+  sources) script=source_capture.py ;;
   x)
     if [ "${1:-}" = "post" ]; then
       shift

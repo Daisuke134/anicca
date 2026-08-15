@@ -123,6 +123,7 @@ techniques do not merge the ledgers.
 | Postiz | A Japanese integration exists, but the product decision excludes Postiz | Do not read, connect, or use it in the Agent; this is not a blocker |
 | X identity | Dedicated Affiliate CDP `9326` and authenticated `whoami` prove `@selawmqt`: 128 posts, 27 following, 0 followers. The semantic profile command changed the public name to `sela | AI Tools`, added an English practical-AI bio with affiliate-link disclosure, set `aniccaai.com`, and a second apply returned `changed=false + matches_config=true`. X rejected legacy `@aniccaen` as inactive | Preserve mixed historical posts, keep all future posts English-only, and never use Japanese `@aniccaxxx` or shared daily-driver `@diceai0`; the first post still requires a duplicate-post fence and public readback |
 | X publication | No Affiliate placement exists. The canonical skill now has a dedicated `x post publish` boundary that verifies `@selawmqt:9326`, requires disclosure plus one owned article URL, writes an effect-possible fence before the click, reconciles exact timeline text after an ambiguous retry, and requires post-page readback before `LIVE`. X's April 2026 rules warn that scripted website automation may permanently suspend an account | The boundary is locally checked but intentionally has not clicked Publish because no approved owned article exists yet. The user-selected implementation is browser-only. Keep action caps and immediate account quarantine; never describe this lane as platform-approved or evade challenges |
+| English source scout | The canonical `sources capture --plan elevenlabs-en` command live-captured six immutable local artifacts: five ElevenLabs official web pages through CRWL and the official `elevenlabs/elevenlabs-python` repository through `gh` | Each receipt stores adapter, locator, locale, evidence class, license, body SHA-256, parser version, observed time, and expiry. The first live run returned `captured=6 + new=6`; after allowlisting stable GitHub fields, an immediate repeat returned `captured=6 + new=0`. Exact hashes are in Git-external `source-captures.jsonl`. CRWL `-q` failed because no LLM provider is configured, so the admitted route deliberately uses deterministic `md-fit` without an LLM. Authenticated X research readback is still missing |
 | clip loop | launchd is installed, last exit code is 0, and logs show production/posting through 2026-08-01 | Not banned. Reuse its publisher, renderer, attribution, and scoring contracts |
 | recent clip runs | Contract reports `skipped`; older stderr shows Telegram DNS delivery failures | Diagnose scheduler/business gates separately from platform health |
 
@@ -801,9 +802,12 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    regression check now implement the duplicate-post fence and post-level exact
    readback. This remains PARTIAL until the first approved artifact is actually
    published and the durable `X_POST_PUBLIC_READBACK` receipt is observed live.
-7. **PENDING.** Implement the source scout using CRWL, `gh`, official sources, and
-   authenticated X readback; every capture stores provenance, license, locale,
-   freshness, and failure class.
+7. **PARTIAL.** The source scout now runs CRWL and `gh` from a versioned English
+   ElevenLabs plan and stores immutable raw artifacts plus provenance, license,
+   locale, evidence class, parser version, freshness, and explicit adapter failure
+   classes outside Git. The live run captured five official pages and one official
+   MIT repository. Add authenticated X read-only capture and record a failed
+   adapter receipt before this item becomes DONE.
 8. **PENDING.** Reuse Writer research/editorial contracts and the existing browser
    publisher without merging Writer revenue or modifying its live loop.
 9. **PENDING.** Publish useful non-affiliate English foundation content on the
