@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "provider": "hubspot-impact",
+  "allowed_origins": ["https://app.impact.com"],
+  "target": {
+    "url_contains": "/secure/member/home/",
+    "title_contains": "HubSpot, Inc."
+  },
+  "states": [
+    {
+      "state": "APPLICATION_PENDING",
+      "all_text": [
+        "HubSpot, Inc. application",
+        "In Review",
+        "You will be notified once there is a response."
+      ],
+      "next_action": "POLL_APPLICATION"
+    }
+  ],
+  "fallback_state": "UNKNOWN_RENDERED_STATE",
+  "fallback_next_action": "RESEARCH_AND_UPDATE_PLAYBOOK"
+}

@@ -35,6 +35,18 @@ F0 provides four deterministic, non-publishing primitives:
   macOS browser app from held no-follow file descriptors without launching it;
   generic executable admission remains fail-closed.
 
+The first provider CLI slice is live:
+
+```bash
+skills/affiliate/affiliate provider inspect \
+  --provider hubspot-impact --cdp-port 9223 --receipt "$RECEIPT"
+```
+
+It attaches read-only to the existing task browser, selects exactly one
+origin/title/path-bound tab, maps rendered text through the versioned provider
+playbook, and writes an atomic sanitized receipt. Unknown UI never becomes an
+approval. The current slice observes status only; it cannot submit or publish.
+
 The committed bootstrap manifest pins PBS CPython `3.14.7+20260814` for macOS
 arm64 by immutable URL and SHA-256. The installer verifies and extracts the same
 held artifact, validates the full runtime tree, and atomically activates it

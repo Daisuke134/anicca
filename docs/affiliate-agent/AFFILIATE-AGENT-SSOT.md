@@ -681,6 +681,12 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    licensed GitHub implementations; reuse inspected code when it closes the same
    postcondition, otherwise cache the live semantic-browser playbook. Verify
    `@selawmqt`, rebrand it in English, and prove identity after every write.
+   The first shipped command is `affiliate provider inspect`: it uses the
+   working raw-CDP path after `agent-browser 0.27.0` hung against the live
+   multi-tab CloakBrowser, selects one origin/title/path-bound provider tab,
+   classifies only known rendered markers, and emits an atomic sanitized
+   receipt. HubSpot/Impact is the first versioned playbook; submit/resume remains
+   separate until duplicate-side-effect protection is implemented.
 7. Apply to/read back at least two English candidate programs through their
    websites; activate only an
    actually authenticated offer with current terms and an executable link.

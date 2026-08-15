@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+if [ "${1:-}" != "provider" ]; then
+  echo "usage: affiliate provider inspect ..." >&2
+  exit 2
+fi
+shift
+if [ -n "${AFFILIATE_PYTHON:-}" ]; then
+  python_bin=$AFFILIATE_PYTHON
+elif command -v python3 >/dev/null 2>&1; then
+  python_bin=$(command -v python3)
+else
+  echo "affiliate: python3 is required; run bootstrap/install.sh" >&2
+  exit 1
+fi
+exec "$python_bin" "$(dirname "$0")/scripts/provider_cli.py" "$@"
