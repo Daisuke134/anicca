@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "missing", "blocker"],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["build", "ask"]
+    },
+    "missing": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "blocker": {"type": "string"}
+  }
+}

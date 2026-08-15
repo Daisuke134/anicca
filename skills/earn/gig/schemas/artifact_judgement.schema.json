@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "reason"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "deliverable",
+        "about_the_deal",
+        "not_the_order",
+        "needs_buyer_input",
+        "undeterminable"
+      ]
+    },
+    "reason": {"type": "string"}
+  }
+}

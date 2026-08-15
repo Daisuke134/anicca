@@ -1,0 +1,89 @@
+{
+  "attachment_index": [
+    {
+      "bytes": 2433925,
+      "content_type": "image/png",
+      "filename": "BCFC4444-CB8A-40C5-81F1-B2173F1481EE.png",
+      "path": "/workspace/gig/projects/5197157/source/dm/attachments/46d9ee4ea85f-BCFC4444-CB8A-40C5-81F1-B2173F1481EE.png",
+      "sha256": "46d9ee4ea85f8111e3f49e095ceac12319b2380958b5d9c49d599edccc445b0c",
+      "side": "buyer",
+      "status": 200,
+      "url": "https://coconala.com/uploaded_files/view/28378318"
+    },
+    {
+      "bytes": 2784148,
+      "content_type": "image/png",
+      "filename": "19C0E719-4A15-4AA4-9F6F-FBF9A99EC39C.png",
+      "path": "/workspace/gig/projects/5197157/source/dm/attachments/0da46b1e2f94-19C0E719-4A15-4AA4-9F6F-FBF9A99EC39C.png",
+      "sha256": "0da46b1e2f94c0fc2a329f37680977523ff103e1c5bc21751a45b3888405c7b8",
+      "side": "buyer",
+      "status": 200,
+      "url": "https://coconala.com/uploaded_files/view/28378319"
+    }
+  ],
+  "content_sha256": "3481d84738ed1685d2020eac008f325cbdc44cbc72c757bc88eb1c7eef52aa53",
+  "message_count": 4,
+  "messages": [
+    {
+      "attachments": [
+        {
+          "filename": "BCFC4444-CB8A-40C5-81F1-B2173F1481EE.png",
+          "url": "https://coconala.com/uploaded_files/view/28378318"
+        },
+        {
+          "filename": "19C0E719-4A15-4AA4-9F6F-FBF9A99EC39C.png",
+          "url": "https://coconala.com/uploaded_files/view/28378319"
+        }
+      ],
+      "author_name": null,
+      "author_path": "/users/471591",
+      "index": 0,
+      "message_id": null,
+      "sent_at": "2026-08-06 15:44:01",
+      "side": "buyer",
+      "text": "「募集内容を拝見し、Canvaを活用した既存画像4枚の編集・加工および編集可能なテンプレート化に...」に関して質問です。\n\n今回の依頼はこの画像データを画像や文字の編集が可能なCanvaデータにして納品して欲しいです！！\n\n1枚目は4コマ、5コマ、6コマでひとつずつ\n2枚目はそのまま\n\n可能でしょうか？\n"
+    },
+    {
+      "attachments": [],
+      "author_name": null,
+      "author_path": "/users/2564121",
+      "index": 1,
+      "message_id": null,
+      "sent_at": "2026-08-06 15:46:41",
+      "side": "seller",
+      "text": "ご連絡ありがとうございます。可能です。\n\n1枚目は4コマ・5コマ・6コマをそれぞれ1枚ずつ、編集可能なCanvaデータとして作成し、2枚目はレイアウトをそのまま再現して、文字・画像を編集できるテンプレートにいたします。\n\nご購入後、まず元画像の構成と使用フォントを確認し、Canva上で再現作業を開始します。素材に問題がなければ、最短でご購入当日〜翌日中に初稿をご提出します。"
+    },
+    {
+      "attachments": [],
+      "author_name": null,
+      "author_path": "/users/471591",
+      "index": 2,
+      "message_id": null,
+      "sent_at": "2026-08-06 15:49:29",
+      "side": "buyer",
+      "text": "ありがとうございます！\nそしたらよろしくお願いいたします！"
+    },
+    {
+      "attachments": [],
+      "author_name": null,
+      "author_path": "/users/2564121",
+      "index": 3,
+      "message_id": null,
+      "sent_at": "2026-08-06 17:00:59",
+      "side": "seller",
+      "text": "ありがとうございます。承知いたしました。1枚目は4コマ・5コマ・6コマを各1点、2枚目は元のレイアウトを保持したまま、文字・画像を編集できるCanvaテンプレートとして制作いたします。\n\nご購入後すぐに元画像を確認し、Canva上で編集可能な形へ再現作業を進めます。素材に問題がなければ、最短でご購入当日〜翌日中に初稿をお渡しします。どうぞよろしくお願いいたします。"
+    }
+  ],
+  "observed_at": "2026-08-07T11:34:01+00:00",
+  "own_user_path": "/users/2564121",
+  "participants": [
+    {
+      "name": "",
+      "user_path": "/users/471591"
+    }
+  ],
+  "source": "coconala_direct_message_dom",
+  "thread_id": "10056132",
+  "url": "https://coconala.com/mypage/direct_message/10056132",
+  "version": 1
+}

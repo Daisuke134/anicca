@@ -1,0 +1,513 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.ai/schemas/marketplace/kpi-record-v1.json",
+  "title": "Marketplace KPI event or metric snapshot",
+  "$defs": {
+    "rfc3339": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9]))(?![\\s\\S])"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?![\\s])(?:(?![\\x00-\\x1F\\x7F-\\x9F])[\\s\\S])+(?<![\\s])(?![\\s\\S])"
+    },
+    "hex64": {
+      "type": "string",
+      "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])"
+    },
+    "platform": {
+      "type": "string",
+      "pattern": "^(?:[a-z][a-z0-9_-]{1,31})(?![\\s\\S])"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["collector", "evidence_ref", "content_sha256"],
+      "properties": {
+        "collector": {"$ref": "#/$defs/identifier"},
+        "evidence_ref": {"$ref": "#/$defs/identifier"},
+        "content_sha256": {"$ref": "#/$defs/hex64"}
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "service_id",
+        "service_version_hash",
+        "opportunity_id",
+        "application_id",
+        "thread_id",
+        "offer_id",
+        "talkroom_id",
+        "payment_receipt_id"
+      ],
+      "properties": {
+        "service_id": {"anyOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
+        "service_version_hash": {"anyOf": [{"$ref": "#/$defs/hex64"}, {"type": "null"}]},
+        "opportunity_id": {"anyOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
+        "application_id": {"anyOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
+        "thread_id": {"anyOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
+        "offer_id": {"anyOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
+        "talkroom_id": {"anyOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
+        "payment_receipt_id": {"anyOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]}
+      }
+    },
+    "amount": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "net_jpy", "currency", "unknown_reason"],
+          "properties": {
+            "status": {"const": "known"},
+            "net_jpy": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "not": {"type": "boolean"}
+            },
+            "currency": {"const": "JPY"},
+            "unknown_reason": {"const": null}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "net_jpy", "currency", "unknown_reason"],
+          "properties": {
+            "status": {"const": "unknown"},
+            "net_jpy": {"const": null},
+            "currency": {"const": null},
+            "unknown_reason": {"$ref": "#/$defs/identifier"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "net_jpy", "currency", "unknown_reason"],
+          "properties": {
+            "status": {"const": "not_applicable"},
+            "net_jpy": {"const": null},
+            "currency": {"const": null},
+            "unknown_reason": {"const": null}
+          }
+        }
+      ]
+    },
+    "snapshot_value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "value", "unknown_reason"],
+          "properties": {
+            "status": {"const": "known"},
+            "value": {
+              "type": "number",
+              "not": {"type": "boolean"}
+            },
+            "unknown_reason": {"const": null}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "value", "unknown_reason"],
+          "properties": {
+            "status": {"const": "unknown"},
+            "value": {"const": null},
+            "unknown_reason": {"$ref": "#/$defs/identifier"}
+          }
+        }
+      ]
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_kind",
+        "platform",
+        "acquisition_lane",
+        "observed_at",
+        "source",
+        "event_id",
+        "event_name",
+        "occurred_at",
+        "identity",
+        "identity_status",
+        "unknown_reason",
+        "amount"
+      ],
+      "properties": {
+        "schema_version": {"type": "integer", "const": 1},
+        "record_kind": {"const": "event"},
+        "platform": {"$ref": "#/$defs/platform"},
+        "acquisition_lane": {
+          "type": "string",
+          "enum": ["storefront", "apply", "unknown"]
+        },
+        "observed_at": {"$ref": "#/$defs/rfc3339"},
+        "source": {"$ref": "#/$defs/source"},
+        "event_id": {"$ref": "#/$defs/identifier"},
+        "event_name": {
+          "type": "string",
+          "enum": [
+            "inquiry_received",
+            "qualified",
+            "estimate_sent",
+            "order_confirmed",
+            "application_submitted",
+            "reply_received",
+            "delivered",
+            "accepted",
+            "settled",
+            "repeat",
+            "refund"
+          ]
+        },
+        "occurred_at": {"$ref": "#/$defs/rfc3339"},
+        "identity": {"$ref": "#/$defs/identity"},
+        "identity_status": {
+          "type": "string",
+          "enum": ["known", "partial", "unknown"]
+        },
+        "unknown_reason": {"type": ["string", "null"]},
+        "amount": {"$ref": "#/$defs/amount"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "acquisition_lane": {"const": "storefront"}
+            }
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "allOf": [
+                  {"$ref": "#/$defs/identity"},
+                  {
+                    "required": ["service_id", "service_version_hash"],
+                    "properties": {
+                      "service_id": {"type": "string", "minLength": 1},
+                      "service_version_hash": {"$ref": "#/$defs/hex64"}
+                    }
+                  }
+                ]
+              },
+              "unknown_reason": {"const": null}
+              ,"identity_status": {"enum": ["known", "partial"]}
+              ,"event_name": {"enum": ["inquiry_received", "qualified", "estimate_sent", "order_confirmed", "delivered", "accepted", "settled", "repeat", "refund"]}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "acquisition_lane": {"const": "apply"}
+            }
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "allOf": [
+                  {"$ref": "#/$defs/identity"},
+                  {
+                    "required": ["opportunity_id", "application_id"],
+                    "properties": {
+                      "opportunity_id": {"type": "string", "minLength": 1},
+                      "application_id": {"type": "string", "minLength": 1}
+                    }
+                  }
+                ]
+              },
+              "unknown_reason": {"const": null}
+              ,"identity_status": {"enum": ["known", "partial"]}
+              ,"event_name": {"enum": ["application_submitted", "reply_received", "qualified", "estimate_sent", "order_confirmed", "delivered", "accepted", "settled", "repeat", "refund"]}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "acquisition_lane": {"const": "unknown"}
+            }
+          },
+          "then": {
+            "properties": {
+              "identity_status": {"const": "unknown"},
+              "unknown_reason": {"$ref": "#/$defs/identifier"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {"enum": ["settled", "refund"]}
+            }
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "allOf": [
+                  {"$ref": "#/$defs/identity"},
+                  {
+                    "required": ["talkroom_id", "payment_receipt_id"],
+                    "properties": {
+                      "talkroom_id": {"type": "string", "minLength": 1},
+                      "payment_receipt_id": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              "amount": {
+                "allOf": [
+                  {"$ref": "#/$defs/amount"},
+                  {
+                    "required": [
+                      "status",
+                      "net_jpy",
+                      "currency",
+                      "unknown_reason"
+                    ],
+                    "properties": {"status": {"const": "known"}}
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {"const": "settled"}
+            }
+          },
+          "then": {
+            "properties": {
+              "amount": {
+                "allOf": [
+                  {"$ref": "#/$defs/amount"},
+                  {
+                    "properties": {
+                      "net_jpy": {"type": "integer", "minimum": 1}
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"event_name": {"const": "refund"}}},
+          "then": {"properties": {"amount": {"allOf": [
+            {"$ref": "#/$defs/amount"},
+            {"properties": {"net_jpy": {"type": "integer", "maximum": 0}}}
+          ]}}}
+        }
+      ]
+    },
+    "metric_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_kind",
+        "platform",
+        "acquisition_lane",
+        "aggregation_scope",
+        "lane_unknown_reason",
+        "observed_at",
+        "source",
+        "snapshot_id",
+        "metric_name",
+        "stage",
+        "window",
+        "dimension",
+        "value"
+      ],
+      "properties": {
+        "schema_version": {"type": "integer", "const": 1},
+        "record_kind": {"const": "metric_snapshot"},
+        "platform": {"$ref": "#/$defs/platform"},
+        "acquisition_lane": {
+          "type": "string",
+          "enum": ["storefront", "apply", "unknown"]
+        },
+        "aggregation_scope": {
+          "type": "string",
+          "enum": ["entity", "lane_total"]
+        },
+        "lane_unknown_reason": {"type": ["string", "null"]},
+        "observed_at": {"$ref": "#/$defs/rfc3339"},
+        "source": {"$ref": "#/$defs/source"},
+        "snapshot_id": {"$ref": "#/$defs/identifier"},
+        "metric_name": {
+          "type": "string",
+          "enum": ["stage_count", "net_jpy"]
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "impression",
+            "view",
+            "inquiry",
+            "qualified",
+            "estimate_order",
+            "eligible_opportunity",
+            "application",
+            "reply",
+            "delivered",
+            "accepted",
+            "settled",
+            "repeat",
+            "refund"
+          ]
+        },
+        "window": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end", "timezone", "complete"],
+          "properties": {
+            "start": {"$ref": "#/$defs/rfc3339"},
+            "end": {"$ref": "#/$defs/rfc3339"},
+            "timezone": {"const": "Asia/Tokyo"},
+            "complete": {"type": "boolean"}
+          }
+        },
+        "dimension": {"$ref": "#/$defs/identity"},
+        "value": {"$ref": "#/$defs/snapshot_value"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"acquisition_lane": {"const": "unknown"}}},
+          "then": {"properties": {"lane_unknown_reason": {"$ref": "#/$defs/identifier"}}},
+          "else": {"properties": {"lane_unknown_reason": {"const": null}}}
+        },
+        {
+          "if": {"properties": {"aggregation_scope": {"const": "lane_total"}}},
+          "then": {"properties": {"dimension": {"allOf": [
+            {"$ref": "#/$defs/identity"},
+            {"properties": {
+              "service_id": {"const": null},
+              "service_version_hash": {"const": null},
+              "opportunity_id": {"const": null},
+              "application_id": {"const": null},
+              "thread_id": {"const": null},
+              "offer_id": {"const": null},
+              "talkroom_id": {"const": null},
+              "payment_receipt_id": {"const": null}
+            }}
+          ]}}}
+        },
+        {
+          "if": {"properties": {"acquisition_lane": {"const": "storefront"}}},
+          "then": {"properties": {"stage": {"enum": ["impression", "view", "inquiry", "qualified", "estimate_order", "delivered", "accepted", "settled", "repeat", "refund"]}}}
+        },
+        {
+          "if": {"properties": {
+            "aggregation_scope": {"const": "entity"},
+            "acquisition_lane": {"const": "storefront"}
+          }},
+          "then": {"properties": {
+            "dimension": {"allOf": [
+              {"$ref": "#/$defs/identity"},
+              {
+                "required": ["service_id", "service_version_hash"],
+                "properties": {
+                  "service_id": {"$ref": "#/$defs/identifier"},
+                  "service_version_hash": {"$ref": "#/$defs/hex64"}
+                }
+              }
+            ]}
+          }}
+        },
+        {
+          "if": {"properties": {"acquisition_lane": {"const": "apply"}}},
+          "then": {"properties": {"stage": {"enum": ["eligible_opportunity", "application", "reply", "qualified", "estimate_order", "delivered", "accepted", "settled", "repeat", "refund"]}}}
+        },
+        {
+          "if": {"properties": {
+            "aggregation_scope": {"const": "entity"},
+            "acquisition_lane": {"const": "apply"},
+            "stage": {"const": "eligible_opportunity"}
+          }},
+          "then": {"properties": {"dimension": {"allOf": [
+            {"$ref": "#/$defs/identity"},
+            {
+              "required": ["opportunity_id"],
+              "properties": {
+                "opportunity_id": {"$ref": "#/$defs/identifier"},
+                "application_id": {"const": null}
+              }
+            }
+          ]}}}
+        },
+        {
+          "if": {"properties": {
+            "aggregation_scope": {"const": "entity"},
+            "acquisition_lane": {"const": "apply"},
+            "stage": {"enum": ["application", "reply", "qualified", "estimate_order", "delivered", "accepted", "settled", "repeat", "refund"]}
+          }},
+          "then": {"properties": {"dimension": {"allOf": [
+            {"$ref": "#/$defs/identity"},
+            {
+              "required": ["opportunity_id", "application_id"],
+              "properties": {
+                "opportunity_id": {"$ref": "#/$defs/identifier"},
+                "application_id": {"$ref": "#/$defs/identifier"}
+              }
+            }
+          ]}}}
+        },
+        {
+          "if": {"properties": {
+            "aggregation_scope": {"const": "entity"},
+            "acquisition_lane": {"const": "unknown"}
+          }},
+          "then": {"properties": {"dimension": {"anyOf": [
+            {"allOf": [
+              {"$ref": "#/$defs/identity"},
+              {"properties": {
+                "service_id": {"$ref": "#/$defs/identifier"},
+                "service_version_hash": {"$ref": "#/$defs/hex64"}
+              }}
+            ]},
+            {"properties": {"opportunity_id": {"$ref": "#/$defs/identifier"}}},
+            {"properties": {"application_id": {"$ref": "#/$defs/identifier"}}},
+            {"properties": {"thread_id": {"$ref": "#/$defs/identifier"}}},
+            {"properties": {"offer_id": {"$ref": "#/$defs/identifier"}}},
+            {"properties": {"talkroom_id": {"$ref": "#/$defs/identifier"}}},
+            {"properties": {"payment_receipt_id": {"$ref": "#/$defs/identifier"}}}
+          ]}}}
+        },
+        {
+          "if": {"properties": {"metric_name": {"const": "stage_count"}, "value": {"properties": {"status": {"const": "known"}}}}},
+          "then": {"properties": {"value": {"allOf": [
+            {"$ref": "#/$defs/snapshot_value"},
+            {"properties": {"value": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "not": {"type": "boolean"}}}}
+          ]}}}
+        },
+        {
+          "if": {"properties": {"metric_name": {"const": "net_jpy"}, "value": {"properties": {"status": {"const": "known"}}}}},
+          "then": {"properties": {"value": {"allOf": [
+            {"$ref": "#/$defs/snapshot_value"},
+            {"properties": {"value": {"type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "not": {"type": "boolean"}}}}
+          ]}}}
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {"$ref": "#/$defs/event"},
+    {"$ref": "#/$defs/metric_snapshot"}
+  ]
+}

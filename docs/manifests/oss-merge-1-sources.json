@@ -58,11 +58,12 @@
       "repository": "https://github.com/Daisuke134/profitable-claude.git",
       "commit": "7f1a32897978b74013a9f09982f6179b9cc0d230",
       "additional_commits": [
-        "fd7d82dea3b1bc62e7d232754f9a93d4db8200e6"
+        "fd7d82dea3b1bc62e7d232754f9a93d4db8200e6",
+        "d9eb8f50c266f4d0ef2e7a7305d3b5d05d3efdea"
       ],
       "disposition": "absorbed",
       "license": "MIT",
-      "scope": "The shared runner, context packet, token ledger, usage reporter, and fail-closed tests are consolidated under the single canonical runtime/agent-runner engine.",
+      "scope": "The shared runner and the accepted Storefront, Apply, Negotiate, and Paid revenue owners, KPI contracts, reporting, launch units, tests, and source-only paid-delivery verifier are consolidated into the canonical Life Manager tree.",
       "excluded": [
         "Personal provider account configuration",
         "Developer-local candidate workspace",
@@ -80,6 +81,10 @@
         {"source": "skills/agent-runner/tests/test_prompt_fail_closed.py", "target": "runtime/agent-runner/tests/test_prompt_fail_closed.py", "sha256": "175961a8f6dee55de540cbb5691b0da4746f09bebc8226d56acaf788e2811209"},
         {"source": "skills/agent-runner/tests/test_token_budget.py", "target": "runtime/agent-runner/tests/test_token_budget.py", "sha256": "868f1af984ab27eda8af462b6a121c339ed93e826a742ee65d840c87d3b459e0"},
         {"source": "skills/agent-runner/tests/test_usage_report.py", "target": "runtime/agent-runner/tests/test_usage_report.py", "sha256": "f10b1ca746093386acd1a45d0b0d0eae3e0603938ac90df8da2d34799fb88295"}
+      ],
+      "absorbed_roots": [
+        {"source": "skills/gig-work", "target": "skills/earn/gig", "files": 554, "inventory_sha256": "f9bf262bba529e9a38381d11816731195b9dad443ebe981fc45fc177c7a95201"},
+        {"source": "skills/music-score-omr", "target": "skills/music-score-omr", "files": 2, "inventory_sha256": "2a60d388a2c29ac8d70fa48328c18cb88527b8348a300a812ec6c9b2a7c02485"}
       ]
     },
     {

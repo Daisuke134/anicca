@@ -1,7 +1,14 @@
 {
   "version": 2,
-  "updated_ts": "2026-07-12T00:00:00Z",
-  "max_apply_per_pass": 12,
+  "updated_ts": "2026-08-01T10:00:00Z",
+  "max_apply_per_pass": 7,
+  "listing_weekly_target": 0,
+  "_listing_weekly_target_note": "2026-08-01 Dais 裁定で新規出品の拡大を凍結。既存 live 15件は維持・改善のみ。実績(受注/納品/評価)が積まれるまで出品を増やしても買われない。解凍条件は SSOT §6 の 2026-08-01 裁定ブロック参照。",
+  "apply_skip_thresholds": {
+    "max_applicants": 30,
+    "min_contracted_to_skip": 1,
+    "min_budget_jpy": 3000
+  },
   "improve_cadence_passes": 4,
   "priority_categories": [
     "PPT/スライド",
@@ -10,6 +17,10 @@
     "データ入力/Excel",
     "文字起こし",
     "コード",
+    "Web制作",
+    "自動化",
+    "スクレイピング",
+    "業務システム",
     "LP/ランディングページ"
   ],
   "skip_categories": [],

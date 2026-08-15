@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "conversation_state",
+    "next_action",
+    "cycle_start_message_id",
+    "evidence_message_ids",
+    "required_official_context",
+    "estimate_terms",
+    "reply_body",
+    "reply_audit",
+    "uncertainty"
+  ],
+  "properties": {
+    "conversation_state": {
+      "type": "string",
+      "enum": [
+        "question",
+        "negotiating",
+        "ready_to_buy",
+        "explicit_estimate_request",
+        "clarify",
+        "gratitude",
+        "considering",
+        "declined",
+        "stop_contact",
+        "seller_last",
+        "unknown"
+      ]
+    },
+    "next_action": {
+      "type": "string",
+      "enum": ["reply", "send_estimate", "clarify", "wait", "stop"]
+    },
+    "cycle_start_message_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "evidence_message_ids": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {"type": "string", "minLength": 1, "maxLength": 128}
+    },
+    "required_official_context": {
+      "type": "string",
+      "enum": ["none", "application", "service", "estimate_form"]
+    },
+    "estimate_terms": {
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "title",
+            "content",
+            "quantity",
+            "price_jpy",
+            "delivery_days",
+            "purchase_plan",
+            "title_evidence_message_ids",
+            "content_evidence_message_ids",
+            "quantity_evidence_message_ids",
+            "price_evidence_message_ids",
+            "delivery_evidence_message_ids",
+            "purchase_plan_evidence_message_ids"
+          ],
+          "properties": {
+            "title": {"type": "string", "minLength": 1, "maxLength": 100},
+            "content": {"type": "string", "minLength": 1, "maxLength": 1000},
+            "quantity": {"type": "integer", "minimum": 1, "maximum": 100000},
+            "price_jpy": {"type": "integer", "minimum": 1, "maximum": 10000000},
+            "delivery_days": {"type": "integer", "minimum": 1, "maximum": 365},
+            "purchase_plan": {"type": "string", "enum": ["single", "subscription"]},
+            "title_evidence_message_ids": {
+              "type": "array", "minItems": 1, "maxItems": 16,
+              "items": {"type": "string", "minLength": 1, "maxLength": 128}
+            },
+            "content_evidence_message_ids": {
+              "type": "array", "minItems": 1, "maxItems": 16,
+              "items": {"type": "string", "minLength": 1, "maxLength": 128}
+            },
+            "quantity_evidence_message_ids": {
+              "type": "array", "minItems": 1, "maxItems": 16,
+              "items": {"type": "string", "minLength": 1, "maxLength": 128}
+            },
+            "price_evidence_message_ids": {
+              "type": "array", "minItems": 1, "maxItems": 16,
+              "items": {"type": "string", "minLength": 1, "maxLength": 128}
+            },
+            "delivery_evidence_message_ids": {
+              "type": "array", "minItems": 1, "maxItems": 16,
+              "items": {"type": "string", "minLength": 1, "maxLength": 128}
+            },
+            "purchase_plan_evidence_message_ids": {
+              "type": "array", "minItems": 1, "maxItems": 16,
+              "items": {"type": "string", "minLength": 1, "maxLength": 128}
+            }
+          }
+        }
+      ]
+    },
+    "reply_body": {
+      "type": ["string", "null"],
+      "maxLength": 1000
+    },
+    "reply_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answered_buyer_message_ids",
+        "unanswered_questions",
+        "unsupported_claims",
+        "unrequested_cta",
+        "repeats_seller_message",
+        "off_platform_contact"
+      ],
+      "properties": {
+        "answered_buyer_message_ids": {
+          "type": "array", "maxItems": 32,
+          "items": {"type": "string", "minLength": 1, "maxLength": 128}
+        },
+        "unanswered_questions": {
+          "type": "array", "maxItems": 16,
+          "items": {"type": "string", "minLength": 1, "maxLength": 240}
+        },
+        "unsupported_claims": {
+          "type": "array", "maxItems": 16,
+          "items": {"type": "string", "minLength": 1, "maxLength": 240}
+        },
+        "unrequested_cta": {"type": "boolean"},
+        "repeats_seller_message": {"type": "boolean"},
+        "off_platform_contact": {"type": "boolean"}
+      }
+    },
+    "uncertainty": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    }
+  }
+}

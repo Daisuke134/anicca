@@ -32,9 +32,9 @@ test('cdp_nav_snapshot.py: waits for the page to finish loading (loadEventFired 
   assert.ok(/Page\.loadEventFired/.test(src) || /readyState/.test(src), 'no load-wait (loadEventFired/readyState) found');
 });
 
-test('cdp_nav_snapshot.py: still captures a screenshot (Page.captureScreenshot)', () => {
+test('cdp_nav_snapshot.py: captures rendered DOM evidence for hidden targets', () => {
   const src = fs.readFileSync(NAV_HELPER, 'utf8');
-  assert.ok(/Page\.captureScreenshot/.test(src), 'no Page.captureScreenshot call found');
+  assert.ok(/document\.body\.innerText/.test(src), 'no rendered DOM evidence capture found');
 });
 
 test('cdp_nav_snapshot.py: appends a trajectory row (parity with cdp_snapshot.py)', () => {

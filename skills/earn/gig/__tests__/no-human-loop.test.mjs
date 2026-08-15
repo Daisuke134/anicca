@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 // All .sh files that are part of the live loop (add new scripts here when created)
 // gig_reality_verify.sh added (feature gig-reality-verify, 増分2b): the fresh-spawn reality-verifier
-// runner must also be human-free — it self-invokes claude -p, never asks/waits for a human.
+// runner must also be human-free — it delegates through the common runner and never asks/waits for a human.
 const FILES = ['gig-cli.sh', 'monitor.sh', 'gig-healthcheck.sh', 'auditor.sh', 'run.sh', 'gig_reality_verify.sh'];
 
 // runtime human-step patterns (the one allowed human element — Dais's one-time KYC/account — is not a
@@ -24,7 +24,7 @@ const FORBIDDEN = [
 ];
 
 // Scan the RAW file (FIND-R3-002): the core's cron prompt is one quoted line containing
-// `#5121769`, so a comment-stripper would blind the scan after that token. The FORBIDDEN
+// `#91000003`, so a comment-stripper would blind the scan after that token. The FORBIDDEN
 // patterns never legitimately appear (the only allowed human element, Dais's one-time KYC,
 // does not match them), so scanning raw is both safe and complete.
 function scan(code) {
@@ -41,14 +41,12 @@ for (const f of FILES) {
 }
 
 test('planted-violation: a human step AFTER a #token is caught (raw scan, not comment-blinded)', () => {
-  const poison = 'CronCreate prompt="... TRACK #5121769 specifically. then wait for Dais approval before 応募."';
+  const poison = 'CronCreate prompt="... TRACK #91000003 specifically. then wait for Dais approval before 応募."';
   assert.ok(scan(poison).length > 0, 'scanner is blind to a violation placed after a # token');
 });
 
-test('gig-cli.sh routes blockers to autonomous paths (captcha/OTP/login), never a human', () => {
+test('gig-cli.sh is a provider-free deterministic supervisor', () => {
   const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/CapSolver/i.test(code), 'no CapSolver captcha path');
-  assert.ok(/gog gmail|OTP/i.test(code), 'no OTP autonomous path');
-  assert.ok(/blocker is NOT a stop/i.test(code), 'blocker-is-not-stop not asserted');
-  assert.ok(/do NOT claim USDC|do NOT call record-earn/i.test(code), 'no-fake-earn guard missing');
+  assert.ok(code.includes('gig_core_supervisor.sh'), 'provider-free supervisor missing');
+  assert.ok(!/claude\s+-p|codex\s+exec|--model(?:=|\s+)sonnet/i.test(code), 'gig core directly invokes a provider');
 });

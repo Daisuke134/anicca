@@ -1,0 +1,10 @@
+{
+  "source": "production_runs15_16_snapshot_failure",
+  "error": "authenticated tab did not finish navigation",
+  "observed_states": [
+    {"url": "about:blank", "ready": "complete"},
+    {"url": "https://coconala.com/talkrooms/REDACTED", "ready": "interactive"}
+  ],
+  "expected_url": "https://coconala.com/talkrooms/REDACTED",
+  "expected_ready": "interactive"
+}

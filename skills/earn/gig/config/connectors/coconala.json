@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "connector": "coconala",
+  "enabled": true,
+  "authorization_source": "user_confirmed",
+  "policy_lookup_at_runtime": false,
+  "terms_lookup_at_runtime": false,
+  "allowed_scope": [
+    "authenticated_browser_read",
+    "reply",
+    "proposal",
+    "listing",
+    "delivery",
+    "verification"
+  ],
+  "prohibited_scope": [
+    "runtime_policy_lookup",
+    "runtime_terms_lookup",
+    "human_approval_gate",
+    "draft_only_terminal"
+  ],
+  "rate_limit": {
+    "max_concurrent_browser_tabs": 1
+  },
+  "reconciliation_mode": "authoritative_dom_readback",
+  "max_consistency_window_seconds": 120,
+  "revoked_at": null,
+  "inbox": {
+    "url": "https://coconala.com/message",
+    "title_contains": "メッセージ",
+    "container_selector": "main.c-layoutMypage #c-main .c-content"
+  },
+  "open_orders": {
+    "url": "https://coconala.com/mypage/received_orders/open"
+  }
+}

@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "source_contract_path": "storefront-direct/offer-contracts.jsonl",
+  "dimensions": ["demand", "outcome", "proof", "scope", "package", "intake", "image", "repeat"],
+  "services": [
+    {
+      "service_id": "4330368",
+      "public_url": "https://coconala.com/services/4330368",
+      "price_jpy": 20000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "782dabb3e28245cd25b38eaf49bf09b2612d3e4635ff75445d868e4aabe4e7d8", "image_count": 0},
+      "scores": {"demand": 2, "outcome": 2, "proof": 1, "scope": 2, "package": 1, "intake": 2, "image": 0, "repeat": 0},
+      "evidence": {
+        "demand": "https://coconala.com/services/3741646: visible 10 sales, 5.0/10 reviews, 18 favorites",
+        "outcome": "title and scope name Python/OpenCV PoC,判定対象, and test-result delivery",
+        "proof": "owned public scope claims TP=30, FP=0, FN=0 on 7 images; no linked delivery receipt is retained",
+        "scope": "owned scope lists implementation, sample-image check, requirements, runbook, and result summary",
+        "package": "public base is JPY20,000; no verified tier/add-on ladder in readback",
+        "intake": "owned scope requests target, use, image/video examples, OS/Python, and due date",
+        "image": "official DOM readback: 0 listing images verified",
+        "repeat": "official scope has no bounded recurring or maintenance offer"
+      }
+    },
+    {
+      "service_id": "4244910",
+      "public_url": "https://coconala.com/services/4244910",
+      "price_jpy": 7000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "df32fe7fe35d1c3d7bd9aa0024ee2af30967d5e66dc8983c14803809d58a3a8d", "image_count": 4},
+      "scores": {"demand": 2, "outcome": 2, "proof": 1, "scope": 1, "package": 2, "intake": 2, "image": 1, "repeat": 1},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=Excel%20VBA%20%E8%87%AA%E5%8B%95%E5%8C%96: visible comparables include 460, 409, and 23 reviews",
+        "outcome": "title names invoice/daily-report Excel automation design",
+        "proof": "scope states prior Excel automation was delivered and paid",
+        "scope": "scope lists input/process/output整理 but boundaries remain partial",
+        "package": "official readback: JPY3,000 extra flow and JPY5,000 monthly maintenance",
+        "intake": "scope requests task, sheet structure, input/output, frequency, and pain point",
+        "image": "official DOM readback: 4 unique listing images; distinct roles not verified",
+        "repeat": "official readback has a JPY5,000 monthly maintenance option but no native recurring plan"
+      }
+    },
+    {
+      "service_id": "4244912",
+      "public_url": "https://coconala.com/services/4244912",
+      "price_jpy": 5000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "166a49d8d8bdc7d419187c7803c40e35cdf888a203a6305f8a00f5d8fd363f37", "image_count": 3},
+      "scores": {"demand": 1, "outcome": 2, "proof": 1, "scope": 1, "package": 2, "intake": 2, "image": 1, "repeat": 0},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=SNS%20%E6%8A%95%E7%A8%BF%20%E6%89%8B%E9%A0%86%E6%9B%B8: adjacent workflow comparables show 1-7 reviews; exact-outcome evidence is weak",
+        "outcome": "title names an SNS posting handover procedure",
+        "proof": "title/scope state a prior delivered posting flow",
+        "scope": "owned contract identifies a handover deliverable but not a complete exclusion boundary",
+        "package": "official readback exposes a base offer with option structure",
+        "intake": "owned scope requests current posting flow and materials before design",
+        "image": "official DOM readback: 3 unique listing images; distinct roles not verified",
+        "repeat": "official scope does not promise a bounded recurring outcome"
+      }
+    },
+    {
+      "service_id": "4302213",
+      "public_url": "https://coconala.com/services/4302213",
+      "price_jpy": 5000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "323250b678735925cc734c9cdbf0c2647b521cc14bb34a77f03702a34f2f39da", "image_count": 5},
+      "scores": {"demand": 1, "outcome": 1, "proof": 1, "scope": 2, "package": 1, "intake": 2, "image": 1, "repeat": 0},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=SNS%20%E6%8A%95%E7%A8%BF%20%E6%89%8B%E9%A0%86%E6%9B%B8: adjacent workflow comparables show 1-7 reviews; exact-outcome evidence is weak",
+        "outcome": "title names SNS posting AI-use procedure design",
+        "proof": "scope states a prior delivered posting automation",
+        "scope": "owned contract lists the target posting workflow and handover deliverable",
+        "package": "official readback has a base offer but no verified three-tier ladder",
+        "intake": "owned scope requests current operation and intended automation boundary",
+        "image": "official DOM readback: 5 unique listing images; distinct roles not verified",
+        "repeat": "official scope does not promise a bounded recurring outcome"
+      }
+    },
+    {
+      "service_id": "4330753",
+      "public_url": "https://coconala.com/services/4330753",
+      "price_jpy": 3000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "37a3d6b4627314e2f592152e9a1411648f0b313dc5a2adc9958d1938f6af7f2c", "image_count": 0},
+      "scores": {"demand": 1, "outcome": 2, "proof": 1, "scope": 1, "package": 1, "intake": 2, "image": 0, "repeat": 2},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=SNS%20%E6%8A%95%E7%A8%BF%20%E6%89%8B%E9%A0%86%E6%9B%B8: adjacent workflow comparables show 1-7 reviews; exact-outcome evidence is weak",
+        "outcome": "title names an SNS pre-publication checklist",
+        "proof": "scope states the checklist is based on a delivered SNS operation",
+        "scope": "owned contract names individualized checklist design but leaves exclusions partial",
+        "package": "official readback exposes a base checklist offer without verified tiering",
+        "intake": "owned scope requests the customer's SNS operation and review points",
+        "image": "official DOM readback: 0 listing images verified",
+        "repeat": "official DOM readback shows native recurring purchase for the bounded one-medium delivery unit"
+      }
+    },
+    {
+      "service_id": "4330105",
+      "public_url": "https://coconala.com/services/4330105",
+      "price_jpy": 5000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "845c0628dae0eb78c6af99c674667afc635288d36ec5a430e34b5f2f1c295f99", "image_count": 0},
+      "scores": {"demand": 1, "outcome": 2, "proof": 1, "scope": 2, "package": 1, "intake": 2, "image": 0, "repeat": 0},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=SNS%20%E6%8A%95%E7%A8%BF%20%E6%89%8B%E9%A0%86%E6%9B%B8: adjacent workflow comparables show 1-7 reviews; exact-outcome evidence is weak",
+        "outcome": "title names an SNS posting AI handover manual",
+        "proof": "scope states a prior delivered SNS posting operation",
+        "scope": "owned contract names handover organization and delivery boundary",
+        "package": "official readback has a base offer without verified tier/add-on ladder",
+        "intake": "owned scope requests current SNS operation and handover materials",
+        "image": "official DOM readback: 0 listing images verified",
+        "repeat": "official scope does not promise a bounded recurring outcome"
+      }
+    },
+    {
+      "service_id": "4313386",
+      "public_url": "https://coconala.com/services/4313386",
+      "price_jpy": 6000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "af69a27a4cf704fc8fd3e5f927bce455baba61c503bfe42df9618620918e3842", "image_count": 6},
+      "scores": {"demand": 2, "outcome": 2, "proof": 1, "scope": 1, "package": 2, "intake": 2, "image": 1, "repeat": 1},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=Excel%20VBA%20%E8%87%AA%E5%8B%95%E5%8C%96: visible comparables include 460, 409, and 23 reviews",
+        "outcome": "title names invoice/daily-report VBA automation support",
+        "proof": "scope states prior delivered fixed-work automation",
+        "scope": "owned contract names runbook-supported automation, with boundary still partial",
+        "package": "official readback: JPY3,000 extra macro and JPY5,000 maintenance option",
+        "intake": "owned scope requests current workbook, task, expected behavior, and environment",
+        "image": "official DOM readback: 6 unique service listing images; roles not yet verified",
+        "repeat": "official readback includes a bounded JPY5,000 maintenance option"
+      }
+    },
+    {
+      "service_id": "4244556",
+      "public_url": "https://coconala.com/services/4244556",
+      "price_jpy": 5000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "b8274d84c0b09ba2b059c004a543a6e08f8ad06b8303d1f1c69eed09fa5f603f", "image_count": 3},
+      "scores": {"demand": 1, "outcome": 2, "proof": 1, "scope": 1, "package": 1, "intake": 2, "image": 1, "repeat": 2},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=SNS%20%E6%8A%95%E7%A8%BF%20%E6%89%8B%E9%A0%86%E6%9B%B8: adjacent workflow comparables show 1-7 reviews; exact-outcome evidence is weak",
+        "outcome": "title names SNS pre-publication confirmation design",
+        "proof": "scope states prior delivered SNS operation as the source",
+        "scope": "owned contract names first-run confirmation design but exclusions remain partial",
+        "package": "official readback has a base offer without verified tiering",
+        "intake": "owned scope requests the initial SNS operation and confirmation points",
+        "image": "official DOM readback: 3 unique listing images; distinct roles not verified",
+        "repeat": "official DOM readback shows native recurring purchase for the bounded one-medium delivery unit"
+      }
+    },
+    {
+      "service_id": "4313100",
+      "public_url": "https://coconala.com/services/4313100",
+      "price_jpy": 3000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "cf416c0b7af03b72b810f24cb9ec8017e22d9e5f3a8d611f35fb1e4bde5e2d3a", "image_count": 3},
+      "scores": {"demand": 2, "outcome": 2, "proof": 1, "scope": 2, "package": 1, "intake": 2, "image": 1, "repeat": 0},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=Web%20%E7%94%BB%E5%83%8F%20%E5%B7%AE%E3%81%97%E6%9B%BF%E3%81%88: visible update comparables include 563, 314, and 132 reviews",
+        "outcome": "title names image replacement and public-display confirmation",
+        "proof": "scope states prior delivered image update checked after publication",
+        "scope": "owned contract names replacement, publish check, and completion boundary",
+        "package": "official readback has a base offer without verified tier/add-on ladder",
+        "intake": "owned scope requests target URL, replacement asset, and publication conditions",
+        "image": "official DOM readback: 3 unique listing images; distinct roles not verified",
+        "repeat": "official scope does not promise a bounded recurring outcome"
+      }
+    },
+    {
+      "service_id": "4312985",
+      "public_url": "https://coconala.com/services/4312985",
+      "price_jpy": 4500,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "d44f2c5c0fbcb15457fe65b19b86715517fd9db81c3ef43c1fe78b521f4551e4", "image_count": 1},
+      "scores": {"demand": 2, "outcome": 2, "proof": 1, "scope": 1, "package": 1, "intake": 2, "image": 1, "repeat": 0},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=%E3%82%A4%E3%82%BF%E3%83%AA%E3%82%A2%E8%AA%9E%20%E7%BF%BB%E8%A8%B3: visible comparables include 35 and 33 reviews",
+        "outcome": "title names Italian UI translation, image adjustment, and clipping check",
+        "proof": "owned public title claims a four-screen delivery and clipping check; no linked delivery receipt is retained",
+        "scope": "owned contract names translation/image adjustment but exclusion boundary remains partial",
+        "package": "official readback has a base offer without verified tier/add-on ladder",
+        "intake": "owned scope requests source screens, target text, and UI context before work",
+        "image": "official DOM readback: 1 unique listing image; distinct roles not verified",
+        "repeat": "official scope does not promise a bounded recurring outcome"
+      }
+    },
+    {
+      "service_id": "4308502",
+      "public_url": "https://coconala.com/services/4308502",
+      "price_jpy": 5000,
+      "observation": {"observed_at": "2026-08-14T22:50:17.886855+00:00", "public_content_sha256": "67d75a9851107cecf1cd19a7429e99ce2e23ab240bcbb220b57da05e0bc7cdbc", "image_count": 6},
+      "scores": {"demand": 2, "outcome": 1, "proof": 1, "scope": 1, "package": 2, "intake": 1, "image": 1, "repeat": 0},
+      "evidence": {
+        "demand": "https://coconala.com/search?keyword=PowerPoint%20%E8%B3%87%E6%96%99%E4%BD%9C%E6%88%90: visible comparables include 470, 217, and 110 reviews",
+        "outcome": "title names making education/training materials easier to understand",
+        "proof": "scope states prior delivered training material was redesigned",
+        "scope": "owned contract names structure redesign but deliverable boundaries are partial",
+        "package": "official readback exposes a base material service with option structure",
+        "intake": "owned scope requests source material and intended audience, with inputs incomplete",
+        "image": "official DOM readback: 6 unique listing images; distinct roles not verified",
+        "repeat": "official scope does not promise a bounded recurring outcome"
+      }
+    }
+  ],
+  "priority_backlog": [
+    {
+      "priority": 1,
+      "service_id": "4330368",
+      "field": "image",
+      "before": 0,
+      "success_metric": "views_to_inquiry",
+      "reason": "verified demand + owned quantified claim + 0 images"
+    },
+    {
+      "priority": 2,
+      "service_id": "4313386",
+      "field": "image",
+      "before": 1,
+      "success_metric": "views_to_inquiry",
+      "reason": "verified demand + owned VBA capability; image roles remain unverified"
+    },
+    {
+      "priority": 3,
+      "service_id": "4308502",
+      "field": "outcome",
+      "before": 1,
+      "success_metric": "views_to_inquiry",
+      "reason": "strong presentation demand but the buyer outcome remains broad"
+    },
+    {
+      "priority": 4,
+      "service_id": "4244910",
+      "field": "scope",
+      "before": 1,
+      "success_metric": "inquiries_to_purchase",
+      "reason": "strong Excel automation demand but exclusions remain partial"
+    },
+    {
+      "priority": 5,
+      "service_id": "4312985",
+      "field": "scope",
+      "before": 1,
+      "success_metric": "inquiries_to_purchase",
+      "reason": "verified translation demand and quantified proof but exclusions remain partial"
+    },
+    {
+      "priority": 6,
+      "service_id": "4313100",
+      "field": "package",
+      "before": 1,
+      "success_metric": "inquiries_to_purchase",
+      "reason": "strong web-update demand but the offer has no verified add-on ladder"
+    },
+    {
+      "priority": 7,
+      "service_id": "4330753",
+      "field": "image",
+      "before": 0,
+      "success_metric": "views_to_inquiry",
+      "reason": "buyer outcome is specific but the listing has 0 images"
+    },
+    {
+      "priority": 8,
+      "service_id": "4330105",
+      "field": "image",
+      "before": 0,
+      "success_metric": "views_to_inquiry",
+      "reason": "buyer outcome and scope are clear but the listing has 0 images"
+    },
+    {
+      "priority": 9,
+      "service_id": "4244912",
+      "field": "scope",
+      "before": 1,
+      "success_metric": "inquiries_to_purchase",
+      "reason": "handover outcome is clear but exclusions remain partial"
+    },
+    {
+      "priority": 10,
+      "service_id": "4302213",
+      "field": "outcome",
+      "before": 1,
+      "success_metric": "views_to_inquiry",
+      "reason": "AI-use offer needs a more specific buyer-visible result"
+    },
+    {
+      "priority": 11,
+      "service_id": "4244556",
+      "field": "scope",
+      "before": 1,
+      "success_metric": "inquiries_to_purchase",
+      "reason": "repeat path exists but exclusions remain partial"
+    }
+  ],
+  "new_slot_policy": {
+    "all_required": true,
+    "required_evidence": ["distinct_demand_evidence", "owned_capability_evidence"],
+    "delivery_capacity_required": true,
+    "quota_can_authorize": false,
+    "forbidden_authority": ["quota"],
+    "rule": "A new slot requires both evidence types and available delivery capacity; the 20-slot quota never authorizes creation."
+  }
+}

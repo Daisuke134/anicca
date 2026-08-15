@@ -17,8 +17,17 @@ Counting rules (deterministic, no judgment):
   won      = ~/gig/lessons.jsonl rows with outcome == "accepted"
   paid     = ~/gig/earnings.jsonl rows with a SETTLED status AND evidence AND jpy>0
   jpy      = sum of jpy over those settled earnings rows
-  listings_live = distinct service_id in ~/gig/shuppin.jsonl that ever had a
-                  shuppin_published action (fallback: distinct service_id seen)
+  listings_live = scripts/listing_ledger.py published_listings — distinct service_id
+                  that ever had a shuppin_published action. The old "fallback to
+                  distinct service_id seen" is GONE: it made one field mean two
+                  different quantities depending on the day, which is one half of why
+                  the funnel and the daily report disagreed (4 vs 7 on 2026-07-27).
+                  Drafts, blocked attempts and unidentifiable publishes now have their
+                  own fields and are never folded into this one.
+  listings_published_today = the same count restricted to the current JST natural day
+  listings_known / listings_draft / listings_publish_events / listings_unidentified
+                = the other taxonomy buckets, reported so a divergence is visible
+                  instead of silently changing what listings_live means
 
 Category for an applied row: row.category if present, else joined from lessons.jsonl by
 requestId, else "uncategorized".
@@ -30,9 +39,13 @@ import json
 import os
 import sys
 import time
+from datetime import datetime, timezone
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
+import listing_ledger  # noqa: E402  -- the single source of truth for listing counts
 
 HOME = os.path.expanduser("~")
-GIG_DIR = os.path.join(HOME, "gig")
+GIG_DIR = os.environ.get("GIG_STATE_DIR", os.path.join(HOME, "gig"))
 FUNNEL_FILE = os.path.join(GIG_DIR, "gig-funnel.jsonl")
 
 SETTLED = {"検収", "支払", "検収完了", "completed", "paid"}
@@ -76,7 +89,6 @@ def build_funnel(pass_id):
     applied_rows = read_rows("applied.jsonl")
     lessons = read_rows("lessons.jsonl")
     earnings = read_rows("earnings.jsonl")
-    shuppin = read_rows("shuppin.jsonl")
 
     # requestId -> category from lessons (fallback join for applied rows lacking category)
     cat_by_req = {}
@@ -120,17 +132,13 @@ def build_funnel(pass_id):
             cat = cat_by_req.get(str(e.get("requestId"))) or "uncategorized"
             bump(cat, "paid")
 
-    # listings_live = distinct service_id ever published (fallback: distinct seen)
-    published_ids = set()
-    seen_ids = set()
-    for s in shuppin:
-        sid = s.get("service_id")
-        if sid is None:
-            continue
-        seen_ids.add(str(sid))
-        if s.get("action") == "shuppin_published":
-            published_ids.add(str(sid))
-    listings_live = len(published_ids) if published_ids else len(seen_ids)
+    # Listing counts come from the shared taxonomy, never re-derived here.
+    ledger_path = os.path.join(GIG_DIR, listing_ledger.LEDGER_FILENAME)
+    events = listing_ledger.load_events(ledger_path)
+    listings = listing_ledger.count(events)
+    now = datetime.now(timezone.utc)
+    day_start, day_end = listing_ledger.jst_day_bounds_for(now)
+    today = listing_ledger.count(events, since=day_start, until=day_end)
 
     return {
         "ts": int(time.time()),
@@ -140,7 +148,12 @@ def build_funnel(pass_id):
         "won": won,
         "paid": paid,
         "jpy": round(jpy, 0),
-        "listings_live": listings_live,
+        "listings_live": listings.published_listings,
+        "listings_published_today": today.published_listings,
+        "listings_known": listings.known_listings,
+        "listings_draft": listings.created_listings,
+        "listings_publish_events": listings.published_events,
+        "listings_unidentified": listings.unidentified_publish_events,
         "by_category": by_cat,
     }
 
@@ -151,8 +164,10 @@ def main():
         row = build_funnel(pass_id)
     except Exception as exc:  # never abort the pass
         row = {"ts": int(time.time()), "pass_id": pass_id, "applied": 0, "replied": 0,
-               "won": 0, "paid": 0, "jpy": 0, "listings_live": 0, "by_category": {},
-               "_error": str(exc)}
+               "won": 0, "paid": 0, "jpy": 0, "listings_live": 0,
+               "listings_published_today": 0, "listings_known": 0, "listings_draft": 0,
+               "listings_publish_events": 0, "listings_unidentified": 0,
+               "by_category": {}, "_error": str(exc)}
         print(f"gig_funnel.py ERROR: {exc}", file=sys.stderr)
     try:
         os.makedirs(GIG_DIR, exist_ok=True)

@@ -9,8 +9,9 @@
 # The model's args arrive as $ANICCA_ARGS (JSON); they are not needed here (no per-call action).
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$HERE/scripts/gig_paths.sh"
 WAKE="${WAKE_ID:-$(date +%s)}"
-PY=/opt/homebrew/bin/python3
+PY="${PYTHON3:-$(command -v python3)}"
 
 # 1) ensure the real Coconala earner (tmux core) is alive — idempotent
 bash "$HERE/gig-cli.sh" >/dev/null 2>&1 || true
@@ -22,10 +23,9 @@ SHARED_DIR="$(cd "$HERE/../../_shared" && pwd)"
 PL_JSON="$( cd "$SHARED_DIR" && "$PY" -m lib.proactive_observe gig "$HOME/loops/gig" 2>/dev/null || echo '{}' )"
 
 # 2b) honest status from the core's ledgers (¥ only; 検収/支払 rows are the only earned rows)
-"$PY" - "$WAKE" "$CORE" "$PL_JSON" <<'PY'
+"$PY" - "$WAKE" "$CORE" "$PL_JSON" "$GIG_STATE_DIR" <<'PY'
 import json,sys,os
-wake,core,pl_json=sys.argv[1],sys.argv[2],sys.argv[3]
-G=os.path.expanduser("~/gig")
+wake,core,pl_json,G=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
 def jnum(v):
     try: return float(str(v).replace(',','').replace('¥','').replace('円','').strip() or 0)
     except Exception: return 0.0

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reaction"],
+  "properties": {
+    "reaction": {
+      "type": "string",
+      "enum": ["positive", "revision_request", "negative", "neutral", "unclear"]
+    }
+  }
+}

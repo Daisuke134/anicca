@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "domain": "gig",
+  "agents": {
+    "ai.anicca.hf-gig-pass": {
+      "loop": "gig",
+      "role": "revenue-pass",
+      "owner": "life-manager",
+      "desired_state": "enabled",
+      "source_path": "~/Library/LaunchAgents/ai.anicca.hf-gig-pass.plist",
+      "schedule": {"type": "calendar", "minutes": [0]},
+      "model_call_limit_per_pass": 7,
+      "b2_model_call_limit_per_pass": 40,
+      "b2_min_new_inspections_per_attempt": 12,
+      "wall_clock": {
+        "pass_limit_seconds": 3480,
+        "finalize_reserve_seconds": 120,
+        "b2_min_invocation_seconds": 600
+      },
+      "token_budget": {
+        "pass_tokens": 4194304,
+        "loop_daily_tokens": 33554432,
+        "daily_scope": "gig-pass",
+        "ledger": "~/.local/state/life-manager/telemetry/token-budget.jsonl",
+        "circuit_breaker_exit": 75
+      },
+      "task_classes": ["composition-agent", "repeatable-agent", "tool-agent", "high-value-agent"],
+      "model_routes": [
+        {"task_class": "composition-agent", "route": "terra-medium-bounded"},
+        {"task_class": "tool-agent", "route": "terra-medium-bounded"},
+        {"task_class": "repeatable-agent", "route": "luna-medium-decision"},
+        {"task_class": "high-value-agent", "route": "luna-medium-decision"}
+      ],
+      "escalation": {
+        "task_class": "escalation-agent",
+        "route": "explicit-escalation",
+        "requires_reason": true
+      }
+    },
+    "ai.anicca.hf-gig-reply-detector": {
+      "loop": "gig",
+      "role": "bounded-reply-detector",
+      "owner": "life-manager",
+      "desired_state": "enabled",
+      "source_path": "~/Library/LaunchAgents/ai.anicca.hf-gig-reply-detector.plist",
+      "schedule": {"type": "interval", "seconds": 300},
+      "model_call_limit_per_pass": 1,
+      "token_budget": {
+        "pass_tokens": 65536,
+        "loop_daily_tokens": 1048576,
+        "daily_scope": "gig-reply-detector",
+        "ledger": "~/.local/state/life-manager/telemetry/token-budget.jsonl",
+        "circuit_breaker_exit": 75
+      },
+      "task_classes": ["composition-agent"],
+      "model_routes": [
+        {"task_class": "composition-agent", "route": "terra-medium-bounded"}
+      ]
+    },
+    "ai.anicca.hf-gig-auditor": {
+      "loop": "gig",
+      "role": "deterministic-hourly-audit-and-six-hour-reality-check",
+      "owner": "life-manager",
+      "desired_state": "enabled",
+      "source_path": "~/Library/LaunchAgents/ai.anicca.hf-gig-auditor.plist",
+      "token_budget": {
+        "pass_tokens": 32768,
+        "loop_daily_tokens": 262144,
+        "daily_scope": "gig-auditor",
+        "ledger": "~/.local/state/life-manager/telemetry/token-budget.jsonl",
+        "circuit_breaker_exit": 75
+      },
+      "task_classes": ["tool-agent"]
+    },
+    "ai.anicca.hf-gig-core-healthcheck": {
+      "loop": "gig",
+      "role": "deterministic-core-healthcheck",
+      "owner": "life-manager",
+      "desired_state": "enabled",
+      "source_path": "~/Library/LaunchAgents/ai.anicca.hf-gig-core-healthcheck.plist",
+      "task_classes": []
+    },
+    "ai.anicca.hf-gig-selfimprove-verify": {
+      "loop": "gig",
+      "role": "deterministic-self-improvement-evidence-check",
+      "owner": "life-manager",
+      "desired_state": "enabled",
+      "source_path": "~/Library/LaunchAgents/ai.anicca.hf-gig-selfimprove-verify.plist",
+      "task_classes": []
+    },
+    "ai.anicca.hf-gig-daily-report": {
+      "loop": "gig",
+      "role": "deterministic-daily-report",
+      "owner": "life-manager",
+      "desired_state": "enabled",
+      "source_path": "~/Library/LaunchAgents/ai.anicca.hf-gig-daily-report.plist",
+      "task_classes": []
+    },
+    "ai.anicca.hf-gig-weekly-report": {
+      "loop": "gig",
+      "role": "deterministic-weekly-report",
+      "owner": "life-manager",
+      "desired_state": "enabled",
+      "source_path": "~/Library/LaunchAgents/ai.anicca.hf-gig-weekly-report.plist",
+      "schedule": {"type": "calendar", "weekday": 1, "hour": 9, "minute": 12},
+      "task_classes": []
+    }
+  }
+}

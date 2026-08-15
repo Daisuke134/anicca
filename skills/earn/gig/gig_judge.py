@@ -80,10 +80,10 @@ def gate_verdict(
     The caller (gig_reality_verify.sh / gig_reality_gate.py) must NEVER accept the fresh judge's
     self-reported `verdict:true` on faith alone — this is the "stop being report-blind one level up"
     gate. If the judge claims `verdict:true` but the caller did not independently observe at least
-    `required_count` fresh ground-truth screenshots (`evidence_count < required_count`), the verdict is
+    `required_count` fresh ground-truth captures (`evidence_count < required_count`), the verdict is
     downgraded to `false` with a fixed, explanatory `failure_reason`. A genuinely `false` verdict from
     the judge is NEVER upgraded to `true` by evidence presence — this gate only ever downgrades an
-    unbacked `true`, it never invents a `true` out of screenshots alone (a screenshot without a
+    unbacked `true`, it never invents a `true` out of evidence alone (an artifact without a
     corroborating true verdict proves nothing either way).
 
     Args:
@@ -91,7 +91,7 @@ def gate_verdict(
         evidence_count: number of trajectory rows independently found for this run's pass_id
             (ts >= run_start), as counted by gig_reality_gate.py from the REAL trajectory file.
         required_count: number of ground-truth URLs that were supposed to be checked this run
-            (one screenshot minimum per ground-truth URL — behavioral-spec REQ-008).
+            (one evidence capture minimum per ground-truth URL — behavioral-spec REQ-008).
 
     Returns:
         The judgement unchanged (pass-through) when verdict is already False, or when
@@ -102,7 +102,7 @@ def gate_verdict(
             verdict=False,
             reasoning=judgement.reasoning,
             failure_reason=(
-                "verifier produced a verdict without capturing ground-truth screenshots "
+                "verifier produced a verdict without capturing ground-truth evidence "
                 f"(captured {evidence_count}, required {required_count})"
             ),
             impossible_task=judgement.impossible_task,
@@ -144,21 +144,24 @@ whether the CLAIMS below actually happened on the REAL Coconala screen — never
 themselves.
 
 <task>
-Navigate the running CloakBrowser daily-driver (CDP :9222, already logged in as mtdc) to EACH of the
-ground-truth URLs below using the DETERMINISTIC navigation helper — do NOT navigate freehand via raw
-Bash/CDP calls. For EACH ground-truth URL below, call this exact script once, using pass_id "{pass_id}"
+Navigate the dedicated Gig CloakBrowser runtime selected by CLOAK_CDP_BASE_URL (already logged in as
+mtdc) to EACH of the ground-truth URLs below using the DETERMINISTIC navigation helper — do NOT
+navigate freehand via raw Bash/CDP calls. For EACH ground-truth URL below, call this exact script
+once, using pass_id "{pass_id}"
 (the SAME pass_id for every call this round) and seq 01, 02, 03... in the SAME order as the URLs are
 listed:
-  python3 __REPO_ROOT__/skills/earn/gig/scripts/cdp_nav_snapshot.py {pass_id} <seq> reality_check_<seq> <url>
-This performs a real Page.navigate, waits for the page to finish loading, captures a screenshot, and
+  python3 $GIG_DIR/scripts/cdp_nav_snapshot.py {pass_id} <seq> reality_check_<seq> <url>
+This performs a real Page.navigate in an owned hidden target, waits for the page to finish loading,
+captures rendered DOM text, and
 appends a trajectory row under ~/gig/trajectory/{pass_id}/. The caller INDEPENDENTLY (deterministically,
 without trusting your report) verifies these trajectory rows exist before your verdict is accepted — a
 verdict:true will be REJECTED and gated to false regardless of what you report if you skip this step
-or use fewer than one screenshot per ground-truth URL, so you MUST call the helper for every URL below.
+or use fewer than one evidence capture per ground-truth URL, so you MUST call the helper for every URL below.
 Then read the ACTUAL rendered DOM/text on each page (not the claim text) to see what is really there.
-For any claim-specific page beyond the 3 ground-truth URLs (e.g. an individual /services/<id> or
-/requests/<id> detail page needed to check one specific claim), you may navigate freely as needed, but
-you MUST still call the nav helper above at least once per ground-truth URL listed below.
+For any claim-specific page beyond the ground-truth URLs (e.g. an individual /services/<id> or
+/requests/<id> detail page needed to check one specific claim), do not navigate freely. Call the same
+nav helper with the next sequence number so every read-only observation stays in an owned hidden
+target and leaves trajectory evidence.
 
 NAVIGATE DIRECTLY, do not detour through a listing page first (real incident, realityverify-
 1784123104-80599: the judge burned its full time budget re-visiting https://coconala.com/message?
@@ -190,8 +193,17 @@ claim, read OUR OWN 納品予定日/提案額 from that applied-offers list (or 
 NOT the client's request-page 納品希望日/募集期限 — do not treat a mismatch against the client's own
 field as a contradiction of our claim.
 
+ARCHIVE CLAIM ROUTING (C2): for a claim whose action is shuppin_archived, the authoritative state is
+the authenticated seller storefront https://coconala.com/mypage/services_lists. Confirm that the
+service_id has no live service card/link there after the archive action. Coconala intentionally keeps
+the direct https://coconala.com/services/<id> URL reachable after archiving, and that page may still
+show the old title or owner edit controls; direct-page reachability alone is NOT a contradiction of
+an archive claim. Do not fail an archive claim merely because the direct URL returns HTTP 200. Conversely,
+do not accept an archive claim from the ledger or from an archive confirmation string alone when the
+fresh seller storefront still contains the service card/link.
+
 CLOSED/DELETED REQUEST WARNING for "applied" claims (real incident: realityverify-1784022302-54772,
-requestId 5152391/buyer "seaby" — verified applied at the time per gh#1035, then wrongly judged false
+requestId 91000016/buyer "seaby" — verified applied at the time per gh#1035, then wrongly judged false
 ~24h later; LIVE-CONFIRMED during the fix for this incident): once a client deletes or closes their
 own coconala.com/requests/<id> 公開依頼 posting, that individual request page permanently 404s
 ("ご指定のページが見つかりませんでした") for EVERYONE, including us — this happens on Coconala's own
@@ -211,7 +223,7 @@ applied-offers list by buyer name, the entry is genuinely nowhere to be found �
 reasoning which tabs/pages and buyer names you actually checked.
 
 STATUS-BASED GROUND-TRUTH ROUTING for applied.jsonl claims (real false-positive incident,
-realityverify-1784094300-58538, requestId "5130931_jibieaian": a genuine talkroom reply on an
+realityverify-1784094300-58538, requestId "91000005_buyer_handle_b": a genuine talkroom reply on an
 ALREADY-PURCHASED contract was wrongly judged false because job_matching/applied/offers was
 searched — that page has no entry for it, since the contract came from a private/scout deal, not a
 public 応募, so no application row for it has ever existed there). applied.jsonl is used for TWO
