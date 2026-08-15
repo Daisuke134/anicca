@@ -18,12 +18,12 @@
       "id": "elevenlabs",
       "priority": 2,
       "network": "PartnerStack",
-      "decision": "INSPECT_ACCOUNT",
+      "decision": "ACTIVE_LINK_VERIFIED",
       "program_url": "https://elevenlabs.io/affiliates",
       "terms_url": null,
       "commission": "22% of qualifying subscription payments for 12 months",
-      "next_action": "OPEN_AUTHORIZED_AFFILIATE_FLOW_AND_CLASSIFY_RENDERED_STATE",
-      "evidence": "Join thousands of creators, publishers, bloggers, and influencers",
+      "next_action": "BUILD_FIRST_DISCLOSED_OWNED_PLACEMENT_WITH_DEFAULT_TRACKING_LINK",
+      "evidence": "Authenticated UI says active affiliate account; anonymous browser execution sets PartnerStack referral query and cookies",
       "credential_ref": "keychain://ai.anicca.affiliate.provider.elevenlabs/primary"
     },
     {
