@@ -2840,3 +2840,8 @@ software portfolioを1件だけ作る。新listing、画像生成、DB、schedul
 
 **DONE EVIDENCE:** production Storefront owner自身が1回createし、public profileにexact title/category/descriptionをreadbackする。
 続くwakeはportfolio effect 0。Application、contracts、ledgerは不変とする。
+
+**FIRST EFFECT:** exact release `7f6b9c60c39468ed31ebe7c01eb0802d4135849b`のStorefront ownerが一度だけcreateし、official
+software portfolio ID `743987`を返した。cookie-free public profileはAI/API portfolioをSNS portfolioより先に表示し、exact title、
+Life Managerの実装説明、制作期間1ヶ月、参考価格180,000円、生成AI利用を表示する。listing `1338228`とSNS portfolio `743964`は不変、
+Application、contracts、ledger SHA-256も前後一致した。product SSOTへ`743987`を固定し、next wakeでduplicate create 0を確認する。
