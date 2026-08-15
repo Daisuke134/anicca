@@ -137,7 +137,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Release `cab6a976d706684a755654378ae294487cf0a35d` is installed and the authenticated local publication/revenue/Telegram/job-journal paths are GREEN | The installed 600-second launchd owner exits `0`. A real harness milestone was written before Telegram mutation and returned provider `messageId=20293`; the matching mode-0600 job preserved all seven A14.1 fields and transitioned `EFFECT_STARTED → VERIFIED`. Replay returned `NO_PENDING` with Telegram rows `2→2` and job transitions `2→2`. This proves installed write-ahead identity and dedupe, not crash resume, attributable click, commission, or revenue |
+| Mac-local runtime | Release `3d4d321cad4c63698f394d88a86e31910aa4f54d` is installed and the authenticated local publication/revenue/Telegram/job-resume paths are GREEN | Process 1 left the existing X placement job at `EFFECT_STARTED`; process 2 ran the normal installed publisher, found the same public status before any click, retained the original run/job IDs, advanced attempt `1→2` with `resumed=true`, and set `VERIFIED`. A direct timeline readback found exactly one matching status URL. This proves process-boundary resume and X publish reconciliation without duplication, not provider-application reconciliation, attributable click, commission, or revenue |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview, Commission Report, and Payouts surfaces | The current aggregate is one baseline click and zero signups/revenue/pending/paid. `revenue capture` live-read 23 commission fields and six payout fields. The current PartnerStack bundle, SHA-256 `be00e11924a35f20b84dee69ae741ae65204f07d3350a3266ad73501e96d867f`, proves the provider row keys use `reward_key`, `reward_status`, and explicit sub-ID/click/link fields even though the UI says Commission key. DOM absence was rejected as row evidence; installed release `329cbfc45` captured official JSON `row_count=0`, the empty Payouts surface, `NO_LIVE_ROWS`, and a mode-0600 artifact at SHA-256 `dce77f0083b0f92e29a67ccf99e417e11fe6307009bdfe98bf2d5fc77b39154d`. Approved/reversed remain unknown rather than zero |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
@@ -878,7 +878,7 @@ commission message counts.
 
 - [x] **A14.1** Persist `run_id`, `job_id`, state, attempt, action fingerprint,
   cooldown, and last verified external object before every external mutation.
-- [ ] **A14.2** Resume the same unfinished job after process crash or Mac restart.
+- [x] **A14.2** Resume the same unfinished job after process crash or Mac restart.
 - [ ] **A14.3** For ambiguous publish/application outcomes, search public/provider
   state first and reconcile the existing effect before any retry.
 - [ ] **A14.4** Detect expired login, invoke the credential/recovery Skill, verify a
@@ -914,13 +914,15 @@ A14.1 implementation basis and checkpoint:
   transitioned `EFFECT_STARTED → VERIFIED`. Replay returned `NO_PENDING` while
   both sent and job-event counts stayed unchanged; A14.1 is DONE.
 
-A14.2 implementation checkpoint: the common journal and all five live adapters
+A14.2 proof: the common journal and all five live adapters
 now reconcile exactly one unresolved `kind + target` only after a fresh semantic
 readback. The recovered transition retains the original `run_id` and `job_id`,
 increments `attempt`, sets `resumed=true`, and appends rather than overwrites its
-history. The focused check proves this across separate journal calls. A14.2 stays
-open until two real processes recover the existing live X placement without a
-second publish.
+history. Installed process 1 left the existing `elevenlabs-en-1` X job unresolved;
+installed process 2 recovered the same job through the real public timeline and
+returned its original status URL. A second read-only timeline pass found exactly
+one matching URL, so no duplicate publish occurred; A14.2 is DONE. A14.3 remains
+open for application-side ambiguity even though X publication is now proven.
 
 #### D. Earn the first externally approved commission
 
@@ -1048,8 +1050,9 @@ second publish.
     send, stable-UUID dedupe, and provider message-ID receipts. The real empty-report
     transition is proven; click, commission, self-heal, and blocked variants close
     only when those external states actually occur.
-14. **PENDING.** Add same-job crash resume, ambiguous-write dedupe, login recovery,
-    selector-drift repair, provider/channel quarantine, watchdog, and cost caps.
+14. **PARTIAL.** Same-job process-boundary resume and X ambiguous-write dedupe are
+    live-proven. Application reconciliation, login recovery, selector repair,
+    provider/channel quarantine, watchdog, and cost caps remain.
 15. **PENDING — Gate E1.** Run unattended until one non-test approved English
     commission is joined from public placement to provider receipt.
 
