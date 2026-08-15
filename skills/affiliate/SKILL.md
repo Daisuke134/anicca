@@ -39,5 +39,6 @@ The committed bootstrap manifest pins PBS CPython `3.14.7+20260814` for macOS
 arm64 by immutable URL and SHA-256. The installer verifies and extracts the same
 held artifact, validates the full runtime tree, and atomically activates it
 without changing PATH or the system Python. The current Mac also has a receipted
-CloakBrowser app. Keychain readback, authenticated-session discovery,
+CloakBrowser app. Affiliate-only Keychain readback is live-proven; an unverified
+reference is never `AUTHORIZED`. Authenticated provider/mail/X session discovery,
 account-handle verification, launchd, publication, and revenue remain disabled.

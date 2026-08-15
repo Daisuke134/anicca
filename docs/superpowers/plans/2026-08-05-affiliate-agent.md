@@ -117,7 +117,7 @@ Execution checkpoint:
   compile/shell syntax, and 30 related regression tests. Its checkboxes remain
   open until fresh review, worktree-diff audit, live-provider boundary proof, and
   a collection-safe full-suite command; the process-boundary test uses a fake provider.
-- 16 atomic checks are closed and 147 remain open. The increase records canonical
+- 17 atomic checks are closed and 146 remain open. The increase records canonical
   repo convergence and public-proof work that previously existed only as prose;
   it is not implementation regression.
 - The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
@@ -353,7 +353,7 @@ Assert EN and JA never share cookies/storage, absent authority remains explicit,
 authorized inbox OTP is scoped to one login intent, and CAPTCHA/KYC/contract
 pages transition to `EXTERNAL_CHALLENGE` without bypass.
 
-- [ ] **Step 3: Implement minimal pinned installer and encrypted vault contract**
+- [x] **Step 3: Implement minimal pinned installer and encrypted vault contract**
 
 Install the exact runtime/browser dependencies, create state/log/download roots,
 configure secret redaction and OS key storage, and emit hashes/versions. Do not
@@ -377,7 +377,11 @@ live-inventoried CloakBrowser Chromium `145.0.7632.109` twice with byte-identica
 receipt SHA-256 `9b4ca7ffc18dc10b83576c812d7c6805ed444e0b685287f7e0cd29f5a2d92f4c` and
 binary SHA-256 `79ddf7e7a7be8087319390ed79266387f6499b8a2e45ccfbaa724d7e7fff6b79`.
 The browser never launched, and Affiliate launchd owner count remained zero.
-Keychain readback keeps Step 3 open.
+Keychain readback is live-proven with an Affiliate-only probe item. The command
+discards secret output, binds the receipt to the exact request hash, ignores a
+hostile caller `HOME`, and invalidates stale authorization before parsing. A
+reference without readback is `REFERENCE_BOUND`, never `AUTHORIZED`. This closes
+the vault contract only; real provider/mail/X authority remains Step 4.
 
 Pinned-runtime decision: directly install Astral python-build-standalone CPython
 `3.14.7+20260814` for macOS arm64. Its artifact SHA-256
