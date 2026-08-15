@@ -117,7 +117,7 @@ Execution checkpoint:
   compile/shell syntax, and 30 related regression tests. Its checkboxes remain
   open until fresh review, worktree-diff audit, live-provider boundary proof, and
   a collection-safe full-suite command; the process-boundary test uses a fake provider.
-- 11 atomic checks are closed and 152 remain open. The increase records canonical
+- 14 atomic checks are closed and 149 remain open. The increase records canonical
   repo convergence and public-proof work that previously existed only as prose;
   it is not implementation regression.
 - The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
@@ -290,7 +290,7 @@ Verify all ten hashes and rerun the 16 pure legacy tests from the archive. Recor
 missing/moved dependencies as `UNAVAILABLE`; do not call that live behavior
 parity. Runtime cutover remains blocked until later adapter and E0 tests pass.
 
-- [ ] **Step 5: Install an immutable canonical release without enabling it**
+- [x] **Step 5: Install an immutable canonical release without enabling it**
 
 Install the exact pushed commit at
 `~/.local/share/life-manager/affiliate/releases/<git_sha>` and atomically prepare
@@ -298,12 +298,12 @@ Install the exact pushed commit at
 the archived workflow. Mutable legacy state remains untouched; only a private,
 sanitized inventory receipt may be written under `LIFE_MANAGER_STATE_HOME`.
 
-- [ ] **Step 6: Commit and push the canonical source**
+- [x] **Step 6: Commit and push the canonical source**
 
 Push the skill source before installing so the release SHA names an actual remote
 commit.
 
-- [ ] **Step 7: Install the pushed SHA, verify, update SSOT, and push the receipt**
+- [x] **Step 7: Install the pushed SHA, verify, update SSOT, and push the receipt**
 
 Install the exact remote commit, verify `current` resolves to that immutable
 release, record the sanitized ownership receipt and disabled-cutover state in the
