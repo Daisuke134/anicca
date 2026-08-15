@@ -107,8 +107,8 @@ techniques do not merge the ledgers.
 
 | Task | State | Receipt |
 |---|---|---|
-| R0 canonical convergence | Complete and disabled at `20710be047e01c10e01826ed809bb57b626ac49d` | Canonical skill and installer pass twice at 3/3; archived verifier 10/10; commission regression 6/6; manifests cover ten legacy files plus one archived parser dependency; remote SHA, immutable release bytes, valid JSON receipt, `current` symlink, untouched legacy state, and zero launchd owners all pass |
-| F0 current-Mac bootstrap | Core primitives GREEN; live capability admission remains open | Bootstrap 3/3, authority 2/2, profile isolation 2/2, and R0 regression 3/3 pass. The tools support pinned hashes, atomic resume receipts, intent-scoped `keychain://` references, explicit external challenges, and isolated EN/JA profile roots without touching browsers or launchd. The default manifest intentionally has no invented artifact; actual runtime/browser admission, Keychain readback, authorized-session discovery, and account-handle proof remain open |
+| R0 canonical convergence | Complete; current disabled release is `615206fd98fb555b0aada794454dd63e1cc95260` | Canonical skill and installer pass twice at 3/3; archived verifier 10/10; commission regression 6/6; manifests cover ten legacy files plus one archived parser dependency; remote SHA, immutable release bytes, valid JSON receipt, `current` symlink, untouched legacy state, and zero launchd owners all pass |
+| F0 current-Mac bootstrap | Core primitives GREEN and installed disabled at `615206fd98fb555b0aada794454dd63e1cc95260`; live capability admission remains open | Bootstrap 3/3, authority 2/2, profile isolation 2/2, and R0 regression 3/3 pass. The tools support pinned hashes, atomic resume receipts, intent-scoped `keychain://` references, explicit external challenges, and isolated EN/JA profile roots without touching browsers or launchd. The default manifest intentionally has no invented artifact; actual runtime/browser admission, Keychain readback, authorized-session discovery, and account-handle proof remain open |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
 
@@ -150,7 +150,7 @@ adds a relocatable but non-executing skill shell. The focused installer test
 proves immutable install, idempotency, stale-symlink repair, valid JSON receipt,
 launchd non-interference, and fail-closed detection of a modified release. The
 disabled release is installed from pushed SHA
-`20710be047e01c10e01826ed809bb57b626ac49d` under
+`615206fd98fb555b0aada794454dd63e1cc95260` under
 `~/.local/share/life-manager/affiliate/releases/`; its private ownership receipt
 is under `~/.local/state/life-manager/affiliate/`. Live behavior parity and
 cutover remain open until later provider/browser/publisher receipts.
