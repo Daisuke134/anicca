@@ -291,6 +291,18 @@ AUTHORIZED_LOGIN_SOURCE | skills/affiliate/affiliate programs store-login \
 returns state, never the login value. Browser automation must not guess an email
 or reuse a password as a username.
 
+Store a provider-generated product link without exposing it on the command line
+or in command output:
+
+```bash
+PRODUCT_LINK_SOURCE | skills/affiliate/affiliate programs store-link \
+  --id elevenlabs --label ElevenLabs --field "ElevenAgents affiliate link"
+```
+
+`store-link` accepts one HTTPS URL through stdin, atomically adds or replaces the
+named affiliate-link field in the mode-0600 private Markdown, and returns status
+only. Never commit or print the referral URL.
+
 When an approved program delegates reporting to a separate network dashboard,
 bootstrap a separate login section without reusing the program password:
 

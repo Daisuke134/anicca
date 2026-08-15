@@ -40,6 +40,25 @@ class ProgramRegistryTest(unittest.TestCase):
         self.assertIn("- Password: \n", partner)
         self.assertNotIn("original", partner)
 
+    def test_store_link_adds_only_private_affiliate_field(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "credentials.md"
+            path.write_text(
+                "## ElevenLabs\n- Login: owner@example.com\n- Password: keep-secret\n",
+                encoding="utf-8",
+            )
+            path.chmod(0o600)
+            link = "https://example.test/private-referral"
+            result = MODULE.store_link(
+                "ElevenLabs", "ElevenAgents affiliate link", path, link,
+            )
+            text = path.read_text(encoding="utf-8")
+            self.assertEqual(result["private_markdown_link_state"], "VERIFIED_NONEMPTY")
+            self.assertNotIn(link, str(result))
+            self.assertIn(f"- ElevenAgents affiliate link: {link}", text)
+            self.assertIn("- Password: keep-secret", text)
+            self.assertEqual(path.stat().st_mode & 0o077, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

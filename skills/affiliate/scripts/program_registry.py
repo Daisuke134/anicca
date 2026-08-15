@@ -194,13 +194,44 @@ def store_login(label, markdown_path, login):
     return {"label": label, "private_markdown_login_state": "VERIFIED_NONEMPTY"}
 
 
+def store_link(label, field, markdown_path, link):
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9 -]{1,63} affiliate link", field):
+        raise ValueError("invalid affiliate-link field")
+    parsed = urlparse(link)
+    if parsed.scheme != "https" or not parsed.netloc or any(character.isspace() for character in link):
+        raise ValueError("affiliate link must be one HTTPS URL")
+    markdown_path = markdown_path.expanduser()
+    text = markdown_path.read_text(encoding="utf-8")
+    section = re.search(rf"(?ms)^## {re.escape(label)}\n.*?(?=^## |\Z)", text)
+    if section is None:
+        raise ValueError("private credential section is missing")
+    field_pattern = rf"(?m)^- {re.escape(field)}: .*$"
+    if re.search(field_pattern, section.group()):
+        updated_section = re.sub(field_pattern, f"- {field}: {link}", section.group(), count=1)
+    else:
+        updated_section = section.group().rstrip() + f"\n- {field}: {link}\n"
+    updated = text[:section.start()] + updated_section + text[section.end():]
+    fd, temporary = tempfile.mkstemp(prefix=".affiliate-links.", dir=markdown_path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(updated)
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, markdown_path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+    if link not in markdown_path.read_text(encoding="utf-8"):
+        raise ValueError("private Markdown link readback mismatch")
+    return {"label": label, "field": field, "private_markdown_link_state": "VERIFIED_NONEMPTY"}
+
+
 def main():
     parser = argparse.ArgumentParser(prog="affiliate programs")
-    parser.add_argument("command", choices=("list", "next", "credential", "store-credential", "store-login"))
+    parser.add_argument("command", choices=("list", "next", "credential", "store-credential", "store-login", "store-link"))
     parser.add_argument("--decision", action="append", default=[])
     parser.add_argument("--id")
     parser.add_argument("--label")
     parser.add_argument("--source-label")
+    parser.add_argument("--field")
     parser.add_argument("--credential-ref")
     parser.add_argument(
         "--verification",
@@ -219,7 +250,7 @@ def main():
         programs = [item for item in programs if item["decision"] in args.decision]
     if args.id:
         programs = [item for item in programs if item["id"] == args.id]
-    if args.command in ("credential", "store-credential", "store-login"):
+    if args.command in ("credential", "store-credential", "store-login", "store-link"):
         if len(programs) != 1:
             return 3
         if args.credential_ref:
@@ -230,6 +261,12 @@ def main():
             if not args.label:
                 raise ValueError("--label is required")
             result = store_login(args.label, args.private_markdown, sys.stdin.readline().strip())
+        elif args.command == "store-link":
+            if not args.label or not args.field:
+                raise ValueError("--label and --field are required")
+            result = store_link(
+                args.label, args.field, args.private_markdown, sys.stdin.readline().strip(),
+            )
         else:
             if not args.label:
                 raise ValueError("--label is required")
