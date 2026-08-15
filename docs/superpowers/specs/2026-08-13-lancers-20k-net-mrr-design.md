@@ -2667,3 +2667,8 @@ product version 4のlisting receipt、next-wake `action=unchanged / effect 0`。
 公式価格98,000円、listing receipt version 3、Application/contracts/ledgerのSHA-256は不変だった。現行edit DOMはcover一枚がある時、既存coverを
 置換するfile inputと追加画像用inputの二つを表示する。旧codeの`count == 1`仮定だけが誤りである。既存projectblob画像を子に持つslotをexact一件
 選び、追加slotを使わない。production code差分は1 file 4行で、新selector、DB、service、state transitionは増やさない。
+
+**DONE:** exact release `3b2b19aa34def93738ed5d7a627cfb9ce6c73b8c`のStorefront ownerがcanonical listing `1338228`を一回更新し、
+public detailとowner readbackの双方で29,800/198,000/398,000円、status active、portfolio `743964`、cover一枚を確認した。listing receiptは
+product version 4へ進み、Application、contracts、ledgerのSHA-256は不変である。直後のsecond wakeは`action=unchanged / aligned=true /
+status_effect_count=0 / portfolio_effect_count=0 / exit 0`で、重複save・画像追加・別listing作成は0だった。
