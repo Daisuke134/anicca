@@ -699,6 +699,41 @@ Cadence:
 Platform publication windows block only that placement. Every wait has a retry
 time and durable owner; “wait for next schedule” is invalid.
 
+### 5.1 Next implementation slice: the loop becomes the operator
+
+This slice precedes another manually operated campaign. It changes the installed
+runtime from a polling shell into one model-led Agent using deterministic tools:
+
+1. bring the proven shared `runtime/agent-runner/` package and its schema/token/
+   usage contracts into the Affiliate immutable release; do not copy any
+   Coconala prompt, account, connector, session, or state;
+2. add one Affiliate decision prompt and schema containing goal, current receipts,
+   unfinished job, allowed tools, budgets, and canonical examples. The model
+   chooses the next useful action; regex/priority tables do not choose niches,
+   offers, topics, or copy;
+3. expose the existing Skill commands as typed tools: program/provider, source
+   capture, campaign artifact, policy, placement, owned publish/readback, X
+   publish/readback, revenue reconciliation, and Telegram outbox;
+4. extend `job_journal.py` with unresolved-job enumeration and stage trajectory,
+   so every wake resumes one unfinished stage before choosing new work;
+5. replace `local_loop.wake()`'s fixed poll-only path with
+   `observe → agent decides one action → tool executes → external readback →
+   receipt → reflect`. Keep provider/revenue observation as tools, not the brain;
+6. add an Affiliate healer that classifies typed auth, source, browser, policy,
+   ambiguous-effect, disk, and owner failures; it runs only bounded allowlisted
+   repairs, rechecks the postcondition, and emits `SELF_HEALED` or quarantine;
+7. keep launchd as the only scheduler. Five/ten-minute wakes reconcile and
+   resume; hourly/daily work is admitted by durable due-times rather than by a
+   second scheduler or a hardcoded article-per-wake rule;
+8. prove one installed wake advances the existing ElevenAgents job from
+   `DELIVERED → LIVE → X LIVE` without Codex/browser intervention, then induce one
+   isolated recoverable fault and prove same-job repair.
+
+The completion receipt for this slice is not a test or a generated article. It is
+one installed launchd wake trajectory whose model decision, tool call, external
+effect/readback, durable state transition, and Telegram report all share the same
+run/job identity.
+
 ## 6. Self-improvement without self-corruption
 
 - Preserve at least 20% exploration and require at least ten mature comparable
@@ -789,6 +824,9 @@ code boundary.
 | [paraggit `src/core/base_affiliate.py`](https://github.com/paraggit/affiliate-automation/blob/main/src/core/base_affiliate.py) | Small provider protocol and normalized product record | Reimplement the protocol shape as provider playbooks with authenticated ownership, terms, allowed-channel, link and report states | Its Amazon/Flipkart assumptions and price/deal ranking as the primary strategy |
 | [paraggit `src/utils/retry.py`](https://github.com/paraggit/affiliate-automation/blob/main/src/utils/retry.py) | Bounded typed retry with exponential delay | Reference for read-only transient retries only; writes remain journaled and reconcile-before-retry | Its interactive scheduler, generic content prompt, Tweepy publisher, and unverified success booleans |
 | [Crawlee `recoverable_state.py`](https://github.com/apify/crawlee-python/blob/master/src/crawlee/_utils/recoverable_state.py) and [`RequestQueue` example](https://github.com/apify/crawlee-python/blob/master/docs/introduction/code_examples/02_request_queue.py) | Persisted crawler state and durable request queue across restart | Admit only when CRWL cannot cover a real multi-page/JS research job; emit normalized `SourceCapture` receipts | Making Crawlee the Agent brain or adding it for single-page fetches |
+| [NanoClaw scheduling and host sweep](https://github.com/nanocoai/nanoclaw/tree/d7d9887eb4acae8d60e327afc21955e3f10b77eb) | MIT; SQLite occurrences with stable series IDs, stuck-claim reset, exponential backoff, auto-pause after repeated failure, delivery status/message ID, and append-only run logs | Copy the durable occurrence, claim, backoff, terminal-failure, and delivery-receipt pattern into Affiliate's existing launchd/job boundary | Its messaging domain, container runtime, and any assumption that task delivery is revenue |
+| [Temporal Python agent activities](https://github.com/temporalio/sdk-python/blob/680a6b4f32e9d5f2484e9a2e1c604178553c3f55/temporalio/contrib/openai_agents/workflow.py) | MIT; wraps each agent tool call as a durable Activity with retry, heartbeat, and workflow history | Retain as the later cloud migration reference for tool-level durability | Adding a Temporal server to the local Mac before the launchd loop proves revenue |
+| [LangGraph ToolNode and SQLite checkpoint](https://github.com/langchain-ai/langgraph/tree/644815f9e5bc52ad8f7a5227a456227e9c3e639b) | MIT; model/tool loop, injected state/store/runtime, checkpoint lineage, and attempt events | Copy the tool-result/context and checkpoint-after-transition pattern only if the shared Life Manager runner lacks it | Replacing the proven shared runner or treating LangGraph core as a persistent scheduler |
 
 The first implementation choice is therefore local reuse, then the smallest
 licensed external mechanism. There is no dependency addition for a mechanism
