@@ -67,7 +67,26 @@ def credential_state(program):
     return {"id": program["id"], "credential_ref": secret_ref, "credential_state": state}
 
 
-def store_credential(program, label, markdown_path, verification):
+def ensure_credential_section(text, label, source_label, credential_ref):
+    section = re.search(rf"(?ms)^## {re.escape(label)}\n.*?(?=^## |\Z)", text)
+    if section is not None:
+        return text
+    if not source_label:
+        raise ValueError("private credential section is missing")
+    source = re.search(rf"(?ms)^## {re.escape(source_label)}\n.*?(?=^## |\Z)", text)
+    login = re.search(r"(?m)^- Login:\s*(.+)$", source.group() if source else "")
+    if login is None:
+        raise ValueError("source credential login is missing")
+    return text.rstrip() + (
+        f"\n\n## {label}\n"
+        f"- Login: {login.group(1).strip()}\n"
+        "- Password: \n"
+        f"- Keychain: `{credential_ref}`\n"
+        "- Verification: `UNVERIFIED`\n"
+    )
+
+
+def store_credential(program, label, markdown_path, verification, source_label=None):
     secret_ref = program["credential_ref"]
     if secret_ref is None:
         raise ValueError("credential reference is not configured")
@@ -79,6 +98,7 @@ def store_credential(program, label, markdown_path, verification):
         raise ValueError("credential must contain at least 12 non-NUL bytes")
     markdown_path = markdown_path.expanduser()
     text = markdown_path.read_text(encoding="utf-8")
+    text = ensure_credential_section(text, label, source_label, secret_ref)
     section = re.search(
         rf"(?ms)^## {re.escape(label)}\n.*?(?=^## |\Z)", text,
     )
@@ -155,6 +175,8 @@ def main():
     parser.add_argument("--decision", action="append", default=[])
     parser.add_argument("--id")
     parser.add_argument("--label")
+    parser.add_argument("--source-label")
+    parser.add_argument("--credential-ref")
     parser.add_argument(
         "--verification",
         choices=("SAVED_BEFORE_SUBMIT", "VERIFIED_LOGIN"),
@@ -175,6 +197,8 @@ def main():
     if args.command in ("credential", "store-credential"):
         if len(programs) != 1:
             return 3
+        if args.credential_ref:
+            programs[0] = {**programs[0], "credential_ref": args.credential_ref}
         if args.command == "credential":
             result = credential_state(programs[0])
         else:
@@ -182,6 +206,7 @@ def main():
                 raise ValueError("--label is required")
             result = store_credential(
                 programs[0], args.label, args.private_markdown, args.verification,
+                args.source_label,
             )
     else:
         result = programs[:1] if args.command == "next" else programs

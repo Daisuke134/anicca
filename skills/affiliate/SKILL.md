@@ -193,6 +193,18 @@ reference, and returns status only. Run it before every signup/reset submission;
 after fresh login repeat with `--verification VERIFIED_LOGIN`. Never pass a
 password on the affiliate CLI command line.
 
+When an approved program delegates reporting to a separate network dashboard,
+bootstrap a separate login section without reusing the program password:
+
+```bash
+PASSWORD_GENERATOR | skills/affiliate/affiliate programs store-credential \
+  --id elevenlabs --label PartnerStack --source-label ElevenLabs \
+  --credential-ref keychain://ai.anicca.affiliate.provider.partnerstack/elevenlabs
+```
+
+The source label contributes only the existing login identifier. The new password
+is read from stdin and saved to the new private Markdown section before Keychain.
+
 The committed bootstrap manifest pins PBS CPython `3.14.7+20260814` for macOS
 arm64 by immutable URL and SHA-256. The installer verifies and extracts the same
 held artifact, validates the full runtime tree, and atomically activates it
