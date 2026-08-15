@@ -1694,7 +1694,7 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
 | canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
-| installed release | `deployment.json`とBrowser、Application、Storefront、Work Sync、Telegramのargv/working directoryはimmutable `e192d126067a35e5dc36378048d4f1ed0dc0ffcf` | owner 5本exact release一致、manifest 21 files一致、release writable file 0 |
+| installed release | 現在値の正本は`~/.local/state/anicca/lancers/deployment.json`の`deployed_sha`。Browser、Application、Storefront、Work Sync、Telegramのargv/working directoryを毎auditで同値確認する | owner 5本exact release一致、manifest 21 files一致、release writable file 0 |
 | production browser | launchd `ai.anicca.lancers-revenue-browser`が専用profileとloopback`:9227`をPID `22242`でsole ownership。RunAtLoad、KeepAlive、exact working directoryを確認 | CDP endpoint live。応答不能Lancers targetを作るE2Eでもtimeout→close→一回retryで12.59秒復帰、targetはabout:blank一枚へ戻る |
 | Apply | launchd enabled、30分、累計`application_verified=31`、fingerprint 106、pending 0 | software proof/query拡張後、AI/API PoC `5586377`を一回送信しproposal `27813129`へ公式確定。次wakeは未処理3件以上を見送り、submit 0、exit 0 |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
