@@ -149,9 +149,9 @@ def _run_default_discovery(tick_value: object, timeout: float, state_path: Path)
     return last
 
 def _seller_proof() -> dict[str, object]:
-    product = json.loads(PRODUCT_PATH.read_text(encoding="utf-8")); portfolio = product["portfolio"]; software = PUBLIC_SOFTWARE_PROOF
-    ids = (product["listing_external_id"], portfolio["external_id"])
-    strings = (product["title_stem"], product["description"], product["notice"], portfolio["title_stem"], portfolio["description"])
+    product = json.loads(PRODUCT_PATH.read_text(encoding="utf-8")); portfolio = product["portfolio"]; software_portfolio = product["software_portfolio"]; software = PUBLIC_SOFTWARE_PROOF
+    ids = (product["listing_external_id"], portfolio["external_id"], software_portfolio["external_id"])
+    strings = (product["title_stem"], product["description"], product["notice"], portfolio["title_stem"], portfolio["description"], software_portfolio["title_stem"], software_portfolio["description"])
     if not isinstance(software, Mapping) or set(software) != {"source_url", "title", "description", "license"} or software.get("source_url") != "https://github.com/Daisuke134/life-manager" or any(not isinstance(software.get(key), str) or not software[key].strip() for key in ("title", "description", "license")): raise ValueError
     if any(not isinstance(value, str) or not value.strip() for value in ids + strings) or any(ID_RE.fullmatch(value) is None for value in ids): raise ValueError
     plans = [{key: plan[key] for key in ("description", "delivery_days", "price_jpy")} for plan in product["plans"]]
@@ -159,6 +159,8 @@ def _seller_proof() -> dict[str, object]:
         "profile_url": "https://www.lancers.jp/profile/keiodaisuke",
         "portfolio_id": ids[1], "portfolio_url": f"https://www.lancers.jp/profile/keiodaisuke/portfolio_popup/{ids[1]}",
         "portfolio_title": portfolio["title_stem"] + "ました", "portfolio_description": portfolio["description"],
+        "software_portfolio_id": ids[2], "software_portfolio_url": f"https://www.lancers.jp/profile/keiodaisuke/portfolio_popup/{ids[2]}",
+        "software_portfolio_title": software_portfolio["title_stem"] + "ました", "software_portfolio_description": software_portfolio["description"],
         "package_id": ids[0], "package_url": f"https://www.lancers.jp/menu/detail/{ids[0]}",
         "package_title": product["title_stem"] + "ます", "package_scope": product["description"], "package_exclusions": product["notice"], "plans": plans,
         "public_software_proof": dict(software),

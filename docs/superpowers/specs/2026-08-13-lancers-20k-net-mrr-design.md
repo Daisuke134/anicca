@@ -2849,3 +2849,14 @@ Application、contracts、ledger SHA-256も前後一致した。product SSOTへ`
 **DONE:** exact IDを固定したrelease `1e3f45720309d48aa2150a77375a080db5bdcc61`のsecond Storefront wakeは
 `action=unchanged / software_portfolio_external_id=743987 / portfolio_effect_count=0 / profile_effect_count=0 / exit 0`である。
 public profileはsoftware `743987`とSNS `743964`の2件を一意に表示し、duplicate portfolio createは0である。
+
+### 18.44 Application software proof handoff
+
+**CURRENT OBSERVATION:** software portfolio `743987`は公開済みだが、Application planner snapshotはSNS portfolio `743964`と
+GitHub source proofだけを渡し、Lancers内のsoftware portfolio identityを渡さない。
+
+**NEXT DIRECT ACTION:** 既存seller-proof objectへsoftware portfolioのofficial ID、Lancers URL、title、descriptionだけを追加する。
+新model、filter、network、schema、stateは作らない。AI/API案件ではこの公式proofを使い、SNS/文章案件では無関係なproofを押し込まない。
+
+**PLAN SIZE:** production 1 file、約6行。**DONE EVIDENCE:** compile、exact release deploy、production Application exit 0、
+次のfresh proposalからofficial portfolio identityを利用可能にし、一wake最大1応募とduplicate effect 0を維持する。
