@@ -34,7 +34,8 @@ BROWSER_LABEL = "ai.anicca.hf-gig-browser"
 def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser()
     value.add_argument(
-        "command", nargs="?", choices=("install", "setup", "doctor", "start"),
+        "command", nargs="?",
+        choices=("install", "setup", "doctor", "start", "status", "stop", "uninstall"),
         default="install",
     )
     value.add_argument(
@@ -225,6 +226,89 @@ def send_daily_report(state_dir: Path, target: str, openclaw: str) -> str:
     return str(row[0])
 
 
+def install_receipt(runtime: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(
+            (runtime / "state" / "gig-install.json").read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError) as error:
+        raise SystemExit("Gig is not installed") from error
+    if not isinstance(value, dict):
+        raise SystemExit("invalid install receipt")
+    return value
+
+
+def lifecycle_status(scheduler: str) -> dict[str, str]:
+    labels = (BROWSER_LABEL, *REVENUE_LABELS)
+    states: dict[str, str] = {}
+    if scheduler == "launchd":
+        domain = f"gui/{os.getuid()}"
+        for label in labels:
+            completed = subprocess.run(
+                ["launchctl", "print", f"{domain}/{label}"],
+                capture_output=True, text=True, check=False,
+            )
+            states[label] = (
+                "running" if "state = running" in completed.stdout
+                else "loaded" if completed.returncode == 0 else "stopped"
+            )
+    elif scheduler == "systemd":
+        for label in labels:
+            completed = subprocess.run(
+                ["systemctl", "--user", "is-active", f"{label}.service"],
+                capture_output=True, text=True, check=False,
+            )
+            states[label] = "running" if completed.returncode == 0 else "stopped"
+    else:
+        states = {label: "stopped" for label in labels}
+    return states
+
+
+def stop_scheduler(scheduler: str) -> None:
+    labels = (BROWSER_LABEL, *REVENUE_LABELS)
+    if scheduler == "launchd":
+        domain = f"gui/{os.getuid()}"
+        for label in labels:
+            subprocess.run(
+                ["launchctl", "bootout", f"{domain}/{label}"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+            )
+    elif scheduler == "systemd":
+        subprocess.run(
+            ["systemctl", "--user", "disable", "--now",
+             *(f"{label}.timer" for label in labels),
+             *(f"{label}.service" for label in labels)],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+        )
+
+
+def uninstall_units(home: Path, runtime: Path, receipt: dict[str, Any]) -> int:
+    scheduler = str(receipt.get("scheduler", "none"))
+    stop_scheduler(scheduler)
+    labels = [str(label) for label in receipt.get("units", [])]
+    removed = 0
+    if scheduler == "launchd":
+        target = Path(os.environ.get(
+            "GIG_LAUNCH_AGENT_DIR", home / "Library" / "LaunchAgents"
+        ))
+        paths = [target / f"{label}.plist" for label in labels]
+    elif scheduler == "systemd":
+        target = Path(os.environ.get(
+            "GIG_SYSTEMD_USER_DIR",
+            Path(os.environ.get("XDG_CONFIG_HOME", home / ".config")) / "systemd/user",
+        ))
+        paths = [target / f"{label}.{suffix}" for label in labels for suffix in ("service", "timer")]
+    else:
+        paths = []
+    for path in paths:
+        if path.is_file() and not path.is_symlink():
+            path.unlink()
+            removed += 1
+    for path in (onboarding_path(runtime), runtime / "state" / "gig-install.json"):
+        path.unlink(missing_ok=True)
+    return removed
+
+
 def render_launchd(
     units: list[dict[str, Any]], home: Path, enable: bool
 ) -> list[str]:
@@ -406,6 +490,33 @@ def main() -> int:
     scheduler = arguments.scheduler
     if scheduler == "auto":
         scheduler = "launchd" if sys.platform == "darwin" else "systemd"
+
+    if arguments.command in {"status", "stop", "uninstall"}:
+        receipt = install_receipt(runtime)
+        scheduler = str(receipt.get("scheduler") or scheduler)
+        if arguments.command == "status":
+            states = lifecycle_status(scheduler)
+            print(json.dumps({
+                "status": "running" if all(
+                    states[label] in {"running", "loaded"} for label in REVENUE_LABELS
+                ) else "stopped",
+                "effect": 0, "owners": states,
+            }, ensure_ascii=False, sort_keys=True))
+            return 0
+        if arguments.command == "stop":
+            stop_scheduler(scheduler)
+            print(json.dumps({
+                "status": "stopped", "owners": list(REVENUE_LABELS),
+                "browser_owner": BROWSER_LABEL,
+            }, ensure_ascii=False, sort_keys=True))
+            return 0
+        state_dir = Path(str(receipt.get("state_dir", ""))).resolve()
+        removed = uninstall_units(home, runtime, receipt)
+        print(json.dumps({
+            "status": "uninstalled", "removed_units": removed,
+            "state_dir": str(state_dir), "state_preserved": state_dir.is_dir(),
+        }, ensure_ascii=False, sort_keys=True))
+        return 0
 
     if arguments.command in {"doctor", "start"}:
         onboarding = read_onboarding(runtime)

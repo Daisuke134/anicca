@@ -44,6 +44,13 @@ const VERIFIED_VENDOR_ROOTS = [
   "skills/capafy-autopublish/vendor",
 ];
 
+const VERIFIED_STATIC_ASSETS = new Map([
+  [
+    "skills/earn/lancers/assets/monthly-sns-content-ops-v1.png",
+    "1225d2b22baac381b566526796a9b2bd79f9ec7b27dfb3983208e30635194793",
+  ],
+]);
+
 function git(root, args, encoding = "utf8") {
   return execFileSync("git", args, {
     cwd: root,
@@ -236,11 +243,16 @@ export function verifyRepository(inputRoot) {
       violations.push({ code: "runtime_copy", path: entry.path, detail: "runtime data is tracked" });
       continue;
     }
-    if (generatedArtifact(entry.path)) {
+    if (generatedArtifact(entry.path) && !VERIFIED_STATIC_ASSETS.has(entry.path)) {
       violations.push({ code: "generated_artifact", path: entry.path, detail: "generated binary is tracked" });
       continue;
     }
     const bytes = readFileSync(absolute);
+    if (VERIFIED_STATIC_ASSETS.has(entry.path)
+      && sha256(bytes) !== VERIFIED_STATIC_ASSETS.get(entry.path)) {
+      violations.push({ code: "static_asset_hash_mismatch", path: entry.path, detail: "verified static asset changed" });
+      continue;
+    }
     const isFirstPartyText =
       !isVerifiedVendorPath(entry.path)
       && !LEGACY_LITERAL_FIXTURES.has(entry.path)

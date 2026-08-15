@@ -54,12 +54,53 @@ skills/earn/gig/install-local.sh setup \
 # Complete the returned official Coconala login URL once, then:
 skills/earn/gig/install-local.sh doctor
 skills/earn/gig/install-local.sh start
+skills/earn/gig/install-local.sh status
+skills/earn/gig/install-local.sh stop
+skills/earn/gig/install-local.sh uninstall
 ```
 
 `doctor` is read-only and reports `effect: 0`. `start` loads the dedicated
 browser plus Storefront, Apply, Negotiate, and Paid owners, then succeeds only
 after the existing natural-language daily reporter records a Telegram provider
 message ID.
+
+`uninstall` removes generated launchd/systemd units and private install receipts.
+It deliberately preserves `$GIG_STATE_DIR`, browser sessions, ledgers, receipts,
+and customer evidence so reinstall and audit remain possible.
+
+## Architecture
+
+```text
+host scheduler -> dedicated browser -> Storefront / Apply / Negotiate / Paid
+                                     -> official marketplace readback
+                                     -> durable ledgers -> Telegram receipt
+```
+
+Source stays in this repository. User state stays under `$GIG_STATE_DIR`, secrets
+stay in `$LIFE_MANAGER_HOME/.env`, and browser authentication stays under the
+external Cloak profile/vault. All four revenue lanes share the canonical agent
+runner, browser fencing, KPI projector, and Telegram outbox.
+
+## Security and platform policy
+
+- The installer never copies work-profile data, cookies, credentials, or buyer
+  evidence into Git.
+- Marketplace effects require official readback; model output alone is not a
+  sale, reply, delivery, or payment.
+- Coconala account creation, KYC, bank linking, and the first official login are
+  setup facts. Daily operation uses the dedicated authenticated browser profile.
+- Telegram sends are event-keyed and provider-ACKed; an unknown ACK is not retried
+  blindly.
+
+## Troubleshooting
+
+- `doctor` returns `login_required`: open its `login_url`, finish the official
+  login in the configured marketplace profile, then run `doctor` again.
+- An owner is `stopped`: run `start`, then inspect `status`; state is preserved.
+- Telegram has no provider receipt: verify the report chat and OpenClaw Telegram
+  transport, then run `start`; the daily event key prevents duplicate delivery.
+- Disk pressure: free regenerable cache/build output only. Never delete
+  `$GIG_STATE_DIR`, browser vaults, ledgers, or customer evidence.
 
 The repository root `install.sh` prepares the Gig state boundary without
 enabling marketplace schedulers. To render and enable the host scheduler after

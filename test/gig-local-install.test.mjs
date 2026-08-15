@@ -249,6 +249,17 @@ test("three-input onboarding passes doctor and starts four owners with Telegram 
   const result = JSON.parse(started.stdout);
   assert.deepEqual(result.owners, REVENUE_LABELS);
   assert.equal(result.telegram_message_id, "fixture-ack");
+  const status = run(["status", "--scheduler", "launchd"]);
+  assert.equal(status.status, 0, status.stderr);
+  assert.equal(JSON.parse(status.stdout).status, "running");
   const launches = readFileSync(schedulerLog, "utf8");
   for (const label of REVENUE_LABELS) assert.equal(launches.includes(label), true);
+  const uninstall = run(["uninstall", "--scheduler", "launchd"]);
+  assert.equal(uninstall.status, 0, uninstall.stderr);
+  const removed = JSON.parse(uninstall.stdout);
+  assert.equal(removed.status, "uninstalled");
+  assert.equal(removed.state_preserved, true);
+  assert.equal(existsSync(join(runtime, "state", "gig-onboarding.json")), false);
+  assert.equal(existsSync(join(runtime, "state", "gig")), true);
+  assert.equal(existsSync(join(home, "Library", "LaunchAgents", `${REVENUE_LABELS[0]}.plist`)), false);
 });

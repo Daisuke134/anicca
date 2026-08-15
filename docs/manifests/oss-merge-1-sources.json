@@ -87,7 +87,7 @@
         {"source": "skills/agent-runner/tests/test_usage_report.py", "target": "runtime/agent-runner/tests/test_usage_report.py", "sha256": "f10b1ca746093386acd1a45d0b0d0eae3e0603938ac90df8da2d34799fb88295"}
       ],
       "absorbed_roots": [
-        {"source": "skills/gig-work", "target": "skills/earn/gig", "files": 553, "inventory_sha256": "02a280ae2c8003c70a332b4c886736bda0e6314335ac25f99bcbbce559f3a152"},
+        {"source": "skills/gig-work", "target": "skills/earn/gig", "files": 553, "inventory_sha256": "b91c479c9715f966b0e706609cc65e9b1c4265b0c0b69f46d90a4dc4c4b9db21"},
         {"source": "skills/music-score-omr", "target": "skills/music-score-omr", "files": 2, "inventory_sha256": "2a60d388a2c29ac8d70fa48328c18cb88527b8348a300a812ec6c9b2a7c02485"}
       ]
     },
@@ -101,7 +101,7 @@
       "absorbed_roots": [
         {"source": "skills/anicca-booking", "target": "skills/anicca-booking", "files": 5, "inventory_sha256": "ce5c1b46422d1a564896a20069d9bacfed8595f67dc67b270f73d0ff1ceb220d"},
         {"source": "skills/capafy-autopublish", "target": "skills/capafy-autopublish", "files": 387, "inventory_sha256": "036ac0c1216e9b361a7a1532d13ce2deee27771c77ee4665f4f0605cab6795e6"},
-        {"source": "skills/_shared", "target": "skills/_shared", "files": 125, "inventory_sha256": "b977d8ba7e73d0212af7a097a7c4bbe52ab70e3d2b63a2d891a50c7fcc80f77c"},
+        {"source": "skills/_shared", "target": "skills/_shared", "files": 131, "inventory_sha256": "292fe14e9a185f9e210697a97bbfceb99c0f1f59bf5d9ca5995ef11879ae3ebc"},
         {"source": "skills/anicca-life-manager", "target": "skills/anicca-life-manager", "files": 16, "inventory_sha256": "9c5cf9ec890477d6282bde87389946aad7c0928bffe750eec4a8ccffa8b9cfb5"}
       ]
     },
