@@ -119,6 +119,21 @@ ElevenLabs link, places disclosure before the first CTA, and prints only the
 artifact identity and hash. The article body and tracking link remain mode-0600
 Git-external state until the later policy and owned-publication boundary.
 
+Build and deliver the non-affiliate English foundation article through the same
+installed skill:
+
+```bash
+skills/affiliate/affiliate content build-foundation
+skills/affiliate/affiliate owned publish \
+  --slug how-to-test-ai-voice-tools-before-you-pay \
+  --landing-root "$CLEAN_PRODUCTION_WORKTREE"
+```
+
+`owned publish` accepts only a hash-valid `READY_FOR_PUBLICATION` artifact,
+writes one deterministic blog JSON target, refuses unrelated worktree/index
+changes, commits and pushes only that target, then records `DELIVERED` until a
+later tick reads the title and three immutable markers from the public page.
+
 Use the versioned English program research before any application:
 
 ```bash
