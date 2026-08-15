@@ -568,6 +568,8 @@ def _prepare_blind_output_audit(
     try:
         correspondence = _load(Path(_text(manifest.get("source_correspondence_path"))))
         exact = correspondence.get("exact_semantic_value_checks")
+        if exact is None:
+            return None, []
         evidence_path = Path(_text(exact.get("label_evidence_path"))).resolve()
         evidence_path.relative_to(root.resolve())
         if exact.get("label_evidence_sha256") != _file_snapshot(evidence_path)[1]:
