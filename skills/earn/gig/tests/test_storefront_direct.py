@@ -496,7 +496,10 @@ def test_public_observation_expands_folded_faq_before_readback(tmp_path, monkeyp
 
     async def observed(_ws, url, expression):
         seen["expression"] = expression
-        return {"url": url, "title": "official", "body": "exact question\nexact answer"}
+        return {
+            "url": url, "title": "official", "body": "exact question\nexact answer",
+            "service_image_ids": [],
+        }
 
     monkeypatch.setattr(listing_inventory, "_eval_json", observed)
     row = direct._observe_own_page("ws://leased", tmp_path)
@@ -504,6 +507,7 @@ def test_public_observation_expands_folded_faq_before_readback(tmp_path, monkeyp
     assert 'aria-controls^="serviceContentsFaqAnswer"' in seen["expression"]
     assert 'aria-expanded="false"' in seen["expression"]
     assert row["body"] == "exact question\nexact answer"
+    assert row["service_image_count"] == 0
 
 
 def test_effect_ledger_append_is_idempotent(tmp_path):
@@ -519,3 +523,37 @@ def test_effect_ledger_append_is_idempotent(tmp_path):
         assert str(error) == "effect_ledger_invalid"
     else:
         raise AssertionError("corrupt effect ledger ignored")
+
+
+def test_verified_image_contract_becomes_one_exact_image_judgement():
+    contract = direct._load_image_contract(direct.DEFAULT_IMAGE_CONTRACT)
+    judgement = direct._image_judgement({
+        "service_id": "91000001", "field": "image", "before": 0,
+        "executable": True, "success_metric": "views_to_inquiry",
+        "reason": "verified demand + owned quantified claim + 0 images",
+    }, {
+        "service_image_count": 0, "service_image_ids": [],
+    }, contract)
+
+    assert contract["width"] == 1220 and contract["height"] == 1016
+    assert judgement["changed_field"] == "image"
+    assert judgement["before_value"] == 0
+    assert judgement["proposed_value"] == contract["asset_sha256"]
+    assert judgement["experiment_key"].startswith("storefront:v1:91000001:image:")
+
+
+def test_image_form_and_public_readback_accept_only_one_image_delta():
+    base = [{"name": "data[Service][overview]", "value": "same", "checked": False}]
+    before_form = {"url": "https://coconala.com/mypage/services/91000001", "fields": base}
+    after_form = {"url": before_form["url"], "fields": base + [{
+        "name": "data[UploadedFile][n1][image_files]", "value": "C:\\fakepath\\hero-final.png",
+        "checked": False,
+    }]}
+    direct._validate_image_form_delta(before_form, after_form)
+    direct._validate_public_image_acceptance({
+        "url": "https://coconala.com/services/91000001", "service_image_count": 0,
+        "service_image_ids": [], "listing_version_sha256": "a" * 64,
+    }, {
+        "url": "https://coconala.com/services/91000001", "service_image_count": 1,
+        "service_image_ids": ["hero.png"], "listing_version_sha256": "b" * 64,
+    })
