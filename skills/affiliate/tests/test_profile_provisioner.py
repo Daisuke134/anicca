@@ -48,7 +48,7 @@ class ProfileProvisionerRedTests(unittest.TestCase):
         path = Path(str(record["path"]))
         return path if path.is_absolute() else root / path
 
-    def test_creates_distinct_real_en_ja_profiles_and_safe_ports(self) -> None:
+    def test_creates_distinct_real_provider_language_and_x_profiles(self) -> None:
         script = self.require_script()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "profiles"
@@ -57,13 +57,14 @@ class ProfileProvisionerRedTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads(receipt.read_text(encoding="utf-8"))
             self.assertEqual(payload["status"], "READY")
-            self.assertEqual(set(payload["locales"]), {"en", "ja"})
+            self.assertEqual(set(payload["locales"]), {"en", "ja", "x-en"})
 
             records = payload["locales"]
-            paths = [self.receipt_locale_path(root, records[locale]) for locale in ("en", "ja")]
-            ports = [int(records[locale]["cdp_port"]) for locale in ("en", "ja")]
-            self.assertEqual(len(set(paths)), 2)
-            self.assertEqual(len(set(ports)), 2)
+            names = ("en", "ja", "x-en")
+            paths = [self.receipt_locale_path(root, records[locale]) for locale in names]
+            ports = [int(records[locale]["cdp_port"]) for locale in names]
+            self.assertEqual(len(set(paths)), 3)
+            self.assertEqual(len(set(ports)), 3)
             self.assertTrue(PROTECTED_PORTS.isdisjoint(ports))
             for path in paths:
                 self.assertTrue(path.is_dir())

@@ -71,7 +71,8 @@ skills/affiliate/affiliate loop wake
 skills/affiliate/affiliate loop placement --placement article-1 --locale en
 ```
 
-`ai.anicca.affiliate-browser` owns the isolated English profile on CDP `9324`.
+`ai.anicca.affiliate-browser` owns the isolated provider profile on CDP `9324`;
+`ai.anicca.affiliate-x-browser` owns the English X profile on CDP `9326`.
 `ai.anicca.affiliate-loop` wakes every 10 minutes. Receipts live under
 `~/.local/state/life-manager/affiliate`; provider passwords and the executable
 ElevenLabs link remain only in the mode-0600 private Markdown. The current wake

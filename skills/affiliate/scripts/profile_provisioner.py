@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 
 
-LOCALES = (("en", 9324), ("ja", 9325))
+LOCALES = (("en", 9324), ("ja", 9325), ("x-en", 9326))
 
 
 class ProvisionError(Exception):
@@ -42,6 +42,34 @@ def write_if_new(path, payload):
             temporary_path.unlink()
 
 
+def write_monotonic_receipt(path, payload):
+    data = (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    if not path.exists():
+        write_if_new(path, data)
+        return
+    if path.is_symlink() or not path.is_file():
+        raise ProvisionError
+    try:
+        previous = json.loads(path.read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        raise ProvisionError
+    previous_locales = previous.get("locales")
+    if previous.get("status") != "READY" or not isinstance(previous_locales, dict):
+        raise ProvisionError
+    if any(payload["locales"].get(name) != value for name, value in previous_locales.items()):
+        raise ProvisionError
+    if previous == payload:
+        return
+    fd, temporary = tempfile.mkstemp(prefix="." + path.name + ".", dir=str(path.parent))
+    temporary_path = Path(temporary)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+        os.replace(str(temporary_path), str(path))
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", required=True, type=Path)
@@ -57,8 +85,7 @@ def main():
         ensure_directory(profile)
         locales[locale] = {"path": str(profile.absolute()), "cdp_port": port}
     payload = {"status": "READY", "locales": locales}
-    data = (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
-    write_if_new(args.receipt.expanduser(), data)
+    write_monotonic_receipt(args.receipt.expanduser(), payload)
     return 0
 
 
