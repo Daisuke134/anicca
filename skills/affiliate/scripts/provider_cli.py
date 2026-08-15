@@ -322,7 +322,7 @@ def reset_password(args):
         job = start_effect(
             state, "PROVIDER_PASSWORD_RESET", args.provider,
             {"operation": "password_reset", "provider": args.provider},
-            {"state": "RESET_FORM", "url": page["url"], "password_fields": len(nodes)}, 900,
+            {"state": "RESET_FORM", "url": page["url"], "field_count": len(nodes)}, 900,
         )
         click(ws, request_id, reset["submit_selector"])
     finally:

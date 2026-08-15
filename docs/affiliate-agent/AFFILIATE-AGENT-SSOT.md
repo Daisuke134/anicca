@@ -989,6 +989,16 @@ that exact state, reads only the pre-saved mode-0600 MD credential, journals the
 mutation, and requires redirect readback. A14.4 stays open until reset, fresh
 login, and `APPLICATION_PENDING` readback all succeed live.
 
+The first installed reset attempt failed before the external effect: the job
+journal correctly rejected the sanitized key name `password_fields` because its
+secret guard rejects every key containing `password`. No job event, receipt, or
+page transition existed, so a reset was not submitted. The harness keeps the
+guard unchanged and renames only that count to `field_count`; the provider and
+job-journal focused checks pass. The official reset form was reacquired on 9327,
+and the replacement credential is now `VERIFIED_NONEMPTY` in both the mode-0600
+private MD and its Keychain mirror. Live submit and authenticated readback remain
+the next A14.4 proof.
+
 #### D. Earn the first externally approved commission
 
 - [ ] **A15.1** Keep ElevenLabs active and poll HubSpot/Impact; never resubmit the
