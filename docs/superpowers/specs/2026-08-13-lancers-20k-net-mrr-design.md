@@ -2796,3 +2796,22 @@ stale contracts snapshotを`capacity_source_unavailable`としてeffect 0で停�
 （募集中25、選定中4、cancel 1）、reply required 0、incoming monthly offer 0、working 0、monthly contract 0、payment 0、source complete true。
 続くApplication ownerは`no_eligible_project / observed 0 / submitted false / exit 0`で終了した。pending 0、一wake最大1応募、daily cap、
 公式proposal readback、duplicate effect 0は維持され、次のfresh eligibleから新price-speed contractが適用される。
+
+### 18.42 Official buyer-first proposal contract
+
+**CURRENT OBSERVATION:** 公式応募履歴はApplicationReceipt 31件、募集中25、選定中4、working 0、buyer-last 0、ContractReceipt 0である。
+最新AI/API proposal `27813129`は案件固有の構成と納品物を示す一方、依頼文の6個の応募質問を見出し単位で全て直接回答せず、修正条件・連絡方法も
+明示しない。proposal一覧DOMの`当選`labelは`display:none`であり、依頼detailは当選人数0、進行中0、募集中を返すため、成約signalに使わない。
+
+**FIRST SOURCE:** Lancers公式「受注のためのアクションを取ろう①」は、良い提案を、依頼内容を把握して自己PRだけで終わらず、冒頭で
+clientの関心を取り、制作手順・schedule、clientが知りたい想定問答（修正回数、連絡方法等）を示すものと定義する。
+https://www.lancers.jp/lp/beginner/l/03
+
+**NEXT DIRECT ACTION:** この公式contractだけを既存semantic plannerへ加える。固定template、keyword、二回目model、既存proposalへの追送、
+追加schemaは作らない。新規proposalは冒頭で依頼理解と提供価値を示し、応募質問へ漏れなく直接回答し、実行手順・schedule・納品物、
+関係する場合だけ修正回数とLancers messageでの連絡方法を示す。検証済みでない実績は作らない。
+
+**PLAN SIZE:** production 1 file / 1文、SSOT 1 section。state、ledger、browser effect、scheduler変更0。
+
+**DONE EVIDENCE:** compile、exact release deploy、Work Sync→Application production owner exit 0。次のfresh eligible proposalから新contractを使い、
+一wake最大1応募、official proposal ID readback、duplicate effect 0を維持する。

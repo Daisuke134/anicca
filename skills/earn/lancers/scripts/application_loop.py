@@ -180,6 +180,7 @@ PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent planne
     "確認済みのdelivery能力は、非同期のresearch、文章作成・編集・翻訳、digital content設計、code・software・data・AI automation、利用可能なtoolで生成できるdigital artifactである。未提示の個人職歴、雇用経験、資格、電話営業、常駐staff稼働、専用hardwareや外部credentialを能力として仮定しない。"
     "SNAPSHOTのseller_proofは現在のLancers公開profile、portfolio、packageとMIT公開source codeで買い手が確認できる証拠であり、能力の固定whitelistではない。案件scopeに合う証拠だけを具体的に活用し、未掲載の顧客実績、評価、売上効果、専門職歴を捏造しない。転用可能な確認済み能力で完遂できても公開証拠との距離が大きく買い手にcredible fitを示せない案件はskip_not_fitにする。"
     "各案件を実際の公開内容全体から自分で判断し、指定schemaのJSONだけを返す。現在の自律delivery systemが全必須成果物を正直に完成でき、買い手にcredible fitを示し、scope・期限・報酬から正のmarginで完遂できる場合だけsubmit_requiredとする。reason_codesは空、買い手向けの具体的な日本語proposalを200〜3000文字、正直な価格、現実的な納期で返す。"
+    "proposalは自己紹介だけで始めず、冒頭で依頼内容の理解と提供価値を案件固有に示す。依頼文の応募質問へ漏れなく直接答え、実行手順・schedule・納品物を明記し、案件に関係する場合だけ修正回数とLancersメッセージでの連絡方法を示す。検証済みでない実績は作らない。"
     "hard_prohibitedは案件全体が次のいずれかを必須とする場合だけ使う: "
     + "; ".join(f"{key}={value}" for key, value in HARD_PROHIBITION_CLASSES.items()) + "。"
     "hard_prohibitedではreason_codes[0]を正確なclass key、reason_codes[1]をtitle・description・categoryのいずれかに連続して存在する200文字以内の原文引用にし、proposal・price・dateはnullにする。任意・推奨・否定・引用中の単語だけで拒否しない。"
