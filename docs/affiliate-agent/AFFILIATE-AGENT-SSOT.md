@@ -134,7 +134,8 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Release `941da44ce40f729a075918938d451e9dc9a2a228` is installed | `ai.anicca.affiliate-browser` is running, isolated EN CDP `9324` returned Chrome `145.0.7632.109`, and `ai.anicca.affiliate-loop` completed with exit code `0`. The first real placement receipt did not complete, so the local foundation remains `PARTIAL`, not GREEN |
+| Mac-local runtime | Release `e789fa61a5714fb6373e0fe22a87fd72e5a473ad` is installed and local foundation is GREEN | `ai.anicca.affiliate-browser` is running; isolated EN CDP `9324` returned Chrome `145.0.7632.109`; the launchd wake returned `READY_FOR_PUBLICATION`; cadence is 600 seconds; repeated `article-1` resolution kept exactly one placement row and returned `deduplicated=true`. This proves readiness, not publication or revenue |
+| Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
@@ -195,7 +196,7 @@ owner, and independent work selected for the same wake.
 | The owned site does not yet present a deep affiliate-relevant English content body | Approval and conversion weakness | Publish evidence-led B2B SaaS/creator workflows and comparison foundations before another fit-sensitive application |
 | `agent-browser 0.27.0` hung against the live multi-tab CloakBrowser | Tool-path failure, not browser incapability | Use the live-proven raw-CDP path now; retain the failure receipt and replace only when a candidate passes the same live postcondition |
 | Provider signup/login/OTP/contract/application writes are not yet fully exposed by `affiliate provider` | Product implementation gap | Turn every successful operator action into an idempotent semantic playbook and CLI state |
-| First placement receipt, provider reconciliation, and Affiliate money ledger are incomplete | Revenue-truth implementation gap | Fix the local receipt boundary before publication; no click or estimate may be reported as commission |
+| Provider reconciliation and Affiliate money ledger are incomplete | Revenue-truth implementation gap | The local placement receipt is exact-once, but no public readback or provider money receipt exists; no click or estimate may be reported as commission |
 | No first-party CTR, conversion, approval, reversal, or payout cohort exists | Learning uncertainty | Do not fabricate best/base/worst revenue forecasts; collect the first live 30-day cohort |
 | Scratch-Mac dependency installation is incomplete | Packaging gap, not current-Mac money blocker | Finish only after the current Mac closes a positive-unit-economics local slice |
 
@@ -780,13 +781,14 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 1. **DONE.** Converge the canonical skill, private state boundary, immutable
    release, and legacy evidence without touching the earning Coconala runtime.
-2. **IN PROGRESS.** Finish the Railway rollback and delete the two Affiliate-only
-   staging variables; prove no Affiliate code or secret remains in Railway.
-3. **IN PROGRESS.** Fix the failed local `placement_ready` receipt, then prove the
-   installed release, both launchd owners, CDP `9324`, wake lock, restart, and
-   append-only local receipts from the installed artifact rather than source.
-4. **PENDING.** Change the coordination cadence from 30 minutes to 10 minutes;
-   keep provider, research, and publication cooldowns independent and bounded.
+2. **DONE.** Finish the Railway rollback and delete the two Affiliate-only
+   staging variables; rollback commit, removed deployment, zero variables, and
+   HTTP `404` on the old route are live-read back.
+3. **DONE.** Make `placement_ready` exact-once and prove the installed release,
+   both launchd owners, CDP `9324`, wake lock, browser-start wait, and append-only
+   local receipts from the installed artifact rather than source.
+4. **DONE.** Change the coordination cadence from 30 minutes to 10 minutes;
+   provider, research, and publication cooldowns remain independent and bounded.
 5. **PARTIAL.** Complete credential-first signup/login/recovery/application states.
    ElevenLabs is active, Impact is pending, Kit is rejected, and provider writes
    still need exact-once semantic browser playbooks.
