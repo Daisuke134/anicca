@@ -10,6 +10,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from provider_cli import ProviderError, atomic_write, cdp_call, click, query_node, read_json
 from x_profile_cli import XProfileError, choose_x_target, connect, inspect, load_config
@@ -72,7 +73,9 @@ def navigate(ws, request_id, url):
 def timeline_posts(ws, request_id):
     expression = """(() => [...document.querySelectorAll('[data-testid="tweet"]')].map(tweet => ({
       text: tweet.querySelector('[data-testid="tweetText"]')?.innerText || '',
-      url: tweet.querySelector('a[href*="/status/"]')?.href || ''
+      url: tweet.querySelector('a[href*="/status/"]')?.href || '',
+      outbound: [...tweet.querySelectorAll('[data-testid="tweetText"] a')]
+        .map(anchor => anchor.href || '')
     })))()"""
     rows, request_id = evaluate(ws, request_id, expression)
     if not isinstance(rows, list):
@@ -80,20 +83,39 @@ def timeline_posts(ws, request_id):
     return rows, request_id
 
 
-def find_exact(rows, text):
+def resolve_outbound(url):
+    parsed = urlparse(url)
+    if parsed.hostname == "aniccaai.com":
+        return url
+    if parsed.hostname != "t.co":
+        return ""
+    try:
+        request = Request(url, method="HEAD", headers={"User-Agent": "Life-Manager-Affiliate/1.0"})
+        with urlopen(request, timeout=12) as response:
+            return response.geturl()
+    except OSError:
+        return ""
+
+
+def find_exact(rows, text, resolver=resolve_outbound):
+    owned_url = re.findall(r"https://[^\s]+", text)[0].rstrip(".,)")
+    prefix = text.replace(owned_url, "").strip()
     for row in rows:
         url = str(row.get("url", ""))
-        if row.get("text", "").strip() == text and re.search(r"/status/[0-9]+", url):
+        outbound = [resolver(str(link)) for link in row.get("outbound", [])]
+        if (
+            str(row.get("text", "")).strip().startswith(prefix)
+            and owned_url in outbound
+            and re.search(r"/status/[0-9]+", url)
+        ):
             return url.split("?")[0]
     return ""
 
 
 def live_readback(ws, request_id, url, text):
     request_id = navigate(ws, request_id, url)
-    expression = """(() => [...document.querySelectorAll('[data-testid="tweetText"]')]
-      .map(node => node.innerText || ''))()"""
-    values, request_id = evaluate(ws, request_id, expression)
-    if not isinstance(values, list) or text not in [str(value).strip() for value in values]:
+    rows, request_id = timeline_posts(ws, request_id)
+    if find_exact(rows, text) != url:
         raise XPostError("published X post failed exact public readback")
     return request_id
 

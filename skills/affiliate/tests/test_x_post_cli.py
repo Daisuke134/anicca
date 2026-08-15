@@ -40,6 +40,19 @@ class XPostContractTest(unittest.TestCase):
             }))
             self.assertIsNone(MODULE.require_live_owned_article(state, text))
 
+    def test_x_short_url_is_reconciled_to_owned_article(self):
+        text = "Affiliate link: https://aniccaai.com/blog/voice-workflows"
+        rows = [{
+            "text": "Affiliate link: https://\naniccaai.com/blog/voice-work…",
+            "url": "https://x.com/selawmqt/status/123",
+            "outbound": ["https://t.co/unit"],
+        }]
+        self.assertEqual(
+            MODULE.find_exact(rows, text, resolver=lambda _: "https://aniccaai.com/blog/voice-workflows"),
+            "https://x.com/selawmqt/status/123",
+        )
+        self.assertEqual(MODULE.find_exact(rows, text, resolver=lambda _: "https://example.com/wrong"), "")
+
 
 if __name__ == "__main__":
     unittest.main()
