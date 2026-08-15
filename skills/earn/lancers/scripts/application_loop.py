@@ -447,6 +447,17 @@ def _batch_summary(
     success = result.ok if ok is None else ok
     return replace(result, ok=success, submitted=any(item.submitted for item in verified) if submitted is None else submitted, observed_count=observed_count, eligible_count=eligible_count, verified_count=len(verified), provider_terminal_blocked_count=len(blocked), verified_project_ids=verified_projects, verified_provider_proposal_ids=verified_proposals, provider_terminal_blocked_project_ids=tuple(blocked), unresolved_project_id=unresolved_project_id)
 
+def _rank_eligible_by_buyer_quality(eligible: Sequence[tuple[Mapping[str, object], Mapping[str, object]]]) -> list[tuple[Mapping[str, object], Mapping[str, object]]]:
+    ranked = []
+    for index, item in enumerate(eligible):
+        row, decision = item
+        try: rate = status.fetch_public_client_order_rate(row.get("buyer_external_id"))
+        except Exception: rate = None
+        maximum = row.get("budget_max_minor")
+        budget = maximum if isinstance(maximum, int) and not isinstance(maximum, bool) else int(decision["price_jpy"])
+        ranked.append(((0 if budget >= 50000 else 1, -budget, 0 if isinstance(rate, int) else 1, -(rate or 0), index), item))
+    return [item for _key, item in sorted(ranked, key=lambda value: value[0])]
+
 def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence: Path, planner: Optional[Callable[..., object]], safety_verifier: Optional[Callable[..., object]], submitter: Optional[Callable[..., object]], state_path: Path) -> ApplicationLoopResult:
     observed_count = len(rows)
     try:
@@ -474,6 +485,8 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     eligible = [(rows_by_id[project_id], decision) for project_id, decision in decisions.items() if decision.get("business_class") == "submit_required"]
     if not eligible:
         return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project"), observed_count, 0, (), ())
+    if submitter is None and len(eligible) > 1:
+        eligible = _rank_eligible_by_buyer_quality(eligible)
     verified, blocked = [], []
     for row, decision in eligible[:1]:
         project_id, proposal = str(row["external_id"]), str(decision["proposal_text"])

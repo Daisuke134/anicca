@@ -2599,3 +2599,41 @@ callerは`receipt_missing`となった。Gateway一次logは同時刻にtarget c
 **CURRENT RESULT:** outbox uncertain rowはGateway一次logのmessage ID `19057`で再送なしに`delivered`へreconcileした。
 exact release `68826874ce172302b9cd23ce2db10443b665b0c1`はrepo内でlive-provenのGateway 60秒+message SHA idempotencyへ置換し、
 人向け本文の内部語を除去した。次のsemantic snapshot変化でpositive top-level message IDとsecond-wake send 0を確認するまで本sliceは未完である。
+
+### 18.35 Application buyer-quality ranking
+
+**USER OUTCOME:** 応募可能な案件が複数ある時、納品能力とseller proofを満たす候補の中から、実際に発注する可能性が高いbuyerを先に選び、
+応募数ではなく`ApplicationReceipt → ContractReceipt`の転換率を上げる。
+
+**CURRENT OBSERVATION:** Coconalaの稼働実装は37件のclosed案件から、誰かを採用したbuyerの発注率中央値61%、誰も採用しなかったbuyerの
+中央値7%を観測し、発注率を能力判定ではなくcandidate rankingに使う。hard gateは新規buyerまで除外してmoney entranceを閉じるため撤回済みである。
+Lancers公式public client profile `https://www.lancers.jp/client/mottomotto`は認証なしで発注率72%、発注460/掲載635、評価398/3を表示し、
+authenticated project detail `5586377`の同じbuyer cardも72%、460/635、398/3を表示する。一方、現Search parserは`/client/gambagentenkaiki`
+のような公式usernameではなくanchor表示名「動画編集サポーター｜初心者歓迎」を`buyer_external_id`へ保存する場合があり、profileと結合できない。
+
+**FIRST-PRINCIPLES DECISION:** buyer発注率は「この仕事を納品できるか」ではなく「buyerが誰かを雇う確率」の観測値である。したがって
+hard reject、固定40% gate、二回目のmodel safetyには使わない。既存plannerが能力・禁止事項・seller proof・予算を満たした候補だけを返した後、
+候補が複数ある場合だけpublic client profileを取得し、Coconalaの`_candidate_rank_key`と同じく高額帯、予算、known rateの順で並べ、
+同条件のunknownは元順序のまま後置する。
+profile取得・parseに失敗しても応募入口を閉じず、元のplanner順位へ戻す。
+
+```mermaid
+flowchart LR
+  D[公開案件を発見] --> P[一回planner<br/>能力・証拠・予算]
+  P -->|候補0| N[正常no-op]
+  P -->|候補1| S[その候補を送信]
+  P -->|候補2件以上| R[公式buyer発注率で順位付け]
+  R --> S
+  S --> A[公式ApplicationReceipt]
+  A --> C[buyer reply・契約]
+```
+
+**NEXT DIRECT ACTION:** search cardの`/client/<username>`をexact buyer IDとして保持し、既存cookie-free GETをclient profileにも安全に再利用する。
+profile headerのexact label `発注率`とnumeric percentを取得し、`_plan_and_submit`の複数eligible候補だけをstable sortする。
+
+**PLAN SIZE:** production 2 files、約45–70行。`status.py`のprovider parser/fetch boundaryと`application_loop.py`のrank keyだけ。
+新schema、DB、state、ledger、browser、model call、scheduler、hard threshold、拒否理由は追加しない。
+
+**DONE EVIDENCE:** public search cardからbuyer usernameを正しく保持し、公式profileとauthenticated detailの双方で同じ発注率72%を読む。
+複数候補はknown rate降順、unknownは元順序を維持し、一候補だけのtickは追加profile request 0。production ownerは引き続き一wake最大一応募、
+公式proposal ID readback、pending reconciliation、daily/capacity quota、next-wake duplicate effect 0を維持する。
