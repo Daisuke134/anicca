@@ -222,8 +222,10 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     _step(page, "業務内容"); _field(page, "textarea:not([name])").fill(product["description"])
     _step(page, "確認事項"); _field(page, '[name="ProjectPlanForm.notice_for_sale"]').fill(product["notice"])
     _step(page, "画像ほか")
-    upload = page.locator('input[type="file"][accept*="image/"]')
-    if upload.count() != 1: raise OfferError("form_changed")
+    uploads = page.locator('input[type="file"][accept*="image/"]')
+    existing = [field for field in uploads.all() if field.evaluate("e => !!e.parentElement?.querySelector('img[src*=\"img2.lancers.jp/projectblob/\"]')")]
+    if len(existing) != 1: raise OfferError("form_changed")
+    upload = existing[0]
     with page.expect_response(lambda response: urlsplit(response.url).path == "/v1/project_store_api/project_blob/add", timeout=20_000) as uploaded:
         upload.set_input_files(str(image))
     if uploaded.value.status != 200: raise OfferError("image_upload_failed")

@@ -2662,3 +2662,8 @@ Coconalaのproduction evidenceも最初の勝ち筋をspeed + low-priceとし、
 
 **DONE EVIDENCE:** public detailのFoundingだけ29,800円、listing ID `1338228`不変、status active、portfolio `743964`不変、
 product version 4のlisting receipt、next-wake `action=unchanged / effect 0`。Application state、contract state、ledgerは不変。
+
+**FIRST REAL BLOCKER:** exact release `478a0ea2f7fe2a50c3e5f95702d859cfc678e901`の初回Storefront wakeは保存前に`form_changed`で停止し、
+公式価格98,000円、listing receipt version 3、Application/contracts/ledgerのSHA-256は不変だった。現行edit DOMはcover一枚がある時、既存coverを
+置換するfile inputと追加画像用inputの二つを表示する。旧codeの`count == 1`仮定だけが誤りである。既存projectblob画像を子に持つslotをexact一件
+選び、追加slotを使わない。production code差分は1 file 4行で、新selector、DB、service、state transitionは増やさない。
