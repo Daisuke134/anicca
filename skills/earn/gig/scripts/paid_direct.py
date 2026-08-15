@@ -1557,9 +1557,6 @@ def _validated_source_census(root: Path, receipt: dict[str, Any],
     trust_path = root / "context" / "paid-source-census.json"
     trust = _load(trust_path) if _regular_file(trust_path) else None
     census_path = root / "acceptance" / "controller-source-census-v1.json"
-    expected_sources = _source_census_inputs(root)
-    if not expected_sources and binding is None and trust is None and not census_path.exists():
-        return
     trusted_sources = trust.get("sources") if isinstance(trust, dict) else None
     receipt_sources = {(str(source.get("path")), source.get("sha256")) for source in sources if isinstance(source, dict)}
     controller_receipt_path = (binding.get("controller_receipt_path") if isinstance(binding, dict) else None) or receipt.get("controller_receipt_path")
@@ -1798,14 +1795,6 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
                                        or "The prior fresh reviewer could not authorize this exact artifact.")
     source_census = (_prepare_source_census(args, root, requirements_sha256, code_root)
                      if resumed is None or finding else None)
-    census_instruction = (
-        "The controller has no source-census inputs for this revision. Set independent_source_census "
-        "to null and do not invent a census, controller receipt, path, or hash."
-        if source_census is None else
-        f"The controller-owned source-only census is {source_census}. Bind independent_source_census "
-        "to its exact absolute path and SHA256 plus the exact absolute controller_receipt_path and "
-        "controller_receipt_sha256 of context/paid-source-census.json."
-    )
     bound = _file_immutable_inputs(root, context)
     requirements_before = _requirements_snapshot(root)
     builder_prompt = base / "file" / "builder.prompt.txt"
@@ -1838,8 +1827,11 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         "candidate output pixels, annotations, or manifests must never select, filter, or confirm which source items count. "
         "Independently compare every source item's exact semantic value, including modifiers, with the actual output value; a "
         "derived expected natural value or nearby coloured mark is not proof of the value actually delivered. Never invent "
-        f"correspondence from counts, layout, or an owner assertion. {census_instruction} "
-        "The owner must not create a census generator, "
+        "correspondence from counts, layout, or an owner assertion. The controller-owned source-only census is "
+        f"{source_census}. Never modify it or its context/paid-source-census.json receipt. Every source-correspondence receipt "
+        "must bind independent_source_census with the exact absolute path and SHA256 of that census plus the exact absolute "
+        "controller_receipt_path and controller_receipt_sha256 of context/paid-source-census.json inside that same "
+        "independent_source_census object. The owner must not create a census generator, "
         "replace the controller census, embed a prior producer ledger, or claim manual independence. "
         "Distinguish buyer-visible deliverable requirements from application qualifications and preferred production tools. "
         "Never claim use of an unavailable tool. A named tool is a delivery blocker only when the contract explicitly requires "
