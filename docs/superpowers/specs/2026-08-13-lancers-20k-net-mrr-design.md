@@ -2815,3 +2815,9 @@ https://www.lancers.jp/lp/beginner/l/03
 
 **DONE EVIDENCE:** compile、exact release deploy、Work Sync→Application production owner exit 0。次のfresh eligible proposalから新contractを使い、
 一wake最大1応募、official proposal ID readback、duplicate effect 0を維持する。
+
+**DONE:** exact release `682170416906dd89466c2e062cf874d7b328addc`へ5 ownerをreloadした。Work Syncは公式proposal 30
+（募集中25、選定中4、cancel 1、working 0）、reply required 0、monthly offer 0、contract candidate 0、payment history 0を
+`source_complete=true / exit 0`で再観測した。続くApplication ownerは公開候補2件を読み、既応募project `5577746`を
+`duplicate_project / submitted false / exit 0`で閉じた。application state SHA-256 `9cb19876…fe48`とledger SHA-256
+`abdb58d0…eb6`は前後一致し、重複proposal 0である。次のfresh eligible proposalからbuyer-first contractが適用される。
