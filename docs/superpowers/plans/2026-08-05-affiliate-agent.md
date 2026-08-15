@@ -318,9 +318,11 @@ runtime behavior.
 - Create: `skills/affiliate/bootstrap/install.sh`
 - Create: `skills/affiliate/bootstrap/manifest.lock`
 - Create: `skills/affiliate/scripts/authority_inventory.py`
+- Create: `skills/affiliate/scripts/machine_capability_inventory.py`
 - Create: `skills/affiliate/scripts/profile_provisioner.py`
 - Test: `skills/affiliate/tests/test_bootstrap.py`
 - Test: `skills/affiliate/tests/test_authority_inventory.py`
+- Test: `skills/affiliate/tests/test_machine_capability_inventory.py`
 - Test: `skills/affiliate/tests/test_profile_provisioner.py`
 
 **Interfaces:**
@@ -362,6 +364,17 @@ receipt, and intent-scoped `keychain://` reference contract pass 5/5 focused
 tests. This step remains open because the current-host runtime/browser artifact
 has not been admitted into `manifest.lock`, and no Keychain value has been read
 back through the contract.
+
+Current-host admission sub-slice: accept only an explicit capability request,
+resolve each existing executable or macOS app bundle without launching it,
+record its canonical path, SHA-256, size, and version from trusted local
+metadata, and atomically write a deterministic sanitized receipt. Missing,
+non-executable, mutable-during-hash, duplicate-name, or secret-bearing inputs
+fail before installing a READY receipt. This proves what already exists on this
+Mac; it does not claim scratch-host portability or invent a downloadable
+artifact. The measured initial candidates are CloakBrowser Chromium
+`145.0.7632.109`, Google Chrome `151.0.7922.138`, Python `3.14.6`, and the macOS
+system `security`, `shasum`, `curl`, and `git` tools.
 
 - [ ] **Step 4: Implement semantic capability inventory and browser provisioning**
 
