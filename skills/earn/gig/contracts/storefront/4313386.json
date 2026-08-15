@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "platform": "coconala",
+  "service_id": "4313386",
+  "service_version_sha256": "dc08f7e2e60676aeab1c7fe6d3a716fddf56321f1ee69164c7a6e06a98bb1f56",
+  "public_url": "https://coconala.com/services/4313386",
+  "offer": {
+    "outcome": "請求書・日報・在庫表などの定型Excel作業をVBAマクロと実行手順書にまとめる",
+    "inclusions": [
+      "複数シート・複数ブックの集計と転記",
+      "請求書・日報・在庫表の定型処理",
+      "ボタン操作で行う定期作業の自動化",
+      "既存マクロの読みやすさ・使いやすさの整理"
+    ],
+    "deliverables": [
+      "VBAマクロを組み込んだExcelファイル（.xlsm）",
+      "実行手順書",
+      "必要に応じてコメント付きソースコード"
+    ],
+    "required_inputs": [
+      "自動化したい作業",
+      "個人情報を伏せた対象Excelサンプル",
+      "WindowsまたはMacとExcel環境",
+      "実行頻度と希望納期",
+      "既存マクロ・他システム連携の有無"
+    ],
+    "base_price_jpy": 6000,
+    "options": [
+      {"name": "追加マクロ1本組み込み", "price_jpy": 3000},
+      {"name": "月次保守（不具合修正・軽微な仕様変更、月1回まで）", "price_jpy": 5000}
+    ]
+  },
+  "inquiry_playbook": {
+    "principles": [
+      "特定のVBA構文を確認前に断定しない",
+      "実現可否・納期・料金はサンプルと期待結果を確認してから案内する",
+      "やりとりと納品はココナラ内で行う"
+    ],
+    "required_clarifications": [
+      "照合キーになる列と値",
+      "転記元シート・転記先シート・対象列",
+      "複数一致・未一致・空欄時の扱い",
+      "処理する行数とファイル数",
+      "ExcelのOS・バージョン"
+    ],
+    "answer_patterns": [
+      {
+        "intent": "implementation_style",
+        "triggers": ["For Next", "ループ", "構文", "テレコ型"],
+        "response": "特定の構文だけに限定せず、対象ファイルと処理量を確認して適切な実装を選びます。For〜Nextでの行走査にも対応できますが、件数や照合条件により配列・Dictionary・Range/Cells等を組み合わせます。"
+      },
+      {
+        "intent": "lookup_and_transfer",
+        "triggers": ["番号を照合", "mainに転記", "複数の列", "list"],
+        "response": "番号をキーにlist側を照合し、mainの指定列へ転記する処理は対応候補です。正確な可否と料金確認のため、個人情報を伏せたサンプル、キー列、転記先列、重複・未一致時の希望動作、Excel環境をご共有ください。"
+      }
+    ]
+  },
+  "handoff_required_fields": [
+    "platform",
+    "service_id",
+    "service_version_sha256",
+    "conversation_id",
+    "origin",
+    "observed_at_epoch"
+  ]
+}
