@@ -124,6 +124,7 @@ techniques do not merge the ledgers.
 | X identity | Dedicated Affiliate CDP `9326` and authenticated `whoami` prove `@selawmqt`: 128 posts, 27 following, 0 followers. The semantic profile command changed the public name to `sela | AI Tools`, added an English practical-AI bio with affiliate-link disclosure, set `aniccaai.com`, and a second apply returned `changed=false + matches_config=true`. X rejected legacy `@aniccaen` as inactive | Preserve mixed historical posts, keep all future posts English-only, and never use Japanese `@aniccaxxx` or shared daily-driver `@diceai0`; the first post still requires a duplicate-post fence and public readback |
 | X publication | No Affiliate placement exists. The canonical skill now has a dedicated `x post publish` boundary that verifies `@selawmqt:9326`, requires disclosure plus one owned article URL, writes an effect-possible fence before the click, reconciles exact timeline text after an ambiguous retry, and requires post-page readback before `LIVE`. X's April 2026 rules warn that scripted website automation may permanently suspend an account | The boundary is locally checked but intentionally has not clicked Publish because no approved owned article exists yet. The user-selected implementation is browser-only. Keep action caps and immediate account quarantine; never describe this lane as platform-approved or evade challenges |
 | English source scout | The canonical `sources capture --plan elevenlabs-en` command live-captured six immutable local artifacts: five ElevenLabs official web pages through CRWL and the official `elevenlabs/elevenlabs-python` repository through `gh` | Each receipt stores adapter, locator, locale, evidence class, license, body SHA-256, parser version, observed time, and expiry. The first live run returned `captured=6 + new=6`; after allowlisting stable GitHub fields, an immediate repeat returned `captured=6 + new=0`. Exact hashes are in Git-external `source-captures.jsonl`. CRWL `-q` failed because no LLM provider is configured, so the admitted route deliberately uses deterministic `md-fit` without an LLM. Authenticated X research readback is still missing |
+| First English content artifact | The versioned `elevenlabs-en-v1` template binds every price, rights, limitation, and case-study claim to five fresh official source captures. `affiliate content build` requires those support markers and the private executable link, then writes a mode-0600 Git-external artifact without printing its body or link | Live build returned `READY_FOR_POLICY`, slug `elevenlabs-plans-for-solo-creators`, and content SHA-256 `03089e860af9ed1e35a4656ebc045dd28d00dacc243739fe10b4f46f8e4822e9`. Disclosure precedes the CTA, company case studies are not represented as guarantees, and no first-hand audio test is invented. This is not yet a public placement or click |
 | clip loop | launchd is installed, last exit code is 0, and logs show production/posting through 2026-08-01 | Not banned. Reuse its publisher, renderer, attribution, and scoring contracts |
 | recent clip runs | Contract reports `skipped`; older stderr shows Telegram DNS delivery failures | Diagnose scheduler/business gates separately from platform health |
 
@@ -808,12 +809,15 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    classes outside Git. The live run captured five official pages and one official
    MIT repository. Add authenticated X read-only capture and record a failed
    adapter receipt before this item becomes DONE.
-8. **PENDING.** Reuse Writer research/editorial contracts and the existing browser
-   publisher without merging Writer revenue or modifying its live loop.
+8. **PARTIAL.** The first content builder reuses Writer's immutable artifact,
+   source-hash, useful-reader-first, disclosure-before-CTA, and Git-external state
+   boundaries without touching its live loop or revenue. Reuse its owned publication
+   readback pattern before this item becomes DONE.
 9. **PENDING.** Publish useful non-affiliate English foundation content on the
    owned site so provider applications and readers see a real editorial surface.
-10. **PENDING.** Create one ElevenLabs buyer-problem evidence pack, comparison,
-    disclosed article, local placement intent, and provider custom/direct link.
+10. **PARTIAL.** The first source-bound ElevenLabs plan comparison and disclosed
+    article artifact are live-built against the private executable direct link.
+    Add the local placement intent and policy decision, then publish before DONE.
 11. **PENDING.** Pass the policy gate, publish the article by browser, require
     public readback, then distribute one matching disclosed X post and read it back.
 12. **PENDING.** Reconcile provider clicks and transactions into local money states:

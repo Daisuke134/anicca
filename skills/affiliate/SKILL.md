@@ -108,6 +108,17 @@ Git-external Affiliate state root. Each receipt binds locale, evidence class,
 license, parser version, body hash, observation time, and expiry; adapter failure
 is fail-closed rather than converted into an empty source.
 
+Build the first source-bound English article into private runtime state:
+
+```bash
+skills/affiliate/affiliate content build
+```
+
+The builder requires fresh official support markers and the executable private
+ElevenLabs link, places disclosure before the first CTA, and prints only the
+artifact identity and hash. The article body and tracking link remain mode-0600
+Git-external state until the later policy and owned-publication boundary.
+
 Use the versioned English program research before any application:
 
 ```bash
