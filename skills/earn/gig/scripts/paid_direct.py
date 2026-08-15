@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Recover verified paid remote answers through existing delivery boundaries."""
 from __future__ import annotations
-import argparse, fcntl, hashlib, json, math, os, re, shutil, stat, subprocess, sys, tempfile, time
+import argparse, fcntl, hashlib, json, os, re, shutil, stat, subprocess, sys, tempfile, time
 from contextlib import contextmanager
 from datetime import date, datetime
 from pathlib import Path
@@ -1278,7 +1278,7 @@ def _file_runner_result(evidence: Path, *, task_label: str,
 def _source_census_inputs(root: Path) -> list[dict[str, str]]:
     requirements = _load(root / "requirements" / "live-buyer-reply.json")
     attachments = requirements.get("attachments") if isinstance(requirements, dict) else None
-    paths: dict[Path, str] = {}
+    result: list[dict[str, str]] = []
     for attachment in attachments if isinstance(attachments, list) else []:
         if not isinstance(attachment, dict) or not _text(attachment.get("source_path")):
             continue
@@ -1287,23 +1287,8 @@ def _source_census_inputs(root: Path) -> list[dict[str, str]]:
         sha256 = _file_snapshot(path)[1]
         if attachment.get("sha256") != sha256:
             raise ValueError("stale source census input")
-        paths[relative] = sha256
-    package = root / "source" / "package" / "full"
-    shallow_suffixes = {".pdf", ".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov", ".m4v", ".webm"}
-    if package.is_dir():
-        for path in package.rglob("*"):
-            if path.is_symlink() or not path.is_file():
-                continue
-            package_relative = path.relative_to(package)
-            if any(part.casefold() == "adobe premiere pro auto-save" for part in package_relative.parts):
-                continue
-            suffix = path.suffix.casefold()
-            if not (suffix == ".prproj" or
-                    suffix in shallow_suffixes and len(package_relative.parts) <= 3):
-                continue
-            relative = path.relative_to(root.resolve())
-            paths[relative] = _file_snapshot(path)[1]
-    return [{"path": str(path), "sha256": paths[path]} for path in sorted(paths)]
+        result.append({"path": str(relative), "sha256": sha256})
+    return result
 
 
 def _trusted_source_census(root: Path, requirements_sha256: str) -> tuple[Path, dict[str, Any]] | None:
@@ -1350,7 +1335,6 @@ def _source_census_visual_inputs(
     images: list[Path] = []
     rows: list[dict[str, Any]] = []
     image_suffixes = {".jpg", ".jpeg", ".png", ".webp"}
-    video_suffixes = {".mp4", ".mov", ".m4v", ".webm"}
     for index, source in enumerate(copied_sources):
         copied = Path(source["isolated_path"])
         rendered: list[Path] = []
@@ -1363,23 +1347,6 @@ def _source_census_visual_inputs(
                 raise Failure("file_builder")
         elif copied.suffix.casefold() in image_suffixes:
             rendered = [copied]
-        elif copied.suffix.casefold() in video_suffixes:
-            duration_text = _run(
-                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                 "-of", "default=noprint_wrappers=1:nokey=1", str(copied)], "file_builder",
-            )
-            try:
-                duration = float(duration_text.strip())
-            except ValueError as error:
-                raise Failure("file_builder") from error
-            if not math.isfinite(duration) or duration <= 0:
-                raise Failure("file_builder")
-            for page, fraction in enumerate((0.2, 0.5, 0.8), start=1):
-                frame = visual_dir / f"source-{index:04d}-frame-{page:02d}.png"
-                _run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-                      "-ss", f"{duration * fraction:.6f}", "-i", str(copied),
-                      "-frames:v", "1", str(frame)], "file_builder")
-                rendered.append(frame)
         for page, image in enumerate(rendered, start=1):
             sha256 = _file_snapshot(image)[1]
             images.append(image)
