@@ -209,6 +209,14 @@ def wait_for_selector(ws, request_id, selector, attempts=20):
     raise ProviderError("next login stage did not render")
 
 
+def selector_exists(ws, request_id, selector):
+    result = cdp_call(ws, request_id, "Runtime.evaluate", {
+        "expression": f"document.querySelector({json.dumps(selector)}) !== null",
+        "returnByValue": True,
+    })
+    return result.get("result", {}).get("value") is True, request_id + 1
+
+
 def read_login_credentials(path, section_name):
     path = path.expanduser()
     if not path.is_file() or path.stat().st_mode & 0o077:
@@ -281,13 +289,15 @@ def submit_login(args, playbook, target):
     )
     try:
         cdp_call(ws, 1, "DOM.enable")
-        request_id = focus_and_type(ws, 2, login["username_selector"], username)
-        if login.get("username_submit_text_any"):
-            request_id = click_text(
-                ws, request_id, login["username_submit_selector"],
-                login["username_submit_text_any"],
-            )
-            request_id = wait_for_selector(ws, request_id, login["password_selector"])
+        password_ready, request_id = selector_exists(ws, 2, login["password_selector"])
+        if not password_ready:
+            request_id = focus_and_type(ws, request_id, login["username_selector"], username)
+            if login.get("username_submit_text_any"):
+                request_id = click_text(
+                    ws, request_id, login["username_submit_selector"],
+                    login["username_submit_text_any"],
+                )
+                request_id = wait_for_selector(ws, request_id, login["password_selector"])
         request_id = focus_and_type(ws, request_id, login["password_selector"], password)
         if login.get("password_submit_text_any"):
             click_text(

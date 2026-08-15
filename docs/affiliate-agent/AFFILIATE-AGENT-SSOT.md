@@ -1059,6 +1059,11 @@ the first-stage semantic control from `Next` to `Continue`; the original
 `PROVIDER_LOGIN` job remains unresolved with the same identity. The smallest
 A14.5 repair is the observed `Continue` allowlist addition in the Impact
 playbook. No selector, credential, scheduler, or publisher is redesigned.
+The first repaired run advanced to Impact's rendered password stage. A following
+retry exposed that the adapter always restarted from email even when the password
+field was already present. The bounded repair detects that exact intermediate
+state, skips the completed email/Continue step, and resumes password submission
+inside the same unresolved login job.
 
 ### A14–E1 remaining implementation map
 
