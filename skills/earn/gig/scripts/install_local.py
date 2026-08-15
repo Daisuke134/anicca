@@ -460,8 +460,20 @@ def main() -> int:
         ]
         if scheduler == "launchd":
             labels = render_launchd(selected, home, True)
+            domain = f"gui/{os.getuid()}"
+            for label in REVENUE_LABELS:
+                subprocess.run(
+                    ["launchctl", "kickstart", f"{domain}/{label}"], check=True
+                )
         elif scheduler == "systemd":
             labels = render_systemd(selected, home, True)
+            subprocess.run(
+                [
+                    "systemctl", "--user", "start",
+                    *(f"{label}.service" for label in REVENUE_LABELS),
+                ],
+                check=True,
+            )
         else:
             raise SystemExit("start requires launchd or systemd")
         message_id = send_daily_report(
