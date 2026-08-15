@@ -2697,3 +2697,20 @@ presend再観測、公式proposal readbackは変更しない。Coconalaの速い
 
 **DONE EVIDENCE:** plist lint、exact release deploy、loaded ownerのinterval 300、production wake exit 0。candidateがなければhealthy no-op、
 candidateがあれば最大1件だけ公式proposal IDへ閉じる。state pending 0、next-wake duplicate submit 0、provider 429/session failure 0を確認する。
+
+### 18.38 First-review conversion ranking parity
+
+**USER OUTCOME:** 評価0の新規sellerが、納品可能な候補の中で最初の有償契約を取りやすい案件へ先に応募する。
+
+**CURRENT OBSERVATION:** public seller profile `keiodaisuke`は、明確なSNS/AI自己紹介、対応可能、料金表29,800円、portfolio一件を公開するが、
+登録日は2026-08-10、24時間返信率と実績評価はまだ表示なしである。公式AI/API PoC `5586377`は提案132件に増えており、評価0のfirst-paid入口として
+競争が強い。現行Lancers plannerは既存detail GETから公式提案数を読み、候補をsemanticに並べるが、その後のbuyer-quality stable sortは
+高額帯、予算、発注率、元順序だけで、Coconala production `_candidate_rank_key`の`applicants_count`を移植していない。
+
+**NEXT DIRECT ACTION:** 既存description内の固定provider field `提案数: N件`を数値として読み、複数eligibleのstable sortへだけ追加する。
+順序はCoconalaと同じく高額帯、予算、known buyer rate、rate、少ない提案数、元の新着順。能力外を提案数だけで通さず、提案数不明を拒否せず後置する。
+
+**PLAN SIZE:** production 1 file / 3行、SSOT 1 section。追加GET、schema、state、ledger、model call、hard threshold、拒否ruleは0。
+
+**DONE EVIDENCE:** compile、exact release deploy、同予算・同buyer qualityの複数eligibleで公式提案数の少ない候補が先、unknownは元順序を維持。
+production ownerは最大1応募、公式proposal readback、next-wake duplicate effect 0を維持する。
