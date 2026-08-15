@@ -2860,3 +2860,8 @@ GitHub source proofだけを渡し、Lancers内のsoftware portfolio identityを
 
 **PLAN SIZE:** production 1 file、約6行。**DONE EVIDENCE:** compile、exact release deploy、production Application exit 0、
 次のfresh proposalからofficial portfolio identityを利用可能にし、一wake最大1応募とduplicate effect 0を維持する。
+
+**DONE:** exact release `82acfd306fab1840183fe4d63d1e21c929f54e9e`のseller-proof objectはsoftware portfolio `743987`の
+official ID、Lancers URL、title、descriptionを保持する。Work Syncはsource complete、contract 0、payment 0を再観測した。続くApplicationは
+既応募project `5577746`を`duplicate_project / submitted false / exit 0`で閉じ、application state `9cb19876…fe48`とledger
+`abdb58d0…eb6`は前後一致した。次のfresh AI/API proposalからLancers内のsoftware proofを利用できる。
