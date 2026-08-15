@@ -75,7 +75,9 @@ skills/affiliate/affiliate loop placement --placement article-1 --locale en
 `ai.anicca.affiliate-loop` wakes every 10 minutes. Receipts live under
 `~/.local/state/life-manager/affiliate`; provider passwords and the executable
 ElevenLabs link remain only in the mode-0600 private Markdown. The current wake
-proves local readiness only. Publication, provider click readback, commission,
+polls the rendered ElevenLabs login state, records only a deterministic provider
+transition ID, and requires `AUTHENTICATED` before publication readiness. It
+still proves readiness only: publication, provider click readback, commission,
 and payout stay separate later gates.
 
 Use the versioned English program research before any application:

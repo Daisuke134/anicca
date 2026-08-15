@@ -134,7 +134,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Release `e789fa61a5714fb6373e0fe22a87fd72e5a473ad` is installed and local foundation is GREEN | `ai.anicca.affiliate-browser` is running; isolated EN CDP `9324` returned Chrome `145.0.7632.109`; the launchd wake returned `READY_FOR_PUBLICATION`; cadence is 600 seconds; repeated `article-1` resolution kept exactly one placement row and returned `deduplicated=true`. This proves readiness, not publication or revenue |
+| Mac-local runtime | Release `e789fa61a5714fb6373e0fe22a87fd72e5a473ad` is installed and local foundation is GREEN; the next immutable release is pending install | `ai.anicca.affiliate-browser` is running; isolated EN CDP `9324` returned Chrome `145.0.7632.109`; source wake now polls the rendered provider state and returned `AUTHENTICATED + READY_FOR_PUBLICATION`; two unchanged wakes preserved transition ID `c1702e21134601f7ae060c3f2c3c4c69737d6e6d539d869bb117c5521d9e020f` with `provider_changed=false`; cadence is 600 seconds; repeated `article-1` resolution kept exactly one placement row. This proves readiness, not publication or revenue |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
 
@@ -792,8 +792,9 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
    provider, research, and publication cooldowns remain independent and bounded.
 5. **PARTIAL.** Complete credential-first signup/login/recovery/application states.
    ElevenLabs dedicated login is live-proven through the reusable semantic CDP
-   playbook; Impact is pending and Kit is rejected. Impact status polling and any
-   future provider write still require exact-once semantic playbooks.
+   playbook, and its state poll is wired into each 10-minute source wake with a
+   stable transition ID. Impact is pending and Kit is rejected. Impact status
+   polling and any future provider write still require exact-once semantic playbooks.
 6. **PENDING.** Rebrand and verify English `@selawmqt`; bind its isolated profile,
    disclosure, public URL, screenshot/DOM receipt, and duplicate-post fence.
 7. **PENDING.** Implement the source scout using CRWL, `gh`, official sources, and

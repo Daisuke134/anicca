@@ -11,6 +11,9 @@ import time
 import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
+from types import SimpleNamespace
+
+from provider_cli import ProviderError, observe, poll
 
 
 def atomic_json(path, value):
@@ -78,6 +81,23 @@ def browser_ready(port, attempts=15):
     return False
 
 
+def provider_poll(state, cdp_port):
+    args = SimpleNamespace(
+        provider="elevenlabs",
+        cdp_host="127.0.0.1",
+        cdp_port=cdp_port,
+        receipt=state / "providers" / "elevenlabs.json",
+    )
+    try:
+        return poll(args, observe(args))
+    except (ProviderError, OSError, ValueError, KeyError, json.JSONDecodeError):
+        return {
+            "state": "PROVIDER_OBSERVATION_FAILED",
+            "changed": False,
+            "transition_id": None,
+        }
+
+
 def wake(args):
     state = args.state.expanduser()
     state.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -85,21 +105,34 @@ def wake(args):
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
+        lock.close()
         print('{"state":"ALREADY_RUNNING"}')
         return 0
     link = elevenlabs_link(args.private_markdown.expanduser())
     browser = browser_ready(args.cdp_port)
-    status = "READY_FOR_PUBLICATION" if link and browser else (
-        "BROWSER_UNAVAILABLE" if link else "TRACKING_LINK_UNAVAILABLE"
-    )
+    provider = provider_poll(state, args.cdp_port) if browser else {
+        "state": "BROWSER_UNAVAILABLE", "changed": False, "transition_id": None,
+    }
+    if not link:
+        status = "TRACKING_LINK_UNAVAILABLE"
+    elif not browser:
+        status = "BROWSER_UNAVAILABLE"
+    elif provider["state"] == "AUTHENTICATED":
+        status = "READY_FOR_PUBLICATION"
+    else:
+        status = provider["state"]
     event = {
         "event": "affiliate_wake",
         "provider": "elevenlabs",
+        "provider_changed": provider["changed"],
+        "provider_state": provider["state"],
+        "provider_transition_id": provider["transition_id"],
         "status": status,
         "ts": int(time.time()),
     }
     append(state / "events.jsonl", event)
     atomic_json(state / "last-run.json", event)
+    lock.close()
     print(json.dumps(event, sort_keys=True, separators=(",", ":")))
     return 0
 
