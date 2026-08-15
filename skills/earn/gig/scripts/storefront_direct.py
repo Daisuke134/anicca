@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import re
+import struct
 import subprocess
 import sys
 import tempfile
@@ -42,6 +43,7 @@ STATE_FILES = (
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl",
 )
 TARGET_SERVICE_ID = "4330368"
+DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
 JUDGEMENT_FIELDS = {
     "decision", "service_id", "changed_field", "before_value", "proposed_value",
     "hypothesis", "competitor_evidence_paths", "capability_evidence_paths",
@@ -225,6 +227,40 @@ def _append_key_once(path: Path, field: str, value: dict) -> bool:
                 return False
     _append(path, value)
     return True
+
+
+def _load_image_contract(path: Path) -> dict:
+    try:
+        contract = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_image_contract_invalid") from error
+    required = {
+        "version", "service_id", "field", "asset", "asset_sha256", "width", "height",
+        "mime_type", "claims", "claim_source", "platform_requirement_source",
+    }
+    if set(contract) != required or contract.get("version") != 1:
+        raise RuntimeError("storefront_image_contract_fields_invalid")
+    if contract.get("service_id") != TARGET_SERVICE_ID or contract.get("field") != "image":
+        raise RuntimeError("storefront_image_contract_identity_invalid")
+    asset = (path.parent / str(contract.get("asset") or "")).resolve()
+    try:
+        asset.relative_to(path.parent.resolve())
+        data = asset.read_bytes()
+    except (OSError, ValueError) as error:
+        raise RuntimeError("storefront_image_asset_invalid") from error
+    if (len(data) > 100 * 1024 * 1024 or len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n"
+            or contract.get("mime_type") != "image/png"):
+        raise RuntimeError("storefront_image_asset_format_invalid")
+    width, height = struct.unpack(">II", data[16:24])
+    digest = hashlib.sha256(data).hexdigest()
+    if (width, height) != (1220, 1016) or (contract.get("width"), contract.get("height")) != (width, height):
+        raise RuntimeError("storefront_image_asset_dimensions_invalid")
+    if contract.get("asset_sha256") != digest:
+        raise RuntimeError("storefront_image_asset_hash_invalid")
+    claims = contract.get("claims")
+    if not isinstance(claims, list) or not claims or not all(isinstance(claim, str) and claim.strip() for claim in claims):
+        raise RuntimeError("storefront_image_claims_invalid")
+    return {**contract, "asset_path": str(asset)}
 
 
 def _analytics_count(body: str, label: str, unit: str) -> int:
@@ -567,12 +603,18 @@ def _observe_own_page(ws_url: str, evidence_dir: Path, name: str = "own-candidat
           )];
           closed.forEach(control => control.click());
           if (closed.length) await new Promise(resolve => setTimeout(resolve, 500));
+          const serviceImageIds = [...new Set([...document.querySelectorAll('.c-contentsImagesProduction img')]
+            .map(image => (image.currentSrc || image.src || '').match(/service_images\\/original\\/([^/?]+)/)?.[1])
+            .filter(Boolean))];
           return JSON.stringify({url:location.href,title:document.title,
-            body:document.body ? document.body.innerText.slice(0,120000) : ''});
+            body:document.body ? document.body.innerText.slice(0,120000) : '',service_image_ids:serviceImageIds});
         })()""",
     ))
     body = str(observed.get("body") or "")
-    if urlsplit(str(observed.get("url") or "")).path.rstrip("/") != f"/services/{TARGET_SERVICE_ID}" or not body.strip():
+    image_ids = observed.get("service_image_ids")
+    if (urlsplit(str(observed.get("url") or "")).path.rstrip("/") != f"/services/{TARGET_SERVICE_ID}" or not body.strip()
+            or not isinstance(image_ids, list) or not all(isinstance(value, str) and value for value in image_ids)
+            or len(set(image_ids)) != len(image_ids)):
         raise RuntimeError("own_candidate_readback_invalid")
     row = {
         "official": True,
@@ -581,7 +623,13 @@ def _observe_own_page(ws_url: str, evidence_dir: Path, name: str = "own-candidat
         "url": str(observed["url"]),
         "title": str(observed.get("title") or ""),
         "body": body,
+        "service_image_ids": image_ids,
+        "service_image_count": len(image_ids),
         "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
+        "listing_version_sha256": hashlib.sha256(json.dumps(
+            {"body": body, "service_image_ids": image_ids}, ensure_ascii=False,
+            sort_keys=True, separators=(",", ":"),
+        ).encode()).hexdigest(),
         "observed_at_epoch": int(time.time()),
     }
     _atomic_write(evidence_dir / name, row)
@@ -657,6 +705,24 @@ def _invoke_judge(
 def _experiment_key(service_id: str, field: str, proposed: str) -> str:
     digest = hashlib.sha256(proposed.strip().encode()).hexdigest()
     return f"storefront:v1:{service_id}:{field}:{digest}"
+
+
+def _image_judgement(hypothesis: dict, own_page: dict, contract: dict) -> dict:
+    if (hypothesis.get("service_id") != TARGET_SERVICE_ID or hypothesis.get("field") != "image"
+            or hypothesis.get("before") != 0 or hypothesis.get("executable") is not True
+            or hypothesis.get("success_metric") != "views_to_inquiry"):
+        raise RuntimeError("storefront_image_hypothesis_invalid")
+    if own_page.get("service_image_count") != 0 or own_page.get("service_image_ids") != []:
+        raise RuntimeError("storefront_image_before_not_current")
+    digest = str(contract["asset_sha256"])
+    return {
+        "decision": "change", "service_id": TARGET_SERVICE_ID, "changed_field": "image",
+        "before_value": 0, "proposed_value": digest,
+        "hypothesis": str(hypothesis["reason"]), "competitor_evidence_paths": [],
+        "capability_evidence_paths": [], "success_metric": "views_to_inquiry",
+        "observation_window_days": 14, "no_op_reason": None,
+        "experiment_key": _experiment_key(TARGET_SERVICE_ID, "image", digest), "uncertainty": [],
+    }
 
 
 def _guarded_noop(value: dict, reason: str) -> dict:
@@ -760,6 +826,11 @@ def _guard_judgement(
 def _presend_guard(judgement: dict, own_page: dict) -> None:
     if judgement.get("decision") != "change":
         return
+    if judgement.get("changed_field") == "image":
+        if (judgement.get("service_id") != TARGET_SERVICE_ID or judgement.get("before_value") != 0
+                or own_page.get("service_image_count") != 0 or own_page.get("service_image_ids") != []):
+            raise RuntimeError("presend_image_current_value_changed")
+        return
     if (judgement.get("service_id") != TARGET_SERVICE_ID
             or judgement.get("changed_field") != "FAQ"
             or judgement.get("before_value") != "FAQ_ABSENT"
@@ -808,6 +879,33 @@ def _validate_public_acceptance(before: dict, after: dict, question: str, answer
         raise RuntimeError("public_faq_readback_mismatch")
 
 
+def _validate_public_image_acceptance(before: dict, after: dict) -> None:
+    url = f"https://coconala.com/services/{TARGET_SERVICE_ID}"
+    if before.get("url") != url or after.get("url") != url:
+        raise RuntimeError("public_image_readback_url_invalid")
+    if before.get("service_image_count") != 0 or before.get("service_image_ids") != []:
+        raise RuntimeError("public_image_before_invalid")
+    if after.get("service_image_count") != 1 or len(after.get("service_image_ids") or []) != 1:
+        raise RuntimeError("public_image_count_mismatch")
+    if before.get("listing_version_sha256") == after.get("listing_version_sha256"):
+        raise RuntimeError("public_image_version_unchanged")
+
+
+def _validate_image_form_delta(before: dict, after: dict) -> None:
+    url = f"https://coconala.com/mypage/services/{TARGET_SERVICE_ID}"
+    if before.get("url") != url or after.get("url") != url:
+        raise RuntimeError("seller_image_form_url_invalid")
+    before_fields = [row for row in _form_base_fields(before) if not str(row.get("name") or "").startswith("data[UploadedFile]")]
+    after_fields = [row for row in _form_base_fields(after) if not str(row.get("name") or "").startswith("data[UploadedFile]")]
+    uploads = [row for row in after.get("fields") or [] if str(row.get("name") or "").startswith("data[UploadedFile]")]
+    if before_fields != after_fields or any(
+        str(row.get("name") or "").startswith("data[UploadedFile]") for row in before.get("fields") or []
+    ):
+        raise RuntimeError("seller_image_non_image_changed")
+    if len(uploads) != 1 or not re.fullmatch(r"data\[UploadedFile]\[n\d+]\[image_files]", str(uploads[0].get("name") or "")):
+        raise RuntimeError("seller_image_upload_field_invalid")
+
+
 def _seller_snapshot(ws_url: str) -> dict:
     import listing_inventory
 
@@ -830,6 +928,13 @@ def _pending_recovery(state_dir: Path, own_page: dict) -> dict | None:
             continue
         if intent.get("status") not in {"prepared", "observed"}:
             continue
+        if intent.get("changed_field") == "image":
+            image_ids = own_page.get("service_image_ids")
+            if own_page.get("service_image_count") == 1 and isinstance(image_ids, list) and len(image_ids) == 1:
+                return {**intent, "intent_path": str(path)}
+            if own_page.get("service_image_count") == 0 and image_ids == []:
+                continue
+            raise RuntimeError("pending_image_effect_public_readback_invalid")
         question, answer = str(intent.get("question") or ""), str(intent.get("answer") or "")
         if not question or not answer or len(question) > 400 or len(answer) > 400:
             raise RuntimeError("pending_effect_values_invalid")
@@ -921,6 +1026,94 @@ def _execute_faq_effect(**kwargs) -> tuple[dict, dict, Path]:
     return asyncio.run(_execute_faq_effect_async(**kwargs))
 
 
+async def _execute_image_effect_async(
+    ws_url: str,
+    *,
+    contract: dict,
+    judgement: dict,
+    public_before_path: Path,
+    evidence_dir: Path,
+    state_dir: Path,
+) -> tuple[dict, dict, Path]:
+    import websockets
+    import listing_inventory
+
+    edit_url = f"https://coconala.com/mypage/services/{TARGET_SERVICE_ID}"
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        await listing_inventory._call(ws, "Page.enable", {}, cid); cid += 1
+        await listing_inventory._call(ws, "DOM.enable", {}, cid); cid += 1
+        await ws.send(json.dumps({"id": cid, "method": "Page.navigate", "params": {"url": edit_url}})); cid += 1
+        _, cid = await listing_inventory._wait_for_load(ws, asyncio.get_event_loop().time() + 15, cid)
+
+        async def evaluate(expression: str) -> object:
+            nonlocal cid
+            response = await listing_inventory._call(
+                ws, "Runtime.evaluate", {"expression": expression, "returnByValue": True}, cid,
+            )
+            cid += 1
+            return response.get("result", {}).get("result", {}).get("value")
+
+        before = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
+        click = json.loads(str(await evaluate(
+            "JSON.stringify((()=>{const b=document.querySelector('.js_upload-select');"
+            "if(!b)return {ok:false,reason:'image_add_missing'};b.click();return {ok:true}})())"
+        ) or "{}"))
+        if click.get("ok") is not True:
+            raise RuntimeError(f"seller_image_add_failed:{click.get('reason')}")
+        await asyncio.sleep(0.5)
+        document = await listing_inventory._call(ws, "DOM.getDocument", {"depth": -1, "pierce": True}, cid); cid += 1
+        queried = await listing_inventory._call(ws, "DOM.querySelector", {
+            "nodeId": document["result"]["root"]["nodeId"], "selector": "input.js_upload-button",
+        }, cid); cid += 1
+        node_id = int(queried.get("result", {}).get("nodeId") or 0)
+        if node_id <= 0:
+            raise RuntimeError("seller_image_file_input_missing")
+        await listing_inventory._call(ws, "DOM.setFileInputFiles", {
+            "nodeId": node_id, "files": [str(contract["asset_path"])],
+        }, cid); cid += 1
+        await asyncio.sleep(2)
+        after = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
+        _validate_image_form_delta(before, after)
+        preview = json.loads(str(await evaluate(
+            "JSON.stringify((()=>{const p=document.querySelector('.js_image-thumbnail[style*=\"blob:\"]');"
+            "const s=document.querySelector('button.submitButton.js_button-edit[type=submit]');"
+            "if(!p)return {ok:false,reason:'preview_missing'};if(!s)return {ok:false,reason:'submit_missing'};"
+            "s.scrollIntoView({block:'center'});const r=s.getBoundingClientRect();"
+            "return {ok:true,rect:{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height}}})())"
+        ) or "{}"))
+        if preview.get("ok") is not True:
+            raise RuntimeError(f"seller_image_preview_failed:{preview.get('reason')}")
+        before_path, after_path = evidence_dir / "seller-form-before.json", evidence_dir / "seller-form-image-filled.json"
+        _atomic_write(before_path, before)
+        _atomic_write(after_path, after)
+        intent_path = _effect_intent_path(state_dir, str(judgement["experiment_key"]))
+        intent = {
+            "version": 1, "status": "prepared", "service_id": TARGET_SERVICE_ID,
+            "changed_field": "image", "experiment_key": judgement["experiment_key"],
+            "asset_path": str(contract["asset_path"]), "asset_sha256": contract["asset_sha256"],
+            "public_before_path": str(public_before_path), "seller_form_before_path": str(before_path),
+            "prepared_at_epoch": int(time.time()), "effect_origin_pass_id": evidence_dir.name,
+            "judgement": judgement,
+        }
+        _atomic_write(intent_path, intent)
+        rect = preview["rect"]
+        if min(float(rect.get("w") or 0), float(rect.get("h") or 0)) <= 0:
+            raise RuntimeError("seller_image_submit_not_visible")
+        for event_type in ("mousePressed", "mouseReleased"):
+            await listing_inventory._call(ws, "Input.dispatchMouseEvent", {
+                "type": event_type, "x": float(rect["x"]), "y": float(rect["y"]),
+                "button": "left", "clickCount": 1,
+            }, cid)
+            cid += 1
+        await asyncio.sleep(3)
+        return before, after, intent_path
+
+
+def _execute_image_effect(**kwargs) -> tuple[dict, dict, Path]:
+    return asyncio.run(_execute_image_effect_async(**kwargs))
+
+
 def run_once(args: argparse.Namespace) -> tuple[int, dict]:
     pass_id = args.pass_id or f"storefront-direct-{time.time_ns()}-{os.getpid()}"
     minimum_epoch = int(time.time())
@@ -1006,15 +1199,18 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 if not isinstance(judgement, dict):
                     raise RuntimeError("pending_effect_judgement_missing")
                 if (recovery.get("service_id") != TARGET_SERVICE_ID
-                        or recovery.get("changed_field") != "FAQ"
+                        or recovery.get("changed_field") not in {"FAQ", "image"}
                         or recovery.get("experiment_key") != judgement.get("experiment_key")):
                     raise RuntimeError("pending_effect_identity_invalid")
-                question, answer = str(recovery["question"]), str(recovery["answer"])
                 public_before = json.loads(Path(recovery["public_before_path"]).read_text(encoding="utf-8"))
-                _validate_public_acceptance(public_before, own_page, question, answer)
                 seller_before = json.loads(Path(recovery["seller_form_before_path"]).read_text(encoding="utf-8"))
                 seller_after = _seller_snapshot(ws_url)
-                _validate_form_delta(seller_before, seller_after, question, answer)
+                if recovery["changed_field"] == "image":
+                    _validate_public_image_acceptance(public_before, own_page)
+                else:
+                    question, answer = str(recovery["question"]), str(recovery["answer"])
+                    _validate_public_acceptance(public_before, own_page, question, answer)
+                    _validate_form_delta(seller_before, seller_after, question, answer)
                 seller_after_path = inventory_path.parent / "seller-form-recovered.json"
                 _atomic_write(seller_after_path, seller_after)
                 judgement_path = inventory_path.parent / "judgement-recovered.json"
@@ -1028,12 +1224,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "observed_at_epoch": int(time.time()),
                 })
                 pending_effect = {
-                    "intent_path": intent_path, "question": question, "answer": answer,
+                    "intent_path": intent_path, "changed_field": recovery["changed_field"],
                     "public_before_path": Path(recovery["public_before_path"]),
                     "public_after_path": inventory_path.parent / "own-candidate.json",
                     "seller_form_before_path": Path(recovery["seller_form_before_path"]),
                     "seller_form_after_path": seller_after_path, "recovered": True,
                 }
+                if recovery["changed_field"] == "FAQ":
+                    pending_effect.update({"question": question, "answer": answer})
             else:
                 capability_paths = {str(Path(path).resolve()) for path in args.capability_evidence}
                 if next_hypothesis is not None and not next_hypothesis["executable"]:
@@ -1046,6 +1244,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         "no_op_reason": str(next_hypothesis["guard_reason"]),
                         "experiment_key": None, "uncertainty": [],
                     }
+                    judgement = _guard_judgement(
+                        raw_judgement,
+                        own_page=own_page, competitor_manifest=competitor_manifest,
+                        capability_paths=capability_paths, evidence_dir=inventory_path.parent,
+                        effects_path=args.state_dir / "effects.jsonl", minimum_epoch=minimum_epoch,
+                        now=int(time.time()),
+                    )
+                elif next_hypothesis is not None and next_hypothesis.get("field") == "image":
+                    image_contract = _load_image_contract(getattr(args, "image_contract", DEFAULT_IMAGE_CONTRACT))
+                    judgement = _image_judgement(next_hypothesis, own_page, image_contract)
                 else:
                     raw_judgement = _invoke_judge(
                         runner=args.runner, schema=args.schema, workdir=args.workdir,
@@ -1053,13 +1261,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         manifest=competitor_manifest, capability_paths=capability_paths,
                         timeout_seconds=args.timeout_seconds,
                     )
-                judgement = _guard_judgement(
-                    raw_judgement,
-                    own_page=own_page, competitor_manifest=competitor_manifest,
-                    capability_paths=capability_paths, evidence_dir=inventory_path.parent,
-                    effects_path=args.state_dir / "effects.jsonl", minimum_epoch=minimum_epoch,
-                    now=int(time.time()),
-                )
+                    judgement = _guard_judgement(
+                        raw_judgement,
+                        own_page=own_page, competitor_manifest=competitor_manifest,
+                        capability_paths=capability_paths, evidence_dir=inventory_path.parent,
+                        effects_path=args.state_dir / "effects.jsonl", minimum_epoch=minimum_epoch,
+                        now=int(time.time()),
+                    )
                 judgement_path = inventory_path.parent / "judgement.json"
                 _atomic_write(judgement_path, judgement)
                 if judgement["decision"] == "change":
@@ -1067,17 +1275,27 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     presend = _observe_own_page(ws_url, inventory_path.parent, presend_path.name)
                     _presend_guard(judgement, presend)
                     if args.effect:
-                        question, answer = _split_faq(str(judgement["proposed_value"]))
-                        seller_before, _, intent_path = _execute_faq_effect(
-                            ws_url=ws_url, question=question, answer=answer, judgement=judgement,
-                            public_before_path=presend_path, evidence_dir=inventory_path.parent,
-                            state_dir=args.state_dir,
-                        )
+                        if judgement["changed_field"] == "image":
+                            seller_before, _, intent_path = _execute_image_effect(
+                                ws_url=ws_url, contract=image_contract, judgement=judgement,
+                                public_before_path=presend_path, evidence_dir=inventory_path.parent,
+                                state_dir=args.state_dir,
+                            )
+                        else:
+                            question, answer = _split_faq(str(judgement["proposed_value"]))
+                            seller_before, _, intent_path = _execute_faq_effect(
+                                ws_url=ws_url, question=question, answer=answer, judgement=judgement,
+                                public_before_path=presend_path, evidence_dir=inventory_path.parent,
+                                state_dir=args.state_dir,
+                            )
                         public_after_path = inventory_path.parent / "after-public.json"
                         public_after = _observe_own_page(ws_url, inventory_path.parent, public_after_path.name)
-                        _validate_public_acceptance(presend, public_after, question, answer)
                         seller_after = _seller_snapshot(ws_url)
-                        _validate_form_delta(seller_before, seller_after, question, answer)
+                        if judgement["changed_field"] == "image":
+                            _validate_public_image_acceptance(presend, public_after)
+                        else:
+                            _validate_public_acceptance(presend, public_after, question, answer)
+                            _validate_form_delta(seller_before, seller_after, question, answer)
                         seller_after_path = inventory_path.parent / "seller-form-after.json"
                         _atomic_write(seller_after_path, seller_after)
                         intent = json.loads(intent_path.read_text(encoding="utf-8"))
@@ -1087,11 +1305,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             "observed_at_epoch": int(time.time()),
                         })
                         pending_effect = {
-                            "intent_path": intent_path, "question": question, "answer": answer,
+                            "intent_path": intent_path, "changed_field": judgement["changed_field"],
                             "public_before_path": presend_path, "public_after_path": public_after_path,
                             "seller_form_before_path": Path(intent["seller_form_before_path"]),
                             "seller_form_after_path": seller_after_path, "recovered": False,
                         }
+                        if judgement["changed_field"] == "FAQ":
+                            pending_effect.update({"question": question, "answer": answer})
             _lease(args.lease_script, "heartbeat", task, lease)
             release = _lease(args.lease_script, "release", task, lease)
             released = release.get("released") == task
@@ -1118,20 +1338,30 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         json.loads(pending_effect["intent_path"].read_text(encoding="utf-8"))
                         .get("effect_origin_pass_id", pass_id)
                     ),
-                    "service_id": TARGET_SERVICE_ID, "changed_field": "FAQ",
-                    "before_value": "FAQ_ABSENT", "after_value": judgement.get("proposed_value"),
+                    "service_id": TARGET_SERVICE_ID, "changed_field": pending_effect["changed_field"],
+                    "before_value": judgement.get("before_value"), "after_value": judgement.get("proposed_value"),
                     "experiment_key": judgement["experiment_key"],
-                    "question": pending_effect["question"], "answer": pending_effect["answer"],
                     "public_before_path": str(pending_effect["public_before_path"]),
                     "public_after_path": str(pending_effect["public_after_path"]),
                     "seller_form_before_path": str(pending_effect["seller_form_before_path"]),
                     "seller_form_after_path": str(pending_effect["seller_form_after_path"]),
                     "recovered": pending_effect["recovered"],
                 }
+                if pending_effect["changed_field"] == "FAQ":
+                    effect_row.update({
+                        "question": pending_effect["question"], "answer": pending_effect["answer"],
+                    })
+                else:
+                    effect_row.update({
+                        "asset_sha256": judgement.get("proposed_value"),
+                        "public_image_ids": json.loads(
+                            Path(pending_effect["public_after_path"]).read_text(encoding="utf-8")
+                        ).get("service_image_ids"),
+                    })
                 appended = _append_effect_once(args.state_dir / "effects.jsonl", effect_row)
                 _append_effect_once(args.state_dir / "experiments.jsonl", {
                     "version": 1, "status": "accepted", "experiment_key": judgement["experiment_key"],
-                    "service_id": TARGET_SERVICE_ID, "changed_field": "FAQ",
+                    "service_id": TARGET_SERVICE_ID, "changed_field": pending_effect["changed_field"],
                     "accepted_at_epoch": effect_row["accepted_at_epoch"],
                     "success_metric": judgement.get("success_metric"),
                     "observation_window_days": judgement.get("observation_window_days"),
@@ -1215,6 +1445,7 @@ def main() -> int:
     parser.add_argument("--runner", type=Path, default=DEFAULT_RUNNER)
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
+    parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
     parser.add_argument("--reply-transcripts", type=Path, default=DEFAULT_REPLY_TRANSCRIPTS)
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--timeout-seconds", type=int, default=180)
