@@ -2739,3 +2739,8 @@ MIT公開Life Managerを実装証拠として明示する。保存前にpublic p
 
 **DONE EVIDENCE:** Storefront owner自身の`profile_updated / profile_effect_count 1`、public profile exact subtitle/software URL、次wake
 `profile_aligned true / profile_effect_count 0`。listing `1338228`、価格、portfolio、Application state、contracts、ledgerは不変。
+
+**FIRST REAL BLOCKER:** 初回production wakeは保存button click前のbrowser validationでPOST 0となり、`profile_submission_uncertain`でfail closedした。
+public profileとlogged-in formは旧値のまま、Application、contracts、ledger、listing receiptのSHA-256も不変である。公式formは未使用で非表示の
+時間単価row 1〜4を空欄のまま`required`にしており、`form.checkValidity()`はその8 fieldだけをinvalidと返す。修正は保存直前にinvalid ID、非表示、
+exact 8 fieldを検証し、そのrequired属性だけをbrowser DOMから外す。visibleまたは別fieldがinvalidなら保存せず`profile_form_changed`とする。

@@ -136,6 +136,10 @@ def _profile(page: Any, product: Mapping[str, Any], apply: bool) -> dict[str, An
     page.goto(ORIGIN + "/mypage/profile", wait_until="domcontentloaded", timeout=20_000)
     if urlsplit(str(page.url)).path != "/mypage/profile": raise OfferError("profile_form_changed")
     _field(page, "#UserProfileSubTitle").fill(expected["subtitle"]); _field(page, "#UserProfileDescription").fill(expected["description"])
+    invalid = page.locator("#UserProfileDescription").evaluate("""field => [...field.form.elements].filter(element => element.willValidate && !element.checkValidity()).map(element => ({id:element.id, hidden:element.offsetParent === null}))""")
+    expected_invalid = {f"UserTimechargeRate{index}{field}" for index in range(1, 5) for field in ("Title", "UnitPrice")}
+    if not isinstance(invalid, list) or {str(item.get("id")) for item in invalid if isinstance(item, Mapping) and item.get("hidden") is True} != expected_invalid or len(invalid) != len(expected_invalid): raise OfferError("profile_form_changed")
+    for field_id in expected_invalid: page.locator(f"#{field_id}").evaluate("element => element.required = false")
     save = page.get_by_role("button", name="保存する", exact=True)
     if save.count() != 1: raise OfferError("profile_form_changed")
     try:
