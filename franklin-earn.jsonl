@@ -4497,3 +4497,4 @@
 {"ts":1786807280,"source":"cook","task":"explore: Solana microtask platforms earn USDC without capital","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSUIX0440C51BF058670423F"}
 {"ts":1786807545,"source":"cook","task":"explore: Solana on-chain microtasks paying USDC for code execution platforms","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSUJ2LUG1F904418F01846ED"}
 {"ts":1786809114,"source":"cook","task":"explore: Solana on-chain microtask platforms paying USDC for code execution or data validation","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSUK0B57EBA9A5F8B678494F"}
+{"ts":1786810180,"source":"cook","task":"explore: Solana on-chain bounty platform paying USDC for data validation or code execution tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSUKN5AI1E3A75572CF148F6"}
