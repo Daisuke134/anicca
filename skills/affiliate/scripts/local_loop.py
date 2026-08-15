@@ -81,21 +81,24 @@ def browser_ready(port, attempts=15):
     return False
 
 
-def provider_poll(state, cdp_port):
+def provider_poll(state, cdp_port, attempts=15):
     args = SimpleNamespace(
         provider="elevenlabs",
         cdp_host="127.0.0.1",
         cdp_port=cdp_port,
         receipt=state / "providers" / "elevenlabs.json",
     )
-    try:
-        return poll(args, observe(args))
-    except (ProviderError, OSError, ValueError, KeyError, json.JSONDecodeError):
-        return {
-            "state": "PROVIDER_OBSERVATION_FAILED",
-            "changed": False,
-            "transition_id": None,
-        }
+    for attempt in range(attempts):
+        try:
+            return poll(args, observe(args))
+        except (ProviderError, OSError, ValueError, KeyError, json.JSONDecodeError):
+            if attempt + 1 < attempts:
+                time.sleep(2)
+    return {
+        "state": "PROVIDER_OBSERVATION_FAILED",
+        "changed": False,
+        "transition_id": None,
+    }
 
 
 def wake(args):

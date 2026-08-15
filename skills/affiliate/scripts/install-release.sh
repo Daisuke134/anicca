@@ -157,7 +157,27 @@ EOF
 for label in ai.anicca.affiliate-loop ai.anicca.affiliate-browser; do
   /bin/launchctl bootout "gui/$(id -u)/$label" >/dev/null 2>&1 || true
 done
-/bin/launchctl bootstrap "gui/$(id -u)" "$BROWSER_PLIST"
-/bin/launchctl bootstrap "gui/$(id -u)" "$LOOP_PLIST"
+
+bootstrap_agent() {
+  local plist="$1"
+  local attempt
+  for attempt in {1..10}; do
+    if /bin/launchctl bootstrap "gui/$(id -u)" "$plist" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+  die "launchd bootstrap failed for $(basename "$plist")"
+}
+
+bootstrap_agent "$BROWSER_PLIST"
+for attempt in {1..30}; do
+  if /usr/bin/curl -fsS --max-time 2 "http://127.0.0.1:9324/json/version" >/dev/null 2>&1; then
+    break
+  fi
+  [[ "$attempt" != "30" ]] || die "affiliate browser CDP did not become ready"
+  sleep 1
+done
+bootstrap_agent "$LOOP_PLIST"
 
 printf 'installed local affiliate release %s\n' "$HEAD_SHA"
