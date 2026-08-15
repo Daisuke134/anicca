@@ -52,11 +52,14 @@ def _product(path: Path) -> tuple[dict[str, Any], Path]:
     if not isinstance(superseded, list) or len(superseded) != len(set(superseded)) or any(not isinstance(item, str) or re.fullmatch(r"[0-9]+", item) is None for item in superseded) or value["listing_external_id"] in superseded: raise OfferError("product_invalid")
     for plan in plans:
         if not isinstance(plan, dict) or not isinstance(plan.get("description"), str) or not 1 <= len(plan["description"]) <= 80 or plan.get("delivery_days") not in {1,2,3,4,5,6,7,10,14,21,30,45,60,75,90} or type(plan.get("price_jpy")) is not int or plan["price_jpy"] < 1000: raise OfferError("product_invalid")
-    portfolio = value.get("portfolio")
-    if not isinstance(portfolio, dict) or set(portfolio) != {"external_id", "title_stem", "subtitle", "category", "subcategory", "description", "duration_value", "duration_unit", "order_index", "generated_ai"}: raise OfferError("product_invalid")
-    if not isinstance(portfolio["external_id"], str) or re.fullmatch(r"[0-9]+", portfolio["external_id"]) is None: raise OfferError("product_invalid")
-    if not isinstance(portfolio["title_stem"], str) or not 1 <= len(portfolio["title_stem"] + "ました") <= 50 or not isinstance(portfolio["subtitle"], str) or len(portfolio["subtitle"]) > 60 or any(not isinstance(portfolio[key], str) or not portfolio[key].strip() for key in ("category", "subcategory")) or not isinstance(portfolio["description"], str) or not 1 <= len(portfolio["description"]) <= 1000: raise OfferError("product_invalid")
-    if type(portfolio["duration_value"]) is not int or not 1 <= portfolio["duration_value"] <= 999 or portfolio["duration_unit"] not in {"時間", "日", "週", "ヶ月", "年"} or type(portfolio["order_index"]) is not int or not 0 <= portfolio["order_index"] <= 9999 or type(portfolio["generated_ai"]) is not bool: raise OfferError("product_invalid")
+    portfolio_fields = {"external_id", "title_stem", "subtitle", "category", "subcategory", "description", "duration_value", "duration_unit", "order_index", "generated_ai"}
+    for key in ("portfolio", "software_portfolio"):
+        portfolio = value.get(key); extra = {"industry", "reference_price_jpy", "listing_external_id"} if key == "software_portfolio" else set()
+        if not isinstance(portfolio, dict) or set(portfolio) != portfolio_fields | extra: raise OfferError("product_invalid")
+        if not isinstance(portfolio["external_id"], str) or (portfolio["external_id"] and re.fullmatch(r"[0-9]+", portfolio["external_id"]) is None) or key == "portfolio" and not portfolio["external_id"]: raise OfferError("product_invalid")
+        if not isinstance(portfolio["title_stem"], str) or not 1 <= len(portfolio["title_stem"] + "ました") <= 50 or not isinstance(portfolio["subtitle"], str) or len(portfolio["subtitle"]) > 60 or any(not isinstance(portfolio[name], str) or not portfolio[name].strip() for name in ("category", "subcategory")) or not isinstance(portfolio["description"], str) or not 1 <= len(portfolio["description"]) <= 1000: raise OfferError("product_invalid")
+        if type(portfolio["duration_value"]) is not int or not 1 <= portfolio["duration_value"] <= 999 or portfolio["duration_unit"] not in {"時間", "日", "週", "ヶ月", "年"} or type(portfolio["order_index"]) is not int or not 0 <= portfolio["order_index"] <= 9999 or type(portfolio["generated_ai"]) is not bool: raise OfferError("product_invalid")
+        if extra and (not isinstance(portfolio["industry"], str) or not portfolio["industry"].strip() or type(portfolio["reference_price_jpy"]) is not int or portfolio["reference_price_jpy"] < 1000 or not isinstance(portfolio["listing_external_id"], str) or portfolio["listing_external_id"] and re.fullmatch(r"[0-9]+", portfolio["listing_external_id"]) is None): raise OfferError("product_invalid")
     profile = value.get("seller_profile")
     if not isinstance(profile, dict) or set(profile) != {"public_path", "subtitle", "description"} or re.fullmatch(r"/profile/[A-Za-z0-9_-]+", str(profile.get("public_path") or "")) is None or not isinstance(profile.get("subtitle"), str) or not 1 <= len(profile["subtitle"]) <= 60 or not isinstance(profile.get("description"), str) or not 1 <= len(profile["description"]) <= 2000: raise OfferError("product_invalid")
     image = (path.parent / value["image_path"]).resolve()
@@ -264,8 +267,8 @@ def _apply(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]
     except OfferError: raise OfferError("publication_uncertain") from None
 
 
-def _portfolio(page: Any, product: Mapping[str, Any]) -> dict[str, Any] | None:
-    title = product["portfolio"]["title_stem"] + "ました"
+def _portfolio(page: Any, item: Mapping[str, Any]) -> dict[str, Any] | None:
+    title = item["title_stem"] + "ました"
     with page.expect_response(lambda response: response.request.method == "GET" and urlsplit(response.url).path == "/api/v1/me/portfolio", timeout=20_000) as loaded:
         page.goto(f"{ORIGIN}/myportfolio", wait_until="domcontentloaded", timeout=20_000)
     if loaded.value.status != 200: raise OfferError("portfolio_readback_invalid")
@@ -278,14 +281,13 @@ def _portfolio(page: Any, product: Mapping[str, Any]) -> dict[str, Any] | None:
     href = matches[0].get_attribute("href") or ""
     parsed = urlsplit(href)
     found = re.fullmatch(r"/profile/[^/?#\s]+/portfolio_popup/([0-9]+)", parsed.path)
-    if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or found is None or found.group(1) != product["portfolio"]["external_id"]: raise OfferError("portfolio_readback_invalid")
+    if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or found is None or item["external_id"] and found.group(1) != item["external_id"]: raise OfferError("portfolio_readback_invalid")
     return {"portfolio_external_id": found.group(1), "portfolio_url": ORIGIN + parsed.path}
 
 
-def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path) -> dict[str, Any]:
-    existing = _portfolio(page, product)
+def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path, key: str) -> dict[str, Any]:
+    item = product[key]; existing = _portfolio(page, item)
     if existing is not None: return existing | {"portfolio_effect_count": 0}
-    item = product["portfolio"]
     page.goto(f"{ORIGIN}/myportfolio/add", wait_until="domcontentloaded", timeout=20_000)
     if urlsplit(str(page.url)).path != "/myportfolio/add": raise OfferError("portfolio_form_changed")
     _field(page, 'textarea[name="title"]').fill(item["title_stem"])
@@ -304,11 +306,11 @@ def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path) -> dic
     page.wait_for_function("label => [...document.querySelectorAll('select')][1]?.querySelector(`option[value]:not([value=''])`) && [...document.querySelectorAll('select')][1].innerText.includes(label)", arg=item["subcategory"], timeout=5_000)
     if selects.count() != 6: raise OfferError("portfolio_form_changed")
     selects.nth(1).select_option(label=item["subcategory"])
-    selects.nth(2).select_option(label=product["industry"])
+    selects.nth(2).select_option(label=item.get("industry", product["industry"]))
     _field(page, 'input[placeholder="10"]').fill(str(item["duration_value"]))
     selects.nth(3).select_option(item["duration_unit"])
-    _field(page, 'input[placeholder="50,000"]').fill(str(product["plans"][0]["price_jpy"]))
-    selects.nth(4).select_option(str(product["listing_external_id"]))
+    _field(page, 'input[placeholder="50,000"]').fill(str(item.get("reference_price_jpy", product["plans"][0]["price_jpy"])))
+    selects.nth(4).select_option(str(item.get("listing_external_id", product["listing_external_id"])))
     checks = page.locator('input[type="checkbox"]')
     if checks.count() < 3: raise OfferError("portfolio_form_changed")
     ai_checks = [field for field in checks.all() if " ".join(field.evaluate("e => e.parentElement.parentElement.innerText").split()) == "生成AIを活用した制作物です"]
@@ -320,7 +322,7 @@ def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path) -> dic
     if save.count() != 1: raise OfferError("portfolio_form_changed")
     try: save.click(); page.wait_for_timeout(2_000)
     except Exception: raise OfferError("portfolio_submission_uncertain") from None
-    observed = _portfolio(page, product)
+    observed = _portfolio(page, item)
     if observed is None: raise OfferError("portfolio_submission_uncertain")
     return observed | {"portfolio_effect_count": 1}
 
@@ -334,9 +336,13 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
             if not tick._production_account_ready(page): raise OfferError("account_unavailable")
             logged_in = True; result = _apply(page, product, image) if apply else _public(page, product) | {"action": "inspect"}
             if apply and result.get("action") == "unchanged":
-                portfolio = _ensure_portfolio(page, product, image)
-                result |= portfolio
-                if portfolio["portfolio_effect_count"]: result["action"] = "portfolio_created"
+                for key in ("portfolio", "software_portfolio"):
+                    portfolio = _ensure_portfolio(page, product, image, key)
+                    result["portfolio_effect_count"] = portfolio["portfolio_effect_count"]
+                    result[key + "_external_id"] = portfolio["portfolio_external_id"]
+                    result[key + "_url"] = portfolio["portfolio_url"]
+                    if portfolio["portfolio_effect_count"]:
+                        result["action"] = "portfolio_created"; break
                 else:
                     profile = _profile(page, product, True); result |= profile
                     if profile["profile_effect_count"]: result["action"] = "profile_updated"

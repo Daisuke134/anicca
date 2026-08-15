@@ -56,6 +56,21 @@
     "order_index": 10,
     "generated_ai": true
   },
+  "software_portfolio": {
+    "external_id": "",
+    "title_stem": "AI・API連携の自動運用システムを設計・実装し",
+    "subtitle": "scheduler・worker・Postgres・通知・公式readbackを一つのrepoで実装",
+    "category": "AI・システム開発・運用",
+    "subcategory": "AI自動化・エージェント開発",
+    "industry": "IT・通信・インターネット",
+    "description": "MIT公開のLife Managerで、API連携、scheduled job、worker、Postgres、object storage、Telegram reporting、外部サービスの公式readbackを一つのrepositoryに実装しました。外部actionは実行前のintent、公式IDでのdedupe、実行後のreadbackを通し、失敗時はblind resendを避ける構成です。掲載画像は、scheduled workflow・制作・reportingを一つの流れで管理する設計を視覚化したものです。これは自主制作の公開source codeを示す制作例であり、未達の顧客実績や売上効果を示すものではありません。",
+    "duration_value": 1,
+    "duration_unit": "ヶ月",
+    "reference_price_jpy": 180000,
+    "listing_external_id": "",
+    "order_index": 20,
+    "generated_ai": true
+  },
   "seller_profile": {
     "public_path": "/profile/keiodaisuke",
     "subtitle": "AI・API自動化とSNS運用を、設計・実装・制作まで支援します",
