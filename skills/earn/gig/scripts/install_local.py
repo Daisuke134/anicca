@@ -13,6 +13,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -250,10 +251,14 @@ def render_launchd(
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            subprocess.run(
-                ["launchctl", "bootstrap", domain, str(output)],
-                check=True,
-            )
+            command = ["launchctl", "bootstrap", domain, str(output)]
+            for attempt in range(5):
+                completed = subprocess.run(command, check=False)
+                if completed.returncode == 0:
+                    break
+                if attempt == 4:
+                    completed.check_returncode()
+                time.sleep(0.25)
     return labels
 
 
