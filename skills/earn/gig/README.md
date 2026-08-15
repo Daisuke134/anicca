@@ -7,9 +7,8 @@ and controlled-plus-natural wake gates pass.
 ## Runtime flow
 
 ```text
-launchd/systemd or Life Manager earn/gig slot
-  -> gig_pass.sh
-  -> Reply / Fulfill / Apply / List
+launchd/systemd
+  -> Storefront / Apply / Negotiate / Paid direct owners
   -> authoritative marketplace readback
   -> canonical event and identity ledgers
   -> Telegram human report + agent event feed
@@ -36,8 +35,7 @@ and customer evidence are not canonical source and must never be added here.
 2. Complete repository-relative runner/browser wiring.
 3. Verify an isolated-HOME install twice for idempotency.
 4. Compare source and target results on the same copied state and fixtures.
-5. Cut over only after one controlled live pass and one natural hourly pass
-   agree on all four lane closures, marketplace readback, and Telegram ACK.
+5. Verify one natural wake per direct owner, marketplace readback, and Telegram ACK.
 
 ## Local install
 
@@ -120,5 +118,5 @@ does not copy, move, or rewrite its ledgers. A fresh install uses
 `$LIFE_MANAGER_HOME/state/gig`. The atomic receipt is
 `$LIFE_MANAGER_HOME/state/gig-install.json`.
 
-The detailed execution order and live evidence are maintained in
-`docs/loop-engineering/26-gig-loop-asis-tobe-plan.md` after D5-F migration.
+The canonical owner set is `config/launchd/agents/gig.json`. Installer lifecycle
+commands reject every plist that is not one of those seven labels.

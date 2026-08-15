@@ -13,7 +13,7 @@ LIVE-1 では公開依頼への応募を手順書や agent の直接 CDP 操作�
 → official exact-request-ID readback
 → canonical ledger / Telegram outbox
 
-`gig-cli.sh`、`launch_gig_worker.sh`、`gig_pass.sh`はApply production entrypointではない。旧shellはStorefront parity
+`scripts/application_parent.py` is the sole Apply production entrypoint. Storefront parity
 完了までread-onlyの履歴証拠としてrepositoryに残すが、install・enable・callしない。親プロセスだけが次の順で実行する。
 
 1. fenced lease を取得し、同じ leased target で marketplace snapshot を固定する。

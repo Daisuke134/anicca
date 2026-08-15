@@ -16,9 +16,11 @@ It owns four revenue lanes:
 | Fulfill | Build, validate, submit, revise, reconcile acceptance, and record paid revenue |
 | List | Inspect the storefront every hour and publish or improve an offer only when the public result is verifiable |
 
-The revenue pass entrypoint is `gig_pass.sh`. `run.sh` is the Life Manager
-`earn/gig` slot bridge. Runtime state, credentials, browser identity, and
-transaction evidence remain outside the public repository.
+The four production entrypoints are `scripts/storefront_direct.py`,
+`scripts/application_parent.py`, `scripts/reply_detector.py`, and
+`scripts/paid_direct.py`. The exact scheduler and support-owner allowlist is
+`config/launchd/agents/gig.json`. Runtime state, credentials, browser identity,
+and transaction evidence remain outside the public repository.
 
 ## Autonomy boundary
 
@@ -28,10 +30,8 @@ and human voice recording are rejected. Initial KYC/OAuth credential bootstrap
 may be minimal human input; routine discovery, application, reply, delivery,
 reporting, recovery, and improvement never wait for a human.
 
-## Migration status
+## Production boundary
 
-D5-A places the complete tracked source and tests in this canonical slot.
-D5-B makes every engine and browser path repository-relative. D5-C provides the
-idempotent macOS/Linux local installer and adopts existing state without
-copying it. D5-D/E verify parity before production cutover. Do not run this
-checkout as production until those gates are complete.
+Only immutable releases of this public repository may run production. Legacy
+shared-pass, Hermes, private-worktree, and compatibility entrypoints are not
+rollback paths.

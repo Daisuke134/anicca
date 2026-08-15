@@ -81,6 +81,23 @@ function digest(path) {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
 
+test("public current tree has no legacy executable or noncanonical launchd unit", () => {
+  const gig = join(REPO_ROOT, "skills", "earn", "gig");
+  for (const relative of [
+    "gig_pass.sh",
+    "scripts/launch_gig_worker.sh",
+    "scripts/hermes_canary.py",
+    "scripts/reply_push_server.py",
+    "launchd/ai.anicca.hf-gig-pass.plist",
+  ]) assert.equal(existsSync(join(gig, relative)), false, relative);
+
+  const labels = readdirSync(join(gig, "launchd"))
+    .filter((name) => name.endsWith(".plist"))
+    .map((name) => plistJson(join(gig, "launchd", name)).Label)
+    .sort();
+  assert.deepEqual(labels, EXPECTED_LABELS.toSorted());
+});
+
 test("fresh macOS install renders only canonical launchd units and is idempotent", () => {
   const { home, runtime } = fixture();
   const first = install({
