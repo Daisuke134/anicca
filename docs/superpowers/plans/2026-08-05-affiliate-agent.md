@@ -117,7 +117,7 @@ Execution checkpoint:
   compile/shell syntax, and 30 related regression tests. Its checkboxes remain
   open until fresh review, worktree-diff audit, live-provider boundary proof, and
   a collection-safe full-suite command; the process-boundary test uses a fake provider.
-- 7 atomic checks are closed and 155 remain open. The increase records canonical
+- 11 atomic checks are closed and 152 remain open. The increase records canonical
   repo convergence and public-proof work that previously existed only as prose;
   it is not implementation regression.
 - The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
@@ -245,8 +245,11 @@ state, auth, a browser profile, or a branch never execute concurrently.
 ### Task R0: Converge the Affiliate runtime into the canonical Life Manager repo
 
 **Files:**
-- Import after equivalence inventory: `skills/affiliate/**`
-- Import only proven shared dependencies: `skills/_shared/browser/**`, `lib/telegram_outbox.py`
+- Create the portable skill contract: `skills/affiliate/SKILL.md`
+- Preserve byte-identical evidence: `skills/affiliate/legacy/**`
+- Create: `skills/affiliate/legacy/SHA256SUMS`
+- Create: `skills/affiliate/legacy/DEPENDENCIES.sha256`
+- Create: `skills/affiliate/scripts/install-release.sh`
 - Create: `skills/affiliate/tests/test_repository_ownership.py`
 - Update: `.gitignore`
 
@@ -254,44 +257,58 @@ state, auth, a browser profile, or a branch never execute concurrently.
 - Consumes read-only legacy source and state from
   `/Users/anicca/profitable-claude/skills/affiliate`.
 - Produces one `RepositoryOwnershipReceipt` containing legacy/source commit,
-  artifact hashes, canonical target commit, excluded mutable paths, and the one
-  permitted launchd owner set.
+  artifact hashes, canonical target commit, missing dependency inventory,
+  excluded mutable paths, and the one permitted launchd owner set.
+- R0 proves source ownership and byte preservation only. It does not claim the
+  legacy workflow is runnable or behavior-equivalent to the new English/X Agent.
 
-- [ ] **Step 1: Write a failing ownership test**
+- [x] **Step 1: Inventory legacy code, state, dependencies, and live owners read-only**
 
-Assert that production entrypoints resolve under the canonical Life Manager
-checkout, mutable state resolves under `LIFE_MANAGER_STATE_HOME`, and no launchd
-plist calls the legacy repository.
+Measured ten tracked files and two ignored state files without reading secrets;
+pure tests passed 16/16 and four shell entrypoints passed syntax checks. No
+Affiliate launchd job, tmux session, process, or open file is live. The legacy
+JP Instagram/Amazon slideshow workflow is not runnable as copied: its fixed-path
+poster, composer, Amazon reporter, and ledger recorder are absent or moved.
 
-- [ ] **Step 2: Inventory legacy code, state, and live owners read-only**
+- [x] **Step 2: Write one minimal failing repository-ownership check**
 
-Hash entrypoints, tests, lessons, watermark, queue/posted state, plist targets,
-tmux state, and dependency imports. Do not stop, restart, delete, or edit any
-running money loop.
+Assert that the canonical folder is a valid skill, committed active files contain
+no `/Users/anicca` or `profitable-claude` runtime dependency, mutable state is
+outside source, the legacy SHA manifest verifies, and no install activates
+launchd. The byte-preserved `legacy/` evidence is exempt from active-path rules.
 
-- [ ] **Step 3: Import the smallest behavior-equivalent source slice**
+- [x] **Step 3: Preserve legacy truth and add the relocatable skill shell**
 
-Copy code and tests required by the Affiliate loop into `skills/affiliate`.
-Migrate mutable artifacts append-only into `${LIFE_MANAGER_STATE_HOME}/affiliate`;
-commit neither secrets nor state. Reuse shared code only when its regression test
-passes from the canonical repo.
+Copy the ten tracked legacy files byte-for-byte under `legacy/`, commit their
+SHA-256 manifest, and add a minimal `SKILL.md`. Active scripts resolve their own
+install root and `${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}`;
+they never execute the archived workflow or manufacture missing adapters.
 
-- [ ] **Step 4: Prove legacy/canonical parity before cutover**
+- [x] **Step 4: Prove byte parity and record the behavior gap**
 
-Run both entrypoints against the same immutable fixture snapshot and compare
-normalized outputs and receipt hashes. Any unexplained difference blocks cutover.
+Verify all ten hashes and rerun the 16 pure legacy tests from the archive. Record
+missing/moved dependencies as `UNAVAILABLE`; do not call that live behavior
+parity. Runtime cutover remains blocked until later adapter and E0 tests pass.
 
 - [ ] **Step 5: Install an immutable canonical release without enabling it**
 
 Install the exact pushed commit at
 `~/.local/share/life-manager/affiliate/releases/<git_sha>` and atomically prepare
-`current`; do not register or kickstart launchd until Task 13.
+`current`; do not write `~/Library/LaunchAgents`, register, kickstart, or execute
+the archived workflow. Mutable legacy state remains untouched; only a private,
+sanitized inventory receipt may be written under `LIFE_MANAGER_STATE_HOME`.
 
-- [ ] **Step 6: Commit, push, and record repository ownership**
+- [ ] **Step 6: Commit and push the canonical source**
 
-Record canonical remote/branch/commit, imported legacy commit/hash, excluded
-state paths, and pending launchd cutover. Only then may later tasks modify runtime
-behavior.
+Push the skill source before installing so the release SHA names an actual remote
+commit.
+
+- [ ] **Step 7: Install the pushed SHA, verify, update SSOT, and push the receipt**
+
+Install the exact remote commit, verify `current` resolves to that immutable
+release, record the sanitized ownership receipt and disabled-cutover state in the
+SSOT, then commit/push the progress update. Only then may later tasks modify
+runtime behavior.
 
 ---
 

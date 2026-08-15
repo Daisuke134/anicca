@@ -107,6 +107,7 @@ techniques do not merge the ledgers.
 
 | Task | State | Receipt |
 |---|---|---|
+| R0 canonical convergence | Source migration verified; disabled install pending pushed SHA | Canonical skill and installer pass 3/3 focused tests; archived verifier 10/10; commission regression 6/6; ten legacy files plus one archived parser dependency have complete SHA-256 manifests; no launchd owner was created |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
 
@@ -127,7 +128,30 @@ live autonomous operation.
 | Telegram | The shared Life Manager allowlist target delivered a real Affiliate milestone with provider `messageId=7639`; the older F1 path failed because it did not use this resolved target | Reuse the validated target contract and build the Affiliate durable outbox/dedupe layer; delivery identity is no longer unknown |
 | Autonomous operation | Queue, browser harness, recovery, launchd, and reports remain open | No-human-loop behavior is not yet achieved |
 
-### 1.3 No-dry-run equivalence rule
+### 1.3 R0 legacy inventory
+
+The legacy source is clean within its own `skills/affiliate` path and contains
+ten tracked files totaling 40,572 bytes. Its two pure suites pass 16/16 and four
+shell entrypoints pass syntax checks. It is a Japanese Instagram carousel →
+Amazon-account-total workflow, not the planned English/X Affiliate Agent.
+
+Literal copying cannot produce a working loop. The fixed-path Instagram poster,
+slideshow composer, Amazon report reader, and affiliate ledger recorder are
+absent or moved, while the source also hardcodes one macOS user, Homebrew paths,
+port 9225, and a Japanese browser profile. These gaps are recorded as
+`UNAVAILABLE`, never silently replaced or reported as parity.
+
+No Affiliate launchd service, tmux session, process, or open file is currently
+live. Two old launchd plists exist only as disabled artifacts. R0 therefore
+preserves the ten files byte-for-byte under canonical `skills/affiliate/legacy`,
+receipts the archived verifier parser separately in `DEPENDENCIES.sha256`, and
+adds a relocatable but non-executing skill shell. The focused installer test
+proves immutable install, idempotency, stale-symlink repair, valid JSON receipt,
+launchd non-interference, and fail-closed detection of a modified release. The
+real disabled install remains pending the pushed canonical SHA. Live behavior
+parity and cutover remain open until later provider/browser/publisher receipts.
+
+### 1.4 No-dry-run equivalence rule
 
 | Evidence | It may prove | It never proves |
 |---|---|---|
@@ -143,7 +167,7 @@ Every report labels evidence as `TEST`, `LIVE_READBACK`, or
 external completion criteria remains open after code completion until the named
 external receipt exists.
 
-### 1.4 Ideal autonomous flow
+### 1.5 Ideal autonomous flow
 
 ```mermaid
 flowchart TD
