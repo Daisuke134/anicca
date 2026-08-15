@@ -2643,3 +2643,22 @@ cookie-free official profileから`mottomotto=72%`、`gambagentenkaiki=95%`を�
 Coconalaと同じく高予算を先にした。hard reject、固定rate gate、二回目model、browser、state、ledgerは追加していない。production Application ownerの
 初回wakeは公開6件を観測したが全件durable claim済みで`duplicate_project 5586723 / submitted false / exit 0`、pending 0、receipt 31、
 application stateとledgerのSHA-256は前後一致した。したがって重複応募0を保ったまま、次のfresh複数候補でrankingが自動適用される。
+
+### 18.36 Storefront first-paid-proof price
+
+**USER OUTCOME:** canonical packageの検索露出を壊さず、実績0のbuyerが最初の相談・注文をしやすい入口を作る。
+
+**CURRENT OBSERVATION:** authenticated rendered searchでcanonical `1338228`は`B2B SNS投稿`2位、`B2B SNS運用`5位、
+`SNS投稿カレンダー`12位に表示されるため、title/keywordは先頭blockerではない。一方、listing demandはsearch impression 1、detail view 0、
+favorite 0、inquiry 0、order 0である。公式競合detailは、同じ投稿企画・カレンダー領域を15,000/30,000/60,000円、レビュー0の近似月次商品を
+60,000円、直近に実購入のある上位商品を19,800/29,800/49,800円で販売する。canonical Foundingは98,000円で、seller実績0の入口として高い。
+Coconalaのproduction evidenceも最初の勝ち筋をspeed + low-priceとし、価格を上限の8割に置いた過去応募が失注を増やした。
+
+**NEXT DIRECT ACTION:** title、scope、納期、画像、説明、Standard、Premiumを変えず、Founding価格だけ98,000→29,800円へ下げ、product versionを4へ進める。
+これは最初の3 paid contractsまでのfounding priceであり、10K MRRの最終単価ではない。既存Storefront owner自身が一回updateし、public detailで
+29,800/198,000/398,000円をreadbackし、次wake mutation 0を確認する。
+
+**PLAN SIZE:** production data 1 file、2行。新code、service、DB、scheduler、listing、model call 0。外部作用は既存Storefront owner一回だけ。
+
+**DONE EVIDENCE:** public detailのFoundingだけ29,800円、listing ID `1338228`不変、status active、portfolio `743964`不変、
+product version 4のlisting receipt、next-wake `action=unchanged / effect 0`。Application state、contract state、ledgerは不変。

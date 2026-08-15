@@ -1,6 +1,6 @@
 {
   "product_id": "monthly-sns-content-ops-v1",
-  "product_version": 3,
+  "product_version": 4,
   "listing_external_id": "1338228",
   "superseded_listing_ids": [
     "1338229",
@@ -27,7 +27,7 @@
       "tier": "Founding",
       "description": "1媒体・月8投稿案。企画、本文、画像指示、投稿カレンダー、月次レポートを納品",
       "delivery_days": 30,
-      "price_jpy": 98000
+      "price_jpy": 29800
     },
     {
       "tier": "Standard",
