@@ -137,7 +137,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Release `3d4d321cad4c63698f394d88a86e31910aa4f54d` is installed and the authenticated local publication/revenue/Telegram/job-resume paths are GREEN | Process 1 left the existing X placement job at `EFFECT_STARTED`; process 2 ran the normal installed publisher, found the same public status before any click, retained the original run/job IDs, advanced attempt `1→2` with `resumed=true`, and set `VERIFIED`. A direct timeline readback found exactly one matching status URL. This proves process-boundary resume and X publish reconciliation without duplication, not provider-application reconciliation, attributable click, commission, or revenue |
+| Mac-local runtime | Release `8665a487567632710c30e3330aea39cbf32c6d78` is installed and four Affiliate-owned launchd jobs isolate the loop, ElevenLabs browser, X browser, and Impact browser | Process 1 left the existing X placement job at `EFFECT_STARTED`; process 2 ran the normal installed publisher, found the same public status before any click, retained the original run/job IDs, advanced attempt `1→2` with `resumed=true`, and set `VERIFIED`. A direct timeline readback found exactly one matching status URL. This proves process-boundary resume and X publish reconciliation without duplication. The newer `33b1756e25630e141952261658394344c770ba16` credential-recovery code is pushed but not yet installed/live-proven; provider-application reconciliation, attributable click, commission, and revenue remain open |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview, Commission Report, and Payouts surfaces | The current aggregate is one baseline click and zero signups/revenue/pending/paid. `revenue capture` live-read 23 commission fields and six payout fields. The current PartnerStack bundle, SHA-256 `be00e11924a35f20b84dee69ae741ae65204f07d3350a3266ad73501e96d867f`, proves the provider row keys use `reward_key`, `reward_status`, and explicit sub-ID/click/link fields even though the UI says Commission key. DOM absence was rejected as row evidence; installed release `329cbfc45` captured official JSON `row_count=0`, the empty Payouts surface, `NO_LIVE_ROWS`, and a mode-0600 artifact at SHA-256 `dce77f0083b0f92e29a67ccf99e417e11fe6307009bdfe98bf2d5fc77b39154d`. Approved/reversed remain unknown rather than zero |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
@@ -298,19 +298,30 @@ external receipt exists.
 ### 1.5 Ideal autonomous flow
 
 ```mermaid
-flowchart LR
-  W[10-minute wake] --> J[Resume one durable job]
-  J --> O[Verify offer and evidence]
-  O --> A[Build one useful asset]
-  A --> P[Publish and public-readback]
-  P --> U[Real reader visits]
-  U --> C[Provider records conversion]
-  C --> R[Reconcile commission receipt]
-  R --> T[Telegram: action, money, next job]
-  R --> L[Change one measured variable]
-  L --> W
-  J -->|Failure| H[Classify, repair harness, resume same job]
-  H --> J
+flowchart TD
+  W[launchd wakes every 10 minutes] --> J{Unfinished durable job?}
+  J -->|Yes| RS[Resume same run and job]
+  J -->|No| AC[Account, login, profile, application Skill]
+  AC --> OF[Approved offer and executable owned link]
+  RS --> OF
+  OF --> EV[CRWL, GitHub, X and product evidence]
+  EV --> AS[Useful decision asset with disclosure]
+  AS --> PB[Owned site and X publish]
+  PB --> RD[Public readback and exact-once receipt]
+  RD --> AU[Real audience discovers asset]
+  AU --> PR[Provider records click, lead or sale]
+  PR --> MR[Import hashed provider receipt]
+  MR --> LD[Ledger: pending, approved, reversed, paid]
+  LD --> TG[Telegram: action, money, blocker, next job]
+  LD --> AL[Allocator: 80% proven winners, 20% canaries]
+  AL --> W
+  AC -->|Failure| FH[Classify and patch the harness]
+  EV -->|Failure| FH
+  PB -->|Ambiguous| FH
+  MR -->|Auth or parser drift| FH
+  FH --> CK[Minimal money, secret, duplicate-effect check]
+  CK --> IN[Install release and resume same job]
+  IN --> RS
 ```
 
 Ten minutes is the default coordination wake. Provider polling, posting, and
@@ -709,6 +720,30 @@ for production behavior: they already supply launchd ownership, same-run
 reconciliation, public readback, durable receipts, and Telegram delivery patterns.
 Their interfaces are reused while their ledgers remain isolated.
 
+### 7.0.1 File-level reuse map
+
+The audit reads implementation files, not only READMEs. `COPY_CODE` still means a
+small compatible slice with license attribution; it never means importing a whole
+runtime. The current disk floor is 10 GiB free. Below that floor the Agent stops
+new clones, media generation, and browser downloads while continuing ledger and
+health reporting. GitHub tree/raw access replaces a clone when it proves the same
+code boundary.
+
+| Source file | Proven mechanism | Exact use in Affiliate Agent | Explicitly excluded |
+|---|---|---|---|
+| [Franklin `src/tasks/store.ts`](https://github.com/BlockRunAI/Franklin/blob/main/src/tasks/store.ts) | Atomic temp-file rename plus append-only `events.jsonl`; one writer per task | Keep the existing `job_journal.py` contract: immutable `run_id`/`job_id`, append-before-effect, tolerant replay, same-job resume | Franklin wallet, trading, generic command runner, and any revenue inference |
+| [Franklin `src/tasks/lost-detection.ts`](https://github.com/BlockRunAI/Franklin/blob/main/src/tasks/lost-detection.ts) and [`src/scheduler/store.ts`](https://github.com/BlockRunAI/Franklin/blob/main/src/scheduler/store.ts) | Reconcile a dead owner as `lost`; after sleep fire one current slot rather than replaying every missed interval | A14.7 watchdog, stale-owner detection, and one bounded catch-up wake | Copying its process model or creating a second scheduler beside launchd |
+| [Forage `forage/agent/core.py`](https://github.com/Nerfed-Lab/forage/blob/main/forage/agent/core.py) | Repeating check-vitals → decide → act → reflect → persist cycle | Copy only the cycle boundary and cost-aware action selection into the existing local loop | Its capability-returned `revenue` value; Affiliate money must come from a hashed provider transaction |
+| [Forage `forage/economy/ledger.py`](https://github.com/Nerfed-Lab/forage/blob/main/forage/economy/ledger.py) | Append-oriented income/expense queries and profitability windows | Reuse the profitability/window vocabulary; preserve Affiliate's richer pending/approved/reversed/paid lineage | Treating a local action result or wallet balance as commission |
+| [paraggit `src/core/base_affiliate.py`](https://github.com/paraggit/affiliate-automation/blob/main/src/core/base_affiliate.py) | Small provider protocol and normalized product record | Reimplement the protocol shape as provider playbooks with authenticated ownership, terms, allowed-channel, link and report states | Its Amazon/Flipkart assumptions and price/deal ranking as the primary strategy |
+| [paraggit `src/utils/retry.py`](https://github.com/paraggit/affiliate-automation/blob/main/src/utils/retry.py) | Bounded typed retry with exponential delay | Reference for read-only transient retries only; writes remain journaled and reconcile-before-retry | Its interactive scheduler, generic content prompt, Tweepy publisher, and unverified success booleans |
+| [Crawlee `recoverable_state.py`](https://github.com/apify/crawlee-python/blob/master/src/crawlee/_utils/recoverable_state.py) and [`RequestQueue` example](https://github.com/apify/crawlee-python/blob/master/docs/introduction/code_examples/02_request_queue.py) | Persisted crawler state and durable request queue across restart | Admit only when CRWL cannot cover a real multi-page/JS research job; emit normalized `SourceCapture` receipts | Making Crawlee the Agent brain or adding it for single-page fetches |
+
+The first implementation choice is therefore local reuse, then the smallest
+licensed external mechanism. There is no dependency addition for a mechanism
+already implemented by `job_journal.py`, launchd, CRWL, CloakBrowser, or the
+Writer/Gig publication and receipt contracts.
+
 ### 7.1 Closest end-to-end OSS and public-claim gate
 
 No inspected OSS project closes the whole chain from lawful account authority to
@@ -816,6 +851,15 @@ commission after reversals and cost, preserves 20% exploration, and limits any
 one provider, offer, or channel to 40% of net commission. A3 closes only after
 three external monthly receipts each reach USD 10,000 gross and the corresponding
 net, cost, reversal, and concentration views reconcile.
+
+The Agent does not scale by increasing post count blindly. It closes the measured
+ladder in order: executable offer → attributable post-baseline click → approved
+commission → ten comparable placements → four profitable unattended weeks →
+three diversified providers → an observed portfolio equation that sums to USD
+10,000. If observed net commission per approved conversion is `N`, required
+monthly approved conversions are `ceil(10000 / N)`; required qualified visits are
+computed only from the cohort's observed conversion rate. Before those receipts,
+the inputs remain `unknown`.
 
 ### 9.0.1 Remaining atomic execution queue
 
@@ -1211,7 +1255,8 @@ without changing the architecture.
   `@aniccaen` is inactive. The account has 128 mixed-language historical posts
   and 0 followers, so rebranding and audience acquisition are required and
   organic distribution power remains unproven.
-- No browser-published Affiliate X placement or owned conversion page exists yet.
+- One disclosed owned article and one browser-published Affiliate X placement are
+  live and public-readback verified. No post-baseline organic click exists yet.
 - Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED`;
   Associates/affiliate acceptance is unknown.
 - English total addressable market and the claim that it is larger than Japanese
@@ -1239,12 +1284,14 @@ without changing the architecture.
 - F2 has a pushed implementation and root-verified focused tests, but lacks fresh
   review, live model/provider boundary proof, a clean worktree audit, and a
   collection-safe all-tests command.
-- Telegram target and provider delivery are resolved by live `messageId=7639`;
-  Affiliate-specific durable outbox, snapshot parity, and dedupe remain unbuilt.
-- No production Affiliate placement, organic click, approved commission, paid
-  payout, full 10-minute money wake, or crash-recovery E2E exists yet.
-- `ai.anicca.affiliate-browser` and `ai.anicca.affiliate-loop` are registered;
-  separate legacy `affiliate-reconcile`, `affiliate-daily`, and `affiliate-core`
-  owners are deliberately not required by the new single local orchestrator.
+- Affiliate Telegram append-before-send, stable-UUID dedupe, provider message-ID
+  receipt, `SELF_HEALED`, and `BLOCKED` are live-proven. Real `CLICK_DELTA`,
+  `COMMISSION_PENDING`, and `COMMISSION_APPROVED` wait for those external states.
+- Production placement and same-job X crash resume are proven. Organic click,
+  approved commission, paid payout, full research-to-money wake, and an induced
+  end-to-end self-repair remain unproven.
+- `ai.anicca.affiliate-browser`, `ai.anicca.affiliate-impact-browser`,
+  `ai.anicca.affiliate-x-browser`, and `ai.anicca.affiliate-loop` are registered;
+  non-Affiliate browser ports and legacy earning-loop owners are out of scope.
 - `$10k`, `$10M`, and `$100M` are outcome gates. There is no honest date or
   probability forecast until live cohorts and partner capacity are measured.
