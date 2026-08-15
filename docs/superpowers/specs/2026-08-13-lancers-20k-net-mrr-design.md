@@ -2558,3 +2558,8 @@ hard thresholdやkeyword filterは作らず、modelがscope、seller proof、価
 
 **DONE:** current public detailを再取得し、公式`提案数: 130件`を取得した。同じ既存detail GETを通るenrichmentは成功1/失敗0で、
 Applicationのnormal planner snapshotにもexact fieldを保持する。hard threshold、追加request、schema、state、ledger、scheduler変更は0である。
+
+**PRODUCTION EVIDENCE:** exact release `5c4d1102bde0b9d05e0a518c4f45ead97e7dc305`へ4 revenue ownerをreloadし、先にWork Syncで
+公式working 0、返信必要0、monthly offer 0、入出金0を更新した。続くApplication ownerは10 queryを順に探す既存default discoveryを実行し、
+`no_eligible_project / observed_count 0 / exit 0`で終了した。ApplicationReceipt 31、fingerprints 107、pending 0は不変で、重複送信0である。
+したがって現在の応募側blockerは実行故障ではなく、公開中の未処理・納品可能案件がそのwakeに0件だったことである。
