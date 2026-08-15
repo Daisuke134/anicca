@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "plan_id": "elevenagents-en",
+  "locale": "en",
+  "sources": [
+    {"id": "elevenagents-overview", "adapter": "crwl", "url": "https://elevenlabs.io/docs/eleven-agents/overview", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},
+    {"id": "elevenagents-quickstart", "adapter": "crwl", "url": "https://elevenlabs.io/docs/eleven-agents/quickstart", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},
+    {"id": "elevenagents-integrations", "adapter": "crwl", "url": "https://elevenlabs.io/docs/eleven-agents/integrate/overview", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},
+    {"id": "elevenagents-cost", "adapter": "crwl", "url": "https://elevenlabs.io/docs/help-center/product/conversational-agents/eleven-labs-agents-formerly-conversational-ai/how-much-does-eleven-agents-cost", "evidence_class": "official_price", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 7}
+  ]
+}
