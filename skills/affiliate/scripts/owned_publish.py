@@ -40,6 +40,13 @@ def load_artifact(state, slug):
     markdown = artifact.get("markdown", "")
     if hashlib.sha256(markdown.encode()).hexdigest() != artifact.get("content_sha256"):
         raise PublishError("article artifact hash mismatch")
+    if artifact.get("disclosure") == "affiliate_link":
+        try:
+            policy = json.loads((state / "policy" / f"{slug}.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise PublishError("affiliate article policy receipt is unavailable") from error
+        if policy.get("decision") != "PASS" or policy.get("content_sha256") != artifact.get("content_sha256"):
+            raise PublishError("affiliate article policy receipt does not match")
     return artifact
 
 
@@ -50,7 +57,7 @@ def public_row(artifact):
         "slug": artifact["slug"],
         "title": artifact["title"],
         "date": published_date,
-        "project": "AI VOICE EVALUATION",
+        "project": artifact.get("project", "AI VOICE EVALUATION"),
         "n_papers_cited": len(artifact["source_hashes"]),
         "word_count": len(re.findall(r"\b[\w'-]+\b", markdown)),
         "markdown": markdown,
@@ -67,7 +74,12 @@ def fetch_readback(artifact, base_url):
     except Exception:
         return None
     visible = html.unescape(re.sub(r"<[^>]+>", " ", markup))
-    if artifact["title"] not in visible or any(marker not in visible for marker in artifact["readback_markers"]):
+    decoded_markup = html.unescape(markup)
+    if (
+        artifact["title"] not in visible
+        or any(marker not in visible for marker in artifact["readback_markers"])
+        or any(link not in decoded_markup for link in artifact.get("readback_links", []))
+    ):
         return None
     return {
         "public_url": url,

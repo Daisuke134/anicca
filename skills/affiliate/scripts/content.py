@@ -8,6 +8,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from local_loop import elevenlabs_link
 from provider_cli import atomic_write
@@ -29,6 +30,9 @@ FOUNDATION_REQUIRED = {
     "elevenlabs-pricing": "Credits are shared across every product",
     "elevenlabs-tts": "Output is nondeterministic",
 }
+
+DISCLOSURE = "Disclosure: This article contains an affiliate link."
+FORBIDDEN_CLAIMS = ("guaranteed income", "guaranteed earnings", "risk-free income", "100% guaranteed")
 
 
 def require_sources(state, required, now):
@@ -105,14 +109,66 @@ def build_foundation(root, state):
     return {key: artifact[key] for key in ("artifact_id", "slug", "content_sha256", "state")}
 
 
+def policy_checks(artifact, source_hashes, link):
+    markdown = artifact.get("markdown", "")
+    tracking = link if isinstance(link, str) else ""
+    parsed = urlsplit(tracking)
+    lowered = markdown.lower()
+    return {
+        "artifact_hash": hashlib.sha256(markdown.encode()).hexdigest() == artifact.get("content_sha256"),
+        "disclosure_before_first_cta": bool(tracking) and DISCLOSURE in markdown and markdown.find(DISCLOSURE) < markdown.find(tracking),
+        "fresh_sources_match_artifact": source_hashes == artifact.get("source_hashes"),
+        "one_owned_tracking_link": bool(tracking) and markdown.count(tracking) == 1 and parsed.scheme == "https" and parsed.hostname == "try.elevenlabs.io",
+        "forbidden_claims_absent": not any(claim in lowered for claim in FORBIDDEN_CLAIMS),
+    }
+
+
+def policy(state, private_markdown):
+    slug = "elevenlabs-plans-for-solo-creators"
+    path = state / "content" / f"{slug}.json"
+    try:
+        artifact = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ContentError("affiliate article artifact is unavailable") from error
+    if artifact.get("state") not in ("READY_FOR_POLICY", "READY_FOR_PUBLICATION"):
+        raise ContentError("affiliate article is not ready for policy")
+    source_hashes = require_sources(state, REQUIRED, datetime.now(timezone.utc))
+    link = elevenlabs_link(private_markdown)
+    checks = policy_checks(artifact, source_hashes, link)
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "CONTENT_POLICY",
+        "artifact_id": artifact.get("artifact_id"),
+        "slug": slug,
+        "content_sha256": artifact.get("content_sha256"),
+        "source_hashes": source_hashes,
+        "checks": checks,
+        "decision": "PASS" if all(checks.values()) else "FAIL",
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    atomic_write(state / "policy" / f"{slug}.json", receipt)
+    if receipt["decision"] != "PASS":
+        raise ContentError("affiliate article policy failed")
+    artifact.update({
+        "project": "AI VOICE TOOLS",
+        "readback_markers": [DISCLOSURE, "A simple buying checklist", "Last evidence refresh"],
+        "readback_links": [link],
+        "state": "READY_FOR_PUBLICATION",
+    })
+    atomic_write(path, artifact)
+    return {key: receipt[key] for key in ("artifact_id", "slug", "content_sha256", "decision")}
+
+
 def main():
     parser = argparse.ArgumentParser(prog="affiliate content")
-    parser.add_argument("command", choices=("build", "build-foundation"))
+    parser.add_argument("command", choices=("build", "build-foundation", "policy"))
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     parser.add_argument("--private-markdown", type=Path, default=Path("~/.config/anicca/affiliate-credentials.md"))
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    if args.command == "build-foundation":
+    if args.command == "policy":
+        result = policy(args.state.expanduser(), args.private_markdown.expanduser())
+    elif args.command == "build-foundation":
         result = build_foundation(root, args.state.expanduser())
     else:
         result = build(root, args.state.expanduser(), args.private_markdown.expanduser())

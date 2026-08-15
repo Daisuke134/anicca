@@ -119,6 +119,22 @@ ElevenLabs link, places disclosure before the first CTA, and prints only the
 artifact identity and hash. The article body and tracking link remain mode-0600
 Git-external state until the later policy and owned-publication boundary.
 
+Before publication, issue the deterministic policy receipt and exact-once
+placement intent:
+
+```bash
+skills/affiliate/affiliate content policy
+skills/affiliate/affiliate loop placement \
+  --placement elevenlabs-plans-for-solo-creators --locale en
+```
+
+The policy command fails closed unless the artifact hash and fresh source hashes
+match, the disclosure precedes the first CTA, exactly one owned HTTPS
+`try.elevenlabs.io` link exists, and forbidden income guarantees are absent. It
+stores no tracking URL in its receipt. `owned publish` independently requires the
+matching `PASS` receipt and later reads both disclosure markers and the exact link
+back from production HTML.
+
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:
 
