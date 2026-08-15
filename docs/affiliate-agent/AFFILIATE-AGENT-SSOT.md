@@ -135,6 +135,7 @@ techniques do not merge the ledgers.
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
 | Mac-local runtime | Release `e789fa61a5714fb6373e0fe22a87fd72e5a473ad` is installed and local foundation is GREEN | `ai.anicca.affiliate-browser` is running; isolated EN CDP `9324` returned Chrome `145.0.7632.109`; the launchd wake returned `READY_FOR_PUBLICATION`; cadence is 600 seconds; repeated `article-1` resolution kept exactly one placement row and returned `deduplicated=true`. This proves readiness, not publication or revenue |
+| ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
@@ -147,7 +148,7 @@ live autonomous operation.
 | Runtime | Canonical local launchd browser and loop are installed; the first loop process exited `0` | A full research → publish → provider reconciliation wake has not completed; a process exit is not economic success |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
-| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`; HubSpot/Impact is `APPLICATION_PENDING + AUTH_RECOVERY_PROVIDER_DEFECT`; Kit is `APPLICATION_REJECTED`; Systeme.io is `EXTERNAL_CHALLENGE` at visible reCAPTCHA; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | ElevenLabs credential recovery, isolated fresh login, active-account readback, owned default link, anonymous link traversal, and attribution-cookie creation are proven. No commission, approved transaction, reversal, or payout is claimed yet |
+| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED + DEDICATED_LOGIN_VERIFIED`; HubSpot/Impact is `APPLICATION_PENDING + AUTH_RECOVERY_PROVIDER_DEFECT`; Kit is `APPLICATION_REJECTED`; Systeme.io is `EXTERNAL_CHALLENGE` at visible reCAPTCHA; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | ElevenLabs credential recovery, dedicated fresh login through semantic CDP controls, active-account readback, owned default link, anonymous link traversal, and attribution-cookie creation are proven. No commission, approved transaction, reversal, or payout is claimed yet |
 | Publication | Browser publisher is planned only | No Affiliate JA/EN placement has an action receipt plus public readback |
 | Attribution | Local placement receipts and direct provider-link resolution are implemented | No public placement or provider-side click/commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
@@ -790,8 +791,9 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 4. **DONE.** Change the coordination cadence from 30 minutes to 10 minutes;
    provider, research, and publication cooldowns remain independent and bounded.
 5. **PARTIAL.** Complete credential-first signup/login/recovery/application states.
-   ElevenLabs is active, Impact is pending, Kit is rejected, and provider writes
-   still need exact-once semantic browser playbooks.
+   ElevenLabs dedicated login is live-proven through the reusable semantic CDP
+   playbook; Impact is pending and Kit is rejected. Impact status polling and any
+   future provider write still require exact-once semantic playbooks.
 6. **PENDING.** Rebrand and verify English `@selawmqt`; bind its isolated profile,
    disclosure, public URL, screenshot/DOM receipt, and duplicate-post fence.
 7. **PENDING.** Implement the source scout using CRWL, `gh`, official sources, and

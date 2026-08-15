@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -78,6 +79,102 @@ def evaluate(host, port, target_id):
         ws.close()
 
 
+def cdp_call(ws, request_id, method, params=None):
+    ws.send(json.dumps({"id": request_id, "method": method, "params": params or {}}))
+    while True:
+        message = json.loads(ws.recv())
+        if message.get("id") == request_id:
+            if "error" in message:
+                raise ProviderError(f"CDP {method} failed")
+            return message.get("result", {})
+
+
+def query_node(ws, request_id, selector):
+    document = cdp_call(ws, request_id, "DOM.getDocument", {"depth": 1})
+    result = cdp_call(
+        ws, request_id + 1, "DOM.querySelector",
+        {"nodeId": document["root"]["nodeId"], "selector": selector},
+    )
+    if not result.get("nodeId"):
+        raise ProviderError("required login control is unavailable")
+    return result["nodeId"], request_id + 2
+
+
+def focus_and_type(ws, request_id, selector, value):
+    node_id, request_id = query_node(ws, request_id, selector)
+    resolved = cdp_call(ws, request_id, "DOM.resolveNode", {"nodeId": node_id})
+    cdp_call(ws, request_id + 1, "Runtime.callFunctionOn", {
+        "objectId": resolved["object"]["objectId"],
+        "functionDeclaration": """function () {
+            const setter = Object.getOwnPropertyDescriptor(
+                HTMLInputElement.prototype, 'value'
+            ).set;
+            setter.call(this, '');
+            this.dispatchEvent(new Event('input', {bubbles: true}));
+            this.dispatchEvent(new Event('change', {bubbles: true}));
+        }""",
+    })
+    cdp_call(ws, request_id + 2, "DOM.focus", {"nodeId": node_id})
+    cdp_call(ws, request_id + 3, "Input.insertText", {"text": value})
+    return request_id + 4
+
+
+def click(ws, request_id, selector):
+    node_id, request_id = query_node(ws, request_id, selector)
+    box = cdp_call(ws, request_id, "DOM.getBoxModel", {"nodeId": node_id})
+    content = box["model"]["content"]
+    x = (content[0] + content[2]) / 2
+    y = (content[1] + content[5]) / 2
+    for event_type in ("mousePressed", "mouseReleased"):
+        cdp_call(ws, request_id + 1, "Input.dispatchMouseEvent", {
+            "type": event_type, "x": x, "y": y, "button": "left", "clickCount": 1,
+        })
+        request_id += 1
+
+
+def read_login_credentials(path, section_name):
+    path = path.expanduser()
+    if not path.is_file() or path.stat().st_mode & 0o077:
+        raise ProviderError("private credential file is unavailable")
+    text = path.read_text(encoding="utf-8")
+    section = re.search(
+        rf"(?ms)^## {re.escape(section_name)}\n.*?(?=^## |\Z)", text,
+    )
+    if not section:
+        raise ProviderError("provider credential section is unavailable")
+
+    def field(label):
+        match = re.search(
+            rf"(?m)^- {re.escape(label)}:[ \t]*(.*?)[ \t]*$", section.group(),
+        )
+        value = match.group(1).strip().strip("`") if match else ""
+        if not value:
+            raise ProviderError("provider credential field is unavailable")
+        return value
+
+    return field("Login"), field("Password")
+
+
+def submit_login(args, playbook, target):
+    login = playbook.get("login")
+    if not login:
+        raise ProviderError("provider login automation is unsupported")
+    username, password = read_login_credentials(
+        args.private_markdown, login["credential_section"],
+    )
+    ws = create_connection(
+        f"ws://{args.cdp_host}:{args.cdp_port}/devtools/page/{target['id']}",
+        timeout=20, max_size=None, suppress_origin=True,
+    )
+    try:
+        cdp_call(ws, 1, "DOM.enable")
+        request_id = focus_and_type(ws, 2, login["username_selector"], username)
+        request_id = focus_and_type(ws, request_id, login["password_selector"], password)
+        click(ws, request_id, login["submit_selector"])
+    finally:
+        ws.close()
+
+
 def classify(playbook, page):
     if not all(isinstance(page.get(key), str) for key in ("url", "title", "text")):
         raise ProviderError("invalid rendered page")
@@ -86,7 +183,10 @@ def classify(playbook, page):
     if f"{parsed.scheme}://{parsed.netloc}" not in allowed:
         raise ProviderError("provider origin mismatch")
     for candidate in playbook["states"]:
-        if all(marker in page["text"] for marker in candidate["all_text"]):
+        if (
+            candidate.get("url_contains", "") in page["url"]
+            and all(marker in page["text"] for marker in candidate.get("all_text", []))
+        ):
             return candidate["state"], candidate["next_action"], candidate["all_text"]
     return playbook["fallback_state"], playbook["fallback_next_action"], []
 
@@ -122,6 +222,34 @@ def observe(args):
         "matched_markers": markers,
         "rendered_text_sha256": hashlib.sha256(page["text"].encode()).hexdigest(),
     }
+
+
+def resume(args):
+    root = Path(__file__).resolve().parents[1]
+    playbook = load_playbook(root, args.provider)
+    before = observe(args)
+    submitted = False
+    if before["state"] == "SIGN_IN_REQUIRED":
+        base = f"http://{args.cdp_host}:{args.cdp_port}"
+        target = choose_target(read_json(f"{base}/json/list"), playbook)
+        submit_login(args, playbook, target)
+        submitted = True
+        for _ in range(20):
+            time.sleep(1)
+            after = observe(args)
+            if after["state"] != "SIGN_IN_REQUIRED":
+                break
+    else:
+        after = before
+    receipt = {
+        **after,
+        "receipt_type": "PROVIDER_RESUME",
+        "previous_state": before["state"],
+        "submitted": submitted,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    atomic_write(args.receipt.expanduser(), receipt)
+    return receipt
 
 
 def poll(args, receipt):
@@ -166,17 +294,24 @@ def poll(args, receipt):
 
 def main():
     parser = argparse.ArgumentParser(prog="affiliate provider")
-    parser.add_argument("command", choices=("inspect", "poll"))
+    parser.add_argument("command", choices=("inspect", "poll", "resume"))
     parser.add_argument("--provider", required=True)
     parser.add_argument("--cdp-port", required=True, type=int)
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--receipt", required=True, type=Path)
+    parser.add_argument(
+        "--private-markdown", type=Path,
+        default=Path("~/.config/anicca/affiliate-credentials.md"),
+    )
     args = parser.parse_args()
 
-    receipt = observe(args)
+    if args.command == "resume":
+        receipt = resume(args)
+    else:
+        receipt = observe(args)
     if args.command == "poll":
         receipt = poll(args, receipt)
-    else:
+    elif args.command == "inspect":
         atomic_write(args.receipt.expanduser(), receipt)
     print(json.dumps(receipt, sort_keys=True, separators=(",", ":")))
     return 0

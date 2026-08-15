@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "provider": "elevenlabs",
+  "allowed_origins": ["https://elevenlabs.io"],
+  "target": {
+    "url_contains": "elevenlabs.io/app/",
+    "title_contains": "ElevenLabs"
+  },
+  "states": [
+    {
+      "state": "SIGN_IN_REQUIRED",
+      "url_contains": "/app/sign-in",
+      "all_text": ["Welcome back", "Email", "Password", "Sign in"],
+      "next_action": "RESUME_LOGIN_ONCE"
+    },
+    {
+      "state": "AUTHENTICATED",
+      "url_contains": "/app/home",
+      "all_text": [],
+      "next_action": "READ_AFFILIATE_ACCOUNT"
+    }
+  ],
+  "login": {
+    "credential_section": "ElevenLabs",
+    "username_selector": "input[name='email']",
+    "password_selector": "input[name='password']",
+    "submit_selector": "button[data-testid='sign-in-submit-button']:not([disabled])"
+  },
+  "fallback_state": "UNKNOWN_RENDERED_STATE",
+  "fallback_next_action": "RESEARCH_AND_UPDATE_PLAYBOOK"
+}

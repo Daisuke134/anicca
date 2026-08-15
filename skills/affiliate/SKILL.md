@@ -52,6 +52,17 @@ a real state change returns `changed=true` and a deterministic `transition_id`;
 an unchanged retry returns `next_action=NO_STATE_CHANGE`. Downstream actions
 must deduplicate on `transition_id`.
 
+Use credential-first resume only on a supported semantic playbook:
+
+```bash
+skills/affiliate/affiliate provider resume \
+  --provider elevenlabs --cdp-port 9324 --receipt "$RECEIPT"
+```
+
+It reads the mode-0600 Git-external Markdown, clears and fills the named controls
+through CDP, submits at most once per invocation, and requires rendered readback.
+Credentials never enter stdout, receipts, Git, selectors, or command arguments.
+
 Install the local release and its two launchd owners:
 
 ```bash
@@ -61,7 +72,7 @@ skills/affiliate/affiliate loop placement --placement article-1 --locale en
 ```
 
 `ai.anicca.affiliate-browser` owns the isolated English profile on CDP `9324`.
-`ai.anicca.affiliate-loop` wakes every 30 minutes. Receipts live under
+`ai.anicca.affiliate-loop` wakes every 10 minutes. Receipts live under
 `~/.local/state/life-manager/affiliate`; provider passwords and the executable
 ElevenLabs link remain only in the mode-0600 private Markdown. The current wake
 proves local readiness only. Publication, provider click readback, commission,
