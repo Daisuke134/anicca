@@ -98,23 +98,22 @@ def _append(path: Path, value: dict) -> None:
 def _report_message(row: dict) -> str:
     failed = int(row.get("status") == "failed")
     effect = int(row.get("effect") or 0)
-    pending = int(row.get("pending") or 0)
+    hypothesis = row.get("next_hypothesis") if isinstance(row.get("next_hypothesis"), dict) else {}
+    contract_delta = int(row.get("listing_contracts_appended") or 0)
     next_action = (
-        "failureを次wakeでbounded repair" if failed
-        else "公式outcomeを観測してkeep/revertを判断" if effect
-        else "新しい公式需要・分析差分を待つ"
+        "失敗stageを自動修復して同じ境界から再開" if failed
+        else "公式readbackとoutcome ledgerを照合" if effect
+        else f"{hypothesis.get('service_id')}/{hypothesis.get('field')}の実行harnessを継続"
+        if hypothesis else "scorecard先頭の実行可能gapを選択"
     )
     lines = [
-        "[ココナラ][出品] Codex:::",
-        f"observed: {int(row.get('official_services_read') or 0)}件",
-        f"actionable: {int(row.get('actionable') or 0)}件",
-        f"effect: {effect}件",
-        f"readback: {int(row.get('readback') or 0)}件",
-        f"failed: {failed}件",
-        f"pending: {pending}件",
-        f"duplicate: {int(row.get('duplicate') or 0)}件",
-        f"service: {row.get('service_id') or 'なし'}",
-        f"次の一手: {next_action}",
+        "Codex::: 🏪 ココナラ Storefront hourly",
+        f"✅ 公式出品 {int(row.get('official_services_read') or 0)}件 / 競合証拠 {int(row.get('competitor_evidence_count') or 0)}件",
+        f"📊 actionable {int(row.get('actionable') or 0)} / effect {effect} / readback {int(row.get('readback') or 0)} / duplicate {int(row.get('duplicate') or 0)}",
+        f"📚 出品contract追加 {contract_delta}件",
+        f"🧪 次候補 {hypothesis.get('service_id') or 'なし'} / {hypothesis.get('field') or 'なし'} / 実行可能 {str(bool(hypothesis.get('executable'))).lower()}",
+        f"🛡️ fence {hypothesis.get('guard_reason') or row.get('reason') or 'なし'}",
+        f"🔧 次の一手: {next_action}",
     ]
     if failed:
         lines.extend((f"reason: {str(row.get('reason') or 'unknown')[:300]}",
