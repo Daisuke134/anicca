@@ -173,6 +173,9 @@ the private artifact; customer name and email never enter the normalized ledger.
 `revenue reconcile` verifies the source artifact hash and appends one stable
 transition per provider key, raw status, amount, and source hash. Replaying the
 same report is a no-op; a later provider status creates a new append-only event.
+It joins a row to one LIVE owned placement by sub-ID/shared-ID or tracking-link
+fingerprint. Zero or multiple candidates remain explicit `UNMATCHED` or
+`AMBIGUOUS`; raw tracking links and customer PII never enter the ledger.
 
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:

@@ -87,7 +87,16 @@ $0.00"""
         self.assertEqual(normalized["status"], "approved")
         self.assertEqual(normalized["net_commission_minor"], 2250)
         self.assertNotIn("customer_email", normalized)
+        self.assertNotIn("link", normalized["attribution"])
 
+        placement = {
+            "placement_id": "placement-1", "public_url": "https://example.com/article",
+            "link_fingerprints": sorted(MODULE.link_fingerprints("https://try.elevenlabs.io/example")),
+        }
+        raw = dict(row, link_path="/example")
+        normalized["placement"] = MODULE.resolve_attribution(raw, [placement])
+        self.assertEqual(normalized["placement"]["state"], "MATCHED")
+        self.assertEqual(normalized["placement"]["match_basis"], ["SUB_ID", "LINK_FINGERPRINT"])
         transition = MODULE.build_transition(normalized, "source-hash", "observed")
         with tempfile.TemporaryDirectory() as directory:
             ledger = Path(directory) / "ledger.jsonl"

@@ -844,7 +844,11 @@ regressions relevant to that step.
 - [x] **A12.6** Make repeated imports idempotent by provider transaction ID plus
   source hash; a status change appends a transition rather than rewriting history.
 - [ ] **A12.7** Join a provider row to placement/click/sub-ID when supported; store
-  an explicit unmatched receipt when the provider exposes no join key.
+  an explicit unmatched receipt when the provider exposes no join key. The
+  resolver now indexes only `LIVE` owned publications and matches sub-ID/shared-ID
+  or tracking-link fingerprints without storing the raw link; `UNMATCHED` and
+  `AMBIGUOUS` fail closed. This closes only after a live non-empty row proves the
+  join or the unmatched path.
 - [x] **A12.8** Mark the existing one-click total `BASELINE_ONLY`; only a post-
   baseline increase can qualify for E0 and it still does not qualify as money.
 - [ ] **A12.9** Wire the revenue observer and report importer into the 10-minute

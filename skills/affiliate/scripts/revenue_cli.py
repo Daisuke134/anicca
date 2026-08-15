@@ -10,6 +10,7 @@ import time
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from urllib.parse import urlparse
 
 from websocket import create_connection
 
@@ -187,10 +188,75 @@ def normalize_commission_row(row, currency="USD"):
             "sub_id_3": row.get("sub_id_3"),
             "shared_id": row.get("shared_id"),
             "clicked_at": row.get("click_created_at_date"),
-            "link": row.get("link_path"),
-            "referrer": row.get("referral_source"),
-            "landing_page": row.get("link_destination_path"),
+            "link_sha256": hash_optional(row.get("link_path")),
+            "referrer_sha256": hash_optional(row.get("referral_source")),
+            "landing_page_sha256": hash_optional(row.get("link_destination_path")),
         },
+    }
+
+
+def hash_optional(value):
+    return hashlib.sha256(value.encode()).hexdigest() if isinstance(value, str) and value else None
+
+
+def link_fingerprints(value):
+    if not isinstance(value, str) or not value:
+        return set()
+    parsed = urlparse(value)
+    values = {value}
+    if parsed.scheme == "https" and parsed.hostname:
+        values.update({parsed.hostname + parsed.path, parsed.path})
+    return {hashlib.sha256(item.encode()).hexdigest() for item in values if item}
+
+
+def placement_candidates(state):
+    candidates = []
+    content_root = state / "content"
+    publication_root = state / "owned-publications"
+    for content_path in sorted(content_root.glob("*.json")) if content_root.is_dir() else []:
+        content = json.loads(content_path.read_text(encoding="utf-8"))
+        slug = content.get("slug")
+        publication_path = publication_root / f"{slug}.json"
+        if not slug or not publication_path.is_file():
+            continue
+        publication = json.loads(publication_path.read_text(encoding="utf-8"))
+        links = content.get("readback_links", [])
+        if publication.get("state") != "LIVE" or len(links) != 1:
+            continue
+        parsed = urlparse(links[0])
+        if parsed.scheme != "https" or parsed.hostname != "try.elevenlabs.io":
+            continue
+        candidates.append({
+            "placement_id": slug,
+            "public_url": publication.get("public_url"),
+            "link_fingerprints": sorted(link_fingerprints(links[0])),
+        })
+    return candidates
+
+
+def resolve_attribution(raw_row, candidates):
+    ids = {
+        value for key in ("sub_id_1", "sub_id_2", "sub_id_3", "shared_id")
+        if isinstance((value := raw_row.get(key)), str) and value
+    }
+    row_links = link_fingerprints(raw_row.get("link_path"))
+    matches = []
+    for candidate in candidates:
+        basis = []
+        if candidate["placement_id"] in ids:
+            basis.append("SUB_ID")
+        if row_links.intersection(candidate["link_fingerprints"]):
+            basis.append("LINK_FINGERPRINT")
+        if basis:
+            matches.append((candidate, basis))
+    if len(matches) != 1:
+        return {"state": "UNMATCHED" if not matches else "AMBIGUOUS", "placement_id": None, "public_url": None, "match_basis": []}
+    candidate, basis = matches[0]
+    return {
+        "state": "MATCHED",
+        "placement_id": candidate["placement_id"],
+        "public_url": candidate["public_url"],
+        "match_basis": basis,
     }
 
 
@@ -217,6 +283,7 @@ def build_transition(row, source_hash, observed_at):
         "target_type": row["target_type"],
         "action": row["action"],
         "attribution": row["attribution"],
+        "placement": row["placement"],
         "observed_at": observed_at,
     }
 
@@ -364,9 +431,14 @@ def reconcile(args):
     artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
     if hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest() != source_hash:
         raise RevenueError("provider report artifact hash mismatch")
-    normalized = [normalize_commission_row(row) for row in artifact.get("commission_rows", [])]
-    if normalized != artifact.get("normalized_commissions"):
+    raw_rows = artifact.get("commission_rows", [])
+    captured_normalized = [normalize_commission_row(row) for row in raw_rows]
+    if captured_normalized != artifact.get("normalized_commissions"):
         raise RevenueError("stored commission normalization mismatch")
+    candidates = placement_candidates(state)
+    normalized = []
+    for raw_row, row in zip(raw_rows, captured_normalized):
+        normalized.append({**row, "placement": resolve_attribution(raw_row, candidates)})
     appended = 0
     for row in normalized:
         transition = build_transition(row, source_hash, latest["observed_at"])
