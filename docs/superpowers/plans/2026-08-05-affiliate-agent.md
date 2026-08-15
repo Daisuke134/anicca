@@ -117,7 +117,7 @@ Execution checkpoint:
   compile/shell syntax, and 30 related regression tests. Its checkboxes remain
   open until fresh review, worktree-diff audit, live-provider boundary proof, and
   a collection-safe full-suite command; the process-boundary test uses a fake provider.
-- 14 atomic checks are closed and 149 remain open. The increase records canonical
+- 15 atomic checks are closed and 148 remain open. The increase records canonical
   repo convergence and public-proof work that previously existed only as prose;
   it is not implementation regression.
 - The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
@@ -330,7 +330,16 @@ runtime behavior.
   bundle. Missing identity/OTP/KYC/contract capability becomes
   `EXTERNAL_CHALLENGE`, not invented data.
 
-- [ ] **Step 1: Write RED bootstrap idempotency and checksum tests**
+**Implementation basis:**
+- Reuse the repository's R0 immutable install and atomic symlink pattern.
+- Copy the pinned manifest plus two-stage checksum behavior from
+  [OpenInterpreter's macOS installer](https://github.com/openinterpreter/openinterpreter/blob/c2a8c3371fe71fc3890c3e82798f54448c7ffe61/scripts/install/install.sh#L1018-L1107): it verifies the checksum manifest before the selected artifact.
+- Copy only the action-state and temp-file rename behavior from
+  [Nix Installer](https://github.com/NixOS/nix-installer/blob/b687af918ee7cb78be861542137395bb482111f3/src/plan.rs#L406-L425): a partial receipt is never installed as the canonical receipt.
+- Do not copy Homebrew's moving-latest behavior or any installer that skips
+  checksum verification when a utility is absent.
+
+- [x] **Step 1: Write RED bootstrap idempotency and checksum tests**
 
 Assert that a second install changes no pinned artifact, an unsupported OS fails
 closed, every download is checksummed, secrets never enter logs/git, and an
@@ -356,8 +365,8 @@ encrypted session material plus sanitized receipts.
 
 - [ ] **Step 5: Run clean-state E2E on the current macOS host**
 
-Use an isolated disposable macOS user/profile without touching running loops.
-Reboot between bootstrap and resume; prove the
+Use isolated disposable data/state/profile roots without touching running loops.
+Terminate and restart only the isolated bootstrap process between bootstrap and resume; prove the
 same queue/profile identities return without duplicate account creation or any
 external publication. This is environment E2E, not a mocked success.
 
