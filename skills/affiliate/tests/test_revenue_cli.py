@@ -71,9 +71,21 @@ $0.00"""
     def test_report_schema_requires_commission_key_and_attribution_fields(self):
         text = "\n".join(aliases[0] for aliases in MODULE.COMMISSION_FIELDS.values())
         fields = MODULE.present_fields(text, MODULE.COMMISSION_FIELDS)
-        self.assertIn("commission_key", fields)
+        self.assertIn("reward_key", fields)
         self.assertIn("sub_id_1", fields)
         self.assertNotIn("transaction_id", fields)
+
+    def test_bundle_contract_normalizes_scheduled_without_customer_pii(self):
+        row = {
+            "reward_key": "reward-1", "reward_status": "scheduled",
+            "commission_amount": "22.50", "created_at_date": "2026-08-16",
+            "customer_email": "private@example.com", "sub_id_1": "placement-1",
+        }
+        normalized = MODULE.normalize_commission_row(row)
+        self.assertEqual(normalized["provider_transaction_id"], "reward-1")
+        self.assertEqual(normalized["status"], "approved")
+        self.assertEqual(normalized["net_commission_minor"], 2250)
+        self.assertNotIn("customer_email", normalized)
 
 
 if __name__ == "__main__":

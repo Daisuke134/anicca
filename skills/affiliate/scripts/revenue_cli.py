@@ -8,6 +8,7 @@ import re
 import sys
 import time
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from websocket import create_connection
@@ -52,8 +53,17 @@ COMMISSION_FIELDS = {
     "referrer_page": ("リファラーページ", "Referrer page"),
     "landing_page": ("ランディングページ", "Landing page"),
     "commission_amount": ("コミッション", "Commission"),
-    "commission_key": ("コミッション・キー", "Commission key"),
+    "reward_key": ("コミッション・キー", "Commission key"),
     "target_type": ("ターゲット・タイプ", "Target type"),
+}
+
+COMMISSION_STATUS = {
+    "pending": "pending",
+    "hold": "pending",
+    "approved": "approved",
+    "scheduled": "approved",
+    "declined": "reversed",
+    "paid": "paid",
 }
 
 PAYOUT_FIELDS = {
@@ -142,6 +152,45 @@ def present_fields(text, schema):
             raise RevenueError("provider report schema is incomplete")
         found.append(key)
     return found
+
+
+def normalize_commission_row(row, currency="USD"):
+    key = row.get("reward_key")
+    provider_status = row.get("reward_status")
+    if not isinstance(key, str) or not key or provider_status not in COMMISSION_STATUS:
+        raise RevenueError("commission identity or status is invalid")
+    try:
+        minor_decimal = Decimal(str(row["commission_amount"])) * 100
+    except (KeyError, InvalidOperation, ValueError):
+        raise RevenueError("commission amount is invalid") from None
+    if minor_decimal != minor_decimal.to_integral_value() or minor_decimal < 0:
+        raise RevenueError("commission amount is invalid")
+    gross_minor = int(minor_decimal)
+    status = COMMISSION_STATUS[provider_status]
+    reversal_minor = gross_minor if status == "reversed" else 0
+    return {
+        "provider_transaction_id": key,
+        "provider_status": provider_status,
+        "status": status,
+        "currency": currency,
+        "gross_commission_minor": gross_minor,
+        "reversal_minor": reversal_minor,
+        "net_commission_minor": gross_minor - reversal_minor,
+        "created_at": row.get("created_at_date"),
+        "offer": row.get("reward_description"),
+        "target_type": row.get("target_type"),
+        "action": row.get("action_external_type"),
+        "attribution": {
+            "sub_id_1": row.get("sub_id_1"),
+            "sub_id_2": row.get("sub_id_2"),
+            "sub_id_3": row.get("sub_id_3"),
+            "shared_id": row.get("shared_id"),
+            "clicked_at": row.get("click_created_at_date"),
+            "link": row.get("link_path"),
+            "referrer": row.get("referral_source"),
+            "landing_page": row.get("link_destination_path"),
+        },
+    }
 
 
 def navigate_text(ws, request_id, url, ready_markers):
@@ -241,6 +290,7 @@ def capture_reports(args):
             ws.close()
     commission_rows = capture_commission_rows(args)
     observed_at = datetime.now(timezone.utc).isoformat()
+    normalized_rows = [normalize_commission_row(row) for row in commission_rows]
     artifact = {
         "schema_version": 1,
         "receipt_type": "PARTNERSTACK_RENDERED_REPORT_ARTIFACT",
@@ -248,6 +298,7 @@ def capture_reports(args):
         "commission_url": commissions["url"],
         "commission_text": commissions["text"],
         "commission_rows": commission_rows,
+        "normalized_commissions": normalized_rows,
         "payout_url": payouts["url"],
         "payout_text": payouts["text"],
     }
@@ -263,10 +314,11 @@ def capture_reports(args):
         "commission_fields": present_fields(commissions["text"], COMMISSION_FIELDS),
         "payout_fields": present_fields(payouts["text"], PAYOUT_FIELDS),
         "generic_transaction_id_available": False,
-        "provider_transaction_key": "commission_key",
-        "attribution_keys": ["sub_id_1", "sub_id_2", "sub_id_3", "shared_id", "clicked_at", "link"],
+        "provider_transaction_key": "reward_key",
+        "attribution_keys": ["sub_id_1", "sub_id_2", "sub_id_3", "shared_id", "click_created_at_date", "link_path"],
         "commission_row_count": len(commission_rows),
         "commission_row_state": "EMPTY" if not commission_rows else "ROWS_PRESENT",
+        "normalizer_state": "NO_LIVE_ROWS" if not commission_rows else "NORMALIZED",
         "payout_row_state": "EMPTY" if ("0 to 0" in payouts["text"] or "0件中0" in payouts["text"]) else "ROWS_PRESENT",
         "rendered_artifact_sha256": artifact_hash,
         "observed_at": observed_at,

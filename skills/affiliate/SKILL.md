@@ -166,6 +166,9 @@ total is never retroactively assigned to a placement.
 surfaces, verifies their real field schemas, and writes a mode-0600 raw rendered
 artifact plus a sanitized hash receipt under Git-external state. An empty report
 is recorded as `EMPTY`; it is never replaced by fixtures or counted as money.
+The authenticated report JSON is the row-count authority. Its provider-native
+`reward_key`, raw status, amount, and attribution fields are normalized inside
+the private artifact; customer name and email never enter the normalized ledger.
 
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:
