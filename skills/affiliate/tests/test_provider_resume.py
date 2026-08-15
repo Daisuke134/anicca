@@ -57,17 +57,19 @@ class ProviderResumeTest(unittest.TestCase):
             patch.object(provider_cli, "cdp_call"),
             patch.object(provider_cli, "selector_exists", return_value=(False, 3)),
             patch.object(provider_cli, "focus_and_type", side_effect=(10, 20)) as typed,
-            patch.object(provider_cli, "click_text", side_effect=(15, 25)) as clicked,
+            patch.object(provider_cli, "playwright_click_text") as clicked,
             patch.object(provider_cli, "wait_for_selector", return_value=18) as waited,
         ):
-            provider_cli.submit_login(args, playbook, {"id": "impact-tab"})
+            provider_cli.submit_login(args, playbook, {
+                "id": "impact-tab", "url": "https://app.impact.com/login.user",
+            })
 
         self.assertEqual(typed.call_args_list, [
             call(socket, 3, "input[type='email']", "person@example.com"),
             call(socket, 18, "input[type='password']", "secret"),
         ])
         self.assertEqual(clicked.call_count, 2)
-        waited.assert_called_once_with(socket, 15, "input[type='password']")
+        waited.assert_called_once_with(socket, 10, "input[type='password']")
         socket.close.assert_called_once()
 
     def test_impact_login_resumes_from_rendered_password_stage(self):
@@ -92,11 +94,15 @@ class ProviderResumeTest(unittest.TestCase):
             patch.object(provider_cli, "cdp_call"),
             patch.object(provider_cli, "selector_exists", return_value=(True, 3)),
             patch.object(provider_cli, "focus_and_type", return_value=8) as typed,
-            patch.object(provider_cli, "click_text", return_value=10) as clicked,
+            patch.object(provider_cli, "playwright_click_text") as clicked,
         ):
-            provider_cli.submit_login(args, playbook, {"id": "impact-tab"})
+            provider_cli.submit_login(args, playbook, {
+                "id": "impact-tab", "url": "https://app.impact.com/login.user",
+            })
         typed.assert_called_once_with(socket, 3, "input[type='password']", "secret")
-        clicked.assert_called_once_with(socket, 8, "button", ["Sign In"])
+        clicked.assert_called_once_with(
+            "127.0.0.1", 9327, "https://app.impact.com/login.user", ["Sign In"],
+        )
 
     def test_reads_plain_and_inconsistently_wrapped_private_fields(self):
         with tempfile.TemporaryDirectory() as temporary:

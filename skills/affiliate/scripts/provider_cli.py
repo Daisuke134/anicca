@@ -196,6 +196,30 @@ def click_text(ws, request_id, selector, allowed_text):
     return request_id + 2
 
 
+def playwright_click_text(host, port, expected_url, allowed_text):
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(f"http://{host}:{port}")
+            pages = [
+                page for context in browser.contexts for page in context.pages
+                if page.url == expected_url
+            ]
+            if len(pages) != 1:
+                raise ProviderError("expected exactly one Playwright provider page")
+            matches = []
+            for text in allowed_text:
+                locator = pages[0].get_by_role("button", name=text, exact=True)
+                matches.extend(locator.nth(index) for index in range(locator.count()))
+            if len(matches) != 1:
+                raise ProviderError("expected exactly one Playwright semantic control")
+            matches[0].click(timeout=5_000)
+    except ProviderError:
+        raise
+    except Exception as error:
+        raise ProviderError("Playwright semantic activation failed") from error
+
+
 def wait_for_selector(ws, request_id, selector, attempts=20):
     expression = f"document.querySelector({json.dumps(selector)}) !== null"
     for _ in range(attempts):
@@ -293,15 +317,15 @@ def submit_login(args, playbook, target):
         if not password_ready:
             request_id = focus_and_type(ws, request_id, login["username_selector"], username)
             if login.get("username_submit_text_any"):
-                request_id = click_text(
-                    ws, request_id, login["username_submit_selector"],
+                playwright_click_text(
+                    args.cdp_host, args.cdp_port, target["url"],
                     login["username_submit_text_any"],
                 )
                 request_id = wait_for_selector(ws, request_id, login["password_selector"])
         request_id = focus_and_type(ws, request_id, login["password_selector"], password)
         if login.get("password_submit_text_any"):
-            click_text(
-                ws, request_id, login["password_submit_selector"],
+            playwright_click_text(
+                args.cdp_host, args.cdp_port, target["url"],
                 login["password_submit_text_any"],
             )
         else:
@@ -434,8 +458,8 @@ def verify_device(args):
         cdp_call(ws, 1, "DOM.enable")
         request_id = focus_and_type(ws, 2, verification["code_selector"], code)
         code = None
-        click_text(
-            ws, request_id, verification["submit_selector"],
+        playwright_click_text(
+            args.cdp_host, args.cdp_port, target["url"],
             verification["submit_text_any"],
         )
     finally:
