@@ -139,6 +139,7 @@ techniques do not merge the ledgers.
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
 | Mac-local runtime | Release `90025a3551d75aa1110af63ead8dbd9d93eedc77` is installed and the authenticated local publication path is GREEN | The installed publisher reconciled the English Affiliate article to `LIVE`, built the 245-character disclosed X artifact, verified `@selawmqt` on CDP `9326`, and reconciled the one real X effect to `X_POST_PUBLIC_READBACK` without a duplicate click. Both browser owners run and the loop is owned on a 600-second interval. This proves owned article and X publication, not provider click, commission, or revenue |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
+| ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview | The current rendered aggregate is one total click, zero signups, zero paid signups, `$0.00` revenue, `$0.00` pending commission, and `$0.00` paid commission. Because no pre-publication baseline exists, the one click is `BASELINE_ONLY`, not attributed to the X placement or counted as money. Approved and reversed amounts remain unknown until transaction-level reports expose them |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
@@ -297,18 +298,19 @@ external receipt exists.
 ### 1.5 Ideal autonomous flow
 
 ```mermaid
-flowchart TD
-  W[10-minute wake] --> N[Resume next unfinished job]
-  N --> R[Research demand and offers]
-  R --> C[Create one useful asset]
-  C --> P[Publish by isolated browser]
-  P --> V[Verify public result]
-  V --> M[Read provider money state]
-  M --> L[Learn: keep or change one variable]
-  L --> T[Report to Telegram]
-  T --> W
-  V -->|Failed| H[Self-heal and resume same job]
-  H --> N
+flowchart LR
+  W[10-minute wake] --> J[Resume one durable job]
+  J --> O[Verify offer and evidence]
+  O --> A[Build one useful asset]
+  A --> P[Publish and public-readback]
+  P --> U[Real reader visits]
+  U --> C[Provider records conversion]
+  C --> R[Reconcile commission receipt]
+  R --> T[Telegram: action, money, next job]
+  R --> L[Change one measured variable]
+  L --> W
+  J -->|Failure| H[Classify, repair harness, resume same job]
+  H --> J
 ```
 
 Ten minutes is the default coordination wake. Provider polling, posting, and
@@ -318,6 +320,19 @@ the same job and ambiguous publication is read back before any retry. The model
 plans and diagnoses, while deterministic code owns money states, permission,
 idempotency, budgets, and evidence. This is the target, not a current revenue
 claim.
+
+The money boundary is `C → R`. An article, post, click, signup, dashboard
+screenshot, or model estimate is never revenue. The ledger increases only when
+the external provider exposes a non-test commission transaction. `pending`,
+`approved`, `reversed`, and `paid` remain separate. The owner does not operate
+the browser or choose the next task; Telegram is an observable control surface,
+not a daily approval queue.
+
+Every box above must be invokable through the versioned `skills/affiliate`
+dispatcher. Browser signup, login, profile setup, application, publication,
+public readback, dashboard observation, and recovery are Skill operations rather
+than undocumented setup performed by Codex. The local launchd owner invokes the
+same commands that a future clean-Mac installer and cloud scheduler invoke.
 
 ## 2. Evidence-backed constraints
 
@@ -781,6 +796,146 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 ## 9. Ordered implementation backlog
 
+### 9.0 One-line route to USD 10,000/month
+
+```mermaid
+flowchart LR
+  E0[E0: attributable click] --> E1[E1: first approved commission]
+  E1 --> P10[10 comparable placements]
+  P10 --> A2[A2: 4 profitable unattended weeks]
+  A2 --> D[3+ providers and no concentration above 40%]
+  D --> A3[A3: 3 receipted months at USD 10k gross]
+```
+
+There is no honest fixed promise that a known number of posts produces USD
+10,000. After 30 days, the Agent computes the required portfolio from observed
+provider receipts. For example, USD 10,000 can equal 100 approved commissions at
+USD 100 net, 20 at USD 500 net, or a mixture. Those are arithmetic decompositions,
+not forecasts. The allocator increases only cohorts with positive approved net
+commission after reversals and cost, preserves 20% exploration, and limits any
+one provider, offer, or channel to 40% of net commission. A3 closes only after
+three external monthly receipts each reach USD 10,000 gross and the corresponding
+net, cost, reversal, and concentration views reconcile.
+
+### 9.0.1 Remaining atomic execution queue
+
+This is the exact execution order from the current live state. Each production
+step ends with a versioned Skill command, durable receipt, installed-release
+replay, SSOT update, commit, and push. A check is minimal: one normal path plus
+only money corruption, secret leak, duplicate external effect, or data-loss
+regressions relevant to that step.
+
+#### A. Close revenue truth for the live ElevenLabs placement
+
+- [ ] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
+  later observations store deltas without overwriting its timestamp or values.
+- [ ] **A12.2** Make `affiliate revenue observe` replay-safe and prove two live
+  observations return the provider browser to ElevenLabs home.
+- [ ] **A12.3** Inspect the rendered PartnerStack Commissions and Reports surfaces;
+  record which transaction ID, click/sub-ID, currency, status, and dates actually
+  exist, leaving absent fields `null`.
+- [ ] **A12.4** Add one transaction-report capture command that stores the raw
+  download or rendered artifact hash outside Git.
+- [ ] **A12.5** Normalize real rows into `pending|approved|reversed|paid` without
+  treating overview totals or unknown values as transactions.
+- [ ] **A12.6** Make repeated imports idempotent by provider transaction ID plus
+  source hash; a status change appends a transition rather than rewriting history.
+- [ ] **A12.7** Join a provider row to placement/click/sub-ID when supported; store
+  an explicit unmatched receipt when the provider exposes no join key.
+- [ ] **A12.8** Mark the existing one-click total `BASELINE_ONLY`; only a post-
+  baseline increase can qualify for E0 and it still does not qualify as money.
+- [ ] **A12.9** Wire the revenue observer and report importer into the 10-minute
+  loop under provider cooldown and exact-once job ownership.
+
+#### B. Make the owner experience observable on Telegram
+
+- [ ] **A13.1** Define one owner-readable event containing what happened, public
+  URL, provider/program, money state, gross/net/cost, recovery, and next job.
+- [ ] **A13.2** Add an append-only outbox before network send so a crash cannot lose
+  a milestone.
+- [ ] **A13.3** Send through the existing Life Manager Telegram transport and save
+  provider `messageId`; never create a second Telegram runtime.
+- [ ] **A13.4** Deduplicate by stable event UUID and retry a failed send without
+  duplicating the underlying publication or money transition.
+- [ ] **A13.5** Prove real messages for `PLACEMENT_LIVE`, `CLICK_DELTA`,
+  `COMMISSION_PENDING`, `COMMISSION_APPROVED`, `SELF_HEALED`, and `BLOCKED`.
+
+#### C. Make the loop repair itself instead of requiring Codex
+
+- [ ] **A14.1** Persist `run_id`, `job_id`, state, attempt, action fingerprint,
+  cooldown, and last verified external object before every external mutation.
+- [ ] **A14.2** Resume the same unfinished job after process crash or Mac restart.
+- [ ] **A14.3** For ambiguous publish/application outcomes, search public/provider
+  state first and reconcile the existing effect before any retry.
+- [ ] **A14.4** Detect expired login, invoke the credential/recovery Skill, verify a
+  fresh authenticated page, then resume the original job.
+- [ ] **A14.5** Detect selector drift from semantic expected-state failure, capture
+  sanitized evidence, let the fixing agent patch the smallest adapter/playbook,
+  run its minimal regression, install the new release, and resume the same job.
+- [ ] **A14.6** Quarantine only the failing provider/channel after repeated auth,
+  policy, reach, or reversal failures; healthy work continues.
+- [ ] **A14.7** Add watchdog, retry/backoff, action caps, daily cost cap, disk-space
+  floor, browser-owner health, and stale-lock recovery.
+- [ ] **A14.8** Induce one isolated recoverable failure and prove the live loop
+  reports, repairs, resumes, and completes without owner action.
+
+#### D. Earn the first externally approved commission
+
+- [ ] **A15.1** Keep ElevenLabs active and poll HubSpot/Impact; never resubmit the
+  rejected Kit application unchanged or submit to paused Notion.
+- [ ] **A15.2** Admit another English B2B/creator program only after official terms,
+  allowed-channel, payout, tracking-link ownership, and fresh login are Skill-
+  receipted; applications themselves are durable browser jobs.
+- [ ] **A15.3** Continuously capture buyer questions and product evidence through
+  CRWL, `gh`, authenticated X, and admitted platform adapters.
+- [ ] **A15.4** Produce one source-bound decision asset per qualified intent with
+  disclosure-before-CTA, limitations, alternatives, and exactly one owned link.
+- [ ] **A15.5** Publish through the owned site and English X browser, require public
+  readback, and refuse duplicate effects.
+- [ ] **A15.6** Reconcile post-baseline clicks and provider transactions on every
+  eligible poll while continuing research and publication work.
+- [ ] **A15.7 — E0.** Record one real post-baseline provider click connected to a
+  live English placement; do not manufacture or self-click it.
+- [ ] **A15.8 — E1.** Record one non-test `approved` commission with public
+  placement, provider source hash, transaction lineage, costs, and Telegram event.
+
+#### E. Scale the proven local loop to USD 10,000/month
+
+- [ ] **B16.1** Reach ten mature comparable English placements and change only one
+  variable per experiment.
+- [ ] **B16.2** Rank by approved net commission per 1,000 qualified impressions and
+  per content dollar; engagement is diagnostic only.
+- [ ] **B17.1** Add at least three independently receipted providers/offers and keep
+  provider, offer, and channel concentration at or below 40% of net commission.
+- [ ] **B20.1 — A2.** Complete four revenue-positive weeks with positive net margin,
+  zero manual execution, and at least one live self-heal.
+- [ ] **B21.1** Compute the observed commission/traffic requirement for USD 10,000,
+  allocate 80% to mature winners and 20% to bounded experiments, and stop cohorts
+  with negative approved unit economics.
+- [ ] **B21.2 — A3.** Reconcile three consecutive months at USD 10,000 gross while
+  showing net, reversals, costs, payout timing, and concentration separately.
+
+#### F. Add locales, then package the already-proven loop
+
+- [ ] **B18.1** After E0, create a separate Japanese browser identity, provider
+  membership/link, native evidence pack, disclosure, attribution cohort, and J0/J1
+  canary; never mix Japanese and English on one account.
+- [ ] **B19.1** Admit Spanish only after English and Japanese proof and the same L0
+  gate; later languages follow observed executable-offer value, not population.
+- [ ] **C22.1** After E1, remove machine-specific paths while preserving the exact
+  local state machine and keeping credentials, sessions, receipts, and ledgers out
+  of Git.
+- [ ] **C23.1** Ship one-command macOS install, minimal credential intake, isolated
+  browser/profile provisioning, health, update, rollback, and uninstall commands.
+- [ ] **C24.1 — OSS1.** Reproduce pre-publication readiness on a clean macOS user
+  without copying this Mac's secrets or mutable state.
+- [ ] **C25.1** Publish a privacy-safe ledger verifier and dated prior-art registry;
+  make only the qualified claims allowed by section 7.1.
+- [ ] **D26.1** Only after A2 + OSS1, replace launchd/browser ownership with tenant
+  scheduler and isolated remote browser workers while keeping the same contracts.
+- [ ] **D27.1–D30.1** Add encrypted tenant authority, deletion/audit controls,
+  Telegram/web UX, prove one isolated cloud E1, then pilot phone-only users.
+
 ### Phase A — Current Mac earns the first real commission
 
 1. **DONE.** Converge the canonical skill, private state boundary, immutable
@@ -834,8 +989,12 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
     exact tracking link. The matching disclosed X artifact is `LIVE` at status
     `2088728168534597644`; its shortened anchor resolves to the exact owned article,
     and the fixed installed release reconciled the first effect without duplication.
-12. **PENDING.** Reconcile provider clicks and transactions into local money states:
-    `unknown`, `pending`, `approved`, `reversed`, and `paid`; estimates remain out.
+12. **PARTIAL.** PartnerStack account/email/team/partnership/program-terms bootstrap
+    is complete and the rendered overview is accessible. `revenue observe` records
+    bilingual dashboard cards with the first aggregate as `BASELINE_ONLY`: one
+    total click, zero signups, zero paid signups, and zero revenue/pending/paid.
+    Approved and reversed stay `null`. Add transaction-level report ingestion and
+    later-delta attribution before DONE; estimates remain out.
 13. **PENDING.** Send owner-readable Telegram transitions through the durable
     outbox with action, public URL, blocker/self-heal, money state, cost, and next job.
 14. **PENDING.** Add same-job crash resume, ambiguous-write dedupe, login recovery,

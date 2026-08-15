@@ -148,6 +148,19 @@ skills/affiliate/affiliate x post publish \
 Both commands require the exact owned publication receipt to be `LIVE`; the X
 publisher rechecks it before opening the composer.
 
+Capture the official PartnerStack overview after its one-time account,
+email-verification, partnership, and program-terms bootstrap:
+
+```bash
+skills/affiliate/affiliate revenue observe
+```
+
+The observer extracts rendered bilingual metric cards, preserves the immutable
+initial `BASELINE_ONLY` values and timestamp, reports later deltas, keeps
+unavailable approved/reversed amounts as `null`, and returns the browser to
+ElevenLabs home so the existing provider wake continues to work. The initial
+total is never retroactively assigned to a placement.
+
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:
 
