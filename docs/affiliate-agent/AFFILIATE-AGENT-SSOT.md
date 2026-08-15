@@ -867,6 +867,13 @@ regressions relevant to that step.
 - [ ] **A13.5** Prove real messages for `PLACEMENT_LIVE`, `CLICK_DELTA`,
   `COMMISSION_PENDING`, `COMMISSION_APPROVED`, `SELF_HEALED`, and `BLOCKED`.
 
+Implementation checkpoint: the canonical Skill now creates one semantic owner
+event, writes it before network send, reuses `openclaw message send --json`,
+extracts the returned provider message ID, and suppresses an already-sent stable
+UUID. A focused local regression proves append-before-send and one-call replay.
+A13.1–A13.4 remain open until the immutable installed release delivers and
+replays one real canary; no dry-run output closes these tasks.
+
 #### C. Make the loop repair itself instead of requiring Codex
 
 - [ ] **A14.1** Persist `run_id`, `job_id`, state, attempt, action fingerprint,

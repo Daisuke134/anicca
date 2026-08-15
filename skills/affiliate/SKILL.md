@@ -182,6 +182,13 @@ provider is authenticated and its independent one-hour revenue cooldown is due.
 The cooldown receipt is written after all three commands succeed; a partial
 failure is retried by the next wake rather than hidden for an hour.
 
+Each wake also derives at most one owner-readable semantic transition. It first
+appends that transition to `telegram-outbox.jsonl`, then sends it through the
+existing `openclaw message send` Telegram transport. A successful delivery is
+recorded in `telegram-sent.jsonl` with the provider `messageId`. Stable event
+UUIDs suppress repeated empty-report/status notifications across later wakes;
+tracking links and customer PII are never included.
+
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:
 

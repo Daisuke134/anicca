@@ -3,9 +3,11 @@
 
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -55,6 +57,123 @@ def append_unique(path, value, identity):
         stream.flush()
         os.fsync(stream.fileno())
         return True
+
+
+def json_rows(path):
+    if not path.is_file():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            rows.append(json.loads(line))
+        except ValueError:
+            continue
+    return rows
+
+
+def latest_live_url(state):
+    receipts = list((state / "x-posts").glob("*.json")) + list(
+        (state / "owned-publications").glob("*.json")
+    )
+    live = []
+    for path in receipts:
+        try:
+            row = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if row.get("state") == "LIVE" and str(row.get("public_url", "")).startswith("https://"):
+            live.append(row)
+    return max(live, key=lambda row: row.get("observed_at", ""))["public_url"] if live else None
+
+
+def owner_event(state, wake_event):
+    ledger = json_rows(state / "commission-ledger.jsonl")
+    transition = ledger[-1] if ledger else None
+    cycle_path = state / "revenue-cycle.json"
+    try:
+        cycle = json.loads(cycle_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        cycle = {}
+    if transition:
+        kind = {
+            "pending": "COMMISSION_PENDING", "approved": "COMMISSION_APPROVED",
+            "reversed": "COMMISSION_REVERSED", "paid": "COMMISSION_PAID",
+        }.get(transition.get("status"), "COMMISSION_CHANGED")
+        identity = {"kind": kind, "transition_id": transition["transition_id"]}
+        money = (
+            f"{transition.get('status')} / gross={transition.get('gross_commission_minor')} minor "
+            f"net={transition.get('net_commission_minor')} minor / {transition.get('currency') or 'currency unknown'}"
+        )
+    elif cycle.get("state") == "NO_TRANSACTIONS":
+        kind = "REVENUE_RECONCILED"
+        identity = {"kind": kind, "provider": "elevenlabs", "state": "NO_TRANSACTIONS"}
+        money = "NO_TRANSACTIONS / gross=unknown / net=unknown / cost=unknown"
+    elif wake_event["status"] not in ("READY_FOR_PUBLICATION",):
+        kind = "BLOCKED"
+        identity = {"kind": kind, "provider": "elevenlabs", "status": wake_event["status"]}
+        money = "unknown"
+    else:
+        return None
+    event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+    public_url = (transition or {}).get("placement", {}).get("public_url") or latest_live_url(state)
+    recovery = "なし" if kind != "BLOCKED" else f"未回復: {wake_event['status']}"
+    next_job = "buyer-intentを収集し、次の公開・収益照合を継続"
+    body = "\n".join((
+        "Life Manager Affiliate::: Affiliate loop report",
+        f"実行: {kind}",
+        f"公開先: {public_url or '未紐付け'}",
+        "プログラム: ElevenLabs / PartnerStack",
+        f"お金: {money}",
+        f"回復: {recovery}",
+        f"次: {next_job}",
+    ))
+    return {"event_uuid": event_uuid, "kind": kind, "body": body, "created_at": int(time.time())}
+
+
+def find_message_id(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key.replace("_", "").lower() == "messageid" and item is not None:
+                return str(item)
+            found = find_message_id(item)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for item in value:
+            found = find_message_id(item)
+            if found:
+                return found
+    return None
+
+
+def flush_telegram(state, event, runner=subprocess.run):
+    if event:
+        append_unique(state / "telegram-outbox.jsonl", event, ("event_uuid",))
+    sent_ids = {row.get("event_uuid") for row in json_rows(state / "telegram-sent.jsonl")}
+    pending = [row for row in json_rows(state / "telegram-outbox.jsonl") if row.get("event_uuid") not in sent_ids]
+    if not pending:
+        return {"state": "NO_PENDING", "sent": 0, "message_id": None}
+    openclaw = shutil.which("openclaw")
+    if not openclaw:
+        return {"state": "TRANSPORT_UNAVAILABLE", "sent": 0, "message_id": None}
+    row = pending[0]
+    completed = runner(
+        [openclaw, "message", "send", "--channel", "telegram", "--target", "8547730585",
+         "--message", row["body"], "--json"],
+        check=False, capture_output=True, text=True, timeout=30,
+    )
+    try:
+        response = json.loads(completed.stdout)
+    except ValueError:
+        response = None
+    message_id = find_message_id(response)
+    if completed.returncode or not message_id:
+        return {"state": "SEND_FAILED", "sent": 0, "message_id": None}
+    append_unique(state / "telegram-sent.jsonl", {
+        "event_uuid": row["event_uuid"], "message_id": message_id,
+        "sent_at": int(time.time()),
+    }, ("event_uuid",))
+    return {"state": "SENT", "sent": 1, "message_id": message_id}
 
 
 def elevenlabs_link(path):
@@ -180,6 +299,10 @@ def wake(args):
         "ts": int(time.time()),
     }
     append(state / "events.jsonl", event)
+    atomic_json(state / "last-run.json", event)
+    telegram = flush_telegram(state, owner_event(state, event))
+    event["telegram_state"] = telegram["state"]
+    event["telegram_message_id"] = telegram["message_id"]
     atomic_json(state / "last-run.json", event)
     lock.close()
     print(json.dumps(event, sort_keys=True, separators=(",", ":")))

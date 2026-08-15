@@ -2,6 +2,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import subprocess
 import tempfile
 import unittest
 import sys
@@ -49,6 +50,25 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(event["provider_state"], "AUTHENTICATED")
             self.assertEqual(event["provider_transition_id"], "transition-1")
             self.assertEqual(event["revenue_state"], "NO_TRANSACTIONS")
+
+    def test_telegram_outbox_precedes_send_and_deduplicates_message_id(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            event = {"event_uuid": "event-1", "kind": "REVENUE_RECONCILED", "body": "report", "created_at": 1}
+            calls = []
+
+            def runner(command, **kwargs):
+                calls.append(command)
+                self.assertTrue((state / "telegram-outbox.jsonl").is_file())
+                return subprocess.CompletedProcess(command, 0, '{"result":{"messageId":"7640"}}', "")
+
+            with patch.object(MODULE.shutil, "which", return_value="/opt/homebrew/bin/openclaw"):
+                first = MODULE.flush_telegram(state, event, runner=runner)
+                second = MODULE.flush_telegram(state, event, runner=runner)
+            self.assertEqual(first, {"state": "SENT", "sent": 1, "message_id": "7640"})
+            self.assertEqual(second["state"], "NO_PENDING")
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(json.loads((state / "telegram-sent.jsonl").read_text())["message_id"], "7640")
 
     def test_revenue_cycle_cooldown_is_independent_of_wake(self):
         with tempfile.TemporaryDirectory() as root:
