@@ -32,6 +32,7 @@ _MAX_BODY_BYTES = 8 * 1024 * 1024
 _MAX_QUERY_LENGTH = 200
 _MISSING = object()
 _DETAIL_RE = re.compile(r"^/work/detail/([1-9][0-9]{0,511})$")
+_CLIENT_RE = re.compile(r"^/client/([A-Za-z0-9_.-]{1,128})$")
 _ADAPTER_MODULE_NAME = "_anicca_lancers_adapter_status_v1"
 
 
@@ -115,7 +116,7 @@ class _SearchParser(HTMLParser):
             if text:
                 self._card.setdefault("categories", []).append(text)
         elif kind == "buyer":
-            self._card["buyer_external_id"] = text
+            self._card.setdefault("buyer_external_id", text)
         elif kind == "type":
             self._card["budget_type"] = text
         elif kind == "price_number" and text:
@@ -140,7 +141,8 @@ class _SearchParser(HTMLParser):
                 self._card["url"] = "https://www.lancers.jp" + href
             if "p-search-job-media__title" in classes:
                 self._begin_capture("title")
-            elif href.startswith("/client/"):
+            elif (client := _CLIENT_RE.fullmatch(href)) is not None:
+                self._card["buyer_external_id"] = client.group(1)
                 self._begin_capture("buyer")
         if "js-job-show-description" in classes:
             self._begin_capture("description")
@@ -323,6 +325,43 @@ def parse_detail_html(html: str) -> Dict[str, str]:
     return parser.values
 
 
+class _ClientProfileParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.depth = 0
+        self.capture_depth: Optional[int] = None
+        self.chunks: List[str] = []
+        self.order_rate: Optional[int] = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
+        self.depth += 1
+        classes = _SearchParser._classes(attrs)
+        if tag == "div" and "c-table-summary__col-item" in classes:
+            self.capture_depth, self.chunks = self.depth, []
+
+    def handle_data(self, data: str) -> None:
+        if self.capture_depth is not None:
+            self.chunks.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self.capture_depth == self.depth:
+            text = _clean_text("".join(self.chunks))
+            match = re.search(r"(?:^|\n)発注率\s*\n?\s*([0-9]{1,3})\s*%", text)
+            if match and 0 <= int(match.group(1)) <= 100:
+                self.order_rate = int(match.group(1))
+            self.capture_depth, self.chunks = None, []
+        self.depth = max(0, self.depth - 1)
+
+
+def parse_client_order_rate(html: str) -> Optional[int]:
+    if not isinstance(html, str):
+        _fail("lancers_response_invalid")
+    parser = _ClientProfileParser()
+    parser.feed(html)
+    parser.close()
+    return parser.order_rate
+
+
 def _query(value: object) -> Optional[str]:
     if value is None:
         return None
@@ -358,7 +397,7 @@ def _canonical_detail_url(value: object) -> str:
     return f"{origin.scheme}://{origin.netloc}{parsed.path}"
 
 
-def fetch_public_html(*, query: Optional[str], limit: int, timeout: float, _detail_url: Optional[str] = None) -> str:
+def fetch_public_html(*, query: Optional[str], limit: int, timeout: float, _detail_url: Optional[str] = None, _client_id: Optional[str] = None) -> str:
     """Fetch one bounded public page with no cookies or auth headers."""
 
     query = _query(query)
@@ -368,9 +407,16 @@ def fetch_public_html(*, query: Optional[str], limit: int, timeout: float, _deta
     if query is not None:
         params.append(("keyword", query))
     encoded = urllib.parse.urlencode(params, encoding="utf-8", errors="strict")
+    if _detail_url is not None and _client_id is not None:
+        _fail("lancers_invalid_argument")
     if _detail_url is not None:
         _detail_url = _canonical_detail_url(_detail_url)
-    url = _detail_url or _ENDPOINT + "?" + encoded
+    client_url = None
+    if _client_id is not None:
+        if not isinstance(_client_id, str) or _CLIENT_RE.fullmatch("/client/" + _client_id) is None:
+            _fail("lancers_invalid_argument")
+        client_url = "https://www.lancers.jp/client/" + _client_id
+    url = _detail_url or client_url or _ENDPOINT + "?" + encoded
     request = urllib.request.Request(
         url,
         headers={"User-Agent": _USER_AGENT, "Accept": "text/html,application/xhtml+xml"},
@@ -383,6 +429,8 @@ def fetch_public_html(*, query: Optional[str], limit: int, timeout: float, _deta
             if isinstance(final_url, str) and "/user/login" in final_url:
                 _fail("lancers_provider_blocked")
             if _detail_url is not None and _canonical_detail_url(final_url) != _detail_url:
+                _fail("lancers_http_error")
+            if client_url is not None and final_url != client_url:
                 _fail("lancers_http_error")
             if status in {401, 403, 429}:
                 _fail("lancers_provider_blocked")
@@ -412,6 +460,13 @@ def fetch_public_html(*, query: Optional[str], limit: int, timeout: float, _deta
     except UnicodeDecodeError:
         _fail("lancers_response_invalid")
     return ""
+
+
+def fetch_public_client_order_rate(buyer_external_id: object, timeout: float = 20.0) -> Optional[int]:
+    if not isinstance(buyer_external_id, str):
+        return None
+    html = fetch_public_html(query=None, limit=1, timeout=timeout, _client_id=buyer_external_id)
+    return parse_client_order_rate(html)
 
 
 def _enrich_cards(cards: Sequence[Dict[str, object]], timeout: float) -> tuple[int, int]:
