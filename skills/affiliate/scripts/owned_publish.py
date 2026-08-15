@@ -13,7 +13,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-from job_journal import JobStateError, start_effect, verify_effect
+from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
 from provider_cli import atomic_write
 
 
@@ -101,6 +101,10 @@ def publish(args):
             raise PublishError("publication receipt conflicts with artifact")
         live = fetch_readback(artifact, args.base_url)
         if live:
+            reconcile_effect(state, "OWNED_GIT_PUSH", args.slug, {
+                "state": "LIVE", "public_url": live["public_url"],
+                "rendered_sha256": live["rendered_sha256"],
+            })
             receipt.update(state="LIVE", **live)
             atomic_write(receipt_path, receipt)
             return receipt

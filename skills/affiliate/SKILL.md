@@ -195,6 +195,10 @@ Git push, or Telegram send, the adapter persists a mode-0600 job containing
 `run_id`, `job_id`, `state`, `attempt`, `action_fingerprint`, `cooldown`, and the
 last verified external object. Only a semantic readback changes it from
 `EFFECT_STARTED` to `VERIFIED`; an unresolved effect refuses a blind retry.
+On a later process, a fresh provider/profile/post/publication/Telegram readback
+may reconcile exactly one unresolved target. It keeps the original `run_id` and
+`job_id`, increments `attempt`, and records `resumed=true`; zero or multiple
+unresolved effects cannot be silently retried.
 
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:

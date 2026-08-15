@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 from websocket import create_connection
 
-from job_journal import JobStateError, start_effect, verify_effect
+from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
 from provider_cli import ProviderError, atomic_write, cdp_call, click, query_node, read_json
 
 
@@ -151,6 +151,9 @@ def matches(profile, config):
 def apply(args, config):
     before = inspect(args, config)
     if matches(before, config):
+        reconcile_effect(args.state, "X_PROFILE_SAVE", config["handle"], {
+            key: before.get(key) for key in ("name", "handle", "bio", "url", "rendered_url")
+        })
         return before, False
     target = choose_x_target(args.cdp_host, args.cdp_port)
     ws = connect(args, target)

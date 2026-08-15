@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from websocket import create_connection
-from job_journal import JobStateError, start_effect, verify_effect
+from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
 
 
 class ProviderError(Exception):
@@ -252,6 +252,11 @@ def resume(args):
             })
     else:
         after = before
+        state = getattr(args, "state", args.receipt.expanduser().parent / "affiliate-state").expanduser()
+        if after["state"] == "AUTHENTICATED":
+            reconcile_effect(state, "PROVIDER_LOGIN", args.provider, {
+                key: after.get(key) for key in ("state", "url", "rendered_text_sha256")
+            })
     receipt = {
         **after,
         "receipt_type": "PROVIDER_RESUME",

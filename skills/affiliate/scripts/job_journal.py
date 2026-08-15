@@ -114,3 +114,37 @@ def verify_effect(state, job_id, external_object):
         atomic_json(jobs / f"key-{row['job_key']}.json", row)
         append(state / "job-events.jsonl", row)
         return row
+
+
+def reconcile_effect(state, kind, target, external_object):
+    """Complete the one unresolved target after a fresh semantic readback."""
+    reject_secrets(external_object)
+    state = state.expanduser()
+    jobs = state / "jobs"
+    if not jobs.is_dir():
+        return None
+    lock_path = jobs / ".lock"
+    with lock_path.open("a+") as lock:
+        os.chmod(lock_path, 0o600)
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        unresolved = []
+        for path in jobs.glob("key-*.json"):
+            row = json.loads(path.read_text())
+            if row.get("state") == "EFFECT_STARTED" and row.get("kind") == kind and row.get("target") == target:
+                unresolved.append((path, row))
+        if not unresolved:
+            return None
+        if len(unresolved) != 1:
+            raise JobStateError("multiple unresolved effects require quarantine")
+        index_path, row = unresolved[0]
+        row.update(
+            state="VERIFIED",
+            attempt=int(row["attempt"]) + 1,
+            resumed=True,
+            last_verified_external_object=external_object,
+            updated_at=int(time.time()),
+        )
+        atomic_json(jobs / f"{row['job_id']}.json", row)
+        atomic_json(index_path, row)
+        append(state / "job-events.jsonl", row)
+        return row

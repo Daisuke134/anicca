@@ -17,7 +17,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from types import SimpleNamespace
 
-from job_journal import JobStateError, start_effect, verify_effect
+from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
 from provider_cli import ProviderError, observe, poll
 
 
@@ -151,6 +151,13 @@ def flush_telegram(state, event, runner=subprocess.run):
     if event:
         append_unique(state / "telegram-outbox.jsonl", event, ("event_uuid",))
     sent_ids = {row.get("event_uuid") for row in json_rows(state / "telegram-sent.jsonl")}
+    sent_by_id = {row.get("event_uuid"): row for row in json_rows(state / "telegram-sent.jsonl")}
+    for row in json_rows(state / "telegram-outbox.jsonl"):
+        if row.get("event_uuid") in sent_by_id:
+            sent = sent_by_id[row["event_uuid"]]
+            reconcile_effect(state, "TELEGRAM_SEND", row["event_uuid"], {
+                "state": "SENT", "event_uuid": row["event_uuid"], "message_id": sent.get("message_id"),
+            })
     pending = [row for row in json_rows(state / "telegram-outbox.jsonl") if row.get("event_uuid") not in sent_ids]
     if not pending:
         return {"state": "NO_PENDING", "sent": 0, "message_id": None}

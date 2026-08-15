@@ -914,6 +914,14 @@ A14.1 implementation basis and checkpoint:
   transitioned `EFFECT_STARTED → VERIFIED`. Replay returned `NO_PENDING` while
   both sent and job-event counts stayed unchanged; A14.1 is DONE.
 
+A14.2 implementation checkpoint: the common journal and all five live adapters
+now reconcile exactly one unresolved `kind + target` only after a fresh semantic
+readback. The recovered transition retains the original `run_id` and `job_id`,
+increments `attempt`, sets `resumed=true`, and appends rather than overwrites its
+history. The focused check proves this across separate journal calls. A14.2 stays
+open until two real processes recover the existing live X placement without a
+second publish.
+
 #### D. Earn the first externally approved commission
 
 - [ ] **A15.1** Keep ElevenLabs active and poll HubSpot/Impact; never resubmit the

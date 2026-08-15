@@ -12,7 +12,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from job_journal import JobStateError, start_effect, verify_effect
+from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
 from provider_cli import ProviderError, atomic_write, cdp_call, click, query_node, read_json
 from x_profile_cli import XProfileError, choose_x_target, connect, inspect, load_config
 
@@ -147,6 +147,10 @@ def publish(args):
             if candidate:
                 request_id = live_readback(ws, request_id, candidate, text)
                 public_url = candidate
+        if public_url:
+            reconcile_effect(state_root, "X_POST_PUBLISH", args.placement, {
+                "state": "LIVE", "public_url": public_url, "content_sha256": fingerprint,
+            })
         if not public_url:
             job = start_effect(
                 state_root, "X_POST_PUBLISH", args.placement,
