@@ -2790,3 +2790,9 @@ Lancersは本文の狭い具体予算と最短納期を既に使うが、価格�
 **PLAN SIZE:** production 1 file / 1文、SSOT 1 section。schema、state、ledger、scheduler、browser、submitterは変更0。
 
 **DONE EVIDENCE:** compile、exact release deploy、production owner exit 0。一wake最大1応募、daily 10件、公式proposal readback、duplicate effect 0を維持する。
+
+**DONE:** exact release `77cf5a64708b59b4cc92f59cc1ce506fb1ebb07e`へ5 ownerをreloadした。reload直後のApplicationは
+stale contracts snapshotを`capacity_source_unavailable`としてeffect 0で停止したため、Work Sync ownerを先に実行した。公式sourceはcurrent proposals 30
+（募集中25、選定中4、cancel 1）、reply required 0、incoming monthly offer 0、working 0、monthly contract 0、payment 0、source complete true。
+続くApplication ownerは`no_eligible_project / observed 0 / submitted false / exit 0`で終了した。pending 0、一wake最大1応募、daily cap、
+公式proposal readback、duplicate effect 0は維持され、次のfresh eligibleから新price-speed contractが適用される。
