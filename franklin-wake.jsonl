@@ -28252,3 +28252,10 @@
 {"ts":1786786849,"wake_id":"00MSU6R8LJF8B757B3539D46AC","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786786999,"wake_id":"00MSU6UGEW053CB0A3D17D42F5","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786787139,"wake_id":"00MSU6XGSI8702B6513AC64B5F","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786787274,"wake_id":"00MSU70CV33363188C44034056","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786787403,"wake_id":"00MSU7342IAC97D6415AB64B41","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786787530,"wake_id":"00MSU75UIUBCBC457C4A4E4FEB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786787658,"wake_id":"00MSU78KXD0E7FF45EE28F44C9","kind":"wake","sleep_s":120,"model":"auto","slot":"report","profitable":false,"exit_code":0}
+{"ts":1786787794,"wake_id":"00MSU7BI3R4699749A64E4468B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786787922,"wake_id":"00MSU7E8DWE0FE008468C64708","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786788056,"wake_id":"00MSU7H46TA0D2FD704D244322","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana microtask platform paying USDC for data labeling or simple tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wa"}
