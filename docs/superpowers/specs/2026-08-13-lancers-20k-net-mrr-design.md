@@ -2758,3 +2758,11 @@ installed exact functionの行traceで、保存POST後のredirect完了前にrec
 
 official POST responseをその場で読むとstatus 200、fieldは送信値を保持するが、server validationは「自己紹介にURLを入力することはできません」と返した。
 URL文字列だけを削除し、MIT公開Life Managerと検索可能なGitHub repository名`Daisuke134/life-manager`をverified proofとして残す。
+
+**DONE:** exact release `371358668d8f42fc06f55fa34bd4a30f818a1e71`のStorefront ownerが一度だけprofileを保存し、
+`profile_updated / profile_aligned true / profile_effect_count 1 / exit 0`で閉じた。cookie-free public profileはsubtitle
+「AI・API自動化とSNS運用を、設計・実装・制作まで支援します」と、Python/API/scheduler/worker/Postgres/object storage/
+Telegram reporting/official readback、MIT公開repo名`Daisuke134/life-manager`を表示する。listing `1338228`、価格29,800/198,000/398,000円、
+portfolio `743964`は不変で、Application、contracts、ledger SHA-256も不変だった。listing receiptだけproduct version 5へ進んだ。
+直後のsecond Storefront wakeは`action=unchanged / profile_aligned true / profile_effect_count 0 / portfolio_effect_count 0 /
+status_effect_count 0 / exit 0`で、重複save 0である。本人確認、電話、NDA、写真、顧客実績は自動生成していない。
