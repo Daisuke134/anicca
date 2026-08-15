@@ -28596,3 +28596,10 @@
 {"ts":1786832503,"wake_id":"00MSUXXRMI9E7AD7E149CC4FE5","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786832630,"wake_id":"00MSUY0HQ1424BA98DC0EE4A6F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786832763,"wake_id":"00MSUY3BUO4CEF3CFAFC48421A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786832894,"wake_id":"00MSUY6539599E626683EB4B09","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786833022,"wake_id":"00MSUY8VSTC3A24771104748A5","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana AI agent marketplace paying per API call USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surf"}
+{"ts":1786833153,"wake_id":"00MSUYBP81E6BF8A07E5C74275","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786833283,"wake_id":"00MSUYEH8P5940B3BABC4141D4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786833415,"wake_id":"00MSUYHBE5B03DF477A8294553","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786833543,"wake_id":"00MSUYK1TZ814CE9798994426F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786833671,"wake_id":"00MSUYMSUG3397A29ECCD4431A","kind":"narrate","sleep_s":120,"model":"auto"}
