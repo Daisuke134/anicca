@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import stat
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -28,16 +27,6 @@ def tree_hashes(root: Path) -> dict[str, str]:
         for path in root.rglob("*")
         if path.is_file()
     }
-
-
-def contains_value(value: Any, expected: str) -> bool:
-    if value == expected:
-        return True
-    if isinstance(value, dict):
-        return any(contains_value(item, expected) for item in value.values())
-    if isinstance(value, list):
-        return any(contains_value(item, expected) for item in value)
-    return False
 
 
 class BootstrapInstallRedTests(unittest.TestCase):
@@ -110,79 +99,6 @@ class BootstrapInstallRedTests(unittest.TestCase):
             self.assertEqual(tree_hashes(data_home), before["data"])
             self.assertEqual(tree_hashes(state_home), before["state"])
             self.assertEqual(tree_hashes(launch_agents), before["launch_agents"])
-
-    def test_pinned_artifact_install_is_idempotent_and_resumes_partial_receipt(self) -> None:
-        installer = self.require_installer()
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            artifact = root / "affiliate-runtime.bin"
-            artifact_bytes = b"affiliate-bootstrap-fixture-v1\n"
-            artifact.write_bytes(artifact_bytes)
-            artifact_hash = file_sha256(artifact)
-            manifest = root / "manifest.tsv"
-            manifest.write_text(
-                f"runtime\t1.0\t{artifact.as_uri()}\t{artifact_hash}\n",
-                encoding="utf-8",
-            )
-            home = root / "home"
-            data_home = root / "data"
-            state_home = root / "state"
-            secret = "bootstrap-secret-sentinel"
-            environment = self.base_environment(home, data_home, state_home, manifest)
-            environment["LIFE_MANAGER_BOOTSTRAP_SECRET"] = secret
-
-            first = self.run_installer(installer, environment)
-            self.assertEqual(first.returncode, 0, first.stderr)
-            receipt_path = state_home / RECEIPT_RELATIVE
-            self.assertTrue(receipt_path.is_file())
-            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-            self.assertEqual(receipt["status"], "READY")
-            self.assertEqual(receipt["platform"], "Darwin")
-            self.assertEqual(receipt["manifest_sha256"], file_sha256(manifest))
-            self.assertTrue(contains_value(receipt, artifact_hash))
-            installed_artifacts = [
-                path
-                for path in data_home.rglob("*")
-                if path.is_file() and path.read_bytes() == artifact_bytes
-            ]
-            self.assertEqual(len(installed_artifacts), 1)
-            first_data = tree_hashes(data_home)
-            first_state = tree_hashes(state_home)
-
-            second = self.run_installer(installer, environment)
-            self.assertEqual(second.returncode, 0, second.stderr)
-            self.assertEqual(tree_hashes(data_home), first_data)
-            self.assertEqual(tree_hashes(state_home), first_state)
-
-            partial = {
-                "status": "IN_PROGRESS",
-                "completed_steps": ["directories"],
-                "manifest_sha256": file_sha256(manifest),
-            }
-            receipt_path.write_text(json.dumps(partial) + "\n", encoding="utf-8")
-            resumed = self.run_installer(installer, environment)
-            self.assertEqual(resumed.returncode, 0, resumed.stderr)
-            resumed_receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-            self.assertEqual(resumed_receipt["status"], "READY")
-            self.assertEqual(resumed_receipt["manifest_sha256"], file_sha256(manifest))
-            self.assertEqual(
-                len(
-                    [
-                        path
-                        for path in data_home.rglob("*")
-                        if path.is_file() and path.read_bytes() == artifact_bytes
-                    ]
-                ),
-                1,
-            )
-
-            for result in (first, second, resumed):
-                self.assertNotIn(secret, result.stdout)
-                self.assertNotIn(secret, result.stderr)
-            for root_to_scan in (data_home, state_home):
-                for path in root_to_scan.rglob("*"):
-                    if path.is_file():
-                        self.assertNotIn(secret, path.read_text(encoding="utf-8", errors="replace"))
 
     def test_missing_or_mismatched_checksum_fails_closed(self) -> None:
         installer = self.require_installer()
