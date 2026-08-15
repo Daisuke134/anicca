@@ -7,6 +7,9 @@ export const metadata = {
     shortcut: '/favicon.png',
     apple: '/favicon.png',
   },
+  other: {
+    'impact-site-verification': '64d92097-aa50-42a8-bd89-a3f923217aa2',
+  },
 };
 
 import './globals.css';

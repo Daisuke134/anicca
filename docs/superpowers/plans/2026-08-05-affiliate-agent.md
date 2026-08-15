@@ -17,7 +17,10 @@
   monorepo. Legacy `/Users/anicca/profitable-claude` is read-only migration input.
 - Mutable runtime truth belongs under `${LIFE_MANAGER_STATE_HOME:-~/.local/state/life-manager}/affiliate/` and installed immutable releases under `~/.local/share/life-manager/affiliate/`; neither may be committed.
 - Execute in isolated `.worktrees/affiliate-agent-*` worktrees created with `superpowers:using-git-worktrees`; never edit a dirty primary checkout.
-- Use TDD for every behavior change: RED, minimal GREEN, focused suite, commit, push.
+- Use the smallest verification that protects a real money, duplicate-side-effect,
+  data-loss, or secret boundary. Do not build broad TDD scaffolding or exhaustive
+  internal edge-case suites; validate real provider postconditions and public
+  readback first.
 - Bootstrap a pinned runtime on the current macOS host; do not depend on
   an ambient `/usr/bin/python3`. Existing launchd remains untouched until cutover.
 - Pin and checksum every non-system runtime dependency.
@@ -409,10 +412,26 @@ Discover existing authorized identities and sessions, create locale-isolated
 profiles, verify the account handle after login/recovery, and persist only
 encrypted session material plus sanitized receipts.
 
+Expose the whole provider lifecycle through the Affiliate skill's reusable
+`affiliate provider` CLI: discover official CLI/API and licensed OSS first;
+otherwise execute a provider playbook through the existing isolated
+CloakBrowser. The CLI owns signup, login, Keychain references, OTP/challenge
+resume, contractual-consent receipts, profile/channel setup, website ownership,
+one-shot application submission, and rendered readback. A new Mac receives the
+same states and commands; one-off operator browser gestures are discovery input,
+not the shipped product.
+
 Progress receipt: EN/JA real-directory provisioning, deterministic isolated
 ports, idempotency, typed external-challenge handling, and secret redaction pass
 4/4 focused tests. This step remains open until authorized-session discovery,
 account-handle readback, and encrypted session persistence are live-proven.
+
+Live provider discovery receipt: HubSpot's official Impact flow created an
+account, verified the authorized Japanese mobile number, selected
+Japan/Tokyo/USD, and completed the truthful creator/company/website/editorial
+profile to 50%. Impact issued a verification meta tag for `aniccaai.com`.
+HubSpot remains `WEBSITE_OWNERSHIP_PENDING`; no application, approval, tracking
+link, commission, or payout is claimed yet.
 
 - [ ] **Step 5: Run clean-state E2E on the current macOS host**
 
