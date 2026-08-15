@@ -37,6 +37,10 @@ class LocalLoopTest(unittest.TestCase):
             with (
                 patch.object(MODULE, "browser_ready", return_value=True),
                 patch.object(MODULE, "provider_poll", return_value=provider),
+                patch.object(MODULE, "run_revenue_cycle", return_value={
+                    "state": "NO_TRANSACTIONS", "source_rows": 0,
+                    "appended_transitions": 0,
+                }),
                 contextlib.redirect_stdout(output),
             ):
                 MODULE.wake(args)
@@ -44,6 +48,14 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(event["status"], "READY_FOR_PUBLICATION")
             self.assertEqual(event["provider_state"], "AUTHENTICATED")
             self.assertEqual(event["provider_transition_id"], "transition-1")
+            self.assertEqual(event["revenue_state"], "NO_TRANSACTIONS")
+
+    def test_revenue_cycle_cooldown_is_independent_of_wake(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.atomic_json(state / "revenue-cycle.json", {"completed_at": 1000})
+            self.assertFalse(MODULE.revenue_cycle_due(state, now=4599))
+            self.assertTrue(MODULE.revenue_cycle_due(state, now=4600))
 
     def test_placement_receipt_is_exactly_once_and_hides_tracking_link(self):
         with tempfile.TemporaryDirectory() as root:

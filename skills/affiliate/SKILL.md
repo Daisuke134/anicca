@@ -177,6 +177,11 @@ It joins a row to one LIVE owned placement by sub-ID/shared-ID or tracking-link
 fingerprint. Zero or multiple candidates remain explicit `UNMATCHED` or
 `AMBIGUOUS`; raw tracking links and customer PII never enter the ledger.
 
+The 10-minute local wake invokes `observe → capture → reconcile` only when the
+provider is authenticated and its independent one-hour revenue cooldown is due.
+The cooldown receipt is written after all three commands succeed; a partial
+failure is retried by the next wake rather than hidden for an hour.
+
 Build and deliver the non-affiliate English foundation article through the same
 installed skill:
 

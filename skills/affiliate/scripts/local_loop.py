@@ -6,6 +6,8 @@ import fcntl
 import json
 import os
 import re
+import subprocess
+import sys
 import tempfile
 import time
 import urllib.request
@@ -101,6 +103,44 @@ def provider_poll(state, cdp_port, attempts=15):
     }
 
 
+def revenue_cycle_due(state, now=None, cooldown_seconds=3600):
+    receipt = state / "revenue-cycle.json"
+    if not receipt.is_file():
+        return True
+    try:
+        completed_at = int(json.loads(receipt.read_text(encoding="utf-8"))["completed_at"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return True
+    return (int(time.time()) if now is None else now) - completed_at >= cooldown_seconds
+
+
+def run_revenue_cycle(state, cdp_port):
+    if not revenue_cycle_due(state):
+        return {"state": "COOLDOWN", "source_rows": None, "appended_transitions": None}
+    script = Path(__file__).with_name("revenue_cli.py")
+    common = ["--state", str(state), "--cdp-port", str(cdp_port)]
+    result = None
+    for command in ("observe", "capture", "reconcile"):
+        completed = subprocess.run(
+            [sys.executable, str(script), command, *common],
+            check=False, capture_output=True, text=True, timeout=90,
+        )
+        if completed.returncode:
+            return {"state": "REVENUE_CYCLE_FAILED", "source_rows": None, "appended_transitions": None}
+        try:
+            result = json.loads(completed.stdout)
+        except ValueError:
+            return {"state": "REVENUE_CYCLE_FAILED", "source_rows": None, "appended_transitions": None}
+    cycle = {
+        "state": result["money_state"],
+        "source_rows": result["source_rows"],
+        "appended_transitions": result["appended_transitions"],
+        "completed_at": int(time.time()),
+    }
+    atomic_json(state / "revenue-cycle.json", cycle)
+    return cycle
+
+
 def wake(args):
     state = args.state.expanduser()
     state.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -116,6 +156,9 @@ def wake(args):
     provider = provider_poll(state, args.cdp_port) if browser else {
         "state": "BROWSER_UNAVAILABLE", "changed": False, "transition_id": None,
     }
+    revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
+        "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
+    }
     if not link:
         status = "TRACKING_LINK_UNAVAILABLE"
     elif not browser:
@@ -130,6 +173,9 @@ def wake(args):
         "provider_changed": provider["changed"],
         "provider_state": provider["state"],
         "provider_transition_id": provider["transition_id"],
+        "revenue_state": revenue["state"],
+        "revenue_source_rows": revenue["source_rows"],
+        "revenue_appended_transitions": revenue["appended_transitions"],
         "status": status,
         "ts": int(time.time()),
     }
