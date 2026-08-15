@@ -95,7 +95,7 @@ techniques do not merge the ledgers.
 | Surface | Observation | Runtime decision |
 |---|---|---|
 | Amazon Associates Japan | Browser confirmed an existing Amazon.co.jp account for the private SSOT application email. No password exists in Chrome or macOS Keychain; password recovery sent an OTP to the masked matching mailbox, but no currently authenticated Gmail or macOS Mail authority could read it. No Associates application was submitted | `AUTH_RECOVERY_OTP_REQUIRED`; resume the same recovery intent only after authorized mail access is available, then inspect existing Associates state before creating any application |
-| Kit | A real PartnerStack application was submitted with truthful Anicca, website, `@selawmqt`, audience-size, channel, country, and region fields. The rendered confirmation says `Application received!` and that Kit review will update the application email | `APPLICATION_PENDING`; poll email/PartnerStack without reapplying. Approval, PartnerStack account setup, payout details, and tracking link remain unproven |
+| Kit | A real PartnerStack application was submitted with truthful Anicca, website, `@selawmqt`, audience-size, channel, country, and region fields. Kit's authenticated application-email reply says it decided not to move forward. It lists four possible fit issues but does not identify one applicant-specific cause: creator-economy audience fit, prohibited promotion methods, inaccessible/insufficient website content, or insufficient promotion detail | `APPLICATION_REJECTED`; do not count approval or reapply unchanged. Reconsider only after an accessible content body, creator-helping-creator audience evidence, and a detailed organic promotion plan are live; coupon, cashback, and paid advertising remain excluded |
 | HubSpot / Impact | The official HubSpot flow created a real Impact account, verified the authorized Japanese mobile number, fixed country/timezone/currency to Japan/Tokyo/USD, and completed the truthful `creator / company / website / editorial content` profile. The exact Impact meta tag was merged through `anicca-products` PR 391, Netlify run `31891497648` passed build/deploy/money-path smoke, public HTML returned the tag, and Impact rendered `aniccaai.com — Connected`. The one-shot final submission rendered `HubSpot, Inc. application — In Review — You will be notified once there is a response.` | `APPLICATION_PENDING`; poll the authenticated Impact application/email without reapplying. Approval, executable tracking link, payout setup, commission, and payout remain unproven |
 | Rakuten Affiliate | CDP rendered the public home page with `ログイン`; approval state is not observable | `AUTH_REQUIRED`, keep the provider adapter dormant |
 | Postiz | A Japanese integration exists, but the product decision excludes Postiz | Do not read, connect, or use it in the Agent; this is not a blocker |
@@ -123,7 +123,7 @@ live autonomous operation.
 | Runtime | Legacy core still reports `DEAD` | No hourly/daily Affiliate Agent wake has completed |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
-| Provider auth | Kit and HubSpot/Impact are both `APPLICATION_PENDING`; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | No provider approval, tracking-link ownership, current executable offer, or payout setup is proven |
+| Provider auth | HubSpot/Impact is `APPLICATION_PENDING`; Kit is `APPLICATION_REJECTED`; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | No provider approval, tracking-link ownership, current executable offer, or payout setup is proven |
 | Publication | Browser publisher is planned only | No Affiliate JA/EN placement has an action receipt plus public readback |
 | Attribution | Design and API tasks remain open | No live redirect click is joined to an ASP transaction |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
@@ -804,9 +804,10 @@ without changing the architecture.
   commissions, withhold payout, or terminate a program. Quarantine and portfolio
   diversification limit damage; they cannot erase this uncertainty.
 
-- Kit has one receipted application and remains `APPLICATION_PENDING`; no English
-  program approval, account ownership, payout setup, or executable tracking link
-  has been read back for this Agent.
+- Kit has one receipted application and an authenticated official rejection
+  email. The email lists possible audience, promotion-method, website-content,
+  and application-detail issues without selecting one applicant-specific cause.
+  Kit stays `APPLICATION_REJECTED`; no unchanged reapplication is allowed.
 - English X ownership/login is resolved as `sela` / `@selawmqt`; legacy
   `@aniccaen` is inactive. The account has 128 mixed-language historical posts
   and 0 followers, so rebranding and audience acquisition are required and

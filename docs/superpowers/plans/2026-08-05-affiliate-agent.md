@@ -1753,7 +1753,11 @@ tag/sub-ID capability, and auth state. Logged-out Amazon/Rakuten stays
 but use only the provider that returns real ownership and executable-link receipts.
 
 Live checkpoint: Kit returned a rendered `Application received!` confirmation
-after a truthful browser submission and is `APPLICATION_PENDING`; do not reapply.
+after a truthful browser submission, then its authenticated official email said
+it decided not to move forward. The email gives four possible fit causes but no
+applicant-specific one: audience niche, prohibited promotion method,
+inaccessible/insufficient website content, or insufficient promotion detail.
+Kit is `APPLICATION_REJECTED`; do not reapply without material evidence changes.
 Amazon Associates JP found an existing Amazon.co.jp account and sent a recovery
 OTP, but no authorized mail session could read it, so it is
 `AUTH_RECOVERY_OTP_REQUIRED` and no Associates application was submitted. This
