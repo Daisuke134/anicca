@@ -365,16 +365,19 @@ tests. This step remains open because the current-host runtime/browser artifact
 has not been admitted into `manifest.lock`, and no Keychain value has been read
 back through the contract.
 
-Current-host admission sub-slice: accept only an explicit capability request,
-resolve each existing executable or macOS app bundle without launching it,
-record its canonical path, SHA-256, size, and version from trusted local
-metadata, and atomically write a deterministic sanitized receipt. Missing,
-non-executable, mutable-during-hash, duplicate-name, or secret-bearing inputs
-fail before installing a READY receipt. This proves what already exists on this
-Mac; it does not claim scratch-host portability or invent a downloadable
-artifact. The measured initial candidates are CloakBrowser Chromium
-`145.0.7632.109`, Google Chrome `151.0.7922.138`, Python `3.14.6`, and the macOS
-system `security`, `shasum`, `curl`, and `git` tools.
+Current-host browser-admission sub-slice: accept only an explicit macOS app
+capability request, hold the bundle tree through no-following file descriptors,
+and record its canonical path, SHA-256, size, and Info.plist version without
+launching it. Missing, non-executable, mutable-during-hash, duplicate-name,
+bundle-escape, or secret-bearing inputs fail before installing a READY receipt.
+Generic executable admission was deliberately rejected because the running
+interpreter version cannot be bound to a mutable disk path without a stronger
+artifact contract. The immutable release `1f487bc877adcc00ed597cdd39e88bb81307272d`
+live-inventoried CloakBrowser Chromium `145.0.7632.109` twice with byte-identical
+receipt SHA-256 `9b4ca7ffc18dc10b83576c812d7c6805ed444e0b685287f7e0cd29f5a2d92f4c` and
+binary SHA-256 `79ddf7e7a7be8087319390ed79266387f6499b8a2e45ccfbaa724d7e7fff6b79`.
+The browser never launched, and Affiliate launchd owner count remained zero.
+Pinned Python runtime admission and Keychain readback keep Step 3 open.
 
 - [ ] **Step 4: Implement semantic capability inventory and browser provisioning**
 

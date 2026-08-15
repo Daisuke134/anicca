@@ -23,7 +23,7 @@ publisher receipt gates are satisfied. This migration shell may verify and
 install an immutable disabled release, but it does not register launchd jobs,
 publish content, or claim revenue.
 
-F0 provides three deterministic, non-publishing primitives:
+F0 provides four deterministic, non-publishing primitives:
 
 - `bootstrap/install.sh` verifies a reviewed pinned manifest and writes an
   atomic machine-capability receipt;
@@ -31,9 +31,13 @@ F0 provides three deterministic, non-publishing primitives:
   intent and records human-only external challenges;
 - `scripts/profile_provisioner.py` creates isolated EN/JA browser roots without
   launching or copying a browser session.
+- `scripts/machine_capability_inventory.py` receipts an explicitly requested
+  macOS browser app from held no-follow file descriptors without launching it;
+  generic executable admission remains fail-closed.
 
 The committed bootstrap manifest intentionally contains no artifact yet. Its
 default run therefore fails closed until current-host runtime/browser admission
-records a real URL and SHA-256. Keychain readback, authenticated-session
+records a real URL and SHA-256. The current Mac has a receipted CloakBrowser app,
+but pinned Python installation remains open. Keychain readback, authenticated-session
 discovery, account-handle verification, launchd, publication, and revenue all
 remain disabled.
