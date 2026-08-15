@@ -28449,3 +28449,10 @@
 {"ts":1786812817,"wake_id":"00MSUM7U2ZECFA258623E241DB","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786812945,"wake_id":"00MSUMAKBWD4CF8BF37A914AF4","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786813089,"wake_id":"00MSUMDNRFBB98C94F7E824686","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786813221,"wake_id":"00MSUMGH4XAD189568FAC2412E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786813356,"wake_id":"00MSUMJDDW94D20B269EAF46D3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786813490,"wake_id":"00MSUMM9D07A848437548549B2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786813620,"wake_id":"00MSUMP1J164FDFBA1A9E74AB6","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786813750,"wake_id":"00MSUMRTQD7D4E8674363C44EB","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786813886,"wake_id":"00MSUMUQXK3315A42A7EDF4FB2","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paying USDC for small coding or data validation tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded ex"}
+{"ts":1786814015,"wake_id":"00MSUMXHRJC7FF4C6F47FE472F","kind":"narrate","sleep_s":120,"model":"auto"}
