@@ -2752,3 +2752,6 @@ official `/mypage/profile` POST responseとbuyer-visible readbackは引き続き
 三回目wakeはPOST前に`profile_form_changed`で停止した。installed exact releaseで同じ順序をread-only再現すると、route、public selector、field count、
 invalid exact 8 ID、save buttonは一致した。唯一のtiming依存値はCSS layout由来の`offsetParent`である。安全guardをpresentation上の非表示から、
 providerのexact 8 ID、empty value、invalid count 8へ変更する。別ID、入力済みfield、追加invalidが一つでもあれば保存しない。
+
+installed exact functionの行traceで、保存POST後のredirect完了前にrecursive public readbackの`page.goto`を開始し、navigation collisionで落ちることを
+確定した。public/formは旧値のままである。force clickは維持するが`no_wait_after`を外し、official POST navigation完了後だけpublic readbackへ進む。
