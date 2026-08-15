@@ -28232,3 +28232,10 @@
 {"ts":1786783955,"wake_id":"00MSU517NC0160BCF5F1EC46A5","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786784095,"wake_id":"00MSU547RL34426DEE40C7416C","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786784226,"wake_id":"00MSU5714F6FDD141D12B6481A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786784363,"wake_id":"00MSU59YCJ0A8FBFEAE4A44711","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana pay-per-use API marketplace earn USDC immediate payment microtasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore "}
+{"ts":1786784498,"wake_id":"00MSU5CUCD53DB75B49FC945E8","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786784630,"wake_id":"00MSU5FOUN12AF51C16ADF496C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786784761,"wake_id":"00MSU5IHZEC68D84343B3C4202","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana token launch fee revenue model earn USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced "}
+{"ts":1786784892,"wake_id":"00MSU5LAMW3117F4435F2A47E1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786785030,"wake_id":"00MSU5O8XH887C47C382984F65","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786785162,"wake_id":"00MSU5R2T125FBC252BEC54C09","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
