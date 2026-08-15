@@ -2508,3 +2508,12 @@ AI/API PoC `5586377`を`Python` queryから適合一件として選んだ。一�
 **FIRST REAL BLOCKER:** provider構造化予算は10–20万円だが、本文はPoC予算10–15万円程度と具体化する。plannerは広いstructured maxを
 使って18万円で提案した。今後は新しい価格parserを作らず、modelへ「本文の狭い具体予算をproviderの広い帯より優先する」と一文だけ追加する。
 proposal額を売上には数えず、現在の契約・入金は0のままである。
+
+### 18.30 Human report healthy no-op semantics
+
+production report `18894`はpending 0、公式source complete、ApplicationReceipt 31、Storefront/契約/入出金の正確な件数を表示する一方、
+Application最終reason `duplicate_project`をblockerとして扱い、冒頭を⚠️「確認が必要」と誤表示した。`duplicate_project`は公式claim/readbackで
+既処理と確認した正常no-opである。新reporterを作らず、既存blocker projectionで`no_eligible_project / duplicate_project /
+provider_reconciled / daily_quota_reached / capacity_details_required`だけをhealthy outcomeとして扱う。source failure、submission uncertain、
+pending、storefront mismatchは引き続きwarningにする。完了証拠は同じproduction snapshotが✅、件数31、pending 0、売上0を自然文表示し、
+次wake同一snapshot送信0となること。
