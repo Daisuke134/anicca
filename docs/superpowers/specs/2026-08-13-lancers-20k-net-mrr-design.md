@@ -2522,3 +2522,21 @@ pending、storefront mismatchは引き続きwarningにする。完了証拠は�
 「今回の確認を安全に完了しました」とrenderし、provider message ID `18896`で配信した。本文はApplicationReceipt累計31、pending 0、
 Storefront受付中1/非表示5、会話1、返信必要0、offer/contract 0、公式入出金0、net MRR 0円を分離する。直後のsecond wakeはoutbox
 `1188→1188`、enqueue 0、send 0、exit 0である。
+
+### 18.31 Negotiate / Contract live boundary
+
+**CURRENT OBSERVATION:** production Work Syncは5分ごとに公式board、buyer-last、`/monthly_work_contracts/lancer/offers`、project working、
+monthly contract、Storefront `serviceItemContract`を観測する。現在はboard 1、required reply 0、incoming offer 0、active contract 0、finance
+source complete、入出金0である。存在しないbuyerへreply/accept effectを作らない。
+
+**FIRST SOURCES:** Lancers公式lancer guide `https://www.lancers.jp/monthly_work_contracts/guide/lancer`は、client offerの「仕事内容」と
+「月額報酬」を確認し、不一致なら断って確認、一致時は「承認する」で契約締結すると定義する。公式FAQ
+`https://www.lancers.jp/faq/M0002/825`はclientが内容・月額・支払方法を入力してoffer時に仮払いし、seller承諾で契約成立、
+`https://www.lancers.jp/faq/M0002/807`は承諾時に仮払い完了、承諾期限3日と定義する。
+
+**REAL BLOCKER:** current official offer pageはexact empty markerだけでpositive detail form、form action、CSRF field、accept POST response、
+active contract readback shapeを持たない。GitHub code searchにも既存client実装はない。未観測selector/routeを推測してaccept effectを実装しない。
+
+**NEXT DIRECT ACTION:** 既存5分observerが最初のoffer IDを検知したwakeで、そのexact detail URLをread-only取得し、scope、初月/翌月金額、
+支払・仮払い表示、期限、accept/decline formを実測する。会話で合意したcanonical product/verified proposal条件と一致する場合だけdurable intent→
+fresh presend→一回承認→active contract exact ID/funding readback→ContractReceipt。timeout/unknownはeffect 0またはreadback-onlyで、blind accept 0。
