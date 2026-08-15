@@ -182,6 +182,26 @@ skills/affiliate/affiliate x post publish \
 Both commands require the exact owned publication receipt to be `LIVE`; the X
 publisher rechecks it before opening the composer.
 
+Build the second source-bound product campaign with the same publisher and X
+adapter:
+
+```bash
+skills/affiliate/affiliate sources capture --plan elevenagents-en
+skills/affiliate/affiliate content build-agents
+skills/affiliate/affiliate content policy-agents
+skills/affiliate/affiliate loop placement \
+  --placement elevenagents-for-customer-support --locale en
+skills/affiliate/affiliate owned publish \
+  --slug elevenagents-for-customer-support --landing-root "$CLEAN_PRODUCTION_WORKTREE"
+skills/affiliate/affiliate content build-x-agents
+skills/affiliate/affiliate x post publish \
+  --content ~/.local/state/life-manager/affiliate/x-content/elevenagents-en-1.txt \
+  --placement elevenagents-en-1
+```
+
+This campaign requires the four fresh official ElevenAgents captures and the
+private product-specific link. It does not create a new CMS or X publisher.
+
 Capture the official PartnerStack overview after its one-time account,
 email-verification, partnership, and program-terms bootstrap:
 

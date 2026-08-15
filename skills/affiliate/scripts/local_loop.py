@@ -196,14 +196,14 @@ def flush_telegram(state, event, runner=subprocess.run):
     return {"state": "SENT", "sent": 1, "message_id": message_id}
 
 
-def elevenlabs_link(path):
+def elevenlabs_link(path, field="Default affiliate link"):
     if not path.is_file() or path.stat().st_mode & 0o077:
         return None
     text = path.read_text(encoding="utf-8")
     section = re.search(r"(?ms)^## ElevenLabs\n.*?(?=^## |\Z)", text)
     if not section:
         return None
-    match = re.search(r"(?m)^- Default affiliate link: `([^`]+)`$", section.group())
+    match = re.search(rf"(?m)^- {re.escape(field)}: `?([^`\s]+)`?$", section.group())
     if not match:
         return None
     link = match.group(1)
