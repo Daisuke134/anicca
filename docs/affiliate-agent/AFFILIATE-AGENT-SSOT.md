@@ -137,7 +137,7 @@ techniques do not merge the ledgers.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Four Affiliate-owned launchd jobs isolate the loop, ElevenLabs browser, X browser, and Impact browser. Source HEAD `4b2e2019f` is the last pushed release; the semantic-click, Messages OTP, authenticated-state, and provider-application reconciliation repair is focused-check GREEN but not yet committed, pushed, or installed | Process-boundary resume and X publish reconciliation are live-proven without duplication. Finish the current repair checkpoint before adding any earning feature. Provider-application ambiguity, attributable click, commission, and payout remain open |
+| Mac-local runtime | Four Affiliate-owned launchd jobs isolate the loop, ElevenLabs browser, X browser, and Impact browser. Release `018bcc643163da2979b75f1116a7193a9c5bc693` is installed. It retains the original Impact login job across restart and resumes either email or password stage, but its DOM `click()` does not activate Impact's enabled Sign In submit control | Process-boundary resume and X publish reconciliation remain live-proven without duplication. Replace only the failed semantic activation with the already live-proven Playwright role-click primitive, then read back the existing application; attributable click, commission, and payout remain open |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | ElevenLabs PartnerStack metrics | The Agent created a separate PartnerStack credential through the private-Markdown-first Skill, created and email-verified the network account, created the `Anicca` business team, confirmed the existing Eleven Labs Inc. partnership, accepted the program terms, and reached the rendered overview, Commission Report, and Payouts surfaces | The current aggregate is one baseline click and zero signups/revenue/pending/paid. `revenue capture` live-read 23 commission fields and six payout fields. The current PartnerStack bundle, SHA-256 `be00e11924a35f20b84dee69ae741ae65204f07d3350a3266ad73501e96d867f`, proves the provider row keys use `reward_key`, `reward_status`, and explicit sub-ID/click/link fields even though the UI says Commission key. DOM absence was rejected as row evidence; installed release `329cbfc45` captured official JSON `row_count=0`, the empty Payouts surface, `NO_LIVE_ROWS`, and a mode-0600 artifact at SHA-256 `dce77f0083b0f92e29a67ccf99e417e11fe6307009bdfe98bf2d5fc77b39154d`. Approved/reversed remain unknown rather than zero |
 | Cloud rollback | Complete | Staging runs rollback commit `bb31c68ada4e041ef1c0e745d7933a94f683a029`; the mistaken deployment is `REMOVED`; both `AFFILIATE_*` variables are absent; the former Affiliate route returns HTTP `404` |
@@ -1039,7 +1039,7 @@ other sections, and never prints the value. Focused credential/provider/job
 checks pass 6/6. The official Gmail reset recipient is the next authorized input;
 fresh reset and login readback are still required before A14.4 closes.
 
-The recovery subsequently completed live. The private Login was corrected from
+The recovery previously completed live. The private Login was corrected from
 the official account recipient without committing it, the official reset
 accepted the replacement, and the staged login reached Impact device
 verification. One authorized code completed the challenge and the dedicated
@@ -1065,6 +1065,15 @@ field was already present. The bounded repair detects that exact intermediate
 state, skips the completed email/Continue step, and resumes password submission
 inside the same unresolved login job.
 
+Installed release `018bcc643` proves the remaining activation defect precisely:
+the email and password inputs are both nonempty and valid, the unique `Sign In`
+button is enabled and has `type=submit`, yet DOM `this.click()` leaves the page on
+`login.user`. The same login previously advanced with Playwright's role click.
+Therefore direct DOM activation is rejected as the production primitive. The
+next repair reuses the existing `playwright-cli`/Playwright browser interaction
+mechanism for the exact unique role/name control while preserving CDP `9327`,
+the original job ID, and all credential/receipt boundaries.
+
 ### A14–E1 remaining implementation map
 
 This is the ordered file-level plan. Later rows do not start before the earlier
@@ -1072,7 +1081,7 @@ observable outcome exists.
 
 | Order | Observable outcome | Reuse first | Files changed |
 |---:|---|---|---|
-| 1 | Installed Affiliate release preserves authenticated Impact `APPLICATION_PENDING`; no repeat login/application | Existing `job_journal.py` and provider playbook | `skills/affiliate/scripts/provider_cli.py`, `skills/affiliate/config/provider-playbooks/hubspot-impact.json`, focused `test_provider_resume.py`, `skills/affiliate/SKILL.md` |
+| 1 | Installed Affiliate release restores Impact to authenticated `APPLICATION_PENDING`; no repeated reset or application | Existing Playwright role-click behavior plus `job_journal.py` and provider playbook | Replace only `provider_cli.py` semantic activation; keep `hubspot-impact.json`, focused `test_provider_resume.py`, and `SKILL.md` aligned. Do not build another browser layer |
 | 2 | Existing ambiguous provider application is reconciled before any retry | Franklin-style append-only same-job recovery already implemented locally | `provider_cli.py` `poll()` plus existing `job_journal.py`; no new scheduler or database |
 | 3 | ElevenLabs can receive a payout and exposes current Resources/copy guidance | Existing PartnerStack browser/report adapter | Extend `skills/affiliate/scripts/revenue_cli.py` only for sanitized payout-readiness and resource-catalog receipts; never store bank data |
 | 4 | Affiliate X Article capability is classified for `@selawmqt:9326` | Writer `scripts/x-publish/*` based on `wshuyi/x-article-publisher-skill` | Parameterize the canonical Writer adapter at its source; add only a thin Affiliate invocation/receipt contract to `x_post_cli.py` or a subcommand, not a copied publisher |
