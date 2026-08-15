@@ -2755,3 +2755,6 @@ providerのexact 8 ID、empty value、invalid count 8へ変更する。別ID、�
 
 installed exact functionの行traceで、保存POST後のredirect完了前にrecursive public readbackの`page.goto`を開始し、navigation collisionで落ちることを
 確定した。public/formは旧値のままである。force clickは維持するが`no_wait_after`を外し、official POST navigation完了後だけpublic readbackへ進む。
+
+official POST responseをその場で読むとstatus 200、fieldは送信値を保持するが、server validationは「自己紹介にURLを入力することはできません」と返した。
+URL文字列だけを削除し、MIT公開Life Managerと検索可能なGitHub repository名`Daisuke134/life-manager`をverified proofとして残す。
