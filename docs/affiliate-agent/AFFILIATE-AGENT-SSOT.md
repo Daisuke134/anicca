@@ -1256,14 +1256,14 @@ they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
 
 Latest restart truth: installed release
-`e63503a5de8d579cdaacb9e42505184032b33f06` is byte-identical to that commit and
+`f4b8109c091cc153bd827459909ff2f7e9507193` is byte-identical to that commit and
 is pushed to `origin` and `canonical`; the publication fix below landed in
 `7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25`. Any commit that touches
 `skills/affiliate` MUST be reinstalled, so
 `git diff <installed-release> HEAD -- skills/affiliate` must stay empty; a
 non-empty diff means the runtime is stale. The focused suite runs
 `python3 -m unittest $(ls tests/test_*.py | sed 's#/#.#;s#\.py##')` from
-`skills/affiliate` and is `67/67` green, with no tolerated red baseline.
+`skills/affiliate` and is `68/68` green, with no tolerated red baseline.
 All six launchd
 owners are loaded; the three job owners read back 600-second intervals and last
 exit `0`, and the three isolated browser owners are running.
@@ -1347,11 +1347,37 @@ materialization and publication is a genuine hazard. Real wake `00:20:52` exited
 `0` and returned `generic=ALREADY_LIVE`, with six placements still
 `LEDGER_READY` and no new post.
 
-A residual inefficiency stays visible rather than hidden: recomposing a campaign
-that is already live consumes one of only four daily composition passes and can
-never publish, so source refresh on published campaigns competes with new
-campaign growth. Fixing that is not urgent while the queue drains, but it MUST be
-revisited before the portfolio target rises. The cap implies at most four sealed compositions per JST
+That inefficiency then proved urgent rather than deferrable. At `00:23:31 JST` the
+owner spent the second of four daily passes recomposing `video-to-text`, also
+already live, while campaign seven still had no placement. Release
+`7d2e019b0ae069799433d8a03da4dd9c55b7f10d` skips any plan whose placement receipt
+is already `LIVE`, so scarce passes go to campaigns that still need one. The very
+next real composition wake sealed campaign seven `READY_FOR_POLICY` under its
+SAME durable run id `elevenlabs-discovered-youtube-transcript-generator-en-a1c63a8d19007084`,
+charging `14560` tokens against day `2026-08-17`, exit `0`.
+
+The same "one stale row returns and blocks the rest" shape then appeared one step
+earlier: recomposition also leaves a published campaign's policy receipt pointing
+at its previous handoff, and `advance_generic_publication` validated that pair
+BEFORE the completed check, so `video-to-text` made the whole path report
+`POLICY_RECEIPT_INVALID` and blocked campaign seven a second time inside ten
+minutes. Release `f4b8109c091cc153bd827459909ff2f7e9507193` skips a plan whose
+placement receipt is `LIVE` before reading its policy at all; validation still
+guards every campaign that has not published yet. The general rule this establishes
+for the whole file: a live placement is terminal, so no later receipt drift about
+it may gate a different campaign.
+
+Campaign seven then advanced through the real money owner with no manual step.
+Wake `00:29:15` created its dedicated provider link and the canonical placement
+ledger grew from six to `7`; wake `00:30:17` returned `OWNED_NOT_LIVE` after the
+loop committed and pushed `3c1277977 feat(blog): publish
+elevenlabs-youtube-transcript-generator-for-creators` to the landing remote, with
+`provider_link_key` `bb8458d6-fdd9-49a4-adaa-c0a9886e3453` and placement
+`elevenlabs-discovered-youtube-transcript-generator-en-1`. Both wakes exited `0`.
+The owned article was still returning `404` while the deploy propagated, which is
+the expected fence: the X post only follows a real public readback. Clicks,
+commission, and cost for this placement remain unknown and MUST stay unknown
+until the provider reports them. The cap implies at most four sealed compositions per JST
 day, so the six-to-ten placement growth is throughput-bound, not blocked.
 
 Measured economics as of this restart, read from `placement-ledger.json`: all six
