@@ -23,6 +23,8 @@
     <key>GIG_OPERATOR_BRAKE_FILE</key><string>__HOME__/.openclaw/state/gig-work/storefront.operator.brake</string>
     <key>CLOAK_CONTEXT_LEASES_FILE</key><string>__HOME__/.cloak/vault/gig-leases.json</string>
     <key>CLOAK_CDP_BASE_URL</key><string>http://127.0.0.1:9223</string>
+    <key>CLOAK_BROWSER_LAUNCHD_LABEL</key><string>ai.anicca.hf-gig-browser</string>
+    <key>CLOAK_BROWSER_OWNER</key><string>gig-storefront-direct</string>
     <key>CDP_DAILY_DRIVER_PORT</key><string>9223</string>
     <key>CDP_DAILY_DRIVER_PROFILE</key><string>__HOME__/.cloak/profiles/gig-daily-driver</string>
   </dict>
