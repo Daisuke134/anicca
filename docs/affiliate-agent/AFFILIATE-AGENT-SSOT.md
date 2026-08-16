@@ -1296,8 +1296,24 @@ daily cap; the budget day is computed in `Asia/Tokyo`). Its same durable job
 retries unattended when the JST day rolls over, because the composition owner
 wakes every 600 seconds. The cap implies at most four sealed compositions per JST
 day, so the six-to-ten placement growth is throughput-bound, not blocked.
-Official provider transactions and approved/paid Affiliate commission remain
-exactly zero.
+
+Measured economics as of this restart, read from `placement-ledger.json`: all six
+placements now carry a real provider-measured click denominator of `count=0`,
+`delta=0` observed at `2026-08-16T14:08:41Z`, so no placement is left with an
+unknown click row. Every placement reports `transaction_count=0` with
+`pending/approved/paid/reversed` all `0` and an empty
+`approved_or_paid_net_minor_by_currency`. Cash cost stays `UNKNOWN`; only
+API-equivalent model estimates exist and they remain flagged
+`api_equivalent_is_not_invoice`. Official provider transactions and
+approved/paid Affiliate commission are therefore exactly zero.
+
+This makes the binding constraint explicit and it is not placement count. Six
+live dedicated links with a provider-confirmed zero click denominator mean the
+demand side has not started, so ten placements of the same shape would still
+multiply zero. Growth to ten remains the ordered cursor because comparable rows
+are what let the strategy Agent learn, but the USD 10,000 threshold cannot move
+until a channel produces measured qualified traffic. Estimates, impressions
+without provider denominators, and model-usage costs are never revenue.
 M0.3 is installed in release `30f7862ab579a1416fd272c3643cce1b3f0f2ff1`.
 Real launchd wake `10` exited `0`, kept provider `AUTHENTICATED` and publication
 `X_LIVE`, and rebuilt a mode-0600, hash-valid six-placement economic ledger even
