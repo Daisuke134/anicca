@@ -16,7 +16,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 SCRIPTS = Path(__file__).resolve().parent
 if str(SCRIPTS) not in sys.path:
@@ -33,6 +33,7 @@ DEFAULT_RUNNER = RUNNER_DIR / "agent_runner.py"
 DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
 DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json"
 DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
+DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_proposal.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
 MEASURABLE_SUCCESS_METRICS = {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase",
                               "net_receipt"}
@@ -52,7 +53,7 @@ STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
     "new-listing-drafts.jsonl", "funnel-events.jsonl", "portfolio-allocations.jsonl",
-    "inquiry-context-envelopes.jsonl",
+    "inquiry-context-envelopes.jsonl", "demand-evidence.jsonl",
 )
 TARGET_SERVICE_ID = "4330368"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
@@ -1170,6 +1171,73 @@ def _seal_demand_proposal(proposal: dict, family_names: set[str], catalog_titles
         sealed.append({"query": query, "capability_family": family,
                        "rationale": str(row.get("rationale") or "").strip()})
     return sealed
+
+
+def _invoke_demand_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
+    families: dict, catalog_titles: list[str], timeout_seconds: int,
+) -> tuple[dict, dict]:
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    context = {"owned_capability_families": families, "current_catalog_titles": catalog_titles}
+    prompt = """Name at most three official Coconala search queries worth measuring as demand for
+work this seller can already deliver, and return only the strict schema object. Every query must
+name one owned capability family from CONTEXT_JSON and must not repeat what current_catalog_titles
+already sell. Do not claim demand exists, do not estimate volume, revenue or competition: the loop
+decides that by crawling the official search page. Choose no_op with a reason when no distinct
+query is supported by an owned family.\nCONTEXT_JSON=""" + json.dumps(
+        context, ensure_ascii=False, separators=(",", ":"))
+    started = time.time()
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-demand", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "").strip()[-400:]
+        raise RuntimeError(f"storefront_demand_proposal_failed:{completed.returncode}:{detail}")
+    try:
+        summary_path = evidence_dir / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        result_path = Path(str(summary["result_path"])).resolve()
+        result_path.relative_to(evidence_dir.resolve())
+        if (summary.get("status") != "success"
+                or summary.get("task_class") != "storefront-proposal-agent"
+                or summary.get("selected_provider") != "codex"
+                or summary.get("selected_model") != "gpt-5.6-terra"
+                or min(summary_path.stat().st_mtime, result_path.stat().st_mtime) < started):
+            raise ValueError("stale_or_wrong_route")
+        proposal = json.loads(result_path.read_text(encoding="utf-8"))
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_demand_proposal_evidence_invalid") from error
+    route = {"task_class": summary["task_class"], "provider": summary["selected_provider"],
+             "model": summary["selected_model"], "effort": summary.get("selected_effort")}
+    return proposal, route
+
+
+def _crawl_demand_cluster(ws_url: str, evidence_dir: Path, query: str) -> dict:
+    """Crawl one official search page and read the demand it states."""
+    import listing_inventory
+
+    url = "https://coconala.com/search?keyword=" + quote(query)
+    observed = asyncio.run(listing_inventory._eval_json(
+        ws_url, url,
+        "JSON.stringify({url:location.href,body:document.body ? document.body.innerText.slice(0,120000) : ''})",
+    ))
+    final = urlsplit(str(observed.get("url") or ""))
+    body = str(observed.get("body") or "")
+    if final.scheme != "https" or final.hostname not in {"coconala.com", "www.coconala.com"}:
+        raise RuntimeError("storefront_demand_source_not_official")
+    if not body.strip():
+        raise RuntimeError("storefront_demand_source_empty")
+    path = evidence_dir / f"demand-search-{hashlib.sha256(url.encode()).hexdigest()[:12]}.json"
+    _atomic_write(path, {"official": True, "query": query, "url": str(observed.get("url")),
+                         "body": body, "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
+                         "observed_at_epoch": int(time.time())})
+    demand = _extract_search_demand(body)
+    return {**demand, "query": query, "search_url": url, "evidence_path": str(path)}
 
 
 def _demand_cluster_key(query: str, category_url: str) -> str:
@@ -4167,6 +4235,44 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 for line in (args.state_dir / "new-listing-drafts.jsonl").read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ) if (args.state_dir / "new-listing-drafts.jsonl").exists() else False
+            # When the committed demand is spent, look for the next market instead of idling.
+            demand_ledger = args.state_dir / "demand-evidence.jsonl"
+            known_clusters = _jsonl_rows(demand_ledger)[0] if demand_ledger.exists() else []
+            unused_cluster = next(
+                (row for row in sorted(known_clusters, key=lambda c: -(c.get("score") or 0))
+                 if row.get("status") == "known" and (row.get("score") or 0) > 0
+                 and not row.get("consumed_at_epoch")),
+                None,
+            )
+            demand_derivation = None
+            if demand_already_sold and unused_cluster is None:
+                try:
+                    proposal, route = _invoke_demand_proposal(
+                        runner=getattr(args, "runner", DEFAULT_RUNNER),
+                        schema=getattr(args, "demand_proposal_schema", DEFAULT_DEMAND_PROPOSAL_SCHEMA),
+                        workdir=args.workdir,
+                        evidence_dir=inventory_path.parent / "demand-proposal-agent",
+                        families=capability_templates,
+                        catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
+                        timeout_seconds=args.timeout_seconds,
+                    )
+                    sealed = _seal_demand_proposal(
+                        proposal, set(capability_templates),
+                        [str(row.get("title") or "") for row in inventory["services"]],
+                    )
+                    appended = 0
+                    for candidate in sealed:
+                        cluster = _crawl_demand_cluster(ws_url, inventory_path.parent, candidate["query"])
+                        scored = _score_demand_cluster(cluster)
+                        row = {**cluster, **scored, "capability_family": candidate["capability_family"],
+                               "rationale": candidate["rationale"], "route": route,
+                               "observed_at_epoch": int(time.time()),
+                               "cluster_key": _demand_cluster_key(candidate["query"], "")}
+                        appended += int(_append_key_once(demand_ledger, "cluster_key", row))
+                    demand_derivation = {"proposed": len(sealed), "appended": appended,
+                                         "route": route.get("model")}
+                except RuntimeError as error:
+                    demand_derivation = {"proposed": 0, "appended": 0, "error": str(error)[:200]}
             # A catalogue fills over days, not over consecutive full wakes.
             last_create = _last_published_create_epoch(args.state_dir)
             create_spacing_open = (last_create is None
@@ -4412,6 +4518,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 portfolio=portfolio,
                 inquiry_context=inquiry_context,
                 new_listing_draft=draft_result,
+                demand_derivation=demand_derivation,
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
                 proposal_agent=proposal_agent,
@@ -4474,6 +4581,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     parser.add_argument("--proposal-schema", type=Path, default=DEFAULT_PROPOSAL_SCHEMA)
     parser.add_argument("--create-proposal-schema", type=Path, default=DEFAULT_CREATE_PROPOSAL_SCHEMA)
+    parser.add_argument("--demand-proposal-schema", type=Path, default=DEFAULT_DEMAND_PROPOSAL_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
     parser.add_argument("--gallery-contract", type=Path, default=DEFAULT_GALLERY_CONTRACT)
