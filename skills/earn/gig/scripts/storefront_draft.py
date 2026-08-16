@@ -424,3 +424,106 @@ def prepare_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
         "asset_sha256": contract["hero_image"]["asset_sha256"],
         "evidence_path": str(evidence_path),
     }
+
+
+async def _submit_public(ws_url: str, contract: dict[str, Any]) -> None:
+    import websockets
+
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        await _call(ws, "Page.enable", {}, cid); cid += 1
+        cid = await _wait_for_option(
+            ws, "data[Service][master_category]", contract["category"]["master"]["value"], cid,
+        )
+        deadline = asyncio.get_running_loop().time() + 12
+        while asyncio.get_running_loop().time() < deadline:
+            raw, cid = await _evaluate(ws, DRAFT_SNAPSHOT_EXPRESSION, cid)
+            snapshot = json.loads(str(raw or "{}"))
+            if _snapshot_matches(snapshot, contract) and _snapshot_image_count(snapshot) == 1:
+                break
+            await asyncio.sleep(0.25)
+        else:
+            raise RuntimeError("storefront_publish_precondition_mismatch")
+        submitted, cid = await _evaluate(ws, (
+            "(()=>{const b=[...document.querySelectorAll('button[type=submit][data-mode=\"open\"]')]"
+            ".find(e=>(e.innerText||'').trim()==='公開する');const f=b?.form;"
+            "const mode=f?.querySelector('[name=\"mode\"]');if(!b||!f||!mode)return false;"
+            "mode.value='open';f.requestSubmit(b);return true})()"
+        ), cid)
+        if submitted is not True:
+            raise RuntimeError("storefront_publish_control_missing")
+        await asyncio.sleep(5)
+
+
+async def _public_readback(ws_url: str, contract: dict[str, Any]) -> dict[str, Any]:
+    import websockets
+
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        deadline = asyncio.get_running_loop().time() + 15
+        while asyncio.get_running_loop().time() < deadline:
+            raw, cid = await _evaluate(ws, (
+                "JSON.stringify({url:location.href,title:document.title,"
+                "body:document.body?document.body.innerText.slice(0,120000):'',"
+                "images:[...document.images].map(e=>e.currentSrc||e.src).filter(Boolean)})"
+            ), cid)
+            snapshot = json.loads(str(raw or "{}"))
+            body = str(snapshot.get("body") or "")
+            if (
+                snapshot.get("url") == contract["expected_public_url"]
+                and contract["public_fields"]["expected_title"] in body
+                and contract["public_fields"]["catchphrase"] in body
+                and f"{contract['public_fields']['display_price_jpy']:,}円" in body
+                and len(snapshot.get("images") or []) > 0
+            ):
+                return snapshot
+            await asyncio.sleep(0.5)
+    raise RuntimeError("storefront_publish_public_readback_mismatch")
+
+
+def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_dir: Path) -> dict[str, Any]:
+    opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", contract["draft_url"]], capture_output=True, text=True,
+        check=False, timeout=30,
+    )
+    tab = None
+    try:
+        tab = json.loads(opened.stdout)
+        if opened.returncode != 0 or tab.get("ok") is not True:
+            raise RuntimeError("storefront_publish_tab_open_failed")
+        asyncio.run(_submit_public(str(tab["ws"]), contract))
+    finally:
+        if isinstance(tab, dict) and tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+    public_opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", contract["expected_public_url"]], capture_output=True, text=True,
+        check=False, timeout=30,
+    )
+    public_tab = None
+    try:
+        public_tab = json.loads(public_opened.stdout)
+        if public_opened.returncode != 0 or public_tab.get("ok") is not True:
+            raise RuntimeError("storefront_publish_readback_tab_open_failed")
+        snapshot = asyncio.run(_public_readback(str(public_tab["ws"]), contract))
+    finally:
+        if isinstance(public_tab, dict) and public_tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(public_tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+    evidence_path = evidence_dir / "new-listing-public-readback.json"
+    evidence_path.write_text(json.dumps(snapshot, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    return {
+        "version": 1, "candidate_key": contract["candidate_key"],
+        "contract_sha256": contract["contract_sha256"], "draft_service_id": contract["draft_service_id"],
+        "status": "published", "effect": 1, "readback": 1, "image_count": 1,
+        "public_effect": 1, "public_url": contract["expected_public_url"],
+        "asset_sha256": contract["hero_image"]["asset_sha256"], "evidence_path": str(evidence_path),
+    }

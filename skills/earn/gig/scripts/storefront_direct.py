@@ -1516,7 +1516,21 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             new_listing_contract = storefront_draft.load_contract(
                 getattr(args, "new_listing_contract", DEFAULT_NEW_LISTING_CONTRACT)
             )
-            draft_result = (
+            candidate_id = new_listing_contract["draft_service_id"]
+            candidate_public = candidate_id in inventory_ids
+            duplicate_title = any(
+                str(service.get("title") or "") == new_listing_contract["public_fields"]["expected_title"]
+                and str(service.get("service_id") or "") != candidate_id
+                for service in inventory["services"] if isinstance(service, dict)
+            )
+            draft_result = ({
+                "version": 1, "candidate_key": new_listing_contract["candidate_key"],
+                "contract_sha256": new_listing_contract["contract_sha256"],
+                "draft_service_id": candidate_id, "status": "already_public",
+                "effect": 0, "readback": 1, "image_count": 1, "public_effect": 0,
+                "public_url": new_listing_contract["expected_public_url"],
+                "publication_guard": "already_public",
+            } if candidate_public else (
                 storefront_draft.prepare_draft(
                     new_listing_contract,
                     getattr(args, "default_tab_script", DEFAULT_TAB),
@@ -1532,7 +1546,23 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "readback": 0,
                     "public_effect": 0,
                 }
+            ))
+            publication_guard = (
+                "already_public" if candidate_public
+                else "duplicate_listing_title" if duplicate_title
+                else "catalog_capacity_exhausted" if observed >= 20
+                else "existing_listing_effect_open" if pending_effect is not None
+                else str(next_hypothesis.get("guard_reason") or "higher_priority_hypothesis_open")
+                if next_hypothesis is not None else None
             )
+            if publication_guard is not None:
+                draft_result = {**draft_result, "publication_guard": publication_guard}
+            elif args.effect:
+                draft_result = storefront_draft.publish_draft(
+                    new_listing_contract,
+                    getattr(args, "default_tab_script", DEFAULT_TAB),
+                    inventory_path.parent,
+                )
 
             for name in STATE_FILES:
                 path = args.state_dir / name
