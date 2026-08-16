@@ -126,6 +126,46 @@ Remaining honest gaps:
   so the coverage brief will say 21 until that producer is changed. The delivered text now follows the
   data instead of contradicting it, which is the part that could mislead Dais.
 
+## C-CORE-04 supervised primary-first wake — DONE 2026-08-16
+
+PR #2819 merged as `364ea0b72`; the shared `main` checkout was fast-forwarded so the launchd label
+runs the merged code. Baseline before firing: label loaded and not running, `runs = 0`, no Connector
+process, no lock, 14 applied bundles, `interactive:dais` and `coconala:kosuke` both reachable with no lease holder.
+
+One `launchctl kickstart` at 22:17:20 JST. Result: `runs = 1`, `last exit code = 1`, state back to not running.
+
+Provider order proven by the audit timestamps, primary first:
+
+| provider | recorded_at | observed | normalized | window | free+open | calendar-free |
+|---|---|---:|---:|---:|---:|---:|
+| Luma | 13:18:11Z | 39 | 39 | 33 | 16 | 0 |
+| Connpass | 13:18:15Z | 6 | 6 | 6 | 0 | 0 |
+| Peatix | 13:19:21Z | 100 | 100 | 86 | 57 | 10 |
+
+Peatix had candidates, attempted `provider_direct` then `browser_harness`, and the wake closed as
+`wake-aaa90b2080ed3b99a1982151` / `circuit_open` / `peatix_form_navigation_failed` with
+`consecutive_failure_count 3`. That is the defined terminal for repeated failure, and the exit contract
+held: non-zero exit plus a durable next action.
+
+Cleanup and honesty checks after the wake:
+
+- applied bundles still 14 — no external write, no duplicate application.
+- wake report delivered to Telegram with positive provider id `21274`.
+- no Connector process and no lock left behind; `evidence/tab-owner.json` and `evidence/target-leases.json`
+  were released.
+- no new stderr, so the non-zero exit is the contract path and not a crash.
+
+## C-CORE-05 blocker investigation
+
+Luma produced 16 free and open events inside the window and zero survived the Calendar gate, so the
+question is whether the gate is wrong or Dais is genuinely busy. Read-only Calendar readback for the
+14-day window returned 10 events, all on 2026-08-16 and 2026-08-17, and zero all-day events, so the
+calendar is nearly empty from 08-18 onward. The live predicate
+(`defaultCalendarFree` in `connector-luma-workflow.js`) blocks only on a timed overlap, and Peatix
+passed 10 candidates through the same busy inventory in the same wake, so the inventory is not
+over-blocking. The remaining explanation to prove is whether the 16 Luma events are themselves clustered
+on 08-16 and 08-17. Until that is measured, `C-CORE-05` is not claimed either way.
+
 Verification, re-run by the parent rather than trusted from the executor: `npm run test:outbound`
 33 + 341 pass / 0 fail, `npm run test:runtime-job` 18 pass / 0 fail, `npm run test:runtime-adapters`
 125 pass / 0 fail. Residual `routeMinutes` matches in production are only `transport/maps-gog.js`
