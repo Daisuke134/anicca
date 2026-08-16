@@ -492,10 +492,21 @@ class LocalLoopTest(unittest.TestCase):
                     "semantic_audit": {"decision": "PASS"},
                 })
                 if live:
-                    # Already published, then recomposed: fingerprint has moved on.
+                    # Already published, then recomposed: fingerprint has moved on
+                    # and the policy receipt no longer matches its handoff.
                     MODULE.atomic_json(state / "campaign-publications" / f"{plan_id}.json", {
                         "state": "X_LIVE", "provider_link_key": "key-1",
                         "handoff_fingerprint": "0" * 64,
+                    })
+                    MODULE.atomic_json(state / "x-posts" / f"{plan_id}-1.json", {
+                        "state": "LIVE", "public_url": "https://x.com/selawmqt/status/1",
+                    })
+                    MODULE.atomic_json(state / "campaign-policy" / f"{plan_id}.json", {
+                        "receipt_type": "GENERIC_CAMPAIGN_POLICY", "state": "PASS",
+                        "decision": "PASS", "plan_id": plan_id, "locale": "en",
+                        "handoff_sha256": "9" * 64, "handoff_fingerprint": "0" * 64,
+                        "source_set_sha256": "8" * 64, "checks": {"ok": True},
+                        "semantic_audit": {"decision": "PASS"},
                     })
 
             link_acquirer = Mock(return_value={

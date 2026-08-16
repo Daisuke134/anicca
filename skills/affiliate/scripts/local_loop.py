@@ -806,6 +806,20 @@ def advance_generic_publication(
     completed = False
     for policy_path in sorted((state / "campaign-policy").glob("*.json")):
         plan_id = policy_path.stem
+        # A campaign whose placement is already live is finished, so its policy
+        # and handoff receipts no longer gate anything. Validating them first
+        # lets a stale pair left behind by a later recomposition return and block
+        # every campaign sorted after it, which is how a published campaign
+        # blocked campaign seven twice on 2026-08-17.
+        try:
+            placement_receipt = json.loads((
+                state / "x-posts" / f"{plan_id}-1.json"
+            ).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            placement_receipt = {}
+        if placement_receipt.get("state") == "LIVE":
+            completed = True
+            continue
         handoff_path = state / "campaign-handoffs" / f"{plan_id}.json"
         try:
             policy = json.loads(policy_path.read_text(encoding="utf-8"))
