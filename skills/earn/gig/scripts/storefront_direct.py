@@ -1437,9 +1437,17 @@ def _seller_snapshot(ws_url: str) -> dict:
 def _seller_snapshot_for(ws_url: str, service_id: str) -> dict:
     import listing_inventory
 
-    return asyncio.run(listing_inventory._eval_json(
-        ws_url, f"https://coconala.com/mypage/services/{service_id}", SELLER_FORM_EXPRESSION,
-    ))
+    url = f"https://coconala.com/mypage/services/{service_id}"
+    required = {"data[Service][overview]", "data[Service][head]", "data[Service][price]"}
+    last = {}
+    for attempt in range(3):
+        last = asyncio.run(listing_inventory._eval_json(ws_url, url, SELLER_FORM_EXPRESSION))
+        names = {str(row.get("name") or "") for row in last.get("fields", []) if isinstance(row, dict)}
+        if last.get("url") == url and required <= names:
+            return last
+        if attempt < 2:
+            time.sleep(1)
+    raise RuntimeError("seller_form_not_fully_hydrated")
 
 
 def _effect_intent_path(state_dir: Path, experiment_key: str) -> Path:
