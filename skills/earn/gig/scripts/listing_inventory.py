@@ -292,10 +292,11 @@ async def _fetch_list_page(
         "JSON.stringify({cards:[...document.querySelectorAll('#serviceListContent "
         ".serviceListContentBox')].map(card=>({"
         "href:card.querySelector('a[href^=\"/services/\"]')?.getAttribute('href')||'',"
-        "state_controls:[...card.querySelectorAll('a,button,[role=button],[role=menuitem]')]"
-        ".filter(e=>/非公開|公開停止|公開を停止|下書きに戻す|停止|削除|公開する/.test(e.innerText||''))"
-        ".slice(0,10).map(e=>({tag:e.tagName,label:(e.innerText||'').trim().slice(0,40),"
-        "href:e.getAttribute('href')||null,id:e.id||null,cls:(e.className||'')+''})),"
+        "state_controls:[...card.querySelectorAll('a,button,[role=button],[role=menuitem],"
+        "input[type=checkbox],select')]"
+        ".slice(0,20).map(e=>({tag:e.tagName,type:e.type||null,"
+        "label:((e.innerText||e.getAttribute('aria-label')||e.getAttribute('title')||'')+'').trim().slice(0,32),"
+        "href:e.getAttribute('href')||null,id:e.id||null,cls:((e.className||'')+'').slice(0,60)})),"
         "text:card.innerText||''})).filter(card=>/^\\/services\\/\\d+$/.test(card.href))})"
     )
     if ws_url is not None:
