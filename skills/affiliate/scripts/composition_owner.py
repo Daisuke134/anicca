@@ -164,7 +164,7 @@ def build_handoff(skill_root: Path, state_root: Path, bundle: dict, receipt: dic
         or "try.elevenlabs.io" in markdown
     ):
         raise CompositionError
-    x_copy = f"Affiliate disclosure: {result['title']}\n\n{{{{OWNED_ARTICLE_URL}}}}"
+    x_copy = f"Affiliate link disclosure: {result['title']}\n\n{{{{OWNED_ARTICLE_URL}}}}"
     if len(x_copy) > 280:
         raise CompositionError
     handoff = {
@@ -349,6 +349,7 @@ def policy_inputs(
                 isinstance(x_copy, str) and len(x_copy) <= 280
                 and x_copy.count("{{OWNED_ARTICLE_URL}}") == 1
                 and "{{AFFILIATE_LINK}}" not in x_copy
+                and re.search(r"(?i)(#ad\b|affiliate link)", x_copy) is not None
             ),
             "private_link_absent": "try.elevenlabs.io" not in markdown,
         }

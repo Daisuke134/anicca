@@ -396,6 +396,13 @@ def advance_generic_publication(
             return {"state": "OWNED_NOT_LIVE", "public_url": owned.get("public_url")}
         progress.update(state="OWNED_LIVE", owned_url=owned["public_url"])
         atomic_json(progress_path, progress)
+        # Handoffs sealed before the publisher disclosure contract was aligned
+        # used this equivalent prefix. Normalize it without changing the
+        # source-backed article or bypassing the policy receipt.
+        if x_copy.startswith("Affiliate disclosure:"):
+            x_copy = x_copy.replace(
+                "Affiliate disclosure:", "Affiliate link disclosure:", 1,
+            )
         x_content = x_copy.replace("{{OWNED_ARTICLE_URL}}", owned["public_url"])
         x_content_path = state / "x-content" / f"{placement}.txt"
         x_content_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -603,6 +610,7 @@ def wake(args):
         "provider_recovery_state": recovery_state,
         "publication_state": publication["state"],
         "publication_url": publication["public_url"],
+        "publication_failure_type": publication.get("failure_type"),
         "revenue_state": revenue["state"],
         "revenue_source_rows": revenue["source_rows"],
         "revenue_appended_transitions": revenue["appended_transitions"],
