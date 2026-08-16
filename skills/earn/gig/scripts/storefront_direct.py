@@ -32,6 +32,7 @@ DEFAULT_ENSURE_BROWSER = BROWSER_DIR / "ensure_browser.sh"
 DEFAULT_RUNNER = RUNNER_DIR / "agent_runner.py"
 DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
 DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json"
+DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
 DEFAULT_REPLY_TRANSCRIPTS = Path.home() / "gig" / "reply-transcripts.jsonl"
 DEFAULT_APPLIED = Path.home() / "gig" / "applied.jsonl"
@@ -1131,6 +1132,7 @@ def _render_prepared_mutation(
 
 def _load_listing_contracts(
     root: Path, observed_contracts: list[dict], families_path: Path = DEFAULT_LISTING_CONTRACT_FAMILIES,
+    created_path: Path | None = None,
 ) -> list[dict]:
     observed = {row["service_id"]: row for row in observed_contracts}
     loaded = []
@@ -1165,6 +1167,19 @@ def _load_listing_contracts(
         })
     explicit_ids = {row["service_id"] for row in loaded}
     mappings, families = _load_capability_families(families_path)
+    if created_path is not None:
+        created_rows, created_error = _jsonl_rows(created_path)
+        if created_error:
+            raise RuntimeError("created_listing_family_ledger_invalid")
+        for row in created_rows:
+            service_id = str(row.get("draft_service_id") or "")
+            family_name = row.get("capability_family")
+            if row.get("status") in {"published", "already_public"} and service_id.isdigit():
+                if service_id in mappings:
+                    continue
+                if not isinstance(family_name, str) or family_name not in families:
+                    raise RuntimeError(f"created_listing_family_missing:{service_id}")
+                mappings[service_id] = family_name
     for source in observed_contracts:
         service_id = source["service_id"]
         if service_id in explicit_ids:
@@ -1935,6 +1950,163 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
     image.save(path, format="PNG", optimize=False)
     data = path.read_bytes()
     return {"asset_sha256": hashlib.sha256(data).hexdigest(), "asset_path": str(path.resolve())}
+
+
+def _create_proposal_prompt(
+    source: dict, family_name: str, family: dict, demand: dict,
+    capability_paths: set[str], catalog_titles: list[str],
+) -> tuple[str, set[str]]:
+    offer_ref = f"official:offer-contract:{source['service_id']}:{source['service_version_sha256']}"
+    family_ref = f"owned:capability-family:{family_name}"
+    demand_ref = str(demand["evidence_path"])
+    allowed_refs = {offer_ref, family_ref, demand_ref}
+    capabilities = []
+    for raw_path in sorted(capability_paths):
+        path = Path(raw_path)
+        if path.is_file():
+            allowed_refs.add(raw_path)
+            capabilities.append({"evidence_ref": raw_path,
+                                 "content": path.read_text(encoding="utf-8")[:6000]})
+    context = {
+        "source_offer": source,
+        "capability_family": {"name": family_name, "contract": family},
+        "demand": demand,
+        "owned_capability_evidence": capabilities,
+        "current_catalog_titles": catalog_titles,
+        "allowed_evidence_refs": sorted(allowed_refs),
+    }
+    prompt = """Create one distinct Coconala service proposal from CONTEXT_JSON and return only the
+strict schema object. The source_service_id must equal source_offer.service_id. The new service must
+sell a narrower buyer-visible outcome supported by the same owned capability family; it must not
+duplicate or merely rephrase any current_catalog_titles. Use the demand page only as demand evidence,
+never copy seller wording, reviews, sales, guarantees or unsupported claims. Include exact evidence
+refs for the official offer, owned family and demand evidence. The title_stem excludes the final
+Japanese `ます`. head must state outcome, exact inclusions, exclusions, required inputs and support
+boundary. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
+lines: headline, supporting line, and two or three short badges separated by `｜`; do not include price,
+speed, sales, reviews or guarantees. Price and paid option must be conservative. Choose create only
+when the proposal is clearly distinct and supported. Otherwise choose no_op, set every nullable
+commercial field and metric/window to null, and provide no_op_reason. Do not claim that creation itself
+caused KPI improvement.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+    return prompt, allowed_refs
+
+
+def _invoke_create_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path, source: dict,
+    family_name: str, family: dict, demand: dict, capability_paths: set[str],
+    catalog_titles: list[str], timeout_seconds: int,
+) -> tuple[dict, dict, set[str]]:
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    prompt, allowed_refs = _create_proposal_prompt(
+        source, family_name, family, demand, capability_paths, catalog_titles,
+    )
+    started = time.time()
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-create", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "").strip()[-400:]
+        raise RuntimeError(f"storefront_create_proposal_failed:{completed.returncode}:{detail}")
+    try:
+        summary_path = evidence_dir / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        result_path = Path(str(summary["result_path"])).resolve()
+        result_path.relative_to(evidence_dir.resolve())
+        if (summary.get("status") != "success"
+                or summary.get("task_class") != "storefront-proposal-agent"
+                or summary.get("selected_provider") != "codex"
+                or summary.get("selected_model") != "gpt-5.6-terra"
+                or summary.get("selected_effort") != "medium"
+                or min(summary_path.stat().st_mtime, result_path.stat().st_mtime) < started):
+            raise ValueError("stale_or_wrong_route")
+        proposal = json.loads(result_path.read_text(encoding="utf-8"))
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_create_proposal_evidence_invalid") from error
+    route = {"task_class": summary["task_class"], "route": summary.get("route"),
+             "provider": summary["selected_provider"], "model": summary["selected_model"],
+             "effort": summary["selected_effort"], "summary_path": str(summary_path)}
+    return proposal, route, allowed_refs
+
+
+def _seal_create_contract(
+    proposal: dict, *, source: dict, family_name: str, allowed_refs: set[str],
+    blueprint: dict, seller_snapshot: dict, draft_service_id: str, evidence_dir: Path,
+) -> dict | None:
+    nullable = ("source_service_id", "title_stem", "catchphrase", "head", "body",
+                "display_price_jpy", "delivery_days", "paid_option_title",
+                "paid_option_price_jpy", "image_copy", "success_metric",
+                "observation_window_days")
+    if proposal.get("decision") == "no_op":
+        if any(proposal.get(key) is not None for key in nullable) or not str(
+                proposal.get("no_op_reason") or "").strip():
+            raise RuntimeError("storefront_create_noop_invalid")
+        return None
+    evidence = proposal.get("evidence")
+    required = {
+        f"official:offer-contract:{source['service_id']}:{source['service_version_sha256']}",
+        f"owned:capability-family:{family_name}", str(blueprint["demand_evidence_path"]),
+    }
+    if (proposal.get("decision") != "create"
+            or proposal.get("source_service_id") != source["service_id"]
+            or proposal.get("success_metric") not in {"views_to_inquiry", "views_to_purchase"}
+            or proposal.get("observation_window_days") not in {7, 14}
+            or proposal.get("no_op_reason") is not None
+            or not isinstance(evidence, list) or not required <= set(evidence)
+            or not set(evidence) <= allowed_refs or not draft_service_id.isdigit()):
+        raise RuntimeError("storefront_create_identity_invalid")
+    title_stem = str(proposal.get("title_stem") or "").strip()
+    catchphrase = str(proposal.get("catchphrase") or "").strip()
+    head = str(proposal.get("head") or "").strip()
+    body = str(proposal.get("body") or "").strip()
+    option_title = str(proposal.get("paid_option_title") or "").strip()
+    image_copy = str(proposal.get("image_copy") or "").strip()
+    if (not title_stem or len(title_stem) > 23 or not 15 <= len(catchphrase) <= 30
+            or not head or len(head) > 1000 or not body or len(body) > 500
+            or not option_title or len(option_title) > 60
+            or len([line for line in image_copy.splitlines() if line.strip()]) != 3
+            or "｜" not in image_copy.splitlines()[-1]):
+        raise RuntimeError("storefront_create_content_invalid")
+    select_options = seller_snapshot.get("select_options") or {}
+    display_price = proposal.get("display_price_jpy")
+    price_option = next((row for row in select_options.get("data[Service][price]", [])
+                         if str(row.get("label") or "").replace(",", "") == f"{display_price}円"), None)
+    option_price = proposal.get("paid_option_price_jpy")
+    option_price_row = next((row for row in select_options.get("data[Option][0][price]", [])
+                             if str(row.get("label") or "").replace(",", "") == f"{option_price}円"), None)
+    if type(display_price) is not int or price_option is None or type(option_price) is not int or option_price_row is None:
+        raise RuntimeError("storefront_create_price_invalid")
+    asset = _render_generated_image_asset(image_copy, draft_service_id, evidence_dir)
+    unsigned = {
+        "version": 1, "platform": "coconala",
+        "candidate_key": f"storefront:create:v1:{hashlib.sha256(title_stem.encode()).hexdigest()}",
+        "draft_service_id": draft_service_id,
+        "draft_url": f"https://coconala.com/mypage/services/{draft_service_id}",
+        "expected_public_url": f"https://coconala.com/services/{draft_service_id}",
+        "origin": "storefront", "demand_evidence": blueprint["demand_evidence"],
+        "capability_evidence": {"family": family_name, "source_service_id": source["service_id"]},
+        "hero_image_contract": asset["asset_path"], "category": blueprint["category"],
+        "public_fields": {"overview_input": title_stem, "expected_title": f"{title_stem}ます",
+                          "catchphrase": catchphrase, "head": head,
+                          "price_option_value": str(price_option["value"]),
+                          "display_price_jpy": display_price,
+                          "delivery_days": int(proposal["delivery_days"]), "order_limit": 1,
+                          "body": body, "accept_estimates": True, "estimate_required": False},
+        "category_specific": blueprint["category_specific"], "subscription": blueprint["subscription"],
+        "paid_options": [{"title": option_title, "price_jpy": option_price, "opened": "1"}],
+        "publication_gate": blueprint["publication_gate"], "proposal_evidence": evidence,
+        "success_metric": proposal["success_metric"],
+        "observation_window_days": proposal["observation_window_days"],
+    }
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {**unsigned, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
+            "hero_image": {"version": 1, "service_id": draft_service_id, "field": "image",
+                           "mime_type": "image/png", "width": 1220, "height": 1016,
+                           "claims": image_copy.splitlines(), **asset}}
 
 
 def _seal_generated_proposal(
@@ -3137,6 +3309,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 listing_contracts = _load_listing_contracts(
                     getattr(args, "listing_contract_dir", DEFAULT_LISTING_CONTRACT_DIR), validated_contracts,
                     getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
+                    args.state_dir / "new-listing-drafts.jsonl",
                 )
                 funnel = _join_funnel(
                     args.state_dir, validated_contracts,
@@ -3241,6 +3414,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             listing_contracts = _load_listing_contracts(
                 getattr(args, "listing_contract_dir", DEFAULT_LISTING_CONTRACT_DIR), validated_contracts,
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
+                args.state_dir / "new-listing-drafts.jsonl",
             )
             competitor_manifest = _collect_competitors(
                 ws_url,
@@ -3302,6 +3476,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             proposal_agent = None
             generated_render = None
             generated_render_path = None
+            capability_paths = {str(Path(path).resolve()) for path in args.capability_evidence}
             recovery = _pending_recovery(args.state_dir, own_page, ws_url, inventory_path.parent)
             if recovery is not None:
                 judgement = recovery.get("judgement")
@@ -3374,7 +3549,6 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 if recovery["changed_field"] == "FAQ":
                     pending_effect.update({"question": question, "answer": answer})
             else:
-                capability_paths = {str(Path(path).resolve()) for path in args.capability_evidence}
                 proposal_noop = None
                 if (next_hypothesis is not None
                         and next_hypothesis.get("guard_reason") == "proposal_contract_required"):
@@ -3583,9 +3757,49 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
 
             import storefront_draft
 
-            new_listing_contract = storefront_draft.load_contract(
-                getattr(args, "new_listing_contract", DEFAULT_NEW_LISTING_CONTRACT)
-            )
+            new_listing_path = getattr(args, "new_listing_contract", DEFAULT_NEW_LISTING_CONTRACT)
+            new_listing_contract = storefront_draft.load_contract(new_listing_path)
+            create_family = None
+            create_draft_claim = None
+            fixed_candidate_public = new_listing_contract["draft_service_id"] in inventory_ids
+            if fixed_candidate_public and next_hypothesis is None and observed < 20:
+                source_service_id = new_listing_contract["draft_service_id"]
+                create_source = next((row for row in validated_contracts
+                                      if row["service_id"] == source_service_id), None)
+                create_family = capability_families.get(source_service_id)
+                create_template = capability_templates.get(str(create_family or ""))
+                if create_source is None or not isinstance(create_family, str) or not isinstance(create_template, dict):
+                    raise RuntimeError("storefront_create_source_contract_missing")
+                demand = {**new_listing_contract["demand_evidence"],
+                          "evidence_path": str(Path(new_listing_path).resolve())}
+                create_proposal, create_route, create_allowed_refs = _invoke_create_proposal(
+                    runner=getattr(args, "runner", DEFAULT_RUNNER),
+                    schema=getattr(args, "create_proposal_schema", DEFAULT_CREATE_PROPOSAL_SCHEMA),
+                    workdir=args.workdir,
+                    evidence_dir=inventory_path.parent / "create-proposal-agent",
+                    source=create_source, family_name=create_family, family=create_template,
+                    demand=demand, capability_paths=capability_paths,
+                    catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
+                    timeout_seconds=args.timeout_seconds,
+                )
+                proposal_agent = create_route
+                if create_proposal.get("decision") == "create" and args.effect:
+                    create_draft_claim = storefront_draft.create_or_claim_blank_draft(
+                        getattr(args, "default_tab_script", DEFAULT_TAB)
+                    )
+                    blueprint = {**new_listing_contract,
+                                 "demand_evidence_path": str(Path(new_listing_path).resolve())}
+                    new_listing_contract = _seal_create_contract(
+                        create_proposal, source=create_source, family_name=create_family,
+                        allowed_refs=create_allowed_refs, blueprint=blueprint,
+                        seller_snapshot=_seller_snapshot_for(ws_url, source_service_id),
+                        draft_service_id=str(create_draft_claim["draft_service_id"]),
+                        evidence_dir=inventory_path.parent / "create-contract",
+                    )
+                    if new_listing_contract is None:
+                        raise RuntimeError("storefront_create_contract_missing")
+                    _atomic_write(inventory_path.parent / "generated-create-contract.json",
+                                  new_listing_contract)
             candidate_id = new_listing_contract["draft_service_id"]
             candidate_public = candidate_id in inventory_ids
             duplicate_title = any(
@@ -3667,6 +3881,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     getattr(args, "default_tab_script", DEFAULT_TAB),
                     inventory_path.parent,
                 )
+            draft_result = {**draft_result,
+                            "capability_family": create_family or capability_families.get(candidate_id),
+                            "blank_draft_claim": create_draft_claim}
 
             for name in STATE_FILES:
                 path = args.state_dir / name
@@ -3841,6 +4058,7 @@ def main() -> int:
     parser.add_argument("--runner", type=Path, default=DEFAULT_RUNNER)
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     parser.add_argument("--proposal-schema", type=Path, default=DEFAULT_PROPOSAL_SCHEMA)
+    parser.add_argument("--create-proposal-schema", type=Path, default=DEFAULT_CREATE_PROPOSAL_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
     parser.add_argument("--gallery-contract", type=Path, default=DEFAULT_GALLERY_CONTRACT)
