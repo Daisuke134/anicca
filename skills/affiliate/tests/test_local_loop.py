@@ -7,8 +7,10 @@ import tempfile
 import unittest
 import sys
 from argparse import Namespace
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "local_loop.py"
@@ -19,6 +21,65 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_daily_summary_has_stable_jst_day_identity_and_money_stage(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            (state / "provider-reports" / "partnerstack-links").mkdir(parents=True)
+            MODULE.atomic_json(
+                state / "provider-reports" / "partnerstack-links" / "latest.json",
+                {"observed_at": "provider-time", "placements": [{
+                    "current_click_count": 0,
+                }]},
+            )
+            wake = {
+                "provider_state": "AUTHENTICATED",
+                "impact_state": "APPLICATION_PENDING",
+                "systeme_state": "CAPTCHA_CHALLENGE",
+            }
+            morning = datetime(2026, 8, 16, 8, tzinfo=ZoneInfo("Asia/Tokyo"))
+            evening = datetime(2026, 8, 16, 21, tzinfo=ZoneInfo("Asia/Tokyo"))
+            next_day = datetime(2026, 8, 17, 8, tzinfo=ZoneInfo("Asia/Tokyo"))
+            first = MODULE.daily_summary_event(state, wake, morning)
+            second = MODULE.daily_summary_event(state, wake, evening)
+            third = MODULE.daily_summary_event(state, wake, next_day)
+            unknown = MODULE.daily_summary_event(
+                state,
+                {"provider_state": "SIGN_IN_REQUIRED", "impact_state": "UNKNOWN", "systeme_state": "FAILED"},
+                next_day,
+            )
+            self.assertEqual(first["event_uuid"], second["event_uuid"])
+            self.assertNotEqual(first["event_uuid"], third["event_uuid"])
+            self.assertIn("専用リンクで最初の外部クリック", first["body"])
+            self.assertNotIn("SIGN_IN_REQUIRED", unknown["body"])
+            self.assertIn("確認が必要な状態", unknown["body"])
+
+    def test_all_unsent_commissions_and_clicks_precede_daily_summary(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            for number in (1, 2):
+                MODULE.append(state / "commission-ledger.jsonl", {
+                    "transition_id": f"commission-{number}",
+                    "provider_transaction_id": f"tx-{number}",
+                    "status": "approved", "gross_commission_minor": 1000,
+                    "net_commission_minor": 1000, "currency": "USD",
+                    "placement": {"public_url": "https://example.test/article"},
+                })
+                MODULE.append(state / "click-ledger.jsonl", {
+                    "transition_id": f"click-{number}", "delta_click_count": 1,
+                    "public_url": "https://example.test/article",
+                })
+            wake = {"status": "READY_FOR_PUBLICATION"}
+            observed = []
+            for number in range(4):
+                event = MODULE.next_telegram_event(state, wake)
+                observed.append(event["kind"])
+                MODULE.append(state / "telegram-sent.jsonl", {
+                    "event_uuid": event["event_uuid"], "message_id": str(number),
+                })
+            self.assertEqual(observed, [
+                "COMMISSION_APPROVED", "COMMISSION_APPROVED", "CLICK_DELTA", "CLICK_DELTA",
+            ])
+
     def test_completed_generic_campaign_advances_to_tts_campaign(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
@@ -90,6 +151,9 @@ class LocalLoopTest(unittest.TestCase):
                     "state": "NO_TRANSACTIONS", "source_rows": 0,
                     "appended_transitions": 0,
                 }),
+                patch.object(MODULE, "flush_telegram", return_value={
+                    "state": "NO_PENDING", "sent": 0, "message_id": None,
+                }),
                 contextlib.redirect_stdout(output),
             ):
                 MODULE.wake(args)
@@ -133,6 +197,9 @@ class LocalLoopTest(unittest.TestCase):
                 patch.object(MODULE, "run_revenue_cycle", return_value={
                     "state": "NO_TRANSACTIONS", "source_rows": 0,
                     "appended_transitions": 0,
+                }),
+                patch.object(MODULE, "flush_telegram", return_value={
+                    "state": "NO_PENDING", "sent": 0, "message_id": None,
                 }),
                 contextlib.redirect_stdout(output),
             ):

@@ -1610,8 +1610,16 @@ shared abstraction to make the diff appear smaller.
   status, identical local/remote landing HEAD `341b04082f80142fff1ae28e452b4fb4ff6c1946`,
   and `Telegram=NO_PENDING`. The replay created neither a third TTS Git-push job
   nor a second TTS X-publish job.
-- [ ] **E0-C08** Capture Link Performance baseline for that link; an unchanged
+- [x] **E0-C08** Capture Link Performance baseline for that link; an unchanged
   replay MUST create no click transition.
+
+  Real launchd run `42` captured the official Link Performance row for provider
+  link key `dd63ebae-fe33-4347-b264-313b7bcb2072` and placement
+  `elevenlabs-text-to-speech-api-for-developers`: baseline `0`, current `0`,
+  delta `0`, with zero appended click transitions. Commission Report returned
+  zero rows and remains `NO_TRANSACTIONS`. The same wake sent Telegram provider
+  message ID `21025` for the separate aggregate-only historical `+1` click as
+  `UNATTRIBUTED_CLICK_DELTA`; it did not attribute that click to this placement.
 - [ ] **E0-C09** Continue scheduled distribution and provider polling until an
   external user produces a provider-observed positive delta. No agent or operator
   manufactures the click.
@@ -1681,6 +1689,7 @@ shared abstraction to make the diff appear smaller.
 | `COMMISSION_PAID` | transaction lineage, approved versus paid, currency | Provider status `paid` | transition ID |
 | `SELF_HEALED` | failed stage, typed cause, repair, postcondition, resumed job | Same-job repair succeeds | repair receipt ID |
 | `BLOCKED` | lane, typed blocker, unaffected lanes, retry due time | Terminal external challenge/quarantine | blocker transition ID |
+| `AFFILIATE_DAILY_SUMMARY` | wake count, owned/X live counts, placement clicks, commission status counts, approved net by currency, provider freshness, external states, unfinished economic stage | First otherwise-eventless 10-minute wake of each JST day | event kind + JST date |
 
 ### 9.0.2 Current slice contract — fourth English campaign through the real loop
 
@@ -2082,6 +2091,20 @@ resubmitted.
   duplicating the underlying publication or money transition.
 - [ ] **A13.5** Prove real messages for `PLACEMENT_LIVE`, `CLICK_DELTA`,
   `COMMISSION_PENDING`, `COMMISSION_APPROVED`, `SELF_HEALED`, and `BLOCKED`.
+- [ ] **A13.6** Send one daily metrics summary even when no business transition
+  occurs. Reuse the existing 10-minute owner and Telegram outbox; do not add a
+  scheduler. Instant transition events retain priority, and the daily summary is
+  deferred to the next otherwise-eventless wake. Its deterministic receipt may
+  report observed money and lifecycle stage, but campaign allocation remains a
+  model decision gated behind E1 approved economics. The Telegram body is
+  natural-language owner UX generated only from real local wake events, public
+  receipts, PartnerStack Link Performance, and the append-only commission
+  ledger. Mock data and test transport never qualify as live proof. Machine state
+  codes and JSON objects are retained in the private receipt, not dumped into the
+  owner-facing message. Before falling back to the daily summary, the owner
+  enumerates every append-only commission and click transition and selects the
+  first unsent UUID in priority order; a multi-row provider burst therefore
+  drains across later wakes without silently losing any event.
 
 `SELF_HEALED` is live-proven with Telegram `messageId=20298`; `BLOCKED` is
 live-proven with `messageId=20305`. The other four event classes remain bound to

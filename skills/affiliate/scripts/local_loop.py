@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 from types import SimpleNamespace
+from zoneinfo import ZoneInfo
 
 from job_journal import (
     JobStateError, reconcile_effect, resume_effect, start_effect,
@@ -195,9 +196,10 @@ def advance_substack_distribution(state, now=None, cooldown_seconds=86400):
             "changed": not result.get("deduplicated", False)}
 
 
-def owner_event(state, wake_event):
-    ledger = json_rows(state / "commission-ledger.jsonl")
-    transition = ledger[-1] if ledger else None
+def owner_event(state, wake_event, sent_event_ids=None):
+    sent_event_ids = sent_event_ids or set()
+    commission_transitions = json_rows(state / "commission-ledger.jsonl")
+    click_transitions = json_rows(state / "click-ledger.jsonl")
     campaign = latest_live_campaign(state)
     cycle_path = state / "revenue-cycle.json"
     try:
@@ -211,89 +213,83 @@ def owner_event(state, wake_event):
     except (OSError, ValueError):
         metrics = {}
     click_delta = metrics.get("delta_from_baseline", {}).get("clicks")
-    link_transition = wake_event.get("link_latest_transition")
     impact_state = wake_event.get("impact_state")
     impact_changed = wake_event.get("impact_changed", False)
+    candidates = []
+
+    def add(kind, identity, money, public_url=None, article_url=None):
+        event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+        candidates.append({
+            "event_uuid": event_uuid, "kind": kind, "money": money,
+            "public_url": public_url, "article_url": article_url,
+        })
+
     if wake_event.get("placement_link_changed") and wake_event.get("placement_link_state") == "VERIFIED":
         kind = "PLACEMENT_LINK_VERIFIED"
-        identity = {
+        add(kind, {
             "kind": kind, "provider": "elevenlabs",
             "placement_id": wake_event.get("placement_link_placement"),
             "provider_link_key": wake_event.get("placement_link_key"),
-        }
-        money = "link verified / commission not observed yet"
-        transition = None
-        campaign = {}
-    elif wake_event.get("distribution_changed") and wake_event.get("distribution_state") == "LIVE":
+        }, "link verified / commission not observed yet")
+    if wake_event.get("distribution_changed") and wake_event.get("distribution_state") == "LIVE":
         kind = "DISTRIBUTION_LIVE"
-        identity = {
+        add(kind, {
             "kind": kind, "channel": wake_event.get("distribution_channel"),
             "plan_id": wake_event.get("distribution_plan_id"),
             "public_url": wake_event.get("distribution_url"),
-        }
-        money = "LIVE / commission not observed yet"
-        transition = None
-        campaign = {}
-    elif impact_changed and impact_state in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
+        }, "LIVE / commission not observed yet", wake_event.get("distribution_url"))
+    if impact_changed and impact_state in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
         kind = f"PROGRAM_{impact_state}"
-        identity = {
+        add(kind, {
             "kind": kind,
             "provider": "hubspot-impact",
             "transition_id": wake_event.get("impact_transition_id"),
-        }
-        money = "commission not observed yet"
-        transition = None
-        campaign = {}
-    elif transition:
+        }, "commission not observed yet")
+    for transition in commission_transitions:
         kind = {
             "pending": "COMMISSION_PENDING", "approved": "COMMISSION_APPROVED",
             "reversed": "COMMISSION_REVERSED", "paid": "COMMISSION_PAID",
         }.get(transition.get("status"), "COMMISSION_CHANGED")
-        identity = {"kind": kind, "transition_id": transition["transition_id"]}
-        money = (
+        add(kind, {"kind": kind, "transition_id": transition["transition_id"]}, (
             f"{transition.get('status')} / gross={transition.get('gross_commission_minor')} minor "
             f"net={transition.get('net_commission_minor')} minor / {transition.get('currency') or 'currency unknown'}"
-        )
-    elif link_transition and wake_event.get("link_appended_transitions", 0) > 0:
+        ), (transition.get("placement") or {}).get("public_url"))
+    for link_transition in click_transitions:
+        if not isinstance(link_transition.get("delta_click_count"), int) or link_transition["delta_click_count"] <= 0:
+            continue
         kind = "CLICK_DELTA"
-        identity = {"kind": kind, "transition_id": link_transition["transition_id"]}
-        money = (
+        add(kind, {"kind": kind, "transition_id": link_transition["transition_id"]}, (
             f"provider link clicks=+{link_transition['delta_click_count']} / "
             "commission not observed yet"
-        )
-        transition = None
-        campaign = {}
-    elif isinstance(click_delta, int) and click_delta > 0:
+        ), link_transition.get("public_url"))
+    if isinstance(click_delta, int) and click_delta > 0:
         kind = "UNATTRIBUTED_CLICK_DELTA"
-        identity = {
+        add(kind, {
             "kind": kind, "provider": "elevenlabs",
             "metrics_sha256": metrics.get("metrics_sha256"),
             "clicks": metrics.get("metrics", {}).get("clicks"),
-        }
-        money = f"aggregate post-baseline clicks=+{click_delta} / not attributable / commission not observed"
-        transition = None
-        campaign = {}
-    elif campaign:
+        }, f"aggregate post-baseline clicks=+{click_delta} / not attributable / commission not observed")
+    if campaign:
         kind = "PLACEMENT_LIVE"
-        identity = {"kind": kind, "plan_id": campaign.get("plan_id"), "x_url": campaign["x_url"]}
-        money = "LIVE / commission not observed yet"
-    elif cycle.get("state") == "NO_TRANSACTIONS":
+        add(kind, {"kind": kind, "plan_id": campaign.get("plan_id"), "x_url": campaign["x_url"]},
+            "LIVE / commission not observed yet", campaign["x_url"], campaign.get("owned_url"))
+    if cycle.get("state") == "NO_TRANSACTIONS":
         kind = "REVENUE_RECONCILED"
-        identity = {"kind": kind, "provider": "elevenlabs", "state": "NO_TRANSACTIONS"}
-        money = "NO_TRANSACTIONS / gross=unknown / net=unknown / cost=unknown"
-    elif wake_event["status"] not in ("READY_FOR_PUBLICATION",):
+        add(kind, {"kind": kind, "provider": "elevenlabs", "state": "NO_TRANSACTIONS"},
+            "NO_TRANSACTIONS / gross=unknown / net=unknown / cost=unknown",
+            wake_event.get("publication_url") or latest_live_url(state))
+    if wake_event.get("status") not in ("READY_FOR_PUBLICATION",):
         kind = "BLOCKED"
-        identity = {"kind": kind, "provider": "elevenlabs", "status": wake_event["status"]}
-        money = "unknown"
-    else:
-        return None
-    event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
-    public_url = link_transition.get("public_url") if kind == "CLICK_DELTA" else wake_event.get("distribution_url") if kind == "DISTRIBUTION_LIVE" else None if kind.startswith("PROGRAM_") or kind in {"PLACEMENT_LINK_VERIFIED", "UNATTRIBUTED_CLICK_DELTA"} else (
-        (transition or {}).get("placement", {}).get("public_url") or (
-            campaign.get("x_url") if kind == "PLACEMENT_LIVE" else None
-        ) or wake_event.get("publication_url") or latest_live_url(state)
+        add(kind, {"kind": kind, "provider": "elevenlabs", "status": wake_event.get("status")},
+            "unknown", wake_event.get("publication_url") or latest_live_url(state))
+    selected = next(
+        (candidate for candidate in candidates if candidate["event_uuid"] not in sent_event_ids),
+        None,
     )
-    recovery = "なし" if kind != "BLOCKED" else f"未回復: {wake_event['status']}"
+    if not selected:
+        return None
+    kind = selected["kind"]
+    recovery = "なし" if kind != "BLOCKED" else "未回復の外部状態があります"
     next_job = (
         "同じ申請を再提出せず、Impactの審査状態を継続確認"
         if kind.startswith("PROGRAM_")
@@ -305,14 +301,148 @@ def owner_event(state, wake_event):
     body = "\n".join((
         "Life Manager Affiliate::: Affiliate loop report",
         f"実行: {kind}",
-        f"公開先: {public_url or '未紐付け'}",
-        *((f"記事: {campaign['owned_url']}",) if campaign.get("owned_url") else ()),
+        f"公開先: {selected['public_url'] or '未紐付け'}",
+        *((f"記事: {selected['article_url']}",) if selected.get("article_url") else ()),
         f"プログラム: {program}",
-        f"お金: {money}",
+        f"お金: {selected['money']}",
         f"回復: {recovery}",
         f"次: {next_job}",
     ))
-    return {"event_uuid": event_uuid, "kind": kind, "body": body, "created_at": int(time.time())}
+    return {"event_uuid": selected["event_uuid"], "kind": kind, "body": body, "created_at": int(time.time())}
+
+
+def daily_summary_event(state, wake_event, now=None):
+    now = now or datetime.now(ZoneInfo("Asia/Tokyo"))
+    report_date = now.astimezone(ZoneInfo("Asia/Tokyo")).date().isoformat()
+    owned_live = sum(
+        json.loads(path.read_text(encoding="utf-8")).get("state") == "LIVE"
+        for path in (state / "owned-publications").glob("*.json")
+    )
+    x_live = sum(
+        json.loads(path.read_text(encoding="utf-8")).get("state") == "LIVE"
+        for path in (state / "x-posts").glob("*.json")
+    )
+    try:
+        links = json.loads(
+            (state / "provider-reports" / "partnerstack-links" / "latest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, ValueError):
+        links = {}
+    placements = links.get("placements") if isinstance(links.get("placements"), list) else []
+    link_clicks = sum(int(row.get("current_click_count", 0)) for row in placements)
+    commission_transitions = json_rows(state / "commission-ledger.jsonl")
+    latest_commissions = {}
+    for row in commission_transitions:
+        transaction_id = row.get("provider_transaction_id")
+        if transaction_id:
+            latest_commissions[transaction_id] = row
+    commissions = list(latest_commissions.values())
+    status_counts = {
+        status: sum(row.get("status") == status for row in commissions)
+        for status in ("pending", "approved", "paid", "reversed")
+    }
+    approved_by_currency = {}
+    for row in commissions:
+        if row.get("status") not in {"approved", "paid"}:
+            continue
+        currency = row.get("currency") or "UNKNOWN"
+        approved_by_currency[currency] = approved_by_currency.get(currency, 0) + int(
+            row.get("net_commission_minor") or 0
+        )
+    economic_stage = (
+        "E0_PROVIDER_CLICK" if link_clicks == 0
+        else "E1_APPROVED_COMMISSION"
+        if not (status_counts["approved"] + status_counts["paid"])
+        else "POST_E1_OPTIMIZATION"
+    )
+    wake_count_today = sum(
+        datetime.fromtimestamp(row.get("ts", 0), ZoneInfo("Asia/Tokyo")).date().isoformat()
+        == report_date
+        for row in json_rows(state / "events.jsonl")
+        if isinstance(row.get("ts"), int)
+    )
+    identity = {"kind": "AFFILIATE_DAILY_SUMMARY", "date": report_date}
+    event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_DAILY_SUMMARY",
+        "report_date": report_date,
+        "event_uuid": event_uuid,
+        "wake_count_today": wake_count_today,
+        "owned_live": owned_live,
+        "x_live": x_live,
+        "placement_count": len(placements),
+        "provider_link_clicks": link_clicks,
+        "commission_status_counts": status_counts,
+        "approved_or_paid_net_minor_by_currency": approved_by_currency,
+        "provider_observed_at": links.get("observed_at"),
+        "provider_state": wake_event.get("provider_state"),
+        "impact_state": wake_event.get("impact_state"),
+        "systeme_state": wake_event.get("systeme_state"),
+        "economic_stage": economic_stage,
+        "created_at": int(now.timestamp()),
+    }
+    atomic_json(state / "daily-summaries" / f"{report_date}.json", receipt)
+    if approved_by_currency:
+        approved_text = "、".join(
+            f"{currency} {minor / 100:,.2f}"
+            for currency, minor in sorted(approved_by_currency.items())
+        )
+    else:
+        approved_text = "USD 0.00"
+    try:
+        observed_text = datetime.fromisoformat(links["observed_at"]).astimezone(
+            ZoneInfo("Asia/Tokyo")
+        ).strftime("%Y-%m-%d %H:%M JST")
+        observed_line = f"最終provider確認は{observed_text}です。"
+    except (KeyError, TypeError, ValueError):
+        observed_line = "最終provider確認はまだ取得できていません。"
+    state_text = {
+        "AUTHENTICATED": "ログイン済み",
+        "APPLICATION_PENDING": "申請審査中",
+        "CAPTCHA_CHALLENGE": "CAPTCHAの外部確認待ち",
+        None: "状態未取得",
+    }
+    stage_text = {
+        "E0_PROVIDER_CLICK": "専用リンクで最初の外部クリックを確認する段階です。",
+        "E1_APPROVED_COMMISSION": "クリックから最初の承認済み報酬を確認する段階です。",
+        "POST_E1_OPTIMIZATION": "実測収益を使って次のcampaignを選ぶ段階です。",
+    }[economic_stage]
+    body = "\n".join((
+        "Life Manager Affiliate::: 今日の運用報告です。",
+        f"{report_date}は、Affiliate loopが{receipt['wake_count_today']}回動きました。",
+        f"現在、owned記事は{owned_live}本、X投稿は{x_live}件が公開状態です。",
+        f"PartnerStackで追跡中の専用リンクは{len(placements)}本で、確認できた外部クリックは{link_clicks}件です。",
+        (
+            "報酬は、保留"
+            f"{status_counts['pending']}件、承認{status_counts['approved']}件、"
+            f"支払済み{status_counts['paid']}件、取消{status_counts['reversed']}件です。"
+        ),
+        f"承認済み以上の純報酬は{approved_text}です。clickや保留報酬は収益に含めていません。",
+        observed_line,
+        (
+            f"ElevenLabsは{state_text.get(receipt['provider_state'], '確認が必要な状態')}、"
+            f"HubSpotは{state_text.get(receipt['impact_state'], '確認が必要な状態')}、"
+            f"Systeme.ioは{state_text.get(receipt['systeme_state'], '確認が必要な状態')}です。"
+        ),
+        f"次の経済stageは、{stage_text}",
+    ))
+    return {
+        "event_uuid": event_uuid,
+        "kind": "AFFILIATE_DAILY_SUMMARY",
+        "body": body,
+        "created_at": receipt["created_at"],
+    }
+
+
+def next_telegram_event(state, wake_event):
+    sent_ids = {row.get("event_uuid") for row in json_rows(state / "telegram-sent.jsonl")}
+    event = owner_event(state, wake_event, sent_ids)
+    if event:
+        return event
+    return daily_summary_event(state, wake_event)
 
 
 def find_message_id(value):
@@ -1141,7 +1271,7 @@ def wake(args):
     }
     append(state / "events.jsonl", event)
     atomic_json(state / "last-run.json", event)
-    telegram = flush_telegram(state, owner_event(state, event))
+    telegram = flush_telegram(state, next_telegram_event(state, event))
     event["telegram_state"] = telegram["state"]
     event["telegram_message_id"] = telegram["message_id"]
     atomic_json(state / "last-run.json", event)
