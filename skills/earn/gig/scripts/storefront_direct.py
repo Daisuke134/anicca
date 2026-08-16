@@ -1096,6 +1096,30 @@ def _render_listing_state_mutation(
     }, capability_families)
 
 
+CREATE_MIN_INTERVAL_SECONDS = 86_400
+
+
+def _last_published_create_epoch(state_dir: Path) -> int | None:
+    """When this loop last published a brand-new listing, read from its own wake receipts."""
+    path = state_dir / "wakes.jsonl"
+    if not path.is_file():
+        return None
+    latest = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        draft = row.get("new_listing_draft") if isinstance(row.get("new_listing_draft"), dict) else {}
+        if (int(draft.get("public_effect") or 0) == 1
+                and str(draft.get("candidate_key") or "").startswith("storefront:create:v1:")
+                and type(row.get("observed_at_epoch")) is int):
+            latest = max(latest or 0, row["observed_at_epoch"])
+    return latest
+
+
 def _render_replace_plan(retire_contract: dict, create_contract: dict | None, allocation: dict) -> dict:
     """One atomic REPLACE: free the slot recoverably, then fill it, or restore the old listing.
 
@@ -4064,7 +4088,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 for line in (args.state_dir / "new-listing-drafts.jsonl").read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ) if (args.state_dir / "new-listing-drafts.jsonl").exists() else False
-            if fixed_candidate_public and not demand_already_sold and next_hypothesis is None and observed < 20:
+            # A catalogue fills over days, not over consecutive full wakes.
+            last_create = _last_published_create_epoch(args.state_dir)
+            create_spacing_open = (last_create is None
+                                   or int(time.time()) - last_create >= CREATE_MIN_INTERVAL_SECONDS)
+            if (fixed_candidate_public and not demand_already_sold and create_spacing_open
+                    and next_hypothesis is None and observed < 20):
                 source_service_id = new_listing_contract["draft_service_id"]
                 create_source = next((row for row in validated_contracts
                                       if row["service_id"] == source_service_id), None)

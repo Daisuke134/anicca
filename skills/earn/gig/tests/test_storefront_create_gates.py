@@ -52,6 +52,30 @@ def test_rows_written_before_the_field_existed_still_close_the_gate():
     assert not sold_from_this_demand(seed)
 
 
+
+def test_a_catalogue_fills_over_days_not_over_consecutive_wakes(tmp_path):
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import storefront_direct as sd
+
+    state = tmp_path / "state"
+    state.mkdir()
+    published = {"observed_at_epoch": 1_786_891_168,
+                 "new_listing_draft": {"public_effect": 1,
+                                       "candidate_key": "storefront:create:v1:abc"}}
+    other = {"observed_at_epoch": 1_786_899_999,
+             "new_listing_draft": {"public_effect": 0,
+                                   "candidate_key": "storefront:create:v1:abc"}}
+    (state / "wakes.jsonl").write_text(
+        json.dumps(published) + "\n" + json.dumps(other) + "\n", encoding="utf-8")
+
+    last = sd._last_published_create_epoch(state)
+    assert last == 1_786_891_168  # a wake without a public effect never counts
+    assert sd.CREATE_MIN_INTERVAL_SECONDS == 86_400
+    assert last + sd.CREATE_MIN_INTERVAL_SECONDS > 1_786_895_800  # still closed hours later
+    assert sd._last_published_create_epoch(tmp_path / "absent") is None
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
