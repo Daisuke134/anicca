@@ -4520,3 +4520,4 @@
 {"ts":1786836919,"source":"cook","task":"explore: solana microtask platform paying USDC per task no upfront cost","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSV0K8RXAF24EFA721B94519"}
 {"ts":1786837051,"source":"cook","task":"explore: solana microtask platform paying USDC per task instant payout","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSV0N0LKDA1368BCA1BB45D0"}
 {"ts":1786839666,"source":"cook","task":"explore: Solana API marketplace paying USDC per request microtasks platform instant payout","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSV273W5A21872E215BE4FB7"}
+{"ts":1786841771,"source":"cook","task":"explore: Solana pay-per-use API marketplace USDC microtasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSV3G98B738938975370445D"}
