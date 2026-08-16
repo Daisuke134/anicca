@@ -1935,7 +1935,7 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
 def _seal_generated_proposal(
     proposal: dict, hypothesis: dict, source: dict, seller_snapshot: dict,
     family_name: str, capability_families: dict[str, str], allowed_refs: set[str],
-    evidence_dir: Path,
+    evidence_dir: Path, public_snapshot: dict,
 ) -> dict | None:
     if proposal.get("decision") == "no_op":
         if (any(proposal.get(key) is not None for key in (
@@ -1962,12 +1962,15 @@ def _seal_generated_proposal(
         raise RuntimeError("storefront_generated_proposal_identity_invalid")
     proposed = str(proposal.get("proposed_value") or "").strip()
     if field == "image":
-        if hypothesis.get("before") != 0 or not proposed:
+        if (hypothesis.get("before") != 0 or not proposed
+                or public_snapshot.get("service_id") != service_id
+                or public_snapshot.get("service_image_ids") != []
+                or not re.fullmatch(r"[0-9a-f]{64}", str(public_snapshot.get("listing_version_sha256") or ""))):
             raise RuntimeError("storefront_generated_image_before_invalid")
         asset = _render_generated_image_asset(proposed, service_id, evidence_dir)
         return _seal_mutation_contract({
             "version": 1, "platform": "coconala", "service_id": service_id,
-            "precondition_listing_version_sha256": source["service_version_sha256"],
+            "precondition_listing_version_sha256": public_snapshot["listing_version_sha256"],
             "changed_field": "image", "before_value": {"service_image_ids": []},
             "proposed_value": asset,
             "allowed_delta": ["data[UploadedFile][n*][image_files]"],
@@ -3395,6 +3398,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                     proposal_snapshot_path = inventory_path.parent / f"proposal-seller-{proposal_service_id}.json"
                     _atomic_write(proposal_snapshot_path, proposal_snapshot)
+                    proposal_public = _observe_own_page(
+                        ws_url, inventory_path.parent, f"proposal-public-{proposal_service_id}.json",
+                        proposal_service_id,
+                    )
                     proposal, proposal_agent, allowed_refs = _invoke_proposal(
                         runner=args.runner,
                         schema=getattr(args, "proposal_schema", DEFAULT_PROPOSAL_SCHEMA),
@@ -3407,6 +3414,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     generated_contract = _seal_generated_proposal(
                         proposal, next_hypothesis, proposal_source, proposal_snapshot,
                         family_name, capability_families, allowed_refs, inventory_path.parent,
+                        proposal_public,
                     )
                     _atomic_write(inventory_path.parent / "proposal-record.json", {
                         "version": 1, "proposal": proposal, "route": proposal_agent,
