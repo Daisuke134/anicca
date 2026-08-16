@@ -34,7 +34,8 @@ DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
 DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json"
 DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
-MEASURABLE_SUCCESS_METRICS = {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase"}
+MEASURABLE_SUCCESS_METRICS = {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase",
+                              "net_receipt"}
 DEFAULT_REPLY_TRANSCRIPTS = Path.home() / "gig" / "reply-transcripts.jsonl"
 DEFAULT_APPLIED = Path.home() / "gig" / "applied.jsonl"
 DEFAULT_EARNINGS = Path.home() / "gig" / "earnings.jsonl"
@@ -1527,9 +1528,37 @@ def _official_metric_windows(path: Path, service_id: str, metric: str, accepted_
     }
 
 
+def _funnel_metric_windows(path: Path, service_id: str, accepted_at: int, window_days: int) -> dict:
+    """Verified net receipt for one service, counted only from immutable payment events."""
+    if not path.is_file():
+        return {"status": "unknown", "reason": "funnel_events_missing"}
+    try:
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    except json.JSONDecodeError:
+        return {"status": "unknown", "reason": "funnel_events_invalid"}
+    payments = [row for row in rows
+                if row.get("event_kind") == "payment"
+                and str(row.get("service_id") or "") == service_id
+                and type(row.get("observed_at_epoch")) is int
+                and type(row.get("net_receipt_jpy")) in {int, float}]
+    stamps = [row["observed_at_epoch"] for row in rows if type(row.get("observed_at_epoch")) is int]
+    pre_start = accepted_at - window_days * 86400
+    if not stamps or min(stamps) > pre_start:
+        return {"status": "unknown", "reason": "funnel_history_does_not_cover_baseline"}
+    eligible_at = accepted_at + window_days * 86400
+    return {
+        "status": "known", "measurement": "window_aligned_receipt_sum",
+        "baseline": sum(float(row["net_receipt_jpy"]) for row in payments
+                        if pre_start <= row["observed_at_epoch"] < accepted_at),
+        "observed": sum(float(row["net_receipt_jpy"]) for row in payments
+                        if accepted_at <= row["observed_at_epoch"] < eligible_at),
+        "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+    }
+
+
 def _measure_experiment_metric(
     metric: str, *, reply_transcripts: Path, analytics_path: Path, service_id: str,
-    accepted_at: int, window_days: int,
+    accepted_at: int, window_days: int, funnel_path: Path | None = None,
 ) -> dict:
     """Measure the experiment's metric, or say why it is unmeasurable and fall back.
 
@@ -1550,6 +1579,10 @@ def _measure_experiment_metric(
         result = _inquiry_windows(reply_transcripts, service_id, accepted_at, window_days)
     elif metric == "purchases":
         result = _official_metric_windows(analytics_path, service_id, "purchases", accepted_at, eligible_at)
+    elif metric == "net_receipt":
+        result = (_funnel_metric_windows(funnel_path, service_id, accepted_at, window_days)
+                  if funnel_path is not None
+                  else {"status": "unknown", "reason": "funnel_events_not_supplied"})
     else:
         return {"status": "unknown", "reason": "unsupported_success_metric",
                 "requested_metric": metric, "measured_metric": None}
@@ -1687,6 +1720,7 @@ def _close_outcome(
             reply_transcripts=reply_transcripts, analytics_path=state_dir / "analytics.jsonl",
             service_id=str(experiment.get("service_id") or ""),
             accepted_at=accepted_at, window_days=window_days,
+            funnel_path=state_dir / "funnel-events.jsonl",
         )
         if inquiry.get("status") != "known":
             terminal_state, reason = True, str(inquiry.get("reason") or "inquiry_evidence_unknown")
