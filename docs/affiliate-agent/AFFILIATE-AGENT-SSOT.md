@@ -1006,11 +1006,15 @@ flowchart LR
    failed on the missing source-set contract, then passed with the full 48-test
    Affiliate suite. Live readback showed all five Affiliate owners healthy and
    Gig untouched; this is real local execution, not a dry run.
-2. **P0 — Add the bounded composition owner.** Give it only one due
+2. **P0 — Add the bounded composition owner — GREEN in source; release pending.** Give it only one due
    `composition-inbox` receipt, no Affiliate credential Markdown, no provider/X
    browser, no money ledger, a separate lock, one attempt budget, and a terminal
    `READY_FOR_POLICY|FAILED|QUARANTINED` receipt. It MUST NOT run inside the
-   ten-minute money owner.
+   ten-minute money owner. The accepted implementation is one new direct owner
+   over the existing runner: one due source set per wake, sealed-result recovery
+   before a new model call, and same-source terminal-receipt dedupe. The focused
+   test first failed because the owner did not exist, then the owner and full
+   49-test Affiliate suite passed; installed launchd E2E remains the closing gate.
 3. **P0 — Define the generic campaign handoff.** Require offer ID, locale, buyer
    intent, title, slug, owned-article Markdown, disclosure, one CTA placeholder,
    cited source IDs/hashes, X copy, and content/result fingerprints. The model

@@ -50,9 +50,10 @@ copy `os.environ` into this boundary.
 The same wrapper owns model evidence. It applies `0700` to directories and
 `0600` to files, rejects symlinks, and removes a stale seal before each run.
 After the vendored runner writes its atomic summary, the wrapper validates the
-attempt JSONL and atomically writes `evidence-seal.json` with the summary and
-attempt hashes. Consumers call `verify_evidence_seal`; raw output without a
-valid seal is incomplete evidence, never a model result.
+attempt JSONL and atomically writes `evidence-seal.json` with the summary,
+attempt, exact result, source-set, and execution hashes/data. Consumers call
+`verify_evidence_seal` with the expected source set; raw output without a valid
+seal is incomplete evidence, never a model result.
 
 F0 provides four deterministic, non-publishing primitives:
 
@@ -128,7 +129,7 @@ fields, and the versioned submit control. It journals the effect before submit
 and never prints the password. Redirect to a different provider page proves only
 reset acceptance; `resume` must still prove the authenticated application state.
 
-Install the local release and its four launchd owners:
+Install the local release and its isolated launchd owners:
 
 ```bash
 skills/affiliate/scripts/install-release.sh
@@ -138,6 +139,8 @@ skills/affiliate/affiliate loop placement --placement article-1 --locale en
 
 `ai.anicca.affiliate-browser` owns the isolated provider profile on CDP `9324`;
 `ai.anicca.affiliate-x-browser` owns the English X profile on CDP `9326`.
+`ai.anicca.affiliate-composition` consumes at most one due credential-free
+source bundle per wake and writes a sealed terminal composition receipt.
 `ai.anicca.affiliate-loop` wakes every 10 minutes. Receipts live under
 `~/.local/state/life-manager/affiliate`; provider passwords and the executable
 ElevenLabs link remain only in the mode-0600 private Markdown. The current wake
