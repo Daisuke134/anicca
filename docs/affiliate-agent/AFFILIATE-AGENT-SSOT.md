@@ -1044,17 +1044,20 @@ flowchart LR
    all 49 Affiliate tests pass. Three installed-owner wakes created three validated
    handoffs from existing sealed outputs with no duplicate usage-ledger row; their
    internal fingerprints and composition-receipt file hashes both read back.
-4. **P0 — Generalize the policy gate — IN PROGRESS.** Validate cited URLs and source hashes,
+4. **P0 — Generalize the policy gate — GREEN IN SOURCE; RELEASE PENDING.** Validate cited URLs and source hashes,
    disclosure-before-CTA, claim support, locale, forbidden guarantees, one CTA,
    article/X length, and provider/channel rules. FAIL returns to the same job;
    only PASS permits private-link injection. Exact structure/freshness/policy
    checks are deterministic; claim support is a separate bounded read-only model
    audit over the sealed handoff and the same official source set. Neither layer
    receives credentials, a tracking link, browser authority, or the money ledger.
-   RED is observed: the focused owner test fails only because `wake()` does not
-   yet accept or persist a `policy_builder` result after an existing handoff;
-   after that contract turns GREEN, the real-receipt test fails only because
-   `build_policy()` has no bounded semantic-audit adapter yet.
+   RED was observed first at each boundary: `wake()` lacked a `policy_builder`,
+   then `build_policy()` lacked a bounded semantic-audit adapter. Both now pass.
+   The source implementation revalidates the exact handoff and current official
+   source hashes before and after the read-only audit, writes one hash-bound
+   PASS/FAIL receipt, and keeps the private link and all effect authority out of
+   policy context. The focused checks and all 50 Affiliate tests pass; immutable
+   release installation and real launchd receipt readback remain open.
 5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
    only a policy-PASS artifact, injects the executable link locally, publishes the
    owned article, waits for HTTP `200`, publishes X, and performs exact public

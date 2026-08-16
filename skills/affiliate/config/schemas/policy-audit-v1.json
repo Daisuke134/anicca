@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "decision",
+    "unsupported_claims",
+    "rationale"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["PASS", "FAIL"]
+    },
+    "unsupported_claims": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "rationale": {
+      "type": "string"
+    }
+  }
+}
