@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `11789537a` is current and five isolated Affiliate launchd owners are installed. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The separate daily source owner owns only versioned official-source refresh | Open-ended discovery/composition, general repair, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `dc78b3bd9` is current and five isolated Affiliate launchd owners are installed. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The separate daily source owner owns versioned official-source refresh and credential-free composition inputs | Open-ended discovery/composition execution, general repair, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and currently `AUTHENTICATED`. Installed recovery filled the observed single-page form, verified the same fenced login job on attempt 3, and the next wake converged with `recovery=NOT_NEEDED`; the browser readback is `Home | ElevenLabs`. HubSpot/Impact remains `APPLICATION_PENDING`; Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, and `BLOCKED` are live-proven | `PLACEMENT_LIVE`, `CLICK_DELTA`, and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, provider recovery, configured source-bound content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `11789537a` refreshed all three plans and 15 sources, then immediate replay returned `COOLDOWN` with the source ledger unchanged at 17 rows while the money loop remained exit `0` | A safe dynamic composition/handoff owner, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop distributes and measures; it has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, source-hash-bound composition inbox, provider recovery, configured content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `dc78b3bd9` produced three credential-free inboxes for `4 + 6 + 5` sources; each contains only locale, official locator, evidence class, raw SHA, and aggregate source-set SHA | A safe dynamic composition executor, open-ended source-plan discovery, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop distributes and measures; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -1005,10 +1005,11 @@ diagnoses only when an existing deterministic tool cannot advance them.
    commission receipts. Repair only failures observed in this live path, then
    encode each successful repair into the Skill.
 9. **PARTIAL:** Installed a separate daily official-source owner. Release
-   `11789537a` captured `4 + 6 + 5` sources across all three plans, produced
-   `COMPLETE`, and replayed as `COOLDOWN` with ledger rows `17 → 17`; the money
-   owner remained exit `0`. Still add the least-authority composition/handoff
-   owner with sanitized inputs, source-hash/result binding, and bounded cost.
+   `11789537a` captured `4 + 6 + 5` sources, produced `COMPLETE`, and replayed as
+   `COOLDOWN` with ledger rows `17 → 17`; the money owner remained exit `0`.
+   Release `dc78b3bd9` then emitted three credential-free, source-set-SHA-bound
+   composition inputs. Still add the bounded composition executor and validate
+   its result hash before deterministic publishing can consume it.
 10. After E1, add another executable English provider, ten comparable placements,
    cohort allocation, Japanese isolation, clean-Mac packaging, and cloud in the
    existing B/C/D gate order.
@@ -1645,10 +1646,10 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 6. **DONE:** Reuse CRWL, content, policy, owned, X, and revenue primitives for the
    TTS API English job. The verified artifact is a versioned template; no model
    runs inside the money-owner lock or receives credential/state-tree access.
-7. **PARTIAL:** The separate least-authority daily source owner is installed and
-   live-proven. Add only the composition step that emits a source-hash-bound
-   durable campaign handoff; keep the deterministic money owner and its
-   ten-minute lock unchanged.
+7. **PARTIAL:** The separate least-authority daily source owner and its
+   source-hash-bound durable composition inbox are installed and live-proven.
+   Add only the bounded composition executor and validated result handoff; keep
+   the deterministic money owner and its ten-minute lock unchanged.
 8. Close E0 and E1 from real provider receipts, then add failure repair from the
    failures actually observed while earning.
 9. Only after E1, resume generic action schema, broad model context/budget work,
