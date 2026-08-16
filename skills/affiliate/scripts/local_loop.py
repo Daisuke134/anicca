@@ -949,7 +949,7 @@ def placement(args):
         state / "placements.jsonl", receipt, ("provider", "locale", "placement")
     )
     receipt["deduplicated"] = not created
-    print(link if args.print_url else json.dumps(receipt, sort_keys=True, separators=(",", ":")))
+    print(json.dumps(receipt, sort_keys=True, separators=(",", ":")))
     return 0
 
 
@@ -970,7 +970,6 @@ def main():
     )
     parser.add_argument("--placement", default="article-1")
     parser.add_argument("--locale", choices=("en", "ja"), default="en")
-    parser.add_argument("--print-url", action="store_true")
     args = parser.parse_args()
     return wake(args) if args.command == "wake" else placement(args)
 
