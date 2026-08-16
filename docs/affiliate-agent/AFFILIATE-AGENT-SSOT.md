@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `dc78b3bd9` is current and five isolated Affiliate launchd owners are installed. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The separate daily source owner owns versioned official-source refresh and credential-free composition inputs | Open-ended discovery/composition execution, general repair, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `501f6d5ea` is current and five isolated Affiliate launchd owners are installed. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The separate daily source owner owns versioned official-source refresh and credential-free composition inputs. The shared runner now seals the exact result and its source set before any future composition owner can hand it to policy | Open-ended discovery/composition execution, general repair, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and currently `AUTHENTICATED`. Installed recovery filled the observed single-page form, verified the same fenced login job on attempt 3, and the next wake converged with `recovery=NOT_NEEDED`; the browser readback is `Home | ElevenLabs`. HubSpot/Impact remains `APPLICATION_PENDING`; Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, and `BLOCKED` are live-proven | `PLACEMENT_LIVE`, `CLICK_DELTA`, and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, source-hash-bound composition inbox, provider recovery, configured content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `dc78b3bd9` produced three credential-free inboxes for `4 + 6 + 5` sources; each contains only locale, official locator, evidence class, raw SHA, and aggregate source-set SHA | A safe dynamic composition executor, open-ended source-plan discovery, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop distributes and measures; it has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, source-hash-bound composition inbox, provider recovery, configured content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `501f6d5ea` preserves the three credential-free inboxes for `4 + 6 + 5` sources and adds a verified composition-result seal; the release readback kept all five Affiliate owners healthy without touching Gig | A scheduled bounded composition owner, open-ended source-plan discovery, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop distributes and measures; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -974,11 +974,11 @@ The completed history remains in the evidence tables below. The following list i
 the only canonical remaining order; later work MUST NOT jump ahead of an unmet
 gate.
 
-Current execution cursor: **step 1**. Installed release `dc78b3bd9` has five
+Current execution cursor: **step 2**. Installed release `501f6d5ea` has five
 healthy launchd owners, 15 refreshed official sources, three source-hash-bound
-composition inputs, zero post-baseline clicks, and zero commission. Therefore
-composition—not another research framework, provider login, locale, packaging,
-or cloud service—is the next implementation slice.
+composition inputs, a result/source-set seal, zero post-baseline clicks, and zero
+commission. Therefore the bounded composition owner—not another research
+framework, provider login, locale, packaging, or cloud service—is the next slice.
 
 ```mermaid
 flowchart LR
@@ -998,13 +998,14 @@ flowchart LR
   M1 --> M10[USD 10M per month]
 ```
 
-1. **P0 — Seal composition output — GREEN in source; release pending.** The
-   existing runner receipt now hashes the exact result file, binds it to one
+1. **DONE — Seal composition output.** Installed release `501f6d5ea` makes the
+   existing runner receipt hash the exact result file, bind it to one
    validated `source_set_sha256`, seals model/effort/provider usage/budget from
    the runner summary, confines the result to its evidence directory, and rejects
    either result tampering or a changed source set. The focused regression first
    failed on the missing source-set contract, then passed with the full 48-test
-   Affiliate suite; this is real local execution, not a dry run.
+   Affiliate suite. Live readback showed all five Affiliate owners healthy and
+   Gig untouched; this is real local execution, not a dry run.
 2. **P0 — Add the bounded composition owner.** Give it only one due
    `composition-inbox` receipt, no Affiliate credential Markdown, no provider/X
    browser, no money ledger, a separate lock, one attempt budget, and a terminal
