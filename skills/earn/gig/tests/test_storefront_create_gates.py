@@ -3,6 +3,7 @@
 Run: python3 -m pytest skills/earn/gig/tests/test_storefront_create_gates.py
 """
 import json
+import pytest
 import sys
 from pathlib import Path
 
@@ -149,6 +150,40 @@ def test_a_page_whose_cards_do_not_parse_stays_unknown():
     out = sd._extract_search_demand("3,220 件中 1 - 60 件表示\nおすすめ順\n")
     assert out["visible_result_count"] == 3220 and out["comparables"] == []
     assert sd._score_demand_cluster(out)["status"] == "unknown"
+
+
+
+FAMILIES = {"seo_writing", "excel_automation"}
+
+
+def test_a_proposed_query_must_belong_to_an_owned_capability():
+    sd = _sd()
+    proposal = {"decision": "propose", "no_op_reason": None,
+                "queries": [{"query": "議事録 要約 自動化", "capability_family": "excel_automation",
+                             "rationale": "既存のExcel自動化能力で対応できる"}]}
+    sealed = sd._seal_demand_proposal(proposal, FAMILIES, ["SEO記事の見出し構成を作成します"])
+    assert sealed[0]["query"] == "議事録 要約 自動化"
+
+    unowned = {"decision": "propose", "no_op_reason": None,
+               "queries": [{"query": "動画編集", "capability_family": "video_editing", "rationale": "r"}]}
+    with pytest.raises(RuntimeError, match="storefront_demand_query_unowned_or_duplicate"):
+        sd._seal_demand_proposal(unowned, FAMILIES, [])
+
+
+def test_a_query_that_repeats_the_current_catalogue_is_refused():
+    sd = _sd()
+    proposal = {"decision": "propose", "no_op_reason": None,
+                "queries": [{"query": "SEO記事", "capability_family": "seo_writing", "rationale": "r"}]}
+    with pytest.raises(RuntimeError, match="storefront_demand_query_duplicates_catalogue"):
+        sd._seal_demand_proposal(proposal, FAMILIES, ["SEO記事の見出し構成を作成します"])
+
+
+def test_a_no_op_must_say_why_and_carry_no_queries():
+    sd = _sd()
+    assert sd._seal_demand_proposal(
+        {"decision": "no_op", "no_op_reason": "既存クラスタが未消化", "queries": []}, FAMILIES, []) == []
+    with pytest.raises(RuntimeError, match="storefront_demand_noop_invalid"):
+        sd._seal_demand_proposal({"decision": "no_op", "no_op_reason": None, "queries": []}, FAMILIES, [])
 
 
 if __name__ == "__main__":

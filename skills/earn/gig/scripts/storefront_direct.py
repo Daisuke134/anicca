@@ -1143,6 +1143,35 @@ def _score_demand_cluster(cluster: dict) -> dict:
     }
 
 
+def _seal_demand_proposal(proposal: dict, family_names: set[str], catalog_titles: list[str]) -> list[dict]:
+    """Accept only query candidates tied to an owned capability family.
+
+    The model may name a market to look at; it may never assert that demand exists. That
+    verdict comes from crawling the official search page afterwards.
+    """
+    if proposal.get("decision") == "no_op":
+        if proposal.get("queries") or not str(proposal.get("no_op_reason") or "").strip():
+            raise RuntimeError("storefront_demand_noop_invalid")
+        return []
+    queries = proposal.get("queries")
+    if (proposal.get("decision") != "propose" or not isinstance(queries, list) or not queries
+            or proposal.get("no_op_reason") is not None):
+        raise RuntimeError("storefront_demand_proposal_invalid")
+    sealed = []
+    seen = set()
+    for row in queries:
+        query = str((row or {}).get("query") or "").strip()
+        family = str((row or {}).get("capability_family") or "").strip()
+        if not query or family not in family_names or query in seen:
+            raise RuntimeError("storefront_demand_query_unowned_or_duplicate")
+        if any(query in str(title or "") for title in catalog_titles):
+            raise RuntimeError("storefront_demand_query_duplicates_catalogue")
+        seen.add(query)
+        sealed.append({"query": query, "capability_family": family,
+                       "rationale": str(row.get("rationale") or "").strip()})
+    return sealed
+
+
 def _demand_cluster_key(query: str, category_url: str) -> str:
     identity = json.dumps({"query": query.strip(), "category": category_url.strip()},
                           ensure_ascii=False, sort_keys=True, separators=(",", ":"))
