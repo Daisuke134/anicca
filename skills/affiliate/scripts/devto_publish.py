@@ -123,6 +123,7 @@ def observe_metrics(state):
             "public_id": public_id,
             "public_url": publication.get("public_url"),
             "published_at": publication.get("published_at"),
+            "experiment": publication.get("experiment"),
             **values,
         })
     receipt_path = state / "distribution-metrics" / "devto.json"
@@ -161,6 +162,7 @@ def observe_metrics(state):
                     "page_views_count": article["page_views_count"],
                     "public_reactions_count": article["public_reactions_count"],
                     "comments_count": article["comments_count"],
+                    "experiment": article.get("experiment"),
                 })
             article["baseline_receipt_sha256"] = hashlib.sha256(
                 baseline_path.read_bytes()
@@ -258,6 +260,7 @@ def publish(state, plan_id):
         "plan_id": plan_id, "placement_id": placement, "canonical_url": canonical,
         "public_id": str(readback["id"]), "public_url": live_url,
         "content_sha256": digest, "published_at": readback["published_at"],
+        "experiment": campaign.get("experiment"),
         "observed_at": datetime.now(timezone.utc).isoformat(), "deduplicated": not created,
     }
     _atomic(receipt_path, receipt)

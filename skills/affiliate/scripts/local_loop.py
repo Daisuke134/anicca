@@ -732,6 +732,8 @@ def advance_generic_publication(
             "state": progress.get("state", "MATERIALIZED"),
             "created_at": created_at,
         }
+        if handoff.get("experiment"):
+            progress["experiment"] = handoff["experiment"]
         atomic_json(progress_path, progress)
         atomic_json(state / "content" / f"{slug}.json", {
             "slug": slug,
@@ -745,11 +747,13 @@ def advance_generic_publication(
             "readback_links": [link],
             "project": "AFFILIATE DECISION GUIDE",
             "built_at": created_at,
+            "experiment": handoff.get("experiment"),
         })
         atomic_json(state / "policy" / f"{slug}.json", {
             "decision": "PASS",
             "content_sha256": content_sha256,
             "generic_policy_sha256": hashlib.sha256(policy_path.read_bytes()).hexdigest(),
+            "experiment": handoff.get("experiment"),
         })
 
         owned = owned_publisher(SimpleNamespace(

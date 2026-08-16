@@ -252,6 +252,11 @@ without invoking a model. The Agent chooses one acquisition variable, records a
 falsifiable hypothesis, one next-campaign instruction, and one success metric
 under `acquisition-decisions/`; it does not publish, edit, or infer revenue.
 Telegram reports the resulting decision in natural language from that receipt.
+The next discovered plan consumes one unused decision and carries its immutable
+experiment envelope through source-set hashing, sealed composition, policy,
+owned/X publication, and DEV/Substack receipts. Composition receives the prior
+sealed campaign as the control and may change only the Agent-selected variable;
+missing control evidence fails closed before any public effect.
 
 The same distribution command exposes the current Writer Substack API shape
 without importing Writer state or its retired manual sentinel path:

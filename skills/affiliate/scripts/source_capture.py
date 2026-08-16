@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from provider_cli import atomic_write
+from acquisition_decision import VARIABLES
 
 
 class CaptureError(Exception):
@@ -88,6 +89,37 @@ def fetch_sitemap_xml(url):
     return result.stdout
 
 
+def pending_experiment(state_root, plans):
+    used = {
+        plan.get("experiment", {}).get("decision_id")
+        for plan in plans if isinstance(plan.get("experiment"), dict)
+    }
+    for path in sorted((state_root / "acquisition-decisions").glob("*.json")):
+        decision = json.loads(path.read_text(encoding="utf-8"))
+        required = (
+            "decision_id", "baseline_sha256", "plan_id", "placement_id",
+            "selected_variable", "hypothesis", "next_campaign_instruction",
+            "success_metric",
+        )
+        if decision.get("state") != "READY" or not all(
+            isinstance(decision.get(key), str) and decision[key] for key in required
+        ) or decision["selected_variable"] not in VARIABLES:
+            raise CaptureError("invalid acquisition decision")
+        if decision["decision_id"] not in used:
+            return {
+                "schema_version": 1,
+                "decision_id": decision["decision_id"],
+                "baseline_sha256": decision["baseline_sha256"],
+                "control_plan_id": decision["plan_id"],
+                "control_placement_id": decision["placement_id"],
+                "selected_variable": decision["selected_variable"],
+                "hypothesis": decision["hypothesis"],
+                "instruction": decision["next_campaign_instruction"],
+                "success_metric": decision["success_metric"],
+            }
+    return None
+
+
 def discover_official_plan(root, state_root, now):
     receipt_path = state_root / "opportunity-discovery.json"
     try:
@@ -128,6 +160,7 @@ def discover_official_plan(root, state_root, now):
     covered_families = {
         family for url in covered_urls if (family := product_family(url))
     }
+    experiment = pending_experiment(state_root, plans)
     selected = next(
         ((family, url) for family, url in observed
          if family not in covered_families and url not in covered_urls),
@@ -167,6 +200,8 @@ def discover_official_plan(root, state_root, now):
             },
         ],
     }
+    if experiment:
+        plan["experiment"] = experiment
     plan_path = state_root / "discovered-source-plans" / f"{plan_id}.json"
     if plan_path.is_file():
         if json.loads(plan_path.read_text(encoding="utf-8")) != plan:
@@ -180,6 +215,7 @@ def discover_official_plan(root, state_root, now):
         "sitemap_url": DISCOVERY_SITEMAP, "sitemap_sha256": sitemap_sha256,
         "observed_candidates": len(observed), "selected_family": family,
         "selected_url": product_url, "plan_id": plan_id,
+        "experiment_id": experiment.get("decision_id") if experiment else None,
         "plan_path": str(plan_path),
         "plan_sha256": hashlib.sha256(plan_path.read_bytes()).hexdigest(),
     }
@@ -306,12 +342,20 @@ def write_composition_bundle(state_root, plan, receipts):
     sources = [{
         key: row[key] for key in ("source_id", "locator", "evidence_class", "raw_sha256")
     } for row in receipts]
-    source_set = hashlib.sha256(json.dumps(sources, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    source_material = {"sources": sources}
+    if plan.get("experiment"):
+        source_material["experiment"] = plan["experiment"]
+    source_set = hashlib.sha256(json.dumps(
+        source_material if plan.get("experiment") else sources,
+        sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
     bundle = {
         "schema_version": 1, "receipt_type": "COMPOSITION_INPUT",
         "plan_id": plan["plan_id"], "locale": plan["locale"],
         "source_set_sha256": source_set, "sources": sources,
     }
+    if plan.get("experiment"):
+        bundle["experiment"] = plan["experiment"]
     atomic_write(state_root / "composition-inbox" / f"{plan['plan_id']}.json", bundle)
     return bundle
 

@@ -256,6 +256,7 @@ def publish(state, plan_id):
                "plan_id": plan_id, "placement_id": placement, "public_id": target,
                "public_url": live_url, "owned_url": campaign["owned_url"],
                "content_sha256": digest, "observed_at": datetime.now(timezone.utc).isoformat(),
+               "experiment": campaign.get("experiment"),
                "deduplicated": not created,
                "duplicate_public_urls": [row["url"] for row in public_targets[1:]]}
     _atomic(receipt_path, receipt)
