@@ -100,7 +100,7 @@ fi
 /usr/bin/plutil -insert excluded_mutable_paths -json '["state"]' "$RECEIPT_STAGE"
 if [[ "$INSTALL_LAUNCHD" == "1" ]]; then
   /usr/bin/plutil -insert launchd_owners -json \
-    '["ai.anicca.affiliate-browser","ai.anicca.affiliate-impact-browser","ai.anicca.affiliate-x-browser","ai.anicca.affiliate-loop"]' "$RECEIPT_STAGE"
+    '["ai.anicca.affiliate-browser","ai.anicca.affiliate-impact-browser","ai.anicca.affiliate-x-browser","ai.anicca.affiliate-source-refresh","ai.anicca.affiliate-loop"]' "$RECEIPT_STAGE"
 else
   /usr/bin/plutil -insert launchd_owners -array "$RECEIPT_STAGE"
 fi
@@ -133,6 +133,7 @@ BROWSER_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-browser.plist"
 IMPACT_BROWSER_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-impact-browser.plist"
 X_BROWSER_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-x-browser.plist"
 LOOP_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-loop.plist"
+SOURCE_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-source-refresh.plist"
 cat > "$BROWSER_PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -177,8 +178,19 @@ cat > "$LOOP_PLIST" <<EOF
 <key>StandardOutPath</key><string>$LOG_DIR/loop.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/loop.err.log</string>
 </dict></plist>
 EOF
-/usr/bin/plutil -lint "$BROWSER_PLIST" "$IMPACT_BROWSER_PLIST" "$X_BROWSER_PLIST" "$LOOP_PLIST" >/dev/null
-for label in ai.anicca.affiliate-loop ai.anicca.affiliate-x-browser ai.anicca.affiliate-impact-browser ai.anicca.affiliate-browser; do
+cat > "$SOURCE_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>ai.anicca.affiliate-source-refresh</string>
+<key>ProgramArguments</key><array><string>/bin/sh</string><string>$CURRENT/affiliate</string><string>sources</string><string>wake</string></array>
+<key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
+<key>RunAtLoad</key><true/><key>StartInterval</key><integer>86400</integer><key>ThrottleInterval</key><integer>60</integer>
+<key>StandardOutPath</key><string>$LOG_DIR/source-refresh.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/source-refresh.err.log</string>
+</dict></plist>
+EOF
+/usr/bin/plutil -lint "$BROWSER_PLIST" "$IMPACT_BROWSER_PLIST" "$X_BROWSER_PLIST" "$SOURCE_PLIST" "$LOOP_PLIST" >/dev/null
+for label in ai.anicca.affiliate-loop ai.anicca.affiliate-source-refresh ai.anicca.affiliate-x-browser ai.anicca.affiliate-impact-browser ai.anicca.affiliate-browser; do
   /bin/launchctl bootout "gui/$(id -u)/$label" >/dev/null 2>&1 || true
 done
 
@@ -218,6 +230,7 @@ for attempt in {1..30}; do
   [[ "$attempt" != "30" ]] || die "affiliate X browser CDP did not become ready"
   sleep 1
 done
+bootstrap_agent "$SOURCE_PLIST"
 bootstrap_agent "$LOOP_PLIST"
 
 printf 'installed local affiliate release %s\n' "$HEAD_SHA"

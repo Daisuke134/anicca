@@ -142,15 +142,54 @@ def capture(plan, state_root):
     return receipts
 
 
+def refresh_all(root, state_root, now=None, cooldown_seconds=86400):
+    state_root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    now = int(datetime.now(timezone.utc).timestamp()) if now is None else int(now)
+    receipt_path = state_root / "source-refresh.json"
+    try:
+        previous = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    if previous.get("completed_at") is not None and now - int(previous["completed_at"]) < cooldown_seconds:
+        return {"state": "COOLDOWN", "completed_at": previous.get("completed_at"), "plans": []}
+    with (state_root / ".source-refresh.lock").open("a+") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return {"state": "ALREADY_RUNNING", "completed_at": None, "plans": []}
+        results = []
+        for path in sorted((root / "config" / "source-plans").glob("*.json")):
+            plan_id = path.stem
+            try:
+                receipts = capture(load_plan(root, plan_id), state_root)
+                results.append({
+                    "plan_id": plan_id, "state": "CAPTURED", "source_count": len(receipts),
+                    "new_count": sum(bool(row["new_capture"]) for row in receipts),
+                })
+            except (CaptureError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+                results.append({"plan_id": plan_id, "state": "FAILED", "failure_type": type(error).__name__})
+        receipt = {
+            "schema_version": 1, "receipt_type": "SOURCE_REFRESH",
+            "state": "COMPLETE" if results and all(row["state"] == "CAPTURED" for row in results) else "PARTIAL",
+            "completed_at": now, "plans": results,
+        }
+        atomic_write(receipt_path, receipt)
+        return receipt
+
+
 def main():
     parser = argparse.ArgumentParser(prog="affiliate sources")
-    parser.add_argument("command", choices=("capture",))
+    parser.add_argument("command", choices=("capture", "wake"))
     parser.add_argument("--plan", default="elevenlabs-en")
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    receipts = capture(load_plan(root, args.plan), args.state.expanduser())
-    print(json.dumps({"plan_id": args.plan, "captured": len(receipts), "new": sum(row["new_capture"] for row in receipts)}, sort_keys=True, separators=(",", ":")))
+    if args.command == "wake":
+        result = refresh_all(root, args.state.expanduser())
+    else:
+        receipts = capture(load_plan(root, args.plan), args.state.expanduser())
+        result = {"plan_id": args.plan, "captured": len(receipts), "new": sum(row["new_capture"] for row in receipts)}
+    print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0
 
 
