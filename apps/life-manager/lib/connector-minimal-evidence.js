@@ -36,6 +36,31 @@ function invalid() {
   throw new Error("Connector minimal evidence invalid");
 }
 
+// Stage codes for the delivery block only (screenshot capture through bundle write). Same
+// stageError/preserveSafe shape as connector-doorkeeper-workflow.js etc: stageError() tags a thrown
+// error with a stable .code; the runner reads .code (never the message) to pick a safe_reason so the
+// wake report and action-history row say WHICH stage failed instead of one generic
+// "evidence_completion_failed" for every cause.
+const EVIDENCE_SAFE_CODES = new Set([
+  "EVIDENCE_SCREENSHOT_CAPTURE_FAILED",
+  "EVIDENCE_CALENDAR_CREATE_FAILED",
+  "EVIDENCE_CALENDAR_READBACK_FAILED",
+  "EVIDENCE_TELEGRAM_MESSAGE_FAILED",
+  "EVIDENCE_TELEGRAM_PHOTO_FAILED",
+  "EVIDENCE_BUNDLE_WRITE_FAILED",
+]);
+
+function stageError(code) {
+  const error = new Error("Connector minimal evidence stage failed");
+  error.code = code;
+  return error;
+}
+
+function preserveSafe(error, fallback) {
+  const code = String(error && error.code || "");
+  return stageError(EVIDENCE_SAFE_CODES.has(code) ? code : fallback);
+}
+
 function receiptHtml(provider, status, eventRef) {
   const safe = (value) => String(value).replace(/[&<>"']/g, (char) => RECEIPT_ESCAPE[char]);
   return `<!doctype html><html><body><dl><dt>provider</dt><dd>${safe(provider)}</dd><dt>status</dt><dd>${safe(status)}</dd><dt>event reference</dt><dd>${safe(eventRef)}</dd></dl></body></html>`;
@@ -559,19 +584,22 @@ function createMinimalEvidenceChain(options = {}) {
         if (verifiedCalendar.id !== bundle.calendar_event_id || verifiedCalendar.htmlLink !== bundle.calendar_event_url) invalid();
         return Object.freeze({ ...bundle, completion_disposition: "reused" });
       }
-      let checkpoint = readCheckpoint(stateDir, identity.file, provider, candidate, identity.canonicalUrlSha256);
+      let checkpoint;
       let screenshot;
-      if (checkpoint) {
-        if (checkpoint.status !== input.providerState.status) invalid();
-        screenshot = await validateCheckpointEvidence(provider, checkpoint, tenantId);
-      } else {
-        const captured = await captureProviderEvidence({ provider, providerName: input.provider, page: input.page, candidate, providerStatus: input.providerState.status, tenantId, now, canonicalUrlSha256: identity.canonicalUrlSha256 });
-        assertNoSymlinkPath(stateDir, identity.file);
-        immutableJson(identity.file, captured.checkpointValue);
+      try {
         checkpoint = readCheckpoint(stateDir, identity.file, provider, candidate, identity.canonicalUrlSha256);
-        screenshot = captured.screenshot;
-        if (input.provider === "meetup" || input.provider === "doorkeeper" || input.provider === "eventbrite" || input.provider === "techplay") screenshot = await validateCheckpointEvidence(provider, checkpoint, tenantId);
-      }
+        if (checkpoint) {
+          if (checkpoint.status !== input.providerState.status) invalid();
+          screenshot = await validateCheckpointEvidence(provider, checkpoint, tenantId);
+        } else {
+          const captured = await captureProviderEvidence({ provider, providerName: input.provider, page: input.page, candidate, providerStatus: input.providerState.status, tenantId, now, canonicalUrlSha256: identity.canonicalUrlSha256 });
+          assertNoSymlinkPath(stateDir, identity.file);
+          immutableJson(identity.file, captured.checkpointValue);
+          checkpoint = readCheckpoint(stateDir, identity.file, provider, candidate, identity.canonicalUrlSha256);
+          screenshot = captured.screenshot;
+          if (input.provider === "meetup" || input.provider === "doorkeeper" || input.provider === "eventbrite" || input.provider === "techplay") screenshot = await validateCheckpointEvidence(provider, checkpoint, tenantId);
+        }
+      } catch (error) { throw preserveSafe(error, "EVIDENCE_SCREENSHOT_CAPTURE_FAILED"); }
 
       const deliveries = deliveryPaths(stateDir, provider, candidate, identity, checkpoint);
       let messageCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.message, "telegram_message", provider, candidate, identity, checkpoint);
@@ -586,83 +614,101 @@ function createMinimalEvidenceChain(options = {}) {
       const idempotencyValue = identity.canonicalUrlSha256;
       const timeMin = new Date(Date.parse(startsAt) - 60_000).toISOString();
       const timeMax = new Date(Date.parse(endsAt) + 60_000).toISOString();
-      const before = await calendar.findConnectorEvents({ calendarId, idempotencyValue, timeMin, timeMax });
-      if (!Array.isArray(before) || before.length > 1) invalid();
-      const expectedCalendar = before.length === 1
-        ? calendarReceipt(before[0])
-        : calendarReceipt(await calendar.createConnectorEvent({ calendarId, idempotencyValue, title, startAt: startsAt, endAt: endsAt, location: venue, canonicalUrl: eventUrl }));
-      const after = await calendar.findConnectorEvents({ idempotencyValue, calendarId, timeMin, timeMax });
-      if (!Array.isArray(after) || after.length !== 1) invalid();
-      const verifiedCalendar = calendarReceipt(after[0]);
-      if (verifiedCalendar.id !== expectedCalendar.id || verifiedCalendar.htmlLink !== expectedCalendar.htmlLink) invalid();
+      let before;
+      try {
+        before = await calendar.findConnectorEvents({ calendarId, idempotencyValue, timeMin, timeMax });
+        if (!Array.isArray(before) || before.length > 1) invalid();
+      } catch (error) { throw preserveSafe(error, "EVIDENCE_CALENDAR_READBACK_FAILED"); }
+      let expectedCalendar;
+      if (before.length === 1) {
+        try { expectedCalendar = calendarReceipt(before[0]); }
+        catch (error) { throw preserveSafe(error, "EVIDENCE_CALENDAR_READBACK_FAILED"); }
+      } else {
+        try {
+          expectedCalendar = calendarReceipt(await calendar.createConnectorEvent({ calendarId, idempotencyValue, title, startAt: startsAt, endAt: endsAt, location: venue, canonicalUrl: eventUrl }));
+        } catch (error) { throw preserveSafe(error, "EVIDENCE_CALENDAR_CREATE_FAILED"); }
+      }
+      let verifiedCalendar;
+      try {
+        const after = await calendar.findConnectorEvents({ idempotencyValue, calendarId, timeMin, timeMax });
+        if (!Array.isArray(after) || after.length !== 1) invalid();
+        verifiedCalendar = calendarReceipt(after[0]);
+        if (verifiedCalendar.id !== expectedCalendar.id || verifiedCalendar.htmlLink !== expectedCalendar.htmlLink) invalid();
+      } catch (error) { throw preserveSafe(error, "EVIDENCE_CALENDAR_READBACK_FAILED"); }
       const calendarReadbackAt = exactInstant(now());
       for (const stored of [messageCheckpoint, photoCheckpoint]) {
         if (stored && (stored.calendarEventId !== verifiedCalendar.id || stored.calendarEventUrl !== verifiedCalendar.htmlLink)) invalid();
       }
 
       const status = input.providerState.status;
-      const message = [
-        "Connector::: イベント申込を確認しました",
-        `event: ${title}`,
-        `starts at: ${localizedStartsAt(startsAt, timeZone)}`,
-        `venue: ${venue}`,
-        `provider: ${input.provider}`,
-        `status: ${status}`,
-        `event url: ${eventUrl}`,
-        `calendar: ${verifiedCalendar.htmlLink}`,
-      ].join("\n");
       let messageId = messageCheckpoint && messageCheckpoint.telegramMessageProviderId;
-      if (!messageCheckpoint) {
-        messageId = parseOpenClawMessageId(await sendMessage(message, {
-          telegramTarget,
-          idempotencyKey: `connector-evidence:${idempotencyValue}`,
-        }));
-        const value = deliveryValue({ stage: "telegram_message", provider, candidate, identity, checkpoint, calendar: verifiedCalendar, calendarReadbackAt, messageId });
-        assertNoSymlinkPath(stateDir, deliveries.message);
-        immutableJson(deliveries.message, value);
-        messageCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.message, "telegram_message", provider, candidate, identity, checkpoint);
-        if (!messageCheckpoint) invalid();
-      }
+      try {
+        if (!messageCheckpoint) {
+          const message = [
+            "Connector::: イベント申込を確認しました",
+            `event: ${title}`,
+            `starts at: ${localizedStartsAt(startsAt, timeZone)}`,
+            `venue: ${venue}`,
+            `provider: ${input.provider}`,
+            `status: ${status}`,
+            `event url: ${eventUrl}`,
+            `calendar: ${verifiedCalendar.htmlLink}`,
+          ].join("\n");
+          messageId = parseOpenClawMessageId(await sendMessage(message, {
+            telegramTarget,
+            idempotencyKey: `connector-evidence:${idempotencyValue}`,
+          }));
+          const value = deliveryValue({ stage: "telegram_message", provider, candidate, identity, checkpoint, calendar: verifiedCalendar, calendarReadbackAt, messageId });
+          assertNoSymlinkPath(stateDir, deliveries.message);
+          immutableJson(deliveries.message, value);
+          messageCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.message, "telegram_message", provider, candidate, identity, checkpoint);
+          if (!messageCheckpoint) invalid();
+        }
+      } catch (error) { throw preserveSafe(error, "EVIDENCE_TELEGRAM_MESSAGE_FAILED"); }
       let photoId = photoCheckpoint && photoCheckpoint.telegramPhotoProviderId;
-      if (!photoCheckpoint) {
-        photoId = parseOpenClawMessageId(await sendPhoto(screenshot, {
-          telegramTarget,
-          idempotencyKey: `connector-evidence-photo:${identity.canonicalUrlSha256}`,
-          caption: input.provider === "luma" ? `Connector::: ${title} / ${status}` : `Connector::: ${input.provider} / ${title} / ${status}`,
-        }));
-        const value = deliveryValue({
-          stage: "telegram_photo", provider, candidate, identity, checkpoint, calendar: verifiedCalendar,
-          calendarReadbackAt: messageCheckpoint.calendarReadbackAt,
-          messageId, photoId, messageCheckpointSha256: messageCheckpoint.checkpointSha256,
-        });
-        assertNoSymlinkPath(stateDir, deliveries.photo);
-        immutableJson(deliveries.photo, value);
-        photoCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.photo, "telegram_photo", provider, candidate, identity, checkpoint);
-        if (!photoCheckpoint || photoCheckpoint.messageCheckpointSha256 !== messageCheckpoint.checkpointSha256) invalid();
-      }
+      try {
+        if (!photoCheckpoint) {
+          photoId = parseOpenClawMessageId(await sendPhoto(screenshot, {
+            telegramTarget,
+            idempotencyKey: `connector-evidence-photo:${identity.canonicalUrlSha256}`,
+            caption: input.provider === "luma" ? `Connector::: ${title} / ${status}` : `Connector::: ${input.provider} / ${title} / ${status}`,
+          }));
+          const value = deliveryValue({
+            stage: "telegram_photo", provider, candidate, identity, checkpoint, calendar: verifiedCalendar,
+            calendarReadbackAt: messageCheckpoint.calendarReadbackAt,
+            messageId, photoId, messageCheckpointSha256: messageCheckpoint.checkpointSha256,
+          });
+          assertNoSymlinkPath(stateDir, deliveries.photo);
+          immutableJson(deliveries.photo, value);
+          photoCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.photo, "telegram_photo", provider, candidate, identity, checkpoint);
+          if (!photoCheckpoint || photoCheckpoint.messageCheckpointSha256 !== messageCheckpoint.checkpointSha256) invalid();
+        }
+      } catch (error) { throw preserveSafe(error, "EVIDENCE_TELEGRAM_PHOTO_FAILED"); }
 
-      const core = Object.freeze({
-        schema_version: 1,
-        status: "applied_bundle",
-        provider: input.provider,
-        event_ref: candidate.event_ref,
-        provider_status: status,
-        provider_receipt_ref: checkpoint.receiptRef,
-        artifact_ref: checkpoint.artifactRef,
-        artifact_sha256: checkpoint.artifactSha256,
-        calendar_event_id: verifiedCalendar.id,
-        calendar_event_url: verifiedCalendar.htmlLink,
-        calendar_readback_at: messageCheckpoint.calendarReadbackAt,
-        telegram_message_provider_id: messageId,
-        telegram_photo_provider_id: photoId,
-        created_at: checkpoint.observedAt,
-      });
-      const digest = createHash("sha256").update(stableJson(core)).digest("hex");
-      const bundle = Object.freeze({ bundle_id: `applied-bundle:${digest}`, ...core });
-      const bundleFile = path.join(stateDir, "applied-bundles", `${digest}.json`);
-      assertNoSymlinkPath(stateDir, bundleFile);
-      immutableJson(bundleFile, bundle);
-      return Object.freeze({ ...bundle, completion_disposition: "created" });
+      try {
+        const core = Object.freeze({
+          schema_version: 1,
+          status: "applied_bundle",
+          provider: input.provider,
+          event_ref: candidate.event_ref,
+          provider_status: status,
+          provider_receipt_ref: checkpoint.receiptRef,
+          artifact_ref: checkpoint.artifactRef,
+          artifact_sha256: checkpoint.artifactSha256,
+          calendar_event_id: verifiedCalendar.id,
+          calendar_event_url: verifiedCalendar.htmlLink,
+          calendar_readback_at: messageCheckpoint.calendarReadbackAt,
+          telegram_message_provider_id: messageId,
+          telegram_photo_provider_id: photoId,
+          created_at: checkpoint.observedAt,
+        });
+        const digest = createHash("sha256").update(stableJson(core)).digest("hex");
+        const bundle = Object.freeze({ bundle_id: `applied-bundle:${digest}`, ...core });
+        const bundleFile = path.join(stateDir, "applied-bundles", `${digest}.json`);
+        assertNoSymlinkPath(stateDir, bundleFile);
+        immutableJson(bundleFile, bundle);
+        return Object.freeze({ ...bundle, completion_disposition: "created" });
+      } catch (error) { throw preserveSafe(error, "EVIDENCE_BUNDLE_WRITE_FAILED"); }
     },
   });
 }
