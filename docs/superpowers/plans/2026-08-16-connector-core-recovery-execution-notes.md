@@ -155,16 +155,47 @@ Cleanup and honesty checks after the wake:
   were released.
 - no new stderr, so the non-zero exit is the contract path and not a crash.
 
-## C-CORE-05 blocker investigation
+## C-CORE-05 Luma — BLOCKED_EXTERNAL 2026-08-16
 
 Luma produced 16 free and open events inside the window and zero survived the Calendar gate, so the
-question is whether the gate is wrong or Dais is genuinely busy. Read-only Calendar readback for the
-14-day window returned 10 events, all on 2026-08-16 and 2026-08-17, and zero all-day events, so the
-calendar is nearly empty from 08-18 onward. The live predicate
-(`defaultCalendarFree` in `connector-luma-workflow.js`) blocks only on a timed overlap, and Peatix
-passed 10 candidates through the same busy inventory in the same wake, so the inventory is not
-over-blocking. The remaining explanation to prove is whether the 16 Luma events are themselves clustered
-on 08-16 and 08-17. Until that is measured, `C-CORE-05` is not claimed either way.
+question was whether the gate is wrong or Dais is genuinely busy.
+
+A first readback with `gog calendar events list` returned only 10 events, all on 08-16 and 08-17, which
+suggested an almost empty calendar and therefore a gate bug. **That reading was wrong and is corrected
+here**: it queried the primary calendar only. Rebuilding the inventory exactly as the runtime does
+(`inspectGoogleCalendarBusyInventory` over the same 14-day window) returns `calendar_count: 5` and
+**103 timed intervals**, including a duplicated daily block from 08:40 to 17:10 JST.
+
+Evening availability, 18:00–22:00 JST, measured from that real inventory:
+
+| date | evening |
+|---|---|
+| 08-16, 08-17 | free (already past for discovery) |
+| 08-18 … 08-24 | busy |
+| 08-25 | free |
+| 08-26, 08-27 | busy |
+| 08-28 | free |
+| 08-29 | busy |
+
+The live Luma discovery page `https://luma.com/tokyo?k=p` currently starts at 08-18, so its free and
+open events fall on dates whose evenings are genuinely taken. `calendar_free_count: 0` is therefore
+**correct behaviour, not a defect**: Connector declined to double-book Dais.
+
+Status `BLOCKED_EXTERNAL`. Counts at the block: Luma observed 39, in-window 33, free and open 16,
+Calendar-free 0. Owner: the daily 09:00 native label. Restart condition: a free and open Luma Tokyo
+event landing on an evening Dais has open — the next such evenings in this window are 08-25 and 08-28.
+Next scheduled check: the next natural 09:00 wake.
+
+## C-CORE-06 Connpass — blocked by a discovery defect, not by the calendar
+
+The same wake recorded Connpass observed 6, in-window 6, free and open 0. Six is not a plausible count
+for Tokyo. The runtime discovers from `https://connpass.com/calendar/?ym=<YYYYMM>&prefectures=13`; a
+read-only crawl of that exact page exposes **1457 distinct `connpass.com/event/<id>` links** for the
+month. So Connector is seeing roughly 0.4% of the listing, and Connpass has never had a fair chance to
+produce a candidate.
+
+This is a defect in `connector-connpass-workflow.js`'s binding collection, not an external blocker, and
+it must be fixed before `C-CORE-06` can be claimed either way.
 
 Verification, re-run by the parent rather than trusted from the executor: `npm run test:outbound`
 33 + 341 pass / 0 fail, `npm run test:runtime-job` 18 pass / 0 fail, `npm run test:runtime-adapters`
