@@ -38,12 +38,15 @@
       "selfFixTarget": "gig",
       "escalateEveryHrs": 24,
       "probe": {
-        "kind": "heartbeat",
-        "heartbeatPath": "gig/.last-pass",
-        "sessionSocket": "/tmp/anicca-gig-tmux.sock",
-        "sessionName": "anicca-gig-core",
-        "launchdLabel": "ai.anicca.hf-gig-core-healthcheck",
-        "maxAgeSeconds": 5400
+        "kind": "launchd-ledger",
+        "ledgerPath": "gig/storefront-direct/wakes.jsonl",
+        "launchdLabels": [
+          "ai.anicca.hf-gig-apply-direct",
+          "ai.anicca.hf-gig-reply-detector",
+          "ai.anicca.hf-gig-paid-direct",
+          "ai.anicca.hf-gig-storefront-direct"
+        ],
+        "maxAgeSeconds": 600
       }
     },
     {

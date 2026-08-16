@@ -116,8 +116,8 @@ async def _calls(pairs, timeout=20.0):
 def _pid_alive(pid):
     """Is the process that last proved it holds this lease still running?
 
-    Every acquire()/heartbeat() call is a subprocess of its actual holder (gig_pass.sh's
-    bash pid for one-shot leases, application_parent.py's pid for LeaseHandle's background
+    Every acquire()/heartbeat() call is a subprocess of its actual direct-loop holder
+    (a one-shot owner pid, or application_parent.py's pid for LeaseHandle's background
     heartbeat thread), so os.getppid() at call time is a legitimate, stable holder id --
     the same holder keeps calling heartbeat with the same ppid until it exits or crashes.
     A -9'd holder never updates `ts` again either, so gc's existing idle_min window already

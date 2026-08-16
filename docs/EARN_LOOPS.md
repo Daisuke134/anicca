@@ -43,12 +43,10 @@ cronが後続passを駆動 → tmuxセッションは stay idle。
 | **affiliate** | `anicca-affiliate-core` | `affiliate/affiliate-cli.sh` | `affiliate-healthcheck.sh` | `affiliate/producer.sh` | `affiliate/run.sh` | 毎日08:41 JST | ¥(Amazon Associates JP `aniccaai-22`) |
 | **video** | `anicca-video-core` | `video/video-cli.sh` | `video-healthcheck.sh` | なし | `video/run.sh` | 4時間毎(23分) | USDC(`money_blueprintdaily`専用アカウント) |
 | **bounty** | `anicca-bounty-core` | `bounty/bounty-cli.sh` | `bounty-healthcheck.sh` | なし | `bounty/run.sh` | 毎日09:29 JST | USD(Algora GitHub bounty、マージ+実支払のみ計上) |
-| **gig** | `anicca-gig-core` | `gig/gig-cli.sh` | `gig-healthcheck.sh`(★二重チェック、後述) | なし(`passprep.py`等が代替) | `gig/run.sh`(監視専用) | 毎時27分 | ¥(ココナラ→Daisの三菱UFJ銀行、human-funded) |
+| **gig** | 4 direct launchd owners | なし | shared registry `launchd-ledger` probe | 各owner自身 | `gig/run.sh`(read-only集約) | owner別60–300秒 | ¥(ココナラ→Daisの三菱UFJ銀行、human-funded) |
 
-**★ gigのhealthcheckだけ特別に頑丈 ★**: 他4つは単純に`tmux has-session`→死んでいれば再起動、だけだが
-gigは追加で `~/gig/.last-pass` のハートビートを見て「tmuxは生きてるがcronスケジューラが90分止まって
-いるSTALE状態」も検知し、かつ**60分に5回までの再起動バックオフ**(サブスク浪費防止)を実装している。
-これは他の4 methodにも展開すべき模範パターン(下記Task #7参照)。
+**gigはshared tmux coreを使用しない。** Apply / Negotiate / Paid / Storefrontの4つのdirect ownerを
+shared earning-health registryがlaunchd labelとdurable Storefront wake ledgerからread-only監視する。
 
 **launchd plist配置**: 各methodの`launchd/`ディレクトリにrepo管理されているが、**videoだけrepo内に
 plistが無く**、`~/Library/LaunchAgents/`に手動インストールされた状態(SSOT違反、要修正)。
