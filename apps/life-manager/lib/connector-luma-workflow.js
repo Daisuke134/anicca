@@ -30,12 +30,6 @@ function invalid() {
   throw new Error("Luma script-first workflow invalid");
 }
 
-function stageError(code) {
-  const error = new Error("Luma discovery stage failed");
-  error.code = code;
-  return error;
-}
-
 function candidateWindow(now) {
   const observed = now();
   if (!(observed instanceof Date) || !Number.isFinite(observed.getTime())) invalid();
@@ -161,38 +155,24 @@ function createLumaScriptFirstWorkflow(options = {}) {
       if (!Number.isInteger(observedCount) || observedCount < observed.length || observedCount > 500) invalid();
       const window = candidateWindow(now);
       const result = [];
-      let normalizedCount = 0;
       let windowCount = 0;
       let freeOpenCount = 0;
-      // Same discipline as Connpass: one unusable row must not abort the
-      // whole provider's turn — skip it and count it (Dais 2026-08-16).
-      let skippedCount = 0;
       for (const raw of observed) {
-        let candidate;
-        try { candidate = exactEvent(raw); }
-        catch { skippedCount += 1; continue; }
-        normalizedCount += 1;
+        const candidate = exactEvent(raw);
         const startsAt = Date.parse(candidate.starts_at);
         if (startsAt < window.start || startsAt >= window.end) continue;
         windowCount += 1;
         if (!isFreeOpen(candidate)) continue;
         freeOpenCount += 1;
-        let calendarFree;
-        try { calendarFree = await isCalendarFree(candidate, calendar); }
-        catch { skippedCount += 1; continue; }
-        if (!calendarFree) continue;
+        if (!await isCalendarFree(candidate, calendar)) continue;
         result.push(Object.freeze({ ...candidate }));
-      }
-      if (observed.length > 0 && skippedCount === observed.length) {
-        throw stageError("LUMA_ALL_CANDIDATES_SKIPPED_FAILED");
       }
       await onDiscoveryAudit(Object.freeze({
         observed_count: observedCount,
-        normalized_count: normalizedCount,
+        normalized_count: observed.length,
         window_count: windowCount,
         free_open_count: freeOpenCount,
         calendar_free_count: result.length,
-        skipped_count: skippedCount,
       }));
       return Object.freeze(result);
     },
