@@ -1107,7 +1107,7 @@ no transition was duplicated or invented.
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
 and Systeme.io remains behind its typed CAPTCHA boundary. Release `50d45beca` is
-the last completed login self-heal slice. Release `a27fae614` is the current installed
+the last completed login self-heal slice. Release `cad9135ae` is the current installed
 M2 runtime; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -1142,6 +1142,16 @@ and spend no further execution time on cleanup.
 | Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist; the sixth campaign reached owned/X/DEV/Substack `LIVE` and Telegram before unchanged replays | A real external click is the first unfinished economic stage; provider admission continues in parallel under provider gates |
 | Acquisition | M2.0 is closed. Real wake `37` exited `0` with six canonical ledger rows, six non-null dedicated provider link keys, six non-null owned URLs, and ledger SHA `906644fd…`. Audio, video, dubbing, Plans, ElevenAgents, and TTS all retain their original owned/X URLs. Plans deployment `31946501665` and ElevenAgents deployment `31946846420` passed production smoke | Each existing English placement is independently measurable. One transient pre-effect PartnerStack form timeout produced no job or link; the next wake created exactly one Plans link, proving bounded autonomous retry. Release `a27fae614` also merges the two legacy slug aliases into canonical X placement IDs, preventing seven-row double accounting |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
+
+The observed pre-effect PartnerStack form timeout also exposed a reporting gap:
+the append-only wake history proved failure then recovery, but Telegram did not
+announce that recovery. Release `cad9135ae` now emits one stable-UUID
+`SELF_HEALED` event when the immediately previous real wake is
+`PUBLICATION_FAILED` and the next real wake advances to another publication
+state. The natural-language message identifies ElevenLabs/PartnerStack, reports
+that the same publication resumed without a duplicate effect, and names public
+readback/revenue measurement as the next Agent action. It does not retrospectively
+invent an event for the already-completed timeout.
 
 ```mermaid
 flowchart LR
