@@ -118,6 +118,21 @@ def test_net_receipt_is_unknown_without_baseline_history_or_a_ledger(tmp_path):
     )["reason"] == "funnel_events_not_supplied"
 
 
+
+def test_official_quality_signals_separate_no_rating_from_zero():
+    body = "評価  -\n販売実績 0件\n残り 1枠"
+    signals = sd._extract_quality_signals(body)
+    assert signals["rating"] == {"status": "unknown", "value": None,
+                                 "reason": "official_page_shows_no_rating"}
+    assert signals["lifetime_sales"] == {"status": "known", "value": 0}
+    rated = sd._extract_quality_signals("評価 4.8\n販売実績 1,204件")
+    assert rated["rating"] == {"status": "known", "value": 4.8}
+    assert rated["lifetime_sales"] == {"status": "known", "value": 1204}
+    missing = sd._extract_quality_signals("no official markers here")
+    assert missing["rating"]["status"] == "unknown"
+    assert missing["lifetime_sales"]["status"] == "unknown"
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
