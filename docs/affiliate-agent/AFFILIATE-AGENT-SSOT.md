@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `f062057b27b466e063ab6a9ebf48f4f973c8116e` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded ElevenLabs recovery, HubSpot/Impact application polling, generic policy-PASS owned/X publication, one-per-day canonical DEV and Substack syndication, hourly DEV acquisition and revenue observation, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and advances composition handoffs through generic policy | New-program application/link acquisition, general repair beyond observed failures, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `30f7862ab579a1416fd272c3643cce1b3f0f2ff1` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, and real money wake `10` has last exit `0`. The ten-minute money loop owns bounded ElevenLabs recovery, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake economic-ledger projection, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner consumes at most one credential-free due stage per wake | Same-stage continuous resume, general repair beyond observed failures, and cohort allocation remain open |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, real `PLACEMENT_LIVE`, and one real-data natural-language daily summary are live-proven. The daily summary is bound to provider message ID `21046`; same-day real replay returns `NO_PENDING` without growing the sent ledger | `CLICK_DELTA` and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, budget-blocked same-job recovery, generic handoff and policy receipt creation, two-provider auth/polling, generic policy-PASS owned/X publication, canonical DEV and Substack syndication, DEV acquisition metrics, revenue polling, receipts, and Telegram are live. Release `f062057b27b466e063ab6a9ebf48f4f973c8116e` keeps ElevenLabs `AUTHENTICATED` and HubSpot/Impact `APPLICATION_PENDING`; real daily reporting and unchanged replay are `SENT → NO_PENDING` | New-program application/link acquisition, provider/channel quarantine, watchdog, post-baseline acquisition, and positive money evidence remain absent. The loop discovers, composes, validates, distributes, and measures one executable provider while polling one pending provider; it has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, official-source refresh, source-hash-bound composition, bounded Terra-high composition, generic handoff/policy, exact placement-link acquisition, owned/X publication, DEV/Substack syndication, acquisition/revenue observation, economic ledger, receipts, and Telegram are live. Release `30f7862ab` keeps ElevenLabs `AUTHENTICATED`; real wake `10` is `LEDGER_READY / NO_PENDING` | Continuous same-stage repair, provider/channel quarantine, watchdog, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -1076,8 +1076,8 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M0.3, join channel exposure, exact provider clicks,
-commission transitions, and experiment identity under one placement ledger**.
+Current execution cursor: **M0.4, resume one unfinished same-ID stage first and
+otherwise advance one eligible campaign per launchd wake**.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
 files and zero decision receipts before eligibility. A first real Agent decision
@@ -1086,9 +1086,22 @@ an organic click arriving, provider review completing, and
 a commission being approved are external acceptance gates observed by launchd;
 they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
+M0.3 is installed in release `30f7862ab579a1416fd272c3643cce1b3f0f2ff1`.
+Real launchd wake `10` exited `0`, kept provider `AUTHENTICATED` and publication
+`X_LIVE`, and rebuilt a mode-0600, hash-valid six-placement economic ledger even
+while the hourly provider fetch remained in `COOLDOWN`. The dedicated TTS
+placement joins provider link key `dd63ebae-fe33-4347-b264-313b7bcb2072` to an
+official click count/delta of `0/0`; the canonical DEV audio-to-text placement
+joins real exposure of `0` page views, `0` reactions, and `0` comments. Every
+commission transaction count is `0`, approved/paid net is empty, and cash cost
+remains `UNKNOWN`. Five historical shared-link placements deliberately retain
+`null` click values rather than borrowing the aggregate PartnerStack count.
+Events advanced by one wake receipt while Telegram sent rows remained `13`, so
+no transition was duplicated or invented.
+
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
-and Systeme.io remains behind its typed CAPTCHA boundary. Release `f062057b2` is
+and Systeme.io remains behind its typed CAPTCHA boundary. Release `30f7862ab` is
 current; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -1121,7 +1134,7 @@ and spend no further execution time on cleanup.
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
 | Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE`; 1 canonical DEV article `LIVE`; 1 receipted Substack article `LIVE` | Real public effects exist and are receipted; one known title-only duplicate remains unchanged by explicit operating decision |
 | Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist; the sixth campaign reached owned/X/DEV/Substack `LIVE` and Telegram before unchanged replays | A real external click is the first unfinished economic stage; provider admission continues in parallel under provider gates |
-| Acquisition | DEV article `4408918` has a real hourly exposure receipt; its first eligible 24-hour snapshot will be frozen once, while provider post-baseline clicks remain `0` | The measurement input exists; the Agent decision consumer is the first unfinished implementation |
+| Acquisition | Six public placements share one hash-valid economic ledger. One dedicated PartnerStack placement has exact clicks `0/0`; one DEV placement has exact exposure `0/0/0`; missing historical denominators remain `null` | Placement-level observation is closed; continuous same-stage resume is the first unfinished implementation |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
 ```mermaid
@@ -1244,11 +1257,18 @@ result will be real external proof, but no implementation waits for the clock.
    prior `e8d1b8ea1` archive, while the 11 affected local-loop/content checks pass.
    A first real experiment publication remains an automatic acceptance gate, not
    a wait task.
-10. **M0.3 — Close placement-level acquisition measurement.** For every experiment,
-    join real channel exposure where the platform supplies it, the exact provider
-    link baseline/delta, and later commission transitions under one placement ID.
-    Missing denominators remain `UNKNOWN`; aggregate PartnerStack overview never
-    masquerades as placement attribution.
+10. **DONE — M0.3 close placement-level acquisition measurement.** Release
+    `30f7862ab` generalizes the already proven PartnerStack placement-link action
+    so each future generic campaign receives one exact, fenced custom link before
+    publication. It joins campaign/experiment identity, real DEV exposure, exact
+    Link Performance baseline/delta, latest commission transitions, and cost
+    state under one placement ID. A local-only `ledger` command rebuilds this
+    projection from durable real receipts on every ten-minute wake even when the
+    one-hour browser fetch is cooling down. Missing values remain `null` or
+    `UNKNOWN`; the aggregate overview never masquerades as placement attribution.
+    Focused affected checks passed `17/17`; installed wake `10` produced six
+    hash-valid rows, one exact dedicated-link row at click `0/0`, zero provider
+    transactions, no secret URL, and no new Telegram send.
 11. **M0.4 — Keep the experiment loop continuously productive.** On each launchd
     wake, resume one unfinished same-ID stage first; otherwise advance one eligible
     campaign. Maturity and provider-review timestamps are readiness inputs, not
@@ -1611,7 +1631,7 @@ shared abstraction to make the diff appear smaller.
   Git, and Telegram contain no raw tracking URL. The subsequent guarded
   same-slug revision fix is pushed and installed as immutable release
   `afe2e5fc7`; its six-owner allowlist is unchanged.
-- [ ] **E0-C06** Let the same loop publish the next policy-PASS campaign with that
+- [x] **E0-C06** Let the same loop publish the next policy-PASS campaign with that
   link and verify owned HTTP, disclosure/link order, X, DEV, and Substack
   readbacks.
   For the already-live TTS slug, a link-only revision is allowed only when the
@@ -1657,16 +1677,15 @@ shared abstraction to make the diff appear smaller.
   zero rows and remains `NO_TRANSACTIONS`. The same wake sent Telegram provider
   message ID `21025` for the separate aggregate-only historical `+1` click as
   `UNATTRIBUTED_CLICK_DELTA`; it did not attribute that click to this placement.
-- [ ] **E0-C09** Continue scheduled distribution and provider polling until an
-  external user produces a provider-observed positive delta. No agent or operator
-  manufactures the click.
-- [ ] **E0-C10** Reconcile the positive row to the placement, send one Telegram
-  `CLICK_DELTA`, store its provider message ID, replay without duplication, and
-  mark E0 closed.
+- **E0 external gate (not a TODO):** launchd continues scheduled distribution and
+  provider polling. A real external user must produce a provider-observed positive
+  delta; no Agent or operator manufactures it. The already implemented path then
+  reconciles the row to its placement, sends one `CLICK_DELTA`, stores the provider
+  message ID, and replays without duplication. That live receipt closes E0.
 
 ##### Phase E1 — Prove the first approved commission
 
-- [ ] **E1-01** Continue capturing provider Commission Report artifacts after E0;
+- [x] **E1-01** Continue capturing provider Commission Report artifacts after E0;
   preserve an explicit no-row state until a real row appears.
 - [ ] **E1-02** Normalize the first row's provider transaction ID, Link/Sub IDs,
   Shared ID, status, gross/reversal/net minor units, currency, event time, and
