@@ -65,7 +65,7 @@ if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     evidence.mkdir(parents=True, exist_ok=True)
     (evidence / "summary.json").write_text(
-        json.dumps({"status": "budget_blocked"}) + "\\n",
+        json.dumps({"status": "failed"}) + "\\n",
         encoding="utf-8",
     )
     raise SystemExit(%d)
@@ -111,24 +111,6 @@ raise SystemExit(0)
             self.assertEqual(
                 json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
                 "daily_quota_reached",
-            )
-            projection = root / "state" / "summary.v1.json"
-            self.assertTrue(projection.is_file())
-            self.assertEqual(projection.stat().st_mode & 0o777, 0o600)
-
-    def test_daily_budget_block_is_an_honest_completed_pass(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            result, calls = self._run_daily_with_fake_python(root, 0, 75)
-
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("job_search_loop.browser_owner", json.dumps(calls))
-            self.assertIn("agent_runner.py", json.dumps(calls))
-            summaries = list((root / "state" / "evidence").glob("daily-*/summary.json"))
-            self.assertEqual(len(summaries), 1)
-            self.assertEqual(
-                json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
-                "budget_blocked",
             )
             projection = root / "state" / "summary.v1.json"
             self.assertTrue(projection.is_file())

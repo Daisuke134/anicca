@@ -20,9 +20,6 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from token_budget import TokenBudgetLedger, budget_day_for
-
-
 HERE = Path(__file__).resolve().parent
 # These tools can perform the filesystem mutation required by a high-value
 # invocation.  Artifact truth is still decided by the deterministic domain
@@ -211,24 +208,6 @@ def extract_provider_usage(provider: str, stdout_text: str, model: str | None = 
     except (json.JSONDecodeError, AttributeError, TypeError, ValueError):
         return usage
     return usage
-
-
-def budget_charge_tokens(
-    provider: str,
-    usage: dict[str, Any],
-    reservation_tokens: int,
-) -> int:
-    if usage.get("measurement") != "provider_reported":
-        return reservation_tokens
-    total = _token(usage.get("total_tokens"))
-    if total is None or total <= 0:
-        return reservation_tokens
-    if provider != "codex":
-        return total
-    cached = _token(usage.get("cached_input_tokens"))
-    if cached is None or cached > total:
-        return reservation_tokens
-    return total - cached
 
 
 def extract_claude_payload(stdout_path: Path, result_path: Path) -> str:
@@ -981,39 +960,6 @@ def run() -> int:
             raise ValueError("explicit escalation reason is required")
         if not requires_explicit_escalation and escalation_reason is not None:
             raise ValueError("escalation reason is only valid for an explicit escalation route")
-        budget_scope_id = os.environ.get("ANICCA_BUDGET_SCOPE_ID", "").strip()
-        pass_budget_raw = os.environ.get("ANICCA_PASS_TOKEN_BUDGET", "").strip()
-        daily_budget_raw = os.environ.get("ANICCA_LOOP_DAILY_TOKEN_BUDGET", "").strip()
-        budget_values_present = tuple(bool(value) for value in (
-            budget_scope_id, pass_budget_raw, daily_budget_raw,
-        ))
-        budget_enabled = all(budget_values_present)
-        # The daily pool belongs to one caller (one LaunchAgent), not to the
-        # whole loop. Defaults to the loop, so callers that do not name an owner
-        # keep their previous behaviour.
-        budget_daily_scope = (
-            os.environ.get("ANICCA_BUDGET_DAILY_SCOPE", "").strip() or parsed.loop
-        )
-        task_token_reservation = int(task_config.get("token_reservation", 0))
-        pass_token_budget = int(pass_budget_raw or 0)
-        daily_token_budget = int(daily_budget_raw or 0)
-        if budget_enabled and (
-            task_token_reservation <= 0
-            or pass_token_budget <= 0
-            or daily_token_budget <= 0
-        ):
-            raise ValueError("enabled token budgets and task reservation must be positive")
-        # Reservations are observability estimates only. They never gate a
-        # revenue loop; settlement records the provider-reported usage.
-        token_reservation = task_token_reservation
-        budget_ledger = TokenBudgetLedger(Path(os.environ.get(
-            "ANICCA_TOKEN_BUDGET_LEDGER",
-            Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "token-budget.jsonl",
-        )))
-        budget_day = budget_day_for(
-            datetime.now(timezone.utc),
-            os.environ.get("ANICCA_BUDGET_DAY_TZ", "").strip() or "Asia/Tokyo",
-        )
         candidate_profile: dict[str, Any] = {}
         if parsed.candidate_profile:
             candidate_profile = config.get("candidate_profiles", {}).get(parsed.candidate_profile)
@@ -1039,25 +985,7 @@ def run() -> int:
     started_at = utc_now()
     attempts: list[dict[str, Any]] = []
     selected: dict[str, Any] | None = None
-    last_budget: dict[str, Any] = {
-        "status": "disabled",
-        "reason": "budget_not_configured",
-        "scope_id": budget_scope_id or None,
-    }
-
     for index, candidate in enumerate(candidates, 1):
-        budget_event_id = f"agent-budget-{uuid.uuid4().hex}"
-        if budget_enabled:
-            last_budget = budget_ledger.reserve(
-                event_id=budget_event_id,
-                loop=parsed.loop,
-                scope_id=budget_scope_id,
-                daily_scope=budget_daily_scope,
-                day=budget_day,
-                reservation_tokens=token_reservation,
-                pass_limit=pass_token_budget,
-                daily_limit=daily_token_budget,
-            )
         effective_candidate = dict(candidate)
         provider = effective_candidate["provider"]
         provider_config = config.get("providers", {}).get(provider, {})
@@ -1159,24 +1087,6 @@ def run() -> int:
         stdout_text = stdout_path.read_text(encoding="utf-8", errors="replace")
         stderr_text = stderr_path.read_text(encoding="utf-8", errors="replace")
         usage = extract_provider_usage(provider, stdout_text, model=effective_candidate.get("model"))
-        if budget_enabled:
-            charged_tokens = budget_charge_tokens(
-                provider,
-                usage,
-                token_reservation,
-            )
-            settlement = budget_ledger.settle(
-                event_id=budget_event_id,
-                actual_tokens=charged_tokens,
-                measurement=str(usage["measurement"]),
-            )
-            last_budget = {
-                **last_budget,
-                "charged_tokens": charged_tokens,
-                "measurement": usage["measurement"],
-                "pass_consumed_after_tokens": settlement["pass_consumed_after_tokens"],
-                "daily_consumed_after_tokens": settlement["daily_consumed_after_tokens"],
-            }
         error_class = None if (rc == 0 and schema_valid) else classify_provider_error(
             rc, timed_out, stdout_text, stderr_text, launch_error,
         )
@@ -1191,7 +1101,6 @@ def run() -> int:
             "route": route,
             "escalated": requires_explicit_escalation,
             "escalation_reason": escalation_reason,
-            "budget": last_budget,
             "provider": provider,
             "account": provider_config.get("account"),
             "model": effective_candidate.get("model"),
@@ -1239,7 +1148,6 @@ def run() -> int:
             "route": route,
             "escalated": requires_explicit_escalation,
             "escalation_reason": escalation_reason,
-            "budget": last_budget,
             "attempt": index,
             "provider": provider,
             "account": provider_config.get("account"),
@@ -1298,7 +1206,6 @@ def run() -> int:
         "escalated": requires_explicit_escalation,
         "escalation_reason": escalation_reason,
         "status": "success" if selected else "failed",
-        "budget": last_budget,
         "selected_provider": selected["provider"] if selected else None,
         "selected_model": selected["model"] if selected else None,
         "selected_effort": selected["effort"] if selected else None,

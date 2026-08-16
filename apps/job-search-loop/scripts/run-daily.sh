@@ -56,12 +56,6 @@ fi
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
-export ANICCA_BUDGET_REQUIRED=1
-export ANICCA_BUDGET_SCOPE_ID="job-search-daily:$RUN_ID"
-export ANICCA_PASS_TOKEN_BUDGET=98304
-export ANICCA_LOOP_DAILY_TOKEN_BUDGET=262144
-export ANICCA_BUDGET_DAILY_SCOPE="job-search-daily"
-export ANICCA_BUDGET_DAY_TZ="Asia/Tokyo"
 set +e
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class browser-lane-agent \
@@ -75,11 +69,6 @@ RUNNER_RC=$?
 set -e
 if [[ "$RUNNER_RC" -ne 0 ]]; then
   refresh_summary
-  if [[ "$RUNNER_RC" -eq 75 ]] \
-    && "$JOB_SEARCH_JQ" -e '.status == "budget_blocked"' \
-      "$EVIDENCE/summary.json" >/dev/null 2>&1; then
-    exit 0
-  fi
   exit "$RUNNER_RC"
 fi
 "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
