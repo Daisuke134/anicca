@@ -288,5 +288,25 @@
     "quota_can_authorize": false,
     "forbidden_authority": ["quota"],
     "rule": "A new slot requires both evidence types and available delivery capacity; the 20-slot quota never authorizes creation."
+  },
+  "portfolio_policy": {
+    "version": 1,
+    "slot_limit": 20,
+    "minimum_complete_window_days": 30,
+    "minimum_views_for_retirement": 100,
+    "replacement_requires": [
+      "minimum_sample_met",
+      "zero_inquiries",
+      "zero_purchases",
+      "zero_verified_payments",
+      "weak_demand_evidence",
+      "stronger_replacement_candidate",
+      "slot_capacity_pressure",
+      "rollback_version",
+      "official_readback_contract"
+    ],
+    "short_term_zero_sales_can_retire": false,
+    "retirement_mode": "recoverable_unpublish_before_delete",
+    "replacement_candidates": []
   }
 }
