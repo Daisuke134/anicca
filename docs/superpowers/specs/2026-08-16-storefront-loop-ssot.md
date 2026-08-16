@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. The Storefront loop has published its first evidence-qualified new service exactly once. Active item: S4b, migrate title/outcome to the common versioned mutation contract. This document owns Storefront only.
+Status: INCOMPLETE. The Storefront loop has published its first evidence-qualified new service exactly once. Active item: S4c, migrate body/scope to the common versioned mutation contract. This document owns Storefront only.
 
 ## 1. Overview
 
@@ -73,6 +73,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The first two publication reports timed out after send start and remain quarantined as `delivery_unknown`; they are never resent. Reporting now uses the real draft/public state, includes the official URL, permits a bounded 180-second provider ACK, and classifies a real public effect separately from a no-op. The corrected current-state report is provider-acked as Telegram `20596`; the identical replay is deduped to `20596` with send `0`.
 - The image adapter now renders one immutable mutation contract from the latest official listing snapshot before any seller form action. Real snapshot `ba309b9b...` binds service `4330368`, only the image upload field, asset SHA `207e699e...`, rollback to zero images, official readback of exactly one image, metric `views_to_inquiry`, and a 14-day observation window. The executor, pre-send gate, public readback and crash recovery consume the same contract; stale versions, changed contract SHA and multi-field deltas fail closed. This proof renders and diffs only and does not publish.
 - Commit `00b1a89ae` is installed as the Storefront-only readonly release. Real owner pass `storefront-direct-1786848245999543000-3943` exits `0`, reads official/competitor `12/8`, preserves the active `4330368` fence with effect/readback/duplicate `0/0/0`, exact-reads public SEO service `4355225` and image `eab2ab35-9531685.png`, retains KPI `441/0/3`, dedupes Telegram to `20596`, and releases the lease. Every non-Storefront gig plist remains byte-identical.
+- The title/outcome adapter consumes the same runtime envelope. Commit `d5e78bc75` installs an evidence-bound proposal for presentation service `4308502`; pass `storefront-direct-1786848631268158000-51494` binds current official version `a345b678...`, renders only `data[Service][overview]`, retains the exact rollback title, records intended public title readback, and proves `published=false` under contract SHA `ccdcd7cd...`. The complete wake exits `0` with the existing fence, SEO readback, KPI, Telegram dedupe and released lease unchanged.
 - Storefront commit `85eaa6d86` is on GitHub `main` and in readonly immutable release `/Users/anicca/gig/releases/life-manager/85eaa6d...`. Only `ai.anicca.hf-gig-storefront-direct` was reloaded. Its natural installed wake `storefront-direct-1786843673261706000-46042` exited `0` with official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, draft `0/1/1/0`, active publication fence, Telegram `deduped/20527`, and released lease. Before/after SHA comparison found zero changes to every non-Storefront gig plist.
 - Official analytics now retries each service independently and records an exhausted readback as `unknown`, never zero and never a reason to skip the rest of the Storefront wake. Reports separate unknown current values from unknown comparisons.
 
@@ -174,7 +175,7 @@ Verification: the existing experiment on `4330368` remains unchanged; official s
 ### S4 — Generalize supported listing mutations
 
 - [x] Define the common versioned mutation envelope and migrate the proven image adapter, including exact official-version precondition, one allowed field delta, rollback and readback.
-- [ ] Migrate title/outcome to the same envelope and prove one deterministic no-publish diff.
+- [x] Migrate title/outcome to the same envelope and prove one deterministic no-publish diff.
 - [ ] Migrate body/scope, package/add-ons, FAQ and price one at a time with the same no-publish proof.
 - [ ] Make image, title/outcome, body/scope, package/add-ons, FAQ and price adapters consume one versioned mutation contract instead of service-specific control flow.
 - [ ] Require every adapter to declare exact precondition hash, changed field, allowed delta, rollback value and official readback contract.
