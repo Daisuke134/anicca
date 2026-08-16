@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. The Storefront loop has published its first evidence-qualified new service exactly once. Active item: S4e, migrate FAQ to the common versioned mutation contract. This document owns Storefront only.
+Status: INCOMPLETE. Active item: S4e, migrate FAQ to the common versioned mutation contract. Finish order is fixed: S4 adapters → S5 attribution/reporting → S6 repeated installed E2E → S7 four-lane legacy cleanup → S8 cleanup-aftercare E2E. No earlier milestone may be called complete while a later finish gate remains open. This document owns Storefront implementation and records the final cross-owner cleanup contract without modifying another owner's code or live state.
 
 ## 1. Overview
 
@@ -202,24 +202,45 @@ Verification: each adapter produces a one-field deterministic diff from the curr
 
 Verification: reconcile ledger totals against official browser screens and real receipts; inject one replay and prove no double count/no duplicate Telegram send; inject missing view data and prove `unknown`, not zero.
 
-### S6 — Production integration and cleanup
+### S6 — Prove the installed loop repeats safely before cleanup
 
 - [x] Preserve the completed Paid reverts and carry zero Paid implementation into Storefront.
-- [x] Integrate the clean Storefront-only history into GitHub `main`; installed commit `85eaa6d86` is an ancestor of current main.
-- [x] Keep runtime ownership explicit: the dedicated plist calls `storefront_direct.py` directly and Storefront imports or subprocesses no Hermes/gig-pass entrypoint.
-- [x] Build a readonly immutable release from the main SHA and reload only `ai.anicca.hf-gig-storefront-direct`; non-Storefront plist hashes remain byte-identical.
-- [x] Observe one installed release wake with exit 0, official readback, draft readback, Telegram dedupe and released lease.
-- [x] Remove the merged temporary clean Storefront worktree and `feat/storefront-loop` local/remote branch.
-- [x] Keep the mixed `fix/storefront-revenue-os` worktree quarantined and unreachable from production while Paid retains it as audit evidence; its eventual owner-approved deletion is not a Storefront implementation task.
-- [x] Prove Storefront has zero executable import, subprocess, plist or installer reachability to Hermes/gig-pass shell entrypoints. Historical recoverable files remain outside the Storefront runtime.
-- [ ] Prove Apply, Negotiate, Paid and Storefront installed entrypoints are each direct owners whose release SHA is an ancestor of GitHub `main`; do not reload another owner's live process to manufacture this proof.
-- [ ] Remove the remaining registry/document references that still identify `gig_pass.sh` as current execution or fuel evidence.
-- [ ] Delete tracked legacy `GIG_PASS_RUNBOOK.md`, `gig_pass.sh`, `gig-cli.sh` and `scripts/gig_single_instance.sh` only after repository, installed plist, launchctl and registry reachability are all zero.
-- [ ] Delete obsolete `ai.anicca.hf-gig-pass.plist.*` backup files after confirming no installer or recovery path consumes them.
-- [ ] Have the Paid owner preserve or integrate any needed audit evidence, then remove `.worktrees/storefront-revenue-os` and `fix/storefront-revenue-os`; Storefront must not delete another owner's audit evidence prematurely.
-- [ ] Finish with one canonical four-lane diagram and inventory showing Apply, Negotiate, Paid and Storefront on the same GitHub `main` ancestry with separate direct launchd owners and no legacy gig-pass owner.
+- [x] Integrate Storefront history into GitHub `main`; the installed Storefront release is an ancestor of current main.
+- [x] Keep a direct Storefront plist with zero Hermes/gig-pass executable reachability.
+- [x] Observe installed wakes with official readback, Telegram dedupe, exit `0` and released lease while other owner plists remain byte-identical.
+- [ ] Run the installed owner three consecutive times: one eligible state-changing run, one no-change replay and one further replay. Require no duplicate listing, ledger effect or Telegram send, exit `0` and released lease each time.
+- [ ] Measure full-wake duration and require it below the configured launch interval. The current full wake is approximately three minutes and the installed interval is 30 minutes.
+- [ ] Add a configurable incremental wake contract for minute operation: either complete delta/readback/reporting in under 60 seconds or return a truthful locked/busy no-op without overlap. Do not claim every-minute capability before this passes.
+- [ ] Prove minute/hour/day accounting without passive waiting by controlled cutoff replays, and retain one natural launchd wake as scheduler evidence.
+- [ ] Prove a stale-version or unknown-metric failure creates no public effect, emits one bounded error/unknown report, releases its lease and succeeds on the next replay.
 
-Verification: `main` is the ancestor of the installed release SHA; Storefront launchd arguments point to that release; two installed wakes exit `0`; other three loop labels/config/state are byte-for-byte unchanged; no temporary clean Storefront development path remains.
+No measurement window or calendar delay is a TODO. Reuse the retained real state-changing publication evidence where valid and run immediate controlled replays/cutoffs; never wait 14 days, one hour or one day to close harness verification.
+
+Verification: repeated installed wakes and controlled cutoffs prove idempotency at minute/hour/day boundaries; runtime is compatible with its declared cadence; Apply, Negotiate and Paid plist/process/state hashes remain unchanged.
+
+### S7 — Retire the old gig-pass path only after S6 passes
+
+- [x] Remove the merged temporary clean Storefront worktree and `feat/storefront-loop` branch.
+- [x] Keep `fix/storefront-revenue-os` quarantined and unreachable until Paid audit evidence is preserved.
+- [ ] Prove Apply, Negotiate, Paid and Storefront installed entrypoints are direct owners whose release SHA is an ancestor of GitHub `main`; do not reload another owner's process to manufacture proof.
+- [ ] Remove registry and authoritative-document references that still identify `gig_pass.sh` as current execution or fuel evidence.
+- [ ] Delete tracked `GIG_PASS_RUNBOOK.md`, `gig_pass.sh`, `gig-cli.sh` and `scripts/gig_single_instance.sh` only after all executable reachability is zero.
+- [ ] Delete obsolete `ai.anicca.hf-gig-pass.plist.*` backups after confirming no installer or recovery path consumes them.
+- [ ] After Paid evidence handoff, remove `.worktrees/storefront-revenue-os` and `fix/storefront-revenue-os`.
+- [ ] Publish one canonical inventory showing all four direct owners on GitHub `main` ancestry and no legacy gig-pass owner. Hermes gateway remains because it is a separate continuing service.
+
+Verification: tracked files, installed plists, launchctl, registry, imports, subprocesses, installers, symlinks and authoritative docs contain zero executable gig-pass reachability.
+
+### S8 — Cleanup-aftercare and final completion gate
+
+- [ ] Build the final readonly Storefront release from GitHub `main` after cleanup and reload only Storefront.
+- [ ] Run Storefront twice after cleanup and require official catalog/readback, contract renders, KPI ledger, Telegram send-or-dedupe, exit `0` and released lease.
+- [ ] Read-only verify Apply, Negotiate and Paid direct-owner health and provenance; do not restart or mutate them.
+- [ ] Prove deleted legacy names cannot be resurrected by installer, recovery, launchd backup, registry or docs.
+- [ ] Reconcile repository/worktree/branch inventory: main clean and pushed, no temporary or mixed Storefront worktree after Paid handoff.
+- [ ] Mark this spec `COMPLETE` only after every S4–S8 checkbox is closed with evidence. Revenue and elapsed time never substitute for implementation or verification.
+
+Verification: two post-cleanup Storefront wakes, four direct-owner provenance records, zero resurrection paths and clean GitHub `main`. Only then is Storefront finished.
 
 ## 9. Test matrix
 
@@ -259,11 +280,17 @@ The exact final tree may reuse existing directories to minimize churn, but Store
 | UI change | Yes: Coconala seller listing publication and official public service readback |
 | Judgment | Maestro not applicable; verification MUST use the authenticated official browser DOM, fresh public URL/readback, durable effect ledger and replay |
 
-Execution order for the active item:
+Remaining execution order is authoritative and may not be reordered:
 
-1. Define one versioned mutation contract with service/version identity, precondition hash, changed field, allowed delta, rollback value and official readback contract.
-2. Make the proven image adapter consume that contract without changing its external behavior.
-3. Add title/outcome, body/scope, package/add-ons, FAQ and price as explicit supported adapter types, one at a time.
-4. Render and diff one current official service per adapter without publishing; require exactly one allowed field delta.
-5. Reject stale service versions, unsupported families, unknown seller option values, multi-field deltas and missing rollback values.
-6. Run the installed Storefront owner and prove it keeps the active `91000001` experiment fenced while retaining official service `91000003` and Telegram idempotency.
+1. S4e: migrate FAQ, render one authenticated one-field diff and prove no publication.
+2. S4f: migrate price, bind exact seller option/display-price values and fail closed on unknown values.
+3. S4g: apply stale-version, unsupported-family, multi-field, rollback and official-readback guards to every adapter; run the installed fenced owner.
+4. S5a: add the append-only Storefront funnel joiner and immutable cross-owner receipt consumer without editing Negotiate or Paid.
+5. S5b: keep Storefront and Apply origins exclusive; add verified money, quality and repeat fields with unknown-preserving reconciliation.
+6. S5c: complete the emoji-led hourly Telegram report and prove changed-state send plus identical-state dedupe.
+7. S6a: run three consecutive installed wakes, measure duration and prove effect/readback/dedupe/lease behavior plus one contained failure recovery.
+8. S6b: prove minute/hour/day cutoffs by immediate controlled replays; minute capability requires a sub-60-second incremental path or truthful locked no-op.
+9. S7a: inventory all four direct owners and fix missing provenance/references through their owners on GitHub `main`.
+10. S7b: remove registry/docs references, then tracked gig-pass files and obsolete backup plists after reachability is zero.
+11. S7c: after Paid evidence handoff, remove the mixed worktree/branch and publish the canonical four-lane inventory.
+12. S8: build the post-cleanup release, run Storefront twice, verify other owners read-only, prove no resurrection path and only then mark the spec complete.
