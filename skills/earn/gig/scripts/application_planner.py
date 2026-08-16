@@ -1,0 +1,308 @@
+#!/usr/bin/env python3
+"""Strict, browser-isolated model-planner contract for Gig applications.
+
+The planner receives an immutable snapshot envelope and returns only feasibility
+judgments plus a proposed offer. It has no browser, lease, or mutation interface.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import re
+import sys
+from pathlib import Path
+
+from application_snapshot import stable_request_text, validate_snapshot
+from buyer_voice import PERSONA, check_style
+from proposal_feedback import fragment as proposal_feedback_fragment
+
+
+MAX_BATCH = 40
+MIN_PROPOSAL_CHARS = 200
+MAX_PROPOSAL_CHARS = 3000
+_ROOT_FIELDS = frozenset({"decisions"})
+_DECISION_FIELDS = frozenset({
+    "request_id", "business_class", "reason_codes", "proposal_text", "price_jpy", "deliver_date",
+})
+_DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+BUSINESS_CLASSES = frozenset({"submit_required", "hard_prohibited"})
+HARD_PROHIBITION_CLASSES = {
+    "video_or_animation": "video editing/production, live-action filming, AI video, animation, or MV",
+    "physical_or_onsite": "on-site work or physical making/assembly/cleaning/repair/cooking/sewing/woodwork/model making/packing/shipping/delivery/receipt",
+    "mandatory_human_presence": "explicitly required human face appearance/performance/voice recording/phone work, real-time live call, or video interview; vague meetings, ordinary communication, or possible consultation do not qualify",
+    "explicit_ai_prohibition": "explicit prohibition on AI use",
+    "illegal_or_unsafe": "illegal or unsafe work",
+    "missing_legal_qualification": "legally required qualification that Kosuke does not hold",
+    "mandatory_attribute_fabrication": "mandatory immutable/current personal identity or life-status fact that cannot be answered truthfully; skill, work experience, portfolio, achievements, tool experience, or preferred qualifications never qualify",
+}
+
+
+def _keys_equal(value: object, expected: frozenset[str], at: str, errors: list[str]) -> bool:
+    if not isinstance(value, dict):
+        errors.append(f"{at}_must_be_object")
+        return False
+    actual = set(value)
+    missing = sorted(expected - actual)
+    additional = sorted(actual - expected)
+    if missing:
+        errors.append(f"{at}_missing:{','.join(missing)}")
+    if additional:
+        errors.append(f"{at}_additional:{','.join(additional)}")
+    return not missing and not additional
+
+
+def id_mismatch_error(expected_ids: list[str], actual_ids: list[str]) -> str:
+    """Name which requests were dropped and which were invented.
+
+    This contract fired ten times on 2026-08-04/05 saying only that the sets differed, with
+    batches of ten and no record of the expected set beside the result — a bare assertion
+    that something was wrong somewhere. A dropped request and a hallucinated one are
+    different bugs with different fixes, so both directions are reported. The lists are
+    capped because this ends up in a log line.
+    """
+    missing = sorted(set(expected_ids) - set(actual_ids))
+    unexpected = sorted(set(actual_ids) - set(expected_ids))
+
+    def brief(ids: list[str]) -> str:
+        if len(ids) <= 6:
+            return ",".join(ids)
+        return ",".join(ids[:6]) + f",+{len(ids) - 6} more"
+
+    return (
+        "decision_request_ids_not_one_to_one: "
+        f"missing=[{brief(missing)}] unexpected=[{brief(unexpected)}]"
+    )
+
+
+def validate_decisions(
+    snapshot: object, decisions: object, *, require_complete: bool = True
+) -> list[str]:
+    """Validate deterministic identity/completeness rules, never semantic business meaning.
+
+    require_complete=False accepts a decisions set that omits some expected ids -- the
+    parent already recorded those as not-attempted-this-wake rather than discarding
+    every other well-formed decision in the batch. An id outside the snapshot is always
+    rejected regardless: it was never judged against real detail data.
+    """
+    errors = [f"snapshot:{item}" for item in validate_snapshot(snapshot)]
+    if errors:
+        return errors
+    assert isinstance(snapshot, dict)
+    if not _keys_equal(decisions, _ROOT_FIELDS, "decisions", errors):
+        return errors
+    assert isinstance(decisions, dict)
+    rows = decisions["decisions"]
+    if not isinstance(rows, list) or len(rows) > MAX_BATCH:
+        errors.append("decisions_array_invalid")
+        return errors
+    expected_ids = [item["request_id"] for item in snapshot["request_details"]]
+    detail_by_id = {item["request_id"]: item for item in snapshot["request_details"]}
+    actual_ids: list[str] = []
+    for index, row in enumerate(rows):
+        if not _keys_equal(row, _DECISION_FIELDS, f"decision[{index}]", errors):
+            continue
+        assert isinstance(row, dict)
+        request_id = row["request_id"]
+        actual_ids.append(str(request_id))
+        if not isinstance(request_id, str) or not request_id.isdigit():
+            errors.append(f"decision[{index}]_request_id_invalid")
+        business_class = row["business_class"]
+        if business_class not in BUSINESS_CLASSES:
+            errors.append(f"decision[{index}]_business_class_invalid")
+            continue
+        reasons = row["reason_codes"]
+        if not isinstance(reasons, list) or not all(
+            isinstance(item, str) and item.strip() for item in reasons
+        ) or len(set(reasons)) != len(reasons):
+            errors.append(f"decision[{index}]_reason_codes_invalid")
+        proposal = row["proposal_text"]
+        price = row["price_jpy"]
+        date = row["deliver_date"]
+        row_detail = detail_by_id.get(request_id) if isinstance(request_id, str) else None
+        if business_class == "submit_required":
+            if reasons:
+                errors.append(f"decision[{index}]_submit_required_reason_codes_must_be_empty")
+            if not isinstance(proposal, str) or not proposal.strip():
+                errors.append(f"decision[{index}]_submit_required_proposal_required")
+            elif not MIN_PROPOSAL_CHARS <= len(proposal) <= MAX_PROPOSAL_CHARS:
+                errors.append(f"decision[{index}]_submit_required_proposal_length_invalid")
+            # proposal_text is read by the buyer. An internal token in it is the same leak
+            # that reached order 91000002, and it is objective, so it fails closed here.
+            # Reported rather than raised: this function's whole contract is to name every
+            # defect in a batch of up to 40 at once (see id_mismatch_error), and a raise
+            # would discard the other 39 diagnoses. A non-empty errors list already blocks
+            # the batch, so this is fail-closed either way.
+            if isinstance(proposal, str):
+                violations = check_style(proposal)
+                if violations:
+                    errors.append(
+                        f"decision[{index}]_buyer_style_violation:{violations[0]}"
+                    )
+            if isinstance(price, bool) or not isinstance(price, int) or price < 1:
+                errors.append(f"decision[{index}]_submit_required_price_required")
+            maximum = row_detail.get("budget_max_jpy") if isinstance(row_detail, dict) else None
+            if (
+                isinstance(price, int)
+                and not isinstance(price, bool)
+                and isinstance(maximum, int)
+                and not isinstance(maximum, bool)
+                and price > maximum
+            ):
+                errors.append(f"decision[{index}]_submit_required_price_exceeds_budget_max")
+            if not isinstance(date, str) or not _DATE.fullmatch(date):
+                errors.append(f"decision[{index}]_submit_required_date_required")
+            else:
+                try:
+                    dt.date.fromisoformat(date)
+                except ValueError:
+                    errors.append(f"decision[{index}]_submit_required_date_invalid")
+        else:
+            if not isinstance(reasons, list) or not reasons:
+                errors.append(f"decision[{index}]_hard_prohibited_reason_required")
+            else:
+                if (
+                    not isinstance(reasons[0], str)
+                    or reasons[0] not in HARD_PROHIBITION_CLASSES
+                ):
+                    errors.append(f"decision[{index}]_hard_prohibited_reason_class_invalid")
+                if len(reasons) < 2 or not isinstance(reasons[1], str):
+                    errors.append(f"decision[{index}]_hard_prohibited_evidence_required")
+                else:
+                    excerpt = stable_request_text(reasons[1])
+                    if not excerpt:
+                        errors.append(f"decision[{index}]_hard_prohibited_evidence_required")
+                    elif len(excerpt) > MIN_PROPOSAL_CHARS:
+                        errors.append(f"decision[{index}]_hard_prohibited_evidence_length_invalid")
+                    elif (
+                        not isinstance(row_detail, dict)
+                        or excerpt not in stable_request_text(row_detail["visible_text"])
+                    ):
+                        errors.append(
+                            f"decision[{index}]_hard_prohibited_evidence_not_in_visible_text"
+                        )
+            if proposal is not None or price is not None or date is not None:
+                errors.append(f"decision[{index}]_hard_prohibited_offer_must_be_null")
+    if len(set(actual_ids)) != len(actual_ids):
+        errors.append("decision_request_ids_duplicate")
+    # The model owns the judgment and semantic priority for each immutable request
+    # identity. Row order may differ from snapshot order, but identity coverage may not.
+    unexpected = set(actual_ids) - set(expected_ids)
+    missing = set(expected_ids) - set(actual_ids)
+    if unexpected or (require_complete and missing):
+        # Name the difference. This fired ten times on 2026-08-04/05 saying only that the
+        # sets differed, with batches of ten and no record of the expected set beside the
+        # result — a bare assertion that something was wrong somewhere. A dropped request and
+        # an invented one are different bugs with different fixes, so both directions are
+        # reported, and the list is capped because this lands in a log line.
+        errors.append(id_mismatch_error(expected_ids, actual_ids))
+    return errors
+
+
+def planner_prompt(envelope: dict) -> str:
+    """Right-altitude instructions plus small canonical examples; no browser guidance."""
+    hard_prohibition_section = "\n".join(
+        f"- {reason_code}: {description}"
+        for reason_code, description in HARD_PROHIBITION_CLASSES.items()
+    )
+    instructions = (
+        # proposal_text is read by a human deciding whether to hire us. Until 2026-08-06
+        # this prompt said nothing at all about who is writing, and the model answered as
+        # the system it could infer from the schema: a status reporter.
+        f"{PERSONA}\n\n"
+        "以下はあなたが書く proposal_text に適用される人格です。判定（submit_required / hard_prohibited）そのものは\n"
+        "下記の業務ルールに従ってください。\n\n"
+        "You are the application-intent planner. Read the immutable marketplace snapshot below.\n"
+        "For every request, make your own feasibility judgment from its actual visible details. Do not claim\n"
+        "that anything was opened, filled, clicked, submitted, verified, or saved. Return JSON that matches\n"
+        "the supplied schema exactly, with one decision for every request ID. Order the decision rows for execution: first\n"
+        "submit_required coding, AI, system, automation, and other high-reward work; within that group prefer higher expected\n"
+        "reward, then place every other submit_required row. Never omit lower-priority feasible work. Put hard_prohibited rows\n"
+        "after submit_required rows. If more than 20 rows are feasible, the first 20 submit_required rows must be the strongest\n"
+        "opportunities. This is semantic ordering from the whole listing, never a keyword rule.\n\n"
+        "When work is feasible, choose `submit_required`, leave reason_codes empty, and provide a concrete 200〜3000文字 proposal, honest price, and realistic\n"
+        "deliver date. 納期には安全マージンとして日数を足さず、正直に実行可能な最短日を選ぶ。 "
+        "When it is hard-prohibited, choose `hard_prohibited`, give concise reason codes, and set proposal,\n"
+        "price, and date to null. Reason from the listing as a whole; do not use a mechanical keyword rule.\n\n"
+        "Use only seller facts explicitly supplied in the verified-facts fragment below or facts stated by this listing.\n"
+        "Never invent or inflate qualifications, personal attributes, employers, career length, numeric achievements,\n"
+        "portfolio items, or prior work. If no exact-domain result is verified, still submit: use the nearest verified\n"
+        "transferable experience and a concrete listing-specific sample/plan, clearly describing unbuilt work as a plan.\n"
+        "Work on an external account whose connected credentials are already available is a supported capability.\n"
+        "Never volunteer or promise a live call, video meeting, face appearance, or voice recording in proposal_text. If live\n"
+        "consultation is optional or only preferred, offer asynchronous requirements gathering through Coconala messages and\n"
+        "documents instead; if it is mandatory, use the applicable hard-prohibition class.\n"
+        "Use hard_prohibited only when the whole listing requires one hard-prohibition class below. Distinguish required\n"
+        "terms from optional, negated, or quoted text; do not route a decision from an isolated phrase. For a hard_prohibited\n"
+        "decision, reason_codes[0] must be the exact class key and reason_codes[1] a bounded exact evidence excerpt from the\n"
+        "listing. Copy reason_codes[1] as one contiguous substring exactly as it appears in visible_text: do not shorten,\n"
+        "summarize, join separate phrases, correct punctuation, or paraphrase it. Before returning JSON, verify that the exact\n"
+        "reason_codes[1] characters occur in that request's visible_text. The only hard-prohibition classes are:\n"
+        f"{hard_prohibition_section}\n"
+        "A requested skill, work history, domain experience, portfolio, numeric achievement, prior client result, or tool experience is never a personal-attribute-fabrication prohibition. Even when the listing says it is required, limited, preferred, experienced-only, or asks the applicant to describe it, choose submit_required and answer honestly with verified transferable capability plus a concrete sample/plan. Do not claim the missing experience.\n"
+        "A generic meeting, discussion, interview, consultation, explanation, coordination, or communication requirement is not mandatory_human_presence unless the listing explicitly requires synchronous phone, live voice, live video, face appearance, performance, or human voice recording. Ambiguous modality remains submit_required and the proposal offers asynchronous Coconala messages/documents.\n"
+        "Experience uncertainty, weak portfolio, broad scope, low budget, difficulty, unclear production scope, possible optional consultation, unverified achievements, and unverified Adobe experience are discretionary weaknesses, never refusal reasons; they remain submit_required candidates.\n\n"
+        "狙う仕事の順序: ①定期購入・保守・運用のように毎月続くもの ②システム開発・業務自動化・ソフト構築・Web制作の\n"
+        "ように1件3万円以上になるもの ③その他の非同期で完結する作業。①②はこちらが最も強い領域で、単価も継続性も高い。\n"
+        "低単価の単発でも、非同期で確実に完遂できるなら請けてよい。\n"
+        "\n"
+        "既知の budget_max_jpy がある案件では、price_jpy は budget_max_jpy を超えない。案件規模と競争状況に合う、\n"
+        "少し競争力のある価格を出す。budget_min_jpy と budget_max_jpy が両方 null の見積依頼（予算「応相談」「未定」）は、\n"
+        "それだけで hard_prohibited にしない。ソフトウェア・コード・IT・システム・API・AI・自動化系は、scope と市場相場に応じて\n"
+        "おおむね ¥50,000〜¥300,000 を目安に price_jpy を決める（小規模は下限寄り、広い・難しい・継続性のある案件は上限寄り）。\n"
+        "これは見積もりの目安であり固定の hard ceiling ではない。その他は成果物・作業量・リスク・通常のカテゴリ相場から案件ごとに\n"
+        "見積もり、一律の最低価格や固定の価格帯を設けず、実行可能なら submit_required にする。\n"
+        "競合より少し安く、速く、品質を具体的に示す価格を基本とする。deliver_date も見積の規模に見合った現実的な\n"
+        "日数にする（小規模なら短く、大規模なら長く）。\n"
+        f"{proposal_feedback_fragment()}"
+        "\n"
+        "Snapshot envelope (the only marketplace input):\n"
+    )
+    planner_envelope = dict(envelope)
+    planner_details: list[object] = []
+    for detail in envelope.get("request_details", []):
+        if isinstance(detail, dict):
+            planner_detail = dict(detail)
+            planner_detail["visible_text"] = stable_request_text(detail.get("visible_text", ""))
+            planner_details.append(planner_detail)
+        else:
+            planner_details.append(detail)
+    planner_envelope["request_details"] = planner_details
+    return instructions + json.dumps(
+        planner_envelope, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    validate = subparsers.add_parser("validate")
+    validate.add_argument("--snapshot", required=True, type=Path)
+    validate.add_argument("--decisions", required=True, type=Path)
+    prompt = subparsers.add_parser("prompt")
+    prompt.add_argument("--snapshot", required=True, type=Path)
+    args = parser.parse_args(argv)
+    try:
+        snapshot = json.loads(args.snapshot.read_text(encoding="utf-8"))
+        if args.command == "prompt":
+            snapshot_errors = validate_snapshot(snapshot)
+            if snapshot_errors:
+                print(json.dumps({"ok": False, "errors": snapshot_errors}, separators=(",", ":")))
+                return 2
+            print(planner_prompt(snapshot))
+            return 0
+        decisions = json.loads(args.decisions.read_text(encoding="utf-8"))
+        errors = validate_decisions(snapshot, decisions)
+        if errors:
+            print(json.dumps({"ok": False, "errors": errors}, separators=(",", ":")))
+            return 2
+        print(json.dumps({"ok": True}, separators=(",", ":")))
+        return 0
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        print(json.dumps({"ok": False, "error": str(error)}, separators=(",", ":")), file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
