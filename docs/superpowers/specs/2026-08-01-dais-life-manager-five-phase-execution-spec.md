@@ -29,7 +29,7 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 
 | organ / loop | 内部作業ではなく要求する現実成果 |
 |---|---|
-| Connector | 複数の東京event site（設定済み: Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY、unknown-provider実証: KokuchPro）を14日窓で探索し、無料・Calendar非衝突候補へ実申込して人と会う |
+| Connector | Luma、次にConnpassをprimary sourceとして14日窓を探索し、無料・受付中・Calendar非衝突の東京eventへ実申込する。残る設定済みproviderはprimaryで候補が足りない時のfallbackにする |
 | LT | 登壇応募、登壇、Life Manager demo、参加者との接点 |
 | Fundraising | 実提出、返信、面談、採択、資金とpeer group |
 | Job Hunter | 実応募、返信、面接、offer、給与改善 |
@@ -41,10 +41,30 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 外部write 0の健康なterminal resultとして報告する。実装acceptanceと現在の運用healthは分けて判定し、
 コードが完了していてもschedule owner、browser dependency、legacy owner、live bundleが未検証ならActive TODOへ戻す。
 
+#### 0.1.1 Connector current product contract
+
+ConnectorはDaisがevent参加機会を増やすためのlocal event application loopであり、「会うべき人」を予測するsystemではない。
+AI・crypto・startup・engineeringは候補の**soft preference**として順位を上げてよいが、topic不一致を理由に無料・受付中・
+Calendar非衝突のeventを除外しない。異分野を含む参加可能なeventを候補として残し、未知の参加者属性や成果を推測しない。
+
+provider優先順位と責任境界は次で固定する。
+
+1. primary discoveryはLuma、次にConnpass。この2 providerを先に尽くす。
+2. Peatix、Meetup、Doorkeeper、Eventbrite、TECH PLAY、KokuchProはfallback railとして既存実装を保持する。
+3. verified registration後、ConnectorがGoogle Calendarへ作るのは**event本体1件だけ**。移動時間、前後buffer、経路、Calendar enrichmentは作らない。
+4. Telegramへevent、日時、場所、event URL、Calendar URL、official evidenceを送る。official ticket/QRが取得できるproviderではQRも送る。QRがないproviderでは検証済みregistration page画像または同等receiptを送る。
+5. schedule、browser ownership、探索、申込、official readback、Calendar event write、Telegram delivery、durable receiptまでをConnectorの完了chainにする。
+6. local official entrypointは`skills/connector/run.sh`とし、agent/loopは同じCLI/skillを起動する。別のad-hoc executorを作らない。
+
+非目標は、全世界のevent siteを網羅する汎用web crawler、特定人物とのmeeting保証、移動時間の計算・Calendar登録、
+Life Manager Web AppのCalendar enrichment、cloud/multi-user化である。これらはConnector core acceptanceへ混ぜない。
+このsectionと`0.2.1`〜`0.2.3`がcurrent contractであり、後段の履歴にあるgoal/serendipity、travel、rolling-21、
+全provider live proofの記述は現在のscopeや完了条件を上書きしない。
+
 ### 0.2 現在地と残りの一本道
 
-Connectorのコード正本はcanonical repositoryの`main`である。2026-08-16のread-only監査では
-`origin/main`と専用status worktreeのbaseが`5a9f390b2`で一致し、production native plistは
+Connectorのコード正本はcanonical repositoryの`main`である。2026-08-16のscope再監査では
+Connector SSOT merge `50f4adca8`から監査base `5b617eb54`までConnector production pathの変更は0で、production native plistは
 `/Users/operator/Projects/life-manager-main/skills/connector/run.sh`を参照する。
 `O1A-01〜06`と`O1B-01〜24`は実装・実測・証拠化・push済み。
 過去の21日coverage証拠（2026-08-02の`open=18 / covered_existing=0 / covered_new=1 / unavailable=2`を含む）は履歴であり、
@@ -54,31 +74,34 @@ Connectorのコード正本はcanonical repositoryの`main`である。2026-08-1
 
 | 観測 | 現在の事実 | target / 境界 |
 |---|---|---|
-| branch / owner | canonical `main` verified base `5a9f390b2`が実装SSOT。native plistもmain checkoutを参照 | 旧integration worktree依存はnative pathから除去済み |
-| production providers | `skills/connector/native-pass.js`の設定済み順序はLuma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY → KokuchPro | 同じowned pageで前進し、別browser/sessionを作らない |
+| branch / owner | canonical `main`のConnector監査anchorは`50f4adca8`、scope再監査baseは`5b617eb54`。native plistもmain checkoutを参照 | 両anchor間のConnector production path変更0。旧integration worktree依存はnative pathから除去済み |
+| production providers | `skills/connector/native-pass.js`の設定済み順序はLuma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY → KokuchPro | LumaとConnpassがprimary、残りはfallback。同じowned pageで前進し、別browser/sessionを作らない |
 | acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
 | agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded model action proposerをprovider別step上限内で使う。click成功だけをcompletionにせずofficial parent/child readbackを必須化 | 実bundleはLuma 2、Connpass 1、Peatix 11。Meetup・Doorkeeper・Eventbrite・TECH PLAY・KokuchProはfirst live bundle未証明 |
 | latest verified wake | `wake-d7fc192bd446f613acd15b02`: `applied_bundle / peatix / registered / failure 0` | Calendar readback、PNG SHA-256、Telegram message `20545`・photo `20546`・wake report `20549`、bundle 14件目を同一chainで確認 |
 | current provider inventory | 同wakeでLuma `35/35/29/17/1`、Connpass `5/5/5/3/0`、Peatix `100/100/86/60/11`。直前wakeではMeetup `14/12/11/1/0`、Doorkeeper `150/13/5/0/0`、Eventbrite `200/0/0/0/0`、TECH PLAY `50/22/1/1/1` | 数値は各providerの`observed or discovered / normalized or within-window / window or eligible / free-open or calendar-free / calendar-free or selected`のschema順。provider間でfield名が異なるため意味を混同しない |
+| current scope drift | Calendar writeはevent本体だけだが、`connector-native-runtime.js`は候補gateで`createConnectorRouteMinutes`、`homeLocation`、`routeMinutes`をまだ要求する | Connector coreからtravel dependencyを削除し、Calendar busy conflictだけをeligibilityへ残すまでcurrent contractと実装は不一致 |
 | lifecycle / lock | native labelはmain checkout、09:00 daily、not running、10:35 reload後runs 0 / never exited。process 0、lockなし | 最新Peatix wakeは10:42でlaunchd runs 0のためforeground証拠。reload後の自然09:00 wakeは未観測 |
 | runtime drift | healthcheckとHealerがloadedだが削除済み`connector-native-completion` worktreeを参照しlast exit `EX_CONFIG`。retire済みhost bridgeもloaded/running。Connector用CloakBrowser `:9222`はlistener 0 | native以外の旧ownerをunloadし、`:9222`の正規ownerを復旧するまでscheduled readinessをPASSにしない。Gig `:9223`は別ownerでDO NOT TOUCH |
-| TODO境界 | 実装Items1〜18・20〜23/23Fは完了。Active remainingは下記`0.2.1`だけ | 過去のmilestone checkboxは履歴であり、現在の実行順に使わない |
+| TODO境界 | 実装Items1〜18・20〜23/23Fは完了。Active remainingは下記7件のConnector coreだけ | fallback providerのlive proofと過去のmilestone checkboxは現在の実行順に使わない |
 
 #### 0.2.1 Active remaining TODO SSOT
 
-この表だけをConnectorの現在TODOと順序の正本にする。外部条件待ちでも消さず、`BLOCKED_EXTERNAL`として保持する。
+この表だけをConnector coreの現在TODOと順序の正本にする。core completionはLuma/Connpass優先loop、Calendar event本体、
+Telegram evidence、local scheduleの復旧で判定する。fallback providerのfirst-live proofはcore blockerにしない。
 
 | 順序 | ID | 状態 | 完了条件 |
 |---:|---|---|---|
-| 1 | C-OPS-01 single-owner cleanup | READY | healthcheck・Healer・host bridgeをunloadし、nativeだけloaded。削除済みworktree参照、`EX_CONFIG`、port `18793` consumerを0にする。plist/stateは削除しない |
-| 2 | C-OPS-02 browser readiness | READY | Connector専用CloakBrowser daily-driver `127.0.0.1:9222`の既存正規ownerを復旧し、Gig `:9223`や他profileを変更せずhealth endpointとpage inventoryをreadbackする |
-| 3 | C-OPS-03 canonical wake | BLOCKED_BY_01_02 | native labelをexact 1回だけsupervised kickstartし、main entrypoint、session/target各1、terminal report、positive Telegram ID、process/lock/owned-page cleanup、exit contractを実測する |
-| 4 | C-LIVE-01 TECH PLAY | READY_AFTER_03 | 直近`calendar_free=1 / selected=1`を`techplay_direct_requires_harness`でcircuit-openさせず、review/finalを最大15-step Harnessへ渡し、official readback→Calendar→PNG→Telegram→first `applied_bundle`を実証する |
-| 5 | C-LIVE-02 Meetup | BLOCKED_EXTERNAL | 将来の無料・14日内・Calendar非衝突候補でfirst `applied_bundle`を実証する。直近はfree-open 1 / calendar-free 0 |
-| 6 | C-LIVE-03 Doorkeeper | BLOCKED_EXTERNAL | 将来のCalendar非衝突候補でfirst `applied_bundle`を実証する。直近はeligible 5 / calendar-free 0 |
-| 7 | C-LIVE-04 Eventbrite | BLOCKED_EXTERNAL | 将来のeligible候補でfirst `applied_bundle`を実証する。直近はwithin-window 0 / eligible 0 |
-| 8 | C-LIVE-05 KokuchPro | BLOCKED_EXTERNAL_AUTH | 14日内のstrict-free候補と有効sessionが同時に存在するwakeで、`auth_required`後のprivate値漏洩・重複作用0を保ったfirst `applied_bundle`を実証する |
-| 9 | C-DUR-01 natural schedule recovery | BLOCKED_BY_01_02 | cleanup後の次の自然09:00 wake、または同等のMac login/reload recoveryでnative ownerだけがruns +1となり、`applied_bundle`または健康な`completed_no_effect`、Telegram receipt、cleanupを残す |
+| 1 | C-CORE-01 single-owner cleanup | READY | 壊れたhealthcheck・Healer・retired host bridgeだけをunloadし、nativeだけloaded。削除済みworktree参照、`EX_CONFIG`、port `18793` consumerを0にする。plist/stateは削除しない |
+| 2 | C-CORE-02 browser readiness | READY | Connector専用CloakBrowser daily-driver `127.0.0.1:9222`の正規ownerを復旧し、Gig `:9223`や他profileを変更せずhealth endpointとpage inventoryをreadbackする |
+| 3 | C-CORE-03 remove travel dependency | READY | `connector-native-runtime.js`のcandidate eligibilityから`createConnectorRouteMinutes`、`homeLocation`、`routeMinutes`依存を除去し、無料・受付中・東京・14日内・Google Calendar busy非衝突だけをgateにする。Connectorがroute APIやtravel Calendar writeを呼ばないregressionを残す |
+| 4 | C-CORE-04 canonical primary-first wake | BLOCKED_BY_01_02_03 | native labelをexact 1回supervised kickstartし、Luma→Connpass→fallbackの順序、main entrypoint、session/target各1、terminal report、process/lock/owned-page cleanup、exit contractを実測する |
+| 5 | C-CORE-05 Luma current-runtime E2E | READY_AFTER_04_AND_CANDIDATE | Daisの既存Luma accountで無料・受付中・Calendar非衝突候補を実申込し、official readback→official QRがあればticket delivery→Calendar event本体exact 1→Telegram positive IDs→`applied_bundle`をcurrent main/runtimeで再証明する |
+| 6 | C-CORE-06 Connpass current-runtime E2E | READY_AFTER_04_AND_CANDIDATE | Daisの既存Connpass accountで無料・受付中・Calendar非衝突候補を実申込し、official readback→Calendar event本体exact 1→Telegram registration evidence positive IDs→`applied_bundle`をcurrent main/runtimeで再証明する |
+| 7 | C-CORE-07 natural schedule recovery | BLOCKED_BY_01_02_03 | cleanup後の次の自然09:00 wake、または同等のMac login/reload recoveryでnative ownerだけがruns +1となり、primary-first discovery、健康な`applied_bundle`または`completed_no_effect`、Telegram receipt、cleanupを残す |
+
+既存fallback railは削除しないが、Meetup・Doorkeeper・Eventbrite・TECH PLAY・KokuchProのfirst-live proofや機能拡張は
+`DEFERRED_NON_BLOCKING`とし、上の7件を閉じる途中へ入れない。Peatixの既存live bundleはfallback chainの証拠として保持する。
 
 #### 0.2.2 Connector ideal loop — start to finish
 
@@ -97,9 +120,10 @@ flowchart TD
     PREFLIGHT -->|No| DEPFAIL["circuit_open<br/>dependency unavailable"]
     PREFLIGHT -->|Yes| CAL["Google Calendar FreeBusy<br/>today + 14 days"]
     CAL --> PAGE["shared context内の<br/>owned page 1枚だけ取得"]
-    PAGE --> PROVIDER["ordered provider loop<br/>8 rails"]
+    PAGE --> PROVIDER["ordered provider cursor<br/>primary: 1. Luma → 2. Connpass<br/>then fallback: Peatix → Meetup → Doorkeeper<br/>→ Eventbrite → TECH PLAY → KokuchPro"]
     PROVIDER --> DISCOVER["privacy-safe discovery audit"]
-    DISCOVER --> GATE{"free・open・Tokyo・window<br/>Calendar-safe?"}
+    DISCOVER --> RANK["AI・cryptoをsoft preference<br/>topic不一致でも候補を除外しない"]
+    RANK --> GATE{"free・open・Tokyo・window<br/>Calendar-safe?"}
     GATE -->|No| NEXT["next candidate / provider"] --> PROVIDER
 
     GATE -->|Yes| PREREAD{"official pre-readback<br/>already registered?"}
@@ -112,10 +136,13 @@ flowchart TD
     HARNESS --> POST
     DIRECT --> POST{"official post-readback<br/>registered / pending?"}
     POST -->|No| NEXT
-    POST -->|Yes| PROVE["provider receipt + PNG SHA"]
+    POST -->|Yes| PROVE["provider receipt + registration-page PNG SHA"]
 
-    PROVE --> GCAL["idempotent Calendar write<br/>independent readback"]
-    GCAL --> TG["Telegram message + photo<br/>positive provider IDs"]
+    PROVE --> QR{"official ticket / QRあり?"}
+    QR -->|Yes| QRCAP["official QRをcapture・verify"]
+    QR -->|No| GCAL
+    QRCAP --> GCAL["event本体だけCalendarへ冪等write<br/>independent readback"]
+    GCAL --> TG["Telegram: event・Calendar link・証拠画像<br/>QRがあればQRも送信 / positive IDs"]
     TG --> BUNDLE["durable applied_bundle"]
     BUNDLE --> REPORT["terminal wake report"]
     NEXT -->|all exhausted| NOEFFECT["completed_no_effect<br/>external write 0"] --> REPORT
@@ -158,10 +185,11 @@ flowchart TB
     subgraph OBSERVE["2. 現実を読む"]
         CAL["全Google Calendar<br/>今日を含む14日busy inventory"]
         TARGET["CloakBrowser :9222<br/>session 1 / owned target 1 / page 1"]
-        PROVIDERS["ordered provider loop<br/>Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY<br/>→ unknown-provider contract: KokuchPro"]
+        PROVIDERS["primary: Luma → Connpass<br/>fallback: Peatix → Meetup → Doorkeeper → Eventbrite → TECH PLAY → KokuchPro"]
         DISCOVER["同じpageで候補をdiscover"]
-        GATE{"無料・受付中・14日内<br/>Calendar非衝突?"}
-        HEART --> CAL --> TARGET --> PROVIDERS --> DISCOVER --> GATE
+        RANK["AI・cryptoをsoft preference<br/>全候補を残して順位だけ付ける"]
+        GATE{"無料・受付中・東京・14日内<br/>Calendar非衝突?"}
+        HEART --> CAL --> TARGET --> PROVIDERS --> DISCOVER --> RANK --> GATE
         GATE -->|No| NEXT["次候補 / 次provider"]
         NEXT --> PROVIDERS
     end
@@ -192,12 +220,13 @@ flowchart TB
         SUPPORT{"minimal evidence chainが<br/>providerを受理?"}
         LUMA["built-in 7 providerのevidence adapter"]
         EVIDPENDING["provider別first live proof待ち"]:::pending
-        PNG["provider page full-page PNG<br/>SHA-256 + provider receipt"]
-        GCAL["Google Calendar冪等write<br/>独立readbackで1件を確認"]
-        TG["Telegram message + photo<br/>positive provider IDs"]
+        PNG["provider registration page PNG<br/>SHA-256 + provider receipt"]
+        QR["official ticket / QR<br/>存在するproviderだけ"]
+        GCAL["event本体だけGoogle Calendarへ冪等write<br/>独立readbackで1件を確認"]
+        TG["Telegram: message + evidence photo<br/>QRがあれば追加送信 / positive IDs"]
         BUNDLE["durable applied_bundle<br/>同一lineage"]
         POST -->|Yes| SUPPORT
-        SUPPORT -->|evidence対応provider| LUMA --> PNG --> GCAL --> TG --> BUNDLE
+        SUPPORT -->|evidence対応provider| LUMA --> PNG --> QR --> GCAL --> TG --> BUNDLE
         SUPPORT -->|bundle未完provider| EVIDPENDING --> CIRCUIT
     end
 
@@ -212,10 +241,10 @@ flowchart TB
         REPORT --> CLOSE --> USER
     end
 
-    subgraph EXPAND["6. 外部条件が成立したwakeだけで閉じる"]
-        MORE["C-LIVE-01〜05<br/>TECH PLAY repair + 4 conditional bundles"]:::future
+    subgraph DEFER["6. core完了後だけ扱う"]
+        MORE["fallback providerの追加live proof<br/>core blockerにしない"]:::future
     end
-    DAILY -.Calendar非衝突候補が出現.-> MORE
+    DAILY -.primaryで候補不足.-> MORE
 
     classDef future fill:#f3f4f6,stroke:#9ca3af,color:#4b5563,stroke-dasharray:5 5;
     classDef pending fill:#fff7ed,stroke:#ea580c,color:#9a3412;
@@ -232,7 +261,7 @@ flowchart TB
 ```text
 完了: O1B-20〜24 source handoff、候補継続、Calendar・移動時間・支出gate
 完了: O1C-00 Life Manager startup context正本化（旧Anicca product提出防止）
-いま: Connectorのruntime driftをC-OPS-01→03で除去し、TECH PLAY first live bundle→外部条件provider→自然09:00 recoveryの順に閉じる
+いま: Connector coreをC-CORE-01→07で閉じる。travel dependencyを除去し、Luma/Connpass優先、Calendar event本体、Telegram evidence、local scheduleだけをacceptanceにする
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -257,25 +286,26 @@ flowchart TD
 
     subgraph FIRST["初回だけ"]
         ON["TelegramでConnectorをON"]
-        PROFILE["既存profileから興味・場所・予算を設定"]
+        PROFILE["Daisの既存Luma / Connpass accountと<br/>AI・crypto等のsoft preferenceを使用"]
         ACK["動作条件を1通で確認"]
         ON --> PROFILE --> ACK
     end
 
     subgraph LOCAL["Mac mini上で継続実行 — 通常は見えない"]
-        CAL["全Calendarの空きと移動時間を確認"]
-        DISCOVER["設定済み8 providerを順に探索"]
-        GATE{"重複・時間・移動・予算gateを通過?"}
+        CAL["全Google Calendarのbusyを確認"]
+        DISCOVER["primary: Luma → Connpass<br/>不足時だけfallback provider"]
+        RANK["AI・cryptoを優先順位へ反映<br/>異分野eventも除外しない"]
+        GATE{"無料・受付中・東京・14日内<br/>Calendar非衝突?"}
         APPLY["cache / provider workflowで参加登録"]
         MODEL["unknown UI時だけbounded model action<br/>generic最大10 / TECH PLAY最大15 step"]
         RECEIPT{"provider receiptを検証できた?"}
-        VERIFY["確認mail・guest binding・ticket / QRを検証"]
-        SYNC["Google Calendarへ冪等登録しreadback"]
+        VERIFY["official registrationをreadback<br/>ticket / QRがあれば追加検証"]
+        SYNC["event本体だけGoogle Calendarへ<br/>冪等登録しexact 1件をreadback"]
         COVERAGE["現行14日窓の候補・申込状態を再計算"]
         NEXT{"設定済みprovider / accepted unknown-provider rail<br/>または日の処理が残る?"}
 
-        CAL --> DISCOVER --> GATE
-        GATE -->|No| DISCOVER
+        CAL --> DISCOVER --> RANK --> GATE
+        GATE -->|No| SKIP["次の候補 / provider"] --> DISCOVER
         GATE -->|Yes| APPLY
         APPLY -->|通常| RECEIPT
         APPLY -->|unknown UI| MODEL --> RECEIPT
@@ -286,7 +316,7 @@ flowchart TD
     end
 
     subgraph TELEGRAM["Daisが見るもの"]
-        BOOKED["予約完了: event・日時・場所・理由・Calendar・ticket"]
+        BOOKED["申込完了: event・日時・場所・Calendar<br/>registration画像 + official QRがあればQR"]
         DAILY["短い日次brief: 新規予約・今後の予定・残りの候補/日"]
         ACTION["本人操作が不可避な時だけ1アクションを依頼"]
         CONTROL["返信で停止・興味修正・予算変更"]
@@ -301,15 +331,16 @@ flowchart TD
 ```
 
 Telegramの予約完了messageは、少なくともevent名、日時、場所、選定理由、event URL、Calendar URL、
-ticket/QRまたは同等provider receipt、現在の14日状態countsを含む。receiptが検証できない登録、Calendar readbackが無い登録、
+検証済みregistration page画像または同等provider receiptを含み、official ticket/QRが存在する時だけQRも送る。receiptが検証できない登録、Calendar readbackが無い登録、
 Telegram provider message IDが無い送信を成功として表示しない。全wakeは`applied / continuing / recovering`を必ず報告し、週次rollupも
 成功0件を含め必ず報告する。報告は内部stack traceを見せず、成立した現実結果、安全なfailure class、未処理日数、次の自動actionを伝える。
-旧rolling-21 coverageは履歴および長期目標として保持するが、現行14日runnerのuser-facing acceptanceまたはgateではない。Peatix、Meetup、Doorkeeper、Eventbrite、TECH PLAYは設定済みrail、KokuchProはaccepted unknown-provider railとして表示する。実bundle未証明providerはその状態も同時に表示する。
+Connectorは移動時間、前後buffer、経路を計算・作成せず、Calendarにはevent本体だけを書く。旧rolling-21 coverageは履歴および長期目標として保持するが、現行14日runnerのuser-facing acceptanceまたはgateではない。Peatix、Meetup、Doorkeeper、Eventbrite、TECH PLAY、KokuchProはfallback railとして表示し、実bundle未証明providerはその状態も同時に表示する。
 
 #### 0.2.4 Connectorの残TODO参照
 
 実行順の唯一の正本は`0.2.1 Active remaining TODO SSOT`である。過去の進捗番号、milestone checkbox、
 旧rolling-21計画、旧「Item19だけ残る」という記述は履歴であり、現在TODOを上書きしない。
+current coreの残TODOはC-CORE-01〜07だけであり、fallback providerの追加live proofは含めない。
 live acceptanceは対話中のCodexや臨時scriptではなく、official native entrypointの外部receiptでのみ閉じる。
 
 ### 0.3 現在のlocal-only gate
@@ -8309,3 +8340,9 @@ productionのread-only最終確認はnative label exact 1、09:00 daily、`not r
 provider auditはLuma `35/35/29/17/1`、Connpass `5/5/5/3/0`、Peatix `100/100/86/60/11`。直前wakeはMeetup `14/12/11/1/0`、Doorkeeper `150/13/5/0/0`、Eventbrite `200/0/0/0/0`、TECH PLAY `50/22/1/1/1`。TECH PLAYは実Calendar-safe selected 1があるのに`techplay_direct_requires_harness`でcircuit-openしたため、単なる外部候補待ちではなくC-LIVE-01の実修復/acceptance対象へ戻す。Meetup・Doorkeeper・Eventbriteは外部条件待ち、KokuchProはwindow＋auth条件待ち。現在の唯一の順序SSOTを`0.2.1 Active remaining TODO SSOT`へ更新した。
 
 隔離worktreeから共有checkoutの既存依存を`NODE_PATH`で参照し、`node --test 'lib/connector-*.test.js'`を実測してConnector全560件がPASSした。依存を参照しない初回実行の4失敗は`playwright-core`/`jsqr`を解決できないworktree環境だけが原因であり、production code回帰ではない。これは静的回帰証拠であって、C-OPS-01〜03および各providerのlive acceptanceを代替しない。
+
+### O1B-25進捗515（Connector core scope再確定）
+
+Daisの明示指示により、Connector current contractを「Luma、次にConnpassをprimaryとして無料・受付中・東京・14日内・Calendar非衝突eventを探索し、実申込、official readback、event本体のGoogle Calendar登録、Telegram evidence、durable receiptまで行うlocal loop」へ再確定した。AI・crypto・startup・engineeringはsoft preferenceであり、異分野eventを除外するhard filterではない。Connectorは会うべき人物を予測せず、移動時間・前後buffer・経路・Life Manager Web AppのCalendar enrichment・cloud化を実装しない。
+
+実装照合では`skills/connector/native-pass.js`のprovider順序がLuma→Connpass→残り6 rails、`event-goal-serendipity.js`が全eventをexact 1回返してomit禁止、write pipelineがofficial receipt後にevent本体をCalendarへexact 1件作成しTelegram message/photoを送ることを確認した。Lumaはofficial ticket/QRを取得できる時だけ追加送信し、QR unavailableでもverified registration page evidence・Calendar・Telegram core chainは継続する。一方、native runtimeのcandidate gateには旧`createConnectorRouteMinutes`/`homeLocation`/`routeMinutes`依存が残るため、C-CORE-03で削除する。既存fallback実装は削除せず、追加first-live proofを`DEFERRED_NON_BLOCKING`へ移した。進捗514のC-OPS/C-LIVE順序は履歴とし、current Active TODOを`0.2.1`のC-CORE-01〜07へ置換した。
