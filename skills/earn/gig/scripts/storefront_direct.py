@@ -222,7 +222,15 @@ def _report_identity(row: dict, message: str) -> tuple[str, str, bool]:
     if row.get("status") == "failed":
         return (f"gig:telegram:storefront-failure:v1:{str(row.get('pass_id') or '')}",
                 "storefront_direct_failure", False)
-    digest = hashlib.sha256(message.encode()).hexdigest()
+    # Runtime is diagnostic, not business state. Keep it in the human report but
+    # exclude it from the no-op identity so a replay of the same accounting
+    # boundary cannot create another Telegram notification.
+    identity_message = re.sub(
+        r"(⚡ incremental )[0-9]+(?:\.[0-9]+)?秒( / minute )",
+        r"\1<runtime>秒\2",
+        message,
+    )
+    digest = hashlib.sha256(identity_message.encode()).hexdigest()
     return f"gig:telegram:storefront-noop:v1:{digest}", "storefront_direct_noop", True
 
 
