@@ -574,7 +574,11 @@ def readback_published_draft(
             break
         except RuntimeError as error:
             last_error = error
-            if not str(error).startswith("storefront_draft_category_option_missing") or attempt >= 2:
+            retryable = (
+                str(error).startswith("storefront_draft_category_option_missing")
+                or str(error) == "storefront_draft_readback_mismatch"
+            )
+            if not retryable or attempt >= 2:
                 raise
         finally:
             if isinstance(draft_tab, dict) and draft_tab.get("target_id"):
