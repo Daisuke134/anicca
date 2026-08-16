@@ -976,11 +976,23 @@ gate.
 
 Current execution cursor: **step 4**. Installed release `64093fd3e` has six
 healthy launchd owners, 15 refreshed official sources, three source-hash-bound
-composition inputs, two sealed outputs, two generic campaign handoffs, zero
-post-baseline clicks, and zero commission. Therefore the generic policy gate—not
-another research framework, provider login, locale, packaging, or cloud—is next.
-The recent ElevenLabs login expiry is already self-healed and is not a remaining
-task; no human login-support request or six-digit-code handoff is outstanding.
+composition inputs, three sealed outputs, and three generic campaign handoffs.
+All three handoffs are `READY_FOR_POLICY` and have no generic `policy_sha256`.
+Separately, the existing deterministic path has three English owned articles and
+three matching X placements with `LIVE` readback. Provider auth is
+`AUTHENTICATED`; revenue remains zero post-baseline clicks and zero commission.
+Therefore the generic policy gate—not another research framework, provider
+login, locale, packaging, or cloud—is next. No human login-support request or
+six-digit-code handoff is outstanding.
+
+| Current surface | Verified state | Meaning |
+|---|---|---|
+| Local scheduler | Six Affiliate launchd owners; last exits are `0` | The local runtime is installed and healthy |
+| Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
+| Existing distribution | 3 owned articles `LIVE`; 3 X posts `LIVE` | Real public effects exist and are receipted |
+| Generic pipeline | 3 sealed handoffs at `READY_FOR_POLICY` | Policy is the first unfinished autonomous stage |
+| Acquisition | 0 post-baseline provider clicks | E0 is open |
+| Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
 ```mermaid
 flowchart LR
@@ -1029,13 +1041,16 @@ flowchart LR
    and versioned source-plan metadata instead of paying for another model call.
    The contract rejects uncited external URLs, a private link, disclosure after
    CTA, invalid slug/locale metadata, oversized X copy, or a broken result seal;
-   all 49 Affiliate tests pass. Two installed-owner wakes created two validated
-   handoffs from existing sealed outputs with no new usage-ledger row; their
+   all 49 Affiliate tests pass. Three installed-owner wakes created three validated
+   handoffs from existing sealed outputs with no duplicate usage-ledger row; their
    internal fingerprints and composition-receipt file hashes both read back.
-4. **P0 — Generalize the policy gate.** Validate cited URLs and source hashes,
+4. **P0 — Generalize the policy gate — IN PROGRESS.** Validate cited URLs and source hashes,
    disclosure-before-CTA, claim support, locale, forbidden guarantees, one CTA,
    article/X length, and provider/channel rules. FAIL returns to the same job;
-   only PASS permits private-link injection.
+   only PASS permits private-link injection. Exact structure/freshness/policy
+   checks are deterministic; claim support is a separate bounded read-only model
+   audit over the sealed handoff and the same official source set. Neither layer
+   receives credentials, a tracking link, browser authority, or the money ledger.
 5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
    only a policy-PASS artifact, injects the executable link locally, publishes the
    owned article, waits for HTTP `200`, publishes X, and performs exact public
@@ -1106,6 +1121,70 @@ flowchart LR
     across independent providers, locales, tenants, and channels while showing
     net profit, reversals, costs, payout timing, concentration, incidents, and
     recovery. This is an evidence gate, not a guaranteed forecast.
+
+### 9.0.2 Current slice contract — generic policy gate
+
+#### 1. Overview
+
+Turn each sealed `READY_FOR_POLICY` handoff into a durable PASS or FAIL decision
+without exposing credentials or the referral URL. This is required because a
+sealed article is not safe to publish until both deterministic structure and
+source-supported claims are verified.
+
+#### 2. Acceptance criteria
+
+1. The gate verifies the handoff hash, source-set hash, current source hashes,
+   locale, disclosure-before-CTA, exactly one CTA placeholder, admitted URLs,
+   article/X limits, forbidden guarantees, and provider/channel rules.
+2. A bounded read-only model checks material claims only against the same sealed
+   official source set and returns schema-valid `PASS|FAIL` evidence.
+3. No credential, referral URL, browser authority, Git authority, X authority, or
+   money-ledger data enters either policy layer.
+4. PASS writes one content-addressed receipt bound to the exact handoff and source
+   set. Replaying the same inputs produces no new external effect.
+5. FAIL writes the unsupported claim or failed rule and blocks link injection,
+   owned publication, and X publication for that job.
+6. The installed composition owner advances one existing handoff per wake and
+   preserves the other handoffs for later wakes.
+
+#### 3. As-Is / To-Be
+
+| Surface | As-Is | To-Be |
+|---|---|---|
+| Handoff state | Three jobs stop at `READY_FOR_POLICY` | Each job receives a hash-bound generic policy receipt |
+| Structural checks | Campaign-specific legacy policy receipts exist | One deterministic gate validates every generic handoff |
+| Claim support | Not represented in the generic handoff lineage | One read-only audit records exact unsupported claims |
+| Effect boundary | Existing articles/X posts came from the deterministic legacy path | Only generic PASS unlocks the existing owned/X effect tools |
+
+#### 4. Test matrix
+
+| # | To-Be | Minimal test / live proof | Cover |
+|---:|---|---|---|
+| 1 | Exact PASS receipt | `test_ready_handoff_advances_to_policy_once` | MUST PASS |
+| 2 | Tampered handoff/source fails closed | `test_policy_rejects_changed_handoff_or_source` | MUST PASS |
+| 3 | Secret/link isolation | `test_policy_input_excludes_private_authority` | MUST PASS |
+| 4 | Unsupported claim blocks effects | `test_policy_fail_does_not_publish` | MUST PASS |
+| 5 | Installed progression | One launchd wake creates one bound policy receipt; replay is idempotent | MUST PASS |
+
+| E2E item | Value |
+|---|---|
+| UI change | None |
+| Conclusion | Maestro not required; installed launchd receipt readback is required |
+
+#### 5. Boundaries
+
+- Do not add a new scheduler, policy framework, database, browser, provider, or
+  model orchestration layer.
+- Do not publish a generic handoff in this slice; publication is ordered step 5.
+- Do not change Gig/Coconala state, owners, browsers, ledgers, or credentials.
+
+#### 6. Execution steps
+
+1. Add one generic policy schema and reuse the installed composition owner.
+2. Add only the four money/secret/duplicate-effect regressions above.
+3. Run the focused policy/composition checks and the existing Affiliate suite.
+4. Install one immutable Affiliate release and observe one real launchd wake.
+5. Verify receipt hashes and secret absence, update this SSOT, commit, and push.
 
 External user authority is required only before withdrawal: truthful tax/KYC and
 one payment provider must be completed with the user's legal/payment data. The
@@ -1744,13 +1823,17 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 6. **DONE:** Reuse CRWL, content, policy, owned, X, and revenue primitives for the
    TTS API English job. The verified artifact is a versioned template; no model
    runs inside the money-owner lock or receives credential/state-tree access.
-7. **PARTIAL:** The separate least-authority daily source owner and its
+7. **DONE:** The separate least-authority daily source owner and its
    source-hash-bound durable composition inbox are installed and live-proven.
-   Add only the bounded composition executor and validated result handoff; keep
-   the deterministic money owner and its ten-minute lock unchanged.
-8. Close E0 and E1 from real provider receipts, then add failure repair from the
+   The bounded composition executor and validated result handoff are installed;
+   three source sets independently reached `READY_FOR_POLICY` while the
+   deterministic money owner and its ten-minute lock remained unchanged.
+8. Implement the generic policy gate, connect one PASS handoff to the existing
+   owned/X effect tools, and prove a fourth English campaign reaches both public
+   `LIVE` receipts without a duplicate Git or X effect.
+9. Close E0 and E1 from real provider receipts, then add failure repair from the
    failures actually observed while earning.
-9. Only after E1, resume generic action schema, broad model context/budget work,
+10. Only after E1, resume generic action schema, broad model context/budget work,
    provider expansion, clean-Mac packaging, locales, and cloud gates.
 
 ### 11.1 Cleared implementation decisions
