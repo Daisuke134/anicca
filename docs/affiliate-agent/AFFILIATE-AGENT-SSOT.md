@@ -382,18 +382,27 @@ same commands that a future clean-Mac installer and cloud scheduler invoke.
 ### 1.5.1 Revenue scale architecture
 
 ```mermaid
-flowchart LR
-  L[Local English pod] --> E0[Attributable click]
-  E0 --> E1[Approved commission]
-  E1 --> C10[10 mature placements]
-  C10 --> P3[3 providers, each at most 40 percent]
-  P3 --> W4[4 profitable unattended weeks]
-  W4 --> K10[3 receipted months at USD 10K]
-  K10 --> PODS[Replicate proven pods by offer, locale and channel]
-  PODS --> K100[3 receipted months at USD 100K]
-  K100 --> CLOUD[Tenant-isolated cloud workers]
-  CLOUD --> M1[3 receipted months at USD 1M]
-  M1 --> M10[3 receipted months at USD 10M]
+flowchart TB
+  I[Buyer intent plus executable offer] --> A[Canonical owned decision asset]
+  A --> X[X]
+  A --> Y[YouTube and Shorts]
+  A --> T[TikTok and Reels]
+  A --> N[Newsletter]
+  A --> P[Pinterest and native locale channels]
+  X --> C[Attributed click and provider conversion]
+  Y --> C
+  T --> C
+  N --> C
+  P --> C
+  C --> R[Approved and paid receipt ledger]
+  R --> U{Positive net unit economics}
+  U -->|No| F[Repair offer, intent, claim or channel]
+  F --> I
+  U -->|Yes| E1[Replicate the proven pod]
+  E1 --> K10[USD 10K per month]
+  K10 --> K100[USD 100K per month]
+  K100 --> M1[USD 1M per month]
+  M1 --> M10[USD 10M per month]
 ```
 
 The scale mechanism is replication of externally profitable cohorts, not a
@@ -403,6 +412,32 @@ reversals, content and model cost, and positive net unit economics. The local
 Mac proves the complete loop first. USD 100K and USD 10M require many independent
 profitable pods and eventually tenant-isolated cloud workers; projections,
 creator screenshots, clicks, and annualized run rates never close a gate.
+
+The replicable unit is one `RevenuePod`: one locale, one buyer problem, one
+canonical owned asset set, one or more independently executable offers, admitted
+distribution channels, attributed provider events, costs, and one settlement
+ledger. Channel variants reuse the canonical evidence and decision logic, but
+each variant is native to its channel and has its own public readback. The Agent
+MUST NOT create account farms or repeat identical affiliate posts. A channel
+identity is provisioned once per legitimate brand and locale, receives an exact
+profile/disclosure/session-health receipt, and then becomes a durable adapter.
+
+The revenue equation is `qualified traffic × approved conversion rate × net
+commission + recurring commission - attributable costs`. Every input remains
+`unknown` until measured. USD 10K is reached by making one local English pod
+profitable and then adding comparable placements and providers. USD 100K and USD
+1M replicate only mature pods across offers, buyer intents, channels, and locales.
+USD 10M requires a tenant-isolated media network, direct partner capacity, and
+millions-scale qualified distribution; it is not achievable by increasing one
+X account's posting frequency.
+
+The channel order is fixed: owned site remains the canonical asset and
+attribution boundary; English X is the first active distributor; YouTube/Shorts
+and newsletter are admitted next because they create durable search and owned
+audience; TikTok/Reels and Pinterest follow after their eligibility and public
+effect contracts are receipted; Japanese `note` or another native platform is a
+locale adapter after English E1. A channel is not added merely because an account
+can be created.
 
 ## 2. Evidence-backed constraints
 
@@ -486,6 +521,32 @@ creator screenshots, clicks, and annualized run rates never close a gate.
     also says commissions are held for 31 days for refunds. The Agent models the
     hold and status tiers instead of treating a click or pending sale as cash.
     Source: [Kit Affiliate Program](https://kit.com/affiliate).
+18. Wirecutter's official description combines independent product testing and
+    more than 1,000 decision categories with subscriptions, retailer placements,
+    product sales, and affiliate commissions. The reusable pattern is a durable
+    decision library with reader trust, not a direct-link feed.
+    Source: [Wirecutter — About Us](https://www.nytimes.com/wirecutter/about/).
+19. YouTube Shopping allows eligible creators to tag relevant products in videos
+    and Shorts, exposes commission and performance data, and may reverse
+    commission after returns. The Agent therefore treats YouTube as a durable
+    search/video adapter and preserves the provider settlement state.
+    Source: [YouTube Shopping affiliate program](https://support.google.com/youtube/answer/13376398?hl=en).
+20. TikTok Shop officially supports commission-based creator promotion through
+    shoppable short videos and livestreams. Its reported US platform growth and
+    LIVE-shopping volume prove channel demand, not this Agent's income; admission
+    still requires account eligibility and our own attributed receipts.
+    Sources: [Introducing TikTok Shop](https://newsroom.tiktok.com/en-us/introducing-tiktok-shop),
+    [TikTok Shop discovery commerce](https://newsroom.tiktok.com/en-us/tiktok-shop-is-where-shoppers-come-to-discover).
+21. Pinterest requires original value, clear disclosure, moderate affiliate-link
+    use, and generally one authentic account; it rejects fake accounts,
+    manipulation, and repetitive high-volume affiliate Pins. Account-farm
+    automation is therefore outside the product contract.
+    Source: [Pinterest commercial and branded content guidelines](https://policy.pinterest.com/en/commercial-and-branded-content-guidelines).
+22. ValueCommerce's official 2024 new-member ranking reports materially different
+    monthly averages by niche, including PC/peripherals, employment,
+    communications, and credit cards. This supports buyer-intent specialization;
+    it does not prove that a category average or top result transfers to us.
+    Source: [ValueCommerce — affiliate mechanism and earnings](https://www.valuecommerce.ne.jp/affiliate-about/).
 
 Creator revenue screenshots and claims found on X are market signals only. They
 never enter earnings or train a prompt as a winner without a matching external
@@ -1116,93 +1177,106 @@ flowchart LR
 11. **Gate E1 — Record real money.** Normalize the first non-test provider row,
     join or explicitly fail to join it to a placement, replay it without a
     duplicate transition, then record the first externally `approved` commission.
-12. **After E1 — Build comparable English cohorts.** Reach ten mature placements,
-    change one variable per experiment, and allocate by approved net commission
-    per 1,000 qualified impressions and per content cost—not engagement.
-13. **After E1 — Diversify providers.** Add at least three independently receipted
+12. **After E1 — Build comparable English cohorts.** Reach ten mature canonical
+    owned placements, change one variable per experiment, and allocate by approved
+    net commission per 1,000 qualified impressions and per content cost—not
+    engagement.
+13. **After E1 — Admit durable distribution adapters.** Reuse each winning owned
+    decision asset as native X, YouTube/Shorts, newsletter, TikTok/Reels, and
+    Pinterest variants in that order. Each adapter requires official eligibility,
+    authentic brand/locale identity, disclosure, exact external-effect fencing,
+    public readback, and placement-level attribution. Do not create account farms.
+14. **After E1 — Diversify providers.** Add at least three independently receipted
     offers and keep provider, offer, and channel concentration at or below 40% of
     approved net commission.
-14. **Gate A2 — Prove unattended profitability.** Complete four consecutive
+15. **Gate A2 — Prove unattended profitability.** Complete four consecutive
     revenue-positive weeks with positive net margin, zero manual execution, and
     at least one live self-heal.
-15. **Gate A3 — Prove USD 10,000/month.** Use observed conversion and approved net
+16. **Gate A3 — Prove USD 10,000/month.** Use observed conversion and approved net
     commission to compute required qualified traffic; reconcile three consecutive
     months at USD 10,000 gross while reporting net, costs, reversals, payout delay,
     and concentration separately.
-16. **After E1 — Add Japanese isolation.** Use a separate account/browser/provider
+17. **After E1 — Add Japanese isolation.** Use a separate account/browser/provider
     membership/link, native evidence pack, disclosure, placement ledger, and J0/J1
-    canary. Never mix Japanese and English on one social account.
-17. **After English and Japanese proof — Add Spanish.** Apply the same locale gate;
+    canary. A Japanese `note` identity is admitted only if its current official
+    rules, public readback, and attribution contract pass. Never mix Japanese and
+    English on one social account.
+18. **After English and Japanese proof — Add Spanish.** Apply the same locale gate;
     later languages are ranked by executable-offer economics rather than audience
     population alone.
-18. **After E1 — Package clean macOS installation.** Remove machine-specific paths,
+19. **After E1 — Package clean macOS installation.** Remove machine-specific paths,
     ship one-command install/update/health/rollback/uninstall, and reproduce
     pre-publication readiness on a clean macOS user without copying secrets,
     sessions, or mutable receipts.
-19. **After E1 — Publish OSS proof.** Release the local Skill, privacy-safe ledger
+20. **After E1 — Publish OSS proof.** Release the local Skill, privacy-safe ledger
     verifier, dated prior-art registry, exact limitations, and reproducible
     receipts; do not claim “money printer” from clicks or model output.
-20. **After A2 + clean-Mac proof — Build cloud product.** Replace local launchd and
+21. **After A2 + clean-Mac proof — Build cloud product.** Replace local launchd and
     browser owners with tenant-isolated scheduler/browser workers while preserving
     the same job, receipt, policy, attribution, deletion, audit, and Telegram/web
     UX contracts.
-21. **Gate A4 — Prove USD 100,000/month.** Scale only mature profitable pods,
+22. **Gate A4 — Prove USD 100,000/month.** Scale only mature profitable pods,
     preserve the 40% concentration ceiling, and reconcile three consecutive
     months at USD 100,000 gross with net, costs, reversals, payout delay, and
     tenant/provider/channel concentration.
-22. **Gate A5 — Prove USD 1,000,000/month.** Operate a multilingual portfolio with
+23. **Gate A5 — Prove USD 1,000,000/month.** Operate a multilingual portfolio with
     tenant-isolated workers, provider capacity receipts, fraud controls, legal and
     tax compliance, and three consecutive externally reconciled USD 1,000,000
     months. No projection or annualized run rate closes this gate.
-23. **Gate A6 — Prove USD 10,000,000/month.** Reach platform-scale qualified
+24. **Gate A6 — Prove USD 10,000,000/month.** Reach platform-scale qualified
     distribution and reconcile three consecutive USD 10,000,000 gross months
     across independent providers, locales, tenants, and channels while showing
     net profit, reversals, costs, payout timing, concentration, incidents, and
     recovery. This is an evidence gate, not a guaranteed forecast.
 
-### 9.0.2 Current slice contract — generic policy gate
+### 9.0.2 Current slice contract — policy-PASS to deterministic public effects
 
 #### 1. Overview
 
-Turn each sealed `READY_FOR_POLICY` handoff into a durable PASS or FAIL decision
-without exposing credentials or the referral URL. This is required because a
-sealed article is not safe to publish until both deterministic structure and
-source-supported claims are verified.
+Make the installed money owner consume one generic policy-PASS handoff and reuse
+the existing fenced owned and X publishers. This closes the current gap between
+safe model output and a real public acquisition surface. The model remains out of
+Git, browser, credential, tracking-link, and money authority.
 
 #### 2. Acceptance criteria
 
-1. The gate verifies the handoff hash, source-set hash, current source hashes,
-   locale, disclosure-before-CTA, exactly one CTA placeholder, admitted URLs,
-   article/X limits, forbidden guarantees, and provider/channel rules.
-2. A bounded read-only model checks material claims only against the same sealed
-   official source set and returns schema-valid `PASS|FAIL` evidence.
-3. No credential, referral URL, browser authority, Git authority, X authority, or
-   money-ledger data enters either policy layer.
-4. PASS writes one content-addressed receipt bound to the exact handoff and source
-   set. Replaying the same inputs produces no new external effect.
-5. FAIL writes the unsupported claim or failed rule and blocks link injection,
-   owned publication, and X publication for that job.
-6. The installed composition owner advances one existing handoff per wake and
-   preserves the other handoffs for later wakes.
+1. `local_loop.py` selects at most one unresolved generic handoff whose exact
+   policy receipt is `PASS`; `FAIL`, missing, stale, or hash-mismatched policy
+   receipts never reach an effect tool.
+2. The deterministic owner loads the executable tracking link only from private
+   state, replaces exactly one placeholder locally, and never writes the link to
+   model input, stdout, Git-tracked state, or Telegram.
+3. `owned_publish.py` publishes the exact slug through its existing Git fence and
+   advances only after the configured public URL returns HTTP `200` with the
+   expected title, disclosure, content marker, and owned link.
+4. Only after owned `LIVE`, `x_post_cli.py` publishes the matching disclosed X
+   variant through its existing effect fence and records the exact status URL and
+   resolved owned URL.
+5. A crash or replay after either external effect performs readback first and
+   preserves one Git commit, one public article, one X object, and one causal job
+   lineage.
+6. One installed launchd wake advances one eligible handoff; a second wake is
+   idempotent. Existing legacy campaigns and Gig/Coconala remain untouched.
 
 #### 3. As-Is / To-Be
 
 | Surface | As-Is | To-Be |
 |---|---|---|
-| Handoff state | Three jobs stop at `READY_FOR_POLICY` | Each job receives a hash-bound generic policy receipt |
-| Structural checks | Campaign-specific legacy policy receipts exist | One deterministic gate validates every generic handoff |
-| Claim support | Not represented in the generic handoff lineage | One read-only audit records exact unsupported claims |
-| Effect boundary | Existing articles/X posts came from the deterministic legacy path | Only generic PASS unlocks the existing owned/X effect tools |
+| Generic pipeline | Two PASS handoffs stop before effects | One eligible PASS handoff advances to owned `LIVE`, then X `LIVE` |
+| Link boundary | Placeholder remains in the sealed handoff | Deterministic local injection uses private state without changing the sealed model artifact |
+| Owned effect | Existing publisher is campaign-specific at its caller | Generic handoff metadata drives the same fenced publisher and exact public readback |
+| X effect | Existing publisher already fences duplicates | It runs only after owned `LIVE` and binds the status URL to the same placement lineage |
+| Replay | Legacy campaigns reconcile individually | Generic publication resumes the unfinished stage and never duplicates an external effect |
 
 #### 4. Test matrix
 
 | # | To-Be | Minimal test / live proof | Cover |
 |---:|---|---|---|
-| 1 | Exact PASS receipt | `test_ready_handoff_advances_to_policy_once` | MUST PASS |
-| 2 | Tampered handoff/source fails closed | `test_policy_rejects_changed_handoff_or_source` | MUST PASS |
-| 3 | Secret/link isolation | `test_policy_input_excludes_private_authority` | MUST PASS |
-| 4 | Unsupported claim blocks effects | `test_policy_fail_does_not_publish` | MUST PASS |
-| 5 | Installed progression | One launchd wake creates one bound policy receipt; replay is idempotent | MUST PASS |
+| 1 | PASS advances in order | One focused test proves owned `LIVE` precedes X publish | MUST PASS |
+| 2 | FAIL and tamper fail closed | One focused test proves neither publisher is called | MUST PASS |
+| 3 | Secret/link isolation | One focused test proves model/log/Telegram artifacts contain no private link | MUST PASS |
+| 4 | Duplicate external-effect prevention | One focused replay test preserves one owned and one X effect | MUST PASS |
+| 5 | Installed progression | One launchd wake publishes a fresh fourth campaign; replay preserves exact URLs and lineage | MUST PASS |
 
 | E2E item | Value |
 |---|---|
@@ -1211,18 +1285,26 @@ source-supported claims are verified.
 
 #### 5. Boundaries
 
-- Do not add a new scheduler, policy framework, database, browser, provider, or
-  model orchestration layer.
-- Do not publish a generic handoff in this slice; publication is ordered step 5.
+- Do not add a new scheduler, publisher, policy framework, database, browser,
+  provider, or model orchestration layer.
+- Do not add YouTube, TikTok, Instagram, Pinterest, `note`, another locale, or a
+  new provider before the existing English owned/X path completes this slice.
 - Do not change Gig/Coconala state, owners, browsers, ledgers, or credentials.
 
 #### 6. Execution steps
 
-1. Add one generic policy schema and reuse the installed composition owner.
-2. Add only the four money/secret/duplicate-effect regressions above.
-3. Run the focused policy/composition checks and the existing Affiliate suite.
-4. Install one immutable Affiliate release and observe one real launchd wake.
-5. Verify receipt hashes and secret absence, update this SSOT, commit, and push.
+1. Update `skills/affiliate/scripts/local_loop.py` to select one eligible PASS
+   handoff and resume its earliest unfinished public-effect stage.
+2. Reuse `skills/affiliate/scripts/owned_publish.py` and
+   `skills/affiliate/scripts/x_post_cli.py`; change them only if generic metadata
+   exposes an observed incompatibility.
+3. Add only the four policy-fail, secret-leak, duplicate-effect, and ordered-effect
+   regressions above in `skills/affiliate/tests/test_local_loop.py`.
+4. Run the focused loop check and existing Affiliate suite, install one immutable
+   release, then kickstart the existing `ai.anicca.affiliate-loop` owner.
+5. Observe a fresh fourth campaign become owned `LIVE` then X `LIVE`; kickstart a
+   second time and verify exact URL, Git, X, and lineage dedupe.
+6. Update this SSOT with real receipts, commit, and push before starting discovery.
 
 External user authority is required only before withdrawal: truthful tax/KYC and
 one payment provider must be completed with the user's legal/payment data. The
@@ -1580,8 +1662,11 @@ observable outcome exists.
 
 ### Phase B — Local profitability and multilingual pods
 
-16. **PENDING.** Run at least ten comparable English placements; change one
-    variable per canary and allocate by net commission, never engagement alone.
+16. **PENDING.** Run at least ten comparable canonical English placements; change
+    one variable per canary and allocate by net commission, never engagement
+    alone. Admit YouTube/Shorts and newsletter first, then TikTok/Reels and
+    Pinterest, only with authentic identity, disclosure, exact public readback,
+    and placement attribution. Do not create account farms.
 17. **PENDING.** Add only eligible English B2B/creator providers so no provider,
     offer, or channel exceeds 40% of net commission.
 18. **PENDING.** After English E0, create an isolated Japanese identity, browser,
