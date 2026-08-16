@@ -296,7 +296,9 @@ async def _fetch_list_page(
         "input[type=checkbox],select')]"
         ".slice(0,20).map(e=>({tag:e.tagName,type:e.type||null,"
         "label:((e.innerText||e.getAttribute('aria-label')||e.getAttribute('title')||'')+'').trim().slice(0,32),"
-        "href:e.getAttribute('href')||null,id:e.id||null,cls:((e.className||'')+'').slice(0,60)})),"
+        "href:e.getAttribute('href')||null,id:e.id||null,cls:((e.className||'')+'').slice(0,60),"
+        "context:/js_change-open-status/.test((e.className||'')+'')?"
+        "((e.closest('div')?.innerText||'')+'').trim().slice(0,300):null})),"
         "text:card.innerText||''})).filter(card=>/^\\/services\\/\\d+$/.test(card.href))})"
     )
     if ws_url is not None:
