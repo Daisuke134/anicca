@@ -1308,6 +1308,14 @@ which is the first independent confirmation that all six public posts are live a
 once, and the replay wake `23:52:17 JST` returned `COOLDOWN` with `checked=0`,
 proving the sweep does not re-drive the browser. Both exited `0`.
 
+The sweep deliberately does NOT mutate the placement ledger when a placement
+fails to verify. A single failed timeline scrape is exactly the transient that
+caused the original bug, and silently dropping a real placement from the money
+ledger on that evidence would be a worse error than reporting it. The sweep
+therefore detects and reports; removing a placement from the ledger stays a
+decision that requires repeated evidence, and that rule MUST hold when the
+portfolio grows past six.
+
 Campaign seven remains source-captured but composition is budget-blocked for JST
 `2026-08-16` (`101310` consumed plus a `32768` reservation exceeds the `131072`
 daily cap; the budget day is computed in `Asia/Tokyo`). Its same durable job
