@@ -4541,3 +4541,5 @@
 {"ts":1786885999,"source":"cook","task":"explore: Solana microtask platforms that pay USDC for completing tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSVTS92IE2B1EA88FEE140CF"}
 {"ts":1786886646,"source":"cook","task":"explore: Solana bounty platform paying USDC for bug reports","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSVU62XV6437C0CD74534B70"}
 {"ts":1786900376,"source":"cook","task":"explore: Solana microtask platform paying USDC for small tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSW2CE2JF49309131CB4468E"}
+{"ts":1786914784,"source":"cook","task":"explore: solana paid API marketplace earn microservice","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSWAX6PU31B12ACAB1D74CDE"}
+{"ts":1786914913,"source":"cook","task":"explore: solana microtask platform paying USDC for API calls","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSWAZXFH11F21B7D907D4E5A"}
