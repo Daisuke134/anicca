@@ -87,7 +87,7 @@ COMPETITOR_SOURCES = (
     ("service", "https://coconala.com/services/3741646"),
 )
 MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
-GENERATED_MUTATION_FIELDS = {"title", "body", "package", "FAQ", "price"}
+GENERATED_MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
 MUTATION_CONTRACT_FIELDS = {
     "version", "platform", "service_id", "precondition_listing_version_sha256",
     "changed_field", "before_value", "proposed_value", "allowed_delta", "rollback_value",
@@ -1823,6 +1823,9 @@ gap.executable=false with guard_reason=proposal_contract_required means this pro
 missing contract; it is not a no-op reason and mutation_contract_sha256 is intentionally absent.
 For title, return only the seller-form title stem (Coconala appends ます). For body, return a complete
 Japanese replacement with outcome, inclusions, exclusions, required inputs and support boundary.
+For image, proposed_value must be exactly three non-empty lines: a short headline, a supporting line,
+then two or three short badges separated by `｜`. Use only supported offer/capability claims; do not put
+price, delivery speed, review count, sales count, guarantees or competitor wording in the image.
 For package, return one precise option title and proposed_price_jpy from the official option-price
 select values visible in seller_form; for FAQ use `Q. ...\nA. ...`; for price return an exact seller
 base-price select option value visible in seller_form. Change one field only. Choose change only when the
@@ -1877,9 +1880,62 @@ def _invoke_proposal(
     return proposal, route, allowed_refs
 
 
+def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: Path) -> dict:
+    from PIL import Image, ImageDraw, ImageFont
+
+    lines = [line.strip() for line in proposed.splitlines() if line.strip()]
+    if len(lines) != 3 or not (2 <= len(lines[0]) <= 28 and 2 <= len(lines[1]) <= 48):
+        raise RuntimeError("storefront_generated_image_copy_invalid")
+    badges = [value.strip() for value in lines[2].split("｜") if value.strip()]
+    if len(badges) not in {2, 3} or any(len(value) > 16 for value in badges):
+        raise RuntimeError("storefront_generated_image_badges_invalid")
+    font_result = subprocess.run(
+        ["fc-match", "-f", "%{file}", "Hiragino Sans"], capture_output=True, text=True,
+        check=False, timeout=10,
+    )
+    font_path = Path(font_result.stdout.strip())
+    if font_result.returncode != 0 or not font_path.is_file():
+        raise RuntimeError("storefront_generated_image_font_missing")
+    image = Image.new("RGB", (1220, 1016), "#111c50")
+    draw = ImageDraw.Draw(image)
+    for y in range(1016):
+        ratio = y / 1015
+        draw.line((0, y, 1220, y), fill=(17 + int(6 * ratio), 28 - int(16 * ratio), 80 - int(38 * ratio)))
+    draw.rounded_rectangle((70, 70, 1150, 946), radius=42, outline="#6f83ff", width=3)
+
+    def fitted(text: str, maximum: int, start: int) -> ImageFont.FreeTypeFont:
+        size = start
+        while size >= 28:
+            font = ImageFont.truetype(str(font_path), size)
+            if draw.textbbox((0, 0), text, font=font)[2] <= maximum:
+                return font
+            size -= 2
+        raise RuntimeError("storefront_generated_image_text_too_wide")
+
+    headline_font = fitted(lines[0], 1000, 82)
+    support_font = fitted(lines[1], 1000, 42)
+    draw.text((110, 260), lines[0], font=headline_font, fill="white")
+    draw.text((112, 400), lines[1], font=support_font, fill="#dce3ff")
+    badge_font = ImageFont.truetype(str(font_path), 27)
+    x = 110
+    for index, badge in enumerate(badges):
+        width = draw.textbbox((0, 0), badge, font=badge_font)[2] + 70
+        draw.rounded_rectangle((x, 600, x + width, 670), radius=35,
+                               fill=("#ef4f55", "#35b777", "#7657db")[index])
+        draw.text((x + 35, 618), badge, font=badge_font, fill="white")
+        x += width + 24
+    if x > 1130:
+        raise RuntimeError("storefront_generated_image_badges_too_wide")
+    path = evidence_dir / f"generated-{service_id}-hero.png"
+    image.save(path, format="PNG", optimize=False)
+    data = path.read_bytes()
+    return {"asset_sha256": hashlib.sha256(data).hexdigest(), "asset_path": str(path.resolve())}
+
+
 def _seal_generated_proposal(
     proposal: dict, hypothesis: dict, source: dict, seller_snapshot: dict,
     family_name: str, capability_families: dict[str, str], allowed_refs: set[str],
+    evidence_dir: Path,
 ) -> dict | None:
     if proposal.get("decision") == "no_op":
         if (any(proposal.get(key) is not None for key in (
@@ -1905,6 +1961,22 @@ def _seal_generated_proposal(
             or capability_families.get(service_id) != family_name):
         raise RuntimeError("storefront_generated_proposal_identity_invalid")
     proposed = str(proposal.get("proposed_value") or "").strip()
+    if field == "image":
+        if hypothesis.get("before") != 0 or not proposed:
+            raise RuntimeError("storefront_generated_image_before_invalid")
+        asset = _render_generated_image_asset(proposed, service_id, evidence_dir)
+        return _seal_mutation_contract({
+            "version": 1, "platform": "coconala", "service_id": service_id,
+            "precondition_listing_version_sha256": source["service_version_sha256"],
+            "changed_field": "image", "before_value": {"service_image_ids": []},
+            "proposed_value": asset,
+            "allowed_delta": ["data[UploadedFile][n*][image_files]"],
+            "rollback_value": {"service_image_ids": []},
+            "official_readback": {"service_image_count": 1},
+            "success_metric": proposal["success_metric"],
+            "observation_window_days": proposal["observation_window_days"],
+            "capability_family": family_name, "evidence": evidence,
+        }, capability_families)
     fields = {str(row.get("name") or ""): row for row in seller_snapshot.get("fields", [])
               if isinstance(row, dict)}
     if field == "title":
@@ -2009,7 +2081,7 @@ def _validate_image_mutation_contract(
     proposed = contract.get("proposed_value")
     if contract.get("changed_field") != "image" or not isinstance(proposed, dict):
         raise RuntimeError("storefront_image_mutation_contract_invalid")
-    if contract.get("service_id") == TARGET_SERVICE_ID:
+    if contract.get("service_id") != GALLERY_SERVICE_ID:
         if (contract.get("before_value") != {"service_image_ids": []}
                 or contract.get("allowed_delta") != ["data[UploadedFile][n*][image_files]"]
                 or contract.get("rollback_value") != {"service_image_ids": []}
@@ -2017,9 +2089,20 @@ def _validate_image_mutation_contract(
                 or set(proposed) != {"asset_sha256", "asset_path"}
                 or not re.fullmatch(r"[0-9a-f]{64}", str(proposed.get("asset_sha256") or ""))):
             raise RuntimeError("storefront_image_mutation_contract_invalid")
+        raw_asset = Path(str(proposed.get("asset_path") or ""))
+        asset = raw_asset.resolve() if raw_asset.is_absolute() else (GIG_DIR / raw_asset).resolve()
+        allowed_roots = (GIG_DIR.resolve(), (STATE_DIR / "storefront-direct").resolve())
+        try:
+            if not any(asset.is_relative_to(root) for root in allowed_roots):
+                raise ValueError("outside_allowed_roots")
+            data = asset.read_bytes()
+        except (OSError, ValueError) as error:
+            raise RuntimeError("storefront_image_asset_invalid") from error
+        if (len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n"
+                or struct.unpack(">II", data[16:24]) != (1220, 1016)
+                or hashlib.sha256(data).hexdigest() != proposed["asset_sha256"]):
+            raise RuntimeError("storefront_image_asset_identity_invalid")
         return
-    if contract.get("service_id") != GALLERY_SERVICE_ID:
-        raise RuntimeError("storefront_image_mutation_contract_invalid")
     before_ids = contract.get("before_value", {}).get("service_image_ids")
     rollback_ids = contract.get("rollback_value", {}).get("service_image_ids")
     assets, kept = proposed.get("replacement_assets"), proposed.get("kept_image_ids")
@@ -2291,7 +2374,7 @@ def _presend_guard(judgement: dict, own_page: dict, mutation_contract: dict | No
         expected_ids = before_value.get("service_image_ids")
         expected_public_version = mutation_contract.get("precondition_listing_version_sha256")
         if (mutation_contract.get("contract_sha256") is None
-                or (mutation_contract.get("service_id") == TARGET_SERVICE_ID
+                or (mutation_contract.get("service_id") != GALLERY_SERVICE_ID
                     and expected_public_version != own_page.get("listing_version_sha256"))
                 or judgement.get("service_id") != mutation_contract.get("service_id")
                 or own_page.get("service_image_ids") != expected_ids):
@@ -2352,7 +2435,7 @@ def _validate_public_image_acceptance(before: dict, after: dict, contract: dict)
     if before.get("url") != url or after.get("url") != url:
         raise RuntimeError("public_image_readback_url_invalid")
     if (before.get("service_image_ids") != contract.get("rollback_value", {}).get("service_image_ids")
-            or (service_id == TARGET_SERVICE_ID
+            or (service_id != GALLERY_SERVICE_ID
                 and before.get("listing_version_sha256") != contract.get("precondition_listing_version_sha256"))):
         raise RuntimeError("public_image_before_invalid")
     expected = contract.get("official_readback", {}).get("service_image_count")
@@ -2365,7 +2448,7 @@ def _validate_public_image_acceptance(before: dict, after: dict, contract: dict)
         if (removed & set(after_ids) or not set(kept) <= set(after_ids)
                 or after_ids[2] != kept[0] or after_ids[4] != kept[1]):
             raise RuntimeError("public_gallery_identity_or_order_mismatch")
-    if (service_id == TARGET_SERVICE_ID
+    if (service_id != GALLERY_SERVICE_ID
             and before.get("listing_version_sha256") == after.get("listing_version_sha256")):
         raise RuntimeError("public_image_version_unchanged")
 
@@ -2380,7 +2463,7 @@ def _validate_image_form_delta(before: dict, after: dict, contract: dict) -> Non
     uploads = [row for row in after.get("fields") or [] if str(row.get("name") or "").startswith("data[UploadedFile]")]
     if before_fields != after_fields:
         raise RuntimeError("seller_image_non_image_changed")
-    if contract["service_id"] == TARGET_SERVICE_ID:
+    if contract["service_id"] != GALLERY_SERVICE_ID:
         if (any(str(row.get("name") or "").startswith("data[UploadedFile]") for row in before.get("fields") or [])
                 or len(uploads) != 1
                 or not re.fullmatch(r"data\[UploadedFile]\[n\d+]\[image_files]", str(uploads[0].get("name") or ""))):
@@ -2492,7 +2575,7 @@ def _pending_recovery(
                     ws_url, evidence_dir, f"recovery-public-{service_id}.json", service_id,
                 )
             image_ids = page.get("service_image_ids")
-            if service_id == TARGET_SERVICE_ID and page.get("service_image_count") == 1:
+            if service_id != GALLERY_SERVICE_ID and page.get("service_image_count") == 1:
                 return {**intent, "intent_path": str(path), "_recovery_public_page": page}
             if service_id == GALLERY_SERVICE_ID:
                 readback = contract["official_readback"]
@@ -2886,7 +2969,7 @@ async def _execute_image_effect_async(
             return response.get("result", {}).get("result", {}).get("value")
 
         before = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
-        if contract["service_id"] == TARGET_SERVICE_ID:
+        if contract["service_id"] != GALLERY_SERVICE_ID:
             click = json.loads(str(await evaluate(
                 "JSON.stringify((()=>{const b=document.querySelector('.js_upload-select');"
                 "if(!b)return {ok:false,reason:'image_add_missing'};b.click();return {ok:true}})())"
@@ -3227,8 +3310,6 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 if (recovery.get("changed_field") not in {"FAQ", "image", "title", "body", "package", "price"}
                         or (recovery.get("changed_field") == "FAQ"
                             and recovery.get("service_id") != TARGET_SERVICE_ID)
-                        or (recovery.get("changed_field") == "image"
-                            and recovery.get("service_id") not in {TARGET_SERVICE_ID, GALLERY_SERVICE_ID})
                         or recovery.get("experiment_key") != judgement.get("experiment_key")):
                     raise RuntimeError("pending_effect_identity_invalid")
                 public_before = json.loads(Path(recovery["public_before_path"]).read_text(encoding="utf-8"))
@@ -3325,7 +3406,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                     generated_contract = _seal_generated_proposal(
                         proposal, next_hypothesis, proposal_source, proposal_snapshot,
-                        family_name, capability_families, allowed_refs,
+                        family_name, capability_families, allowed_refs, inventory_path.parent,
                     )
                     _atomic_write(inventory_path.parent / "proposal-record.json", {
                         "version": 1, "proposal": proposal, "route": proposal_agent,
