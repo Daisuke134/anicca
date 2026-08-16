@@ -258,6 +258,13 @@ owned/X publication, and DEV/Substack receipts. Composition receives the prior
 sealed campaign as the control and may change only the Agent-selected variable;
 missing control evidence fails closed before any public effect.
 
+Every future generic campaign acquires its own PartnerStack custom link before
+publication by reusing the verified ElevenLabs link adapter. The raw URL stays in
+the mode-0600 private Markdown; public receipts retain only provider identity and
+fingerprints. Each revenue reconciliation rebuilds `placement-ledger.json` from
+real campaign, DEV exposure, provider-link click, and commission receipts.
+Unavailable denominators and costs remain `null`/`UNKNOWN`, never inferred zero.
+
 The same distribution command exposes the current Writer Substack API shape
 without importing Writer state or its retired manual sentinel path:
 

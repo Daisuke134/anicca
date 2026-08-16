@@ -254,6 +254,20 @@ def placement_candidates(state):
                 "tracking_custom_link_id": row.get("tracking_custom_link_id"),
                 "link_fingerprints": row.get("link_fingerprints", []),
             }
+    campaigns_by_slug = {}
+    for path in sorted((state / "campaign-publications").glob("*.json")):
+        try:
+            campaign = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if campaign.get("state") != "X_LIVE" or not campaign.get("slug"):
+            continue
+        campaigns_by_slug[campaign["slug"]] = campaign
+        placement_id = campaign.get("placement_id")
+        if placement_id in candidates:
+            candidates[placement_id]["public_url"] = campaign.get("owned_url")
+            candidates[placement_id]["experiment"] = campaign.get("experiment")
+            candidates[placement_id]["plan_id"] = campaign.get("plan_id")
     content_root = state / "content"
     publication_root = state / "owned-publications"
     for content_path in sorted(content_root.glob("*.json")) if content_root.is_dir() else []:
@@ -269,10 +283,12 @@ def placement_candidates(state):
         parsed = urlparse(links[0])
         if parsed.scheme != "https" or parsed.hostname != "try.elevenlabs.io":
             continue
-        prior = candidates.get(slug, {})
+        campaign = campaigns_by_slug.get(slug, {})
+        placement_id = campaign.get("placement_id") or slug
+        prior = candidates.get(placement_id, {})
         dedicated = bool(prior.get("provider_link_key"))
-        candidates[slug] = {
-            "placement_id": slug,
+        candidates[placement_id] = {
+            "placement_id": placement_id,
             "public_url": publication.get("public_url"),
             "provider_link_key": prior.get("provider_link_key"),
             "tracking_custom_link_id": prior.get("tracking_custom_link_id"),
@@ -280,8 +296,107 @@ def placement_candidates(state):
                 set(prior.get("link_fingerprints", []))
                 if dedicated else link_fingerprints(links[0])
             ),
+            "experiment": campaign.get("experiment"),
+            "plan_id": campaign.get("plan_id"),
         }
     return list(candidates.values())
+
+
+def _json_rows(path):
+    if not path.is_file():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            value = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(value, dict):
+            rows.append(value)
+    return rows
+
+
+def build_placement_ledger(state):
+    candidates = {row["placement_id"]: row for row in placement_candidates(state)}
+    try:
+        link_report = json.loads((
+            state / "provider-reports" / "partnerstack-links" / "latest.json"
+        ).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        link_report = {}
+    link_rows = {
+        row.get("placement_id"): row for row in link_report.get("placements", [])
+        if isinstance(row, dict) and row.get("placement_id")
+    }
+    try:
+        dev_metrics = json.loads((
+            state / "distribution-metrics" / "devto.json"
+        ).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        dev_metrics = {}
+    dev_rows = {
+        row.get("placement_id"): row for row in dev_metrics.get("articles", [])
+        if isinstance(row, dict) and row.get("placement_id")
+    }
+    latest_transactions = {}
+    for transition in _json_rows(state / "commission-ledger.jsonl"):
+        transaction_id = transition.get("provider_transaction_id")
+        if transaction_id:
+            latest_transactions[transaction_id] = transition
+    rows = []
+    for placement_id, candidate in sorted(candidates.items()):
+        link = link_rows.get(placement_id, {})
+        dev = dev_rows.get(placement_id, {})
+        transactions = [
+            row for row in latest_transactions.values()
+            if (row.get("placement") or {}).get("placement_id") == placement_id
+        ]
+        approved = {}
+        for row in transactions:
+            if row.get("status") not in {"approved", "paid"}:
+                continue
+            currency = row.get("currency") or "UNKNOWN"
+            approved[currency] = approved.get(currency, 0) + int(
+                row.get("net_commission_minor") or 0
+            )
+        rows.append({
+            "placement_id": placement_id,
+            "plan_id": candidate.get("plan_id"),
+            "experiment": candidate.get("experiment"),
+            "public_url": candidate.get("public_url"),
+            "provider_link_key": candidate.get("provider_link_key"),
+            "exposure": {
+                "devto_page_views": dev.get("page_views_count"),
+                "devto_reactions": dev.get("public_reactions_count"),
+                "devto_comments": dev.get("comments_count"),
+                "observed_at": dev_metrics.get("observed_at") if dev else None,
+            },
+            "provider_clicks": {
+                "count": link.get("current_click_count"),
+                "delta": link.get("delta_click_count"),
+                "observed_at": link_report.get("observed_at") if link else None,
+            },
+            "commission": {
+                "transaction_count": len(transactions),
+                "status_counts": {
+                    status: sum(row.get("status") == status for row in transactions)
+                    for status in ("pending", "approved", "paid", "reversed")
+                },
+                "approved_or_paid_net_minor_by_currency": approved,
+            },
+            "cost": {"state": "UNKNOWN", "amount_minor_by_currency": None},
+        })
+    core = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_PLACEMENT_LEDGER",
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+        "placements": rows,
+    }
+    core["ledger_sha256"] = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    atomic_write(state / "placement-ledger.json", core)
+    return core
 
 
 def capture_link_performance(args):
@@ -631,6 +746,7 @@ def reconcile(args):
         appended += int(append_unique(
             state / "commission-ledger.jsonl", transition, ("transition_id",),
         ))
+    placement_ledger = build_placement_ledger(state)
     receipt = {
         "schema_version": 1,
         "receipt_type": "COMMISSION_RECONCILIATION",
@@ -640,6 +756,7 @@ def reconcile(args):
         "appended_transitions": appended,
         "replayed_transitions": len(normalized) - appended,
         "money_state": "NO_TRANSACTIONS" if not normalized else "TRANSACTIONS_RECONCILED",
+        "placement_ledger_sha256": placement_ledger["ledger_sha256"],
         "observed_at": datetime.now(timezone.utc).isoformat(),
     }
     atomic_write(state / "provider-reports" / "partnerstack" / "reconciliation-latest.json", receipt)

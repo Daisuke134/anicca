@@ -31,6 +31,7 @@ ELEVENLABS_LINKS = "https://dash.partnerstack.com/elevenlabsinc/links"
 TTS_PLACEMENT = "elevenlabs-text-to-speech-api-for-developers"
 TTS_LINK_FIELD = "TTS API affiliate link"
 TTS_DESTINATION = "https://elevenlabs.io/text-to-speech"
+DEFAULT_ELEVENLABS_DESTINATION = "https://elevenlabs.io"
 GETRESPONSE_PROMOTION = (
     "We publish evidence-led English software buying guides on aniccaai.com and disclose "
     "affiliate relationships before calls to action. We distribute each guide through "
@@ -294,9 +295,28 @@ def _link_identity(item):
     }
 
 
-def elevenlabs_link_action(state, cdp_port, private_markdown, placement, create=False):
-    if placement != TTS_PLACEMENT:
-        raise ValueError("unsupported ElevenLabs placement")
+def placement_link_field(placement):
+    return f"Placement {hashlib.sha256(placement.encode()).hexdigest()[:16]} affiliate link"
+
+
+def elevenlabs_link_action(
+    state, cdp_port, private_markdown, placement, create=False,
+    title=None, description=None, destination=None,
+):
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,80}", placement):
+        raise ValueError("invalid ElevenLabs placement")
+    if placement == TTS_PLACEMENT:
+        title = title or "ElevenLabs TTS API developer benchmark"
+        description = description or (
+            "Decision-stage benchmark for developers evaluating the ElevenLabs text-to-speech API."
+        )
+        destination = destination or TTS_DESTINATION
+        private_field = TTS_LINK_FIELD
+    else:
+        if not all(isinstance(value, str) and value.strip() for value in (title, description)):
+            raise ValueError("generic placement metadata is required")
+        destination = destination or DEFAULT_ELEVENLABS_DESTINATION
+        private_field = placement_link_field(placement)
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as error:
@@ -326,19 +346,23 @@ def elevenlabs_link_action(state, cdp_port, private_markdown, placement, create=
                 return result
             if create and match is None:
                 page.get_by_text(re.compile(r"^(カスタムリンクの作成|Create custom link)$")).click()
-                page.get_by_placeholder(re.compile(r"^(タイトル|Title)$")).fill(
-                    "ElevenLabs TTS API developer benchmark"
-                )
-                page.locator("textarea").fill(
-                    "Decision-stage benchmark for developers evaluating the ElevenLabs text-to-speech API."
-                )
+                page.get_by_placeholder(re.compile(r"^(タイトル|Title)$")).fill(title[:160])
+                page.locator("textarea").fill(description[:500])
                 page.get_by_text("https://elevenlabs.io", exact=True).click()
-                page.get_by_role("option", name=TTS_DESTINATION, exact=True).click()
+                destinations = page.get_by_role("option").all_inner_texts()
+                selected_destination = next((
+                    candidate for candidate in (
+                        destination, TTS_DESTINATION, DEFAULT_ELEVENLABS_DESTINATION,
+                    ) if candidate in destinations
+                ), destinations[0] if destinations else None)
+                if not selected_destination:
+                    raise ValueError("PartnerStack exposed no allowed destination")
+                page.get_by_role("option", name=selected_destination, exact=True).click()
                 page.get_by_placeholder("your-custom-link").fill(placement)
                 job = start_effect(
                     state, "PARTNERSTACK_PLACEMENT_LINK", placement,
                     {"operation": "create_custom_link", "placement": placement,
-                     "destination": TTS_DESTINATION},
+                     "destination": selected_destination},
                     {"state": "ABSENT", "placement": placement}, 86_400,
                 )
                 page.get_by_role("button", name=re.compile(r"^(リンクを作成|Create link)$")).last.click()
@@ -367,7 +391,7 @@ def elevenlabs_link_action(state, cdp_port, private_markdown, placement, create=
                 return result
             if not match or not str(match.get("url", "")).startswith("https://try.elevenlabs.io/"):
                 raise ValueError("PartnerStack custom-link readback is ambiguous")
-            store_link("ElevenLabs", TTS_LINK_FIELD, private_markdown, match["url"])
+            store_link("ElevenLabs", private_field, private_markdown, match["url"])
             external = {"state": "VERIFIED", "placement": placement, **_link_identity(match)}
             if job:
                 verify_effect(state, job["job_id"], external)
@@ -375,6 +399,7 @@ def elevenlabs_link_action(state, cdp_port, private_markdown, placement, create=
                 "schema_version": 1, "receipt_type": "PARTNERSTACK_PLACEMENT_LINK",
                 "provider": "elevenlabs", **external,
                 "private_link_state": "VERIFIED_NONEMPTY",
+                "private_link_field": private_field,
                 "deduplicated": job is None,
                 "observed_at": datetime.now(timezone.utc).isoformat(),
             }

@@ -628,8 +628,8 @@ def recover_provider(state, cdp_port, private_markdown, provider="elevenlabs"):
 
 
 def advance_generic_publication(
-    state, landing_root, x_cdp_port, private_markdown,
-    owned_publisher=None, x_publisher=None,
+    state, landing_root, x_cdp_port, private_markdown, provider_cdp_port=9324,
+    owned_publisher=None, x_publisher=None, link_acquirer=None,
 ):
     """Advance one policy-PASS generic campaign through existing effect fences."""
     from owned_publish import publish as default_owned_publisher
@@ -637,6 +637,7 @@ def advance_generic_publication(
 
     owned_publisher = owned_publisher or default_owned_publisher
     x_publisher = x_publisher or default_x_publisher
+    link_acquirer = link_acquirer or elevenlabs_link_action
     completed = False
     for policy_path in sorted((state / "campaign-policy").glob("*.json")):
         plan_id = policy_path.stem
@@ -706,7 +707,18 @@ def advance_generic_publication(
         if not progress and (existing_owned or existing_x):
             return {"state": "PUBLICATION_CONFLICT", "public_url": None}
 
-        link = elevenlabs_link(private_markdown)
+        destination = next((
+            row.get("locator") for row in handoff.get("cited_sources", [])
+            if str(row.get("locator", "")).startswith("https://elevenlabs.io/")
+        ), None)
+        dedicated = link_acquirer(
+            state, provider_cdp_port, private_markdown, placement, create=True,
+            title=handoff.get("title"), description=handoff.get("buyer_intent"),
+            destination=destination,
+        )
+        if dedicated.get("state") != "VERIFIED":
+            return {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None}
+        link = elevenlabs_link(private_markdown, dedicated.get("private_link_field", ""))
         markdown = handoff.get("owned_article_markdown", "")
         x_copy = handoff.get("x_copy", "")
         disclosure = handoff.get("disclosure", "")
@@ -731,6 +743,8 @@ def advance_generic_publication(
             "content_sha256": content_sha256,
             "state": progress.get("state", "MATERIALIZED"),
             "created_at": created_at,
+            "provider_link_key": dedicated.get("provider_link_key"),
+            "tracking_custom_link_id": dedicated.get("tracking_custom_link_id"),
         }
         if handoff.get("experiment"):
             progress["experiment"] = handoff["experiment"]
@@ -792,9 +806,11 @@ def advance_generic_publication(
     }
 
 
-def advance_known_publication(state, landing_root, x_cdp_port, private_markdown=None):
+def advance_known_publication(
+    state, landing_root, x_cdp_port, private_markdown=None, provider_cdp_port=9324,
+):
     generic = advance_generic_publication(
-        state, landing_root, x_cdp_port, private_markdown,
+        state, landing_root, x_cdp_port, private_markdown, provider_cdp_port,
     )
     generic_non_blocking = {
         "NO_DUE_PUBLICATION", "ALREADY_LIVE", "PUBLICATION_CONFLICT",
@@ -1241,7 +1257,7 @@ def wake(args):
         publication = (
             advance_known_publication(
                 state, landing_root.expanduser(), getattr(args, "x_cdp_port", 9326),
-                args.private_markdown.expanduser(),
+                args.private_markdown.expanduser(), args.cdp_port,
             )
             if placement_link_ready and not placement_link_changed
             else {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None}
