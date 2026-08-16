@@ -74,6 +74,65 @@ test("operations persist safe history and a positive every-wake Telegram receipt
   }
 });
 
+test("recordAction persists provider and stage safe_reason for a failed discovery action", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-action-context-"));
+  try {
+    const operations = createMinimalProductionOperations({
+      stateDir,
+      wakeId: "wake-20260816-connpass",
+      telegramTarget: "private-target",
+      now: () => new Date("2026-08-16T14:03:56.454Z"),
+      async sendMessage() { return { messageId: 7002 }; },
+    });
+
+    await operations.recordAction({
+      purpose: "observe",
+      method: "provider_discovery",
+      timestamp: "2026-08-16T14:03:56.454Z",
+      result: "failed",
+      duration_ms: 45971,
+      provider: "connpass",
+      safe_reason: "connpass_calendar_navigation_failed",
+    });
+
+    const historyFile = path.join(stateDir, "action-history.jsonl");
+    const row = JSON.parse(fs.readFileSync(historyFile, "utf8").trim());
+    assert.deepEqual(row, {
+      schema_version: 1,
+      wake_id: "wake-20260816-connpass",
+      purpose: "observe",
+      method: "provider_discovery",
+      timestamp: "2026-08-16T14:03:56.454Z",
+      result: "failed",
+      duration_ms: 45971,
+      provider: "connpass",
+      safe_reason: "connpass_calendar_navigation_failed",
+    });
+
+    await assert.rejects(() => operations.recordAction({
+      purpose: "observe",
+      method: "provider_discovery",
+      timestamp: "2026-08-16T14:03:56.454Z",
+      result: "success",
+      duration_ms: 100,
+      provider: "connpass",
+      safe_reason: "connpass_calendar_navigation_failed",
+    }), "a success row must not carry provider/safe_reason context");
+
+    await assert.rejects(() => operations.recordAction({
+      purpose: "observe",
+      method: "provider_discovery",
+      timestamp: "2026-08-16T14:03:56.454Z",
+      result: "failed",
+      duration_ms: 100,
+      provider: "Connpass",
+      safe_reason: "connpass_calendar_navigation_failed",
+    }), "an uppercase provider must be rejected");
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("duplicate report uses stored created_at and rejects business-field drift", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-duplicate-"));
   let clock = Date.parse("2026-08-08T08:30:00.000Z"); const sent = [];
