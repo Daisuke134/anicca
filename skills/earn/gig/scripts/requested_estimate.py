@@ -164,7 +164,7 @@ def semantic_prompt(
 - buyerがseller提示の納期rangeを受諾済みなら、短い側を約束せず、最も遅い上限をdelivery_daysにします。「購入当日または翌日」は1日、「2〜3日」は3日です。これは不確実性ではなくsellerに安全な確定値です。
 - reply/clarifyは最新buyerの質問・依頼へ直接答えるsend-readyな日本語本文をreply_bodyへ返します。未依頼の購入催促、同じ案内の反復、根拠のない職歴・実績・本人属性を作りません。
 - 最新messageがbuyerで、明確なdecline/stop、unknown、必要official context待ちのいずれでもない場合、waitにしません。question/negotiating/ready stateはreply/clarify/send_estimateで前進させ、gratitude/consideringにも同じmessage identityへ一度だけ短いcontextual acknowledgementを返します。購入催促やseller既送文の反復は加えません。
-- buyerが対応可否を尋ね、current conversationまたはverified factsに根拠がある場合、reply_bodyの冒頭で「対応可能です」等の明確な回答を先に述べ、その後に根拠と条件を短く続けます。根拠がない能力をyesにせず、確認できる範囲を正直に区別します。
+- buyerが対応可否を尋ね、依頼全体・verified tool・transferable capabilityから実現方法を組める場合、reply_bodyの冒頭を「対応可能です」にします。verified applicationがあれば正確な価格・納期、続いて具体的な方法を示し、不足情報は契約後にseller側で整理して案内します。購入前の質問、疑問文、buyerへの要件整理依頼は0件です。
 - reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsとunsupported_claimsは具体的な問題を列挙します。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
 - 経験、売上、契約plan、稼働時間など未提供の本人事実を聞かれた場合、推測せず「この会話で確認できる事実としては断言できません」と正直に答えます。質問を無視せず、確認できる能力・条件だけを区別して答えます。
 - seller本人の年齢、性別、身体、容姿、声、出演・撮影可否、着用できる衣装なども未提供の本人事実です。会話かverified contextに明示がなければ対応可能と断言しません。
@@ -182,7 +182,7 @@ def semantic_prompt(
 - verified_official_context.applicationsがある場合、同じbuyerに対する全official応募candidateです。current cycleのtitle・内容・価格・納期と一意に一致する1件だけを使い、別candidateのfieldを混ぜません。0件または複数件が整合する時は推測せずwaitと具体的uncertaintyを返します。
 - verified_official_context.serviceがある場合、それはbuyer message内の正確な公式service URLから選んだ現在公開中の出品契約です。契約のscope・title・priceだけを根拠に使い、契約外の能力や対応範囲を断言しません。
 - required_official_contextがnone以外で、そのcontextなしに正確なreply/estimateを作れない場合はnext_action=wait、uncertaintyへ不足を示し、reply_body=nullにします。
-- unknown/conflict/根拠不足は推測しません。安全な確認質問1件で前進できる時だけclarifyとsend-ready reply_bodyを返し、uncertaintyは空にします。それ以外はwaitとuncertaintyです。
+- unknown/conflict、本人属性・資格・規約・金銭条件の根拠不足は推測せずwaitとuncertaintyにし、購入前の確認質問は送信しません。実現可能な通常案件はreplyで前進させます。
 - current cycleの開始messageをcycle_start_message_id、判断根拠のbuyer messageだけをevidence_message_idsへ返します。
 - send_estimate以外はestimate_terms=null。reply/clarify以外はreply_body=nullかつreply_auditの配列は空・booleanはfalse。JSON schema以外を返しません。
 

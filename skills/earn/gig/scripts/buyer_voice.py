@@ -86,6 +86,19 @@ def check_style(text: str) -> list[str]:
     return [code for code, pattern in _CHECKS if pattern.search(body)]
 
 
+_PRECONTRACT_BURDEN: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("question_mark", re.compile(r"[?？]")),
+    ("ask_for_details", re.compile(r"教えて|ご教示|ご共有|お知らせいただ|いただけますか")),
+    ("uncertain_opening", re.compile(r"判断できません|断言できません|分かりかね|わかりかね")),
+)
+
+
+def check_precontract_reply(text: str) -> list[str]:
+    """Objective buyer-burden violations for a purchase-before reply."""
+    body = str(text or "")
+    return [code for code, pattern in _PRECONTRACT_BURDEN if pattern.search(body)]
+
+
 def normalize_for_match(text: str) -> str:
     """Drop whitespace entirely, so our own message is recognisable after render.
 

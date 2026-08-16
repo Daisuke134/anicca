@@ -107,6 +107,23 @@ def test_empty_text_is_not_a_style_violation() -> None:
     assert buyer_voice.check_style(None) == []  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("message", [
+    "詳細を教えていただけますか？",
+    "現時点では判断できません。",
+    "確認しないと分かりかねます。",
+])
+def test_precontract_reply_rejects_buyer_burden(message: str) -> None:
+    assert buyer_voice.check_precontract_reply(message)
+
+
+def test_decisive_precontract_reply_has_no_violation() -> None:
+    message = (
+        "対応可能です。応募時と同じ99,000円で、8月20日までに納品します。"
+        "必要な情報はご契約後にこちらで整理してご案内します。"
+    )
+    assert buyer_voice.check_precontract_reply(message) == []
+
+
 # ---------------------------------------------------------------------------
 # 3. normalize_for_match
 # ---------------------------------------------------------------------------

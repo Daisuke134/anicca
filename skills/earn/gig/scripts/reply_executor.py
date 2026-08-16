@@ -228,6 +228,9 @@ def execute_reply(
         style_violations = _load_local("buyer_voice").check_style(outgoing_body)
         if style_violations:
             raise ValueError(f"buyer_style_violation:{style_violations[0]}")
+        burden_violations = _load_local("buyer_voice").check_precontract_reply(outgoing_body)
+        if burden_violations:
+            raise ValueError(f"precontract_buyer_burden:{burden_violations[0]}")
         verify_freshness = getattr(browser, "verify_semantic_freshness", None)
         if callable(verify_freshness):
             verify_freshness()

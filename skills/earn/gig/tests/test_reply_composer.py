@@ -158,7 +158,8 @@ def test_prompt_limits_questions_and_free_deliverable_promises():
         "conversation": [{"side": "buyer", "body": "対応可能でしょうか？"}]
     })
 
-    assert "質問を1つまで" in prompt
+    assert "購入前の質問・疑問文は0件" in prompt
+    assert "必要情報は契約後にこちらで整理" in prompt
     assert "成果物・提案書・サンプル・構成案を購入前に送ると約束しない" in prompt
 
 
