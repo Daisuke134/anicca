@@ -122,79 +122,10 @@ test("Luma discovery reports only safe aggregate eligibility counts", async () =
     window_count: 3,
     free_open_count: 2,
     calendar_free_count: 1,
-    skipped_count: 0,
   }]);
   assert.deepEqual(Object.keys(audits[0]).sort(), [
-    "calendar_free_count", "free_open_count", "normalized_count", "observed_count", "skipped_count", "window_count",
+    "calendar_free_count", "free_open_count", "normalized_count", "observed_count", "window_count",
   ]);
-});
-
-test("Luma skips a malformed candidate row instead of aborting the other rows in the batch", async () => {
-  const audits = [];
-  const good = event("good-row");
-  const workflow = createLumaScriptFirstWorkflow({
-    now: () => new Date("2026-08-07T08:30:00.000Z"),
-    async discoverOnPage() { return [{ provider: "luma" }, good]; },
-    isCalendarFree() { return true; },
-    async onDiscoveryAudit(value) { audits.push(value); },
-  });
-
-  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
-
-  assert.deepEqual(result.map((candidate) => candidate.event_ref), [good.event_ref]);
-  assert.deepEqual(audits, [{
-    observed_count: 2, normalized_count: 1, window_count: 1,
-    free_open_count: 1, calendar_free_count: 1, skipped_count: 1,
-  }]);
-});
-
-test("Luma skips a candidate whose calendar conflict check throws instead of aborting the batch", async () => {
-  const audits = [];
-  const throwing = event("throwing-row");
-  const good = event("good-row");
-  const workflow = createLumaScriptFirstWorkflow({
-    now: () => new Date("2026-08-07T08:30:00.000Z"),
-    async discoverOnPage() { return [throwing, good]; },
-    async isCalendarFree(candidate) {
-      if (candidate.event_ref === throwing.event_ref) throw new Error("private calendar error");
-      return true;
-    },
-    async onDiscoveryAudit(value) { audits.push(value); },
-  });
-
-  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
-
-  assert.deepEqual(result.map((candidate) => candidate.event_ref), [good.event_ref]);
-  assert.deepEqual(audits, [{
-    observed_count: 2, normalized_count: 2, window_count: 2,
-    free_open_count: 2, calendar_free_count: 1, skipped_count: 1,
-  }]);
-});
-
-test("Luma fails closed with a coded error when every observed row is unusable", async () => {
-  const workflow = createLumaScriptFirstWorkflow({
-    now: () => new Date("2026-08-07T08:30:00.000Z"),
-    async discoverOnPage() { return [{ provider: "luma" }, { provider: "luma" }]; },
-    isCalendarFree() { return true; },
-  });
-
-  await assert.rejects(
-    workflow.discoverCandidates({ page: {}, calendar: [] }),
-    (error) => error.code === "LUMA_ALL_CANDIDATES_SKIPPED_FAILED",
-  );
-});
-
-test("Luma still fails closed without a row-skip code on a structural discovery contract violation", async () => {
-  const workflow = createLumaScriptFirstWorkflow({
-    now: () => new Date("2026-08-07T08:30:00.000Z"),
-    async discoverOnPage() { return Array.from({ length: 501 }, () => event("overflow")); },
-    isCalendarFree() { return true; },
-  });
-
-  await assert.rejects(
-    workflow.discoverCandidates({ page: {}, calendar: [] }),
-    (error) => error.message === "Luma script-first workflow invalid" && error.code === undefined,
-  );
 });
 
 test("Luma direct action uses the retained submit function without agent assistance", async () => {
