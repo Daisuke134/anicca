@@ -2,8 +2,10 @@
 """Syndicate one verified Affiliate article through the proven Writer API shape."""
 
 import hashlib
+import html
 import json
 import os
+import re
 import tempfile
 import urllib.error
 import urllib.request
@@ -134,6 +136,44 @@ def _profile(cookie):
     return matches[0]["user_id"]
 
 
+def _inline(value):
+    nodes, position = [], 0
+    for match in re.finditer(r"\[([^\]]+)\]\((https://[^)]+)\)|(https://\S+)", value):
+        if match.start() > position:
+            nodes.append({"type": "text", "text": value[position:match.start()]})
+        label, target = (match.group(1), match.group(2)) if match.group(1) else (match.group(3), match.group(3))
+        nodes.append({"type": "text", "text": label,
+                      "marks": [{"type": "link", "attrs": {"href": target}}]})
+        position = match.end()
+    if position < len(value):
+        nodes.append({"type": "text", "text": value[position:]})
+    return nodes
+
+
+def _prosemirror(markdown):
+    paragraphs = [row.strip() for row in re.split(r"\n\s*\n", markdown) if row.strip()]
+    return json.dumps({"type": "doc", "content": [
+        {"type": "paragraph", "content": _inline(row.replace("\n", " "))}
+        for row in paragraphs
+    ]}, ensure_ascii=False, separators=(",", ":"))
+
+
+def _public_targets(title):
+    feed = _public_html(f"https://{PUBLICATION}/feed")
+    links = re.findall(
+        r"<item>.*?<title><!\[CDATA\[\s*" + re.escape(title) +
+        r"\s*\]\]></title>.*?<link>(https://[^<]+)</link>.*?</item>",
+        feed, re.DOTALL,
+    )
+    targets = []
+    for link in reversed(list(dict.fromkeys(html.unescape(row) for row in links))):
+        visible = _public_html(link)
+        match = re.search(r'\\"post\\":\{.*?\\"id\\":(\d+)', visible)
+        if match:
+            targets.append({"id": match.group(1), "url": link})
+    return targets
+
+
 def _existing(cookie, marker):
     value = _json(f"https://{PUBLICATION}/api/v1/drafts", cookie)
     rows = value if isinstance(value, list) else value.get("drafts", value.get("posts", []))
@@ -165,31 +205,43 @@ def publish(state, plan_id):
     placement, cookie = campaign["placement_id"], _cookie()
     marker = f"affiliate-intent:{placement} content-sha256:{digest}"
     job = unresolved_effect(state, "SUBSTACK_PUBLICATION", placement)
-    target = _existing(cookie, marker)
-    if job and target is None:
+    target_path = state / "substack-targets" / f"{plan_id}.json"
+    target_row = json.loads(target_path.read_text()) if target_path.is_file() else {}
+    target = str(target_row.get("target", "")) or _existing(cookie, marker)
+    public_targets = _public_targets(artifact["title"]) if job and not target else []
+    if public_targets:
+        target = public_targets[0]["id"]
+        _atomic(target_path, {"target": target, "public_url": public_targets[0]["url"],
+                              "recovered": True})
+    if job and not target:
         raise SubstackError("unresolved Substack effect requires public recovery; refusing a new draft")
     created = target is None
+    payload = {
+        "draft_title": artifact["title"], "draft_subtitle": "",
+        "draft_body": _prosemirror(markdown),
+        "draft_bylines": [{"id": _profile(cookie), "is_guest": False}],
+        "type": "newsletter", "audience": "everyone", "draft_section_id": None,
+        "section_chosen": True, "write_comment_permissions": "everyone",
+        "should_send_email": False,
+    }
     if target is None:
-        body = _owned_html(campaign["owned_url"]) + f"<!-- {marker} -->"
         action = {"operation": "publish_substack", "placement": placement,
                   "owned_url": campaign["owned_url"], "content_sha256": digest}
         job = resume_effect(state, "SUBSTACK_PUBLICATION", placement) if job else start_effect(
             state, "SUBSTACK_PUBLICATION", placement, action,
             {"state": "READY", "owned_url": campaign["owned_url"]}, 86400,
         )
-        draft = _json(f"https://{PUBLICATION}/api/v1/drafts", cookie, "POST", {
-            "draft_title": artifact["title"], "draft_subtitle": "",
-            "draft_body": json.dumps({"type": "doc", "content": [{"type": "rawHtml", "attrs": {"html": body}}]}),
-            "draft_bylines": [{"id": _profile(cookie), "is_guest": False}],
-            "type": "newsletter", "audience": "everyone", "draft_section_id": None,
-            "section_chosen": True, "write_comment_permissions": "everyone",
-            "should_send_email": False,
-        })
+        draft = _json(f"https://{PUBLICATION}/api/v1/drafts", cookie, "POST", payload)
         target = str(draft.get("id", ""))
         if not target.isdigit():
             raise SubstackError("draft creation returned no stable id")
-        _json(f"https://{PUBLICATION}/api/v1/drafts/{target}/publish", cookie, "POST",
-              {"send": False, "share_automatically": False})
+        _atomic(target_path, {"target": target, "recovered": False})
+    else:
+        updated = _json(f"https://{PUBLICATION}/api/v1/drafts/{target}", cookie, "PUT", payload)
+        if str(updated.get("id", target)) != target:
+            raise SubstackError("Substack update changed the protected target")
+    _json(f"https://{PUBLICATION}/api/v1/drafts/{target}/publish", cookie, "POST",
+          {"send": False, "share_automatically": False})
     readback = _json(f"https://{PUBLICATION}/api/v1/drafts/{target}", cookie)
     slug = readback.get("slug") or readback.get("draft_slug")
     live_url = f"https://{PUBLICATION}/p/{slug}" if slug else ""
@@ -204,6 +256,7 @@ def publish(state, plan_id):
                "plan_id": plan_id, "placement_id": placement, "public_id": target,
                "public_url": live_url, "owned_url": campaign["owned_url"],
                "content_sha256": digest, "observed_at": datetime.now(timezone.utc).isoformat(),
-               "deduplicated": not created}
+               "deduplicated": not created,
+               "duplicate_public_urls": [row["url"] for row in public_targets[1:]]}
     _atomic(receipt_path, receipt)
     return receipt
