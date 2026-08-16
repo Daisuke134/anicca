@@ -76,7 +76,7 @@ def test_noop_observes_on_one_lease_and_commits_only_after_release(tmp_path, mon
     monkeypatch.setattr(listing_inventory, "observe_storefront", observe)
     code, row = direct.run_once(_args(tmp_path))
 
-    assert code == 0
+    assert code == 0, row
     assert events == ["acquire", ("observe", lease["ws"]), "heartbeat", "release"]
     assert row["status"] == "completed" and row["effect"] == row["duplicate"] == 0
     assert row["official_services_read"] == 11 and row["lease"]["released"] is True
@@ -179,7 +179,7 @@ def test_storefront_brake_prevents_lease_and_observation(tmp_path, monkeypatch):
 
     code, row = direct.run_once(args)
 
-    assert code == 0
+    assert code == 0, row
     assert row["status"] == "operator_brake" and row["effect"] == 0
 
 
