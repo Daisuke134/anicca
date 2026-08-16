@@ -156,7 +156,7 @@ live autonomous operation.
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
-| Publication | Six English owned Affiliate articles and their matching disclosed `@selawmqt` X posts are live. The latest campaign is also on canonical DEV and at `https://aniccabuddha.substack.com/p/elevenlabs-audio-to-text-a-practical`. Anonymous Substack readback returns the full body, disclosure, and one tracking link; external job `3a7c7b28…78c2` is `VERIFIED`, Telegram message `20934` reports it, and replay is `COOLDOWN / NO_PENDING / exit 0`. A lost-target recovery defect created one additional title-only Substack duplicate at `https://aniccabuddha.substack.com/p/elevenlabs-audio-to-text-a-practical-ac1`; the fixed adapter journals the ID before publish and fences unresolved effects, but public deletion awaits explicit authorization | Post-baseline provider click readback and every Japanese placement remain unproven |
+| Publication | Six English owned Affiliate articles and their matching disclosed `@selawmqt` X posts are live. The latest campaign is also on canonical DEV and at `https://aniccabuddha.substack.com/p/elevenlabs-audio-to-text-a-practical`. Anonymous Substack readback returns the full body, disclosure, and one tracking link; external job `3a7c7b28…78c2` is `VERIFIED`, Telegram message `20934` reports it, and replay is `COOLDOWN / NO_PENDING / exit 0`. A lost-target recovery defect created one additional title-only Substack duplicate at `https://aniccabuddha.substack.com/p/elevenlabs-audio-to-text-a-practical-ac1`; recurrence is fenced and the accepted operating decision is no cleanup action | Post-baseline provider click readback and every Japanese placement remain unproven |
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, and real `PLACEMENT_LIVE` are live-proven. The sixth campaign notification is bound to provider message ID `20895`; replay returns `NO_PENDING` | `CLICK_DELTA` and commission events remain bound to their real external transitions |
@@ -1103,13 +1103,14 @@ ProseMirror paragraphs, verified the full anonymous body/disclosure/tracking
 link, closed external job `3a7c7b28…78c2`, and sent Telegram message `20934`.
 Replay is `COOLDOWN / NO_PENDING / exit 0`. The failed first recovery also
 created title-only public duplicate `211393237`; the unresolved-effect fence now
-prevents recurrence, while deletion remains an explicit public-cleanup action.
+prevents recurrence. The accepted operating decision is to leave it unchanged
+and spend no further execution time on cleanup.
 
 | Current surface | Verified state | Meaning |
 |---|---|---|
 | Local scheduler | Six Affiliate launchd owners; last exits are `0` | The local runtime is installed and healthy |
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
-| Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE`; 1 canonical DEV article `LIVE`; 1 receipted Substack article `LIVE` | Real public effects exist and are receipted; one title-only Substack duplicate is visible and pending cleanup authorization |
+| Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE`; 1 canonical DEV article `LIVE`; 1 receipted Substack article `LIVE` | Real public effects exist and are receipted; one known title-only duplicate remains unchanged by explicit operating decision |
 | Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist; the sixth campaign reached owned/X/DEV/Substack `LIVE` and Telegram before unchanged replays | A real external click is the first unfinished economic stage; provider admission continues in parallel under provider gates |
 | Acquisition | 0 post-baseline provider clicks | E0 is open |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
@@ -1373,7 +1374,7 @@ outcomes remain observable unknowns and MUST NOT be guessed before execution.
 | E0-Q8 | Existing 600-second money owner polls due provider state; daily owners supply new evidence/content | Installed plists and last exits are live-proven | No new launchd label; installed readback shows the same six-label allowlist |
 | E0-Q9 | Do not add a generic learner before E1 | Current revenue is USD 0 and cannot rank profitability | E1 produces the first approved denominator; only then admit experiment/allocation state |
 | E0-Q10 | USD 10,000 timing and traffic remain irreducible until unit economics exist | No post-baseline click or commission exists | Compute required qualified clicks from observed approved commission and conversion after ten mature placements; never use creator screenshots as the denominator |
-| E0-Q11 | The title-only duplicate Substack post is an incident cleanup, not an earning dependency | The valid post/job are verified and recurrence is fenced | Delete only after explicit public-deletion authorization; its presence cannot close or block E0 |
+| E0-Q11 | The title-only duplicate Substack post is not an earning dependency and receives no cleanup work | The valid post/job are verified, recurrence is fenced, and the operator explicitly chose no deletion | Keep it outside the execution queue; its presence cannot close or block E0 |
 
 #### 3.2 File ownership for the next implementation
 
@@ -1444,11 +1445,6 @@ shared abstraction to make the diff appear smaller.
 
 ##### Phase E0-A — Freeze current truth before code
 
-- [ ] **E0-A00** The title-only Substack duplicate remains
-  `OPEN_PUBLIC_CLEANUP`. After explicit public-deletion authorization, let the
-  Affiliate Substack adapter delete only public ID `211393237`, read back `404`,
-  and verify the RSS title count is one. Until authorization exists, do not
-  delete it and do not let this cleanup block E0.
 - [ ] **E0-A01** Read `git status`, source HEAD, installed release symlink, six
   launchd labels, run counts, last exits, CDP `9324/9326/9327`, unresolved jobs,
   latest provider metrics, commission row count, and Telegram sent tail.
@@ -2562,7 +2558,7 @@ atomic replacement, matching Python's replacement contract
 | U56 | DEFERRED-BY-GATE | Spanish and later locales have no owned identity, offer, or cohort | Admit only after English/Japanese proof and the same locale gate |
 | U57 | IRREDUCIBLE | CAPTCHA, biometric checks, KYC, tax attestations, contracts, and unavailable OTP ownership cannot be invented | Record `EXTERNAL_CHALLENGE`, continue independent work, resume only with authorized evidence |
 | U58 | LIVE-OPEN | Prices, terms, allowed channels, UI, and tracking behavior can change after capture | TTL-bound official evidence, pre-write observation, post-write readback, and provider quarantine |
-| U59 | EXTERNAL-AUTHORIZATION | Substack public ID `211393237` is a title-only duplicate from the repaired response-loss incident. Recurrence is fenced; deletion is a separate public destructive effect | After explicit deletion authorization, the Affiliate adapter deletes only that ID, verifies anonymous `404`, verifies one matching RSS title, and emits one cleanup receipt |
+| U59 | CLOSED-NO-ACTION | Substack public ID `211393237` is a title-only duplicate from the repaired response-loss incident. Recurrence is fenced; the operator explicitly chose no cleanup work | Keep it outside every remaining queue. Reopen only if it causes a measured acquisition, policy, or platform-health failure |
 
 No implementation starts for a slice while an uncertainty that can change that
 slice's effect, identity, money, secret, or recovery contract remains
