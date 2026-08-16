@@ -1845,6 +1845,12 @@ observable outcome exists.
   it admits exactly one next unused product only after the prior discovered plan
   has a durable `X_LIVE` campaign receipt. An unfinished plan and
   `NO_NEW_PRODUCT` remain in cooldown, preventing an unbounded content queue.
+  The first same-day continuation discovered official `audio-to-text` and captured
+  `2/2` sources, but Terra-high was correctly rejected before launch because the
+  old 49,152-token reservation exceeded the 131,072 daily cap after 87,029 actual
+  tokens. Prior successful campaigns consumed 14,526–19,236 tokens, so the task
+  reservation and pass cap are reduced together to 32,768 while keeping the same
+  Terra-high model and daily cap.
 - [ ] **A15.4** Produce one source-bound decision asset per qualified intent with
   disclosure-before-CTA, limitations, alternatives, and exactly one owned link.
 - [ ] **A15.5** Publish through the owned site and English X browser, require public

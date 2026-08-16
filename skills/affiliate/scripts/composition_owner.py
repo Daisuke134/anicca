@@ -218,7 +218,7 @@ def run_model(skill_root: Path, state_root: Path, bundle: dict) -> dict:
         ),
         "AFFILIATE_SOURCE_SET_SHA256": bundle["source_set_sha256"],
         "ANICCA_BUDGET_SCOPE_ID": f"affiliate-composition-{bundle['plan_id']}",
-        "ANICCA_PASS_TOKEN_BUDGET": "49152",
+        "ANICCA_PASS_TOKEN_BUDGET": "32768",
         "ANICCA_LOOP_DAILY_TOKEN_BUDGET": "131072",
         "ANICCA_BUDGET_REQUIRED": "1",
         "ANICCA_BUDGET_DAILY_SCOPE": "affiliate-composition-owner",

@@ -45,7 +45,7 @@
     "marketing-agent": {
       "route": "affiliate-terra-high-strategy",
       "requires_explicit_escalation": true,
-      "token_reservation": 49152,
+      "token_reservation": 32768,
       "timeout_seconds": 900,
       "candidates": [
         {
