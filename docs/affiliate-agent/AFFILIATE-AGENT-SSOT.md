@@ -1052,7 +1052,9 @@ flowchart LR
    audit over the sealed handoff and the same official source set. Neither layer
    receives credentials, a tracking link, browser authority, or the money ledger.
    RED is observed: the focused owner test fails only because `wake()` does not
-   yet accept or persist a `policy_builder` result after an existing handoff.
+   yet accept or persist a `policy_builder` result after an existing handoff;
+   after that contract turns GREEN, the real-receipt test fails only because
+   `build_policy()` has no bounded semantic-audit adapter yet.
 5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
    only a policy-PASS artifact, injects the executable link locally, publishes the
    owned article, waits for HTTP `200`, publishes X, and performs exact public

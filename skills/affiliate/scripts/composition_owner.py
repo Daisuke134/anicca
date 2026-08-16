@@ -259,9 +259,13 @@ def run_model(skill_root: Path, state_root: Path, bundle: dict) -> dict:
         }
 
 
+def build_policy(skill_root: Path, state_root: Path, bundle: dict, receipt: dict) -> str:
+    raise CompositionError
+
+
 def wake(
     skill_root: Path, state_root: Path, run_model=run_model,
-    handoff_builder=build_handoff,
+    handoff_builder=build_handoff, policy_builder=build_policy,
 ) -> dict:
     state_root.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (state_root / ".composition.lock").open("a+") as lock:
@@ -294,6 +298,15 @@ def wake(
                     and not SHA256.fullmatch(previous.get("handoff_sha256", ""))
                 ):
                     previous["handoff_sha256"] = handoff_builder(
+                        skill_root, state_root, bundle, previous
+                    )
+                    atomic_write(receipt_path, previous)
+                    return previous
+                if (
+                    previous.get("state") == "READY_FOR_POLICY"
+                    and not SHA256.fullmatch(previous.get("policy_sha256", ""))
+                ):
+                    previous["policy_sha256"] = policy_builder(
                         skill_root, state_root, bundle, previous
                     )
                     atomic_write(receipt_path, previous)
