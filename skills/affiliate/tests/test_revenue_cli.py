@@ -14,6 +14,32 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RevenueCliTest(unittest.TestCase):
+    def test_legacy_slug_merges_into_canonical_dedicated_placement(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            for name in ("program-links", "content", "owned-publications"):
+                (state / name).mkdir(parents=True)
+            (state / "program-links" / "elevenlabs-en-1.json").write_text(json.dumps({
+                "placement": "elevenlabs-en-1", "state": "VERIFIED",
+                "provider_link_key": "link-1", "link_fingerprints": ["f" * 64],
+            }))
+            (state / "content" / "elevenlabs-plans-for-solo-creators.json").write_text(
+                json.dumps({
+                    "slug": "elevenlabs-plans-for-solo-creators",
+                    "readback_links": ["https://try.elevenlabs.io/example"],
+                })
+            )
+            (state / "owned-publications" / "elevenlabs-plans-for-solo-creators.json").write_text(
+                json.dumps({"state": "LIVE", "public_url": "https://example.test/plans"})
+            )
+
+            candidates = MODULE.placement_candidates(state)
+
+            self.assertEqual(len(candidates), 1)
+            self.assertEqual(candidates[0]["placement_id"], "elevenlabs-en-1")
+            self.assertEqual(candidates[0]["provider_link_key"], "link-1")
+            self.assertEqual(candidates[0]["public_url"], "https://example.test/plans")
+
     def test_placement_economics_separates_api_estimate_from_actual_cash(self):
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory)

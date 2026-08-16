@@ -61,8 +61,15 @@ COMMISSION_FIELDS = {
 
 KNOWN_PLAN_BY_PLACEMENT = {
     "elevenlabs-plans-for-solo-creators": "elevenlabs-en",
+    "elevenlabs-en-1": "elevenlabs-en",
     "elevenagents-for-customer-support": "elevenagents-en",
+    "elevenagents-en-1": "elevenagents-en",
     "elevenlabs-text-to-speech-api-for-developers": "elevenlabs-tts-api-en",
+}
+
+KNOWN_PLACEMENT_BY_SLUG = {
+    "elevenlabs-plans-for-solo-creators": "elevenlabs-en-1",
+    "elevenagents-for-customer-support": "elevenagents-en-1",
 }
 
 COMMISSION_STATUS = {
@@ -290,7 +297,7 @@ def placement_candidates(state):
         if parsed.scheme != "https" or parsed.hostname != "try.elevenlabs.io":
             continue
         campaign = campaigns_by_slug.get(slug, {})
-        placement_id = campaign.get("placement_id") or slug
+        placement_id = campaign.get("placement_id") or KNOWN_PLACEMENT_BY_SLUG.get(slug, slug)
         prior = candidates.get(placement_id, {})
         dedicated = bool(prior.get("provider_link_key"))
         candidates[placement_id] = {
