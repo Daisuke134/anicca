@@ -1076,9 +1076,9 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M0.2, carry one Agent decision through the existing
-research, composition, policy, and publication pipeline with experiment
-lineage**. M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
+Current execution cursor: **M0.3, join channel exposure, exact provider clicks,
+commission transitions, and experiment identity under one placement ledger**.
+M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
 files and zero decision receipts before eligibility. A first real Agent decision
 remains an automatically observed acceptance gate, not a wait task. Time passing,
@@ -1224,12 +1224,26 @@ flowchart LR
    provider remained `AUTHENTICATED`, publication remained `X_LIVE`, DEV remained
    `WAITING_24H`, Agent evidence and decision receipt counts stayed `0`, Telegram
    returned `NO_PENDING`, and the owner exited `0`. The first post-gate model
-   result will be real external proof, but no implementation waits for the clock.
-9. **M0.2 — Execute one-variable experiments through the existing pipeline.** Bind
-   the decision ID and hypothesis to the next source plan, sealed composition,
-   policy receipt, owned publication, X/DEV/Substack placements, and public
-   readbacks. The loop—not Codex—performs every external effect, and unchanged
-   replay creates no duplicate post.
+result will be real external proof, but no implementation waits for the clock.
+9. **DONE — M0.2 execute one-variable experiments through the existing pipeline.**
+   Release `84a0e242b` binds one unused decision ID, baseline, control campaign,
+   selected variable, hypothesis, instruction, and success metric to the next
+   discovered source plan. The envelope participates in the source-set hash, so a
+   changed instruction cannot reuse an old sealed result. Composition receives a
+   hash-valid, policy-PASS control handoff and fails closed if it is absent; the
+   envelope then reaches handoff, policy, owned/X campaign, DEV/Substack, and DEV
+   baseline receipts. Only `title`, `opening_hook`, `article_structure`, or `cta`
+   are admitted because the existing composition/publication path can enact them.
+   Installed source-owner run `2` exited `0` with real decision count `0→0` and
+   experiment-plan count `0→0`; it continued the healthy non-experiment research
+   lane without inventing a decision. Installed money wake `8` preserved job
+   events `106→106` and Telegram sent rows `13→13`, returned
+   `AUTHENTICATED / X_LIVE / WAITING_FOR_BASELINE / NO_PENDING`, and exited `0`.
+   The deterministic experiment-envelope/hash contract passed; the full 55-check
+   suite retained the same four pre-existing failures observed unchanged in the
+   prior `e8d1b8ea1` archive, while the 11 affected local-loop/content checks pass.
+   A first real experiment publication remains an automatic acceptance gate, not
+   a wait task.
 10. **M0.3 — Close placement-level acquisition measurement.** For every experiment,
     join real channel exposure where the platform supplies it, the exact provider
     link baseline/delta, and later commission transitions under one placement ID.
