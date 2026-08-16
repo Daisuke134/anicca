@@ -1384,7 +1384,8 @@ outcomes remain observable unknowns and MUST NOT be guessed before execution.
 | `skills/affiliate/scripts/job_journal.py` | Reuse existing start/resume/verify/reconcile calls; change only if the observed provider effect cannot be represented | Job identity or completed historical events |
 | `skills/affiliate/scripts/local_loop.py` | Select one policy-PASS campaign lacking a link, invoke the fenced link tool, then continue existing publication/revenue/Telegram order | Add a scheduler, bypass policy, or call a model inside the money lock |
 | `skills/affiliate/scripts/revenue_cli.py` | Capture Link Performance baseline/rows, persist click transitions, and pass exact link identity to existing attribution candidates | Count local analytics as provider clicks or change commission transition identity |
-| `skills/affiliate/scripts/content.py` and `composition_owner.py` | No change: continue producing a single placeholder and source-bound sealed content | Receive a private link, provider cookie, or money ledger access |
+| `skills/affiliate/scripts/content.py` | Bind only the TTS API builder/policy to the private `TTS API affiliate link` field after exact provider readback | Receive a provider cookie, generate a link, or change article copy |
+| `skills/affiliate/scripts/composition_owner.py` | No change: continue producing a single placeholder and source-bound sealed content | Receive a private link, provider cookie, or money ledger access |
 | `skills/affiliate/scripts/install-release.sh` | Preserve the six-owner allowlist and install the pushed immutable release | Add a seventh business owner or touch Gig/Coconala labels |
 | `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md` | Record each observed state transition and advance the current cursor | Store secrets, raw referral links, or forecasts as facts |
 
@@ -1393,6 +1394,7 @@ The change budget is three sequential slices, never one broad patch:
 | Slice | Production files | Minimal regression file | Soft limit |
 |---|---|---|---:|
 | E0-B-link | `program_registry.py` | `tests/test_program_registry.py` | 100 net LOC |
+| E0-B-materialize | `content.py` | existing content contract checks | 10 net LOC |
 | E0-B-click | `revenue_cli.py` | `tests/test_revenue_cli.py` | 100 net LOC |
 | E0-B-wire | `local_loop.py` | `tests/test_local_loop.py` | 100 net LOC |
 
@@ -1504,8 +1506,10 @@ shared abstraction to make the diff appear smaller.
   call `resume_effect()` only for the same target and refuse a second create when
   effect certainty is ambiguous.
 - [ ] **E0-B05** Store the raw provider URL through stdin in mode-0600 private
-  state under the exact placement label; persist only its SHA-256 fingerprint in
-  the public receipt.
+  state as `TTS API affiliate link` for the first placement; persist only its
+  SHA-256 fingerprint in the public receipt. Bind the TTS builder and policy to
+  this exact field so the verified custom link, not the default link, is
+  materialized into the article.
 - [ ] **E0-B06** Extend `placement_candidates()` to index provider link `key`,
   `tracking_custom_link_id`, URL hash, placement ID, owned URL, offer, locale,
   and public distribution URLs without exposing the raw link.
