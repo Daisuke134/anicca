@@ -47,8 +47,13 @@ _SOURCE_FIELDS = frozenset({
 _DETAIL_FIELDS = frozenset({
     "request_id", "canonical_url", "title", "category", "visible_text",
     "accepting_applications", "budget_min_jpy", "budget_max_jpy", "applicants_count",
-    "contracted_count", "observed_at", "content_sha256",
+    "contracted_count", "applicants", "observed_at", "content_sha256",
 })
+_APPLICANT_FIELDS = frozenset({
+    "user_id", "name", "applied_at", "profile_url", "rating", "sales_count",
+    "public_services", "profile_summary",
+})
+_PROFILE_PATH = re.compile(r"^/users/([0-9]+)$")
 _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
 _HEX_32 = re.compile(r"^[0-9a-f]{32}$")
 
@@ -207,6 +212,49 @@ def _string_list(value: object, field: str) -> list[str]:
     return [_nonempty_text(item, field) for item in value]
 
 
+def _normalise_applicants(value: object) -> list[dict[str, object]]:
+    if not isinstance(value, list) or len(value) > 3:
+        raise SnapshotContractError("applicants_must_be_array_max_3")
+    result: list[dict[str, object]] = []
+    for applicant in value:
+        if not isinstance(applicant, dict) or set(applicant) != _APPLICANT_FIELDS:
+            raise SnapshotContractError("applicant_fields_invalid")
+        user_id = canonical_request_id(applicant["user_id"])
+        parsed = urlsplit(str(applicant["profile_url"]).strip())
+        matched = _PROFILE_PATH.fullmatch(parsed.path.rstrip("/"))
+        if (
+            parsed.scheme.lower() != "https"
+            or parsed.hostname is None
+            or parsed.hostname.lower().removeprefix("www.") != "coconala.com"
+            or matched is None
+            or matched.group(1) != user_id
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise SnapshotContractError("applicant_profile_url_invalid")
+        rating = applicant["rating"]
+        if rating is not None and (
+            isinstance(rating, bool)
+            or not isinstance(rating, (int, float))
+            or not 0 <= float(rating) <= 5
+        ):
+            raise SnapshotContractError("applicant_rating_invalid")
+        services = _string_list(applicant["public_services"], "public_services")
+        if len(services) > 5:
+            raise SnapshotContractError("public_services_max_5")
+        result.append({
+            "user_id": user_id,
+            "name": _nonempty_text(applicant["name"], "applicant_name"),
+            "applied_at": _nonempty_text(applicant["applied_at"], "applicant_applied_at"),
+            "profile_url": f"https://coconala.com/users/{user_id}",
+            "rating": None if rating is None else float(rating),
+            "sales_count": _nonnegative_int_or_none(applicant["sales_count"], "sales_count"),
+            "public_services": services,
+            "profile_summary": _nonempty_text(applicant["profile_summary"], "profile_summary"),
+        })
+    return result
+
+
 def _normalise_source(source: object) -> dict[str, object]:
     if not isinstance(source, dict):
         raise SnapshotContractError("search_source_must_be_object")
@@ -274,6 +322,7 @@ def _normalise_detail(detail: object) -> dict[str, object]:
             "contracted_count": _nonnegative_int_or_none(
                 detail["contracted_count"], "contracted_count"
             ),
+            "applicants": _normalise_applicants(detail["applicants"]),
             "observed_at": _nonempty_text(detail["observed_at"], "detail_observed_at"),
         }
     except KeyError as error:
@@ -492,6 +541,11 @@ def validate_snapshot(envelope: object) -> list[str]:
                 value = detail[key]
                 if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0):
                     errors.append(f"detail_{key}_invalid")
+            try:
+                if detail["applicants"] != _normalise_applicants(detail["applicants"]):
+                    errors.append("detail_applicants_not_normalised")
+            except SnapshotContractError:
+                errors.append("detail_applicants_invalid")
             if not isinstance(detail["observed_at"], str) or not detail["observed_at"]:
                 errors.append("detail_observed_at_invalid")
             expected_hash = sha256_json(detail_content_payload(detail))
