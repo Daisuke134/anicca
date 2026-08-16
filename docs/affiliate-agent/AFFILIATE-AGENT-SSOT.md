@@ -1072,6 +1072,12 @@ flowchart LR
    shell syntax passes, and all 51 Affiliate tests pass. Live owner recovery and
    the first installed generic policy receipt still require a fresh macOS login
    context because the current Codex process cannot reach any launchd domain.
+   Safe release `2067b62a6` is staged as `current` with
+   `LOCAL_RELEASE_ONLY`; CDP ports `9324`, `9326`, and `9327` are all down and no
+   generic policy receipt exists. The exact recovery action is to rerun the safe
+   installer from a fresh desktop process; it will bootstrap the six missing
+   owners without first stopping any healthy service, then the composition owner
+   will resume the oldest `READY_FOR_POLICY` handoff.
 5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
    only a policy-PASS artifact, injects the executable link locally, publishes the
    owned article, waits for HTTP `200`, publishes X, and performs exact public
