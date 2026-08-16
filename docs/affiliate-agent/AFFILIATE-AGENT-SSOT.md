@@ -1076,10 +1076,13 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M0.1, turn the first immutable real acquisition
-baseline into one Agent-selected improvement decision**. The Agent stage is
-implemented now and remains effect-free until a real immutable baseline receipt
-exists. Time passing, an organic click arriving, provider review completing, and
+Current execution cursor: **M0.2, carry one Agent decision through the existing
+research, composition, policy, and publication pipeline with experiment
+lineage**. M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
+returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
+files and zero decision receipts before eligibility. A first real Agent decision
+remains an automatically observed acceptance gate, not a wait task. Time passing,
+an organic click arriving, provider review completing, and
 a commission being approved are external acceptance gates observed by launchd;
 they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
@@ -1212,11 +1215,16 @@ flowchart LR
    the existing composition/policy/publication path. Same-day replay returned
    `COOLDOWN`, preserved the plan bytes and 22-row source ledger, and created no
    duplicate campaign.
-8. **M0.1 — Consume real acquisition evidence.** Add one bounded Agent decision
-   stage to the existing owner. It reads only an immutable real exposure baseline,
-   public campaign metadata, and provider click state; chooses exactly one
-   acquisition variable; and stores one hash-bound decision receipt. With no
-   mature receipt it returns `WAITING_FOR_BASELINE` without invoking a model.
+8. **DONE — M0.1 consume real acquisition evidence.** Release `e8d1b8ea1` adds
+   one bounded Agent decision stage to the existing owner. It reads only an
+   immutable real exposure baseline, public campaign metadata, and provider click
+   state; chooses exactly one acquisition variable; and stores one hash-bound
+   decision receipt. With no mature receipt it returns `WAITING_FOR_BASELINE`
+   without invoking a model. Real installed wake `7` proved that pre-gate path:
+   provider remained `AUTHENTICATED`, publication remained `X_LIVE`, DEV remained
+   `WAITING_24H`, Agent evidence and decision receipt counts stayed `0`, Telegram
+   returned `NO_PENDING`, and the owner exited `0`. The first post-gate model
+   result will be real external proof, but no implementation waits for the clock.
 9. **M0.2 — Execute one-variable experiments through the existing pipeline.** Bind
    the decision ID and hypothesis to the next source plan, sealed composition,
    policy receipt, owned publication, X/DEV/Substack placements, and public
