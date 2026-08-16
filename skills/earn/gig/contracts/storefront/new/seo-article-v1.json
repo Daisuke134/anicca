@@ -38,6 +38,25 @@
     "accept_estimates": true,
     "estimate_required": false
   },
+  "category_specific": {
+    "features": ["8", "465", "34"],
+    "industries": ["453", "437", "440"],
+    "languages": ["366"],
+    "provision_format": "2",
+    "fix_limit": "1",
+    "unit_price_jpy_per_character": "1"
+  },
+  "subscription": {
+    "enabled": true,
+    "discount_ratio": "5"
+  },
+  "paid_options": [
+    {
+      "title": "3,000文字追加",
+      "price_jpy": 3000,
+      "opened": "1"
+    }
+  ],
   "publication_gate": {
     "requires_distinct_catalog_outcome": true,
     "requires_owned_capability": true,
