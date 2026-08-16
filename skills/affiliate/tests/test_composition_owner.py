@@ -98,6 +98,53 @@ class CompositionOwnerTests(unittest.TestCase):
             self.assertEqual(receipt["handoff_sha256"], "c" * 64)
             self.assertEqual(receipt["policy_sha256"], "d" * 64)
 
+    def test_published_campaign_never_spends_a_composition_pass(self) -> None:
+        spec = importlib.util.spec_from_file_location("affiliate_composition_owner", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            state = root / "state"
+            inbox = state / "composition-inbox"
+            inbox.mkdir(parents=True)
+            posts = state / "x-posts"
+            posts.mkdir(parents=True)
+            receipts = state / "composition-receipts"
+            receipts.mkdir(parents=True)
+            for plan_id, published in (("alpha-en", True), ("beta-en", False)):
+                (inbox / f"{plan_id}.json").write_text(json.dumps({
+                    "schema_version": 1, "receipt_type": "COMPOSITION_INPUT",
+                    "plan_id": plan_id, "locale": "en",
+                    # Sources were refreshed, so the stored receipt hash is stale.
+                    "source_set_sha256": "f" * 64, "sources": [],
+                }), encoding="utf-8")
+                (receipts / f"{plan_id}.json").write_text(json.dumps({
+                    "state": "READY_FOR_POLICY", "plan_id": plan_id, "locale": "en",
+                    "source_set_sha256": "a" * 64,
+                }), encoding="utf-8")
+                if published:
+                    (posts / f"{plan_id}-1.json").write_text(json.dumps({
+                        "state": "LIVE",
+                        "public_url": "https://x.com/selawmqt/status/1",
+                    }), encoding="utf-8")
+
+            run_model = mock.Mock(return_value={
+                "state": "READY_FOR_POLICY", "plan_id": "beta-en", "locale": "en",
+                "source_set_sha256": "f" * 64, "result_sha256": "b" * 64,
+            })
+            result = module.wake(
+                root, state, run_model=run_model,
+                handoff_builder=mock.Mock(return_value="c" * 64),
+                policy_builder=mock.Mock(return_value="d" * 64),
+            )
+
+            # The already-live campaign is skipped despite its stale hash, so the
+            # single daily pass goes to the campaign that still needs one.
+            self.assertEqual(run_model.call_count, 1)
+            self.assertEqual(run_model.call_args.args[2]["plan_id"], "beta-en")
+            self.assertEqual(result["plan_id"], "beta-en")
+
     def test_build_policy_writes_one_hash_bound_pass_receipt(self) -> None:
         spec = importlib.util.spec_from_file_location("affiliate_composition_owner", SCRIPT)
         module = importlib.util.module_from_spec(spec)

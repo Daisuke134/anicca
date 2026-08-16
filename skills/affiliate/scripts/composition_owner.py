@@ -653,6 +653,20 @@ def wake(
                 previous = json.loads(receipt_path.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 previous = {}
+            # A published placement is terminal, so composing it again cannot
+            # produce anything publishable: the publication path treats a live
+            # campaign as complete and would never emit a second post. Spending
+            # one of only four daily passes on it directly starves the campaigns
+            # that still need one, which is what happened on 2026-08-17 when a
+            # refreshed source set recomposed an already-live campaign.
+            try:
+                placement_receipt = json.loads((
+                    state_root / "x-posts" / f"{path.stem}-1.json"
+                ).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                placement_receipt = {}
+            if placement_receipt.get("state") == "LIVE":
+                continue
             budget_retry_due = (
                 previous.get("state") == "FAILED"
                 and previous.get("failure_class") == "RUNNER_REJECTED"
