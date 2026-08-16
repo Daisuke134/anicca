@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `30f7862ab579a1416fd272c3643cce1b3f0f2ff1` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, and real money wake `10` has last exit `0`. The ten-minute money loop owns bounded ElevenLabs recovery, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake economic-ledger projection, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner consumes at most one credential-free due stage per wake | Same-stage continuous resume, general repair beyond observed failures, and cohort allocation remain open |
+| Runtime | Immutable local release `41ba6a3a69f827ce7ede58d6a43cac6e18a7b00d` is current. All six isolated Affiliate launchd owners are loaded; real money wake `10` and composition run `9` have last exit `0`. The ten-minute money loop owns bounded ElevenLabs recovery, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake economic-ledger projection, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner resumes existing due stages before new inbox work and consumes at most one credential-free due stage per wake | General repair beyond observed failures and cohort allocation remain open |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, real `PLACEMENT_LIVE`, and one real-data natural-language daily summary are live-proven. The daily summary is bound to provider message ID `21046`; same-day real replay returns `NO_PENDING` without growing the sent ledger | `CLICK_DELTA` and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, official-source refresh, source-hash-bound composition, bounded Terra-high composition, generic handoff/policy, exact placement-link acquisition, owned/X publication, DEV/Substack syndication, acquisition/revenue observation, economic ledger, receipts, and Telegram are live. Release `30f7862ab` keeps ElevenLabs `AUTHENTICATED`; real wake `10` is `LEDGER_READY / NO_PENDING` | Continuous same-stage repair, provider/channel quarantine, watchdog, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, official-source refresh, source-hash-bound composition, bounded Terra-high composition, same-ID budget recovery, generic handoff/policy, exact placement-link acquisition, owned/X publication, DEV/Substack syndication, acquisition/revenue observation, economic ledger, receipts, and Telegram are live. Release `41ba6a3a6` keeps today's blocked receipt unchanged and exits healthy; a new JST budget day makes that same run retry-eligible | Provider/channel quarantine, watchdog, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -1076,8 +1076,8 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M0.4, resume one unfinished same-ID stage first and
-otherwise advance one eligible campaign per launchd wake**.
+Current execution cursor: **M0.5, report the real closed loop in owner-readable
+natural language without leaking machine codes, secret URLs, or inferred money**.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
 files and zero decision receipts before eligibility. A first real Agent decision
@@ -1101,7 +1101,7 @@ no transition was duplicated or invented.
 
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
-and Systeme.io remains behind its typed CAPTCHA boundary. Release `30f7862ab` is
+and Systeme.io remains behind its typed CAPTCHA boundary. Release `41ba6a3a6` is
 current; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -1269,11 +1269,18 @@ result will be real external proof, but no implementation waits for the clock.
     Focused affected checks passed `17/17`; installed wake `10` produced six
     hash-valid rows, one exact dedicated-link row at click `0/0`, zero provider
     transactions, no secret URL, and no new Telegram send.
-11. **M0.4 — Keep the experiment loop continuously productive.** On each launchd
-    wake, resume one unfinished same-ID stage first; otherwise advance one eligible
-    campaign. Maturity and provider-review timestamps are readiness inputs, not
-    queued work. Other healthy research, publication, measurement, and provider
-    lanes continue while one input is not yet eligible.
+11. **DONE — M0.4 keep the experiment loop continuously productive.** Release
+    `41ba6a3a6` fixes the observed permanent-retry defect: a budget-blocked
+    composition previously re-read the old day's consumed-token summary forever,
+    so a fresh daily budget could never reopen the same run. The owner now makes
+    that exact source/run ID eligible when the JST budget day changes, orders all
+    existing receipts before new inbox work, and still advances a new eligible
+    campaign when an older one is not yet eligible. It does not raise the
+    `32,768` pass or `131,072` daily caps. The two focused budget-day assertions
+    plus the affected local-loop checks pass `10/10`. Installed composition run
+    `9` exited `0` as `IDLE`, made no model call during the same-day cap, and kept
+    the blocked YouTube-transcript receipt byte-identical. Date maturity is an
+    input observed by the owner, not a TODO or operator wait instruction.
 12. **M0.5 — Report the closed loop in natural language.** Telegram sends one
     deduplicated transition for experiment selected, placement live, provider
     click, pending/approved/paid/reversed commission, and self-heal. The daily
