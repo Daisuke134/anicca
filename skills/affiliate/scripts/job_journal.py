@@ -143,6 +143,26 @@ def resume_effect(state, kind, target):
         return row
 
 
+def unresolved_effect(state, kind, target):
+    """Read exactly one unresolved effect without changing attempts or timestamps."""
+    state = state.expanduser()
+    jobs = state / "jobs"
+    if not jobs.is_dir():
+        return None
+    lock_path = jobs / ".lock"
+    with lock_path.open("a+") as lock:
+        os.chmod(lock_path, 0o600)
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        rows = []
+        for path in jobs.glob("key-*.json"):
+            row = json.loads(path.read_text())
+            if row.get("state") == "EFFECT_STARTED" and row.get("kind") == kind and row.get("target") == target:
+                rows.append(row)
+        if len(rows) > 1:
+            raise JobStateError("multiple unresolved effects require quarantine")
+        return rows[0] if rows else None
+
+
 def reconcile_effect(state, kind, target, external_object):
     """Complete the one unresolved target after a fresh semantic readback."""
     reject_secrets(external_object)

@@ -17,7 +17,10 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from websocket import create_connection
-from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
+from job_journal import (
+    JobStateError, reconcile_effect, resume_effect, start_effect,
+    unresolved_effect, verify_effect,
+)
 
 
 class ProviderError(Exception):
@@ -331,6 +334,7 @@ def submit_login(args, playbook, target):
                 login["password_submit_text_any"],
             )
         else:
+            request_id = wait_for_selector(ws, request_id, login["submit_selector"])
             click(ws, request_id, login["submit_selector"])
     finally:
         ws.close()
@@ -394,13 +398,21 @@ def resume(args):
         base = f"http://{args.cdp_host}:{args.cdp_port}"
         target = choose_target(read_json(f"{base}/json/list"), playbook)
         state = getattr(args, "state", args.receipt.expanduser().parent / "affiliate-state").expanduser()
-        try:
+        pending = unresolved_effect(state, "PROVIDER_LOGIN", args.provider)
+        if pending:
+            cooldown = int(pending.get("cooldown", {}).get("seconds", 300))
+            retry_due = int(time.time()) - int(pending.get("updated_at", 0)) >= cooldown
+            if retry_due and int(pending.get("attempt", 1)) < 3:
+                job = resume_effect(state, "PROVIDER_LOGIN", args.provider)
+            else:
+                job = None
+        else:
             job = start_effect(
                 state, "PROVIDER_LOGIN", args.provider,
                 {"operation": "submit_login", "provider": args.provider},
                 {key: before.get(key) for key in ("state", "url", "rendered_text_sha256")}, 300,
             )
-        except JobStateError:
+        if job is None:
             after = before
         else:
             submit_login(args, playbook, target)
