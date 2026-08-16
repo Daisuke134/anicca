@@ -14,6 +14,19 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ContentPolicyTest(unittest.TestCase):
+    def test_generated_tts_api_contract_keeps_secret_link_out_of_model_output(self):
+        markdown = "\n".join((
+            f"# {MODULE.TTS_API_TITLE}", MODULE.DISCLOSURE,
+            "## A benchmark before you pay", "benchmark " * 400,
+            *MODULE.TTS_API_URLS,
+            "[Try ElevenLabs]({{AFFILIATE_LINK}})", "Last evidence refresh",
+        ))
+        self.assertEqual(
+            MODULE.validate_tts_api_result({"title": MODULE.TTS_API_TITLE, "markdown": markdown}),
+            markdown,
+        )
+        self.assertNotIn("try.elevenlabs.io", markdown)
+
     def test_disclosure_source_hash_and_owned_link_gate(self):
         link = "https://try.elevenlabs.io/unit"
         markdown = f"*{MODULE.DISCLOSURE}*\n\nUseful comparison. [Try it]({link})"

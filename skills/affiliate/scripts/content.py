@@ -40,6 +40,32 @@ AGENTS_REQUIRED = {
     "elevenagents-cost": "There is no cost to create your agent.",
 }
 
+TTS_API_REQUIRED = {
+    "elevenlabs-api-quickstart": "Store the key as a managed secret",
+    "elevenlabs-api-reference": "character costs",
+    "elevenlabs-tts-capability": (
+        "The models are nondeterministic.",
+        "Up to 2 free regenerations per generation",
+    ),
+    "elevenlabs-latency-guide": (
+        "75ms refers to model inference time only.",
+        "Actual end-to-end latency will vary",
+    ),
+    "elevenlabs-api-pricing": (
+        "Text to Speech is billed per character.",
+        "$0.10 per 1,000 characters (Multilingual v2/v3) or $0.05 (Flash/Turbo)",
+    ),
+}
+TTS_API_SLUG = "elevenlabs-text-to-speech-api-for-developers"
+TTS_API_TITLE = "ElevenLabs Text-to-Speech API: What Developers Should Benchmark Before Paying"
+TTS_API_URLS = (
+    "https://elevenlabs.io/docs/eleven-api/quickstart",
+    "https://elevenlabs.io/docs/api-reference/introduction",
+    "https://elevenlabs.io/docs/overview/capabilities/text-to-speech",
+    "https://elevenlabs.io/docs/eleven-api/guides/how-to/best-practices/latency-optimization",
+    "https://elevenlabs.io/pricing/api",
+)
+
 DISCLOSURE = "Disclosure: This article contains an affiliate link."
 FORBIDDEN_CLAIMS = ("guaranteed income", "guaranteed earnings", "risk-free income", "100% guaranteed")
 
@@ -55,7 +81,8 @@ def require_sources(state, required, now):
             raw = artifact.read_text(encoding="utf-8")
         except (OSError, ValueError, KeyError, StopIteration) as error:
             raise ContentError("required source capture is unavailable") from error
-        if expires <= now or marker not in raw:
+        markers = (marker,) if isinstance(marker, str) else tuple(marker)
+        if expires <= now or not markers or any(value not in raw for value in markers):
             raise ContentError("required source is stale or does not support its claim")
         source_hashes[source_id] = receipt["raw_sha256"]
     return source_hashes
@@ -115,6 +142,51 @@ def build_agents(root, state, private_markdown):
         "built_at": now.isoformat(),
     }
     atomic_write(state / "content" / f"{slug}.json", artifact)
+    return {key: artifact[key] for key in ("artifact_id", "slug", "content_sha256", "state")}
+
+
+def validate_tts_api_result(row):
+    if row.get("title") != TTS_API_TITLE or not isinstance(row.get("markdown"), str):
+        raise ContentError("generated TTS API article contract is invalid")
+    markdown = row["markdown"]
+    checks = (
+        2500 <= len(markdown) <= 9000,
+        markdown.startswith(f"# {TTS_API_TITLE}"),
+        markdown.count("{{AFFILIATE_LINK}}") == 1,
+        "try.elevenlabs.io" not in markdown,
+        markdown.find(DISCLOSURE) < markdown.find("{{AFFILIATE_LINK}}"),
+        "## A benchmark before you pay" in markdown,
+        "Last evidence refresh" in markdown,
+        all(url in markdown for url in TTS_API_URLS),
+        not any(claim in markdown.lower() for claim in FORBIDDEN_CLAIMS),
+    )
+    if not all(checks):
+        raise ContentError("generated TTS API article failed deterministic validation")
+    return markdown
+
+
+def build_tts_api(root, state, private_markdown):
+    target = state / "content" / f"{TTS_API_SLUG}.json"
+    if target.is_file():
+        artifact = json.loads(target.read_text(encoding="utf-8"))
+        return {key: artifact[key] for key in ("artifact_id", "slug", "content_sha256", "state")}
+    now = datetime.now(timezone.utc)
+    source_hashes = require_sources(state, TTS_API_REQUIRED, now)
+    link = elevenlabs_link(private_markdown)
+    if not link:
+        raise ContentError("executable ElevenLabs link is unavailable")
+    template = (root / "config" / "content" / "elevenlabs-tts-api-en-v1.md").read_text(encoding="utf-8")
+    markdown = validate_tts_api_result({
+        "title": TTS_API_TITLE, "markdown": template,
+    }).replace("{{AFFILIATE_LINK}}", link)
+    artifact = {
+        "schema_version": 1, "artifact_id": "elevenlabs-tts-api-en-v1",
+        "slug": TTS_API_SLUG, "locale": "en", "title": TTS_API_TITLE,
+        "disclosure": "affiliate_link", "source_hashes": source_hashes,
+        "content_sha256": hashlib.sha256(markdown.encode()).hexdigest(),
+        "markdown": markdown, "state": "READY_FOR_POLICY", "built_at": now.isoformat(),
+    }
+    atomic_write(target, artifact)
     return {key: artifact[key] for key in ("artifact_id", "slug", "content_sha256", "state")}
 
 
@@ -209,6 +281,13 @@ def policy_agents(state, private_markdown):
     )
 
 
+def policy_tts_api(state, private_markdown):
+    return policy_campaign(
+        state, private_markdown, TTS_API_SLUG, TTS_API_REQUIRED,
+        "Default affiliate link", "AI VOICE API", ["A benchmark before you pay"],
+    )
+
+
 def build_x(state):
     slug = "elevenlabs-plans-for-solo-creators"
     publication_path = state / "owned-publications" / f"{slug}.json"
@@ -281,9 +360,44 @@ def build_x_agents(state):
     }
 
 
+def build_x_tts_api(state):
+    publication_path = state / "owned-publications" / f"{TTS_API_SLUG}.json"
+    try:
+        publication = json.loads(publication_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ContentError("live owned publication receipt is unavailable") from error
+    url = f"https://aniccaai.com/blog/{TTS_API_SLUG}"
+    if publication.get("state") != "LIVE" or publication.get("public_url") != url:
+        raise ContentError("owned article is not live")
+    text = (
+        "Building with a TTS API? Benchmark secret handling, character costs, repeatability, "
+        "and real end-to-end latency before paying.\n\n"
+        "Affiliate link disclosed in my developer checklist:\n"
+        f"{url}"
+    )
+    if len(text) > 280:
+        raise ContentError("X artifact exceeds the platform limit")
+    target = state / "x-content" / "elevenlabs-tts-api-en-1.txt"
+    target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
+    temporary_path = Path(temporary)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(text + "\n")
+        os.replace(temporary_path, target)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+    return {
+        "artifact_id": "elevenlabs-tts-api-x-en-1",
+        "placement": "elevenlabs-tts-api-en-1",
+        "content_sha256": hashlib.sha256(text.encode()).hexdigest(),
+        "state": "READY_FOR_X_PUBLICATION",
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(prog="affiliate content")
-    parser.add_argument("command", choices=("build", "build-agents", "build-foundation", "build-x", "build-x-agents", "policy", "policy-agents"))
+    parser.add_argument("command", choices=("build", "build-agents", "build-tts-api", "build-foundation", "build-x", "build-x-agents", "build-x-tts-api", "policy", "policy-agents", "policy-tts-api"))
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     parser.add_argument("--private-markdown", type=Path, default=Path("~/.config/anicca/affiliate-credentials.md"))
     args = parser.parse_args()
@@ -292,14 +406,20 @@ def main():
         result = build_x(args.state.expanduser())
     elif args.command == "build-x-agents":
         result = build_x_agents(args.state.expanduser())
+    elif args.command == "build-x-tts-api":
+        result = build_x_tts_api(args.state.expanduser())
     elif args.command == "policy":
         result = policy(args.state.expanduser(), args.private_markdown.expanduser())
     elif args.command == "policy-agents":
         result = policy_agents(args.state.expanduser(), args.private_markdown.expanduser())
+    elif args.command == "policy-tts-api":
+        result = policy_tts_api(args.state.expanduser(), args.private_markdown.expanduser())
     elif args.command == "build-foundation":
         result = build_foundation(root, args.state.expanduser())
     elif args.command == "build-agents":
         result = build_agents(root, args.state.expanduser(), args.private_markdown.expanduser())
+    elif args.command == "build-tts-api":
+        result = build_tts_api(root, args.state.expanduser(), args.private_markdown.expanduser())
     else:
         result = build(root, args.state.expanduser(), args.private_markdown.expanduser())
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))

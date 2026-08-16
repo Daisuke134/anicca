@@ -260,7 +260,7 @@ def recover_provider(state, cdp_port, private_markdown):
     return poll(poll_args, recovered)
 
 
-def advance_known_publication(state, landing_root, x_cdp_port):
+def advance_known_publication(state, landing_root, x_cdp_port, private_markdown=None):
     slug = "elevenagents-for-customer-support"
     placement = "elevenagents-en-1"
     x_receipt_path = state / "x-posts" / f"{placement}.json"
@@ -269,7 +269,10 @@ def advance_known_publication(state, landing_root, x_cdp_port):
     except (OSError, ValueError):
         x_receipt = {}
     if x_receipt.get("state") == "LIVE":
-        return {"state": "ALREADY_LIVE", "public_url": x_receipt.get("public_url")}
+        return advance_tts_api_publication(
+            state, landing_root, x_cdp_port, private_markdown,
+            x_receipt.get("public_url"),
+        )
 
     artifact_path = state / "content" / f"{slug}.json"
     policy_path = state / "policy" / f"{slug}.json"
@@ -303,6 +306,42 @@ def advance_known_publication(state, landing_root, x_cdp_port):
         placement=placement,
         cdp_host="127.0.0.1",
         cdp_port=x_cdp_port,
+    ))
+    return {"state": "X_LIVE", "public_url": posted.get("public_url")}
+
+
+def advance_tts_api_publication(state, landing_root, x_cdp_port, private_markdown, fallback_url):
+    slug = "elevenlabs-text-to-speech-api-for-developers"
+    placement = "elevenlabs-tts-api-en-1"
+    receipt_path = state / "x-posts" / f"{placement}.json"
+    try:
+        existing = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        existing = {}
+    if existing.get("state") == "LIVE":
+        return {"state": "ALREADY_LIVE", "public_url": existing.get("public_url")}
+    if not (state / "sources" / "elevenlabs-api-pricing" / "latest.json").is_file():
+        return {"state": "ALREADY_LIVE", "public_url": fallback_url}
+    if private_markdown is None:
+        return {"state": "TTS_API_CREDENTIAL_BOUNDARY_MISSING", "public_url": fallback_url}
+
+    from content import build_tts_api, build_x_tts_api, policy_tts_api
+    from owned_publish import publish as publish_owned
+    from x_post_cli import publish as publish_x
+
+    root = Path(__file__).resolve().parents[1]
+    build_tts_api(root, state, private_markdown)
+    policy_tts_api(state, private_markdown)
+    owned = publish_owned(SimpleNamespace(
+        state=state, landing_root=landing_root, slug=slug,
+        base_url="https://aniccaai.com", remote="origin", branch="main",
+    ))
+    if owned.get("state") != "LIVE":
+        return {"state": "OWNED_NOT_LIVE", "public_url": owned.get("public_url")}
+    build_x_tts_api(state)
+    posted = publish_x(SimpleNamespace(
+        state=state, content=state / "x-content" / f"{placement}.txt",
+        placement=placement, cdp_host="127.0.0.1", cdp_port=x_cdp_port,
     ))
     return {"state": "X_LIVE", "public_url": posted.get("public_url")}
 
@@ -377,6 +416,7 @@ def wake(args):
         )
         publication = advance_known_publication(
             state, landing_root.expanduser(), getattr(args, "x_cdp_port", 9326),
+            args.private_markdown.expanduser(),
         )
     except Exception as error:
         publication = {
