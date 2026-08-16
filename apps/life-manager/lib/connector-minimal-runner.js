@@ -98,6 +98,24 @@ function safeDiscoveryReason(error) {
     ? code.toLowerCase() : "provider_discovery_failed";
 }
 
+// Mirrors connector-minimal-evidence.js's EVIDENCE_SAFE_CODES: reads the .code a stageError()
+// attached in the delivery block (screenshot capture / calendar create / calendar readback /
+// telegram message / telegram photo / bundle write) so the wake report and action-history row name
+// the failing stage instead of one generic "evidence_completion_failed" for every cause.
+const EVIDENCE_STAGE_CODES = new Set([
+  "EVIDENCE_SCREENSHOT_CAPTURE_FAILED",
+  "EVIDENCE_CALENDAR_CREATE_FAILED",
+  "EVIDENCE_CALENDAR_READBACK_FAILED",
+  "EVIDENCE_TELEGRAM_MESSAGE_FAILED",
+  "EVIDENCE_TELEGRAM_PHOTO_FAILED",
+  "EVIDENCE_BUNDLE_WRITE_FAILED",
+]);
+
+function safeEvidenceReason(error) {
+  const code = String(error && error.code || "");
+  return EVIDENCE_STAGE_CODES.has(code) ? code.toLowerCase() : "evidence_completion_failed";
+}
+
 async function runMinimalConnectorWake(input = {}, injected = {}) {
   const settings = config(input);
   const deps = dependencies(injected);
@@ -328,17 +346,21 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           if (deadlineReached()) return finish("circuit_open", "wake_deadline");
           let bundle;
           try {
-            bundle = await deps.completeEvidence({
-              provider,
-              candidate: selected,
-              page: owned.page,
-              providerState,
-              repairedActions,
-            });
-          } catch {
+            bundle = await action(
+              "submit", "evidence_completion",
+              () => deps.completeEvidence({
+                provider,
+                candidate: selected,
+                page: owned.page,
+                providerState,
+                repairedActions,
+              }),
+              (error) => ({ provider, safe_reason: safeEvidenceReason(error) }),
+            );
+          } catch (error) {
             if (deadlineReached()) return finish("circuit_open", "wake_deadline");
             consecutiveFailures += 1;
-            return finish("circuit_open", "evidence_completion_failed");
+            return finish("circuit_open", safeEvidenceReason(error));
           }
           if (!bundle || typeof bundle !== "object" || Array.isArray(bundle)) {
             return finish("circuit_open", "evidence_result_invalid");

@@ -826,9 +826,9 @@ test("registered parent pre-readback composes real evidence recovery with zero s
   });
   try {
     const first = await wake(["2026-08-07T08:30:00.000Z", "2026-08-07T08:31:00.000Z"], async () => ({ messageId: 9401 }), async () => ({ messageId: 9402 }));
-    assert.deepEqual(first, { status: "circuit_open", safe_reason: "evidence_completion_failed", telegram_provider_id: "9001" });
+    assert.deepEqual(first, { status: "circuit_open", safe_reason: "evidence_calendar_readback_failed", telegram_provider_id: "9001" });
     const second = await wake(["2026-08-07T08:31:00.000Z"], async () => { messageCalls += 1; return { messageId: 9401 }; }, async () => { photoCalls += 1; throw new Error("photo interruption"); });
-    assert.deepEqual(second, { status: "circuit_open", safe_reason: "evidence_completion_failed", telegram_provider_id: "9001" });
+    assert.deepEqual(second, { status: "circuit_open", safe_reason: "evidence_telegram_photo_failed", telegram_provider_id: "9001" });
     const result = await wake(["2026-08-07T08:32:00.000Z"], async () => { messageCalls += 1; return { messageId: 9401 }; }, async () => { photoCalls += 1; return { messageId: 9402 }; });
     assert.equal(result.status, "applied_bundle"); assert.equal(lastBundle.created_at, "2026-08-07T08:30:00.000Z"); assert.deepEqual([registered.size, evidenceRecords, calendarCreates, messageCalls, photoCalls, cacheCalls, directCalls, harnessCalls, fs.readdirSync(path.join(stateDir, "applied-bundles")).length], [1, 1, 1, 1, 2, 0, 0, 0, 1]);
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
