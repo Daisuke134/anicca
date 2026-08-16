@@ -1551,18 +1551,29 @@ shared abstraction to make the diff appear smaller.
 
 ##### Phase E0-C — Prove the installed owner, not Codex, performs the work
 
-- [ ] **E0-C01** Compile touched Python files and run only the minimal regressions
+- [x] **E0-C01** Compile touched Python files and run only the minimal regressions
   for duplicate external effect, secret leak, click identity, unmatched
   attribution, and Telegram dedupe.
-- [ ] **E0-C02** Fetch, commit, and push the source branch to both remotes before
+- [x] **E0-C02** Fetch, commit, and push the source branch to both remotes before
   install; install only the exact pushed SHA.
-- [ ] **E0-C03** Read back the immutable release hash and unchanged six-label
+- [x] **E0-C03** Read back the immutable release hash and unchanged six-label
   launchd allowlist.
-- [ ] **E0-C04** Kick `ai.anicca.affiliate-loop`; do not invoke the write command
-  directly.
-- [ ] **E0-C05** Verify one placement-link job moves
+- [x] **E0-C04** Trigger `ai.anicca.affiliate-loop`, or watch its already-running
+  scheduled process; do not invoke the write command directly.
+- [x] **E0-C05** Verify one placement-link job moves
   `EFFECT_STARTED → VERIFIED`, one private link entry exists, and no secret is in
   stdout/log/Git/Telegram.
+
+  Installed proof: the pushed `47733180f` release preserved exactly six owners.
+  Its real scheduled launchd run created provider link key
+  `dd63ebae-fe33-4347-b264-313b7bcb2072`, moved job
+  `828d49ec1c82aeb8b20778c2fe57eb57aff2a6851585bb7dd46abe337caa77ea`
+  from `EFFECT_STARTED` to `VERIFIED`, wrote the raw URL only to the mode-0600
+  private field, matched its SHA-256 to the sanitized receipt, skipped publication
+  and distribution in that wake, and sent Telegram message `20987`. Public logs,
+  Git, and Telegram contain no raw tracking URL. The subsequent guarded
+  same-slug revision fix is pushed and installed as immutable release
+  `afe2e5fc7`; its six-owner allowlist is unchanged.
 - [ ] **E0-C06** Let the same loop publish the next policy-PASS campaign with that
   link and verify owned HTTP, disclosure/link order, X, DEV, and Substack
   readbacks.
