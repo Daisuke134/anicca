@@ -152,10 +152,10 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `6cb5ddb3b` is current and the four existing Affiliate launchd owners remain installed without restart. The loop wakes every 600 seconds and last exits `0` | Current `wake()` only checks link/browser/provider, runs hourly revenue reconciliation when authenticated, writes receipts, and flushes limited Telegram events. It does not yet autonomously advance owned/X publication or recover the current signed-out provider session |
+| Runtime | Immutable local release `1f14181cb` is current and all four Affiliate launchd owners are installed. Two installed wake replays exited `0`; the loop owns provider recovery, known owned/X advancement, hourly revenue reconciliation, receipts, and Telegram | Source research, new-job content/policy creation, general repair, and cohort allocation are not yet scheduled stages |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
-| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED` and earning-enabled, but the latest scheduled observation is `SIGN_IN_REQUIRED`; HubSpot/Impact was application-reconciled to `APPLICATION_PENDING`, while its browser session also requires recovery. Kit is `APPLICATION_REJECTED`; Notion is `PROGRAM_PAUSED`; Systeme.io is `EXTERNAL_CHALLENGE`; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten is `AUTH_REQUIRED` | ElevenLabs is the only currently executable earning offer. The loop does not yet invoke the already live-proven provider recovery command. No commission, approved transaction, reversal, or payout is claimed |
+| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED` and earning-enabled. One installed wake observed `AUTHENTICATED` and completed a zero-row revenue reconciliation; a later wake observed `SIGN_IN_REQUIRED`. Recovery is fenced, waits five minutes after an ambiguous attempt, and stops after three sends rather than causing provider lockout. HubSpot/Impact remains `APPLICATION_PENDING`; Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. The current login attempt remains unresolved until its bounded retry succeeds or reaches terminal `BLOCKED`. No commission, approved transaction, reversal, or payout is claimed |
 | Publication | Two English owned Affiliate articles and both matching disclosed `@selawmqt` X posts are live. The ElevenAgents article reconciled `DELIVERED → LIVE` without a duplicate Git effect; its X placement is `https://x.com/selawmqt/status/2088797086871666703`, and an immediate identical replay reconciled to the same URL without a second post | Post-baseline provider click readback and every Japanese placement remain unproven |
 | Attribution | Local placement receipts and direct provider-link resolution are implemented | No public placement or provider-side click/commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
@@ -974,14 +974,16 @@ diagnoses only when an existing deterministic tool cannot advance them.
    published `elevenagents-en-1` at
    `https://x.com/selawmqt/status/2088797086871666703`. Immediate replay returned
    the same URL, proving timeline/public readback exact-once behavior.
-3. **IN PROGRESS:** Let `loop wake` invoke the existing ElevenLabs `provider resume` when it reads
-   `SIGN_IN_REQUIRED`, then continue the already-wired revenue observe/capture/
-   reconcile cycle. A provider-specific auth failure MUST NOT block owned/X work.
-4. Wire only those three proven stage transitions into `local_loop.py`: owned
+3. **IN PROGRESS:** `loop wake` now invokes ElevenLabs recovery on
+   `SIGN_IN_REQUIRED` and continues owned/X independently. Live replay exposed a
+   React submit-enable race; release `1f14181cb` waits for the enabled control and
+   bounds ambiguous retries to five-minute cooldowns and three total sends.
+4. **DONE:** Wire only those three proven stage transitions into `local_loop.py`: owned
    readback, X build/publish, and provider recovery. Emit `PLACEMENT_LIVE` and the
    next-job Telegram receipt from the same job lineage.
-5. Run the installed launchd owner twice: the first pass advances the unfinished
-   ElevenAgents job; the second proves exact-once behavior and no duplicate post.
+5. **PARTIAL:** Installed launchd replay twice preserved the same ElevenAgents X
+   URL and one X external job. One wake authenticated and reconciled zero provider
+   rows; the next exposed the login race now fixed. Re-run after cooldown to close.
 6. Add the next English ElevenLabs buyer-intent job by reusing CRWL capture,
    Writer/content generation, policy, owned publish, X publish, and revenue tools.
    Stage choice remains deterministic; model admission is added only for the
@@ -1510,7 +1512,7 @@ atomic replacement, matching Python's replacement contract
 
 | ID | State | Uncertainty / observed answer | Closure condition |
 |---|---|---|---|
-| U45 | LIVE-OPEN | ElevenLabs and Impact sessions are currently signed out despite nonempty stored credentials | Installed Agent restores each authorized session and re-reads program/application state |
+| U45 | LIVE-OPEN | ElevenLabs alternated between authenticated and signed-out states during installed wake replay. The first bounded login attempt failed before receipt completion; retry is fenced for five minutes and capped at three. Impact is still outside the active revenue lane | Installed Agent restores the ElevenLabs session, then re-reads provider revenue without manual browser action |
 | U46 | CLOSED-MANUAL | Installed Skill reconciled the ElevenAgents article to `LIVE`, built its X artifact, published one status, and immediate replay returned the same status URL | The remaining proof is that the newly wired scheduled wake observes the same receipts without a duplicate external effect |
 | U47 | LIVE-OPEN | No real post-baseline click exists | Provider reports one attributable organic click; self-clicks/tests do not count |
 | U48 | LIVE-OPEN | No non-empty commission row has tested dedupe, status transition, or placement join | One real provider transaction replays twice without duplication and preserves pending/approved/reversed/paid lineage |
