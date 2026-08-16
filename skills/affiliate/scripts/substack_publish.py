@@ -245,7 +245,7 @@ def publish(state, plan_id):
     readback = _json(f"https://{PUBLICATION}/api/v1/drafts/{target}", cookie)
     slug = readback.get("slug") or readback.get("draft_slug")
     live_url = f"https://{PUBLICATION}/p/{slug}" if slug else ""
-    visible = _public_html(live_url) if live_url else ""
+    visible = _public_html(f"{live_url}?output=1") if live_url else ""
     if not ((readback.get("is_published") is True or readback.get("post_date"))
             and artifact["title"] in visible and "affiliate link" in visible.casefold()):
         raise SubstackError("Substack publication failed exact public readback")
