@@ -34,6 +34,7 @@ DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
 DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json"
 DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
+MEASURABLE_SUCCESS_METRICS = {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase"}
 DEFAULT_REPLY_TRANSCRIPTS = Path.home() / "gig" / "reply-transcripts.jsonl"
 DEFAULT_APPLIED = Path.home() / "gig" / "applied.jsonl"
 DEFAULT_EARNINGS = Path.home() / "gig" / "earnings.jsonl"
@@ -1946,6 +1947,7 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
                                fill=("#ef4f55", "#35b777", "#7657db")[index])
         draw.text((x + 35, 618), badge, font=badge_font, fill="white")
         x += width + 24
+    evidence_dir.mkdir(parents=True, exist_ok=True)
     path = evidence_dir / f"generated-{service_id}-hero.png"
     image.save(path, format="PNG", optimize=False)
     data = path.read_bytes()
@@ -2053,7 +2055,7 @@ def _seal_create_contract(
     }
     if (proposal.get("decision") != "create"
             or proposal.get("source_service_id") != source["service_id"]
-            or proposal.get("success_metric") not in {"views_to_inquiry", "views_to_purchase"}
+            or proposal.get("success_metric") not in MEASURABLE_SUCCESS_METRICS
             or proposal.get("observation_window_days") not in {7, 14}
             or proposal.get("no_op_reason") is not None
             or not isinstance(evidence, list) or not required <= set(evidence)
@@ -2519,7 +2521,7 @@ def _guard_judgement(
         raise RuntimeError("judgement_capability_evidence_unowned")
     if any(not Path(path).is_file() for path in capabilities):
         raise RuntimeError("judgement_capability_evidence_missing")
-    if value.get("success_metric") not in {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase"}:
+    if value.get("success_metric") not in MEASURABLE_SUCCESS_METRICS:
         raise RuntimeError("judgement_success_metric_invalid")
     if value.get("observation_window_days") not in {7, 14}:
         raise RuntimeError("judgement_window_invalid")
