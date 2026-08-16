@@ -111,6 +111,46 @@ def test_demand_cluster_identity_ignores_surrounding_whitespace():
     assert a == b and a.startswith("storefront:demand:v1:")
 
 
+
+SEARCH_BODY = """お届け日数
+7,834 件中 1 - 60 件表示
+おすすめ順
+AI業務効率化システムを開発します
+AIエージェント・自動化システムを開発します。
+uta_lab_
+5.0
+(1)
+10,000円
+Excel/Python/GASで業務自動化します
+社員を雇うより、まず業務の仕組み化してみませんか。
+株式会社SCコンサルティング
+5.0
+(11)
+3,000円
+"""
+
+
+def test_search_demand_is_read_from_the_official_page_shape():
+    sd = _sd()
+    out = sd._extract_search_demand(SEARCH_BODY)
+    assert out["visible_result_count"] == 7834
+    assert out["comparables"] == [
+        {"rating": 5.0, "review_count": 1, "display_price_jpy": 10000},
+        {"rating": 5.0, "review_count": 11, "display_price_jpy": 3000},
+    ]
+    scored = sd._score_demand_cluster(out)
+    # Reviews only follow purchases, so reviewed comparables are real demand evidence.
+    assert scored["status"] == "known" and scored["reviewed_comparables"] == 2
+
+
+def test_a_page_whose_cards_do_not_parse_stays_unknown():
+    sd = _sd()
+    # The official category page states a count but lists no parseable card.
+    out = sd._extract_search_demand("3,220 件中 1 - 60 件表示\nおすすめ順\n")
+    assert out["visible_result_count"] == 3220 and out["comparables"] == []
+    assert sd._score_demand_cluster(out)["status"] == "unknown"
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
