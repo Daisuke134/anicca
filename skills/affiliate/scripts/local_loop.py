@@ -22,7 +22,7 @@ from job_journal import (
     JobStateError, reconcile_effect, resume_effect, start_effect,
     unresolved_effect, verify_effect,
 )
-from provider_cli import ProviderError, observe, poll, resume
+from provider_cli import ProviderError, observe, poll, read_login_credentials, resume
 from program_registry import apply_getresponse
 
 
@@ -669,9 +669,42 @@ def verify_systeme_email(state, cdp_port, private_markdown):
         try:
             page.goto(link, wait_until="domcontentloaded", timeout=20_000)
             page.wait_for_function(
-                "() => !location.pathname.includes('/register/confirm/')",
-                timeout=20_000,
+                """() => !location.pathname.includes('/register/confirm/') ||
+                    document.body.innerText.includes('Create a password to confirm your account')""",
+                timeout=15_000,
             )
+            confirmation_response = None
+            form_heading = page.get_by_text(
+                "Create a password to confirm your account", exact=True,
+            )
+            if form_heading.count():
+                profile = json.loads(Path(
+                    "~/.config/anicca/job-search/profile.json"
+                ).expanduser().read_text(encoding="utf-8"))
+                names = profile["candidate"]["name_romaji_parts"]
+                _, password = read_login_credentials(private_markdown, "Systeme.io")
+                page.locator("input[name='firstName']").fill(names["given"])
+                page.locator("input[name='lastName']").fill(names["family"])
+                page.locator("input[name='plainPassword']").fill(password)
+                page.locator("input[name='confirm_password']").fill(password)
+                with page.expect_response(
+                    lambda response: "/api/security/register/confirm" in response.url,
+                    timeout=20_000,
+                ) as response_info:
+                    page.locator(
+                        "button[data-test-id='button-auth-register-confirm-submit']"
+                    ).click(timeout=5_000)
+                response = response_info.value
+                confirmation_response = {
+                    "http_status": response.status,
+                    "url_sha256": hashlib.sha256(response.url.encode()).hexdigest(),
+                    "body_sha256": hashlib.sha256(response.body()).hexdigest(),
+                }
+                if 200 <= response.status < 300:
+                    page.wait_for_function(
+                        "() => !location.pathname.includes('/register/confirm/')",
+                        timeout=20_000,
+                    )
             accepted = (
                 page.url.startswith("https://systeme.io/")
                 and ("/login" in page.url or "/dashboard" in page.url)
@@ -685,12 +718,14 @@ def verify_systeme_email(state, cdp_port, private_markdown):
                 "rendered_text_sha256": hashlib.sha256(
                     page.locator("body").inner_text().encode()
                 ).hexdigest(),
+                "confirmation_response": confirmation_response,
                 "deduplicated": False,
             }
             if accepted:
                 verify_effect(state, job["job_id"], {
                     key: result[key] for key in (
                         "state", "observed_url", "rendered_text_sha256",
+                        "confirmation_response",
                     )
                 })
             atomic_json(receipt_path, result)

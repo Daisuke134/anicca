@@ -1540,6 +1540,14 @@ Markdown, consumes it through a `PROVIDER_EMAIL_VERIFY` write-ahead job, records
 only final URL/body hashes, restores ElevenLabs home, and resumes the same login
 job. The email URL/token never enters Git, stdout, or a runtime receipt.
 
+The first verification wake proved the confirmation URL does not redirect by
+itself. It renders `Create a password to confirm your account` with first name,
+last name, password, and confirmation controls. The currently served official
+JavaScript posts that form to `/api/security/register/confirm`. The loop now
+fills names from the private profile, both password fields from the repaired
+private Markdown, receipts only response URL/body hashes and HTTP status, and
+requires a final `/login` or `/dashboard` URL before `EMAIL_VERIFIED`.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
