@@ -152,31 +152,33 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `05e9b68ec` is current and all four Affiliate launchd owners are installed. Repeated installed wakes exit `0`; the loop owns bounded provider recovery, known owned/X advancement, hourly revenue reconciliation, receipts, and Telegram | Source research, new-job content/policy creation, general repair, and cohort allocation are not yet scheduled stages |
+| Runtime | Immutable local release `7b43ae847` is current and all four Affiliate launchd owners are installed. Repeated installed wakes exit `0`; the loop owns bounded provider recovery, two configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram | Open-ended research/composition, general repair, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and currently `AUTHENTICATED`. Installed recovery filled the observed single-page form, verified the same fenced login job on attempt 3, and the next wake converged with `recovery=NOT_NEEDED`; the browser readback is `Home | ElevenLabs`. HubSpot/Impact remains `APPLICATION_PENDING`; Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. No commission, approved transaction, reversal, or payout is claimed |
-| Publication | Two English owned Affiliate articles and both matching disclosed `@selawmqt` X posts are live. The ElevenAgents article reconciled `DELIVERED → LIVE` without a duplicate Git effect; its X placement is `https://x.com/selawmqt/status/2088797086871666703`, and an immediate identical replay reconciled to the same URL without a second post | Post-baseline provider click readback and every Japanese placement remain unproven |
-| Attribution | Local placement receipts and direct provider-link resolution are implemented | No public placement or provider-side click/commission receipt exists yet; local clicks and estimates never count as money |
+| Publication | Three English owned Affiliate articles and their matching disclosed `@selawmqt` X posts are live. The installed `7b43ae847` loop published the TTS API article, reconciled its initially ambiguous X effect to `https://x.com/selawmqt/status/2088809159932465497`, then replayed with the same URL, one X job, and unchanged Git HEAD | Post-baseline provider click readback and every Japanese placement remain unproven |
+| Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, and `BLOCKED` are live-proven | `PLACEMENT_LIVE`, `CLICK_DELTA`, and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, provider/revenue polling, receipts, and limited Telegram reporting are live | Research, model-led selection, content build/policy, owned/X publication, auth recovery, quarantine, and watchdog are CLI-only or absent. No-human-loop money behavior is not yet achieved |
+| Autonomous operation | launchd ownership, isolated browsers, provider recovery, configured source-bound content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. The TTS API campaign traversed build → policy → owned push/readback → X effect reconciliation without Codex or user execution | A separate safe owner for open-ended research/composition, provider/channel quarantine, watchdog, and positive money evidence remains absent. The loop distributes and measures; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
-The installed scheduler currently invokes only `affiliate loop wake`. Code audit
-shows that `local_loop.wake()` owns the wake lock, private-link check, CDP `9324`
-health, ElevenLabs observe/poll, hourly `revenue observe → capture → reconcile`,
-event receipts, and Telegram flush. Latest installed wakes detect
-`SIGN_IN_REQUIRED` and stop after reporting; they do not invoke auth recovery.
+The installed scheduler invokes only `affiliate loop wake`. `local_loop.wake()`
+owns the wake lock, private-link check, CDP `9324` health, ElevenLabs
+observe/poll/recovery, receipt-driven configured campaign advancement, hourly
+`revenue observe → capture → reconcile`, event receipts, and Telegram flush.
+Release `7b43ae847` live-proved the TTS API path through public owned and X
+readback. A first-pass ambiguous X effect remained fenced; the next wake found
+the exact timeline object and verified the original job without a second click.
 
-The following are valid Affiliate Skill tools but are not yet called by the
-scheduled loop: program selection/application, source capture, campaign build,
-policy gate, placement intent, owned publication/readback, X build/publication,
-and provider repair. Manual live canaries exist only to discover real fields,
-states, and postconditions. A canary is complete only after its behavior becomes
-an idempotent tool and the model-led loop can select and execute that tool from a
-durable unfinished job.
+Program discovery/application, open-ended source discovery, and safe dynamic
+composition are not scheduled. Source capture and deterministic campaign
+build/policy/publish are already tools; the missing generalization is a separate
+research/composition owner with a sanitized allowlisted input bundle, result and
+source-hash binding, its own lock, and no access to credentials or the revenue
+wake. Runtime model work MUST NOT be reintroduced inside the ten-minute money
+owner.
 
 The target architecture copy+tweaks the live Coconala immutable-release pattern:
 one explicit owner per lane, the shared schema-validating agent runner, separate
@@ -221,7 +223,7 @@ owner, and independent work selected for the same wake.
 | Condition | Class | Consequence and required action |
 |---|---|---|
 | HubSpot/Impact has not approved or rejected the application | External blocker for HubSpot link only | Continue polling with dedupe; execute the rest of the funnel and apply to other eligible programs |
-| ElevenLabs has executable default and ElevenAgents product links plus two disclosed owned articles, but no post-baseline click or provider transaction | Acquisition and revenue blocker, not authority blocker | Reconcile the second article to `LIVE`, let the loop publish its X placement, then measure real provider clicks and transactions without counting clicks as money |
+| ElevenLabs has executable default and ElevenAgents product links plus three disclosed owned/X placements, but no post-baseline click or provider transaction | Acquisition and revenue blocker, not authority blocker | Continue truthful distribution and measure real provider clicks and transactions without counting clicks as money |
 | Kit rejected the submitted application without naming one applicant-specific cause | Closed negative receipt | Do not reapply unchanged; first make audience fit, accessible content, and organic promotion evidence materially stronger |
 | `@selawmqt` has zero followers and mixed historical language | Acquisition weakness, not implementation blocker | Rebrand future output to English, preserve history, publish useful material, and measure qualified reach honestly |
 | The owned site does not yet present a deep affiliate-relevant English content body | Approval and conversion weakness | Publish evidence-led B2B SaaS/creator workflows and comparison foundations before another fit-sensitive application |
@@ -988,14 +990,23 @@ diagnoses only when an existing deterministic tool cannot advance them.
    one X external job, repaired the provider session with the same fenced login
    job, and then converged with `AUTHENTICATED`, `recovery=NOT_NEEDED`, and no
    duplicate external effect. The latest revenue cycle is honestly in cooldown.
-6. Add the next English ElevenLabs buyer-intent job by reusing CRWL capture,
-   Writer/content generation, policy, owned publish, X publish, and revenue tools.
-   Stage choice remains deterministic; model admission is added only for the
-   content artifact that cannot be produced by a fixed tool.
-7. Continue this same pipeline until E0 and E1 provide real click and approved-
+6. **DONE:** Added the English TTS API buyer-intent job. The versioned CRWL plan
+   captured `5/5` official sources and replayed with `new=0`; release `7b43ae847`
+   built the source-gated artifact, passed policy, pushed owned commit `5be0d43db`,
+   waited for the successful Netlify production deployment and HTTP `200`, then
+   published `elevenlabs-tts-api-en-1` through the launchd loop at
+   `https://x.com/selawmqt/status/2088809159932465497`.
+7. **DONE:** Replayed the installed loop after TTS publication. X URL stayed
+   identical, the unique X external-job count stayed `1 → 1`, and public Git HEAD
+   stayed `5be0d43db → 5be0d43db`; no duplicate effect occurred.
+8. Continue this same pipeline until E0 and E1 provide real click and approved-
    commission receipts. Repair only failures observed in this live path, then
    encode each successful repair into the Skill.
-8. After E1, add another executable English provider, ten comparable placements,
+9. Add a separate least-authority research/composition owner so new English jobs
+   can be proposed continuously without blocking revenue reconciliation or
+   reading credential/state trees. Require sanitized inputs, source-hash/result
+   binding, bounded cost, and a durable handoff to the deterministic publisher.
+10. After E1, add another executable English provider, ten comparable placements,
    cohort allocation, Japanese isolation, clean-Mac packaging, and cloud in the
    existing B/C/D gate order.
 
@@ -1209,7 +1220,8 @@ observable outcome exists.
 | 3 | DONE: Affiliate X Article is `CHANNEL_UNAVAILABLE`; owned article + normal X remain active | Writer `scripts/x-publish/*` and canonical `/compose/articles` route were read-only checked | No code change. Parameterize only if `@selawmqt:9326` later exposes the editor |
 | 4 | DONE: the next buyer intent has a fresh official evidence pack | Existing CRWL source capture and PartnerStack Resources selection signal | Installed `6f377563c`; `elevenagents-en` captured four official sources |
 | 5 | DONE: create and privately retain one product-specific ElevenAgents referral link | Existing PartnerStack custom-link UI and secret-refusing runtime state | Installed `6623f2e02`; provider readback and private mode-0600 Markdown readback both passed without printing or committing the URL |
-| 6 | IN PROGRESS: the second source-bound owned article is `LIVE`; publish and read back its bounded X placement | Existing `owned_publish.py`, `content.build_x_agents`, `x_post_cli.py`, and Writer patterns | Current installed release reconciled commit `756c54064` to [`/blog/elevenagents-for-customer-support`](https://aniccaai.com/blog/elevenagents-for-customer-support) at HTTP `200` without changing Git HEAD. The X builder exposed one real blocker: its copy exceeded 280 characters; the minimal copy regression is now GREEN |
+| 6 | DONE: the second source-bound owned article and bounded X placement are `LIVE` | Existing `owned_publish.py`, `content.build_x_agents`, `x_post_cli.py`, and Writer patterns | ElevenAgents is live at `https://x.com/selawmqt/status/2088797086871666703`; installed replay preserved one external effect |
+| 6.1 | DONE: a third configured buyer-intent campaign completes the same installed path | Existing CRWL capture, deterministic content/policy, owned publisher, X publisher, and launchd owner | TTS API captured `5/5` official sources; installed `7b43ae847` published owned commit `5be0d43db` and X status `2088809159932465497`; replay preserved URL, one X job, and Git HEAD |
 | 7 | PartnerStack click/signup/commission joins to the exact placement and reports to Telegram | Existing `revenue_cli.py`, placement receipt, commission ledger, Telegram outbox | `revenue_cli.py` and `local_loop.py`; provider money remains pending/approved/reversed/paid, never inferred from clicks |
 | 8 | The loop repairs selector/auth/source failures and resumes the same job while healthy lanes continue | Existing job journal, semantic playbooks, Writer same-ID repair, Franklin lost-task pattern | `local_loop.py`, provider/source playbooks, minimal repair registry; no general multi-agent framework |
 | 9 | First non-test approved commission closes E1 | No code substitute: provider receipt is required | Git-external ledger/receipt plus SSOT truth update; tests, self-clicks, estimates, and screenshots cannot close E1 |
@@ -1509,7 +1521,7 @@ atomic replacement, matching Python's replacement contract
 | U40 | OPEN-BEFORE-CODE | No Experiment, Cohort, Outcome, or Learning receipt exists | Add one-variable hypothesis, exposure, click, commission states, cost, maturity, allocation, promote/revert, and learner version |
 | U41 | OPEN-BEFORE-CODE | Model/token/content/browser costs do not join placement economics | Record provider-reported usage and cost basis separately from actual cash cost; compute net only from comparable bases |
 | U42 | OPEN-BEFORE-CODE | Failed/rejected attempts are not uniformly durable, creating survivorship bias | Persist every admitted attempt and terminal reason, including no-effect and policy rejection |
-| U43 | OPEN-PROOF | No installed wake has completed research → decision → build → policy → owned/X readback → revenue → Telegram | Existing ElevenAgents job MUST be the first installed autonomous trajectory; no third manual campaign first |
+| U43 | PARTIAL-CLOSED | Installed `7b43ae847` completed configured source-bound build → policy → owned/X readback and continued revenue/Telegram lanes. Source capture was independently replay-proven before install; open-ended discovery/selection is not yet a scheduled owner | Close fully when the separate research/composition owner creates a new durable campaign handoff and the money owner finishes it without shared locks or secret access |
 | U44 | OPEN-PROOF | Same-job self-heal is proven in individual adapters, not across the whole Agent pipeline | Inject one isolated recoverable fault and require diagnosis, repair, resume, effect dedupe, and Telegram proof |
 
 #### Live-only and irreducible uncertainties
@@ -1517,7 +1529,7 @@ atomic replacement, matching Python's replacement contract
 | ID | State | Uncertainty / observed answer | Closure condition |
 |---|---|---|---|
 | U45 | CLOSED-EN | Installed Agent restored ElevenLabs from `SIGN_IN_REQUIRED` to `AUTHENTICATED`, verified the same login job, and the next wake required no recovery. Impact remains outside the active revenue lane | Reopen only if a future scheduled wake cannot repair the session within the bounded policy |
-| U46 | CLOSED-MANUAL | Installed Skill reconciled the ElevenAgents article to `LIVE`, built its X artifact, published one status, and immediate replay returned the same status URL | The remaining proof is that the newly wired scheduled wake observes the same receipts without a duplicate external effect |
+| U46 | CLOSED-INSTALLED | Installed launchd replay observes both ElevenAgents and TTS receipts without duplicate Git or X effects. The TTS ambiguous first effect was fenced, reconciled from the timeline on the next wake, and then replayed with one job and one URL | Reopen only if a future campaign creates a second external object for the same placement fingerprint |
 | U47 | LIVE-OPEN | No real post-baseline click exists | Provider reports one attributable organic click; self-clicks/tests do not count |
 | U48 | LIVE-OPEN | No non-empty commission row has tested dedupe, status transition, or placement join | One real provider transaction replays twice without duplication and preserves pending/approved/reversed/paid lineage |
 | U49 | EXTERNAL | Payout is blocked by truthful tax registration and payment-provider selection | Authorized legal/tax/payment data completes provider readback; Agent never fabricates it |
@@ -1591,12 +1603,12 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 | 4 | Mandatory budgets | Required before any runtime model admission | DEFERRED |
 | 5 | Common attempt receipts | Existing external effects use the job journal; a universal receipt is not implemented | OPEN |
 | 6 | Same transaction is exact-once | `test_repeated_capture_does_not_duplicate_commission_transition` | OK |
-| 7 | Same unfinished stage resumes | Known ElevenAgents receipt-driven replay | OPEN-LIVE |
-| 8 | Healthy lanes continue | `test_wake_recovers_provider_and_advances_publication_without_cross_lane_blocking` | PARTIAL |
+| 7 | Same unfinished stage resumes | TTS X effect fence reconciled to the exact public status on the next installed wake | LIVE-PROVEN |
+| 8 | Healthy lanes continue | Provider recovery/publication/revenue/Telegram share one installed wake without cross-lane duplication | LIVE-PROVEN for configured lanes |
 | 9 | Owned ambiguous readback is typed | Existing publisher reconciles `DELIVERED` by public readback | LIVE-PROVEN |
 | 10 | X effect is exact-once | Existing timeline reconciliation regression plus installed public readback | OK |
 | 11 | Telegram shares causal identity | Stable event UUID and provider messageId exist; full pipeline lineage is not implemented | PARTIAL |
-| 12 | Full Agent trajectory | Installed ElevenAgents `DELIVERED → LIVE → X LIVE → revenue → Telegram` | OPEN-LIVE |
+| 12 | Full configured trajectory | Installed TTS build → policy → owned `LIVE` → X `LIVE` → revenue cooldown → Telegram flush | LIVE-PROVEN; dynamic research handoff remains open |
 | 13 | Self-heal | Provider login recovery exists; induced whole-pipeline repair proof does not | OPEN |
 
 | E2E item | Value |
@@ -1622,17 +1634,20 @@ because a polling launchd job and manually successful CLIs are not an Agent.
    second Git effect; the existing publisher already used the correct `/blog` route.
 3. **DONE:** Reuse the existing X builder/publisher to create and verify the one missing
    ElevenAgents placement on `@selawmqt`; installed replay reconciles to the same public URL.
-4. **IN PROGRESS:** Connect existing provider recovery, owned readback, X publication, revenue,
+4. **DONE:** Connect existing provider recovery, owned readback, X publication, revenue,
    and Telegram calls to the scheduled `wake()` in that order; do not introduce a
    model-led stage selector for this known pipeline.
-5. Install and run the actual launchd owner twice, proving progress on pass one
-   and exact-once reconciliation on pass two.
-6. Reuse CRWL, Writer/content, policy, owned, X, and revenue primitives for one
-   new English job. Add the smallest bounded model call only where content cannot
-   be produced deterministically.
-7. Close E0 and E1 from real provider receipts, then add failure repair from the
+5. **DONE:** Install and run the actual launchd owner repeatedly, proving progress,
+   ambiguous-effect reconciliation, and exact-once behavior.
+6. **DONE:** Reuse CRWL, content, policy, owned, X, and revenue primitives for the
+   TTS API English job. The verified artifact is a versioned template; no model
+   runs inside the money-owner lock or receives credential/state-tree access.
+7. Add a separate least-authority research/composition owner that emits a
+   source-hash-bound durable campaign handoff; keep the deterministic money owner
+   and its ten-minute lock unchanged.
+8. Close E0 and E1 from real provider receipts, then add failure repair from the
    failures actually observed while earning.
-8. Only after E1, resume generic action schema, broad model context/budget work,
+9. Only after E1, resume generic action schema, broad model context/budget work,
    provider expansion, clean-Mac packaging, locales, and cloud gates.
 
 ### 11.1 Cleared implementation decisions
