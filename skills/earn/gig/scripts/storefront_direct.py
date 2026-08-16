@@ -3772,6 +3772,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     raise RuntimeError("storefront_create_source_contract_missing")
                 demand = {**new_listing_contract["demand_evidence"],
                           "evidence_path": str(Path(new_listing_path).resolve())}
+                create_seller_snapshot = _seller_snapshot_for(ws_url, source_service_id)
                 create_proposal, create_route, create_allowed_refs = _invoke_create_proposal(
                     runner=getattr(args, "runner", DEFAULT_RUNNER),
                     schema=getattr(args, "create_proposal_schema", DEFAULT_CREATE_PROPOSAL_SCHEMA),
@@ -3792,7 +3793,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     new_listing_contract = _seal_create_contract(
                         create_proposal, source=create_source, family_name=create_family,
                         allowed_refs=create_allowed_refs, blueprint=blueprint,
-                        seller_snapshot=_seller_snapshot_for(ws_url, source_service_id),
+                        seller_snapshot=create_seller_snapshot,
                         draft_service_id=str(create_draft_claim["draft_service_id"]),
                         evidence_dir=inventory_path.parent / "create-contract",
                     )
@@ -4028,7 +4029,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             row = _persist_receipt(args, output, row)
             return 0, row
-        except (OSError, RuntimeError, TypeError, ValueError, subprocess.SubprocessError) as error:
+        except Exception as error:
             if lease is not None and not released:
                 try:
                     release = _lease(args.lease_script, "release", task, lease)
