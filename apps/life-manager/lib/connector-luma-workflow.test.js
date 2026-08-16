@@ -128,6 +128,72 @@ test("Luma discovery reports only safe aggregate eligibility counts", async () =
   ]);
 });
 
+test("Luma discovery surfaces an already-registered event with no bundle for reconciliation, bypassing the free-open and calendar-free filters", async () => {
+  const registered = event("already-registered", { rsvp_status: "registered" });
+  const bundleChecks = [];
+  const workflow = createLumaScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() { return [registered]; },
+    isCalendarFree() { throw new Error("must not be called for a reconciliation candidate"); },
+    async submitOnPage() { throw new Error("must not be called for a reconciliation candidate"); },
+    async readProviderStateOnPage() { throw new Error("must not be called during discovery"); },
+    async hasAppliedBundle(candidate) { bundleChecks.push(candidate.event_ref); return false; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: { busy_intervals: [] } });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [registered.event_ref]);
+  assert.deepEqual(bundleChecks, [registered.event_ref]);
+});
+
+test("Luma discovery drops an already-registered event once it already has an applied bundle", async () => {
+  const registered = event("bundled-already", { rsvp_status: "registered" });
+  const openCandidate = event("still-open");
+  const workflow = createLumaScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() { return [registered, openCandidate]; },
+    isCalendarFree() { return true; },
+    async hasAppliedBundle() { return true; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: { busy_intervals: [] } });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [openCandidate.event_ref]);
+});
+
+test("Luma discovery defaults to treating a candidate as already bundled when no bundle check is wired", async () => {
+  const registered = event("unwired-registered", { rsvp_status: "registered" });
+  const workflow = createLumaScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() { return [registered]; },
+    isCalendarFree() { return true; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: { busy_intervals: [] } });
+
+  assert.deepEqual(result, []);
+});
+
+test("Luma discovery reconciles at most three already-registered unbundled events per wake, even with a larger backlog", async () => {
+  const backlog = [1, 2, 3, 4, 5].map((n) => event(`backlog-${n}`, { rsvp_status: "registered" }));
+  const openCandidate = event("open-alongside-backlog");
+  const workflow = createLumaScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() { return [...backlog, openCandidate]; },
+    isCalendarFree() { return true; },
+    async hasAppliedBundle() { return false; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: { busy_intervals: [] } });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [
+    "luma-event://event/backlog-1",
+    "luma-event://event/backlog-2",
+    "luma-event://event/backlog-3",
+    "luma-event://event/open-alongside-backlog",
+  ]);
+});
+
 test("Luma direct action uses the retained submit function without agent assistance", async () => {
   const calls = [];
   const page = Object.freeze({ page_id: "owned-page" });

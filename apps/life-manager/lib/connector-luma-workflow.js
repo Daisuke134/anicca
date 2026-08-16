@@ -25,6 +25,11 @@ const FALLBACK_CODES = new Set([
   "LUMA_CONFIRM_UNAVAILABLE",
   "LUMA_BROWSER_ACTION_FAILED",
 ]);
+// A wake must stay bounded: reconcile (readback -> evidence chain, never
+// re-submit) at most this many already-registered-but-unbundled events per
+// wake, even if a backlog of missed applied_bundle writes exists. One
+// constant, one place (Dais 2026-08-17 connector-core-recovery).
+const LUMA_RECONCILE_LIMIT = 3;
 
 function invalid() {
   throw new Error("Luma script-first workflow invalid");
@@ -137,11 +142,14 @@ function createLumaScriptFirstWorkflow(options = {}) {
   const readProviderStateOnPage = options.readProviderStateOnPage || defaultReadProviderStateOnPage;
   const readLumaFormProfile = options.readLumaFormProfile;
   const onDiscoveryAudit = options.onDiscoveryAudit || (() => {});
+  // Fail closed: until production wiring proves an event has no bundle,
+  // treat it as bundled so a mis-wired caller can never re-surface it.
+  const hasAppliedBundle = options.hasAppliedBundle || (() => true);
   if (
     typeof now !== "function" || typeof discoverOnPage !== "function"
     || typeof isCalendarFree !== "function"
     || typeof submitOnPage !== "function" || typeof readProviderStateOnPage !== "function"
-    || typeof onDiscoveryAudit !== "function"
+    || typeof onDiscoveryAudit !== "function" || typeof hasAppliedBundle !== "function"
     || (readLumaFormProfile != null && typeof readLumaFormProfile !== "function")
   ) invalid();
 
@@ -155,6 +163,13 @@ function createLumaScriptFirstWorkflow(options = {}) {
       if (!Number.isInteger(observedCount) || observedCount < observed.length || observedCount > 500) invalid();
       const window = candidateWindow(now);
       const result = [];
+      // Registrations the provider already reports but that never produced
+      // an applied_bundle (evidence chain failed mid-way on a prior wake).
+      // These skip the direct-registration path entirely downstream — the
+      // runner's existing pre-submit readback sees "registered" and jumps
+      // straight to completeEvidence(). Bounded so a backlog can't make a
+      // wake unbounded; see LUMA_RECONCILE_LIMIT.
+      const reconcile = [];
       let windowCount = 0;
       let freeOpenCount = 0;
       for (const raw of observed) {
@@ -162,6 +177,12 @@ function createLumaScriptFirstWorkflow(options = {}) {
         const startsAt = Date.parse(candidate.starts_at);
         if (startsAt < window.start || startsAt >= window.end) continue;
         windowCount += 1;
+        if (candidate.rsvp_status === "registered") {
+          if (reconcile.length >= LUMA_RECONCILE_LIMIT) continue;
+          if (await hasAppliedBundle(candidate)) continue;
+          reconcile.push(Object.freeze({ ...candidate }));
+          continue;
+        }
         if (!isFreeOpen(candidate)) continue;
         freeOpenCount += 1;
         if (!await isCalendarFree(candidate, calendar)) continue;
@@ -172,9 +193,9 @@ function createLumaScriptFirstWorkflow(options = {}) {
         normalized_count: observed.length,
         window_count: windowCount,
         free_open_count: freeOpenCount,
-        calendar_free_count: result.length,
+        calendar_free_count: reconcile.length + result.length,
       }));
-      return Object.freeze(result);
+      return Object.freeze([...reconcile, ...result]);
     },
 
     async runDirectAction({ page, candidate }) {
