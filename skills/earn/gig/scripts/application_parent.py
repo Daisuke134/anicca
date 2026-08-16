@@ -161,24 +161,101 @@ def _price_within_official_bounds(price_jpy: int, text: object) -> int:
     return price
 
 
+PRICING_BASIS = "budget_discount_v1_10pct"
+
+
+def _money_or_none(value: object) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
+
+
+def _positive_env_int(name: str, default: int) -> int:
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
+def _verified_category_contract_median(category: object) -> int | None:
+    """Read prices only for applied rows whose request has a local won-project dir."""
+    category_value = str(category or "").strip()
+    if not category_value:
+        return None
+    ledger = Path(os.environ.get("GIG_APPLIED_LEDGER", str(Path.home() / "gig/applied.jsonl")))
+    projects = Path(os.environ.get("GIG_PROJECTS_ROOT", str(Path.home() / "gig/projects")))
+    prices: list[int] = []
+    try:
+        lines = ledger.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(row, dict) or str(row.get("category") or "").strip() != category_value:
+            continue
+        request_id = str(row.get("request_id") or "")
+        price = _money_or_none(row.get("price_jpy"))
+        if request_id.isdigit() and price is not None and (projects / request_id).is_dir():
+            prices.append(price)
+    if not prices:
+        return None
+    prices.sort()
+    middle = len(prices) // 2
+    return prices[middle] if len(prices) % 2 else (prices[middle - 1] + prices[middle]) // 2
+
+
+def _target_offer_price(
+    *,
+    budget_max: int | None,
+    official_min: int | None,
+    official_max: int | None,
+    profitability_floor: int,
+    category_contract_median: int | None,
+) -> int | None:
+    """Return the v1 code-owned bid, or None when no profitable basis exists."""
+    floor = max(1_000, int(profitability_floor))
+    if budget_max is None:
+        target = category_contract_median
+        ceiling = official_max
+    else:
+        discount = min(max(1_000, budget_max // 10), budget_max // 5)
+        unit = 1_000 if budget_max <= 50_000 else 5_000
+        target = ((budget_max - discount) // unit) * unit
+        ceiling = min(
+            value for value in (budget_max, official_max) if value is not None
+        )
+    if target is None:
+        return None
+    target = max(target, official_min or 1_000, floor)
+    if ceiling is not None and target > ceiling:
+        return None
+    return target
+
+
 def commercial_offer_price(
     detail: dict[str, object], *, planner_price_jpy: int
-) -> int:
+) -> int | None:
     """Own the final bid in code without inventing private competitor terms."""
     minimum = detail.get("budget_min_jpy")
     maximum = detail.get("budget_max_jpy")
-    minimum_value = minimum if isinstance(minimum, int) and not isinstance(minimum, bool) else None
-    maximum_value = maximum if isinstance(maximum, int) and not isinstance(maximum, bool) else None
-    if maximum_value is not None:
-        competitive = maximum_value - 1_000
-        if minimum_value is not None:
-            competitive = max(competitive, minimum_value)
-        return max(1, competitive)
-    if minimum_value is not None:
-        return max(1, minimum_value)
-    # With no public budget, retain the planner's scope judgment but make the
-    # executable amount deterministic and code-normalised.
-    return max(1_000, (int(planner_price_jpy) // 1_000) * 1_000)
+    profitability_floor = (
+        _money_or_none(detail.get("profitability_floor_jpy"))
+        or _positive_env_int("GIG_PROFITABILITY_FLOOR_JPY", 1_000)
+        or 1_000
+    )
+    category_median = (
+        _money_or_none(detail.get("category_contract_median_jpy"))
+        or _verified_category_contract_median(detail.get("category"))
+    )
+    return _target_offer_price(
+        budget_max=_money_or_none(maximum),
+        official_min=_money_or_none(minimum),
+        official_max=_money_or_none(maximum),
+        profitability_floor=profitability_floor,
+        category_contract_median=category_median,
+    )
 
 
 def commercial_proposal_text(
@@ -231,6 +308,8 @@ def apply_commercial_offer_contract(
             continue
         detail = details[str(raw["request_id"])]
         price = commercial_offer_price(detail, planner_price_jpy=int(raw["price_jpy"]))
+        if price is None:
+            continue
         row = dict(raw)
         row["price_jpy"] = price
         row["proposal_text"] = commercial_proposal_text(
@@ -1032,62 +1111,12 @@ class CdpParentEffects:
                   const deadline_value=date?
                     `${date[1]}-${date[2].padStart(2,'0')}-${date[3].padStart(2,'0')}`:null;
                   const not_found=/^(404\\b|ページが見つかりません|お探しのページ|ご指定のページが見つかりませんでした)/u.test(title);
-                  const applicants=[...document.querySelectorAll('#requestContentsProposers .c-proposersRow-body')]
-                    .slice(0,3).map(row=>{
-                      const link=row.querySelector('a[href^="/users/"]');
-                      const match=(link?.getAttribute('href')||'').match(/^\\/users\\/([0-9]+)\\/?$/);
-                      const applied_at=(row.querySelector('.c-proposersRowDate')?.innerText||'').trim();
-                      return match?{user_id:match[1],name:(link.innerText||'').trim(),applied_at,
-                        profile_url:`https://coconala.com/users/${match[1]}`}:null;
-                    }).filter(Boolean);
                   return {url:location.href,title,text,category,accepting:accepting_control,
                     accepting_control:accepting_control?'present':'absent',
-                    page_state:not_found?'not_found':'present',deadline_value,deadline_text,applicants};
+                    page_state:not_found?'not_found':'present',deadline_value,deadline_text};
                 })())""",
                 call_id,
             )
-            enriched_applicants: list[dict[str, object]] = []
-            raw_applicants = page.get("applicants")
-            if isinstance(raw_applicants, list):
-                for raw in raw_applicants[:3]:
-                    if not isinstance(raw, dict):
-                        continue
-                    user_id = str(raw.get("user_id") or "")
-                    if not user_id.isdigit():
-                        continue
-                    call_id = await self._navigate(
-                        ws, f"https://coconala.com/users/{user_id}", call_id
-                    )
-                    profile, call_id = await self._eval_json(
-                        ws,
-                        """JSON.stringify((()=>{
-                          const text=(document.body?.innerText||'').normalize('NFKC');
-                          const name=text.match(/最終ログイン:[^\\n]*\\n\\s*([^\\n]+)/u);
-                          const rating=text.match(/(?:評価|rating)\\s*([0-5](?:\\.[0-9]+)?)/iu);
-                          const sales=text.match(/(?:販売実績|販売数)\\s*([0-9,]+)/u);
-                          const services=[...document.querySelectorAll('a[href^="/services/"]')]
-                            .map(e=>(e.innerText||'').trim()).filter(Boolean)
-                            .filter((value,index,array)=>array.indexOf(value)===index).slice(0,5);
-                          return {url:location.href,name:name?(name[1]||'').trim():null,
-                            rating:rating?Number(rating[1]):null,
-                            sales_count:sales?Number(sales[1].replaceAll(',','')):null,
-                            public_services:services,profile_summary:text.replace(/\\s+/g,' ').trim().slice(0,600)};
-                        })())""",
-                        call_id,
-                    )
-                    expected_profile = f"https://coconala.com/users/{user_id}"
-                    if str(profile.get("url") or "").rstrip("/") != expected_profile:
-                        continue
-                    enriched_applicants.append({
-                        "user_id": user_id,
-                        "name": str(raw.get("name") or profile.get("name") or "").strip(),
-                        "applied_at": str(raw.get("applied_at") or "").strip(),
-                        "profile_url": expected_profile,
-                        "rating": profile.get("rating"),
-                        "sales_count": profile.get("sales_count"),
-                        "public_services": profile.get("public_services") or [],
-                        "profile_summary": str(profile.get("profile_summary") or "").strip(),
-                    })
         text = str(page.get("text") or "")
         title = str(page.get("title") or "").strip()
         # A server/WAF denial is not marketplace lifecycle evidence. Treating the
@@ -1144,7 +1173,7 @@ class CdpParentEffects:
             "budget_max_jpy": market.get("budget_hi_jpy"),
             "applicants_count": market.get("applicants_at_bid"),
             "contracted_count": market.get("contracted_count"),
-            "applicants": enriched_applicants,
+            "applicants": [],
             "observed_at": _utc_now(),
             # T3 (2026-08-09): ranking-only. application_snapshot._DETAIL_FIELDS
             # deliberately omits this key, so _normalise_detail drops it before the
@@ -2417,6 +2446,7 @@ def _application_row(detail: dict[str, object], decision: dict[str, object]) -> 
         "category": detail["category"],
         "title": detail["title"],
         "price_jpy": decision["price_jpy"],
+        "pricing_basis": PRICING_BASIS,
         "deliver_date": decision["deliver_date"],
         "url": detail["canonical_url"],
         "compensation_type": None,
@@ -2436,6 +2466,7 @@ def _application_row_from_intent(
         "category": detail["category"],
         "title": detail["title"],
         "price_jpy": intent["price_jpy"],
+        "pricing_basis": PRICING_BASIS,
         "deliver_date": intent["deliver_date"],
         "url": detail["canonical_url"],
         "compensation_type": None,
