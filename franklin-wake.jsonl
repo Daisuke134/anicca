@@ -28722,3 +28722,10 @@
 {"ts":1786849065,"wake_id":"00MSV7SR1S04BB306790274B4C","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786849201,"wake_id":"00MSV7VNWNFDBAC22E57C54EC9","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786849339,"wake_id":"00MSV7YM3B1BAAF530991B45C3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786849470,"wake_id":"00MSV81FEW02D20DBE34DD43EE","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana low capital yield vault minimal deposit [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced f"}
+{"ts":1786849605,"wake_id":"00MSV84BJV75ED9A81F07C4FE0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786849734,"wake_id":"00MSV8734Z6D837CD1CE8444AB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786849862,"wake_id":"00MSV89TZ0C0EBF90AE31F4315","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786849991,"wake_id":"00MSV8CLJA2F711A992BF4443F","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786850119,"wake_id":"00MSV8FC7I00861E0080314805","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786850253,"wake_id":"00MSV8I78823A5F38A9889441E","kind":"narrate","sleep_s":120,"model":"auto"}
