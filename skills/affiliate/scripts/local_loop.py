@@ -641,8 +641,11 @@ def wake(args):
                 state, args.cdp_port,
                 Path("~/.config/anicca/job-search/profile.json"),
             )
-        except (JobStateError, OSError, RuntimeError, ValueError, KeyError, json.JSONDecodeError):
-            application = {"state": "APPLICATION_FAILED", "program": "getresponse"}
+        except (JobStateError, OSError, RuntimeError, ValueError, KeyError, json.JSONDecodeError) as error:
+            application = {
+                "state": "APPLICATION_FAILED", "program": "getresponse",
+                "failure_type": type(error).__name__,
+            }
     try:
         landing_root = getattr(
             args, "landing_root",
@@ -685,6 +688,7 @@ def wake(args):
         "application_program": application.get("program"),
         "application_state": application.get("state"),
         "application_deduplicated": application.get("deduplicated"),
+        "application_failure_type": application.get("failure_type"),
         "publication_state": publication["state"],
         "publication_url": publication["public_url"],
         "publication_failure_type": publication.get("failure_type"),

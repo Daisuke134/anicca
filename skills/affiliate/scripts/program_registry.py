@@ -289,6 +289,10 @@ def apply_getresponse(state, cdp_port, profile_path):
             ):
                 raise ValueError("PartnerStack identity prefill is incomplete")
             turnstile = page.locator("input[name='cf-turnstile-response']")
+            page.wait_for_function(
+                "() => !!document.querySelector(\"input[name='cf-turnstile-response']\")?.value",
+                timeout=20_000,
+            )
             if turnstile.count() != 1 or not turnstile.input_value().strip():
                 raise ValueError("PartnerStack Turnstile token is unavailable")
             page.locator("input[name='field_qlNDAL0eQOe6Pk']").fill("Anicca")
