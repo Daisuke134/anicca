@@ -850,11 +850,20 @@ def advance_generic_publication(
         except (OSError, ValueError):
             progress = {}
         if progress:
-            if progress.get("handoff_fingerprint") != fingerprint:
-                return {"state": "PUBLICATION_CONFLICT", "public_url": None}
+            # A published placement is terminal. When a source refresh later
+            # recomposes a live campaign the handoff legitimately changes, and
+            # republishing would mean a second X post for the same placement, so
+            # the new handoff is simply not a publication task. Checking the
+            # conflict first instead would let one already-live campaign block
+            # every campaign sorted after it, which is what stalled campaign
+            # seven behind a recomposed audio-to-text on 2026-08-17.
             if progress.get("state") == "X_LIVE" and progress.get("provider_link_key"):
                 completed = True
                 continue
+            # Still a real hazard while the campaign is in flight: content that
+            # changed between materialization and publication.
+            if progress.get("handoff_fingerprint") != fingerprint:
+                return {"state": "PUBLICATION_CONFLICT", "public_url": None}
 
         owned_receipt_path = state / "owned-publications" / f"{slug}.json"
         x_receipt_path = state / "x-posts" / f"{placement}.json"

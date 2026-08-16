@@ -1,4 +1,5 @@
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
@@ -460,6 +461,58 @@ class LocalLoopTest(unittest.TestCase):
                 self.assertEqual(result, {"state": expected, "public_url": live_url})
                 self.assertEqual(publish_x.call_count, 1 if changed else 0)
 
+
+    def test_recomposed_live_campaign_does_not_block_the_next_campaign(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root) / "state"
+            for plan_id, live in (("alpha-en", True), ("beta-en", False)):
+                handoff = {
+                    "receipt_type": "CAMPAIGN_HANDOFF", "state": "READY_FOR_POLICY",
+                    "plan_id": plan_id, "locale": "en", "slug": f"{plan_id}-guide",
+                    "source_set_sha256": "e" * 64, "title": "t", "buyer_intent": "b",
+                    "cited_sources": [{"locator": "https://elevenlabs.io/x", "raw_sha256": "f" * 64}],
+                    "owned_article_markdown": "disclosure\n{{AFFILIATE_LINK}}",
+                    "x_copy": "copy {{OWNED_ARTICLE_URL}}", "disclosure": "disclosure",
+                }
+                fingerprint = hashlib.sha256(json.dumps(
+                    handoff, sort_keys=True, separators=(",", ":"),
+                ).encode()).hexdigest()
+                payload = {**handoff, "handoff_fingerprint": fingerprint}
+                body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+                path = state / "campaign-handoffs" / f"{plan_id}.json"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(body)
+                MODULE.atomic_json(state / "campaign-policy" / f"{plan_id}.json", {
+                    "receipt_type": "GENERIC_CAMPAIGN_POLICY", "state": "PASS",
+                    "decision": "PASS", "plan_id": plan_id, "locale": "en",
+                    "handoff_sha256": hashlib.sha256(body).hexdigest(),
+                    "handoff_fingerprint": fingerprint,
+                    "source_set_sha256": "e" * 64,
+                    "checks": {"ok": True},
+                    "semantic_audit": {"decision": "PASS"},
+                })
+                if live:
+                    # Already published, then recomposed: fingerprint has moved on.
+                    MODULE.atomic_json(state / "campaign-publications" / f"{plan_id}.json", {
+                        "state": "X_LIVE", "provider_link_key": "key-1",
+                        "handoff_fingerprint": "0" * 64,
+                    })
+
+            link_acquirer = Mock(return_value={
+                "state": "VERIFIED", "deduplicated": True,
+                "private_link_field": "Placement example affiliate link",
+                "provider_link_key": "key-2",
+            })
+            with patch.object(MODULE, "elevenlabs_link", return_value="https://try.example/x"):
+                result = MODULE.advance_generic_publication(
+                    state, Path(root) / "landing", 9326, Path(root) / "private.md",
+                    owned_publisher=Mock(return_value={"state": "NOT_LIVE", "public_url": None}),
+                    x_publisher=Mock(),
+                    link_acquirer=link_acquirer,
+                )
+            # The live campaign no longer conflicts, so beta-en is actually reached.
+            self.assertEqual(result["state"], "OWNED_NOT_LIVE")
+            self.assertEqual(link_acquirer.call_args.args[3], "beta-en-1")
 
     def test_liveness_sweep_runs_once_per_jst_day_and_reports_a_dead_post(self):
         with tempfile.TemporaryDirectory() as root:
