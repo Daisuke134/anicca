@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE, with the Storefront runtime healthy. GitHub `main` contains the dedicated Storefront owner and the shared runner has no token-budget admission system. Storefront is enabled from readonly main release `b4463cf90...` every 60 seconds; the loaded service has no token-budget environment. A full pass repaired official inventory truth, rendered all six mutation contracts, republished service `4355225` from its exact existing contract, verified the public page, sent Telegram and exited `0`. Immediate and natural launchd replays read twelve public services, reconciled KPI coverage `12/12`, produced no duplicate effect, sent or deduped truthful Telegram, released their leases and exited `0`. Apply is enabled from main-derived release `c2d971c88...`; Negotiate is enabled and green but still executes mixed-branch release `d150e4b1d...`. Paid remains intentionally disabled and externally owned. The active order is select an immediately executable improvement on a service not blocked by the existing experiment, complete Apply replay evidence, migrate Negotiate provenance plus Storefront-context ACK, prove the three-lane inventory, then finish zero-reachability cleanup. The mixed worktree/ref remains quarantined only for Paid audit evidence.
+Status: INCOMPLETE. The Storefront scheduler, catalog/KPI reader, Telegram reporter, mutation fences and several concrete publication adapters are healthy, but the autonomous improvement loop is not complete. The runtime can execute only a finite set of committed per-listing mutation contracts and one committed new-listing contract; it cannot yet generate, validate and execute the next contract for any eligible listing without a coding session. Calling this state "finished" is forbidden. The installed Storefront release remains readonly `84c41cb17...` at 60-second cadence; main contains the next scope adapter at `5b617eb54...` but it is not installed. Negotiate is green at 180-second cadence. Apply is loaded at 60-second cadence but its latest observed passes fail `parent_failed_rc_2`; loaded is not green. Paid remains intentionally disabled and externally owned.
 
 ## 1. Overview
 
@@ -27,6 +27,20 @@ flowchart LR
 ```
 
 Waiting is not work. A 14-day window may control when a hypothesis can be judged, but the TODO is to build the selector, executor, verifier, ledger, and reporter now. While one hypothesis matures, the loop may prepare evidence for the next hypothesis but must not silently overwrite the active experiment.
+
+### Completion definition — beach mode
+
+Storefront is complete only when one installed launchd loop repeatedly performs the following cycle without a human writing a service-specific JSON contract or running a coding session:
+
+1. Read the exact official catalog, per-service analytics, funnel receipts, owned delivery capability and fresh competitor evidence.
+2. Score all twenty slots and choose exactly one highest-value `KEEP`, `IMPROVE`, `RETIRE`, `REPLACE` or `CREATE` action with an evidence-backed reason.
+3. Generate a complete version-bound listing contract and exact single-action mutation contract from the observed state. Unsupported claims, unknown capability, missing metric attribution and stale versions MUST fail closed.
+4. Publish at most one eligible action, read it back from the official buyer-visible page, persist effect/rollback/receipt evidence and replay without a duplicate effect.
+5. Measure attributable Storefront inquiries, payments, net receipts, reviews and repeat purchases separately from Apply. Unknown origin MUST remain unknown.
+6. Keep, improve, revert, retire recoverably or replace based on evidence, then immediately select the next executable action while other experiments mature.
+7. Report the observation, decision, effect, official readback, funnel movement, errors and next action to Telegram in natural language.
+
+A working scheduler, a scorecard, a fixed set of adapters, or one successful publication is necessary evidence but is not completion by itself.
 
 ## 2. Ownership boundary
 
@@ -301,9 +315,21 @@ Verification: controlled current-data allocation produces one reasoned action pe
 - [x] Immediate full replay `storefront-direct-1786876973027656000-88633` from main release `3d4b35c4c...` completed `no_executable_unfenced_mutation_contract`: official services `12`, actionable/effect/readback/duplicate `0/0/0/0`, Telegram `21098`, exit `0` and released lease. It validated the confirmed public gallery, performed no upload, and left exactly one accepted `4313386/image` row in each effect and experiment ledger. Final readonly main release `84c41cb17...` restores `--effect --auto-cadence` at 60 seconds. Installed incremental pass `storefront-direct-1786877155391027000-93401` completed with official `12`, last-known-good KPI `441/0/3`, Storefront `1/0/JPY0`, Apply `0/3/JPY27,378`, unknown `102/5/JPY99,060`, effect/readback/duplicate `0/0/0`, Telegram `21101`, exit `0` and released lease.
 - [x] Prepare one exact, version-bound `4244910/scope` mutation contract from its authenticated current listing and retained competitor evidence. Contract `79ae5f3e...` binds official listing version `68ef4b73...`, changes only `data[Service][head]`, retains the exact rollback body, adds explicit inclusions, exclusions, required inputs and support boundary, and binds public body SHA `b5f648d2...`. The adapter reuses the existing text mutation path for `body`; it does not copy unsupported speed, guarantee or outcome claims. Static render proves the exact current body is present in the latest official offer contract, the delta is one field and the measurable success metric is `inquiries` rather than the unsupported synthetic `inquiries_to_purchase` ratio.
 - [ ] Execute that contract through the installed Storefront loop, require one official public effect and exact readback, then replay immediately and require zero duplicate effect. A manual browser edit does not close this item.
-- [ ] After the second distinct field adapter is proven, leave subsequent KEEP/IMPROVE/RETIRE/REPLACE choices to the recurring scorecard loop. Continuous portfolio improvement is operation, not an infinite completion TODO.
+- [ ] After the second distinct field adapter is proven, remove the human-authored-contract dependency described in S5h. The recurring scorecard alone cannot close this item while its selected action has no automatically generated executable contract.
 
 Verification: authenticated seller form → exact four upload inputs → one submit → authenticated public image identity/order → durable effect/experiment ledger → identical replay. Calendar time and the 14-day outcome window are not TODOs.
+
+### S5h — Close the autonomous-improvement gap
+
+- [ ] Replace the finite per-listing mutation file list with one Storefront-owned proposal builder that consumes the current official listing, capability-family contract, scorecard gap and retained competitor evidence and emits the existing sealed mutation schema for title, body/scope, package, FAQ, price and gallery.
+- [ ] Make `CREATE`, recoverable `RETIRE` and `REPLACE` produce the same versioned contract, precondition, official readback, rollback and duplicate-effect evidence as `IMPROVE`; do not keep one hard-coded new-listing candidate.
+- [ ] Require the selector to skip an ineligible or maturing experiment and choose the next immediately executable service/field. Calendar eligibility MUST never make the whole loop idle.
+- [ ] Add evidence-backed metric evaluation for views→inquiry, inquiry→payment, verified net receipt, review and repeat purchase. If the required service/order attribution is absent, record `unknown` and choose a metric that is actually measurable; never invent a conversion rate.
+- [ ] Prove autonomy with two consecutive full cycles after the committed seed contracts are exhausted: each cycle must generate its own new contract, perform at most one real official effect, read it back, emit Telegram, release the lease and replay with zero duplicate effect. A developer adding a JSON file invalidates this proof.
+- [ ] Prove portfolio capacity behavior at 20/20: a weak listing is never deleted from short-term zero sales alone; `RETIRE` is recoverable, and `REPLACE` publishes only after stronger demand plus owned delivery capability and exact slot release are verified.
+- [ ] Continue indefinitely under normal launchd cadence. A no-op is valid only when the receipt names the exact evidence-backed reason and the next executable search path; `no mutation contract exists` is an implementation failure, not a business no-op.
+
+Verification: remove all service-specific mutation inputs from the test invocation, start from official state plus generic policy/capability evidence, and require two generated-contract effect/readback/replay cycles with no manual artifact creation.
 
 ### S6 — Prove the installed loop repeats safely before cleanup
 
@@ -353,6 +379,8 @@ Verification: two post-cleanup Storefront wakes, a truthful four-direct-owner in
 | Risk | Proof |
 |---|---|
 | Wrong listing changed | exact service ID + precondition hash before effect; official readback after effect |
+| Human-authored contract dependency survives | exhaust committed seed contracts; two later cycles must generate, seal, execute and replay their own contracts with no new service-specific artifact |
+| Loop idles behind a measurement window | one maturing experiment remains open while the selector produces a different immediately executable action |
 | Duplicate public service | catalog identity scan before create; second run creates zero |
 | Unrelated experiment blocks revenue | conflict key includes `service_id`; open `4330368` experiment does not block distinct `4355225` |
 | Unsupported claim or scope | every public claim links to owned proof; inclusions/exclusions round-trip |
@@ -388,25 +416,26 @@ The exact final tree may reuse existing directories to minimize churn, but Store
 
 ### Authoritative remaining order
 
-The following order is the Storefront finish line. Time-dependent measurement is never a TODO and Paid work never blocks Storefront-owned implementation.
+The following order is the finish line. Time-dependent measurement is never a TODO and Paid work never blocks Storefront-owned implementation.
 
-1. **Scope adapter proof:** create the exact `4244910/scope` contract from current official state and retained competitor evidence. Change only Storefront-owned contract/config/code when the existing adapter cannot represent the exact delta.
-2. **Candidate release:** commit and push that Storefront-owned change to `main`, build an immutable main-ancestor release and install only the Storefront label. Never execute a public mutation from a writable checkout.
-3. **One real effect:** run the installed Storefront loop, publish that scope delta once, verify the exact official service ID/version/content, record effect/readback/Telegram receipts and confirm Apply/Negotiate/Paid files, plists and state are unchanged.
-4. **Idempotent replay:** run the same installed release immediately and require effect/readback/duplicate `0/0/0`, exit `0`, released lease and truthful Telegram send-or-dedupe. Do not wait for the analytics window.
-5. **Normal cadence proof:** retain or build the final readonly main-ancestor release with only `--effect --auto-cadence`, then prove two normal launchd wakes without a manual verification cutoff.
-6. **Storefront cleanup:** prove zero executable dependency on `gig_pass.sh`, Hermes-as-executor, temporary Storefront branches or a writable development checkout. Remove only Storefront-owned obsolete reachability; Hermes gateway remains.
-7. **Storefront completion record:** reconcile official catalog, last-known-good analytics, funnel attribution/unknowns, portfolio decision, experiment/effect ledgers, Telegram receipts, launchd status and repository status. Mark Storefront complete when these agree and `main` is clean/pushed.
-8. **External integration tail:** Negotiate owner consumes and ACKs the Storefront context envelope; Apply and Negotiate owners finish their own main-provenance gates; Paid owner finishes Paid independently. Only after every owner releases the mixed ref may the shared worktree/branch be deleted and the global four-loop/open-source gate close.
+1. **Install the committed scope slice:** build immutable main release `5b617eb54...`, update only the Storefront label, then publish/read back/replay `4244910/body` once to prove the second concrete field path.
+2. **Remove human contract authoring:** implement S5h's generic proposal builder so the loop turns any eligible scorecard gap into the sealed mutation schema without a developer adding a service-specific JSON file.
+3. **Generalize portfolio actions:** generate and fence `IMPROVE`, `CREATE`, recoverable `RETIRE` and `REPLACE` actions across the twenty-slot portfolio; remove the single hard-coded new-listing candidate.
+4. **Complete measurable learning:** evaluate attributable inquiries, payments, net receipts, reviews and repeat purchases; preserve unsupported conversions as `unknown`, and choose another immediately executable action while an experiment matures.
+5. **Prove beach-mode autonomy:** after seed contracts are exhausted, require two consecutive loop-generated contracts to produce real official effect/readback, immediate zero-duplicate replay, Telegram receipt, exit `0` and released lease without any coding-session artifact.
+6. **Prove normal cadence:** install the final readonly main-ancestor release with only `--effect --auto-cadence`; verify repeated incremental/full wakes remain green and keep selecting work indefinitely.
+7. **Repair the three-lane operating floor:** Apply must recover from current `parent_failed_rc_2`; Negotiate must remain green and consume/ACK the Storefront context envelope; Storefront must remain green. Paid remains excluded until its owner enables it.
+8. **Cleanup:** prove zero executable dependency on `gig_pass.sh`, Hermes-as-executor, mixed or temporary Storefront branches, and writable checkouts. Remove the shared mixed worktree/ref only after every external owner releases it; Hermes gateway remains.
+9. **Completion record:** reconcile official catalog, analytics, both earning funnels, portfolio decisions, contracts, effect/outcome ledgers, Telegram receipts, launchd status and clean pushed `main`; only then mark Storefront and the three-lane operating floor complete.
 
-Items 1–7 are Storefront work in this spec. Item 8 remains visible so it is not forgotten, but Storefront MUST NOT edit or reload Apply, Negotiate or Paid to close it.
+Items 1–6 and the Storefront portion of 8–9 are Storefront-owned. Apply/Negotiate/Paid changes stay with their owners; their observable green/ACK state remains an integration acceptance gate.
 
 ### External four-loop integration TODOs — not removed
 
 These items are not Storefront-owned and Storefront must not edit or reload their owners. They remain required before the four-loop system and open-source product can be called complete. They do not create passive waiting: Storefront cleanup and E2E continue independently.
 
 - [ ] Negotiate consumes and ACKs context key `storefront:inquiry-context:v1:10083449:4313386:dc08f7e2...`, uses the versioned price/scope/input/playbook context while composing replies, and publishes a canonical immutable conversation/attribution inventory. Current evidence: loop healthy with `106` conversations and exit `0`, but envelope `1`, ACK `0`, ACK file missing.
-- [ ] Apply owner moves installed direct release `d150e4b1d...` to its own reviewed GitHub-`main`-ancestor release and proves its E2E without Storefront intervention.
+- [ ] Apply owner diagnoses and repairs current `parent_failed_rc_2`, then proves two consecutive live passes from its installed main-derived release with Telegram and official effect/readback when actionable. Storefront does not patch Apply.
 - [ ] Negotiate owner moves installed direct release `d150e4b1d...` to its own reviewed GitHub-`main`-ancestor release and proves its E2E without Storefront intervention.
 - [ ] Paid owner resolves its implementation on its own clean branch, moves the installed direct release away from mixed `d150e4b1d...` to its reviewed GitHub-`main` ancestor, and decides when to enable the intentionally stopped label.
 - [ ] After all four owner items close, publish the global canonical four-loop inventory and run the separate product/open-source release gate.
