@@ -15,7 +15,15 @@ SERVICE_ID = "4312985"
 VERSION = "a" * 64
 FAMILY = {SERVICE_ID: "ui_translation"}
 SOURCE = {"service_id": SERVICE_ID, "service_version_sha256": VERSION}
-INVENTORY_ROW = {"service_id": SERVICE_ID, "state": sd.PUBLIC_LISTING_STATE, "price_jpy": 4500}
+ARCHIVE_CONTROL = {"tag": "A", "type": None, "label": "OK",
+                   "href": f"/services/archive/{SERVICE_ID}", "id": None,
+                   "cls": "button-solid modi_black js_change-open-status",
+                   "context": "公開停止しますか？公開停止後も再公開できます。"}
+INVENTORY_ROW = {"service_id": SERVICE_ID, "state": sd.PUBLIC_LISTING_STATE, "price_jpy": 4500,
+                 "state_controls": [
+                     {"tag": "A", "label": "編集する", "href": f"/mypage/services/{SERVICE_ID}",
+                      "cls": "", "id": None, "context": None},
+                     ARCHIVE_CONTROL]}
 ALLOCATION = {
     "service_id": SERVICE_ID, "action": "RETIRE", "allocation_key": "b" * 64,
     "gates": {"minimum_sample_met": True, "weak_demand_evidence": True,
@@ -42,9 +50,10 @@ def test_retire_contract_changes_only_the_listing_state_and_keeps_a_public_rollb
     contract = render()
     assert contract["changed_field"] == "listing_state"
     assert contract["allowed_delta"] == [sd.LISTING_STATE_DELTA]
-    assert contract["proposed_value"]["submit_mode"] == "draft"
+    assert contract["proposed_value"]["action"] == f"/services/archive/{SERVICE_ID}"
+    assert contract["proposed_value"]["listing_state"] == "非公開"
     # Recoverable: rollback restores the public state, and the contract never asks for deletion.
-    assert contract["rollback_value"] == {"listing_state": sd.PUBLIC_LISTING_STATE, "submit_mode": "open"}
+    assert contract["rollback_value"] == {"listing_state": sd.PUBLIC_LISTING_STATE, "action": "none"}
     assert contract["official_readback"]["deletion"] is False
     assert contract["official_readback"]["recoverable"] is True
     assert len(contract["contract_sha256"]) == 64
@@ -52,9 +61,13 @@ def test_retire_contract_changes_only_the_listing_state_and_keeps_a_public_rollb
 
 def test_retire_fails_closed_when_the_seller_form_exposes_no_non_public_control():
     with pytest.raises(RuntimeError, match="storefront_retire_control_missing"):
-        render(seller_snapshot=seller_form([{"mode": "open", "label": "公開する", "disabled": False}]))
+        render(inventory_row={**INVENTORY_ROW, "state_controls": [
+            {"tag": "A", "label": "編集する", "href": "/mypage/services/1", "cls": "", "context": None}]})
     with pytest.raises(RuntimeError, match="storefront_retire_controls_unobserved"):
-        render(seller_snapshot=seller_form([]))
+        render(inventory_row={**INVENTORY_ROW, "state_controls": []})
+    with pytest.raises(RuntimeError, match="storefront_retire_control_wording_unobserved"):
+        render(inventory_row={**INVENTORY_ROW,
+                              "state_controls": [{**ARCHIVE_CONTROL, "context": ""}]})
 
 
 def test_retire_fails_closed_on_unmet_gates_or_a_listing_that_is_not_public():
@@ -80,7 +93,7 @@ def test_replace_plan_requires_a_ready_candidate_and_keeps_a_republish_rollback(
     assert plan["sequence"] == ["retire", "create"]
     assert plan["retired_service_id"] == SERVICE_ID and plan["created_service_id"] == "4356229"
     # A failed creation must be able to put the old listing back.
-    assert plan["rollback"] == {"republish_service_id": SERVICE_ID, "submit_mode": "open",
+    assert plan["rollback"] == {"republish_service_id": SERVICE_ID, "restore_to": sd.PUBLIC_LISTING_STATE,
                                 "on": "create_failed_after_retire"}
     assert len(plan["plan_sha256"]) == 64
 
