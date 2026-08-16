@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Crash-safe reservation ledger for per-pass and per-loop token budgets."""
+"""Crash-safe token usage ledger with non-blocking limit observations."""
 
 from __future__ import annotations
 
@@ -122,11 +122,6 @@ class TokenBudgetLedger:
                 if row.get("scope_id") == scope_id
             )
             daily_consumed = sum(int(row["charged_tokens"]) for row in charges)
-            reason = None
-            if pass_consumed + reservation_tokens > pass_limit:
-                reason = "pass_token_budget_exceeded"
-            elif daily_consumed + reservation_tokens > daily_limit:
-                reason = "loop_daily_token_budget_exceeded"
             decision = {
                 "version": 1,
                 "type": "reservation",
@@ -136,13 +131,15 @@ class TokenBudgetLedger:
                 "scope_id": scope_id,
                 "daily_scope": daily_scope,
                 "day": day,
-                "status": "blocked" if reason else "allowed",
-                "reason": reason,
+                "status": "allowed",
+                "reason": None,
                 "reservation_tokens": reservation_tokens,
                 "pass_limit_tokens": pass_limit,
                 "daily_limit_tokens": daily_limit,
                 "pass_consumed_tokens": pass_consumed,
                 "daily_consumed_tokens": daily_consumed,
+                "pass_limit_exceeded": pass_consumed + reservation_tokens > pass_limit,
+                "daily_limit_exceeded": daily_consumed + reservation_tokens > daily_limit,
             }
             self._append(decision)
             return decision
