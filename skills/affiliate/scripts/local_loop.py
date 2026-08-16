@@ -236,12 +236,12 @@ def owner_event(state, wake_event, sent_event_ids=None):
     impact_changed = wake_event.get("impact_changed", False)
     candidates = []
 
-    def add(kind, identity, money, public_url=None, article_url=None, decision=None):
+    def add(kind, identity, money, public_url=None, article_url=None, decision=None, scope=None):
         event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
         candidates.append({
             "event_uuid": event_uuid, "kind": kind, "money": money,
             "public_url": public_url, "article_url": article_url,
-            "decision": decision,
+            "decision": decision, "scope": scope,
         })
 
     if wake_event.get("placement_link_changed") and wake_event.get("placement_link_state") == "VERIFIED":
@@ -271,7 +271,22 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "kind": kind,
             "provider": "hubspot-impact",
             "job_id": wake_event["impact_login_reconciled_job_id"],
-        }, "login effect reconciled from fresh authenticated readback")
+        }, "login effect reconciled from fresh authenticated readback", scope="impact-login")
+    wake_history = json_rows(state / "events.jsonl")
+    if len(wake_history) >= 2:
+        previous = wake_history[-2]
+        if (
+            previous.get("publication_state") == "PUBLICATION_FAILED"
+            and wake_event.get("publication_state") != "PUBLICATION_FAILED"
+        ):
+            kind = "SELF_HEALED"
+            add(kind, {
+                "kind": kind, "scope": "publication",
+                "failed_at": previous.get("ts"),
+                "recovered_state": wake_event.get("publication_state"),
+            }, "publication retry recovered / commission not observed yet",
+                wake_event.get("publication_url") or latest_live_url(state),
+                scope="publication")
     if wake_event.get("acquisition_decision_changed"):
         kind = "ACQUISITION_DECISION_READY"
         add(kind, {
@@ -327,12 +342,17 @@ def owner_event(state, wake_event, sent_event_ids=None):
         return None
     kind = selected["kind"]
     recovery = (
-        "Impactの認証済み画面から、未解決だった同じlogin jobを完了しました"
+        "次のwakeが同じpublicationを再開し、重複作用なしで進行を回復しました"
+        if kind == "SELF_HEALED" and selected.get("scope") == "publication"
+        else "Impactの認証済み画面から、未解決だった同じlogin jobを完了しました"
         if kind == "SELF_HEALED"
         else "なし" if kind != "BLOCKED"
         else "未回復の外部状態があります"
     )
     next_job = (
+        "同じcampaignのpublic readbackと収益計測を継続"
+        if kind == "SELF_HEALED" and selected.get("scope") == "publication"
+        else
         "同じ申請を再提出せず、Impactの審査状態を継続確認"
         if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"
         else "provider transactionを待ち、sub-IDまたはlink fingerprintでplacementへ照合"
@@ -340,6 +360,9 @@ def owner_event(state, wake_event, sent_event_ids=None):
         else "buyer-intentを収集し、次の公開・収益照合を継続"
     )
     program = (
+        "ElevenLabs / PartnerStack"
+        if kind == "SELF_HEALED" and selected.get("scope") == "publication"
+        else
         "HubSpot / Impact"
         if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"
         else "ElevenLabs / PartnerStack"

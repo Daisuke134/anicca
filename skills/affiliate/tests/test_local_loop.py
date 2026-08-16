@@ -106,6 +106,26 @@ class LocalLoopTest(unittest.TestCase):
             self.assertIn("同じlogin jobを完了", event["body"])
             self.assertNotIn("EFFECT_STARTED", event["body"])
 
+    def test_publication_failure_then_progress_emits_natural_self_healed_event(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.append(state / "events.jsonl", {
+                "ts": 1, "publication_state": "PUBLICATION_FAILED",
+                "publication_failure_type": "TimeoutError",
+            })
+            wake = {
+                "ts": 2, "publication_state": "WAITING_FOR_PLACEMENT_LINK",
+                "publication_url": None, "status": "READY_FOR_PUBLICATION",
+            }
+            MODULE.append(state / "events.jsonl", wake)
+
+            event = MODULE.owner_event(state, wake)
+
+            self.assertEqual(event["kind"], "SELF_HEALED")
+            self.assertIn("同じpublicationを再開", event["body"])
+            self.assertIn("ElevenLabs / PartnerStack", event["body"])
+            self.assertNotIn("Impact", event["body"])
+
     def test_completed_generic_campaign_advances_to_tts_campaign(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
