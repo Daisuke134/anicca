@@ -1141,7 +1141,19 @@ tasks and not reasons to stop safe work.
    source→composition→policy→dedicated-link→owned/X→readback→ledger path advances
    four more campaigns. The Agent performs the work; a human or Codex does not
    author or publish a replacement. Each row needs independent click/exposure,
-   provider usage, cost, and commission lineage.
+   provider usage, cost, and commission lineage. Audit found that composition and
+   post-baseline experiment selection were Agent-owned, but initial official
+   product selection still used Python `next(...)` over sitemap order. The current
+   YouTube Transcript Generator plan is a pre-fix bootstrap artifact and remains
+   the same durable job; it is not manually rewritten. Before the eighth placement,
+   the source owner must pass all uncovered official candidates plus the canonical
+   placement ledger to the marketing Agent, require a sealed
+   `OPPORTUNITY_DECISION` containing one available family, falsifiable hypothesis,
+   observed evidence, and ledger-readable success metric, and fail closed without
+   a fixed-order fallback. Candidate collection and result validation remain
+   deterministic tools. The final acceptance is a real source-owner wake, after
+   the current campaign becomes `X_LIVE`, creating exactly one new source plan
+   bound to the Agent decision ID and replaying without another plan.
 3. **E1-H — Close the first real transaction path.** On the first provider row,
    the loop normalizes provider transaction ID and status, joins the exact
    placement, appends one replay-safe economic transition, reports
