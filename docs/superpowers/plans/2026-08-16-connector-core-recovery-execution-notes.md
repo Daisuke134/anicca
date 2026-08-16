@@ -126,6 +126,77 @@ Remaining honest gaps:
   so the coverage brief will say 21 until that producer is changed. The delivered text now follows the
   data instead of contradicting it, which is the part that could mislead Dais.
 
+## C-CORE-04 supervised primary-first wake — DONE 2026-08-16
+
+PR #2819 merged as `364ea0b72`; the shared `main` checkout was fast-forwarded so the launchd label
+runs the merged code. Baseline before firing: label loaded and not running, `runs = 0`, no Connector
+process, no lock, 14 applied bundles, `interactive:dais` and `coconala:kosuke` both reachable with no lease holder.
+
+One `launchctl kickstart` at 22:17:20 JST. Result: `runs = 1`, `last exit code = 1`, state back to not running.
+
+Provider order proven by the audit timestamps, primary first:
+
+| provider | recorded_at | observed | normalized | window | free+open | calendar-free |
+|---|---|---:|---:|---:|---:|---:|
+| Luma | 13:18:11Z | 39 | 39 | 33 | 16 | 0 |
+| Connpass | 13:18:15Z | 6 | 6 | 6 | 0 | 0 |
+| Peatix | 13:19:21Z | 100 | 100 | 86 | 57 | 10 |
+
+Peatix had candidates, attempted `provider_direct` then `browser_harness`, and the wake closed as
+`wake-aaa90b2080ed3b99a1982151` / `circuit_open` / `peatix_form_navigation_failed` with
+`consecutive_failure_count 3`. That is the defined terminal for repeated failure, and the exit contract
+held: non-zero exit plus a durable next action.
+
+Cleanup and honesty checks after the wake:
+
+- applied bundles still 14 — no external write, no duplicate application.
+- wake report delivered to Telegram with positive provider id `21274`.
+- no Connector process and no lock left behind; `evidence/tab-owner.json` and `evidence/target-leases.json`
+  were released.
+- no new stderr, so the non-zero exit is the contract path and not a crash.
+
+## C-CORE-05 Luma — BLOCKED_EXTERNAL 2026-08-16
+
+Luma produced 16 free and open events inside the window and zero survived the Calendar gate, so the
+question was whether the gate is wrong or Dais is genuinely busy.
+
+A first readback with `gog calendar events list` returned only 10 events, all on 08-16 and 08-17, which
+suggested an almost empty calendar and therefore a gate bug. **That reading was wrong and is corrected
+here**: it queried the primary calendar only. Rebuilding the inventory exactly as the runtime does
+(`inspectGoogleCalendarBusyInventory` over the same 14-day window) returns `calendar_count: 5` and
+**103 timed intervals**, including a duplicated daily block from 08:40 to 17:10 JST.
+
+Evening availability, 18:00–22:00 JST, measured from that real inventory:
+
+| date | evening |
+|---|---|
+| 08-16, 08-17 | free (already past for discovery) |
+| 08-18 … 08-24 | busy |
+| 08-25 | free |
+| 08-26, 08-27 | busy |
+| 08-28 | free |
+| 08-29 | busy |
+
+The live Luma discovery page `https://luma.com/tokyo?k=p` currently starts at 08-18, so its free and
+open events fall on dates whose evenings are genuinely taken. `calendar_free_count: 0` is therefore
+**correct behaviour, not a defect**: Connector declined to double-book Dais.
+
+Status `BLOCKED_EXTERNAL`. Counts at the block: Luma observed 39, in-window 33, free and open 16,
+Calendar-free 0. Owner: the daily 09:00 native label. Restart condition: a free and open Luma Tokyo
+event landing on an evening Dais has open — the next such evenings in this window are 08-25 and 08-28.
+Next scheduled check: the next natural 09:00 wake.
+
+## C-CORE-06 Connpass — blocked by a discovery defect, not by the calendar
+
+The same wake recorded Connpass observed 6, in-window 6, free and open 0. Six is not a plausible count
+for Tokyo. The runtime discovers from `https://connpass.com/calendar/?ym=<YYYYMM>&prefectures=13`; a
+read-only crawl of that exact page exposes **1457 distinct `connpass.com/event/<id>` links** for the
+month. So Connector is seeing roughly 0.4% of the listing, and Connpass has never had a fair chance to
+produce a candidate.
+
+This is a defect in `connector-connpass-workflow.js`'s binding collection, not an external blocker, and
+it must be fixed before `C-CORE-06` can be claimed either way.
+
 Verification, re-run by the parent rather than trusted from the executor: `npm run test:outbound`
 33 + 341 pass / 0 fail, `npm run test:runtime-job` 18 pass / 0 fail, `npm run test:runtime-adapters`
 125 pass / 0 fail. Residual `routeMinutes` matches in production are only `transport/maps-gog.js`

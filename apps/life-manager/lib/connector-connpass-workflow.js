@@ -14,6 +14,10 @@ const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const EVENT_REF = /^connpass-event:\/\/event\/[1-9][0-9]*$/;
 const EVENT_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/$/i;
 const TIME_ZONE = "Asia/Tokyo";
+// A wake must stay bounded: walk detail pages for at most this many
+// earliest-dated bindings per wake, even when a busy window discovers
+// hundreds of candidates. One constant, one place (Dais 2026-08-16).
+const CONNPASS_DETAIL_WALK_BUDGET = 40;
 
 function invalid() { throw new Error("Connpass script-first workflow invalid"); }
 const DETAIL_FIELD_CODES = new Set([
@@ -74,6 +78,15 @@ function discoveryDates(now) {
   return Object.freeze(dates);
 }
 
+function eventIdOf(eventRef) {
+  return Number(String(eventRef).slice(String(eventRef).lastIndexOf("/") + 1));
+}
+
+function byCalendarDateThenEventId(a, b) {
+  if (a.calendar_date !== b.calendar_date) return a.calendar_date < b.calendar_date ? -1 : 1;
+  return eventIdOf(a.event_ref) - eventIdOf(b.event_ref);
+}
+
 function createDefaultDiscovery({ now, readBindings, readDetail }) {
   return async ({ page }) => {
     if (!page || typeof page.goto !== "function") invalid();
@@ -83,6 +96,7 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
     if (months.length < 1 || months.length > 2) invalid();
     const bindings = [];
     const seen = new Set();
+    let discoveredCount = 0;
     for (const month of months) {
       try {
         await page.goto(`https://connpass.com/calendar/?ym=${month}&prefectures=13`, {
@@ -95,6 +109,7 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
       if (!Array.isArray(rows) || rows.length > 5_000) {
         throw stageError("CONNPASS_CALENDAR_ROWS_CONTRACT_FAILED");
       }
+      const monthBindings = [];
       for (const row of rows) {
         const eventRef = String(row && row.event_ref || "");
         const url = String(row && row.canonical_url || "");
@@ -104,14 +119,26 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
           throw stageError("CONNPASS_CALENDAR_BINDING_VALIDATION_FAILED");
         }
         seen.add(eventRef);
-        bindings.push(Object.freeze({ event_ref: eventRef, canonical_url: url }));
+        discoveredCount += 1;
+        monthBindings.push(Object.freeze({ event_ref: eventRef, canonical_url: url, calendar_date: date }));
+      }
+      // Bound accumulation per month, sorted earliest-first, BEFORE it ever
+      // reaches the 500-binding hard guard below — a legitimate busy month
+      // (measured ~748 Tokyo events/14-day window) must never trip it.
+      monthBindings.sort(byCalendarDateThenEventId);
+      for (const binding of monthBindings.slice(0, CONNPASS_DETAIL_WALK_BUDGET)) {
+        bindings.push(binding);
         if (bindings.length > 500) {
           throw stageError("CONNPASS_CALENDAR_ROWS_CONTRACT_FAILED");
         }
       }
     }
+    // Months are chronological and each already budget-truncated, so this is
+    // already earliest-first; re-sort defensively in case a page's spillover
+    // rows blurred the month boundary, then apply the wake-level budget.
+    const walkList = bindings.slice().sort(byCalendarDateThenEventId).slice(0, CONNPASS_DETAIL_WALK_BUDGET);
     const result = [];
-    for (const binding of bindings) {
+    for (const binding of walkList) {
       try {
         await page.goto(binding.canonical_url, { waitUntil: "domcontentloaded", timeout: 30_000 });
       } catch { throw stageError("CONNPASS_DETAIL_NAVIGATION_FAILED"); }
@@ -126,6 +153,10 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
       }
       result.push(detail);
     }
+    // observed_count in the audit must reflect what the window really
+    // listed, not the walked/truncated count — carry the true total on the
+    // array itself so discoverCandidates can report it honestly.
+    result.discoveredCount = discoveredCount;
     return Object.freeze(result);
   };
 }
@@ -193,7 +224,7 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         result.push(Object.freeze({ ...candidate }));
       }
       await onDiscoveryAudit(Object.freeze({
-        observed_count: observed.length,
+        observed_count: typeof observed.discoveredCount === "number" ? observed.discoveredCount : observed.length,
         normalized_count: normalizedCount,
         window_count: windowCount,
         free_open_count: freeOpenCount,
