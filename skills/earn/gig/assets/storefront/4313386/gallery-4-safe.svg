@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="1016" viewBox="0 0 1220 1016">
+  <rect width="1220" height="1016" fill="#17624f"/>
+  <g stroke="#87baa8" opacity=".18"><path d="M0 100h1220M0 200h1220M0 300h1220M0 400h1220M0 500h1220M0 600h1220M0 700h1220M0 800h1220M100 0v1016M200 0v1016M300 0v1016M400 0v1016M500 0v1016M600 0v1016M700 0v1016M800 0v1016M900 0v1016M1000 0v1016M1100 0v1016"/></g>
+  <g font-family="Hiragino Sans, sans-serif" fill="#fff" text-anchor="middle">
+    <text x="610" y="150" font-size="64" font-weight="700">納品物</text>
+    <text x="610" y="305" font-size="38">① VBA組込み済みExcelファイル（.xlsm）</text>
+    <text x="610" y="430" font-size="38">② 操作手順書（セットアップ・実行方法）</text>
+    <text x="610" y="555" font-size="38">③ ソースコード（コメント付き）</text>
+    <text x="610" y="680" font-size="38">④ テスト実行結果サンプル</text>
+  </g>
+  <g font-family="Hiragino Sans, sans-serif" font-size="27" font-weight="700" text-anchor="middle">
+    <rect x="320" y="790" width="290" height="62" rx="12" fill="#ffc72c"/><text x="465" y="832" fill="#141414">納期は事前合意</text>
+    <rect x="640" y="790" width="260" height="62" rx="12" fill="#ffc72c"/><text x="770" y="832" fill="#141414">修正1回無料</text>
+  </g>
+</svg>

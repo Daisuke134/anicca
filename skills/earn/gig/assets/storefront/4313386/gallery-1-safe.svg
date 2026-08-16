@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="1016" viewBox="0 0 1220 1016">
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#111c50"/><stop offset="1" stop-color="#170c2a"/></linearGradient></defs>
+  <rect width="1220" height="1016" fill="url(#bg)"/>
+  <g fill="none" stroke="#6f83ff" opacity=".16" stroke-width="2"><path d="M70 120h390M70 165h310M70 210h420M760 110v290M820 140v310M880 90v270"/></g>
+  <g font-family="Hiragino Sans, sans-serif" fill="#fff">
+    <text x="90" y="360" font-size="78" font-weight="700">Excel/VBAで</text>
+    <text x="90" y="455" font-size="78" font-weight="700">面倒な作業を自動化</text>
+    <text x="94" y="535" font-size="34">請求書・日報・転記を、使える仕組みに</text>
+  </g>
+  <g font-family="Hiragino Sans, sans-serif" font-size="27" font-weight="700" text-anchor="middle">
+    <rect x="90" y="640" width="210" height="62" rx="31" fill="#ef4f55"/><text x="195" y="681" fill="#fff">見積り無料</text>
+    <rect x="320" y="640" width="280" height="62" rx="31" fill="#35b777"/><text x="460" y="681" fill="#fff">納期は事前合意</text>
+    <rect x="620" y="640" width="250" height="62" rx="31" fill="#7657db"/><text x="745" y="681" fill="#fff">要件ヒアリング</text>
+  </g>
+</svg>

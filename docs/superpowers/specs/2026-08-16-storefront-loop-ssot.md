@@ -290,6 +290,17 @@ Verification: authenticated Coconala DOM → per-service analytics ledger → fu
 
 Verification: controlled current-data allocation produces one reasoned action per listing without publishing; one eligible action has official effect/readback/replay proof; conversation `10083449` resolves service `4313386` and its versioned VBA playbook, while a missing/mismatched version fails closed.
 
+### S5g — Repair the VBA gallery as one executable Storefront field
+
+- [x] Inspect all six public images for service `4313386` against its versioned listing contract. Images 1, 2, 4 and 6 contain unsupported `24時間` / `24h` delivery claims; images 3 and 5 are safe and remain in place.
+- [x] Create four deterministic 1220×1016 PNG assets from committed SVG sources. The replacement copy says delivery timing is agreed before purchase and introduces no new outcome, price or delivery guarantee.
+- [x] Define one gallery mutation contract containing the exact six-image before order, four exact replacement IDs/assets/hashes, two kept IDs, allowed upload fields, rollback identity and official readback. The four replacements are one logical field; the loop must never accept a partial gallery as success.
+- [ ] Render the contract from the current authenticated public version, select `4313386/image` as the first unfenced executable hypothesis, and prove all non-image seller fields remain byte-for-byte unchanged before submit.
+- [ ] Publish through the installed Storefront loop, then verify official public count `6`, old unsafe IDs absent, both safe IDs retained in their original positions, changed listing version, one effect/readback ledger row, one Telegram report and a released lease.
+- [ ] Run an immediate installed replay and require effect `0`, no duplicate upload/ledger/Telegram effect, official images still `6`, exit `0` and released lease. Record pass IDs, message IDs and final release SHA here.
+
+Verification: authenticated seller form → exact four upload inputs → one submit → authenticated public image identity/order → durable effect/experiment ledger → identical replay. Calendar time and the 14-day outcome window are not TODOs.
+
 ### S6 — Prove the installed loop repeats safely before cleanup
 
 - [x] Preserve the completed Paid reverts and carry zero Paid implementation into Storefront.

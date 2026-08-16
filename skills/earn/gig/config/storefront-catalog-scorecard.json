@@ -118,7 +118,7 @@
         "scope": "owned contract names runbook-supported automation, with boundary still partial",
         "package": "official readback: JPY3,000 extra macro and JPY5,000 maintenance option",
         "intake": "owned scope requests current workbook, task, expected behavior, and environment",
-        "image": "official DOM readback: 6 unique service listing images; roles not yet verified",
+        "image": "official DOM + visual readback: 6 unique role-specific images; four legacy images contain unsupported 24-hour delivery claims and require one atomic gallery replacement",
         "repeat": "official readback includes a bounded JPY5,000 maintenance option"
       }
     },
@@ -206,7 +206,7 @@
       "field": "image",
       "before": 1,
       "success_metric": "views_to_inquiry",
-      "reason": "verified demand + owned VBA capability; image roles remain unverified"
+      "reason": "verified demand + owned VBA capability; replace four unsupported 24-hour image claims while preserving two safe role-specific images"
     },
     {
       "priority": 3,

@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "service_id": "4313386",
+  "field": "image",
+  "before_image_ids": [
+    "ced36e2a-9390297.png",
+    "9b83e4d4-9401027.png",
+    "863b1412-9401028.png",
+    "19a72c66-9401029.png",
+    "a1a079fc-9407806.png",
+    "a22b61fc-9407807.png"
+  ],
+  "kept_image_ids": [
+    "863b1412-9401028.png",
+    "a1a079fc-9407806.png"
+  ],
+  "replacements": [
+    {
+      "replace_image_id": "ced36e2a-9390297.png",
+      "asset": "gallery-1-safe.png",
+      "asset_sha256": "f1a28fd2c3b150ebcf6d4cff9b947204a09c6139f51c12a94d73a17bc4b572aa",
+      "width": 1220,
+      "height": 1016,
+      "mime_type": "image/png"
+    },
+    {
+      "replace_image_id": "9b83e4d4-9401027.png",
+      "asset": "gallery-2-safe.png",
+      "asset_sha256": "79303b3e85e150026fffa5fb7e3d0450feb671410354b43f7e4d0e9560bec69b",
+      "width": 1220,
+      "height": 1016,
+      "mime_type": "image/png"
+    },
+    {
+      "replace_image_id": "19a72c66-9401029.png",
+      "asset": "gallery-4-safe.png",
+      "asset_sha256": "370843f154a2a5c2038e084fa241b38bd0d8d46d5a67319b0402c4c5397a3ce8",
+      "width": 1220,
+      "height": 1016,
+      "mime_type": "image/png"
+    },
+    {
+      "replace_image_id": "a22b61fc-9407807.png",
+      "asset": "gallery-6-safe.png",
+      "asset_sha256": "f0d6df3efb8e6a76f7e391c43173ad1f36dd0c65c2bf45b01160166919e77f2f",
+      "width": 1220,
+      "height": 1016,
+      "mime_type": "image/png"
+    }
+  ],
+  "claims": [
+    "納期は購入前に合意する",
+    "修正1回無料",
+    "購入前見積り無料"
+  ],
+  "claim_source": "contracts/storefront/4313386.json",
+  "platform_requirement_source": "https://coconala.com/pages/guide_sell"
+}

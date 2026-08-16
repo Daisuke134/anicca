@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="1016" viewBox="0 0 1220 1016">
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#16113f"/><stop offset="1" stop-color="#07051b"/></linearGradient></defs>
+  <rect width="1220" height="1016" fill="url(#bg)"/>
+  <g font-family="Hiragino Sans, sans-serif" fill="#fff">
+    <text x="80" y="115" font-size="65" font-weight="700">ご依頼の流れ</text>
+    <text x="82" y="175" font-size="30" fill="#d8d5e2">購入前見積り〜納品まで5ステップ</text>
+  </g>
+  <g font-family="Hiragino Sans, sans-serif">
+    <g transform="translate(90 245)"><circle cx="40" cy="40" r="38" fill="#ef4f55"/><text x="40" y="53" text-anchor="middle" fill="#fff" font-size="38" font-weight="700">1</text><text x="115" y="30" fill="#fff" font-size="36" font-weight="700">メッセージで相談</text><text x="115" y="72" fill="#d8d5e2" font-size="27">自動化したい作業内容をお聞かせください</text></g>
+    <g transform="translate(90 385)"><circle cx="40" cy="40" r="38" fill="#f4ae35"/><text x="40" y="53" text-anchor="middle" fill="#fff" font-size="38" font-weight="700">2</text><text x="115" y="30" fill="#fff" font-size="36" font-weight="700">ヒアリング</text><text x="115" y="72" fill="#d8d5e2" font-size="27">現状ファイル・処理内容・実行頻度を確認</text></g>
+    <g transform="translate(90 525)"><circle cx="40" cy="40" r="38" fill="#35b777"/><text x="40" y="53" text-anchor="middle" fill="#fff" font-size="38" font-weight="700">3</text><text x="115" y="30" fill="#fff" font-size="36" font-weight="700">ご購入</text><text x="115" y="72" fill="#d8d5e2" font-size="27">内容・価格・納期の合意後、正式にご依頼</text></g>
+    <g transform="translate(90 665)"><circle cx="40" cy="40" r="38" fill="#478fdd"/><text x="40" y="53" text-anchor="middle" fill="#fff" font-size="38" font-weight="700">4</text><text x="115" y="30" fill="#fff" font-size="36" font-weight="700">合意した納期で初稿提出</text><text x="115" y="72" fill="#d8d5e2" font-size="27">動作確認いただきます</text></g>
+    <g transform="translate(90 805)"><circle cx="40" cy="40" r="38" fill="#7858df"/><text x="40" y="53" text-anchor="middle" fill="#fff" font-size="38" font-weight="700">5</text><text x="115" y="30" fill="#fff" font-size="36" font-weight="700">修正1回無料</text><text x="115" y="72" fill="#d8d5e2" font-size="27">ご要望に応じて調整して完了</text></g>
+  </g>
+</svg>

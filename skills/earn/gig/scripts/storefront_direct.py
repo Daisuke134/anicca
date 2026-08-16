@@ -52,6 +52,8 @@ STATE_FILES = (
 )
 TARGET_SERVICE_ID = "4330368"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
+GALLERY_SERVICE_ID = "4313386"
+DEFAULT_GALLERY_CONTRACT = GIG_DIR / "assets" / "storefront" / GALLERY_SERVICE_ID / "gallery-contract.json"
 DEFAULT_TITLE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-title-v1.json"
 DEFAULT_BODY_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-body-v1.json"
 DEFAULT_PACKAGE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-package-v1.json"
@@ -919,6 +921,53 @@ def _load_image_contract(path: Path) -> dict:
     return {**contract, "asset_path": str(asset)}
 
 
+def _load_gallery_contract(path: Path) -> dict:
+    try:
+        contract = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_gallery_contract_invalid") from error
+    required = {
+        "version", "service_id", "field", "before_image_ids", "kept_image_ids",
+        "replacements", "claims", "claim_source", "platform_requirement_source",
+    }
+    if (set(contract) != required or contract.get("version") != 1
+            or contract.get("service_id") != GALLERY_SERVICE_ID or contract.get("field") != "image"):
+        raise RuntimeError("storefront_gallery_contract_fields_invalid")
+    before_ids, kept_ids, replacements = (
+        contract.get("before_image_ids"), contract.get("kept_image_ids"), contract.get("replacements")
+    )
+    if (not isinstance(before_ids, list) or len(before_ids) != 6 or len(set(before_ids)) != 6
+            or not isinstance(kept_ids, list) or len(kept_ids) != 2 or not set(kept_ids) < set(before_ids)
+            or not isinstance(replacements, list) or len(replacements) != 4):
+        raise RuntimeError("storefront_gallery_identity_invalid")
+    loaded = []
+    replaced_ids = []
+    for row in replacements:
+        if not isinstance(row, dict) or set(row) != {
+            "replace_image_id", "asset", "asset_sha256", "width", "height", "mime_type",
+        }:
+            raise RuntimeError("storefront_gallery_replacement_invalid")
+        asset = (path.parent / str(row.get("asset") or "")).resolve()
+        try:
+            asset.relative_to(path.parent.resolve())
+            data = asset.read_bytes()
+        except (OSError, ValueError) as error:
+            raise RuntimeError("storefront_gallery_asset_invalid") from error
+        if (data[:8] != b"\x89PNG\r\n\x1a\n" or len(data) > 100 * 1024 * 1024
+                or row.get("mime_type") != "image/png"):
+            raise RuntimeError("storefront_gallery_asset_format_invalid")
+        width, height = struct.unpack(">II", data[16:24])
+        if ((width, height) != (1220, 1016)
+                or (row.get("width"), row.get("height")) != (width, height)
+                or row.get("asset_sha256") != hashlib.sha256(data).hexdigest()):
+            raise RuntimeError("storefront_gallery_asset_identity_invalid")
+        replaced_ids.append(str(row.get("replace_image_id") or ""))
+        loaded.append({**row, "asset_path": str(asset)})
+    if set(replaced_ids) != set(before_ids) - set(kept_ids) or len(set(replaced_ids)) != 4:
+        raise RuntimeError("storefront_gallery_partition_invalid")
+    return {**contract, "replacements": loaded}
+
+
 def _load_capability_families(path: Path) -> tuple[dict[str, str], dict[str, dict]]:
     try:
         config = json.loads(path.read_text(encoding="utf-8"))
@@ -1755,14 +1804,38 @@ def _validate_image_mutation_contract(
     mappings, _ = _load_capability_families(families_path)
     _validate_mutation_contract(contract, mappings)
     proposed = contract.get("proposed_value")
-    if (contract.get("service_id") != TARGET_SERVICE_ID or contract.get("changed_field") != "image"
-            or contract.get("before_value") != {"service_image_ids": []}
-            or contract.get("allowed_delta") != ["data[UploadedFile][n*][image_files]"]
-            or contract.get("rollback_value") != {"service_image_ids": []}
-            or contract.get("official_readback") != {"service_image_count": 1}
-            or not isinstance(proposed, dict) or set(proposed) != {"asset_sha256", "asset_path"}
-            or not re.fullmatch(r"[0-9a-f]{64}", str(proposed.get("asset_sha256") or ""))):
+    if contract.get("changed_field") != "image" or not isinstance(proposed, dict):
         raise RuntimeError("storefront_image_mutation_contract_invalid")
+    if contract.get("service_id") == TARGET_SERVICE_ID:
+        if (contract.get("before_value") != {"service_image_ids": []}
+                or contract.get("allowed_delta") != ["data[UploadedFile][n*][image_files]"]
+                or contract.get("rollback_value") != {"service_image_ids": []}
+                or contract.get("official_readback") != {"service_image_count": 1}
+                or set(proposed) != {"asset_sha256", "asset_path"}
+                or not re.fullmatch(r"[0-9a-f]{64}", str(proposed.get("asset_sha256") or ""))):
+            raise RuntimeError("storefront_image_mutation_contract_invalid")
+        return
+    if contract.get("service_id") != GALLERY_SERVICE_ID:
+        raise RuntimeError("storefront_image_mutation_contract_invalid")
+    before_ids = contract.get("before_value", {}).get("service_image_ids")
+    rollback_ids = contract.get("rollback_value", {}).get("service_image_ids")
+    assets, kept = proposed.get("replacement_assets"), proposed.get("kept_image_ids")
+    readback, allowed = contract.get("official_readback"), contract.get("allowed_delta")
+    if (not isinstance(before_ids, list) or len(before_ids) != 6 or rollback_ids != before_ids
+            or not isinstance(assets, list) or len(assets) != 4
+            or not isinstance(kept, list) or len(kept) != 2 or not set(kept) < set(before_ids)
+            or allowed != ["data[UploadedFile][gallery][image_files]"]
+            or not isinstance(readback, dict) or readback.get("service_image_count") != 6
+            or set(readback.get("removed_image_ids") or []) != set(before_ids) - set(kept)
+            or readback.get("kept_image_ids") != kept):
+        raise RuntimeError("storefront_gallery_mutation_contract_invalid")
+    for row in assets:
+        if (not isinstance(row, dict) or set(row) != {
+                "replace_image_id", "asset_sha256", "asset_path", "upload_field"}
+                or row.get("replace_image_id") not in before_ids
+                or not re.fullmatch(r"data\[UploadedFile]\[\d+]\[image_files]", str(row.get("upload_field") or ""))
+                or not re.fullmatch(r"[0-9a-f]{64}", str(row.get("asset_sha256") or ""))):
+            raise RuntimeError("storefront_gallery_mutation_contract_invalid")
 
 
 def _render_image_mutation(
@@ -1782,12 +1855,64 @@ def _render_image_mutation(
             "delta": delta, "published": False}
 
 
+def _render_gallery_mutation(
+    own_page: dict, asset_contract: dict, capability_families: dict[str, str],
+) -> dict:
+    before_ids = list(asset_contract["before_image_ids"])
+    if (own_page.get("service_id") != GALLERY_SERVICE_ID
+            or own_page.get("service_image_ids") != before_ids):
+        raise RuntimeError("storefront_gallery_before_not_current")
+    replacements = []
+    for row in asset_contract["replacements"]:
+        match = re.search(r"-(\d+)\.png$", row["replace_image_id"])
+        if match is None:
+            raise RuntimeError("storefront_gallery_image_id_invalid")
+        replacements.append({
+            "replace_image_id": row["replace_image_id"],
+            "asset_sha256": row["asset_sha256"],
+            "asset_path": str(Path(row["asset_path"]).resolve().relative_to(GIG_DIR.resolve())),
+            "upload_field": f"data[UploadedFile][{match.group(1)}][image_files]",
+        })
+    upload_fields = [row["upload_field"] for row in replacements]
+    contract = {
+        "version": 1, "platform": "coconala", "service_id": GALLERY_SERVICE_ID,
+        "precondition_listing_version_sha256": own_page["listing_version_sha256"],
+        "changed_field": "image", "before_value": {"service_image_ids": before_ids},
+        "proposed_value": {
+            "replacement_assets": replacements,
+            "kept_image_ids": list(asset_contract["kept_image_ids"]),
+        },
+        "allowed_delta": ["data[UploadedFile][gallery][image_files]"],
+        "rollback_value": {"service_image_ids": before_ids},
+        "official_readback": {
+            "service_image_count": 6,
+            "removed_image_ids": [row["replace_image_id"] for row in asset_contract["replacements"]],
+            "kept_image_ids": list(asset_contract["kept_image_ids"]),
+        },
+        "success_metric": "views_to_inquiry", "observation_window_days": 14,
+        "capability_family": capability_families.get(GALLERY_SERVICE_ID),
+        "evidence": [asset_contract["claim_source"], asset_contract["platform_requirement_source"]],
+    }
+    contract = _seal_mutation_contract(contract, capability_families)
+    _validate_image_mutation_contract(contract)
+    logical_field = contract["allowed_delta"][0]
+    return {
+        "version": 1, "contract": contract,
+        "before": {logical_field: contract["before_value"]},
+        "after": {logical_field: contract["proposed_value"]},
+        "delta": contract["allowed_delta"], "published": False,
+    }
+
+
 def _image_judgement(hypothesis: dict, contract: dict) -> dict:
     _validate_image_mutation_contract(contract)
-    digest = str(contract["proposed_value"]["asset_sha256"])
+    proposed = contract["proposed_value"]
+    digest = str(proposed.get("asset_sha256") if isinstance(proposed, dict) else "")
+    if not digest:
+        digest = str(contract["contract_sha256"])
     return {
         "decision": "change", "service_id": contract["service_id"], "changed_field": "image",
-        "before_value": 0, "proposed_value": digest,
+        "before_value": hypothesis.get("before"), "proposed_value": digest,
         "hypothesis": str(hypothesis["reason"]), "competitor_evidence_paths": [],
         "capability_evidence_paths": [], "success_metric": contract["success_metric"],
         "observation_window_days": contract["observation_window_days"], "no_op_reason": None,
@@ -1932,10 +2057,11 @@ def _presend_guard(judgement: dict, own_page: dict, mutation_contract: dict | No
         if not isinstance(mutation_contract, dict):
             raise RuntimeError("presend_image_mutation_contract_missing")
         _validate_image_mutation_contract(mutation_contract)
+        expected_ids = mutation_contract.get("before_value", {}).get("service_image_ids")
         if (mutation_contract.get("contract_sha256") is None
                 or mutation_contract.get("precondition_listing_version_sha256") != own_page.get("listing_version_sha256")
-                or judgement.get("service_id") != mutation_contract.get("service_id") or judgement.get("before_value") != 0
-                or own_page.get("service_image_count") != 0 or own_page.get("service_image_ids") != []):
+                or judgement.get("service_id") != mutation_contract.get("service_id")
+                or own_page.get("service_image_ids") != expected_ids):
             raise RuntimeError("presend_image_current_value_changed")
         return
     if (judgement.get("service_id") != TARGET_SERVICE_ID
@@ -1998,6 +2124,13 @@ def _validate_public_image_acceptance(before: dict, after: dict, contract: dict)
     expected = contract.get("official_readback", {}).get("service_image_count")
     if after.get("service_image_count") != expected or len(after.get("service_image_ids") or []) != expected:
         raise RuntimeError("public_image_count_mismatch")
+    if service_id == GALLERY_SERVICE_ID:
+        after_ids = after.get("service_image_ids") or []
+        removed = set(contract["official_readback"]["removed_image_ids"])
+        kept = contract["official_readback"]["kept_image_ids"]
+        if (removed & set(after_ids) or not set(kept) <= set(after_ids)
+                or after_ids[2] != kept[0] or after_ids[4] != kept[1]):
+            raise RuntimeError("public_gallery_identity_or_order_mismatch")
     if before.get("listing_version_sha256") == after.get("listing_version_sha256"):
         raise RuntimeError("public_image_version_unchanged")
 
@@ -2010,12 +2143,24 @@ def _validate_image_form_delta(before: dict, after: dict, contract: dict) -> Non
     before_fields = [row for row in _form_base_fields(before) if not str(row.get("name") or "").startswith("data[UploadedFile]")]
     after_fields = [row for row in _form_base_fields(after) if not str(row.get("name") or "").startswith("data[UploadedFile]")]
     uploads = [row for row in after.get("fields") or [] if str(row.get("name") or "").startswith("data[UploadedFile]")]
-    if before_fields != after_fields or any(
-        str(row.get("name") or "").startswith("data[UploadedFile]") for row in before.get("fields") or []
-    ):
+    if before_fields != after_fields:
         raise RuntimeError("seller_image_non_image_changed")
-    if len(uploads) != 1 or not re.fullmatch(r"data\[UploadedFile]\[n\d+]\[image_files]", str(uploads[0].get("name") or "")):
-        raise RuntimeError("seller_image_upload_field_invalid")
+    if contract["service_id"] == TARGET_SERVICE_ID:
+        if (any(str(row.get("name") or "").startswith("data[UploadedFile]") for row in before.get("fields") or [])
+                or len(uploads) != 1
+                or not re.fullmatch(r"data\[UploadedFile]\[n\d+]\[image_files]", str(uploads[0].get("name") or ""))):
+            raise RuntimeError("seller_image_upload_field_invalid")
+        return
+    before_uploads = {str(row.get("name") or ""): str(row.get("value") or "")
+                      for row in before.get("fields") or []
+                      if str(row.get("name") or "").startswith("data[UploadedFile]")}
+    after_uploads = {str(row.get("name") or ""): str(row.get("value") or "")
+                     for row in uploads}
+    changed = [name for name in sorted(set(before_uploads) | set(after_uploads))
+               if before_uploads.get(name) != after_uploads.get(name)]
+    expected = sorted(row["upload_field"] for row in contract["proposed_value"]["replacement_assets"])
+    if changed != expected:
+        raise RuntimeError("seller_gallery_upload_delta_invalid")
 
 
 def _seller_snapshot(ws_url: str) -> dict:
@@ -2055,10 +2200,29 @@ def _pending_recovery(
         if intent.get("status") not in {"prepared", "observed"}:
             continue
         if intent.get("changed_field") == "image":
-            image_ids = own_page.get("service_image_ids")
-            if own_page.get("service_image_count") == 1 and isinstance(image_ids, list) and len(image_ids) == 1:
-                return {**intent, "intent_path": str(path)}
-            if own_page.get("service_image_count") == 0 and image_ids == []:
+            contract = intent.get("mutation_contract")
+            if not isinstance(contract, dict):
+                raise RuntimeError("pending_image_contract_missing")
+            _validate_image_mutation_contract(contract)
+            service_id = str(contract["service_id"])
+            page = own_page
+            if service_id != str(own_page.get("service_id") or ""):
+                if ws_url is None or evidence_dir is None:
+                    raise RuntimeError("pending_image_readback_context_missing")
+                page = _observe_own_page(
+                    ws_url, evidence_dir, f"recovery-public-{service_id}.json", service_id,
+                )
+            image_ids = page.get("service_image_ids")
+            if service_id == TARGET_SERVICE_ID and page.get("service_image_count") == 1:
+                return {**intent, "intent_path": str(path), "_recovery_public_page": page}
+            if service_id == GALLERY_SERVICE_ID:
+                readback = contract["official_readback"]
+                removed = set(readback["removed_image_ids"])
+                kept = readback["kept_image_ids"]
+                if (page.get("service_image_count") == 6 and isinstance(image_ids, list)
+                        and not removed.intersection(image_ids) and set(kept) <= set(image_ids)):
+                    return {**intent, "intent_path": str(path), "_recovery_public_page": page}
+            if image_ids == contract["rollback_value"]["service_image_ids"]:
                 continue
             raise RuntimeError("pending_image_effect_public_readback_invalid")
         if intent.get("changed_field") == "title":
@@ -2301,30 +2465,42 @@ async def _execute_image_effect_async(
             return response.get("result", {}).get("result", {}).get("value")
 
         before = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
-        click = json.loads(str(await evaluate(
-            "JSON.stringify((()=>{const b=document.querySelector('.js_upload-select');"
-            "if(!b)return {ok:false,reason:'image_add_missing'};b.click();return {ok:true}})())"
-        ) or "{}"))
-        if click.get("ok") is not True:
-            raise RuntimeError(f"seller_image_add_failed:{click.get('reason')}")
-        await asyncio.sleep(0.5)
-        document = await listing_inventory._call(ws, "DOM.getDocument", {"depth": -1, "pierce": True}, cid); cid += 1
-        queried = await listing_inventory._call(ws, "DOM.querySelector", {
-            "nodeId": document["result"]["root"]["nodeId"], "selector": "input.js_upload-button",
-        }, cid); cid += 1
-        node_id = int(queried.get("result", {}).get("nodeId") or 0)
-        if node_id <= 0:
-            raise RuntimeError("seller_image_file_input_missing")
-        await listing_inventory._call(ws, "DOM.setFileInputFiles", {
-            "nodeId": node_id, "files": [str((GIG_DIR / contract["proposed_value"]["asset_path"]).resolve())],
-        }, cid); cid += 1
+        if contract["service_id"] == TARGET_SERVICE_ID:
+            click = json.loads(str(await evaluate(
+                "JSON.stringify((()=>{const b=document.querySelector('.js_upload-select');"
+                "if(!b)return {ok:false,reason:'image_add_missing'};b.click();return {ok:true}})())"
+            ) or "{}"))
+            if click.get("ok") is not True:
+                raise RuntimeError(f"seller_image_add_failed:{click.get('reason')}")
+            await asyncio.sleep(0.5)
+            uploads = [("input.js_upload-button", contract["proposed_value"]["asset_path"])]
+        else:
+            uploads = []
+            for row in contract["proposed_value"]["replacement_assets"]:
+                match = re.search(r"-(\d+)\.png$", row["replace_image_id"])
+                if match is None:
+                    raise RuntimeError("seller_gallery_image_id_invalid")
+                uploads.append((f'input[data-service-image-id="{match.group(1)}"]', row["asset_path"]))
+        for selector, asset_path in uploads:
+            document = await listing_inventory._call(ws, "DOM.getDocument", {"depth": -1, "pierce": True}, cid); cid += 1
+            queried = await listing_inventory._call(ws, "DOM.querySelector", {
+                "nodeId": document["result"]["root"]["nodeId"], "selector": selector,
+            }, cid); cid += 1
+            node_id = int(queried.get("result", {}).get("nodeId") or 0)
+            if node_id <= 0:
+                raise RuntimeError(f"seller_image_file_input_missing:{selector}")
+            await listing_inventory._call(ws, "DOM.setFileInputFiles", {
+                "nodeId": node_id, "files": [str((GIG_DIR / asset_path).resolve())],
+            }, cid); cid += 1
+            await asyncio.sleep(0.75)
         await asyncio.sleep(2)
         after = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
         _validate_image_form_delta(before, after, contract)
         preview = json.loads(str(await evaluate(
-            "JSON.stringify((()=>{const p=document.querySelector('.js_image-thumbnail[style*=\"blob:\"]');"
+            "JSON.stringify((()=>{const p=[...document.querySelectorAll('.js_image-thumbnail[style*=\"blob:\"]')];"
             "const s=document.querySelector('button.submitButton.js_button-edit[type=submit]');"
-            "if(!p)return {ok:false,reason:'preview_missing'};if(!s)return {ok:false,reason:'submit_missing'};"
+            f"if(p.length<{len(uploads)})return {{ok:false,reason:'preview_missing',count:p.length}};"
+            "if(!s)return {ok:false,reason:'submit_missing'};"
             "s.scrollIntoView({block:'center'});const r=s.getBoundingClientRect();"
             "return {ok:true,rect:{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height}}})())"
         ) or "{}"))
@@ -2337,8 +2513,8 @@ async def _execute_image_effect_async(
         intent = {
             "version": 1, "status": "prepared", "service_id": contract["service_id"],
             "changed_field": "image", "experiment_key": judgement["experiment_key"],
-            "asset_path": str(contract["proposed_value"]["asset_path"]),
-            "asset_sha256": contract["proposed_value"]["asset_sha256"], "mutation_contract": contract,
+            "asset_path": contract["proposed_value"].get("asset_path"),
+            "asset_sha256": contract["proposed_value"].get("asset_sha256"), "mutation_contract": contract,
             "public_before_path": str(public_before_path), "seller_form_before_path": str(before_path),
             "prepared_at_epoch": int(time.time()), "effect_origin_pass_id": evidence_dir.name,
             "judgement": judgement,
@@ -2562,8 +2738,17 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             image_render = _render_image_mutation(own_page, image_asset, capability_families)
             image_render_path = inventory_path.parent / "mutation-render-image.json"
             _atomic_write(image_render_path, image_render)
+            gallery_page = _observe_own_page(
+                ws_url, inventory_path.parent, "own-gallery-candidate.json", GALLERY_SERVICE_ID,
+            )
+            gallery_asset = _load_gallery_contract(
+                getattr(args, "gallery_contract", DEFAULT_GALLERY_CONTRACT)
+            )
+            gallery_render = _render_gallery_mutation(gallery_page, gallery_asset, capability_families)
+            gallery_render_path = inventory_path.parent / "mutation-render-gallery.json"
+            _atomic_write(gallery_render_path, gallery_render)
             mutation_contracts = [render["contract"] for render in (
-                image_render, title_render, body_render, package_render, faq_render, price_render,
+                image_render, gallery_render, title_render, body_render, package_render, faq_render, price_render,
             )]
             analytics = _collect_analytics(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
@@ -2596,8 +2781,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 if not isinstance(judgement, dict):
                     raise RuntimeError("pending_effect_judgement_missing")
                 if (recovery.get("changed_field") not in {"FAQ", "image", "title"}
-                        or (recovery.get("changed_field") in {"FAQ", "image"}
+                        or (recovery.get("changed_field") == "FAQ"
                             and recovery.get("service_id") != TARGET_SERVICE_ID)
+                        or (recovery.get("changed_field") == "image"
+                            and recovery.get("service_id") not in {TARGET_SERVICE_ID, GALLERY_SERVICE_ID})
                         or recovery.get("experiment_key") != judgement.get("experiment_key")):
                     raise RuntimeError("pending_effect_identity_invalid")
                 public_before = json.loads(Path(recovery["public_before_path"]).read_text(encoding="utf-8"))
@@ -2609,7 +2796,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     mutation_contract = recovery.get("mutation_contract")
                     if not isinstance(mutation_contract, dict):
                         raise RuntimeError("pending_image_mutation_contract_missing")
-                    _validate_public_image_acceptance(public_before, own_page, mutation_contract)
+                    recovery_page = recovery.get("_recovery_public_page", own_page)
+                    if not isinstance(recovery_page, dict):
+                        raise RuntimeError("pending_image_public_readback_missing")
+                    _validate_public_image_acceptance(public_before, recovery_page, mutation_contract)
                 elif recovery["changed_field"] == "title":
                     mutation_contract = recovery.get("mutation_contract")
                     if not isinstance(mutation_contract, dict):
@@ -2635,7 +2825,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "public_after_path": str(
                         inventory_path.parent / (
                             f"recovery-public-{recovery['service_id']}.json"
-                            if recovery["changed_field"] == "title" else "own-candidate.json"
+                            if recovery["changed_field"] in {"title", "image"}
+                            and recovery["service_id"] != TARGET_SERVICE_ID else "own-candidate.json"
                         )
                     ),
                     "seller_form_after_path": str(seller_after_path),
@@ -2646,7 +2837,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "public_before_path": Path(recovery["public_before_path"]),
                     "public_after_path": inventory_path.parent / (
                         f"recovery-public-{recovery['service_id']}.json"
-                        if recovery["changed_field"] == "title" else "own-candidate.json"
+                        if recovery["changed_field"] in {"title", "image"}
+                        and recovery["service_id"] != TARGET_SERVICE_ID else "own-candidate.json"
                     ),
                     "seller_form_before_path": Path(recovery["seller_form_before_path"]),
                     "seller_form_after_path": seller_after_path, "recovered": True,
@@ -2684,9 +2876,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         now=int(time.time()),
                     )
                 elif next_hypothesis is not None and next_hypothesis.get("field") == "image":
-                    mutation_contract = _image_mutation_contract(
-                        next_hypothesis, own_page, image_asset, capability_families,
-                    )
+                    mutation_contract = next((contract for contract in mutation_contracts
+                                              if contract["contract_sha256"]
+                                              == next_hypothesis["mutation_contract_sha256"]), None)
+                    if mutation_contract is None:
+                        raise RuntimeError("storefront_image_mutation_contract_missing")
                     _atomic_write(inventory_path.parent / "mutation-contract.json", mutation_contract)
                     judgement = _image_judgement(next_hypothesis, mutation_contract)
                 elif next_hypothesis is not None and next_hypothesis.get("field") == "title":
@@ -3001,6 +3195,7 @@ def main() -> int:
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
+    parser.add_argument("--gallery-contract", type=Path, default=DEFAULT_GALLERY_CONTRACT)
     parser.add_argument("--title-mutation", type=Path, default=DEFAULT_TITLE_MUTATION)
     parser.add_argument("--body-mutation", type=Path, default=DEFAULT_BODY_MUTATION)
     parser.add_argument("--package-mutation", type=Path, default=DEFAULT_PACKAGE_MUTATION)

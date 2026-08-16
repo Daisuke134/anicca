@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="1016" viewBox="0 0 1220 1016">
+  <rect width="1220" height="1016" fill="#17624f"/>
+  <g stroke="#87baa8" opacity=".18"><path d="M0 100h1220M0 200h1220M0 300h1220M0 400h1220M0 500h1220M0 600h1220M0 700h1220M0 800h1220M100 0v1016M200 0v1016M300 0v1016M400 0v1016M500 0v1016M600 0v1016M700 0v1016M800 0v1016M900 0v1016M1000 0v1016M1100 0v1016"/></g>
+  <g font-family="Hiragino Sans, sans-serif" fill="#fff" text-anchor="middle">
+    <text x="610" y="180" font-size="58" font-weight="700">手作業30分 → VBAで数秒</text>
+    <rect x="155" y="260" width="910" height="300" fill="#155947" stroke="#fff" stroke-width="3"/>
+    <path d="M610 260v300" stroke="#fff" stroke-width="3"/>
+    <text x="382" y="340" font-size="42" fill="#ffc72c">Before</text>
+    <text x="838" y="340" font-size="42" fill="#ffc72c">After</text>
+    <text x="382" y="425" font-size="35">毎回コピー・集計</text>
+    <text x="838" y="425" font-size="35">ボタン1つで完了</text>
+  </g>
+  <g font-family="Hiragino Sans, sans-serif" font-size="26" font-weight="700" text-anchor="middle">
+    <rect x="185" y="650" width="260" height="60" rx="12" fill="#ffc72c"/><text x="315" y="690" fill="#141414">納期は事前合意</text>
+    <rect x="480" y="650" width="240" height="60" rx="12" fill="#ffc72c"/><text x="600" y="690" fill="#141414">修正1回無料</text>
+    <rect x="755" y="650" width="230" height="60" rx="12" fill="#ffc72c"/><text x="870" y="690" fill="#141414">見積り無料</text>
+    <text x="610" y="875" fill="#fff" font-size="43">Excel/VBA自動化</text>
+  </g>
+</svg>
