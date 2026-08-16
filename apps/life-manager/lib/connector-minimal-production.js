@@ -295,10 +295,29 @@ function createMinimalProductionDependencies(options = {}) {
     telegramTarget,
     now,
   });
+  // Created before the workflows (moved up from its original spot below the
+  // provider router) so the Luma workflow's discoverCandidates can ask it
+  // "does this already-registered event have a bundle yet?" via the same
+  // bundle store completeEvidence() itself reads — no parallel bundle-check
+  // path, no second source of truth for "already applied".
+  const evidenceChain = options.evidenceChain || createMinimalEvidenceChain({
+    stateDir,
+    tenantId,
+    calendar,
+    calendarId,
+    telegramTarget,
+    timeZone: PRODUCTION_TIME_ZONE,
+    now,
+  });
   const lumaWorkflow = options.lumaWorkflow || createLumaScriptFirstWorkflow({
     now,
     onDiscoveryAudit: operations.recordDiscoveryAudit || (() => {}),
     readLumaFormProfile: () => readLumaFormProfile({ path: lumaFormProfilePath }),
+    hasAppliedBundle: (candidate) => evidenceChain.hasAppliedBundle({
+      provider: "luma",
+      event_ref: candidate.event_ref,
+      provider_status: "registered",
+    }),
   });
   const connpassWorkflow = options.connpassWorkflow || createConnpassScriptFirstWorkflow({
     now,
@@ -368,15 +387,6 @@ function createMinimalProductionDependencies(options = {}) {
     actionCache,
     browserHarness,
     performAction: browserHarness.performAction,
-    now,
-  });
-  const evidenceChain = options.evidenceChain || createMinimalEvidenceChain({
-    stateDir,
-    tenantId,
-    calendar,
-    calendarId,
-    telegramTarget,
-    timeZone: PRODUCTION_TIME_ZONE,
     now,
   });
   return Object.freeze({
