@@ -7,7 +7,6 @@ const OPERATIONS = new Set([
   "calendar.events",
   "calendar.find",
   "calendar.create",
-  "route.minutes",
 ]);
 
 function invalid() { throw new Error("Connector host bridge invalid"); }
@@ -60,10 +59,7 @@ async function dispatchConnectorHostBridge(request = {}, dependencies = {}) {
       if (!calendar || typeof calendar.createConnectorEvent !== "function") unavailable();
       return await calendar.createConnectorEvent(input);
     }
-    if (typeof dependencies.routeMinutes !== "function") unavailable();
-    const minutes = await dependencies.routeMinutes(input);
-    if (!Number.isInteger(minutes) || minutes < 0 || minutes > 24 * 60) unavailable();
-    return minutes;
+    unavailable();
   } catch (error) {
     if (error && /^Connector host bridge /.test(error.message)) throw error;
     unavailable();
@@ -119,7 +115,6 @@ function createConnectorHostBridgeClient(options = {}) {
       findConnectorEvents(input = {}) { return call("calendar.find", input); },
       createConnectorEvent(input = {}) { return call("calendar.create", input); },
     }),
-    routeMinutes(input = {}) { return call("route.minutes", input); },
   });
 }
 
