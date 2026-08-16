@@ -3525,6 +3525,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 isinstance(source, dict) for source in contract_sources
             )
             source_ids = [source.get("service_id") for source in contract_sources] if source_dicts else []
+            if source_dicts:
+                # Kept out of the hashed catalogue payload on purpose: this is adapter input,
+                # not listing identity.
+                _atomic_write(inventory_path.parent / "listing-state-controls.json", {
+                    "version": 1,
+                    "observed_at": inventory.get("observed_at"),
+                    "controls": {str(source.get("service_id")): source.get("state_controls") or []
+                                 for source in contract_sources},
+                })
             inventory_ids = {
                 str(service.get("service_id"))
                 for service in inventory["services"]
