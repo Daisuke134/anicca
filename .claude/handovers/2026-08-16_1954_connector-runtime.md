@@ -1,5 +1,7 @@
 # Connector runtime handover
 
+> **SUPERSEDED:** Do not resume from this handover. Use `.claude/handovers/2026-08-16_2040_connector-core-recovery.md`; the product contract and Active TODO were narrowed by PR #2801.
+
 ## Canonical state
 
 - Repo: `/Users/operator/Projects/life-manager-main`
@@ -46,4 +48,3 @@ Sol owns the spec, plan, acceptance criteria, production E2E, final status, comm
 - Spec commit above is pushed to `origin/docs/connector-status-20260816`.
 - No production state was changed during this audit.
 - This handover's exact continuation goal is in `2026-08-16_1954_connector-runtime_goal.txt`.
-
