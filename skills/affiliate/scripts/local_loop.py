@@ -196,6 +196,24 @@ def advance_substack_distribution(state, now=None, cooldown_seconds=86400):
             "changed": not result.get("deduplicated", False)}
 
 
+def observe_devto_acquisition(state, now=None, cooldown_seconds=3600):
+    """Poll the existing DEV publication metrics without adding a scheduler."""
+    from devto_publish import observe_metrics
+
+    now = int(time.time()) if now is None else now
+    receipt_path = state / "distribution-metrics" / "devto.json"
+    try:
+        prior = json.loads(receipt_path.read_text(encoding="utf-8"))
+        observed = int(datetime.fromisoformat(
+            prior["observed_at"].replace("Z", "+00:00")
+        ).timestamp())
+    except (OSError, KeyError, TypeError, ValueError):
+        prior, observed = {}, 0
+    if observed and now - observed < cooldown_seconds:
+        return {**prior, "state": "COOLDOWN"}
+    return observe_metrics(state)
+
+
 def owner_event(state, wake_event, sent_event_ids=None):
     sent_event_ids = sent_event_ids or set()
     commission_transitions = json_rows(state / "commission-ledger.jsonl")
@@ -332,6 +350,12 @@ def daily_summary_event(state, wake_event, now=None):
         links = {}
     placements = links.get("placements") if isinstance(links.get("placements"), list) else []
     link_clicks = sum(int(row.get("current_click_count", 0)) for row in placements)
+    try:
+        devto_metrics = json.loads(
+            (state / "distribution-metrics" / "devto.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        devto_metrics = {}
     commission_transitions = json_rows(state / "commission-ledger.jsonl")
     latest_commissions = {}
     for row in commission_transitions:
@@ -375,6 +399,9 @@ def daily_summary_event(state, wake_event, now=None):
         "x_live": x_live,
         "placement_count": len(placements),
         "provider_link_clicks": link_clicks,
+        "devto_article_count": devto_metrics.get("article_count"),
+        "devto_page_views": devto_metrics.get("total_page_views"),
+        "devto_page_view_delta": devto_metrics.get("delta_page_views"),
         "commission_status_counts": status_counts,
         "approved_or_paid_net_minor_by_currency": approved_by_currency,
         "provider_observed_at": links.get("observed_at"),
@@ -415,6 +442,11 @@ def daily_summary_event(state, wake_event, now=None):
         f"{report_date}は、Affiliate loopが{receipt['wake_count_today']}回動きました。",
         f"現在、owned記事は{owned_live}本、X投稿は{x_live}件が公開状態です。",
         f"PartnerStackで追跡中の専用リンクは{len(placements)}本で、確認できた外部クリックは{link_clicks}件です。",
+        (
+            f"DEVではAffiliate記事{devto_metrics.get('article_count', 0)}本が"
+            f"合計{devto_metrics.get('total_page_views', 0)}回閲覧され、"
+            f"前回確認からの増加は{devto_metrics.get('delta_page_views', 0)}回です。"
+        ),
         (
             "報酬は、保留"
             f"{status_counts['pending']}件、承認{status_counts['approved']}件、"
@@ -1211,6 +1243,14 @@ def wake(args):
             "changed": False, "failure_type": type(error).__name__,
             "failure_detail": str(error)[:600],
         }
+    try:
+        devto_metrics = observe_devto_acquisition(state)
+    except Exception as error:
+        devto_metrics = {
+            "state": "OBSERVATION_FAILED", "article_count": None,
+            "total_page_views": None, "delta_page_views": None,
+            "failure_type": type(error).__name__,
+        }
     revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
     }
@@ -1261,6 +1301,11 @@ def wake(args):
         "distribution_changed": distribution.get("changed", False),
         "distribution_failure_type": distribution.get("failure_type"),
         "distribution_failure_detail": distribution.get("failure_detail"),
+        "devto_metrics_state": devto_metrics.get("state"),
+        "devto_article_count": devto_metrics.get("article_count"),
+        "devto_page_views": devto_metrics.get("total_page_views"),
+        "devto_page_view_delta": devto_metrics.get("delta_page_views"),
+        "devto_metrics_failure_type": devto_metrics.get("failure_type"),
         "revenue_state": revenue["state"],
         "revenue_source_rows": revenue["source_rows"],
         "revenue_appended_transitions": revenue["appended_transitions"],

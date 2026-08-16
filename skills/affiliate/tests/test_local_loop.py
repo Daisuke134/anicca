@@ -147,6 +147,10 @@ class LocalLoopTest(unittest.TestCase):
                 patch.object(MODULE, "advance_known_publication", return_value={
                     "state": "X_LIVE", "public_url": "https://x.com/selawmqt/status/1",
                 }) as advance,
+                patch.object(MODULE, "observe_devto_acquisition", return_value={
+                    "state": "OBSERVED", "article_count": 1,
+                    "total_page_views": 0, "delta_page_views": 0,
+                }),
                 patch.object(MODULE, "run_revenue_cycle", return_value={
                     "state": "NO_TRANSACTIONS", "source_rows": 0,
                     "appended_transitions": 0,
@@ -193,6 +197,10 @@ class LocalLoopTest(unittest.TestCase):
                 }),
                 patch.object(MODULE, "verify_systeme_email", return_value={
                     "state": "CAPTCHA_CHALLENGE", "deduplicated": True,
+                }),
+                patch.object(MODULE, "observe_devto_acquisition", return_value={
+                    "state": "OBSERVED", "article_count": 1,
+                    "total_page_views": 0, "delta_page_views": 0,
                 }),
                 patch.object(MODULE, "run_revenue_cycle", return_value={
                     "state": "NO_TRANSACTIONS", "source_rows": 0,

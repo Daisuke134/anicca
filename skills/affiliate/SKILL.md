@@ -235,6 +235,13 @@ The current host reads `DEVTO_API_KEY` from the process environment,
 `~/.config/anicca/affiliate.env`, or the already-provisioned Writer private env;
 the key never enters a receipt, log, prompt, or Git.
 
+The existing ten-minute money owner also reads the authenticated Forem article
+list at most once per hour and stores Affiliate-only page views, reactions, and
+comments under `distribution-metrics/devto.json`. These are acquisition
+diagnostics, not revenue. The daily Telegram summary reports the real DEV view
+count beside provider clicks and approved commission so a zero-click result can
+be separated into a reach problem or a conversion problem.
+
 The same distribution command exposes the current Writer Substack API shape
 without importing Writer state or its retired manual sentinel path:
 

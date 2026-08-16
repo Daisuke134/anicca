@@ -87,6 +87,71 @@ def _public_readback(url, title):
         return False
 
 
+def observe_metrics(state):
+    """Persist real DEV exposure metrics for Affiliate-owned publications."""
+    state = Path(state).expanduser()
+    publications = {}
+    for path in (state / "devto-publications").glob("*.json"):
+        try:
+            receipt = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if receipt.get("state") == "LIVE" and receipt.get("public_id"):
+            publications[str(receipt["public_id"])] = receipt
+    rows = _request("https://dev.to/api/articles/me/all?per_page=1000&state=all", _key())
+    if not isinstance(rows, list):
+        raise DevtoError("DEV article list is not an array")
+    by_id = {str(row.get("id")): row for row in rows if isinstance(row, dict) and row.get("id")}
+    articles = []
+    for public_id, publication in sorted(publications.items()):
+        row = by_id.get(public_id)
+        if not row:
+            raise DevtoError("DEV publication is missing from authenticated metrics readback")
+        values = {}
+        for field in (
+            "page_views_count", "public_reactions_count",
+            "positive_reactions_count", "comments_count",
+        ):
+            value = row.get(field)
+            if not isinstance(value, int) or value < 0:
+                raise DevtoError(f"DEV returned invalid {field}")
+            values[field] = value
+        articles.append({
+            "plan_id": publication.get("plan_id"),
+            "placement_id": publication.get("placement_id"),
+            "public_id": public_id,
+            "public_url": publication.get("public_url"),
+            **values,
+        })
+    receipt_path = state / "distribution-metrics" / "devto.json"
+    try:
+        previous = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    previous_views = {
+        str(row.get("public_id")): row.get("page_views_count", 0)
+        for row in previous.get("articles", []) if isinstance(row, dict)
+    }
+    for article in articles:
+        prior = previous_views.get(article["public_id"], 0)
+        if article["page_views_count"] < prior:
+            raise DevtoError("DEV page views moved backwards")
+        article["delta_page_views"] = article["page_views_count"] - prior
+    digest = hashlib.sha256(json.dumps(articles, sort_keys=True).encode()).hexdigest()
+    receipt = {
+        "schema_version": 1, "receipt_type": "DEVTO_DISTRIBUTION_METRICS",
+        "state": "OBSERVED", "observed_at": datetime.now(timezone.utc).isoformat(),
+        "article_count": len(articles),
+        "total_page_views": sum(row["page_views_count"] for row in articles),
+        "delta_page_views": sum(row["delta_page_views"] for row in articles),
+        "total_reactions": sum(row["public_reactions_count"] for row in articles),
+        "total_comments": sum(row["comments_count"] for row in articles),
+        "metrics_sha256": digest, "articles": articles,
+    }
+    _atomic(receipt_path, receipt)
+    return receipt
+
+
 def publish(state, plan_id):
     state = Path(state).expanduser()
     campaign_path = state / "campaign-publications" / f"{plan_id}.json"
