@@ -1254,6 +1254,24 @@ an organic click arriving, provider review completing, and
 a commission being approved are external acceptance gates observed by launchd;
 they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
+
+Latest restart truth: source/spec HEAD `50eb883f3c9a2ab695484e1bc4b69cfc7e4ddeb1`
+and installed release `c2c1aa60d3375e9e6abb0156d9da803077fef697`
+remain clean/current. All six launchd owners are loaded; the three job owners
+read back 600-second intervals and last exit `0`, and the three isolated browser
+owners are running. Money wakes immediately before the latest wake returned
+`X_LIVE`; the latest wake at runtime timestamp `1786889338` returned
+`PUBLICATION_FAILED / XPostError` while retaining ElevenLabs `AUTHENTICATED`,
+revenue `NO_TRANSACTIONS`, six placements `LEDGER_READY`, and Telegram
+`NO_PENDING`. This is an unresolved real-runtime failure, not proof that an
+external post failed or duplicated. Resume by reading the exact X target and
+publication/job receipts, then trigger and watch the existing launchd money owner;
+if the same class repeats, repair the X observation/reconciliation harness rather
+than posting manually. Campaign seven remains source-captured but composition is
+budget-blocked for JST `2026-08-16` (`101310` consumed plus a `32768`
+reservation exceeds the `131072` daily cap); its same durable job retries when
+the next budget day becomes eligible. Official provider transactions and
+approved/paid Affiliate commission remain exactly zero.
 M0.3 is installed in release `30f7862ab579a1416fd272c3643cce1b3f0f2ff1`.
 Real launchd wake `10` exited `0`, kept provider `AUTHENTICATED` and publication
 `X_LIVE`, and rebuilt a mode-0600, hash-valid six-placement economic ledger even
