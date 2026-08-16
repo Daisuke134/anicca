@@ -138,6 +138,105 @@ test("verified registration becomes one durable Calendar PNG Telegram applied bu
   assert.equal(fs.statSync(bundleFile).mode & 0o777, 0o600);
 });
 
+test("hasAppliedBundle reports false before completion and true after, without touching Calendar or Telegram", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-evidence-has-bundle-"));
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 7)]);
+  const pngSha = createHash("sha256").update(png).digest("hex");
+  const calls = [];
+  const calendarReceipt = Object.freeze({
+    id: "google-event-2",
+    htmlLink: "https://www.google.com/calendar/event?eid=has-bundle-one",
+  });
+  let calendarReads = 0;
+  const calendar = {
+    async findConnectorEvents(input) {
+      calls.push(["calendar-read", input]);
+      calendarReads += 1;
+      return calendarReads === 1 ? [] : [calendarReceipt];
+    },
+    async createConnectorEvent(input) {
+      calls.push(["calendar-create", input]);
+      return calendarReceipt;
+    },
+  };
+  const evidenceStore = {
+    async record(input) {
+      const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${pngSha}`).digest("hex");
+      return Object.freeze({
+        external_receipt_ref: `provider-receipt://luma/${receiptId}`,
+        artifact_ref: `object://sha256/${pngSha}`,
+      });
+    },
+  };
+  const chain = createMinimalEvidenceChain({
+    stateDir,
+    tenantId: "dais-local",
+    calendar,
+    calendarId: "primary",
+    telegramTarget: "private-target",
+    evidenceStore,
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async sendMessage(message, options) { calls.push(["telegram-message", message, options]); return { messageId: 9201 }; },
+    async sendPhoto(bytes, options) { calls.push(["telegram-photo", bytes, options]); return { messageId: 9202 }; },
+  });
+  const candidate = Object.freeze({
+    provider: "luma",
+    event_ref: "luma-event://event/has-bundle-one",
+    canonical_url: "https://luma.com/has-bundle-one",
+    title: "Has Bundle Event",
+    starts_at: "2026-08-10T10:00:00.000Z",
+    ends_at: "2026-08-10T11:00:00.000Z",
+    venue_name: "Tokyo",
+  });
+  const page = {
+    async setContent() {},
+    async screenshot() { return png; },
+  };
+
+  assert.equal(
+    await chain.hasAppliedBundle({ provider: "luma", event_ref: candidate.event_ref, provider_status: "registered" }),
+    false,
+  );
+
+  const before = calls.length;
+  await chain.completeEvidence({
+    provider: "luma", candidate, page, providerState: { status: "registered" }, repairedActions: [],
+  });
+  assert.equal(calls.length > before, true);
+
+  assert.equal(
+    await chain.hasAppliedBundle({ provider: "luma", event_ref: candidate.event_ref, provider_status: "registered" }),
+    true,
+  );
+  const afterReads = calls.length;
+  assert.equal(
+    await chain.hasAppliedBundle({ provider: "luma", event_ref: candidate.event_ref, provider_status: "registered" }),
+    true,
+  );
+  assert.equal(calls.length, afterReads, "hasAppliedBundle must never call Calendar or Telegram");
+  assert.equal(calls.filter(([name]) => name === "calendar-create").length, 1);
+  assert.equal(calls.filter(([name]) => name === "telegram-message").length, 1);
+  assert.equal(calls.filter(([name]) => name === "telegram-photo").length, 1);
+
+  fs.rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("hasAppliedBundle rejects an unknown provider or an out-of-contract provider_status", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-evidence-has-bundle-invalid-"));
+  const chain = createMinimalEvidenceChain({
+    stateDir,
+    tenantId: "dais-local",
+    calendar: { async findConnectorEvents() { return []; }, async createConnectorEvent() { return {}; } },
+    calendarId: "primary",
+    telegramTarget: "private-target",
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+  });
+  await assert.rejects(chain.hasAppliedBundle({ provider: "not-a-real-provider", event_ref: "x", provider_status: "registered" }));
+  await assert.rejects(chain.hasAppliedBundle({ provider: "luma", event_ref: "luma-event://event/x", provider_status: "not-a-real-status" }));
+  await assert.rejects(chain.hasAppliedBundle({ provider: "luma", event_ref: "not-a-real-ref", provider_status: "registered" }));
+  fs.rmSync(stateDir, { recursive: true, force: true });
+});
+
 function peatixCandidate(extra = {}) {
   return {
     provider: "peatix", event_ref: "peatix-event://event/5075819", canonical_url: "https://peatix.com/event/5075819",

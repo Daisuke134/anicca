@@ -549,6 +549,21 @@ function createMinimalEvidenceChain(options = {}) {
   ) invalid();
 
   return Object.freeze({
+    // Reconciliation-only lookup: lets a discovery step ask "does this
+    // provider+event already have an applied bundle?" without running the
+    // rest of the evidence chain. Reuses the exact same bundle store
+    // scanAppliedBundles() reads inside completeEvidence(), so the answer
+    // can never drift from what completeEvidence() itself would decide.
+    async hasAppliedBundle(input = {}) {
+      const provider = providers[input.provider];
+      if (!provider) invalid();
+      const eventRef = String(input.event_ref || "");
+      if (!provider.eventRef.test(eventRef)) invalid();
+      const status = String(input.provider_status || "");
+      if (!provider.states.includes(status)) invalid();
+      return scanAppliedBundles(stateDir, providers, provider.name, { event_ref: eventRef }, status).length === 1;
+    },
+
     async completeEvidence(input = {}) {
       const provider = providers[input.provider];
       if (
