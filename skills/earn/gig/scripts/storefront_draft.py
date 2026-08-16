@@ -22,6 +22,9 @@ def load_contract(path: Path) -> dict[str, Any]:
     fields = value.get("public_fields")
     category = value.get("category")
     gate = value.get("publication_gate")
+    category_specific = value.get("category_specific")
+    subscription = value.get("subscription")
+    paid_options = value.get("paid_options")
     if (
         value.get("version") != 1 or value.get("platform") != "coconala"
         or not str(value.get("draft_service_id") or "").isdigit()
@@ -39,6 +42,20 @@ def load_contract(path: Path) -> dict[str, Any]:
         or int(fields["price_option_value"]) != int(fields["display_price_jpy"] * 1.1)
         or type(fields.get("delivery_days")) is not int or not 1 <= fields["delivery_days"] <= 99
         or type(fields.get("order_limit")) is not int or not 1 <= fields["order_limit"] <= 20
+        or not isinstance(category_specific, dict)
+        or any(not isinstance(category_specific.get(key), list) or not category_specific[key]
+               for key in ("features", "industries", "languages"))
+        or any(not all(str(item).isdigit() for item in category_specific[key])
+               for key in ("features", "industries", "languages"))
+        or category_specific.get("provision_format") not in {"1", "2", "3"}
+        or not str(category_specific.get("fix_limit") or "").lstrip("-").isdigit()
+        or not str(category_specific.get("unit_price_jpy_per_character") or "").isdigit()
+        or not isinstance(subscription, dict) or subscription.get("enabled") is not True
+        or subscription.get("discount_ratio") not in {"5", "10", "15", "20"}
+        or not isinstance(paid_options, list) or len(paid_options) != 1
+        or not isinstance(paid_options[0], dict) or not str(paid_options[0].get("title") or "").strip()
+        or type(paid_options[0].get("price_jpy")) is not int or paid_options[0]["price_jpy"] < 500
+        or paid_options[0].get("opened") != "1"
         or not all(gate.get(key) is True for key in (
             "requires_distinct_catalog_outcome", "requires_owned_capability",
             "requires_available_capacity", "requires_hero_image",
@@ -134,8 +151,29 @@ def _snapshot_matches(snapshot: dict[str, Any], contract: dict[str, Any]) -> boo
         return False
     price = next((row for row in snapshot.get("price_options") or []
                   if str(row.get("value") or "") == expected["data[Service][price]"]), None)
-    return isinstance(price, dict) and str(price.get("text") or "").replace(",", "") == (
+    if not isinstance(price, dict) or str(price.get("text") or "").replace(",", "") != (
         f"{contract['public_fields']['display_price_jpy']}円"
+    ):
+        return False
+    rows = [row for row in snapshot.get("fields") or [] if isinstance(row, dict)]
+    checked = lambda name: {
+        str(row.get("value") or "") for row in rows
+        if row.get("name") == name and row.get("checked") is True
+    }
+    category_specific = contract["category_specific"]
+    option = contract["paid_options"][0]
+    return (
+        checked("data[facets][163][]") == set(category_specific["features"])
+        and checked("data[facets][164][]") == set(category_specific["industries"])
+        and checked("data[facets][165][]") == set(category_specific["languages"])
+        and checked("data[Service][provision_format]") == {category_specific["provision_format"]}
+        and checked("data[Service][can_subscribe]") == {"1"}
+        and values.get("data[Service][fix_limit]") == category_specific["fix_limit"]
+        and values.get("data[Service][unit_price]") == category_specific["unit_price_jpy_per_character"]
+        and values.get("data[ServiceSubscription][discount_ratio]") == contract["subscription"]["discount_ratio"]
+        and values.get("data[Option][0][title]") == option["title"]
+        and values.get("data[Option][0][price]") == str(option["price_jpy"])
+        and values.get("data[Option][0][opened]") == option["opened"]
     )
 
 
@@ -165,26 +203,14 @@ async def _prepare(ws_url: str, contract: dict[str, Any]) -> tuple[dict[str, Any
         cid = await _wait_for_option(
             ws, "data[Service][master_category]", contract["category"]["master"]["value"], cid,
         )
-        before_raw, cid = await _evaluate(ws, DRAFT_SNAPSHOT_EXPRESSION, cid)
-        before = json.loads(str(before_raw or "{}"))
-        before_values = {
-            str(row.get("name") or ""): str(row.get("value") or "")
-            for row in before.get("fields") or [] if isinstance(row, dict)
-        }
-        if before_values.get("data[Service][master_category]") == contract["category"]["master"]["value"]:
-            cid = await _wait_for_option(
-                ws, "data[Service][master_sub_category]", contract["category"]["sub"]["value"], cid,
-            )
-            cid = await _wait_for_option(
-                ws, "data[Service][master_category_type_id]", contract["category"]["type"]["value"], cid,
-            )
-            hydration_deadline = asyncio.get_running_loop().time() + 5
-            while asyncio.get_running_loop().time() < hydration_deadline:
-                before_raw, cid = await _evaluate(ws, DRAFT_SNAPSHOT_EXPRESSION, cid)
-                before = json.loads(str(before_raw or "{}"))
-                if _snapshot_matches(before, contract) and _snapshot_image_count(before) == 1:
-                    return before, False
-                await asyncio.sleep(0.25)
+        hydration_deadline = asyncio.get_running_loop().time() + 6
+        before = {}
+        while asyncio.get_running_loop().time() < hydration_deadline:
+            before_raw, cid = await _evaluate(ws, DRAFT_SNAPSHOT_EXPRESSION, cid)
+            before = json.loads(str(before_raw or "{}"))
+            if _snapshot_matches(before, contract) and _snapshot_image_count(before) == 1:
+                return before, False
+            await asyncio.sleep(0.25)
         before_image_count = _snapshot_image_count(before)
         if before_image_count > 1:
             raise RuntimeError("storefront_draft_image_count_invalid")
@@ -226,6 +252,55 @@ async def _prepare(ws_url: str, contract: dict[str, Any]) -> tuple[dict[str, Any
             if result is not True:
                 raise RuntimeError("storefront_draft_price_contract_mismatch")
             await asyncio.sleep(0.5)
+        category_specific = contract["category_specific"]
+        checkbox_values = {
+            "data[facets][163][]": category_specific["features"],
+            "data[facets][164][]": category_specific["industries"],
+            "data[facets][165][]": category_specific["languages"],
+        }
+        configured, cid = await _evaluate(ws, (
+            "(()=>{const sets=" + json.dumps(checkbox_values) + ";"
+            "for(const [name,wanted] of Object.entries(sets)){const els=[...document.getElementsByName(name)];"
+            "if(!els.length)return false;for(const e of els){e.checked=wanted.includes(e.value);"
+            "e.dispatchEvent(new Event('change',{bubbles:true}))}}"
+            "const radio=[...document.getElementsByName('data[Service][provision_format]')]"
+            f".find(e=>e.value==={json.dumps(category_specific['provision_format'])});"
+            "const fix=document.querySelector('[name=\"data[Service][fix_limit]\"]');"
+            "const unit=document.querySelector('[name=\"data[Service][unit_price]\"]');"
+            "const subscribe=document.querySelector('[name=\"data[Service][can_subscribe]\"][type=checkbox]');"
+            "const discount=document.querySelector('[name=\"data[ServiceSubscription][discount_ratio]\"]');"
+            "if(!radio||!fix||!unit||!subscribe||!discount)return false;"
+            "radio.checked=true;radio.dispatchEvent(new Event('change',{bubbles:true}));"
+            f"fix.value={json.dumps(category_specific['fix_limit'])};fix.dispatchEvent(new Event('change',{{bubbles:true}}));"
+            f"unit.value={json.dumps(category_specific['unit_price_jpy_per_character'])};unit.dispatchEvent(new Event('input',{{bubbles:true}}));"
+            "subscribe.checked=true;subscribe.dispatchEvent(new Event('change',{bubbles:true}));"
+            f"discount.value={json.dumps(contract['subscription']['discount_ratio'])};discount.dispatchEvent(new Event('change',{{bubbles:true}}));"
+            "return true})()"
+        ), cid)
+        if configured is not True:
+            raise RuntimeError("storefront_draft_category_specific_missing")
+        option = contract["paid_options"][0]
+        has_option, cid = await _evaluate(
+            ws, "!!document.querySelector('[name=\"data[Option][0][title]\"]')", cid,
+        )
+        if has_option is not True:
+            added, cid = await _evaluate(ws, (
+                "(()=>{const b=document.querySelector('.js_add-option-button');if(!b)return false;b.click();return true})()"
+            ), cid)
+            if added is not True:
+                raise RuntimeError("storefront_draft_paid_option_add_missing")
+            await asyncio.sleep(0.5)
+        option_set, cid = await _evaluate(ws, (
+            "(()=>{const title=document.querySelector('[name=\"data[Option][0][title]\"]');"
+            "const price=document.querySelector('[name=\"data[Option][0][price]\"]');"
+            "const opened=document.querySelector('[name=\"data[Option][0][opened]\"]');"
+            "if(!title||!price||!opened)return false;"
+            f"title.value={json.dumps(option['title'], ensure_ascii=False)};title.dispatchEvent(new Event('input',{{bubbles:true}}));"
+            f"price.value={json.dumps(str(option['price_jpy']))};price.dispatchEvent(new Event('change',{{bubbles:true}}));"
+            f"opened.value={json.dumps(option['opened'])};opened.dispatchEvent(new Event('change',{{bubbles:true}}));return true}})()"
+        ), cid)
+        if option_set is not True:
+            raise RuntimeError("storefront_draft_paid_option_missing")
         if before_image_count == 0:
             clicked, cid = await _evaluate(ws, (
                 "(()=>{const b=document.querySelector('.js_upload-select');if(!b)return false;b.click();return true})()"
