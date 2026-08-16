@@ -1101,7 +1101,7 @@ This list contains implementation work only. Time passing, an organic visitor,
 provider approval, and commission settlement are observed acceptance gates, not
 tasks and not reasons to stop safe work.
 
-1. **IN PROGRESS — M2.1-O — Correct owner observability.** Build the natural-language daily
+1. **DONE — M2.1-O — Correct owner observability.** Build the natural-language daily
    summary from the canonical placement ledger, not a partial provider report.
    Report canonical placements, dedicated links, measured clicks, unknown click
    rows, commission states, actual/unknown costs, current campaign, recovery, and
@@ -1131,8 +1131,12 @@ tasks and not reasons to stop safe work.
    recovery first and sent message ID `21251`. That event was real, not fabricated,
    yet unlimited historical publication backfill is noisy. The corrected boundary
    keeps publication recovery immediate-only, retains durable historical scan for
-   the observed revenue recovery, and must now send the `41→42` revenue event once
-   before an unchanged replay proves no duplicate.
+   the observed revenue recovery. Installed release `6f14094a68fb2c6720931bc9ce1c85996d441fd2`
+   closed the acceptance: real wake `44` sent exactly one natural revenue
+   `SELF_HEALED` event as Telegram message ID `21255`, stated `transactions=0`,
+   and counted no estimated revenue. Unchanged replay wake `45` exited `0`, kept
+   six placements `X_LIVE` with provider `AUTHENTICATED`, and kept Telegram sent
+   rows `16→16`, proving duplicate suppression.
 2. **M2.1-P — Grow six comparable English placements to ten.** The existing
    source→composition→policy→dedicated-link→owned/X→readback→ledger path advances
    four more campaigns. The Agent performs the work; a human or Codex does not
