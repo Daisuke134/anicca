@@ -24,7 +24,7 @@ REQUIRED = {
 }
 
 GETRESPONSE_URL = "https://dash.partnerstack.com/application?company=getresponse&group=default"
-ELEVENLABS_HOME = "https://elevenlabs.io/app/affiliates"
+ELEVENLABS_HOME = "https://elevenlabs.io/app/home"
 GETRESPONSE_PROMOTION = (
     "We publish evidence-led English software buying guides on aniccaai.com and disclose "
     "affiliate relationships before calls to action. We distribute each guide through "
