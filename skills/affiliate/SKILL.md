@@ -23,6 +23,12 @@ append-only receipts outside Git, an isolated browser profile, and launchd-owned
 local wakes. It does not use Railway or an Anicca API redirect. Public content
 uses an authenticated provider tracking link directly; clicks are not revenue.
 
+The model boundary is pinned under `vendor/agent-runner/` from Life Manager
+commit `d150e4b1dba4c207a12fa4be974356124d425919`. `SOURCE.md`, the preserved MIT
+license, and `SHA256SUMS` are authoritative; an installed Gig release is evidence,
+not source. The runner is not admitted into `loop wake` until the Affiliate
+routing, privacy, schema, and budget gates in the SSOT are closed.
+
 F0 provides four deterministic, non-publishing primitives:
 
 - `bootstrap/install.sh` verifies a reviewed pinned manifest and writes an

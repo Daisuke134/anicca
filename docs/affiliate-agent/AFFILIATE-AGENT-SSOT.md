@@ -1390,7 +1390,7 @@ a due judgment or bounded diagnosis after budget and privacy gates pass.
 
 | ID | State | Uncertainty / observed answer | Closure condition |
 |---|---|---|---|
-| U01 | CLEARED | Runner provenance is GitHub `Daisuke134/life-manager@d150e4b1…`; the five runtime files byte-match that commit | Vendor the pinned commit, license, and SHA manifest; never treat a writable release directory as source |
+| U01 | CLEARED | Runner provenance is GitHub `Daisuke134/life-manager@d150e4b1…`; `skills/affiliate/vendor/agent-runner/` preserves the five byte-matching runtime files, MIT license, source record, and verified SHA manifest | Keep the pinned snapshot and manifest as source; never substitute a branch head or writable installed release |
 | U02 | CLEARED | d150 and canonical `main` diverge; `agent_runner.py` and `config.json` differ, while three support files match | Base Affiliate on d150 and review later main changes explicitly; no blind latest-main copy |
 | U03 | CLEARED | Current Codex auth plus Terra-medium structured output works read-only | Preserve a sanitized installed canary receipt; it is capability proof, not economic proof |
 | U04 | OPEN-BEFORE-CODE | Terra-high strategy and one-use Sol escalation are not configured or live-proven | Add Affiliate task classes, prove each route read-only, and record model/effort/route |
@@ -1550,7 +1550,7 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 
 #### 6. Execution steps
 
-1. Pin and vendor the d150 runner snapshot with license/SHA provenance.
+1. **DONE:** pin and vendor the d150 runner snapshot with license/SHA provenance. `SHA256SUMS` verifies all six preserved files, each runtime file byte-matches the fixed Git commit, three support modules import under the host Python, and the existing 37 Affiliate tests pass.
 2. Close U04–U14: routing, binary, privacy, schema, context, budget, timezone,
    machine capability, and repair authority contracts.
 3. Add common Run/ToolAttempt/StageTrajectory and typed failure schemas.
