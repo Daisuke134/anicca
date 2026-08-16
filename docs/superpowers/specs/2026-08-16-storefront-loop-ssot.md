@@ -42,6 +42,19 @@ Storefront is complete only when one installed launchd loop repeatedly performs 
 
 A working scheduler, a scorecard, a fixed set of adapters, or one successful publication is necessary evidence but is not completion by itself.
 
+### Four-stage completion contract
+
+`launchctl state=not running` between scheduled invocations does not mean OFF. An interval owner is ON when its label is loaded, its plist has the intended interval, wakes continue, and the latest completed wake exits `0`. Current read-only observation shows Storefront, Apply and Negotiate loaded with latest exit `0`; Storefront uses `StartInterval=60`. Paid is intentionally not loaded. This is operational availability, not completion evidence.
+
+The finish line has four separate stages:
+
+1. **Storefront complete on this Mac mini:** every Storefront-owned item in this spec is closed, including generated `CREATE`, recoverable `RETIRE`, atomic `REPLACE`, official KPI learning, Telegram, idempotent replay, reboot recovery and cleanup.
+2. **Four-lane Coconala production complete on this Mac mini:** Apply, Storefront, Negotiate and Paid are all owner-isolated, main-derived, loaded as intended, and both earning paths complete real official E2E with attribution and no duplicate effect. Enabling Paid alone is insufficient.
+3. **Unattended-by-default acceptance:** reboot/login recovery, browser/session recovery, bounded failure reporting and repeated scheduled wakes prove ordinary operation does not need a coding session. CAPTCHA, expired identity/authentication, policy changes and unsupported buyer requests remain explicit fail-closed human-escalation boundaries; revenue is never guaranteed.
+4. **Portable open-source release:** a clean second Mac installs from the public repository, supplies only documented profile/capability, marketplace login and Telegram inputs, creates owner-isolated launchd services and readonly releases, passes the same health/E2E gates, and can uninstall without deleting user marketplace data.
+
+Stage 4 starts only after stages 1–3 pass on the current Mac mini. “Works on this Mac” and “works on any Mac” are different acceptance claims.
+
 ### Runtime intelligence and model contract
 
 The Storefront loop is not one continuously running LLM. Its installed launchd label wakes every 60 seconds. Incremental wakes collect official state, reconcile funnel data, perform public readback and report through deterministic Python only. A full decision wake is due every 1,800 seconds. Even on a full wake, code performs identity, version, evidence, ownership, one-effect, rollback, official-readback and duplicate guards; the model may propose commercial content but can never certify its own external effect.
@@ -472,9 +485,12 @@ The following order is the finish line. Time-dependent measurement is never a TO
 7. **Prove normal cadence:** install the final readonly main-ancestor release with only `--effect --auto-cadence`; verify repeated incremental/full wakes remain green and keep selecting work indefinitely.
 8. **Canonicalize the three-lane operating floor:** Apply is operationally green but MUST move its split non-main release paths into one readonly GitHub-`main`-ancestor release; Negotiate is operationally green but MUST move its non-main release into its own readonly GitHub-`main`-ancestor release and consume/ACK the Storefront context envelope; Storefront MUST remain green. Paid remains excluded until its owner enables it.
 9. **Cleanup:** prove zero executable dependency on `gig_pass.sh`, Hermes-as-executor, mixed or temporary Storefront branches, and writable checkouts. Remove the shared mixed worktree/ref only after every external owner releases it; Hermes gateway remains.
-10. **Completion record:** reconcile official catalog, analytics, both earning funnels, portfolio decisions, contracts, effect/outcome ledgers, Telegram receipts, launchd status and clean pushed `main`; only then mark Storefront and the three-lane operating floor complete.
+10. **Storefront completion record:** reconcile official catalog, analytics, both earning funnels, portfolio decisions, contracts, effect/outcome ledgers, Telegram receipts, launchd status and clean pushed `main`; only then mark Storefront complete.
+11. **Four-lane Mac mini acceptance:** after the Paid owner finishes and enables Paid, require Apply→Negotiate→Paid and Storefront→Negotiate→Paid real official E2E, exact origin attribution, four owner-isolated main-derived releases, scheduled wake evidence, zero duplicate external effects and reboot/login recovery. Only then call the Mac mini Coconala system complete.
+12. **Open-source productization:** replace machine-specific paths and private state assumptions with a documented bootstrap/config contract, Keychain-safe secrets, per-owner launchd installation, healthcheck, update/rollback and non-destructive uninstall. Keep login/CAPTCHA/policy exceptions explicit instead of claiming absolute zero-human operation.
+13. **Clean-Mac portability proof:** install the public repository on a second clean supported Mac, provide only documented user inputs and marketplace login, run the same four-lane health and bounded E2E gates, reboot, verify automatic recovery, and publish the versioned open-source release only after it passes.
 
-Items 1–7 and the Storefront portion of 9–10 are Storefront-owned. Apply/Negotiate/Paid changes stay with their owners; their observable green/ACK state remains an integration acceptance gate.
+Items 1–7 and the Storefront portion of 9–10 are Storefront-owned. Item 11 is the cross-owner Mac mini acceptance gate. Items 12–13 are the later open-source product gate. Apply/Negotiate/Paid changes stay with their owners.
 
 ### External four-loop integration TODOs — not removed
 
@@ -485,3 +501,6 @@ These items are not Storefront-owned and Storefront must not edit or reload thei
 - [ ] Negotiate owner moves installed direct release `7fbedc7c4...` to its own GitHub-`main`-ancestor release and proves its E2E without Storefront intervention.
 - [ ] Paid owner resolves its implementation on its own clean branch, moves the installed direct release away from mixed `d150e4b1d...` to its reviewed GitHub-`main` ancestor, and decides when to enable the intentionally stopped label.
 - [ ] After all four owner items close, publish the global canonical four-loop inventory and run the separate product/open-source release gate.
+- [ ] Prove both real earning paths on the Mac mini, then reboot/login and prove all intended labels recover with accurate Telegram, attribution, receipts and no duplicate effect.
+- [ ] Build the portable installer/config/health/update/rollback/uninstall contract without embedding this machine's paths, credentials or marketplace state.
+- [ ] Pass a clean supported-Mac installation and reboot proof before tagging the first public open-source release.
