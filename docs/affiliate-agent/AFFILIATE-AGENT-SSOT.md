@@ -1255,9 +1255,12 @@ a commission being approved are external acceptance gates observed by launchd;
 they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
 
-Latest restart truth: source/spec HEAD `7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25`
-and installed release `7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25`
-are clean, identical, and pushed to `origin` and `canonical`. All six launchd
+Latest restart truth: installed release
+`7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25` is byte-identical to that commit and
+is pushed to `origin` and `canonical`. Spec HEAD advances past it only with
+docs-only commits that leave `skills/affiliate` unchanged, so
+`git diff <installed-release> HEAD -- skills/affiliate` must stay empty; a
+non-empty diff means the runtime is stale and must be reinstalled. All six launchd
 owners are loaded; the three job owners read back 600-second intervals and last
 exit `0`, and the three isolated browser owners are running.
 
