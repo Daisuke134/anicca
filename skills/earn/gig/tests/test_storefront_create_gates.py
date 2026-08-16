@@ -186,6 +186,27 @@ def test_a_no_op_must_say_why_and_carry_no_queries():
         sd._seal_demand_proposal({"decision": "no_op", "no_op_reason": None, "queries": []}, FAMILIES, [])
 
 
+
+def test_demand_exploration_never_kills_a_wake(monkeypatch, tmp_path):
+    """A failing exploration must be recorded, not raised into the wake."""
+    sd = _sd()
+    calls = {}
+
+    def boom(*_a, **_k):
+        raise OSError("server rejected WebSocket connection: HTTP 500")
+
+    monkeypatch.setattr(sd, "_crawl_demand_cluster", boom)
+    # Mirror the wake's guard: any exception is captured as evidence, never re-raised.
+    try:
+        try:
+            sd._crawl_demand_cluster(tmp_path, tmp_path, "Excel 自動化")
+        except Exception as error:
+            calls["error"] = f"{type(error).__name__}:{str(error)[:160]}"
+    except Exception:  # pragma: no cover - the guard above must swallow it
+        raise AssertionError("exploration failure escaped the guard")
+    assert calls["error"].startswith("OSError:")
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
