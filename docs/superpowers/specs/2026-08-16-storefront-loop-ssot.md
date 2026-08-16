@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. Active item: S4f, prove the price mutation contract through the installed authenticated Storefront owner. S4r browser/provenance recovery is complete. Finish order is fixed: S4 adapters → S5 attribution/reporting → S6 repeated installed E2E → S7 four-lane legacy cleanup → S8 cleanup-aftercare E2E. No earlier milestone may be called complete while a later finish gate remains open. This document owns Storefront implementation and records the final cross-owner cleanup contract without modifying another owner's code or live state.
+Status: INCOMPLETE. Active item: S4g, unify the remaining adapter guards and prove stale-version, unsupported-family, multi-field, rollback and official-readback failures through the installed fenced owner. S4r recovery and S4f price rendering are complete. Finish order is fixed: S4 guards → S5 attribution/reporting → S6 repeated installed E2E → S7 four-lane legacy cleanup → S8 cleanup-aftercare E2E. No earlier milestone may be called complete while a later finish gate remains open. This document owns Storefront implementation and records the final cross-owner cleanup contract without modifying another owner's code or live state.
 
 ## 1. Overview
 
@@ -82,7 +82,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The first public recovery release exposed a deeper provenance gap before deployment: `main` had neither `launch_gig_browser.sh` nor the source `ai.anicca.hf-gig-browser.plist`, although the installed browser plist still referenced quarantined release `d150e4b1d...`. The two browser-owner files are restored individually from proven commit `f1209ea69`; the mixed branch is not merged. Public-main release `8fefa7a0c...` now closes this browser-source provenance gap.
 - Public-main commit `8fefa7a0c` now contains the restored browser launcher and source plist. Readonly immutable release `/Users/operator/gig/releases/life-manager/8fefa7a0c1a6ba1a86d36a587953006026ac2cf0` matches both source files and `storefront_direct.py`; the installed browser and Storefront plist files point only to this release, and the other five canonical plist files remain byte-identical. Failed recovery pass `storefront-browser-failure-c0c803f56` exits through the durable receipt boundary with `status=failed`, `reason=storefront_browser_unavailable:FAILED`, `effect/readback/duplicate=0/0/0`, and no lease. This proves fail-closed recording, not installed recovery success.
 - After the Mac user session returned, OpenDirectory and GUI launchd manager both read UID `501`; canonical browser label `ai.anicca.hf-gig-browser` remained running on CDP `:9223`. The existing Storefront label was triggered once without reloading another owner. Recovery pass `storefront-direct-1786854719329508000-8615` completed with launchd exit `0`, official/competitor `12/8`, effect/readback/duplicate `0/0/0`, catalog KPI `441/0/3`, four authenticated mutation renders, public SEO readback `1`, Telegram `deduped/20596`, and released lease. CDP stayed alive through analytics 12/12, and the lease ledger ended empty. This closes S4r; the earlier bootstrap outage remains historical evidence, not a TODO.
-- The price adapter now uses the common mutation envelope and binds seller option identity separately from buyer-visible JPY. For service `91000004`, the latest retained official contract version `a345b678...` has public JPY5,000; the render requires current seller option `5500`, proposed option `6600` with exact label `6,000円`, and official public readback JPY6,000. The isolated render changes only `data[Service][price]` and remains `published=false`; removing the proposed option fails closed with `storefront_price_option_binding_invalid`. Browser recovery is complete; building the price-enabled main release and obtaining the installed authenticated render are now the only S4f acceptance work.
+- The price adapter uses the common mutation envelope and binds seller option identity separately from buyer-visible JPY. Readonly main release `76bd1117e...` is installed only for Storefront. Pass `storefront-direct-1786855420160162000-28208` authenticated the current service `91000004` version `a345b678...`, seller option `5500` / public JPY5,000, and proposed option `6600` / `6,000円`; it rendered only `data[Service][price]`, retained rollback `5500`, contract SHA `d9d5c930...`, and `published=false`. Removing the proposed option fails closed with `storefront_price_option_binding_invalid`. The full installed wake exits `0` with official/competitor `12/8`, all five mutation renders, KPI `441/0/3`, public SEO readback `1`, Telegram `deduped/20596`, and released Storefront lease. No price or listing was published.
 - Storefront commit `85eaa6d86` is on GitHub `main` and in readonly immutable release `/Users/operator/gig/releases/life-manager/85eaa6d...`. Only `ai.anicca.hf-gig-storefront-direct` was reloaded. Its natural installed wake `storefront-direct-1786843673261706000-46042` exited `0` with official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, draft `0/1/1/0`, active publication fence, Telegram `deduped/20527`, and released lease. Before/after SHA comparison found zero changes to every non-Storefront gig plist.
 - Official analytics now retries each service independently and records an exhausted readback as `unknown`, never zero and never a reason to skip the rest of the Storefront wake. Reports separate unknown current values from unknown comparisons.
 
@@ -189,7 +189,7 @@ Verification: the existing experiment on `91000001` remains unchanged; official 
 - [x] Migrate body/scope to the same envelope and prove one deterministic no-publish diff from the authenticated seller form.
 - [x] Migrate package/add-ons to the same envelope and prove one deterministic no-publish diff from the authenticated seller form.
 - [x] Migrate FAQ to the same envelope and prove one authenticated logical-field no-publish diff with exact question/answer readback.
-- [ ] Migrate price to the same envelope and prove one authenticated no-publish diff with exact option/display-price binding. The implementation and fail-closed isolated render pass; the installed authenticated render is still required.
+- [x] Migrate price to the same envelope and prove one authenticated no-publish diff with exact option/display-price binding.
 - [ ] Make image, title/outcome, body/scope, package/add-ons, FAQ and price adapters consume one versioned mutation contract instead of service-specific control flow.
 - [ ] Require every adapter to declare exact precondition hash, changed field, allowed delta, rollback value and official readback contract.
 - [ ] Render and diff one existing service per adapter without publishing; fail closed on unsupported family, stale version, unknown option value or multi-field delta.
@@ -291,14 +291,13 @@ The exact final tree may reuse existing directories to minimize churn, but Store
 
 Remaining execution order is authoritative and may not be reordered:
 
-1. S4f: install the price adapter from GitHub `main`, render the authenticated seller option/display-price contract without publishing, and fail closed on an unknown option.
-2. S4g: apply stale-version, unsupported-family, multi-field, rollback and official-readback guards to every adapter; run the installed fenced owner.
-3. S5a: add the append-only Storefront funnel joiner and immutable cross-owner receipt consumer without editing Negotiate or Paid.
-4. S5b: keep Storefront and Apply origins exclusive; add verified money, quality and repeat fields with unknown-preserving reconciliation.
-5. S5c: complete the emoji-led hourly Telegram report and prove changed-state send plus identical-state dedupe.
-6. S6a: run three consecutive installed wakes, measure duration and prove effect/readback/dedupe/lease behavior plus one contained failure recovery.
-7. S6b: prove minute/hour/day cutoffs by immediate controlled replays; minute capability requires a sub-60-second incremental path or truthful locked no-op.
-8. S7a: inventory all four direct owners and fix missing provenance/references through their owners on GitHub `main`.
-9. S7b: remove registry/docs references, then tracked gig-pass files and obsolete backup plists after reachability is zero.
-10. S7c: after Paid evidence handoff, remove the mixed worktree/branch and publish the canonical four-lane inventory.
-11. S8: build the post-cleanup release, run Storefront twice, verify other owners read-only, prove no resurrection path and only then mark the spec complete.
+1. S4g: apply stale-version, unsupported-family, multi-field, rollback and official-readback guards to every adapter; run the installed fenced owner.
+2. S5a: add the append-only Storefront funnel joiner and immutable cross-owner receipt consumer without editing Negotiate or Paid.
+3. S5b: keep Storefront and Apply origins exclusive; add verified money, quality and repeat fields with unknown-preserving reconciliation.
+4. S5c: complete the emoji-led hourly Telegram report and prove changed-state send plus identical-state dedupe.
+5. S6a: run three consecutive installed wakes, measure duration and prove effect/readback/dedupe/lease behavior plus one contained failure recovery.
+6. S6b: prove minute/hour/day cutoffs by immediate controlled replays; minute capability requires a sub-60-second incremental path or truthful locked no-op.
+7. S7a: inventory all four direct owners and fix missing provenance/references through their owners on GitHub `main`.
+8. S7b: remove registry/docs references, then tracked gig-pass files and obsolete backup plists after reachability is zero.
+9. S7c: after Paid evidence handoff, remove the mixed worktree/branch and publish the canonical four-lane inventory.
+10. S8: build the post-cleanup release, run Storefront twice, verify other owners read-only, prove no resurrection path and only then mark the spec complete.
