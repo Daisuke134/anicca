@@ -109,7 +109,19 @@ def owner_event(state, wake_event):
         cycle = json.loads(cycle_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         cycle = {}
-    if transition:
+    impact_state = wake_event.get("impact_state")
+    impact_changed = wake_event.get("impact_changed", False)
+    if impact_changed and impact_state in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
+        kind = f"PROGRAM_{impact_state}"
+        identity = {
+            "kind": kind,
+            "provider": "hubspot-impact",
+            "transition_id": wake_event.get("impact_transition_id"),
+        }
+        money = "commission not observed yet"
+        transition = None
+        campaign = {}
+    elif transition:
         kind = {
             "pending": "COMMISSION_PENDING", "approved": "COMMISSION_APPROVED",
             "reversed": "COMMISSION_REVERSED", "paid": "COMMISSION_PAID",
@@ -134,17 +146,24 @@ def owner_event(state, wake_event):
     else:
         return None
     event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
-    public_url = (transition or {}).get("placement", {}).get("public_url") or (
-        campaign.get("x_url") if kind == "PLACEMENT_LIVE" else None
-    ) or wake_event.get("publication_url") or latest_live_url(state)
+    public_url = None if kind.startswith("PROGRAM_") else (
+        (transition or {}).get("placement", {}).get("public_url") or (
+            campaign.get("x_url") if kind == "PLACEMENT_LIVE" else None
+        ) or wake_event.get("publication_url") or latest_live_url(state)
+    )
     recovery = "なし" if kind != "BLOCKED" else f"未回復: {wake_event['status']}"
-    next_job = "buyer-intentを収集し、次の公開・収益照合を継続"
+    next_job = (
+        "同じ申請を再提出せず、Impactの審査状態を継続確認"
+        if kind.startswith("PROGRAM_")
+        else "buyer-intentを収集し、次の公開・収益照合を継続"
+    )
+    program = "HubSpot / Impact" if kind.startswith("PROGRAM_") else "ElevenLabs / PartnerStack"
     body = "\n".join((
         "Life Manager Affiliate::: Affiliate loop report",
         f"実行: {kind}",
         f"公開先: {public_url or '未紐付け'}",
         *((f"記事: {campaign['owned_url']}",) if campaign.get("owned_url") else ()),
-        "プログラム: ElevenLabs / PartnerStack",
+        f"プログラム: {program}",
         f"お金: {money}",
         f"回復: {recovery}",
         f"次: {next_job}",
@@ -243,12 +262,12 @@ def browser_ready(port, attempts=15):
     return False
 
 
-def provider_poll(state, cdp_port, attempts=15):
+def provider_poll(state, cdp_port, attempts=15, provider="elevenlabs"):
     args = SimpleNamespace(
-        provider="elevenlabs",
+        provider=provider,
         cdp_host="127.0.0.1",
         cdp_port=cdp_port,
-        receipt=state / "providers" / "elevenlabs.json",
+        receipt=state / "providers" / f"{provider}.json",
     )
     for attempt in range(attempts):
         try:
@@ -263,19 +282,19 @@ def provider_poll(state, cdp_port, attempts=15):
     }
 
 
-def recover_provider(state, cdp_port, private_markdown):
+def recover_provider(state, cdp_port, private_markdown, provider="elevenlabs"):
     common = dict(
-        provider="elevenlabs",
+        provider=provider,
         cdp_host="127.0.0.1",
         cdp_port=cdp_port,
         state=state,
         private_markdown=private_markdown,
     )
     resume_args = SimpleNamespace(
-        **common, receipt=state / "providers" / "elevenlabs-resume.json",
+        **common, receipt=state / "providers" / f"{provider}-resume.json",
     )
     poll_args = SimpleNamespace(
-        **common, receipt=state / "providers" / "elevenlabs.json",
+        **common, receipt=state / "providers" / f"{provider}.json",
     )
     recovered = resume(resume_args)
     return poll(poll_args, recovered)
@@ -593,6 +612,26 @@ def wake(args):
             recovery_state = "RECOVERED" if provider["state"] == "AUTHENTICATED" else provider["state"]
         except (ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
             recovery_state = "RECOVERY_FAILED"
+    impact = {
+        "state": "BROWSER_UNAVAILABLE", "changed": False, "transition_id": None,
+    }
+    impact_recovery_state = "NOT_NEEDED"
+    impact_port = getattr(args, "impact_cdp_port", 9327)
+    if browser_ready(impact_port):
+        impact = provider_poll(state, impact_port, provider="hubspot-impact")
+        if impact["state"] == "SIGN_IN_REQUIRED":
+            try:
+                impact = recover_provider(
+                    state, impact_port, args.private_markdown.expanduser(),
+                    provider="hubspot-impact",
+                )
+                impact_recovery_state = (
+                    "RECOVERED" if impact["state"] in {
+                        "APPLICATION_PENDING", "APPROVED", "REJECTED",
+                    } else impact["state"]
+                )
+            except (ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
+                impact_recovery_state = "RECOVERY_FAILED"
     try:
         landing_root = getattr(
             args, "landing_root",
@@ -628,6 +667,10 @@ def wake(args):
         "provider_state": provider["state"],
         "provider_transition_id": provider["transition_id"],
         "provider_recovery_state": recovery_state,
+        "impact_state": impact["state"],
+        "impact_changed": impact["changed"],
+        "impact_transition_id": impact["transition_id"],
+        "impact_recovery_state": impact_recovery_state,
         "publication_state": publication["state"],
         "publication_url": publication["public_url"],
         "publication_failure_type": publication.get("failure_type"),
@@ -678,6 +721,7 @@ def main():
     parser.add_argument("--private-markdown", type=Path, default=Path("~/.config/anicca/affiliate-credentials.md"))
     parser.add_argument("--cdp-port", type=int, default=9324)
     parser.add_argument("--x-cdp-port", type=int, default=9326)
+    parser.add_argument("--impact-cdp-port", type=int, default=9327)
     parser.add_argument(
         "--landing-root", type=Path,
         default=Path(os.environ.get(

@@ -1394,6 +1394,33 @@ provider, or publication adapter is added.
 - Run syntax checks and real launchd wake/readback. No Superpowers, TDD/RED,
   subagent implementation, speculative database, or broad test suite.
 
+### 9.0.4 Current slice contract — existing-program admission polling
+
+**Status: IN PROGRESS.** The live Impact browser was `SIGN_IN_REQUIRED`; the
+existing credential resumed it to `HubSpot, Inc. - Welcome`. Exact rendered
+markers `HubSpot, Inc. application`, `In Review`, and `You will be notified once
+there is a response.` then classified the existing application as
+`APPLICATION_PENDING`. No new application was submitted.
+
+#### Goal
+
+Make the installed ten-minute Affiliate owner maintain the existing HubSpot
+admission state without blocking ElevenLabs earning work. The same wake observes
+Impact on isolated CDP `9327`, resumes the stored login when required, polls the
+existing application, and reports only a real pending/approved/rejected
+transition. It never submits a second HubSpot application.
+
+#### Minimal implementation
+
+- Reuse `provider_cli.observe`, `poll`, and `resume` from `local_loop.py`; do not
+  add a scheduler, browser, agent, database, or application-form abstraction.
+- Add Impact state, transition ID, and recovery state to the existing wake
+  receipt. Impact failure remains isolated from ElevenLabs publication/revenue.
+- Send a stable-deduplicated Telegram event only when the official rendered
+  application state changes.
+- Compile, commit/push, install the immutable release, kick the existing launchd
+  owner, and replay it. No Superpowers, TDD/RED, or subagent implementation.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
