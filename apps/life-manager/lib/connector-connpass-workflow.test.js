@@ -390,3 +390,88 @@ test("Connpass filters large calendar noise before enforcing the eligible bindin
   const result = await workflow.discoverCandidates({ page: { async goto() {} }, calendar: [] });
   assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/393711"]);
 });
+
+function detailFor(id, date) {
+  return {
+    ...event(id, { starts_at: `${date}T10:00:00.000Z`, ends_at: `${date}T11:00:00.000Z` }),
+    controls: ["このイベントに申し込む"], offers: [{ price: "0", priceCurrency: "JPY" }],
+    venue_name: "Public venue", address: "Tokyo",
+  };
+}
+
+function bindingRow(id, date) {
+  return {
+    event_ref: `connpass-event://event/${id}`,
+    canonical_url: `https://connpass.com/event/${id}/`,
+    calendar_date: date,
+  };
+}
+
+test("Connpass default discovery walks only the earliest budget-sized events from a busy window", async () => {
+  const now = () => new Date("2026-08-07T08:30:00.000Z");
+  const earlyDate = "2026-08-07";
+  const lateDate = "2026-08-08";
+  const earlyIds = Array.from({ length: 40 }, (_, i) => 700000 + i);
+  const lateIds = Array.from({ length: 5 }, (_, i) => 800000 + i);
+  // Later-date rows appear first and the early group is reversed, so a pass
+  // that trusted page order (instead of sorting) would walk the wrong set.
+  const rows = [
+    ...lateIds.map((id) => bindingRow(id, lateDate)),
+    ...[...earlyIds].reverse().map((id) => bindingRow(id, earlyDate)),
+  ];
+  const navigatedIds = [];
+  const workflow = createConnpassScriptFirstWorkflow({
+    now,
+    async readCalendarBindings() { return rows; },
+    async readEventDetail(page) {
+      const id = Number(page.current.match(/event\/(\d+)\//)[1]);
+      navigatedIds.push(id);
+      return detailFor(id, earlyDate);
+    },
+    async submitOnPage() { return { status: "registered" }; },
+    async readStateOnPage() { return { state: "registered" }; },
+  });
+  const page = { current: "", async goto(url) { this.current = url; } };
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+
+  assert.equal(navigatedIds.length, 40);
+  assert.deepEqual([...navigatedIds].sort((a, b) => a - b), earlyIds);
+  assert.deepEqual(
+    result.map((candidate) => Number(candidate.event_ref.split("/").pop())).sort((a, b) => a - b),
+    earlyIds,
+  );
+});
+
+test("Connpass default discovery survives a busy month without tripping the binding cap and reports the true observed count", async () => {
+  const now = () => new Date("2026-08-07T08:30:00.000Z");
+  const date = "2026-08-10";
+  const totalEvents = 600; // exceeds both the old inline 500-binding cap and the 40 walk budget
+  const rows = Array.from({ length: totalEvents }, (_, i) => bindingRow(900_000 + i, date));
+  const navigatedIds = [];
+  const audits = [];
+  const workflow = createConnpassScriptFirstWorkflow({
+    now,
+    async readCalendarBindings() { return rows; },
+    async readEventDetail(page) {
+      const id = Number(page.current.match(/event\/(\d+)\//)[1]);
+      navigatedIds.push(id);
+      return detailFor(id, date);
+    },
+    async submitOnPage() { return { status: "registered" }; },
+    async readStateOnPage() { return { state: "registered" }; },
+    onDiscoveryAudit(audit) { audits.push(audit); },
+  });
+  const page = { current: "", async goto(url) { this.current = url; } };
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+
+  assert.equal(navigatedIds.length, 40);
+  assert.equal(result.length, 40);
+  assert.deepEqual(
+    [...navigatedIds].sort((a, b) => a - b),
+    Array.from({ length: 40 }, (_, i) => 900_000 + i),
+  );
+  assert.equal(audits.length, 1);
+  assert.equal(audits[0].observed_count, totalEvents);
+});
