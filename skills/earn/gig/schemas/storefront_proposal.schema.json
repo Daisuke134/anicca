@@ -32,7 +32,7 @@
     },
     "success_metric": {
       "type": ["string", "null"],
-      "enum": ["inquiries", "purchases", "views_to_inquiry", "views_to_purchase", "inquiries_to_purchase", "net_revenue_per_view", null]
+      "enum": ["inquiries", "purchases", "views_to_inquiry", "views_to_purchase", null]
     },
     "observation_window_days": {"type": ["integer", "null"], "enum": [7, 14, null]},
     "no_op_reason": {"type": ["string", "null"], "maxLength": 1000},
