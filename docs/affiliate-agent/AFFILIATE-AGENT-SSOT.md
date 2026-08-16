@@ -998,9 +998,13 @@ flowchart LR
   M1 --> M10[USD 10M per month]
 ```
 
-1. **P0 — Seal composition output.** Extend the existing runner receipt so it
-   hashes the final result, binds it to exactly one `source_set_sha256`, records
-   model/effort/token usage, and rejects an output whose source set changed.
+1. **P0 — Seal composition output — GREEN in source; release pending.** The
+   existing runner receipt now hashes the exact result file, binds it to one
+   validated `source_set_sha256`, seals model/effort/provider usage/budget from
+   the runner summary, confines the result to its evidence directory, and rejects
+   either result tampering or a changed source set. The focused regression first
+   failed on the missing source-set contract, then passed with the full 48-test
+   Affiliate suite; this is real local execution, not a dry run.
 2. **P0 — Add the bounded composition owner.** Give it only one due
    `composition-inbox` receipt, no Affiliate credential Markdown, no provider/X
    browser, no money ledger, a separate lock, one attempt budget, and a terminal
