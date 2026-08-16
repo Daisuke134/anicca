@@ -364,4 +364,12 @@ Remaining Storefront execution order is authoritative and may not be reordered. 
 5. S8-b: run two post-cleanup Storefront wakes and reconcile official `12/12`, analytics `441/0/3`, corrected funnel totals, coverage `102/106`, competitor last-full `8`, effect/readback/duplicate, Telegram send/dedupe, exit and lease release.
 6. S8-c: reconcile repository/worktree/branch inventory, leave `main` clean/pushed, record pass/message/release evidence, and mark this spec `COMPLETE`.
 
-External follow-ups, recorded but not owned or awaited by Storefront: Negotiate consumes/ACKs context key `storefront:inquiry-context:v1:10083449:91000002:dc08f7e2...` and publishes a canonical inventory; Apply, Negotiate and Paid owners move their releases to their own reviewed `main` ancestors. Paid may remain intentionally stopped until its owner enables it.
+### External four-loop integration TODOs — not removed
+
+These items are not Storefront-owned and Storefront must not edit or reload their owners. They remain required before the four-loop system and open-source product can be called complete. They do not create passive waiting: Storefront cleanup and E2E continue independently.
+
+- [ ] Negotiate consumes and ACKs context key `storefront:inquiry-context:v1:10083449:91000002:dc08f7e2...`, uses the versioned price/scope/input/playbook context while composing replies, and publishes a canonical immutable conversation/attribution inventory. Current evidence: loop healthy with `106` conversations and exit `0`, but envelope `1`, ACK `0`, ACK file missing.
+- [ ] Apply owner moves installed direct release `d150e4b1d...` to its own reviewed GitHub-`main`-ancestor release and proves its E2E without Storefront intervention.
+- [ ] Negotiate owner moves installed direct release `d150e4b1d...` to its own reviewed GitHub-`main`-ancestor release and proves its E2E without Storefront intervention.
+- [ ] Paid owner resolves its implementation on its own clean branch, moves the installed direct release away from mixed `d150e4b1d...` to its reviewed GitHub-`main` ancestor, and decides when to enable the intentionally stopped label.
+- [ ] After all four owner items close, publish the global canonical four-loop inventory and run the separate product/open-source release gate.
