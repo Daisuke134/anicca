@@ -219,6 +219,11 @@ def _normalise_applicants(value: object) -> list[dict[str, object]]:
     for applicant in value:
         if not isinstance(applicant, dict) or set(applicant) != _APPLICANT_FIELDS:
             raise SnapshotContractError("applicant_fields_invalid")
+        name = str(applicant["name"] or "").strip()
+        applied_at = str(applicant["applied_at"] or "").strip()
+        profile_summary = str(applicant["profile_summary"] or "").strip()
+        if not name or not applied_at or not profile_summary:
+            continue
         user_id = canonical_request_id(applicant["user_id"])
         parsed = urlsplit(str(applicant["profile_url"]).strip())
         matched = _PROFILE_PATH.fullmatch(parsed.path.rstrip("/"))
@@ -244,13 +249,13 @@ def _normalise_applicants(value: object) -> list[dict[str, object]]:
             raise SnapshotContractError("public_services_max_5")
         result.append({
             "user_id": user_id,
-            "name": _nonempty_text(applicant["name"], "applicant_name"),
-            "applied_at": _nonempty_text(applicant["applied_at"], "applicant_applied_at"),
+            "name": name,
+            "applied_at": applied_at,
             "profile_url": f"https://coconala.com/users/{user_id}",
             "rating": None if rating is None else float(rating),
             "sales_count": _nonnegative_int_or_none(applicant["sales_count"], "sales_count"),
             "public_services": services,
-            "profile_summary": _nonempty_text(applicant["profile_summary"], "profile_summary"),
+            "profile_summary": profile_summary,
         })
     return result
 
