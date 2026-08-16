@@ -20,6 +20,61 @@ class PinError(Exception):
     pass
 
 
+PASSTHROUGH_ENV = (
+    "LANG",
+    "LC_ALL",
+    "TZ",
+    "ANICCA_BUDGET_SCOPE_ID",
+    "ANICCA_PASS_TOKEN_BUDGET",
+    "ANICCA_LOOP_DAILY_TOKEN_BUDGET",
+    "ANICCA_BUDGET_REQUIRED",
+    "ANICCA_BUDGET_DAILY_SCOPE",
+    "ANICCA_TOKEN_BUDGET_LEDGER",
+    "ANICCA_BUDGET_DAY_TZ",
+    "ANICCA_USAGE_LEDGER",
+)
+
+
+def _owner_path(value: str, owner_home: Path) -> Path:
+    if value == "~":
+        return owner_home
+    if value.startswith("~/"):
+        return owner_home / value[2:]
+    path = Path(value)
+    return path if path.is_absolute() else owner_home / path
+
+
+def allowlisted_environment(source: dict[str, str], executable: Path) -> dict[str, str]:
+    owner_home = Path(source.get("HOME") or str(Path.home())).resolve()
+    state_home = _owner_path(
+        source.get("LIFE_MANAGER_STATE_HOME", str(owner_home / ".local" / "state" / "life-manager")),
+        owner_home,
+    ).resolve()
+    codex_home = state_home / "affiliate" / "codex-runner"
+    user_home = codex_home / "user-home"
+    for directory in (codex_home, user_home):
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        directory.chmod(0o700)
+    auth_file = _owner_path(
+        source.get("AFFILIATE_CODEX_AUTH_FILE", str(owner_home / ".codex" / "auth.json")),
+        owner_home,
+    ).resolve()
+    child = {
+        "PATH": os.pathsep.join((str(executable.parent), "/usr/bin", "/bin", "/usr/sbin", "/sbin")),
+        "HOME": str(user_home),
+        "CODEX_HOME": str(codex_home),
+        "AFFILIATE_CODEX_HOME": str(codex_home),
+        "AFFILIATE_CODEX_AUTH_FILE": str(auth_file),
+        "AGENT_RUNNER_CONFIG": source.get(
+            "AGENT_RUNNER_CONFIG", str(SKILL_ROOT / "config" / "agent-runner.json")
+        ),
+    }
+    for name in PASSTHROUGH_ENV:
+        if source.get(name):
+            child[name] = source[name]
+    return child
+
+
 def verified_codex_record(receipt_path: Path) -> dict:
     try:
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -58,7 +113,8 @@ def write_model_call_pin(receipt_path: Path, evidence_dir: Path) -> Path:
 
 def main() -> int:
     os.umask(0o077)
-    receipt_value = os.environ.get("AFFILIATE_CODEX_CAPABILITY_RECEIPT", "")
+    parent_environment = dict(os.environ)
+    receipt_value = parent_environment.get("AFFILIATE_CODEX_CAPABILITY_RECEIPT", "")
     if not receipt_value:
         raise PinError
     receipt_path = Path(receipt_value)
@@ -68,8 +124,9 @@ def main() -> int:
     except (ValueError, IndexError):
         raise PinError
     write_model_call_pin(receipt_path, evidence_dir)
-    os.environ["PATH"] = str(executable.parent) + os.pathsep + os.environ.get("PATH", "")
-    os.environ.setdefault("AGENT_RUNNER_CONFIG", str(SKILL_ROOT / "config" / "agent-runner.json"))
+    child_environment = allowlisted_environment(parent_environment, executable)
+    os.environ.clear()
+    os.environ.update(child_environment)
     sys.path.insert(0, str(VENDOR))
     import agent_runner
     return agent_runner.run()

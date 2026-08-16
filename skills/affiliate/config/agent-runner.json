@@ -5,8 +5,8 @@
   "providers": {
     "codex": {
       "executable": "codex",
-      "automation_home": "~/.local/state/life-manager/affiliate/codex-runner",
-      "auth_file": "~/.codex/auth.json",
+      "automation_home": "$AFFILIATE_CODEX_HOME",
+      "auth_file": "$AFFILIATE_CODEX_AUTH_FILE",
       "ssl_cert_file": "/etc/ssl/cert.pem",
       "project_doc_max_bytes": 0,
       "disabled_skills": [

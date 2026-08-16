@@ -1395,7 +1395,7 @@ a due judgment or bounded diagnosis after budget and privacy gates pass.
 | U03 | CLEARED | Current Codex auth plus Terra-medium structured output works read-only | Preserve a sanitized installed canary receipt; it is capability proof, not economic proof |
 | U04 | CLEARED | Affiliate config binds `marketing-agent` to the single-candidate `affiliate-terra-high-strategy` route and `escalation-agent` to the fallback-free `affiliate-sol-one-use-repair` route. One read-only canary per route returned schema-valid output and recorded the selected model, high effort, route, duration, and provider-reported usage | Keep both routes explicit-escalation-only; the business loop cannot call either until U05–U10 close |
 | U05 | CLEARED | `machine_capability_inventory.py` now admits only the named `codex_cli` capability, records its canonical path/version/SHA, and `scripts/agent_runner.py` re-observes the same binary before every provider launch. The real Mac receipt pins Codex `0.147.0` SHA `19c4f144…d37`; a Terra-high read-only call stored the same pin beside its attempt receipt, while a corrupted SHA produced exit `1` with no provider attempt | All Affiliate model calls use the gate and a current private machine receipt; direct vendor-runner execution remains diagnostic-only |
-| U06 | OPEN-BEFORE-CODE | d150 inherits most parent environment and restores the real HOME inside Codex | Replace with an allowlisted environment and isolated Affiliate `CODEX_HOME`; prove forbidden secrets are absent |
+| U06 | CLEARED | `scripts/agent_runner.py` now discards the parent environment before importing d150 and admits only a fixed executable path, isolated Affiliate `HOME`/`CODEX_HOME`, auth-file path, locale/timezone, and named budget controls. A real Terra-high shell canary started with fake database/AWS/OpenAI/CDP secrets and reported all four names absent plus the isolated homes; evidence search found no sentinel and all canary artifacts were private | Keep this wrapper as the only production entrypoint; additions to the environment require an exact-name contract and a privacy canary |
 | U07 | OPEN-BEFORE-CODE | Runner result/stdout/stderr/attempt ledgers can be `0644` | Force directories `0700`, files `0600`, atomic writes, and install/readback checks |
 | U08 | OPEN-BEFORE-CODE | Runner validation ignores `enum`, `additionalProperties`, limits, and several JSON Schema constraints | Add complete domain validation proving exactly one allowlisted action and rejecting unknown fields/tools |
 | U09 | OPEN-BEFORE-CODE | Context packet defaults to 8 KiB and truncates without secret filtering | Define measured Affiliate context cap, provenance selection, and key/value redaction before model input |
@@ -1409,6 +1409,13 @@ U05 follows the Python subprocess contract for fixed argument vectors, bounded
 timeouts, and explicit return-code handling ([Python `subprocess.run`](https://docs.python.org/3/library/subprocess.html#subprocess.run)). The exact operational
 pattern is also independently present in OSS: [`ctx` hashes the selected binary,
 rejects a mismatch, and only then calls `--version`](https://github.com/ctxrs/ctx/blob/79db15ba445622375a07a67204c00175747de11d/scripts/check-loc.py).
+
+U06 uses Python's child-process contract that a supplied `env` mapping defines
+the new process environment instead of relying on ambient inheritance
+([Python `subprocess.Popen`](https://docs.python.org/3/library/subprocess.html#subprocess.Popen)).
+The checked-in config resolves the authentication source and automation home
+only through wrapper-created path variables; secret values themselves are never
+placed in that mapping or in the canary result.
 
 #### Tool and money-contract uncertainties
 

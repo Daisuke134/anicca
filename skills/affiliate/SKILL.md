@@ -40,6 +40,12 @@ canonical Codex path, `--version`, and SHA-256, writes the verified pin beside
 the model-call receipts, and refuses to start a provider after any mismatch.
 `machine_capability_inventory.py` creates the private receipt from an explicitly
 requested `codex_cli`; it does not admit arbitrary executables or commands.
+Before importing the vendored runner, the gate replaces the parent environment
+with an explicit allowlist. Codex receives a fixed system `PATH`, an Affiliate-
+owned `HOME` and `CODEX_HOME`, the configured auth-file path, locale/timezone,
+and only the named budget variables. Parent API keys, database URLs, browser
+routes, and every other ambient variable are absent. Never add a wildcard or
+copy `os.environ` into this boundary.
 
 F0 provides four deterministic, non-publishing primitives:
 

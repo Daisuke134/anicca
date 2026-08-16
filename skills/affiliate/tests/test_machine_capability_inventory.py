@@ -172,6 +172,47 @@ class MachineCapabilityInventoryTests(unittest.TestCase):
             with self.assertRaises(gate.PinError):
                 gate.verify_codex_pin(receipt)
 
+    def test_runner_environment_is_allowlisted_and_uses_isolated_home(self) -> None:
+        gate = self.load_module(RUNNER_GATE)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            owner_home = root / "owner"
+            executable = root / "release" / "codex"
+            executable.parent.mkdir(parents=True)
+            executable.write_bytes(b"codex")
+            source = {
+                "HOME": str(owner_home),
+                "PATH": "/untrusted/bin:/usr/bin",
+                "LIFE_MANAGER_STATE_HOME": str(root / "state"),
+                "AGENT_RUNNER_CONFIG": str(root / "runner.json"),
+                "AFFILIATE_CODEX_CAPABILITY_RECEIPT": str(root / "pin.json"),
+                "ANICCA_BUDGET_SCOPE_ID": "affiliate-campaign",
+                "ANICCA_PASS_TOKEN_BUDGET": "49152",
+                "DATABASE_URL": "AUTHORITY_SECRET_SENTINEL",
+                "AWS_SECRET_ACCESS_KEY": "AUTHORITY_SECRET_SENTINEL",
+                "OPENAI_API_KEY": "AUTHORITY_SECRET_SENTINEL",
+                "BROWSER_CDP_URL": "http://127.0.0.1:9324",
+            }
+
+            child = gate.allowlisted_environment(source, executable)
+
+            self.assertEqual(child["HOME"], str((root / "state" / "affiliate" / "codex-runner" / "user-home").resolve()))
+            self.assertEqual(child["CODEX_HOME"], str((root / "state" / "affiliate" / "codex-runner").resolve()))
+            self.assertNotEqual(child["HOME"], str(owner_home))
+            self.assertEqual(child["AFFILIATE_CODEX_AUTH_FILE"], str((owner_home / ".codex" / "auth.json").resolve()))
+            self.assertEqual(child["ANICCA_BUDGET_SCOPE_ID"], "affiliate-campaign")
+            self.assertEqual(child["PATH"], f"{executable.parent}:/usr/bin:/bin:/usr/sbin:/sbin")
+            config = json.loads(
+                (REPO_ROOT / "skills" / "affiliate" / "config" / "agent-runner.json").read_text(encoding="utf-8")
+            )["providers"]["codex"]
+            self.assertEqual(config["automation_home"], "$AFFILIATE_CODEX_HOME")
+            self.assertEqual(config["auth_file"], "$AFFILIATE_CODEX_AUTH_FILE")
+            for forbidden in (
+                "DATABASE_URL", "AWS_SECRET_ACCESS_KEY", "OPENAI_API_KEY", "BROWSER_CDP_URL"
+            ):
+                self.assertNotIn(forbidden, child)
+            self.assertNotIn("AUTHORITY_SECRET_SENTINEL", json.dumps(child, sort_keys=True))
+
     def test_rejects_missing_duplicate_and_secret_inputs_without_receipt(self) -> None:
         script = self.require_script()
         with tempfile.TemporaryDirectory() as temporary:
