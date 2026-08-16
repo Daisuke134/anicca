@@ -750,7 +750,7 @@ def _render_prepared_mutation(
             intent = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
-        if (intent.get("status") != "prepared" or intent.get("service_id") != service_id
+        if (intent.get("status") not in {"prepared", "confirmed"} or intent.get("service_id") != service_id
                 or intent.get("changed_field") != changed_field):
             continue
         contract = intent.get("mutation_contract")
