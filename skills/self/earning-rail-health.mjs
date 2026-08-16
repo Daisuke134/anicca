@@ -114,6 +114,28 @@ export function classifySlotProbe({ slot, observation, nowMs = Date.now() } = {}
     });
   }
 
+  if (probe.kind === "launchd-ledger") {
+    if (observation.loaded !== true) {
+      return result(slot, "degraded", "direct_owner_not_loaded", nowMs, {
+        labels: observation.labels || {},
+      });
+    }
+    if (observation.exists !== true) {
+      return result(slot, "degraded", "direct_owner_ledger_missing", nowMs);
+    }
+    const ledgerAgeSeconds = ageSeconds(observation.mtimeMs, nowMs);
+    if (ledgerAgeSeconds == null || ledgerAgeSeconds > Number(probe.maxAgeSeconds)) {
+      return result(slot, "degraded", "direct_owner_ledger_stale", nowMs, {
+        ledgerAgeSeconds,
+        maxAgeSeconds: Number(probe.maxAgeSeconds),
+      });
+    }
+    return result(slot, "operational", "direct_owners_loaded_fresh_ledger", nowMs, {
+      ledgerAgeSeconds,
+      labels: observation.labels || {},
+    });
+  }
+
   if (probe.kind === "funded-account") {
     if (observation.ok !== true || !finiteNumber(observation.balanceUsd) || observation.balanceUsd < 0) {
       return result(slot, "degraded", "account_probe_failed", nowMs);
@@ -329,6 +351,29 @@ export async function observeSlot(slot, {
       alive: tmux.status === 0,
       exists,
       mtimeMs: exists ? fs.statSync(heartbeatPath).mtimeMs : null,
+    };
+  }
+
+  if (probe.kind === "launchd-ledger") {
+    const ledgerPath = resolveProbePath(probe.ledgerPath, {
+      base: "home",
+      runtimeRoot,
+      homeDir,
+    });
+    const labels = Object.fromEntries((probe.launchdLabels || []).map((label) => {
+      const checked = process.platform === "darwin"
+        ? spawnSyncImpl("launchctl", ["print", `gui/${process.getuid()}/${label}`], {
+          stdio: "ignore", timeout: 5_000,
+        })
+        : { status: 1 };
+      return [label, checked.status === 0];
+    }));
+    const exists = fs.existsSync(ledgerPath);
+    return {
+      loaded: Object.keys(labels).length > 0 && Object.values(labels).every(Boolean),
+      labels,
+      exists,
+      mtimeMs: exists ? fs.statSync(ledgerPath).mtimeMs : null,
     };
   }
 

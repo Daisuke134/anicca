@@ -17,9 +17,8 @@ catch: ids the ledger never recorded a shuppin_published for at all.
 Capability-fit judgment is deliberately NOT made here. Per building-agents, judgement
 belongs to the model, not a hardcoded rule -- this collector's job is only to hand the
 model a grounded inventory instead of letting it guess or re-scrape. collect() writes a
-context file (listing-fit-context.json) with the exact prompt text a step() call would
-need; wiring the actual model invocation (a schema + step in gig_pass.sh, like B0/B1/B2)
-is C2's job, because C2 is the one that needs the verdict to decide what to delist.
+context file (listing-fit-context.json) with the exact prompt text a schema-bound owner
+may use. Any optional model invocation belongs to the direct loop that needs the verdict.
 
 Usage:
   listing_inventory.py collect --out ~/gig/listings-inventory.json
@@ -424,7 +423,7 @@ def _main(argv=None) -> int:
             "reason": (
                 "Capability-fit is model judgement (C1 scope is the deterministic inventory "
                 "only). fit_judgment_context_path below has the exact prompt/schema for the "
-                "step() call C2 needs to add to gig_pass.sh."
+                "owning direct loop may add a schema-bound judgment when needed."
             ),
         },
     }
