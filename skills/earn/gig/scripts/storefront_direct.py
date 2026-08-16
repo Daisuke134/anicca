@@ -1217,15 +1217,35 @@ query is supported by an owned family.\nCONTEXT_JSON=""" + json.dumps(
     return proposal, route
 
 
-def _crawl_demand_cluster(ws_url: str, evidence_dir: Path, query: str) -> dict:
-    """Crawl one official search page and read the demand it states."""
+def _crawl_demand_cluster(default_tab_script: Path, evidence_dir: Path, query: str) -> dict:
+    """Crawl one official search page and read the demand it states.
+
+    Uses its own tab: by the time this runs the wake has opened and closed many targets,
+    and reusing the leased page's socket is what made a whole wake die on HTTP 500.
+    """
     import listing_inventory
 
     url = "https://coconala.com/search?keyword=" + quote(query)
-    observed = asyncio.run(listing_inventory._eval_json(
-        ws_url, url,
-        "JSON.stringify({url:location.href,body:document.body ? document.body.innerText.slice(0,120000) : ''})",
-    ))
+    opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
+    )
+    tab = None
+    try:
+        tab = json.loads(opened.stdout)
+        if opened.returncode != 0 or tab.get("ok") is not True:
+            raise RuntimeError("storefront_demand_tab_open_failed")
+        observed = asyncio.run(listing_inventory._eval_json(
+            str(tab["ws"]), url,
+            "JSON.stringify({url:location.href,body:document.body ? document.body.innerText.slice(0,120000) : ''})",
+        ))
+    finally:
+        if isinstance(tab, dict) and tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
     final = urlsplit(str(observed.get("url") or ""))
     body = str(observed.get("body") or "")
     if final.scheme != "https" or final.hostname not in {"coconala.com", "www.coconala.com"}:
@@ -4262,7 +4282,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                     appended = 0
                     for candidate in sealed:
-                        cluster = _crawl_demand_cluster(ws_url, inventory_path.parent, candidate["query"])
+                        cluster = _crawl_demand_cluster(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            inventory_path.parent, candidate["query"])
                         scored = _score_demand_cluster(cluster)
                         row = {**cluster, **scored, "capability_family": candidate["capability_family"],
                                "rationale": candidate["rationale"], "route": route,
@@ -4271,8 +4293,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         appended += int(_append_key_once(demand_ledger, "cluster_key", row))
                     demand_derivation = {"proposed": len(sealed), "appended": appended,
                                          "route": route.get("model")}
-                except RuntimeError as error:
-                    demand_derivation = {"proposed": 0, "appended": 0, "error": str(error)[:200]}
+                except Exception as error:  # exploration is optional; a wake must survive it
+                    demand_derivation = {"proposed": 0, "appended": 0,
+                                         "error": f"{type(error).__name__}:{str(error)[:160]}"}
             # A catalogue fills over days, not over consecutive full wakes.
             last_create = _last_published_create_epoch(args.state_dir)
             create_spacing_open = (last_create is None
