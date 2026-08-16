@@ -118,10 +118,22 @@ def _append(path: Path, value: dict) -> None:
     path.chmod(0o600)
 
 
+def _display_count(value: object) -> str:
+    return str(value) if type(value) is int and value >= 0 else "不明"
+
+
+def _display_delta(value: object) -> str:
+    return f"{value:+d}" if type(value) is int else "不明"
+
+
+def _display_money(value: object) -> str:
+    return f"¥{value:,.0f}" if type(value) in {int, float} else "不明"
+
+
 def _report_message(row: dict) -> str:
     failed = int(row.get("status") == "failed")
     hypothesis = row.get("next_hypothesis") if isinstance(row.get("next_hypothesis"), dict) else {}
-    contract_delta = int(row.get("listing_contracts_appended") or 0)
+    contract_delta = row.get("listing_contracts_appended")
     catalog = row.get("catalog_analytics") if isinstance(row.get("catalog_analytics"), dict) else {}
     totals = catalog.get("totals") if isinstance(catalog.get("totals"), dict) else {}
     changes = catalog.get("changes") if isinstance(catalog.get("changes"), dict) else {}
@@ -141,6 +153,44 @@ def _report_message(row: dict) -> str:
     inquiry_context = row.get("inquiry_context") if isinstance(row.get("inquiry_context"), dict) else {}
     effect = max(int(row.get("effect") or 0), int(draft.get("effect") or 0),
                  int(draft.get("public_effect") or 0))
+    competitor = row.get("competitor_evidence") if isinstance(row.get("competitor_evidence"), dict) else {}
+    competitor_text = (
+        f"今回未計測（直近full {_display_count(competitor.get('latest_full_count'))}件）"
+        if competitor.get("status") == "not_checked_incremental"
+        else _display_count(row.get("competitor_evidence_count")) + "件"
+    )
+    catalog_status = {
+        "current_full": "今回公式確認",
+        "last_known_good": "前回公式確認",
+        "not_checked_incremental": "今回未計測",
+        "not_applicable": "対象外",
+        "unknown": "不明",
+    }.get(catalog.get("status"), "不明")
+    freshness = catalog.get("freshness_seconds")
+    if type(freshness) is int:
+        catalog_status += f"・{freshness}秒前"
+    window = catalog.get("window") if isinstance(catalog.get("window"), dict) else {}
+    window_text = (
+        f"{window.get('start')}–{window.get('end')}"
+        if window.get("complete") is True and window.get("start") and window.get("end") else "期間不明"
+    )
+    coverage = catalog.get("coverage") if isinstance(catalog.get("coverage"), dict) else {}
+    coverage_text = f"{_display_count(coverage.get('observed'))}/{_display_count(coverage.get('expected'))}"
+    draft_status = draft.get("status")
+    draft_id = (
+        "今回未計測" if draft_status == "not_checked_incremental"
+        else str(draft.get("draft_service_id")) if draft.get("draft_service_id")
+        else "不明"
+    )
+    source_errors = funnel.get("unknown_sources")
+    source_error_text = (
+        ", ".join(source_errors) or "なし" if isinstance(source_errors, list) else "不明"
+    )
+    hypothesis_executable = hypothesis.get("executable")
+    executable_text = (
+        str(hypothesis_executable).lower()
+        if type(hypothesis_executable) is bool else "不明"
+    )
     next_action = (
         "失敗stageを自動修復して同じ境界から再開" if failed
         else (f"{portfolio_selected.get('service_id')}/{portfolio_selected.get('improvement_field')}を"
@@ -152,35 +202,45 @@ def _report_message(row: dict) -> str:
     )
     lines = [
         "Codex::: 🏪 ココナラ Storefront hourly",
-        f"✅ 公式出品 {int(row.get('official_services_read') or 0)}件 / 競合証拠 {int(row.get('competitor_evidence_count') or 0)}件",
-        f"📊 actionable {int(row.get('actionable') or 0)} / effect {effect} / readback {int(row.get('readback') or 0)} / duplicate {int(row.get('duplicate') or 0)}",
-        (f"📚 公開contract {int(row.get('listing_contracts_active') or 0)}件 / "
-         f"version履歴 {int(row.get('listing_contracts_total') or 0)}件 / 今回追加 {contract_delta}件"),
-        (f"📝 新規出品draft {draft.get('draft_service_id') or 'なし'} / "
-         f"更新 {int(draft.get('effect') or 0)} / 照合 {int(draft.get('readback') or 0)} / "
-         f"画像 {int(draft.get('image_count') or 0)} / 公開 {int(draft.get('public_effect') or 0)} / "
-         f"状態 {draft.get('status') or 'なし'}"),
-        (f"📈 直近30日: 閲覧 {int(totals.get('views') or 0)} / 販売 {int(totals.get('purchases') or 0)} / "
-         f"お気に入り {int(totals.get('favorites') or 0)} | 前回比 閲覧 {int(changes.get('views') or 0):+d} / "
-         f"販売 {int(changes.get('purchases') or 0):+d} / 現在値不明 {int(metric_unknown.get('views') or 0)}件 / "
-         f"前回比不明 {int(catalog.get('change_unknown_services') or 0)}件"),
-        (f"✅ Storefront funnel: 問合せ {int(storefront_funnel.get('inquiries') or 0)} / "
-         f"入金 {int(storefront_funnel.get('payments') or 0)} / 純入金 ¥{float(storefront_funnel.get('net_jpy') or 0):,.0f}"),
-        (f"✅ Apply funnel: 問合せ {int(apply_funnel.get('inquiries') or 0)} / "
-         f"入金 {int(apply_funnel.get('payments') or 0)} / 純入金 ¥{float(apply_funnel.get('net_jpy') or 0):,.0f}"),
-        (f"❓ attribution不明: 問合せ {int(unknown_funnel.get('inquiries') or 0)} / "
-         f"入金 {int(unknown_funnel.get('payments') or 0)} / source error {len(funnel.get('unknown_sources') or [])}"),
-        (f"🧭 Portfolio: KEEP {int(portfolio_counts.get('KEEP') or 0)} / "
-         f"IMPROVE {int(portfolio_counts.get('IMPROVE') or 0)} / "
-         f"RETIRE {int(portfolio_counts.get('RETIRE') or 0)} / "
-         f"REPLACE {int(portfolio_counts.get('REPLACE') or 0)} / "
-         f"枠 {int((portfolio.get('capacity') or {}).get('used') or 0)}/{int((portfolio.get('capacity') or {}).get('limit') or 0)}"),
-        (f"🧠 Negotiate context: {inquiry_context.get('negotiate_context') or 'missing'} / "
-         f"envelope {int(inquiry_context.get('contexts') or 0)} / "
-         f"ACK {int(inquiry_context.get('acknowledged') or 0)}"),
-        f"⚠️ bad: {'確定入金0' if int(storefront_funnel.get('payments') or 0) == 0 else 'なし'}",
-        f"❌ errors: {', '.join(funnel.get('unknown_sources') or []) or 'なし'}",
-        f"🧪 次候補 {hypothesis.get('service_id') or 'なし'} / {hypothesis.get('field') or 'なし'} / 実行可能 {str(bool(hypothesis.get('executable'))).lower()}",
+        f"✅ 公式出品 {_display_count(row.get('official_services_read'))}件 / 競合証拠 {competitor_text}",
+        (f"📊 actionable {_display_count(row.get('actionable'))} / effect {effect} / "
+         f"readback {_display_count(row.get('readback'))} / duplicate {_display_count(row.get('duplicate'))}"),
+        (f"📚 公開contract {_display_count(row.get('listing_contracts_active'))}件 / "
+         f"version履歴 {_display_count(row.get('listing_contracts_total'))}件 / "
+         f"今回追加 {_display_count(contract_delta)}件"),
+        (f"📝 新規出品draft {draft_id} / "
+         f"更新 {_display_count(draft.get('effect'))} / 照合 {_display_count(draft.get('readback'))} / "
+         f"画像 {_display_count(draft.get('image_count'))} / 公開 {_display_count(draft.get('public_effect'))} / "
+         f"状態 {draft_status or '不明'}"),
+        (f"📈 公式分析 {catalog_status} / {window_text} / coverage {coverage_text}: "
+         f"閲覧 {_display_count(totals.get('views'))} / 販売 {_display_count(totals.get('purchases'))} / "
+         f"お気に入り {_display_count(totals.get('favorites'))} | 前回比 閲覧 {_display_delta(changes.get('views'))} / "
+         f"販売 {_display_delta(changes.get('purchases'))} / "
+         f"現在値不明 {_display_count(metric_unknown.get('views'))}件 / "
+         f"前回比不明 {_display_count(catalog.get('change_unknown_services'))}件"),
+        (f"✅ Storefront funnel: 問合せ {_display_count(storefront_funnel.get('inquiries'))} / "
+         f"入金 {_display_count(storefront_funnel.get('payments'))} / "
+         f"純入金 {_display_money(storefront_funnel.get('net_jpy'))}"),
+        (f"✅ Apply funnel: 問合せ {_display_count(apply_funnel.get('inquiries'))} / "
+         f"入金 {_display_count(apply_funnel.get('payments'))} / "
+         f"純入金 {_display_money(apply_funnel.get('net_jpy'))}"),
+        (f"❓ 帰属未確定: 問合せ {_display_count(unknown_funnel.get('inquiries'))} / "
+         f"入金 {_display_count(unknown_funnel.get('payments'))}"),
+        (f"🧭 Portfolio: KEEP {_display_count(portfolio_counts.get('KEEP'))} / "
+         f"IMPROVE {_display_count(portfolio_counts.get('IMPROVE'))} / "
+         f"RETIRE {_display_count(portfolio_counts.get('RETIRE'))} / "
+         f"REPLACE {_display_count(portfolio_counts.get('REPLACE'))} / "
+         f"枠 {_display_count((portfolio.get('capacity') or {}).get('used'))}/"
+         f"{_display_count((portfolio.get('capacity') or {}).get('limit'))}"),
+        (f"🧠 Negotiate context: {inquiry_context.get('negotiate_context') or '不明'} / "
+         f"envelope {_display_count(inquiry_context.get('contexts'))} / "
+         f"ACK {_display_count(inquiry_context.get('acknowledged'))}"),
+        ("⚠️ bad: 確定入金0" if storefront_funnel.get("payments") == 0
+         else "⚠️ bad: Storefront入金不明" if type(storefront_funnel.get("payments")) is not int
+         else "⚠️ bad: なし"),
+        f"❌ source file errors: {source_error_text}",
+        (f"🧪 次候補 {hypothesis.get('service_id') or '不明'} / "
+         f"{hypothesis.get('field') or '不明'} / 実行可能 {executable_text}"),
         f"🛡️ fence {hypothesis.get('guard_reason') or row.get('reason') or 'なし'}",
         f"🔧 次の一手: {next_action}",
     ]
@@ -388,6 +448,28 @@ def _last_known_good_catalog_analytics(
         "window": window,
     })
     return catalog
+
+
+def _last_full_competitor_evidence(state_dir: Path, now: int) -> dict:
+    wakes, error = _jsonl_rows(state_dir / "wakes.jsonl")
+    if error not in {None, "wakes.jsonl_missing"}:
+        raise RuntimeError(error)
+    source = next((
+        row for row in reversed(wakes)
+        if row.get("status") == "completed"
+        and row.get("mode") == "full"
+        and type(row.get("competitor_evidence_count")) is int
+    ), None)
+    if source is None:
+        return {"status": "not_checked_incremental", "latest_full_count": None,
+                "observed_at_epoch": None, "freshness_seconds": None}
+    observed_at = int(source.get("observed_at_epoch") or 0)
+    return {
+        "status": "not_checked_incremental",
+        "latest_full_count": int(source["competitor_evidence_count"]),
+        "observed_at_epoch": observed_at,
+        "freshness_seconds": max(0, now - observed_at) if observed_at else None,
+    }
 
 
 def _auto_cadence_is_incremental(state_dir: Path, now: int, full_interval_seconds: int) -> bool:
@@ -2255,6 +2337,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 catalog_analytics = _last_known_good_catalog_analytics(
                     args.state_dir, source_ids, cutoff,
                 )
+                competitor_evidence = _last_full_competitor_evidence(args.state_dir, cutoff)
                 contract_count = sum(int(_append_contract_once(
                     args.state_dir / "offer-contracts.jsonl", contract,
                 )) for contract in validated_contracts)
@@ -2268,7 +2351,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 analytics_epoch = int((catalog_analytics or {}).get("observed_at_epoch") or 0)
                 row = _receipt(
                     pass_id, status="completed", reason="incremental_catalog_funnel_readback",
-                    official_services_read=observed, competitor_evidence_count=0,
+                    official_services_read=observed, competitor_evidence_count=None,
+                    competitor_evidence=competitor_evidence,
                     offer_contracts_appended=contract_count,
                     listing_contracts_appended=listing_contract_count,
                     listing_contracts_active=len(listing_contracts),
