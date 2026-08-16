@@ -259,6 +259,7 @@ def apply_getresponse(state, cdp_port, profile_path):
         prior = json.loads(receipt_path.read_text(encoding="utf-8"))
         if prior.get("state") in {
             "APPLICATION_PENDING", "APPROVED", "REJECTED", "SUBMISSION_REJECTED",
+            "ELIGIBILITY_BLOCKED",
         }:
             return {**prior, "deduplicated": True}
     pending_job = unresolved_effect(state, "PROVIDER_APPLICATION", "getresponse")
@@ -291,6 +292,27 @@ def apply_getresponse(state, cdp_port, profile_path):
                 }""",
                 GETRESPONSE_APPLICATION_API,
             )
+            rendered_before = page.locator("body").inner_text()
+            eligibility_blocked = (
+                "PartnerStack Marketplaceのロックを解除する" in rendered_before
+                or "unlock partnerstack marketplace" in rendered_before.casefold()
+            )
+            if eligibility_blocked and not provider_application.get("key"):
+                external = {
+                    "state": "ELIGIBILITY_BLOCKED",
+                    "url": page.url,
+                    "rendered_text_sha256": hashlib.sha256(
+                        rendered_before.encode()
+                    ).hexdigest(),
+                }
+                if pending_job:
+                    verify_effect(state, pending_job["job_id"], external)
+                result = {
+                    "schema_version": 1, "receipt_type": "PROGRAM_APPLICATION",
+                    "program": "getresponse", **external, "deduplicated": False,
+                }
+                atomic_receipt(receipt_path, result)
+                return result
             if provider_application.get("key"):
                 external = {
                     "state": "APPLICATION_PENDING",

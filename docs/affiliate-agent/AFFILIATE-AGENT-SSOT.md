@@ -1484,6 +1484,15 @@ only `https://api.partnerstack.com/api/applications`, waits for the official
 application key, verifies only a keyed 2xx or terminal 4xx, and leaves every
 ambiguous result unresolved. This is real effect reconciliation, not a dry run.
 
+The exact effect POST returned HTTP `200`, but the official GetResponse network
+application object remained empty. A subsequent semantic page readback exposed
+the decisive provider gate: PartnerStack hides the submit button and says the
+Marketplace remains locked until the account earns one commission in an already
+joined program. GetResponse is therefore **not submitted** and is classified
+`ELIGIBILITY_BLOCKED`, not pending. The existing write-ahead job is terminally
+reconciled to that rendered provider evidence, and later wakes must not retry it.
+The next A15.2 candidate must be outside this PartnerStack Marketplace gate.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
