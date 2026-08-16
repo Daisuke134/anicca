@@ -229,7 +229,7 @@
       "service_id": "4312985",
       "field": "scope",
       "before": 1,
-      "success_metric": "inquiries_to_purchase",
+      "success_metric": "purchases",
       "reason": "verified translation demand and quantified proof but exclusions remain partial"
     },
     {
@@ -237,7 +237,7 @@
       "service_id": "4313100",
       "field": "package",
       "before": 1,
-      "success_metric": "inquiries_to_purchase",
+      "success_metric": "purchases",
       "reason": "strong web-update demand but the offer has no verified add-on ladder"
     },
     {
@@ -261,7 +261,7 @@
       "service_id": "4244912",
       "field": "scope",
       "before": 1,
-      "success_metric": "inquiries_to_purchase",
+      "success_metric": "purchases",
       "reason": "handover outcome is clear but exclusions remain partial"
     },
     {
@@ -277,7 +277,7 @@
       "service_id": "4244556",
       "field": "scope",
       "before": 1,
-      "success_metric": "inquiries_to_purchase",
+      "success_metric": "purchases",
       "reason": "repeat path exists but exclusions remain partial"
     }
   ],
