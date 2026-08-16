@@ -152,15 +152,15 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `1c0c487fe` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded ElevenLabs recovery, HubSpot/Impact application polling, generic policy-PASS owned/X publication, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and advances composition handoffs through generic policy | New-program application/link acquisition, general repair beyond observed failures, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `c895d32ca` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded ElevenLabs recovery, HubSpot/Impact application polling, generic policy-PASS owned/X publication, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and advances composition handoffs through generic policy | New-program application/link acquisition, general repair beyond observed failures, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
-| Publication | Five English owned Affiliate articles and their matching disclosed `@selawmqt` X posts are live. The first autonomously discovered campaign is `https://aniccaai.com/blog/elevenlabs-video-to-text-for-creators` and `https://x.com/selawmqt/status/2088867619319550432`. Netlify run `31930024799` passed deploy plus production money-path smoke; installed replay returned `ALREADY_LIVE / NO_PENDING` without a second Git or X effect | Post-baseline provider click readback and every Japanese placement remain unproven |
+| Publication | Six English owned Affiliate articles and their matching disclosed `@selawmqt` X posts are live. The latest autonomous campaign is `https://aniccaai.com/blog/elevenlabs-audio-to-text-for-creators` and `https://x.com/selawmqt/status/2088896288914059731`. Netlify run `31934721445` passed deploy plus production money-path smoke; installed replay returned `ALREADY_LIVE / NO_PENDING` without a second Git, X, or Telegram effect | Post-baseline provider click readback and every Japanese placement remain unproven |
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
-| Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, and real `PLACEMENT_LIVE` are live-proven. The discovered fifth campaign notification is bound to provider message ID `20757`; replay returns `NO_PENDING` | `CLICK_DELTA` and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, generic handoff and policy receipt creation, two-provider auth/polling, generic policy-PASS owned/X publication, revenue polling, receipts, and Telegram are live. Release `1c0c487fe` keeps ElevenLabs `AUTHENTICATED` and HubSpot/Impact `APPLICATION_PENDING` in the same wake while publication replays `ALREADY_LIVE / NO_PENDING` | New-program application/link acquisition, provider/channel quarantine, watchdog, post-baseline acquisition, and positive money evidence remain absent. The loop discovers, composes, validates, distributes, and measures one executable provider while polling one pending provider; it has not yet earned a commission |
+| Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, and real `PLACEMENT_LIVE` are live-proven. The sixth campaign notification is bound to provider message ID `20895`; replay returns `NO_PENDING` | `CLICK_DELTA` and commission events remain bound to their real external transitions |
+| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, budget-blocked same-job recovery, generic handoff and policy receipt creation, two-provider auth/polling, generic policy-PASS owned/X publication, revenue polling, receipts, and Telegram are live. Release `c895d32ca` keeps ElevenLabs `AUTHENTICATED` and HubSpot/Impact `APPLICATION_PENDING` in the same wake while publication replays `ALREADY_LIVE / NO_PENDING` | New-program application/link acquisition, provider/channel quarantine, watchdog, post-baseline acquisition, and positive money evidence remain absent. The loop discovers, composes, validates, distributes, and measures one executable provider while polling one pending provider; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -1077,33 +1077,33 @@ the only canonical remaining order; later work MUST NOT jump ahead of an unmet
 gate.
 
 Current execution cursor: **step 8, automate eligible program admission**.
-Release `1c0c487fe` is current; all six launchd owners are loaded and all three
-CDP ports respond. Step 7 is closed by the real
-`elevenlabs-discovered-video-to-text-en` lineage: official sitemap discovery,
-plan SHA-256 `10f79f506ec5f6470fba0eca50a978a5f55e43e6174f6f36303afef6205b1685`,
-source-set SHA-256 `394eeb258b17fb13af45764928a3969adaa1dc1486b2b64a2b9373048c0da799`,
-Terra-high sealed composition, semantic policy `PASS` with zero unsupported
-claims, owned HTTP `200`, exact X readback, and Telegram message ID `20757`.
-Netlify run `31930024799` passed its production smoke. Replay is
+Release `c895d32ca` is current; all six launchd owners are loaded and all three
+CDP ports respond. The real `elevenlabs-discovered-audio-to-text-en` lineage also
+closes a same-day continuation proof: official sitemap discovery, source-set
+SHA-256 `ebe01c0d4c285ce6d7157c7c851e879cfd024ed0cbb7d4c113a96154d8e03ce6`,
+Terra-high sealed composition, independent semantic policy `PASS`, owned HTTP
+`200`, exact X readback, and Telegram message ID `20895`. Netlify run
+`31934721445` passed its production smoke. Replay is
 `ALREADY_LIVE / NO_PENDING / last exit 0`; landing Git HEAD remains
-`aece80a1a8763b417c04fe0a98cd824c0086d013`, the X URL remains
-`https://x.com/selawmqt/status/2088867619319550432`, and the source ledger remains
-22 rows. Revenue remains zero post-baseline clicks and zero commission. No human
-login-support request or six-digit-code handoff is outstanding.
+`04ce872aec466a66344403c6a392382004f4e962`, exactly one verified X job ID owns
+the placement, and the X URL remains
+`https://x.com/selawmqt/status/2088896288914059731`. Revenue remains zero
+post-baseline clicks and zero commission. No human login-support request or
+six-digit-code handoff is outstanding.
 
 | Current surface | Verified state | Meaning |
 |---|---|---|
 | Local scheduler | Six Affiliate launchd owners; last exits are `0` | The local runtime is installed and healthy |
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
-| Existing distribution | 5 owned articles `LIVE`; 5 X posts `LIVE` | Real public effects exist and are receipted |
-| Generic pipeline | Official sitemap discovery created a mutable-state plan; five sealed handoffs and five hash-bound policy receipts exist, with the fifth discovered campaign reaching owned/X `LIVE` and Telegram before an unchanged replay | Provider admission is the first unfinished autonomous stage |
+| Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE` | Real public effects exist and are receipted |
+| Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist, with the sixth campaign reaching owned/X `LIVE` and Telegram before an unchanged replay | Provider admission is the first unfinished autonomous stage |
 | Acquisition | 0 post-baseline provider clicks | E0 is open |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
 ```mermaid
 flowchart LR
   C[Composition] --> P[Policy and deterministic publish]
-  P --> F[5 English campaigns LIVE]
+  P --> F[6 English campaigns LIVE]
   F --> E0[E0 real click]
   E0 --> E1[E1 approved commission]
   E1 --> T[10 comparable placements]
@@ -1864,12 +1864,19 @@ observable outcome exists.
   the exact budget-blocked source-set resumed; Terra-high produced a sealed draft
   in 14,281 tokens; and the independent policy audit returned every deterministic
   check true plus semantic `PASS`. No article or X effect occurred before PASS.
-- [ ] **A15.4** Produce one source-bound decision asset per qualified intent with
+- [x] **A15.4** Produce one source-bound decision asset per qualified intent with
   disclosure-before-CTA, limitations, alternatives, and exactly one owned link.
   The sixth English handoff is `elevenlabs-audio-to-text-for-creators`, bound to
   source set `ebe01c0d…e03ce6` and policy receipt `740bd97c…cec27`.
-- [ ] **A15.5** Publish through the owned site and English X browser, require public
-  readback, and refuse duplicate effects.
+- [x] **A15.5** Publish through the owned site and English X browser, require public
+  readback, and refuse duplicate effects. The launchd money owner pushed landing
+  commit `04ce872aec466a66344403c6a392382004f4e962`; Netlify run `31934721445`
+  passed deploy and production money-path smoke; the owned article returned HTTP
+  `200`; and the ambiguous first X readback reconciled the already-created status
+  `2088896288914059731` instead of posting again. Telegram sent the stable event
+  once as message `20895`. A final unchanged launchd replay returned
+  `ALREADY_LIVE / NO_PENDING / exit 0`, preserved the landing commit and X URL,
+  and retained exactly one verified external-effect job ID for the placement.
 - [ ] **A15.6** Reconcile post-baseline clicks and provider transactions on every
   eligible poll while continuing research and publication work. Source now emits
   a stable, deduplicated `CLICK_DELTA` Telegram event only when the official
