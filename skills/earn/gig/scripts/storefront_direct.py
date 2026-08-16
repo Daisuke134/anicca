@@ -4353,7 +4353,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     pass
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """The one place the runtime contract is declared, so tests cannot drift from it."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state-dir", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--output", type=Path)
@@ -4401,7 +4402,11 @@ def main() -> int:
     parser.add_argument("--telegram-receipt-dir", type=Path, default=DEFAULT_TELEGRAM_RECEIPTS)
     parser.add_argument("--telegram-target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     parser.add_argument("--openclaw", type=Path, default=Path("/opt/homebrew/bin/openclaw"))
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
     code, row = run_once(args)
     print(json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
     return code
