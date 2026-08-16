@@ -88,9 +88,22 @@ def latest_live_url(state):
     return max(live, key=lambda row: row.get("observed_at", ""))["public_url"] if live else None
 
 
+def latest_live_campaign(state):
+    live = []
+    for path in (state / "campaign-publications").glob("*.json"):
+        try:
+            row = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if row.get("state") == "X_LIVE" and str(row.get("x_url", "")).startswith("https://"):
+            live.append(row)
+    return max(live, key=lambda row: row.get("created_at", "")) if live else {}
+
+
 def owner_event(state, wake_event):
     ledger = json_rows(state / "commission-ledger.jsonl")
     transition = ledger[-1] if ledger else None
+    campaign = latest_live_campaign(state)
     cycle_path = state / "revenue-cycle.json"
     try:
         cycle = json.loads(cycle_path.read_text(encoding="utf-8"))
@@ -106,6 +119,10 @@ def owner_event(state, wake_event):
             f"{transition.get('status')} / gross={transition.get('gross_commission_minor')} minor "
             f"net={transition.get('net_commission_minor')} minor / {transition.get('currency') or 'currency unknown'}"
         )
+    elif campaign:
+        kind = "PLACEMENT_LIVE"
+        identity = {"kind": kind, "plan_id": campaign.get("plan_id"), "x_url": campaign["x_url"]}
+        money = "LIVE / commission not observed yet"
     elif cycle.get("state") == "NO_TRANSACTIONS":
         kind = "REVENUE_RECONCILED"
         identity = {"kind": kind, "provider": "elevenlabs", "state": "NO_TRANSACTIONS"}
@@ -117,13 +134,16 @@ def owner_event(state, wake_event):
     else:
         return None
     event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
-    public_url = (transition or {}).get("placement", {}).get("public_url") or latest_live_url(state)
+    public_url = (transition or {}).get("placement", {}).get("public_url") or (
+        campaign.get("x_url") if kind == "PLACEMENT_LIVE" else None
+    ) or wake_event.get("publication_url") or latest_live_url(state)
     recovery = "なし" if kind != "BLOCKED" else f"未回復: {wake_event['status']}"
     next_job = "buyer-intentを収集し、次の公開・収益照合を継続"
     body = "\n".join((
         "Life Manager Affiliate::: Affiliate loop report",
         f"実行: {kind}",
         f"公開先: {public_url or '未紐付け'}",
+        *((f"記事: {campaign['owned_url']}",) if campaign.get("owned_url") else ()),
         "プログラム: ElevenLabs / PartnerStack",
         f"お金: {money}",
         f"回復: {recovery}",
