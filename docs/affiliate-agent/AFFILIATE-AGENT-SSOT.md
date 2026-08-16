@@ -1556,6 +1556,12 @@ CloakBrowser, proceeds only after `g-recaptcha-response` is non-empty, and emits
 challenge or Playwright timeout is isolated to the Systeme lane so ElevenLabs,
 Impact, publication, revenue, and Telegram continue in the same wake.
 
+Attempt `3` proved reCAPTCHA creates two iframes: one `/api2/anchor?` checkbox
+and one hidden `/api2/bframe?` challenge. The initial exact-one check incorrectly
+counted both and skipped activation. The corrected semantic target selects only
+the anchor frame and clicks `#recaptcha-anchor`; token readback remains the gate
+before any confirmation POST.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;

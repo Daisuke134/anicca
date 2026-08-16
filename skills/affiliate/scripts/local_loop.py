@@ -687,11 +687,11 @@ def verify_systeme_email(state, cdp_port, private_markdown):
                 page.locator("input[name='lastName']").fill(names["family"])
                 page.locator("input[name='plainPassword']").fill(password)
                 page.locator("input[name='confirm_password']").fill(password)
-                captcha = page.locator("iframe[src*='recaptcha']")
+                captcha = page.locator("iframe[src*='/recaptcha/api2/anchor?']")
                 if captcha.count() == 1:
-                    page.frame_locator("iframe[src*='recaptcha']").get_by_role(
-                        "checkbox",
-                    ).click(timeout=10_000)
+                    page.frame_locator(
+                        "iframe[src*='/recaptcha/api2/anchor?']"
+                    ).locator("#recaptcha-anchor").click(timeout=10_000)
                     try:
                         page.wait_for_function(
                             """() => !!document.querySelector(
