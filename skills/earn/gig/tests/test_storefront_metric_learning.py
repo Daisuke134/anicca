@@ -76,6 +76,48 @@ def test_an_unsupported_metric_is_reported_rather_than_guessed(tmp_path):
     assert result["measured_metric"] is None
 
 
+
+def funnel_file(tmp_path, events):
+    path = tmp_path / "funnel-events.jsonl"
+    path.write_text("".join(json.dumps(e) + "\n" for e in events), encoding="utf-8")
+    return path
+
+
+def test_net_receipt_counts_only_attributed_immutable_payments(tmp_path):
+    path = funnel_file(tmp_path, [
+        {"event_kind": "inquiry", "service_id": SERVICE_ID, "observed_at_epoch": ACCEPTED_AT - 2_000_000},
+        {"event_kind": "payment", "service_id": SERVICE_ID,
+         "observed_at_epoch": ACCEPTED_AT - 100, "net_receipt_jpy": 5000},
+        {"event_kind": "payment", "service_id": SERVICE_ID,
+         "observed_at_epoch": ACCEPTED_AT + 100, "net_receipt_jpy": 9000},
+        {"event_kind": "payment", "service_id": "9999999",
+         "observed_at_epoch": ACCEPTED_AT + 100, "net_receipt_jpy": 70000},
+        {"event_kind": "payment", "service_id": SERVICE_ID,
+         "observed_at_epoch": ACCEPTED_AT + 100},
+    ])
+    result = sd._measure_experiment_metric(
+        "net_receipt", reply_transcripts=Path("/nonexistent"), analytics_path=Path("/nonexistent"),
+        service_id=SERVICE_ID, accepted_at=ACCEPTED_AT, window_days=WINDOW_DAYS, funnel_path=path,
+    )
+    assert result["status"] == "known"
+    # Another service's receipt and a receipt with no proven amount are both excluded.
+    assert (result["baseline"], result["observed"]) == (5000.0, 9000.0)
+    assert result["measurement"] == "window_aligned_receipt_sum"
+
+
+def test_net_receipt_is_unknown_without_baseline_history_or_a_ledger(tmp_path):
+    late = funnel_file(tmp_path, [
+        {"event_kind": "payment", "service_id": SERVICE_ID,
+         "observed_at_epoch": ACCEPTED_AT + 100, "net_receipt_jpy": 9000},
+    ])
+    assert sd._funnel_metric_windows(late, SERVICE_ID, ACCEPTED_AT, WINDOW_DAYS)["reason"] == (
+        "funnel_history_does_not_cover_baseline")
+    assert sd._measure_experiment_metric(
+        "net_receipt", reply_transcripts=Path("/nonexistent"), analytics_path=Path("/nonexistent"),
+        service_id=SERVICE_ID, accepted_at=ACCEPTED_AT, window_days=WINDOW_DAYS,
+    )["reason"] == "funnel_events_not_supplied"
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
