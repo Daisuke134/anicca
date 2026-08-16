@@ -63,6 +63,8 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - Commit `e53a70689` binds the official VBA listing version, JPY6,000 base, JPY3,000 add-on, JPY5,000 maintenance, required inputs and two inquiry answer patterns into the runtime contract ledger. Real loop runs appended `1` then replayed `0`. Commit `3649a0bb9` reports official/competitor counts, contract inventory, selected hypothesis and fence in natural Japanese; real Telegram delivery is `sent/20425`.
 - Storefront now derives version-bound contracts for all 11 official services from six owned-capability families while preserving the VBA-specific override. Real pass `storefront-family-contract-live-37c975927` read official/competitor `11/8`, appended the missing `10`, and reached contract total `11`. The first replay exposed a transient truncated service DOM; the inventory reader now retries the full 120,000-character public page until the official service scope exists. Pass `storefront-family-contract-replay-fixed-37c975927` completed with appended `0`, total `11`, effect/readback/duplicate `0/0/0`, and a released lease.
 - Read-only inspection of the installed Negotiate owner shows its composer currently receives only conversation, verified research and verified application context. It has no service-ID or Storefront-contract consumer. Storefront publishes the immutable versioned contract ledger, but the Negotiate owner must add the consumer; Storefront must not patch the Negotiate implementation to hide this boundary gap.
+- The seller edit form exposes `overview`, `catchphrase`, `head`, `body` and `price`, but the observed price control value is `22000` while the official public listing is JPY20,000. Price mutation remains fenced until that representation difference is explained by official readback; the loop must not guess.
+- Storefront analytics now reads all 11 official service pages, not only OpenCV. Real pass `storefront-catalog-kpi-live-458fab724` recorded per-service snapshots and official 30-day totals of 441 views, 0 purchases and 3 favorites, preserving ten first-baseline deltas as unknown, and sent Telegram `20444`. Replay resolved all deltas to zero and sent the changed state as `20446`; a third identical pass returned `deduped/20446`. Every pass released the Storefront lease and produced no public mutation.
 
 ## 5. Acceptance criteria
 
@@ -171,9 +173,12 @@ Verification: official service ID and URL exist, every contract field matches, d
 
 ### S5 — Complete attribution, KPI ledger and Telegram reporting
 
-- Join Storefront listing version → inquiry → Negotiate conversation → Paid receipt by stable IDs.
-- Keep Apply attribution parallel and mutually exclusive; preserve `unknown` gaps.
-- Emit hourly natural-language KPI reports plus immediate material error/milestone reports with idempotent receipts.
+- [x] Read official views, purchases and favorites for every owned service; retain unavailable impressions and revenue as unavailable rather than zero.
+- [x] Persist service-ID snapshots, catalog totals and same-window deltas; keep missing baselines as unknown.
+- [x] Emit the catalog totals/deltas in the natural-language hourly Telegram report and prove changed-state send plus identical-state dedupe.
+- [ ] Join Storefront listing version → inquiry → Negotiate conversation → Paid receipt by stable IDs.
+- [ ] Keep Apply attribution parallel and mutually exclusive; preserve `unknown` gaps.
+- [ ] Add verified net receipt, revision, rating/review and repeat-purchase fields after the owning loops expose their immutable receipts.
 
 Verification: reconcile ledger totals against official browser screens and real receipts; inject one replay and prove no double count/no duplicate Telegram send; inject missing view data and prove `unknown`, not zero.
 
