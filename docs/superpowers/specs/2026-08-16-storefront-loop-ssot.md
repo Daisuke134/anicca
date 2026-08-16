@@ -70,6 +70,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The SEO hero is a deterministic 1220x1016 PNG bound to SHA `5e9ebb2f...` and contains only contract-backed claims. Blob preview was explicitly rejected as proof: the adapter now submits native multipart with hidden `mode=draft`, closes that tab, opens a fresh official tab, and requires all fields plus exactly one persisted image. Direct adapter proof produced `1/1/1/0` for effect/readback/image/public, then replay `0/1/1/0`. Full pass `storefront-new-draft-image-full-final-18b6c261b` reproduced replay `0/1/1/0`, official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, released lease and Telegram `20519`.
 - The SEO draft now binds its category-specific completeness and ladder: features `企画・構成/リサーチ/SEO対応`, industries `ビジネス・法律/IT・テクノロジー/メディア・マスコミ`, Japanese, deliverable format, one free revision, JPY1 per character, JPY3,000 for an extra 3,000 characters, and repeat purchase enabled with a 5% discount. The portfolio link is owned proof and the SHA-bound hero is the gallery asset. Direct save/readback then replay produced effect `1` then `0`; full pass `storefront-new-draft-ladder-full-3a940473d` reproduced `effect/readback/image/public=0/1/1/0`, sent Telegram `20527`, and released the lease.
 - The publication adapter is present but remains mechanically fenced. It requires the exact fresh draft contract, one image, no duplicate title/service, catalog capacity, no existing-listing effect, and no higher-priority/active hypothesis; it then submits only `mode=open` and requires a fresh official public URL, title, catchphrase, price and image readback. Real pass `storefront-new-publish-fence-984414d4a` returned `publication_guard=active_experiment_measurement_open`, public effect `0`, deduped Telegram `20527`, and released the lease. Eligibility is an external terminal event, not a waiting task.
+- Storefront commit `85eaa6d86` is on GitHub `main` and in readonly immutable release `/Users/operator/gig/releases/life-manager/85eaa6d...`. Only `ai.anicca.hf-gig-storefront-direct` was reloaded. Its natural installed wake `storefront-direct-1786843673261706000-46042` exited `0` with official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, draft `0/1/1/0`, active publication fence, Telegram `deduped/20527`, and released lease. Before/after SHA comparison found zero changes to every non-Storefront gig plist.
 - Official analytics now retries each service independently and records an exhausted readback as `unknown`, never zero and never a reason to skip the rest of the Storefront wake. Reports separate unknown current values from unknown comparisons.
 
 ## 5. Acceptance criteria
@@ -194,13 +195,12 @@ Verification: reconcile ledger totals against official browser screens and real 
 
 ### S6 — Production integration and cleanup
 
-- Preserve the completed reverts of `ff5b96a8e`, `0bba80549`, `6ed25b976`, and `d150e4b1d`; never carry the original Paid changes into Storefront.
-- Create a fresh integration branch from latest `origin/main` and bring only Storefront-owned files/commits with audited provenance.
-- Add explicit ownership boundaries for Storefront vs Negotiate/Paid/Apply.
-- Prove legacy Hermes/gig-pass shell paths have zero launchd, installer, import, subprocess, symlink, and documentation authority. Preserve immutable state/ledgers; remove only obsolete executable code and regenerateable artifacts.
-- Push Storefront integration to `main`; build an immutable release from the resulting main SHA; change only the Storefront launchd owner through the coordinated installer path.
-- Observe one natural scheduled receipt and official readback from that release.
-- Remove obsolete Storefront worktrees, merged branches, unreachable legacy releases, and stale documentation pointers.
+- [x] Preserve the completed Paid reverts and carry zero Paid implementation into Storefront.
+- [x] Integrate the clean Storefront-only history into GitHub `main`; main and the feature tip both resolve to `85eaa6d86` at integration.
+- [x] Keep runtime ownership explicit: the dedicated plist calls `storefront_direct.py` directly and Storefront imports or subprocesses no Hermes/gig-pass entrypoint.
+- [x] Build a readonly immutable release from the main SHA and reload only `ai.anicca.hf-gig-storefront-direct`; non-Storefront plist hashes remain byte-identical.
+- [x] Observe one installed release wake with exit 0, official readback, draft readback, Telegram dedupe and released lease.
+- [ ] Remove the merged temporary Storefront worktree/branch and stale Storefront-only development pointers. Shared historical Hermes/gig-pass files remain untouched while another owner may still reference them; they have zero Storefront executable reachability.
 
 Verification: `main` is the ancestor of the installed release SHA; Storefront launchd arguments point to that release; all Storefront checks and one real scheduled pass succeed; other three loop labels/config/state are byte-for-byte unchanged; `git worktree list`, local branches, remote branches, and reachability searches contain no obsolete Storefront development path.
 
