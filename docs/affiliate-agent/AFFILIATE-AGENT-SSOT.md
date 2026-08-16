@@ -1492,24 +1492,34 @@ shared abstraction to make the diff appear smaller.
 
 ##### Phase E0-B — Add the smallest reusable Skill contracts
 
-- [ ] **E0-B01** Add `affiliate programs observe-link-form --id elevenlabs` as a
+- [x] **E0-B01** Add `affiliate programs observe-link-form --id elevenlabs` as a
   `READ_EXTERNAL` command that writes a sanitized capability receipt.
-- [ ] **E0-B02** Add `affiliate programs acquire-placement-link --id elevenlabs
+- [x] **E0-B02** Add `affiliate programs acquire-placement-link --id elevenlabs
   --placement <id>` as a `WRITE_EXTERNAL` command with deterministic title,
   destination, and placement identity. The first target is placement
   `elevenlabs-text-to-speech-api-for-developers` and approved destination
   `https://elevenlabs.io/text-to-speech`.
-- [ ] **E0-B03** Before submit, call `start_effect()` with kind
+- [x] **E0-B03** Before submit, call `start_effect()` with kind
   `PARTNERSTACK_PLACEMENT_LINK`; after submit, locate the exact result and call
   `verify_effect()`.
-- [ ] **E0-B04** On an unresolved job, search the authenticated result list first;
+- [x] **E0-B04** On an unresolved job, search the authenticated result list first;
   call `resume_effect()` only for the same target and refuse a second create when
   effect certainty is ambiguous.
-- [ ] **E0-B05** Store the raw provider URL through stdin in mode-0600 private
-  state as `TTS API affiliate link` for the first placement; persist only its
+- [x] **E0-B05** Store the raw provider URL through the existing `store_link()`
+  boundary in mode-0600 private state as `TTS API affiliate link` for the first
+  placement; persist only its
   SHA-256 fingerprint in the public receipt. Bind the TTS builder and policy to
   this exact field so the verified custom link, not the default link, is
   materialized into the article.
+
+  Source proof: `program_registry.py` dynamically resolves the authenticated
+  partnership key, enumerates existing links before any write, fences one create,
+  verifies `key + slug + URL hash + destination hash`, and restores the owner
+  tab. The live read-only command returned `FORM_OBSERVED`, 27 selectable
+  destinations plus the currently selected destination, and two existing links;
+  its mode-0600 receipt and stdout contain no raw tracking URL. `content.py`
+  changes only the TTS builder/policy field. Existing registry and content policy
+  tests pass; installed-owner write proof remains Phase E0-C.
 - [ ] **E0-B06** Extend `placement_candidates()` to index provider link `key`,
   `tracking_custom_link_id`, URL hash, placement ID, owned URL, offer, locale,
   and public distribution URLs without exposing the raw link.

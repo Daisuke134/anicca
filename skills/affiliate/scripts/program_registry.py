@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -26,6 +27,10 @@ REQUIRED = {
 GETRESPONSE_URL = "https://dash.partnerstack.com/application?company=getresponse&group=default"
 GETRESPONSE_APPLICATION_API = "https://api.partnerstack.com/api/network_applications/stck_NCzCmpfaODzjl3"
 ELEVENLABS_HOME = "https://elevenlabs.io/app/home"
+ELEVENLABS_LINKS = "https://dash.partnerstack.com/elevenlabsinc/links"
+TTS_PLACEMENT = "elevenlabs-text-to-speech-api-for-developers"
+TTS_LINK_FIELD = "TTS API affiliate link"
+TTS_DESTINATION = "https://elevenlabs.io/text-to-speech"
 GETRESPONSE_PROMOTION = (
     "We publish evidence-led English software buying guides on aniccaai.com and disclose "
     "affiliate relationships before calls to action. We distribute each guide through "
@@ -254,6 +259,116 @@ def atomic_receipt(path, payload):
         Path(temporary).unlink(missing_ok=True)
 
 
+def _elevenlabs_links(page):
+    return page.evaluate(
+        """async () => {
+            const partnership = await fetch(
+              'https://api.partnerstack.com/api/companies/partnerships/elevenlabsinc',
+              {credentials: 'include'}).then(response => response.json());
+            const key = partnership?.data?.key;
+            if (!key) throw new Error('ElevenLabs partnership key is unavailable');
+            const response = await fetch(
+              `https://api.partnerstack.com/api/links/ensure/${key}`,
+              {method: 'POST', credentials: 'include'});
+            const body = await response.json();
+            return {http: response.status, items: body?.data?.items || []};
+        }"""
+    )
+
+
+def _link_identity(item):
+    return {
+        "provider_link_key": item.get("key"),
+        "tracking_custom_link_id": item.get("tracking_custom_link_id"),
+        "slug": item.get("slug"),
+        "url_sha256": hashlib.sha256(str(item.get("url", "")).encode()).hexdigest(),
+        "destination_sha256": hashlib.sha256(str(item.get("dest", "")).encode()).hexdigest(),
+    }
+
+
+def elevenlabs_link_action(state, cdp_port, private_markdown, placement, create=False):
+    if placement != TTS_PLACEMENT:
+        raise ValueError("unsupported ElevenLabs placement")
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as error:
+        raise RuntimeError("Playwright is unavailable") from error
+    receipt_path = state / "program-links" / f"{placement}.json"
+    job = unresolved_effect(state, "PARTNERSTACK_PLACEMENT_LINK", placement)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{cdp_port}")
+        pages = [page for context in browser.contexts for page in context.pages]
+        if len(pages) != 1:
+            raise ValueError("expected one PartnerStack browser page")
+        page = pages[0]
+        try:
+            page.goto(ELEVENLABS_LINKS, wait_until="domcontentloaded", timeout=20_000)
+            page.get_by_text(re.compile(r"^(カスタムリンク|Custom links?)")).first.wait_for(timeout=15_000)
+            observed = _elevenlabs_links(page)
+            match = next((item for item in observed["items"] if item.get("slug") == placement), None)
+            if create and match is None:
+                page.get_by_text(re.compile(r"^(カスタムリンクの作成|Create custom link)$")).click()
+                page.get_by_placeholder(re.compile(r"^(タイトル|Title)$")).fill(
+                    "ElevenLabs TTS API developer benchmark"
+                )
+                page.locator("textarea").fill(
+                    "Decision-stage benchmark for developers evaluating the ElevenLabs text-to-speech API."
+                )
+                page.get_by_text("https://elevenlabs.io", exact=True).click()
+                page.get_by_role("option", name=TTS_DESTINATION, exact=True).click()
+                page.get_by_placeholder("your-custom-link").fill(placement)
+                if job:
+                    job = resume_effect(state, "PARTNERSTACK_PLACEMENT_LINK", placement)
+                else:
+                    job = start_effect(
+                        state, "PARTNERSTACK_PLACEMENT_LINK", placement,
+                        {"operation": "create_custom_link", "placement": placement,
+                         "destination": TTS_DESTINATION},
+                        {"state": "ABSENT", "placement": placement}, 86_400,
+                    )
+                page.get_by_role("button", name=re.compile(r"^(リンクを作成|Create link)$")).last.click()
+                for _ in range(20):
+                    page.wait_for_timeout(500)
+                    observed = _elevenlabs_links(page)
+                    match = next((item for item in observed["items"] if item.get("slug") == placement), None)
+                    if match:
+                        break
+            if not create:
+                page.get_by_text(re.compile(r"^(カスタムリンクの作成|Create custom link)$")).click()
+                page.get_by_text("https://elevenlabs.io", exact=True).click()
+                destinations = page.get_by_role("option").all_inner_texts()
+                result = {
+                    "schema_version": 1, "receipt_type": "PARTNERSTACK_LINK_CAPABILITY",
+                    "provider": "elevenlabs", "state": "FORM_OBSERVED",
+                    "required_fields": ["title", "description", "destination", "slug"],
+                    "allowed_destination_count": len(destinations),
+                    "allowed_destination_sha256": hashlib.sha256(
+                        json.dumps(destinations, sort_keys=True).encode()
+                    ).hexdigest(),
+                    "existing_link_count": len(observed["items"]),
+                    "observed_at": datetime.now(timezone.utc).isoformat(),
+                }
+                atomic_receipt(state / "program-links" / "capability.json", result)
+                return result
+            if not match or not str(match.get("url", "")).startswith("https://try.elevenlabs.io/"):
+                raise ValueError("PartnerStack custom-link readback is ambiguous")
+            store_link("ElevenLabs", TTS_LINK_FIELD, private_markdown, match["url"])
+            external = {"state": "VERIFIED", "placement": placement, **_link_identity(match)}
+            if job:
+                verify_effect(state, job["job_id"], external)
+            result = {
+                "schema_version": 1, "receipt_type": "PARTNERSTACK_PLACEMENT_LINK",
+                "provider": "elevenlabs", **external,
+                "private_link_state": "VERIFIED_NONEMPTY",
+                "deduplicated": job is None,
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            atomic_receipt(receipt_path, result)
+            return result
+        finally:
+            page.goto(ELEVENLABS_HOME, wait_until="domcontentloaded", timeout=20_000)
+
+
 def apply_getresponse(state, cdp_port, profile_path):
     """Submit the one admitted GetResponse application under a durable effect fence."""
     receipt_path = state / "program-applications" / "getresponse.json"
@@ -447,12 +562,13 @@ def apply_getresponse(state, cdp_port, profile_path):
 
 def main():
     parser = argparse.ArgumentParser(prog="affiliate programs")
-    parser.add_argument("command", choices=("list", "next", "credential", "store-credential", "store-login", "store-link", "apply"))
+    parser.add_argument("command", choices=("list", "next", "credential", "store-credential", "store-login", "store-link", "apply", "observe-link-form", "acquire-placement-link"))
     parser.add_argument("--decision", action="append", default=[])
     parser.add_argument("--id")
     parser.add_argument("--label")
     parser.add_argument("--source-label")
     parser.add_argument("--field")
+    parser.add_argument("--placement")
     parser.add_argument("--credential-ref")
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     parser.add_argument("--cdp-port", type=int, default=9324)
@@ -474,12 +590,22 @@ def main():
         programs = [item for item in programs if item["decision"] in args.decision]
     if args.id:
         programs = [item for item in programs if item["id"] == args.id]
-    if args.command in ("credential", "store-credential", "store-login", "store-link", "apply"):
+    if args.command in ("credential", "store-credential", "store-login", "store-link", "apply", "observe-link-form", "acquire-placement-link"):
         if len(programs) != 1:
             return 3
         if args.credential_ref:
             programs[0] = {**programs[0], "credential_ref": args.credential_ref}
-        if args.command == "apply":
+        if args.command in ("observe-link-form", "acquire-placement-link"):
+            if programs[0]["id"] != "elevenlabs":
+                raise ValueError("ElevenLabs link adapter is required")
+            if args.command == "acquire-placement-link" and not args.placement:
+                raise ValueError("--placement is required")
+            result = elevenlabs_link_action(
+                args.state.expanduser(), args.cdp_port, args.private_markdown.expanduser(),
+                args.placement or TTS_PLACEMENT,
+                create=args.command == "acquire-placement-link",
+            )
+        elif args.command == "apply":
             if programs[0]["id"] != "getresponse":
                 raise ValueError("application adapter is unavailable")
             result = apply_getresponse(args.state.expanduser(), args.cdp_port, args.profile)

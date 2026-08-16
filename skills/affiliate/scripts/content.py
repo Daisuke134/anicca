@@ -57,6 +57,7 @@ TTS_API_REQUIRED = {
     ),
 }
 TTS_API_SLUG = "elevenlabs-text-to-speech-api-for-developers"
+TTS_API_LINK_FIELD = "TTS API affiliate link"
 TTS_API_TITLE = "ElevenLabs Text-to-Speech API: What Developers Should Benchmark Before Paying"
 TTS_API_URLS = (
     "https://elevenlabs.io/docs/eleven-api/quickstart",
@@ -172,7 +173,7 @@ def build_tts_api(root, state, private_markdown):
         return {key: artifact[key] for key in ("artifact_id", "slug", "content_sha256", "state")}
     now = datetime.now(timezone.utc)
     source_hashes = require_sources(state, TTS_API_REQUIRED, now)
-    link = elevenlabs_link(private_markdown)
+    link = elevenlabs_link(private_markdown, TTS_API_LINK_FIELD)
     if not link:
         raise ContentError("executable ElevenLabs link is unavailable")
     template = (root / "config" / "content" / "elevenlabs-tts-api-en-v1.md").read_text(encoding="utf-8")
@@ -284,7 +285,7 @@ def policy_agents(state, private_markdown):
 def policy_tts_api(state, private_markdown):
     return policy_campaign(
         state, private_markdown, TTS_API_SLUG, TTS_API_REQUIRED,
-        "Default affiliate link", "AI VOICE API", ["A benchmark before you pay"],
+        TTS_API_LINK_FIELD, "AI VOICE API", ["A benchmark before you pay"],
     )
 
 
