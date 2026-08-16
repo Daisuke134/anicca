@@ -400,7 +400,7 @@ def run_policy_audit(
             ),
             "AFFILIATE_SOURCE_SET_SHA256": bundle["source_set_sha256"],
             "ANICCA_BUDGET_SCOPE_ID": f"affiliate-policy-{bundle['plan_id']}",
-            "ANICCA_PASS_TOKEN_BUDGET": "32768",
+            "ANICCA_PASS_TOKEN_BUDGET": "24576",
             "ANICCA_LOOP_DAILY_TOKEN_BUDGET": "98304",
             "ANICCA_BUDGET_REQUIRED": "1",
             "ANICCA_BUDGET_DAILY_SCOPE": "affiliate-policy-owner",

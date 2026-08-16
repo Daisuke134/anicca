@@ -1854,6 +1854,11 @@ observable outcome exists.
   only when its exact evidence summary says `budget_blocked` and the current
   reservation now fits the recorded remaining daily budget; every other failed or
   quarantined result stays terminal, preventing a ten-minute retry loop.
+  The resumed composition succeeded with 14,281 actual tokens. Its separate
+  source-only policy audit then hit the same truthful boundary at 73,554 consumed
+  because 32,768 would exceed the 98,304 policy cap by 174. Prior policy audits
+  consumed 10,456–18,895 tokens, so only the policy pass reservation is reduced to
+  24,576; Terra-high and the 98,304 daily policy cap remain unchanged.
 - [ ] **A15.4** Produce one source-bound decision asset per qualified intent with
   disclosure-before-CTA, limitations, alternatives, and exactly one owned link.
 - [ ] **A15.5** Publish through the owned site and English X browser, require public
