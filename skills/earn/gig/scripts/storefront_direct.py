@@ -1020,7 +1020,7 @@ def _next_hypothesis(scorecard_path: Path, experiment: dict) -> dict | None:
 
 def _prepare_next_hypothesis(
     scorecard_path: Path, effects_path: Path, outcomes_path: Path,
-    contracts: list[dict], now: int,
+    contracts: list[dict], now: int, mutation_contracts: list[dict] | None = None,
 ) -> dict | None:
     try:
         backlog = json.loads(scorecard_path.read_text(encoding="utf-8"))["priority_backlog"]
@@ -1033,15 +1033,31 @@ def _prepare_next_hypothesis(
     outcomes = ([json.loads(line) for line in outcomes_path.read_text(encoding="utf-8").splitlines() if line]
                 if outcomes_path.exists() else [])
     terminal = {row.get("experiment_key") for row in outcomes if row.get("terminal") is True}
-    active = next((row for row in effects if row.get("status") == "accepted"
-                   and row.get("effect") == 1 and row.get("experiment_key") not in terminal), None)
+    active = [row for row in effects if row.get("status") == "accepted"
+              and row.get("effect") == 1 and row.get("experiment_key") not in terminal]
+    active_services = {str(row.get("service_id") or "") for row in active}
     completed = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
                  for row in effects if row.get("status") == "accepted" and row.get("effect") == 1}
     versions = {str(row["service_id"]): row["service_version_sha256"] for row in contracts}
-    candidate = next((row for row in backlog if isinstance(row, dict)
-                      and str(row.get("service_id")) in versions
-                      and (str(row.get("service_id")), str(row.get("field")).lower()) not in completed), None)
-    if candidate is None:
+    field_alias = {"outcome": "title", "scope": "body"}
+    rendered = {
+        (str(row.get("service_id") or ""), str(row.get("changed_field") or "").lower()): row
+        for row in (mutation_contracts or []) if isinstance(row, dict)
+    }
+    candidate = None
+    mutation_contract = None
+    for row in backlog:
+        if not isinstance(row, dict):
+            continue
+        service_id = str(row.get("service_id") or "")
+        field = field_alias.get(str(row.get("field") or "").lower(), str(row.get("field") or "").lower())
+        contract = rendered.get((service_id, field))
+        if (service_id in versions and service_id not in active_services
+                and (service_id, field) not in completed and isinstance(contract, dict)
+                and contract.get("precondition_listing_version_sha256") == versions[service_id]):
+            candidate, mutation_contract = row, contract
+            break
+    if candidate is None or mutation_contract is None:
         return None
     identity = json.dumps(candidate, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return {
@@ -1050,13 +1066,15 @@ def _prepare_next_hypothesis(
         "prepared_at_epoch": now,
         "service_id": str(candidate["service_id"]),
         "service_version_sha256": versions[str(candidate["service_id"])],
-        "field": str(candidate["field"]),
+        "field": str(mutation_contract["changed_field"]),
+        "portfolio_field": str(candidate["field"]),
         "before": candidate.get("before"),
         "success_metric": candidate.get("success_metric"),
         "reason": str(candidate.get("reason") or ""),
-        "executable": active is None,
-        "guard_reason": None if active is None else "active_experiment_measurement_open",
-        "active_experiment_key": active.get("experiment_key") if active else None,
+        "executable": True,
+        "guard_reason": None,
+        "active_experiment_key": active[0].get("experiment_key") if active else None,
+        "mutation_contract_sha256": mutation_contract["contract_sha256"],
     }
 
 
@@ -1234,10 +1252,15 @@ def _collect_competitors(ws_url: str, evidence_dir: Path, own_ids: set[str]) -> 
     return manifest
 
 
-def _observe_own_page(ws_url: str, evidence_dir: Path, name: str = "own-candidate.json") -> dict:
+def _observe_own_page(
+    ws_url: str, evidence_dir: Path, name: str = "own-candidate.json",
+    service_id: str = TARGET_SERVICE_ID,
+) -> dict:
     import listing_inventory
 
-    url = f"https://coconala.com/services/{TARGET_SERVICE_ID}"
+    if not service_id.isdigit():
+        raise RuntimeError("own_candidate_service_id_invalid")
+    url = f"https://coconala.com/services/{service_id}"
     observed = asyncio.run(listing_inventory._eval_json(
         ws_url,
         url,
@@ -1256,14 +1279,14 @@ def _observe_own_page(ws_url: str, evidence_dir: Path, name: str = "own-candidat
     ))
     body = str(observed.get("body") or "")
     image_ids = observed.get("service_image_ids")
-    if (urlsplit(str(observed.get("url") or "")).path.rstrip("/") != f"/services/{TARGET_SERVICE_ID}" or not body.strip()
+    if (urlsplit(str(observed.get("url") or "")).path.rstrip("/") != f"/services/{service_id}" or not body.strip()
             or not isinstance(image_ids, list) or not all(isinstance(value, str) and value for value in image_ids)
             or len(set(image_ids)) != len(image_ids)):
         raise RuntimeError("own_candidate_readback_invalid")
     row = {
         "official": True,
         "observed": True,
-        "service_id": TARGET_SERVICE_ID,
+        "service_id": service_id,
         "url": str(observed["url"]),
         "title": str(observed.get("title") or ""),
         "body": body,
@@ -1422,6 +1445,38 @@ def _image_judgement(hypothesis: dict, contract: dict) -> dict:
         "observation_window_days": contract["observation_window_days"], "no_op_reason": None,
         "experiment_key": _experiment_key(contract["service_id"], "image", digest), "uncertainty": [],
     }
+
+
+def _title_judgement(hypothesis: dict, contract: dict, effects_path: Path, now: int) -> dict:
+    mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
+    _validate_mutation_contract(contract, mappings)
+    if (hypothesis.get("service_id") != contract.get("service_id")
+            or hypothesis.get("field") != "title" or contract.get("changed_field") != "title"
+            or hypothesis.get("mutation_contract_sha256") != contract.get("contract_sha256")
+            or hypothesis.get("executable") is not True):
+        raise RuntimeError("storefront_title_hypothesis_invalid")
+    proposed = str(contract["proposed_value"])
+    value = {
+        "decision": "change", "service_id": contract["service_id"], "changed_field": "title",
+        "before_value": contract["before_value"], "proposed_value": proposed,
+        "hypothesis": str(hypothesis["reason"]), "competitor_evidence_paths": [],
+        "capability_evidence_paths": [], "success_metric": contract["success_metric"],
+        "observation_window_days": contract["observation_window_days"], "no_op_reason": None,
+        "experiment_key": _experiment_key(contract["service_id"], "title", proposed), "uncertainty": [],
+    }
+    if effects_path.exists():
+        for line in effects_path.read_text(encoding="utf-8").splitlines():
+            effect = json.loads(line)
+            if effect.get("status") != "accepted" or effect.get("effect") != 1:
+                continue
+            accepted_at = int(effect.get("accepted_at_epoch") or 0)
+            if effect.get("experiment_key") == value["experiment_key"]:
+                return _guarded_noop(value, "experiment_already_succeeded")
+            if now - accepted_at < 86400:
+                return _guarded_noop(value, "account_effect_budget_24h")
+            if str(effect.get("service_id") or "") == contract["service_id"] and now - accepted_at < 604800:
+                return _guarded_noop(value, "service_cooldown_7d")
+    return value
 
 
 def _guarded_noop(value: dict, reason: str) -> dict:
@@ -1640,7 +1695,9 @@ def _effect_intent_path(state_dir: Path, experiment_key: str) -> Path:
     return state_dir / "effect-intents" / f"{digest}.json"
 
 
-def _pending_recovery(state_dir: Path, own_page: dict) -> dict | None:
+def _pending_recovery(
+    state_dir: Path, own_page: dict, ws_url: str | None = None, evidence_dir: Path | None = None,
+) -> dict | None:
     body = str(own_page.get("body") or "")
     for path in sorted((state_dir / "effect-intents").glob("*.json")):
         try:
@@ -1656,6 +1713,27 @@ def _pending_recovery(state_dir: Path, own_page: dict) -> dict | None:
             if own_page.get("service_image_count") == 0 and image_ids == []:
                 continue
             raise RuntimeError("pending_image_effect_public_readback_invalid")
+        if intent.get("changed_field") == "title":
+            contract = intent.get("mutation_contract")
+            if not isinstance(contract, dict) or ws_url is None or evidence_dir is None:
+                raise RuntimeError("pending_title_contract_missing")
+            mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
+            _validate_mutation_contract(contract, mappings)
+            service_id = str(contract["service_id"])
+            page = _observe_own_page(
+                ws_url, evidence_dir, f"recovery-public-{service_id}.json", service_id,
+            )
+            seller = _seller_snapshot_for(ws_url, service_id)
+            values = {str(row.get("name") or ""): str(row.get("value") or "")
+                      for row in seller.get("fields") or [] if isinstance(row, dict)}
+            current = values.get(contract["allowed_delta"][0])
+            if (current == contract["proposed_value"]
+                    and contract["official_readback"]["public_title"] in str(page.get("body") or "")):
+                return {**intent, "intent_path": str(path), "_recovery_public_page": page,
+                        "_recovery_seller_snapshot": seller}
+            if current == contract["before_value"]:
+                continue
+            raise RuntimeError("pending_title_effect_public_readback_invalid")
         question, answer = str(intent.get("question") or ""), str(intent.get("answer") or "")
         if not question or not answer or len(question) > 400 or len(answer) > 400:
             raise RuntimeError("pending_effect_values_invalid")
@@ -1745,6 +1823,104 @@ async def _execute_faq_effect_async(
 
 def _execute_faq_effect(**kwargs) -> tuple[dict, dict, Path]:
     return asyncio.run(_execute_faq_effect_async(**kwargs))
+
+
+def _validate_title_form_delta(before: dict, after: dict, contract: dict) -> None:
+    field = contract["allowed_delta"][0]
+    url = f"https://coconala.com/mypage/services/{contract['service_id']}"
+    if before.get("url") != url or after.get("url") != url:
+        raise RuntimeError("seller_title_form_url_invalid")
+    before_targets = [row for row in before.get("fields") or [] if row.get("name") == field]
+    after_targets = [row for row in after.get("fields") or [] if row.get("name") == field]
+    if (len(before_targets) != 1 or len(after_targets) != 1
+            or before_targets[0].get("value") != contract["before_value"]
+            or after_targets[0].get("value") != contract["proposed_value"]):
+        raise RuntimeError("seller_title_value_mismatch")
+    strip = lambda snapshot: [row for row in snapshot.get("fields") or [] if row.get("name") != field]
+    if strip(before) != strip(after):
+        raise RuntimeError("seller_title_non_title_changed")
+
+
+def _validate_title_public_acceptance(before: dict, after: dict, contract: dict) -> None:
+    url = f"https://coconala.com/services/{contract['service_id']}"
+    expected = str(contract["official_readback"]["public_title"])
+    if before.get("url") != url or after.get("url") != url:
+        raise RuntimeError("public_title_readback_url_invalid")
+    if before.get("content_sha256") == after.get("content_sha256") or expected not in str(after.get("body") or ""):
+        raise RuntimeError("public_title_readback_mismatch")
+
+
+async def _execute_title_effect_async(
+    ws_url: str, *, contract: dict, judgement: dict, public_before_path: Path,
+    evidence_dir: Path, state_dir: Path,
+) -> tuple[dict, dict, Path]:
+    import websockets
+    import listing_inventory
+
+    mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
+    _validate_mutation_contract(contract, mappings)
+    if contract.get("changed_field") != "title" or judgement.get("experiment_key") != _experiment_key(
+        contract["service_id"], "title", str(contract["proposed_value"]),
+    ):
+        raise RuntimeError("seller_title_contract_invalid")
+    edit_url = f"https://coconala.com/mypage/services/{contract['service_id']}"
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        await listing_inventory._call(ws, "Page.enable", {}, cid); cid += 1
+        await ws.send(json.dumps({"id": cid, "method": "Page.navigate", "params": {"url": edit_url}})); cid += 1
+        _, cid = await listing_inventory._wait_for_load(ws, asyncio.get_event_loop().time() + 15, cid)
+
+        async def evaluate(expression: str) -> object:
+            nonlocal cid
+            response = await listing_inventory._call(
+                ws, "Runtime.evaluate", {"expression": expression, "returnByValue": True}, cid,
+            )
+            cid += 1
+            return response.get("result", {}).get("result", {}).get("value")
+
+        before = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
+        field = contract["allowed_delta"][0]
+        filled = json.loads(str(await evaluate(
+            "JSON.stringify((()=>{const form=document.forms[0],field=" + json.dumps(field)
+            + ",before=" + json.dumps(contract["before_value"], ensure_ascii=False)
+            + ",proposed=" + json.dumps(contract["proposed_value"], ensure_ascii=False)
+            + ";const e=form?.querySelector(`[name=\"${field}\"]`);"
+            "if(!e||e.value!==before)return {ok:false,reason:'before_mismatch'};"
+            "e.value=proposed;e.dispatchEvent(new Event('input',{bubbles:true}));"
+            "e.dispatchEvent(new Event('change',{bubbles:true}));"
+            "const submit=form.querySelector('button.submitButton.js_button-edit[type=submit]');"
+            "if(!submit)return {ok:false,reason:'submit_missing'};submit.scrollIntoView({block:'center'});"
+            "const r=submit.getBoundingClientRect();return {ok:true,value:e.value,"
+            "rect:{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height}}})())"
+        ) or "{}"))
+        if filled.get("ok") is not True or filled.get("value") != contract["proposed_value"]:
+            raise RuntimeError(f"seller_title_fill_failed:{filled.get('reason')}")
+        after = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
+        _validate_title_form_delta(before, after, contract)
+        before_path, after_path = evidence_dir / "seller-form-before.json", evidence_dir / "seller-form-title-filled.json"
+        _atomic_write(before_path, before); _atomic_write(after_path, after)
+        intent_path = _effect_intent_path(state_dir, str(judgement["experiment_key"]))
+        _atomic_write(intent_path, {
+            "version": 1, "status": "prepared", "service_id": contract["service_id"],
+            "changed_field": "title", "experiment_key": judgement["experiment_key"],
+            "mutation_contract": contract, "public_before_path": str(public_before_path),
+            "seller_form_before_path": str(before_path), "prepared_at_epoch": int(time.time()),
+            "effect_origin_pass_id": evidence_dir.name, "judgement": judgement,
+        })
+        rect = filled["rect"]
+        if min(float(rect.get("w") or 0), float(rect.get("h") or 0)) <= 0:
+            raise RuntimeError("seller_title_submit_not_visible")
+        for event_type in ("mousePressed", "mouseReleased"):
+            await listing_inventory._call(ws, "Input.dispatchMouseEvent", {
+                "type": event_type, "x": float(rect["x"]), "y": float(rect["y"]),
+                "button": "left", "clickCount": 1,
+            }, cid); cid += 1
+        await asyncio.sleep(3)
+        return before, after, intent_path
+
+
+def _execute_title_effect(**kwargs) -> tuple[dict, dict, Path]:
+    return asyncio.run(_execute_title_effect_async(**kwargs))
 
 
 async def _execute_image_effect_async(
@@ -1955,6 +2131,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             image_render = _render_image_mutation(own_page, image_asset, capability_families)
             image_render_path = inventory_path.parent / "mutation-render-image.json"
             _atomic_write(image_render_path, image_render)
+            mutation_contracts = [render["contract"] for render in (
+                image_render, title_render, body_render, package_render, faq_render, price_render,
+            )]
             analytics = _collect_analytics(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
@@ -1976,26 +2155,38 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             next_hypothesis = _prepare_next_hypothesis(
                 getattr(args, "scorecard", DEFAULT_SCORECARD),
                 args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
-                validated_contracts, int(time.time()),
+                validated_contracts, int(time.time()), mutation_contracts,
             )
             pending_effect = None
-            recovery = _pending_recovery(args.state_dir, own_page)
+            recovery = _pending_recovery(args.state_dir, own_page, ws_url, inventory_path.parent)
             if recovery is not None:
                 judgement = recovery.get("judgement")
                 if not isinstance(judgement, dict):
                     raise RuntimeError("pending_effect_judgement_missing")
-                if (recovery.get("service_id") != TARGET_SERVICE_ID
-                        or recovery.get("changed_field") not in {"FAQ", "image"}
+                if (recovery.get("changed_field") not in {"FAQ", "image", "title"}
+                        or (recovery.get("changed_field") in {"FAQ", "image"}
+                            and recovery.get("service_id") != TARGET_SERVICE_ID)
                         or recovery.get("experiment_key") != judgement.get("experiment_key")):
                     raise RuntimeError("pending_effect_identity_invalid")
                 public_before = json.loads(Path(recovery["public_before_path"]).read_text(encoding="utf-8"))
                 seller_before = json.loads(Path(recovery["seller_form_before_path"]).read_text(encoding="utf-8"))
-                seller_after = _seller_snapshot(ws_url)
+                seller_after = recovery.get("_recovery_seller_snapshot") or _seller_snapshot_for(
+                    ws_url, str(recovery["service_id"]),
+                )
                 if recovery["changed_field"] == "image":
                     mutation_contract = recovery.get("mutation_contract")
                     if not isinstance(mutation_contract, dict):
                         raise RuntimeError("pending_image_mutation_contract_missing")
                     _validate_public_image_acceptance(public_before, own_page, mutation_contract)
+                elif recovery["changed_field"] == "title":
+                    mutation_contract = recovery.get("mutation_contract")
+                    if not isinstance(mutation_contract, dict):
+                        raise RuntimeError("pending_title_mutation_contract_missing")
+                    recovery_page = recovery.get("_recovery_public_page")
+                    if not isinstance(recovery_page, dict):
+                        raise RuntimeError("pending_title_public_readback_missing")
+                    _validate_title_public_acceptance(public_before, recovery_page, mutation_contract)
+                    _validate_title_form_delta(seller_before, seller_after, mutation_contract)
                 else:
                     question, answer = str(recovery["question"]), str(recovery["answer"])
                     _validate_public_acceptance(public_before, own_page, question, answer)
@@ -2005,17 +2196,26 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 judgement_path = inventory_path.parent / "judgement-recovered.json"
                 _atomic_write(judgement_path, judgement)
                 intent_path = Path(recovery["intent_path"])
-                durable_recovery = {key: value for key, value in recovery.items() if key != "intent_path"}
+                durable_recovery = {key: value for key, value in recovery.items()
+                                    if key != "intent_path" and not key.startswith("_")}
                 _atomic_write(intent_path, {
                     **durable_recovery, "status": "observed",
-                    "public_after_path": str(inventory_path.parent / "own-candidate.json"),
+                    "public_after_path": str(
+                        inventory_path.parent / (
+                            f"recovery-public-{recovery['service_id']}.json"
+                            if recovery["changed_field"] == "title" else "own-candidate.json"
+                        )
+                    ),
                     "seller_form_after_path": str(seller_after_path),
                     "observed_at_epoch": int(time.time()),
                 })
                 pending_effect = {
                     "intent_path": intent_path, "changed_field": recovery["changed_field"],
                     "public_before_path": Path(recovery["public_before_path"]),
-                    "public_after_path": inventory_path.parent / "own-candidate.json",
+                    "public_after_path": inventory_path.parent / (
+                        f"recovery-public-{recovery['service_id']}.json"
+                        if recovery["changed_field"] == "title" else "own-candidate.json"
+                    ),
                     "seller_form_before_path": Path(recovery["seller_form_before_path"]),
                     "seller_form_after_path": seller_after_path, "recovered": True,
                 }
@@ -2047,6 +2247,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                     _atomic_write(inventory_path.parent / "mutation-contract.json", mutation_contract)
                     judgement = _image_judgement(next_hypothesis, mutation_contract)
+                elif next_hypothesis is not None and next_hypothesis.get("field") == "title":
+                    mutation_contract = next((contract for contract in mutation_contracts
+                                              if contract["contract_sha256"]
+                                              == next_hypothesis["mutation_contract_sha256"]), None)
+                    if mutation_contract is None:
+                        raise RuntimeError("storefront_title_mutation_contract_missing")
+                    _atomic_write(inventory_path.parent / "mutation-contract.json", mutation_contract)
+                    judgement = _title_judgement(
+                        next_hypothesis, mutation_contract, args.state_dir / "effects.jsonl", int(time.time()),
+                    )
                 else:
                     raw_judgement = _invoke_judge(
                         runner=args.runner, schema=args.schema, workdir=args.workdir,
@@ -2065,11 +2275,20 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 _atomic_write(judgement_path, judgement)
                 if judgement["decision"] == "change":
                     presend_path = inventory_path.parent / "presend-own-page.json"
-                    presend = _observe_own_page(ws_url, inventory_path.parent, presend_path.name)
-                    _presend_guard(judgement, presend, mutation_contract)
+                    presend = _observe_own_page(
+                        ws_url, inventory_path.parent, presend_path.name, str(judgement["service_id"]),
+                    )
+                    if judgement["changed_field"] != "title":
+                        _presend_guard(judgement, presend, mutation_contract)
                     if args.effect:
                         if judgement["changed_field"] == "image":
                             seller_before, _, intent_path = _execute_image_effect(
+                                ws_url=ws_url, contract=mutation_contract, judgement=judgement,
+                                public_before_path=presend_path, evidence_dir=inventory_path.parent,
+                                state_dir=args.state_dir,
+                            )
+                        elif judgement["changed_field"] == "title":
+                            seller_before, _, intent_path = _execute_title_effect(
                                 ws_url=ws_url, contract=mutation_contract, judgement=judgement,
                                 public_before_path=presend_path, evidence_dir=inventory_path.parent,
                                 state_dir=args.state_dir,
@@ -2082,10 +2301,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                 state_dir=args.state_dir,
                             )
                         public_after_path = inventory_path.parent / "after-public.json"
-                        public_after = _observe_own_page(ws_url, inventory_path.parent, public_after_path.name)
-                        seller_after = _seller_snapshot(ws_url)
+                        public_after = _observe_own_page(
+                            ws_url, inventory_path.parent, public_after_path.name, str(judgement["service_id"]),
+                        )
+                        seller_after = _seller_snapshot_for(ws_url, str(judgement["service_id"]))
                         if judgement["changed_field"] == "image":
                             _validate_public_image_acceptance(presend, public_after, mutation_contract)
+                        elif judgement["changed_field"] == "title":
+                            _validate_title_public_acceptance(presend, public_after, mutation_contract)
+                            _validate_title_form_delta(seller_before, seller_after, mutation_contract)
                         else:
                             _validate_public_acceptance(presend, public_after, question, answer)
                             _validate_form_delta(seller_before, seller_after, question, answer)
@@ -2202,7 +2426,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         json.loads(pending_effect["intent_path"].read_text(encoding="utf-8"))
                         .get("effect_origin_pass_id", pass_id)
                     ),
-                    "service_id": TARGET_SERVICE_ID, "changed_field": pending_effect["changed_field"],
+                    "service_id": str(judgement["service_id"]), "changed_field": pending_effect["changed_field"],
                     "before_value": judgement.get("before_value"), "after_value": judgement.get("proposed_value"),
                     "experiment_key": judgement["experiment_key"],
                     "public_before_path": str(pending_effect["public_before_path"]),
@@ -2215,17 +2439,22 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     effect_row.update({
                         "question": pending_effect["question"], "answer": pending_effect["answer"],
                     })
-                else:
+                elif pending_effect["changed_field"] == "image":
                     effect_row.update({
                         "asset_sha256": judgement.get("proposed_value"),
                         "public_image_ids": json.loads(
                             Path(pending_effect["public_after_path"]).read_text(encoding="utf-8")
                         ).get("service_image_ids"),
                     })
+                else:
+                    effect_row["contract_sha256"] = str(
+                        json.loads(pending_effect["intent_path"].read_text(encoding="utf-8"))
+                        .get("mutation_contract", {}).get("contract_sha256") or ""
+                    )
                 appended = _append_effect_once(args.state_dir / "effects.jsonl", effect_row)
                 _append_effect_once(args.state_dir / "experiments.jsonl", {
                     "version": 1, "status": "accepted", "experiment_key": judgement["experiment_key"],
-                    "service_id": TARGET_SERVICE_ID, "changed_field": pending_effect["changed_field"],
+                    "service_id": str(judgement["service_id"]), "changed_field": pending_effect["changed_field"],
                     "accepted_at_epoch": effect_row["accepted_at_epoch"],
                     "success_metric": judgement.get("success_metric"),
                     "observation_window_days": judgement.get("observation_window_days"),
