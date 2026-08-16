@@ -2246,6 +2246,10 @@ def _seal_create_contract(
             or len([line for line in image_copy.splitlines() if line.strip()]) != 3
             or "｜" not in image_copy.splitlines()[-1]):
         raise RuntimeError("storefront_create_content_invalid")
+    # Coconala renders the title as `{title_stem}ます`, so the stem must end in a verb continuative
+    # form. A stem ending in a particle produced `…SEO構成からます` in a sealed contract.
+    if title_stem[-1] not in "いきしちにひみりぎじびぴえけせてねへめれげぜでべぺ":
+        raise RuntimeError("storefront_create_title_stem_not_continuative")
     # Buyer-visible copy must not leak the schema: an English `outcome:` prefix reached a live listing.
     if any(re.match(r"^[A-Za-z_]{3,}\s*[:：]", line.strip())
            for line in f"{head}\n{body}".splitlines()):
@@ -3971,7 +3975,23 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             create_family = None
             create_draft_claim = None
             fixed_candidate_public = new_listing_contract["draft_service_id"] in inventory_ids
-            if fixed_candidate_public and next_hypothesis is None and observed < 20:
+            # One published listing per distinct demand evidence. Without this the loop generates a
+            # brand new service on every full wake until the catalogue hits its slot limit.
+            demand_evidence_path = str(Path(new_listing_path).resolve())
+            def _sold_from_this_demand(line: str) -> bool:
+                row = json.loads(line)
+                if row.get("status") != "published" or not str(
+                        row.get("candidate_key") or "").startswith("storefront:create:v1:"):
+                    return False
+                # Rows written before this field existed came from this same committed demand file.
+                return row.get("demand_evidence_path", demand_evidence_path) == demand_evidence_path
+
+            demand_already_sold = any(
+                _sold_from_this_demand(line)
+                for line in (args.state_dir / "new-listing-drafts.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ) if (args.state_dir / "new-listing-drafts.jsonl").exists() else False
+            if fixed_candidate_public and not demand_already_sold and next_hypothesis is None and observed < 20:
                 source_service_id = new_listing_contract["draft_service_id"]
                 create_source = next((row for row in validated_contracts
                                       if row["service_id"] == source_service_id), None)
@@ -4095,7 +4115,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 )
             draft_result = {**draft_result,
                             "capability_family": create_family or capability_families.get(candidate_id),
-                            "blank_draft_claim": create_draft_claim}
+                            "blank_draft_claim": create_draft_claim,
+                            "demand_evidence_path": demand_evidence_path}
 
             for name in STATE_FILES:
                 path = args.state_dir / name
