@@ -974,6 +974,30 @@ The completed history remains in the evidence tables below. The following list i
 the only canonical remaining order; later work MUST NOT jump ahead of an unmet
 gate.
 
+Current execution cursor: **step 1**. Installed release `dc78b3bd9` has five
+healthy launchd owners, 15 refreshed official sources, three source-hash-bound
+composition inputs, zero post-baseline clicks, and zero commission. Therefore
+composition—not another research framework, provider login, locale, packaging,
+or cloud service—is the next implementation slice.
+
+```mermaid
+flowchart LR
+  C[Composition] --> P[Policy and deterministic publish]
+  P --> F[Fourth English campaign]
+  F --> E0[E0 real click]
+  E0 --> E1[E1 approved commission]
+  E1 --> T[10 comparable placements]
+  T --> D[3 providers]
+  D --> A2[4 profitable unattended weeks]
+  A2 --> K10[USD 10K per month]
+  K10 --> L[Japanese and Spanish pods]
+  L --> O[Clean Mac and OSS]
+  O --> C1[Cloud tenants]
+  C1 --> K100[USD 100K per month]
+  K100 --> M1[USD 1M per month]
+  M1 --> M10[USD 10M per month]
+```
+
 1. **P0 — Seal composition output.** Extend the existing runner receipt so it
    hashes the final result, binds it to exactly one `source_set_sha256`, records
    model/effort/token usage, and rejects an output whose source set changed.
@@ -1030,7 +1054,7 @@ gate.
     commission to compute required qualified traffic; reconcile three consecutive
     months at USD 10,000 gross while reporting net, costs, reversals, payout delay,
     and concentration separately.
-16. **After E0 — Add Japanese isolation.** Use a separate account/browser/provider
+16. **After E1 — Add Japanese isolation.** Use a separate account/browser/provider
     membership/link, native evidence pack, disclosure, placement ledger, and J0/J1
     canary. Never mix Japanese and English on one social account.
 17. **After English and Japanese proof — Add Spanish.** Apply the same locale gate;
@@ -1047,6 +1071,19 @@ gate.
     browser owners with tenant-isolated scheduler/browser workers while preserving
     the same job, receipt, policy, attribution, deletion, audit, and Telegram/web
     UX contracts.
+21. **Gate A4 — Prove USD 100,000/month.** Scale only mature profitable pods,
+    preserve the 40% concentration ceiling, and reconcile three consecutive
+    months at USD 100,000 gross with net, costs, reversals, payout delay, and
+    tenant/provider/channel concentration.
+22. **Gate A5 — Prove USD 1,000,000/month.** Operate a multilingual portfolio with
+    tenant-isolated workers, provider capacity receipts, fraud controls, legal and
+    tax compliance, and three consecutive externally reconciled USD 1,000,000
+    months. No projection or annualized run rate closes this gate.
+23. **Gate A6 — Prove USD 10,000,000/month.** Reach platform-scale qualified
+    distribution and reconcile three consecutive USD 10,000,000 gross months
+    across independent providers, locales, tenants, and channels while showing
+    net profit, reversals, costs, payout timing, concentration, incidents, and
+    recovery. This is an evidence gate, not a guaranteed forecast.
 
 External user authority is required only before withdrawal: truthful tax/KYC and
 one payment provider must be completed with the user's legal/payment data. The
