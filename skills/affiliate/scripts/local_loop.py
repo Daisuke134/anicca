@@ -610,7 +610,7 @@ def advance_known_publication(state, landing_root, x_cdp_port, private_markdown=
     generic = advance_generic_publication(
         state, landing_root, x_cdp_port, private_markdown,
     )
-    if generic["state"] != "NO_DUE_PUBLICATION":
+    if generic["state"] not in ("NO_DUE_PUBLICATION", "ALREADY_LIVE"):
         return generic
     slug = "elevenagents-for-customer-support"
     placement = "elevenagents-en-1"

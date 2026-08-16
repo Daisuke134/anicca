@@ -1585,6 +1585,13 @@ shared abstraction to make the diff appear smaller.
   boundary: a prior-hash-matching LIVE slug can be revised, while an unexpected
   checked-in markdown hash is rejected before commit or push. This is the only
   added publication regression; broad TDD is out of scope.
+  First installed wake observation exposed one routing defect without creating
+  an external duplicate: `advance_known_publication()` returned the completed
+  generic campaign's `ALREADY_LIVE` state before reaching the TTS campaign, so
+  the old content hash remained public. Treat `ALREADY_LIVE` as a completed
+  campaign and continue to the next known campaign; return early only for an
+  actionable/nonterminal generic state. The focused local-loop regression binds
+  this exact cascade behavior.
 - [ ] **E0-C07** Kick an unchanged replay and require the same provider link,
   public URLs, job count, Git HEAD, and `Telegram=NO_PENDING`.
 - [ ] **E0-C08** Capture Link Performance baseline for that link; an unchanged

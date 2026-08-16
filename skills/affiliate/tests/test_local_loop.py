@@ -19,6 +19,27 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_completed_generic_campaign_advances_to_tts_campaign(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            receipt = state / "x-posts" / "elevenagents-en-1.json"
+            receipt.parent.mkdir(parents=True)
+            receipt.write_text(json.dumps({
+                "state": "LIVE", "public_url": "https://x.com/selawmqt/status/1",
+            }))
+            expected = {"state": "X_LIVE", "public_url": "https://x.com/selawmqt/status/1"}
+            with (
+                patch.object(MODULE, "advance_generic_publication", return_value={
+                    "state": "ALREADY_LIVE", "public_url": None,
+                }),
+                patch.object(MODULE, "advance_tts_api_publication", return_value=expected) as advance,
+            ):
+                result = MODULE.advance_known_publication(
+                    state, Path(root) / "landing", 9326, Path(root) / "private.md",
+                )
+            self.assertEqual(result, expected)
+            advance.assert_called_once()
+
     def test_wake_recovers_provider_and_advances_publication_without_cross_lane_blocking(self):
         with tempfile.TemporaryDirectory() as root:
             root = Path(root)
