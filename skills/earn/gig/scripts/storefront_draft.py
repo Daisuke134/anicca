@@ -620,3 +620,106 @@ def readback_published_draft(
         "asset_sha256": contract["hero_image"]["asset_sha256"], "evidence_path": str(evidence_path),
         "publication_guard": "already_public",
     }
+
+
+async def _blank_draft_ids(ws_url: str) -> list[str]:
+    import websockets
+
+    expression = r"""JSON.stringify((()=>{const cards=[...document.querySelectorAll('.serviceListContentBox')];
+      return{cards:cards.length,ids:cards.map(card=>({text:(card.innerText||'').trim(),
+      ids:[...card.querySelectorAll('a[href*="/mypage/services/"]')]
+      .map(a=>(a.href.match(/\/mypage\/services\/(\d+)/)||[])[1]).filter(Boolean)}))
+      .filter(row=>row.text.includes('下書き中')&&row.text.includes('サービスタイトル未設定'))
+      .flatMap(row=>row.ids)}})())"""
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10,
+                                  max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        deadline = asyncio.get_running_loop().time() + 15
+        while asyncio.get_running_loop().time() < deadline:
+            raw, cid = await _evaluate(ws, expression, cid)
+            observed = json.loads(str(raw or "{}"))
+            if int(observed.get("cards") or 0) > 0:
+                values = observed.get("ids") or []
+                break
+            await asyncio.sleep(0.25)
+        else:
+            raise RuntimeError("storefront_create_inventory_not_hydrated")
+    return sorted({str(value) for value in values if str(value).isdigit()})
+
+
+async def _submit_blank_draft(ws_url: str) -> str:
+    import websockets
+
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10,
+                                  max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        deadline = asyncio.get_running_loop().time() + 15
+        while asyncio.get_running_loop().time() < deadline:
+            selected, cid = await _evaluate(ws, """(()=>{const r=document.querySelector(
+              'input[name="service-type"][value="0"]');if(!r)return false;r.click();
+              r.dispatchEvent(new Event('change',{bubbles:true}));return true})()""", cid)
+            if selected is True:
+                break
+            await asyncio.sleep(0.25)
+        else:
+            raise RuntimeError("storefront_create_service_type_missing")
+        await asyncio.sleep(0.5)
+        submitted, cid = await _evaluate(ws, """(()=>{const f=document.querySelector(
+          'form[action$="/services/add"]');const b=f?.querySelector('button[type=submit]');
+          if(!f||!b)return false;f.requestSubmit(b);return true})()""", cid)
+        if submitted is not True:
+            raise RuntimeError("storefront_create_submit_missing")
+        deadline = asyncio.get_running_loop().time() + 15
+        while asyncio.get_running_loop().time() < deadline:
+            url, cid = await _evaluate(ws, "location.href", cid)
+            match = re.fullmatch(r"https://coconala\.com/mypage/services/(\d+)", str(url or ""))
+            if match:
+                return match.group(1)
+            await asyncio.sleep(0.25)
+    raise RuntimeError("storefront_create_draft_id_missing")
+
+
+def create_or_claim_blank_draft(default_tab_script: Path) -> dict[str, Any]:
+    """Claim one recoverable blank draft, creating it only when none exists."""
+    list_opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", "https://coconala.com/mypage/services_lists"],
+        capture_output=True, text=True, check=False, timeout=30,
+    )
+    list_tab = None
+    try:
+        list_tab = json.loads(list_opened.stdout)
+        if list_opened.returncode != 0 or list_tab.get("ok") is not True:
+            raise RuntimeError("storefront_create_inventory_tab_open_failed")
+        blank_ids = asyncio.run(_blank_draft_ids(str(list_tab["ws"])))
+    finally:
+        if isinstance(list_tab, dict) and list_tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(list_tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+    if len(blank_ids) > 1:
+        raise RuntimeError("storefront_create_multiple_blank_drafts")
+    if blank_ids:
+        return {"draft_service_id": blank_ids[0], "effect": 0, "recovered": True}
+
+    add_opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", "https://coconala.com/services/add"],
+        capture_output=True, text=True, check=False, timeout=30,
+    )
+    add_tab = None
+    try:
+        add_tab = json.loads(add_opened.stdout)
+        if add_opened.returncode != 0 or add_tab.get("ok") is not True:
+            raise RuntimeError("storefront_create_tab_open_failed")
+        draft_id = asyncio.run(_submit_blank_draft(str(add_tab["ws"])))
+    finally:
+        if isinstance(add_tab, dict) and add_tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(add_tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+    return {"draft_service_id": draft_id, "effect": 1, "recovered": False}
