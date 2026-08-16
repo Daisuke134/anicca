@@ -25,6 +25,7 @@ from job_journal import (
 )
 from provider_cli import ProviderError, observe, poll, read_login_credentials, resume
 from program_registry import TTS_PLACEMENT, apply_getresponse, elevenlabs_link_action
+from acquisition_decision import advance as advance_acquisition_decision
 
 
 SYSTEME_LOGIN = "https://systeme.io/en/login"
@@ -235,11 +236,12 @@ def owner_event(state, wake_event, sent_event_ids=None):
     impact_changed = wake_event.get("impact_changed", False)
     candidates = []
 
-    def add(kind, identity, money, public_url=None, article_url=None):
+    def add(kind, identity, money, public_url=None, article_url=None, decision=None):
         event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
         candidates.append({
             "event_uuid": event_uuid, "kind": kind, "money": money,
             "public_url": public_url, "article_url": article_url,
+            "decision": decision,
         })
 
     if wake_event.get("placement_link_changed") and wake_event.get("placement_link_state") == "VERIFIED":
@@ -263,6 +265,16 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "provider": "hubspot-impact",
             "transition_id": wake_event.get("impact_transition_id"),
         }, "commission not observed yet")
+    if wake_event.get("acquisition_decision_changed"):
+        kind = "ACQUISITION_DECISION_READY"
+        add(kind, {
+            "kind": kind,
+            "decision_id": wake_event.get("acquisition_decision_id"),
+        }, "commission not observed yet", decision=(
+            f"実測baselineから「{wake_event.get('acquisition_decision_variable')}」を"
+            f"1つだけ変更します。仮説: {wake_event.get('acquisition_decision_hypothesis')} "
+            f"次の実行: {wake_event.get('acquisition_decision_instruction')}"
+        ))
     for transition in commission_transitions:
         kind = {
             "pending": "COMMISSION_PENDING", "approved": "COMMISSION_APPROVED",
@@ -323,6 +335,7 @@ def owner_event(state, wake_event, sent_event_ids=None):
         *((f"記事: {selected['article_url']}",) if selected.get("article_url") else ()),
         f"プログラム: {program}",
         f"お金: {selected['money']}",
+        *((f"判断: {selected['decision']}",) if selected.get("decision") else ()),
         f"回復: {recovery}",
         f"次: {next_job}",
     ))
@@ -1261,6 +1274,15 @@ def wake(args):
     revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
     }
+    try:
+        acquisition_decision = advance_acquisition_decision(
+            Path(__file__).resolve().parent.parent, state
+        )
+    except Exception as error:
+        acquisition_decision = {
+            "state": "DECISION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
     if provider["state"] == "AUTHENTICATED" and not placement_link_ready:
         status = placement_link["state"]
     elif not link:
@@ -1315,6 +1337,13 @@ def wake(args):
         "devto_baseline_state": devto_metrics.get("baseline_state"),
         "devto_baseline_receipt_count": devto_metrics.get("baseline_receipt_count"),
         "devto_metrics_failure_type": devto_metrics.get("failure_type"),
+        "acquisition_decision_state": acquisition_decision.get("state"),
+        "acquisition_decision_changed": acquisition_decision.get("changed", False),
+        "acquisition_decision_id": acquisition_decision.get("decision_id"),
+        "acquisition_decision_variable": acquisition_decision.get("selected_variable"),
+        "acquisition_decision_hypothesis": acquisition_decision.get("hypothesis"),
+        "acquisition_decision_instruction": acquisition_decision.get("next_campaign_instruction"),
+        "acquisition_decision_failure_type": acquisition_decision.get("failure_type"),
         "revenue_state": revenue["state"],
         "revenue_source_rows": revenue["source_rows"],
         "revenue_appended_transitions": revenue["appended_transitions"],

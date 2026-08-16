@@ -246,6 +246,13 @@ remains an agent decision rather than a deterministic content rule. The first
 eligible observation is frozen once under `distribution-baselines/`; later
 hourly polls cannot rewrite the evidence used by that decision.
 
+The same wake passes each new immutable baseline to the bounded acquisition
+Agent exactly once. With no eligible receipt it returns `WAITING_FOR_BASELINE`
+without invoking a model. The Agent chooses one acquisition variable, records a
+falsifiable hypothesis, one next-campaign instruction, and one success metric
+under `acquisition-decisions/`; it does not publish, edit, or infer revenue.
+Telegram reports the resulting decision in natural language from that receipt.
+
 The same distribution command exposes the current Writer Substack API shape
 without importing Writer state or its retired manual sentinel path:
 
