@@ -108,6 +108,10 @@ def _report_message(row: dict) -> str:
     catalog = row.get("catalog_analytics") if isinstance(row.get("catalog_analytics"), dict) else {}
     totals = catalog.get("totals") if isinstance(catalog.get("totals"), dict) else {}
     changes = catalog.get("changes") if isinstance(catalog.get("changes"), dict) else {}
+    metric_unknown = (
+        catalog.get("metric_unknown_services")
+        if isinstance(catalog.get("metric_unknown_services"), dict) else {}
+    )
     draft = row.get("new_listing_draft") if isinstance(row.get("new_listing_draft"), dict) else {}
     next_action = (
         "失敗stageを自動修復して同じ境界から再開" if failed
@@ -122,10 +126,12 @@ def _report_message(row: dict) -> str:
         (f"📚 公開contract {int(row.get('listing_contracts_active') or 0)}件 / "
          f"version履歴 {int(row.get('listing_contracts_total') or 0)}件 / 今回追加 {contract_delta}件"),
         (f"📝 新規出品draft {draft.get('draft_service_id') or 'なし'} / "
-         f"更新 {int(draft.get('effect') or 0)} / 照合 {int(draft.get('readback') or 0)} / 公開 0"),
+         f"更新 {int(draft.get('effect') or 0)} / 照合 {int(draft.get('readback') or 0)} / "
+         f"画像 {int(draft.get('image_count') or 0)} / 公開 0"),
         (f"📈 直近30日: 閲覧 {int(totals.get('views') or 0)} / 販売 {int(totals.get('purchases') or 0)} / "
          f"お気に入り {int(totals.get('favorites') or 0)} | 前回比 閲覧 {int(changes.get('views') or 0):+d} / "
-         f"販売 {int(changes.get('purchases') or 0):+d} / 未確定 {int(catalog.get('change_unknown_services') or 0)}件"),
+         f"販売 {int(changes.get('purchases') or 0):+d} / 現在値不明 {int(metric_unknown.get('views') or 0)}件 / "
+         f"前回比不明 {int(catalog.get('change_unknown_services') or 0)}件"),
         f"🧪 次候補 {hypothesis.get('service_id') or 'なし'} / {hypothesis.get('field') or 'なし'} / 実行可能 {str(bool(hypothesis.get('executable'))).lower()}",
         f"🛡️ fence {hypothesis.get('guard_reason') or row.get('reason') or 'なし'}",
         f"🔧 次の一手: {next_action}",
@@ -434,7 +440,29 @@ def _collect_analytics(
             if attempt < 2:
                 time.sleep(1)
         if period is None or observed.get("url") != url or "サービス別分析" not in body:
-            raise RuntimeError(f"official_analytics_readback_invalid:{service_id}")
+            raw_path = evidence_dir / f"official-analytics-{service_id}.json"
+            _atomic_write(raw_path, observed)
+            metrics = {
+                metric: {"status": "unavailable", "value": None,
+                         "reason": "official_readback_failed_after_retries"}
+                for metric in ("impressions", "views", "purchases", "gross_jpy", "favorites")
+            }
+            identity = {
+                "service_id": service_id, "window_start": None, "window_end": None,
+                "metrics": metrics, "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
+            }
+            snapshot = {
+                "version": 1, "snapshot_key": "storefront:analytics:v1:" + hashlib.sha256(
+                    json.dumps(identity, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest(),
+                "observed_at_epoch": now, "official": False, "service_id": service_id,
+                "source_url": url, "window": {"start": None, "end": None, "complete": False},
+                "metrics": metrics, "content_sha256": identity["content_sha256"],
+                "evidence_path": str(raw_path),
+            }
+            _append_key_once(analytics_path, "snapshot_key", snapshot)
+            snapshots.append(snapshot)
+            continue
         raw_path = evidence_dir / f"official-analytics-{service_id}.json"
         _atomic_write(raw_path, observed)
         metrics = {
@@ -460,8 +488,13 @@ def _collect_analytics(
         }
         _append_key_once(analytics_path, "snapshot_key", snapshot)
         snapshots.append(snapshot)
-    totals = {metric: sum(int(row["metrics"][metric]["value"]) for row in snapshots)
+    totals = {metric: sum(int(row["metrics"][metric]["value"]) for row in snapshots
+                          if type(row["metrics"][metric]["value"]) is int)
               for metric in ("views", "purchases", "favorites")}
+    metric_unknown_services = {
+        metric: sum(type(row["metrics"][metric]["value"]) is not int for row in snapshots)
+        for metric in totals
+    }
     changes = {metric: 0 for metric in totals}
     unknown_changes = 0
     for snapshot in snapshots:
@@ -473,7 +506,7 @@ def _collect_analytics(
         for metric in changes:
             before = ((prior.get("metrics") or {}).get(metric) or {}).get("value")
             after = snapshot["metrics"][metric]["value"]
-            if type(before) is not int or after < before:
+            if type(before) is not int or type(after) is not int or after < before:
                 valid = False
                 break
             changes[metric] += after - before
@@ -483,7 +516,9 @@ def _collect_analytics(
     if target is None:
         raise RuntimeError("official_analytics_target_missing")
     return {**target, "catalog_metrics": {"services_observed": len(snapshots), "totals": totals,
-                                           "changes": changes, "change_unknown_services": unknown_changes}}
+                                           "changes": changes,
+                                           "metric_unknown_services": metric_unknown_services,
+                                           "change_unknown_services": unknown_changes}}
 
 
 def _inquiry_windows(path: Path, service_id: str, accepted_at: int, window_days: int) -> dict:

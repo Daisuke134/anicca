@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="1016" viewBox="0 0 1220 1016">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07142f"/>
+      <stop offset="0.58" stop-color="#123a63"/>
+      <stop offset="1" stop-color="#0b7b78"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#e8fbff" stop-opacity="0.94"/>
+    </linearGradient>
+  </defs>
+  <rect width="1220" height="1016" fill="url(#bg)"/>
+  <circle cx="1080" cy="120" r="250" fill="#43e7d2" fill-opacity="0.13"/>
+  <circle cx="1050" cy="910" r="340" fill="#6db8ff" fill-opacity="0.10"/>
+  <g font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif">
+    <rect x="58" y="60" width="1104" height="896" rx="44" fill="#061126" fill-opacity="0.42" stroke="#69e7df" stroke-opacity="0.65" stroke-width="2"/>
+    <text x="104" y="156" fill="#7ef2e7" font-size="34" font-weight="700">SEO ARTICLE WRITING</text>
+    <text x="100" y="270" fill="#ffffff" font-size="74" font-weight="800">SEO記事を</text>
+    <text x="100" y="365" fill="#ffffff" font-size="74" font-weight="800">構成から執筆します</text>
+    <text x="104" y="445" fill="#d8f6ff" font-size="34" font-weight="600">検索意図を整理し、読みやすい1記事へ</text>
+    <g transform="translate(100 520)">
+      <rect width="610" height="306" rx="30" fill="url(#card)"/>
+      <circle cx="68" cy="70" r="24" fill="#0f9d91"/>
+      <path d="M57 70l8 8 16-18" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="112" y="82" fill="#0a2742" font-size="34" font-weight="700">見出し構成</text>
+      <circle cx="68" cy="151" r="24" fill="#0f9d91"/>
+      <path d="M57 151l8 8 16-18" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="112" y="163" fill="#0a2742" font-size="34" font-weight="700">公開情報リサーチ</text>
+      <circle cx="68" cy="232" r="24" fill="#0f9d91"/>
+      <path d="M57 232l8 8 16-18" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="112" y="244" fill="#0a2742" font-size="34" font-weight="700">3,000文字までの本文</text>
+    </g>
+    <g transform="translate(780 520)">
+      <rect width="300" height="306" rx="30" fill="#061126" fill-opacity="0.78" stroke="#7ef2e7" stroke-width="3"/>
+      <circle cx="128" cy="113" r="70" fill="none" stroke="#7ef2e7" stroke-width="14"/>
+      <line x1="180" y1="165" x2="238" y2="223" stroke="#7ef2e7" stroke-width="18" stroke-linecap="round"/>
+      <path d="M72 258h156" stroke="#ffffff" stroke-width="12" stroke-linecap="round" opacity="0.9"/>
+    </g>
+    <text x="104" y="900" fill="#bdefff" font-size="28">構成・リサーチ・本文を1つの納品物に</text>
+  </g>
+</svg>

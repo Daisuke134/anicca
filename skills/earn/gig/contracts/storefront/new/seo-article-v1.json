@@ -19,6 +19,7 @@
     "profile_url": "https://coconala.com/users/2564121/portfolios",
     "portfolio_title": "SEO記事執筆 構成案・執筆納品事例"
   },
+  "hero_image_contract": "../../../assets/storefront/4355225/image-contract.json",
   "category": {
     "master": {"value": "19", "label": "ライティング・翻訳"},
     "sub": {"value": "372", "label": "記事・Webコンテンツ作成"},
