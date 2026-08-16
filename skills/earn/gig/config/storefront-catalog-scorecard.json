@@ -221,7 +221,7 @@
       "service_id": "4244910",
       "field": "scope",
       "before": 1,
-      "success_metric": "inquiries_to_purchase",
+      "success_metric": "inquiries",
       "reason": "strong Excel automation demand but exclusions remain partial"
     },
     {
