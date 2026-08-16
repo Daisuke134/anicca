@@ -1046,7 +1046,7 @@ monthly approved conversions are `ceil(10000 / N)`; required qualified visits ar
 computed only from the cohort's observed conversion rate. Before those receipts,
 the inputs remain `unknown`.
 
-### 9.0.1 Remaining atomic execution queue
+### 9.0.1 Current truth and milestone queue
 
 This is the exact execution order from the current live state. Each production
 step ends with a versioned Skill command, durable receipt, installed-release
@@ -1073,8 +1073,8 @@ existing check cannot protect a money, secret, data-loss, or duplicate-effect
 boundary.
 
 The completed history remains in the evidence tables below. The following list is
-the only canonical remaining order; later work MUST NOT jump ahead of an unmet
-gate.
+the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
+cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor: **A15.7, acquire the first external post-baseline click**.
 Provider admission continues in the same wake: HubSpot/Impact is polled without
@@ -1268,6 +1268,327 @@ flowchart LR
     across independent providers, locales, tenants, and channels while showing
     net profit, reversals, costs, payout timing, concentration, incidents, and
     recovery. This is an evidence gate, not a guaranteed forecast.
+
+### 9.0.1.1 Canonical atomic execution specification — E0 to USD 10,000/month
+
+#### 1. Overview
+
+The installed launchd owners, not Codex or the operator, MUST own every earning
+effect. Codex may inspect receipts, repair the harness after an observed failure,
+install an immutable pushed release, kick the existing owner, and verify the
+result. Codex MUST NOT manually create a campaign, publish a placement, or record
+money on behalf of the loop.
+
+The current pipeline is operationally closed through distribution and aggregate
+measurement, but economically open:
+
+```mermaid
+flowchart LR
+  S[Source owner] --> C[Composition owner]
+  C --> P[Policy receipt]
+  P --> O[Owned publication]
+  O --> X[X placement]
+  X --> D[DEV and Substack]
+  D --> L[Placement-specific provider link]
+  L --> K[Provider click receipt]
+  K --> M[Commission row]
+  M --> N[Approved net economics]
+  N --> A[Allocate next campaign]
+  A --> S
+```
+
+The next implementation closes only the missing `D → L → K` boundary. The first
+real commission then closes `K → M`. Revenue-led allocation starts only after E1,
+because zero-money data cannot identify a profitable winner.
+
+#### 2. Acceptance criteria
+
+1. `ai.anicca.affiliate-loop` remains the only scheduled owner of provider-link,
+   publication, revenue, and Telegram effects; no new business scheduler exists.
+2. One policy-PASS English campaign receives one PartnerStack custom link whose
+   title, destination, provider program, and placement ID are read back from the
+   authenticated provider surface.
+3. The raw custom link exists only in mode-0600 private state. Git, stdout, model
+   context, logs, receipts, and Telegram contain only a SHA-256 fingerprint and
+   provider public identifiers that are not credentials.
+4. The link-creation effect uses `job_journal.py` with kind
+   `PARTNERSTACK_PLACEMENT_LINK`; response loss resumes and locates the existing
+   link instead of creating another link.
+5. The next owned article contains exactly one placement-specific link and a
+   disclosure before it. X, DEV, and Substack point to the owned article and do
+   not expose or replace the provider link.
+6. PartnerStack Link Performance is captured as an immutable provider artifact
+   with provider link identity, click count, reporting window, observation time,
+   and source hash. Aggregate Overview remains a health metric, not attribution.
+7. E0 closes only when the provider reports a positive post-baseline click delta
+   for the exact placement-specific custom link. Self-clicks, local redirect
+   logs, impressions, page views, and aggregate-only deltas do not close E0.
+8. The same Link Performance artifact replays without a second click transition.
+   A later real click-count increase produces one new transition.
+9. Telegram sends exactly one `CLICK_DELTA` message containing the owned public
+   URL, provider, placement ID, provider-observed delta, and explicit
+   `commission not observed yet`; it never includes the raw referral URL.
+10. E1 closes only when a non-test provider commission row is normalized and
+    joined by provider Link, Sub ID 1–3, Shared ID, or the stored link
+    fingerprint. An unmatched row remains `UNMATCHED` and does not become zero.
+11. `pending`, `approved`, `paid`, and `reversed` remain separate economic
+    transitions. Only externally `approved` commission enters the optimization
+    denominator; payout readiness remains a separate state.
+12. After E1, each experiment changes one variable, stores exposure/cost/outcome
+    lineage, and allocates by approved net commission per qualified impression
+    and per content cost—not likes, views, or model scores.
+13. The USD 10,000 gate closes only after three consecutive provider-reconciled
+    months at or above USD 10,000 gross commission, while net, cash cost,
+    reversals, payout delay, and concentration are reported separately.
+14. Every installed-effect proof includes release SHA, launchd label/run count,
+    terminal receipt, public/provider readback, replay result, and Telegram
+    provider message ID when a report is due.
+
+#### 3. As-Is / To-Be
+
+| Surface | As-Is | To-Be |
+|---|---|---|
+| Execution owner | Six Affiliate launchd owners are installed; Codex kickstarts and observes them | The same owners perform every external effect; Codex changes only the harness |
+| Provider link | Executable default/product links exist privately, but campaigns can share them | One authenticated custom link per placement with deterministic identity and exact-once receipt |
+| Click measurement | PartnerStack Overview exposes one aggregate baseline click and zero delta | Link Performance exposes a baseline/delta for one exact provider link and placement |
+| Commission attribution | `revenue_cli.py` can match Link/Sub IDs/Shared ID/fingerprints when a row exists | The placement-link receipt supplies the exact candidate identity used by the existing resolver |
+| Learning | Content is selected from official demand evidence; money outcomes are zero | E1 creates comparable cohort outcomes; allocation begins only from mature approved-net evidence |
+| Reporting | Placement/distribution/program events are live; click/commission paths have no live event | Provider click, pending/approved/paid/reversed, and recovery events each send one deduplicated message |
+| Scale claim | USD 10,000 is a goal with unknown unit economics | Observed click-to-approved conversion and approved net commission determine required qualified traffic |
+
+#### 3.1 Implementation decisions and uncertainty closure
+
+All code-shape uncertainties for the next slice are resolved below. Live market
+outcomes remain observable unknowns and MUST NOT be guessed before execution.
+
+| ID | Decision | Evidence already held | Closure before write/effect |
+|---|---|---|---|
+| E0-Q1 | Use a separate PartnerStack custom link per placement; do not assume an undocumented query parameter | The authenticated Links UI already created and read back an ElevenAgents product-specific link | A read-only canary receipts the exact create-form fields, result-list identity, and destination before the loop is allowed to create one placement link |
+| E0-Q2 | Close E0 from Link Performance, not aggregate Overview | The rendered provider report has a Link Performance surface; Overview is aggregate-only | Capture one baseline row for the selected custom link and prove the same row replays unchanged |
+| E0-Q3 | Join commission by provider Link, Sub ID 1–3, Shared ID, then fingerprint; never by title guess | The real Commission Report renders all of those columns; `revenue_cli.resolve_attribution()` already indexes them | A synthetic-free schema check maps the exact rendered/API field names before the first live row; the first real row supplies live proof |
+| E0-Q4 | Publish the provider link only on the owned article. X/DEV/Substack distribute the owned URL | Six owned/X pairs and DEV/Substack readback already prove this funnel | The next campaign readback shows one disclosure, one provider link on owned, and only the owned URL on distribution channels |
+| E0-Q5 | Preserve raw links in Git-external mode-0600 private Markdown plus a private placement-link receipt; public receipts store only fingerprints | Existing `program_registry.store_link()` already enforces private stdin storage | Readback compares stored value to the authenticated provider result without printing either value |
+| E0-Q6 | A zero click is valid evidence of zero delta, not failure; absence of a provider row is `UNKNOWN/NO_ROWS`, not zero money | Current baseline receipt records click count while commission report has zero rows | Each capture states source/window/row presence separately from numerical values |
+| E0-Q7 | Payout tax/payment setup does not block click, signup, or approved-commission evidence | ElevenLabs is accepted and earning-enabled; only withdrawal is blocked | Keep `PAYOUT_BLOCKED_BY_TAX_SETUP` independent until truthful legal/payment data is supplied |
+| E0-Q8 | Existing 600-second money owner polls due provider state; daily owners supply new evidence/content | Installed plists and last exits are live-proven | No new launchd label; installed readback shows the same six-label allowlist |
+| E0-Q9 | Do not add a generic learner before E1 | Current revenue is USD 0 and cannot rank profitability | E1 produces the first approved denominator; only then admit experiment/allocation state |
+| E0-Q10 | USD 10,000 timing and traffic remain irreducible until unit economics exist | No post-baseline click or commission exists | Compute required qualified clicks from observed approved commission and conversion after ten mature placements; never use creator screenshots as the denominator |
+| E0-Q11 | The title-only duplicate Substack post is an incident cleanup, not an earning dependency | The valid post/job are verified and recurrence is fenced | Delete only after explicit public-deletion authorization; its presence cannot close or block E0 |
+
+#### 3.2 File ownership for the next implementation
+
+| File | Required change | Must not change |
+|---|---|---|
+| `skills/affiliate/scripts/program_registry.py` | Add authenticated placement-link observe/create/readback commands and reuse `store_link()` for private persistence | Password/login recovery, provider application policy, or unrelated programs |
+| `skills/affiliate/scripts/job_journal.py` | Reuse existing start/resume/verify/reconcile calls; change only if the observed provider effect cannot be represented | Job identity or completed historical events |
+| `skills/affiliate/scripts/local_loop.py` | Select one policy-PASS campaign lacking a link, invoke the fenced link tool, then continue existing publication/revenue/Telegram order | Add a scheduler, bypass policy, or call a model inside the money lock |
+| `skills/affiliate/scripts/revenue_cli.py` | Capture Link Performance baseline/rows, persist click transitions, and pass exact link identity to existing attribution candidates | Count local analytics as provider clicks or change commission transition identity |
+| `skills/affiliate/scripts/content.py` and `composition_owner.py` | No change: continue producing a single placeholder and source-bound sealed content | Receive a private link, provider cookie, or money ledger access |
+| `skills/affiliate/scripts/install-release.sh` | Preserve the six-owner allowlist and install the pushed immutable release | Add a seventh business owner or touch Gig/Coconala labels |
+| `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md` | Record each observed state transition and advance the current cursor | Store secrets, raw referral links, or forecasts as facts |
+
+The change budget is three sequential slices, never one broad patch:
+
+| Slice | Production files | Minimal regression file | Soft limit |
+|---|---|---|---:|
+| E0-B-link | `program_registry.py` | `tests/test_program_registry.py` | 100 net LOC |
+| E0-B-click | `revenue_cli.py` | `tests/test_revenue_cli.py` | 100 net LOC |
+| E0-B-wire | `local_loop.py` | `tests/test_local_loop.py` | 100 net LOC |
+
+If a slice exceeds the soft limit or needs more than its named production file,
+split the next externally observable contract again. Do not add a framework or a
+shared abstraction to make the diff appear smaller.
+
+#### 4. Minimal test and live-proof matrix
+
+| # | To-Be | Minimal check / live proof | Evidence point | Spec cover |
+|---:|---|---|---|---|
+| 1 | One link effect per placement | Same placement create is invoked twice; one job and one provider link remain | Before install | OK |
+| 2 | Response-loss recovery | Started job plus provider readback resumes to the same link ID | Before install | OK |
+| 3 | Secret boundary | Command outputs, Git diff, public receipt, and Telegram contain no raw link | Before install and live | OK |
+| 4 | Placement-specific owned publish | Anonymous owned HTML has disclosure before exactly one matching link fingerprint | Live campaign | OK |
+| 5 | Distribution funnel | X/DEV/Substack contain the owned URL and no raw provider link | Live campaign | OK |
+| 6 | Link baseline exact-once | Same provider Link Performance artifact replays with no new transition | Before E0 | OK |
+| 7 | Real click transition | Positive provider delta creates one placement-bound transition and one Telegram message | Live E0 | OK |
+| 8 | Aggregate-only delta | Overview delta without link identity remains `UNATTRIBUTED` and does not close E0 | Before E0 | OK |
+| 9 | Commission row exact-once | Same real row capture twice yields one economic transition | Live E1 | OK |
+| 10 | Commission status evolution | Provider status change creates a new transition without overwriting history | Live E1+ | OK |
+| 11 | Unmatched commission | Missing identifiers produce `UNMATCHED`, no guessed placement | Before E1 | OK |
+| 12 | Healthy lanes continue | One provider/link failure leaves source, publication readback, revenue cooldown, and Telegram reconciliation healthy | Next observed failure | OK |
+| 13 | Launchd ownership | Effect occurs only after `launchctl kickstart`/interval run and appears under the installed release SHA | Every live effect | OK |
+| 14 | Replay | Immediate unchanged wake returns no duplicate effect and `NO_PENDING` Telegram | Every live milestone | OK |
+
+| E2E item | Value |
+|---|---|
+| UI change | No Life Manager app UI change; authenticated PartnerStack and public publishing surfaces change |
+| Conclusion | Maestro not required. Real launchd, CloakBrowser/provider, anonymous public HTTP, provider receipt, and Telegram E2E are mandatory |
+
+#### 5. Boundaries
+
+- MUST NOT manually create or publish a placement to make the demo pass; the
+  installed owner performs the effect.
+- MUST NOT self-click, buy through the link, use a test conversion, or count a
+  local redirect as E0/E1.
+- MUST NOT implement broad watchdogs, Temporal, LangGraph, a multi-agent runtime,
+  cloud hosting, Japanese/Spanish lanes, or new distribution channels before the
+  current E0/E1 evidence requires them.
+- MUST NOT resubmit HubSpot/Impact, Kit, or GetResponse while their current
+  provider gates remain unchanged.
+- MUST NOT complete tax, KYC, contract, bank, PayPal, or Stripe declarations with
+  invented data. These affect withdrawal, not the current acquisition gate.
+- MUST NOT touch Coconala/Gig labels, ports, profiles, locks, state, credentials,
+  receipts, or Telegram namespace.
+- MUST NOT claim USD 10,000 from a forecast. A3 is an external evidence gate.
+
+#### 6. Canonical atomic execution steps
+
+##### Phase E0-A — Freeze current truth before code
+
+- [ ] **E0-A00** The title-only Substack duplicate remains
+  `OPEN_PUBLIC_CLEANUP`. After explicit public-deletion authorization, let the
+  Affiliate Substack adapter delete only public ID `211393237`, read back `404`,
+  and verify the RSS title count is one. Until authorization exists, do not
+  delete it and do not let this cleanup block E0.
+- [ ] **E0-A01** Read `git status`, source HEAD, installed release symlink, six
+  launchd labels, run counts, last exits, CDP `9324/9326/9327`, unresolved jobs,
+  latest provider metrics, commission row count, and Telegram sent tail.
+- [ ] **E0-A02** Write one redacted pre-change receipt containing release SHA,
+  click baseline, zero/nonzero row presence, and current public placement IDs.
+- [ ] **E0-A03** Verify PartnerStack remains authenticated and ElevenLabs remains
+  accepted/earning-enabled; auth repair is a separate same-job action only if the
+  readback says `SIGN_IN_REQUIRED`.
+- [ ] **E0-A04** Inspect the authenticated Links create surface without submitting;
+  receipt allowed destinations, title/description/slug requirements, and result
+  identity. This closes E0-Q1.
+- [ ] **E0-A05** Inspect Link Performance without changing filters; receipt exact
+  row fields, link identity, click field, time window, pagination, and empty
+  state. This closes E0-Q2.
+- [ ] **E0-A06** Compare the live report field names with
+  `revenue_cli.capture_commission_rows()` and `resolve_attribution()`; document an
+  exact mapping for Link, Sub ID 1–3, Shared ID, status, amount, and transaction
+  ID. This closes E0-Q3 at schema level.
+
+##### Phase E0-B — Add the smallest reusable Skill contracts
+
+- [ ] **E0-B01** Add `affiliate programs observe-link-form --id elevenlabs` as a
+  `READ_EXTERNAL` command that writes a sanitized capability receipt.
+- [ ] **E0-B02** Add `affiliate programs acquire-placement-link --id elevenlabs
+  --placement <id>` as a `WRITE_EXTERNAL` command with deterministic title,
+  destination, and placement identity.
+- [ ] **E0-B03** Before submit, call `start_effect()` with kind
+  `PARTNERSTACK_PLACEMENT_LINK`; after submit, locate the exact result and call
+  `verify_effect()`.
+- [ ] **E0-B04** On an unresolved job, search the authenticated result list first;
+  call `resume_effect()` only for the same target and refuse a second create when
+  effect certainty is ambiguous.
+- [ ] **E0-B05** Store the raw provider URL through stdin in mode-0600 private
+  state under the exact placement label; persist only its SHA-256 fingerprint in
+  the public receipt.
+- [ ] **E0-B06** Extend `placement_candidates()` to index provider link ID/hash,
+  placement ID, owned URL, offer, locale, and public distribution URLs without
+  exposing the raw link.
+- [ ] **E0-B07** Add Link Performance capture to `revenue_cli.py`; preserve raw
+  rendered/API evidence mode-0600 and write a sanitized latest receipt.
+- [ ] **E0-B08** Define click transition identity as provider + provider link ID +
+  placement ID + observed click count + reporting window. Source artifact hash is
+  lineage, not transition identity.
+- [ ] **E0-B09** Extend `owner_event()` so an attributable positive delta produces
+  one `CLICK_DELTA`; aggregate-only deltas remain `UNATTRIBUTED_CLICK_DELTA` and
+  cannot close E0.
+- [ ] **E0-B10** Wire these calls into `wake()` after provider auth/poll and before
+  publication/revenue reconciliation, advancing at most one new external effect
+  per wake.
+
+##### Phase E0-C — Prove the installed owner, not Codex, performs the work
+
+- [ ] **E0-C01** Compile touched Python files and run only the minimal regressions
+  for duplicate external effect, secret leak, click identity, unmatched
+  attribution, and Telegram dedupe.
+- [ ] **E0-C02** Fetch, commit, and push the source branch to both remotes before
+  install; install only the exact pushed SHA.
+- [ ] **E0-C03** Read back the immutable release hash and unchanged six-label
+  launchd allowlist.
+- [ ] **E0-C04** Kick `ai.anicca.affiliate-loop`; do not invoke the write command
+  directly.
+- [ ] **E0-C05** Verify one placement-link job moves
+  `EFFECT_STARTED → VERIFIED`, one private link entry exists, and no secret is in
+  stdout/log/Git/Telegram.
+- [ ] **E0-C06** Let the same loop publish the next policy-PASS campaign with that
+  link and verify owned HTTP, disclosure/link order, X, DEV, and Substack
+  readbacks.
+- [ ] **E0-C07** Kick an unchanged replay and require the same provider link,
+  public URLs, job count, Git HEAD, and `Telegram=NO_PENDING`.
+- [ ] **E0-C08** Capture Link Performance baseline for that link; an unchanged
+  replay MUST create no click transition.
+- [ ] **E0-C09** Continue scheduled distribution and provider polling until an
+  external user produces a provider-observed positive delta. No agent or operator
+  manufactures the click.
+- [ ] **E0-C10** Reconcile the positive row to the placement, send one Telegram
+  `CLICK_DELTA`, store its provider message ID, replay without duplication, and
+  mark E0 closed.
+
+##### Phase E1 — Prove the first approved commission
+
+- [ ] **E1-01** Continue capturing provider Commission Report artifacts after E0;
+  preserve an explicit no-row state until a real row appears.
+- [ ] **E1-02** Normalize the first row's provider transaction ID, Link/Sub IDs,
+  Shared ID, status, gross/reversal/net minor units, currency, event time, and
+  availability time.
+- [ ] **E1-03** Resolve attribution using exact identifiers/fingerprint; if none
+  match, persist `UNMATCHED` and continue without guessing.
+- [ ] **E1-04** Append one economic transition keyed independently of capture time
+  and source artifact hash.
+- [ ] **E1-05** Replay the same artifact and a fresh recapture of the same row;
+  both MUST leave transition count unchanged.
+- [ ] **E1-06** Send one status-specific Telegram event. `pending` says money is
+  not approved; `reversed` subtracts; `paid` remains distinct from approval.
+- [ ] **E1-07** When the provider first reports `approved`, compute gross and net
+  from provider facts plus recorded cash costs, then close E1.
+
+##### Phase A2/A3 — Turn observed economics into USD 10,000/month
+
+- [ ] **A2-01** Create an Experiment receipt for each post-E1 campaign with one
+  changed variable, offer, buyer intent, channel set, exposure start, and cost.
+- [ ] **A2-02** Mature ten canonical English placements through the same
+  provider-link/click/commission contract.
+- [ ] **A2-03** Compute qualified CTR, click-to-approved conversion, approved net
+  commission per click, per 1,000 qualified impressions, and per content cost;
+  unknown denominators remain unknown.
+- [ ] **A2-04** Promote only a mature cohort whose approved-net lower-confidence
+  evidence exceeds the current control; otherwise retain or revert the control.
+- [ ] **A2-05** Admit two additional providers only after official terms,
+  channel eligibility, authenticated acceptance, executable link, report schema,
+  and one canary receipt pass.
+- [ ] **A2-06** Keep any provider/offer/channel at or below 40% of approved net
+  commission once three earning sources exist.
+- [ ] **A2-07** Prove four consecutive unattended revenue-positive weeks with
+  positive net margin, zero manual earning effects, and at least one observed
+  same-job recovery; close A2.
+- [ ] **A3-01** Compute required monthly qualified clicks as
+  `10000 / observed approved net commission per qualified click`; show the
+  observed cohort/window and never substitute an assumed conversion rate.
+- [ ] **A3-02** Allocate new campaign slots among mature cohorts by approved net
+  economics while preserving policy, evidence freshness, action caps, and
+  concentration limits.
+- [ ] **A3-03** Reconcile month one at or above USD 10,000 gross; report net,
+  reversals, costs, payout delay, and concentration separately.
+- [ ] **A3-04** Repeat for months two and three without resetting the ledger or
+  annualizing a partial period; then close A3.
+
+#### 6.1 Telegram contract
+
+| Event | Required fields | Trigger | Dedupe identity |
+|---|---|---|---|
+| `PLACEMENT_LINK_VERIFIED` | provider, placement ID, link fingerprint, destination class | Provider link exact readback | provider + placement + fingerprint |
+| `PLACEMENT_LIVE` | owned URL, channel URLs, offer, locale | Public readback for owned/X | placement + public URLs |
+| `DISTRIBUTION_LIVE` | channel, public URL, owned canonical | DEV/Substack public readback | channel + placement + public URL |
+| `CLICK_DELTA` | provider, placement, owned URL, delta, window, money=`not observed` | Positive provider link-row delta | provider + link ID + count + window |
+| `COMMISSION_PENDING` | transaction lineage, placement, amount/currency | Provider status `pending` | transition ID |
+| `COMMISSION_APPROVED` | transaction lineage, placement, gross/net/cost/currency | Provider status `approved` | transition ID |
+| `COMMISSION_REVERSED` | transaction lineage, placement, reversal/net/currency | Provider status `reversed` | transition ID |
+| `COMMISSION_PAID` | transaction lineage, approved versus paid, currency | Provider status `paid` | transition ID |
+| `SELF_HEALED` | failed stage, typed cause, repair, postcondition, resumed job | Same-job repair succeeds | repair receipt ID |
+| `BLOCKED` | lane, typed blocker, unaffected lanes, retry due time | Terminal external challenge/quarantine | blocker transition ID |
 
 ### 9.0.2 Current slice contract — fourth English campaign through the real loop
 
@@ -2191,17 +2512,17 @@ atomic replacement, matching Python's replacement contract
 | U16 | OPEN-BEFORE-CODE | Provider playbooks cover only ElevenLabs and HubSpot/Impact | Add a playbook only after an executable provider passes official terms/channel/receipt gates |
 | U17 | OPEN-BEFORE-CODE | Recovery covers configured login, Impact reset form, and one SMS path; reset request, email link/OTP, CAPTCHA and broader 2FA do not | Implement authorized inbox paths; classify CAPTCHA/KYC as `EXTERNAL_CHALLENGE`, never bypass |
 | U18 | OPEN-BEFORE-CODE | Program registry is a static priority table; `next_action` is text and never dispatched | Model selects from a fresh candidate snapshot and writes constraints, reason, hypothesis, budget, and lineage receipt |
-| U19 | OPEN-BEFORE-CODE | Source capture has two fixed plans; failures raise without a receipt; authenticated X/Reddit discovery is absent | Persist failed-source attempts and add discovery tools only behind observed buyer-intent need |
-| U20 | OPEN-BEFORE-CODE | Three content campaigns are fixed templates with no model/prompt/variant lineage | Treat them as few-shot examples; model writes source-bound artifacts with prompt/model/version/cost receipts |
+| U19 | PARTIAL-CLOSED | The daily source owner now performs official-sitemap discovery, creates mutable discovered plans, captures source-hash evidence, and feeds the composition inbox. Authenticated X/Reddit discovery remains absent | Add a new discovery adapter only when official-source supply cannot produce the next qualified buyer-intent plan; persist its failures before admitting its output |
+| U20 | CLOSED-INSTALLED | The bounded composition owner writes source-bound artifacts and seals prompt/model/effort/provider/result/source-set/cost lineage; deterministic handoff and policy receipts consume the seal | Reopen only if an installed campaign cannot reproduce its artifact lineage or exposes a private link to the model |
 | U21 | PARTIAL-CLOSED | Installed generic policy persists prerequisite failures, validates exact handoff/source fingerprints, disclosure, one CTA, cited/admitted URLs, locale and channel structure, and runs a bounded source-only semantic claim audit. Two handoffs passed and one unsupported claim failed with a durable receipt | Add provider-specific dynamic rule packs only when a newly admitted provider requires rules not represented by the current official evidence contract |
 | U22 | OPEN-BEFORE-CODE | Owned readback compresses HTTP, deploy lag, title, marker, and link mismatch into `None` | Return typed status, HTTP code, failed marker/link class, response hash, attempt, and retry due-time |
-| U23 | OPEN-BEFORE-CODE | X failures lack durable typed receipts; current X home is not a fresh `@selawmqt` semantic identity proof | Add identity/composer/effect/readback/short-link failure classes and account-risk quarantine signals |
+| U23 | PARTIAL-CLOSED | Six `@selawmqt` placements have exact public readback and ambiguous-effect recovery under the job journal. X failure classes and account-risk quarantine are not uniform | Add a typed failure/quarantine contract only after the next observed X failure; preserve current exact target/readback fence |
 | U24 | CLOSED-IN-SOURCE | Revenue transition identity is provider + provider transaction ID + provider status + gross/reversal/net minor units + currency. The timestamp-varying source artifact hash remains immutable lineage outside the identity, so the same row re-captured from a new artifact deduplicates while a real economic-state change remains a new transition | Installed loop replay remains required when the first non-empty provider row exists; an empty report cannot prove live-row behavior |
 | U25 | CLOSED-INSTALLED | Revenue cycle persists the failed `observe`, `capture`, or `reconcile` stage, typed timeout/nonzero-exit/invalid-JSON class, return code, redacted output hash, latest provider artifact hash, observation time, and one-hour retry boundary. Raw stderr/stdout and provider data never enter the failure receipt. Installed release `44a04dcd15bada580f6701625ce18b275d5e6086` preserved the healthy cooldown path, all other lanes, and exit `0` | A future real failure must retain the same typed receipt and recover without resetting healthy work |
-| U26 | OPEN-BEFORE-CODE | Aggregate click `1` is baseline-only; qualified impressions and placement-level provider clicks do not exist | Add placement/sub-ID cohort observations; never infer attribution from aggregate totals |
+| U26 | CONTRACT-CLOSED-PROOF-OPEN | Aggregate click `1` is baseline-only. Section 9.0.1.1 fixes the next contract: one PartnerStack custom link per placement plus Link Performance baseline/delta; aggregate Overview never closes E0 | Implement E0-B01–B10, then close proof only from one positive provider link-row delta; never infer attribution from aggregate totals |
 | U27 | CLOSED-INSTALLED | `loop placement` always prints only the redacted placement receipt. The `--print-url` argument and the conditional stdout path are absent; installed release `3b8b14992fdaa0af4e1ba9ecf2db3e3288033cc5` rejects that legacy flag with exit `2` instead of exposing the private referral URL | Keep all referral URLs in private Markdown/browser state and hashes only in receipts |
 | U28 | OPEN-BEFORE-CODE | Private Markdown can update before a later Keychain failure, with no rollback receipt | Make the two-store operation resumable/reconcilable and report partial state without secret values |
-| U29 | OPEN-BEFORE-CODE | Owned publisher requires a machine-specific clean landing worktree path | Add an explicit connector capability receipt and configured local root; never guess or scan arbitrary repositories |
+| U29 | CLOSED-INSTALLED | `AFFILIATE_LANDING_ROOT` is an explicit launchd environment value and the installed publisher accepts only that clean configured root | Reopen only if install/readback loses the configured root or publication scans an unconfigured repository |
 | U30 | OPEN-BEFORE-CODE | Commands named `inspect`/`observe` can navigate or write receipts | Mark every tool contract as `READ_LOCAL`, `READ_EXTERNAL`, or `WRITE_EXTERNAL`; the Agent uses the declared effect class |
 | U31 | DEFERRED-BY-GATE | Japanese profile `9325` exists but has no launchd owner/listener | Add it only after English E0 and the locale admission gate |
 | U32 | OPEN-BEFORE-CODE | No Affiliate core-health/watchdog owner is installed | Add health inside the single Affiliate ownership graph without creating a second business scheduler |
@@ -2220,8 +2541,8 @@ atomic replacement, matching Python's replacement contract
 | U40 | OPEN-BEFORE-CODE | No Experiment, Cohort, Outcome, or Learning receipt exists | Add one-variable hypothesis, exposure, click, commission states, cost, maturity, allocation, promote/revert, and learner version |
 | U41 | OPEN-BEFORE-CODE | Model/token/content/browser costs do not join placement economics | Record provider-reported usage and cost basis separately from actual cash cost; compute net only from comparable bases |
 | U42 | OPEN-BEFORE-CODE | Failed/rejected attempts are not uniformly durable, creating survivorship bias | Persist every admitted attempt and terminal reason, including no-effect and policy rejection |
-| U43 | PARTIAL-CLOSED | Installed source and composition owners independently refresh official plans, create source-hash-bound handoffs, and create hash-bound generic policy receipts without sharing the money lock or secret access. The configured money loop separately completes owned/X readback and revenue reconciliation | Close fully when the money owner consumes one generic policy-PASS handoff through owned `LIVE`, X `LIVE`, revenue poll, and Telegram under the same durable lineage |
-| U44 | OPEN-PROOF | Same-job self-heal is proven in individual adapters, not across the whole Agent pipeline | Inject one isolated recoverable fault and require diagnosis, repair, resume, effect dedupe, and Telegram proof |
+| U43 | CLOSED-INSTALLED | Installed source and composition owners refresh/discover official plans, create source-bound handoffs and policy receipts, and the money owner consumes them through owned/X/DEV/Substack readback, revenue poll, and Telegram without secret/model authority crossing | Reopen only if a new campaign breaks this installed lineage or requires manual earning execution |
+| U44 | PARTIAL-CLOSED | Provider auth, ambiguous X publication, and Substack response-loss have each resumed the same job without repeating the accepted target. No single injected whole-pipeline fault has proven every stage | Do not build a synthetic broad healer before E1; the next observed recoverable failure MUST produce typed diagnosis, one allowlisted repair, same-job resume, dedupe, and `SELF_HEALED` proof |
 
 #### Live-only and irreducible uncertainties
 
@@ -2241,11 +2562,14 @@ atomic replacement, matching Python's replacement contract
 | U56 | DEFERRED-BY-GATE | Spanish and later locales have no owned identity, offer, or cohort | Admit only after English/Japanese proof and the same locale gate |
 | U57 | IRREDUCIBLE | CAPTCHA, biometric checks, KYC, tax attestations, contracts, and unavailable OTP ownership cannot be invented | Record `EXTERNAL_CHALLENGE`, continue independent work, resume only with authorized evidence |
 | U58 | LIVE-OPEN | Prices, terms, allowed channels, UI, and tracking behavior can change after capture | TTL-bound official evidence, pre-write observation, post-write readback, and provider quarantine |
+| U59 | EXTERNAL-AUTHORIZATION | Substack public ID `211393237` is a title-only duplicate from the repaired response-loss incident. Recurrence is fenced; deletion is a separate public destructive effect | After explicit deletion authorization, the Affiliate adapter deletes only that ID, verifies anonymous `404`, verifies one matching RSS title, and emits one cleanup receipt |
 
-No implementation starts while any `OPEN-BEFORE-CODE` item lacks an explicit
-contract in the focused autonomous-loop spec. `OPEN-PROOF` items close only with
-installed real trajectories. `LIVE-OPEN` and `EXTERNAL` items remain visible and
-must never be converted to zero, success, or a forecast.
+No implementation starts for a slice while an uncertainty that can change that
+slice's effect, identity, money, secret, or recovery contract remains
+`OPEN-BEFORE-CODE`. Unrelated provider/locale uncertainties do not block the
+current E0 slice. `OPEN-PROOF` items close only with installed real trajectories.
+`LIVE-OPEN` and `EXTERNAL` items remain visible and must never be converted to
+zero, success, or a forecast.
 
 ### 11.0.1 Focused autonomous-loop specification — Core 6
 
