@@ -1205,6 +1205,72 @@ def advance_tts_api_publication(state, landing_root, x_cdp_port, private_markdow
     return {"state": "X_LIVE", "public_url": posted.get("public_url")}
 
 
+def sweep_publication_liveness(state, x_cdp_port, now=None, publisher=None):
+    """Re-verify every live X receipt once per JST day.
+
+    The completed publication paths deliberately stop touching X, so nothing
+    else would ever notice a post that was deleted or suspended after the fact
+    and the ledger would keep reporting a dead URL as live. Verification still
+    has to happen; it just must not happen on every ten-minute wake, which is
+    what made a transient timeline scrape fail the whole loop. Publishing with a
+    matching live receipt is verify-only: the compose branch is unreachable once
+    the receipt carries a public URL, so this can observe but never post.
+    """
+    from x_post_cli import publish as default_publisher
+
+    publisher = publisher or default_publisher
+    receipt_path = state / "publication-liveness.json"
+    today = (now or datetime.now(ZoneInfo("Asia/Tokyo"))).date().isoformat()
+    try:
+        previous = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    if previous.get("day") == today:
+        return {"state": "COOLDOWN", "checked": 0, "unverified": []}
+    checked = 0
+    unverified = []
+    for path in sorted((state / "x-posts").glob("*.json")):
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        content = state / "x-content" / f"{path.stem}.txt"
+        if (
+            existing.get("state") != "LIVE"
+            or not existing.get("public_url")
+            or not content.is_file()
+        ):
+            continue
+        checked += 1
+        try:
+            publisher(SimpleNamespace(
+                state=state, content=content, placement=path.stem,
+                cdp_host="127.0.0.1", cdp_port=x_cdp_port,
+            ))
+        except Exception as error:
+            unverified.append({
+                "placement_id": path.stem,
+                "failure_type": type(error).__name__,
+                "failure_detail": str(error)[:300],
+            })
+    # The day is recorded even when a placement failed, so one bad scrape cannot
+    # drag the sweep back onto the per-wake cadence this exists to avoid. The
+    # failure stays visible in the wake event and in this receipt.
+    atomic_json(receipt_path, {
+        "schema_version": 1,
+        "receipt_type": "PUBLICATION_LIVENESS_SWEEP",
+        "day": today,
+        "checked": checked,
+        "unverified": unverified,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {
+        "state": "UNVERIFIED_PLACEMENTS" if unverified else "ALL_LIVE",
+        "checked": checked,
+        "unverified": unverified,
+    }
+
+
 def revenue_cycle_due(state, now=None, cooldown_seconds=3600):
     receipt = state / "revenue-cycle.json"
     if not receipt.is_file():
@@ -1585,6 +1651,15 @@ def wake(args):
             "failure_detail": str(error)[:600],
         }
     try:
+        liveness = sweep_publication_liveness(
+            state, getattr(args, "x_cdp_port", 9326),
+        )
+    except Exception as error:
+        liveness = {
+            "state": "SWEEP_FAILED", "checked": 0, "unverified": [],
+            "failure_type": type(error).__name__,
+        }
+    try:
         if placement_link_changed or not placement_link_ready:
             distribution = {
                 "state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None,
@@ -1663,6 +1738,11 @@ def wake(args):
         "publication_failure_type": publication.get("failure_type"),
         "publication_failure_detail": publication.get("failure_detail"),
         "publication_generic_state": publication.get("generic_state"),
+        "publication_liveness_state": liveness["state"],
+        "publication_liveness_checked": liveness["checked"],
+        "publication_liveness_unverified": [
+            row["placement_id"] for row in liveness["unverified"]
+        ],
         "distribution_state": distribution["state"],
         "distribution_url": distribution.get("public_url"),
         "distribution_plan_id": distribution.get("plan_id"),

@@ -461,5 +461,50 @@ class LocalLoopTest(unittest.TestCase):
                 self.assertEqual(publish_x.call_count, 1 if changed else 0)
 
 
+    def test_liveness_sweep_runs_once_per_jst_day_and_reports_a_dead_post(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root) / "state"
+            for placement, live in (("alpha-en-1", True), ("beta-en-1", False)):
+                MODULE.atomic_json(state / "x-posts" / f"{placement}.json", {
+                    "state": "LIVE", "public_url": f"https://x.com/selawmqt/status/{placement}",
+                    "content_sha256": "d" * 64,
+                })
+                path = state / "x-content" / f"{placement}.txt"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(f"{placement} copy\n", encoding="utf-8")
+            # A placement with no built content is not guessed at.
+            MODULE.atomic_json(state / "x-posts" / "gamma-en-1.json", {
+                "state": "LIVE", "public_url": "https://x.com/selawmqt/status/gamma",
+            })
+
+            def publisher(args):
+                if args.placement == "beta-en-1":
+                    raise RuntimeError("published X post failed exact public readback")
+                return {"state": "LIVE"}
+
+            day = datetime(2026, 8, 17, 0, 30, tzinfo=ZoneInfo("Asia/Tokyo"))
+            first = MODULE.sweep_publication_liveness(
+                state, 9326, now=day, publisher=publisher,
+            )
+            self.assertEqual(first["state"], "UNVERIFIED_PLACEMENTS")
+            self.assertEqual(first["checked"], 2)
+            self.assertEqual(
+                [row["placement_id"] for row in first["unverified"]], ["beta-en-1"],
+            )
+
+            calls = []
+            same_day = MODULE.sweep_publication_liveness(
+                state, 9326, now=day.replace(hour=23),
+                publisher=lambda args: calls.append(args.placement),
+            )
+            self.assertEqual(same_day["state"], "COOLDOWN")
+            self.assertEqual(calls, [])
+
+            next_day = MODULE.sweep_publication_liveness(
+                state, 9326, now=day.replace(day=18), publisher=publisher,
+            )
+            self.assertEqual(next_day["checked"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()
