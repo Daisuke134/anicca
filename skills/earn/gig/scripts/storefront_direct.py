@@ -1523,14 +1523,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 and str(service.get("service_id") or "") != candidate_id
                 for service in inventory["services"] if isinstance(service, dict)
             )
-            draft_result = ({
-                "version": 1, "candidate_key": new_listing_contract["candidate_key"],
-                "contract_sha256": new_listing_contract["contract_sha256"],
-                "draft_service_id": candidate_id, "status": "already_public",
-                "effect": 0, "readback": 1, "image_count": 1, "public_effect": 0,
-                "public_url": new_listing_contract["expected_public_url"],
-                "publication_guard": "already_public",
-            } if candidate_public else (
+            draft_result = (storefront_draft.readback_published_draft(
+                new_listing_contract,
+                getattr(args, "default_tab_script", DEFAULT_TAB),
+                inventory_path.parent,
+            ) if candidate_public else (
                 storefront_draft.prepare_draft(
                     new_listing_contract,
                     getattr(args, "default_tab_script", DEFAULT_TAB),
