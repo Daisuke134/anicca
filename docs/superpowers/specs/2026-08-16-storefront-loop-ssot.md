@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. S5e owner-visible metric truth and S6 cadence proof are complete. The S7 provenance audit proves that GitHub `main` currently tracks only `storefront_direct.py`; installed Apply, Negotiate and Paid still execute source preserved only by mixed-branch release `d150e4b1d...`. Therefore mixed-worktree/branch deletion is forbidden until each non-Storefront owner preserves its complete direct runtime on reviewed `main` ancestry. This is an actionable global cleanup prerequisite, not a calendar wait. Storefront continues its own read-only verification without modifying or reloading another owner.
+Status: INCOMPLETE. S5e owner-visible metric truth and S6 cadence proof are complete. GitHub `main` contains the complete Storefront owner and the shared runner has no token-budget admission system. Apply is live and its latest verified effectful pass has official readback, but Apply and Negotiate direct source still comes from mixed-branch release `d150e4b1d...`; only the shared Apply runner is main-derived. The active order is therefore Apply source provenance, Negotiate source provenance and Storefront-context ACK, final Storefront replay, then legacy reachability cleanup. Paid remains excluded while its separate owner works. The mixed worktree/ref is quarantined and clean, but cannot be removed until Paid no longer needs its audit evidence.
 
 ## 1. Overview
 
@@ -48,6 +48,10 @@ Cross-loop integration is an immutable handoff event, not shared ownership: `pla
 These sources determine the listing contract: one buyer-visible outcome, exact inclusions and exclusions, required inputs, delivery time, revision rule, proof/gallery, tier or add-on ladder, FAQ, and a repeat/recurring path where the service genuinely supports repeat work.
 
 ## 4. Current verified state
+
+- Apply recovery pass `gig-apply-direct-1786871660578692000-85922` completed with observed/actionable/effect/readback/failed/pending `40/1/1/1/0/0`, Telegram `sent/20996`, and launchd exit `0`. The installed Apply plist was then reloaded alone: its shared runner is main-derived release `d91bec35c...`, and its loaded launchd environment contains no token-budget keys. Apply direct source remains `d150e4b1d...`, so provenance cleanup is still open.
+- Commit `d91bec35c` deletes the shared token-budget ledger/admission implementation and all runtime/installer resurrection paths. Provider usage telemetry remains observational. The per-pass submit-attempt fence is not a token budget; it prevents duplicate external submissions and remains mandatory.
+- The quarantined `.worktrees/storefront-revenue-os` has no uncommitted changes. Its problem is mixed ownership, not Git dirtiness. No canonical Apply, Negotiate or Storefront launchd path invokes GigPass or Hermes. Hermes is untouched and outside this migration.
 
 - The historical mixed implementation remains quarantined in worktree `.worktrees/storefront-revenue-os`, branch `fix/storefront-revenue-os`, HEAD `b8f15537a`. Its exact accidental-Paid/revert pairs are `d150e4b1d → 06e9ac0dc`, `6ed25b976 → 1a6894b6f`, `0bba80549 → 5beb42ce2`, and `ff5b96a8e → b8f15537a`. The branch remains forbidden from whole-branch merge and is not a Storefront execution path; these immutable SHAs preserve the audit after its worktree and refs are removed.
 - GitHub and local `main` contain integration point `c494a588f`. The temporary clean Storefront worktree and `feat/storefront-loop` branch are removed. Coconala Storefront production code, config, contracts, assets, tests, plist and this SSOT are all on `main`.
@@ -296,16 +300,17 @@ No measurement window or calendar delay is a TODO. Reuse the retained real state
 
 Verification: repeated installed wakes and controlled cutoffs prove idempotency at minute/hour/day boundaries; runtime is compatible with its declared cadence; Apply, Negotiate and Paid plist/process/state hashes remain unchanged.
 
-### S7 — Retire the old gig-pass path only after S6 passes
+### S7 — Make the three active lanes main-derived, then retire legacy reachability
 
 - [x] Remove the merged temporary clean Storefront worktree and `feat/storefront-loop` branch.
 - [x] Keep `fix/storefront-revenue-os` quarantined and unreachable until Paid audit evidence is preserved.
 - [x] Read-only inventory Apply, Negotiate, Paid and Storefront installed direct entrypoints and their release ancestry; do not reload another owner's process to manufacture proof. Storefront is a `main` ancestor; the three non-Storefront `d150e4b1d...` releases remain explicit external-owner follow-ups rather than Storefront blockers.
-- [ ] Before deleting any mixed ref, Apply and Negotiate owners preserve their complete installed direct entrypoints, launchd sources and runtime dependency call graphs on reviewed GitHub-`main` ancestry, then prove byte identity or intentional reviewed differences and live E2E. Paid remains with its active owner.
+- [ ] Preserve the complete Apply direct entrypoint, launchd source and runtime dependency call graph on GitHub-`main` ancestry; remove obsolete token-budget references without weakening duplicate-submit fences; install its immutable main-derived release and prove two live passes, Telegram and official effect/readback when actionable.
+- [ ] Preserve the complete Negotiate direct entrypoint, launchd source and runtime dependency call graph on GitHub-`main` ancestry; add exact Storefront-envelope consumption/ACK without changing Paid; install its immutable main-derived release and prove two live passes, Telegram, official readback and ACK.
 - [x] Remove registry and authoritative-document references that still identify `gig_pass.sh` as current execution or fuel evidence.
 - [x] Delete tracked `GIG_PASS_RUNBOOK.md`, `gig_pass.sh`, `gig-cli.sh` and `scripts/gig_single_instance.sh` only after all executable reachability is zero.
 - [x] Delete obsolete `ai.anicca.hf-gig-pass.plist.*` backups after confirming no installer or recovery path consumes them.
-- [ ] Only after Apply, Negotiate and Paid owners no longer require the mixed ref, confirm no live process uses it and remove `.worktrees/storefront-revenue-os` plus local/remote `fix/storefront-revenue-os`; retain the four original Paid commit SHAs and four exact revert SHAs in this audit.
+- [ ] After Apply and Negotiate migration, prove the three active lanes have zero runtime dependency on the mixed ref. Keep the clean mixed worktree/ref quarantined only for the separate Paid audit. After the Paid owner releases it, confirm no live process uses it and remove `.worktrees/storefront-revenue-os` plus local/remote `fix/storefront-revenue-os`; retain the four original Paid commit SHAs and four exact revert SHAs in this audit.
 - [ ] Publish one canonical inventory showing all four direct owners, truthful release ancestry/status, and no legacy gig-pass owner. Hermes gateway remains because it is a separate continuing service.
 
 Verification: tracked files, installed plists, launchctl, registry, imports, subprocesses, installers, symlinks and authoritative docs contain zero executable gig-pass reachability.
@@ -314,7 +319,7 @@ Verification: tracked files, installed plists, launchctl, registry, imports, sub
 
 - [ ] Build or confirm the final readonly Storefront release from GitHub `main` after mixed-worktree cleanup; reload only Storefront if its installed SHA must change.
 - [ ] Run Storefront twice after cleanup and require official catalog/readback, KPI ledger, Telegram send-or-dedupe, exit `0` and released lease. Full-wake contract renders remain proven by the retained installed full wake; incremental wakes intentionally do not render mutation forms.
-- [x] Read-only verify Apply, Negotiate and Paid direct-owner health and provenance; do not restart or mutate them. Negotiate is loaded and green; Apply is loaded but its current pass fails closed at the planner reservation budget boundary; Paid is intentionally unloaded. The three non-Storefront installed releases are not main ancestors, so their external-owner remediation remains visible.
+- [ ] Verify the final installed three-lane inventory after migration. Current evidence: Apply is loaded and effectful with official readback, Negotiate is loaded and green, Storefront is loaded and green, and Paid is intentionally excluded. Apply/Negotiate source provenance remains non-main and therefore this gate is open.
 - [ ] Re-prove after branch cleanup that deleted legacy names cannot be resurrected by installer, recovery, launchd backup, registry or current docs. Historical evidence and immutable releases are non-executable records.
 - [ ] Reconcile repository/worktree/branch inventory: main clean and pushed, with no temporary or mixed Storefront worktree/branch.
 - [ ] Mark this spec `COMPLETE` only after every S4–S8 checkbox is closed with evidence. Revenue and elapsed time never substitute for implementation or verification.
