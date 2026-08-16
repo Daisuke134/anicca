@@ -1547,13 +1547,20 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "public_effect": 0,
                 }
             ))
+            conflicting_hypothesis = (
+                next_hypothesis
+                if next_hypothesis is not None
+                and str(next_hypothesis.get("service_id") or "") == candidate_id
+                and next_hypothesis.get("guard_reason")
+                else None
+            )
             publication_guard = (
                 "already_public" if candidate_public
                 else "duplicate_listing_title" if duplicate_title
                 else "catalog_capacity_exhausted" if observed >= 20
                 else "existing_listing_effect_open" if pending_effect is not None
-                else str(next_hypothesis.get("guard_reason") or "higher_priority_hypothesis_open")
-                if next_hypothesis is not None else None
+                else str(conflicting_hypothesis["guard_reason"])
+                if conflicting_hypothesis is not None else None
             )
             if publication_guard is not None:
                 draft_result = {**draft_result, "publication_guard": publication_guard}

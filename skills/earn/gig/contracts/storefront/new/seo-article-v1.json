@@ -62,6 +62,6 @@
     "requires_owned_capability": true,
     "requires_available_capacity": true,
     "requires_hero_image": true,
-    "requires_no_active_storefront_experiment": true
+    "requires_no_conflicting_service_experiment": true
   }
 }

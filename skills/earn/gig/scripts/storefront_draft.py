@@ -59,7 +59,7 @@ def load_contract(path: Path) -> dict[str, Any]:
         or not all(gate.get(key) is True for key in (
             "requires_distinct_catalog_outcome", "requires_owned_capability",
             "requires_available_capacity", "requires_hero_image",
-            "requires_no_active_storefront_experiment",
+            "requires_no_conflicting_service_experiment",
         ))
     ):
         raise RuntimeError("storefront_draft_contract_invalid")
