@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "service_id",
+    "changed_field",
+    "proposed_value",
+    "proposed_price_jpy",
+    "hypothesis",
+    "evidence",
+    "success_metric",
+    "observation_window_days",
+    "no_op_reason",
+    "uncertainty"
+  ],
+  "properties": {
+    "decision": {"type": "string", "enum": ["change", "no_op"]},
+    "service_id": {"type": ["string", "null"], "pattern": "^[0-9]+$", "maxLength": 32},
+    "changed_field": {
+      "type": ["string", "null"],
+      "enum": ["title", "body", "package", "FAQ", "price", null]
+    },
+    "proposed_value": {"type": ["string", "null"], "maxLength": 12000},
+    "proposed_price_jpy": {"type": ["integer", "null"], "minimum": 500, "maximum": 1000000},
+    "hypothesis": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "evidence": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {"type": "string", "minLength": 1, "maxLength": 2048}
+    },
+    "success_metric": {
+      "type": ["string", "null"],
+      "enum": ["inquiries", "purchases", "views_to_inquiry", "views_to_purchase", "inquiries_to_purchase", "net_revenue_per_view", null]
+    },
+    "observation_window_days": {"type": ["integer", "null"], "enum": [7, 14, null]},
+    "no_op_reason": {"type": ["string", "null"], "maxLength": 1000},
+    "uncertainty": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    }
+  }
+}

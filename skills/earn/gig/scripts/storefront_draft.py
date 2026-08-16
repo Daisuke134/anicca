@@ -555,10 +555,11 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
 
 def readback_published_draft(
     contract: dict[str, Any], default_tab_script: Path, evidence_dir: Path,
+    known_image_identity: str | None = None,
 ) -> dict[str, Any]:
-    image_identity = None
+    image_identity = known_image_identity
     last_error = None
-    for attempt in range(3):
+    for attempt in range(3) if image_identity is None else ():
         draft_opened = subprocess.run(
             [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
              "--background", "open", contract["draft_url"]], capture_output=True, text=True,
