@@ -61,6 +61,8 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - Real pass `storefront-selector-live-a695e79e4` then completed with official/competitor `11/8`, effect/readback/duplicate `0/0/0`, next hypothesis `91000001/image`, metric `views_to_inquiry`, Telegram `deduped/20073`, and lease released. The hypothesis is prepared but non-executable while the FAQ experiment remains active; the measurement window is not a TODO and does not block building the image adapter now.
 - Commits `1a13109d0` and `0244e1660` add the verified 1220x1016 OpenCV hero asset/contract and the fenced multipart publication adapter. The asset regenerates to the exact contract SHA; the isolated seller form produced one blob preview and exact field `data[UploadedFile][n1][image_files]` without submitting. Forty-two focused checks pass. Real pass `storefront-image-fence-live-0244e1660` preserved the active-experiment fence with public image count `0`, effect/readback/duplicate `0/0/0`, and no residual Storefront lease.
 - Commit `e53a70689` binds the official VBA listing version, JPY6,000 base, JPY3,000 add-on, JPY5,000 maintenance, required inputs and two inquiry answer patterns into the runtime contract ledger. Real loop runs appended `1` then replayed `0`. Commit `3649a0bb9` reports official/competitor counts, contract inventory, selected hypothesis and fence in natural Japanese; real Telegram delivery is `sent/20425`.
+- Storefront now derives version-bound contracts for all 11 official services from six owned-capability families while preserving the VBA-specific override. Real pass `storefront-family-contract-live-37c975927` read official/competitor `11/8`, appended the missing `10`, and reached contract total `11`. The first replay exposed a transient truncated service DOM; the inventory reader now retries the full 120,000-character public page until the official service scope exists. Pass `storefront-family-contract-replay-fixed-37c975927` completed with appended `0`, total `11`, effect/readback/duplicate `0/0/0`, and a released lease.
+- Read-only inspection of the installed Negotiate owner shows its composer currently receives only conversation, verified research and verified application context. It has no service-ID or Storefront-contract consumer. Storefront publishes the immutable versioned contract ledger, but the Negotiate owner must add the consumer; Storefront must not patch the Negotiate implementation to hide this boundary gap.
 
 ## 5. Acceptance criteria
 
@@ -153,7 +155,9 @@ Verification: official browser DOM and screenshot show the expected images; effe
 - [ ] Make image, title/outcome, body/scope, package/add-ons, FAQ and price adapters consume the same versioned contract.
 - [x] Add the first VBA inquiry playbook covering implementation-style questions, lookup/transfer questions, required samples and clarifications, delivery, add-on and recurring maintenance facts.
 - [x] Bind the VBA playbook to the exact official service version and emit it once to the append-only Storefront contract ledger; replay appends zero.
-- [ ] Add the remaining owned service contracts and pass the exact contract/version in the immutable Negotiate handoff; do not implement replies in Storefront.
+- [x] Generate the remaining ten version-bound contracts from six explicit service-family playbooks; fail closed when an official service has neither a dedicated contract nor a family mapping.
+- [x] Run the production loop and prove 11/11 contract coverage, first-run append 10 and replay append 0.
+- [ ] Negotiate owner consumes the exact Storefront contract/version and attaches `conversation_id`; do not implement replies in Storefront.
 
 Verification: one existing service per adapter can be rendered and diffed without publishing; the production change remains one selected field on one service.
 

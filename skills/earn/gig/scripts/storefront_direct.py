@@ -45,6 +45,7 @@ STATE_FILES = (
 TARGET_SERVICE_ID = "91000001"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
 DEFAULT_LISTING_CONTRACT_DIR = GIG_DIR / "contracts" / "storefront"
+DEFAULT_LISTING_CONTRACT_FAMILIES = GIG_DIR / "config" / "storefront-contract-families.json"
 JUDGEMENT_FIELDS = {
     "decision", "service_id", "changed_field", "before_value", "proposed_value",
     "hypothesis", "competitor_evidence_paths", "capability_evidence_paths",
@@ -263,7 +264,9 @@ def _load_image_contract(path: Path) -> dict:
     return {**contract, "asset_path": str(asset)}
 
 
-def _load_listing_contracts(root: Path, observed_contracts: list[dict]) -> list[dict]:
+def _load_listing_contracts(
+    root: Path, observed_contracts: list[dict], families_path: Path = DEFAULT_LISTING_CONTRACT_FAMILIES,
+) -> list[dict]:
     observed = {row["service_id"]: row for row in observed_contracts}
     loaded = []
     for path in sorted(root.glob("*.json")):
@@ -295,6 +298,62 @@ def _load_listing_contracts(root: Path, observed_contracts: list[dict]) -> list[
             "contract_key": f"storefront:contract:v1:{service_id}:{hashlib.sha256(canonical.encode()).hexdigest()}",
             "source_path": str(path.resolve()), "observed_at_epoch": int(time.time()),
         })
+    explicit_ids = {row["service_id"] for row in loaded}
+    try:
+        family_config = json.loads(families_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("listing_contract_families_invalid") from error
+    mappings = family_config.get("service_families")
+    families = family_config.get("families")
+    if family_config.get("version") != 1 or not isinstance(mappings, dict) or not isinstance(families, dict):
+        raise RuntimeError("listing_contract_families_invalid")
+    for source in observed_contracts:
+        service_id = source["service_id"]
+        if service_id in explicit_ids:
+            continue
+        family_name = mappings.get(service_id)
+        template = families.get(family_name)
+        if not isinstance(family_name, str) or not isinstance(template, dict):
+            raise RuntimeError(f"listing_contract_family_missing:{service_id}")
+        required = ("inclusions", "deliverables", "required_inputs", "principles", "answer_patterns")
+        if any(not isinstance(template.get(key), list) or not template[key] for key in required):
+            raise RuntimeError(f"listing_contract_family_invalid:{family_name}")
+        contract = {
+            "version": 1, "platform": "coconala", "service_id": service_id,
+            "service_version_sha256": source["service_version_sha256"],
+            "public_url": source["public_url"],
+            "offer": {
+                "outcome": source["title"], "inclusions": template["inclusions"],
+                "deliverables": template["deliverables"],
+                "required_inputs": template["required_inputs"],
+                "base_price_jpy": source["price_jpy"], "options": [],
+            },
+            "inquiry_playbook": {
+                "principles": template["principles"],
+                "required_clarifications": template["required_inputs"],
+                "answer_patterns": template["answer_patterns"],
+            },
+            "generated_from_family": family_name,
+            "handoff_required_fields": [
+                "platform", "service_id", "service_version_sha256", "conversation_id",
+                "origin", "observed_at_epoch",
+            ],
+        }
+        patterns = contract["inquiry_playbook"]["answer_patterns"]
+        if not all(
+            isinstance(row, dict) and str(row.get("intent") or "").strip()
+            and isinstance(row.get("triggers"), list) and row["triggers"]
+            and str(row.get("response") or "").strip() for row in patterns
+        ):
+            raise RuntimeError(f"listing_contract_family_invalid:{family_name}")
+        canonical = json.dumps(contract, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        loaded.append({
+            **contract,
+            "contract_key": f"storefront:contract:v1:{service_id}:{hashlib.sha256(canonical.encode()).hexdigest()}",
+            "source_path": str(families_path.resolve()), "observed_at_epoch": int(time.time()),
+        })
+    if {row["service_id"] for row in loaded} != set(observed):
+        raise RuntimeError("listing_contract_inventory_incomplete")
     return loaded
 
 
@@ -1214,6 +1273,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             ]
             listing_contracts = _load_listing_contracts(
                 getattr(args, "listing_contract_dir", DEFAULT_LISTING_CONTRACT_DIR), validated_contracts,
+                getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
             )
             competitor_manifest = _collect_competitors(
                 ws_url,
@@ -1496,6 +1556,9 @@ def main() -> int:
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
     parser.add_argument("--listing-contract-dir", type=Path, default=DEFAULT_LISTING_CONTRACT_DIR)
+    parser.add_argument(
+        "--listing-contract-families", type=Path, default=DEFAULT_LISTING_CONTRACT_FAMILIES,
+    )
     parser.add_argument("--reply-transcripts", type=Path, default=DEFAULT_REPLY_TRANSCRIPTS)
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--timeout-seconds", type=int, default=180)

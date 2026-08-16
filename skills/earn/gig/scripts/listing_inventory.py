@@ -319,13 +319,20 @@ async def _fetch_category(
 ) -> dict:
     url = f"https://coconala.com/services/{service_id}"
     if ws_url is not None:
-        data = await _eval_json(
-            ws_url,
-            url,
-            "JSON.stringify({text:document.body ? document.body.innerText.slice(0,12000) : ''})",
-        )
-        text = str(data.get("text") or "")
-        scope = extract_public_service_scope(text) or ""
+        text = ""
+        scope = ""
+        for attempt in range(3):
+            data = await _eval_json(
+                ws_url,
+                url,
+                "JSON.stringify({text:document.body ? document.body.innerText.slice(0,120000) : ''})",
+            )
+            text = str(data.get("text") or "")
+            scope = extract_public_service_scope(text) or ""
+            if scope:
+                break
+            if attempt < 2:
+                await asyncio.sleep(0.75)
         return {
             "category": parse_category_breadcrumb(text), "sales_count": parse_sales_count(text),
             "public_url": url, "public_text": scope,
