@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. Active item: S4f, migrate price to the common versioned mutation contract. Finish order is fixed: S4 adapters → S5 attribution/reporting → S6 repeated installed E2E → S7 four-lane legacy cleanup → S8 cleanup-aftercare E2E. No earlier milestone may be called complete while a later finish gate remains open. This document owns Storefront implementation and records the final cross-owner cleanup contract without modifying another owner's code or live state.
+Status: INCOMPLETE. Active item: S4r, recover the failed installed FAQ wake and prove a durable failed receipt plus successful replay before continuing to price. Finish order is fixed: S4 recovery/adapters → S5 attribution/reporting → S6 repeated installed E2E → S7 four-lane legacy cleanup → S8 cleanup-aftercare E2E. No earlier milestone may be called complete while a later finish gate remains open. This document owns Storefront implementation and records the final cross-owner cleanup contract without modifying another owner's code or live state.
 
 ## 1. Overview
 
@@ -77,6 +77,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The body/scope adapter reads the exact authenticated seller form rather than a collapsed public excerpt. Commit `d3e718921` binds service `4308502` to a bounded JPY5,000/maximum-five-slide scope with explicit inclusions, exclusions and estimate boundary. Pass `storefront-direct-1786849061129008000-97801` renders only `data[Service][head]`, retains the complete prior body as rollback, binds proposed public body SHA `e035c9a5...`, proves `published=false` under contract SHA `ba0df122...`, and completes with the other Storefront invariants unchanged.
 - The package adapter keeps price ownership separate and changes only the existing add-on label. Commit `69f74c2b3` binds the authenticated JPY1,000 option on service `4308502` to the bounded label `追加スライド1枚（原稿支給・同一デザイン）`. Pass `storefront-direct-1786849420229880000-38442` renders only `data[Option][0][title]`, preserves rollback and price readback, proves `published=false` under contract SHA `348f2edb...`, and exits `0` with 12 services, SEO exact readback, Telegram `deduped/20596` and released lease.
 - The FAQ adapter treats one question/answer pair as one logical listing field while still validating both seller controls. Authenticated seller form service `4308502` contains no FAQ. The versioned proposal renders logical delta `data[Faq][0]`, preserves `FAQ_ABSENT` rollback, binds exact public question/answer readback, and proves `published=false` under contract SHA `6362ed00...`.
+- Installed FAQ wake `storefront-direct-1786850853324012000-9452` rendered all four mutation contracts and reached analytics service 11/12, then CDP ports `9222/9223` disappeared. The analytics read timed out; the tab-close timeout replaced that failure, and the lease-release timeout escaped the receipt boundary. This wake is failed, not completed. Disk has 18 GiB available, so disk exhaustion is not the observed cause. Storefront now catches cleanup subprocess timeouts so the original failure produces a durable failed receipt; a successful installed replay and released lease remain required before S4f.
 - Storefront commit `85eaa6d86` is on GitHub `main` and in readonly immutable release `/Users/anicca/gig/releases/life-manager/85eaa6d...`. Only `ai.anicca.hf-gig-storefront-direct` was reloaded. Its natural installed wake `storefront-direct-1786843673261706000-46042` exited `0` with official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, draft `0/1/1/0`, active publication fence, Telegram `deduped/20527`, and released lease. Before/after SHA comparison found zero changes to every non-Storefront gig plist.
 - Official analytics now retries each service independently and records an exhausted readback as `unknown`, never zero and never a reason to skip the rest of the Storefront wake. Reports separate unknown current values from unknown comparisons.
 
@@ -177,6 +178,7 @@ Verification: the existing experiment on `4330368` remains unchanged; official s
 
 ### S4 — Generalize supported listing mutations
 
+- [ ] Recover the failed installed FAQ wake without touching another owner's process: preserve the original error in a durable failed receipt, release the stale Storefront lease after shared-browser ownership is clear, then complete one installed replay with exit `0`.
 - [x] Define the common versioned mutation envelope and migrate the proven image adapter, including exact official-version precondition, one allowed field delta, rollback and readback.
 - [x] Migrate title/outcome to the same envelope and prove one deterministic no-publish diff.
 - [x] Migrate body/scope to the same envelope and prove one deterministic no-publish diff from the authenticated seller form.
@@ -284,7 +286,7 @@ The exact final tree may reuse existing directories to minimize churn, but Store
 
 Remaining execution order is authoritative and may not be reordered:
 
-1. S4e: migrate FAQ, render one authenticated one-field diff and prove no publication.
+1. S4r: close the failed FAQ wake correctly, release only its stale lease when no other owner conflicts, and prove one successful installed replay.
 2. S4f: migrate price, bind exact seller option/display-price values and fail closed on unknown values.
 3. S4g: apply stale-version, unsupported-family, multi-field, rollback and official-readback guards to every adapter; run the installed fenced owner.
 4. S5a: add the append-only Storefront funnel joiner and immutable cross-owner receipt consumer without editing Negotiate or Paid.
