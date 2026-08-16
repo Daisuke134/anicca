@@ -1464,16 +1464,29 @@ shared abstraction to make the diff appear smaller.
   classify ElevenLabs `AUTHENTICATED` and HubSpot/Impact
   `APPLICATION_PENDING / In Review`; no login, application, publication, or
   money effect occurred.
-- [ ] **E0-A04** Inspect the authenticated Links create surface without submitting;
+- [x] **E0-A04** Inspect the authenticated Links create surface without submitting;
   receipt allowed destinations, title/description/slug requirements, and result
   identity. This closes E0-Q1.
-- [ ] **E0-A05** Inspect Link Performance without changing filters; receipt exact
+- [x] **E0-A05** Inspect Link Performance without changing filters; receipt exact
   row fields, link identity, click field, time window, pagination, and empty
   state. This closes E0-Q2.
-- [ ] **E0-A06** Compare the live report field names with
+- [x] **E0-A06** Compare the live report field names with
   `revenue_cli.capture_commission_rows()` and `resolve_attribution()`; document an
   exact mapping for Link, Sub ID 1–3, Shared ID, status, amount, and transaction
   ID. This closes E0-Q3 at schema level.
+
+  Installed proof: the mode-0600 `AFFILIATE_E0_PARTNERSTACK_CONTRACT` receipt
+  records an authenticated Links surface at `/elevenlabsinc/links`, one default
+  link, one existing custom link, and 28 approved destinations. Creation requires
+  title, description up to 255 characters, an approved destination, and a custom
+  slug. The list response exposes exact result identity as `key`, `slug`, `url`,
+  `dest`, and `tracking_custom_link_id`; raw URLs remain private. Link Performance
+  at `/reporting/link_performance` supports `primary_grouping=link_path`, returns
+  `click_count` and `unique_click_count`, uses `Last 12 months`, returns one array
+  rather than a paginated contract, and represents no rows as an empty array.
+  Its live state is one link row and one click. Commission mapping is exact:
+  `link_path`, `sub_id_1..3`, `shared_id`, `reward_status`,
+  `commission_amount`, and `reward_key`. No provider write occurred.
 
 ##### Phase E0-B — Add the smallest reusable Skill contracts
 
@@ -1481,7 +1494,9 @@ shared abstraction to make the diff appear smaller.
   `READ_EXTERNAL` command that writes a sanitized capability receipt.
 - [ ] **E0-B02** Add `affiliate programs acquire-placement-link --id elevenlabs
   --placement <id>` as a `WRITE_EXTERNAL` command with deterministic title,
-  destination, and placement identity.
+  destination, and placement identity. The first target is placement
+  `elevenlabs-text-to-speech-api-for-developers` and approved destination
+  `https://elevenlabs.io/text-to-speech`.
 - [ ] **E0-B03** Before submit, call `start_effect()` with kind
   `PARTNERSTACK_PLACEMENT_LINK`; after submit, locate the exact result and call
   `verify_effect()`.
@@ -1491,14 +1506,14 @@ shared abstraction to make the diff appear smaller.
 - [ ] **E0-B05** Store the raw provider URL through stdin in mode-0600 private
   state under the exact placement label; persist only its SHA-256 fingerprint in
   the public receipt.
-- [ ] **E0-B06** Extend `placement_candidates()` to index provider link ID/hash,
-  placement ID, owned URL, offer, locale, and public distribution URLs without
-  exposing the raw link.
+- [ ] **E0-B06** Extend `placement_candidates()` to index provider link `key`,
+  `tracking_custom_link_id`, URL hash, placement ID, owned URL, offer, locale,
+  and public distribution URLs without exposing the raw link.
 - [ ] **E0-B07** Add Link Performance capture to `revenue_cli.py`; preserve raw
   rendered/API evidence mode-0600 and write a sanitized latest receipt.
-- [ ] **E0-B08** Define click transition identity as provider + provider link ID +
-  placement ID + observed click count + reporting window. Source artifact hash is
-  lineage, not transition identity.
+- [ ] **E0-B08** Define click transition identity as provider + provider link
+  `key` + `link_path` hash + placement ID + observed click count + reporting
+  window. Source artifact hash is lineage, not transition identity.
 - [ ] **E0-B09** Extend `owner_event()` so an attributable positive delta produces
   one `CLICK_DELTA`; aggregate-only deltas remain `UNATTRIBUTED_CLICK_DELTA` and
   cannot close E0.
@@ -1589,7 +1604,7 @@ shared abstraction to make the diff appear smaller.
 | `PLACEMENT_LINK_VERIFIED` | provider, placement ID, link fingerprint, destination class | Provider link exact readback | provider + placement + fingerprint |
 | `PLACEMENT_LIVE` | owned URL, channel URLs, offer, locale | Public readback for owned/X | placement + public URLs |
 | `DISTRIBUTION_LIVE` | channel, public URL, owned canonical | DEV/Substack public readback | channel + placement + public URL |
-| `CLICK_DELTA` | provider, placement, owned URL, delta, window, money=`not observed` | Positive provider link-row delta | provider + link ID + count + window |
+| `CLICK_DELTA` | provider, placement, owned URL, delta, window, money=`not observed` | Positive provider link-row delta | provider + link key + link-path hash + count + window |
 | `COMMISSION_PENDING` | transaction lineage, placement, amount/currency | Provider status `pending` | transition ID |
 | `COMMISSION_APPROVED` | transaction lineage, placement, gross/net/cost/currency | Provider status `approved` | transition ID |
 | `COMMISSION_REVERSED` | transaction lineage, placement, reversal/net/currency | Provider status `reversed` | transition ID |
