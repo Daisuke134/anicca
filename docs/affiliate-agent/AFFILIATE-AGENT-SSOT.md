@@ -1153,7 +1153,13 @@ tasks and not reasons to stop safe work.
    a fixed-order fallback. Candidate collection and result validation remain
    deterministic tools. The final acceptance is a real source-owner wake, after
    the current campaign becomes `X_LIVE`, creating exactly one new source plan
-   bound to the Agent decision ID and replaying without another plan.
+   bound to the Agent decision ID and replaying without another plan. Release
+   `abcbda4f66d912aceb14e5e48b022a284760172e` is installed with the sealed
+   opportunity selector and no fixed-order fallback. Real source-owner wake `4`
+   exited `0`, returned `COOLDOWN`, and kept discovered plans `3→3` because the
+   pre-fix YouTube campaign is still unfinished; it did not skip ahead or create
+   an unreceipted eighth plan. The post-`X_LIVE` decision/readback remains the live
+   acceptance gate, not a manual authoring or waiting task.
 3. **E1-H — Close the first real transaction path.** On the first provider row,
    the loop normalizes provider transaction ID and status, joins the exact
    placement, appends one replay-safe economic transition, reports
