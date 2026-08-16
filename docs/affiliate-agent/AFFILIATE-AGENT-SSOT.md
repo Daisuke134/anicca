@@ -152,15 +152,15 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `2067b62a6` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and now advances composition handoffs through generic policy | Open-ended discovery, generic policy-PASS effect consumption, general repair, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `2a4880297` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded provider recovery, generic policy-PASS owned/X publication, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and advances composition handoffs through generic policy | Open-ended discovery, general repair beyond the observed X reconciliation path, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and currently `AUTHENTICATED`. Installed recovery filled the observed single-page form, verified the same fenced login job on attempt 3, and later wakes converge with `recovery=NOT_NEEDED`; the latest provider receipt is `AUTHENTICATED / NO_STATE_CHANGE`. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. HubSpot/Impact's dedicated browser remains `SIGN_IN_REQUIRED`; Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. Impact recovery is not on the active revenue path and must use an existing credential/OAuth skill before any human escalation. No commission, approved transaction, reversal, or payout is claimed |
-| Publication | Three English owned Affiliate articles and their matching disclosed `@selawmqt` X posts are live. The installed `7b43ae847` loop published the TTS API article, reconciled its initially ambiguous X effect to `https://x.com/selawmqt/status/2088809159932465497`, then replayed with the same URL, one X job, and unchanged Git HEAD | Post-baseline provider click readback and every Japanese placement remain unproven |
+| Publication | Four English owned Affiliate articles and their matching disclosed `@selawmqt` X posts are live. The fourth generic campaign is `https://aniccaai.com/blog/elevenlabs-ai-dubbing-for-video-creators` and `https://x.com/selawmqt/status/2088862149347295484`. Its initially ambiguous X effect resumed the same job on attempt 2, found the exact timeline object, and verified without a second post | Post-baseline provider click readback and every Japanese placement remain unproven |
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
-| Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, and `BLOCKED` are live-proven | `PLACEMENT_LIVE`, `CLICK_DELTA`, and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, generic handoff and policy receipt creation, provider recovery, configured content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `2067b62a6` produced three hash-bound generic policy receipts: `elevenlabs-en` and `elevenlabs-tts-api-en` are `PASS`; `elevenagents-en` is correctly `FAIL` because one call-billing claim is unsupported by its admitted source set. A replay ended `IDLE` without changing the three policy hashes | Generic policy-PASS effect consumption, open-ended source-plan discovery, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop composes, validates, distributes configured campaigns, and measures; it has not yet earned a commission |
+| Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, and real `PLACEMENT_LIVE` are live-proven. The fourth campaign notification is bound to provider message ID `20735`; replay returns `NO_PENDING` | `CLICK_DELTA` and commission events remain bound to their real external transitions |
+| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, generic handoff and policy receipt creation, provider recovery, generic policy-PASS owned/X publication, revenue polling, receipts, and Telegram are live. Four source plans now yield three `PASS` receipts and one evidence-correct `FAIL`. Release `2a4880297` carried the new Dubbing campaign through official capture, sealed composition, policy `PASS`, owned `LIVE`, X `LIVE`, revenue cooldown, and `PLACEMENT_LIVE`; replay ended `ALREADY_LIVE / NO_PENDING` | Open-ended source-plan discovery, provider/channel quarantine, watchdog, post-baseline acquisition, and positive money evidence remain absent. The loop composes, validates, distributes configured campaigns, and measures; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -170,9 +170,10 @@ owners plus separate source-refresh, composition, and money owners.
 health, ElevenLabs
 observe/poll/recovery, receipt-driven configured campaign advancement, hourly
 `revenue observe → capture → reconcile`, event receipts, and Telegram flush.
-Release `7b43ae847` live-proved the TTS API path through public owned and X
-readback. A first-pass ambiguous X effect remained fenced; the next wake found
-the exact timeline object and verified the original job without a second click.
+Release `2a4880297` live-proved the generic Dubbing path through public owned and
+X readback plus Telegram. A first-pass ambiguous X effect remained fenced; the
+next wake found the exact timeline object and verified the original job without
+a second click. A further wake returned `ALREADY_LIVE / NO_PENDING`.
 
 Program discovery/application and open-ended source discovery are not scheduled.
 The separate `ai.anicca.affiliate-source-refresh`
@@ -1074,37 +1075,33 @@ The completed history remains in the evidence tables below. The following list i
 the only canonical remaining order; later work MUST NOT jump ahead of an unmet
 gate.
 
-Current execution cursor: **step 6, prove a fresh fourth English campaign through
-the installed generic path**. Release `50a86df60` is current;
-all six launchd owners are loaded and all three CDP ports respond. A real
-money-loop kickstart observed ElevenLabs `AUTHENTICATED`, reconciled the existing
-X placement as `ALREADY_LIVE`, captured zero provider transaction rows, and
-terminated `NO_TRANSACTIONS` without a duplicate effect. Three real composition-
-owner wakes created three policy receipts: two `PASS` and one evidence-correct
-`FAIL`; the next wake ended `IDLE` and preserved all receipt hashes. The generic
-PASS-to-effect path is now installed: repeated real wakes returned
-`ALREADY_LIVE`, advanced launchd runs from 8 to 9 with last exit `0`, and preserved
-the complete owned/X receipt hash, landing Git HEAD `5be0d43db`, and 49 job events.
-No legacy article or X object was duplicated. Separately,
-the existing deterministic path has three English owned articles and three
-matching X placements with `LIVE` readback. Revenue remains zero post-baseline
-clicks and zero commission. Therefore one fresh source-bound fourth campaign—not
-another login, policy framework, locale, packaging, or cloud—is next. No human login-
-support request or six-digit-code handoff is outstanding.
+Current execution cursor: **step 7, add open-ended opportunity discovery**.
+Release `2a4880297` is current; all six launchd owners are loaded and all three
+CDP ports respond. Step 6 is closed by the real `elevenlabs-dubbing-en` lineage:
+four official source artifacts, source-set SHA-256
+`304b9073d7efd620ab9df8520cbc4ad60e53172ebe6816bdc40439dcbf98dccc`,
+Terra-high sealed composition, semantic policy `PASS` with zero unsupported
+claims, owned HTTP `200`, exact X readback, and Telegram message ID `20735`.
+The X disclosure contract was aligned with the existing publisher after the
+real first failure exposed the mismatch. A later ambiguous X effect retained job
+`75bf5be…`, resumed attempt 1→2, and verified the original status URL without a
+second post. Replay is `ALREADY_LIVE / NO_PENDING / last exit 0`; landing Git
+HEAD remains `3519e3895`. Revenue remains zero post-baseline clicks and zero
+commission. No human login-support request or six-digit-code handoff is outstanding.
 
 | Current surface | Verified state | Meaning |
 |---|---|---|
 | Local scheduler | Six Affiliate launchd owners; last exits are `0` | The local runtime is installed and healthy |
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
-| Existing distribution | 3 owned articles `LIVE`; 3 X posts `LIVE` | Real public effects exist and are receipted |
-| Generic pipeline | 3 sealed handoffs and 3 hash-bound policy receipts: 2 `PASS`, 1 evidence-correct `FAIL`; installed effect wiring replays existing public work as `ALREADY_LIVE` without mutation | A fresh fourth campaign is the first unfinished autonomous proof |
+| Existing distribution | 4 owned articles `LIVE`; 4 X posts `LIVE` | Real public effects exist and are receipted |
+| Generic pipeline | 4 sealed handoffs and 4 hash-bound policy receipts: 3 `PASS`, 1 evidence-correct `FAIL`; the fresh fourth campaign reached owned/X `LIVE` and Telegram, then replayed without mutation | Open-ended discovery is the first unfinished autonomous stage |
 | Acquisition | 0 post-baseline provider clicks | E0 is open |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
 ```mermaid
 flowchart LR
   C[Composition] --> P[Policy and deterministic publish]
-  P --> F[Fourth English campaign]
+  P --> F[4 English campaigns LIVE]
   F --> E0[E0 real click]
   E0 --> E1[E1 approved commission]
   E1 --> T[10 comparable placements]
@@ -1157,7 +1154,7 @@ flowchart LR
    structure. Exact checks are deterministic; claim support is a bounded read-
    only model audit over the same sealed official source set. Neither layer sees
    credentials, tracking links, browser authority, or the money ledger. Release
-   `2067b62a6` is current; all six owners and CDP `9324`, `9326`, and `9327` are
+   `2067b62a6` was the installed milestone; all six owners and CDP `9324`, `9326`, and `9327` were
    healthy. Installed wakes created policy hashes `94841cab46fa…` (`FAIL`),
    `6cff9924d46f…` (`PASS`), and `49f0bae15d98…` (`PASS`). The failure names one
    unsupported ElevenAgents call-billing statement. A replay returned `IDLE`
@@ -1174,10 +1171,12 @@ flowchart LR
    `AUTHENTICATED / ALREADY_LIVE / last exit 0`, and replay preserved the owned/X
    receipt hash, landing Git HEAD, and job-event count. The first fresh generic
    external effect is step 6, not evidence retroactively attributed to this step.
-6. **P0 — Prove a fourth English campaign end to end.** The installed launchd
-   owners MUST advance a newly composed campaign through source → composition →
-   policy → owned `LIVE` → X `LIVE` → revenue poll → Telegram. A second wake MUST
-   preserve one Git effect, one X object, and one job lineage.
+6. **DONE — Prove a fourth English campaign end to end.** Installed release
+   `2a4880297` advanced `elevenlabs-dubbing-en` through source → composition →
+   policy → owned `LIVE` → X `LIVE` → revenue poll → Telegram. Public receipts
+   bind the article and X URLs above. The ambiguous X effect was reconciled under
+   the same job on attempt 2; replay preserved Git HEAD, the X URL, the verified
+   job lineage, and returned Telegram `NO_PENDING`.
 7. **P0 — Add open-ended opportunity discovery.** The daily research owner uses
    CRWL, `gh`, authenticated read-only X, official provider resources, and the
    executable-program registry to create or refresh candidate source plans. It
@@ -1257,6 +1256,12 @@ Prove the installed generic path with one fresh English buyer intent and unique
 slug. Existing source, composition, policy, owned, X, revenue, and Telegram owners
 must carry the campaign from official evidence to two exact public readbacks. No
 stage is performed manually by Codex after the source plan is admitted.
+
+**Status: CLOSED.** The admitted plan is `elevenlabs-dubbing-en`, with buyer
+intent “video and podcast creators evaluating paid AI dubbing.” The installed
+owners produced source, composition, policy, owned, X, revenue, and Telegram
+receipts in order. Public evidence is the owned article and X status URL recorded
+in §1.2. Telegram provider message ID is `20735`; replay is deduplicated.
 
 #### 2. Acceptance criteria
 
@@ -2052,9 +2057,8 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `@aniccaen` is inactive. The account has 128 mixed-language historical posts
   and 0 followers, so rebranding and audience acquisition are required and
   organic distribution power remains unproven.
-- Two disclosed owned articles are public; the first article and one Affiliate X
-  placement have Agent `LIVE` readback. The second article is HTTP `200` but its
-  receipt remains `DELIVERED`, and no post-baseline organic click exists yet.
+- Four disclosed owned articles and four matching Affiliate X placements have
+  Agent `LIVE` readback. No post-baseline organic provider click exists yet.
 - Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED`;
   Associates/affiliate acceptance is unknown.
 - English total addressable market and the claim that it is larger than Japanese
@@ -2083,8 +2087,9 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   proves the d150 runner can call Terra-medium read-only, but U04–U14 remain the
   privacy, schema, budget, routing, and portability gates for the new slice.
 - Affiliate Telegram append-before-send, stable-UUID dedupe, provider message-ID
-  receipt, `SELF_HEALED`, and `BLOCKED` are live-proven. Real `CLICK_DELTA`,
-  `COMMISSION_PENDING`, and `COMMISSION_APPROVED` wait for those external states.
+  receipt, `SELF_HEALED`, `BLOCKED`, and `PLACEMENT_LIVE` are live-proven. Real
+  `CLICK_DELTA`, `COMMISSION_PENDING`, and `COMMISSION_APPROVED` wait for those
+  external states.
 - Production placement and same-job X crash resume are proven. Organic click,
   approved commission, paid payout, full research-to-money wake, and an induced
   end-to-end self-repair remain unproven.
