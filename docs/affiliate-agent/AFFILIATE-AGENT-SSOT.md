@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `64093fd3e` is current and six isolated Affiliate launchd owners are installed. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-source refresh; the ten-minute composition owner consumes at most one credential-free due source set per wake and deterministically emits a generic campaign handoff | Open-ended discovery, generic policy/effect consumption, general repair, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `2067b62a6` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and now advances composition handoffs through generic policy | Open-ended discovery, generic policy-PASS effect consumption, general repair, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and currently `AUTHENTICATED`. Installed recovery filled the observed single-page form, verified the same fenced login job on attempt 3, and later wakes converge with `recovery=NOT_NEEDED`; the latest provider receipt is `AUTHENTICATED / NO_STATE_CHANGE`. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. HubSpot/Impact's dedicated browser remains `SIGN_IN_REQUIRED`; Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. Impact recovery is not on the active revenue path and must use an existing credential/OAuth skill before any human escalation. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,27 +160,30 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, and `BLOCKED` are live-proven | `PLACEMENT_LIVE`, `CLICK_DELTA`, and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, generic handoff creation, provider recovery, configured content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `64093fd3e` transformed both sealed outputs into hash-verified handoffs without adding a model-usage row; each has exactly one CTA and owned-URL placeholder and no private link | Generic policy/effect consumption of the new handoff, open-ended source-plan discovery, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop composes, distributes configured campaigns, and measures; it has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, generic handoff and policy receipt creation, provider recovery, configured content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `2067b62a6` produced three hash-bound generic policy receipts: `elevenlabs-en` and `elevenlabs-tts-api-en` are `PASS`; `elevenagents-en` is correctly `FAIL` because one call-billing claim is unsupported by its admitted source set. A replay ended `IDLE` without changing the three policy hashes | Generic policy-PASS effect consumption, open-ended source-plan discovery, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop composes, validates, distributes configured campaigns, and measures; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
-The installed scheduler invokes only `affiliate loop wake`. `local_loop.wake()`
-owns the wake lock, private-link check, CDP `9324` health, ElevenLabs
+The installed ownership graph has six launchd labels: three persistent browser
+owners plus separate source-refresh, composition, and money owners.
+`local_loop.wake()` owns the money wake lock, private-link check, CDP `9324`
+health, ElevenLabs
 observe/poll/recovery, receipt-driven configured campaign advancement, hourly
 `revenue observe → capture → reconcile`, event receipts, and Telegram flush.
 Release `7b43ae847` live-proved the TTS API path through public owned and X
 readback. A first-pass ambiguous X effect remained fenced; the next wake found
 the exact timeline object and verified the original job without a second click.
 
-Program discovery/application, open-ended source discovery, and safe dynamic
-composition are not scheduled. The separate `ai.anicca.affiliate-source-refresh`
+Program discovery/application and open-ended source discovery are not scheduled.
+The separate `ai.anicca.affiliate-source-refresh`
 owner now refreshes every versioned plan daily through CRWL and writes one
-aggregate receipt without reading credentials, CDP, or the money ledger. Source
-capture and deterministic campaign build/policy/publish are tools; the remaining
-generalization is a composition/handoff owner with a sanitized allowlisted input
-bundle, result and source-hash binding, its own lock, and no access to credentials
-or the revenue wake. Runtime model work MUST NOT be reintroduced inside the
-ten-minute money owner.
+aggregate receipt without reading credentials, CDP, or the money ledger. The
+separate `ai.anicca.affiliate-composition` owner consumes one due source-bound
+stage per wake, uses a sanitized allowlisted input bundle and its own lock, and
+now creates both generic handoff and generic policy receipts. It has no browser,
+credential, publication, or money authority. Runtime model work MUST NOT be
+reintroduced inside the ten-minute money owner. The next boundary is deterministic
+consumption of a generic policy-PASS handoff by the existing fenced publisher.
 
 The target architecture copy+tweaks the live Coconala immutable-release pattern:
 one explicit owner per lane, the shared schema-validating agent runner, separate
@@ -250,11 +253,12 @@ allowed. Git commits, pushed branches, this SSOT, and runtime receipts are the
 durable recovery boundary; they preserve progress but do not guarantee that an
 in-flight command continues.
 
-The Affiliate browser and wake launchd owners are installed and live-proven.
-Provider and revenue polling plus limited Telegram reporting are wired into the
-wake; research, model-led selection, publication, and recovery are not. Desktop
-independence is therefore still a product gate. After wiring, the desktop becomes
-an observation/steering surface rather than the process owner.
+All six Affiliate launchd owners are installed and live-proven. Source refresh,
+bounded composition, generic policy, configured publication, provider recovery,
+revenue polling, and limited Telegram reporting run without the desktop as their
+owner. Open-ended discovery, generic policy-PASS publication wiring, broad
+self-healing, and cohort allocation remain product gates. The desktop is already
+an observation/steering surface for installed stages, not their process owner.
 
 ### 1.2.4 Credential-first provider preflight
 
@@ -374,6 +378,31 @@ dispatcher. Browser signup, login, profile setup, application, publication,
 public readback, dashboard observation, and recovery are Skill operations rather
 than undocumented setup performed by Codex. The local launchd owner invokes the
 same commands that a future clean-Mac installer and cloud scheduler invoke.
+
+### 1.5.1 Revenue scale architecture
+
+```mermaid
+flowchart LR
+  L[Local English pod] --> E0[Attributable click]
+  E0 --> E1[Approved commission]
+  E1 --> C10[10 mature placements]
+  C10 --> P3[3 providers, each at most 40 percent]
+  P3 --> W4[4 profitable unattended weeks]
+  W4 --> K10[3 receipted months at USD 10K]
+  K10 --> PODS[Replicate proven pods by offer, locale and channel]
+  PODS --> K100[3 receipted months at USD 100K]
+  K100 --> CLOUD[Tenant-isolated cloud workers]
+  CLOUD --> M1[3 receipted months at USD 1M]
+  M1 --> M10[3 receipted months at USD 10M]
+```
+
+The scale mechanism is replication of externally profitable cohorts, not a
+promise that more generated posts create money. A cohort is promoted only after
+provider receipts establish attributable traffic, approved commission after
+reversals, content and model cost, and positive net unit economics. The local
+Mac proves the complete loop first. USD 100K and USD 10M require many independent
+profitable pods and eventually tenant-isolated cloud workers; projections,
+creator screenshots, clicks, and annualized run rates never close a gate.
 
 ## 2. Evidence-backed constraints
 
@@ -974,25 +1003,26 @@ The completed history remains in the evidence tables below. The following list i
 the only canonical remaining order; later work MUST NOT jump ahead of an unmet
 gate.
 
-Current execution cursor: **step 4 live recovery**. Before the failed policy
-install, release `64093fd3e` had six healthy launchd owners, 15 refreshed official
-sources, three source-hash-bound composition inputs, three sealed outputs, and
-three generic campaign handoffs. Safe release `2067b62a6` is now staged, but the
-current desktop bootstrap context cannot reload the six stopped owners.
-All three handoffs are `READY_FOR_POLICY` and have no generic `policy_sha256`.
-Separately, the existing deterministic path has three English owned articles and
-three matching X placements with `LIVE` readback. Provider auth is
-`AUTHENTICATED`; revenue remains zero post-baseline clicks and zero commission.
-Therefore the generic policy gate—not another research framework, provider
-login, locale, packaging, or cloud—is next. No human login-support request or
-six-digit-code handoff is outstanding.
+Current execution cursor: **step 5, connect generic policy-PASS handoffs to the
+existing deterministic publication effects**. Release `2067b62a6` is current;
+all six launchd owners are loaded and all three CDP ports respond. A real
+money-loop kickstart observed ElevenLabs `AUTHENTICATED`, reconciled the existing
+X placement as `ALREADY_LIVE`, captured zero provider transaction rows, and
+terminated `NO_TRANSACTIONS` without a duplicate effect. Three real composition-
+owner wakes created three policy receipts: two `PASS` and one evidence-correct
+`FAIL`; the next wake ended `IDLE` and preserved all receipt hashes. Separately,
+the existing deterministic path has three English owned articles and three
+matching X placements with `LIVE` readback. Revenue remains zero post-baseline
+clicks and zero commission. Therefore policy-PASS effect wiring—not another
+login, policy framework, locale, packaging, or cloud—is next. No human login-
+support request or six-digit-code handoff is outstanding.
 
 | Current surface | Verified state | Meaning |
 |---|---|---|
 | Local scheduler | Six Affiliate launchd owners; last exits are `0` | The local runtime is installed and healthy |
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
 | Existing distribution | 3 owned articles `LIVE`; 3 X posts `LIVE` | Real public effects exist and are receipted |
-| Generic pipeline | 3 sealed handoffs at `READY_FOR_POLICY` | Policy is the first unfinished autonomous stage |
+| Generic pipeline | 3 sealed handoffs and 3 hash-bound policy receipts: 2 `PASS`, 1 evidence-correct `FAIL`; replay is `IDLE` | Deterministic effect consumption is the first unfinished autonomous stage |
 | Acquisition | 0 post-baseline provider clicks | E0 is open |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
@@ -1046,42 +1076,19 @@ flowchart LR
    all 49 Affiliate tests pass. Three installed-owner wakes created three validated
    handoffs from existing sealed outputs with no duplicate usage-ledger row; their
    internal fingerprints and composition-receipt file hashes both read back.
-4. **P0 — Generalize the policy gate — GREEN IN SOURCE; RELEASE PENDING.** Validate cited URLs and source hashes,
-   disclosure-before-CTA, claim support, locale, forbidden guarantees, one CTA,
-   article/X length, and provider/channel rules. FAIL returns to the same job;
-   only PASS permits private-link injection. Exact structure/freshness/policy
-   checks are deterministic; claim support is a separate bounded read-only model
-   audit over the sealed handoff and the same official source set. Neither layer
-   receives credentials, a tracking link, browser authority, or the money ledger.
-   RED was observed first at each boundary: `wake()` lacked a `policy_builder`,
-   then `build_policy()` lacked a bounded semantic-audit adapter. Both now pass.
-   The source implementation revalidates the exact handoff and current official
-   source hashes before and after the read-only audit, writes one hash-bound
-   PASS/FAIL receipt, and keeps the private link and all effect authority out of
-   policy context. The focused checks and all 50 Affiliate tests pass; immutable
-   release installation and real launchd receipt readback remain open. A third
-   RED proved that changed official-source bytes previously raised before leaving
-   evidence; it now writes a deterministic FAIL receipt, does not invoke the
-   semantic auditor again, and records `source_artifacts=false`. The first live
-   install exposed an installer failure before policy execution: it switched the
-   immutable release, booted out all six healthy Affiliate owners, then macOS
-   returned launchctl error 141 before the first browser bootstrap. Plists lint,
-   but this Codex process also lost Keychain/XPC access, so a fresh login context
-   is required for live recovery. The harness fix is now RED: live install MUST
-   preserve loaded owners and bootstrap only missing owners; it MUST NOT batch
-   bootout healthy Affiliate services. That installer regression is GREEN in
-   source: loaded labels are preserved, only missing labels are bootstrapped,
-   shell syntax passes, and all 51 Affiliate tests pass. Live owner recovery and
-   the first installed generic policy receipt still require a fresh macOS login
-   context because the current Codex process cannot reach any launchd domain.
-   Safe release `2067b62a6` is staged as `current` with
-   `LOCAL_RELEASE_ONLY`; CDP ports `9324`, `9326`, and `9327` are all down and no
-   generic policy receipt exists. The exact recovery action is to rerun the safe
-   installer from a fresh desktop process; it will bootstrap the six missing
-   owners without first stopping any healthy service, then the composition owner
-   will resume the oldest `READY_FOR_POLICY` handoff. The required milestone
-   Telegram send also failed with local gateway `127.0.0.1:18789 ECONNREFUSED`,
-   so no message ID is claimed for this incident.
+4. **DONE — Generalize the policy gate; installed and live-proven.** The gate
+   validates cited URLs and source hashes, disclosure-before-CTA, claim support,
+   locale, forbidden guarantees, one CTA, article/X limits, and channel
+   structure. Exact checks are deterministic; claim support is a bounded read-
+   only model audit over the same sealed official source set. Neither layer sees
+   credentials, tracking links, browser authority, or the money ledger. Release
+   `2067b62a6` is current; all six owners and CDP `9324`, `9326`, and `9327` are
+   healthy. Installed wakes created policy hashes `94841cab46fa…` (`FAIL`),
+   `6cff9924d46f…` (`PASS`), and `49f0bae15d98…` (`PASS`). The failure names one
+   unsupported ElevenAgents call-billing statement. A replay returned `IDLE`
+   with last exit `0` and preserved all three hashes. The installer now preserves
+   loaded owners and bootstraps only missing labels, preventing recurrence of the
+   earlier batch-bootout incident.
 5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
    only a policy-PASS artifact, injects the executable link locally, publishes the
    owned article, waits for HTTP `200`, publishes X, and performs exact public
@@ -1706,7 +1713,7 @@ atomic replacement, matching Python's replacement contract
 | U18 | OPEN-BEFORE-CODE | Program registry is a static priority table; `next_action` is text and never dispatched | Model selects from a fresh candidate snapshot and writes constraints, reason, hypothesis, budget, and lineage receipt |
 | U19 | OPEN-BEFORE-CODE | Source capture has two fixed plans; failures raise without a receipt; authenticated X/Reddit discovery is absent | Persist failed-source attempts and add discovery tools only behind observed buyer-intent need |
 | U20 | OPEN-BEFORE-CODE | Three content campaigns are fixed templates with no model/prompt/variant lineage | Treat them as few-shot examples; model writes source-bound artifacts with prompt/model/version/cost receipts |
-| U21 | OPEN-BEFORE-CODE | Policy has five fixed checks; prerequisite failures disappear before a receipt; provider/channel rules are not dynamic | Persist prerequisite failure and combine deterministic disclosure/link gates with fresh provider/locale policy evidence |
+| U21 | PARTIAL-CLOSED | Installed generic policy persists prerequisite failures, validates exact handoff/source fingerprints, disclosure, one CTA, cited/admitted URLs, locale and channel structure, and runs a bounded source-only semantic claim audit. Two handoffs passed and one unsupported claim failed with a durable receipt | Add provider-specific dynamic rule packs only when a newly admitted provider requires rules not represented by the current official evidence contract |
 | U22 | OPEN-BEFORE-CODE | Owned readback compresses HTTP, deploy lag, title, marker, and link mismatch into `None` | Return typed status, HTTP code, failed marker/link class, response hash, attempt, and retry due-time |
 | U23 | OPEN-BEFORE-CODE | X failures lack durable typed receipts; current X home is not a fresh `@selawmqt` semantic identity proof | Add identity/composer/effect/readback/short-link failure classes and account-risk quarantine signals |
 | U24 | OPEN-BEFORE-CODE | Revenue transition identity includes the timestamp-varying source artifact hash, so the same future transaction can duplicate across captures | Deduplicate by provider transaction identity plus economic state; source hashes remain lineage, not transition identity |
@@ -1733,7 +1740,7 @@ atomic replacement, matching Python's replacement contract
 | U40 | OPEN-BEFORE-CODE | No Experiment, Cohort, Outcome, or Learning receipt exists | Add one-variable hypothesis, exposure, click, commission states, cost, maturity, allocation, promote/revert, and learner version |
 | U41 | OPEN-BEFORE-CODE | Model/token/content/browser costs do not join placement economics | Record provider-reported usage and cost basis separately from actual cash cost; compute net only from comparable bases |
 | U42 | OPEN-BEFORE-CODE | Failed/rejected attempts are not uniformly durable, creating survivorship bias | Persist every admitted attempt and terminal reason, including no-effect and policy rejection |
-| U43 | PARTIAL-CLOSED | Installed `7b43ae847` completed configured build → policy → owned/X readback and continued revenue/Telegram lanes. Installed `11789537a` separately refreshed all versioned source plans daily without sharing the money lock; dynamic composition/selection is not yet scheduled | Close fully when the composition owner creates a new durable source-hash-bound campaign handoff and the money owner finishes it without shared locks or secret access |
+| U43 | PARTIAL-CLOSED | Installed source and composition owners independently refresh official plans, create source-hash-bound handoffs, and create hash-bound generic policy receipts without sharing the money lock or secret access. The configured money loop separately completes owned/X readback and revenue reconciliation | Close fully when the money owner consumes one generic policy-PASS handoff through owned `LIVE`, X `LIVE`, revenue poll, and Telegram under the same durable lineage |
 | U44 | OPEN-PROOF | Same-job self-heal is proven in individual adapters, not across the whole Agent pipeline | Inject one isolated recoverable fault and require diagnosis, repair, resume, effect dedupe, and Telegram proof |
 
 #### Live-only and irreducible uncertainties
