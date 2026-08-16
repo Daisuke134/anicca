@@ -1239,7 +1239,7 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M2.1-P, grow the English portfolio from six to ten
+Current execution cursor: **M2.1-P, grow the English portfolio from seven to ten
 comparable dedicated-link placements through the already-installed autonomous
 campaign path**. M2.0 is closed: every existing revenue placement now has one
 PartnerStack link, owned/X public readback, and one canonical ledger row. The
@@ -1374,10 +1374,31 @@ loop committed and pushed `3c1277977 feat(blog): publish
 elevenlabs-youtube-transcript-generator-for-creators` to the landing remote, with
 `provider_link_key` `bb8458d6-fdd9-49a4-adaa-c0a9886e3453` and placement
 `elevenlabs-discovered-youtube-transcript-generator-en-1`. Both wakes exited `0`.
-The owned article was still returning `404` while the deploy propagated, which is
-the expected fence: the X post only follows a real public readback. Clicks,
-commission, and cost for this placement remain unknown and MUST stay unknown
-until the provider reports them. The cap implies at most four sealed compositions per JST
+The article went public at `00:34:43 JST`, and the loop then closed the placement
+itself. Wake `00:35:33` returned `PUBLICATION_FAILED / XPostError` carrying the
+detail `X effect is ambiguous; retry will reconcile timeline` — the exact
+duplicate-effect boundary, readable only because publication failures now record
+`failure_detail`. The job journal showed `X_POST_PUBLISH` in `EFFECT_STARTED`
+with `last_verified={state: NOT_FOUND, timeline_rows: 7}`, meaning the timeline
+scrape ran about six seconds after the click and did not yet see the post. Wake
+`00:37:20` reconciled it to `X_LIVE` at
+`https://x.com/selawmqt/status/2089013146950521304`, and the fence receipt became
+a `X_POST_PUBLIC_READBACK` in state `LIVE`.
+
+This is the first live demonstration that the duplicate-effect guard works rather
+than merely being argued. `start_effect` refuses to open a second effect while one
+is `EFFECT_STARTED` (`job_journal.py:69`), so a retry can only reconcile or fail
+closed. The job ended `VERIFIED` at `attempt 2` with `sequence` still `1`, which
+proves no second effect was ever opened and therefore that exactly one post
+exists. The ambiguous class is safe by construction; it MUST NOT be "fixed" by
+retrying the compose branch.
+
+The canonical ledger holds seven placements, one per campaign. The count read `8`
+only while the placement was mid-flight, because the dedicated-link row and the
+owned-article row had not yet merged; they collapsed into the single canonical row
+`elevenlabs-discovered-youtube-transcript-generator-en-1` once the post completed,
+so nothing was double counted. Clicks, commission, and cost for placement seven
+remain unknown and MUST stay unknown until PartnerStack reports them. The cap implies at most four sealed compositions per JST
 day, so the six-to-ten placement growth is throughput-bound, not blocked.
 
 Measured economics as of this restart, read from `placement-ledger.json`: all six
