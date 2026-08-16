@@ -292,6 +292,14 @@ async def _fetch_list_page(
         "JSON.stringify({cards:[...document.querySelectorAll('#serviceListContent "
         ".serviceListContentBox')].map(card=>({"
         "href:card.querySelector('a[href^=\"/services/\"]')?.getAttribute('href')||'',"
+        "state_controls:[...card.querySelectorAll('a,button,[role=button],[role=menuitem],"
+        "input[type=checkbox],select')]"
+        ".slice(0,20).map(e=>({tag:e.tagName,type:e.type||null,"
+        "label:((e.innerText||e.getAttribute('aria-label')||e.getAttribute('title')||'')+'').trim().slice(0,32),"
+        "href:e.getAttribute('href')||null,id:e.id||null,cls:((e.className||'')+'').slice(0,60),"
+        "context:/js_change-open-status/.test((e.className||'')+'')?(()=>{let n=e,best='';"
+        "for(let i=0;i<5&&n;i++){const t=((n.innerText||'')+'').trim();"
+        "if(t.length>best.length&&t.length<=400)best=t;n=n.parentElement}return best})():null})),"
         "text:card.innerText||''})).filter(card=>/^\\/services\\/\\d+$/.test(card.href))})"
     )
     if ws_url is not None:
@@ -372,10 +380,14 @@ async def collect_live(identity: str = IDENTITY, *, ws_url: str | None = None) -
             for live_card in live_cards:
                 match = re.fullmatch(r"/services/(\d+)", str(live_card.get("href") or ""))
                 if match:
-                    cards.extend(parse_list_page(
+                    parsed = parse_list_page(
                         str(live_card.get("text") or "") + CARD_DELIMITER,
                         [match.group(1)],
-                    ))
+                    )
+                    for row in parsed:
+                        # Observed only. The listing-state adapter binds the real control from here.
+                        row["state_controls"] = live_card.get("state_controls") or []
+                    cards.extend(parsed)
             new_cards = new_cards_only(cards, seen_ids)
             if not new_cards:
                 break

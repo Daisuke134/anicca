@@ -34,6 +34,8 @@ DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
 DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json"
 DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
+MEASURABLE_SUCCESS_METRICS = {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase",
+                              "net_receipt"}
 DEFAULT_REPLY_TRANSCRIPTS = Path.home() / "gig" / "reply-transcripts.jsonl"
 DEFAULT_APPLIED = Path.home() / "gig" / "applied.jsonl"
 DEFAULT_EARNINGS = Path.home() / "gig" / "earnings.jsonl"
@@ -76,7 +78,7 @@ FAQ_PATTERN = re.compile(
     r"(?:よくある質問\s*)?Q[.．]\s*(?P<question>.+?)\s*\n+A[.．]\s*(?P<answer>.+)\Z",
     re.DOTALL,
 )
-SELLER_FORM_EXPRESSION = r'''JSON.stringify((()=>{const form=document.forms[0];return{url:location.href,action:form?.action||null,method:form?.method||null,fields:form?[...form.elements].filter(e=>e.name).map(e=>({name:e.name,type:e.type||null,value:e.value||'',checked:!!e.checked,maxLength:Number.isInteger(e.maxLength)&&e.maxLength>=0?e.maxLength:null})):[],select_options:form?Object.fromEntries([...form.elements].filter(e=>e.name&&e.tagName==='SELECT').map(e=>[e.name,[...e.options].map(o=>({value:o.value,label:(o.textContent||'').trim()}))])):{}}})())'''
+SELLER_FORM_EXPRESSION = r'''JSON.stringify((()=>{const form=document.forms[0];return{url:location.href,action:form?.action||null,method:form?.method||null,fields:form?[...form.elements].filter(e=>e.name).map(e=>({name:e.name,type:e.type||null,value:e.value||'',checked:!!e.checked,maxLength:Number.isInteger(e.maxLength)&&e.maxLength>=0?e.maxLength:null})):[],select_options:form?Object.fromEntries([...form.elements].filter(e=>e.name&&e.tagName==='SELECT').map(e=>[e.name,[...e.options].map(o=>({value:o.value,label:(o.textContent||'').trim()}))])):{},submit_controls:form?[...form.querySelectorAll('button[type=submit],input[type=submit]')].map(e=>({mode:e.dataset?e.dataset.mode||null:null,label:((e.innerText||e.value||'')+'').trim(),disabled:!!e.disabled})):[],listing_state_controls:[...document.querySelectorAll('a,button,[role=button],[role=menuitem]')].filter(e=>/非公開|公開停止|公開を停止|下書きに戻す|停止する|削除/.test((e.innerText||'').trim())).slice(0,20).map(e=>({tag:e.tagName,label:(e.innerText||'').trim().slice(0,40),href:e.getAttribute('href')||null,id:e.id||null,cls:(e.className||'')+''}))}})())'''
 COMPETITOR_SOURCES = (
     ("category", "https://coconala.com/categories/230/66"),
     ("search", "https://coconala.com/search?keyword=%E6%A5%AD%E5%8B%99%E8%87%AA%E5%8B%95%E5%8C%96"),
@@ -87,8 +89,11 @@ COMPETITOR_SOURCES = (
     ("service", "https://coconala.com/services/3122692"),
     ("service", "https://coconala.com/services/3741646"),
 )
-MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
+MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price", "listing_state"}
 GENERATED_MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
+# The seller listing-state control is the form's own hidden `mode` field, not a `data[...]` input.
+LISTING_STATE_DELTA = "mode"
+PUBLIC_LISTING_STATE = "公開中"
 MUTATION_CONTRACT_FIELDS = {
     "version", "platform", "service_id", "precondition_listing_version_sha256",
     "changed_field", "before_value", "proposed_value", "allowed_delta", "rollback_value",
@@ -790,13 +795,16 @@ def _allocate_portfolio(
         weak_demand = demand.get(service_id) in {0, 1}
         replacement = next((row for row in replacements if isinstance(row, dict)
                             and row.get("replaces_service_id") == service_id), None)
-        replace_ready = bool(
+        retire_ready = bool(
             minimum_sample and inquiries.get(service_id, 0) == 0 and purchases == 0
-            and payments.get(service_id, 0) == 0 and weak_demand and replacement and capacity_pressure
+            and payments.get(service_id, 0) == 0 and weak_demand and capacity_pressure
         )
+        replace_ready = bool(retire_ready and replacement)
         gap = gaps.get(service_id)
         if replace_ready:
             action, reason = "REPLACE", "all_replacement_gates_met"
+        elif retire_ready:
+            action, reason = "RETIRE", "recoverable_retire_gates_met_without_stronger_candidate"
         elif payments.get(service_id, 0) > 0 or (known and purchases > 0):
             action, reason = "KEEP", "verified_purchase_or_payment"
         elif gap is not None:
@@ -814,7 +822,8 @@ def _allocate_portfolio(
                         "verified_net_jpy": net.get(service_id, 0.0)},
             "gates": {"metrics_known": known, "minimum_sample_met": minimum_sample,
                       "weak_demand_evidence": weak_demand, "stronger_replacement_candidate": bool(replacement),
-                      "slot_capacity_pressure": capacity_pressure},
+                      "slot_capacity_pressure": capacity_pressure,
+                      "recoverable_retire_gates_met": retire_ready},
             "improvement_field": gap.get("field") if gap else None,
             "rollback_version": contract["service_version_sha256"],
             "official_readback_required": action in {"IMPROVE", "RETIRE", "REPLACE"},
@@ -992,6 +1001,13 @@ def _validate_mutation_contract(contract: dict, capability_families: dict[str, s
     service_id = str(contract.get("service_id") or "")
     allowed_delta = contract.get("allowed_delta")
     evidence = contract.get("evidence")
+    delta_ok = (
+        isinstance(allowed_delta, list) and len(allowed_delta) == 1
+        and isinstance(allowed_delta[0], str)
+        and (allowed_delta[0] == LISTING_STATE_DELTA
+             if contract.get("changed_field") == "listing_state"
+             else allowed_delta[0].startswith("data["))
+    )
     if (set(contract) != MUTATION_CONTRACT_FIELDS or contract.get("version") != 1
             or contract.get("platform") != "coconala" or not service_id.isdigit()
             or capability_families.get(service_id) != contract.get("capability_family")
@@ -999,8 +1015,7 @@ def _validate_mutation_contract(contract: dict, capability_families: dict[str, s
             or contract.get("changed_field") not in MUTATION_FIELDS
             or contract.get("before_value") == contract.get("proposed_value")
             or contract.get("rollback_value") != contract.get("before_value")
-            or not isinstance(allowed_delta, list) or len(allowed_delta) != 1
-            or not isinstance(allowed_delta[0], str) or not allowed_delta[0].startswith("data[")
+            or not delta_ok
             or not isinstance(contract.get("official_readback"), dict) or not contract["official_readback"]
             or not isinstance(contract.get("success_metric"), str) or not contract["success_metric"].strip()
             or type(contract.get("observation_window_days")) is not int
@@ -1016,6 +1031,104 @@ def _seal_mutation_contract(unsigned: dict, capability_families: dict[str, str])
     contract = {**unsigned, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
     _validate_mutation_contract(contract, capability_families)
     return contract
+
+
+def _listing_state_control(inventory_row: dict, service_id: str) -> dict:
+    """Bind the observed seller control that unpublishes one listing.
+
+    Measured on the seller list page: each card exposes `公開設定`, whose confirmation is
+    `a.js_change-open-status` pointing at `/services/archive/<id>`. Archiving keeps the
+    listing, its versions and its sales history, which is what makes retirement
+    recoverable. The published service edit form carries no such control at all, so this
+    binds the card control or fails closed.
+    """
+    controls = [row for row in inventory_row.get("state_controls") or [] if isinstance(row, dict)]
+    if not controls:
+        raise RuntimeError("storefront_retire_controls_unobserved")
+    control = next(
+        (row for row in controls
+         if "js_change-open-status" in str(row.get("cls") or "")
+         and str(row.get("href") or "") == f"/services/archive/{service_id}"),
+        None,
+    )
+    if control is None:
+        raise RuntimeError("storefront_retire_control_missing")
+    if not str(control.get("context") or "").strip():
+        raise RuntimeError("storefront_retire_control_wording_unobserved")
+    return control
+
+
+def _render_listing_state_mutation(
+    source: dict, inventory_row: dict, seller_snapshot: dict,
+    capability_families: dict[str, str], allocation: dict,
+) -> dict:
+    service_id = str(source["service_id"])
+    if str(inventory_row.get("state") or "") != PUBLIC_LISTING_STATE:
+        raise RuntimeError("storefront_retire_listing_not_public")
+    if allocation.get("action") not in {"RETIRE", "REPLACE"} or allocation.get("service_id") != service_id:
+        raise RuntimeError("storefront_retire_allocation_invalid")
+    gates = allocation.get("gates") or {}
+    if not gates.get("recoverable_retire_gates_met"):
+        raise RuntimeError("storefront_retire_gates_unmet")
+    if seller_snapshot.get("url") != f"https://coconala.com/mypage/services/{service_id}":
+        raise RuntimeError("storefront_retire_seller_form_invalid")
+    control = _listing_state_control(inventory_row, service_id)
+    return _seal_mutation_contract({
+        "version": 1, "platform": "coconala", "service_id": service_id,
+        "precondition_listing_version_sha256": source["service_version_sha256"],
+        "changed_field": "listing_state",
+        "before_value": {"listing_state": PUBLIC_LISTING_STATE, "action": "none"},
+        "proposed_value": {"listing_state": "非公開", "action": str(control["href"]),
+                           "control_class": str(control["cls"]),
+                           "platform_wording": str(control["context"])},
+        "allowed_delta": [LISTING_STATE_DELTA],
+        "rollback_value": {"listing_state": PUBLIC_LISTING_STATE, "action": "none"},
+        "official_readback": {"service_id": service_id, "public_listing_absent": True,
+                              "seller_state": "非公開",
+                              "recoverable": True, "deletion": False},
+        "success_metric": "inquiries",
+        "observation_window_days": 14,
+        "capability_family": capability_families.get(service_id),
+        "evidence": [
+            f"official:offer-contract:{service_id}:{source['service_version_sha256']}",
+            f"storefront:portfolio-allocation:{allocation['allocation_key']}",
+        ],
+    }, capability_families)
+
+
+def _render_replace_plan(retire_contract: dict, create_contract: dict | None, allocation: dict) -> dict:
+    """One atomic REPLACE: free the slot recoverably, then fill it, or restore the old listing.
+
+    The replacement contract must already exist before anything is retired, so a failed
+    creation can never leave the portfolio with an empty slot and no way back.
+    """
+    if allocation.get("action") != "REPLACE":
+        raise RuntimeError("storefront_replace_allocation_invalid")
+    if create_contract is None:
+        raise RuntimeError("storefront_replace_without_ready_candidate")
+    retired_id = str(retire_contract.get("service_id") or "")
+    created_id = str(create_contract.get("draft_service_id") or "")
+    if (retire_contract.get("changed_field") != "listing_state"
+            or retired_id != str(allocation.get("service_id") or "")
+            or not created_id.isdigit() or created_id == retired_id):
+        raise RuntimeError("storefront_replace_identity_invalid")
+    unsigned = {
+        "version": 1, "platform": "coconala", "action": "REPLACE",
+        "allocation_key": allocation["allocation_key"],
+        "retired_service_id": retired_id, "created_service_id": created_id,
+        "sequence": ["retire", "create"],
+        "retire_contract_sha256": retire_contract["contract_sha256"],
+        "create_contract_sha256": create_contract["contract_sha256"],
+        "official_readback": {
+            "retired": retire_contract["official_readback"],
+            "created": {"public_url": create_contract["expected_public_url"]},
+        },
+        "rollback": {"republish_service_id": retired_id,
+                     "restore_to": retire_contract["rollback_value"]["listing_state"],
+                     "on": "create_failed_after_retire"},
+    }
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {**unsigned, "plan_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
 
 
 def _render_text_mutation(
@@ -1388,6 +1501,99 @@ def _collect_analytics(
     }}
 
 
+def _official_metric_windows(path: Path, service_id: str, metric: str, accepted_at: int, eligible_at: int) -> dict:
+    """Movement of one official per-service metric across an experiment window.
+
+    Coconala publishes a rolling 30-day figure, so this is a snapshot delta, never a
+    window-aligned count and never the denominator of a conversion rate.
+    """
+    if not path.is_file():
+        return {"status": "unknown", "reason": "official_analytics_missing"}
+    try:
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    except json.JSONDecodeError:
+        return {"status": "unknown", "reason": "official_analytics_invalid"}
+    samples = [row for row in rows
+               if str(row.get("service_id") or "") == service_id
+               and type(row.get("observed_at_epoch")) is int
+               and ((row.get("metrics") or {}).get(metric) or {}).get("status") == "known"]
+    baseline_rows = [row for row in samples if row["observed_at_epoch"] <= accepted_at]
+    observed_rows = [row for row in samples if accepted_at < row["observed_at_epoch"] <= eligible_at]
+    if not baseline_rows:
+        return {"status": "unknown", "reason": f"no_official_{metric}_snapshot_at_or_before_accept"}
+    if not observed_rows:
+        return {"status": "unknown", "reason": f"no_official_{metric}_snapshot_inside_window"}
+    baseline = baseline_rows[-1]
+    observed = observed_rows[-1]
+    return {
+        "status": "known", "measurement": "rolling_30d_snapshot_delta",
+        "baseline": int(baseline["metrics"][metric]["value"]),
+        "observed": int(observed["metrics"][metric]["value"]),
+        "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+    }
+
+
+def _funnel_metric_windows(path: Path, service_id: str, accepted_at: int, window_days: int) -> dict:
+    """Verified net receipt for one service, counted only from immutable payment events."""
+    if not path.is_file():
+        return {"status": "unknown", "reason": "funnel_events_missing"}
+    try:
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    except json.JSONDecodeError:
+        return {"status": "unknown", "reason": "funnel_events_invalid"}
+    payments = [row for row in rows
+                if row.get("event_kind") == "payment"
+                and str(row.get("service_id") or "") == service_id
+                and type(row.get("observed_at_epoch")) is int
+                and type(row.get("net_receipt_jpy")) in {int, float}]
+    stamps = [row["observed_at_epoch"] for row in rows if type(row.get("observed_at_epoch")) is int]
+    pre_start = accepted_at - window_days * 86400
+    if not stamps or min(stamps) > pre_start:
+        return {"status": "unknown", "reason": "funnel_history_does_not_cover_baseline"}
+    eligible_at = accepted_at + window_days * 86400
+    return {
+        "status": "known", "measurement": "window_aligned_receipt_sum",
+        "baseline": sum(float(row["net_receipt_jpy"]) for row in payments
+                        if pre_start <= row["observed_at_epoch"] < accepted_at),
+        "observed": sum(float(row["net_receipt_jpy"]) for row in payments
+                        if accepted_at <= row["observed_at_epoch"] < eligible_at),
+        "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+    }
+
+
+def _measure_experiment_metric(
+    metric: str, *, reply_transcripts: Path, analytics_path: Path, service_id: str,
+    accepted_at: int, window_days: int, funnel_path: Path | None = None,
+) -> dict:
+    """Measure the experiment's metric, or say why it is unmeasurable and fall back.
+
+    A conversion ratio between a rolling official view count and a window-aligned inquiry
+    count is not a real rate, so it is reported unknown instead of being invented.
+    """
+    eligible_at = accepted_at + window_days * 86400
+    if metric in {"views_to_inquiry", "views_to_purchase"}:
+        fallback = "inquiries" if metric == "views_to_inquiry" else "purchases"
+        result = _measure_experiment_metric(
+            fallback, reply_transcripts=reply_transcripts, analytics_path=analytics_path,
+            service_id=service_id, accepted_at=accepted_at, window_days=window_days,
+        )
+        return {**result, "requested_metric": metric, "measured_metric": fallback,
+                "requested_metric_status": "unknown",
+                "requested_metric_reason": "official_views_are_rolling_30d_not_window_aligned"}
+    if metric == "inquiries":
+        result = _inquiry_windows(reply_transcripts, service_id, accepted_at, window_days)
+    elif metric == "purchases":
+        result = _official_metric_windows(analytics_path, service_id, "purchases", accepted_at, eligible_at)
+    elif metric == "net_receipt":
+        result = (_funnel_metric_windows(funnel_path, service_id, accepted_at, window_days)
+                  if funnel_path is not None
+                  else {"status": "unknown", "reason": "funnel_events_not_supplied"})
+    else:
+        return {"status": "unknown", "reason": "unsupported_success_metric",
+                "requested_metric": metric, "measured_metric": None}
+    return {**result, "requested_metric": metric, "measured_metric": metric}
+
+
 def _inquiry_windows(path: Path, service_id: str, accepted_at: int, window_days: int) -> dict:
     if not path.is_file():
         return {"status": "unknown", "reason": "reply_transcripts_missing"}
@@ -1514,19 +1720,21 @@ def _close_outcome(
     inquiry = {"status": "not_evaluated"}
     decision, terminal_state, reason = "NO_OP", False, "measurement_window_ineligible"
     if now >= eligible_at:
-        inquiry = _inquiry_windows(
-            reply_transcripts, str(experiment.get("service_id") or ""), accepted_at, window_days,
+        inquiry = _measure_experiment_metric(
+            str(experiment.get("success_metric") or ""),
+            reply_transcripts=reply_transcripts, analytics_path=state_dir / "analytics.jsonl",
+            service_id=str(experiment.get("service_id") or ""),
+            accepted_at=accepted_at, window_days=window_days,
+            funnel_path=state_dir / "funnel-events.jsonl",
         )
-        if experiment.get("success_metric") != "inquiries":
-            terminal_state, reason = True, "target_metric_evidence_unavailable"
-        elif inquiry.get("status") != "known":
+        if inquiry.get("status") != "known":
             terminal_state, reason = True, str(inquiry.get("reason") or "inquiry_evidence_unknown")
         elif inquiry["observed"] > inquiry["baseline"]:
-            decision, terminal_state, reason = "KEEP", True, "inquiries_improved"
+            decision, terminal_state, reason = "KEEP", True, f"{inquiry['measured_metric']}_improved"
         elif inquiry["baseline"] > 0 and inquiry["observed"] < inquiry["baseline"]:
-            decision, terminal_state, reason = "REVERT", True, "inquiries_declined"
+            decision, terminal_state, reason = "REVERT", True, f"{inquiry['measured_metric']}_declined"
         else:
-            decision, terminal_state, reason = "NO_OP", True, "no_measured_inquiry_change"
+            decision, terminal_state, reason = "NO_OP", True, f"no_measured_{inquiry['measured_metric']}_change"
     evidence = {
         "experiment_sha256": hashlib.sha256(json.dumps(
             experiment, ensure_ascii=False, sort_keys=True, separators=(",", ":")
@@ -1543,6 +1751,10 @@ def _close_outcome(
         "observed_at_epoch": now, "experiment_key": experiment["experiment_key"],
         "service_id": experiment["service_id"], "decision": decision, "terminal": terminal_state,
         "reason": reason, "eligible_at_epoch": eligible_at, "metric": experiment.get("success_metric"),
+        "measured_metric": inquiry.get("measured_metric"),
+        "measurement": inquiry.get("measurement", "window_aligned_count" if inquiry.get("status") == "known" else None),
+        "requested_metric_status": inquiry.get("requested_metric_status"),
+        "requested_metric_reason": inquiry.get("requested_metric_reason"),
         "baseline": inquiry.get("baseline"), "observed": inquiry.get("observed"), "evidence": evidence,
         "next_hypothesis": _next_hypothesis(scorecard_path, experiment) if terminal_state else None,
         "effect": 0,
@@ -1668,6 +1880,27 @@ def _collect_competitors(ws_url: str, evidence_dir: Path, own_ids: set[str]) -> 
     return manifest
 
 
+def _extract_quality_signals(body: str) -> dict:
+    """Per-service rating and lifetime sales as the official public page states them.
+
+    `評価  -` means no rating exists yet, which is unknown rather than zero. Lifetime sales
+    are not the 30-day analytics figure and are never mixed with it.
+    """
+    rating = re.search(r"評価\s+(-|[0-9]+(?:\.[0-9]+)?)", body)
+    sales = re.search(r"販売実績\s*([0-9,]+)\s*件", body)
+    return {
+        "rating": ({"status": "known", "value": float(rating.group(1))}
+                   if rating and rating.group(1) != "-"
+                   else {"status": "unknown", "value": None,
+                         "reason": "official_page_shows_no_rating" if rating
+                         else "rating_not_found_on_official_page"}),
+        "lifetime_sales": ({"status": "known", "value": int(sales.group(1).replace(",", ""))}
+                           if sales else
+                           {"status": "unknown", "value": None,
+                            "reason": "lifetime_sales_not_found_on_official_page"}),
+    }
+
+
 def _observe_own_page(
     ws_url: str, evidence_dir: Path, name: str = "own-candidate.json",
     service_id: str = TARGET_SERVICE_ID,
@@ -1719,6 +1952,7 @@ def _observe_own_page(
         "body": body,
         "service_image_ids": image_ids,
         "service_image_count": len(image_ids),
+        "quality_signals": _extract_quality_signals(body),
         "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
         "listing_version_sha256": hashlib.sha256(json.dumps(
             {"body": body, "service_image_ids": image_ids}, ensure_ascii=False,
@@ -1946,6 +2180,7 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
                                fill=("#ef4f55", "#35b777", "#7657db")[index])
         draw.text((x + 35, 618), badge, font=badge_font, fill="white")
         x += width + 24
+    evidence_dir.mkdir(parents=True, exist_ok=True)
     path = evidence_dir / f"generated-{service_id}-hero.png"
     image.save(path, format="PNG", optimize=False)
     data = path.read_bytes()
@@ -1982,7 +2217,8 @@ duplicate or merely rephrase any current_catalog_titles. Use the demand page onl
 never copy seller wording, reviews, sales, guarantees or unsupported claims. Include exact evidence
 refs for the official offer, owned family and demand evidence. The title_stem excludes the final
 Japanese `ます`. head must state outcome, exact inclusions, exclusions, required inputs and support
-boundary. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
+boundary. Write head and body as buyer-facing Japanese prose: never emit a schema field name or an
+English label such as `outcome:`, and never prefix a sentence with a bare label like `含むもの:`. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
 lines: headline, supporting line, and two or three short badges separated by `｜`; do not include price,
 speed, sales, reviews or guarantees. Price and paid option must be conservative. Choose create only
 when the proposal is clearly distinct and supported. Otherwise choose no_op, set every nullable
@@ -2053,7 +2289,7 @@ def _seal_create_contract(
     }
     if (proposal.get("decision") != "create"
             or proposal.get("source_service_id") != source["service_id"]
-            or proposal.get("success_metric") not in {"views_to_inquiry", "views_to_purchase"}
+            or proposal.get("success_metric") not in MEASURABLE_SUCCESS_METRICS
             or proposal.get("observation_window_days") not in {7, 14}
             or proposal.get("no_op_reason") is not None
             or not isinstance(evidence, list) or not required <= set(evidence)
@@ -2071,6 +2307,14 @@ def _seal_create_contract(
             or len([line for line in image_copy.splitlines() if line.strip()]) != 3
             or "｜" not in image_copy.splitlines()[-1]):
         raise RuntimeError("storefront_create_content_invalid")
+    # Coconala renders the title as `{title_stem}ます`, so the stem must end in a verb continuative
+    # form. A stem ending in a particle produced `…SEO構成からます` in a sealed contract.
+    if title_stem[-1] not in "いきしちにひみりぎじびぴえけせてねへめれげぜでべぺ":
+        raise RuntimeError("storefront_create_title_stem_not_continuative")
+    # Buyer-visible copy must not leak the schema: an English `outcome:` prefix reached a live listing.
+    if any(re.match(r"^[A-Za-z_]{3,}\s*[:：]", line.strip())
+           for line in f"{head}\n{body}".splitlines()):
+        raise RuntimeError("storefront_create_copy_leaks_schema_labels")
     select_options = seller_snapshot.get("select_options") or {}
     display_price = proposal.get("display_price_jpy")
     price_option = next((row for row in select_options.get("data[Service][price]", [])
@@ -2519,7 +2763,7 @@ def _guard_judgement(
         raise RuntimeError("judgement_capability_evidence_unowned")
     if any(not Path(path).is_file() for path in capabilities):
         raise RuntimeError("judgement_capability_evidence_missing")
-    if value.get("success_metric") not in {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase"}:
+    if value.get("success_metric") not in MEASURABLE_SUCCESS_METRICS:
         raise RuntimeError("judgement_success_metric_invalid")
     if value.get("observation_window_days") not in {7, 14}:
         raise RuntimeError("judgement_window_invalid")
@@ -3308,6 +3552,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 isinstance(source, dict) for source in contract_sources
             )
             source_ids = [source.get("service_id") for source in contract_sources] if source_dicts else []
+            if source_dicts:
+                # Kept out of the hashed catalogue payload on purpose: this is adapter input,
+                # not listing identity.
+                _atomic_write(inventory_path.parent / "listing-state-controls.json", {
+                    "version": 1,
+                    "observed_at": inventory.get("observed_at"),
+                    "controls": {str(source.get("service_id")): source.get("state_controls") or []
+                                 for source in contract_sources},
+                })
             inventory_ids = {
                 str(service.get("service_id"))
                 for service in inventory["services"]
@@ -3401,6 +3654,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             presentation_snapshot = _seller_snapshot_for(ws_url, "91000004")
             scope_snapshot = _seller_snapshot_for(ws_url, "91000005")
+            # Retained so the listing-state adapter can bind the real seller submit controls.
+            _atomic_write(inventory_path.parent / "seller-form-91000004.json", presentation_snapshot)
+            _atomic_write(inventory_path.parent / "seller-form-91000005.json", scope_snapshot)
             title_render = _render_prepared_mutation(
                 args.state_dir, presentation_snapshot, "91000004", "title", capability_families,
             ) or _render_text_mutation(
@@ -3792,7 +4048,23 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             create_family = None
             create_draft_claim = None
             fixed_candidate_public = new_listing_contract["draft_service_id"] in inventory_ids
-            if fixed_candidate_public and next_hypothesis is None and observed < 20:
+            # One published listing per distinct demand evidence. Without this the loop generates a
+            # brand new service on every full wake until the catalogue hits its slot limit.
+            demand_evidence_path = str(Path(new_listing_path).resolve())
+            def _sold_from_this_demand(line: str) -> bool:
+                row = json.loads(line)
+                if row.get("status") != "published" or not str(
+                        row.get("candidate_key") or "").startswith("storefront:create:v1:"):
+                    return False
+                # Rows written before this field existed came from this same committed demand file.
+                return row.get("demand_evidence_path", demand_evidence_path) == demand_evidence_path
+
+            demand_already_sold = any(
+                _sold_from_this_demand(line)
+                for line in (args.state_dir / "new-listing-drafts.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ) if (args.state_dir / "new-listing-drafts.jsonl").exists() else False
+            if fixed_candidate_public and not demand_already_sold and next_hypothesis is None and observed < 20:
                 source_service_id = new_listing_contract["draft_service_id"]
                 create_source = next((row for row in validated_contracts
                                       if row["service_id"] == source_service_id), None)
@@ -3916,7 +4188,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 )
             draft_result = {**draft_result,
                             "capability_family": create_family or capability_families.get(candidate_id),
-                            "blank_draft_claim": create_draft_claim}
+                            "blank_draft_claim": create_draft_claim,
+                            "demand_evidence_path": demand_evidence_path}
 
             for name in STATE_FILES:
                 path = args.state_dir / name
