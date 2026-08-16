@@ -34,6 +34,7 @@ DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
 DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json"
 DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
 DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_proposal.schema.json"
+DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_proposal.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
 MEASURABLE_SUCCESS_METRICS = {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase",
                               "net_receipt"}
@@ -54,6 +55,7 @@ STATE_FILES = (
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
     "new-listing-drafts.jsonl", "funnel-events.jsonl", "portfolio-allocations.jsonl",
     "inquiry-context-envelopes.jsonl", "demand-evidence.jsonl",
+    "demand-category.jsonl",
 )
 TARGET_SERVICE_ID = "91000001"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
@@ -1258,6 +1260,57 @@ def _crawl_demand_cluster(default_tab_script: Path, evidence_dir: Path, query: s
                          "observed_at_epoch": int(time.time())})
     demand = _extract_search_demand(body)
     return {**demand, "query": query, "search_url": url, "evidence_path": str(path)}
+
+
+def _invoke_category_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
+    cluster: dict, options: list, timeout_seconds: int,
+) -> tuple[dict, dict]:
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    context = {
+        "demand_cluster": {k: cluster.get(k) for k in
+                           ("query", "capability_family", "visible_result_count", "median_price_jpy")},
+        "official_master_categories": [
+            {"value": str(row.get("value")), "label": str(row.get("label") or "")}
+            for row in options if isinstance(row, dict) and str(row.get("value") or "").strip()
+        ],
+    }
+    prompt = """Choose the one official Coconala top-level category a service for this demand cluster
+belongs in, and return only the strict schema object. master_category_value must be copied exactly
+from official_master_categories; never invent an id. Choose no_op with a reason when no official
+category fits the cluster.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-category", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"storefront_category_proposal_failed:{completed.returncode}")
+    summary = json.loads((evidence_dir / "summary.json").read_text(encoding="utf-8"))
+    result_path = Path(str(summary["result_path"])).resolve()
+    result_path.relative_to(evidence_dir.resolve())
+    if summary.get("status") != "success" or summary.get("selected_model") != "gpt-5.6-terra":
+        raise RuntimeError("storefront_category_proposal_evidence_invalid")
+    return json.loads(result_path.read_text(encoding="utf-8")), {
+        "provider": summary.get("selected_provider"), "model": summary.get("selected_model")}
+
+
+def _validate_category_choice(chosen_value: str, options: list) -> dict:
+    """Bind a category to an option the official seller form actually offers.
+
+    Category ids are not transferable between listings: the committed contract's
+    `19/372/150` belongs to writing, and a new market needs its own official triple.
+    """
+    rows = [row for row in options or [] if isinstance(row, dict) and str(row.get("value") or "").strip()]
+    if not rows:
+        raise RuntimeError("storefront_category_options_unobserved")
+    match = next((row for row in rows if str(row["value"]) == str(chosen_value).strip()), None)
+    if match is None:
+        raise RuntimeError("storefront_category_choice_not_official")
+    return {"value": str(match["value"]), "label": str(match.get("label") or "").strip()}
 
 
 def _demand_cluster_key(query: str, category_url: str) -> str:
@@ -4272,6 +4325,41 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 "selected_family": unused_cluster.get("capability_family"),
                 "reason": "unused_demand_cluster_available",
             }
+            # Choosing a category reads official options only, so it does not wait on the
+            # publication brake: a waiting cluster gets its category as soon as it exists.
+            category_ledger = args.state_dir / "demand-category.jsonl"
+            categorised = {json.loads(line).get("cluster_key")
+                           for line in category_ledger.read_text(encoding="utf-8").splitlines()
+                           if line.strip()} if category_ledger.exists() else set()
+            if unused_cluster is not None and unused_cluster.get("cluster_key") not in categorised:
+                try:
+                    master_options = (presentation_snapshot.get("select_options") or {}).get(
+                        "data[Service][master_category]") or []
+                    choice, category_route = _invoke_category_proposal(
+                        runner=getattr(args, "runner", DEFAULT_RUNNER),
+                        schema=getattr(args, "category_proposal_schema", DEFAULT_CATEGORY_PROPOSAL_SCHEMA),
+                        workdir=args.workdir,
+                        evidence_dir=inventory_path.parent / "category-proposal-agent",
+                        cluster=unused_cluster, options=master_options,
+                        timeout_seconds=args.timeout_seconds,
+                    )
+                    if choice.get("decision") != "choose":
+                        raise RuntimeError(
+                            f"storefront_category_no_op:{str(choice.get('no_op_reason'))[:120]}")
+                    bound = _validate_category_choice(choice.get("master_category_value"), master_options)
+                    _append_key_once(category_ledger, "cluster_key", {
+                        "version": 1, "cluster_key": unused_cluster.get("cluster_key"),
+                        "query": unused_cluster.get("query"),
+                        "capability_family": unused_cluster.get("capability_family"),
+                        "master_category": bound, "rationale": str(choice.get("rationale") or "")[:400],
+                        "route": category_route, "observed_at_epoch": int(time.time()),
+                    })
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "master_category": bound["label"],
+                                         "master_category_value": bound["value"]}
+                except Exception as error:  # category selection must never end a wake
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "category_error": f"{type(error).__name__}:{str(error)[:140]}"}
             if demand_already_sold and unused_cluster is None:
                 try:
                     proposal, route = _invoke_demand_proposal(
@@ -4612,6 +4700,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--proposal-schema", type=Path, default=DEFAULT_PROPOSAL_SCHEMA)
     parser.add_argument("--create-proposal-schema", type=Path, default=DEFAULT_CREATE_PROPOSAL_SCHEMA)
     parser.add_argument("--demand-proposal-schema", type=Path, default=DEFAULT_DEMAND_PROPOSAL_SCHEMA)
+    parser.add_argument("--category-proposal-schema", type=Path, default=DEFAULT_CATEGORY_PROPOSAL_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
     parser.add_argument("--gallery-contract", type=Path, default=DEFAULT_GALLERY_CONTRACT)
