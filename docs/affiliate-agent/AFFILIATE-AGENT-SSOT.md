@@ -182,13 +182,22 @@ per wake under mutable state, refreshes the union of versioned and discovered
 plans, and writes one aggregate receipt without reading credentials or CDP. An
 unfinished campaign returns `COOLDOWN` before crawling or Agent invocation; once
 it is `X_LIVE`, the next wake can select the next opportunity without a daily
-scheduler delay. The
+   scheduler delay. The
 separate `ai.anicca.affiliate-composition` owner consumes one due source-bound
 stage per wake, uses a sanitized allowlisted input bundle and its own lock, and
 now creates both generic handoff and generic policy receipts. It has no browser,
 credential, publication, or money authority. Runtime model work MUST NOT be
 reintroduced inside the ten-minute money owner. The next boundary is deterministic
 consumption of a generic policy-PASS handoff by the existing fenced publisher.
+
+Release `c2c1aa60d3375e9e6abb0156d9da803077fef697` removes the obsolete daily
+scheduler delay without adding an owner. The installed source label reads back a
+`600` second interval. Its first real RunAtLoad wake exited `0`, returned
+`COOLDOWN` before another crawl or Agent decision while the seventh campaign is
+unfinished, and kept discovered source plans at three. The other five Affiliate
+owners remained loaded. After the campaign becomes `X_LIVE`, the next ten-minute
+wake may select one next opportunity; the existing one-plan-per-wake and token
+budget fences remain authoritative.
 
 The target architecture copy+tweaks the live Coconala immutable-release pattern:
 one explicit owner per lane, the shared schema-validating agent runner, separate
