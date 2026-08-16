@@ -37,6 +37,7 @@ DEFAULT_APPLIED = Path.home() / "gig" / "applied.jsonl"
 DEFAULT_EARNINGS = Path.home() / "gig" / "earnings.jsonl"
 DEFAULT_PROJECTS = Path.home() / "gig" / "projects"
 DEFAULT_NEGOTIATE_CONTEXT_ACKS = Path.home() / "gig" / "negotiate-context-acks.jsonl"
+DEFAULT_NEGOTIATE_RUN_LOG = Path.home() / ".openclaw" / "logs" / "gig-reply-detector-launchd.out.log"
 DEFAULT_CAPABILITIES = (
     Path.home() / "gig" / "projects" / "5138597" / "state.json",
     Path.home() / "gig" / "projects" / "5138597" / "acceptance" / "v4-acceptance-evidence.json",
@@ -147,6 +148,7 @@ def _report_message(row: dict) -> str:
     storefront_funnel = by_origin.get("storefront", {})
     apply_funnel = by_origin.get("apply", {})
     unknown_funnel = by_origin.get("unknown", {})
+    funnel_coverage = funnel.get("coverage") if isinstance(funnel.get("coverage"), dict) else {}
     portfolio = row.get("portfolio") if isinstance(row.get("portfolio"), dict) else {}
     portfolio_counts = portfolio.get("counts") if isinstance(portfolio.get("counts"), dict) else {}
     portfolio_selected = portfolio.get("selected") if isinstance(portfolio.get("selected"), dict) else {}
@@ -197,6 +199,10 @@ def _report_message(row: dict) -> str:
     source_error_text = (
         ", ".join(source_errors) or "なし" if isinstance(source_errors, list) else "不明"
     )
+    coverage_source_text = {
+        "latest_completed_log_noncanonical": "Negotiate最新完了log（canonical inventory未提供）",
+        "unknown": "不明",
+    }.get(funnel_coverage.get("source_status"), "不明")
     selected_text = (
         f"{portfolio_selected.get('service_id')} / "
         f"{portfolio_selected.get('improvement_field')} / "
@@ -252,6 +258,16 @@ def _report_message(row: dict) -> str:
         (f"❓ 帰属未確定: 問合せ {_display_count(unknown_funnel.get('inquiries'))} / "
          f"入金 {_display_count(unknown_funnel.get('payments'))} / "
          f"純入金 {_display_money(unknown_funnel.get('net_jpy'))}"),
+        (f"🔎 Funnel coverage: transcript/公式 "
+         f"{_display_count(funnel_coverage.get('transcript_conversations_ingested'))}/"
+         f"{_display_count(funnel_coverage.get('official_negotiate_conversations_observed'))} / "
+         f"未収載 {_display_count(funnel_coverage.get('uncovered_official_conversations'))} / "
+         f"Storefront問合せ {_display_count(funnel_coverage.get('storefront_inquiries'))} / "
+         f"Apply 問合せ {_display_count(funnel_coverage.get('apply_inquiries'))}・入金 "
+         f"{_display_count(funnel_coverage.get('apply_payments'))} / "
+         f"未帰属 問合せ {_display_count(funnel_coverage.get('unresolved_inquiries'))}・入金 "
+         f"{_display_count(funnel_coverage.get('unresolved_payments'))} / "
+         f"source {coverage_source_text}"),
         (f"🧭 Portfolio: KEEP {_display_count(portfolio_counts.get('KEEP'))} / "
          f"IMPROVE {_display_count(portfolio_counts.get('IMPROVE'))} / "
          f"RETIRE {_display_count(portfolio_counts.get('RETIRE'))} / "
@@ -422,6 +438,30 @@ def _jsonl_rows(path: Path) -> tuple[list[dict], str | None]:
     return rows, None
 
 
+def _latest_negotiate_observation(path: Path) -> tuple[dict | None, str | None]:
+    if not path.is_file():
+        return None, f"{path.name}_missing"
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None, f"{path.name}_invalid"
+    for line in reversed(lines):
+        if not line.strip().startswith("{"):
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if row.get("status") == "completed" and type(row.get("observed")) is int:
+            return {
+                "observed": row["observed"],
+                "run_id": row.get("run_id"),
+                "evidence_path": str(path.resolve()),
+                "evidence_sha256": hashlib.sha256(line.encode()).hexdigest(),
+            }, None
+    return None, f"{path.name}_completed_observation_missing"
+
+
 def _last_known_good_catalog_analytics(
     state_dir: Path, service_ids: list[str], now: int,
 ) -> dict | None:
@@ -519,6 +559,7 @@ def _auto_cadence_is_incremental(state_dir: Path, now: int, full_interval_second
 def _join_funnel(
     state_dir: Path, contracts: list[dict], reply_transcripts: Path, applied_path: Path,
     earnings_path: Path, projects_dir: Path, now: int,
+    negotiate_run_log: Path = DEFAULT_NEGOTIATE_RUN_LOG,
 ) -> dict:
     transcripts, transcript_error = _jsonl_rows(reply_transcripts)
     applied, applied_error = _jsonl_rows(applied_path)
@@ -622,6 +663,9 @@ def _join_funnel(
             ))
     events, ledger_error = _jsonl_rows(state_dir / "funnel-events.jsonl")
     attributions, attribution_error = _jsonl_rows(state_dir / "attribution-map.jsonl")
+    negotiate_observation, negotiate_observation_error = _latest_negotiate_observation(
+        negotiate_run_log,
+    )
     corrections = {
         str(row.get("source_event_id")): row
         for row in attributions
@@ -642,13 +686,32 @@ def _join_funnel(
             summary[origin]["net_jpy"] += float(event["net_receipt_jpy"])
     errors = [value for value in (
         transcript_error, applied_error, earnings_error, ledger_error, attribution_error,
+        negotiate_observation_error,
     ) if value]
     cursor_inputs = [str(row.get("source_event_id") or "") for row in events]
     cursor_inputs.extend(str(row.get("attribution_key") or "") for row in attributions)
     cursor = hashlib.sha256("\n".join(sorted(cursor_inputs)).encode()).hexdigest()
+    official_observed = negotiate_observation.get("observed") if negotiate_observation else None
+    transcript_ingested = len(conversations)
+    uncovered = (
+        max(official_observed - transcript_ingested, 0)
+        if type(official_observed) is int else None
+    )
+    coverage = {
+        "official_negotiate_conversations_observed": official_observed,
+        "transcript_conversations_ingested": transcript_ingested,
+        "uncovered_official_conversations": uncovered,
+        "storefront_inquiries": summary["storefront"]["inquiries"],
+        "apply_inquiries": summary["apply"]["inquiries"],
+        "apply_payments": summary["apply"]["payments"],
+        "unresolved_inquiries": summary["unknown"]["inquiries"],
+        "unresolved_payments": summary["unknown"]["payments"],
+        "source_status": "latest_completed_log_noncanonical" if negotiate_observation else "unknown",
+        "source": negotiate_observation,
+    }
     return {"version": 1, "appended": appended, "events": len(events), "by_origin": summary,
             "attribution_corrections_appended": attribution_corrections_appended,
-            "unknown_sources": errors, "cutoff_cursor": cursor}
+            "coverage": coverage, "unknown_sources": errors, "cutoff_cursor": cursor}
 
 
 def _allocate_portfolio(
@@ -2401,6 +2464,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),
                     getattr(args, "applied", DEFAULT_APPLIED), getattr(args, "earnings", DEFAULT_EARNINGS),
                     getattr(args, "projects_dir", DEFAULT_PROJECTS), cutoff,
+                    getattr(args, "negotiate_run_log", DEFAULT_NEGOTIATE_RUN_LOG),
                 )
                 portfolio = _allocate_portfolio(
                     args.state_dir, validated_contracts, funnel,
@@ -2512,6 +2576,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),
                 getattr(args, "applied", DEFAULT_APPLIED), getattr(args, "earnings", DEFAULT_EARNINGS),
                 getattr(args, "projects_dir", DEFAULT_PROJECTS), int(time.time()),
+                getattr(args, "negotiate_run_log", DEFAULT_NEGOTIATE_RUN_LOG),
             )
             portfolio = _allocate_portfolio(
                 args.state_dir, validated_contracts, funnel,
@@ -2955,6 +3020,7 @@ def main() -> int:
     parser.add_argument(
         "--negotiate-context-acks", type=Path, default=DEFAULT_NEGOTIATE_CONTEXT_ACKS,
     )
+    parser.add_argument("--negotiate-run-log", type=Path, default=DEFAULT_NEGOTIATE_RUN_LOG)
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--timeout-seconds", type=int, default=180)
     parser.add_argument("--capability-evidence", type=Path, action="append", default=list(DEFAULT_CAPABILITIES))
