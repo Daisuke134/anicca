@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from websocket import create_connection
-from job_journal import JobStateError, reconcile_effect, resume_effect, start_effect, verify_effect
+from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
 
 
 class ProviderError(Exception):
@@ -394,24 +394,26 @@ def resume(args):
         base = f"http://{args.cdp_host}:{args.cdp_port}"
         target = choose_target(read_json(f"{base}/json/list"), playbook)
         state = getattr(args, "state", args.receipt.expanduser().parent / "affiliate-state").expanduser()
-        job = resume_effect(state, "PROVIDER_LOGIN", args.provider)
-        if job is None:
+        try:
             job = start_effect(
                 state, "PROVIDER_LOGIN", args.provider,
                 {"operation": "submit_login", "provider": args.provider},
                 {key: before.get(key) for key in ("state", "url", "rendered_text_sha256")}, 300,
             )
-        submit_login(args, playbook, target)
-        submitted = True
-        for _ in range(20):
-            time.sleep(1)
-            after = observe(args)
-            if after["state"] != "SIGN_IN_REQUIRED":
-                break
-        if is_authenticated_state(after["state"]):
-            verify_effect(state, job["job_id"], {
-                key: after.get(key) for key in ("state", "url", "rendered_text_sha256")
-            })
+        except JobStateError:
+            after = before
+        else:
+            submit_login(args, playbook, target)
+            submitted = True
+            for _ in range(20):
+                time.sleep(1)
+                after = observe(args)
+                if after["state"] != "SIGN_IN_REQUIRED":
+                    break
+            if is_authenticated_state(after["state"]):
+                verify_effect(state, job["job_id"], {
+                    key: after.get(key) for key in ("state", "url", "rendered_text_sha256")
+                })
     else:
         after = before
         state = getattr(args, "state", args.receipt.expanduser().parent / "affiliate-state").expanduser()

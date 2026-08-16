@@ -152,11 +152,11 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `e33e716c9` is current and the four existing Affiliate launchd owners remain installed without restart. The loop wakes every 600 seconds and last exits `0` | Current `wake()` only checks link/browser/provider, runs hourly revenue reconciliation when authenticated, writes receipts, and flushes limited Telegram events. It does not yet autonomously advance owned/X publication or recover the current signed-out provider session |
+| Runtime | Immutable local release `6cb5ddb3b` is current and the four existing Affiliate launchd owners remain installed without restart. The loop wakes every 600 seconds and last exits `0` | Current `wake()` only checks link/browser/provider, runs hourly revenue reconciliation when authenticated, writes receipts, and flushes limited Telegram events. It does not yet autonomously advance owned/X publication or recover the current signed-out provider session |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED` and earning-enabled, but the latest scheduled observation is `SIGN_IN_REQUIRED`; HubSpot/Impact was application-reconciled to `APPLICATION_PENDING`, while its browser session also requires recovery. Kit is `APPLICATION_REJECTED`; Notion is `PROGRAM_PAUSED`; Systeme.io is `EXTERNAL_CHALLENGE`; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten is `AUTH_REQUIRED` | ElevenLabs is the only currently executable earning offer. The loop does not yet invoke the already live-proven provider recovery command. No commission, approved transaction, reversal, or payout is claimed |
-| Publication | The first English owned Affiliate article and matching disclosed `@selawmqt` X post are live. The second ElevenAgents article deploy succeeded and serves HTTP `200`; its Agent receipt still needs `DELIVERED → LIVE` reconciliation before X distribution | The second X placement, provider click readback, and every Japanese placement remain unproven |
+| Publication | Two English owned Affiliate articles and both matching disclosed `@selawmqt` X posts are live. The ElevenAgents article reconciled `DELIVERED → LIVE` without a duplicate Git effect; its X placement is `https://x.com/selawmqt/status/2088797086871666703`, and an immediate identical replay reconciled to the same URL without a second post | Post-baseline provider click readback and every Japanese placement remain unproven |
 | Attribution | Local placement receipts and direct provider-link resolution are implemented | No public placement or provider-side click/commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, and `BLOCKED` are live-proven | `PLACEMENT_LIVE`, `CLICK_DELTA`, and commission events remain bound to their real external transitions |
@@ -970,10 +970,11 @@ diagnoses only when an existing deterministic tool cannot advance them.
    installed Skill. It reconciled the existing ElevenAgents `DELIVERED` effect to
    `LIVE`, preserved Git HEAD `756c54064`, and independently re-read the title at
    HTTP `200`; no code change or duplicate push was needed.
-2. **IN PROGRESS:** Run the existing ElevenAgents X builder and `x post publish` against that LIVE
-   receipt. Require one disclosed `@selawmqt` status plus timeline/public URL
-   readback; an ambiguous result reconciles by fingerprint before retry.
-3. Let `loop wake` invoke the existing ElevenLabs `provider resume` when it reads
+2. **DONE:** The installed Skill built a 253-character disclosed X artifact and
+   published `elevenagents-en-1` at
+   `https://x.com/selawmqt/status/2088797086871666703`. Immediate replay returned
+   the same URL, proving timeline/public readback exact-once behavior.
+3. **IN PROGRESS:** Let `loop wake` invoke the existing ElevenLabs `provider resume` when it reads
    `SIGN_IN_REQUIRED`, then continue the already-wired revenue observe/capture/
    reconcile cycle. A provider-specific auth failure MUST NOT block owned/X work.
 4. Wire only those three proven stage transitions into `local_loop.py`: owned
@@ -1510,7 +1511,7 @@ atomic replacement, matching Python's replacement contract
 | ID | State | Uncertainty / observed answer | Closure condition |
 |---|---|---|---|
 | U45 | LIVE-OPEN | ElevenLabs and Impact sessions are currently signed out despite nonempty stored credentials | Installed Agent restores each authorized session and re-reads program/application state |
-| U46 | LIVE-OPEN | ElevenAgents article is public HTTP `200` but its Agent receipt remains `DELIVERED`; X artifact is absent | Autonomous wake reconciles `LIVE`, creates X artifact, publishes once, and reads the status back |
+| U46 | CLOSED-MANUAL | Installed Skill reconciled the ElevenAgents article to `LIVE`, built its X artifact, published one status, and immediate replay returned the same status URL | The remaining proof is that the newly wired scheduled wake observes the same receipts without a duplicate external effect |
 | U47 | LIVE-OPEN | No real post-baseline click exists | Provider reports one attributable organic click; self-clicks/tests do not count |
 | U48 | LIVE-OPEN | No non-empty commission row has tested dedupe, status transition, or placement join | One real provider transaction replays twice without duplication and preserves pending/approved/reversed/paid lineage |
 | U49 | EXTERNAL | Payout is blocked by truthful tax registration and payment-provider selection | Authorized legal/tax/payment data completes provider readback; Agent never fabricates it |
@@ -1578,19 +1579,19 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 
 | # | To-Be | Minimal test / live proof | Cover |
 |---:|---|---|---|
-| 1 | No model when nothing is due | `test_wake_without_due_judgment_skips_runner` | OK |
-| 2 | One schema-valid action | `test_action_proposal_rejects_unknown_or_multiple_tools` | OK |
-| 3 | Sanitized private runner | `test_runner_env_context_and_evidence_exclude_secrets` | OK |
-| 4 | Mandatory budgets | `test_model_admission_fails_closed_without_complete_budget` | OK |
-| 5 | Common attempt receipts | `test_every_stage_persists_success_and_failure_attempt` | OK |
+| 1 | No model when nothing is due | No generic runner is admitted before E1 | DEFERRED |
+| 2 | One schema-valid action | No generic action selector is admitted before E1 | DEFERRED |
+| 3 | Sanitized private runner | Vendored runner boundary exists; runtime admission is deferred | DEFERRED |
+| 4 | Mandatory budgets | Required before any runtime model admission | DEFERRED |
+| 5 | Common attempt receipts | Existing external effects use the job journal; a universal receipt is not implemented | OPEN |
 | 6 | Same transaction is exact-once | `test_repeated_capture_does_not_duplicate_commission_transition` | OK |
-| 7 | Same unfinished stage resumes | `test_restart_resumes_same_pipeline_job` | OK |
-| 8 | Healthy lanes continue | `test_quarantined_provider_does_not_block_other_due_work` | OK |
-| 9 | Owned ambiguous readback is typed | `test_owned_readback_distinguishes_http_marker_and_link_failure` | OK |
+| 7 | Same unfinished stage resumes | Known ElevenAgents receipt-driven replay | OPEN-LIVE |
+| 8 | Healthy lanes continue | `test_wake_recovers_provider_and_advances_publication_without_cross_lane_blocking` | PARTIAL |
+| 9 | Owned ambiguous readback is typed | Existing publisher reconciles `DELIVERED` by public readback | LIVE-PROVEN |
 | 10 | X effect is exact-once | Existing timeline reconciliation regression plus installed public readback | OK |
-| 11 | Telegram shares causal identity | `test_delivery_receipt_joins_run_job_and_event_uuid` | OK |
-| 12 | Full Agent trajectory | Installed ElevenAgents `DELIVERED → LIVE → X LIVE → revenue → Telegram` | OK |
-| 13 | Self-heal | Installed induced recoverable fault with same-job repair and no duplicate effect | OK |
+| 11 | Telegram shares causal identity | Stable event UUID and provider messageId exist; full pipeline lineage is not implemented | PARTIAL |
+| 12 | Full Agent trajectory | Installed ElevenAgents `DELIVERED → LIVE → X LIVE → revenue → Telegram` | OPEN-LIVE |
+| 13 | Self-heal | Provider login recovery exists; induced whole-pipeline repair proof does not | OPEN |
 
 | E2E item | Value |
 |---|---|
@@ -1613,9 +1614,9 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 1. **DONE:** pin and vendor the d150 runner snapshot with license/SHA provenance. `SHA256SUMS` verifies all six preserved files, each runtime file byte-matches the fixed Git commit, three support modules import under the host Python, and the existing 37 Affiliate tests pass.
 2. **DONE:** Reconcile the existing ElevenAgents commit to `LIVE` and prove no
    second Git effect; the existing publisher already used the correct `/blog` route.
-3. **IN PROGRESS:** Reuse the existing X builder/publisher to create and verify the one missing
-   ElevenAgents placement on `@selawmqt`.
-4. Connect existing provider recovery, owned readback, X publication, revenue,
+3. **DONE:** Reuse the existing X builder/publisher to create and verify the one missing
+   ElevenAgents placement on `@selawmqt`; installed replay reconciles to the same public URL.
+4. **IN PROGRESS:** Connect existing provider recovery, owned readback, X publication, revenue,
    and Telegram calls to the scheduled `wake()` in that order; do not introduce a
    model-led stage selector for this known pipeline.
 5. Install and run the actual launchd owner twice, proving progress on pass one

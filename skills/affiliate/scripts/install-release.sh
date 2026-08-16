@@ -172,7 +172,7 @@ cat > "$LOOP_PLIST" <<EOF
 <plist version="1.0"><dict>
 <key>Label</key><string>ai.anicca.affiliate-loop</string>
 <key>ProgramArguments</key><array><string>/bin/sh</string><string>$CURRENT/affiliate</string><string>loop</string><string>wake</string></array>
-<key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
+<key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string><key>AFFILIATE_LANDING_ROOT</key><string>${AFFILIATE_LANDING_ROOT:-$HOME_ROOT/anicca-project/.worktrees/affiliate-foundation-prod}</string></dict>
 <key>RunAtLoad</key><true/><key>StartInterval</key><integer>600</integer><key>ThrottleInterval</key><integer>60</integer>
 <key>StandardOutPath</key><string>$LOG_DIR/loop.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/loop.err.log</string>
 </dict></plist>

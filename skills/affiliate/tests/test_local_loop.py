@@ -19,6 +19,50 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_wake_recovers_provider_and_advances_publication_without_cross_lane_blocking(self):
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            private = root / "affiliate-credentials.md"
+            private.write_text(
+                "## ElevenLabs\n"
+                "- Default affiliate link: `https://try.elevenlabs.io/example`\n",
+                encoding="utf-8",
+            )
+            private.chmod(0o600)
+            args = Namespace(
+                private_markdown=private, state=root / "state", cdp_port=9324,
+                x_cdp_port=9326, landing_root=root / "landing",
+            )
+            signed_out = {
+                "state": "SIGN_IN_REQUIRED", "changed": False,
+                "transition_id": "transition-1",
+            }
+            authenticated = {
+                "state": "AUTHENTICATED", "changed": True,
+                "transition_id": "transition-2",
+            }
+            output = io.StringIO()
+            with (
+                patch.object(MODULE, "browser_ready", return_value=True),
+                patch.object(MODULE, "provider_poll", return_value=signed_out),
+                patch.object(MODULE, "recover_provider", return_value=authenticated) as recover,
+                patch.object(MODULE, "advance_known_publication", return_value={
+                    "state": "X_LIVE", "public_url": "https://x.com/selawmqt/status/1",
+                }) as advance,
+                patch.object(MODULE, "run_revenue_cycle", return_value={
+                    "state": "NO_TRANSACTIONS", "source_rows": 0,
+                    "appended_transitions": 0,
+                }),
+                contextlib.redirect_stdout(output),
+            ):
+                MODULE.wake(args)
+            event = json.loads(output.getvalue())
+            recover.assert_called_once()
+            advance.assert_called_once()
+            self.assertEqual(event["provider_state"], "AUTHENTICATED")
+            self.assertEqual(event["publication_state"], "X_LIVE")
+            self.assertEqual(event["revenue_state"], "NO_TRANSACTIONS")
+
     def test_wake_requires_authenticated_provider_and_receipts_transition(self):
         with tempfile.TemporaryDirectory() as root:
             root = Path(root)

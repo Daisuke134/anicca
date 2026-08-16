@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 from types import SimpleNamespace
 
 from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
-from provider_cli import ProviderError, observe, poll
+from provider_cli import ProviderError, observe, poll, resume
 
 
 def atomic_json(path, value):
@@ -242,6 +242,71 @@ def provider_poll(state, cdp_port, attempts=15):
     }
 
 
+def recover_provider(state, cdp_port, private_markdown):
+    common = dict(
+        provider="elevenlabs",
+        cdp_host="127.0.0.1",
+        cdp_port=cdp_port,
+        state=state,
+        private_markdown=private_markdown,
+    )
+    resume_args = SimpleNamespace(
+        **common, receipt=state / "providers" / "elevenlabs-resume.json",
+    )
+    poll_args = SimpleNamespace(
+        **common, receipt=state / "providers" / "elevenlabs.json",
+    )
+    recovered = resume(resume_args)
+    return poll(poll_args, recovered)
+
+
+def advance_known_publication(state, landing_root, x_cdp_port):
+    slug = "elevenagents-for-customer-support"
+    placement = "elevenagents-en-1"
+    x_receipt_path = state / "x-posts" / f"{placement}.json"
+    try:
+        x_receipt = json.loads(x_receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        x_receipt = {}
+    if x_receipt.get("state") == "LIVE":
+        return {"state": "ALREADY_LIVE", "public_url": x_receipt.get("public_url")}
+
+    artifact_path = state / "content" / f"{slug}.json"
+    policy_path = state / "policy" / f"{slug}.json"
+    if not artifact_path.is_file() or not policy_path.is_file():
+        return {"state": "NO_DUE_PUBLICATION", "public_url": None}
+    try:
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    except ValueError:
+        return {"state": "POLICY_RECEIPT_INVALID", "public_url": None}
+    if policy.get("decision") != "PASS":
+        return {"state": "POLICY_NOT_PASSED", "public_url": None}
+
+    from content import build_x_agents
+    from owned_publish import publish as publish_owned
+    from x_post_cli import publish as publish_x
+
+    owned = publish_owned(SimpleNamespace(
+        state=state,
+        landing_root=landing_root,
+        slug=slug,
+        base_url="https://aniccaai.com",
+        remote="origin",
+        branch="main",
+    ))
+    if owned.get("state") != "LIVE":
+        return {"state": "OWNED_NOT_LIVE", "public_url": owned.get("public_url")}
+    build_x_agents(state)
+    posted = publish_x(SimpleNamespace(
+        state=state,
+        content=state / "x-content" / f"{placement}.txt",
+        placement=placement,
+        cdp_host="127.0.0.1",
+        cdp_port=x_cdp_port,
+    ))
+    return {"state": "X_LIVE", "public_url": posted.get("public_url")}
+
+
 def revenue_cycle_due(state, now=None, cooldown_seconds=3600):
     receipt = state / "revenue-cycle.json"
     if not receipt.is_file():
@@ -295,6 +360,29 @@ def wake(args):
     provider = provider_poll(state, args.cdp_port) if browser else {
         "state": "BROWSER_UNAVAILABLE", "changed": False, "transition_id": None,
     }
+    recovery_state = "NOT_NEEDED"
+    if provider["state"] == "SIGN_IN_REQUIRED":
+        try:
+            provider = recover_provider(state, args.cdp_port, args.private_markdown.expanduser())
+            recovery_state = "RECOVERED" if provider["state"] == "AUTHENTICATED" else provider["state"]
+        except (ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
+            recovery_state = "RECOVERY_FAILED"
+    try:
+        landing_root = getattr(
+            args, "landing_root",
+            Path(os.environ.get(
+                "AFFILIATE_LANDING_ROOT",
+                "~/anicca-project/.worktrees/affiliate-foundation-prod",
+            )),
+        )
+        publication = advance_known_publication(
+            state, landing_root.expanduser(), getattr(args, "x_cdp_port", 9326),
+        )
+    except Exception as error:
+        publication = {
+            "state": "PUBLICATION_FAILED", "public_url": None,
+            "failure_type": type(error).__name__,
+        }
     revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
     }
@@ -312,6 +400,9 @@ def wake(args):
         "provider_changed": provider["changed"],
         "provider_state": provider["state"],
         "provider_transition_id": provider["transition_id"],
+        "provider_recovery_state": recovery_state,
+        "publication_state": publication["state"],
+        "publication_url": publication["public_url"],
         "revenue_state": revenue["state"],
         "revenue_source_rows": revenue["source_rows"],
         "revenue_appended_transitions": revenue["appended_transitions"],
@@ -358,6 +449,14 @@ def main():
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     parser.add_argument("--private-markdown", type=Path, default=Path("~/.config/anicca/affiliate-credentials.md"))
     parser.add_argument("--cdp-port", type=int, default=9324)
+    parser.add_argument("--x-cdp-port", type=int, default=9326)
+    parser.add_argument(
+        "--landing-root", type=Path,
+        default=Path(os.environ.get(
+            "AFFILIATE_LANDING_ROOT",
+            "~/anicca-project/.worktrees/affiliate-foundation-prod",
+        )),
+    )
     parser.add_argument("--placement", default="article-1")
     parser.add_argument("--locale", choices=("en", "ja"), default="en")
     parser.add_argument("--print-url", action="store_true")

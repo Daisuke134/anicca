@@ -149,6 +149,37 @@ class ProviderResumeTest(unittest.TestCase):
             self.assertNotIn("password", serialized.lower())
             self.assertNotIn("credential", serialized.lower())
 
+    def test_unresolved_login_effect_observes_without_resubmitting_credentials(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary) / "state"
+            provider_cli.start_effect(
+                state, "PROVIDER_LOGIN", "elevenlabs",
+                {"operation": "submit_login", "provider": "elevenlabs"},
+                {"state": "SIGN_IN_REQUIRED"}, 300,
+            )
+            args = argparse.Namespace(
+                provider="elevenlabs", cdp_host="127.0.0.1", cdp_port=9324,
+                receipt=Path(temporary) / "resume.json", state=state,
+                private_markdown=Path(temporary) / "credentials.md",
+            )
+            signed_out = {
+                "provider": "elevenlabs", "state": "SIGN_IN_REQUIRED",
+                "next_action": "LOGIN", "url": "https://elevenlabs.io/app/sign-in",
+                "rendered_text_sha256": "a" * 64,
+            }
+            with (
+                patch.object(provider_cli, "observe", return_value=signed_out),
+                patch.object(provider_cli, "read_json", return_value=[{
+                    "type": "page", "url": signed_out["url"],
+                    "title": "Sign In | ElevenLabs", "id": "tab-1",
+                }]),
+                patch.object(provider_cli, "submit_login") as submit,
+            ):
+                receipt = provider_cli.resume(args)
+            submit.assert_not_called()
+            self.assertFalse(receipt["submitted"])
+            self.assertEqual(receipt["state"], "SIGN_IN_REQUIRED")
+
 
 if __name__ == "__main__":
     unittest.main()
