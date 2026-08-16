@@ -31,6 +31,7 @@ DEFAULT_TAB = BROWSER_DIR / "scripts" / "cdp_default_tab.py"
 DEFAULT_ENSURE_BROWSER = BROWSER_DIR / "ensure_browser.sh"
 DEFAULT_RUNNER = RUNNER_DIR / "agent_runner.py"
 DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
+DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
 DEFAULT_REPLY_TRANSCRIPTS = Path.home() / "gig" / "reply-transcripts.jsonl"
 DEFAULT_APPLIED = Path.home() / "gig" / "applied.jsonl"
@@ -74,7 +75,7 @@ FAQ_PATTERN = re.compile(
     r"(?:よくある質問\s*)?Q[.．]\s*(?P<question>.+?)\s*\n+A[.．]\s*(?P<answer>.+)\Z",
     re.DOTALL,
 )
-SELLER_FORM_EXPRESSION = r'''JSON.stringify((()=>{const form=document.forms[0];return{url:location.href,action:form?.action||null,method:form?.method||null,fields:form?[...form.elements].filter(e=>e.name).map(e=>({name:e.name,type:e.type||null,value:e.value||'',checked:!!e.checked})):[],select_options:form?Object.fromEntries([...form.elements].filter(e=>e.name&&e.tagName==='SELECT').map(e=>[e.name,[...e.options].map(o=>({value:o.value,label:(o.textContent||'').trim()}))])):{}}})())'''
+SELLER_FORM_EXPRESSION = r'''JSON.stringify((()=>{const form=document.forms[0];return{url:location.href,action:form?.action||null,method:form?.method||null,fields:form?[...form.elements].filter(e=>e.name).map(e=>({name:e.name,type:e.type||null,value:e.value||'',checked:!!e.checked,maxLength:Number.isInteger(e.maxLength)&&e.maxLength>=0?e.maxLength:null})):[],select_options:form?Object.fromEntries([...form.elements].filter(e=>e.name&&e.tagName==='SELECT').map(e=>[e.name,[...e.options].map(o=>({value:o.value,label:(o.textContent||'').trim()}))])):{}}})())'''
 COMPETITOR_SOURCES = (
     ("category", "https://coconala.com/categories/230/66"),
     ("search", "https://coconala.com/search?keyword=%E6%A5%AD%E5%8B%99%E8%87%AA%E5%8B%95%E5%8C%96"),
@@ -86,6 +87,7 @@ COMPETITOR_SOURCES = (
     ("service", "https://coconala.com/services/3741646"),
 )
 MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
+GENERATED_MUTATION_FIELDS = {"title", "body", "package", "FAQ", "price"}
 MUTATION_CONTRACT_FIELDS = {
     "version", "platform", "service_id", "precondition_listing_version_sha256",
     "changed_field", "before_value", "proposed_value", "allowed_delta", "rollback_value",
@@ -1447,12 +1449,14 @@ def _prepare_next_hypothesis(
         service_id = str(row.get("service_id") or "")
         field = field_alias.get(str(row.get("field") or "").lower(), str(row.get("field") or "").lower())
         contract = rendered.get((service_id, field))
+        contract_current = (isinstance(contract, dict)
+                            and contract.get("precondition_listing_version_sha256") == versions.get(service_id))
         if (service_id in versions and service_id not in active_services
-                and (service_id, field) not in completed and isinstance(contract, dict)
-                and contract.get("precondition_listing_version_sha256") == versions[service_id]):
+                and (service_id, field) not in completed
+                and (contract_current or field in GENERATED_MUTATION_FIELDS)):
             candidate, mutation_contract = row, contract
             break
-    if candidate is None or mutation_contract is None:
+    if candidate is None:
         return None
     identity = json.dumps(candidate, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return {
@@ -1461,15 +1465,17 @@ def _prepare_next_hypothesis(
         "prepared_at_epoch": now,
         "service_id": str(candidate["service_id"]),
         "service_version_sha256": versions[str(candidate["service_id"])],
-        "field": str(mutation_contract["changed_field"]),
+        "field": field_alias.get(str(candidate["field"]).lower(), str(candidate["field"])),
         "portfolio_field": str(candidate["field"]),
         "before": candidate.get("before"),
         "success_metric": candidate.get("success_metric"),
         "reason": str(candidate.get("reason") or ""),
-        "executable": True,
-        "guard_reason": None,
+        "executable": mutation_contract is not None,
+        "guard_reason": None if mutation_contract is not None else "proposal_contract_required",
         "active_experiment_key": active[0].get("experiment_key") if active else None,
-        "mutation_contract_sha256": mutation_contract["contract_sha256"],
+        "mutation_contract_sha256": (
+            mutation_contract["contract_sha256"] if mutation_contract is not None else None
+        ),
     }
 
 
@@ -1769,6 +1775,184 @@ def _invoke_judge(
     if not isinstance(value, dict):
         raise RuntimeError("storefront_judge_result_not_object")
     return value
+
+
+def _proposal_prompt(
+    hypothesis: dict, source: dict, seller_snapshot: dict, family_name: str, family: dict,
+    manifest: dict, capability_paths: set[str],
+) -> tuple[str, set[str]]:
+    competitor_rows = []
+    allowed_refs = {
+        f"official:seller-form:{source['service_id']}",
+        f"official:offer-contract:{source['service_id']}:{source['service_version_sha256']}",
+        f"owned:capability-family:{family_name}",
+    }
+    for reference in manifest.get("sources", []):
+        path = str(reference.get("path") or "")
+        try:
+            row = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise RuntimeError("storefront_proposal_competitor_evidence_invalid") from error
+        allowed_refs.add(path)
+        competitor_rows.append({"evidence_ref": path, "url": row.get("url"),
+                                "body": str(row.get("body") or "")[:8000]})
+    capabilities = []
+    for raw_path in sorted(capability_paths):
+        path = Path(raw_path)
+        if not path.is_file():
+            continue
+        allowed_refs.add(raw_path)
+        capabilities.append({"evidence_ref": raw_path,
+                             "content": path.read_text(encoding="utf-8")[:6000]})
+    context = {
+        "gap": hypothesis,
+        "official_offer": source,
+        "seller_form": seller_snapshot,
+        "capability_family": {"name": family_name, "contract": family},
+        "competitors": competitor_rows,
+        "owned_capability_evidence": capabilities,
+        "allowed_evidence_refs": sorted(allowed_refs),
+    }
+    prompt = """Create exactly one Coconala Storefront improvement proposal from CONTEXT_JSON.
+Return only the strict schema object. The selected service_id, changed_field and success_metric must
+exactly equal gap.service_id, gap.field and gap.success_metric. Use only claims supported by the
+owned capability family/offer. Competitors supply generalized structure only: never copy their
+wording, images, reviews, sales, speed, guarantees or results. evidence entries must be exact values
+from allowed_evidence_refs and must include the official offer ref and owned capability-family ref.
+For title, return only the seller-form title stem (Coconala appends ます). For body, return a complete
+Japanese replacement with outcome, inclusions, exclusions, required inputs and support boundary.
+For package, return one precise option title; for FAQ use `Q. ...\nA. ...`; for price return an exact
+seller select option value visible in seller_form. Change one field only. Choose change only when the
+proposal is fully supported; otherwise choose no_op with all nullable change fields null and a concrete
+no_op_reason. observation_window_days is 7 or 14. Do not claim that the proposal itself caused KPI
+improvement.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+    return prompt, allowed_refs
+
+
+def _invoke_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path, hypothesis: dict,
+    source: dict, seller_snapshot: dict, family_name: str, family: dict, manifest: dict,
+    capability_paths: set[str], timeout_seconds: int,
+) -> tuple[dict, dict, set[str]]:
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    prompt, allowed_refs = _proposal_prompt(
+        hypothesis, source, seller_snapshot, family_name, family, manifest, capability_paths,
+    )
+    started = time.time()
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-proposal", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "").strip()[-400:]
+        raise RuntimeError(f"storefront_proposal_failed:{completed.returncode}:{detail}")
+    try:
+        summary_path = evidence_dir / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        result_path = Path(str(summary["result_path"])).resolve()
+        result_path.relative_to(evidence_dir.resolve())
+        if (summary.get("status") != "success"
+                or summary.get("task_class") != "storefront-proposal-agent"
+                or summary.get("selected_provider") != "codex"
+                or summary.get("selected_model") != "gpt-5.6-terra"
+                or summary.get("selected_effort") != "medium"
+                or min(summary_path.stat().st_mtime, result_path.stat().st_mtime) < started):
+            raise ValueError("stale_or_wrong_route")
+        proposal = json.loads(result_path.read_text(encoding="utf-8"))
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_proposal_evidence_invalid") from error
+    route = {
+        "task_class": summary["task_class"], "route": summary.get("route"),
+        "provider": summary["selected_provider"], "model": summary["selected_model"],
+        "effort": summary["selected_effort"], "summary_path": str(summary_path),
+        "summary_sha256": hashlib.sha256(summary_path.read_bytes()).hexdigest(),
+    }
+    return proposal, route, allowed_refs
+
+
+def _seal_generated_proposal(
+    proposal: dict, hypothesis: dict, source: dict, seller_snapshot: dict,
+    family_name: str, capability_families: dict[str, str], allowed_refs: set[str],
+) -> dict | None:
+    if proposal.get("decision") == "no_op":
+        if (any(proposal.get(key) is not None for key in (
+                "service_id", "changed_field", "proposed_value", "success_metric",
+                "observation_window_days")) or not str(proposal.get("no_op_reason") or "").strip()):
+            raise RuntimeError("storefront_generated_noop_invalid")
+        return None
+    field = str(hypothesis.get("field") or "")
+    service_id = str(hypothesis.get("service_id") or "")
+    evidence = proposal.get("evidence")
+    required_refs = {
+        f"official:offer-contract:{service_id}:{source['service_version_sha256']}",
+        f"owned:capability-family:{family_name}",
+    }
+    if (proposal.get("decision") != "change" or proposal.get("service_id") != service_id
+            or proposal.get("changed_field") != field
+            or proposal.get("success_metric") != hypothesis.get("success_metric")
+            or proposal.get("observation_window_days") not in {7, 14}
+            or proposal.get("no_op_reason") is not None
+            or not isinstance(evidence, list) or not evidence
+            or not set(evidence) <= allowed_refs or not required_refs <= set(evidence)
+            or capability_families.get(service_id) != family_name):
+        raise RuntimeError("storefront_generated_proposal_identity_invalid")
+    proposed = str(proposal.get("proposed_value") or "").strip()
+    fields = {str(row.get("name") or ""): row for row in seller_snapshot.get("fields", [])
+              if isinstance(row, dict)}
+    if field == "title":
+        form_field = "data[Service][overview]"
+    elif field == "body":
+        form_field = "data[Service][head]"
+    elif field == "price":
+        form_field = "data[Service][price]"
+    elif field == "package":
+        form_field = next((name for name in sorted(fields)
+                           if re.fullmatch(r"data\[Option]\[\d+]\[title]", name)), "")
+    elif field == "FAQ":
+        if any(name.startswith("data[Faq]") for name in fields):
+            raise RuntimeError("storefront_generated_faq_requires_absent_slot")
+        form_field = "data[Faq][0]"
+    else:
+        raise RuntimeError("storefront_generated_field_unsupported")
+    before = "FAQ_ABSENT" if field == "FAQ" else str((fields.get(form_field) or {}).get("value") or "")
+    maximum = (fields.get(form_field) or {}).get("maxLength")
+    if (not proposed or proposed == before or (type(maximum) is int and maximum > 0 and len(proposed) > maximum)):
+        raise RuntimeError("storefront_generated_value_invalid")
+    if field == "title":
+        readback = {"public_title": f"{proposed}ます"}
+    elif field == "body":
+        readback = {"public_body_sha256": hashlib.sha256(proposed.encode()).hexdigest()}
+    elif field == "FAQ":
+        question, answer = _split_faq(proposed)
+        readback = {"question": question, "answer": answer}
+    elif field == "package":
+        price_field = form_field.replace("[title]", "[price]")
+        raw_price = str((fields.get(price_field) or {}).get("value") or "")
+        if not raw_price.isdigit() or int(raw_price) <= 0:
+            raise RuntimeError("storefront_generated_package_price_unknown")
+        readback = {"option_title": proposed, "option_price_jpy": int(raw_price)}
+    else:
+        options = seller_snapshot.get("select_options", {}).get(form_field, [])
+        selected = next((row for row in options if str(row.get("value") or "") == proposed), None)
+        label = str((selected or {}).get("label") or "")
+        match = re.fullmatch(r"([0-9,]+)円", label)
+        if selected is None or match is None:
+            raise RuntimeError("storefront_generated_price_option_invalid")
+        readback = {"seller_option_value": proposed, "seller_option_label": label,
+                    "public_price_jpy": int(match.group(1).replace(",", ""))}
+    return _seal_mutation_contract({
+        "version": 1, "platform": "coconala", "service_id": service_id,
+        "precondition_listing_version_sha256": source["service_version_sha256"],
+        "changed_field": field, "before_value": before, "proposed_value": proposed,
+        "allowed_delta": [form_field], "rollback_value": before, "official_readback": readback,
+        "success_metric": proposal["success_metric"],
+        "observation_window_days": proposal["observation_window_days"],
+        "capability_family": family_name, "evidence": evidence,
+    }, capability_families)
 
 
 def _experiment_key(service_id: str, field: str, proposed: str) -> str:
@@ -2727,7 +2911,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 )
                 row = _persist_receipt(args, output, row)
                 return 0, row
-            capability_families, _ = _load_capability_families(
+            capability_families, capability_templates = _load_capability_families(
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
             )
             presentation_snapshot = _seller_snapshot_for(ws_url, "91000004")
@@ -2833,6 +3017,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 validated_contracts, int(time.time()), mutation_contracts,
             )
             pending_effect = None
+            proposal_agent = None
+            generated_render = None
+            generated_render_path = None
             recovery = _pending_recovery(args.state_dir, own_page, ws_url, inventory_path.parent)
             if recovery is not None:
                 judgement = recovery.get("judgement")
@@ -2905,8 +3092,72 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     pending_effect.update({"question": question, "answer": answer})
             else:
                 capability_paths = {str(Path(path).resolve()) for path in args.capability_evidence}
+                proposal_noop = None
+                if (next_hypothesis is not None
+                        and next_hypothesis.get("guard_reason") == "proposal_contract_required"):
+                    proposal_service_id = str(next_hypothesis["service_id"])
+                    proposal_source = next(
+                        (row for row in validated_contracts if row["service_id"] == proposal_service_id), None,
+                    )
+                    family_name = capability_families.get(proposal_service_id)
+                    family = capability_templates.get(str(family_name or ""))
+                    if proposal_source is None or not isinstance(family_name, str) or not isinstance(family, dict):
+                        raise RuntimeError("storefront_proposal_context_missing")
+                    proposal_snapshot = (
+                        presentation_snapshot if proposal_service_id == "91000004"
+                        else scope_snapshot if proposal_service_id == "91000005"
+                        else _seller_snapshot_for(ws_url, proposal_service_id)
+                    )
+                    proposal_snapshot_path = inventory_path.parent / f"proposal-seller-{proposal_service_id}.json"
+                    _atomic_write(proposal_snapshot_path, proposal_snapshot)
+                    proposal, proposal_agent, allowed_refs = _invoke_proposal(
+                        runner=args.runner,
+                        schema=getattr(args, "proposal_schema", DEFAULT_PROPOSAL_SCHEMA),
+                        workdir=args.workdir,
+                        evidence_dir=inventory_path.parent / "proposal-agent", hypothesis=next_hypothesis,
+                        source=proposal_source, seller_snapshot=proposal_snapshot,
+                        family_name=family_name, family=family, manifest=competitor_manifest,
+                        capability_paths=capability_paths, timeout_seconds=args.timeout_seconds,
+                    )
+                    generated_contract = _seal_generated_proposal(
+                        proposal, next_hypothesis, proposal_source, proposal_snapshot,
+                        family_name, capability_families, allowed_refs,
+                    )
+                    _atomic_write(inventory_path.parent / "proposal-record.json", {
+                        "version": 1, "proposal": proposal, "route": proposal_agent,
+                        "service_id": proposal_service_id, "changed_field": next_hypothesis["field"],
+                        "contract_sha256": (generated_contract or {}).get("contract_sha256"),
+                    })
+                    if generated_contract is None:
+                        proposal_noop = proposal
+                    else:
+                        field = generated_contract["allowed_delta"][0]
+                        generated_render = {
+                            "version": 1, "contract": generated_contract,
+                            "before": {field: generated_contract["before_value"]},
+                            "after": {field: generated_contract["proposed_value"]},
+                            "delta": [field], "published": False,
+                        }
+                        generated_render_path = inventory_path.parent / "mutation-render-generated.json"
+                        _atomic_write(generated_render_path, generated_render)
+                        mutation_contracts.append(generated_contract)
+                        next_hypothesis = _prepare_next_hypothesis(
+                            getattr(args, "scorecard", DEFAULT_SCORECARD),
+                            args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
+                            validated_contracts, int(time.time()), mutation_contracts,
+                        )
                 mutation_contract = None
-                if next_hypothesis is None:
+                if proposal_noop is not None:
+                    judgement = _guarded_noop({
+                        "decision": "no_op", "service_id": None, "changed_field": None,
+                        "before_value": None, "proposed_value": None,
+                        "hypothesis": str(proposal_noop["hypothesis"]),
+                        "competitor_evidence_paths": [], "capability_evidence_paths": [],
+                        "success_metric": None, "observation_window_days": None,
+                        "no_op_reason": str(proposal_noop["no_op_reason"]),
+                        "experiment_key": None, "uncertainty": proposal_noop.get("uncertainty", []),
+                    }, str(proposal_noop["no_op_reason"]))
+                elif next_hypothesis is None:
                     judgement = _guarded_noop({
                         "decision": "no_op", "service_id": None, "changed_field": None,
                         "before_value": None, "proposed_value": None,
@@ -3201,6 +3452,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 new_listing_draft=draft_result,
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
+                proposal_agent=proposal_agent,
                 mutation_renders=[{
                     "changed_field": render["contract"]["changed_field"],
                     "service_id": render["contract"]["service_id"],
@@ -3211,7 +3463,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     (title_render, title_render_path), (body_render, body_render_path),
                     (package_render, package_render_path), (faq_render, faq_render_path),
                     (price_render, price_render_path),
-                )],
+                )] + ([{
+                    "changed_field": generated_render["contract"]["changed_field"],
+                    "service_id": generated_render["contract"]["service_id"],
+                    "contract_sha256": generated_render["contract"]["contract_sha256"],
+                    "delta": generated_render["delta"], "published": False,
+                    "evidence_path": str(generated_render_path), "generated": True,
+                }] if generated_render is not None else []),
                 lease={
                     "task": task,
                     "context_id": lease.get("context_id"),
@@ -3251,6 +3509,7 @@ def main() -> int:
     parser.add_argument("--default-tab-script", type=Path, default=DEFAULT_TAB)
     parser.add_argument("--runner", type=Path, default=DEFAULT_RUNNER)
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
+    parser.add_argument("--proposal-schema", type=Path, default=DEFAULT_PROPOSAL_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
     parser.add_argument("--gallery-contract", type=Path, default=DEFAULT_GALLERY_CONTRACT)

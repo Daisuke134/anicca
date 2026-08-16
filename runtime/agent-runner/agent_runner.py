@@ -879,7 +879,7 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
 def run() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-class", required=True,
-                        choices=("deterministic", "composition-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "application-intent-planner", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent"))
+                        choices=("deterministic", "composition-agent", "storefront-proposal-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "application-intent-planner", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent"))
     prompt_source = parser.add_mutually_exclusive_group(required=True)
     prompt_source.add_argument("--prompt-file", type=Path)
     prompt_source.add_argument("--prompt-stdin", action="store_true")
@@ -893,8 +893,8 @@ def run() -> int:
     parser.add_argument("--timeout-seconds", type=int)
     parsed = parser.parse_args()
 
-    if parsed.task_class == "composition-agent" and not parsed.prompt_stdin:
-        parser.error("composition-agent requires --prompt-stdin")
+    if parsed.task_class in {"composition-agent", "storefront-proposal-agent"} and not parsed.prompt_stdin:
+        parser.error(f"{parsed.task_class} requires --prompt-stdin")
 
     config_path = Path(os.environ.get("AGENT_RUNNER_CONFIG", HERE / "config.json"))
     try:
