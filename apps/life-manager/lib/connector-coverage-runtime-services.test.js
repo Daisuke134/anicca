@@ -5,11 +5,11 @@ const test = require("node:test");
 
 const { createConnectorCoverageRuntimeServices } = require("./connector-coverage-runtime-services.js");
 
-test("runtime assembly keeps evidence in Docker and sends only Calendar, route, and opaque home through the host bridge", () => {
+test("runtime assembly keeps evidence in Docker and sends only Calendar operations through the host bridge", () => {
   const observed = {};
   const query = async () => ({ rows: [] });
   const connect = async () => ({ query, release() {} });
-  const bridge = { calendar: { findConnectorEvents() {}, createConnectorEvent() {} }, routeMinutes() {} };
+  const bridge = { calendar: { findConnectorEvents() {}, createConnectorEvent() {} } };
   const evidenceStore = { record() {}, readExternalReceipt() {}, readArtifact() {} };
   const dailyDriver = { withLumaPage() {} };
   const auth = { ensureAuthenticated() {} };
@@ -58,8 +58,6 @@ test("runtime assembly keeps evidence in Docker and sends only Calendar, route, 
   assert.equal(observed.receiptReader.readExternalReceipt, evidenceStore.readExternalReceipt);
   assert.equal(observed.coverageStore.connect, connect);
   assert.equal(observed.refresh.calendar, bridge.calendar);
-  assert.equal(observed.refresh.routeMinutes, bridge.routeMinutes);
-  assert.equal(observed.refresh.homeLocation, "home://dais-local");
   assert.equal(observed.refresh.calendarId, "primary");
   assert.deepEqual(observed.profile, {
     path: "/app/apps/life-manager/config/connector/dais-local.json",

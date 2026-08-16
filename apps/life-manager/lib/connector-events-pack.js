@@ -159,10 +159,8 @@ function createConnectorEventsPack(options = {}) {
     readBusyCalendar(calendar, window = {}) {
       return inspectBusyCalendar({ calendar, ...window });
     },
-    gateDateCalendar(dateInventory, busyInventory, date, homeLocation, routeMinutes) {
-      return evaluateCalendarGate({
-        dateInventory, busyInventory, date, homeLocation, routeMinutes,
-      });
+    gateDateCalendar(dateInventory, busyInventory, date) {
+      return evaluateCalendarGate({ dateInventory, busyInventory, date });
     },
     syncRegistrationCalendar(input) {
       return syncRegistrationCalendar(input);
