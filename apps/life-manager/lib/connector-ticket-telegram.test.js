@@ -25,6 +25,7 @@ function input(overrides = {}) {
     selectionReason: "東京でエンジニアと直接会え、既存予定と移動時間が重ならないためです。",
     eventUrl: "https://luma.com/a879ax7k",
     calendarUrl: "https://www.google.com/calendar/event?eid=fixture",
+    confirmationReceiptRef: `gmail-message://dais-local/${"b".repeat(64)}`,
     ...overrides,
   };
 }
@@ -54,6 +55,20 @@ test("placeholder、非Luma URL、非Google Calendar URL、壊れた時刻を拒
   assert.throws(() => buildConnectorTicketCaption(input({ eventUrl: "https://evil.example/a879ax7k" })), /event URL/i);
   assert.throws(() => buildConnectorTicketCaption(input({ calendarUrl: "https://evil.example/calendar" })), /Calendar URL/i);
   assert.throws(() => buildConnectorTicketCaption(input({ endsAt: "2026-08-15T17:00:00+09:00" })), /time/i);
+});
+
+test("確認メールの証跡refがない申込みは確認メール受信済みと主張しない", () => {
+  assert.throws(() => buildConnectorTicketCaption(input({ confirmationReceiptRef: "" })), /confirmation receipt/i);
+  assert.throws(() => buildConnectorTicketCaption(input({ confirmationReceiptRef: "not-a-receipt" })), /confirmation receipt/i);
+  assert.throws(
+    () => buildConnectorTicketCaption(input({ confirmationReceiptRef: "provider-receipt://luma/fixture" })),
+    /confirmation receipt/i,
+  );
+});
+
+test("captionの確認メール文言は検証済みeventUrlのproviderから導出する", () => {
+  const caption = buildConnectorTicketCaption(input({ eventUrl: "https://lu.ma/a879ax7k" }));
+  assert.match(caption, /✅ Lumaの確認メールを受信済み/);
 });
 
 test("verified artifactを一度だけ送りpositive message IDだけをreceiptにする", async () => {

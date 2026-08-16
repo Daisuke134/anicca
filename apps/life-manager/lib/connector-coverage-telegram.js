@@ -117,14 +117,20 @@ function normalizeNewEvents(coverage, rows) {
 
 function buildConnectorCoverageTelegramMessage(input = {}) {
   const coverage = input.coverage;
-  if (!isVerifiedRollingEventCoverage(coverage) || coverage.horizon_days !== 21) invalid();
+  if (
+    !isVerifiedRollingEventCoverage(coverage)
+    || !Number.isInteger(coverage.horizon_days) || coverage.horizon_days < 1
+  ) invalid();
+  const horizonDays = coverage.horizon_days;
   const calendar = googleCalendarUrl(input.calendarCoverageUrl);
   const newEvents = normalizeNewEvents(coverage, input.newEvents);
   const lines = [
-    coverage.counts.open === 0 ? "✅ 今後3週間のevent予定を確認しました。" : "🔌 Connector 3週間予約状況",
+    coverage.counts.open === 0
+      ? `✅ 今後${horizonDays}日のevent予定を確認しました。`
+      : `🔌 Connector ${horizonDays}日予約状況`,
     "",
     `確認期間: ${jaDate(coverage.window_start_date)}〜${jaDate(coverage.window_end_date)}`,
-    "対象日: 21日",
+    `対象日: ${horizonDays}日`,
     `既存の対面予定: ${coverage.counts.covered_existing}日`,
     `Connectorが新しく予約: ${coverage.counts.covered_new}日`,
     `固定予定で追加不可: ${coverage.counts.unavailable}日`,
@@ -154,9 +160,9 @@ function buildConnectorCoverageTelegramMessage(input = {}) {
   } else if (coverage.counts.covered_new === 0) {
     lines.push("", "予約できる空き枠が残っていないため、二重予約を作りませんでした。");
   } else {
-    lines.push("", "21日間の未処理日はありません。既存予定と移動時間が重なる予約もありません。");
+    lines.push("", `${horizonDays}日間の未処理日はありません。既存のCalendar予定と重なる予約もありません。`);
   }
-  lines.push("", "3週間のCalendarを開く:", calendar);
+  lines.push("", `${horizonDays}日のCalendarを開く:`, calendar);
   const message = lines.join("\n");
   if (message.length > 4_096 || /runner|bounded|none:/i.test(message)) invalid();
   return message;
