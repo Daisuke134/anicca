@@ -462,6 +462,38 @@ class LocalLoopTest(unittest.TestCase):
                 self.assertEqual(publish_x.call_count, 1 if changed else 0)
 
 
+    def test_failed_telegram_send_retries_instead_of_wedging_reporting(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            event = {"event_uuid": "e" * 64, "kind": "SELF_HEALED", "body": "報告"}
+            attempts = []
+
+            def failing(args, **kwargs):
+                attempts.append(args)
+                return subprocess.CompletedProcess(args, 1, "", "boom")
+
+            first = MODULE.flush_telegram(state, event, runner=failing)
+            self.assertEqual(first["state"], "SEND_FAILED")
+            # Previously the unresolved effect made every later wake report
+            # RECONCILE_REQUIRED forever and the owner heard nothing again.
+            second = MODULE.flush_telegram(state, None, runner=failing)
+            self.assertEqual(second["state"], "SEND_FAILED")
+            self.assertEqual(len(attempts), 2)
+
+            def succeeding(args, **kwargs):
+                attempts.append(args)
+                return subprocess.CompletedProcess(
+                    args, 0, json.dumps({"messageId": "4242"}), "",
+                )
+
+            third = MODULE.flush_telegram(state, None, runner=succeeding)
+            self.assertEqual(third["state"], "SENT")
+            self.assertEqual(third["message_id"], "4242")
+            # A delivered message is never sent twice.
+            fourth = MODULE.flush_telegram(state, None, runner=succeeding)
+            self.assertEqual(fourth["state"], "NO_PENDING")
+            self.assertEqual(len(attempts), 3)
+
     def test_recomposed_live_campaign_does_not_block_the_next_campaign(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root) / "state"

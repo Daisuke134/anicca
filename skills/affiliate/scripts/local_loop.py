@@ -696,8 +696,15 @@ def flush_telegram(state, event, runner=subprocess.run):
     if not openclaw:
         return {"state": "TRANSPORT_UNAVAILABLE", "sent": 0, "message_id": None}
     row = pending[0]
+    # A send that failed before it could be recorded leaves an unresolved effect
+    # that the reconcile pass above can never clear, because that pass only
+    # resolves events already present in telegram-sent.jsonl. Without a resume
+    # the owner stops hearing anything at all, which is how placements eight
+    # through ten went unreported on 2026-08-17. Resume under the same identity,
+    # exactly as every other effect owner here does; the sent-ledger dedupe on
+    # event_uuid still guarantees a delivered message is never sent twice.
     try:
-        job = start_effect(
+        job = resume_effect(state, "TELEGRAM_SEND", row["event_uuid"]) or start_effect(
             state, "TELEGRAM_SEND", row["event_uuid"],
             {"channel": "telegram", "event_uuid": row["event_uuid"],
              "body_sha256": hashlib.sha256(row["body"].encode()).hexdigest()},
