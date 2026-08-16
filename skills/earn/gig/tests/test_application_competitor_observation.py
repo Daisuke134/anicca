@@ -71,3 +71,13 @@ def test_competitor_profile_identity_is_strict():
 
     with pytest.raises(snapshot.SnapshotContractError, match="applicant_profile_url_invalid"):
         snapshot._normalise_detail(bad)
+
+
+@pytest.mark.parametrize("field", ["name", "applied_at", "profile_summary"])
+def test_incomplete_optional_applicant_does_not_invalidate_listing_snapshot(field):
+    incomplete = detail()
+    incomplete["applicants"][0][field] = ""
+
+    normalized = snapshot._normalise_detail(incomplete)
+
+    assert normalized["applicants"] == []
