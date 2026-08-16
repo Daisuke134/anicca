@@ -279,14 +279,22 @@ def policy_inputs(
             row["source_id"]: row for row in bundle["sources"]
         }
         current_sources = []
+        source_artifacts = []
         for source_id, row in source_rows.items():
+            directory = state_root / "sources" / source_id
             latest = json.loads((
-                state_root / "sources" / source_id / "latest.json"
+                directory / "latest.json"
             ).read_text(encoding="utf-8"))
             current_sources.append(
                 latest.get("raw_sha256") == row["raw_sha256"]
                 and latest.get("locator") == row["locator"]
                 and datetime.fromisoformat(latest["expires_at"]) > datetime.now(timezone.utc)
+            )
+            matches = sorted(directory.glob(f"{row['raw_sha256']}.*"))
+            source_artifacts.append(
+                len(matches) == 1
+                and hashlib.sha256(matches[0].read_bytes()).hexdigest()
+                == row["raw_sha256"]
             )
         cited = handoff["cited_sources"]
         cited_exact = bool(cited) and all(
@@ -309,6 +317,7 @@ def policy_inputs(
                 == handoff.get("source_set_sha256")
             ),
             "fresh_sources": bool(current_sources) and all(current_sources),
+            "source_artifacts": bool(source_artifacts) and all(source_artifacts),
             "metadata": all((
                 handoff.get("schema_version") == 1,
                 handoff.get("receipt_type") == "CAMPAIGN_HANDOFF",
@@ -343,7 +352,6 @@ def policy_inputs(
             ),
             "private_link_absent": "try.elevenlabs.io" not in markdown,
         }
-        source_text(state_root, bundle)
         return handoff, checks
     except (
         OSError, TypeError, ValueError, KeyError, json.JSONDecodeError,

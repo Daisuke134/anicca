@@ -175,6 +175,18 @@ class CompositionOwnerTests(unittest.TestCase):
             self.assertEqual(policy["handoff_sha256"], handoff_sha256)
             self.assertEqual(audit_runner.call_count, 1)
 
+            (source_dir / f"{raw_sha256}.md").write_bytes(b"tampered")
+            failed_sha256 = module.build_policy(
+                root, state, bundle,
+                {"handoff_sha256": handoff_sha256},
+                audit_runner=audit_runner,
+            )
+            failed = json.loads(policy_path.read_text(encoding="utf-8"))
+            self.assertEqual(failed_sha256, hashlib.sha256(policy_path.read_bytes()).hexdigest())
+            self.assertEqual(failed["decision"], "FAIL")
+            self.assertFalse(failed["checks"]["source_artifacts"])
+            self.assertEqual(audit_runner.call_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1057,7 +1057,10 @@ flowchart LR
    source hashes before and after the read-only audit, writes one hash-bound
    PASS/FAIL receipt, and keeps the private link and all effect authority out of
    policy context. The focused checks and all 50 Affiliate tests pass; immutable
-   release installation and real launchd receipt readback remain open.
+   release installation and real launchd receipt readback remain open. A third
+   RED proved that changed official-source bytes previously raised before leaving
+   evidence; it now writes a deterministic FAIL receipt, does not invoke the
+   semantic auditor again, and records `source_artifacts=false`.
 5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
    only a policy-PASS artifact, injects the executable link locally, publishes the
    owned article, waits for HTTP `200`, publishes X, and performs exact public
