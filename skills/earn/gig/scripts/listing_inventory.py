@@ -292,6 +292,10 @@ async def _fetch_list_page(
         "JSON.stringify({cards:[...document.querySelectorAll('#serviceListContent "
         ".serviceListContentBox')].map(card=>({"
         "href:card.querySelector('a[href^=\"/services/\"]')?.getAttribute('href')||'',"
+        "state_controls:[...card.querySelectorAll('a,button,[role=button],[role=menuitem]')]"
+        ".filter(e=>/非公開|公開停止|公開を停止|下書きに戻す|停止|削除|公開する/.test(e.innerText||''))"
+        ".slice(0,10).map(e=>({tag:e.tagName,label:(e.innerText||'').trim().slice(0,40),"
+        "href:e.getAttribute('href')||null,id:e.id||null,cls:(e.className||'')+''})),"
         "text:card.innerText||''})).filter(card=>/^\\/services\\/\\d+$/.test(card.href))})"
     )
     if ws_url is not None:
@@ -372,10 +376,14 @@ async def collect_live(identity: str = IDENTITY, *, ws_url: str | None = None) -
             for live_card in live_cards:
                 match = re.fullmatch(r"/services/(\d+)", str(live_card.get("href") or ""))
                 if match:
-                    cards.extend(parse_list_page(
+                    parsed = parse_list_page(
                         str(live_card.get("text") or "") + CARD_DELIMITER,
                         [match.group(1)],
-                    ))
+                    )
+                    for row in parsed:
+                        # Observed only. The listing-state adapter binds the real control from here.
+                        row["state_controls"] = live_card.get("state_controls") or []
+                    cards.extend(parsed)
             new_cards = new_cards_only(cards, seen_ids)
             if not new_cards:
                 break
