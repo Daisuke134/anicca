@@ -184,6 +184,13 @@ def _report_message(row: dict) -> str:
         f"🛡️ fence {hypothesis.get('guard_reason') or row.get('reason') or 'なし'}",
         f"🔧 次の一手: {next_action}",
     ]
+    accounting = row.get("accounting") if isinstance(row.get("accounting"), dict) else None
+    if accounting is not None:
+        lines.append(
+            f"⚡ incremental {float(row.get('runtime_seconds') or 0):.1f}秒 / "
+            f"minute {accounting.get('minute')} / hour {accounting.get('hour')} / day {accounting.get('day')} / "
+            f"全KPI更新 {accounting.get('analytics_observed_at_epoch') or 'unknown'}"
+        )
     if draft.get("public_url"):
         lines.extend(("✅ 新規SEOサービスは公式公開中", f"🔗 {draft['public_url']}"))
     if failed:
@@ -2047,6 +2054,7 @@ def _execute_image_effect(**kwargs) -> tuple[dict, dict, Path]:
 
 
 def run_once(args: argparse.Namespace) -> tuple[int, dict]:
+    started_at = time.monotonic()
     pass_id = args.pass_id or f"storefront-direct-{time.time_ns()}-{os.getpid()}"
     minimum_epoch = int(time.time())
     args.state_dir.mkdir(parents=True, exist_ok=True)
@@ -2116,6 +2124,69 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             validated_contracts = [
                 _service_contract(source, str(inventory["observed_at"])) for source in contract_sources
             ]
+            if getattr(args, "incremental", False):
+                cutoff = int(getattr(args, "accounting_cutoff_epoch", 0) or time.time())
+                if cutoff <= 0:
+                    raise RuntimeError("incremental_cutoff_invalid")
+                listing_contracts = _load_listing_contracts(
+                    getattr(args, "listing_contract_dir", DEFAULT_LISTING_CONTRACT_DIR), validated_contracts,
+                    getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
+                )
+                funnel = _join_funnel(
+                    args.state_dir, validated_contracts,
+                    getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),
+                    getattr(args, "applied", DEFAULT_APPLIED), getattr(args, "earnings", DEFAULT_EARNINGS),
+                    getattr(args, "projects_dir", DEFAULT_PROJECTS), cutoff,
+                )
+                portfolio = _allocate_portfolio(
+                    args.state_dir, validated_contracts, funnel,
+                    getattr(args, "scorecard", DEFAULT_SCORECARD), cutoff,
+                )
+                inquiry_context = _materialize_inquiry_context(
+                    args.state_dir, listing_contracts,
+                    getattr(args, "negotiate_context_acks", DEFAULT_NEGOTIATE_CONTEXT_ACKS), cutoff,
+                )
+                prior = {}
+                try:
+                    prior = json.loads(output.read_text(encoding="utf-8")) if output.exists() else {}
+                except (OSError, json.JSONDecodeError):
+                    prior = {}
+                contract_count = sum(int(_append_contract_once(
+                    args.state_dir / "offer-contracts.jsonl", contract,
+                )) for contract in validated_contracts)
+                listing_contract_count = sum(int(_append_key_once(
+                    args.state_dir / "listing-contracts.jsonl", "contract_key", contract,
+                )) for contract in listing_contracts)
+                release = _lease(args.lease_script, "release", task, lease)
+                released = release.get("released") == task
+                if not released:
+                    raise RuntimeError("lease_release_unproven")
+                analytics_epoch = max((int(row.get("observed_at_epoch") or 0) for row in
+                    _jsonl_rows(args.state_dir / "analytics.jsonl")[0]), default=0)
+                row = _receipt(
+                    pass_id, status="completed", reason="incremental_catalog_funnel_readback",
+                    official_services_read=observed, competitor_evidence_count=0,
+                    offer_contracts_appended=contract_count,
+                    listing_contracts_appended=listing_contract_count,
+                    listing_contracts_active=len(listing_contracts),
+                    listing_contracts_total=sum(1 for line in
+                        (args.state_dir / "listing-contracts.jsonl").read_text(encoding="utf-8").splitlines()
+                        if line.strip()),
+                    inventory_content_sha256=inventory.get("content_sha256"),
+                    incremental_public_readback=1, catalog_analytics=prior.get("catalog_analytics"),
+                    funnel=funnel, portfolio=portfolio, inquiry_context=inquiry_context,
+                    new_listing_draft={"status": "not_checked_incremental", "effect": 0,
+                                       "readback": 0, "public_effect": 0},
+                    accounting={"cutoff_epoch": cutoff, "minute": cutoff // 60,
+                                "hour": cutoff // 3600, "day": cutoff // 86400,
+                                "analytics_observed_at_epoch": analytics_epoch},
+                    runtime_seconds=round(time.monotonic() - started_at, 3),
+                    lease={"task": task, "context_id": lease.get("context_id"),
+                           "target_id": lease.get("target_id"), "generation": lease.get("generation"),
+                           "released": True},
+                )
+                row = _persist_receipt(args, output, row)
+                return 0, row
             capability_families, _ = _load_capability_families(
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
             )
@@ -2625,6 +2696,8 @@ def main() -> int:
     parser.add_argument("--timeout-seconds", type=int, default=180)
     parser.add_argument("--capability-evidence", type=Path, action="append", default=list(DEFAULT_CAPABILITIES))
     parser.add_argument("--effect", action="store_true")
+    parser.add_argument("--incremental", action="store_true")
+    parser.add_argument("--accounting-cutoff-epoch", type=int, default=0)
     parser.add_argument("--pass-id")
     parser.add_argument("--telegram-database", type=Path, default=DEFAULT_TELEGRAM_DATABASE)
     parser.add_argument("--telegram-receipt-dir", type=Path, default=DEFAULT_TELEGRAM_RECEIPTS)
