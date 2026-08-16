@@ -1010,6 +1010,7 @@ def wake(args):
         distribution = {
             "state": "DISTRIBUTION_FAILED", "public_url": None,
             "changed": False, "failure_type": type(error).__name__,
+            "failure_detail": str(error)[:600],
         }
     revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
@@ -1051,6 +1052,7 @@ def wake(args):
         "distribution_channel": distribution.get("channel"),
         "distribution_changed": distribution.get("changed", False),
         "distribution_failure_type": distribution.get("failure_type"),
+        "distribution_failure_detail": distribution.get("failure_detail"),
         "revenue_state": revenue["state"],
         "revenue_source_rows": revenue["source_rows"],
         "revenue_appended_transitions": revenue["appended_transitions"],

@@ -52,11 +52,14 @@ def _json(url, cookie, method="GET", payload=None):
     request = urllib.request.Request(url, data=data, method=method, headers={
         "Accept": "application/json", "Content-Type": "application/json",
         "Cookie": cookie, "Referer": f"https://{PUBLICATION}/publish/post",
-        "User-Agent": "life-manager-affiliate/1",
+        "User-Agent": "Mozilla/5.0",
     })
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             value = json.load(response)
+    except urllib.error.HTTPError as error:
+        detail = error.read(512).decode("utf-8", errors="replace").replace("\n", " ")
+        raise SubstackError(f"Substack HTTP {error.code}: {detail}") from error
     except (urllib.error.URLError, json.JSONDecodeError) as error:
         raise SubstackError(f"Substack request failed: {type(error).__name__}") from error
     if not isinstance(value, (dict, list)):
