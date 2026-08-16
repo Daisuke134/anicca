@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `501f6d5ea` is current and five isolated Affiliate launchd owners are installed. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The separate daily source owner owns versioned official-source refresh and credential-free composition inputs. The shared runner now seals the exact result and its source set before any future composition owner can hand it to policy | Open-ended discovery/composition execution, general repair, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `cf8e23528` is current and six isolated Affiliate launchd owners are installed. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-source refresh; the new ten-minute composition owner consumes at most one credential-free due source set per wake under its own lock and token budget | Open-ended discovery, generic policy/effect handoff, general repair, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and currently `AUTHENTICATED`. Installed recovery filled the observed single-page form, verified the same fenced login job on attempt 3, and the next wake converged with `recovery=NOT_NEEDED`; the browser readback is `Home | ElevenLabs`. HubSpot/Impact remains `APPLICATION_PENDING`; Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, and `BLOCKED` are live-proven | `PLACEMENT_LIVE`, `CLICK_DELTA`, and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, source-hash-bound composition inbox, provider recovery, configured content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `501f6d5ea` preserves the three credential-free inboxes for `4 + 6 + 5` sources and adds a verified composition-result seal; the release readback kept all five Affiliate owners healthy without touching Gig | A scheduled bounded composition owner, open-ended source-plan discovery, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop distributes and measures; it has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, provider recovery, configured content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `cf8e23528` advanced `elevenagents-en` and `elevenlabs-en` to sealed `READY_FOR_POLICY` receipts in two real wakes; the first receipt stayed byte-identical on wake two, proving same-source dedupe | Generic policy/effect consumption of the new composition result, open-ended source-plan discovery, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop composes, distributes configured campaigns, and measures; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -974,11 +974,11 @@ The completed history remains in the evidence tables below. The following list i
 the only canonical remaining order; later work MUST NOT jump ahead of an unmet
 gate.
 
-Current execution cursor: **step 2**. Installed release `501f6d5ea` has five
+Current execution cursor: **step 3**. Installed release `cf8e23528` has six
 healthy launchd owners, 15 refreshed official sources, three source-hash-bound
-composition inputs, a result/source-set seal, zero post-baseline clicks, and zero
-commission. Therefore the bounded composition owner—not another research
-framework, provider login, locale, packaging, or cloud service—is the next slice.
+composition inputs, two sealed `READY_FOR_POLICY` outputs, zero post-baseline
+clicks, and zero commission. Therefore the generic campaign handoff—not another
+research framework, provider login, locale, packaging, or cloud service—is next.
 
 ```mermaid
 flowchart LR
@@ -1006,7 +1006,8 @@ flowchart LR
    failed on the missing source-set contract, then passed with the full 48-test
    Affiliate suite. Live readback showed all five Affiliate owners healthy and
    Gig untouched; this is real local execution, not a dry run.
-2. **P0 — Add the bounded composition owner — GREEN in source; release pending.** Give it only one due
+2. **DONE — Add the bounded composition owner.** Installed release `cf8e23528`
+   gives it only one due
    `composition-inbox` receipt, no Affiliate credential Markdown, no provider/X
    browser, no money ledger, a separate lock, one attempt budget, and a terminal
    `READY_FOR_POLICY|FAILED|QUARANTINED` receipt. It MUST NOT run inside the
@@ -1014,7 +1015,9 @@ flowchart LR
    over the existing runner: one due source set per wake, sealed-result recovery
    before a new model call, and same-source terminal-receipt dedupe. The focused
    test first failed because the owner did not exist, then the owner and full
-   49-test Affiliate suite passed; installed launchd E2E remains the closing gate.
+   49-test Affiliate suite passed. Two installed launchd wakes produced two
+   sealed outputs, each with one placeholder and no private link; wake two left
+   wake one's receipt byte-identical. No Git, X, or commission effect occurred.
 3. **P0 — Define the generic campaign handoff.** Require offer ID, locale, buyer
    intent, title, slug, owned-article Markdown, disclosure, one CTA placeholder,
    cited source IDs/hashes, X copy, and content/result fingerprints. The model
