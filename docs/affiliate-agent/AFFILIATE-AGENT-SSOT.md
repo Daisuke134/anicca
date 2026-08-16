@@ -1850,7 +1850,10 @@ observable outcome exists.
   old 49,152-token reservation exceeded the 131,072 daily cap after 87,029 actual
   tokens. Prior successful campaigns consumed 14,526–19,236 tokens, so the task
   reservation and pass cap are reduced together to 32,768 while keeping the same
-  Terra-high model and daily cap.
+  Terra-high model and daily cap. A prior `RUNNER_REJECTED` receipt is resumable
+  only when its exact evidence summary says `budget_blocked` and the current
+  reservation now fits the recorded remaining daily budget; every other failed or
+  quarantined result stays terminal, preventing a ten-minute retry loop.
 - [ ] **A15.4** Produce one source-bound decision asset per qualified intent with
   disclosure-before-CTA, limitations, alternatives, and exactly one owned link.
 - [ ] **A15.5** Publish through the owned site and English X browser, require public

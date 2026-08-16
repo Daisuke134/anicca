@@ -515,9 +515,33 @@ def wake(
                 previous = json.loads(receipt_path.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 previous = {}
+            budget_retry_due = False
+            if (
+                previous.get("state") == "FAILED"
+                and previous.get("failure_class") == "RUNNER_REJECTED"
+                and previous.get("source_set_sha256") == bundle["source_set_sha256"]
+            ):
+                run_id = f"{bundle['plan_id']}-{bundle['source_set_sha256'][:16]}"
+                try:
+                    summary = json.loads((
+                        state_root / "composition-runs" / run_id / "summary.json"
+                    ).read_text(encoding="utf-8"))
+                    config = json.loads((
+                        skill_root / "config" / "agent-runner.json"
+                    ).read_text(encoding="utf-8"))
+                    reservation = int(config["task_classes"]["marketing-agent"]["token_reservation"])
+                    budget = summary["budget"]
+                    budget_retry_due = (
+                        summary.get("status") == "budget_blocked"
+                        and int(budget["daily_consumed_tokens"]) + reservation
+                        <= int(budget["daily_limit_tokens"])
+                    )
+                except (OSError, ValueError, KeyError, TypeError):
+                    budget_retry_due = False
             if (
                 previous.get("state") in TERMINAL
                 and previous.get("source_set_sha256") == bundle["source_set_sha256"]
+                and not budget_retry_due
             ):
                 if (
                     previous.get("state") == "READY_FOR_POLICY"
