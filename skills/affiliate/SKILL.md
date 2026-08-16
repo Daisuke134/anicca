@@ -240,7 +240,9 @@ list at most once per hour and stores Affiliate-only page views, reactions, and
 comments under `distribution-metrics/devto.json`. These are acquisition
 diagnostics, not revenue. The daily Telegram summary reports the real DEV view
 count beside provider clicks and approved commission so a zero-click result can
-be separated into a reach problem or a conversion problem.
+be separated into a reach problem or a conversion problem. The receipt marks a
+publication's 24-hour reach baseline `READY`; the choice of what to improve next
+remains an agent decision rather than a deterministic content rule.
 
 The same distribution command exposes the current Writer Substack API shape
 without importing Writer state or its retired manual sentinel path:

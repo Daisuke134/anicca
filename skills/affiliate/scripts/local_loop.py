@@ -209,7 +209,7 @@ def observe_devto_acquisition(state, now=None, cooldown_seconds=3600):
         ).timestamp())
     except (OSError, KeyError, TypeError, ValueError):
         prior, observed = {}, 0
-    if observed and now - observed < cooldown_seconds:
+    if prior.get("baseline_state") and observed and now - observed < cooldown_seconds:
         return {**prior, "state": "COOLDOWN"}
     return observe_metrics(state)
 
@@ -402,6 +402,7 @@ def daily_summary_event(state, wake_event, now=None):
         "devto_article_count": devto_metrics.get("article_count"),
         "devto_page_views": devto_metrics.get("total_page_views"),
         "devto_page_view_delta": devto_metrics.get("delta_page_views"),
+        "devto_baseline_state": devto_metrics.get("baseline_state"),
         "commission_status_counts": status_counts,
         "approved_or_paid_net_minor_by_currency": approved_by_currency,
         "provider_observed_at": links.get("observed_at"),
@@ -446,6 +447,11 @@ def daily_summary_event(state, wake_event, now=None):
             f"DEVではAffiliate記事{devto_metrics.get('article_count', 0)}本が"
             f"合計{devto_metrics.get('total_page_views', 0)}回閲覧され、"
             f"前回確認からの増加は{devto_metrics.get('delta_page_views', 0)}回です。"
+        ),
+        (
+            "DEVの24時間reach baselineは確定済みです。"
+            if devto_metrics.get("baseline_state") == "READY"
+            else "DEVの24時間reach baselineは観測中です。"
         ),
         (
             "報酬は、保留"
@@ -1305,6 +1311,7 @@ def wake(args):
         "devto_article_count": devto_metrics.get("article_count"),
         "devto_page_views": devto_metrics.get("total_page_views"),
         "devto_page_view_delta": devto_metrics.get("delta_page_views"),
+        "devto_baseline_state": devto_metrics.get("baseline_state"),
         "devto_metrics_failure_type": devto_metrics.get("failure_type"),
         "revenue_state": revenue["state"],
         "revenue_source_rows": revenue["source_rows"],

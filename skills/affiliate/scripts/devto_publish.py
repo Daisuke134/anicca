@@ -90,6 +90,7 @@ def _public_readback(url, title):
 def observe_metrics(state):
     """Persist real DEV exposure metrics for Affiliate-owned publications."""
     state = Path(state).expanduser()
+    observed_at = datetime.now(timezone.utc)
     publications = {}
     for path in (state / "devto-publications").glob("*.json"):
         try:
@@ -121,6 +122,7 @@ def observe_metrics(state):
             "placement_id": publication.get("placement_id"),
             "public_id": public_id,
             "public_url": publication.get("public_url"),
+            "published_at": publication.get("published_at"),
             **values,
         })
     receipt_path = state / "distribution-metrics" / "devto.json"
@@ -137,10 +139,18 @@ def observe_metrics(state):
         if article["page_views_count"] < prior:
             raise DevtoError("DEV page views moved backwards")
         article["delta_page_views"] = article["page_views_count"] - prior
+        try:
+            published_at = datetime.fromisoformat(article["published_at"].replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError) as error:
+            raise DevtoError("DEV publication has no valid published_at") from error
+        article["age_seconds"] = max(0, int((observed_at - published_at).total_seconds()))
+        article["baseline_ready"] = article["age_seconds"] >= 86400
     digest = hashlib.sha256(json.dumps(articles, sort_keys=True).encode()).hexdigest()
+    baseline_ready = bool(articles) and all(row["baseline_ready"] for row in articles)
     receipt = {
         "schema_version": 1, "receipt_type": "DEVTO_DISTRIBUTION_METRICS",
-        "state": "OBSERVED", "observed_at": datetime.now(timezone.utc).isoformat(),
+        "state": "OBSERVED", "observed_at": observed_at.isoformat(),
+        "baseline_state": "READY" if baseline_ready else "WAITING_24H",
         "article_count": len(articles),
         "total_page_views": sum(row["page_views_count"] for row in articles),
         "delta_page_views": sum(row["delta_page_views"] for row in articles),
