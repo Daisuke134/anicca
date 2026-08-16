@@ -1573,6 +1573,12 @@ Attempt `5` isolated the remaining defect: cross-origin
 immediately yields a non-empty token. The redundant scroll is removed; the
 verified anchor target and token gate remain unchanged.
 
+Attempt `6` still left the confirmation form intact. The CAPTCHA block now owns
+anchor lookup, DOM activation, and token wait as one typed boundary: it invokes
+the already-verified anchor's DOM `click()` and converts any failure in that
+boundary to `CAPTCHA_CHALLENGE`. No raw Playwright timeout can escape or be
+misreported as provider login failure.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
