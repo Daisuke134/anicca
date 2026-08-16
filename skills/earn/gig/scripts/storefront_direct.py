@@ -281,6 +281,12 @@ def _dispatch_report(args: argparse.Namespace, row: dict) -> dict:
 
 def _persist_receipt(args: argparse.Namespace, output: Path, row: dict) -> dict:
     durable = dict(row)
+    durable.setdefault("mode", "incremental" if getattr(args, "incremental", False) else "full")
+    if getattr(args, "auto_cadence", False):
+        durable["cadence"] = {
+            "auto": True,
+            "full_interval_seconds": int(getattr(args, "full_interval_seconds", 1800)),
+        }
     if hasattr(args, "telegram_database"):
         try:
             durable["telegram"] = _dispatch_report(args, durable)
@@ -330,6 +336,25 @@ def _jsonl_rows(path: Path) -> tuple[list[dict], str | None]:
     except (OSError, json.JSONDecodeError):
         return [], f"{path.name}_invalid"
     return rows, None
+
+
+def _auto_cadence_is_incremental(state_dir: Path, now: int, full_interval_seconds: int) -> bool:
+    if full_interval_seconds <= 0:
+        raise RuntimeError("full_interval_seconds_invalid")
+    rows, error = _jsonl_rows(state_dir / "wakes.jsonl")
+    if error not in {None, "wakes.jsonl_missing"}:
+        raise RuntimeError(error)
+    full_epochs = [
+        int(row.get("observed_at_epoch") or 0)
+        for row in rows
+        if row.get("status") == "completed"
+        and (
+            row.get("mode") == "full"
+            or (row.get("mode") is None and row.get("reason") != "incremental_catalog_funnel_readback")
+        )
+    ]
+    last_full_epoch = max(full_epochs, default=0)
+    return last_full_epoch > 0 and now - last_full_epoch < full_interval_seconds
 
 
 def _join_funnel(
@@ -2062,6 +2087,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
     minimum_epoch = int(time.time())
     args.state_dir.mkdir(parents=True, exist_ok=True)
     output = args.output or args.state_dir / "current.json"
+    if getattr(args, "auto_cadence", False):
+        try:
+            args.incremental = _auto_cadence_is_incremental(
+                args.state_dir, minimum_epoch, int(args.full_interval_seconds),
+            )
+        except RuntimeError as error:
+            row = _receipt(pass_id, status="failed", reason=str(error))
+            row = _persist_receipt(args, output, row)
+            return 1, row
     try:
         brake_held = args.operator_brake.exists()
     except OSError as error:
@@ -2700,6 +2734,8 @@ def main() -> int:
     parser.add_argument("--capability-evidence", type=Path, action="append", default=list(DEFAULT_CAPABILITIES))
     parser.add_argument("--effect", action="store_true")
     parser.add_argument("--incremental", action="store_true")
+    parser.add_argument("--auto-cadence", action="store_true")
+    parser.add_argument("--full-interval-seconds", type=int, default=1800)
     parser.add_argument("--accounting-cutoff-epoch", type=int, default=0)
     parser.add_argument("--pass-id")
     parser.add_argument("--telegram-database", type=Path, default=DEFAULT_TELEGRAM_DATABASE)
