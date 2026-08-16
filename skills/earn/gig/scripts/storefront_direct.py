@@ -155,6 +155,7 @@ def _report_message(row: dict) -> str:
     inquiry_context = row.get("inquiry_context") if isinstance(row.get("inquiry_context"), dict) else {}
     effect = max(int(row.get("effect") or 0), int(draft.get("effect") or 0),
                  int(draft.get("public_effect") or 0))
+    readback = max(int(row.get("readback") or 0), int(draft.get("readback") or 0))
     competitor = row.get("competitor_evidence") if isinstance(row.get("competitor_evidence"), dict) else {}
     competitor_text = (
         f"今回未計測（直近full {_display_count(competitor.get('latest_full_count'))}件）"
@@ -228,14 +229,15 @@ def _report_message(row: dict) -> str:
         else "公式readbackとoutcome ledgerを照合" if effect
         else f"{hypothesis.get('service_id')}/{hypothesis.get('field')}の実行harnessを継続"
         if hypothesis else
-        f"{portfolio_selected.get('service_id')}/{portfolio_selected.get('improvement_field')}の実行contractを準備"
+        (f"{portfolio_selected.get('service_id')}/{portfolio_selected.get('improvement_field')}のfenceを維持し、"
+         "他出品の実行可能gapを選定")
         if portfolio_selected else "scorecard先頭の改善gapを選択"
     )
     lines = [
         "Codex::: 🏪 ココナラ Storefront hourly",
         f"✅ 公式出品 {_display_count(row.get('official_services_read'))}件 / 競合証拠 {competitor_text}",
         (f"📊 actionable {_display_count(row.get('actionable'))} / effect {effect} / "
-         f"readback {_display_count(row.get('readback'))} / duplicate {_display_count(row.get('duplicate'))}"),
+         f"readback {readback} / duplicate {_display_count(row.get('duplicate'))}"),
         (f"📚 公開contract {_display_count(row.get('listing_contracts_active'))}件 / "
          f"version履歴 {_display_count(row.get('listing_contracts_total'))}件 / "
          f"今回追加 {_display_count(contract_delta)}件"),
