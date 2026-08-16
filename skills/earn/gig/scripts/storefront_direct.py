@@ -47,6 +47,7 @@ TARGET_SERVICE_ID = "4330368"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
 DEFAULT_TITLE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-title-v1.json"
 DEFAULT_BODY_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-body-v1.json"
+DEFAULT_PACKAGE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-package-v1.json"
 DEFAULT_LISTING_CONTRACT_DIR = GIG_DIR / "contracts" / "storefront"
 DEFAULT_LISTING_CONTRACT_FAMILIES = GIG_DIR / "config" / "storefront-contract-families.json"
 DEFAULT_NEW_LISTING_CONTRACT = (
@@ -310,8 +311,8 @@ def _render_text_mutation(path: Path, sources: list[dict], seller_snapshot: dict
     }
     source = next((row for row in sources if row["service_id"] == str(spec.get("service_id") or "")), None)
     if (set(spec) != required or spec.get("version") != 1 or spec.get("platform") != "coconala"
-            or spec.get("changed_field") not in {"title", "body", "FAQ"} or source is None
-            or not str(spec.get("form_field") or "").startswith("data[Service][")
+            or spec.get("changed_field") not in {"title", "body", "package", "FAQ", "price"} or source is None
+            or not str(spec.get("form_field") or "").startswith("data[")
             or not all(isinstance(spec.get(key), str) and spec[key].strip()
                        for key in ("before_value", "proposed_value", "rollback_value"))
             or spec["before_value"] != spec["rollback_value"]
@@ -332,6 +333,10 @@ def _render_text_mutation(path: Path, sources: list[dict], seller_snapshot: dict
             and spec["official_readback"].get("public_body_sha256")
             != hashlib.sha256(spec["proposed_value"].encode()).hexdigest()):
         raise RuntimeError("storefront_body_readback_contract_invalid")
+    if (spec["changed_field"] == "package"
+            and (spec["official_readback"].get("option_title") != spec["proposed_value"]
+                 or type(spec["official_readback"].get("option_price_jpy")) is not int)):
+        raise RuntimeError("storefront_package_readback_contract_invalid")
     unsigned = {
         "version": 1, "platform": "coconala", "service_id": source["service_id"],
         "precondition_listing_version_sha256": source["service_version_sha256"],
@@ -1498,10 +1503,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "body_mutation", DEFAULT_BODY_MUTATION), validated_contracts,
                 presentation_snapshot,
             )
+            package_render = _render_text_mutation(
+                getattr(args, "package_mutation", DEFAULT_PACKAGE_MUTATION), validated_contracts,
+                presentation_snapshot,
+            )
             title_render_path = inventory_path.parent / "mutation-render-title.json"
             body_render_path = inventory_path.parent / "mutation-render-body.json"
+            package_render_path = inventory_path.parent / "mutation-render-package.json"
             _atomic_write(title_render_path, title_render)
             _atomic_write(body_render_path, body_render)
+            _atomic_write(package_render_path, package_render)
             listing_contracts = _load_listing_contracts(
                 getattr(args, "listing_contract_dir", DEFAULT_LISTING_CONTRACT_DIR), validated_contracts,
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
@@ -1822,7 +1833,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "service_id": render["contract"]["service_id"],
                     "contract_sha256": render["contract"]["contract_sha256"],
                     "delta": render["delta"], "published": False, "evidence_path": str(path),
-                } for render, path in ((title_render, title_render_path), (body_render, body_render_path))],
+                } for render, path in (
+                    (title_render, title_render_path), (body_render, body_render_path),
+                    (package_render, package_render_path),
+                )],
                 lease={
                     "task": task,
                     "context_id": lease.get("context_id"),
@@ -1865,6 +1879,7 @@ def main() -> int:
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
     parser.add_argument("--title-mutation", type=Path, default=DEFAULT_TITLE_MUTATION)
     parser.add_argument("--body-mutation", type=Path, default=DEFAULT_BODY_MUTATION)
+    parser.add_argument("--package-mutation", type=Path, default=DEFAULT_PACKAGE_MUTATION)
     parser.add_argument("--listing-contract-dir", type=Path, default=DEFAULT_LISTING_CONTRACT_DIR)
     parser.add_argument(
         "--listing-contract-families", type=Path, default=DEFAULT_LISTING_CONTRACT_FAMILIES,

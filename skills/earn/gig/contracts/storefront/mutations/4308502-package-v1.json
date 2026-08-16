@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "platform": "coconala",
+  "service_id": "4308502",
+  "capability_family": "presentation_design",
+  "changed_field": "package",
+  "form_field": "data[Option][0][title]",
+  "before_value": "スライド追加作成（1枚あたり）",
+  "proposed_value": "追加スライド1枚（原稿支給・同一デザイン）",
+  "rollback_value": "スライド追加作成（1枚あたり）",
+  "official_readback": {
+    "option_title": "追加スライド1枚（原稿支給・同一デザイン）",
+    "option_price_jpy": 1000
+  },
+  "success_metric": "views_to_purchase",
+  "observation_window_days": 14,
+  "evidence": [
+    "official:seller-form:4308502",
+    "owned:portfolio:education-training-presentation"
+  ]
+}
