@@ -95,19 +95,25 @@ def publish(args):
     artifact = load_artifact(state, args.slug)
     receipt_path = state / "owned-publications" / f"{args.slug}.json"
     receipt = {}
+    revision = False
+    prior_content_sha256 = None
     if receipt_path.is_file():
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
         if receipt.get("content_sha256") != artifact["content_sha256"]:
-            raise PublishError("publication receipt conflicts with artifact")
-        live = fetch_readback(artifact, args.base_url)
-        if live:
-            reconcile_effect(state, "OWNED_GIT_PUSH", args.slug, {
-                "state": "LIVE", "public_url": live["public_url"],
-                "rendered_sha256": live["rendered_sha256"],
-            })
-            receipt.update(state="LIVE", **live)
-            atomic_write(receipt_path, receipt)
-            return receipt
+            if receipt.get("state") != "LIVE":
+                raise PublishError("publication receipt conflicts with artifact")
+            revision = True
+            prior_content_sha256 = receipt.get("content_sha256")
+        else:
+            live = fetch_readback(artifact, args.base_url)
+            if live:
+                reconcile_effect(state, "OWNED_GIT_PUSH", args.slug, {
+                    "state": "LIVE", "public_url": live["public_url"],
+                    "rendered_sha256": live["rendered_sha256"],
+                })
+                receipt.update(state="LIVE", **live)
+                atomic_write(receipt_path, receipt)
+                return receipt
     if git(root, "rev-parse", "--show-toplevel") != str(root):
         raise PublishError("landing root is not the exact git worktree")
     target_relative = f"apps/landing/data/research/{args.slug}.json"
@@ -117,13 +123,29 @@ def publish(args):
     if dirty and dirty != {target_relative}:
         raise PublishError("landing worktree has unrelated changes")
     if target.exists() and target.read_text(encoding="utf-8") != expected:
-        raise PublishError("public slug conflicts with different content")
-    if not target.exists():
+        try:
+            current = json.loads(target.read_text(encoding="utf-8"))
+        except ValueError as error:
+            raise PublishError("public slug conflicts with different content") from error
+        current_sha256 = hashlib.sha256(str(current.get("markdown", "")).encode()).hexdigest()
+        if not revision or current.get("slug") != args.slug or current_sha256 != prior_content_sha256:
+            raise PublishError("public slug conflicts with different content")
+        temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+        temporary.write_text(expected, encoding="utf-8")
+        os.replace(temporary, target)
+    elif not target.exists():
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
         temporary.write_text(expected, encoding="utf-8")
         os.replace(temporary, target)
-    if not receipt:
+    if revision:
+        receipt.update(
+            content_sha256=artifact["content_sha256"], state="INTENT",
+            prior_content_sha256=prior_content_sha256,
+            revised_at=datetime.now(timezone.utc).isoformat(),
+        )
+        atomic_write(receipt_path, receipt)
+    elif not receipt:
         receipt = {
             "schema_version": 1,
             "receipt_type": "OWNED_PUBLICATION",

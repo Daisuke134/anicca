@@ -1386,6 +1386,7 @@ outcomes remain observable unknowns and MUST NOT be guessed before execution.
 | `skills/affiliate/scripts/revenue_cli.py` | Capture Link Performance baseline/rows, persist click transitions, and pass exact link identity to existing attribution candidates | Count local analytics as provider clicks or change commission transition identity |
 | `skills/affiliate/scripts/content.py` | Bind only the TTS API builder/policy to the private `TTS API affiliate link` field after exact provider readback | Receive a provider cookie, generate a link, or change article copy |
 | `skills/affiliate/scripts/composition_owner.py` | No change: continue producing a single placeholder and source-bound sealed content | Receive a private link, provider cookie, or money ledger access |
+| `skills/affiliate/scripts/owned_publish.py` | Permit a same-slug revision only when the checked-in public artifact still hashes to the prior LIVE receipt, then create a new fenced push/readback | Overwrite an unrelated slug, bypass the prior hash, or create a second X post |
 | `skills/affiliate/scripts/install-release.sh` | Preserve the six-owner allowlist and install the pushed immutable release | Add a seventh business owner or touch Gig/Coconala labels |
 | `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md` | Record each observed state transition and advance the current cursor | Store secrets, raw referral links, or forecasts as facts |
 
@@ -1395,6 +1396,7 @@ The change budget is three sequential slices, never one broad patch:
 |---|---|---|---:|
 | E0-B-link | `program_registry.py` | `tests/test_program_registry.py` | 100 net LOC |
 | E0-B-materialize | `content.py` | existing content contract checks | 10 net LOC |
+| E0-B-revise-owned | `owned_publish.py` | existing publication conflict/effect checks | 40 net LOC |
 | E0-B-click | `revenue_cli.py` | `tests/test_revenue_cli.py` | 100 net LOC |
 | E0-B-wire | `local_loop.py` | `tests/test_local_loop.py` | 100 net LOC |
 
@@ -1564,6 +1566,10 @@ shared abstraction to make the diff appear smaller.
 - [ ] **E0-C06** Let the same loop publish the next policy-PASS campaign with that
   link and verify owned HTTP, disclosure/link order, X, DEV, and Substack
   readbacks.
+  For the already-live TTS slug, a link-only revision is allowed only when the
+  checked-in artifact markdown hashes to the prior LIVE receipt. The loop writes
+  a new content hash and fenced Git push, while the unchanged owned URL lets the
+  existing X placement reconcile without a duplicate post.
 - [ ] **E0-C07** Kick an unchanged replay and require the same provider link,
   public URLs, job count, Git HEAD, and `Telegram=NO_PENDING`.
 - [ ] **E0-C08** Capture Link Performance baseline for that link; an unchanged
