@@ -202,9 +202,6 @@ cat > "$COMPOSITION_PLIST" <<EOF
 </dict></plist>
 EOF
 /usr/bin/plutil -lint "$BROWSER_PLIST" "$IMPACT_BROWSER_PLIST" "$X_BROWSER_PLIST" "$SOURCE_PLIST" "$COMPOSITION_PLIST" "$LOOP_PLIST" >/dev/null
-for label in ai.anicca.affiliate-loop ai.anicca.affiliate-composition ai.anicca.affiliate-source-refresh ai.anicca.affiliate-x-browser ai.anicca.affiliate-impact-browser ai.anicca.affiliate-browser; do
-  /bin/launchctl bootout "gui/$(id -u)/$label" >/dev/null 2>&1 || true
-done
 
 bootstrap_agent() {
   local plist="$1"
@@ -218,7 +215,16 @@ bootstrap_agent() {
   die "launchd bootstrap failed for $(basename "$plist")"
 }
 
-bootstrap_agent "$BROWSER_PLIST"
+ensure_agent() {
+  local label="$1"
+  local plist="$2"
+  if /bin/launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1; then
+    return 0
+  fi
+  bootstrap_agent "$plist"
+}
+
+ensure_agent "ai.anicca.affiliate-browser" "$BROWSER_PLIST"
 for attempt in {1..30}; do
   if /usr/bin/curl -fsS --max-time 2 "http://127.0.0.1:9324/json/version" >/dev/null 2>&1; then
     break
@@ -226,7 +232,7 @@ for attempt in {1..30}; do
   [[ "$attempt" != "30" ]] || die "affiliate browser CDP did not become ready"
   sleep 1
 done
-bootstrap_agent "$IMPACT_BROWSER_PLIST"
+ensure_agent "ai.anicca.affiliate-impact-browser" "$IMPACT_BROWSER_PLIST"
 for attempt in {1..30}; do
   if /usr/bin/curl -fsS --max-time 2 "http://127.0.0.1:9327/json/version" >/dev/null 2>&1; then
     break
@@ -234,7 +240,7 @@ for attempt in {1..30}; do
   [[ "$attempt" != "30" ]] || die "affiliate Impact browser CDP did not become ready"
   sleep 1
 done
-bootstrap_agent "$X_BROWSER_PLIST"
+ensure_agent "ai.anicca.affiliate-x-browser" "$X_BROWSER_PLIST"
 for attempt in {1..30}; do
   if /usr/bin/curl -fsS --max-time 2 "http://127.0.0.1:9326/json/version" >/dev/null 2>&1; then
     break
@@ -242,8 +248,8 @@ for attempt in {1..30}; do
   [[ "$attempt" != "30" ]] || die "affiliate X browser CDP did not become ready"
   sleep 1
 done
-bootstrap_agent "$SOURCE_PLIST"
-bootstrap_agent "$COMPOSITION_PLIST"
-bootstrap_agent "$LOOP_PLIST"
+ensure_agent "ai.anicca.affiliate-source-refresh" "$SOURCE_PLIST"
+ensure_agent "ai.anicca.affiliate-composition" "$COMPOSITION_PLIST"
+ensure_agent "ai.anicca.affiliate-loop" "$LOOP_PLIST"
 
 printf 'installed local affiliate release %s\n' "$HEAD_SHA"

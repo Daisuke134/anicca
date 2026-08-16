@@ -50,6 +50,11 @@ def sha256(path: Path) -> str:
 
 
 class RepositoryOwnershipTests(unittest.TestCase):
+    def test_live_installer_does_not_bootout_loaded_affiliate_owners(self) -> None:
+        installer = REPO_ROOT / "skills" / "affiliate" / "scripts" / "install-release.sh"
+        text = installer.read_text(encoding="utf-8")
+        self.assertNotIn('/bin/launchctl bootout "gui/$(id -u)/$label"', text)
+
     def test_canonical_skill_is_migration_only_and_active_files_are_portable(self) -> None:
         skill = SKILL_ROOT / "SKILL.md"
         self.assertTrue(skill.is_file())

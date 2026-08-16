@@ -1060,7 +1060,18 @@ flowchart LR
    release installation and real launchd receipt readback remain open. A third
    RED proved that changed official-source bytes previously raised before leaving
    evidence; it now writes a deterministic FAIL receipt, does not invoke the
-   semantic auditor again, and records `source_artifacts=false`.
+   semantic auditor again, and records `source_artifacts=false`. The first live
+   install exposed an installer failure before policy execution: it switched the
+   immutable release, booted out all six healthy Affiliate owners, then macOS
+   returned launchctl error 141 before the first browser bootstrap. Plists lint,
+   but this Codex process also lost Keychain/XPC access, so a fresh login context
+   is required for live recovery. The harness fix is now RED: live install MUST
+   preserve loaded owners and bootstrap only missing owners; it MUST NOT batch
+   bootout healthy Affiliate services. That installer regression is GREEN in
+   source: loaded labels are preserved, only missing labels are bootstrapped,
+   shell syntax passes, and all 51 Affiliate tests pass. Live owner recovery and
+   the first installed generic policy receipt still require a fresh macOS login
+   context because the current Codex process cannot reach any launchd domain.
 5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
    only a policy-PASS artifact, injects the executable link locally, publishes the
    owned article, waits for HTTP `200`, publishes X, and performs exact public
