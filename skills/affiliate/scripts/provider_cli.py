@@ -199,7 +199,7 @@ def click_text(ws, request_id, selector, allowed_text):
     return request_id + 2
 
 
-def playwright_click_text(host, port, expected_url, allowed_text):
+def playwright_click_text(host, port, expected_url, allowed_text, response_url_contains=None):
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as playwright:
@@ -218,7 +218,20 @@ def playwright_click_text(host, port, expected_url, allowed_text):
                 matches.extend(locator.nth(index) for index in range(locator.count()))
             if len(matches) != 1:
                 raise ProviderError("expected exactly one Playwright semantic control")
+            if response_url_contains:
+                with pages[0].expect_response(
+                    lambda response: response_url_contains in response.url,
+                    timeout=20_000,
+                ) as response_info:
+                    matches[0].click(timeout=5_000)
+                response = response_info.value
+                return {
+                    "http_status": response.status,
+                    "url_sha256": hashlib.sha256(response.url.encode()).hexdigest(),
+                    "body_sha256": hashlib.sha256(response.body()).hexdigest(),
+                }
             matches[0].click(timeout=5_000)
+            return None
     except ProviderError:
         raise
     except Exception as error:
@@ -316,6 +329,7 @@ def submit_login(args, playbook, target):
         f"ws://{args.cdp_host}:{args.cdp_port}/devtools/page/{target['id']}",
         timeout=20, max_size=None, suppress_origin=True,
     )
+    login_response = None
     try:
         cdp_call(ws, 1, "DOM.enable")
         username_ready, request_id = selector_exists(ws, 2, login["username_selector"])
@@ -333,15 +347,17 @@ def submit_login(args, playbook, target):
                 request_id = wait_for_selector(ws, request_id, login["password_selector"])
         request_id = focus_and_type(ws, request_id, login["password_selector"], password)
         if login.get("password_submit_text_any"):
-            playwright_click_text(
+            login_response = playwright_click_text(
                 args.cdp_host, args.cdp_port, target["url"],
                 login["password_submit_text_any"],
+                login.get("response_url_contains"),
             )
         else:
             request_id = wait_for_selector(ws, request_id, login["submit_selector"])
             click(ws, request_id, login["submit_selector"])
     finally:
         ws.close()
+    return login_response
 
 
 def classify(playbook, page):
@@ -398,6 +414,7 @@ def resume(args):
     playbook = load_playbook(root, args.provider)
     before = observe(args)
     submitted = False
+    login_response = None
     if before["state"] == "SIGN_IN_REQUIRED":
         base = f"http://{args.cdp_host}:{args.cdp_port}"
         target = choose_target(read_json(f"{base}/json/list"), playbook)
@@ -419,7 +436,7 @@ def resume(args):
         if job is None:
             after = before
         else:
-            submit_login(args, playbook, target)
+            login_response = submit_login(args, playbook, target)
             submitted = True
             for _ in range(20):
                 time.sleep(1)
@@ -442,6 +459,7 @@ def resume(args):
         "receipt_type": "PROVIDER_RESUME",
         "previous_state": before["state"],
         "submitted": submitted,
+        "login_response": login_response,
         "observed_at": datetime.now(timezone.utc).isoformat(),
     }
     atomic_write(args.receipt.expanduser(), receipt)

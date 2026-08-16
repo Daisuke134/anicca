@@ -38,6 +38,7 @@
     "password_submit_text_any": [
       "Log in"
     ],
+    "response_url_contains": "/api/security/login",
     "submit_selector": "button[type='submit']"
   },
   "fallback_state": "UNKNOWN_RENDERED_STATE",

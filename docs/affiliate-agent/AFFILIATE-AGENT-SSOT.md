@@ -1520,6 +1520,15 @@ readback, and CDP `9324`. The shared tab is restored to ElevenLabs home in
 TDD/RED cycle, test suite, or subagent implementation is introduced. A real
 launchd wake must prove login before affiliate-link discovery begins.
 
+The first real wake submitted the stored credential under one
+`PROVIDER_LOGIN` job but remained `SIGN_IN_REQUIRED`; no CAPTCHA iframe or
+persistent rendered error was present after navigation. The same job therefore
+remains unresolved with a five-minute bounded cooldown. Before attempt `2`, the
+shared provider login helper is extended only to receipt the matching login API
+HTTP status and hashes of its URL/body. It never stores response content,
+credential values, cookies, or tokens. This gives the loop an observation it can
+heal from instead of blindly repeating a UI click.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
