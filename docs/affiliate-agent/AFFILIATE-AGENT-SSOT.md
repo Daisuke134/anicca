@@ -1562,6 +1562,12 @@ counted both and skipped activation. The corrected semantic target selects only
 the anchor frame and clicks `#recaptcha-anchor`; token readback remains the gate
 before any confirmation POST.
 
+Attempt `4` isolated another actionability timeout before token readback. Live
+readback proves the exact anchor is visible, enabled, unchecked, and 28×28 below
+the initial viewport. The loop now waits for that exact element, scrolls it into
+view, and force-clicks only that verified checkbox target; it still refuses the
+confirmation POST unless the provider writes a non-empty token.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
