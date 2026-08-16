@@ -90,7 +90,7 @@ test("Connpass recovery audit counts registered separately from free-open candid
   assert.deepEqual(result.map((candidate) => candidate.event_ref), [registered.event_ref, available.event_ref]);
   assert.deepEqual(audits, [{
     observed_count: 4, normalized_count: 4, window_count: 3,
-    free_open_count: 1, calendar_free_count: 2, skipped_count: 0,
+    free_open_count: 1, calendar_free_count: 2,
   }]);
 });
 
@@ -119,7 +119,6 @@ test("Connpass discovery reports the ordered eligibility gate counts", async () 
     window_count: 4,
     free_open_count: 2,
     calendar_free_count: 1,
-    skipped_count: 0,
   }]);
 });
 
@@ -321,60 +320,7 @@ test("Connpass distinguishes binding validation from candidate validation", asyn
   });
   await assert.rejects(
     candidateWorkflow.discoverCandidates({ page: {}, calendar: [] }),
-    (error) => error.code === "CONNPASS_ALL_CANDIDATES_SKIPPED_FAILED",
-  );
-});
-
-test("Connpass skips a malformed candidate row instead of aborting the other rows in the batch", async () => {
-  const audits = [];
-  const good = event(401);
-  const workflow = createConnpassScriptFirstWorkflow({
-    now: () => new Date("2026-08-07T08:30:00.000Z"),
-    async discoverOnPage() { return [{ provider: "connpass" }, good]; },
-    onDiscoveryAudit(audit) { audits.push(audit); },
-  });
-
-  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
-
-  assert.deepEqual(result.map((candidate) => candidate.event_ref), [good.event_ref]);
-  assert.deepEqual(audits, [{
-    observed_count: 2, normalized_count: 1, window_count: 1,
-    free_open_count: 1, calendar_free_count: 1, skipped_count: 1,
-  }]);
-});
-
-test("Connpass skips a candidate whose calendar conflict check throws instead of aborting the batch", async () => {
-  const audits = [];
-  const throwing = event(402);
-  const good = event(403);
-  const workflow = createConnpassScriptFirstWorkflow({
-    now: () => new Date("2026-08-07T08:30:00.000Z"),
-    async discoverOnPage() { return [throwing, good]; },
-    async isCalendarFree(candidate) {
-      if (candidate.event_ref === throwing.event_ref) throw new Error("private calendar error");
-      return true;
-    },
-    onDiscoveryAudit(audit) { audits.push(audit); },
-  });
-
-  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
-
-  assert.deepEqual(result.map((candidate) => candidate.event_ref), [good.event_ref]);
-  assert.deepEqual(audits, [{
-    observed_count: 2, normalized_count: 2, window_count: 2,
-    free_open_count: 2, calendar_free_count: 1, skipped_count: 1,
-  }]);
-});
-
-test("Connpass fails closed with a coded error when every observed row is unusable", async () => {
-  const workflow = createConnpassScriptFirstWorkflow({
-    now: () => new Date("2026-08-07T08:30:00.000Z"),
-    async discoverOnPage() { return [{ provider: "connpass" }, { provider: "connpass" }]; },
-  });
-
-  await assert.rejects(
-    workflow.discoverCandidates({ page: {}, calendar: [] }),
-    (error) => error.code === "CONNPASS_ALL_CANDIDATES_SKIPPED_FAILED",
+    (error) => error.code === "CONNPASS_CANDIDATE_VALIDATION_FAILED",
   );
 });
 
@@ -403,9 +349,6 @@ test("Connpass classifies remaining parent discovery contracts without leaking e
     (error) => error.code === "CONNPASS_DISCOVERY_RESULT_CONTRACT_FAILED",
   );
 
-  // A single row's calendar-conflict check throwing is now skipped rather
-  // than aborting outright — with only one observed row, "one skipped" and
-  // "all skipped" coincide, so this still fails closed, via the all-skipped code.
   const calendarWorkflow = createConnpassScriptFirstWorkflow({
     ...common,
     async discoverOnPage() { return [event(301)]; },
@@ -413,7 +356,7 @@ test("Connpass classifies remaining parent discovery contracts without leaking e
   });
   await assert.rejects(
     calendarWorkflow.discoverCandidates({ page: {}, calendar: [] }),
-    (error) => error.code === "CONNPASS_ALL_CANDIDATES_SKIPPED_FAILED",
+    (error) => error.code === "CONNPASS_CALENDAR_CONFLICT_CHECK_FAILED",
   );
 });
 
