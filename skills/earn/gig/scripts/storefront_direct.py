@@ -1887,7 +1887,7 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
     if len(lines) != 3 or not (2 <= len(lines[0]) <= 28 and 2 <= len(lines[1]) <= 48):
         raise RuntimeError("storefront_generated_image_copy_invalid")
     badges = [value.strip() for value in lines[2].split("｜") if value.strip()]
-    if len(badges) not in {2, 3} or any(len(value) > 16 for value in badges):
+    if len(badges) not in {2, 3} or any(len(value) > 24 for value in badges):
         raise RuntimeError("storefront_generated_image_badges_invalid")
     font_result = subprocess.run(
         ["fc-match", "-f", "%{file}", "Hiragino Sans"], capture_output=True, text=True,
@@ -1916,16 +1916,21 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
     support_font = fitted(lines[1], 1000, 42)
     draw.text((110, 260), lines[0], font=headline_font, fill="white")
     draw.text((112, 400), lines[1], font=support_font, fill="#dce3ff")
-    badge_font = ImageFont.truetype(str(font_path), 27)
+    badge_size = 27
+    while badge_size >= 18:
+        badge_font = ImageFont.truetype(str(font_path), badge_size)
+        badge_widths = [draw.textbbox((0, 0), badge, font=badge_font)[2] + 70 for badge in badges]
+        if sum(badge_widths) + 24 * (len(badges) - 1) <= 1020:
+            break
+        badge_size -= 1
+    else:
+        raise RuntimeError("storefront_generated_image_badges_too_wide")
     x = 110
-    for index, badge in enumerate(badges):
-        width = draw.textbbox((0, 0), badge, font=badge_font)[2] + 70
+    for index, (badge, width) in enumerate(zip(badges, badge_widths)):
         draw.rounded_rectangle((x, 600, x + width, 670), radius=35,
                                fill=("#ef4f55", "#35b777", "#7657db")[index])
         draw.text((x + 35, 618), badge, font=badge_font, fill="white")
         x += width + 24
-    if x > 1130:
-        raise RuntimeError("storefront_generated_image_badges_too_wide")
     path = evidence_dir / f"generated-{service_id}-hero.png"
     image.save(path, format="PNG", optimize=False)
     data = path.read_bytes()
