@@ -1062,12 +1062,14 @@ class CdpParentEffects:
                         ws,
                         """JSON.stringify((()=>{
                           const text=(document.body?.innerText||'').normalize('NFKC');
+                          const name=text.match(/最終ログイン:[^\\n]*\\n\\s*([^\\n]+)/u);
                           const rating=text.match(/(?:評価|rating)\\s*([0-5](?:\\.[0-9]+)?)/iu);
                           const sales=text.match(/(?:販売実績|販売数)\\s*([0-9,]+)/u);
                           const services=[...document.querySelectorAll('a[href^="/services/"]')]
                             .map(e=>(e.innerText||'').trim()).filter(Boolean)
                             .filter((value,index,array)=>array.indexOf(value)===index).slice(0,5);
-                          return {url:location.href,rating:rating?Number(rating[1]):null,
+                          return {url:location.href,name:name?(name[1]||'').trim():null,
+                            rating:rating?Number(rating[1]):null,
                             sales_count:sales?Number(sales[1].replaceAll(',','')):null,
                             public_services:services,profile_summary:text.replace(/\\s+/g,' ').trim().slice(0,600)};
                         })())""",
@@ -1078,7 +1080,7 @@ class CdpParentEffects:
                         continue
                     enriched_applicants.append({
                         "user_id": user_id,
-                        "name": str(raw.get("name") or "").strip(),
+                        "name": str(raw.get("name") or profile.get("name") or "").strip(),
                         "applied_at": str(raw.get("applied_at") or "").strip(),
                         "profile_url": expected_profile,
                         "rating": profile.get("rating"),
