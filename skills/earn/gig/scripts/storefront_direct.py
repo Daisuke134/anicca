@@ -2158,6 +2158,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 or set(source_ids) != inventory_ids
             ):
                 raise RuntimeError("official_service_contract_invalid")
+            expected_catalog_sha256 = str(
+                getattr(args, "expected_catalog_sha256", "") or ""
+            ).strip().lower()
+            if expected_catalog_sha256 and (
+                not re.fullmatch(r"[0-9a-f]{64}", expected_catalog_sha256)
+                or str(inventory.get("content_sha256") or "").lower() != expected_catalog_sha256
+            ):
+                raise RuntimeError("official_catalog_version_stale")
             validated_contracts = [
                 _service_contract(source, str(inventory["observed_at"])) for source in contract_sources
             ]
@@ -2737,6 +2745,7 @@ def main() -> int:
     parser.add_argument("--auto-cadence", action="store_true")
     parser.add_argument("--full-interval-seconds", type=int, default=1800)
     parser.add_argument("--accounting-cutoff-epoch", type=int, default=0)
+    parser.add_argument("--expected-catalog-sha256", default="")
     parser.add_argument("--pass-id")
     parser.add_argument("--telegram-database", type=Path, default=DEFAULT_TELEGRAM_DATABASE)
     parser.add_argument("--telegram-receipt-dir", type=Path, default=DEFAULT_TELEGRAM_RECEIPTS)
