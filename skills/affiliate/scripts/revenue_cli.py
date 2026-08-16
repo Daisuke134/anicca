@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from websocket import create_connection
 
@@ -239,7 +239,21 @@ def link_fingerprints(value):
 
 
 def placement_candidates(state):
-    candidates = []
+    candidates = {}
+    for path in sorted((state / "program-links").glob("*.json")):
+        try:
+            row = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        placement_id = row.get("placement")
+        if row.get("state") == "VERIFIED" and placement_id:
+            candidates[placement_id] = {
+                "placement_id": placement_id,
+                "public_url": None,
+                "provider_link_key": row.get("provider_link_key"),
+                "tracking_custom_link_id": row.get("tracking_custom_link_id"),
+                "link_fingerprints": row.get("link_fingerprints", []),
+            }
     content_root = state / "content"
     publication_root = state / "owned-publications"
     for content_path in sorted(content_root.glob("*.json")) if content_root.is_dir() else []:
@@ -255,12 +269,148 @@ def placement_candidates(state):
         parsed = urlparse(links[0])
         if parsed.scheme != "https" or parsed.hostname != "try.elevenlabs.io":
             continue
-        candidates.append({
+        prior = candidates.get(slug, {})
+        dedicated = bool(prior.get("provider_link_key"))
+        candidates[slug] = {
             "placement_id": slug,
             "public_url": publication.get("public_url"),
-            "link_fingerprints": sorted(link_fingerprints(links[0])),
-        })
-    return candidates
+            "provider_link_key": prior.get("provider_link_key"),
+            "tracking_custom_link_id": prior.get("tracking_custom_link_id"),
+            "link_fingerprints": sorted(
+                set(prior.get("link_fingerprints", []))
+                if dedicated else link_fingerprints(links[0])
+            ),
+        }
+    return list(candidates.values())
+
+
+def capture_link_performance(args):
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as error:
+        raise RevenueError("Playwright is unavailable") from error
+    rows = None
+    report_url = None
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.connect_over_cdp(
+            f"http://{args.cdp_host}:{args.cdp_port}"
+        )
+        pages = [page for context in browser.contexts for page in context.pages]
+        if len(pages) != 1:
+            raise RevenueError("expected one provider tab")
+        page = pages[0]
+        try:
+            page.goto(
+                "https://dash.partnerstack.com/reporting/link_performance",
+                wait_until="domcontentloaded", timeout=20_000,
+            )
+            page.get_by_text(re.compile(r"^(リンク追跡レポート|Link tracking report)$")).first.wait_for(
+                timeout=15_000
+            )
+            page.evaluate(
+                """() => [...document.querySelectorAll('button')]
+                .find(element => (element.innerText || '').trim() === 'グループ別' ||
+                  (element.innerText || '').trim() === 'Group by').click()"""
+            )
+            page.evaluate(
+                """() => [...document.querySelectorAll('button')]
+                .find(element => ['ランディングページ','Landing page']
+                  .includes((element.innerText || '').trim())).click()"""
+            )
+            with page.expect_response(
+                lambda response: (
+                    "/api/v2/stats/click_report/" in response.url
+                    and not response.url.split("?", 1)[0].endswith("/summary")
+                    and "primary_grouping=link_path" in response.url
+                ), timeout=15_000,
+            ) as response_info:
+                selected = page.evaluate(
+                    """() => { const element = [...document.querySelectorAll('*')]
+                    .find(node => node.children.length === 0 &&
+                      ['リンク','Link'].includes((node.innerText || '').trim()) &&
+                      node.getBoundingClientRect().width);
+                    if (!element) return false; element.click(); return true; }"""
+                )
+                if not selected:
+                    raise RevenueError("link grouping is unavailable")
+            response = response_info.value
+            rows = response.json()
+            report_url = response.url
+        finally:
+            page.goto("https://elevenlabs.io/app/home", wait_until="domcontentloaded", timeout=20_000)
+    if not isinstance(rows, list):
+        raise RevenueError("PartnerStack link report is not a list")
+    query = parse_qs(urlparse(report_url).query)
+    window = {key: query.get(key, [None])[0] for key in ("start_date", "end_date")}
+    state = args.state.expanduser()
+    previous_path = state / "provider-reports" / "partnerstack-links" / "latest.json"
+    try:
+        previous = json.loads(previous_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    previous_counts = {
+        row["placement_id"]: row["current_click_count"]
+        for row in previous.get("placements", [])
+    }
+    candidates = [
+        candidate for candidate in placement_candidates(state)
+        if candidate.get("provider_link_key")
+    ]
+    placements = []
+    appended = 0
+    latest_transition = None
+    for candidate in candidates:
+        matches = [row for row in rows if link_fingerprints(row.get("link_path")).intersection(
+            candidate["link_fingerprints"]
+        )]
+        if len(matches) > 1:
+            raise RevenueError("PartnerStack link attribution is ambiguous")
+        current = int(matches[0].get("click_count", 0)) if matches else 0
+        baseline = previous_counts.get(candidate["placement_id"], current)
+        delta = current - baseline
+        if delta < 0:
+            raise RevenueError("PartnerStack click count regressed")
+        path_hash = hash_optional(matches[0].get("link_path")) if matches else None
+        row = {
+            "provider_link_key": candidate.get("provider_link_key"),
+            "placement_id": candidate["placement_id"],
+            "public_url": candidate.get("public_url"),
+            "link_path_sha256": path_hash,
+            "baseline_click_count": baseline,
+            "current_click_count": current,
+            "delta_click_count": delta,
+        }
+        placements.append(row)
+        if delta > 0 and row["provider_link_key"] and path_hash:
+            identity = {
+                "provider": "elevenlabs", "provider_link_key": row["provider_link_key"],
+                "link_path_sha256": path_hash, "placement_id": row["placement_id"],
+                "observed_click_count": current, "window": window,
+            }
+            transition_id = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+            transition = {
+                "schema_version": 1, "receipt_type": "CLICK_TRANSITION",
+                "transition_id": transition_id, **identity,
+                "delta_click_count": delta, "public_url": row["public_url"],
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            if append_unique(state / "click-ledger.jsonl", transition, ("transition_id",)):
+                appended += 1
+                latest_transition = transition
+    observed_at = datetime.now(timezone.utc).isoformat()
+    artifact = {"rows": rows, "report_url": report_url, "observed_at": observed_at}
+    artifact_hash = hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest()
+    atomic_write(previous_path.parent / f"{artifact_hash}.json", artifact)
+    receipt = {
+        "schema_version": 1, "receipt_type": "PARTNERSTACK_LINK_PERFORMANCE",
+        "provider": "elevenlabs", "window": window, "placements": placements,
+        "provider_row_count": len(rows), "rendered_artifact_sha256": artifact_hash,
+        "appended_transitions": appended,
+        "latest_transition": latest_transition,
+        "observed_at": observed_at,
+    }
+    atomic_write(previous_path, receipt)
+    return receipt
 
 
 def resolve_attribution(raw_row, candidates):
@@ -540,13 +690,15 @@ def observe(args):
 
 def main():
     parser = argparse.ArgumentParser(prog="affiliate revenue")
-    parser.add_argument("command", choices=("observe", "capture", "reconcile"))
+    parser.add_argument("command", choices=("observe", "links", "capture", "reconcile"))
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--cdp-port", type=int, default=9324)
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     args = parser.parse_args()
     if args.command == "observe":
         result = observe(args)
+    elif args.command == "links":
+        result = capture_link_performance(args)
     elif args.command == "capture":
         result = capture_reports(args)
     else:

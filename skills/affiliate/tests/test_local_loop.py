@@ -43,9 +43,20 @@ class LocalLoopTest(unittest.TestCase):
             }
             output = io.StringIO()
             with (
-                patch.object(MODULE, "browser_ready", return_value=True),
+                patch.object(MODULE, "browser_ready", side_effect=lambda port: port == 9324),
                 patch.object(MODULE, "provider_poll", return_value=signed_out),
                 patch.object(MODULE, "recover_provider", return_value=authenticated) as recover,
+                patch.object(MODULE, "elevenlabs_link_action", return_value={
+                    "state": "VERIFIED", "placement": MODULE.TTS_PLACEMENT,
+                    "deduplicated": True, "provider_link_key": "link-1",
+                }),
+                patch.object(MODULE, "apply_getresponse", return_value={
+                    "state": "ELIGIBILITY_BLOCKED", "program": "getresponse",
+                    "deduplicated": True,
+                }),
+                patch.object(MODULE, "verify_systeme_email", return_value={
+                    "state": "CAPTCHA_CHALLENGE", "deduplicated": True,
+                }),
                 patch.object(MODULE, "advance_known_publication", return_value={
                     "state": "X_LIVE", "public_url": "https://x.com/selawmqt/status/1",
                 }) as advance,
@@ -82,6 +93,17 @@ class LocalLoopTest(unittest.TestCase):
             with (
                 patch.object(MODULE, "browser_ready", return_value=True),
                 patch.object(MODULE, "provider_poll", return_value=provider),
+                patch.object(MODULE, "elevenlabs_link_action", return_value={
+                    "state": "VERIFIED", "placement": MODULE.TTS_PLACEMENT,
+                    "deduplicated": True, "provider_link_key": "link-1",
+                }),
+                patch.object(MODULE, "apply_getresponse", return_value={
+                    "state": "ELIGIBILITY_BLOCKED", "program": "getresponse",
+                    "deduplicated": True,
+                }),
+                patch.object(MODULE, "verify_systeme_email", return_value={
+                    "state": "CAPTCHA_CHALLENGE", "deduplicated": True,
+                }),
                 patch.object(MODULE, "run_revenue_cycle", return_value={
                     "state": "NO_TRANSACTIONS", "source_rows": 0,
                     "appended_transitions": 0,

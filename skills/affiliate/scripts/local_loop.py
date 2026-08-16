@@ -23,7 +23,7 @@ from job_journal import (
     unresolved_effect, verify_effect,
 )
 from provider_cli import ProviderError, observe, poll, read_login_credentials, resume
-from program_registry import apply_getresponse
+from program_registry import TTS_PLACEMENT, apply_getresponse, elevenlabs_link_action
 
 
 SYSTEME_LOGIN = "https://systeme.io/en/login"
@@ -211,9 +211,20 @@ def owner_event(state, wake_event):
     except (OSError, ValueError):
         metrics = {}
     click_delta = metrics.get("delta_from_baseline", {}).get("clicks")
+    link_transition = wake_event.get("link_latest_transition")
     impact_state = wake_event.get("impact_state")
     impact_changed = wake_event.get("impact_changed", False)
-    if wake_event.get("distribution_changed") and wake_event.get("distribution_state") == "LIVE":
+    if wake_event.get("placement_link_changed") and wake_event.get("placement_link_state") == "VERIFIED":
+        kind = "PLACEMENT_LINK_VERIFIED"
+        identity = {
+            "kind": kind, "provider": "elevenlabs",
+            "placement_id": wake_event.get("placement_link_placement"),
+            "provider_link_key": wake_event.get("placement_link_key"),
+        }
+        money = "link verified / commission not observed yet"
+        transition = None
+        campaign = {}
+    elif wake_event.get("distribution_changed") and wake_event.get("distribution_state") == "LIVE":
         kind = "DISTRIBUTION_LIVE"
         identity = {
             "kind": kind, "channel": wake_event.get("distribution_channel"),
@@ -243,15 +254,23 @@ def owner_event(state, wake_event):
             f"{transition.get('status')} / gross={transition.get('gross_commission_minor')} minor "
             f"net={transition.get('net_commission_minor')} minor / {transition.get('currency') or 'currency unknown'}"
         )
-    elif isinstance(click_delta, int) and click_delta > 0:
+    elif link_transition and wake_event.get("link_appended_transitions", 0) > 0:
         kind = "CLICK_DELTA"
+        identity = {"kind": kind, "transition_id": link_transition["transition_id"]}
+        money = (
+            f"provider link clicks=+{link_transition['delta_click_count']} / "
+            "commission not observed yet"
+        )
+        transition = None
+        campaign = {}
+    elif isinstance(click_delta, int) and click_delta > 0:
+        kind = "UNATTRIBUTED_CLICK_DELTA"
         identity = {
-            "kind": kind,
-            "provider": "elevenlabs",
+            "kind": kind, "provider": "elevenlabs",
             "metrics_sha256": metrics.get("metrics_sha256"),
             "clicks": metrics.get("metrics", {}).get("clicks"),
         }
-        money = f"post-baseline clicks=+{click_delta} / commission not observed yet"
+        money = f"aggregate post-baseline clicks=+{click_delta} / not attributable / commission not observed"
         transition = None
         campaign = {}
     elif campaign:
@@ -269,7 +288,7 @@ def owner_event(state, wake_event):
     else:
         return None
     event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
-    public_url = wake_event.get("distribution_url") if kind == "DISTRIBUTION_LIVE" else None if kind.startswith("PROGRAM_") or kind == "CLICK_DELTA" else (
+    public_url = link_transition.get("public_url") if kind == "CLICK_DELTA" else wake_event.get("distribution_url") if kind == "DISTRIBUTION_LIVE" else None if kind.startswith("PROGRAM_") or kind in {"PLACEMENT_LINK_VERIFIED", "UNATTRIBUTED_CLICK_DELTA"} else (
         (transition or {}).get("placement", {}).get("public_url") or (
             campaign.get("x_url") if kind == "PLACEMENT_LIVE" else None
         ) or wake_event.get("publication_url") or latest_live_url(state)
@@ -279,7 +298,7 @@ def owner_event(state, wake_event):
         "同じ申請を再提出せず、Impactの審査状態を継続確認"
         if kind.startswith("PROGRAM_")
         else "provider transactionを待ち、sub-IDまたはlink fingerprintでplacementへ照合"
-        if kind == "CLICK_DELTA"
+        if kind in {"CLICK_DELTA", "UNATTRIBUTED_CLICK_DELTA", "PLACEMENT_LINK_VERIFIED"}
         else "buyer-intentを収集し、次の公開・収益照合を継続"
     )
     program = "HubSpot / Impact" if kind.startswith("PROGRAM_") else "ElevenLabs / PartnerStack"
@@ -650,7 +669,13 @@ def advance_tts_api_publication(state, landing_root, x_cdp_port, private_markdow
         existing = json.loads(receipt_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         existing = {}
-    if existing.get("state") == "LIVE":
+    try:
+        dedicated_link = json.loads(
+            (state / "program-links" / f"{slug}.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        dedicated_link = {}
+    if existing.get("state") == "LIVE" and dedicated_link.get("state") != "VERIFIED":
         return {"state": "ALREADY_LIVE", "public_url": existing.get("public_url")}
     if not (state / "sources" / "elevenlabs-api-pricing" / "latest.json").is_file():
         return {"state": "ALREADY_LIVE", "public_url": fallback_url}
@@ -722,7 +747,8 @@ def run_revenue_cycle(state, cdp_port):
     script = Path(__file__).with_name("revenue_cli.py")
     common = ["--state", str(state), "--cdp-port", str(cdp_port)]
     result = None
-    for command in ("observe", "capture", "reconcile"):
+    link_result = {}
+    for command in ("observe", "links", "capture", "reconcile"):
         try:
             completed = subprocess.run(
                 [sys.executable, str(script), command, *common],
@@ -740,10 +766,14 @@ def run_revenue_cycle(state, cdp_port):
             return revenue_failure(
                 state, command, "INVALID_JSON", completed.returncode, completed.stdout,
             )
+        if command == "links":
+            link_result = result
     cycle = {
         "state": result["money_state"],
         "source_rows": result["source_rows"],
         "appended_transitions": result["appended_transitions"],
+        "link_appended_transitions": link_result.get("appended_transitions", 0),
+        "link_latest_transition": link_result.get("latest_transition"),
         "completed_at": int(time.time()),
     }
     atomic_json(state / "revenue-cycle.json", cycle)
@@ -940,6 +970,20 @@ def wake(args):
             recovery_state = "RECOVERED" if provider["state"] == "AUTHENTICATED" else provider["state"]
         except (ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
             recovery_state = "RECOVERY_FAILED"
+    placement_link = {"state": "NOT_RUN", "placement": TTS_PLACEMENT, "deduplicated": None}
+    if provider["state"] == "AUTHENTICATED":
+        try:
+            placement_link = elevenlabs_link_action(
+                state, args.cdp_port, args.private_markdown.expanduser(),
+                TTS_PLACEMENT, create=True,
+            )
+        except (JobStateError, OSError, RuntimeError, ValueError, KeyError, json.JSONDecodeError) as error:
+            placement_link = {
+                "state": "PLACEMENT_LINK_FAILED", "placement": TTS_PLACEMENT,
+                "deduplicated": None, "failure_type": type(error).__name__,
+            }
+    placement_link_ready = placement_link.get("state") == "VERIFIED"
+    placement_link_changed = placement_link_ready and not placement_link.get("deduplicated", False)
     impact = {
         "state": "BROWSER_UNAVAILABLE", "changed": False, "transition_id": None,
     }
@@ -961,7 +1005,7 @@ def wake(args):
             except (ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
                 impact_recovery_state = "RECOVERY_FAILED"
     application = {"state": "NOT_RUN", "program": "getresponse"}
-    if provider["state"] == "AUTHENTICATED":
+    if provider["state"] == "AUTHENTICATED" and placement_link_ready and not placement_link_changed:
         try:
             application = apply_getresponse(
                 state, args.cdp_port,
@@ -974,7 +1018,7 @@ def wake(args):
             }
     systeme = {"state": "NOT_RUN", "provider": "systeme-io"}
     systeme_verification = {"state": "NOT_RUN"}
-    if provider["state"] == "AUTHENTICATED":
+    if provider["state"] == "AUTHENTICATED" and placement_link_ready and not placement_link_changed:
         try:
             systeme_verification = verify_systeme_email(
                 state, args.cdp_port, args.private_markdown.expanduser(),
@@ -1001,9 +1045,13 @@ def wake(args):
                 "~/anicca-project/.worktrees/affiliate-foundation-prod",
             )),
         )
-        publication = advance_known_publication(
-            state, landing_root.expanduser(), getattr(args, "x_cdp_port", 9326),
-            args.private_markdown.expanduser(),
+        publication = (
+            advance_known_publication(
+                state, landing_root.expanduser(), getattr(args, "x_cdp_port", 9326),
+                args.private_markdown.expanduser(),
+            )
+            if placement_link_ready and not placement_link_changed
+            else {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None}
         )
     except Exception as error:
         publication = {
@@ -1011,9 +1059,15 @@ def wake(args):
             "failure_type": type(error).__name__,
         }
     try:
-        distribution = advance_devto_distribution(state)
-        if not distribution.get("changed"):
-            distribution = advance_substack_distribution(state)
+        if placement_link_changed or not placement_link_ready:
+            distribution = {
+                "state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None,
+                "changed": False, "channel": None,
+            }
+        else:
+            distribution = advance_devto_distribution(state)
+            if not distribution.get("changed"):
+                distribution = advance_substack_distribution(state)
     except Exception as error:
         distribution = {
             "state": "DISTRIBUTION_FAILED", "public_url": None,
@@ -1023,7 +1077,9 @@ def wake(args):
     revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
     }
-    if not link:
+    if provider["state"] == "AUTHENTICATED" and not placement_link_ready:
+        status = placement_link["state"]
+    elif not link:
         status = "TRACKING_LINK_UNAVAILABLE"
     elif not browser:
         status = "BROWSER_UNAVAILABLE"
@@ -1038,6 +1094,12 @@ def wake(args):
         "provider_state": provider["state"],
         "provider_transition_id": provider["transition_id"],
         "provider_recovery_state": recovery_state,
+        "placement_link_state": placement_link.get("state"),
+        "placement_link_placement": placement_link.get("placement"),
+        "placement_link_key": placement_link.get("provider_link_key"),
+        "placement_link_changed": placement_link_changed,
+        "placement_link_deduplicated": placement_link.get("deduplicated"),
+        "placement_link_failure_type": placement_link.get("failure_type"),
         "impact_state": impact["state"],
         "impact_changed": impact["changed"],
         "impact_transition_id": impact["transition_id"],
@@ -1064,6 +1126,8 @@ def wake(args):
         "revenue_state": revenue["state"],
         "revenue_source_rows": revenue["source_rows"],
         "revenue_appended_transitions": revenue["appended_transitions"],
+        "link_appended_transitions": revenue.get("link_appended_transitions", 0),
+        "link_latest_transition": revenue.get("link_latest_transition"),
         "status": status,
         "ts": int(time.time()),
     }

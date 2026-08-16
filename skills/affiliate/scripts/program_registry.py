@@ -277,11 +277,19 @@ def _elevenlabs_links(page):
 
 
 def _link_identity(item):
+    url = str(item.get("url", ""))
+    parsed = urlparse(url)
+    fingerprints = {
+        hashlib.sha256(value.encode()).hexdigest()
+        for value in (url, parsed.hostname + parsed.path if parsed.hostname else "", parsed.path)
+        if value
+    }
     return {
         "provider_link_key": item.get("key"),
         "tracking_custom_link_id": item.get("tracking_custom_link_id"),
         "slug": item.get("slug"),
-        "url_sha256": hashlib.sha256(str(item.get("url", "")).encode()).hexdigest(),
+        "url_sha256": hashlib.sha256(url.encode()).hexdigest(),
+        "link_fingerprints": sorted(fingerprints),
         "destination_sha256": hashlib.sha256(str(item.get("dest", "")).encode()).hexdigest(),
     }
 
@@ -306,6 +314,16 @@ def elevenlabs_link_action(state, cdp_port, private_markdown, placement, create=
             page.get_by_text(re.compile(r"^(カスタムリンク|Custom links?)")).first.wait_for(timeout=15_000)
             observed = _elevenlabs_links(page)
             match = next((item for item in observed["items"] if item.get("slug") == placement), None)
+            if create and match is None and job:
+                result = {
+                    "schema_version": 1, "receipt_type": "PARTNERSTACK_PLACEMENT_LINK",
+                    "provider": "elevenlabs", "state": "RECONCILE_PENDING",
+                    "placement": placement, "job_id": job["job_id"],
+                    "deduplicated": True,
+                    "observed_at": datetime.now(timezone.utc).isoformat(),
+                }
+                atomic_receipt(receipt_path, result)
+                return result
             if create and match is None:
                 page.get_by_text(re.compile(r"^(カスタムリンクの作成|Create custom link)$")).click()
                 page.get_by_placeholder(re.compile(r"^(タイトル|Title)$")).fill(
@@ -317,15 +335,12 @@ def elevenlabs_link_action(state, cdp_port, private_markdown, placement, create=
                 page.get_by_text("https://elevenlabs.io", exact=True).click()
                 page.get_by_role("option", name=TTS_DESTINATION, exact=True).click()
                 page.get_by_placeholder("your-custom-link").fill(placement)
-                if job:
-                    job = resume_effect(state, "PARTNERSTACK_PLACEMENT_LINK", placement)
-                else:
-                    job = start_effect(
-                        state, "PARTNERSTACK_PLACEMENT_LINK", placement,
-                        {"operation": "create_custom_link", "placement": placement,
-                         "destination": TTS_DESTINATION},
-                        {"state": "ABSENT", "placement": placement}, 86_400,
-                    )
+                job = start_effect(
+                    state, "PARTNERSTACK_PLACEMENT_LINK", placement,
+                    {"operation": "create_custom_link", "placement": placement,
+                     "destination": TTS_DESTINATION},
+                    {"state": "ABSENT", "placement": placement}, 86_400,
+                )
                 page.get_by_role("button", name=re.compile(r"^(リンクを作成|Create link)$")).last.click()
                 for _ in range(20):
                     page.wait_for_timeout(500)

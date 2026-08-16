@@ -1520,20 +1520,32 @@ shared abstraction to make the diff appear smaller.
   its mode-0600 receipt and stdout contain no raw tracking URL. `content.py`
   changes only the TTS builder/policy field. Existing registry and content policy
   tests pass; installed-owner write proof remains Phase E0-C.
-- [ ] **E0-B06** Extend `placement_candidates()` to index provider link `key`,
+- [x] **E0-B06** Extend `placement_candidates()` to index provider link `key`,
   `tracking_custom_link_id`, URL hash, placement ID, owned URL, offer, locale,
   and public distribution URLs without exposing the raw link.
-- [ ] **E0-B07** Add Link Performance capture to `revenue_cli.py`; preserve raw
+- [x] **E0-B07** Add Link Performance capture to `revenue_cli.py`; preserve raw
   rendered/API evidence mode-0600 and write a sanitized latest receipt.
-- [ ] **E0-B08** Define click transition identity as provider + provider link
+- [x] **E0-B08** Define click transition identity as provider + provider link
   `key` + `link_path` hash + placement ID + observed click count + reporting
   window. Source artifact hash is lineage, not transition identity.
-- [ ] **E0-B09** Extend `owner_event()` so an attributable positive delta produces
+- [x] **E0-B09** Extend `owner_event()` so an attributable positive delta produces
   one `CLICK_DELTA`; aggregate-only deltas remain `UNATTRIBUTED_CLICK_DELTA` and
   cannot close E0.
-- [ ] **E0-B10** Wire these calls into `wake()` after provider auth/poll and before
+- [x] **E0-B10** Wire these calls into `wake()` after provider auth/poll and before
   publication/revenue reconciliation, advancing at most one new external effect
   per wake.
+
+  Source proof: `revenue links` reads the official `link_path` grouping and
+  persists raw rows mode-0600. Only placements with a dedicated provider link
+  `key` are eligible for click attribution; the existing one-click shared default
+  link now yields `placements=[]` and cannot create a transition. `wake()` makes
+  dedicated-link acquisition the first earning effect, skips other writes on the
+  creation wake, then allows publication on the deduplicated readback wake.
+  Link capture is part of the hourly revenue cycle and only newly appended
+  provider transitions can emit `CLICK_DELTA`; aggregate deltas emit
+  `UNATTRIBUTED_CLICK_DELTA`. An unresolved create with no exact provider object
+  returns `RECONCILE_PENDING` and is never submitted twice. Installed-owner proof
+  remains Phase E0-C.
 
 ##### Phase E0-C — Prove the installed owner, not Codex, performs the work
 
