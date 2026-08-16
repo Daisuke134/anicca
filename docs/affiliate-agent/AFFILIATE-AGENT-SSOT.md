@@ -1101,11 +1101,16 @@ This list contains implementation work only. Time passing, an organic visitor,
 provider approval, and commission settlement are observed acceptance gates, not
 tasks and not reasons to stop safe work.
 
-1. **M2.1-O — Correct owner observability.** Build the natural-language daily
+1. **DONE — M2.1-O — Correct owner observability.** Build the natural-language daily
    summary from the canonical placement ledger, not a partial provider report.
    Report canonical placements, dedicated links, measured clicks, unknown click
    rows, commission states, actual/unknown costs, current campaign, recovery, and
-   the next Agent action without converting unknown to zero.
+   the next Agent action without converting unknown to zero. Release
+   `0eec86508dd3af06b08efb2ff26212d4fc7797bf` is installed. Real launchd wake
+   `39` exited `0`, rebuilt `LEDGER_READY` with six canonical placements and six
+   dedicated links, reported three provider-measured click rows totaling zero and
+   three unknown rows without coercing them to zero, preserved zero commission
+   transactions, and kept Telegram sent rows `14→14` without a duplicate event.
 2. **M2.1-P — Grow six comparable English placements to ten.** The existing
    source→composition→policy→dedicated-link→owned/X→readback→ledger path advances
    four more campaigns. The Agent performs the work; a human or Codex does not
@@ -1162,7 +1167,7 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M2.1, grow the English portfolio from six to ten
+Current execution cursor: **M2.1-P, grow the English portfolio from six to ten
 comparable dedicated-link placements through the already-installed autonomous
 campaign path**. M2.0 is closed: every existing revenue placement now has one
 PartnerStack link, owned/X public readback, and one canonical ledger row. The
