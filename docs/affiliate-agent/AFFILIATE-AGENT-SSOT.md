@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `e7c8aee00edf2381ca3d44d1cb61e38abcb0ac7d` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded ElevenLabs recovery, HubSpot/Impact application polling, generic policy-PASS owned/X publication, one-per-day canonical DEV and Substack syndication, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and advances composition handoffs through generic policy | New-program application/link acquisition, general repair beyond observed failures, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `9af6e23ee23c3df7a91d9715ec62d4072cdd0d12` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded ElevenLabs recovery, HubSpot/Impact application polling, generic policy-PASS owned/X publication, one-per-day canonical DEV and Substack syndication, hourly DEV acquisition and revenue observation, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and advances composition handoffs through generic policy | New-program application/link acquisition, general repair beyond observed failures, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, real `PLACEMENT_LIVE`, and one real-data natural-language daily summary are live-proven. The daily summary is bound to provider message ID `21046`; same-day real replay returns `NO_PENDING` without growing the sent ledger | `CLICK_DELTA` and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, budget-blocked same-job recovery, generic handoff and policy receipt creation, two-provider auth/polling, generic policy-PASS owned/X publication, canonical DEV and Substack syndication, revenue polling, receipts, and Telegram are live. Release `e7c8aee00edf2381ca3d44d1cb61e38abcb0ac7d` keeps ElevenLabs `AUTHENTICATED` and HubSpot/Impact `APPLICATION_PENDING`; real daily reporting and unchanged replay are `SENT → NO_PENDING` | New-program application/link acquisition, provider/channel quarantine, watchdog, post-baseline acquisition, and positive money evidence remain absent. The loop discovers, composes, validates, distributes, and measures one executable provider while polling one pending provider; it has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, budget-blocked same-job recovery, generic handoff and policy receipt creation, two-provider auth/polling, generic policy-PASS owned/X publication, canonical DEV and Substack syndication, DEV acquisition metrics, revenue polling, receipts, and Telegram are live. Release `9af6e23ee23c3df7a91d9715ec62d4072cdd0d12` keeps ElevenLabs `AUTHENTICATED` and HubSpot/Impact `APPLICATION_PENDING`; real daily reporting and unchanged replay are `SENT → NO_PENDING` | New-program application/link acquisition, provider/channel quarantine, watchdog, post-baseline acquisition, and positive money evidence remain absent. The loop discovers, composes, validates, distributes, and measures one executable provider while polling one pending provider; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -1079,7 +1079,7 @@ cursor; later work MUST NOT jump ahead of an unmet gate.
 Current execution cursor: **A15.7, acquire the first external post-baseline click**.
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
-and Systeme.io remains behind its typed CAPTCHA boundary. Release `804eb4eaa` is
+and Systeme.io remains behind its typed CAPTCHA boundary. Release `9af6e23ee` is
 current; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -2389,6 +2389,16 @@ observable outcome exists.
   `COOLDOWN / NO_PENDING / exit 0`. The second title-only URL remains visible;
   deletion is not silently folded into recovery because it is a public deletion.
   Neither DEV nor Substack closes E0 without a real provider click.
+  Release `9af6e23ee` adds the missing acquisition denominator without adding a
+  scheduler: the existing ten-minute owner polls the authenticated Forem list at
+  most once per hour and receipts only Affiliate-owned article views, reactions,
+  and comments. Real launchd run `47` observed DEV article `4408918` with `0`
+  page views, `0` reactions, and `0` comments; therefore the DEV lane currently
+  has a reach problem and does not justify changing CTA copy. Run
+  `48` exited `0` with `devto_metrics_state=COOLDOWN`, preserved the receipt hash,
+  kept the Telegram sent ledger at `12` rows, and produced no duplicate effect.
+  The natural-language daily summary now reports this real exposure denominator
+  beside provider clicks and approved commission.
 - [ ] **A15.8 — E1.** Record one non-test `approved` commission with public
   placement, provider source hash, transaction lineage, costs, and Telegram event.
 
