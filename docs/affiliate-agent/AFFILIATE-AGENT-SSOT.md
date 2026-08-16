@@ -1529,6 +1529,17 @@ HTTP status and hashes of its URL/body. It never stores response content,
 credential values, cookies, or tokens. This gives the loop an observation it can
 heal from instead of blindly repeating a UI click.
 
+Gmail readback then proved the signup identity: an authenticated message from
+Systeme.io was sent to the private profile application email with subject
+`Confirm your email address`. The private Markdown had contained Keychain
+reference prose rather than parseable credentials, so the existing
+`programs store-login` and `store-credential` commands repaired its Login and
+Password from the private profile and existing Keychain without printing either
+value. The next minimal effect stores the confirmation URL only in that mode-0600
+Markdown, consumes it through a `PROVIDER_EMAIL_VERIFY` write-ahead job, records
+only final URL/body hashes, restores ElevenLabs home, and resumes the same login
+job. The email URL/token never enters Git, stdout, or a runtime receipt.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;

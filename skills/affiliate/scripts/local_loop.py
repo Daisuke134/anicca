@@ -18,7 +18,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 from types import SimpleNamespace
 
-from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
+from job_journal import (
+    JobStateError, reconcile_effect, resume_effect, start_effect,
+    unresolved_effect, verify_effect,
+)
 from provider_cli import ProviderError, observe, poll, resume
 from program_registry import apply_getresponse
 
@@ -632,6 +635,70 @@ def resume_systeme_provider(state, cdp_port, private_markdown):
             page.goto(ELEVENLABS_HOME, wait_until="domcontentloaded", timeout=20_000)
 
 
+def verify_systeme_email(state, cdp_port, private_markdown):
+    receipt_path = state / "provider-systeme-email-verification.json"
+    if receipt_path.is_file():
+        prior = json.loads(receipt_path.read_text(encoding="utf-8"))
+        if prior.get("state") == "EMAIL_VERIFIED":
+            return {**prior, "deduplicated": True}
+    text = private_markdown.read_text(encoding="utf-8")
+    section = re.search(r"(?ms)^## Systeme\.io\n.*?(?=^## |\Z)", text)
+    match = re.search(
+        r"(?m)^- Email verification link:[ \t]*(https://\S+)[ \t]*$",
+        section.group() if section else "",
+    )
+    if not match:
+        return {"state": "VERIFICATION_LINK_UNAVAILABLE", "deduplicated": False}
+    link = match.group(1)
+    pending = unresolved_effect(state, "PROVIDER_EMAIL_VERIFY", "systeme-io")
+    job = (
+        resume_effect(state, "PROVIDER_EMAIL_VERIFY", "systeme-io")
+        if pending else start_effect(
+            state, "PROVIDER_EMAIL_VERIFY", "systeme-io",
+            {"operation": "verify_email", "provider": "systeme-io"},
+            {"state": "CONFIRMATION_EMAIL_RECEIVED"}, 300,
+        )
+    )
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{cdp_port}")
+        pages = [page for context in browser.contexts for page in context.pages]
+        if len(pages) != 1:
+            raise ProviderError("expected one shared English provider tab")
+        page = pages[0]
+        try:
+            page.goto(link, wait_until="domcontentloaded", timeout=20_000)
+            page.wait_for_function(
+                "() => !location.pathname.includes('/register/confirm/')",
+                timeout=20_000,
+            )
+            accepted = (
+                page.url.startswith("https://systeme.io/")
+                and ("/login" in page.url or "/dashboard" in page.url)
+            )
+            result = {
+                "schema_version": 1,
+                "receipt_type": "PROVIDER_EMAIL_VERIFICATION",
+                "provider": "systeme-io",
+                "state": "EMAIL_VERIFIED" if accepted else "VERIFICATION_AMBIGUOUS",
+                "observed_url": page.url,
+                "rendered_text_sha256": hashlib.sha256(
+                    page.locator("body").inner_text().encode()
+                ).hexdigest(),
+                "deduplicated": False,
+            }
+            if accepted:
+                verify_effect(state, job["job_id"], {
+                    key: result[key] for key in (
+                        "state", "observed_url", "rendered_text_sha256",
+                    )
+                })
+            atomic_json(receipt_path, result)
+            return result
+        finally:
+            page.goto(ELEVENLABS_HOME, wait_until="domcontentloaded", timeout=20_000)
+
+
 def wake(args):
     state = args.state.expanduser()
     state.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -687,8 +754,12 @@ def wake(args):
                 "failure_type": type(error).__name__,
             }
     systeme = {"state": "NOT_RUN", "provider": "systeme-io"}
+    systeme_verification = {"state": "NOT_RUN"}
     if provider["state"] == "AUTHENTICATED":
         try:
+            systeme_verification = verify_systeme_email(
+                state, args.cdp_port, args.private_markdown.expanduser(),
+            )
             systeme = resume_systeme_provider(
                 state, args.cdp_port, args.private_markdown.expanduser(),
             )
@@ -743,6 +814,8 @@ def wake(args):
         "systeme_state": systeme.get("state"),
         "systeme_failure_type": systeme.get("failure_type"),
         "systeme_submitted": systeme.get("submitted"),
+        "systeme_verification_state": systeme_verification.get("state"),
+        "systeme_verification_deduplicated": systeme_verification.get("deduplicated"),
         "publication_state": publication["state"],
         "publication_url": publication["public_url"],
         "publication_failure_type": publication.get("failure_type"),

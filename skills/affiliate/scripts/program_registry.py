@@ -210,11 +210,13 @@ def store_login(label, markdown_path, login):
 
 
 def store_link(label, field, markdown_path, link):
-    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9 -]{1,63} affiliate link", field):
-        raise ValueError("invalid affiliate-link field")
+    if not re.fullmatch(
+        r"[A-Za-z][A-Za-z0-9 -]{1,63} (affiliate|verification) link", field,
+    ):
+        raise ValueError("invalid private-link field")
     parsed = urlparse(link)
     if parsed.scheme != "https" or not parsed.netloc or any(character.isspace() for character in link):
-        raise ValueError("affiliate link must be one HTTPS URL")
+        raise ValueError("private link must be one HTTPS URL")
     markdown_path = markdown_path.expanduser()
     text = markdown_path.read_text(encoding="utf-8")
     section = re.search(rf"(?ms)^## {re.escape(label)}\n.*?(?=^## |\Z)", text)
