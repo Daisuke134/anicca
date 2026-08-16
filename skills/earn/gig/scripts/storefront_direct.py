@@ -1657,11 +1657,15 @@ def _observe_own_page(
         raise RuntimeError("own_candidate_service_id_invalid")
     url = f"https://coconala.com/services/{service_id}"
     expression = """(async () => {
+          const collapsedBodies = [...document.querySelectorAll(
+            'button.c-contentsCollapse_readMoreButton'
+          )];
+          collapsedBodies.forEach(control => control.click());
           const closed = [...document.querySelectorAll(
             'a[aria-controls^="serviceContentsFaqAnswer"][aria-expanded="false"]'
           )];
           closed.forEach(control => control.click());
-          if (closed.length) await new Promise(resolve => setTimeout(resolve, 500));
+          if (collapsedBodies.length || closed.length) await new Promise(resolve => setTimeout(resolve, 500));
           const serviceImageIds = [...new Set([...document.querySelectorAll('.c-contentsImagesProduction img')]
             .map(image => (image.currentSrc || image.src || '').match(/service_images\\/original\\/([^/?]+)/)?.[1])
             .filter(Boolean))];
