@@ -418,7 +418,16 @@ Verification: repeated installed wakes and controlled cutoffs prove idempotency 
 - [x] Delete tracked `GIG_PASS_RUNBOOK.md`, `gig_pass.sh`, `gig-cli.sh` and `scripts/gig_single_instance.sh` only after all executable reachability is zero.
 - [x] Delete obsolete `ai.anicca.hf-gig-pass.plist.*` backups after confirming no installer or recovery path consumes them.
 - [ ] After Apply and Negotiate migration, prove the three active lanes have zero runtime dependency on the mixed ref. Keep the clean mixed worktree/ref quarantined only for the separate Paid audit. After the Paid owner releases it, confirm no live process uses it and remove `.worktrees/storefront-revenue-os` plus local/remote `fix/storefront-revenue-os`; retain the four original Paid commit SHAs and four exact revert SHAs in this audit.
-- [ ] Publish one canonical inventory showing all four direct owners, truthful release ancestry/status, and no legacy gig-pass owner. Hermes gateway remains because it is a separate continuing service.
+- [x] Publish one canonical inventory showing all four direct owners, truthful release ancestry/status, and no legacy gig-pass owner. Hermes gateway remains because it is a separate continuing service. Measured 2026-08-17, read-only:
+
+| Owner | Label | Loaded | Installed release | Life Manager `main` ancestor |
+|---|---|---|---|---|
+| Storefront | `ai.anicca.hf-gig-storefront-direct` | yes, interval `60` | `life-manager/66a1a7632…` | yes |
+| Apply | `ai.anicca.hf-gig-apply-direct` | yes | `life-manager/db449f8db…` | yes |
+| Negotiate | `ai.anicca.hf-gig-reply-detector` | yes | `profitable-claude/610e0e42a…` | no — different repository, owner's decision |
+| Paid | `ai.anicca.hf-gig-paid-direct` | no, intentionally | `life-manager/d150e4b1d…` | no |
+
+No `gig-pass` label exists in `launchctl` or `~/Library/LaunchAgents`, and each plist resolves all of its paths to a single readonly release directory.
 
 Verification: tracked files, installed plists, launchctl, registry, imports, subprocesses, installers, symlinks and authoritative docs contain zero executable gig-pass reachability.
 
@@ -429,7 +438,7 @@ Verification: tracked files, installed plists, launchctl, registry, imports, sub
 - [ ] Run Storefront twice after cleanup and require official catalog/readback, KPI ledger, Telegram send-or-dedupe, exit `0` and released lease. Full-wake contract renders remain proven by the retained installed full wake; incremental wakes intentionally do not render mutation forms.
 - [ ] Verify the final installed three-lane inventory after owner migrations. Storefront is currently enabled/green on main-derived `4aa8e51e9...`; Apply and Negotiate provenance/context gates remain external-owner work; Paid is intentionally excluded. This gate is a global product-cleanliness gate, not a Storefront runtime-recovery gate.
 - [x] Re-prove after branch cleanup that deleted legacy names cannot be resurrected by installer, recovery, launchd backup, registry or current docs. Historical evidence and immutable releases are non-executable records. Measured on 2026-08-17: `launchctl list` contains no `gig-pass` label, `~/Library/LaunchAgents` contains no `gig-pass` plist or backup, and neither `install.sh` nor `scripts/` references `gig_pass.sh`, `gig-cli.sh` or `gig_single_instance.sh`. The only tracked hits are non-executable: historical execution notes, provenance comments in sibling loop launchers, one stale docstring in the Apply-owned `evidence_gc.py` call path, and the Storefront tests that forbid the names. The stale docstring is left to the Apply owner rather than edited across the ownership boundary.
-- [ ] Reconcile repository/worktree/branch inventory: main clean and pushed, with no temporary or mixed Storefront worktree/branch.
+- [ ] Reconcile repository/worktree/branch inventory: main clean and pushed, with no temporary or mixed Storefront worktree/branch. Measured 2026-08-17: the working tree is clean, local `main` equals `origin/main`, and no temporary Storefront worktree or branch exists. Two Storefront-named refs remain and are not temporary: the quarantined mixed audit worktree `.worktrees/storefront-revenue-os` at `b8f15537a` with its remote branch, which stays until the Paid owner releases it, and `feat/lancers-storefront-inventory`, which belongs to a different marketplace and is out of this spec's scope.
 - [ ] Mark this spec `COMPLETE` only after every S4–S8 checkbox is closed with evidence. Revenue and elapsed time never substitute for implementation or verification.
 
 Verification: two post-cleanup Storefront wakes, a truthful four-direct-owner inventory, zero resurrection paths and clean GitHub `main`. Non-Storefront owner remediation stays outside this completion judgment.
