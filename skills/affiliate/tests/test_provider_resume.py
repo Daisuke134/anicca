@@ -101,7 +101,7 @@ class ProviderResumeTest(unittest.TestCase):
             })
         typed.assert_called_once_with(socket, 4, "input[type='password']", "secret")
         clicked.assert_called_once_with(
-            "127.0.0.1", 9327, "https://app.impact.com/login.user", ["Sign In"],
+            "127.0.0.1", 9327, "https://app.impact.com/login.user", ["Sign In"], None,
         )
 
     def test_single_page_login_fills_email_before_password(self):
@@ -166,7 +166,11 @@ class ProviderResumeTest(unittest.TestCase):
                     "type": "page", "url": "https://elevenlabs.io/app/sign-in",
                     "title": "Sign In | ElevenLabs", "id": "tab-1",
                 }]),
-                patch.object(provider_cli, "submit_login") as submit,
+                patch.object(provider_cli, "submit_login", return_value={
+                    "http_status": 200,
+                    "url_sha256": "b" * 64,
+                    "body_sha256": "c" * 64,
+                }) as submit,
                 patch.object(provider_cli.time, "sleep"),
             ):
                 receipt = provider_cli.resume(args)
