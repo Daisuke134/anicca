@@ -1602,8 +1602,14 @@ shared abstraction to make the diff appear smaller.
   fail-closed states remain observable as `publication_generic_state` but cannot
   block a separate known campaign lane. Active generic delivery states still
   retain ownership and return immediately.
-- [ ] **E0-C07** Kick an unchanged replay and require the same provider link,
+- [x] **E0-C07** Kick an unchanged replay and require the same provider link,
   public URLs, job count, Git HEAD, and `Telegram=NO_PENDING`.
+
+  Installed release `60d82d05d` completed this replay with provider link
+  `dd63ebae-fe33-4347-b264-313b7bcb2072`, owned article `LIVE`, the unchanged X
+  status, identical local/remote landing HEAD `341b04082f80142fff1ae28e452b4fb4ff6c1946`,
+  and `Telegram=NO_PENDING`. The replay created neither a third TTS Git-push job
+  nor a second TTS X-publish job.
 - [ ] **E0-C08** Capture Link Performance baseline for that link; an unchanged
   replay MUST create no click transition.
 - [ ] **E0-C09** Continue scheduled distribution and provider polling until an
