@@ -446,7 +446,8 @@ def _allocate_portfolio(
                 net[service_id] = net.get(service_id, 0.0) + float(event["net_receipt_jpy"])
     evidence_identity = {
         "contracts": {key: value["service_version_sha256"] for key, value in sorted(contract_by_id.items())},
-        "analytics": {key: value.get("snapshot_key") for key, value in sorted(latest_analytics.items())},
+        "analytics": {key: {"window": value.get("window"), "metrics": value.get("metrics")}
+                      for key, value in sorted(latest_analytics.items())},
         "funnel": funnel.get("cutoff_cursor"), "policy": policy,
     }
     evidence_cursor = hashlib.sha256(json.dumps(
