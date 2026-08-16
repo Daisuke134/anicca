@@ -101,6 +101,9 @@ def _report_message(row: dict) -> str:
     effect = int(row.get("effect") or 0)
     hypothesis = row.get("next_hypothesis") if isinstance(row.get("next_hypothesis"), dict) else {}
     contract_delta = int(row.get("listing_contracts_appended") or 0)
+    catalog = row.get("catalog_analytics") if isinstance(row.get("catalog_analytics"), dict) else {}
+    totals = catalog.get("totals") if isinstance(catalog.get("totals"), dict) else {}
+    changes = catalog.get("changes") if isinstance(catalog.get("changes"), dict) else {}
     next_action = (
         "失敗stageを自動修復して同じ境界から再開" if failed
         else "公式readbackとoutcome ledgerを照合" if effect
@@ -112,6 +115,9 @@ def _report_message(row: dict) -> str:
         f"✅ 公式出品 {int(row.get('official_services_read') or 0)}件 / 競合証拠 {int(row.get('competitor_evidence_count') or 0)}件",
         f"📊 actionable {int(row.get('actionable') or 0)} / effect {effect} / readback {int(row.get('readback') or 0)} / duplicate {int(row.get('duplicate') or 0)}",
         f"📚 出品contract {int(row.get('listing_contracts_total') or 0)}件 / 今回追加 {contract_delta}件",
+        (f"📈 直近30日: 閲覧 {int(totals.get('views') or 0)} / 販売 {int(totals.get('purchases') or 0)} / "
+         f"お気に入り {int(totals.get('favorites') or 0)} | 前回比 閲覧 {int(changes.get('views') or 0):+d} / "
+         f"販売 {int(changes.get('purchases') or 0):+d} / 未確定 {int(catalog.get('change_unknown_services') or 0)}件"),
         f"🧪 次候補 {hypothesis.get('service_id') or 'なし'} / {hypothesis.get('field') or 'なし'} / 実行可能 {str(bool(hypothesis.get('executable'))).lower()}",
         f"🛡️ fence {hypothesis.get('guard_reason') or row.get('reason') or 'なし'}",
         f"🔧 次の一手: {next_action}",
@@ -366,64 +372,100 @@ def _analytics_count(body: str, label: str, unit: str) -> int:
 
 
 def _collect_analytics(
-    state_dir: Path, evidence_dir: Path, now: int, default_tab_script: Path = DEFAULT_TAB,
+    state_dir: Path, evidence_dir: Path, now: int, service_ids: list[str],
+    default_tab_script: Path = DEFAULT_TAB,
 ) -> dict:
     import listing_inventory
 
-    url = f"https://coconala.com/mypage/analytics/{TARGET_SERVICE_ID}"
-    opened = subprocess.run(
-        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-         "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
-    )
-    try:
-        tab = json.loads(opened.stdout)
-        if opened.returncode != 0 or tab.get("ok") is not True:
-            raise RuntimeError("official_analytics_tab_open_failed")
-        observed = asyncio.run(listing_inventory._eval_json(
-            str(tab["ws"]), url,
-            "JSON.stringify({url:location.href,title:document.title,body:document.body?document.body.innerText.slice(0,120000):''})",
-        ))
-    except (KeyError, json.JSONDecodeError) as error:
-        raise RuntimeError("official_analytics_tab_open_invalid") from error
-    finally:
-        if "tab" in locals() and tab.get("target_id"):
-            subprocess.run(
-                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-                 "close", str(tab["target_id"])], capture_output=True, text=True, check=False, timeout=30,
-            )
-    body = str(observed.get("body") or "")
-    period = re.search(r"対象期間：([0-9]{4}/[0-9]{2}/[0-9]{2})\s*-\s*([0-9]{4}/[0-9]{2}/[0-9]{2})", body)
-    if (observed.get("url") != url or period is None or "サービス別分析" not in body
-            or "OpenCV画像認識を検証・手順書付きで実装します" not in body):
-        raise RuntimeError("official_analytics_readback_invalid")
-    raw_path = evidence_dir / "official-analytics.json"
-    _atomic_write(raw_path, observed)
-    metrics = {
-        "impressions": {"status": "unavailable", "value": None,
-                        "reason": "seller_success_subscription_required"},
-        "views": {"status": "known", "value": _analytics_count(body, "閲覧数", "回")},
-        "purchases": {"status": "known", "value": _analytics_count(body, "販売数", "件")},
-        "gross_jpy": {"status": "unavailable", "value": None,
-                      "reason": "service_analytics_does_not_expose_sales_amount"},
-        "favorites": {"status": "known", "value": _analytics_count(body, "お気に入り数", "回")},
-    }
-    identity = {
-        "service_id": TARGET_SERVICE_ID, "window_start": period.group(1),
-        "window_end": period.group(2), "metrics": metrics,
-        "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
-    }
-    snapshot = {
-        "version": 1, "snapshot_key": "storefront:analytics:v1:" + hashlib.sha256(
-            json.dumps(identity, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest(),
-        "observed_at_epoch": now, "official": True, "service_id": TARGET_SERVICE_ID,
-        "source_url": url, "window": {"start": period.group(1), "end": period.group(2),
-                                       "complete": True},
-        "metrics": metrics, "content_sha256": identity["content_sha256"],
-        "evidence_path": str(raw_path),
-    }
-    _append_key_once(state_dir / "analytics.jsonl", "snapshot_key", snapshot)
-    return snapshot
+    if not service_ids or len(service_ids) != len(set(service_ids)) or any(not value.isdigit() for value in service_ids):
+        raise RuntimeError("official_analytics_service_ids_invalid")
+    analytics_path = state_dir / "analytics.jsonl"
+    previous: dict[str, dict] = {}
+    if analytics_path.exists():
+        for line in analytics_path.read_text(encoding="utf-8").splitlines():
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError as error:
+                raise RuntimeError("official_analytics_ledger_invalid") from error
+            if isinstance(row, dict) and str(row.get("service_id") or "").isdigit():
+                previous[str(row["service_id"])] = row
+    snapshots = []
+    for service_id in service_ids:
+        url = f"https://coconala.com/mypage/analytics/{service_id}"
+        opened = subprocess.run(
+            [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+             "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
+        )
+        tab = None
+        try:
+            tab = json.loads(opened.stdout)
+            if opened.returncode != 0 or tab.get("ok") is not True:
+                raise RuntimeError("official_analytics_tab_open_failed")
+            observed = asyncio.run(listing_inventory._eval_json(
+                str(tab["ws"]), url,
+                "JSON.stringify({url:location.href,title:document.title,body:document.body?document.body.innerText.slice(0,120000):''})",
+            ))
+        except (KeyError, json.JSONDecodeError) as error:
+            raise RuntimeError("official_analytics_tab_open_invalid") from error
+        finally:
+            if isinstance(tab, dict) and tab.get("target_id"):
+                subprocess.run(
+                    [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                     "close", str(tab["target_id"])], capture_output=True, text=True, check=False, timeout=30,
+                )
+        body = str(observed.get("body") or "")
+        period = re.search(r"対象期間：([0-9]{4}/[0-9]{2}/[0-9]{2})\s*-\s*([0-9]{4}/[0-9]{2}/[0-9]{2})", body)
+        if observed.get("url") != url or period is None or "サービス別分析" not in body:
+            raise RuntimeError(f"official_analytics_readback_invalid:{service_id}")
+        raw_path = evidence_dir / f"official-analytics-{service_id}.json"
+        _atomic_write(raw_path, observed)
+        metrics = {
+            "impressions": {"status": "unavailable", "value": None,
+                            "reason": "seller_success_subscription_required"},
+            "views": {"status": "known", "value": _analytics_count(body, "閲覧数", "回")},
+            "purchases": {"status": "known", "value": _analytics_count(body, "販売数", "件")},
+            "gross_jpy": {"status": "unavailable", "value": None,
+                          "reason": "service_analytics_does_not_expose_sales_amount"},
+            "favorites": {"status": "known", "value": _analytics_count(body, "お気に入り数", "回")},
+        }
+        identity = {
+            "service_id": service_id, "window_start": period.group(1), "window_end": period.group(2),
+            "metrics": metrics, "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
+        }
+        snapshot = {
+            "version": 1, "snapshot_key": "storefront:analytics:v1:" + hashlib.sha256(
+                json.dumps(identity, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+            "observed_at_epoch": now, "official": True, "service_id": service_id,
+            "source_url": url, "window": {"start": period.group(1), "end": period.group(2), "complete": True},
+            "metrics": metrics, "content_sha256": identity["content_sha256"], "evidence_path": str(raw_path),
+        }
+        _append_key_once(analytics_path, "snapshot_key", snapshot)
+        snapshots.append(snapshot)
+    totals = {metric: sum(int(row["metrics"][metric]["value"]) for row in snapshots)
+              for metric in ("views", "purchases", "favorites")}
+    changes = {metric: 0 for metric in totals}
+    unknown_changes = 0
+    for snapshot in snapshots:
+        prior = previous.get(snapshot["service_id"])
+        if not isinstance(prior, dict) or prior.get("window") != snapshot["window"]:
+            unknown_changes += 1
+            continue
+        valid = True
+        for metric in changes:
+            before = ((prior.get("metrics") or {}).get(metric) or {}).get("value")
+            after = snapshot["metrics"][metric]["value"]
+            if type(before) is not int or after < before:
+                valid = False
+                break
+            changes[metric] += after - before
+        if not valid:
+            unknown_changes += 1
+    target = next((row for row in snapshots if row["service_id"] == TARGET_SERVICE_ID), None)
+    if target is None:
+        raise RuntimeError("official_analytics_target_missing")
+    return {**target, "catalog_metrics": {"services_observed": len(snapshots), "totals": totals,
+                                           "changes": changes, "change_unknown_services": unknown_changes}}
 
 
 def _inquiry_windows(path: Path, service_id: str, accepted_at: int, window_days: int) -> dict:
@@ -1282,7 +1324,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             own_page = _observe_own_page(ws_url, inventory_path.parent)
             analytics = _collect_analytics(
-                args.state_dir, inventory_path.parent, int(time.time()),
+                args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
             )
             next_hypothesis = _prepare_next_hypothesis(
@@ -1513,6 +1555,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 public_after_path=(str(pending_effect["public_after_path"]) if pending_effect else None),
                 recovered_effect=bool(pending_effect and pending_effect["recovered"]),
                 analytics_snapshot_key=analytics["snapshot_key"],
+                catalog_analytics=analytics.get("catalog_metrics"),
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
                 lease={
