@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "platform": "coconala",
+  "service_id": "4308502",
+  "capability_family": "presentation_design",
+  "changed_field": "price",
+  "form_field": "data[Service][price]",
+  "before_value": "5500",
+  "proposed_value": "6600",
+  "rollback_value": "5500",
+  "official_readback": {
+    "seller_option_value": "6600",
+    "seller_option_label": "6,000円",
+    "public_price_jpy": 6000
+  },
+  "success_metric": "net_revenue_per_view",
+  "observation_window_days": 14,
+  "evidence": [
+    "official:seller-form:4308502:price-option",
+    "https://coconala.com/categories/230/66"
+  ]
+}

@@ -50,6 +50,7 @@ DEFAULT_TITLE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4
 DEFAULT_BODY_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-body-v1.json"
 DEFAULT_PACKAGE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-package-v1.json"
 DEFAULT_FAQ_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-faq-v1.json"
+DEFAULT_PRICE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-price-v1.json"
 DEFAULT_LISTING_CONTRACT_DIR = GIG_DIR / "contracts" / "storefront"
 DEFAULT_LISTING_CONTRACT_FAMILIES = GIG_DIR / "config" / "storefront-contract-families.json"
 DEFAULT_NEW_LISTING_CONTRACT = (
@@ -64,7 +65,7 @@ FAQ_PATTERN = re.compile(
     r"(?:よくある質問\s*)?Q[.．]\s*(?P<question>.+?)\s*\n+A[.．]\s*(?P<answer>.+)\Z",
     re.DOTALL,
 )
-SELLER_FORM_EXPRESSION = r'''JSON.stringify((()=>{const form=document.forms[0];return{url:location.href,action:form?.action||null,method:form?.method||null,fields:form?[...form.elements].filter(e=>e.name).map(e=>({name:e.name,type:e.type||null,value:e.value||'',checked:!!e.checked})):[]}})())'''
+SELLER_FORM_EXPRESSION = r'''JSON.stringify((()=>{const form=document.forms[0];return{url:location.href,action:form?.action||null,method:form?.method||null,fields:form?[...form.elements].filter(e=>e.name).map(e=>({name:e.name,type:e.type||null,value:e.value||'',checked:!!e.checked})):[],select_options:form?Object.fromEntries([...form.elements].filter(e=>e.name&&e.tagName==='SELECT').map(e=>[e.name,[...e.options].map(o=>({value:o.value,label:(o.textContent||'').trim()}))])):{}}})())'''
 COMPETITOR_SOURCES = (
     ("category", "https://coconala.com/categories/230/66"),
     ("search", "https://coconala.com/search?keyword=%E6%A5%AD%E5%8B%99%E8%87%AA%E5%8B%95%E5%8C%96"),
@@ -348,6 +349,24 @@ def _render_text_mutation(path: Path, sources: list[dict], seller_snapshot: dict
         question, answer = _split_faq(spec["proposed_value"])
         if spec["official_readback"] != {"question": question, "answer": answer}:
             raise RuntimeError("storefront_faq_readback_contract_invalid")
+    if spec["changed_field"] == "price":
+        readback = spec["official_readback"]
+        proposed_jpy = readback.get("public_price_jpy")
+        before_label = f'{source["price_jpy"]:,}円'
+        proposed_label = f"{proposed_jpy:,}円" if type(proposed_jpy) is int and proposed_jpy > 0 else None
+        options = seller_snapshot.get("select_options", {}).get(spec["form_field"], [])
+        option_pairs = {
+            (str(row.get("value") or ""), str(row.get("label") or ""))
+            for row in options if isinstance(row, dict)
+        }
+        if (readback != {
+                "seller_option_value": spec["proposed_value"],
+                "seller_option_label": proposed_label,
+                "public_price_jpy": proposed_jpy,
+            }
+                or (spec["before_value"], before_label) not in option_pairs
+                or (spec["proposed_value"], proposed_label) not in option_pairs):
+            raise RuntimeError("storefront_price_option_binding_invalid")
     unsigned = {
         "version": 1, "platform": "coconala", "service_id": source["service_id"],
         "precondition_listing_version_sha256": source["service_version_sha256"],
@@ -1534,14 +1553,20 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "faq_mutation", DEFAULT_FAQ_MUTATION), validated_contracts,
                 presentation_snapshot,
             )
+            price_render = _render_text_mutation(
+                getattr(args, "price_mutation", DEFAULT_PRICE_MUTATION), validated_contracts,
+                presentation_snapshot,
+            )
             title_render_path = inventory_path.parent / "mutation-render-title.json"
             body_render_path = inventory_path.parent / "mutation-render-body.json"
             package_render_path = inventory_path.parent / "mutation-render-package.json"
             faq_render_path = inventory_path.parent / "mutation-render-faq.json"
+            price_render_path = inventory_path.parent / "mutation-render-price.json"
             _atomic_write(title_render_path, title_render)
             _atomic_write(body_render_path, body_render)
             _atomic_write(package_render_path, package_render)
             _atomic_write(faq_render_path, faq_render)
+            _atomic_write(price_render_path, price_render)
             listing_contracts = _load_listing_contracts(
                 getattr(args, "listing_contract_dir", DEFAULT_LISTING_CONTRACT_DIR), validated_contracts,
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
@@ -1865,6 +1890,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 } for render, path in (
                     (title_render, title_render_path), (body_render, body_render_path),
                     (package_render, package_render_path), (faq_render, faq_render_path),
+                    (price_render, price_render_path),
                 )],
                 lease={
                     "task": task,
@@ -1911,6 +1937,7 @@ def main() -> int:
     parser.add_argument("--body-mutation", type=Path, default=DEFAULT_BODY_MUTATION)
     parser.add_argument("--package-mutation", type=Path, default=DEFAULT_PACKAGE_MUTATION)
     parser.add_argument("--faq-mutation", type=Path, default=DEFAULT_FAQ_MUTATION)
+    parser.add_argument("--price-mutation", type=Path, default=DEFAULT_PRICE_MUTATION)
     parser.add_argument("--listing-contract-dir", type=Path, default=DEFAULT_LISTING_CONTRACT_DIR)
     parser.add_argument(
         "--listing-contract-families", type=Path, default=DEFAULT_LISTING_CONTRACT_FAMILIES,
