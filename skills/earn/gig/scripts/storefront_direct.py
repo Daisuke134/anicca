@@ -2259,7 +2259,17 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             else:
                 capability_paths = {str(Path(path).resolve()) for path in args.capability_evidence}
                 mutation_contract = None
-                if next_hypothesis is not None and not next_hypothesis["executable"]:
+                if next_hypothesis is None:
+                    judgement = _guarded_noop({
+                        "decision": "no_op", "service_id": None, "changed_field": None,
+                        "before_value": None, "proposed_value": None,
+                        "hypothesis": "No current unfenced backlog item has an exact executable mutation contract.",
+                        "competitor_evidence_paths": [], "capability_evidence_paths": [],
+                        "success_metric": None, "observation_window_days": None,
+                        "no_op_reason": "no_executable_unfenced_mutation_contract",
+                        "experiment_key": None, "uncertainty": [],
+                    }, "no_executable_unfenced_mutation_contract")
+                elif not next_hypothesis["executable"]:
                     raw_judgement = {
                         "decision": "no_op", "service_id": None, "changed_field": None,
                         "before_value": None, "proposed_value": None,
