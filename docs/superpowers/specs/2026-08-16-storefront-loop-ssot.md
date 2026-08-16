@@ -42,6 +42,25 @@ Storefront is complete only when one installed launchd loop repeatedly performs 
 
 A working scheduler, a scorecard, a fixed set of adapters, or one successful publication is necessary evidence but is not completion by itself.
 
+### Runtime intelligence and model contract
+
+The Storefront loop is not one continuously running LLM. Its installed launchd label wakes every 60 seconds. Incremental wakes collect official state, reconcile funnel data, perform public readback and report through deterministic Python only. A full decision wake is due every 1,800 seconds. Even on a full wake, code performs identity, version, evidence, ownership, one-effect, rollback, official-readback and duplicate guards; the model may propose commercial content but can never certify its own external effect.
+
+Current runtime truth:
+
+- `storefront_direct.py` routes its existing model judgement through `agent_runner.py --task-class composition-agent`.
+- Both current `main` and installed release `84c41cb17...` resolve `composition-agent` to Codex `gpt-5.6-terra`, effort `medium`, with no Luna or Sol candidate.
+- Pre-authored image/title/body mutation contracts bypass that model call. Therefore “launchd is running every minute” does not mean Terra is invoked every minute, and recent fixed-contract/no-op wakes do not prove autonomous model generation.
+
+Completion model contract:
+
+- Add a Storefront-specific runner task class named `storefront-proposal-agent`, pinned to Codex `gpt-5.6-terra`, effort `medium`. Do not reuse a shared task class whose model change could silently alter another loop.
+- Use Terra only on a full wake that has fresh evidence and an eligible proposal gap. Terra generates the candidate listing contract, copy, scope, package/price proposal, FAQ or portfolio action in the strict schema.
+- Keep catalog collection, KPI arithmetic, attribution, capability checks, version/hash binding, mutation cardinality, seller submission, public readback, rollback, receipt persistence and Telegram dedupe deterministic.
+- Do not put Luna or Sol in the normal Storefront runtime path. Luna may be evaluated later only as a measured challenger against the same retained evidence and schema; it does not replace Terra unless contract validity and downstream Storefront KPIs are no worse. Sol is not a per-wake reviewer.
+
+This decision optimizes for commercial judgment quality without paying for an LLM on every minute tick. No model change is allowed to be reported as a KPI improvement until official attributable funnel evidence proves it.
+
 ## 2. Ownership boundary
 
 | Owner | Owns | Must not own |
@@ -168,6 +187,7 @@ The Storefront loop is complete only when all are true:
 10. An open experiment blocks another mutation only when it can contaminate the same listing-level metric: the same `service_id` is blocked; a distinct new service with independent per-service attribution is not catalog-globally blocked.
 11. Portfolio allocation evaluates every public listing as an asset and emits exactly one of `KEEP`, `IMPROVE`, `RETIRE`, or `REPLACE`. A niche label or short period with zero sales is never sufficient evidence to retire it. Replacement requires adequate exposure evidence or an explicitly unknown verdict, a stronger evidence-backed candidate, delivery capability, a slot/capacity reason, rollback, and official readback. Retirement is recoverable unpublication/archive before deletion so reviews, versions and evidence are preserved.
 12. Storefront publishes an immutable inquiry-context envelope containing `platform`, `service_id`, `listing_version`, `origin=storefront`, `conversation_id`, offer/scope, required inputs, pricing/add-ons, exclusions and the inquiry playbook. Negotiate must acknowledge consuming that exact envelope before the end-to-end Storefront funnel is complete; application context alone is insufficient.
+13. Minute wakes perform zero model calls. Eligible full proposal wakes use the Storefront-specific `storefront-proposal-agent` route pinned to Codex `gpt-5.6-terra`, effort `medium`; every proposed contract is accepted or rejected by deterministic guards and official readback evidence.
 
 ## 6. KPI contract
 
@@ -322,6 +342,7 @@ Verification: authenticated seller form → exact four upload inputs → one sub
 ### S5h — Close the autonomous-improvement gap
 
 - [ ] Replace the finite per-listing mutation file list with one Storefront-owned proposal builder that consumes the current official listing, capability-family contract, scorecard gap and retained competitor evidence and emits the existing sealed mutation schema for title, body/scope, package, FAQ, price and gallery.
+- [ ] Add `storefront-proposal-agent` to the runner config with the pinned Codex `gpt-5.6-terra`, effort `medium` route, and make the proposal builder use that task class. Prove incremental wakes make zero provider calls and an eligible full wake records the exact provider/model/effort in durable evidence.
 - [ ] Make `CREATE`, recoverable `RETIRE` and `REPLACE` produce the same versioned contract, precondition, official readback, rollback and duplicate-effect evidence as `IMPROVE`; do not keep one hard-coded new-listing candidate.
 - [ ] Require the selector to skip an ineligible or maturing experiment and choose the next immediately executable service/field. Calendar eligibility MUST never make the whole loop idle.
 - [ ] Add evidence-backed metric evaluation for views→inquiry, inquiry→payment, verified net receipt, review and repeat purchase. If the required service/order attribution is absent, record `unknown` and choose a metric that is actually measurable; never invent a conversion rate.
@@ -380,6 +401,7 @@ Verification: two post-cleanup Storefront wakes, a truthful four-direct-owner in
 |---|---|
 | Wrong listing changed | exact service ID + precondition hash before effect; official readback after effect |
 | Human-authored contract dependency survives | exhaust committed seed contracts; two later cycles must generate, seal, execute and replay their own contracts with no new service-specific artifact |
+| Wrong or hidden model route | incremental wake records zero provider attempts; eligible full proposal evidence records `codex/gpt-5.6-terra/medium`; a shared task-class edit cannot alter Storefront routing |
 | Loop idles behind a measurement window | one maturing experiment remains open while the selector produces a different immediately executable action |
 | Duplicate public service | catalog identity scan before create; second run creates zero |
 | Unrelated experiment blocks revenue | conflict key includes `service_id`; open `4330368` experiment does not block distinct `4355225` |
@@ -419,7 +441,7 @@ The exact final tree may reuse existing directories to minimize churn, but Store
 The following order is the finish line. Time-dependent measurement is never a TODO and Paid work never blocks Storefront-owned implementation.
 
 1. **Install the committed scope slice:** build immutable main release `5b617eb54...`, update only the Storefront label, then publish/read back/replay `4244910/body` once to prove the second concrete field path.
-2. **Remove human contract authoring:** implement S5h's generic proposal builder so the loop turns any eligible scorecard gap into the sealed mutation schema without a developer adding a service-specific JSON file.
+2. **Remove human contract authoring and pin intelligence:** add the Storefront-only `storefront-proposal-agent` route at Codex `gpt-5.6-terra`, effort `medium`, then implement S5h's generic proposal builder so the loop turns any eligible scorecard gap into the sealed mutation schema without a developer adding a service-specific JSON file. Prove minute wakes use no model and eligible full wakes persist the exact route evidence.
 3. **Generalize portfolio actions:** generate and fence `IMPROVE`, `CREATE`, recoverable `RETIRE` and `REPLACE` actions across the twenty-slot portfolio; remove the single hard-coded new-listing candidate.
 4. **Complete measurable learning:** evaluate attributable inquiries, payments, net receipts, reviews and repeat purchases; preserve unsupported conversions as `unknown`, and choose another immediately executable action while an experiment matures.
 5. **Prove beach-mode autonomy:** after seed contracts are exhausted, require two consecutive loop-generated contracts to produce real official effect/readback, immediate zero-duplicate replay, Telegram receipt, exit `0` and released lease without any coding-session artifact.
