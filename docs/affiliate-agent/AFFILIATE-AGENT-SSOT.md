@@ -1564,9 +1564,14 @@ before any confirmation POST.
 
 Attempt `4` isolated another actionability timeout before token readback. Live
 readback proves the exact anchor is visible, enabled, unchecked, and 28×28 below
-the initial viewport. The loop now waits for that exact element, scrolls it into
-view, and force-clicks only that verified checkbox target; it still refuses the
+the initial viewport. The loop now waits for that exact element and force-clicks
+only that verified checkbox target; it still refuses the
 confirmation POST unless the provider writes a non-empty token.
+
+Attempt `5` isolated the remaining defect: cross-origin
+`scroll_into_view_if_needed` times out, while the exact force click succeeds and
+immediately yields a non-empty token. The redundant scroll is removed; the
+verified anchor target and token gate remain unchanged.
 
 #### A. Close revenue truth for the live ElevenLabs placement
 

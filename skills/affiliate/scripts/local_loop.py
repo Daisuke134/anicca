@@ -693,7 +693,6 @@ def verify_systeme_email(state, cdp_port, private_markdown):
                         "iframe[src*='/recaptcha/api2/anchor?']"
                     ).locator("#recaptcha-anchor")
                     captcha_anchor.wait_for(timeout=15_000)
-                    captcha_anchor.scroll_into_view_if_needed(timeout=5_000)
                     captcha_anchor.click(timeout=10_000, force=True)
                     try:
                         page.wait_for_function(
