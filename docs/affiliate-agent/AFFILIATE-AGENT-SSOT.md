@@ -1126,7 +1126,13 @@ tasks and not reasons to stop safe work.
    with no invented revenue. The remaining current acceptance is durable owner
    visibility: enumerate unsent adjacent failure→recovery transitions from the
    append-only wake journal, send exactly one natural `SELF_HEALED` event for
-   wake `41→42`, and replay without a duplicate.
+   wake `41→42`, and replay without a duplicate. Release `a9e138247` first proved
+   durable enumeration, but real wake `43` selected an older unsent publication
+   recovery first and sent message ID `21251`. That event was real, not fabricated,
+   yet unlimited historical publication backfill is noisy. The corrected boundary
+   keeps publication recovery immediate-only, retains durable historical scan for
+   the observed revenue recovery, and must now send the `41→42` revenue event once
+   before an unchanged replay proves no duplicate.
 2. **M2.1-P — Grow six comparable English placements to ten.** The existing
    source→composition→policy→dedicated-link→owned/X→readback→ledger path advances
    four more campaigns. The Agent performs the work; a human or Codex does not

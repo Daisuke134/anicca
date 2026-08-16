@@ -176,6 +176,12 @@ class LocalLoopTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
             MODULE.append(state / "events.jsonl", {
+                "ts": 1, "publication_state": "PUBLICATION_FAILED",
+            })
+            MODULE.append(state / "events.jsonl", {
+                "ts": 2, "publication_state": "X_LIVE",
+            })
+            MODULE.append(state / "events.jsonl", {
                 "ts": 10, "revenue_state": "REVENUE_CYCLE_FAILED",
             })
             wake = {

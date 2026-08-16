@@ -273,7 +273,8 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "job_id": wake_event["impact_login_reconciled_job_id"],
         }, "login effect reconciled from fresh authenticated readback", scope="impact-login")
     wake_history = json_rows(state / "events.jsonl")
-    for previous, current in zip(wake_history, wake_history[1:]):
+    if len(wake_history) >= 2:
+        previous, current = wake_history[-2:]
         if (
             previous.get("publication_state") == "PUBLICATION_FAILED"
             and current.get("publication_state") != "PUBLICATION_FAILED"
@@ -286,6 +287,7 @@ def owner_event(state, wake_event, sent_event_ids=None):
             }, "publication retry recovered / commission not observed yet",
                 current.get("publication_url") or latest_live_url(state),
                 scope="publication")
+    for previous, current in zip(wake_history, wake_history[1:]):
         if (
             previous.get("revenue_state") == "REVENUE_CYCLE_FAILED"
             and current.get("revenue_state")
