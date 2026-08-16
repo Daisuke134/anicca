@@ -1840,7 +1840,11 @@ observable outcome exists.
   allowed-channel, payout, tracking-link ownership, and fresh login are Skill-
   receipted; applications themselves are durable browser jobs.
 - [ ] **A15.3** Continuously capture buyer questions and product evidence through
-  CRWL, `gh`, authenticated X, and admitted platform adapters.
+  CRWL, `gh`, authenticated X, and admitted platform adapters. The official
+  sitemap owner no longer blocks solely because a UTC-day discovery already ran:
+  it admits exactly one next unused product only after the prior discovered plan
+  has a durable `X_LIVE` campaign receipt. An unfinished plan and
+  `NO_NEW_PRODUCT` remain in cooldown, preventing an unbounded content queue.
 - [ ] **A15.4** Produce one source-bound decision asset per qualified intent with
   disclosure-before-CTA, limitations, alternatives, and exactly one owned link.
 - [ ] **A15.5** Publish through the owned site and English X browser, require public

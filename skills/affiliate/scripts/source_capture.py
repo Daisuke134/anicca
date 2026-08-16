@@ -95,7 +95,17 @@ def discover_official_plan(root, state_root, now):
     except (OSError, ValueError):
         previous = {}
     if previous.get("completed_day") == datetime.fromtimestamp(now, timezone.utc).date().isoformat():
-        return {**previous, "state": "COOLDOWN"}
+        prior_plan = previous.get("plan_id")
+        try:
+            publication = json.loads(
+                (state_root / "campaign-publications" / f"{prior_plan}.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+        except (OSError, ValueError):
+            publication = {}
+        if previous.get("state") != "CREATED" or publication.get("state") != "X_LIVE":
+            return {**previous, "state": "COOLDOWN"}
     index_raw = run_adapter({"adapter": "crwl", "url": DISCOVERY_INDEX})
     if DISCOVERY_SITEMAP not in index_raw:
         raise CaptureError("official English product sitemap is not indexed")
