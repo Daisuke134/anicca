@@ -1977,8 +1977,6 @@ def _text_judgement(hypothesis: dict, contract: dict, effects_path: Path, now: i
             accepted_at = int(effect.get("accepted_at_epoch") or 0)
             if effect.get("experiment_key") == value["experiment_key"]:
                 return _guarded_noop(value, "experiment_already_succeeded")
-            if now - accepted_at < 86400:
-                return _guarded_noop(value, "account_effect_budget_24h")
             if str(effect.get("service_id") or "") == contract["service_id"] and now - accepted_at < 604800:
                 return _guarded_noop(value, "service_cooldown_7d")
     return value
@@ -2075,8 +2073,6 @@ def _guard_judgement(
             accepted_at = int(effect.get("accepted_at_epoch") or 0)
             if effect.get("experiment_key") == key:
                 return _guarded_noop(value, "experiment_already_succeeded")
-            if now - accepted_at < 86400:
-                return _guarded_noop(value, "account_effect_budget_24h")
             if effect.get("service_id") == TARGET_SERVICE_ID and now - accepted_at < 604800:
                 return _guarded_noop(value, "service_cooldown_7d")
     return {**value, "experiment_key": key, "no_op_reason": None}

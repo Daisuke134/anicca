@@ -277,7 +277,7 @@ def test_competitor_sources_are_fresh_owned_official_and_exclude_own(tmp_path, m
         raise AssertionError("own service accepted as competitor")
 
 
-def test_one_variable_guard_binds_fresh_evidence_and_enforces_effect_budget(tmp_path):
+def test_one_variable_guard_allows_other_service_and_fences_same_service(tmp_path):
     evidence = tmp_path / "evidence"
     evidence.mkdir()
     competitor = evidence / "competitor.json"
@@ -307,13 +307,23 @@ def test_one_variable_guard_binds_fresh_evidence_and_enforces_effect_budget(tmp_
     effects.write_text(json.dumps({"status": "accepted", "effect": 1,
                                    "accepted_at_epoch": 190, "service_id": "other",
                                    "experiment_key": "other"}) + "\n")
+    independent = direct._guard_judgement(
+        value, own_page={"body": "FAQなし"}, competitor_manifest=manifest,
+        capability_paths={str(capability)}, evidence_dir=evidence, effects_path=effects,
+        minimum_epoch=100, now=200,
+    )
+    assert independent["decision"] == "change"
+
+    effects.write_text(json.dumps({"status": "accepted", "effect": 1,
+                                   "accepted_at_epoch": 190, "service_id": direct.TARGET_SERVICE_ID,
+                                   "experiment_key": "different-experiment"}) + "\n")
     blocked = direct._guard_judgement(
         value, own_page={"body": "FAQなし"}, competitor_manifest=manifest,
         capability_paths={str(capability)}, evidence_dir=evidence, effects_path=effects,
         minimum_epoch=100, now=200,
     )
     assert blocked["decision"] == "no_op"
-    assert blocked["no_op_reason"] == "account_effect_budget_24h"
+    assert blocked["no_op_reason"] == "service_cooldown_7d"
 
 
 def test_judge_result_must_be_fresh_and_owned(tmp_path):
