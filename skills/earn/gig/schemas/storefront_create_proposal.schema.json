@@ -22,7 +22,7 @@
     "image_copy": {"type": ["string", "null"], "maxLength": 240},
     "hypothesis": {"type": "string", "minLength": 1, "maxLength": 1000},
     "evidence": {"type": "array", "minItems": 0, "maxItems": 16, "items": {"type": "string", "minLength": 1, "maxLength": 2048}},
-    "success_metric": {"type": ["string", "null"], "enum": ["inquiries", "purchases", "views_to_inquiry", "views_to_purchase", "inquiries_to_purchase", "net_revenue_per_view", null]},
+    "success_metric": {"type": ["string", "null"], "enum": ["inquiries", "purchases", "views_to_inquiry", "views_to_purchase", "net_receipt", null]},
     "observation_window_days": {"type": ["integer", "null"], "enum": [7, 14, null]},
     "no_op_reason": {"type": ["string", "null"], "maxLength": 1000},
     "uncertainty": {"type": "array", "maxItems": 16, "items": {"type": "string", "minLength": 1, "maxLength": 240}}
