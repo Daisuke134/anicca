@@ -1819,6 +1819,8 @@ exactly equal gap.service_id, gap.field and gap.success_metric. Use only claims 
 owned capability family/offer. Competitors supply generalized structure only: never copy their
 wording, images, reviews, sales, speed, guarantees or results. evidence entries must be exact values
 from allowed_evidence_refs and must include the official offer ref and owned capability-family ref.
+gap.executable=false with guard_reason=proposal_contract_required means this proposal must create the
+missing contract; it is not a no-op reason and mutation_contract_sha256 is intentionally absent.
 For title, return only the seller-form title stem (Coconala appends ます). For body, return a complete
 Japanese replacement with outcome, inclusions, exclusions, required inputs and support boundary.
 For package, return one precise option title; for FAQ use `Q. ...\nA. ...`; for price return an exact
@@ -3292,10 +3294,40 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 and str(service.get("service_id") or "") != candidate_id
                 for service in inventory["services"] if isinstance(service, dict)
             )
+            known_draft_image_identity = None
+            draft_ledger_path = args.state_dir / "new-listing-drafts.jsonl"
+            if draft_ledger_path.exists():
+                for line in reversed(draft_ledger_path.read_text(encoding="utf-8").splitlines()):
+                    try:
+                        prior_draft = json.loads(line)
+                    except json.JSONDecodeError as error:
+                        raise RuntimeError("new_listing_draft_ledger_invalid") from error
+                    if (prior_draft.get("contract_sha256") == new_listing_contract["contract_sha256"]
+                            and prior_draft.get("status") == "published"):
+                        known_draft_image_identity = str(prior_draft.get("public_image_identity") or "")
+                        if not known_draft_image_identity:
+                            try:
+                                prior_public = json.loads(
+                                    Path(str(prior_draft["evidence_path"])).read_text(encoding="utf-8")
+                                )
+                            except (OSError, KeyError, json.JSONDecodeError) as error:
+                                raise RuntimeError("published_draft_evidence_missing") from error
+                            for image_url in prior_public.get("images") or []:
+                                match = re.search(
+                                    r"service_images/original/([A-Za-z0-9-]+\.(?:png|jpe?g|webp))",
+                                    str(image_url), re.IGNORECASE,
+                                )
+                                if match is not None:
+                                    known_draft_image_identity = match.group(1)
+                                    break
+                        if not known_draft_image_identity:
+                            raise RuntimeError("published_draft_image_identity_missing")
+                        break
             draft_result = (storefront_draft.readback_published_draft(
                 new_listing_contract,
                 getattr(args, "default_tab_script", DEFAULT_TAB),
                 inventory_path.parent,
+                known_image_identity=known_draft_image_identity,
             ) if candidate_public else (
                 storefront_draft.prepare_draft(
                     new_listing_contract,
