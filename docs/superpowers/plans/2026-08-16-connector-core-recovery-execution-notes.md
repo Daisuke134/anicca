@@ -202,3 +202,36 @@ Verification, re-run by the parent rather than trusted from the executor: `npm r
 125 pass / 0 fail. Residual `routeMinutes` matches in production are only `transport/maps-gog.js`
 and `late-notice.js`, which belong to other organs.
 
+
+## C-CORE-06 Connpass — still open, with a regression I caused and reverted
+
+Sequence of live wakes on the merged code, all one `launchctl kickstart` each, all ending
+`circuit_open / peatix_form_navigation_failed`, all leaving applied bundles at 14 (no external write):
+
+| wake | Luma | Connpass | note |
+|---|---|---|---|
+| `wake-aaa90b20` | 39/33/16/0 | 6/6/6/0/0 | before the date fix |
+| `wake-3fc029d9` | 39/33/16/0 | discovery failed 46.0s | date fix live; Connpass now sees real volume and fails |
+| `wake-07b2c409` | 39/33/16/0 | failed 23.9s, `provider: connpass`, `safe_reason: provider_discovery_failed` | failure reason now durable |
+| `wake-6b15481b` | **failed 30.8s** | failed 25.8s | **regression: the per-row skip change broke Luma** |
+| `wake-65f06d99` | 39/33/16/0 | failed 46.3s | after reverting that change; Luma restored |
+
+What the date fix bought: Connpass stopped silently reporting 6 of ~1457 listings. What it exposed:
+discovery now fails outright once real volume flows through it.
+
+What I got wrong: I extended the per-row skip treatment to `connector-luma-workflow.js` as well. Luma had
+discovered 39 events in three consecutive wakes and failed in the first wake after that change landed, so
+the change regressed a working primary provider. I reverted the whole commit rather than debug it live,
+merged the revert, and fired another wake to confirm Luma is back to 39/33/16/0. Connpass was already
+failing before that change and still fails after it, so the revert cost nothing that worked.
+
+`safe_reason` is still the generic `provider_discovery_failed`, which means the thrown error carries no
+code `safeDiscoveryReason` recognises. The per-row normalisation theory is not proven — the executor's
+reading found those paths already wrapped in coded stage errors. The next step is to reproduce Connpass
+discovery outside a wake against the live page and read the actual error, rather than guess again.
+
+Peatix is unchanged across all five wakes: 10 Calendar-free candidates, three submit attempts, then
+`peatix_form_navigation_failed`. It stays `DEFERRED_NON_BLOCKING` per the product contract.
+
+`C-CORE-07` is untouched and cannot be forced honestly: it needs the next natural 09:00 wake or an
+equivalent login/reload recovery.
