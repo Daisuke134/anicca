@@ -4264,7 +4264,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                  and not row.get("consumed_at_epoch")),
                 None,
             )
-            demand_derivation = None
+            # A no-op must name the market it would go after next, not just say it did nothing.
+            demand_derivation = None if unused_cluster is None else {
+                "proposed": 0, "appended": 0,
+                "selected_cluster": unused_cluster.get("query"),
+                "selected_score": unused_cluster.get("score"),
+                "selected_family": unused_cluster.get("capability_family"),
+                "reason": "unused_demand_cluster_available",
+            }
             if demand_already_sold and unused_cluster is None:
                 try:
                     proposal, route = _invoke_demand_proposal(
