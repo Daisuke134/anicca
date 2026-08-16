@@ -1880,6 +1880,27 @@ def _collect_competitors(ws_url: str, evidence_dir: Path, own_ids: set[str]) -> 
     return manifest
 
 
+def _extract_quality_signals(body: str) -> dict:
+    """Per-service rating and lifetime sales as the official public page states them.
+
+    `評価  -` means no rating exists yet, which is unknown rather than zero. Lifetime sales
+    are not the 30-day analytics figure and are never mixed with it.
+    """
+    rating = re.search(r"評価\s+(-|[0-9]+(?:\.[0-9]+)?)", body)
+    sales = re.search(r"販売実績\s*([0-9,]+)\s*件", body)
+    return {
+        "rating": ({"status": "known", "value": float(rating.group(1))}
+                   if rating and rating.group(1) != "-"
+                   else {"status": "unknown", "value": None,
+                         "reason": "official_page_shows_no_rating" if rating
+                         else "rating_not_found_on_official_page"}),
+        "lifetime_sales": ({"status": "known", "value": int(sales.group(1).replace(",", ""))}
+                           if sales else
+                           {"status": "unknown", "value": None,
+                            "reason": "lifetime_sales_not_found_on_official_page"}),
+    }
+
+
 def _observe_own_page(
     ws_url: str, evidence_dir: Path, name: str = "own-candidate.json",
     service_id: str = TARGET_SERVICE_ID,
@@ -1931,6 +1952,7 @@ def _observe_own_page(
         "body": body,
         "service_image_ids": image_ids,
         "service_image_count": len(image_ids),
+        "quality_signals": _extract_quality_signals(body),
         "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
         "listing_version_sha256": hashlib.sha256(json.dumps(
             {"body": body, "service_image_ids": image_ids}, ensure_ascii=False,
