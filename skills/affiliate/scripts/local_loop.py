@@ -733,7 +733,7 @@ def advance_generic_publication(
         if progress:
             if progress.get("handoff_fingerprint") != fingerprint:
                 return {"state": "PUBLICATION_CONFLICT", "public_url": None}
-            if progress.get("state") == "X_LIVE":
+            if progress.get("state") == "X_LIVE" and progress.get("provider_link_key"):
                 completed = True
                 continue
 
@@ -763,6 +763,8 @@ def advance_generic_publication(
             destination=destination,
         )
         if dedicated.get("state") != "VERIFIED":
+            return {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None}
+        if not dedicated.get("deduplicated", False):
             return {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None}
         link = elevenlabs_link(private_markdown, dedicated.get("private_link_field", ""))
         markdown = handoff.get("owned_article_markdown", "")
