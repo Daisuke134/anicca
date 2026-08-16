@@ -1859,8 +1859,15 @@ observable outcome exists.
   because 32,768 would exceed the 98,304 policy cap by 174. Prior policy audits
   consumed 10,456–18,895 tokens, so only the policy pass reservation is reduced to
   24,576; Terra-high and the 98,304 daily policy cap remain unchanged.
+  Installed releases `53b9a6560`, `16b7c148c`, `61a4bde81`, and `c895d32ca`
+  prove the complete repair chain: source owner captured `audio-to-text` `2/2`;
+  the exact budget-blocked source-set resumed; Terra-high produced a sealed draft
+  in 14,281 tokens; and the independent policy audit returned every deterministic
+  check true plus semantic `PASS`. No article or X effect occurred before PASS.
 - [ ] **A15.4** Produce one source-bound decision asset per qualified intent with
   disclosure-before-CTA, limitations, alternatives, and exactly one owned link.
+  The sixth English handoff is `elevenlabs-audio-to-text-for-creators`, bound to
+  source set `ebe01c0d…e03ce6` and policy receipt `740bd97c…cec27`.
 - [ ] **A15.5** Publish through the owned site and English X browser, require public
   readback, and refuse duplicate effects.
 - [ ] **A15.6** Reconcile post-baseline clicks and provider transactions on every
