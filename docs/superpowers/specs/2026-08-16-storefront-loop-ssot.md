@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. The Storefront scheduler, catalog/KPI reader, Telegram reporter, mutation fences, dedicated Terra proposal route and generated body/package publications are healthy, but the autonomous portfolio loop is not complete. Readonly GitHub-`main` release `8f37ab5a3...` runs at 60-second cadence. It generated `4312985/body` and `4313100/package` from official state without service-specific JSON mutations; both have exactly one accepted effect, official public readback, zero-effect replay and normal Telegram recovery. The next active Storefront item is the remaining generic executor and twenty-slot `IMPROVE/CREATE/RETIRE/REPLACE` action contract. Calling the whole loop "finished" before those actions, KPI learning and cleanup is forbidden. Apply is operationally green but its provenance cleanup remains externally owned. Negotiate is operationally green but its main provenance/context ACK remains externally owned. Paid remains intentionally disabled and externally owned. Operationally green and canonically clean are separate claims.
+Status: INCOMPLETE. The Storefront scheduler, catalog/KPI reader, Telegram reporter, mutation fences and dedicated Terra proposal route are healthy. Readonly GitHub-`main` release `4aa8e51e9...` runs at 60-second cadence and has generated, published and officially read back body, title, package and zero-image improvements without service-specific mutation JSON. Every current scorecard gap has exactly one accepted effect and the final full replay has `next_hypothesis=null`, effect/readback/duplicate `0/0/0`. The next active Storefront item is the twenty-slot `CREATE`, recoverable `RETIRE` and `REPLACE` contract; the current implementation still depends on one hard-coded already-published draft. Calling the whole loop "finished" before those actions, KPI learning and cleanup is forbidden. Apply and Negotiate provenance/context cleanup remains externally owned. Paid remains intentionally disabled and externally owned. Operationally green and canonically clean are separate claims.
 
 ## 1. Overview
 
@@ -48,9 +48,9 @@ The Storefront loop is not one continuously running LLM. Its installed launchd l
 
 Current runtime truth:
 
-- `storefront_direct.py` routes its existing model judgement through `agent_runner.py --task-class composition-agent`.
-- Both current `main` and installed release `84c41cb17...` resolve `composition-agent` to Codex `gpt-5.6-terra`, effort `medium`, with no Luna or Sol candidate.
-- Pre-authored image/title/body mutation contracts bypass that model call. Therefore “launchd is running every minute” does not mean Terra is invoked every minute, and recent fixed-contract/no-op wakes do not prove autonomous model generation.
+- `storefront_direct.py` routes commercial proposals through `agent_runner.py --task-class storefront-proposal-agent`.
+- Both current `main` and installed release `4aa8e51e9...` resolve that Storefront-only task class to Codex `gpt-5.6-terra`, effort `medium`, with no Luna or Sol candidate.
+- Incremental wakes and full wakes with no eligible gap bypass that model call. Therefore “launchd is running every minute” does not mean Terra is invoked every minute.
 
 Completion model contract:
 
@@ -113,7 +113,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The historical mixed implementation remains quarantined in worktree `.worktrees/storefront-revenue-os`, branch `fix/storefront-revenue-os`, HEAD `b8f15537a`. Its exact accidental-Paid/revert pairs are `d150e4b1d → 06e9ac0dc`, `6ed25b976 → 1a6894b6f`, `0bba80549 → 5beb42ce2`, and `ff5b96a8e → b8f15537a`. The branch remains forbidden from whole-branch merge and is not a Storefront execution path; these immutable SHAs preserve the audit after its worktree and refs are removed.
 - GitHub and local `main` contain integration point `c494a588f`. The temporary clean Storefront worktree and `feat/storefront-loop` branch are removed. Coconala Storefront production code, config, contracts, assets, tests, plist and this SSOT are all on `main`.
 - Paid is intentionally stopped by its owner. Storefront integration does not change its plist, release, process, project state, artifacts, receipts, or restart state.
-- Launchd label `ai.anicca.hf-gig-storefront-direct` runs `storefront_direct.py --effect --auto-cadence` every 60 seconds from readonly GitHub-main release `84c41cb17f1f664c69d063b5346dde9693e80d01`. Incremental wakes read catalog/funnel state; auto-cadence performs the full market/analytics/mutation selection at the bounded full interval. Historical release references in this section are evidence, not current pointers.
+- Launchd label `ai.anicca.hf-gig-storefront-direct` runs `storefront_direct.py --effect --auto-cadence` every 60 seconds from readonly GitHub-main release `4aa8e51e904db84a0f6d4cc02ba1ab7607f3fd43`. Incremental wakes read catalog/funnel state; auto-cadence performs the full market/analytics/mutation selection at the bounded full interval. Historical release references in this section are evidence, not current pointers.
 - The selector consumes the scorecard and prepares service `91000001`, field `image`, metric `views_to_inquiry`. It correctly blocks a second mutation on service `91000001` while that service's FAQ experiment is open.
 - Twelve official services are listed. The 20-slot quota is capacity, never authority to create eight more. A new service requires distinct demand evidence, owned capability evidence, and available delivery capacity.
 - Clean Storefront history is merged into `main`: `d65f13bf9` imports the dedicated owner, `2854097ad` selects the scorecard hypothesis, and `b655a83d0` closes an active-experiment no-op before the LLM judge. Later slices extend the same main ancestry through installed commit `85eaa6d86`.
