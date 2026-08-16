@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `3bfdd03cfa5594bce3009cd18d46ffc31192e14c` is current. All six isolated Affiliate launchd owners are loaded; real money wake `13` and composition run `9` have last exit `0`. The ten-minute money loop owns bounded ElevenLabs recovery, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake placement economics, economics-bound campaign decisions, natural-language reporting, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner resumes existing due stages before new inbox work and consumes at most one credential-free due stage per wake | General repair beyond observed failures remains open |
+| Runtime | Immutable local release `50d45beca58aac4dc2cf077d7ec1eb5f216e3c2f` is current. All six isolated Affiliate launchd owners are loaded; real money wake `15` and composition run `9` have last exit `0`. The ten-minute money loop owns bounded provider recovery/reconciliation, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake placement economics, economics-bound campaign decisions, natural-language reporting, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner resumes existing due stages before new inbox work and consumes at most one credential-free due stage per wake | Ten comparable placements and provider/channel diversification remain open |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, real `PLACEMENT_LIVE`, and one real-data natural-language daily summary are live-proven. The daily summary is bound to provider message ID `21046`; same-day real replay returns `NO_PENDING` without growing the sent ledger | `CLICK_DELTA` and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery/refresh, source-hash-bound composition, bounded Terra-high composition, same-ID recovery, policy, exact placement-link acquisition, publication/distribution, acquisition/revenue observation, placement economics, economics-bound one-variable allocation, receipts, and Telegram are live. Release `3bfdd03cf` invokes no model until a real immutable acquisition baseline exists | Actual billed/tool/channel cash receipts, broader repair, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery/refresh, source-hash-bound composition, bounded Terra-high composition, same-ID recovery, policy, exact placement-link acquisition, publication/distribution, acquisition/revenue observation, placement economics, economics-bound one-variable allocation, typed observed-failure repair, receipts, and Telegram are live. Release `50d45beca` reconciled one stale Impact login job from fresh authenticated readback and replayed without mutation | Actual billed/tool/channel cash receipts, ten comparable placements, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -1076,8 +1076,9 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M1.3, repair only the money-path failures already
-observed in real launchd operation and keep healthy lanes moving**.
+Current execution cursor: **M2, grow the English portfolio to ten comparable
+dedicated-link placements and admit additional providers/channels only with exact
+readback and measurable economics**.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
 files and zero decision receipts before eligibility. A first real Agent decision
@@ -1101,7 +1102,7 @@ no transition was duplicated or invented.
 
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
-and Systeme.io remains behind its typed CAPTCHA boundary. Release `3bfdd03cf` is
+and Systeme.io remains behind its typed CAPTCHA boundary. Release `50d45beca` is
 current; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -1320,10 +1321,18 @@ result will be real external proof, but no implementation waits for the clock.
     kept provider/publication/ledger healthy, returned `WAITING_FOR_BASELINE`, and
     preserved decision runs `0→0` and usage rows `13→13`. Thus no-evidence uses no
     model; future observed economics use the same bounded campaign loop.
-15. **M1.3 — Repair only observed money-path failures.** Add typed classification,
-    bounded repair/backoff, same-job resume, channel/provider quarantine, action
-    and cost caps, postcondition readback, and `SELF_HEALED` reporting for failures
-    actually observed on M0/M1. Do not build a generic healer framework.
+15. **DONE — M1.3 repair only an observed money-path failure.** Release
+    `50d45beca` addresses the live stale Impact login fence: the browser and poll
+    receipt proved `APPLICATION_PENDING`, while its prior `PROVIDER_LOGIN` job
+    remained `EFFECT_STARTED` and could make a later auth recovery ambiguous.
+    `provider_cli.poll()` now reconciles exactly one matching login job only after
+    a fresh `AUTHENTICATED|APPLICATION_PENDING|APPROVED|REJECTED` semantic readback.
+    Systeme.io's real CAPTCHA-bound login/email jobs remain untouched. Installed
+    wake `14` moved Impact job `c95b75…ef4a` from attempt 2 `EFFECT_STARTED` to
+    attempt 3 `VERIFIED`, preserved URL/rendered-text proof, and sent natural
+    `SELF_HEALED` Telegram message ID `21156`. Wake `15` exited `0`, preserved the
+    exact job hash and attempt, kept sent rows `14→14`, and returned `NO_PENDING`.
+    No generic healer, resubmission, or duplicate login was added.
 16. **M2.1 — Expand profitable distribution.** Reuse a winning owned asset through
     additional policy-compatible native channels only when their real reach can be
     observed and their traffic can be joined to a placement. Account creation,
