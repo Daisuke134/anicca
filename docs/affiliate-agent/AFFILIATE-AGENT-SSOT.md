@@ -1605,6 +1605,15 @@ reconciliation, and Telegram remain eligible in every wake. This slice is
 implemented directly by the primary model: no Superpowers, TDD/RED scaffolding,
 subagent implementation, speculative framework, or broad test suite.
 
+Installed release `98ade91daa2a1bfd52b8a8f8739f14f5ecd7c343` proves this
+behavior under the real launchd owner. The first wake stored
+`CAPTCHA_CHALLENGE` with a six-hour retry boundary while ElevenLabs remained
+`AUTHENTICATED`, Impact remained `APPLICATION_PENDING`, the existing placement
+remained `ALREADY_LIVE`, revenue stayed in its valid cooldown, and the process
+exited `0`. An immediate replay returned `deduplicated=true`; the unresolved
+verification job stayed at attempt `9`, so neither confirmation nor login was
+resubmitted.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
