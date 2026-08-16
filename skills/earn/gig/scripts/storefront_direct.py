@@ -1261,10 +1261,7 @@ def _observe_own_page(
     if not service_id.isdigit():
         raise RuntimeError("own_candidate_service_id_invalid")
     url = f"https://coconala.com/services/{service_id}"
-    observed = asyncio.run(listing_inventory._eval_json(
-        ws_url,
-        url,
-        """(async () => {
+    expression = """(async () => {
           const closed = [...document.querySelectorAll(
             'a[aria-controls^="serviceContentsFaqAnswer"][aria-expanded="false"]'
           )];
@@ -1275,13 +1272,23 @@ def _observe_own_page(
             .filter(Boolean))];
           return JSON.stringify({url:location.href,title:document.title,
             body:document.body ? document.body.innerText.slice(0,120000) : '',service_image_ids:serviceImageIds});
-        })()""",
-    ))
-    body = str(observed.get("body") or "")
-    image_ids = observed.get("service_image_ids")
-    if (urlsplit(str(observed.get("url") or "")).path.rstrip("/") != f"/services/{service_id}" or not body.strip()
-            or not isinstance(image_ids, list) or not all(isinstance(value, str) and value for value in image_ids)
-            or len(set(image_ids)) != len(image_ids)):
+        })()"""
+    observed = {}
+    for attempt in range(3):
+        observed = asyncio.run(listing_inventory._eval_json(ws_url, url, expression))
+        body = str(observed.get("body") or "")
+        image_ids = observed.get("service_image_ids")
+        valid = (
+            urlsplit(str(observed.get("url") or "")).path.rstrip("/") == f"/services/{service_id}"
+            and bool(body.strip()) and isinstance(image_ids, list)
+            and all(isinstance(value, str) and value for value in image_ids)
+            and len(set(image_ids)) == len(image_ids)
+        )
+        if valid:
+            break
+        if attempt < 2:
+            time.sleep(2)
+    else:
         raise RuntimeError("own_candidate_readback_invalid")
     row = {
         "official": True,
