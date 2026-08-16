@@ -93,6 +93,19 @@ class LocalLoopTest(unittest.TestCase):
                 "COMMISSION_APPROVED", "COMMISSION_APPROVED", "CLICK_DELTA", "CLICK_DELTA",
             ])
 
+    def test_reconciled_impact_login_emits_one_natural_self_healed_event(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            wake = {
+                "impact_state": "APPLICATION_PENDING",
+                "impact_login_reconciled_job_id": "job-1",
+                "status": "READY_FOR_PUBLICATION",
+            }
+            event = MODULE.owner_event(state, wake)
+            self.assertEqual(event["kind"], "SELF_HEALED")
+            self.assertIn("同じlogin jobを完了", event["body"])
+            self.assertNotIn("EFFECT_STARTED", event["body"])
+
     def test_completed_generic_campaign_advances_to_tts_campaign(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

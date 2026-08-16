@@ -265,6 +265,13 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "provider": "hubspot-impact",
             "transition_id": wake_event.get("impact_transition_id"),
         }, "commission not observed yet")
+    if wake_event.get("impact_login_reconciled_job_id"):
+        kind = "SELF_HEALED"
+        add(kind, {
+            "kind": kind,
+            "provider": "hubspot-impact",
+            "job_id": wake_event["impact_login_reconciled_job_id"],
+        }, "login effect reconciled from fresh authenticated readback")
     if wake_event.get("acquisition_decision_changed"):
         kind = "ACQUISITION_DECISION_READY"
         add(kind, {
@@ -319,15 +326,24 @@ def owner_event(state, wake_event, sent_event_ids=None):
     if not selected:
         return None
     kind = selected["kind"]
-    recovery = "なし" if kind != "BLOCKED" else "未回復の外部状態があります"
+    recovery = (
+        "Impactの認証済み画面から、未解決だった同じlogin jobを完了しました"
+        if kind == "SELF_HEALED"
+        else "なし" if kind != "BLOCKED"
+        else "未回復の外部状態があります"
+    )
     next_job = (
         "同じ申請を再提出せず、Impactの審査状態を継続確認"
-        if kind.startswith("PROGRAM_")
+        if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"
         else "provider transactionを待ち、sub-IDまたはlink fingerprintでplacementへ照合"
         if kind in {"CLICK_DELTA", "UNATTRIBUTED_CLICK_DELTA", "PLACEMENT_LINK_VERIFIED"}
         else "buyer-intentを収集し、次の公開・収益照合を継続"
     )
-    program = "HubSpot / Impact" if kind.startswith("PROGRAM_") else "ElevenLabs / PartnerStack"
+    program = (
+        "HubSpot / Impact"
+        if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"
+        else "ElevenLabs / PartnerStack"
+    )
     body = "\n".join((
         "Life Manager Affiliate::: Affiliate loop report",
         f"実行: {kind}",
@@ -1384,6 +1400,7 @@ def wake(args):
         "impact_changed": impact["changed"],
         "impact_transition_id": impact["transition_id"],
         "impact_recovery_state": impact_recovery_state,
+        "impact_login_reconciled_job_id": impact.get("login_reconciled_job_id"),
         "application_program": application.get("program"),
         "application_state": application.get("state"),
         "application_deduplicated": application.get("deduplicated"),

@@ -615,6 +615,12 @@ def poll(args, receipt):
             ),
             "observed_at": datetime.now(timezone.utc).isoformat(),
         })
+        login_job = None
+        if receipt["state"] in {"AUTHENTICATED", "APPLICATION_PENDING", "APPROVED", "REJECTED"}:
+            login_job = reconcile_effect(args.state.expanduser(), "PROVIDER_LOGIN", args.provider, {
+                key: receipt.get(key) for key in ("state", "url", "rendered_text_sha256")
+            })
+        receipt["login_reconciled_job_id"] = login_job.get("job_id") if login_job else None
         atomic_write(path, receipt)
     if receipt["state"] in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
         reconcile_effect(args.state.expanduser(), "PROVIDER_APPLICATION", args.provider, {
