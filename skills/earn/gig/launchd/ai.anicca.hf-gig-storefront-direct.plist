@@ -7,8 +7,9 @@
     <string>/opt/homebrew/bin/python3</string>
     <string>__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/storefront_direct.py</string>
     <string>--effect</string>
+    <string>--auto-cadence</string>
   </array>
-  <key>StartInterval</key><integer>1800</integer>
+  <key>StartInterval</key><integer>60</integer>
   <key>ProcessType</key><string>Background</string>
   <key>ThrottleInterval</key><integer>60</integer>
   <key>WorkingDirectory</key><string>__HOME__</string>
