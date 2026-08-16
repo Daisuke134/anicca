@@ -414,6 +414,52 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual([row["deduplicated"] for row in emitted], [False, True])
             self.assertNotIn("try.elevenlabs.io", output.getvalue())
 
+    def test_settled_tts_api_placement_is_not_republished_to_x(self):
+        import content as content_module
+        import owned_publish as owned_module
+        import x_post_cli
+
+        slug = "elevenlabs-text-to-speech-api-for-developers"
+        placement = "elevenlabs-tts-api-en-1"
+        text = (
+            "Building with a TTS API? Affiliate link in my checklist:\n"
+            "https://aniccaai.com/blog/elevenlabs-text-to-speech-api-for-developers"
+        )
+        live_url = "https://x.com/selawmqt/status/2088809159932465497"
+        for changed, expected in ((False, "ALREADY_LIVE"), (True, "X_LIVE")):
+            with self.subTest(content_changed=changed), tempfile.TemporaryDirectory() as root:
+                state = Path(root) / "state"
+                (state / "sources" / "elevenlabs-api-pricing").mkdir(parents=True)
+                (state / "sources" / "elevenlabs-api-pricing" / "latest.json").write_text("{}")
+                MODULE.atomic_json(state / "program-links" / f"{slug}.json", {"state": "VERIFIED"})
+                MODULE.atomic_json(state / "x-posts" / f"{placement}.json", {
+                    "state": "LIVE", "public_url": live_url,
+                    "content_sha256": x_post_cli.content_fingerprint(text),
+                })
+                built = text + (" updated" if changed else "")
+
+                def write_x_content(target_state, _built=built):
+                    path = target_state / "x-content" / f"{placement}.txt"
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(_built + "\n", encoding="utf-8")
+
+                publish_x = Mock(return_value={"state": "LIVE", "public_url": live_url})
+                with (
+                    patch.object(content_module, "build_tts_api"),
+                    patch.object(content_module, "policy_tts_api"),
+                    patch.object(content_module, "build_x_tts_api", side_effect=write_x_content),
+                    patch.object(owned_module, "publish", return_value={
+                        "state": "LIVE", "public_url": f"https://aniccaai.com/blog/{slug}",
+                    }),
+                    patch.object(x_post_cli, "publish", publish_x),
+                ):
+                    result = MODULE.advance_tts_api_publication(
+                        state, Path(root) / "landing", 9326,
+                        Path(root) / "private.md", live_url,
+                    )
+                self.assertEqual(result, {"state": expected, "public_url": live_url})
+                self.assertEqual(publish_x.call_count, 1 if changed else 0)
+
 
 if __name__ == "__main__":
     unittest.main()

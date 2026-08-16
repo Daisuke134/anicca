@@ -1178,7 +1178,7 @@ def advance_tts_api_publication(state, landing_root, x_cdp_port, private_markdow
 
     from content import build_tts_api, build_x_tts_api, policy_tts_api
     from owned_publish import publish as publish_owned
-    from x_post_cli import publish as publish_x
+    from x_post_cli import content_fingerprint, publish as publish_x
 
     root = Path(__file__).resolve().parents[1]
     build_tts_api(root, state, private_markdown)
@@ -1190,8 +1190,16 @@ def advance_tts_api_publication(state, landing_root, x_cdp_port, private_markdow
     if owned.get("state") != "LIVE":
         return {"state": "OWNED_NOT_LIVE", "public_url": owned.get("public_url")}
     build_x_tts_api(state)
+    x_content_path = state / "x-content" / f"{placement}.txt"
+    # The relink republish is complete once the live receipt already carries the
+    # rebuilt content. Re-driving X for a settled effect cannot publish anything
+    # new, and a transient timeline scrape then fails the whole wake.
+    if existing.get("state") == "LIVE" and existing.get("content_sha256") == content_fingerprint(
+        x_content_path.read_text(encoding="utf-8")
+    ):
+        return {"state": "ALREADY_LIVE", "public_url": existing.get("public_url")}
     posted = publish_x(SimpleNamespace(
-        state=state, content=state / "x-content" / f"{placement}.txt",
+        state=state, content=x_content_path,
         placement=placement, cdp_host="127.0.0.1", cdp_port=x_cdp_port,
     ))
     return {"state": "X_LIVE", "public_url": posted.get("public_url")}
@@ -1574,6 +1582,7 @@ def wake(args):
         publication = {
             "state": "PUBLICATION_FAILED", "public_url": None,
             "failure_type": type(error).__name__,
+            "failure_detail": str(error)[:600],
         }
     try:
         if placement_link_changed or not placement_link_ready:
@@ -1652,6 +1661,7 @@ def wake(args):
         "publication_state": publication["state"],
         "publication_url": publication["public_url"],
         "publication_failure_type": publication.get("failure_type"),
+        "publication_failure_detail": publication.get("failure_detail"),
         "publication_generic_state": publication.get("generic_state"),
         "distribution_state": distribution["state"],
         "distribution_url": distribution.get("public_url"),
