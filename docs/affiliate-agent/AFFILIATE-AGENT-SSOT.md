@@ -165,7 +165,7 @@ live autonomous operation.
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
-owners plus separate source-refresh, composition, and money owners.
+owners plus separate ten-minute source-refresh, composition, and money owners.
 `local_loop.wake()` owns the money wake lock, private-link check, CDP `9324`
 health, ElevenLabs
 observe/poll/recovery, receipt-driven configured campaign advancement, hourly
@@ -176,10 +176,13 @@ campaign through public owned/X readback plus Telegram. The next wake returned
 URL, the discovered-plan hash, and the 22-row source ledger.
 
 Program application and executable-link acquisition are not yet scheduled. The
-separate `ai.anicca.affiliate-source-refresh` owner discovers at most one unused
-official ElevenLabs product family per UTC day, stores the plan under mutable
-state, refreshes the union of versioned and discovered plans, and writes one
-aggregate receipt without reading credentials, CDP, or the money ledger. The
+separate `ai.anicca.affiliate-source-refresh` owner checks for one due unused
+official ElevenLabs product family every ten minutes, stores at most one new plan
+per wake under mutable state, refreshes the union of versioned and discovered
+plans, and writes one aggregate receipt without reading credentials or CDP. An
+unfinished campaign returns `COOLDOWN` before crawling or Agent invocation; once
+it is `X_LIVE`, the next wake can select the next opportunity without a daily
+scheduler delay. The
 separate `ai.anicca.affiliate-composition` owner consumes one due source-bound
 stage per wake, uses a sanitized allowlisted input bundle and its own lock, and
 now creates both generic handoff and generic policy receipts. It has no browser,
