@@ -1460,6 +1460,67 @@ def _collect_analytics(
     }}
 
 
+def _official_metric_windows(path: Path, service_id: str, metric: str, accepted_at: int, eligible_at: int) -> dict:
+    """Movement of one official per-service metric across an experiment window.
+
+    Coconala publishes a rolling 30-day figure, so this is a snapshot delta, never a
+    window-aligned count and never the denominator of a conversion rate.
+    """
+    if not path.is_file():
+        return {"status": "unknown", "reason": "official_analytics_missing"}
+    try:
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    except json.JSONDecodeError:
+        return {"status": "unknown", "reason": "official_analytics_invalid"}
+    samples = [row for row in rows
+               if str(row.get("service_id") or "") == service_id
+               and type(row.get("observed_at_epoch")) is int
+               and ((row.get("metrics") or {}).get(metric) or {}).get("status") == "known"]
+    baseline_rows = [row for row in samples if row["observed_at_epoch"] <= accepted_at]
+    observed_rows = [row for row in samples if accepted_at < row["observed_at_epoch"] <= eligible_at]
+    if not baseline_rows:
+        return {"status": "unknown", "reason": f"no_official_{metric}_snapshot_at_or_before_accept"}
+    if not observed_rows:
+        return {"status": "unknown", "reason": f"no_official_{metric}_snapshot_inside_window"}
+    baseline = baseline_rows[-1]
+    observed = observed_rows[-1]
+    return {
+        "status": "known", "measurement": "rolling_30d_snapshot_delta",
+        "baseline": int(baseline["metrics"][metric]["value"]),
+        "observed": int(observed["metrics"][metric]["value"]),
+        "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+    }
+
+
+def _measure_experiment_metric(
+    metric: str, *, reply_transcripts: Path, analytics_path: Path, service_id: str,
+    accepted_at: int, window_days: int,
+) -> dict:
+    """Measure the experiment's metric, or say why it is unmeasurable and fall back.
+
+    A conversion ratio between a rolling official view count and a window-aligned inquiry
+    count is not a real rate, so it is reported unknown instead of being invented.
+    """
+    eligible_at = accepted_at + window_days * 86400
+    if metric in {"views_to_inquiry", "views_to_purchase"}:
+        fallback = "inquiries" if metric == "views_to_inquiry" else "purchases"
+        result = _measure_experiment_metric(
+            fallback, reply_transcripts=reply_transcripts, analytics_path=analytics_path,
+            service_id=service_id, accepted_at=accepted_at, window_days=window_days,
+        )
+        return {**result, "requested_metric": metric, "measured_metric": fallback,
+                "requested_metric_status": "unknown",
+                "requested_metric_reason": "official_views_are_rolling_30d_not_window_aligned"}
+    if metric == "inquiries":
+        result = _inquiry_windows(reply_transcripts, service_id, accepted_at, window_days)
+    elif metric == "purchases":
+        result = _official_metric_windows(analytics_path, service_id, "purchases", accepted_at, eligible_at)
+    else:
+        return {"status": "unknown", "reason": "unsupported_success_metric",
+                "requested_metric": metric, "measured_metric": None}
+    return {**result, "requested_metric": metric, "measured_metric": metric}
+
+
 def _inquiry_windows(path: Path, service_id: str, accepted_at: int, window_days: int) -> dict:
     if not path.is_file():
         return {"status": "unknown", "reason": "reply_transcripts_missing"}
@@ -1586,19 +1647,20 @@ def _close_outcome(
     inquiry = {"status": "not_evaluated"}
     decision, terminal_state, reason = "NO_OP", False, "measurement_window_ineligible"
     if now >= eligible_at:
-        inquiry = _inquiry_windows(
-            reply_transcripts, str(experiment.get("service_id") or ""), accepted_at, window_days,
+        inquiry = _measure_experiment_metric(
+            str(experiment.get("success_metric") or ""),
+            reply_transcripts=reply_transcripts, analytics_path=state_dir / "analytics.jsonl",
+            service_id=str(experiment.get("service_id") or ""),
+            accepted_at=accepted_at, window_days=window_days,
         )
-        if experiment.get("success_metric") != "inquiries":
-            terminal_state, reason = True, "target_metric_evidence_unavailable"
-        elif inquiry.get("status") != "known":
+        if inquiry.get("status") != "known":
             terminal_state, reason = True, str(inquiry.get("reason") or "inquiry_evidence_unknown")
         elif inquiry["observed"] > inquiry["baseline"]:
-            decision, terminal_state, reason = "KEEP", True, "inquiries_improved"
+            decision, terminal_state, reason = "KEEP", True, f"{inquiry['measured_metric']}_improved"
         elif inquiry["baseline"] > 0 and inquiry["observed"] < inquiry["baseline"]:
-            decision, terminal_state, reason = "REVERT", True, "inquiries_declined"
+            decision, terminal_state, reason = "REVERT", True, f"{inquiry['measured_metric']}_declined"
         else:
-            decision, terminal_state, reason = "NO_OP", True, "no_measured_inquiry_change"
+            decision, terminal_state, reason = "NO_OP", True, f"no_measured_{inquiry['measured_metric']}_change"
     evidence = {
         "experiment_sha256": hashlib.sha256(json.dumps(
             experiment, ensure_ascii=False, sort_keys=True, separators=(",", ":")
@@ -1615,6 +1677,10 @@ def _close_outcome(
         "observed_at_epoch": now, "experiment_key": experiment["experiment_key"],
         "service_id": experiment["service_id"], "decision": decision, "terminal": terminal_state,
         "reason": reason, "eligible_at_epoch": eligible_at, "metric": experiment.get("success_metric"),
+        "measured_metric": inquiry.get("measured_metric"),
+        "measurement": inquiry.get("measurement", "window_aligned_count" if inquiry.get("status") == "known" else None),
+        "requested_metric_status": inquiry.get("requested_metric_status"),
+        "requested_metric_reason": inquiry.get("requested_metric_reason"),
         "baseline": inquiry.get("baseline"), "observed": inquiry.get("observed"), "evidence": evidence,
         "next_hypothesis": _next_hypothesis(scorecard_path, experiment) if terminal_state else None,
         "effect": 0,
