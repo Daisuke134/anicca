@@ -29092,3 +29092,11 @@
 {"ts":1786899361,"wake_id":"00MSW1QRR47923AE580DC34DC2","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786899520,"wake_id":"00MSW1U6LD7ECE45ECEE26497B","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1786899678,"wake_id":"00MSW1XKBR7A4DB3FB2EE24050","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786899832,"wake_id":"00MSW20V309A1A675900F145FF","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786899900,"wake_id":"00MSW22BF6D8C70F1CA24C4ABD","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786899968,"wake_id":"00MSW23RP0E005C58637C94D48","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786900095,"wake_id":"00MSW26HZ77A4885BDC54D40F4","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786900244,"wake_id":"00MSW29OXL9490DA184C394834","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786900370,"wake_id":"00MSW2CE2JF49309131CB4468E","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paying USDC for small tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates sur"}
+{"ts":1786900497,"wake_id":"00MSW2F4GA3CA615453CCB447F","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786900624,"wake_id":"00MSW2HU3MB1B4F255DC02478F","kind":"narrate","sleep_s":120,"model":"auto"}
