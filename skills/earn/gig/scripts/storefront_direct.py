@@ -337,6 +337,59 @@ def _jsonl_rows(path: Path) -> tuple[list[dict], str | None]:
     return rows, None
 
 
+def _last_known_good_catalog_analytics(
+    state_dir: Path, service_ids: list[str], now: int,
+) -> dict | None:
+    expected_ids = set(service_ids)
+    if (
+        not expected_ids
+        or len(expected_ids) != len(service_ids)
+        or any(not value.isdigit() for value in service_ids)
+    ):
+        raise RuntimeError("catalog_analytics_expected_services_invalid")
+    expected_services = len(expected_ids)
+    wakes, error = _jsonl_rows(state_dir / "wakes.jsonl")
+    if error not in {None, "wakes.jsonl_missing"}:
+        raise RuntimeError(error)
+    source_row = next((
+        row for row in reversed(wakes)
+        if row.get("status") == "completed"
+        and isinstance(row.get("catalog_analytics"), dict)
+        and row["catalog_analytics"].get("services_observed") == expected_services
+        and isinstance(row["catalog_analytics"].get("totals"), dict)
+        and isinstance(row["catalog_analytics"].get("metric_unknown_services"), dict)
+    ), None)
+    if source_row is None:
+        return None
+
+    catalog = dict(source_row["catalog_analytics"])
+    source_epoch = int(
+        catalog.get("observed_at_epoch") or source_row.get("observed_at_epoch") or 0
+    )
+    analytics, analytics_error = _jsonl_rows(state_dir / "analytics.jsonl")
+    if analytics_error not in {None, "analytics.jsonl_missing"}:
+        raise RuntimeError(analytics_error)
+    latest_official: dict[str, dict] = {}
+    for row in analytics:
+        service_id = str(row.get("service_id") or "")
+        if service_id in expected_ids and row.get("official") is True:
+            latest_official[service_id] = row
+    windows = {
+        json.dumps(row.get("window"), sort_keys=True, separators=(",", ":"))
+        for row in latest_official.values()
+        if isinstance(row.get("window"), dict) and row["window"].get("complete") is True
+    }
+    window = json.loads(next(iter(windows))) if len(latest_official) == expected_services and len(windows) == 1 else None
+    catalog.update({
+        "status": "last_known_good",
+        "observed_at_epoch": source_epoch,
+        "freshness_seconds": max(0, now - source_epoch) if source_epoch else None,
+        "coverage": {"observed": int(catalog["services_observed"]), "expected": expected_services},
+        "window": window,
+    })
+    return catalog
+
+
 def _auto_cadence_is_incremental(state_dir: Path, now: int, full_interval_seconds: int) -> bool:
     if full_interval_seconds <= 0:
         raise RuntimeError("full_interval_seconds_invalid")
@@ -1030,10 +1083,19 @@ def _collect_analytics(
     target = next((row for row in snapshots if row["service_id"] == TARGET_SERVICE_ID), None)
     if target is None:
         raise RuntimeError("official_analytics_target_missing")
-    return {**target, "catalog_metrics": {"services_observed": len(snapshots), "totals": totals,
-                                           "changes": changes,
-                                           "metric_unknown_services": metric_unknown_services,
-                                           "change_unknown_services": unknown_changes}}
+    windows = {
+        json.dumps(row.get("window"), sort_keys=True, separators=(",", ":"))
+        for row in snapshots
+        if isinstance(row.get("window"), dict) and row["window"].get("complete") is True
+    }
+    window = json.loads(next(iter(windows))) if len(windows) == 1 else None
+    return {**target, "catalog_metrics": {
+        "status": "current_full", "observed_at_epoch": now,
+        "window": window, "coverage": {"observed": len(snapshots), "expected": len(service_ids)},
+        "services_observed": len(snapshots), "totals": totals, "changes": changes,
+        "metric_unknown_services": metric_unknown_services,
+        "change_unknown_services": unknown_changes,
+    }}
 
 
 def _inquiry_windows(path: Path, service_id: str, accepted_at: int, window_days: int) -> dict:
@@ -2190,11 +2252,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     args.state_dir, listing_contracts,
                     getattr(args, "negotiate_context_acks", DEFAULT_NEGOTIATE_CONTEXT_ACKS), cutoff,
                 )
-                prior = {}
-                try:
-                    prior = json.loads(output.read_text(encoding="utf-8")) if output.exists() else {}
-                except (OSError, json.JSONDecodeError):
-                    prior = {}
+                catalog_analytics = _last_known_good_catalog_analytics(
+                    args.state_dir, source_ids, cutoff,
+                )
                 contract_count = sum(int(_append_contract_once(
                     args.state_dir / "offer-contracts.jsonl", contract,
                 )) for contract in validated_contracts)
@@ -2205,8 +2265,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 released = release.get("released") == task
                 if not released:
                     raise RuntimeError("lease_release_unproven")
-                analytics_epoch = max((int(row.get("observed_at_epoch") or 0) for row in
-                    _jsonl_rows(args.state_dir / "analytics.jsonl")[0]), default=0)
+                analytics_epoch = int((catalog_analytics or {}).get("observed_at_epoch") or 0)
                 row = _receipt(
                     pass_id, status="completed", reason="incremental_catalog_funnel_readback",
                     official_services_read=observed, competitor_evidence_count=0,
@@ -2217,7 +2276,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         (args.state_dir / "listing-contracts.jsonl").read_text(encoding="utf-8").splitlines()
                         if line.strip()),
                     inventory_content_sha256=inventory.get("content_sha256"),
-                    incremental_public_readback=1, catalog_analytics=prior.get("catalog_analytics"),
+                    incremental_public_readback=1, catalog_analytics=catalog_analytics,
                     funnel=funnel, portfolio=portfolio, inquiry_context=inquiry_context,
                     new_listing_draft={"status": "not_checked_incremental", "effect": 0,
                                        "readback": 0, "public_effect": 0},
