@@ -286,31 +286,25 @@ async def _eval_json(ws_url: str, url: str, expression: str) -> dict:
 
 async def _fetch_list_page(
     cdp_base: str | None, page: int, *, ws_url: str | None = None,
-) -> tuple[list[str], str]:
+) -> list[dict]:
     url = LISTINGS_URL if page == 1 else f"{LISTINGS_URL}/page:{page}"
+    expression = (
+        "JSON.stringify({cards:[...document.querySelectorAll('#serviceListContent "
+        ".serviceListContentBox')].map(card=>({"
+        "href:card.querySelector('a[href^=\"/services/\"]')?.getAttribute('href')||'',"
+        "text:card.innerText||''})).filter(card=>/^\\/services\\/\\d+$/.test(card.href))})"
+    )
     if ws_url is not None:
-        data = await _eval_json(ws_url, url, (
-            "JSON.stringify({"
-            "hrefs:[...new Set([...document.querySelectorAll('a[href]')]"
-            ".map(a=>a.getAttribute('href')))],"
-            "text: document.body ? document.body.innerText.slice(0,120000) : ''"
-            "})"
-        ))
-        return data.get("hrefs", []), data.get("text", "")
+        data = await _eval_json(ws_url, url, expression)
+        return data.get("cards", [])
     if cdp_base is None:
         raise ValueError("cdp_base_required_without_ws")
     from cdp_nav_snapshot import hidden_page_target
 
     os.environ["CLOAK_CDP_BASE_URL"] = cdp_base
     async with hidden_page_target(url) as ws_url:
-        data = await _eval_json(ws_url, url, (
-            "JSON.stringify({"
-            "hrefs:[...new Set([...document.querySelectorAll('a[href]')]"
-            ".map(a=>a.getAttribute('href')))],"
-            "text: document.body ? document.body.innerText.slice(0,120000) : ''"
-            "})"
-        ))
-    return data.get("hrefs", []), data.get("text", "")
+        data = await _eval_json(ws_url, url, expression)
+    return data.get("cards", [])
 
 
 async def _fetch_category(
@@ -373,9 +367,15 @@ async def collect_live(identity: str = IDENTITY, *, ws_url: str | None = None) -
         inventory: list[dict] = []
         seen_ids: set[str] = set()
         for page in range(1, MAX_PAGES + 1):
-            hrefs, text = await _fetch_list_page(cdp_base, page, ws_url=ws_url)
-            ids = extract_own_service_ids(hrefs)
-            cards = parse_list_page(text, ids)
+            live_cards = await _fetch_list_page(cdp_base, page, ws_url=ws_url)
+            cards = []
+            for live_card in live_cards:
+                match = re.fullmatch(r"/services/(\d+)", str(live_card.get("href") or ""))
+                if match:
+                    cards.extend(parse_list_page(
+                        str(live_card.get("text") or "") + CARD_DELIMITER,
+                        [match.group(1)],
+                    ))
             new_cards = new_cards_only(cards, seen_ids)
             if not new_cards:
                 break
