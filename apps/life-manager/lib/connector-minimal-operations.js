@@ -8,8 +8,11 @@ const { notifyOpenClawGateway, parseOpenClawMessageId } = require("./outbound-gu
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/;
 const SAFE_REASON = /^[a-z0-9][a-z0-9_:-]{1,99}$/;
 const SAFE_METHOD = /^[a-z][a-z0-9_]{1,63}$/;
+const SAFE_PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
 const PURPOSE = /^(?:navigate|observe|fill|submit|readback)$/;
 const RESULT = /^(?:success|failed)$/;
+const ACTION_KEYS = "duration_ms,method,purpose,result,timestamp";
+const ACTION_FAILURE_CONTEXT_KEYS = "duration_ms,method,provider,purpose,result,safe_reason,timestamp";
 const REPORT_KEYS = "consecutive_failure_count,created_at,safe_reason,schema_version,status,wake_id";
 const DELIVERY_KEYS = "delivered_at,schema_version,telegram_provider_id,wake_id";
 const POSITIVE_PROVIDER_ID = /^[1-9][0-9]*$/;
@@ -53,13 +56,20 @@ function append(file, value) {
 }
 
 function safeAction(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) invalid();
+  const keys = Object.keys(input).sort().join(",");
+  const hasFailureContext = keys === ACTION_FAILURE_CONTEXT_KEYS;
   if (
-    !input || typeof input !== "object" || Array.isArray(input)
-    || Object.keys(input).sort().join(",") !== "duration_ms,method,purpose,result,timestamp"
+    (keys !== ACTION_KEYS && !hasFailureContext)
     || !PURPOSE.test(String(input.purpose || ""))
     || !SAFE_METHOD.test(String(input.method || ""))
     || !RESULT.test(String(input.result || ""))
     || !Number.isInteger(input.duration_ms) || input.duration_ms < 0 || input.duration_ms > 600_000
+    || (hasFailureContext && (
+      input.result !== "failed"
+      || !SAFE_PROVIDER.test(String(input.provider || ""))
+      || !SAFE_REASON.test(String(input.safe_reason || ""))
+    ))
   ) invalid();
   return Object.freeze({
     purpose: input.purpose,
@@ -67,6 +77,7 @@ function safeAction(input) {
     timestamp: exactInstant(input.timestamp),
     result: input.result,
     duration_ms: input.duration_ms,
+    ...(hasFailureContext ? { provider: input.provider, safe_reason: input.safe_reason } : {}),
   });
 }
 

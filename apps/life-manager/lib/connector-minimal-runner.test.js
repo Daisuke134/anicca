@@ -201,6 +201,14 @@ test("provider discovery failure continues and still reports the wake", async ()
   ]);
   assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
   assert.equal(result.telegram_provider_id, "9001");
+
+  const discoveryFailure = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .find((row) => row.purpose === "observe" && row.method === "provider_discovery" && row.result === "failed");
+  assert.deepEqual(discoveryFailure && [discoveryFailure.provider, discoveryFailure.safe_reason], [
+    "luma", "connpass_detail_start_invalid_failed",
+  ]);
 });
 
 test("malformed provider candidates report the parent contract boundary", async () => {

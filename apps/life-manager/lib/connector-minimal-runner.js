@@ -112,7 +112,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
   const elapsed = () => Date.parse(exactInstant(deps.now())) - startedAt;
   const deadlineReached = () => elapsed() >= settings.maxWakeMs;
 
-  async function action(purpose, method, task) {
+  async function action(purpose, method, task, onFailure) {
     if (!PURPOSE.test(purpose) || !METHOD.test(method)) invalid();
     const timestamp = exactInstant(deps.now());
     const actionStartedAt = Date.parse(timestamp);
@@ -127,12 +127,14 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       }));
       return value;
     } catch (error) {
+      const context = typeof onFailure === "function" ? onFailure(error) : null;
       await deps.recordAction(Object.freeze({
         purpose,
         method,
         timestamp,
         result: "failed",
         duration_ms: Math.max(0, Date.parse(exactInstant(deps.now())) - actionStartedAt),
+        ...(context && typeof context === "object" ? context : {}),
       }));
       throw error;
     }
@@ -173,6 +175,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         }
         const discovered = await action(
           "observe", "provider_discovery", () => deps.discoverCandidates(provider, gaps, owned.page),
+          (error) => ({ provider, safe_reason: safeDiscoveryReason(error) }),
         );
         try { candidates = verifiedCandidates(discovered, provider); }
         catch {
