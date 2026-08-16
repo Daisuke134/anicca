@@ -3584,6 +3584,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             presentation_snapshot = _seller_snapshot_for(ws_url, "91000004")
             scope_snapshot = _seller_snapshot_for(ws_url, "91000005")
+            # Retained so the listing-state adapter can bind the real seller submit controls.
+            _atomic_write(inventory_path.parent / "seller-form-91000004.json", presentation_snapshot)
+            _atomic_write(inventory_path.parent / "seller-form-91000005.json", scope_snapshot)
             title_render = _render_prepared_mutation(
                 args.state_dir, presentation_snapshot, "91000004", "title", capability_families,
             ) or _render_text_mutation(
