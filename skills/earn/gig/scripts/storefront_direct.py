@@ -45,7 +45,7 @@ DEFAULT_TELEGRAM_RECEIPTS = Path.home() / "gig" / "telegram-delivery-receipts"
 STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
-    "new-listing-drafts.jsonl", "funnel-events.jsonl",
+    "new-listing-drafts.jsonl", "funnel-events.jsonl", "portfolio-allocations.jsonl",
 )
 TARGET_SERVICE_ID = "91000001"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
@@ -133,11 +133,16 @@ def _report_message(row: dict) -> str:
     storefront_funnel = by_origin.get("storefront", {})
     apply_funnel = by_origin.get("apply", {})
     unknown_funnel = by_origin.get("unknown", {})
+    portfolio = row.get("portfolio") if isinstance(row.get("portfolio"), dict) else {}
+    portfolio_counts = portfolio.get("counts") if isinstance(portfolio.get("counts"), dict) else {}
+    portfolio_selected = portfolio.get("selected") if isinstance(portfolio.get("selected"), dict) else {}
     effect = max(int(row.get("effect") or 0), int(draft.get("effect") or 0),
                  int(draft.get("public_effect") or 0))
     next_action = (
         "失敗stageを自動修復して同じ境界から再開" if failed
-        else "全出品adapterをversioned mutation contractへ共通化" if draft.get("status") == "already_public"
+        else (f"{portfolio_selected.get('service_id')}/{portfolio_selected.get('improvement_field')}を"
+              f"{portfolio_selected.get('action')}" if portfolio_selected else
+              "全出品adapterをversioned mutation contractへ共通化") if draft.get("status") == "already_public"
         else "公式readbackとoutcome ledgerを照合" if effect
         else f"{hypothesis.get('service_id')}/{hypothesis.get('field')}の実行harnessを継続"
         if hypothesis else "scorecard先頭の実行可能gapを選択"
@@ -162,6 +167,11 @@ def _report_message(row: dict) -> str:
          f"入金 {int(apply_funnel.get('payments') or 0)} / 純入金 ¥{float(apply_funnel.get('net_jpy') or 0):,.0f}"),
         (f"❓ attribution不明: 問合せ {int(unknown_funnel.get('inquiries') or 0)} / "
          f"入金 {int(unknown_funnel.get('payments') or 0)} / source error {len(funnel.get('unknown_sources') or [])}"),
+        (f"🧭 Portfolio: KEEP {int(portfolio_counts.get('KEEP') or 0)} / "
+         f"IMPROVE {int(portfolio_counts.get('IMPROVE') or 0)} / "
+         f"RETIRE {int(portfolio_counts.get('RETIRE') or 0)} / "
+         f"REPLACE {int(portfolio_counts.get('REPLACE') or 0)} / "
+         f"枠 {int((portfolio.get('capacity') or {}).get('used') or 0)}/{int((portfolio.get('capacity') or {}).get('limit') or 0)}"),
         f"⚠️ bad: {'確定入金0' if int(storefront_funnel.get('payments') or 0) == 0 else 'なし'}",
         f"❌ errors: {', '.join(funnel.get('unknown_sources') or []) or 'なし'}",
         f"🧪 次候補 {hypothesis.get('service_id') or 'なし'} / {hypothesis.get('field') or 'なし'} / 実行可能 {str(bool(hypothesis.get('executable'))).lower()}",
@@ -388,6 +398,122 @@ def _join_funnel(
     cursor = hashlib.sha256("\n".join(sorted(str(row.get("source_event_id") or "") for row in events)).encode()).hexdigest()
     return {"version": 1, "appended": appended, "events": len(events), "by_origin": summary,
             "unknown_sources": errors, "cutoff_cursor": cursor}
+
+
+def _allocate_portfolio(
+    state_dir: Path, contracts: list[dict], funnel: dict, scorecard_path: Path, now: int,
+) -> dict:
+    try:
+        scorecard = json.loads(scorecard_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_portfolio_policy_invalid") from error
+    policy = scorecard.get("portfolio_policy")
+    services = scorecard.get("services")
+    backlog = scorecard.get("priority_backlog")
+    if (not isinstance(policy, dict) or policy.get("version") != 1
+            or type(policy.get("slot_limit")) is not int or policy["slot_limit"] <= 0
+            or type(policy.get("minimum_views_for_retirement")) is not int
+            or policy.get("short_term_zero_sales_can_retire") is not False
+            or policy.get("retirement_mode") != "recoverable_unpublish_before_delete"
+            or not isinstance(services, list) or not isinstance(backlog, list)
+            or not isinstance(policy.get("replacement_candidates"), list)):
+        raise RuntimeError("storefront_portfolio_policy_invalid")
+    latest_analytics = {}
+    analytics_path = state_dir / "analytics.jsonl"
+    rows, analytics_error = _jsonl_rows(analytics_path)
+    for row in rows:
+        if str(row.get("service_id") or "").isdigit():
+            latest_analytics[str(row["service_id"])] = row
+    contract_by_id = {str(row["service_id"]): row for row in contracts}
+    demand = {str(row.get("service_id") or ""): ((row.get("scores") or {}).get("demand"))
+              for row in services if isinstance(row, dict)}
+    gaps = {str(row.get("service_id") or ""): row for row in sorted(
+        (row for row in backlog if isinstance(row, dict)), key=lambda row: int(row.get("priority") or 9999),
+    )}
+    events, funnel_error = _jsonl_rows(state_dir / "funnel-events.jsonl")
+    inquiries = {}
+    payments = {}
+    net = {}
+    for event in events:
+        service_id = str(event.get("service_id") or "")
+        if not service_id:
+            continue
+        if event.get("event_kind") == "inquiry":
+            inquiries[service_id] = inquiries.get(service_id, 0) + 1
+        elif event.get("event_kind") == "payment":
+            payments[service_id] = payments.get(service_id, 0) + 1
+            if type(event.get("net_receipt_jpy")) in {int, float}:
+                net[service_id] = net.get(service_id, 0.0) + float(event["net_receipt_jpy"])
+    evidence_identity = {
+        "contracts": {key: value["service_version_sha256"] for key, value in sorted(contract_by_id.items())},
+        "analytics": {key: value.get("snapshot_key") for key, value in sorted(latest_analytics.items())},
+        "funnel": funnel.get("cutoff_cursor"), "policy": policy,
+    }
+    evidence_cursor = hashlib.sha256(json.dumps(
+        evidence_identity, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    capacity_pressure = len(contract_by_id) >= policy["slot_limit"]
+    replacements = policy["replacement_candidates"]
+    allocations = []
+    appended = 0
+    for service_id, contract in sorted(contract_by_id.items()):
+        analytics = latest_analytics.get(service_id, {})
+        metrics = analytics.get("metrics") if isinstance(analytics.get("metrics"), dict) else {}
+        views = ((metrics.get("views") or {}).get("value"))
+        purchases = ((metrics.get("purchases") or {}).get("value"))
+        favorites = ((metrics.get("favorites") or {}).get("value"))
+        known = type(views) is int and type(purchases) is int and type(favorites) is int
+        minimum_sample = known and views >= policy["minimum_views_for_retirement"]
+        weak_demand = demand.get(service_id) in {0, 1}
+        replacement = next((row for row in replacements if isinstance(row, dict)
+                            and row.get("replaces_service_id") == service_id), None)
+        replace_ready = bool(
+            minimum_sample and inquiries.get(service_id, 0) == 0 and purchases == 0
+            and payments.get(service_id, 0) == 0 and weak_demand and replacement and capacity_pressure
+        )
+        gap = gaps.get(service_id)
+        if replace_ready:
+            action, reason = "REPLACE", "all_replacement_gates_met"
+        elif payments.get(service_id, 0) > 0 or (known and purchases > 0):
+            action, reason = "KEEP", "verified_purchase_or_payment"
+        elif gap is not None:
+            action = "IMPROVE"
+            reason = "known_offer_gap" if minimum_sample else "minimum_sample_open_improve_known_gap"
+        else:
+            action, reason = "KEEP", "insufficient_evidence_for_retirement" if not known else "no_stronger_candidate"
+        allocation = {
+            "version": 1, "service_id": service_id,
+            "listing_version": contract["service_version_sha256"], "action": action,
+            "reason": reason, "evidence_cursor": evidence_cursor, "observed_at_epoch": now,
+            "metrics": {"views": views, "favorites": favorites, "purchases": purchases,
+                        "inquiries": inquiries.get(service_id, 0),
+                        "verified_payments": payments.get(service_id, 0),
+                        "verified_net_jpy": net.get(service_id, 0.0)},
+            "gates": {"metrics_known": known, "minimum_sample_met": minimum_sample,
+                      "weak_demand_evidence": weak_demand, "stronger_replacement_candidate": bool(replacement),
+                      "slot_capacity_pressure": capacity_pressure},
+            "improvement_field": gap.get("field") if gap else None,
+            "rollback_version": contract["service_version_sha256"],
+            "official_readback_required": action in {"IMPROVE", "RETIRE", "REPLACE"},
+        }
+        identity = f"storefront:portfolio:v1:{service_id}:{contract['service_version_sha256']}:{evidence_cursor}"
+        allocation["allocation_key"] = hashlib.sha256(identity.encode()).hexdigest()
+        appended += int(_append_key_once(
+            state_dir / "portfolio-allocations.jsonl", "allocation_key", allocation,
+        ))
+        allocations.append(allocation)
+    counts = {name: sum(row["action"] == name for row in allocations)
+              for name in ("KEEP", "IMPROVE", "RETIRE", "REPLACE")}
+    selected = next((row for row in allocations if row["action"] in {"REPLACE", "RETIRE"}), None)
+    if selected is None:
+        selected = next((row for service_id in gaps for row in allocations
+                         if row["service_id"] == service_id and row["action"] == "IMPROVE"), None)
+    if selected is None:
+        selected = next((row for row in allocations if row["action"] == "IMPROVE"), None)
+    return {"version": 1, "evidence_cursor": evidence_cursor, "service_count": len(allocations),
+            "capacity": {"used": len(allocations), "limit": policy["slot_limit"],
+                         "pressure": capacity_pressure}, "counts": counts, "appended": appended,
+            "selected": selected, "unknown_sources": [value for value in (analytics_error, funnel_error) if value]}
 
 
 def _load_image_contract(path: Path) -> dict:
@@ -1780,6 +1906,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "applied", DEFAULT_APPLIED), getattr(args, "earnings", DEFAULT_EARNINGS),
                 getattr(args, "projects_dir", DEFAULT_PROJECTS), int(time.time()),
             )
+            portfolio = _allocate_portfolio(
+                args.state_dir, validated_contracts, funnel,
+                getattr(args, "scorecard", DEFAULT_SCORECARD), int(time.time()),
+            )
             next_hypothesis = _prepare_next_hypothesis(
                 getattr(args, "scorecard", DEFAULT_SCORECARD),
                 args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
@@ -2080,6 +2210,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 analytics_snapshot_key=analytics["snapshot_key"],
                 catalog_analytics=analytics.get("catalog_metrics"),
                 funnel=funnel,
+                portfolio=portfolio,
                 new_listing_draft=draft_result,
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
