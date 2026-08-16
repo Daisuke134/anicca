@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "platform": "coconala",
+  "service_id": "4308502",
+  "capability_family": "presentation_design",
+  "changed_field": "FAQ",
+  "form_field": "data[Faq][0]",
+  "before_value": "FAQ_ABSENT",
+  "proposed_value": "Q. 依頼前に何を用意すればよいですか？\nA. 資料の用途、読み手、元になる文章・既存資料、希望納期、参考デザインをご共有ください。内容を確認し、対応範囲と総額をご案内してから着手します。",
+  "rollback_value": "FAQ_ABSENT",
+  "official_readback": {
+    "question": "依頼前に何を用意すればよいですか？",
+    "answer": "資料の用途、読み手、元になる文章・既存資料、希望納期、参考デザインをご共有ください。内容を確認し、対応範囲と総額をご案内してから着手します。"
+  },
+  "success_metric": "views_to_inquiry",
+  "observation_window_days": 14,
+  "evidence": [
+    "official:seller-form:4308502:faq-absent",
+    "owned:portfolio:education-training-presentation"
+  ]
+}

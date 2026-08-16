@@ -48,6 +48,7 @@ DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID /
 DEFAULT_TITLE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-title-v1.json"
 DEFAULT_BODY_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-body-v1.json"
 DEFAULT_PACKAGE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-package-v1.json"
+DEFAULT_FAQ_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-faq-v1.json"
 DEFAULT_LISTING_CONTRACT_DIR = GIG_DIR / "contracts" / "storefront"
 DEFAULT_LISTING_CONTRACT_FAMILIES = GIG_DIR / "config" / "storefront-contract-families.json"
 DEFAULT_NEW_LISTING_CONTRACT = (
@@ -323,8 +324,13 @@ def _render_text_mutation(path: Path, sources: list[dict], seller_snapshot: dict
         str(row.get("name") or ""): str(row.get("value") or "")
         for row in seller_snapshot.get("fields", []) if isinstance(row, dict)
     }
+    faq_fields = {name: value for name, value in fields.items() if name.startswith("data[Faq]")}
+    current_matches = (
+        not faq_fields and spec["before_value"] == "FAQ_ABSENT"
+        if spec["changed_field"] == "FAQ" else fields.get(spec["form_field"]) == spec["before_value"]
+    )
     if (seller_snapshot.get("url") != f'https://coconala.com/mypage/services/{source["service_id"]}'
-            or fields.get(spec["form_field"]) != spec["before_value"]):
+            or not current_matches):
         raise RuntimeError("storefront_text_mutation_before_not_current")
     if spec["changed_field"] == "title":
         if spec["official_readback"].get("public_title") != f'{spec["proposed_value"]}ます':
@@ -337,6 +343,10 @@ def _render_text_mutation(path: Path, sources: list[dict], seller_snapshot: dict
             and (spec["official_readback"].get("option_title") != spec["proposed_value"]
                  or type(spec["official_readback"].get("option_price_jpy")) is not int)):
         raise RuntimeError("storefront_package_readback_contract_invalid")
+    if spec["changed_field"] == "FAQ":
+        question, answer = _split_faq(spec["proposed_value"])
+        if spec["official_readback"] != {"question": question, "answer": answer}:
+            raise RuntimeError("storefront_faq_readback_contract_invalid")
     unsigned = {
         "version": 1, "platform": "coconala", "service_id": source["service_id"],
         "precondition_listing_version_sha256": source["service_version_sha256"],
@@ -1507,12 +1517,18 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "package_mutation", DEFAULT_PACKAGE_MUTATION), validated_contracts,
                 presentation_snapshot,
             )
+            faq_render = _render_text_mutation(
+                getattr(args, "faq_mutation", DEFAULT_FAQ_MUTATION), validated_contracts,
+                presentation_snapshot,
+            )
             title_render_path = inventory_path.parent / "mutation-render-title.json"
             body_render_path = inventory_path.parent / "mutation-render-body.json"
             package_render_path = inventory_path.parent / "mutation-render-package.json"
+            faq_render_path = inventory_path.parent / "mutation-render-faq.json"
             _atomic_write(title_render_path, title_render)
             _atomic_write(body_render_path, body_render)
             _atomic_write(package_render_path, package_render)
+            _atomic_write(faq_render_path, faq_render)
             listing_contracts = _load_listing_contracts(
                 getattr(args, "listing_contract_dir", DEFAULT_LISTING_CONTRACT_DIR), validated_contracts,
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
@@ -1835,7 +1851,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "delta": render["delta"], "published": False, "evidence_path": str(path),
                 } for render, path in (
                     (title_render, title_render_path), (body_render, body_render_path),
-                    (package_render, package_render_path),
+                    (package_render, package_render_path), (faq_render, faq_render_path),
                 )],
                 lease={
                     "task": task,
@@ -1880,6 +1896,7 @@ def main() -> int:
     parser.add_argument("--title-mutation", type=Path, default=DEFAULT_TITLE_MUTATION)
     parser.add_argument("--body-mutation", type=Path, default=DEFAULT_BODY_MUTATION)
     parser.add_argument("--package-mutation", type=Path, default=DEFAULT_PACKAGE_MUTATION)
+    parser.add_argument("--faq-mutation", type=Path, default=DEFAULT_FAQ_MUTATION)
     parser.add_argument("--listing-contract-dir", type=Path, default=DEFAULT_LISTING_CONTRACT_DIR)
     parser.add_argument(
         "--listing-contract-families", type=Path, default=DEFAULT_LISTING_CONTRACT_FAMILIES,
