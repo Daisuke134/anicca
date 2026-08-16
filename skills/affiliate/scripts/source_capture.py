@@ -142,6 +142,27 @@ def capture(plan, state_root):
     return receipts
 
 
+def plan_set_sha256(root):
+    digest = hashlib.sha256()
+    for path in sorted((root / "config" / "source-plans").glob("*.json")):
+        digest.update(path.name.encode("utf-8") + b"\0" + path.read_bytes() + b"\0")
+    return digest.hexdigest()
+
+
+def write_composition_bundle(state_root, plan, receipts):
+    sources = [{
+        key: row[key] for key in ("source_id", "locator", "evidence_class", "raw_sha256")
+    } for row in receipts]
+    source_set = hashlib.sha256(json.dumps(sources, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    bundle = {
+        "schema_version": 1, "receipt_type": "COMPOSITION_INPUT",
+        "plan_id": plan["plan_id"], "locale": plan["locale"],
+        "source_set_sha256": source_set, "sources": sources,
+    }
+    atomic_write(state_root / "composition-inbox" / f"{plan['plan_id']}.json", bundle)
+    return bundle
+
+
 def refresh_all(root, state_root, now=None, cooldown_seconds=86400):
     state_root.mkdir(mode=0o700, parents=True, exist_ok=True)
     now = int(datetime.now(timezone.utc).timestamp()) if now is None else int(now)
@@ -150,7 +171,10 @@ def refresh_all(root, state_root, now=None, cooldown_seconds=86400):
         previous = json.loads(receipt_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         previous = {}
-    if previous.get("state") == "COMPLETE" and now - int(previous["completed_at"]) < cooldown_seconds:
+    plan_set = plan_set_sha256(root)
+    if (previous.get("state") == "COMPLETE"
+            and previous.get("plan_set_sha256") == plan_set
+            and now - int(previous["completed_at"]) < cooldown_seconds):
         return {"state": "COOLDOWN", "completed_at": previous.get("completed_at"), "plans": []}
     with (state_root / ".source-refresh.lock").open("a+") as lock:
         try:
@@ -161,17 +185,20 @@ def refresh_all(root, state_root, now=None, cooldown_seconds=86400):
         for path in sorted((root / "config" / "source-plans").glob("*.json")):
             plan_id = path.stem
             try:
-                receipts = capture(load_plan(root, plan_id), state_root)
+                plan = load_plan(root, plan_id)
+                receipts = capture(plan, state_root)
+                bundle = write_composition_bundle(state_root, plan, receipts)
                 results.append({
                     "plan_id": plan_id, "state": "CAPTURED", "source_count": len(receipts),
                     "new_count": sum(bool(row["new_capture"]) for row in receipts),
+                    "source_set_sha256": bundle["source_set_sha256"],
                 })
             except (CaptureError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
                 results.append({"plan_id": plan_id, "state": "FAILED", "failure_type": type(error).__name__})
         receipt = {
             "schema_version": 1, "receipt_type": "SOURCE_REFRESH",
             "state": "COMPLETE" if results and all(row["state"] == "CAPTURED" for row in results) else "PARTIAL",
-            "completed_at": now, "plans": results,
+            "completed_at": now, "plan_set_sha256": plan_set, "plans": results,
         }
         atomic_write(receipt_path, receipt)
         return receipt

@@ -37,6 +37,7 @@ class SourceCaptureTest(unittest.TestCase):
                 replay = MODULE.refresh_all(root, state, now=1001, cooldown_seconds=86400)
             self.assertEqual(receipt["state"], "COMPLETE")
             self.assertEqual([row["plan_id"] for row in receipt["plans"]], ["alpha-en", "beta-en"])
+            self.assertTrue((state / "composition-inbox" / "alpha-en.json").is_file())
             self.assertEqual(replay["state"], "COOLDOWN")
 
 
