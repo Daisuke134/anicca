@@ -1060,6 +1060,16 @@ cloud work, and broad self-repair do not start unless one is the measured blocke
 for the next external state. Known stages are deterministic; the model writes or
 diagnoses only when an existing deterministic tool cannot advance them.
 
+The active implementation method is direct primary-model execution. The primary
+Sol reads the complete existing call path, edits the smallest production surface,
+and verifies the installed launchd owner itself. Superpowers, TDD/RED scaffolding,
+subagent implementation, speculative abstractions, and broad new test suites are
+not part of this Affiliate slice. Existing checks run after the minimal change;
+the decisive proof is a real installed wake, exact public readback, and replay
+dedupe. A new regression is added only after a real failure demonstrates that an
+existing check cannot protect a money, secret, data-loss, or duplicate-effect
+boundary.
+
 The completed history remains in the evidence tables below. The following list is
 the only canonical remaining order; later work MUST NOT jump ahead of an unmet
 gate.
@@ -1272,10 +1282,10 @@ Git, browser, credential, tracking-link, and money authority.
 
 | # | To-Be | Minimal test / live proof | Cover |
 |---:|---|---|---|
-| 1 | PASS advances in order | One focused test proves owned `LIVE` precedes X publish | MUST PASS |
-| 2 | FAIL and tamper fail closed | One focused test proves neither publisher is called | MUST PASS |
-| 3 | Secret/link isolation | One focused test proves model/log/Telegram artifacts contain no private link | MUST PASS |
-| 4 | Duplicate external-effect prevention | One focused replay test preserves one owned and one X effect | MUST PASS |
+| 1 | PASS advances in order | Installed trajectory proves owned `LIVE` precedes X `LIVE` | MUST PASS |
+| 2 | FAIL and tamper fail closed | Existing FAIL receipt remains without an owned/X effect | MUST PASS |
+| 3 | Secret/link isolation | Installed artifacts/logs/Telegram contain no private link outside the intended public article | MUST PASS |
+| 4 | Duplicate external-effect prevention | A second real kickstart preserves one owned and one X effect | MUST PASS |
 | 5 | Installed progression | One launchd wake publishes a fresh fourth campaign; replay preserves exact URLs and lineage | MUST PASS |
 
 | E2E item | Value |
@@ -1289,6 +1299,9 @@ Git, browser, credential, tracking-link, and money authority.
   provider, or model orchestration layer.
 - Do not add YouTube, TikTok, Instagram, Pinterest, `note`, another locale, or a
   new provider before the existing English owned/X path completes this slice.
+- Do not use Superpowers, TDD/RED scaffolding, subagent implementation, or a new
+  test framework for this slice. Primary Sol owns the direct production edit and
+  real launchd verification.
 - Do not change Gig/Coconala state, owners, browsers, ledgers, or credentials.
 
 #### 6. Execution steps
@@ -1298,9 +1311,9 @@ Git, browser, credential, tracking-link, and money authority.
 2. Reuse `skills/affiliate/scripts/owned_publish.py` and
    `skills/affiliate/scripts/x_post_cli.py`; change them only if generic metadata
    exposes an observed incompatibility.
-3. Add only the four policy-fail, secret-leak, duplicate-effect, and ordered-effect
-   regressions above in `skills/affiliate/tests/test_local_loop.py`.
-4. Run the focused loop check and existing Affiliate suite, install one immutable
+3. Run `py_compile` and the existing Affiliate checks after the production edit;
+   do not create synthetic RED work or a broad new test suite.
+4. Install one immutable
    release, then kickstart the existing `ai.anicca.affiliate-loop` owner.
 5. Observe a fresh fourth campaign become owned `LIVE` then X `LIVE`; kickstart a
    second time and verify exact URL, Git, X, and lineage dedupe.
