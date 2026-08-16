@@ -1099,6 +1099,26 @@ def _render_listing_state_mutation(
 CREATE_MIN_INTERVAL_SECONDS = 86_400
 
 
+def _extract_search_demand(body: str) -> dict:
+    """Demand facts an official search page states: result count and reviewed comparables.
+
+    A review on Coconala can only follow a purchase, so a reviewed comparable is evidence
+    that buyers pay for this work. Search cards do not state sales counts, so those stay
+    absent rather than being inferred.
+    """
+    total = re.search(r"([0-9,]+)\s*件中", body)
+    comparables = [
+        {"rating": float(rating), "review_count": int(review.replace(",", "")),
+         "display_price_jpy": int(price.replace(",", ""))}
+        for rating, review, price in re.findall(
+            r"([0-5]\.[0-9])\s*\n\(([0-9,]+)\)\s*\n([0-9,]+)\s*円", body)
+    ]
+    return {
+        "visible_result_count": int(total.group(1).replace(",", "")) if total else None,
+        "comparables": comparables[:12],
+    }
+
+
 def _score_demand_cluster(cluster: dict) -> dict:
     """Score one official demand cluster from what the marketplace actually shows.
 
