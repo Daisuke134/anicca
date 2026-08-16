@@ -854,6 +854,113 @@ def advance_generic_publication(
     }
 
 
+LEGACY_DEDICATED_PLACEMENTS = (
+    {
+        "slug": "elevenlabs-plans-for-solo-creators",
+        "placement": "elevenlabs-en-1",
+        "title": "ElevenLabs plans for solo creators",
+        "description": "Decision guide for solo creators comparing ElevenLabs plans.",
+        "builder": "plans",
+    },
+    {
+        "slug": "elevenagents-for-customer-support",
+        "placement": "elevenagents-en-1",
+        "title": "ElevenAgents customer support evaluation",
+        "description": "Decision guide for teams evaluating ElevenAgents for customer support.",
+        "builder": "agents",
+    },
+)
+
+
+def advance_legacy_dedicated_publication(
+    state, landing_root, x_cdp_port, private_markdown, provider_cdp_port=9324,
+    link_acquirer=None, owned_publisher=None, x_publisher=None,
+):
+    """Migrate one already-live legacy placement to its own provider link."""
+    from content import (
+        build, build_agents, build_x, build_x_agents, policy, policy_agents,
+    )
+    from owned_publish import publish as default_owned_publisher
+    from x_post_cli import publish as default_x_publisher
+
+    link_acquirer = link_acquirer or elevenlabs_link_action
+    owned_publisher = owned_publisher or default_owned_publisher
+    x_publisher = x_publisher or default_x_publisher
+    root = Path(__file__).resolve().parents[1]
+    completed = False
+    for config in LEGACY_DEDICATED_PLACEMENTS:
+        slug = config["slug"]
+        placement = config["placement"]
+        try:
+            existing_x = json.loads(
+                (state / "x-posts" / f"{placement}.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            continue
+        if existing_x.get("state") != "LIVE":
+            continue
+        try:
+            dedicated = json.loads(
+                (state / "program-links" / f"{placement}.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            dedicated = {}
+        field = dedicated.get("private_link_field", "")
+        link = elevenlabs_link(private_markdown, field) if field else None
+        try:
+            artifact = json.loads(
+                (state / "content" / f"{slug}.json").read_text(encoding="utf-8")
+            )
+            owned = json.loads(
+                (state / "owned-publications" / f"{slug}.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            artifact, owned = {}, {}
+        if all((
+            dedicated.get("state") == "VERIFIED",
+            link,
+            artifact.get("readback_links") == [link],
+            owned.get("state") == "LIVE",
+            owned.get("content_sha256") == artifact.get("content_sha256"),
+        )):
+            completed = True
+            continue
+        if dedicated.get("state") != "VERIFIED":
+            dedicated = link_acquirer(
+                state, provider_cdp_port, private_markdown, placement, create=True,
+                title=config["title"], description=config["description"],
+            )
+            if dedicated.get("state") != "VERIFIED" or not dedicated.get("deduplicated", False):
+                return {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None}
+            field = dedicated.get("private_link_field", "")
+        if config["builder"] == "plans":
+            build(root, state, private_markdown, field)
+            policy(state, private_markdown, field)
+            x_builder = build_x
+        else:
+            build_agents(root, state, private_markdown, field)
+            policy_agents(state, private_markdown, field)
+            x_builder = build_x_agents
+        published = owned_publisher(SimpleNamespace(
+            state=state, landing_root=landing_root, slug=slug,
+            base_url="https://aniccaai.com", remote="origin", branch="main",
+        ))
+        if published.get("state") != "LIVE":
+            return {"state": "OWNED_NOT_LIVE", "public_url": published.get("public_url")}
+        x_builder(state)
+        posted = x_publisher(SimpleNamespace(
+            state=state, content=state / "x-content" / f"{placement}.txt",
+            placement=placement, cdp_host="127.0.0.1", cdp_port=x_cdp_port,
+        ))
+        if posted.get("state") != "LIVE":
+            return {"state": "X_NOT_LIVE", "public_url": posted.get("public_url")}
+        return {"state": "X_LIVE", "public_url": posted.get("public_url")}
+    return {
+        "state": "ALREADY_LIVE" if completed else "NO_DUE_PUBLICATION",
+        "public_url": None,
+    }
+
+
 def advance_known_publication(
     state, landing_root, x_cdp_port, private_markdown=None, provider_cdp_port=9324,
 ):
@@ -867,6 +974,12 @@ def advance_known_publication(
     }
     if generic["state"] not in generic_non_blocking:
         return generic
+    legacy = advance_legacy_dedicated_publication(
+        state, landing_root, x_cdp_port, private_markdown, provider_cdp_port,
+    )
+    if legacy["state"] not in {"NO_DUE_PUBLICATION", "ALREADY_LIVE"}:
+        legacy["generic_state"] = generic["state"]
+        return legacy
     slug = "elevenagents-for-customer-support"
     placement = "elevenagents-en-1"
     x_receipt_path = state / "x-posts" / f"{placement}.json"
@@ -880,6 +993,7 @@ def advance_known_publication(
             x_receipt.get("public_url"),
         )
         result["generic_state"] = generic["state"]
+        result["legacy_state"] = legacy["state"]
         return result
 
     artifact_path = state / "content" / f"{slug}.json"

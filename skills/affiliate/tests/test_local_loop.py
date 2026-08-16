@@ -9,7 +9,7 @@ import sys
 from argparse import Namespace
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
 
@@ -122,6 +122,10 @@ class LocalLoopTest(unittest.TestCase):
                             "state": generic_state, "public_url": None,
                         }),
                         patch.object(
+                            MODULE, "advance_legacy_dedicated_publication",
+                            return_value={"state": "ALREADY_LIVE", "public_url": None},
+                        ),
+                        patch.object(
                             MODULE, "advance_tts_api_publication",
                             return_value=dict(expected),
                         ) as advance,
@@ -129,8 +133,30 @@ class LocalLoopTest(unittest.TestCase):
                         result = MODULE.advance_known_publication(
                             state, Path(root) / "landing", 9326, Path(root) / "private.md",
                         )
-                    self.assertEqual(result, {**expected, "generic_state": generic_state})
+                    self.assertEqual(result, {
+                        **expected, "generic_state": generic_state,
+                        "legacy_state": "ALREADY_LIVE",
+                    })
                     advance.assert_called_once()
+
+    def test_legacy_migration_stops_after_creating_one_provider_link(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root) / "state"
+            receipt = state / "x-posts" / "elevenlabs-en-1.json"
+            receipt.parent.mkdir(parents=True)
+            receipt.write_text(json.dumps({
+                "state": "LIVE", "public_url": "https://x.com/selawmqt/status/1",
+            }))
+            acquire = Mock(return_value={
+                "state": "VERIFIED", "deduplicated": False,
+                "private_link_field": "Placement example affiliate link",
+            })
+            result = MODULE.advance_legacy_dedicated_publication(
+                state, Path(root) / "landing", 9326, Path(root) / "private.md",
+                link_acquirer=acquire,
+            )
+            self.assertEqual(result["state"], "WAITING_FOR_PLACEMENT_LINK")
+            acquire.assert_called_once()
 
     def test_wake_recovers_provider_and_advances_publication_without_cross_lane_blocking(self):
         with tempfile.TemporaryDirectory() as root:

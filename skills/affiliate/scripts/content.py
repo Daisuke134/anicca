@@ -89,10 +89,10 @@ def require_sources(state, required, now):
     return source_hashes
 
 
-def build(root, state, private_markdown):
+def build(root, state, private_markdown, link_field="Default affiliate link"):
     now = datetime.now(timezone.utc)
     source_hashes = require_sources(state, REQUIRED, now)
-    link = elevenlabs_link(private_markdown)
+    link = elevenlabs_link(private_markdown, link_field)
     if not link:
         raise ContentError("executable ElevenLabs link is unavailable")
     template = (root / "config" / "content" / "elevenlabs-en-v1.md").read_text(encoding="utf-8")
@@ -118,10 +118,10 @@ def build(root, state, private_markdown):
     return {key: artifact[key] for key in ("artifact_id", "slug", "content_sha256", "state")}
 
 
-def build_agents(root, state, private_markdown):
+def build_agents(root, state, private_markdown, link_field="ElevenAgents affiliate link"):
     now = datetime.now(timezone.utc)
     source_hashes = require_sources(state, AGENTS_REQUIRED, now)
-    link = elevenlabs_link(private_markdown, "ElevenAgents affiliate link")
+    link = elevenlabs_link(private_markdown, link_field)
     if not link:
         raise ContentError("executable ElevenAgents link is unavailable")
     template = (root / "config" / "content" / "elevenagents-en-v1.md").read_text(encoding="utf-8")
@@ -269,17 +269,17 @@ def policy_campaign(state, private_markdown, slug, required, link_field, project
     return {key: receipt[key] for key in ("artifact_id", "slug", "content_sha256", "decision")}
 
 
-def policy(state, private_markdown):
+def policy(state, private_markdown, link_field="Default affiliate link"):
     return policy_campaign(
         state, private_markdown, "elevenlabs-plans-for-solo-creators", REQUIRED,
-        "Default affiliate link", "AI VOICE TOOLS", ["A simple buying checklist"],
+        link_field, "AI VOICE TOOLS", ["A simple buying checklist"],
     )
 
 
-def policy_agents(state, private_markdown):
+def policy_agents(state, private_markdown, link_field="ElevenAgents affiliate link"):
     return policy_campaign(
         state, private_markdown, "elevenagents-for-customer-support", AGENTS_REQUIRED,
-        "ElevenAgents affiliate link", "AI CUSTOMER SUPPORT", ["The five-test evaluation"],
+        link_field, "AI CUSTOMER SUPPORT", ["The five-test evaluation"],
     )
 
 
