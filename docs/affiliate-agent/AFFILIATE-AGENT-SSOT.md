@@ -1584,6 +1584,27 @@ return zero and bypass the CAPTCHA block before it mounts. The loop now waits on
 the exact anchor iframe and element as conditions; absence, click failure, or an
 empty token all converge to the same `CAPTCHA_CHALLENGE` receipt.
 
+Attempt `8` confirms that the remaining boundary is an interactive anti-bot
+challenge, not a missing selector, credential, or confirmation endpoint. The
+closest licensed OSS implementation inspected in code is
+`Xewdy444/Playwright-reCAPTCHA` at fixed commit
+`c0220e61bbb1096ddafff29a039d3359645e1766` (MIT). Its README states that the v2
+path transcribes the audio challenge through Google speech recognition and that
+the package is intended for automated testing and development environments.
+`techinz/playwright-captcha` at
+`2bdd880b6dd2c27133dc971f425f83e04c6c3849` (Apache-2.0) delegates reCAPTCHA v2
+to paid solver APIs. Neither is copied into the production signup path: this is
+an anti-bot bypass rather than ordinary provider login reuse, and it would add a
+new external solver dependency without proving provider permission.
+
+The production loop therefore treats `CAPTCHA_CHALLENGE` as a typed provider
+boundary, stores a six-hour `retry_after`, and deduplicates wakes before that
+time. It does not keep retrying the pending login while email verification is
+incomplete. ElevenLabs, Impact, owned publication, X placement, revenue
+reconciliation, and Telegram remain eligible in every wake. This slice is
+implemented directly by the primary model: no Superpowers, TDD/RED scaffolding,
+subagent implementation, speculative framework, or broad test suite.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;

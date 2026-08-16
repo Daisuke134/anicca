@@ -641,6 +641,11 @@ def verify_systeme_email(state, cdp_port, private_markdown):
         prior = json.loads(receipt_path.read_text(encoding="utf-8"))
         if prior.get("state") == "EMAIL_VERIFIED":
             return {**prior, "deduplicated": True}
+        if (
+            prior.get("state") == "CAPTCHA_CHALLENGE"
+            and int(prior.get("retry_after", 0)) > int(time.time())
+        ):
+            return {**prior, "deduplicated": True}
     text = private_markdown.read_text(encoding="utf-8")
     section = re.search(r"(?ms)^## Systeme\.io\n.*?(?=^## |\Z)", text)
     match = re.search(
@@ -707,6 +712,7 @@ def verify_systeme_email(state, cdp_port, private_markdown):
                         "receipt_type": "PROVIDER_EMAIL_VERIFICATION",
                         "provider": "systeme-io",
                         "state": "CAPTCHA_CHALLENGE",
+                        "retry_after": int(time.time()) + 21_600,
                         "rendered_text_sha256": hashlib.sha256(
                             page.locator("body").inner_text().encode()
                         ).hexdigest(),
@@ -822,9 +828,15 @@ def wake(args):
             systeme_verification = verify_systeme_email(
                 state, args.cdp_port, args.private_markdown.expanduser(),
             )
-            systeme = resume_systeme_provider(
-                state, args.cdp_port, args.private_markdown.expanduser(),
-            )
+            if systeme_verification["state"] == "EMAIL_VERIFIED":
+                systeme = resume_systeme_provider(
+                    state, args.cdp_port, args.private_markdown.expanduser(),
+                )
+            else:
+                systeme = {
+                    "state": systeme_verification["state"],
+                    "provider": "systeme-io",
+                }
         except Exception as error:
             systeme = {
                 "state": "PROVIDER_FAILED", "provider": "systeme-io",
