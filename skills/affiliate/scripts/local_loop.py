@@ -161,6 +161,14 @@ def advance_substack_distribution(state, now=None, cooldown_seconds=86400):
             receipts.append(json.loads(path.read_text(encoding="utf-8")))
         except (OSError, ValueError):
             continue
+    sent_ids = {row.get("event_uuid") for row in json_rows(state / "telegram-sent.jsonl")}
+    for row in receipts:
+        identity = {"kind": "DISTRIBUTION_LIVE", "channel": "substack",
+                    "plan_id": row.get("plan_id"), "public_url": row.get("public_url")}
+        event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+        if row.get("state") == "LIVE" and event_uuid not in sent_ids:
+            return {"state": "LIVE", "public_url": row.get("public_url"),
+                    "plan_id": row.get("plan_id"), "channel": "substack", "changed": True}
     observed = []
     for row in receipts:
         try:
