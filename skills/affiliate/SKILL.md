@@ -29,6 +29,11 @@ license, and `SHA256SUMS` are authoritative; an installed Gig release is evidenc
 not source. The runner is not admitted into `loop wake` until the Affiliate
 routing, privacy, schema, and budget gates in the SSOT are closed.
 
+`config/agent-runner.json` exposes only two model routes: explicit Terra-high
+strategy and a fallback-free, one-use Sol-high repair escalation. Both routes
+are live-proven read-only, but remain disconnected from `loop wake` until the
+remaining binary, privacy, schema, context, and budget gates close.
+
 F0 provides four deterministic, non-publishing primitives:
 
 - `bootstrap/install.sh` verifies a reviewed pinned manifest and writes an
