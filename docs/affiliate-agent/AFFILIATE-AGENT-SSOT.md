@@ -1076,7 +1076,13 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **A15.7, acquire the first external post-baseline click**.
+Current execution cursor: **M0.1, turn the first immutable real acquisition
+baseline into one Agent-selected improvement decision**. The Agent stage is
+implemented now and remains effect-free until a real immutable baseline receipt
+exists. Time passing, an organic click arriving, provider review completing, and
+a commission being approved are external acceptance gates observed by launchd;
+they are not implementation TODOs and never block safe work on the next missing
+harness boundary.
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
 and Systeme.io remains behind its typed CAPTCHA boundary. Release `f062057b2` is
@@ -1112,19 +1118,23 @@ and spend no further execution time on cleanup.
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
 | Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE`; 1 canonical DEV article `LIVE`; 1 receipted Substack article `LIVE` | Real public effects exist and are receipted; one known title-only duplicate remains unchanged by explicit operating decision |
 | Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist; the sixth campaign reached owned/X/DEV/Substack `LIVE` and Telegram before unchanged replays | A real external click is the first unfinished economic stage; provider admission continues in parallel under provider gates |
-| Acquisition | 0 post-baseline provider clicks | E0 is open |
+| Acquisition | DEV article `4408918` has a real hourly exposure receipt; its first eligible 24-hour snapshot will be frozen once, while provider post-baseline clicks remain `0` | The measurement input exists; the Agent decision consumer is the first unfinished implementation |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
 ```mermaid
 flowchart LR
-  C[Composition] --> P[Policy and deterministic publish]
-  P --> F[6 campaigns + DEV + Substack LIVE]
-  F --> E0[E0 real click]
-  E0 --> E1[E1 approved commission]
-  E1 --> T[10 comparable placements]
-  T --> D[3 providers]
-  D --> A2[4 profitable unattended weeks]
-  A2 --> K10[USD 10K per month]
+  R[Real exposure receipt] --> A[Agent chooses one change]
+  A --> C[Research + composition]
+  C --> P[Policy + deterministic publish]
+  P --> F[Owned + distribution LIVE]
+  F --> R
+  F --> E0[Provider click receipt]
+  E0 --> E1[Approved commission]
+  E1 --> U[Net unit economics]
+  U --> A
+  U --> T[Scale winning placements]
+  T --> D[Diversify channels + providers]
+  D --> K10[USD 10K per month]
   K10 --> L[Japanese and Spanish pods]
   L --> O[Clean Mac and OSS]
   O --> C1[Cloud tenants]
@@ -1202,73 +1212,78 @@ flowchart LR
    the existing composition/policy/publication path. Same-day replay returned
    `COOLDOWN`, preserved the plan bytes and 22-row source ledger, and created no
    duplicate campaign.
-8. **IN PROGRESS — Automate eligible program admission.** The installed money
-   owner now resumes and polls the existing HubSpot/Impact application on isolated
-   CDP `9327` without blocking ElevenLabs or resubmitting. For each next English candidate,
-   receipt official terms, allowed channels, payout, audience/site requirements,
-   login authority, application identity, review status, and executable tracking
-   link. Poll HubSpot/Impact; do not resubmit rejected Kit unchanged.
-9. **P0 — Complete observed self-healing.** Add typed failure receipts, bounded
-   retry/backoff, stale-lock watchdog, disk/token/action caps, provider/channel
-   quarantine, one allowlisted repair, postcondition readback, and `SELF_HEALED`
-   Telegram reporting while healthy lanes continue.
-10. **Gate E0 — Record real acquisition.** Reconcile one organic post-baseline
-    provider click to a live placement. Self-clicks, tests, impressions, and local
-    redirects do not close E0.
-11. **Gate E1 — Record real money.** Normalize the first non-test provider row,
-    join or explicitly fail to join it to a placement, replay it without a
-    duplicate transition, then record the first externally `approved` commission.
-12. **After E1 — Build comparable English cohorts.** Reach ten mature canonical
-    owned placements, change one variable per experiment, and allocate by approved
-    net commission per 1,000 qualified impressions and per content cost—not
-    engagement.
-13. **After E1 — Admit durable distribution adapters.** Reuse each winning owned
-    decision asset as native X, YouTube/Shorts, newsletter, TikTok/Reels, and
-    Pinterest variants in that order. Each adapter requires official eligibility,
-    authentic brand/locale identity, disclosure, exact external-effect fencing,
-    public readback, and placement-level attribution. Do not create account farms.
-14. **After E1 — Diversify providers.** Add at least three independently receipted
-    offers and keep provider, offer, and channel concentration at or below 40% of
-    approved net commission.
-15. **Gate A2 — Prove unattended profitability.** Complete four consecutive
-    revenue-positive weeks with positive net margin, zero manual execution, and
-    at least one live self-heal.
-16. **Gate A3 — Prove USD 10,000/month.** Use observed conversion and approved net
-    commission to compute required qualified traffic; reconcile three consecutive
-    months at USD 10,000 gross while reporting net, costs, reversals, payout delay,
-    and concentration separately.
-17. **After E1 — Add Japanese isolation.** Use a separate account/browser/provider
-    membership/link, native evidence pack, disclosure, placement ledger, and J0/J1
-    canary. A Japanese `note` identity is admitted only if its current official
-    rules, public readback, and attribution contract pass. Never mix Japanese and
-    English on one social account.
-18. **After English and Japanese proof — Add Spanish.** Apply the same locale gate;
-    later languages are ranked by executable-offer economics rather than audience
-    population alone.
-19. **After E1 — Package clean macOS installation.** Remove machine-specific paths,
-    ship one-command install/update/health/rollback/uninstall, and reproduce
-    pre-publication readiness on a clean macOS user without copying secrets,
-    sessions, or mutable receipts.
-20. **After E1 — Publish OSS proof.** Release the local Skill, privacy-safe ledger
-    verifier, dated prior-art registry, exact limitations, and reproducible
-    receipts; do not claim “money printer” from clicks or model output.
-21. **After A2 + clean-Mac proof — Build cloud product.** Replace local launchd and
-    browser owners with tenant-isolated scheduler/browser workers while preserving
-    the same job, receipt, policy, attribution, deletion, audit, and Telegram/web
-    UX contracts.
-22. **Gate A4 — Prove USD 100,000/month.** Scale only mature profitable pods,
-    preserve the 40% concentration ceiling, and reconcile three consecutive
-    months at USD 100,000 gross with net, costs, reversals, payout delay, and
-    tenant/provider/channel concentration.
-23. **Gate A5 — Prove USD 1,000,000/month.** Operate a multilingual portfolio with
-    tenant-isolated workers, provider capacity receipts, fraud controls, legal and
-    tax compliance, and three consecutive externally reconciled USD 1,000,000
-    months. No projection or annualized run rate closes this gate.
-24. **Gate A6 — Prove USD 10,000,000/month.** Reach platform-scale qualified
-    distribution and reconcile three consecutive USD 10,000,000 gross months
-    across independent providers, locales, tenants, and channels while showing
-    net profit, reversals, costs, payout timing, concentration, incidents, and
-    recovery. This is an evidence gate, not a guaranteed forecast.
+8. **M0.1 — Consume real acquisition evidence.** Add one bounded Agent decision
+   stage to the existing owner. It reads only an immutable real exposure baseline,
+   public campaign metadata, and provider click state; chooses exactly one
+   acquisition variable; and stores one hash-bound decision receipt. With no
+   mature receipt it returns `WAITING_FOR_BASELINE` without invoking a model.
+9. **M0.2 — Execute one-variable experiments through the existing pipeline.** Bind
+   the decision ID and hypothesis to the next source plan, sealed composition,
+   policy receipt, owned publication, X/DEV/Substack placements, and public
+   readbacks. The loop—not Codex—performs every external effect, and unchanged
+   replay creates no duplicate post.
+10. **M0.3 — Close placement-level acquisition measurement.** For every experiment,
+    join real channel exposure where the platform supplies it, the exact provider
+    link baseline/delta, and later commission transitions under one placement ID.
+    Missing denominators remain `UNKNOWN`; aggregate PartnerStack overview never
+    masquerades as placement attribution.
+11. **M0.4 — Keep the experiment loop continuously productive.** On each launchd
+    wake, resume one unfinished same-ID stage first; otherwise advance one eligible
+    campaign. Maturity and provider-review timestamps are readiness inputs, not
+    queued work. Other healthy research, publication, measurement, and provider
+    lanes continue while one input is not yet eligible.
+12. **M0.5 — Report the closed loop in natural language.** Telegram sends one
+    deduplicated transition for experiment selected, placement live, provider
+    click, pending/approved/paid/reversed commission, and self-heal. The daily
+    message reports real exposure, clicks, approved net commission, costs, current
+    bottleneck, and the next Agent-selected action; no machine code or secret URL.
+13. **M1.1 — Add approved unit economics.** Join real cash/model/tool/channel costs
+    to each placement and compute approved net commission per 1,000 observed
+    qualified exposures and per content dollar. Views and engagement remain
+    acquisition diagnostics; only provider-approved commission ranks profit.
+14. **M1.2 — Allocate the next campaign.** The Agent receives comparable mature
+    cohort receipts, selects one offer/channel/creative variable, and writes a
+    budget-capped allocation receipt. It cannot infer a winner before the required
+    denominator exists and cannot increase spend or volume from model confidence.
+15. **M1.3 — Repair only observed money-path failures.** Add typed classification,
+    bounded repair/backoff, same-job resume, channel/provider quarantine, action
+    and cost caps, postcondition readback, and `SELF_HEALED` reporting for failures
+    actually observed on M0/M1. Do not build a generic healer framework.
+16. **M2.1 — Expand profitable distribution.** Reuse a winning owned asset through
+    additional policy-compatible native channels only when their real reach can be
+    observed and their traffic can be joined to a placement. Account creation,
+    login, disclosure, publish, readback, and recovery are all Skill-owned effects.
+17. **M2.2 — Expand executable offers.** Continue polling HubSpot/Impact and admit
+    another English B2B/creator program only through official-terms, allowed-
+    channel, application, authentication, executable-link, and provider-readback
+    receipts. Never resubmit rejected Kit unchanged or pause ElevenLabs earnings.
+18. **M2.3 — Build the USD 10,000 portfolio.** Maintain at least ten comparable
+    mature placements, allocate 80% of bounded effort to observed approved-net
+    winners and 20% to one-variable experiments, and keep provider/offer/channel
+    concentration at or below 40% of approved net commission.
+19. **M3.1 — Add locale pods after the English loop proves unit economics.** Start
+    Japanese, then Spanish, with isolated accounts, browser profiles, provider
+    memberships, links, disclosures, ledgers, and native evidence. Never mix
+    languages on one social identity.
+20. **M4.1 — Package only the proven local loop.** After real approved revenue,
+    remove machine-specific paths, ship one-command macOS install/update/health/
+    rollback/uninstall, and publish the Skill plus privacy-safe ledger verifier.
+21. **M5.1 — Move the proven contracts to cloud.** Only after unattended positive
+    net operation and clean-Mac reproduction, replace launchd/browser ownership
+    with tenant-isolated schedulers and browser workers while preserving the same
+    job, receipt, attribution, recovery, deletion, audit, and Telegram/web UX.
+
+External outcomes are gates, not TODOs:
+
+- **E0:** one organic placement-attributed provider click; no self-click or test.
+- **E1:** one non-test externally `approved` commission joined to a placement.
+- **A2:** four consecutive revenue-positive unattended weeks with positive net
+  margin and at least one observed self-heal.
+- **A3:** three consecutive provider-reconciled USD 10,000 gross months with net,
+  reversals, costs, payout delay, and concentration shown separately.
+- **A4/A5/A6:** the same external-proof rule at USD 100,000, USD 1,000,000, and
+  USD 10,000,000 monthly. No projection, creator screenshot, wait instruction,
+  or annualized run rate closes a gate.
 
 ### 9.0.1.1 Canonical atomic execution specification — E0 to USD 10,000/month
 
@@ -1298,9 +1313,13 @@ flowchart LR
   A --> S
 ```
 
-The next implementation closes only the missing `D → L → K` boundary. The first
-real commission then closes `K → M`. Revenue-led allocation starts only after E1,
-because zero-money data cannot identify a profitable winner.
+The next implementation closes `R → A`: an immutable real exposure baseline is
+consumed by one bounded Agent decision that selects one acquisition change. It
+then closes `A → S` by sending that decision through the existing source,
+composition, policy, and publication path. `D → L → K` remains a continuously
+observed provider boundary, not a wait task. Before E1, the Agent may improve
+reach from real exposure evidence but MUST NOT claim a profitable winner.
+Revenue-led allocation begins only from approved-net receipts after E1.
 
 #### 2. Acceptance criteria
 
@@ -1335,9 +1354,10 @@ because zero-money data cannot identify a profitable winner.
 11. `pending`, `approved`, `paid`, and `reversed` remain separate economic
     transitions. Only externally `approved` commission enters the optimization
     denominator; payout readiness remains a separate state.
-12. After E1, each experiment changes one variable, stores exposure/cost/outcome
-    lineage, and allocates by approved net commission per qualified impression
-    and per content cost—not likes, views, or model scores.
+12. Before E1, each acquisition experiment changes one variable and stores
+    exposure/click lineage without making a profit claim. After E1, allocation
+    additionally requires approved net commission per qualified impression and
+    per content cost—not likes, views, or model scores.
 13. The USD 10,000 gate closes only after three consecutive provider-reconciled
     months at or above USD 10,000 gross commission, while net, cash cost,
     reversals, payout delay, and concentration are reported separately.
@@ -1353,7 +1373,7 @@ because zero-money data cannot identify a profitable winner.
 | Provider link | Executable default/product links exist privately, but campaigns can share them | One authenticated custom link per placement with deterministic identity and exact-once receipt |
 | Click measurement | PartnerStack Overview exposes one aggregate baseline click and zero delta | Link Performance exposes a baseline/delta for one exact provider link and placement |
 | Commission attribution | `revenue_cli.py` can match Link/Sub IDs/Shared ID/fingerprints when a row exists | The placement-link receipt supplies the exact candidate identity used by the existing resolver |
-| Learning | Content is selected from official demand evidence; money outcomes are zero | E1 creates comparable cohort outcomes; allocation begins only from mature approved-net evidence |
+| Learning | Real DEV exposure is observed and the first immutable maturity snapshot is automatic; money outcomes are zero | A bounded Agent improves one acquisition variable from real exposure; approved-net allocation begins only after E1 |
 | Reporting | Placement/distribution/program events are live; click/commission paths have no live event | Provider click, pending/approved/paid/reversed, and recovery events each send one deduplicated message |
 | Scale claim | USD 10,000 is a goal with unknown unit economics | Observed click-to-approved conversion and approved net commission determine required qualified traffic |
 
@@ -1372,33 +1392,28 @@ outcomes remain observable unknowns and MUST NOT be guessed before execution.
 | E0-Q6 | A zero click is valid evidence of zero delta, not failure; absence of a provider row is `UNKNOWN/NO_ROWS`, not zero money | Current baseline receipt records click count while commission report has zero rows | Each capture states source/window/row presence separately from numerical values |
 | E0-Q7 | Payout tax/payment setup does not block click, signup, or approved-commission evidence | ElevenLabs is accepted and earning-enabled; only withdrawal is blocked | Keep `PAYOUT_BLOCKED_BY_TAX_SETUP` independent until truthful legal/payment data is supplied |
 | E0-Q8 | Existing 600-second money owner polls due provider state; daily owners supply new evidence/content | Installed plists and last exits are live-proven | No new launchd label; installed readback shows the same six-label allowlist |
-| E0-Q9 | Do not add a generic learner before E1 | Current revenue is USD 0 and cannot rank profitability | E1 produces the first approved denominator; only then admit experiment/allocation state |
+| E0-Q9 | Separate acquisition learning from profit allocation | Current revenue is USD 0, so exposure can diagnose reach but cannot rank profitability | Before E1, permit one-variable reach experiments from immutable real exposure; only approved-net receipts after E1 may allocate by profit |
 | E0-Q10 | USD 10,000 timing and traffic remain irreducible until unit economics exist | No post-baseline click or commission exists | Compute required qualified clicks from observed approved commission and conversion after ten mature placements; never use creator screenshots as the denominator |
 | E0-Q11 | The title-only duplicate Substack post is not an earning dependency and receives no cleanup work | The valid post/job are verified, recurrence is fenced, and the operator explicitly chose no deletion | Keep it outside the execution queue; its presence cannot close or block E0 |
 
-#### 3.2 File ownership for the next implementation
+#### 3.2 File ownership for the current M0.1 implementation
 
 | File | Required change | Must not change |
 |---|---|---|
-| `skills/affiliate/scripts/program_registry.py` | Add authenticated placement-link observe/create/readback commands and reuse `store_link()` for private persistence | Password/login recovery, provider application policy, or unrelated programs |
-| `skills/affiliate/scripts/job_journal.py` | Reuse existing start/resume/verify/reconcile calls; change only if the observed provider effect cannot be represented | Job identity or completed historical events |
-| `skills/affiliate/scripts/local_loop.py` | Select one policy-PASS campaign lacking a link, invoke the fenced link tool, then continue existing publication/revenue/Telegram order | Add a scheduler, bypass policy, or call a model inside the money lock |
-| `skills/affiliate/scripts/revenue_cli.py` | Capture Link Performance baseline/rows, persist click transitions, and pass exact link identity to existing attribution candidates | Count local analytics as provider clicks or change commission transition identity |
-| `skills/affiliate/scripts/content.py` | Bind only the TTS API builder/policy to the private `TTS API affiliate link` field after exact provider readback | Receive a provider cookie, generate a link, or change article copy |
-| `skills/affiliate/scripts/composition_owner.py` | No change: continue producing a single placeholder and source-bound sealed content | Receive a private link, provider cookie, or money ledger access |
-| `skills/affiliate/scripts/owned_publish.py` | Permit a same-slug revision only when the checked-in public artifact still hashes to the prior LIVE receipt, then create a new fenced push/readback | Overwrite an unrelated slug, bypass the prior hash, or create a second X post |
+| `skills/affiliate/scripts/acquisition_decision.py` | Read one immutable baseline, invoke the existing bounded Agent runner once, validate one-variable output, and persist one hash-bound decision receipt | Publish, edit public content, receive credentials/private links, or infer money from exposure |
+| `skills/affiliate/config/schemas/acquisition-decision-v1.json` | Require selected variable, evidence-bound hypothesis, exact next-campaign instruction, and success metric | Permit multiple simultaneous variables, invented numbers, revenue guarantees, or secret fields |
+| `skills/affiliate/scripts/local_loop.py` | After real DEV measurement, return `WAITING_FOR_BASELINE` without model use or invoke M0.1 exactly once for one immutable baseline SHA; emit a deduplicated natural-language decision event | Add a scheduler, block healthy lanes, publish directly from the decision stage, or call the model again for the same baseline |
+| `skills/affiliate/scripts/composition_owner.py` | Reuse its existing runner invocation, evidence sealing, task budget, and model/provider boundary as the implementation pattern | Change its public-effect authority or give it money/provider credentials |
 | `skills/affiliate/scripts/install-release.sh` | Preserve the six-owner allowlist and install the pushed immutable release | Add a seventh business owner or touch Gig/Coconala labels |
 | `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md` | Record each observed state transition and advance the current cursor | Store secrets, raw referral links, or forecasts as facts |
 
-The change budget is three sequential slices, never one broad patch:
+M0.1 is one small slice; later rows are separate TODOs:
 
 | Slice | Production files | Minimal regression file | Soft limit |
 |---|---|---|---:|
-| E0-B-link | `program_registry.py` | `tests/test_program_registry.py` | 100 net LOC |
-| E0-B-materialize | `content.py` | existing content contract checks | 10 net LOC |
-| E0-B-revise-owned | `owned_publish.py` | existing publication conflict/effect checks | 40 net LOC |
-| E0-B-click | `revenue_cli.py` | `tests/test_revenue_cli.py` | 100 net LOC |
-| E0-B-wire | `local_loop.py` | `tests/test_local_loop.py` | 100 net LOC |
+| M0.1-decision | `acquisition_decision.py`, one schema, `local_loop.py` | only early-invocation and same-baseline duplicate boundaries if existing checks do not cover them | 100 net LOC soft target |
+| M0.2-execute | existing source/composition/policy/publication files only where the observed handoff contract requires it | duplicate external effect boundary only | separate slice |
+| M0.3-join | `revenue_cli.py`, `local_loop.py` | money-identity and duplicate-transition boundaries only | separate slice |
 
 If a slice exceeds the soft limit or needs more than its named production file,
 split the next externally observable contract again. Do not add a framework or a
@@ -2277,8 +2292,10 @@ A14.4 and A14.5 are DONE.
 
 ### A14–E1 remaining implementation map
 
-This is the ordered file-level plan. Later rows do not start before the earlier
-observable outcome exists.
+This table preserves the earlier E0 file-level path and its evidence. Current
+implementation order is the M0–M5 list in section 9.0.1; external outcomes in
+this table are observed gates and do not block work on a safe missing harness
+boundary.
 
 | Order | Observable outcome | Reuse first | Files changed |
 |---:|---|---|---|
@@ -2348,7 +2365,7 @@ observable outcome exists.
   E0; a provider row with sub-ID or link fingerprint is still required. Installed
   release `64a12f13eaac6cede4ddb8abe76d24b0aab7424a` replayed the real zero-delta
   receipt with exit `0`, `NO_PENDING`, and no outbox growth (`6 → 6`).
-- [ ] **A15.7 — E0.** Record one real post-baseline provider click connected to a
+- **A15.7 — E0 external gate; not an implementation TODO.** Record one real post-baseline provider click connected to a
   live English placement; do not manufacture or self-click it. The next admitted
   acquisition lane is DEV syndication, not another zero-audience X-only post.
   [Forem's official create-article contract](https://developers.forem.com/api/v1#tag/articles/operation/createArticle)
@@ -2411,7 +2428,7 @@ observable outcome exists.
   evidence supplied to the agent. A real installed wake before maturity exited
   `0`, kept `baseline_state=WAITING_24H`, created `0` baseline files, and returned
   `Telegram=NO_PENDING`; no early or synthetic baseline was admitted.
-- [ ] **A15.8 — E1.** Record one non-test `approved` commission with public
+- **A15.8 — E1 external gate; not an implementation TODO.** Record one non-test `approved` commission with public
   placement, provider source hash, transaction lineage, costs, and Telegram event.
 
 #### E. Scale the proven local loop to USD 10,000/month
@@ -2422,12 +2439,12 @@ observable outcome exists.
   per content dollar; engagement is diagnostic only.
 - [ ] **B17.1** Add at least three independently receipted providers/offers and keep
   provider, offer, and channel concentration at or below 40% of net commission.
-- [ ] **B20.1 — A2.** Complete four revenue-positive weeks with positive net margin,
+- **B20.1 — A2 external gate; not an implementation TODO.** Complete four revenue-positive weeks with positive net margin,
   zero manual execution, and at least one live self-heal.
 - [ ] **B21.1** Compute the observed commission/traffic requirement for USD 10,000,
   allocate 80% to mature winners and 20% to bounded experiments, and stop cohorts
   with negative approved unit economics.
-- [ ] **B21.2 — A3.** Reconcile three consecutive months at USD 10,000 gross while
+- **B21.2 — A3 external gate; not an implementation TODO.** Reconcile three consecutive months at USD 10,000 gross while
   showing net, reversals, costs, payout timing, and concentration separately.
 
 #### F. Add locales, then package the already-proven loop
