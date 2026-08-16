@@ -1077,7 +1077,9 @@ flowchart LR
    generic policy receipt exists. The exact recovery action is to rerun the safe
    installer from a fresh desktop process; it will bootstrap the six missing
    owners without first stopping any healthy service, then the composition owner
-   will resume the oldest `READY_FOR_POLICY` handoff.
+   will resume the oldest `READY_FOR_POLICY` handoff. The required milestone
+   Telegram send also failed with local gateway `127.0.0.1:18789 ECONNREFUSED`,
+   so no message ID is claimed for this incident.
 5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
    only a policy-PASS artifact, injects the executable link locally, publishes the
    owned article, waits for HTTP `200`, publishes X, and performs exact public
