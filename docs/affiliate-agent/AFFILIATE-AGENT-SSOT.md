@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `7b43ae847` is current and all four Affiliate launchd owners are installed. Repeated installed wakes exit `0`; the loop owns bounded provider recovery, two configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram | Open-ended research/composition, general repair, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `11789537a` is current and five isolated Affiliate launchd owners are installed. The ten-minute money loop owns bounded provider recovery, configured owned/X campaign paths, hourly revenue reconciliation, receipts, and Telegram. The separate daily source owner owns only versioned official-source refresh | Open-ended discovery/composition, general repair, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and currently `AUTHENTICATED`. Installed recovery filled the observed single-page form, verified the same fenced login job on attempt 3, and the next wake converged with `recovery=NOT_NEEDED`; the browser readback is `Home | ElevenLabs`. HubSpot/Impact remains `APPLICATION_PENDING`; Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, and `BLOCKED` are live-proven | `PLACEMENT_LIVE`, `CLICK_DELTA`, and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, provider recovery, configured source-bound content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. The TTS API campaign traversed build → policy → owned push/readback → X effect reconciliation without Codex or user execution | A separate safe owner for open-ended research/composition, provider/channel quarantine, watchdog, and positive money evidence remains absent. The loop distributes and measures; it has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, daily official-source refresh, provider recovery, configured source-bound content/policy, owned/X publication, revenue polling, receipts, and Telegram are live. Installed `11789537a` refreshed all three plans and 15 sources, then immediate replay returned `COOLDOWN` with the source ledger unchanged at 17 rows while the money loop remained exit `0` | A safe dynamic composition/handoff owner, provider/channel quarantine, watchdog, and positive money evidence remain absent. The loop distributes and measures; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -173,12 +173,14 @@ readback. A first-pass ambiguous X effect remained fenced; the next wake found
 the exact timeline object and verified the original job without a second click.
 
 Program discovery/application, open-ended source discovery, and safe dynamic
-composition are not scheduled. Source capture and deterministic campaign
-build/policy/publish are already tools; the missing generalization is a separate
-research/composition owner with a sanitized allowlisted input bundle, result and
-source-hash binding, its own lock, and no access to credentials or the revenue
-wake. Runtime model work MUST NOT be reintroduced inside the ten-minute money
-owner.
+composition are not scheduled. The separate `ai.anicca.affiliate-source-refresh`
+owner now refreshes every versioned plan daily through CRWL and writes one
+aggregate receipt without reading credentials, CDP, or the money ledger. Source
+capture and deterministic campaign build/policy/publish are tools; the remaining
+generalization is a composition/handoff owner with a sanitized allowlisted input
+bundle, result and source-hash binding, its own lock, and no access to credentials
+or the revenue wake. Runtime model work MUST NOT be reintroduced inside the
+ten-minute money owner.
 
 The target architecture copy+tweaks the live Coconala immutable-release pattern:
 one explicit owner per lane, the shared schema-validating agent runner, separate
@@ -1002,10 +1004,11 @@ diagnoses only when an existing deterministic tool cannot advance them.
 8. Continue this same pipeline until E0 and E1 provide real click and approved-
    commission receipts. Repair only failures observed in this live path, then
    encode each successful repair into the Skill.
-9. Add a separate least-authority research/composition owner so new English jobs
-   can be proposed continuously without blocking revenue reconciliation or
-   reading credential/state trees. Require sanitized inputs, source-hash/result
-   binding, bounded cost, and a durable handoff to the deterministic publisher.
+9. **PARTIAL:** Installed a separate daily official-source owner. Release
+   `11789537a` captured `4 + 6 + 5` sources across all three plans, produced
+   `COMPLETE`, and replayed as `COOLDOWN` with ledger rows `17 → 17`; the money
+   owner remained exit `0`. Still add the least-authority composition/handoff
+   owner with sanitized inputs, source-hash/result binding, and bounded cost.
 10. After E1, add another executable English provider, ten comparable placements,
    cohort allocation, Japanese isolation, clean-Mac packaging, and cloud in the
    existing B/C/D gate order.
@@ -1521,7 +1524,7 @@ atomic replacement, matching Python's replacement contract
 | U40 | OPEN-BEFORE-CODE | No Experiment, Cohort, Outcome, or Learning receipt exists | Add one-variable hypothesis, exposure, click, commission states, cost, maturity, allocation, promote/revert, and learner version |
 | U41 | OPEN-BEFORE-CODE | Model/token/content/browser costs do not join placement economics | Record provider-reported usage and cost basis separately from actual cash cost; compute net only from comparable bases |
 | U42 | OPEN-BEFORE-CODE | Failed/rejected attempts are not uniformly durable, creating survivorship bias | Persist every admitted attempt and terminal reason, including no-effect and policy rejection |
-| U43 | PARTIAL-CLOSED | Installed `7b43ae847` completed configured source-bound build → policy → owned/X readback and continued revenue/Telegram lanes. Source capture was independently replay-proven before install; open-ended discovery/selection is not yet a scheduled owner | Close fully when the separate research/composition owner creates a new durable campaign handoff and the money owner finishes it without shared locks or secret access |
+| U43 | PARTIAL-CLOSED | Installed `7b43ae847` completed configured build → policy → owned/X readback and continued revenue/Telegram lanes. Installed `11789537a` separately refreshed all versioned source plans daily without sharing the money lock; dynamic composition/selection is not yet scheduled | Close fully when the composition owner creates a new durable source-hash-bound campaign handoff and the money owner finishes it without shared locks or secret access |
 | U44 | OPEN-PROOF | Same-job self-heal is proven in individual adapters, not across the whole Agent pipeline | Inject one isolated recoverable fault and require diagnosis, repair, resume, effect dedupe, and Telegram proof |
 
 #### Live-only and irreducible uncertainties
@@ -1642,9 +1645,10 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 6. **DONE:** Reuse CRWL, content, policy, owned, X, and revenue primitives for the
    TTS API English job. The verified artifact is a versioned template; no model
    runs inside the money-owner lock or receives credential/state-tree access.
-7. Add a separate least-authority research/composition owner that emits a
-   source-hash-bound durable campaign handoff; keep the deterministic money owner
-   and its ten-minute lock unchanged.
+7. **PARTIAL:** The separate least-authority daily source owner is installed and
+   live-proven. Add only the composition step that emits a source-hash-bound
+   durable campaign handoff; keep the deterministic money owner and its
+   ten-minute lock unchanged.
 8. Close E0 and E1 from real provider receipts, then add failure repair from the
    failures actually observed while earning.
 9. Only after E1, resume generic action schema, broad model context/budget work,
