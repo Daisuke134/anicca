@@ -45,6 +45,7 @@ STATE_FILES = (
 )
 TARGET_SERVICE_ID = "4330368"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
+DEFAULT_TITLE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "4308502-title-v1.json"
 DEFAULT_LISTING_CONTRACT_DIR = GIG_DIR / "contracts" / "storefront"
 DEFAULT_LISTING_CONTRACT_FAMILIES = GIG_DIR / "config" / "storefront-contract-families.json"
 DEFAULT_NEW_LISTING_CONTRACT = (
@@ -294,6 +295,50 @@ def _load_image_contract(path: Path) -> dict:
     if not isinstance(claims, list) or not claims or not all(isinstance(claim, str) and claim.strip() for claim in claims):
         raise RuntimeError("storefront_image_claims_invalid")
     return {**contract, "asset_path": str(asset)}
+
+
+def _render_text_mutation(path: Path, sources: list[dict]) -> dict:
+    try:
+        spec = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_text_mutation_spec_invalid") from error
+    required = {
+        "version", "platform", "service_id", "capability_family", "changed_field", "form_field",
+        "before_value", "proposed_value", "rollback_value", "official_readback", "success_metric",
+        "observation_window_days", "evidence",
+    }
+    source = next((row for row in sources if row["service_id"] == str(spec.get("service_id") or "")), None)
+    if (set(spec) != required or spec.get("version") != 1 or spec.get("platform") != "coconala"
+            or spec.get("changed_field") not in {"title", "body", "FAQ"} or source is None
+            or not str(spec.get("form_field") or "").startswith("data[Service][")
+            or not all(isinstance(spec.get(key), str) and spec[key].strip()
+                       for key in ("before_value", "proposed_value", "rollback_value"))
+            or spec["before_value"] != spec["rollback_value"]
+            or spec["before_value"] == spec["proposed_value"]
+            or not isinstance(spec.get("evidence"), list) or not spec["evidence"]):
+        raise RuntimeError("storefront_text_mutation_spec_fields_invalid")
+    if spec["changed_field"] == "title":
+        if f'{spec["before_value"]}ます' not in source["scope_text"]:
+            raise RuntimeError("storefront_title_before_not_current")
+        if spec["official_readback"].get("public_title") != f'{spec["proposed_value"]}ます':
+            raise RuntimeError("storefront_title_readback_contract_invalid")
+    unsigned = {
+        "version": 1, "platform": "coconala", "service_id": source["service_id"],
+        "precondition_listing_version_sha256": source["service_version_sha256"],
+        "changed_field": spec["changed_field"], "before_value": spec["before_value"],
+        "proposed_value": spec["proposed_value"], "allowed_delta": [spec["form_field"]],
+        "rollback_value": spec["rollback_value"], "official_readback": spec["official_readback"],
+        "success_metric": spec["success_metric"], "observation_window_days": spec["observation_window_days"],
+        "capability_family": spec["capability_family"], "evidence": spec["evidence"],
+    }
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    contract = {**unsigned, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+    before = {spec["form_field"]: spec["before_value"]}
+    after = {**before, spec["form_field"]: spec["proposed_value"]}
+    delta = [key for key in sorted(set(before) | set(after)) if before.get(key) != after.get(key)]
+    if delta != contract["allowed_delta"]:
+        raise RuntimeError("storefront_text_mutation_multi_field_delta")
+    return {"version": 1, "contract": contract, "before": before, "after": after, "delta": delta, "published": False}
 
 
 def _load_listing_contracts(
@@ -1430,6 +1475,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             validated_contracts = [
                 _service_contract(source, str(inventory["observed_at"])) for source in contract_sources
             ]
+            title_render = _render_text_mutation(
+                getattr(args, "title_mutation", DEFAULT_TITLE_MUTATION), validated_contracts,
+            )
+            title_render_path = inventory_path.parent / "mutation-render-title.json"
+            _atomic_write(title_render_path, title_render)
             listing_contracts = _load_listing_contracts(
                 getattr(args, "listing_contract_dir", DEFAULT_LISTING_CONTRACT_DIR), validated_contracts,
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
@@ -1745,6 +1795,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 new_listing_draft=draft_result,
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
+                mutation_renders=[{
+                    "changed_field": "title", "service_id": title_render["contract"]["service_id"],
+                    "contract_sha256": title_render["contract"]["contract_sha256"],
+                    "delta": title_render["delta"], "published": False,
+                    "evidence_path": str(title_render_path),
+                }],
                 lease={
                     "task": task,
                     "context_id": lease.get("context_id"),
@@ -1785,6 +1841,7 @@ def main() -> int:
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
+    parser.add_argument("--title-mutation", type=Path, default=DEFAULT_TITLE_MUTATION)
     parser.add_argument("--listing-contract-dir", type=Path, default=DEFAULT_LISTING_CONTRACT_DIR)
     parser.add_argument(
         "--listing-contract-families", type=Path, default=DEFAULT_LISTING_CONTRACT_FAMILIES,

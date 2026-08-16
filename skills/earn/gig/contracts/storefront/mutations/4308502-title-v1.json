@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "platform": "coconala",
+  "service_id": "4308502",
+  "capability_family": "presentation_design",
+  "changed_field": "title",
+  "form_field": "data[Service][overview]",
+  "before_value": "教育・研修資料を見やすく整え",
+  "proposed_value": "研修資料を伝わる構成と見やすいスライドに整え",
+  "rollback_value": "教育・研修資料を見やすく整え",
+  "official_readback": {
+    "public_title": "研修資料を伝わる構成と見やすいスライドに整えます"
+  },
+  "success_metric": "views_to_inquiry",
+  "observation_window_days": 14,
+  "evidence": [
+    "https://coconala.com/search?keyword=PowerPoint%20%E8%B3%87%E6%96%99%E4%BD%9C%E6%88%90",
+    "owned:portfolio:education-training-presentation"
+  ]
+}
