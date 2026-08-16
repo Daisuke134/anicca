@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. The runner is wired and observable, but the Storefront revenue function is not complete. Active item: S3, scope the experiment fence by `service_id` and publish distinct draft `4355225`. This document owns Storefront only.
+Status: INCOMPLETE. The Storefront loop has published its first evidence-qualified new service exactly once. Active item: S4, make every supported listing mutation consume one versioned contract. This document owns Storefront only.
 
 ## 1. Overview
 
@@ -52,7 +52,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The historical mixed implementation remains quarantined in worktree `.worktrees/storefront-revenue-os`, branch `fix/storefront-revenue-os`, HEAD `b8f15537a`. The four accidental Paid changes were reverted by `06e9ac0dc`, `1a6894b6f`, `5beb42ce2`, and `b8f15537a`; the branch remains forbidden from whole-branch merge and is not a Storefront execution path.
 - GitHub and local `main` contain integration point `c494a588f`. The temporary clean Storefront worktree and `feat/storefront-loop` branch are removed. Coconala Storefront production code, config, contracts, assets, tests, plist and this SSOT are all on `main`.
 - Paid is intentionally stopped by its owner. Storefront integration does not change its plist, release, process, project state, artifacts, receipts, or restart state.
-- Launchd label `ai.anicca.hf-gig-storefront-direct` runs the immutable release `85eaa6d86` with `storefront_direct.py --effect` every 1800 seconds. It has two installed wakes and last exit `0`. Latest pass `storefront-direct-1786845553600756000-61442` read official/competitor `11/8`, retained active contracts `11`, recorded KPI `441/0/3`, exact-read draft `4355225` with one image, returned public effect `0`, deduped Telegram `20527`, and released its lease.
+- Launchd label `ai.anicca.hf-gig-storefront-direct` runs immutable release `9ca13ffc0` with `storefront_direct.py --effect` every 1800 seconds. Its two latest installed wakes exit `0`, read official/competitor `12/8`, exact-read public service `4355225`, preserve KPI `441/0/3`, release the lease, and leave every non-Storefront gig plist byte-identical.
 - The selector consumes the scorecard and prepares service `4330368`, field `image`, metric `views_to_inquiry`. It correctly blocks a second mutation on service `4330368` while that service's FAQ experiment is open.
 - Eleven official services are listed. The 20-slot quota is capacity, never authority to create nine more. A new service requires distinct demand evidence, owned capability evidence, and available delivery capacity.
 - Clean Storefront history is merged into `main`: `d65f13bf9` imports the dedicated owner, `2854097ad` selects the scorecard hypothesis, and `b655a83d0` closes an active-experiment no-op before the LLM judge. Later slices extend the same main ancestry through installed commit `85eaa6d86`.
@@ -68,7 +68,9 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - Storefront created nonpublic Coconala draft `4355225` in the official category `19/372/150` and bound title, catchphrase, scope, exclusions, buyer inputs, JPY3,000 display price (`3300` option), five-day delivery and one-order capacity in `seo-article-v1.json`. The first live save exposed page-hydration and delayed-readback races; the adapter now waits for each dependent category option and polls exact saved-state equality. Full pass `storefront-new-draft-readback-a5a969097` completed with official/competitor `11/8`, draft `effect/readback/public_effect=0/1/0`, KPI `441/0/3`, released lease and Telegram `20482`. The earlier failed pass had already saved the exact draft; the successful replay correctly did not claim a second effect.
 - The SEO hero is a deterministic 1220x1016 PNG bound to SHA `5e9ebb2f...` and contains only contract-backed claims. Blob preview was explicitly rejected as proof: the adapter now submits native multipart with hidden `mode=draft`, closes that tab, opens a fresh official tab, and requires all fields plus exactly one persisted image. Direct adapter proof produced `1/1/1/0` for effect/readback/image/public, then replay `0/1/1/0`. Full pass `storefront-new-draft-image-full-final-18b6c261b` reproduced replay `0/1/1/0`, official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, released lease and Telegram `20519`.
 - The SEO draft now binds its category-specific completeness and ladder: features `企画・構成/リサーチ/SEO対応`, industries `ビジネス・法律/IT・テクノロジー/メディア・マスコミ`, Japanese, deliverable format, one free revision, JPY1 per character, JPY3,000 for an extra 3,000 characters, and repeat purchase enabled with a 5% discount. The portfolio link is owned proof and the SHA-bound hero is the gallery asset. Direct save/readback then replay produced effect `1` then `0`; full pass `storefront-new-draft-ladder-full-3a940473d` reproduced `effect/readback/image/public=0/1/1/0`, sent Telegram `20527`, and released the lease.
-- The publication adapter is present and mechanically fenced. It requires the exact fresh draft contract, one image, no duplicate title/service, catalog capacity and no conflicting effect on the same service; it then submits only `mode=open` and requires a fresh official public URL, title, catchphrase, price and image readback. The current guard incorrectly treats the open experiment on service `4330368` as a catalog-global lock and therefore blocks distinct draft `4355225`. The next executable change is to scope experiment conflicts by `service_id`; time passage is not required to publish a different service.
+- The publication conflict is scoped by `service_id`, so the open experiment on `4330368` remains protected without blocking distinct draft `4355225`. Pass `storefront-direct-1786846676934847000-88255` published `https://coconala.com/services/4355225` once with public effect/readback `1/1`, duplicate `0`, official count `12`, exit `0`, and released lease.
+- Public verification no longer accepts an arbitrary page image. Seller image identity `eab2ab35-9531685.png` must appear in the public CDN images, while title, catchphrase, full service body, buyer-input body, price and all three category labels must match the versioned contract. Passes `storefront-direct-1786847133578052000-66056`, `storefront-direct-1786847461472084000-2443`, and `storefront-direct-1786847667444581000-30337` proved `already_public`, effect `0`, exact readback `1`, duplicate `0`, and exit `0`.
+- The first two publication reports timed out after send start and remain quarantined as `delivery_unknown`; they are never resent. Reporting now uses the real draft/public state, includes the official URL, permits a bounded 180-second provider ACK, and classifies a real public effect separately from a no-op. The corrected current-state report is provider-acked as Telegram `20596`; the identical replay is deduped to `20596` with send `0`.
 - Storefront commit `85eaa6d86` is on GitHub `main` and in readonly immutable release `/Users/anicca/gig/releases/life-manager/85eaa6d...`. Only `ai.anicca.hf-gig-storefront-direct` was reloaded. Its natural installed wake `storefront-direct-1786843673261706000-46042` exited `0` with official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, draft `0/1/1/0`, active publication fence, Telegram `deduped/20527`, and released lease. Before/after SHA comparison found zero changes to every non-Storefront gig plist.
 - Official analytics now retries each service independently and records an exhausted readback as `unknown`, never zero and never a reason to skip the rest of the Storefront wake. Reports separate unknown current values from unknown comparisons.
 
@@ -160,10 +162,10 @@ Verification: official browser DOM and screenshot show the expected images; effe
 
 ### S3 — Publish the distinct SEO service now
 
-- [ ] Scope the active-experiment conflict guard by `service_id`, so the open experiment on `4330368` cannot block distinct draft `4355225`.
-- [ ] Preserve every existing fail-closed publication guard: exact draft contract, asset SHA, one persisted image, title/service duplicate scan, capacity, category, price, scope, inputs and fresh-tab official readback.
-- [ ] Run the installed Storefront loop and require one real `mode=open` effect for `4355225`, a fresh official public URL, exact contract/image readback and `duplicate=0`.
-- [ ] Run the same installed loop again and require `already_public`, effect `0`, readback `1`, duplicate service `0`, one Telegram state transition and subsequent dedupe.
+- [x] Scope the active-experiment conflict guard by `service_id`, so the open experiment on `4330368` cannot block distinct draft `4355225`.
+- [x] Preserve every existing fail-closed publication guard: exact draft contract, asset SHA, one persisted image, title/service duplicate scan, capacity, category, price, scope, inputs and fresh-tab official readback.
+- [x] Run the installed Storefront loop and require one real `mode=open` effect for `4355225`, a fresh official public URL, exact contract/image readback and `duplicate=0`.
+- [x] Run the same installed loop again and require `already_public`, effect `0`, readback `1`, duplicate service `0`, one Telegram state transition and subsequent dedupe.
 
 Verification: the existing experiment on `4330368` remains unchanged; official service `4355225` is public exactly once; a second wake creates and edits nothing.
 
@@ -243,9 +245,9 @@ The exact final tree may reuse existing directories to minimize churn, but Store
 
 Execution order for the active item:
 
-1. Change only the Storefront publication conflict key from catalog-global to same-`service_id` conflict.
-2. Run a read-only guard evaluation proving `4330368` remains blocked while `4355225` becomes executable.
-3. Trigger the existing `ai.anicca.hf-gig-storefront-direct` owner once and observe the real public effect.
-4. Verify the fresh official URL, exact title/catchphrase/price/image/category/scope readback, effect `1`, readback `1`, duplicate `0`, and released lease.
-5. Trigger the same owner once more and require `already_public`, effect `0`, duplicate `0`, and Telegram dedupe.
-6. Update this SSOT with the exact pass IDs, official service URL, receipt IDs and remaining active item before starting S4.
+1. Define one versioned mutation contract with service/version identity, precondition hash, changed field, allowed delta, rollback value and official readback contract.
+2. Make the proven image adapter consume that contract without changing its external behavior.
+3. Add title/outcome, body/scope, package/add-ons, FAQ and price as explicit supported adapter types, one at a time.
+4. Render and diff one current official service per adapter without publishing; require exactly one allowed field delta.
+5. Reject stale service versions, unsupported families, unknown seller option values, multi-field deltas and missing rollback values.
+6. Run the installed Storefront owner and prove it keeps the active `4330368` experiment fenced while retaining official service `4355225` and Telegram idempotency.
