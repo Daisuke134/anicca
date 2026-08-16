@@ -376,6 +376,7 @@ function createMinimalProductionDependencies(options = {}) {
     calendar,
     calendarId,
     telegramTarget,
+    timeZone: PRODUCTION_TIME_ZONE,
     now,
   });
   return Object.freeze({
