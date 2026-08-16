@@ -1076,12 +1076,13 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M2.0, migrate the already-live English portfolio from
-shared referral links to one dedicated PartnerStack link per placement before
-creating more content**. This is the shortest money path because it makes the
-existing traffic attributable without paying for another model run or creating
-another public asset. Only after those existing placements are comparable does
-M2 add placements to ten, admit another executable provider, or add a channel.
+Current execution cursor: **M2.1, grow the English portfolio from six to ten
+comparable dedicated-link placements through the already-installed autonomous
+campaign path**. M2.0 is closed: every existing revenue placement now has one
+PartnerStack link, owned/X public readback, and one canonical ledger row. The
+next four campaigns must pass source, composition, semantic policy, owned/X,
+dedicated-link, public-readback, exposure, cost, and commission-lineage gates;
+content volume without those measurement contracts does not advance the cursor.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
 files and zero decision receipts before eligibility. A first real Agent decision
@@ -1106,7 +1107,7 @@ no transition was duplicated or invented.
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
 and Systeme.io remains behind its typed CAPTCHA boundary. Release `50d45beca` is
-the last completed self-heal slice. Release `abbc41d1a` is the current installed
+the last completed login self-heal slice. Release `a27fae614` is the current installed
 M2 runtime; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -1139,7 +1140,7 @@ and spend no further execution time on cleanup.
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
 | Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE`; 1 canonical DEV article `LIVE`; 1 receipted Substack article `LIVE` | Real public effects exist and are receipted; one known title-only duplicate remains unchanged by explicit operating decision |
 | Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist; the sixth campaign reached owned/X/DEV/Substack `LIVE` and Telegram before unchanged replays | A real external click is the first unfinished economic stage; provider admission continues in parallel under provider gates |
-| Acquisition | Six public placements share one hash-valid economic ledger. TTS, audio-to-text, video-to-text, and dubbing now have dedicated PartnerStack link receipts. Real wakes `19` and `23` read back audio/video `LIVE` and reconciled their existing X statuses without duplicates. Wakes `25–27` created the dubbing link and pushed landing revision `64a5e3e1`; Netlify run `31945984672` is `in_progress`, so exact readback remains `OWNED_NOT_LIVE` | The loop owns migration and waits fail-closed at deployment boundaries; deployment time is an observed gate, not a TODO. Release `abbc41d1a` also connects the legacy plans and ElevenAgents articles to the same one-link-per-wake migration after dubbing is public |
+| Acquisition | M2.0 is closed. Real wake `37` exited `0` with six canonical ledger rows, six non-null dedicated provider link keys, six non-null owned URLs, and ledger SHA `906644fd…`. Audio, video, dubbing, Plans, ElevenAgents, and TTS all retain their original owned/X URLs. Plans deployment `31946501665` and ElevenAgents deployment `31946846420` passed production smoke | Each existing English placement is independently measurable. One transient pre-effect PartnerStack form timeout produced no job or link; the next wake created exactly one Plans link, proving bounded autonomous retry. Release `a27fae614` also merges the two legacy slug aliases into canonical X placement IDs, preventing seven-row double accounting |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
 ```mermaid
@@ -1337,7 +1338,7 @@ result will be real external proof, but no implementation waits for the clock.
     `SELF_HEALED` Telegram message ID `21156`. Wake `15` exited `0`, preserved the
     exact job hash and attempt, kept sent rows `14→14`, and returned `NO_PENDING`.
     No generic healer, resubmission, or duplicate login was added.
-16. **M2.0 — Make existing traffic attributable before producing more.** The
+16. **DONE — M2.0 make existing traffic attributable before producing more.** The
     installed loop revisits each existing `X_LIVE` campaign that lacks a
     `provider_link_key`, creates exactly one placement-specific PartnerStack link,
     revises the same owned slug, reconciles the existing X post without posting a
@@ -1346,10 +1347,12 @@ result will be real external proof, but no implementation waits for the clock.
     fences to the two legacy plans/ElevenAgents articles; no new scheduler or
     posting path exists. Real wakes `16–23` publicly verified audio/video while
     preserving the original owned and X URLs. Wakes `25–27` created the dubbing
-    link and landing revision; its exact public readback is the current deployment
-    gate. Plans and ElevenAgents follow next. Continue until every eligible
-    existing ElevenLabs placement has a dedicated link key or a typed provider
-    limitation receipt.
+    link and landing revision. Wakes `31–37` then migrated Plans and ElevenAgents.
+    A transient Plans form timeout occurred before any job/effect; the next wake
+    created exactly one link. Plans and ElevenAgents deployments passed production
+    smoke and the publisher reconciled their original X statuses. Installed
+    release `a27fae614` corrected the observed legacy alias duplication, and wake
+    `37` produced exactly six public, dedicated-link, hash-valid ledger rows.
 17. **M2.1 — Grow to ten comparable English placements.** After existing migration,
     let the source→composition→policy→owned/X→measurement loop add four campaigns.
     Each campaign must have one dedicated provider link, exact public readback, a
