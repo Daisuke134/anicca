@@ -1581,6 +1581,10 @@ shared abstraction to make the diff appear smaller.
   checked-in artifact markdown hashes to the prior LIVE receipt. The loop writes
   a new content hash and fenced Git push, while the unchanged owned URL lets the
   existing X placement reconcile without a duplicate post.
+  The persisted `test_owned_publish.py` regression proves both sides of this
+  boundary: a prior-hash-matching LIVE slug can be revised, while an unexpected
+  checked-in markdown hash is rejected before commit or push. This is the only
+  added publication regression; broad TDD is out of scope.
 - [ ] **E0-C07** Kick an unchanged replay and require the same provider link,
   public URLs, job count, Git HEAD, and `Telegram=NO_PENDING`.
 - [ ] **E0-C08** Capture Link Performance baseline for that link; an unchanged
