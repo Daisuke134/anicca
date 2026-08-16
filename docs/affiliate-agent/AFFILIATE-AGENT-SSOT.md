@@ -1074,18 +1074,22 @@ The completed history remains in the evidence tables below. The following list i
 the only canonical remaining order; later work MUST NOT jump ahead of an unmet
 gate.
 
-Current execution cursor: **step 5, connect generic policy-PASS handoffs to the
-existing deterministic publication effects**. Release `2067b62a6` is current;
+Current execution cursor: **step 6, prove a fresh fourth English campaign through
+the installed generic path**. Release `50a86df60` is current;
 all six launchd owners are loaded and all three CDP ports respond. A real
 money-loop kickstart observed ElevenLabs `AUTHENTICATED`, reconciled the existing
 X placement as `ALREADY_LIVE`, captured zero provider transaction rows, and
 terminated `NO_TRANSACTIONS` without a duplicate effect. Three real composition-
 owner wakes created three policy receipts: two `PASS` and one evidence-correct
-`FAIL`; the next wake ended `IDLE` and preserved all receipt hashes. Separately,
+`FAIL`; the next wake ended `IDLE` and preserved all receipt hashes. The generic
+PASS-to-effect path is now installed: repeated real wakes returned
+`ALREADY_LIVE`, advanced launchd runs from 8 to 9 with last exit `0`, and preserved
+the complete owned/X receipt hash, landing Git HEAD `5be0d43db`, and 49 job events.
+No legacy article or X object was duplicated. Separately,
 the existing deterministic path has three English owned articles and three
 matching X placements with `LIVE` readback. Revenue remains zero post-baseline
-clicks and zero commission. Therefore policy-PASS effect wiring—not another
-login, policy framework, locale, packaging, or cloud—is next. No human login-
+clicks and zero commission. Therefore one fresh source-bound fourth campaign—not
+another login, policy framework, locale, packaging, or cloud—is next. No human login-
 support request or six-digit-code handoff is outstanding.
 
 | Current surface | Verified state | Meaning |
@@ -1093,7 +1097,7 @@ support request or six-digit-code handoff is outstanding.
 | Local scheduler | Six Affiliate launchd owners; last exits are `0` | The local runtime is installed and healthy |
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
 | Existing distribution | 3 owned articles `LIVE`; 3 X posts `LIVE` | Real public effects exist and are receipted |
-| Generic pipeline | 3 sealed handoffs and 3 hash-bound policy receipts: 2 `PASS`, 1 evidence-correct `FAIL`; replay is `IDLE` | Deterministic effect consumption is the first unfinished autonomous stage |
+| Generic pipeline | 3 sealed handoffs and 3 hash-bound policy receipts: 2 `PASS`, 1 evidence-correct `FAIL`; installed effect wiring replays existing public work as `ALREADY_LIVE` without mutation | A fresh fourth campaign is the first unfinished autonomous proof |
 | Acquisition | 0 post-baseline provider clicks | E0 is open |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
@@ -1160,10 +1164,16 @@ flowchart LR
    with last exit `0` and preserved all three hashes. The installer now preserves
    loaded owners and bootstraps only missing labels, preventing recurrence of the
    earlier batch-bootout incident.
-5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
+5. **DONE — Connect the handoff to deterministic effects.** Release `50a86df60`
+   makes the money owner consume
    only a policy-PASS artifact, injects the executable link locally, publishes the
    owned article, waits for HTTP `200`, publishes X, and performs exact public
-   readback under the existing Git/X fences.
+   readback under the existing Git/X fences. It reuses `owned_publish.py` and
+   `x_post_cli.py`; no scheduler, publisher, framework, or test suite was added.
+   All 51 existing Affiliate checks passed. Installed wakes returned
+   `AUTHENTICATED / ALREADY_LIVE / last exit 0`, and replay preserved the owned/X
+   receipt hash, landing Git HEAD, and job-event count. The first fresh generic
+   external effect is step 6, not evidence retroactively attributed to this step.
 6. **P0 — Prove a fourth English campaign end to end.** The installed launchd
    owners MUST advance a newly composed campaign through source → composition →
    policy → owned `LIVE` → X `LIVE` → revenue poll → Telegram. A second wake MUST
@@ -1239,54 +1249,53 @@ flowchart LR
     net profit, reversals, costs, payout timing, concentration, incidents, and
     recovery. This is an evidence gate, not a guaranteed forecast.
 
-### 9.0.2 Current slice contract — policy-PASS to deterministic public effects
+### 9.0.2 Current slice contract — fourth English campaign through the real loop
 
 #### 1. Overview
 
-Make the installed money owner consume one generic policy-PASS handoff and reuse
-the existing fenced owned and X publishers. This closes the current gap between
-safe model output and a real public acquisition surface. The model remains out of
-Git, browser, credential, tracking-link, and money authority.
+Prove the installed generic path with one fresh English buyer intent and unique
+slug. Existing source, composition, policy, owned, X, revenue, and Telegram owners
+must carry the campaign from official evidence to two exact public readbacks. No
+stage is performed manually by Codex after the source plan is admitted.
 
 #### 2. Acceptance criteria
 
-1. `local_loop.py` selects at most one unresolved generic handoff whose exact
-   policy receipt is `PASS`; `FAIL`, missing, stale, or hash-mismatched policy
-   receipts never reach an effect tool.
-2. The deterministic owner loads the executable tracking link only from private
-   state, replaces exactly one placeholder locally, and never writes the link to
-   model input, stdout, Git-tracked state, or Telegram.
-3. `owned_publish.py` publishes the exact slug through its existing Git fence and
-   advances only after the configured public URL returns HTTP `200` with the
-   expected title, disclosure, content marker, and owned link.
-4. Only after owned `LIVE`, `x_post_cli.py` publishes the matching disclosed X
-   variant through its existing effect fence and records the exact status URL and
-   resolved owned URL.
-5. A crash or replay after either external effect performs readback first and
-   preserves one Git commit, one public article, one X object, and one causal job
-   lineage.
-6. One installed launchd wake advances one eligible handoff; a second wake is
-   idempotent. Existing legacy campaigns and Gig/Coconala remain untouched.
+1. One new source plan uses a unique `plan_id` and slug, the existing verified
+   ElevenLabs offer, one decision-stage buyer intent, and only fresh official
+   sources captured through the installed source owner.
+2. The installed composition owner creates one sealed handoff with no private
+   link; the installed policy owner produces a hash-bound `PASS`. A real `FAIL`
+   stops without publication and is repaired only by a new source/content lineage.
+3. The installed money owner consumes the `PASS`, injects the private link locally,
+   advances the owned article to HTTP `200` `LIVE`, then advances X to exact
+   status-URL `LIVE`.
+4. The same wake polls PartnerStack revenue and Telegram reports the public
+   placement state without exposing the private credential record or claiming
+   click/commission revenue.
+5. A second real kickstart preserves one source lineage, one model usage row, one
+   owned Git effect, one public article, one X object, and one campaign receipt.
+6. Existing three campaigns, Gig/Coconala, other browsers, and every money ledger
+   remain unchanged except for normal Affiliate revenue observation.
 
 #### 3. As-Is / To-Be
 
 | Surface | As-Is | To-Be |
 |---|---|---|
-| Generic pipeline | Two PASS handoffs stop before effects | One eligible PASS handoff advances to owned `LIVE`, then X `LIVE` |
-| Link boundary | Placeholder remains in the sealed handoff | Deterministic local injection uses private state without changing the sealed model artifact |
-| Owned effect | Existing publisher is campaign-specific at its caller | Generic handoff metadata drives the same fenced publisher and exact public readback |
-| X effect | Existing publisher already fences duplicates | It runs only after owned `LIVE` and binds the status URL to the same placement lineage |
-| Replay | Legacy campaigns reconcile individually | Generic publication resumes the unfinished stage and never duplicates an external effect |
+| Evidence | Three existing source plans | Fourth unique buyer intent has fresh official artifacts and immutable hashes |
+| Generic pipeline | Effect wiring is installed but has only migration replay proof | Fresh source reaches sealed composition, policy `PASS`, owned `LIVE`, and X `LIVE` |
+| Owner UX | Revenue/block messages exist | `PLACEMENT_LIVE` reports the exact public URLs and truthful money state |
+| Replay | Existing public work returns `ALREADY_LIVE` | Fourth campaign replay preserves every external-effect and usage identity |
 
 #### 4. Test matrix
 
 | # | To-Be | Minimal test / live proof | Cover |
 |---:|---|---|---|
-| 1 | PASS advances in order | Installed trajectory proves owned `LIVE` precedes X `LIVE` | MUST PASS |
-| 2 | FAIL and tamper fail closed | Existing FAIL receipt remains without an owned/X effect | MUST PASS |
-| 3 | Secret/link isolation | Installed artifacts/logs/Telegram contain no private link outside the intended public article | MUST PASS |
-| 4 | Duplicate external-effect prevention | A second real kickstart preserves one owned and one X effect | MUST PASS |
-| 5 | Installed progression | One launchd wake publishes a fresh fourth campaign; replay preserves exact URLs and lineage | MUST PASS |
+| 1 | Official source lineage | CRWL artifacts, current hashes, and source receipt all read back | MUST PASS |
+| 2 | Composition and policy | Installed owners produce sealed handoff and exact `PASS` | MUST PASS |
+| 3 | Ordered real effects | Installed trajectory proves owned `LIVE` precedes X `LIVE` | MUST PASS |
+| 4 | Secret isolation | Model/log/Telegram contain no private link record | MUST PASS |
+| 5 | Replay | Second kickstart preserves Git HEAD, public URLs, effect jobs, and usage count | MUST PASS |
+| 6 | Owner UX | Telegram provider `messageId` binds one `PLACEMENT_LIVE` event | MUST PASS |
 
 | E2E item | Value |
 |---|---|
@@ -1296,7 +1305,7 @@ Git, browser, credential, tracking-link, and money authority.
 #### 5. Boundaries
 
 - Do not add a new scheduler, publisher, policy framework, database, browser,
-  provider, or model orchestration layer.
+  provider, model orchestration layer, or distribution channel.
 - Do not add YouTube, TikTok, Instagram, Pinterest, `note`, another locale, or a
   new provider before the existing English owned/X path completes this slice.
 - Do not use Superpowers, TDD/RED scaffolding, subagent implementation, or a new
@@ -1306,18 +1315,18 @@ Git, browser, credential, tracking-link, and money authority.
 
 #### 6. Execution steps
 
-1. Update `skills/affiliate/scripts/local_loop.py` to select one eligible PASS
-   handoff and resume its earliest unfinished public-effect stage.
-2. Reuse `skills/affiliate/scripts/owned_publish.py` and
-   `skills/affiliate/scripts/x_post_cli.py`; change them only if generic metadata
-   exposes an observed incompatibility.
-3. Run `py_compile` and the existing Affiliate checks after the production edit;
-   do not create synthetic RED work or a broad new test suite.
-4. Install one immutable
-   release, then kickstart the existing `ai.anicca.affiliate-loop` owner.
-5. Observe a fresh fourth campaign become owned `LIVE` then X `LIVE`; kickstart a
-   second time and verify exact URL, Git, X, and lineage dedupe.
-6. Update this SSOT with real receipts, commit, and push before starting discovery.
+1. Use CRWL against official ElevenLabs pages to select one decision-stage intent
+   distinct from plans, ElevenAgents, and raw TTS API evaluation.
+2. Add one source-plan config and let the installed source and composition owners
+   create the artifacts, sealed handoff, and policy receipt.
+3. If policy is `FAIL`, admit corrected evidence/content as a new immutable lineage;
+   never edit a PASS/FAIL receipt in place.
+4. Add only the missing `PLACEMENT_LIVE` owner event if the real wake proves the
+   current Telegram contract omits it.
+5. Run `py_compile` and the existing Affiliate checks, install one immutable
+   release, and kickstart the existing owners in source-to-money order.
+6. Verify owned and X public readback, revenue truth, Telegram `messageId`, and
+   second-wake dedupe; update this SSOT, commit, and push.
 
 External user authority is required only before withdrawal: truthful tax/KYC and
 one payment provider must be completed with the user's legal/payment data. The
