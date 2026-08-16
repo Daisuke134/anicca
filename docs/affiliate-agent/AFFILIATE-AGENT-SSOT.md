@@ -1338,6 +1338,43 @@ one payment provider must be completed with the user's legal/payment data. The
 Agent MUST NOT invent or infer those facts, and payout setup does not block E0/E1
 earning work.
 
+### 9.0.3 Current slice contract — official opportunity discovery
+
+#### Goal
+
+Remove the last manual campaign-plan step for the only executable offer. The
+existing daily source owner discovers at most one unused English ElevenLabs
+product family from the provider's official sitemap, creates one durable candidate
+source plan in local state, and immediately feeds that plan into the existing
+capture → composition → policy pipeline. No new scheduler, model call, browser,
+provider, or publication adapter is added.
+
+#### Acceptance criteria
+
+1. Discovery input is the live official ElevenLabs English product sitemap
+   obtained through CRWL. Search-engine pages, creator earnings claims, and
+   third-party affiliate lists cannot become product evidence.
+2. Only `https://elevenlabs.io/` product URLs pass admission. Terms, jobs, legal,
+   archived, language-template, and already-covered product families fail closed.
+3. One wake creates at most one unique `plan_id`, offer ID, buyer intent, slug,
+   product source, and pricing source. The plan is stored under Affiliate mutable
+   state, never written into an immutable installed release.
+4. Existing versioned and discovered plans share the same validation, source
+   capture, source-set hashing, composition, policy, and publication contracts.
+5. Repeating the same sitemap produces no second candidate and no changed plan
+   bytes. A new sitemap product can create only the next one-per-day candidate.
+6. The discovery receipt records sitemap URL/hash, selected product URL/family,
+   plan path/hash, state, and failure class without credentials or tracking links.
+
+#### Minimal implementation
+
+- Extend `source_capture.py`; do not create another owner. It discovers first,
+  then refreshes the union of release plans and state-owned discovered plans.
+- Extend `composition_owner.py` only so it resolves the exact admitted plan from
+  release config or the discovered-plan directory.
+- Run syntax checks and real launchd wake/readback. No Superpowers, TDD/RED,
+  subagent implementation, speculative database, or broad test suite.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
