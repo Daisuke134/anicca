@@ -63,8 +63,10 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - Commit `e53a70689` binds the official VBA listing version, JPY6,000 base, JPY3,000 add-on, JPY5,000 maintenance, required inputs and two inquiry answer patterns into the runtime contract ledger. Real loop runs appended `1` then replayed `0`. Commit `3649a0bb9` reports official/competitor counts, contract inventory, selected hypothesis and fence in natural Japanese; real Telegram delivery is `sent/20425`.
 - Storefront now derives version-bound contracts for all 11 official services from six owned-capability families while preserving the VBA-specific override. Real pass `storefront-family-contract-live-37c975927` read official/competitor `11/8`, appended the missing `10`, and reached contract total `11`. The first replay exposed a transient truncated service DOM; the inventory reader now retries the full 120,000-character public page until the official service scope exists. Pass `storefront-family-contract-replay-fixed-37c975927` completed with appended `0`, total `11`, effect/readback/duplicate `0/0/0`, and a released lease.
 - Read-only inspection of the installed Negotiate owner shows its composer currently receives only conversation, verified research and verified application context. It has no service-ID or Storefront-contract consumer. Storefront publishes the immutable versioned contract ledger, but the Negotiate owner must add the consumer; Storefront must not patch the Negotiate implementation to hide this boundary gap.
-- The seller edit form exposes `overview`, `catchphrase`, `head`, `body` and `price`, but the observed price control value is `22000` while the official public listing is JPY20,000. Price mutation remains fenced until that representation difference is explained by official readback; the loop must not guess.
+- The seller price select stores the tax-inclusive internal option value while its label and public page show the seller price: option `22000` reads `20,000円`, and option `3300` reads `3,000円`. Storefront contracts bind both values and reject a mutation unless the exact option/value pair exists; the loop never guesses the conversion.
 - Storefront analytics now reads all 11 official service pages, not only OpenCV. Real pass `storefront-catalog-kpi-live-458fab724` recorded per-service snapshots and official 30-day totals of 441 views, 0 purchases and 3 favorites, preserving ten first-baseline deltas as unknown, and sent Telegram `20444`. Replay resolved all deltas to zero and sent the changed state as `20446`; a third identical pass returned `deduped/20446`. Every pass released the Storefront lease and produced no public mutation.
+- Official search for `SEO 記事 構成 執筆` exposed 3,899 results; observed comparables include service `2329055` (216 sales, 185 reviews, JPY6,000), `1884761` (331 reviews, JPY20,000), and `1051841` (443 reviews, JPY35,000). The owned public portfolio contains `SEO記事執筆 構成案・執筆納品事例`, so the first distinct new-listing candidate is grounded in both demand and owned capability.
+- Storefront created nonpublic Coconala draft `4355225` in the official category `19/372/150` and bound title, catchphrase, scope, exclusions, buyer inputs, JPY3,000 display price (`3300` option), five-day delivery and one-order capacity in `seo-article-v1.json`. The first live save exposed page-hydration and delayed-readback races; the adapter now waits for each dependent category option and polls exact saved-state equality. Full pass `storefront-new-draft-readback-a5a969097` completed with official/competitor `11/8`, draft `effect/readback/public_effect=0/1/0`, KPI `441/0/3`, released lease and Telegram `20482`. The earlier failed pass had already saved the exact draft; the successful replay correctly did not claim a second effect.
 
 ## 5. Acceptance criteria
 
@@ -165,9 +167,12 @@ Verification: one existing service per adapter can be rendered and diffed withou
 
 ### S4 — Complete the new-listing path
 
-- Rank unmet demand from official/competitor evidence against owned capability.
-- Require a distinct outcome, non-duplicate catalog position, exact delivery contract, proof/gallery, pricing ladder, and capacity.
-- Create one evidence-qualified service, publish it, and read it back. Do not fill unused quota blindly.
+- [x] Rank unmet demand from official/competitor evidence against owned capability; choose one SEO article outcome, not unused quota.
+- [x] Bind a distinct outcome, official category, exact delivery contract, exclusions, buyer inputs, price representation and capacity.
+- [x] Create and exact-readback one nonpublic official draft through the real Storefront loop; replay performs zero duplicate save.
+- [ ] Create and bind the 1220x1016 hero image and add it to the same draft without publishing.
+- [ ] Bind proof/gallery and the justified add-on or recurring ladder without unsupported claims.
+- [ ] When the one-active-experiment gate permits, publish draft `4355225`, read back its official public URL and prove rerun creates zero duplicate service.
 
 Verification: official service ID and URL exist, every contract field matches, duplicate=0, and a rerun does not create another service.
 

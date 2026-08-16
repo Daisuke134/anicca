@@ -10,7 +10,8 @@
     "4313100": "web_image_update",
     "4330105": "sns_operations",
     "4330368": "computer_vision",
-    "4330753": "sns_operations"
+    "4330753": "sns_operations",
+    "4355225": "seo_writing"
   },
   "families": {
     "sns_operations": {
@@ -61,6 +62,16 @@
       "answer_patterns": [
         {"intent": "supported_site", "triggers": ["WordPress", "CMS", "どのサイト", "対応できますか"], "response": "対象URL、利用CMS、更新権限、差し替え箇所を確認して対応可否を判断します。差し替え画像と現在のページをご共有ください。"},
         {"intent": "image_creation", "triggers": ["画像も作成", "バナー制作", "デザイン", "素材なし"], "response": "既存画像の差し替えと、新しい画像の制作では作業範囲が異なります。素材の有無、必要サイズ、用途、希望納期をご共有ください。"}
+      ]
+    },
+    "seo_writing": {
+      "inclusions": ["検索意図に沿った記事構成", "公開情報のリサーチ", "日本語SEO記事1本の執筆"],
+      "deliverables": ["見出し構成", "3,000文字までの記事本文", "WordまたはGoogleドキュメント用原稿"],
+      "required_inputs": ["記事の目的", "対象読者", "狙うキーワード", "掲載先の概要", "希望文字数と納期"],
+      "principles": ["検索順位や成果を保証しない", "薬機法・医療・法律など専門監修が必要な内容は監修を含めない", "未確認の実績や専門資格を主張しない"],
+      "answer_patterns": [
+        {"intent": "article_scope", "triggers": ["何文字", "構成", "リサーチ", "SEO記事"], "response": "基本範囲は、検索意図の整理、見出し構成、公開情報のリサーチ、3,000文字までの記事1本です。記事目的、対象読者、キーワード、掲載先、希望納期をご共有ください。"},
+        {"intent": "seo_guarantee", "triggers": ["上位表示", "順位保証", "必ず", "成果保証"], "response": "検索意図と読みやすさを意識して構成・執筆しますが、検索順位や流入成果は保証できません。既存サイトの状態とキーワードを確認し、対応範囲をご案内します。"}
       ]
     },
     "computer_vision": {

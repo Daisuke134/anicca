@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "platform": "coconala",
+  "candidate_key": "storefront:new-listing:v1:seo-article-single",
+  "draft_service_id": "4355225",
+  "draft_url": "https://coconala.com/mypage/services/4355225",
+  "expected_public_url": "https://coconala.com/services/4355225",
+  "origin": "storefront",
+  "demand_evidence": {
+    "search_url": "https://coconala.com/search?keyword=SEO%20%E8%A8%98%E4%BA%8B%20%E6%A7%8B%E6%88%90%20%E5%9F%B7%E7%AD%86",
+    "visible_result_count": 3899,
+    "comparables": [
+      {"service_id": "2329055", "sales_count": 216, "review_count": 185, "display_price_jpy": 6000},
+      {"service_id": "1884761", "review_count": 331, "display_price_jpy": 20000},
+      {"service_id": "1051841", "review_count": 443, "display_price_jpy": 35000}
+    ]
+  },
+  "capability_evidence": {
+    "profile_url": "https://coconala.com/users/2564121/portfolios",
+    "portfolio_title": "SEO記事執筆 構成案・執筆納品事例"
+  },
+  "category": {
+    "master": {"value": "19", "label": "ライティング・翻訳"},
+    "sub": {"value": "372", "label": "記事・Webコンテンツ作成"},
+    "type": {"value": "150", "label": "ブログ記事・メディア記事作成"}
+  },
+  "public_fields": {
+    "overview_input": "SEO記事を構成から丁寧に執筆し",
+    "expected_title": "SEO記事を構成から丁寧に執筆します",
+    "catchphrase": "検索意図を整理し読みやすい1記事を納品",
+    "head": "SEO記事の構成作成から本文執筆まで、1記事単位で対応します。\n\n【基本内容】\n・記事目的と対象読者の整理\n・狙うキーワードの検索意図確認\n・見出し構成の作成\n・公開情報のリサーチ\n・3,000文字までの日本語本文執筆\n・WordまたはGoogleドキュメント用原稿で納品\n\n自分の公開ポートフォリオに『SEO記事執筆 構成案・執筆納品事例』を掲載しています。AIの出力をそのまま納品せず、依頼内容と公開情報を照合し、読みやすい文章へ整えます。\n\n【含まれないもの】\n検索順位・アクセス数・売上の保証、薬機法・医療・法律等の専門監修、WordPressへの直接入稿、画像制作は基本料金に含みません。必要な場合は事前に範囲を確認します。\n\nまずは記事の目的、対象読者、キーワード、掲載先の概要、希望文字数、納期をお知らせください。",
+    "price_option_value": "3300",
+    "display_price_jpy": 3000,
+    "delivery_days": 5,
+    "order_limit": 1,
+    "body": "ご購入前に、記事の目的、対象読者、狙うキーワード、掲載先の概要、希望文字数、希望納期をご共有ください。参考資料や避けたい表現があれば併せてお知らせください。\n\n検索順位や流入成果は保証できません。薬機法・医療・法律など専門監修が必要な内容は、資格者による監修を含みません。第三者の文章の転載、事実と異なる実績表現、権利侵害につながる内容には対応できません。",
+    "accept_estimates": true,
+    "estimate_required": false
+  },
+  "publication_gate": {
+    "requires_distinct_catalog_outcome": true,
+    "requires_owned_capability": true,
+    "requires_available_capacity": true,
+    "requires_hero_image": true,
+    "requires_no_active_storefront_experiment": true
+  }
+}
