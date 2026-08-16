@@ -202,13 +202,10 @@ function createConnpassScriptFirstWorkflow(options = {}) {
       let normalizedCount = 0;
       let windowCount = 0;
       let freeOpenCount = 0;
-      // A single unusable row must not abort every other row's discovery
-      // this wake — skip it and count it instead of throwing (Dais 2026-08-16).
-      let skippedCount = 0;
       for (const raw of observed) {
         let candidate;
         try { candidate = exactCandidate(raw); }
-        catch { skippedCount += 1; continue; }
+        catch { throw stageError("CONNPASS_CANDIDATE_VALIDATION_FAILED"); }
         normalizedCount += 1;
         const startsAt = Date.parse(candidate.starts_at);
         if (startsAt < window.start || startsAt >= window.end) continue;
@@ -222,15 +219,9 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         freeOpenCount += 1;
         let calendarFree;
         try { calendarFree = await isCalendarFree(candidate, calendar); }
-        catch { skippedCount += 1; continue; }
+        catch { throw stageError("CONNPASS_CALENDAR_CONFLICT_CHECK_FAILED"); }
         if (!calendarFree) continue;
         result.push(Object.freeze({ ...candidate }));
-      }
-      // Every row failing is a defect signal (broken normalization/calendar
-      // check), not a healthy empty result — fail closed instead of reporting
-      // a silent empty discovery.
-      if (observed.length > 0 && skippedCount === observed.length) {
-        throw stageError("CONNPASS_ALL_CANDIDATES_SKIPPED_FAILED");
       }
       await onDiscoveryAudit(Object.freeze({
         observed_count: typeof observed.discoveredCount === "number" ? observed.discoveredCount : observed.length,
@@ -238,7 +229,6 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         window_count: windowCount,
         free_open_count: freeOpenCount,
         calendar_free_count: registeredExisting.length + result.length,
-        skipped_count: skippedCount,
       }));
       return Object.freeze([...registeredExisting, ...result]);
     },
