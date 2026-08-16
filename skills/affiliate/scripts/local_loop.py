@@ -20,6 +20,7 @@ from types import SimpleNamespace
 
 from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
 from provider_cli import ProviderError, observe, poll, resume
+from program_registry import apply_getresponse
 
 
 def atomic_json(path, value):
@@ -633,6 +634,15 @@ def wake(args):
                 )
             except (ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
                 impact_recovery_state = "RECOVERY_FAILED"
+    application = {"state": "NOT_RUN", "program": "getresponse"}
+    if provider["state"] == "AUTHENTICATED":
+        try:
+            application = apply_getresponse(
+                state, args.cdp_port,
+                Path("~/.config/anicca/job-search/profile.json"),
+            )
+        except (JobStateError, OSError, RuntimeError, ValueError, KeyError, json.JSONDecodeError):
+            application = {"state": "APPLICATION_FAILED", "program": "getresponse"}
     try:
         landing_root = getattr(
             args, "landing_root",
@@ -672,6 +682,9 @@ def wake(args):
         "impact_changed": impact["changed"],
         "impact_transition_id": impact["transition_id"],
         "impact_recovery_state": impact_recovery_state,
+        "application_program": application.get("program"),
+        "application_state": application.get("state"),
+        "application_deduplicated": application.get("deduplicated"),
         "publication_state": publication["state"],
         "publication_url": publication["public_url"],
         "publication_failure_type": publication.get("failure_type"),

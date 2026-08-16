@@ -2,6 +2,7 @@
 """Validate and query the versioned Affiliate program research registry."""
 
 import argparse
+import hashlib
 import hmac
 import json
 import os
@@ -13,12 +14,25 @@ import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
+from job_journal import JobStateError, start_effect, unresolved_effect, verify_effect
+
 
 REQUIRED = {
     "id", "priority", "network", "decision", "program_url", "terms_url",
     "commission", "next_action", "evidence",
     "credential_ref",
 }
+
+GETRESPONSE_URL = "https://dash.partnerstack.com/application?company=getresponse&group=default"
+ELEVENLABS_HOME = "https://elevenlabs.io/app/affiliates"
+GETRESPONSE_PROMOTION = (
+    "We publish evidence-led English software buying guides on aniccaai.com and disclose "
+    "affiliate relationships before calls to action. We distribute each guide through "
+    "@selawmqt on X, measure provider-side clicks and approved commissions, and update "
+    "articles from official product documentation. For GetResponse, we will create "
+    "email-marketing and automation comparison and how-to content for creators and small "
+    "businesses, then link readers directly to GetResponse from the relevant article."
+)
 
 
 def load_registry(path):
@@ -224,15 +238,136 @@ def store_link(label, field, markdown_path, link):
     return {"label": label, "field": field, "private_markdown_link_state": "VERIFIED_NONEMPTY"}
 
 
+def atomic_receipt(path, payload):
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(payload, stream, sort_keys=True, separators=(",", ":"))
+            stream.write("\n")
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def apply_getresponse(state, cdp_port, profile_path):
+    """Submit the one admitted GetResponse application under a durable effect fence."""
+    receipt_path = state / "program-applications" / "getresponse.json"
+    if receipt_path.is_file():
+        prior = json.loads(receipt_path.read_text(encoding="utf-8"))
+        if prior.get("state") in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
+            return {**prior, "deduplicated": True}
+    if unresolved_effect(state, "PROVIDER_APPLICATION", "getresponse"):
+        return {
+            "schema_version": 1, "receipt_type": "PROGRAM_APPLICATION",
+            "program": "getresponse", "state": "RECONCILE_REQUIRED",
+            "deduplicated": True,
+        }
+    profile = json.loads(profile_path.expanduser().read_text(encoding="utf-8"))
+    linkedin = str(profile.get("candidate", {}).get("linkedin_url", ""))
+    if not linkedin.startswith(("https://linkedin.com/", "https://www.linkedin.com/")):
+        raise ValueError("verified LinkedIn profile is unavailable")
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as error:
+        raise RuntimeError("Playwright is unavailable") from error
+    job = None
+    result = None
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{cdp_port}")
+        pages = [page for context in browser.contexts for page in context.pages]
+        if len(pages) != 1:
+            raise ValueError("expected one PartnerStack browser page")
+        page = pages[0]
+        try:
+            page.goto(GETRESPONSE_URL, wait_until="domcontentloaded", timeout=20_000)
+            page.get_by_text("GetResponse Affiliate Application", exact=True).wait_for(timeout=15_000)
+            required_locked = page.locator("input[required][disabled]")
+            if required_locked.count() != 3 or not all(
+                required_locked.nth(index).input_value().strip() for index in range(3)
+            ):
+                raise ValueError("PartnerStack identity prefill is incomplete")
+            turnstile = page.locator("input[name='cf-turnstile-response']")
+            if turnstile.count() != 1 or not turnstile.input_value().strip():
+                raise ValueError("PartnerStack Turnstile token is unavailable")
+            page.locator("input[name='field_qlNDAL0eQOe6Pk']").fill("Anicca")
+            page.locator("input[name='field_PeKF0gSPmi9TIk']").fill("https://aniccaai.com")
+            page.locator("input[name='field_7xRPJ4InAwZY8I']").fill("ElevenLabs")
+            page.locator("textarea[required]").fill(GETRESPONSE_PROMOTION)
+            page.locator("input[name='field_sETYP00rsB0hyP']").fill(
+                f"https://x.com/selawmqt {linkedin}"
+            )
+            country = page.get_by_role("button", name=re.compile(r"^(国を選択|Select country)$", re.I))
+            country.click()
+            page.get_by_role("option", name="Japan", exact=True).click()
+            agency_no = page.get_by_text("No", exact=True)
+            agency_no.click()
+            if not page.locator("input[type='checkbox']").nth(1).is_checked():
+                raise ValueError("agency answer was not selected")
+            submit = page.get_by_role(
+                "button", name=re.compile(r"^(申し込みを提出|Submit application)$", re.I),
+            )
+            if not submit.is_enabled():
+                raise ValueError("GetResponse application is not submittable")
+            job = start_effect(
+                state, "PROVIDER_APPLICATION", "getresponse",
+                {
+                    "operation": "submit_application", "program": "getresponse",
+                    "application_url": GETRESPONSE_URL,
+                    "website": "https://aniccaai.com",
+                    "promotion_sha256": hashlib.sha256(GETRESPONSE_PROMOTION.encode()).hexdigest(),
+                },
+                {"state": "FORM_READY", "url": page.url}, 86400,
+            )
+            before = page.locator("body").inner_text()
+            submit.click(timeout=5_000)
+            page.wait_for_function(
+                "before => document.body.innerText !== before", arg=before, timeout=20_000,
+            )
+            rendered = page.locator("body").inner_text()
+            lowered = rendered.casefold()
+            accepted = (
+                "application" in lowered
+                and any(marker in lowered for marker in (
+                    "submitted", "under review", "in review", "thank you for applying",
+                ))
+                and not page.get_by_role(
+                    "button", name=re.compile(r"^(申し込みを提出|Submit application)$", re.I),
+                ).count()
+            )
+            state_name = "APPLICATION_PENDING" if accepted else "SUBMISSION_AMBIGUOUS"
+            result = {
+                "schema_version": 1, "receipt_type": "PROGRAM_APPLICATION",
+                "program": "getresponse", "state": state_name,
+                "application_url": GETRESPONSE_URL,
+                "observed_url": page.url,
+                "rendered_text_sha256": hashlib.sha256(rendered.encode()).hexdigest(),
+                "job_id": job["job_id"], "deduplicated": False,
+            }
+            if accepted:
+                verify_effect(state, job["job_id"], {
+                    "state": state_name, "url": page.url,
+                    "rendered_text_sha256": result["rendered_text_sha256"],
+                })
+            atomic_receipt(receipt_path, result)
+        finally:
+            page.goto(ELEVENLABS_HOME, wait_until="domcontentloaded", timeout=20_000)
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(prog="affiliate programs")
-    parser.add_argument("command", choices=("list", "next", "credential", "store-credential", "store-login", "store-link"))
+    parser.add_argument("command", choices=("list", "next", "credential", "store-credential", "store-login", "store-link", "apply"))
     parser.add_argument("--decision", action="append", default=[])
     parser.add_argument("--id")
     parser.add_argument("--label")
     parser.add_argument("--source-label")
     parser.add_argument("--field")
     parser.add_argument("--credential-ref")
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
+    parser.add_argument("--cdp-port", type=int, default=9324)
+    parser.add_argument("--profile", type=Path, default=Path("~/.config/anicca/job-search/profile.json"))
     parser.add_argument(
         "--verification",
         choices=("SAVED_BEFORE_SUBMIT", "VERIFIED_LOGIN"),
@@ -250,12 +385,16 @@ def main():
         programs = [item for item in programs if item["decision"] in args.decision]
     if args.id:
         programs = [item for item in programs if item["id"] == args.id]
-    if args.command in ("credential", "store-credential", "store-login", "store-link"):
+    if args.command in ("credential", "store-credential", "store-login", "store-link", "apply"):
         if len(programs) != 1:
             return 3
         if args.credential_ref:
             programs[0] = {**programs[0], "credential_ref": args.credential_ref}
-        if args.command == "credential":
+        if args.command == "apply":
+            if programs[0]["id"] != "getresponse":
+                raise ValueError("application adapter is unavailable")
+            result = apply_getresponse(args.state.expanduser(), args.cdp_port, args.profile)
+        elif args.command == "credential":
             result = credential_state(programs[0])
         elif args.command == "store-login":
             if not args.label:

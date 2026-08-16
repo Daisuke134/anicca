@@ -1432,6 +1432,43 @@ Telegram `NO_PENDING`, and exit `0`; the Impact transition ID remained
 `327009d77f87775c468a64d2ca1ec34028c0e1a6c6268cc6e4a70598cd989777`.
 No Git, X, application-submit, or Telegram effect was duplicated.
 
+### 9.0.5 Current slice contract — one new executable English application
+
+**Status: IN PROGRESS.** Official GetResponse evidence says signup is free through
+PartnerStack, each accepted affiliate receives a unique link, and the entry tier
+earns 40% recurring commission for 12 months. The live application requires
+account-locked identity/email, business name, website, country, and a specific
+promotion plan; it does not impose Pipedrive's observed work-email-only gate.
+The account-locked identity is present, the Turnstile token is live, and all
+remaining truthful inputs are available from the owned site, X identity, current
+ElevenLabs membership, and private identity SSOT.
+
+Pipedrive remains deferred because its live form states that applications without
+a work email are not considered, while the current authorized application email
+is `gmail.com`. The Agent does not knowingly submit an ineligible application.
+
+#### Reuse decision
+
+The MIT repository `adbertram/cli-tools` at fixed commit
+`aef03fa228d6779c043d71d470b5407d8ac5836a` implements PartnerStack form-template
+listing and `POST /api/v2/applications`. The official endpoint requires Basic
+auth, whereas PartnerStack's partner dashboard API key uses Bearer auth. That CLI
+therefore crosses the wrong authority boundary for this applicant account and is
+not copied as the submission transport. Its bounded retry and typed application
+receipt pattern are reused conceptually; the existing authenticated CloakBrowser
+is the effect owner.
+
+#### Minimal implementation
+
+- Extend `program_registry.py` with one GetResponse browser action using exact
+  rendered form identity, user-facing country/submit locators, private-profile
+  readback, and the existing `PROVIDER_APPLICATION` write-ahead fence.
+- Connect it to `local_loop.py` only when ElevenLabs provider auth is healthy.
+  Submit once, restore ElevenLabs home in `finally`, and never retry an unresolved
+  submit. A terminal application receipt deduplicates every later wake.
+- No new scheduler, browser, agent, database, Superpowers stage, TDD/RED cycle,
+  subagent implementation, or generalized application framework.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
