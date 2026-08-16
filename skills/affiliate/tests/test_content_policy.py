@@ -1,5 +1,7 @@
 import importlib.util
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -23,6 +25,24 @@ class ContentPolicyTest(unittest.TestCase):
         self.assertTrue(all(MODULE.policy_checks(artifact, {"official": "abc"}, link).values()))
         artifact["markdown"] = f"[Try it]({link})\n\n{MODULE.DISCLOSURE}"
         self.assertFalse(MODULE.policy_checks(artifact, {"official": "abc"}, link)["disclosure_before_first_cta"])
+
+    def test_elevenagents_x_artifact_fits_platform_limit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary)
+            publications = state / "owned-publications"
+            publications.mkdir()
+            slug = "elevenagents-for-customer-support"
+            url = f"https://aniccaai.com/blog/{slug}"
+            (publications / f"{slug}.json").write_text(
+                json.dumps({"state": "LIVE", "public_url": url}), encoding="utf-8"
+            )
+
+            result = MODULE.build_x_agents(state)
+            text = (state / "x-content" / "elevenagents-en-1.txt").read_text().strip()
+            self.assertEqual(result["state"], "READY_FOR_X_PUBLICATION")
+            self.assertLessEqual(len(text), 280)
+            self.assertIn("Affiliate link", text)
+            self.assertIn(url, text)
 
 
 if __name__ == "__main__":

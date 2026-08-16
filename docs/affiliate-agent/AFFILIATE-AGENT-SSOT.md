@@ -966,11 +966,11 @@ cloud work, and broad self-repair do not start unless one is the measured blocke
 for the next external state. Known stages are deterministic; the model writes or
 diagnoses only when an existing deterministic tool cannot advance them.
 
-1. Correct the owned-site readback route from `/research/<slug>` to the deployed
-   `/blog/<slug>`. The ElevenAgents page already returns HTTP `200` with its title;
-   this change reconciles the existing `DELIVERED` effect to `LIVE` and MUST NOT
-   push a duplicate commit.
-2. Run the existing ElevenAgents X builder and `x post publish` against that LIVE
+1. **DONE:** Re-run the already-correct `/blog/<slug>` readback from the current
+   installed Skill. It reconciled the existing ElevenAgents `DELIVERED` effect to
+   `LIVE`, preserved Git HEAD `756c54064`, and independently re-read the title at
+   HTTP `200`; no code change or duplicate push was needed.
+2. **IN PROGRESS:** Run the existing ElevenAgents X builder and `x post publish` against that LIVE
    receipt. Require one disclosed `@selawmqt` status plus timeline/public URL
    readback; an ambiguous result reconciles by fingerprint before retry.
 3. Let `loop wake` invoke the existing ElevenLabs `provider resume` when it reads
@@ -1202,7 +1202,7 @@ observable outcome exists.
 | 3 | DONE: Affiliate X Article is `CHANNEL_UNAVAILABLE`; owned article + normal X remain active | Writer `scripts/x-publish/*` and canonical `/compose/articles` route were read-only checked | No code change. Parameterize only if `@selawmqt:9326` later exposes the editor |
 | 4 | DONE: the next buyer intent has a fresh official evidence pack | Existing CRWL source capture and PartnerStack Resources selection signal | Installed `6f377563c`; `elevenagents-en` captured four official sources |
 | 5 | DONE: create and privately retain one product-specific ElevenAgents referral link | Existing PartnerStack custom-link UI and secret-refusing runtime state | Installed `6623f2e02`; provider readback and private mode-0600 Markdown readback both passed without printing or committing the URL |
-| 6 | IN PROGRESS: the second source-bound owned article is publicly HTTP `200`, but its receipt is falsely stuck at `DELIVERED`; reconcile it to `LIVE`, then publish its bounded X placement | Existing `owned_publish.py`, `content.build_x_agents`, `x_post_cli.py`, and Writer patterns | Commit `756c54064` has a successful [GitHub deploy check](https://github.com/Daisuke134/anicca-products/actions/runs/31914449913/job/95084174975). [`/blog/elevenagents-for-customer-support`](https://aniccaai.com/blog/elevenagents-for-customer-support) returns the title at HTTP `200`; only the adapter's incorrect `/research/<slug>` readback returns `404` |
+| 6 | IN PROGRESS: the second source-bound owned article is `LIVE`; publish and read back its bounded X placement | Existing `owned_publish.py`, `content.build_x_agents`, `x_post_cli.py`, and Writer patterns | Current installed release reconciled commit `756c54064` to [`/blog/elevenagents-for-customer-support`](https://aniccaai.com/blog/elevenagents-for-customer-support) at HTTP `200` without changing Git HEAD. The X builder exposed one real blocker: its copy exceeded 280 characters; the minimal copy regression is now GREEN |
 | 7 | PartnerStack click/signup/commission joins to the exact placement and reports to Telegram | Existing `revenue_cli.py`, placement receipt, commission ledger, Telegram outbox | `revenue_cli.py` and `local_loop.py`; provider money remains pending/approved/reversed/paid, never inferred from clicks |
 | 8 | The loop repairs selector/auth/source failures and resumes the same job while healthy lanes continue | Existing job journal, semantic playbooks, Writer same-ID repair, Franklin lost-task pattern | `local_loop.py`, provider/source playbooks, minimal repair registry; no general multi-agent framework |
 | 9 | First non-test approved commission closes E1 | No code substitute: provider receipt is required | Git-external ledger/receipt plus SSOT truth update; tests, self-clicks, estimates, and screenshots cannot close E1 |
@@ -1611,9 +1611,9 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 #### 6. Execution steps
 
 1. **DONE:** pin and vendor the d150 runner snapshot with license/SHA provenance. `SHA256SUMS` verifies all six preserved files, each runtime file byte-matches the fixed Git commit, three support modules import under the host Python, and the existing 37 Affiliate tests pass.
-2. Fix only the owned-publication `/blog/<slug>` readback, reconcile the existing
-   ElevenAgents commit to `LIVE`, and prove no second Git effect.
-3. Reuse the existing X builder/publisher to create and verify the one missing
+2. **DONE:** Reconcile the existing ElevenAgents commit to `LIVE` and prove no
+   second Git effect; the existing publisher already used the correct `/blog` route.
+3. **IN PROGRESS:** Reuse the existing X builder/publisher to create and verify the one missing
    ElevenAgents placement on `@selawmqt`.
 4. Connect existing provider recovery, owned readback, X publication, revenue,
    and Telegram calls to the scheduled `wake()` in that order; do not introduce a

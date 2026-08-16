@@ -256,8 +256,8 @@ def build_x_agents(state):
     if publication.get("state") != "LIVE" or publication.get("public_url") != url:
         raise ContentError("owned article is not live")
     text = (
-        "A customer-support voice agent needs more than a polished demo. Test knowledge freshness, "
-        "failure handling, latency, channel fit, and real call costs before rollout.\n\n"
+        "Before deploying a customer-support voice agent, test knowledge freshness, failure handling, "
+        "latency, channel fit, and real call costs.\n\n"
         "Affiliate link disclosed in my ElevenAgents evaluation:\n"
         f"{url}"
     )
