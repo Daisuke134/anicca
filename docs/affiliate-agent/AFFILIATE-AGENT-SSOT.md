@@ -1850,7 +1850,9 @@ observable outcome exists.
   a stable, deduplicated `CLICK_DELTA` Telegram event only when the official
   PartnerStack overview reports a positive post-baseline delta. Because that
   overview is aggregate, the event deliberately says `未紐付け` and cannot close
-  E0; a provider row with sub-ID or link fingerprint is still required.
+  E0; a provider row with sub-ID or link fingerprint is still required. Installed
+  release `64a12f13eaac6cede4ddb8abe76d24b0aab7424a` replayed the real zero-delta
+  receipt with exit `0`, `NO_PENDING`, and no outbox growth (`6 → 6`).
 - [ ] **A15.7 — E0.** Record one real post-baseline provider click connected to a
   live English placement; do not manufacture or self-click it.
 - [ ] **A15.8 — E1.** Record one non-test `approved` commission with public
