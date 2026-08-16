@@ -187,8 +187,8 @@ def _report_message(row: dict) -> str:
     accounting = row.get("accounting") if isinstance(row.get("accounting"), dict) else None
     if accounting is not None:
         lines.append(
-            f"⚡ incremental {float(row.get('runtime_seconds') or 0):.1f}秒 / "
-            f"minute {accounting.get('minute')} / hour {accounting.get('hour')} / day {accounting.get('day')} / "
+            f"⚡ incremental / minute {accounting.get('minute')} / "
+            f"hour {accounting.get('hour')} / day {accounting.get('day')} / "
             f"全KPI更新 {accounting.get('analytics_observed_at_epoch') or 'unknown'}"
         )
     if draft.get("public_url"):
@@ -222,16 +222,11 @@ def _report_identity(row: dict, message: str) -> tuple[str, str, bool]:
     if row.get("status") == "failed":
         return (f"gig:telegram:storefront-failure:v1:{str(row.get('pass_id') or '')}",
                 "storefront_direct_failure", False)
-    # Runtime is diagnostic, not business state. Keep it in the human report but
-    # exclude it from the no-op identity so a replay of the same accounting
-    # boundary cannot create another Telegram notification.
-    identity_message = re.sub(
-        r"(⚡ incremental )[0-9]+(?:\.[0-9]+)?秒( / minute )",
-        r"\1<runtime>秒\2",
-        message,
-    )
-    digest = hashlib.sha256(identity_message.encode()).hexdigest()
-    return f"gig:telegram:storefront-noop:v1:{digest}", "storefront_direct_noop", True
+    # Runtime remains in the durable receipt, not the idempotent notification.
+    # v2 separates stable incremental payloads from the historical runtime-bound key.
+    digest = hashlib.sha256(message.encode()).hexdigest()
+    key_version = "v2" if isinstance(row.get("accounting"), dict) else "v1"
+    return f"gig:telegram:storefront-noop:{key_version}:{digest}", "storefront_direct_noop", True
 
 
 def _send_telegram(args: argparse.Namespace, message: str, event_key: str) -> str:
