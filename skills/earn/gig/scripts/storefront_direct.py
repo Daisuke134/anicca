@@ -3062,7 +3062,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, minimum_epoch, int(args.full_interval_seconds),
             )
         except RuntimeError as error:
-            row = _receipt(pass_id, status="failed", reason=str(error))
+            row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__)
             row = _persist_receipt(args, output, row)
             return 1, row
     try:
@@ -3826,7 +3826,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     released = release.get("released") == task
                 except (OSError, RuntimeError, TypeError, ValueError, subprocess.SubprocessError):
                     pass
-            row = _receipt(pass_id, status="failed", reason=str(error),
+            row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__,
                            lease={"task": task, "released": released} if lease is not None else None)
             row = _persist_receipt(args, output, row)
             return 1, row
