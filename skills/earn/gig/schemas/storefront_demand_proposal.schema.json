@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "queries", "hypothesis", "no_op_reason", "uncertainty"],
+  "properties": {
+    "decision": {"type": "string", "enum": ["propose", "no_op"]},
+    "queries": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["query", "capability_family", "rationale"],
+        "properties": {
+          "query": {"type": "string", "minLength": 2, "maxLength": 40},
+          "capability_family": {"type": "string", "minLength": 1, "maxLength": 60},
+          "rationale": {"type": "string", "minLength": 1, "maxLength": 400}
+        }
+      }
+    },
+    "hypothesis": {"type": ["string", "null"], "minLength": 1, "maxLength": 1000},
+    "no_op_reason": {"type": ["string", "null"], "minLength": 1, "maxLength": 400},
+    "uncertainty": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 8,
+      "items": {"type": "string", "minLength": 1, "maxLength": 400}
+    }
+  }
+}

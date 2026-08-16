@@ -1099,6 +1099,26 @@ def _render_listing_state_mutation(
 CREATE_MIN_INTERVAL_SECONDS = 86_400
 
 
+def _extract_search_demand(body: str) -> dict:
+    """Demand facts an official search page states: result count and reviewed comparables.
+
+    A review on Coconala can only follow a purchase, so a reviewed comparable is evidence
+    that buyers pay for this work. Search cards do not state sales counts, so those stay
+    absent rather than being inferred.
+    """
+    total = re.search(r"([0-9,]+)\s*件中", body)
+    comparables = [
+        {"rating": float(rating), "review_count": int(review.replace(",", "")),
+         "display_price_jpy": int(price.replace(",", ""))}
+        for rating, review, price in re.findall(
+            r"([0-5]\.[0-9])\s*\n\(([0-9,]+)\)\s*\n([0-9,]+)\s*円", body)
+    ]
+    return {
+        "visible_result_count": int(total.group(1).replace(",", "")) if total else None,
+        "comparables": comparables[:12],
+    }
+
+
 def _score_demand_cluster(cluster: dict) -> dict:
     """Score one official demand cluster from what the marketplace actually shows.
 
@@ -1121,6 +1141,35 @@ def _score_demand_cluster(cluster: dict) -> dict:
         "reviewed_comparables": len(reviewed),
         "median_price_jpy": sorted(prices)[len(prices) // 2] if prices else None,
     }
+
+
+def _seal_demand_proposal(proposal: dict, family_names: set[str], catalog_titles: list[str]) -> list[dict]:
+    """Accept only query candidates tied to an owned capability family.
+
+    The model may name a market to look at; it may never assert that demand exists. That
+    verdict comes from crawling the official search page afterwards.
+    """
+    if proposal.get("decision") == "no_op":
+        if proposal.get("queries") or not str(proposal.get("no_op_reason") or "").strip():
+            raise RuntimeError("storefront_demand_noop_invalid")
+        return []
+    queries = proposal.get("queries")
+    if (proposal.get("decision") != "propose" or not isinstance(queries, list) or not queries
+            or proposal.get("no_op_reason") is not None):
+        raise RuntimeError("storefront_demand_proposal_invalid")
+    sealed = []
+    seen = set()
+    for row in queries:
+        query = str((row or {}).get("query") or "").strip()
+        family = str((row or {}).get("capability_family") or "").strip()
+        if not query or family not in family_names or query in seen:
+            raise RuntimeError("storefront_demand_query_unowned_or_duplicate")
+        if any(query in str(title or "") for title in catalog_titles):
+            raise RuntimeError("storefront_demand_query_duplicates_catalogue")
+        seen.add(query)
+        sealed.append({"query": query, "capability_family": family,
+                       "rationale": str(row.get("rationale") or "").strip()})
+    return sealed
 
 
 def _demand_cluster_key(query: str, category_url: str) -> str:
