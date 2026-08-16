@@ -1256,14 +1256,14 @@ they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
 
 Latest restart truth: installed release
-`9e482de486f4fef85e50c3d6af3b278ec3cbf16e` is byte-identical to that commit and
+`e63503a5de8d579cdaacb9e42505184032b33f06` is byte-identical to that commit and
 is pushed to `origin` and `canonical`; the publication fix below landed in
 `7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25`. Any commit that touches
 `skills/affiliate` MUST be reinstalled, so
 `git diff <installed-release> HEAD -- skills/affiliate` must stay empty; a
 non-empty diff means the runtime is stale. The focused suite runs
 `python3 -m unittest $(ls tests/test_*.py | sed 's#/#.#;s#\.py##')` from
-`skills/affiliate` and is `66/66` green, with no tolerated red baseline.
+`skills/affiliate` and is `67/67` green, with no tolerated red baseline.
 All six launchd
 owners are loaded; the three job owners read back 600-second intervals and last
 exit `0`, and the three isolated browser owners are running.
@@ -1316,11 +1316,42 @@ therefore detects and reports; removing a placement from the ledger stays a
 decision that requires repeated evidence, and that rule MUST hold when the
 portfolio grows past six.
 
-Campaign seven remains source-captured but composition is budget-blocked for JST
+Campaign seven was source-captured but composition was budget-blocked for JST
 `2026-08-16` (`101310` consumed plus a `32768` reservation exceeds the `131072`
-daily cap; the budget day is computed in `Asia/Tokyo`). Its same durable job
-retries unattended when the JST day rolls over, because the composition owner
-wakes every 600 seconds. The cap implies at most four sealed compositions per JST
+daily cap; the budget day is computed in `Asia/Tokyo`).
+
+Watching the `2026-08-17` rollover corrected two assumptions that the receipts
+alone had made look simpler than they are, and exposed a hard blocker.
+
+First, campaign seven is not the only blocked campaign. THREE plans hit the same
+`101310` wall and are all `FAILED / RUNNER_REJECTED` with `budget_blocked`:
+`elevenlabs-discovered-video-to-text-en`, campaign seven itself, and
+`elevenlabs-en`. The composition owner seals at most one result per wake and
+iterates the inbox by name, so campaign seven is second in that retry queue, not
+first. Growth is therefore paced by both the JST token cap and the queue depth.
+
+Second, a source refresh can recompose an ALREADY PUBLISHED campaign. At
+`00:13 JST` the owner recomposed `elevenlabs-discovered-audio-to-text-en` under a
+new `source_set_sha256` and charged `14584` tokens, producing a new handoff while
+that campaign's publication receipt still held the old `handoff_fingerprint`.
+`advance_generic_publication` compared the fingerprints BEFORE checking whether
+the campaign was already complete, and it `return`s rather than `continue`s, so
+one live campaign blocked every campaign sorted after it. Real wake `00:14:36`
+reported `publication_generic_state=PUBLICATION_CONFLICT`, which means campaign
+seven could never have published no matter how its token budget resolved. A
+published placement is terminal: republishing it would mean a second X post for
+the same placement, so a later recomposition is not a publication task. Release
+`e63503a5de8d579cdaacb9e42505184032b33f06` checks completion first and keeps the
+conflict guard for campaigns still in flight, where content changing between
+materialization and publication is a genuine hazard. Real wake `00:20:52` exited
+`0` and returned `generic=ALREADY_LIVE`, with six placements still
+`LEDGER_READY` and no new post.
+
+A residual inefficiency stays visible rather than hidden: recomposing a campaign
+that is already live consumes one of only four daily composition passes and can
+never publish, so source refresh on published campaigns competes with new
+campaign growth. Fixing that is not urgent while the queue drains, but it MUST be
+revisited before the portfolio target rises. The cap implies at most four sealed compositions per JST
 day, so the six-to-ten placement growth is throughput-bound, not blocked.
 
 Measured economics as of this restart, read from `placement-ledger.json`: all six
