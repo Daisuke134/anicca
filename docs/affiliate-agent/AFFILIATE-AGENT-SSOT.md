@@ -1501,6 +1501,25 @@ and exited `0`; ElevenLabs remained `AUTHENTICATED`, HubSpot remained
 remained in its normal cooldown, and Telegram had no pending event. The program
 registry now carries the same block and cannot present GetResponse as eligible.
 
+### 9.0.6 Current slice contract — first-party provider admission
+
+**Status: IN PROGRESS.** Systeme.io is the shortest provider-diversification path
+outside the PartnerStack Marketplace gate. Its official program page says anyone
+may join free without an application or purchase and advertises 60% lifetime
+recurring commission. Its agreement requires a real new lead, excludes the
+affiliate and affiliated parties, makes payment contingent on completed account
+and payment setup, and says the unique affiliate URL is supplied after signup.
+The existing mode-0600 private Markdown contains non-empty Systeme.io login and
+password fields; the live login page currently exposes no CAPTCHA iframe.
+
+The implementation adds only a provider playbook and a bounded call from the
+existing money wake. It reuses `provider_cli.resume`, the private Markdown
+credential reader, the `PROVIDER_LOGIN` write-ahead journal, semantic dashboard
+readback, and CDP `9324`. The shared tab is restored to ElevenLabs home in
+`finally`. No new browser, launchd label, scheduler, database, Superpowers stage,
+TDD/RED cycle, test suite, or subagent implementation is introduced. A real
+launchd wake must prove login before affiliate-link discovery begins.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;

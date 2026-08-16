@@ -23,6 +23,10 @@ from provider_cli import ProviderError, observe, poll, resume
 from program_registry import apply_getresponse
 
 
+SYSTEME_LOGIN = "https://systeme.io/en/login"
+ELEVENLABS_HOME = "https://elevenlabs.io/app/home"
+
+
 def atomic_json(path, value):
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     fd, name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
@@ -592,6 +596,42 @@ def run_revenue_cycle(state, cdp_port):
     return cycle
 
 
+def resume_systeme_provider(state, cdp_port, private_markdown):
+    """Reuse the provider harness on the shared EN browser, then restore its owner URL."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as error:
+        raise ProviderError("Playwright is unavailable") from error
+    args = SimpleNamespace(
+        provider="systeme-io", cdp_host="127.0.0.1", cdp_port=cdp_port,
+        state=state, private_markdown=private_markdown,
+        receipt=state / "provider-systeme-io.json",
+    )
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{cdp_port}")
+            pages = [page for context in browser.contexts for page in context.pages]
+            if len(pages) != 1:
+                raise ProviderError("expected one shared English provider tab")
+            page = pages[0]
+            page.goto(SYSTEME_LOGIN, wait_until="domcontentloaded", timeout=20_000)
+            page.wait_for_function(
+                """() => location.pathname.includes('/dashboard') ||
+                    document.body.innerText.includes('Log in')""",
+                timeout=15_000,
+            )
+        before = observe(args)
+        return resume(args) if before["state"] == "SIGN_IN_REQUIRED" else before
+    finally:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{cdp_port}")
+            pages = [page for context in browser.contexts for page in context.pages]
+            if len(pages) != 1:
+                raise ProviderError("expected one shared English provider tab")
+            page = pages[0]
+            page.goto(ELEVENLABS_HOME, wait_until="domcontentloaded", timeout=20_000)
+
+
 def wake(args):
     state = args.state.expanduser()
     state.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -646,6 +686,17 @@ def wake(args):
                 "state": "APPLICATION_FAILED", "program": "getresponse",
                 "failure_type": type(error).__name__,
             }
+    systeme = {"state": "NOT_RUN", "provider": "systeme-io"}
+    if provider["state"] == "AUTHENTICATED":
+        try:
+            systeme = resume_systeme_provider(
+                state, args.cdp_port, args.private_markdown.expanduser(),
+            )
+        except (ProviderError, JobStateError, OSError, RuntimeError, ValueError, KeyError, json.JSONDecodeError) as error:
+            systeme = {
+                "state": "PROVIDER_FAILED", "provider": "systeme-io",
+                "failure_type": type(error).__name__,
+            }
     try:
         landing_root = getattr(
             args, "landing_root",
@@ -689,6 +740,9 @@ def wake(args):
         "application_state": application.get("state"),
         "application_deduplicated": application.get("deduplicated"),
         "application_failure_type": application.get("failure_type"),
+        "systeme_state": systeme.get("state"),
+        "systeme_failure_type": systeme.get("failure_type"),
+        "systeme_submitted": systeme.get("submitted"),
         "publication_state": publication["state"],
         "publication_url": publication["public_url"],
         "publication_failure_type": publication.get("failure_type"),
