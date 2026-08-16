@@ -36,6 +36,7 @@ DEFAULT_REPLY_TRANSCRIPTS = Path.home() / "gig" / "reply-transcripts.jsonl"
 DEFAULT_APPLIED = Path.home() / "gig" / "applied.jsonl"
 DEFAULT_EARNINGS = Path.home() / "gig" / "earnings.jsonl"
 DEFAULT_PROJECTS = Path.home() / "gig" / "projects"
+DEFAULT_NEGOTIATE_CONTEXT_ACKS = Path.home() / "gig" / "negotiate-context-acks.jsonl"
 DEFAULT_CAPABILITIES = (
     Path.home() / "gig" / "projects" / "5138597" / "state.json",
     Path.home() / "gig" / "projects" / "5138597" / "acceptance" / "v4-acceptance-evidence.json",
@@ -46,6 +47,7 @@ STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
     "new-listing-drafts.jsonl", "funnel-events.jsonl", "portfolio-allocations.jsonl",
+    "inquiry-context-envelopes.jsonl",
 )
 TARGET_SERVICE_ID = "91000001"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
@@ -136,6 +138,7 @@ def _report_message(row: dict) -> str:
     portfolio = row.get("portfolio") if isinstance(row.get("portfolio"), dict) else {}
     portfolio_counts = portfolio.get("counts") if isinstance(portfolio.get("counts"), dict) else {}
     portfolio_selected = portfolio.get("selected") if isinstance(portfolio.get("selected"), dict) else {}
+    inquiry_context = row.get("inquiry_context") if isinstance(row.get("inquiry_context"), dict) else {}
     effect = max(int(row.get("effect") or 0), int(draft.get("effect") or 0),
                  int(draft.get("public_effect") or 0))
     next_action = (
@@ -172,6 +175,9 @@ def _report_message(row: dict) -> str:
          f"RETIRE {int(portfolio_counts.get('RETIRE') or 0)} / "
          f"REPLACE {int(portfolio_counts.get('REPLACE') or 0)} / "
          f"枠 {int((portfolio.get('capacity') or {}).get('used') or 0)}/{int((portfolio.get('capacity') or {}).get('limit') or 0)}"),
+        (f"🧠 Negotiate context: {inquiry_context.get('negotiate_context') or 'missing'} / "
+         f"envelope {int(inquiry_context.get('contexts') or 0)} / "
+         f"ACK {int(inquiry_context.get('acknowledged') or 0)}"),
         f"⚠️ bad: {'確定入金0' if int(storefront_funnel.get('payments') or 0) == 0 else 'なし'}",
         f"❌ errors: {', '.join(funnel.get('unknown_sources') or []) or 'なし'}",
         f"🧪 次候補 {hypothesis.get('service_id') or 'なし'} / {hypothesis.get('field') or 'なし'} / 実行可能 {str(bool(hypothesis.get('executable'))).lower()}",
@@ -515,6 +521,58 @@ def _allocate_portfolio(
             "capacity": {"used": len(allocations), "limit": policy["slot_limit"],
                          "pressure": capacity_pressure}, "counts": counts, "appended": appended,
             "selected": selected, "unknown_sources": [value for value in (analytics_error, funnel_error) if value]}
+
+
+def _materialize_inquiry_context(
+    state_dir: Path, listing_contracts: list[dict], ack_path: Path, now: int,
+) -> dict:
+    events, event_error = _jsonl_rows(state_dir / "funnel-events.jsonl")
+    contracts = {(str(row.get("service_id") or ""), str(row.get("service_version_sha256") or "")): row
+                 for row in listing_contracts}
+    appended = 0
+    missing = []
+    context_keys = []
+    for event in events:
+        if event.get("event_kind") != "inquiry" or event.get("origin") != "storefront":
+            continue
+        identity = (str(event.get("service_id") or ""), str(event.get("listing_version") or ""))
+        contract = contracts.get(identity)
+        conversation_id = str(event.get("conversation_id") or "")
+        if contract is None or not conversation_id:
+            missing.append({"conversation_id": conversation_id or None,
+                            "service_id": identity[0] or None, "listing_version": identity[1] or None})
+            continue
+        offer = contract.get("offer")
+        playbook = contract.get("inquiry_playbook")
+        if not isinstance(offer, dict) or not isinstance(playbook, dict):
+            raise RuntimeError("storefront_inquiry_context_contract_invalid")
+        unsigned = {
+            "version": 1, "platform": "coconala", "service_id": identity[0],
+            "listing_version": identity[1], "origin": "storefront",
+            "conversation_id": conversation_id, "source_event_id": event["source_event_id"],
+            "offer": {"outcome": offer.get("outcome"), "inclusions": offer.get("inclusions"),
+                      "deliverables": offer.get("deliverables"), "required_inputs": offer.get("required_inputs"),
+                      "base_price_jpy": offer.get("base_price_jpy"), "add_ons": offer.get("options"),
+                      "exclusions": offer.get("exclusions")},
+            "inquiry_playbook": playbook, "listing_contract_key": contract.get("contract_key"),
+        }
+        canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        envelope = {**unsigned, "context_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
+                    "materialized_at_epoch": now}
+        envelope["context_key"] = (
+            f"storefront:inquiry-context:v1:{conversation_id}:{identity[0]}:{identity[1]}"
+        )
+        context_keys.append(envelope["context_key"])
+        appended += int(_append_key_once(
+            state_dir / "inquiry-context-envelopes.jsonl", "context_key", envelope,
+        ))
+    acks, ack_error = _jsonl_rows(ack_path)
+    consumed = {str(row.get("context_key") or "") for row in acks
+                if row.get("status") == "consumed" and str(row.get("context_key") or "") in context_keys}
+    return {"version": 1, "contexts": len(context_keys), "appended": appended,
+            "acknowledged": len(consumed), "missing_contracts": missing,
+            "negotiate_context": "ready" if context_keys and len(consumed) == len(context_keys)
+            else "missing", "unknown_sources": [value for value in (event_error, ack_error) if value]}
 
 
 def _load_image_contract(path: Path) -> dict:
@@ -1911,6 +1969,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, validated_contracts, funnel,
                 getattr(args, "scorecard", DEFAULT_SCORECARD), int(time.time()),
             )
+            inquiry_context = _materialize_inquiry_context(
+                args.state_dir, listing_contracts,
+                getattr(args, "negotiate_context_acks", DEFAULT_NEGOTIATE_CONTEXT_ACKS), int(time.time()),
+            )
             next_hypothesis = _prepare_next_hypothesis(
                 getattr(args, "scorecard", DEFAULT_SCORECARD),
                 args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
@@ -2212,6 +2274,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 catalog_analytics=analytics.get("catalog_metrics"),
                 funnel=funnel,
                 portfolio=portfolio,
+                inquiry_context=inquiry_context,
                 new_listing_draft=draft_result,
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
@@ -2281,6 +2344,9 @@ def main() -> int:
     parser.add_argument("--applied", type=Path, default=DEFAULT_APPLIED)
     parser.add_argument("--earnings", type=Path, default=DEFAULT_EARNINGS)
     parser.add_argument("--projects-dir", type=Path, default=DEFAULT_PROJECTS)
+    parser.add_argument(
+        "--negotiate-context-acks", type=Path, default=DEFAULT_NEGOTIATE_CONTEXT_ACKS,
+    )
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--timeout-seconds", type=int, default=180)
     parser.add_argument("--capability-evidence", type=Path, action="append", default=list(DEFAULT_CAPABILITIES))
