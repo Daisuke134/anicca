@@ -53,6 +53,31 @@ function exactInstant(value) {
   return instant;
 }
 
+// The only timezone connector-minimal-production.js verifies for a live run (its PRODUCTION_TIME_ZONE
+// gate rejects any other value). Callers should thread the real run timezone in via options.timeZone;
+// this is the fallback for callers (tests, the restart harness) that predate per-run timezone threading.
+const DEFAULT_TIME_ZONE = "Asia/Tokyo";
+
+function timeZoneName(value) {
+  const result = text(value, 100);
+  try { new Intl.DateTimeFormat("en-US", { timeZone: result }); } catch { invalid(); }
+  return result;
+}
+
+function localizedStartsAt(startsAt, timeZone) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("ja-JP", {
+    timeZone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(startsAt)).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return `${parts.year}/${parts.month}/${parts.day}(${parts.weekday}) ${parts.hour}:${parts.minute} ${timeZone}`;
+}
+
 function assertNoSymlinkPath(root, target) {
   const base = path.resolve(root); const resolved = path.resolve(target); const relative = path.relative(base, resolved);
   if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) invalid();
@@ -451,6 +476,7 @@ function createMinimalEvidenceChain(options = {}) {
   const calendar = options.calendar;
   const calendarId = text(options.calendarId, 1_024);
   const telegramTarget = text(options.telegramTarget, 200);
+  const timeZone = timeZoneName(options.timeZone || DEFAULT_TIME_ZONE);
   const lumaEvidenceStore = options.evidenceStore || createLumaEvidenceStore({
     dataDir: path.join(stateDir, "evidence"),
   });
@@ -577,11 +603,13 @@ function createMinimalEvidenceChain(options = {}) {
       const status = input.providerState.status;
       const message = [
         "Connector::: イベント申込を確認しました",
-        `provider: ${input.provider}`,
         `event: ${title}`,
+        `starts at: ${localizedStartsAt(startsAt, timeZone)}`,
+        `venue: ${venue}`,
+        `provider: ${input.provider}`,
         `status: ${status}`,
-        `starts at: ${startsAt}`,
-        `calendar event ID: ${verifiedCalendar.id}`,
+        `event url: ${eventUrl}`,
+        `calendar: ${verifiedCalendar.htmlLink}`,
       ].join("\n");
       let messageId = messageCheckpoint && messageCheckpoint.telegramMessageProviderId;
       if (!messageCheckpoint) {
