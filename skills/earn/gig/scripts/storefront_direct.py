@@ -1099,6 +1099,36 @@ def _render_listing_state_mutation(
 CREATE_MIN_INTERVAL_SECONDS = 86_400
 
 
+def _score_demand_cluster(cluster: dict) -> dict:
+    """Score one official demand cluster from what the marketplace actually shows.
+
+    Demand is only credited when comparables prove buyers pay: a query with results but
+    no sold comparable scores zero rather than being called demand.
+    """
+    results = cluster.get("visible_result_count")
+    comparables = [row for row in cluster.get("comparables") or [] if isinstance(row, dict)]
+    sold = [row for row in comparables if type(row.get("sales_count")) is int and row["sales_count"] > 0]
+    reviewed = [row for row in comparables if type(row.get("review_count")) is int and row["review_count"] > 0]
+    prices = [row["display_price_jpy"] for row in comparables
+              if type(row.get("display_price_jpy")) is int and row["display_price_jpy"] > 0]
+    if type(results) is not int or not comparables:
+        return {"status": "unknown", "reason": "official_demand_evidence_incomplete", "score": None}
+    return {
+        "status": "known",
+        "score": len(sold) * 3 + len(reviewed),
+        "visible_result_count": results,
+        "sold_comparables": len(sold),
+        "reviewed_comparables": len(reviewed),
+        "median_price_jpy": sorted(prices)[len(prices) // 2] if prices else None,
+    }
+
+
+def _demand_cluster_key(query: str, category_url: str) -> str:
+    identity = json.dumps({"query": query.strip(), "category": category_url.strip()},
+                          ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return "storefront:demand:v1:" + hashlib.sha256(identity.encode()).hexdigest()
+
+
 def _last_published_create_epoch(state_dir: Path) -> int | None:
     """When this loop last published a brand-new listing, read from its own wake receipts."""
     path = state_dir / "wakes.jsonl"
