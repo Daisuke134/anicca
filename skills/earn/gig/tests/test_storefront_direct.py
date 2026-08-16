@@ -243,10 +243,7 @@ def test_launchagent_is_immutable_dedicated_and_storefront_braked():
                     "__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/storefront_direct.py",
                     "--effect"]
     assert env["GIG_OPERATOR_BRAKE_FILE"].endswith("/storefront.operator.brake")
-    assert env["ANICCA_BUDGET_DAILY_SCOPE"] == "gig-storefront-direct"
-    assert env["ANICCA_BUDGET_REQUIRED"] == "1"
-    assert int(env["ANICCA_PASS_TOKEN_BUDGET"]) > 0
-    assert int(env["ANICCA_LOOP_DAILY_TOKEN_BUDGET"]) >= int(env["ANICCA_PASS_TOKEN_BUDGET"])
+    assert not any("BUDGET" in key for key in env)
     serialized = PLIST.read_text(encoding="utf-8")
     for forbidden in ("hermes", "gig_pass.sh", "/operator.brake</string>", "worktree"):
         assert forbidden not in serialized

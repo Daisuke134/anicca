@@ -84,13 +84,12 @@ git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   skills/gig-work/schemas/application_decisions.schema.json \
   skills/gig-work/schemas/reply_composition.schema.json \
   runtime/agent-runner/agent_runner.py \
-  runtime/agent-runner/token_budget.py \
   runtime/agent-runner/config.json | tar -xf - -C "$STAGING"
 git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   skills/earn/lancers/scripts/telegram_report.py \
   skills/_shared/marketplace-core/scripts/telegram_outbox.py | tar -xf - -C "$STAGING"
 mkdir -p "$STAGING/skills/agent-runner"
-for source in agent_runner.py token_budget.py config.json; do
+for source in agent_runner.py config.json; do
   mv "$STAGING/runtime/agent-runner/$source" "$STAGING/skills/agent-runner/$source"
 done
 rmdir "$STAGING/runtime/agent-runner" "$STAGING/runtime"

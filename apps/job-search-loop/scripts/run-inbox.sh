@@ -66,12 +66,6 @@ PENDING_PREP_COUNT=$("$JOB_SEARCH_JQ" -r '.pending_count' "$PREP_STATUS")
 if [[ "$NEW_COUNT" == "0" && "$PENDING_PREP_COUNT" == "0" ]]; then
   exit 0
 fi
-export ANICCA_BUDGET_REQUIRED=1
-export ANICCA_BUDGET_SCOPE_ID="job-search-inbox:$RUN_ID"
-export ANICCA_PASS_TOKEN_BUDGET=65536
-export ANICCA_LOOP_DAILY_TOKEN_BUDGET=1048576
-export ANICCA_BUDGET_DAILY_SCOPE="job-search-inbox"
-export ANICCA_BUDGET_DAY_TZ="Asia/Tokyo"
 set +e
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class composition-agent \
@@ -85,11 +79,6 @@ set +e
 RUNNER_RC=$?
 set -e
 if [[ "$RUNNER_RC" -ne 0 ]]; then
-  if [[ "$RUNNER_RC" -eq 75 ]] \
-    && "$JOB_SEARCH_JQ" -e '.status == "budget_blocked"' \
-      "$EVIDENCE/summary.json" >/dev/null 2>&1; then
-    exit 0
-  fi
   exit "$RUNNER_RC"
 fi
 RESULT_PATH=$("$JOB_SEARCH_JQ" -er \

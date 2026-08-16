@@ -1685,10 +1685,6 @@ def _invoke_judge(
     evidence_dir.mkdir(parents=True, exist_ok=True)
     started = time.time()
     child_env = os.environ.copy()
-    if (child_env.get("ANICCA_BUDGET_REQUIRED") == "1"
-            or child_env.get("ANICCA_PASS_TOKEN_BUDGET")
-            or child_env.get("ANICCA_LOOP_DAILY_TOKEN_BUDGET")):
-        child_env["ANICCA_BUDGET_SCOPE_ID"] = f"gig-storefront-direct:{evidence_dir.parent.name}"
     completed = subprocess.run(
         [sys.executable, str(runner), "--task-class", "composition-agent", "--prompt-stdin",
          "--schema", str(schema), "--evidence-dir", str(evidence_dir),
