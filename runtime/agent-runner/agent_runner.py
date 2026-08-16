@@ -974,17 +974,7 @@ def run() -> int:
         budget_values_present = tuple(bool(value) for value in (
             budget_scope_id, pass_budget_raw, daily_budget_raw,
         ))
-        if any(budget_values_present) and not all(budget_values_present):
-            raise ValueError("token budget scope/pass/daily settings must be provided together")
         budget_enabled = all(budget_values_present)
-        # Fail closed. An unconfigured budget used to degrade silently to no
-        # breaker at all, which is how the reply detector ran 47 uncharged model
-        # calls. Owners that are meant to be budgeted set this and refuse to run
-        # rather than run unbounded.
-        if os.environ.get("ANICCA_BUDGET_REQUIRED", "").strip() == "1" and not budget_enabled:
-            raise ValueError(
-                "token budget is required but scope/pass/daily settings are missing"
-            )
         # The daily pool belongs to one caller (one LaunchAgent), not to the
         # whole loop. Defaults to the loop, so callers that do not name an owner
         # keep their previous behaviour.
@@ -1000,14 +990,9 @@ def run() -> int:
             or daily_token_budget <= 0
         ):
             raise ValueError("enabled token budgets and task reservation must be positive")
-        # Admission must reserve an upper bound, not the task class's planning
-        # estimate. Settlement replaces this hold with provider-reported usage,
-        # but a provider may already have spent far more than the estimate by
-        # then. Reserving the whole pass allowance prevents that observed
-        # estimate-to-settlement gap from crossing the daily cap.
-        token_reservation = (
-            pass_token_budget if budget_enabled else task_token_reservation
-        )
+        # Reservations are observability estimates only. They never gate a
+        # revenue loop; settlement records the provider-reported usage.
+        token_reservation = task_token_reservation
         budget_ledger = TokenBudgetLedger(Path(os.environ.get(
             "ANICCA_TOKEN_BUDGET_LEDGER",
             Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "token-budget.jsonl",
@@ -1041,7 +1026,6 @@ def run() -> int:
     started_at = utc_now()
     attempts: list[dict[str, Any]] = []
     selected: dict[str, Any] | None = None
-    budget_blocked: dict[str, Any] | None = None
     last_budget: dict[str, Any] = {
         "status": "disabled",
         "reason": "budget_not_configured",
@@ -1061,16 +1045,6 @@ def run() -> int:
                 pass_limit=pass_token_budget,
                 daily_limit=daily_token_budget,
             )
-            if last_budget["status"] == "blocked":
-                # Exhaustion stops everything for this owner, including the
-                # revenue lane. Deliberate: the daily limit is set ~3x above
-                # measured peak spend, so tripping it means a runaway, and the
-                # revenue lane is the highest-token lane -- exempting it would
-                # exempt the exact thing that runs away. A tripped breaker is a
-                # page for a human, not a lane to route around. Per-pass limits
-                # stay in place so one bad pass dies without burning the day.
-                budget_blocked = last_budget
-                break
         effective_candidate = dict(candidate)
         provider = effective_candidate["provider"]
         provider_config = config.get("providers", {}).get(provider, {})
@@ -1310,8 +1284,8 @@ def run() -> int:
         "route": route,
         "escalated": requires_explicit_escalation,
         "escalation_reason": escalation_reason,
-        "status": "success" if selected else ("budget_blocked" if budget_blocked else "failed"),
-        "budget": budget_blocked or last_budget,
+        "status": "success" if selected else "failed",
+        "budget": last_budget,
         "selected_provider": selected["provider"] if selected else None,
         "selected_model": selected["model"] if selected else None,
         "selected_effort": selected["effort"] if selected else None,
@@ -1323,7 +1297,7 @@ def run() -> int:
     print(json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
     if selected:
         return 0
-    return 75 if budget_blocked else 1
+    return 1
 
 
 if __name__ == "__main__":

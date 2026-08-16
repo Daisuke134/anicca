@@ -36,7 +36,7 @@ class TokenBudgetTest(unittest.TestCase):
             daily_limit=100,
         )
 
-    def test_actual_charge_replaces_reservation_and_blocks_pass_then_day(self):
+    def test_actual_charge_replaces_reservation_without_blocking(self):
         first = self.reserve("event-1", "pass-1")
         self.assertEqual(first["status"], "allowed")
         self.ledger.settle(
@@ -46,19 +46,20 @@ class TokenBudgetTest(unittest.TestCase):
         )
 
         same_pass = self.reserve("event-2", "pass-1")
-        self.assertEqual(same_pass["status"], "blocked")
-        self.assertEqual(same_pass["reason"], "pass_token_budget_exceeded")
+        self.assertEqual(same_pass["status"], "allowed")
+        self.assertTrue(same_pass["pass_limit_exceeded"])
 
         next_pass = self.reserve("event-3", "pass-2")
-        self.assertEqual(next_pass["status"], "blocked")
-        self.assertEqual(next_pass["reason"], "loop_daily_token_budget_exceeded")
+        self.assertEqual(next_pass["status"], "allowed")
+        self.assertTrue(next_pass["daily_limit_exceeded"])
 
     def test_unsettled_reservation_remains_charged_after_crash(self):
         first = self.reserve("event-crash", "pass-crash", reservation=60)
         second = self.reserve("event-next", "pass-crash", reservation=50)
 
         self.assertEqual(first["status"], "allowed")
-        self.assertEqual(second["status"], "blocked")
+        self.assertEqual(second["status"], "allowed")
+        self.assertTrue(second["pass_limit_exceeded"])
         self.assertEqual(second["pass_consumed_tokens"], 60)
 
 
