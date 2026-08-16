@@ -508,11 +508,16 @@ def _collect_analytics(
                 raise RuntimeError("official_analytics_tab_open_invalid") from error
             finally:
                 if isinstance(tab, dict) and tab.get("target_id"):
-                    subprocess.run(
-                        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-                         "close", str(tab["target_id"])], capture_output=True, text=True,
-                        check=False, timeout=30,
-                    )
+                    try:
+                        subprocess.run(
+                            [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                             "close", str(tab["target_id"])], capture_output=True, text=True,
+                            check=False, timeout=30,
+                        )
+                    except subprocess.TimeoutExpired:
+                        # A dead CDP endpoint must not replace the original read
+                        # failure or prevent run_once from writing a failed receipt.
+                        pass
             body = str(observed.get("body") or "")
             period = re.search(
                 r"対象期間：([0-9]{4}/[0-9]{2}/[0-9]{2})\s*-\s*([0-9]{4}/[0-9]{2}/[0-9]{2})", body,
@@ -1863,12 +1868,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             row = _persist_receipt(args, output, row)
             return 0, row
-        except (OSError, RuntimeError, TypeError, ValueError) as error:
+        except (OSError, RuntimeError, TypeError, ValueError, subprocess.SubprocessError) as error:
             if lease is not None and not released:
                 try:
                     release = _lease(args.lease_script, "release", task, lease)
                     released = release.get("released") == task
-                except (OSError, RuntimeError, TypeError, ValueError):
+                except (OSError, RuntimeError, TypeError, ValueError, subprocess.SubprocessError):
                     pass
             row = _receipt(pass_id, status="failed", reason=str(error),
                            lease={"task": task, "released": released} if lease is not None else None)
@@ -1878,7 +1883,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             if lease is not None and not released:
                 try:
                     _lease(args.lease_script, "release", task, lease)
-                except (OSError, RuntimeError, TypeError, ValueError):
+                except (OSError, RuntimeError, TypeError, ValueError, subprocess.SubprocessError):
                     pass
 
 
