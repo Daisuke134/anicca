@@ -92,7 +92,7 @@ Telegram evidence、local scheduleの復旧で判定する。fallback provider�
 
 | 順序 | ID | 状態 | 完了条件 |
 |---:|---|---|---|
-| 1 | C-CORE-01 single-owner cleanup | READY | 壊れたhealthcheck・Healer・retired host bridgeだけをunloadし、nativeだけloaded。削除済みworktree参照、`EX_CONFIG`、port `18793` consumerを0にする。plist/stateは削除しない |
+| 1 | C-CORE-01 single-owner cleanup | DONE 2026-08-16（証拠は`docs/superpowers/plans/2026-08-16-connector-core-recovery-execution-notes.md`。unload後にnativeだけloaded、`EX_CONFIG` 0件、`18793` listener 0、plist 7件とstate 27件を保持、Gig `9223`無変更） | 壊れたhealthcheck・Healer・retired host bridgeだけをunloadし、nativeだけloaded。削除済みworktree参照、`EX_CONFIG`、port `18793` consumerを0にする。plist/stateは削除しない |
 | 2 | C-CORE-02 browser readiness | READY | Connector専用CloakBrowser daily-driver `127.0.0.1:9222`の正規ownerを復旧し、Gig `:9223`や他profileを変更せずhealth endpointとpage inventoryをreadbackする |
 | 3 | C-CORE-03 remove travel dependency | READY | `connector-native-runtime.js`のcandidate eligibilityから`createConnectorRouteMinutes`、`homeLocation`、`routeMinutes`依存を除去し、無料・受付中・東京・14日内・Google Calendar busy非衝突だけをgateにする。Connectorがroute APIやtravel Calendar writeを呼ばないregressionを残す。あわせて`0.2.6`の実測driftどおりuser-facing Telegram文面を14日窓・移動時間非言及・provider非決め打ちへ合わせる |
 | 4 | C-CORE-04 canonical primary-first wake | BLOCKED_BY_01_02_03 | native labelをexact 1回supervised kickstartし、Luma→Connpass→fallbackの順序、main entrypoint、session/target各1、terminal report、process/lock/owned-page cleanup、exit contractを実測する |
