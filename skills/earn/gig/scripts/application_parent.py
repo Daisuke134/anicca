@@ -161,6 +161,87 @@ def _price_within_official_bounds(price_jpy: int, text: object) -> int:
     return price
 
 
+def commercial_offer_price(
+    detail: dict[str, object], *, planner_price_jpy: int
+) -> int:
+    """Own the final bid in code without inventing private competitor terms."""
+    minimum = detail.get("budget_min_jpy")
+    maximum = detail.get("budget_max_jpy")
+    minimum_value = minimum if isinstance(minimum, int) and not isinstance(minimum, bool) else None
+    maximum_value = maximum if isinstance(maximum, int) and not isinstance(maximum, bool) else None
+    if maximum_value is not None:
+        competitive = maximum_value - 1_000
+        if minimum_value is not None:
+            competitive = max(competitive, minimum_value)
+        return max(1, competitive)
+    if minimum_value is not None:
+        return max(1, minimum_value)
+    # With no public budget, retain the planner's scope judgment but make the
+    # executable amount deterministic and code-normalised.
+    return max(1_000, (int(planner_price_jpy) // 1_000) * 1_000)
+
+
+def commercial_proposal_text(
+    planner_text: str, *, price_jpy: int, deliver_date: str
+) -> str:
+    """Turn semantic planner copy into a decisive, zero-question offer."""
+    burden_markers = (
+        "いただけますか", "教えてください", "ご共有ください", "ご教示ください",
+        "確認させてください", "確認が必要", "分かりかね", "判断できません",
+    )
+    pieces = re.split(r"(?<=[。！？!?])", str(planner_text or ""))
+    kept = [
+        piece.strip()
+        for piece in pieces
+        if piece.strip()
+        and "?" not in piece
+        and "？" not in piece
+        and not any(marker in piece for marker in burden_markers)
+    ]
+    body = "".join(kept).strip()
+    if body.startswith("対応可能です。"):
+        body = body.removeprefix("対応可能です。").lstrip()
+    if len(body) < 100:
+        body += (
+            "ご要望に沿った完成物まで責任を持って進めます。着手後は必要な情報をトークルームで整理し、"
+            "進捗を分かりやすく共有します。初回納品の段階からそのままご利用いただける品質に整えます。"
+            "途中で認識差が生じないよう、成果物の目的と完成条件をこちらで整理してから制作します。"
+            "使いやすさと保守性も含め、納品後の運用で困らない形に仕上げます。"
+        )
+    body = body[:2_800]
+    closing = (
+        f"上記内容を{price_jpy:,}円で対応し、{deliver_date}までに納品します。"
+        "納品後も、ご納得いただけるまで修正に対応します。"
+    )
+    return f"対応可能です。{body}{closing}"
+
+
+def apply_commercial_offer_contract(
+    snapshot: dict[str, object], decisions: dict[str, object]
+) -> dict[str, object]:
+    details = {
+        str(detail["request_id"]): detail
+        for detail in snapshot["request_details"]
+        if isinstance(detail, dict)
+    }
+    rows: list[object] = []
+    for raw in decisions["decisions"]:
+        if not isinstance(raw, dict) or raw.get("business_class") != SUBMIT_REQUIRED:
+            rows.append(raw)
+            continue
+        detail = details[str(raw["request_id"])]
+        price = commercial_offer_price(detail, planner_price_jpy=int(raw["price_jpy"]))
+        row = dict(raw)
+        row["price_jpy"] = price
+        row["proposal_text"] = commercial_proposal_text(
+            str(raw["proposal_text"]),
+            price_jpy=price,
+            deliver_date=str(raw["deliver_date"]),
+        )
+        rows.append(row)
+    return {"decisions": rows}
+
+
 async def settle_after_click(read, predicate, *, deadline_seconds: float = 15.0, interval: float = 0.25):
     """Read the page until the click has visibly landed, or the deadline passes.
 
@@ -951,12 +1032,60 @@ class CdpParentEffects:
                   const deadline_value=date?
                     `${date[1]}-${date[2].padStart(2,'0')}-${date[3].padStart(2,'0')}`:null;
                   const not_found=/^(404\\b|ページが見つかりません|お探しのページ|ご指定のページが見つかりませんでした)/u.test(title);
+                  const applicants=[...document.querySelectorAll('#requestContentsProposers .c-proposersRow-body')]
+                    .slice(0,3).map(row=>{
+                      const link=row.querySelector('a[href^="/users/"]');
+                      const match=(link?.getAttribute('href')||'').match(/^\\/users\\/([0-9]+)\\/?$/);
+                      const applied_at=(row.querySelector('.c-proposersRowDate')?.innerText||'').trim();
+                      return match?{user_id:match[1],name:(link.innerText||'').trim(),applied_at,
+                        profile_url:`https://coconala.com/users/${match[1]}`}:null;
+                    }).filter(Boolean);
                   return {url:location.href,title,text,category,accepting:accepting_control,
                     accepting_control:accepting_control?'present':'absent',
-                    page_state:not_found?'not_found':'present',deadline_value,deadline_text};
+                    page_state:not_found?'not_found':'present',deadline_value,deadline_text,applicants};
                 })())""",
                 call_id,
             )
+            enriched_applicants: list[dict[str, object]] = []
+            raw_applicants = page.get("applicants")
+            if isinstance(raw_applicants, list):
+                for raw in raw_applicants[:3]:
+                    if not isinstance(raw, dict):
+                        continue
+                    user_id = str(raw.get("user_id") or "")
+                    if not user_id.isdigit():
+                        continue
+                    call_id = await self._navigate(
+                        ws, f"https://coconala.com/users/{user_id}", call_id
+                    )
+                    profile, call_id = await self._eval_json(
+                        ws,
+                        """JSON.stringify((()=>{
+                          const text=(document.body?.innerText||'').normalize('NFKC');
+                          const rating=text.match(/(?:評価|rating)\\s*([0-5](?:\\.[0-9]+)?)/iu);
+                          const sales=text.match(/(?:販売実績|販売数)\\s*([0-9,]+)/u);
+                          const services=[...document.querySelectorAll('a[href^="/services/"]')]
+                            .map(e=>(e.innerText||'').trim()).filter(Boolean)
+                            .filter((value,index,array)=>array.indexOf(value)===index).slice(0,5);
+                          return {url:location.href,rating:rating?Number(rating[1]):null,
+                            sales_count:sales?Number(sales[1].replaceAll(',','')):null,
+                            public_services:services,profile_summary:text.replace(/\\s+/g,' ').trim().slice(0,600)};
+                        })())""",
+                        call_id,
+                    )
+                    expected_profile = f"https://coconala.com/users/{user_id}"
+                    if str(profile.get("url") or "").rstrip("/") != expected_profile:
+                        continue
+                    enriched_applicants.append({
+                        "user_id": user_id,
+                        "name": str(raw.get("name") or "").strip(),
+                        "applied_at": str(raw.get("applied_at") or "").strip(),
+                        "profile_url": expected_profile,
+                        "rating": profile.get("rating"),
+                        "sales_count": profile.get("sales_count"),
+                        "public_services": profile.get("public_services") or [],
+                        "profile_summary": str(profile.get("profile_summary") or "").strip(),
+                    })
         text = str(page.get("text") or "")
         title = str(page.get("title") or "").strip()
         # A server/WAF denial is not marketplace lifecycle evidence. Treating the
@@ -1013,6 +1142,7 @@ class CdpParentEffects:
             "budget_max_jpy": market.get("budget_hi_jpy"),
             "applicants_count": market.get("applicants_at_bid"),
             "contracted_count": market.get("contracted_count"),
+            "applicants": enriched_applicants,
             "observed_at": _utc_now(),
             # T3 (2026-08-09): ranking-only. application_snapshot._DETAIL_FIELDS
             # deliberately omits this key, so _normalise_detail drops it before the
@@ -3422,7 +3552,7 @@ def invoke_isolated_planner(
         assert isinstance(batch_rows, list)
         rows.extend(batch_rows)
         missing_ids.extend(batch_missing)
-    decisions = {"decisions": rows}
+    decisions = apply_commercial_offer_contract(snapshot, {"decisions": rows})
     if not rows:
         raise ParentContractError(
             "application_intent_planner_contract:decisions_empty_after_id_sanitization"
