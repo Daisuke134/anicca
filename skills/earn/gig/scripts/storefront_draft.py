@@ -556,25 +556,36 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
 def readback_published_draft(
     contract: dict[str, Any], default_tab_script: Path, evidence_dir: Path,
 ) -> dict[str, Any]:
-    draft_opened = subprocess.run(
-        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-         "--background", "open", contract["draft_url"]], capture_output=True, text=True,
-        check=False, timeout=30,
-    )
-    draft_tab = None
-    try:
-        draft_tab = json.loads(draft_opened.stdout)
-        if draft_opened.returncode != 0 or draft_tab.get("ok") is not True:
-            raise RuntimeError("storefront_published_draft_tab_open_failed")
-        draft_snapshot = asyncio.run(_readback(str(draft_tab["ws"]), contract))
-        image_identity = _snapshot_image_identity(draft_snapshot)
-    finally:
-        if isinstance(draft_tab, dict) and draft_tab.get("target_id"):
-            subprocess.run(
-                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-                 "close", str(draft_tab["target_id"])], capture_output=True, text=True,
-                check=False, timeout=30,
-            )
+    image_identity = None
+    last_error = None
+    for attempt in range(3):
+        draft_opened = subprocess.run(
+            [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+             "--background", "open", contract["draft_url"]], capture_output=True, text=True,
+            check=False, timeout=30,
+        )
+        draft_tab = None
+        try:
+            draft_tab = json.loads(draft_opened.stdout)
+            if draft_opened.returncode != 0 or draft_tab.get("ok") is not True:
+                raise RuntimeError("storefront_published_draft_tab_open_failed")
+            draft_snapshot = asyncio.run(_readback(str(draft_tab["ws"]), contract))
+            image_identity = _snapshot_image_identity(draft_snapshot)
+            break
+        except RuntimeError as error:
+            last_error = error
+            if not str(error).startswith("storefront_draft_category_option_missing") or attempt >= 2:
+                raise
+        finally:
+            if isinstance(draft_tab, dict) and draft_tab.get("target_id"):
+                subprocess.run(
+                    [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                     "close", str(draft_tab["target_id"])], capture_output=True, text=True,
+                    check=False, timeout=30,
+                )
+        time.sleep(2)
+    if image_identity is None:
+        raise last_error or RuntimeError("storefront_published_draft_readback_missing")
     public_opened = subprocess.run(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", contract["expected_public_url"]], capture_output=True, text=True,
