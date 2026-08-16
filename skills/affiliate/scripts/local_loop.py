@@ -345,6 +345,24 @@ def owner_event(state, wake_event, sent_event_ids=None):
 def daily_summary_event(state, wake_event, now=None):
     now = now or datetime.now(ZoneInfo("Asia/Tokyo"))
     report_date = now.astimezone(ZoneInfo("Asia/Tokyo")).date().isoformat()
+    budget_blocked = 0
+    for receipt_path in (state / "composition-receipts").glob("*.json"):
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            if not (
+                receipt.get("state") == "FAILED"
+                and receipt.get("failure_class") == "RUNNER_REJECTED"
+            ):
+                continue
+            run_id = f"{receipt['plan_id']}-{receipt['source_set_sha256'][:16]}"
+            summary = json.loads((
+                state / "composition-runs" / run_id / "summary.json"
+            ).read_text(encoding="utf-8"))
+            budget = summary["budget"]
+            if summary.get("status") == "budget_blocked" and budget.get("day") == report_date:
+                budget_blocked += 1
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
     owned_live = sum(
         json.loads(path.read_text(encoding="utf-8")).get("state") == "LIVE"
         for path in (state / "owned-publications").glob("*.json")
@@ -424,6 +442,7 @@ def daily_summary_event(state, wake_event, now=None):
         "impact_state": wake_event.get("impact_state"),
         "systeme_state": wake_event.get("systeme_state"),
         "economic_stage": economic_stage,
+        "composition_budget_blocked_count": budget_blocked,
         "created_at": int(now.timestamp()),
     }
     atomic_json(state / "daily-summaries" / f"{report_date}.json", receipt)
@@ -452,6 +471,16 @@ def daily_summary_event(state, wake_event, now=None):
         "E1_APPROVED_COMMISSION": "クリックから最初の承認済み報酬を確認する段階です。",
         "POST_E1_OPTIMIZATION": "実測収益を使って次のcampaignを選ぶ段階です。",
     }[economic_stage]
+    if budget_blocked:
+        next_action = (
+            f"英語campaign {budget_blocked}件の制作stageは、本日の安全な生成予算上限を守って保留しています。"
+            "Agentは次のJST予算で同じ仕事を自動再開し、その間もprovider確認、"
+            "公開計測、収益照合を継続します。"
+        )
+    else:
+        next_action = (
+            "Agentは現在の実測値を収集し、次に実行可能なcampaignを1件だけ進めます。"
+        )
     body = "\n".join((
         "Life Manager Affiliate::: 今日の運用報告です。",
         f"{report_date}は、Affiliate loopが{receipt['wake_count_today']}回動きました。",
@@ -480,6 +509,7 @@ def daily_summary_event(state, wake_event, now=None):
             f"Systeme.ioは{state_text.get(receipt['systeme_state'], '確認が必要な状態')}です。"
         ),
         f"次の経済stageは、{stage_text}",
+        f"次のAgent行動は、{next_action}",
     ))
     return {
         "event_uuid": event_uuid,

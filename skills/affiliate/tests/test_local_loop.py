@@ -24,6 +24,17 @@ class LocalLoopTest(unittest.TestCase):
     def test_daily_summary_has_stable_jst_day_identity_and_money_stage(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
+            receipt_dir = state / "composition-receipts"
+            run_dir = state / "composition-runs" / f"alpha-en-{'a' * 16}"
+            receipt_dir.mkdir(parents=True)
+            run_dir.mkdir(parents=True)
+            MODULE.atomic_json(receipt_dir / "alpha-en.json", {
+                "state": "FAILED", "failure_class": "RUNNER_REJECTED",
+                "plan_id": "alpha-en", "source_set_sha256": "a" * 64,
+            })
+            MODULE.atomic_json(run_dir / "summary.json", {
+                "status": "budget_blocked", "budget": {"day": "2026-08-16"},
+            })
             (state / "provider-reports" / "partnerstack-links").mkdir(parents=True)
             MODULE.atomic_json(
                 state / "provider-reports" / "partnerstack-links" / "latest.json",
@@ -50,6 +61,8 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(first["event_uuid"], second["event_uuid"])
             self.assertNotEqual(first["event_uuid"], third["event_uuid"])
             self.assertIn("専用リンクで最初の外部クリック", first["body"])
+            self.assertIn("英語campaign 1件の制作stage", first["body"])
+            self.assertIn("次のJST予算で同じ仕事を自動再開", first["body"])
             self.assertNotIn("SIGN_IN_REQUIRED", unknown["body"])
             self.assertIn("確認が必要な状態", unknown["body"])
 
