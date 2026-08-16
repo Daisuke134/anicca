@@ -211,7 +211,7 @@ def commercial_proposal_text(
     body = body[:2_800]
     closing = (
         f"上記内容を{price_jpy:,}円で対応し、{deliver_date}までに納品します。"
-        "納品後も、ご納得いただけるまで修正に対応します。"
+        "納品後も、契約範囲内でご納得いただけるまで修正に対応します。"
     )
     return f"対応可能です。{body}{closing}"
 
