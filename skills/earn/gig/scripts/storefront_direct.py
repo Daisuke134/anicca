@@ -2673,6 +2673,36 @@ def _seller_snapshot_for(ws_url: str, service_id: str) -> dict:
     raise RuntimeError("seller_form_not_fully_hydrated")
 
 
+def _seller_snapshot_from_fresh_tab(default_tab_script: Path, service_id: str) -> dict:
+    last_error: Exception | None = None
+    url = f"https://coconala.com/mypage/services/{service_id}"
+    for attempt in range(3):
+        opened = subprocess.run(
+            [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+             "--background", "open", url], capture_output=True, text=True,
+            check=False, timeout=30,
+        )
+        tab = None
+        try:
+            tab = json.loads(opened.stdout)
+            if opened.returncode != 0 or tab.get("ok") is not True:
+                raise RuntimeError("storefront_create_source_tab_open_failed")
+            return _seller_snapshot_for(str(tab["ws"]), service_id)
+        except Exception as error:
+            last_error = error
+            if attempt >= 2:
+                raise RuntimeError(f"storefront_create_source_snapshot_failed:{type(error).__name__}") from error
+            time.sleep(1)
+        finally:
+            if isinstance(tab, dict) and tab.get("target_id"):
+                subprocess.run(
+                    [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                     "close", str(tab["target_id"])], capture_output=True, text=True,
+                    check=False, timeout=30,
+                )
+    raise RuntimeError("storefront_create_source_snapshot_failed") from last_error
+
+
 async def _seller_package_snapshot_async(ws_url: str, service_id: str) -> dict:
     import websockets
     import listing_inventory
@@ -3772,7 +3802,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     raise RuntimeError("storefront_create_source_contract_missing")
                 demand = {**new_listing_contract["demand_evidence"],
                           "evidence_path": str(Path(new_listing_path).resolve())}
-                create_seller_snapshot = _seller_snapshot_for(ws_url, source_service_id)
+                create_seller_snapshot = _seller_snapshot_from_fresh_tab(
+                    getattr(args, "default_tab_script", DEFAULT_TAB), source_service_id,
+                )
                 create_proposal, create_route, create_allowed_refs = _invoke_create_proposal(
                     runner=getattr(args, "runner", DEFAULT_RUNNER),
                     schema=getattr(args, "create_proposal_schema", DEFAULT_CREATE_PROPOSAL_SCHEMA),
