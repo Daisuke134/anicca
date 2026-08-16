@@ -1239,7 +1239,7 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M2.1-P, grow the English portfolio from seven to ten
+Current execution cursor: **E1-H, close the first real transaction path; M2.1-P is met at ten
 comparable dedicated-link placements through the already-installed autonomous
 campaign path**. M2.0 is closed: every existing revenue placement now has one
 PartnerStack link, owned/X public readback, and one canonical ledger row. The
@@ -1256,14 +1256,14 @@ they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
 
 Latest restart truth: installed release
-`f4b8109c091cc153bd827459909ff2f7e9507193` is byte-identical to that commit and
+`22e8876ad561eef85827a73fa9f34dc534d7e771` is byte-identical to that commit and
 is pushed to `origin` and `canonical`; the publication fix below landed in
 `7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25`. Any commit that touches
 `skills/affiliate` MUST be reinstalled, so
 `git diff <installed-release> HEAD -- skills/affiliate` must stay empty; a
 non-empty diff means the runtime is stale. The focused suite runs
 `python3 -m unittest $(ls tests/test_*.py | sed 's#/#.#;s#\.py##')` from
-`skills/affiliate` and is `68/68` green, with no tolerated red baseline.
+`skills/affiliate` and is `69/69` green, with no tolerated red baseline.
 All six launchd
 owners are loaded; the three job owners read back 600-second intervals and last
 exit `0`, and the three isolated browser owners are running.
@@ -1397,8 +1397,46 @@ The canonical ledger holds seven placements, one per campaign. The count read `8
 only while the placement was mid-flight, because the dedicated-link row and the
 owned-article row had not yet merged; they collapsed into the single canonical row
 `elevenlabs-discovered-youtube-transcript-generator-en-1` once the post completed,
-so nothing was double counted. Clicks, commission, and cost for placement seven
-remain unknown and MUST stay unknown until PartnerStack reports them. The cap implies at most four sealed compositions per JST
+so nothing was double counted.
+
+M2.1-P then completed. The same unattended path produced placements eight, nine,
+and ten, each selected by the Agent through a sealed `OPPORTUNITY_DECISION` over
+uncovered product families, and each carrying its own dedicated link, owned
+article, X post, public readback, and canonical ledger row:
+
+| # | plan | X post | decision |
+|---|---|---|---|
+| 8 | `elevenlabs-discovered-voice-cloning-en` | `2089016511650472129` | `1c123ded…` |
+| 9 | `elevenlabs-discovered-voice-changer-en` | `2089019590332580115` | `9d7b5391…` |
+| 10 | `elevenlabs-discovered-subtitle-translator-en` | `2089023703632023863` | — |
+
+All ten `x-posts` receipts are `X_POST_PUBLIC_READBACK` in state `LIVE`, with no
+effect fence left open and no duplicate post. Placement ten additionally proved
+the publication fence is real: its landing deploy FAILED on an unrelated
+`next/font/google` fetch error for `app/comedy/ja/page.tsx`, the article stayed
+`404`, and the loop correctly refused to post — an X post may never point at an
+article that is not live. Re-running that deploy cleared it.
+
+Clicks, commission, and cost for the new placements were unknown at creation and
+were only written once PartnerStack actually reported them. All ten now carry a
+provider-measured click denominator of `0`, `transaction_count=0` in every status,
+empty approved net, and `UNKNOWN` cash cost. Official provider transactions and
+approved/paid commission remain exactly zero, so no revenue may be claimed.
+
+One further self-healing gap surfaced and was closed. `flush_telegram` was the only
+effect owner in the skill with no resume path: its reconcile pass can only clear an
+event already written to `telegram-sent.jsonl`, which never happens when the send
+itself failed, so one failed send left the job `EFFECT_STARTED` and every later
+wake returned `RECONCILE_REQUIRED`. Owner reporting was silent from `00:54:47`
+through `01:18:07 JST` and placements eight, nine, and ten went unreported while
+the loop otherwise looked healthy — the exact "still running, quietly not doing its
+job" failure this spec forbids. Release
+`22e8876ad561eef85827a73fa9f34dc534d7e771` resumes the unresolved effect under the
+same identity, matching `devto_publish`, `substack_publish`, `program_registry`,
+`provider_cli`, and this file's own `PROVIDER_EMAIL_VERIFY`. Real wake `01:21:36`
+sent message `21453` and left zero stuck `TELEGRAM_SEND` jobs; the backlog then
+drained. Dedupe stays keyed on `event_uuid`, so a delivered message is never
+resent. The cap implies at most four sealed compositions per JST
 day, so the six-to-ten placement growth is throughput-bound, not blocked.
 
 Measured economics as of this restart, read from `placement-ledger.json`: all six
