@@ -145,12 +145,35 @@ def observe_metrics(state):
             raise DevtoError("DEV publication has no valid published_at") from error
         article["age_seconds"] = max(0, int((observed_at - published_at).total_seconds()))
         article["baseline_ready"] = article["age_seconds"] >= 86400
+        if article["baseline_ready"]:
+            baseline_path = state / "distribution-baselines" / f"devto-{article['public_id']}.json"
+            if not baseline_path.is_file():
+                _atomic(baseline_path, {
+                    "schema_version": 1,
+                    "receipt_type": "DEVTO_24H_BASELINE",
+                    "provider": "devto",
+                    "public_id": article["public_id"],
+                    "plan_id": article["plan_id"],
+                    "placement_id": article["placement_id"],
+                    "published_at": article["published_at"],
+                    "observed_at": observed_at.isoformat(),
+                    "age_seconds": article["age_seconds"],
+                    "page_views_count": article["page_views_count"],
+                    "public_reactions_count": article["public_reactions_count"],
+                    "comments_count": article["comments_count"],
+                })
+            article["baseline_receipt_sha256"] = hashlib.sha256(
+                baseline_path.read_bytes()
+            ).hexdigest()
     digest = hashlib.sha256(json.dumps(articles, sort_keys=True).encode()).hexdigest()
     baseline_ready = bool(articles) and all(row["baseline_ready"] for row in articles)
     receipt = {
         "schema_version": 1, "receipt_type": "DEVTO_DISTRIBUTION_METRICS",
         "state": "OBSERVED", "observed_at": observed_at.isoformat(),
         "baseline_state": "READY" if baseline_ready else "WAITING_24H",
+        "baseline_receipt_count": sum(
+            bool(row.get("baseline_receipt_sha256")) for row in articles
+        ),
         "article_count": len(articles),
         "total_page_views": sum(row["page_views_count"] for row in articles),
         "delta_page_views": sum(row["delta_page_views"] for row in articles),
