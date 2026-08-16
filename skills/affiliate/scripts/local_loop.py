@@ -688,32 +688,32 @@ def verify_systeme_email(state, cdp_port, private_markdown):
                 page.locator("input[name='plainPassword']").fill(password)
                 page.locator("input[name='confirm_password']").fill(password)
                 captcha = page.locator("iframe[src*='/recaptcha/api2/anchor?']")
-                if captcha.count() == 1:
-                    try:
-                        captcha_anchor = page.frame_locator(
-                            "iframe[src*='/recaptcha/api2/anchor?']"
-                        ).locator("#recaptcha-anchor")
-                        captcha_anchor.wait_for(timeout=15_000)
-                        captcha_anchor.evaluate("element => element.click()")
-                        page.wait_for_function(
-                            """() => !!document.querySelector(
-                                "textarea[name='g-recaptcha-response']"
-                            )?.value""",
-                            timeout=15_000,
-                        )
-                    except Exception:
-                        result = {
-                            "schema_version": 1,
-                            "receipt_type": "PROVIDER_EMAIL_VERIFICATION",
-                            "provider": "systeme-io",
-                            "state": "CAPTCHA_CHALLENGE",
-                            "rendered_text_sha256": hashlib.sha256(
-                                page.locator("body").inner_text().encode()
-                            ).hexdigest(),
-                            "deduplicated": False,
-                        }
-                        atomic_json(receipt_path, result)
-                        return result
+                try:
+                    captcha.wait_for(timeout=15_000)
+                    captcha_anchor = page.frame_locator(
+                        "iframe[src*='/recaptcha/api2/anchor?']"
+                    ).locator("#recaptcha-anchor")
+                    captcha_anchor.wait_for(timeout=15_000)
+                    captcha_anchor.evaluate("element => element.click()")
+                    page.wait_for_function(
+                        """() => !!document.querySelector(
+                            "textarea[name='g-recaptcha-response']"
+                        )?.value""",
+                        timeout=15_000,
+                    )
+                except Exception:
+                    result = {
+                        "schema_version": 1,
+                        "receipt_type": "PROVIDER_EMAIL_VERIFICATION",
+                        "provider": "systeme-io",
+                        "state": "CAPTCHA_CHALLENGE",
+                        "rendered_text_sha256": hashlib.sha256(
+                            page.locator("body").inner_text().encode()
+                        ).hexdigest(),
+                        "deduplicated": False,
+                    }
+                    atomic_json(receipt_path, result)
+                    return result
                 with page.expect_response(
                     lambda response: "/api/security/register/confirm" in response.url,
                     timeout=20_000,

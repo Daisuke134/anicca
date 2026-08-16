@@ -1579,6 +1579,11 @@ the already-verified anchor's DOM `click()` and converts any failure in that
 boundary to `CAPTCHA_CHALLENGE`. No raw Playwright timeout can escape or be
 misreported as provider login failure.
 
+Attempt `7` exposed a render race: immediately counting the anchor iframe can
+return zero and bypass the CAPTCHA block before it mounts. The loop now waits on
+the exact anchor iframe and element as conditions; absence, click failure, or an
+empty token all converge to the same `CAPTCHA_CHALLENGE` receipt.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
