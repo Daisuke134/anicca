@@ -1886,7 +1886,17 @@ observable outcome exists.
   release `64a12f13eaac6cede4ddb8abe76d24b0aab7424a` replayed the real zero-delta
   receipt with exit `0`, `NO_PENDING`, and no outbox growth (`6 → 6`).
 - [ ] **A15.7 — E0.** Record one real post-baseline provider click connected to a
-  live English placement; do not manufacture or self-click it.
+  live English placement; do not manufacture or self-click it. The next admitted
+  acquisition lane is DEV syndication, not another zero-audience X-only post.
+  [Forem's official create-article contract](https://developers.forem.com/api/v1#tag/articles/operation/createArticle)
+  supports `canonical_url`; [DEV's community guideline](https://dev.to/p/community-guidelines)
+  permits affiliate links only with clear disclosure and
+  requires good-faith, on-topic, high-quality content that is not primarily a
+  backlink promotion. The Affiliate Skill therefore reuses Writer's proven
+  marker/API/public-readback sequence, preserves disclosure, points canonical SEO
+  ownership to the existing Anicca article, journals the external effect, and
+  publishes at most one qualified guide per 24 hours. Live publication and click
+  evidence remain open until the installed launchd owner produces them.
 - [ ] **A15.8 — E1.** Record one non-test `approved` commission with public
   placement, provider source hash, transaction lineage, costs, and Telegram event.
 

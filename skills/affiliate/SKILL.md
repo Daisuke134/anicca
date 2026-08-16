@@ -216,6 +216,25 @@ skills/affiliate/affiliate x post publish \
 Both commands require the exact owned publication receipt to be `LIVE`; the X
 publisher rechecks it before opening the composer.
 
+After a generic campaign reaches owned/X `LIVE`, the same money owner may
+syndicate one full English guide per 24 hours to the configured DEV account:
+
+```bash
+skills/affiliate/affiliate distribution publish-devto \
+  --plan elevenlabs-discovered-audio-to-text-en
+```
+
+This adapter is a copy+tweak of Writer's proven Forem transport. It finds an
+existing stable placement marker before any POST, uses the official
+`canonical_url` field to identify the owned article as the SEO source, preserves
+the article's affiliate disclosure, and requires API plus anonymous public
+readback before writing a `LIVE` receipt. The shared external-effect journal
+prevents a blind repeat after an ambiguous response. A daily cooldown prevents
+the ten-minute money wake from turning a valid distribution lane into bulk spam.
+The current host reads `DEVTO_API_KEY` from the process environment,
+`~/.config/anicca/affiliate.env`, or the already-provisioned Writer private env;
+the key never enters a receipt, log, prompt, or Git.
+
 Build the second source-bound product campaign with the same publisher and X
 adapter:
 

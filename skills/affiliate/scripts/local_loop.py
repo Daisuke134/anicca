@@ -108,6 +108,47 @@ def latest_live_campaign(state):
     return max(live, key=lambda row: row.get("created_at", "")) if live else {}
 
 
+def advance_devto_distribution(state, now=None, cooldown_seconds=86400):
+    """Syndicate at most one X_LIVE campaign per day through the DEV adapter."""
+    from devto_publish import publish
+
+    now = int(time.time()) if now is None else now
+    receipts = []
+    for path in (state / "devto-publications").glob("*.json"):
+        try:
+            row = json.loads(path.read_text(encoding="utf-8"))
+            receipts.append(row)
+        except (OSError, ValueError):
+            continue
+    observed = []
+    for row in receipts:
+        try:
+            observed.append(int(datetime.fromisoformat(
+                row["observed_at"].replace("Z", "+00:00")
+            ).timestamp()))
+        except (KeyError, TypeError, ValueError):
+            continue
+    if observed and now - max(observed) < cooldown_seconds:
+        return {"state": "COOLDOWN", "public_url": None, "changed": False}
+    done = {row.get("plan_id") for row in receipts if row.get("state") == "LIVE"}
+    due = []
+    for path in (state / "campaign-publications").glob("*.json"):
+        try:
+            row = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if row.get("state") == "X_LIVE" and row.get("plan_id") not in done:
+            due.append(row)
+    if not due:
+        return {"state": "ALREADY_LIVE", "public_url": None, "changed": False}
+    selected = max(due, key=lambda row: row.get("created_at", ""))
+    result = publish(state, selected["plan_id"])
+    return {
+        "state": result["state"], "public_url": result.get("public_url"),
+        "plan_id": selected["plan_id"], "changed": not result.get("deduplicated", False),
+    }
+
+
 def owner_event(state, wake_event):
     ledger = json_rows(state / "commission-ledger.jsonl")
     transition = ledger[-1] if ledger else None
@@ -126,7 +167,17 @@ def owner_event(state, wake_event):
     click_delta = metrics.get("delta_from_baseline", {}).get("clicks")
     impact_state = wake_event.get("impact_state")
     impact_changed = wake_event.get("impact_changed", False)
-    if impact_changed and impact_state in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
+    if wake_event.get("distribution_changed") and wake_event.get("distribution_state") == "LIVE":
+        kind = "DISTRIBUTION_LIVE"
+        identity = {
+            "kind": kind, "channel": "devto",
+            "plan_id": wake_event.get("distribution_plan_id"),
+            "public_url": wake_event.get("distribution_url"),
+        }
+        money = "LIVE / commission not observed yet"
+        transition = None
+        campaign = {}
+    elif impact_changed and impact_state in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
         kind = f"PROGRAM_{impact_state}"
         identity = {
             "kind": kind,
@@ -172,7 +223,7 @@ def owner_event(state, wake_event):
     else:
         return None
     event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
-    public_url = None if kind.startswith("PROGRAM_") or kind == "CLICK_DELTA" else (
+    public_url = wake_event.get("distribution_url") if kind == "DISTRIBUTION_LIVE" else None if kind.startswith("PROGRAM_") or kind == "CLICK_DELTA" else (
         (transition or {}).get("placement", {}).get("public_url") or (
             campaign.get("x_url") if kind == "PLACEMENT_LIVE" else None
         ) or wake_event.get("publication_url") or latest_live_url(state)
@@ -913,6 +964,13 @@ def wake(args):
             "state": "PUBLICATION_FAILED", "public_url": None,
             "failure_type": type(error).__name__,
         }
+    try:
+        distribution = advance_devto_distribution(state)
+    except Exception as error:
+        distribution = {
+            "state": "DISTRIBUTION_FAILED", "public_url": None,
+            "changed": False, "failure_type": type(error).__name__,
+        }
     revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
     }
@@ -947,6 +1005,11 @@ def wake(args):
         "publication_state": publication["state"],
         "publication_url": publication["public_url"],
         "publication_failure_type": publication.get("failure_type"),
+        "distribution_state": distribution["state"],
+        "distribution_url": distribution.get("public_url"),
+        "distribution_plan_id": distribution.get("plan_id"),
+        "distribution_changed": distribution.get("changed", False),
+        "distribution_failure_type": distribution.get("failure_type"),
         "revenue_state": revenue["state"],
         "revenue_source_rows": revenue["source_rows"],
         "revenue_appended_transitions": revenue["appended_transitions"],
