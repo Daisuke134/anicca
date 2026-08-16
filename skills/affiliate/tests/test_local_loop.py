@@ -35,6 +35,18 @@ class LocalLoopTest(unittest.TestCase):
             MODULE.atomic_json(run_dir / "summary.json", {
                 "status": "budget_blocked", "budget": {"day": "2026-08-16"},
             })
+            published_run = state / "composition-runs" / f"published-en-{'b' * 16}"
+            published_run.mkdir(parents=True)
+            MODULE.atomic_json(receipt_dir / "published-en.json", {
+                "state": "FAILED", "failure_class": "RUNNER_REJECTED",
+                "plan_id": "published-en", "source_set_sha256": "b" * 64,
+            })
+            MODULE.atomic_json(published_run / "summary.json", {
+                "status": "budget_blocked", "budget": {"day": "2026-08-16"},
+            })
+            MODULE.atomic_json(state / "discovered-source-plans" / "alpha-en.json", {
+                "buyer_intent": "Creators choosing a transcript workflow",
+            })
             (state / "provider-reports" / "partnerstack-links").mkdir(parents=True)
             MODULE.atomic_json(
                 state / "provider-reports" / "partnerstack-links" / "latest.json",
@@ -46,7 +58,9 @@ class LocalLoopTest(unittest.TestCase):
                 "placements": [
                     {
                         "placement_id": "alpha-en-1",
+                        "plan_id": "published-en",
                         "provider_link_key": "link-alpha",
+                        "public_url": "https://example.test/published",
                         "provider_clicks": {"count": 0},
                     },
                     {
@@ -75,8 +89,10 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(first["event_uuid"], second["event_uuid"])
             self.assertNotEqual(first["event_uuid"], third["event_uuid"])
             self.assertIn("専用リンクで最初の外部クリック", first["body"])
-            self.assertIn("英語campaign 1件の制作stage", first["body"])
+            self.assertIn("現在の制作対象", first["body"])
             self.assertIn("次のJST予算で同じ仕事を自動再開", first["body"])
+            self.assertIn("Creators choosing a transcript workflow", first["body"])
+            self.assertNotIn("published-en", first["body"])
             self.assertIn("正規台帳には2配信面", first["body"])
             self.assertIn("残り1本のクリック値はprovider未観測", first["body"])
             summary = json.loads(
@@ -85,6 +101,14 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(summary["placement_count"], 2)
             self.assertEqual(summary["provider_click_measurement_count"], 1)
             self.assertEqual(summary["provider_click_unknown_count"], 1)
+            self.assertEqual(summary["composition_budget_blocked_count"], 1)
+            self.assertEqual(
+                summary["composition_budget_blocked_campaigns"],
+                [{
+                    "plan_id": "alpha-en",
+                    "label": "Creators choosing a transcript workflow",
+                }],
+            )
             self.assertNotIn("SIGN_IN_REQUIRED", unknown["body"])
             self.assertIn("確認が必要な状態", unknown["body"])
 

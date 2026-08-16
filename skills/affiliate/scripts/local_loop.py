@@ -384,7 +384,25 @@ def owner_event(state, wake_event, sent_event_ids=None):
 def daily_summary_event(state, wake_event, now=None):
     now = now or datetime.now(ZoneInfo("Asia/Tokyo"))
     report_date = now.astimezone(ZoneInfo("Asia/Tokyo")).date().isoformat()
-    budget_blocked = 0
+    try:
+        placement_ledger = json.loads(
+            (state / "placement-ledger.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        placement_ledger = {}
+    ledger_placements = (
+        placement_ledger.get("placements")
+        if isinstance(placement_ledger.get("placements"), list)
+        else []
+    )
+    live_plan_ids = {
+        row.get("plan_id") for row in ledger_placements
+        if isinstance(row, dict)
+        and isinstance(row.get("plan_id"), str)
+        and row.get("provider_link_key")
+        and row.get("public_url")
+    }
+    budget_blocked_campaigns = []
     for receipt_path in (state / "composition-receipts").glob("*.json"):
         try:
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -393,15 +411,30 @@ def daily_summary_event(state, wake_event, now=None):
                 and receipt.get("failure_class") == "RUNNER_REJECTED"
             ):
                 continue
+            if receipt["plan_id"] in live_plan_ids:
+                continue
             run_id = f"{receipt['plan_id']}-{receipt['source_set_sha256'][:16]}"
             summary = json.loads((
                 state / "composition-runs" / run_id / "summary.json"
             ).read_text(encoding="utf-8"))
             budget = summary["budget"]
             if summary.get("status") == "budget_blocked" and budget.get("day") == report_date:
-                budget_blocked += 1
+                plan_paths = (
+                    state / "discovered-source-plans" / f"{receipt['plan_id']}.json",
+                    Path(__file__).resolve().parents[1]
+                    / "config" / "source-plans" / f"{receipt['plan_id']}.json",
+                )
+                plan = next((
+                    json.loads(path.read_text(encoding="utf-8"))
+                    for path in plan_paths if path.is_file()
+                ), {})
+                budget_blocked_campaigns.append({
+                    "plan_id": receipt["plan_id"],
+                    "label": plan.get("buyer_intent") or "次の英語campaign",
+                })
         except (OSError, ValueError, KeyError, TypeError):
             continue
+    budget_blocked = len(budget_blocked_campaigns)
     owned_live = sum(
         json.loads(path.read_text(encoding="utf-8")).get("state") == "LIVE"
         for path in (state / "owned-publications").glob("*.json")
@@ -420,17 +453,6 @@ def daily_summary_event(state, wake_event, now=None):
         links = {}
     link_report_placements = (
         links.get("placements") if isinstance(links.get("placements"), list) else []
-    )
-    try:
-        placement_ledger = json.loads(
-            (state / "placement-ledger.json").read_text(encoding="utf-8")
-        )
-    except (OSError, ValueError):
-        placement_ledger = {}
-    ledger_placements = (
-        placement_ledger.get("placements")
-        if isinstance(placement_ledger.get("placements"), list)
-        else []
     )
     if ledger_placements:
         placements = ledger_placements
@@ -520,6 +542,7 @@ def daily_summary_event(state, wake_event, now=None):
         "systeme_state": wake_event.get("systeme_state"),
         "economic_stage": economic_stage,
         "composition_budget_blocked_count": budget_blocked,
+        "composition_budget_blocked_campaigns": budget_blocked_campaigns,
         "created_at": int(now.timestamp()),
     }
     atomic_json(state / "daily-summaries" / f"{report_date}.json", receipt)
@@ -549,8 +572,13 @@ def daily_summary_event(state, wake_event, now=None):
         "POST_E1_OPTIMIZATION": "実測収益を使って次のcampaignを選ぶ段階です。",
     }[economic_stage]
     if budget_blocked:
+        campaign_text = "、".join(
+            row["label"] for row in budget_blocked_campaigns[:2]
+        )
+        if budget_blocked > 2:
+            campaign_text += f"ほか{budget_blocked - 2}件"
         next_action = (
-            f"英語campaign {budget_blocked}件の制作stageは、本日の安全な生成予算上限を守って保留しています。"
+            f"現在の制作対象「{campaign_text}」は、本日の安全な生成予算上限を守って保留しています。"
             "Agentは次のJST予算で同じ仕事を自動再開し、その間もprovider確認、"
             "公開計測、収益照合を継続します。"
         )

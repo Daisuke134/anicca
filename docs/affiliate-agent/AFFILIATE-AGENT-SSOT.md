@@ -1101,7 +1101,7 @@ This list contains implementation work only. Time passing, an organic visitor,
 provider approval, and commission settlement are observed acceptance gates, not
 tasks and not reasons to stop safe work.
 
-1. **DONE — M2.1-O — Correct owner observability.** Build the natural-language daily
+1. **IN PROGRESS — M2.1-O — Correct owner observability.** Build the natural-language daily
    summary from the canonical placement ledger, not a partial provider report.
    Report canonical placements, dedicated links, measured clicks, unknown click
    rows, commission states, actual/unknown costs, current campaign, recovery, and
@@ -1111,6 +1111,13 @@ tasks and not reasons to stop safe work.
    dedicated links, reported three provider-measured click rows totaling zero and
    three unknown rows without coercing them to zero, preserved zero commission
    transactions, and kept Telegram sent rows `14→14` without a duplicate event.
+   A subsequent authoritative audit found one remaining defect: the summary
+   counted four same-day historical `budget_blocked` receipts even though three
+   already had canonical public ledger rows and only the YouTube Transcript
+   Generator campaign remained unpublished. The current slice must exclude
+   canonical live `plan_id` values, report the one unfinished campaign by its
+   natural buyer-intent label, preserve the same one-per-JST-day Telegram UUID,
+   and prove `4→1` in an installed wake before this item returns to `DONE`.
 2. **M2.1-P — Grow six comparable English placements to ten.** The existing
    source→composition→policy→dedicated-link→owned/X→readback→ledger path advances
    four more campaigns. The Agent performs the work; a human or Codex does not
