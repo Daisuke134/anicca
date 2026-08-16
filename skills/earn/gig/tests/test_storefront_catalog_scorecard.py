@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SCORECARD = ROOT / "config" / "storefront-catalog-scorecard.json"
+sys.path.insert(0, str(ROOT / "scripts"))
+from storefront_direct import MEASURABLE_SUCCESS_METRICS  # noqa: E402
 DIMENSIONS = (
     "demand",
     "outcome",
@@ -84,7 +87,8 @@ def test_catalog_has_verified_eleven_service_scorecards_and_policy():
         assert row["field"] in DIMENSIONS
         service = next(item for item in services if item["service_id"] == row["service_id"])
         assert row["before"] == service["scores"][row["field"]]
-        assert row["success_metric"] in {"views_to_inquiry", "inquiries_to_purchase"}
+        # Only metrics the loop can actually measure; a synthetic conversion ratio is not one.
+        assert row["success_metric"] in MEASURABLE_SUCCESS_METRICS
         assert isinstance(row["reason"], str) and row["reason"].strip()
     assert priorities and priorities[0] == 1
     first = backlog[0]
