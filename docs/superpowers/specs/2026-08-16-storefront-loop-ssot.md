@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. Active item: S4e, migrate FAQ to the common versioned mutation contract. Finish order is fixed: S4 adapters → S5 attribution/reporting → S6 repeated installed E2E → S7 four-lane legacy cleanup → S8 cleanup-aftercare E2E. No earlier milestone may be called complete while a later finish gate remains open. This document owns Storefront implementation and records the final cross-owner cleanup contract without modifying another owner's code or live state.
+Status: INCOMPLETE. Active item: S4f, migrate price to the common versioned mutation contract. Finish order is fixed: S4 adapters → S5 attribution/reporting → S6 repeated installed E2E → S7 four-lane legacy cleanup → S8 cleanup-aftercare E2E. No earlier milestone may be called complete while a later finish gate remains open. This document owns Storefront implementation and records the final cross-owner cleanup contract without modifying another owner's code or live state.
 
 ## 1. Overview
 
@@ -76,6 +76,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The title/outcome adapter consumes the same runtime envelope. Commit `d5e78bc75` installs an evidence-bound proposal for presentation service `91000004`; pass `storefront-direct-1786848631268158000-51494` binds current official version `a345b678...`, renders only `data[Service][overview]`, retains the exact rollback title, records intended public title readback, and proves `published=false` under contract SHA `ccdcd7cd...`. The complete wake exits `0` with the existing fence, SEO readback, KPI, Telegram dedupe and released lease unchanged.
 - The body/scope adapter reads the exact authenticated seller form rather than a collapsed public excerpt. Commit `d3e718921` binds service `91000004` to a bounded JPY5,000/maximum-five-slide scope with explicit inclusions, exclusions and estimate boundary. Pass `storefront-direct-1786849061129008000-97801` renders only `data[Service][head]`, retains the complete prior body as rollback, binds proposed public body SHA `e035c9a5...`, proves `published=false` under contract SHA `ba0df122...`, and completes with the other Storefront invariants unchanged.
 - The package adapter keeps price ownership separate and changes only the existing add-on label. Commit `69f74c2b3` binds the authenticated JPY1,000 option on service `91000004` to the bounded label `追加スライド1枚（原稿支給・同一デザイン）`. Pass `storefront-direct-1786849420229880000-38442` renders only `data[Option][0][title]`, preserves rollback and price readback, proves `published=false` under contract SHA `348f2edb...`, and exits `0` with 12 services, SEO exact readback, Telegram `deduped/20596` and released lease.
+- The FAQ adapter treats one question/answer pair as one logical listing field while still validating both seller controls. Authenticated seller form service `91000004` contains no FAQ. The versioned proposal renders logical delta `data[Faq][0]`, preserves `FAQ_ABSENT` rollback, binds exact public question/answer readback, and proves `published=false` under contract SHA `6362ed00...`.
 - Storefront commit `85eaa6d86` is on GitHub `main` and in readonly immutable release `/Users/operator/gig/releases/life-manager/85eaa6d...`. Only `ai.anicca.hf-gig-storefront-direct` was reloaded. Its natural installed wake `storefront-direct-1786843673261706000-46042` exited `0` with official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, draft `0/1/1/0`, active publication fence, Telegram `deduped/20527`, and released lease. Before/after SHA comparison found zero changes to every non-Storefront gig plist.
 - Official analytics now retries each service independently and records an exhausted readback as `unknown`, never zero and never a reason to skip the rest of the Storefront wake. Reports separate unknown current values from unknown comparisons.
 
@@ -180,7 +181,8 @@ Verification: the existing experiment on `91000001` remains unchanged; official 
 - [x] Migrate title/outcome to the same envelope and prove one deterministic no-publish diff.
 - [x] Migrate body/scope to the same envelope and prove one deterministic no-publish diff from the authenticated seller form.
 - [x] Migrate package/add-ons to the same envelope and prove one deterministic no-publish diff from the authenticated seller form.
-- [ ] Migrate FAQ and price one at a time with the same no-publish proof.
+- [x] Migrate FAQ to the same envelope and prove one authenticated logical-field no-publish diff with exact question/answer readback.
+- [ ] Migrate price to the same envelope and prove one authenticated no-publish diff with exact option/display-price binding.
 - [ ] Make image, title/outcome, body/scope, package/add-ons, FAQ and price adapters consume one versioned mutation contract instead of service-specific control flow.
 - [ ] Require every adapter to declare exact precondition hash, changed field, allowed delta, rollback value and official readback contract.
 - [ ] Render and diff one existing service per adapter without publishing; fail closed on unsupported family, stale version, unknown option value or multi-field delta.
