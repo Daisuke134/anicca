@@ -76,6 +76,13 @@ COMPETITOR_SOURCES = (
     ("service", "https://coconala.com/services/3122692"),
     ("service", "https://coconala.com/services/3741646"),
 )
+MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
+MUTATION_CONTRACT_FIELDS = {
+    "version", "platform", "service_id", "precondition_listing_version_sha256",
+    "changed_field", "before_value", "proposed_value", "allowed_delta", "rollback_value",
+    "official_readback", "success_metric", "observation_window_days", "capability_family",
+    "evidence", "contract_sha256",
+}
 
 
 def _atomic_write(path: Path, value: dict) -> None:
@@ -302,7 +309,55 @@ def _load_image_contract(path: Path) -> dict:
     return {**contract, "asset_path": str(asset)}
 
 
-def _render_text_mutation(path: Path, sources: list[dict], seller_snapshot: dict) -> dict:
+def _load_capability_families(path: Path) -> tuple[dict[str, str], dict[str, dict]]:
+    try:
+        config = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("listing_contract_families_invalid") from error
+    mappings, families = config.get("service_families"), config.get("families")
+    if (config.get("version") != 1 or not isinstance(mappings, dict) or not isinstance(families, dict)
+            or not mappings or not families
+            or any(not str(service_id).isdigit() or family not in families
+                   for service_id, family in mappings.items())):
+        raise RuntimeError("listing_contract_families_invalid")
+    return mappings, families
+
+
+def _validate_mutation_contract(contract: dict, capability_families: dict[str, str]) -> None:
+    unsigned = {key: value for key, value in contract.items() if key != "contract_sha256"}
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    service_id = str(contract.get("service_id") or "")
+    allowed_delta = contract.get("allowed_delta")
+    evidence = contract.get("evidence")
+    if (set(contract) != MUTATION_CONTRACT_FIELDS or contract.get("version") != 1
+            or contract.get("platform") != "coconala" or not service_id.isdigit()
+            or capability_families.get(service_id) != contract.get("capability_family")
+            or not re.fullmatch(r"[0-9a-f]{64}", str(contract.get("precondition_listing_version_sha256") or ""))
+            or contract.get("changed_field") not in MUTATION_FIELDS
+            or contract.get("before_value") == contract.get("proposed_value")
+            or contract.get("rollback_value") != contract.get("before_value")
+            or not isinstance(allowed_delta, list) or len(allowed_delta) != 1
+            or not isinstance(allowed_delta[0], str) or not allowed_delta[0].startswith("data[")
+            or not isinstance(contract.get("official_readback"), dict) or not contract["official_readback"]
+            or not isinstance(contract.get("success_metric"), str) or not contract["success_metric"].strip()
+            or type(contract.get("observation_window_days")) is not int
+            or contract["observation_window_days"] <= 0
+            or not isinstance(evidence, list) or not evidence
+            or not all(isinstance(value, str) and value.strip() for value in evidence)
+            or contract.get("contract_sha256") != hashlib.sha256(canonical.encode()).hexdigest()):
+        raise RuntimeError("storefront_mutation_contract_invalid")
+
+
+def _seal_mutation_contract(unsigned: dict, capability_families: dict[str, str]) -> dict:
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    contract = {**unsigned, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+    _validate_mutation_contract(contract, capability_families)
+    return contract
+
+
+def _render_text_mutation(
+    path: Path, sources: list[dict], seller_snapshot: dict, capability_families: dict[str, str],
+) -> dict:
     try:
         spec = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -315,6 +370,7 @@ def _render_text_mutation(path: Path, sources: list[dict], seller_snapshot: dict
     source = next((row for row in sources if row["service_id"] == str(spec.get("service_id") or "")), None)
     if (set(spec) != required or spec.get("version") != 1 or spec.get("platform") != "coconala"
             or spec.get("changed_field") not in {"title", "body", "package", "FAQ", "price"} or source is None
+            or capability_families.get(str(spec.get("service_id") or "")) != spec.get("capability_family")
             or not str(spec.get("form_field") or "").startswith("data[")
             or not all(isinstance(spec.get(key), str) and spec[key].strip()
                        for key in ("before_value", "proposed_value", "rollback_value"))
@@ -376,8 +432,7 @@ def _render_text_mutation(path: Path, sources: list[dict], seller_snapshot: dict
         "success_metric": spec["success_metric"], "observation_window_days": spec["observation_window_days"],
         "capability_family": spec["capability_family"], "evidence": spec["evidence"],
     }
-    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    contract = {**unsigned, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+    contract = _seal_mutation_contract(unsigned, capability_families)
     before = {spec["form_field"]: spec["before_value"]}
     after = {**before, spec["form_field"]: spec["proposed_value"]}
     delta = [key for key in sorted(set(before) | set(after)) if before.get(key) != after.get(key)]
@@ -421,14 +476,7 @@ def _load_listing_contracts(
             "source_path": str(path.resolve()), "observed_at_epoch": int(time.time()),
         })
     explicit_ids = {row["service_id"] for row in loaded}
-    try:
-        family_config = json.loads(families_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise RuntimeError("listing_contract_families_invalid") from error
-    mappings = family_config.get("service_families")
-    families = family_config.get("families")
-    if family_config.get("version") != 1 or not isinstance(mappings, dict) or not isinstance(families, dict):
-        raise RuntimeError("listing_contract_families_invalid")
+    mappings, families = _load_capability_families(families_path)
     for source in observed_contracts:
         service_id = source["service_id"]
         if service_id in explicit_ids:
@@ -1003,7 +1051,9 @@ def _experiment_key(service_id: str, field: str, proposed: str) -> str:
     return f"storefront:v1:{service_id}:{field}:{digest}"
 
 
-def _image_mutation_contract(hypothesis: dict, own_page: dict, asset: dict) -> dict:
+def _image_mutation_contract(
+    hypothesis: dict, own_page: dict, asset: dict, capability_families: dict[str, str],
+) -> dict:
     if (hypothesis.get("service_id") != TARGET_SERVICE_ID or hypothesis.get("field") != "image"
             or hypothesis.get("before") != 0 or hypothesis.get("executable") is not True
             or hypothesis.get("success_metric") != "views_to_inquiry"):
@@ -1022,30 +1072,43 @@ def _image_mutation_contract(hypothesis: dict, own_page: dict, asset: dict) -> d
         "rollback_value": {"service_image_ids": []},
         "official_readback": {"service_image_count": 1},
         "success_metric": "views_to_inquiry", "observation_window_days": 14,
+        "capability_family": capability_families.get(TARGET_SERVICE_ID),
+        "evidence": [asset["claim_source"], asset["platform_requirement_source"]],
     }
-    canonical = json.dumps(contract, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return {**contract, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+    return _seal_mutation_contract(contract, capability_families)
 
 
-def _validate_image_mutation_contract(contract: dict) -> None:
-    required = {
-        "version", "platform", "service_id", "precondition_listing_version_sha256",
-        "changed_field", "before_value", "proposed_value", "allowed_delta", "rollback_value",
-        "official_readback", "success_metric", "observation_window_days", "contract_sha256",
-    }
-    unsigned = {key: value for key, value in contract.items() if key != "contract_sha256"}
-    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+def _validate_image_mutation_contract(
+    contract: dict, families_path: Path = DEFAULT_LISTING_CONTRACT_FAMILIES,
+) -> None:
+    mappings, _ = _load_capability_families(families_path)
+    _validate_mutation_contract(contract, mappings)
     proposed = contract.get("proposed_value")
-    if (set(contract) != required or contract.get("version") != 1 or contract.get("platform") != "coconala"
-            or not str(contract.get("service_id") or "").isdigit() or contract.get("changed_field") != "image"
+    if (contract.get("service_id") != TARGET_SERVICE_ID or contract.get("changed_field") != "image"
             or contract.get("before_value") != {"service_image_ids": []}
             or contract.get("allowed_delta") != ["data[UploadedFile][n*][image_files]"]
             or contract.get("rollback_value") != {"service_image_ids": []}
             or contract.get("official_readback") != {"service_image_count": 1}
             or not isinstance(proposed, dict) or set(proposed) != {"asset_sha256", "asset_path"}
-            or not re.fullmatch(r"[0-9a-f]{64}", str(proposed.get("asset_sha256") or ""))
-            or contract.get("contract_sha256") != hashlib.sha256(canonical.encode()).hexdigest()):
+            or not re.fullmatch(r"[0-9a-f]{64}", str(proposed.get("asset_sha256") or ""))):
         raise RuntimeError("storefront_image_mutation_contract_invalid")
+
+
+def _render_image_mutation(
+    own_page: dict, asset: dict, capability_families: dict[str, str],
+) -> dict:
+    contract = _image_mutation_contract({
+        "service_id": TARGET_SERVICE_ID, "field": "image", "before": 0,
+        "executable": True, "success_metric": "views_to_inquiry",
+    }, own_page, asset, capability_families)
+    key = contract["allowed_delta"][0]
+    before = {key: contract["before_value"]}
+    after = {key: contract["proposed_value"]}
+    delta = [name for name in sorted(set(before) | set(after)) if before.get(name) != after.get(name)]
+    if delta != contract["allowed_delta"]:
+        raise RuntimeError("storefront_image_mutation_multi_field_delta")
+    return {"version": 1, "contract": contract, "before": before, "after": after,
+            "delta": delta, "published": False}
 
 
 def _image_judgement(hypothesis: dict, contract: dict) -> dict:
@@ -1536,26 +1599,29 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             validated_contracts = [
                 _service_contract(source, str(inventory["observed_at"])) for source in contract_sources
             ]
+            capability_families, _ = _load_capability_families(
+                getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
+            )
             presentation_snapshot = _seller_snapshot_for(ws_url, "91000004")
             title_render = _render_text_mutation(
                 getattr(args, "title_mutation", DEFAULT_TITLE_MUTATION), validated_contracts,
-                presentation_snapshot,
+                presentation_snapshot, capability_families,
             )
             body_render = _render_text_mutation(
                 getattr(args, "body_mutation", DEFAULT_BODY_MUTATION), validated_contracts,
-                presentation_snapshot,
+                presentation_snapshot, capability_families,
             )
             package_render = _render_text_mutation(
                 getattr(args, "package_mutation", DEFAULT_PACKAGE_MUTATION), validated_contracts,
-                presentation_snapshot,
+                presentation_snapshot, capability_families,
             )
             faq_render = _render_text_mutation(
                 getattr(args, "faq_mutation", DEFAULT_FAQ_MUTATION), validated_contracts,
-                presentation_snapshot,
+                presentation_snapshot, capability_families,
             )
             price_render = _render_text_mutation(
                 getattr(args, "price_mutation", DEFAULT_PRICE_MUTATION), validated_contracts,
-                presentation_snapshot,
+                presentation_snapshot, capability_families,
             )
             title_render_path = inventory_path.parent / "mutation-render-title.json"
             body_render_path = inventory_path.parent / "mutation-render-body.json"
@@ -1577,6 +1643,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 {str(row.get("service_id")) for row in inventory["services"]},
             )
             own_page = _observe_own_page(ws_url, inventory_path.parent)
+            image_asset = _load_image_contract(getattr(args, "image_contract", DEFAULT_IMAGE_CONTRACT))
+            image_render = _render_image_mutation(own_page, image_asset, capability_families)
+            image_render_path = inventory_path.parent / "mutation-render-image.json"
+            _atomic_write(image_render_path, image_render)
             analytics = _collect_analytics(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
@@ -1650,8 +1720,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         now=int(time.time()),
                     )
                 elif next_hypothesis is not None and next_hypothesis.get("field") == "image":
-                    image_asset = _load_image_contract(getattr(args, "image_contract", DEFAULT_IMAGE_CONTRACT))
-                    mutation_contract = _image_mutation_contract(next_hypothesis, own_page, image_asset)
+                    mutation_contract = _image_mutation_contract(
+                        next_hypothesis, own_page, image_asset, capability_families,
+                    )
                     _atomic_write(inventory_path.parent / "mutation-contract.json", mutation_contract)
                     judgement = _image_judgement(next_hypothesis, mutation_contract)
                 else:
@@ -1888,6 +1959,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "contract_sha256": render["contract"]["contract_sha256"],
                     "delta": render["delta"], "published": False, "evidence_path": str(path),
                 } for render, path in (
+                    (image_render, image_render_path),
                     (title_render, title_render_path), (body_render, body_render_path),
                     (package_render, package_render_path), (faq_render, faq_render_path),
                     (price_render, price_render_path),
