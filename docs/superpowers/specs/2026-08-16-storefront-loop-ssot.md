@@ -90,7 +90,7 @@ The Storefront loop is complete only when all are true:
 5. It creates a new listing only through the evidence + capability + capacity gate, then proves one public creation and `duplicate=0` by official readback.
 6. Each inquiry and paid receipt is attributable to `storefront` or `apply`; unknown attribution remains `unknown`, never coerced to zero or assigned by guess.
 7. Hourly Telegram reporting is natural language, emoji-led, idempotent, and contains current funnel totals, changes since the last report, good news, bad news, errors, unknowns, and the next action. Same state produces `send=0`; changed state produces exactly `send=1`.
-8. Storefront code/spec/config are on Life Manager `main`; the installed Storefront release is built from a main ancestor; obsolete Hermes/gig-pass-shell entrypoints have zero executable reachability; temporary clean Storefront worktrees and branches are removed. The quarantined mixed Paid-audit worktree is explicitly excluded from production and from Storefront cleanup ownership.
+8. Storefront code/spec/config are on Life Manager `main`; the installed Storefront release is built from a main ancestor; all four earning owners must graduate from the obsolete gig-pass shell before its tracked driver, backup plists and mixed audit worktree are removed. Hermes gateway remains a separate continuing service and is not part of gig-pass retirement.
 9. Storefront does not alter or restart Negotiate, Paid, or Apply owners during implementation or verification.
 10. An open experiment blocks another mutation only when it can contaminate the same listing-level metric: the same `service_id` is blocked; a distinct new service with independent per-service attribution is not catalog-globally blocked.
 
@@ -212,6 +212,12 @@ Verification: reconcile ledger totals against official browser screens and real 
 - [x] Remove the merged temporary clean Storefront worktree and `feat/storefront-loop` local/remote branch.
 - [x] Keep the mixed `fix/storefront-revenue-os` worktree quarantined and unreachable from production while Paid retains it as audit evidence; its eventual owner-approved deletion is not a Storefront implementation task.
 - [x] Prove Storefront has zero executable import, subprocess, plist or installer reachability to Hermes/gig-pass shell entrypoints. Historical recoverable files remain outside the Storefront runtime.
+- [ ] Prove Apply, Negotiate, Paid and Storefront installed entrypoints are each direct owners whose release SHA is an ancestor of GitHub `main`; do not reload another owner's live process to manufacture this proof.
+- [ ] Remove the remaining registry/document references that still identify `gig_pass.sh` as current execution or fuel evidence.
+- [ ] Delete tracked legacy `GIG_PASS_RUNBOOK.md`, `gig_pass.sh`, `gig-cli.sh` and `scripts/gig_single_instance.sh` only after repository, installed plist, launchctl and registry reachability are all zero.
+- [ ] Delete obsolete `ai.anicca.hf-gig-pass.plist.*` backup files after confirming no installer or recovery path consumes them.
+- [ ] Have the Paid owner preserve or integrate any needed audit evidence, then remove `.worktrees/storefront-revenue-os` and `fix/storefront-revenue-os`; Storefront must not delete another owner's audit evidence prematurely.
+- [ ] Finish with one canonical four-lane diagram and inventory showing Apply, Negotiate, Paid and Storefront on the same GitHub `main` ancestry with separate direct launchd owners and no legacy gig-pass owner.
 
 Verification: `main` is the ancestor of the installed release SHA; Storefront launchd arguments point to that release; two installed wakes exit `0`; other three loop labels/config/state are byte-for-byte unchanged; no temporary clean Storefront development path remains.
 
