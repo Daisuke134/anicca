@@ -161,14 +161,16 @@ def _report_message(row: dict) -> str:
     )
     catalog_status = {
         "current_full": "今回公式確認",
-        "last_known_good": "前回公式確認",
+        "last_known_good": "前回公式値",
         "not_checked_incremental": "今回未計測",
         "not_applicable": "対象外",
         "unknown": "不明",
     }.get(catalog.get("status"), "不明")
-    freshness = catalog.get("freshness_seconds")
-    if type(freshness) is int:
-        catalog_status += f"・{freshness}秒前"
+    catalog_observed_at = catalog.get("observed_at_epoch")
+    if type(catalog_observed_at) is int and catalog_observed_at > 0:
+        catalog_status += "・確認" + time.strftime(
+            "%m/%d %H:%M", time.localtime(catalog_observed_at),
+        )
     window = catalog.get("window") if isinstance(catalog.get("window"), dict) else {}
     window_text = (
         f"{window.get('start')}–{window.get('end')}"
@@ -182,6 +184,15 @@ def _report_message(row: dict) -> str:
         else str(draft.get("draft_service_id")) if draft.get("draft_service_id")
         else "不明"
     )
+    draft_image = (
+        "今回未計測"
+        if draft_status == "not_checked_incremental" and draft.get("image_count") is None
+        else _display_count(draft.get("image_count"))
+    )
+    draft_status_text = {
+        "not_checked_incremental": "今回未計測",
+        "not_applicable": "対象外",
+    }.get(draft_status, str(draft_status) if draft_status else "不明")
     source_errors = funnel.get("unknown_sources")
     source_error_text = (
         ", ".join(source_errors) or "なし" if isinstance(source_errors, list) else "不明"
@@ -210,8 +221,8 @@ def _report_message(row: dict) -> str:
          f"今回追加 {_display_count(contract_delta)}件"),
         (f"📝 新規出品draft {draft_id} / "
          f"更新 {_display_count(draft.get('effect'))} / 照合 {_display_count(draft.get('readback'))} / "
-         f"画像 {_display_count(draft.get('image_count'))} / 公開 {_display_count(draft.get('public_effect'))} / "
-         f"状態 {draft_status or '不明'}"),
+         f"画像 {draft_image} / 公開 {_display_count(draft.get('public_effect'))} / "
+         f"状態 {draft_status_text}"),
         (f"📈 公式分析 {catalog_status} / {window_text} / coverage {coverage_text}: "
          f"閲覧 {_display_count(totals.get('views'))} / 販売 {_display_count(totals.get('purchases'))} / "
          f"お気に入り {_display_count(totals.get('favorites'))} | 前回比 閲覧 {_display_delta(changes.get('views'))} / "
