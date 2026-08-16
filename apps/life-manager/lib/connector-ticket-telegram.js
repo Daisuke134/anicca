@@ -12,6 +12,7 @@ const TENANT = /^[a-z0-9][a-z0-9._-]{0,127}$/i;
 const ARTIFACT_REF = /^object:\/\/sha256\/[0-9a-f]{64}$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const PLACEHOLDER = /\{\{|\}\}|<placeholder>|TODO|TBD/i;
+const CONFIRMATION_RECEIPT_REF = /^gmail-message:\/\/[a-z0-9._-]+\/[0-9a-f]{64}$/i;
 
 function text(value, label, max = 500) {
   const result = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
@@ -62,6 +63,20 @@ function eventUrl(value) {
   return `https://${url.hostname.toLowerCase()}${url.pathname.replace(/\/$/, "")}`;
 }
 
+function providerLabel(canonicalEventUrl) {
+  const hostname = new URL(canonicalEventUrl).hostname.toLowerCase();
+  if (hostname === "luma.com" || hostname === "lu.ma") return "Luma";
+  throw new Error("Connector Telegram provider unresolved");
+}
+
+function confirmationReceiptRef(value) {
+  const result = String(value == null ? "" : value).trim();
+  if (!CONFIRMATION_RECEIPT_REF.test(result)) {
+    throw new Error("Connector Telegram confirmation receipt invalid");
+  }
+  return result;
+}
+
 function calendarUrl(value) {
   let url;
   try { url = new URL(String(value || "")); } catch { throw new Error("Connector Telegram Calendar URL invalid"); }
@@ -90,6 +105,8 @@ function buildConnectorTicketCaption(input = {}) {
   const when = `${date}${start.hour}:${start.minute}〜${end.hour}:${end.minute}`;
   const event = eventUrl(input.eventUrl);
   const calendar = calendarUrl(input.calendarUrl);
+  const provider = providerLabel(event);
+  confirmationReceiptRef(input.confirmationReceiptRef);
   const caption = [
     "🎟️ イベント参加の申込みが完了しました。",
     "",
@@ -101,7 +118,7 @@ function buildConnectorTicketCaption(input = {}) {
     "このイベントを選んだ理由:",
     reason,
     "",
-    "✅ Lumaの確認メールを受信済み",
+    `✅ ${provider}の確認メールを受信済み`,
     "✅ Google Calendarへ登録済み",
     "📱 当日の公式QRを添付しました",
     "",

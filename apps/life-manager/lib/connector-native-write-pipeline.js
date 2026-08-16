@@ -450,6 +450,7 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
         endsAt: event.ends_at,
         eventUrl: event.canonical_url,
         calendarUrl: calendarSync.calendar_event_url,
+        confirmationReceiptRef: confirmation.external_receipt_ref,
       }, {
         readArtifact: injected.readTicketArtifact,
         sendMedia: injected.sendTicketMedia,

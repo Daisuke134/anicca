@@ -3,6 +3,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createHash } = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const { buildRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { collectLumaInventory } = require("./luma-discovery.js");
@@ -171,11 +173,14 @@ test("未処理日がある報告は失敗終了にせず、21日と継続中の
     calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r/customday?start=2026-08-02&end=2026-08-23",
   });
   assert.match(message, /確認期間: 2026年8月2日〜2026年8月22日/);
+  assert.match(message, new RegExp(`対象日: ${openCoverage().horizon_days}日`));
+  assert.match(message, new RegExp(`🔌 Connector ${openCoverage().horizon_days}日予約状況`));
   assert.match(message, /未処理の空き: 21日/);
   assert.match(message, /予約が成立するまで探索と申込みを続けています/);
   assert.match(message, /空いている日: 8\/2、8\/3/);
-  assert.match(message, /3週間のCalendarを開く:\nhttps:\/\/calendar\.google\.com\/calendar\/u\/0\/r\/customday\?start=2026-08-02&end=2026-08-23/);
+  assert.match(message, /21日のCalendarを開く:\nhttps:\/\/calendar\.google\.com\/calendar\/u\/0\/r\/customday\?start=2026-08-02&end=2026-08-23/);
   assert.doesNotMatch(message, /runner|bounded|none:|候補が見つからなかった|失敗\s*[:：]/i);
+  assert.doesNotMatch(message, /移動時間/);
 });
 
 test("openが0なら新規0件でも、全日が既存予定か固定予定で解決済みだと説明できる", () => {
@@ -195,6 +200,7 @@ test("openが0なら新規0件でも、全日が既存予定か固定予定で�
     coverage, newEvents: [], calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
   });
   assert.match(message, /未処理の空き: 0日/);
+  assert.match(message, new RegExp(`✅ 今後${coverage.horizon_days}日のevent予定を確認しました。`));
   assert.match(message, /予約できる空き枠が残っていないため、二重予約を作りませんでした/);
   assert.doesNotMatch(message, /予約作業中|見つからなかった/);
 });
@@ -285,4 +291,10 @@ test("verified新規予約は結果cardと登録済みpage画像のpositive ID�
     chat_id_sha256: "37da4c800042eb1a27e8081315efc08f7d546c5be1e47d2d026be17417a090b3",
     coverage_snapshot_id: input.coverage.coverage_snapshot_id,
   });
+});
+
+test("coverage telegramの文面はhorizon_daysの実値から組み立て、travel/buffer文言を再導入しない", () => {
+  const source = fs.readFileSync(path.join(__dirname, "connector-coverage-telegram.js"), "utf8");
+  assert.doesNotMatch(source, /移動時間|travel_minutes|routeMinutes|homeLocation|buffer_minutes/i);
+  assert.doesNotMatch(source, /horizon_days\s*!==\s*21/);
 });
