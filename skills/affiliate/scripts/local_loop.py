@@ -989,6 +989,29 @@ def run_revenue_cycle(state, cdp_port):
     return cycle
 
 
+def refresh_placement_ledger(state):
+    """Rebuild placement economics from durable real receipts on every wake."""
+    script = Path(__file__).with_name("revenue_cli.py")
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(script), "ledger", "--state", str(state)],
+            check=False, capture_output=True, text=True, timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        return {"state": "LEDGER_FAILED", "failure_type": "TIMEOUT"}
+    if completed.returncode:
+        return {"state": "LEDGER_FAILED", "failure_type": "NONZERO_EXIT"}
+    try:
+        ledger = json.loads(completed.stdout)
+    except ValueError:
+        return {"state": "LEDGER_FAILED", "failure_type": "INVALID_JSON"}
+    return {
+        "state": "LEDGER_READY",
+        "ledger_sha256": ledger["ledger_sha256"],
+        "placement_count": len(ledger["placements"]),
+    }
+
+
 def resume_systeme_provider(state, cdp_port, private_markdown):
     """Reuse the provider harness on the shared EN browser, then restore its owner URL."""
     try:
@@ -1294,6 +1317,7 @@ def wake(args):
     revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
     }
+    placement_ledger = refresh_placement_ledger(state)
     try:
         acquisition_decision = advance_acquisition_decision(
             Path(__file__).resolve().parent.parent, state
@@ -1369,6 +1393,10 @@ def wake(args):
         "revenue_appended_transitions": revenue["appended_transitions"],
         "link_appended_transitions": revenue.get("link_appended_transitions", 0),
         "link_latest_transition": revenue.get("link_latest_transition"),
+        "placement_ledger_state": placement_ledger["state"],
+        "placement_ledger_sha256": placement_ledger.get("ledger_sha256"),
+        "placement_ledger_count": placement_ledger.get("placement_count"),
+        "placement_ledger_failure_type": placement_ledger.get("failure_type"),
         "status": status,
         "ts": int(time.time()),
     }

@@ -807,7 +807,9 @@ def observe(args):
 
 def main():
     parser = argparse.ArgumentParser(prog="affiliate revenue")
-    parser.add_argument("command", choices=("observe", "links", "capture", "reconcile"))
+    parser.add_argument(
+        "command", choices=("observe", "links", "capture", "reconcile", "ledger")
+    )
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--cdp-port", type=int, default=9324)
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
@@ -818,8 +820,10 @@ def main():
         result = capture_link_performance(args)
     elif args.command == "capture":
         result = capture_reports(args)
-    else:
+    elif args.command == "reconcile":
         result = reconcile(args)
+    else:
+        result = build_placement_ledger(args.state.expanduser())
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0
 
