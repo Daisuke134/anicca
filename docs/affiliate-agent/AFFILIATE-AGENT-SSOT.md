@@ -1151,7 +1151,11 @@ announce that recovery. Release `cad9135ae` now emits one stable-UUID
 state. The natural-language message identifies ElevenLabs/PartnerStack, reports
 that the same publication resumed without a duplicate effect, and names public
 readback/revenue measurement as the next Agent action. It does not retrospectively
-invent an event for the already-completed timeout.
+invent an event for the already-completed timeout. Installed replay wake `38`
+exited `0`, retained six dedicated/public ledger rows, preserved program-link
+receipts `7→7` and Telegram sent rows `14→14`, returned
+`X_LIVE / ALREADY_LIVE / LEDGER_READY / NO_PENDING`, and created no duplicate
+public effect.
 
 ```mermaid
 flowchart LR
