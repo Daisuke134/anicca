@@ -2738,7 +2738,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "body_mutation", DEFAULT_BODY_MUTATION), validated_contracts,
                 presentation_snapshot, capability_families,
             )
-            scope_render = _render_text_mutation(
+            scope_render = _render_prepared_mutation(
+                args.state_dir, scope_snapshot, "91000005", "body", capability_families,
+            ) or _render_text_mutation(
                 getattr(args, "scope_mutation", DEFAULT_SCOPE_MUTATION), validated_contracts,
                 scope_snapshot, capability_families,
             )
