@@ -1090,6 +1090,41 @@ def _render_listing_state_mutation(
     }, capability_families)
 
 
+def _render_replace_plan(retire_contract: dict, create_contract: dict | None, allocation: dict) -> dict:
+    """One atomic REPLACE: free the slot recoverably, then fill it, or restore the old listing.
+
+    The replacement contract must already exist before anything is retired, so a failed
+    creation can never leave the portfolio with an empty slot and no way back.
+    """
+    if allocation.get("action") != "REPLACE":
+        raise RuntimeError("storefront_replace_allocation_invalid")
+    if create_contract is None:
+        raise RuntimeError("storefront_replace_without_ready_candidate")
+    retired_id = str(retire_contract.get("service_id") or "")
+    created_id = str(create_contract.get("draft_service_id") or "")
+    if (retire_contract.get("changed_field") != "listing_state"
+            or retired_id != str(allocation.get("service_id") or "")
+            or not created_id.isdigit() or created_id == retired_id):
+        raise RuntimeError("storefront_replace_identity_invalid")
+    unsigned = {
+        "version": 1, "platform": "coconala", "action": "REPLACE",
+        "allocation_key": allocation["allocation_key"],
+        "retired_service_id": retired_id, "created_service_id": created_id,
+        "sequence": ["retire", "create"],
+        "retire_contract_sha256": retire_contract["contract_sha256"],
+        "create_contract_sha256": create_contract["contract_sha256"],
+        "official_readback": {
+            "retired": retire_contract["official_readback"],
+            "created": {"public_url": create_contract["expected_public_url"]},
+        },
+        "rollback": {"republish_service_id": retired_id,
+                     "submit_mode": retire_contract["rollback_value"]["submit_mode"],
+                     "on": "create_failed_after_retire"},
+    }
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {**unsigned, "plan_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+
+
 def _render_text_mutation(
     path: Path, sources: list[dict], seller_snapshot: dict, capability_families: dict[str, str],
 ) -> dict:
