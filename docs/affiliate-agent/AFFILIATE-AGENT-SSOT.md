@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `5c2e297e5a28ab5c27fe8e2ab29b83fff46a7ac3` is current. All six isolated Affiliate launchd owners are loaded; real money wake `12` and composition run `9` have last exit `0`. The ten-minute money loop owns bounded ElevenLabs recovery, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake placement economics, natural-language reporting, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner resumes existing due stages before new inbox work and consumes at most one credential-free due stage per wake | Cohort allocation and general repair beyond observed failures remain open |
+| Runtime | Immutable local release `3bfdd03cfa5594bce3009cd18d46ffc31192e14c` is current. All six isolated Affiliate launchd owners are loaded; real money wake `13` and composition run `9` have last exit `0`. The ten-minute money loop owns bounded ElevenLabs recovery, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake placement economics, economics-bound campaign decisions, natural-language reporting, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner resumes existing due stages before new inbox work and consumes at most one credential-free due stage per wake | General repair beyond observed failures remains open |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, real `PLACEMENT_LIVE`, and one real-data natural-language daily summary are live-proven. The daily summary is bound to provider message ID `21046`; same-day real replay returns `NO_PENDING` without growing the sent ledger | `CLICK_DELTA` and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery/refresh, source-hash-bound composition, bounded Terra-high composition, same-ID recovery, policy, exact placement-link acquisition, publication/distribution, acquisition/revenue observation, placement economics, receipts, and Telegram are live. Release `5c2e297e5` joins provider-reported usage to placements but keeps API-equivalent estimates separate from actual cash | Actual billed/tool/channel cash receipts, provider/channel quarantine, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery/refresh, source-hash-bound composition, bounded Terra-high composition, same-ID recovery, policy, exact placement-link acquisition, publication/distribution, acquisition/revenue observation, placement economics, economics-bound one-variable allocation, receipts, and Telegram are live. Release `3bfdd03cf` invokes no model until a real immutable acquisition baseline exists | Actual billed/tool/channel cash receipts, broader repair, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -1076,8 +1076,8 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M1.2, allocate the next campaign only from comparable
-mature cohort evidence and make the no-evidence path invoke no model**.
+Current execution cursor: **M1.3, repair only the money-path failures already
+observed in real launchd operation and keep healthy lanes moving**.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
 files and zero decision receipts before eligibility. A first real Agent decision
@@ -1101,7 +1101,7 @@ no transition was duplicated or invented.
 
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
-and Systeme.io remains behind its typed CAPTCHA boundary. Release `5c2e297e5` is
+and Systeme.io remains behind its typed CAPTCHA boundary. Release `3bfdd03cf` is
 current; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -1308,10 +1308,18 @@ result will be real external proof, but no implementation waits for the clock.
     hash-valid six-row ledger. The audio-to-text placement records 28,602 tokens
     and API-equivalent USD 0.080955; TTS records 71,350 tokens and USD 0.2061235.
     Both correctly retain `UNKNOWN_COST` and insufficient exposure denominator.
-14. **M1.2 — Allocate the next campaign.** The Agent receives comparable mature
-    cohort receipts, selects one offer/channel/creative variable, and writes a
-    budget-capped allocation receipt. It cannot infer a winner before the required
-    denominator exists and cannot increase spend or volume from model confidence.
+14. **DONE — M1.2 allocate the next campaign through the existing decision path.**
+    Release `3bfdd03cf` reuses the installed acquisition decision instead of adding
+    a second allocator or scheduler. The decision context now verifies and binds
+    the exact placement-ledger SHA alongside the immutable acquisition baseline.
+    It may still change only one enacted variable and feeds the existing
+    decision → source plan → composition → policy → publication chain. Its prompt
+    explicitly treats API-equivalent cost as non-invoice telemetry and forbids a
+    profit winner when actual cash, approved commission, or a positive denominator
+    is unknown. The gate/hash checks pass `9/9`. Installed wake `13` exited `0`,
+    kept provider/publication/ledger healthy, returned `WAITING_FOR_BASELINE`, and
+    preserved decision runs `0→0` and usage rows `13→13`. Thus no-evidence uses no
+    model; future observed economics use the same bounded campaign loop.
 15. **M1.3 — Repair only observed money-path failures.** Add typed classification,
     bounded repair/backoff, same-job resume, channel/provider quarantine, action
     and cost caps, postcondition readback, and `SELF_HEALED` reporting for failures
