@@ -1062,6 +1062,92 @@ cloud work, and broad self-repair do not start unless one is the measured blocke
 for the next external state. Known stages are deterministic; the model writes or
 diagnoses only when an existing deterministic tool cannot advance them.
 
+#### Autonomous responsibility boundary
+
+The product is the launchd-owned Affiliate Agent, not an operator-assisted
+publishing service. Dais and Codex do not choose each topic, write each article,
+create each affiliate link, publish each asset, inspect each dashboard, or decide
+the next experiment. They design and repair the harness. The installed owners
+must perform the recurring business work themselves:
+
+```mermaid
+flowchart LR
+  R[Agent researches markets and buyer intent] --> S[Agent selects one strategy]
+  S --> C[Agent composes one evidence-bound asset]
+  C --> P[Tools enforce policy and publish]
+  P --> O[Tools read back reach clicks commission and cost]
+  O --> L[Agent compares cohort economics]
+  L --> A[Agent allocates 80 percent winners and 20 percent exploration]
+  A --> R
+  P -->|failure receipt| H[Agent diagnoses and resumes the same job]
+  H --> P
+```
+
+Judgment belongs to the Agent through natural-language prompts and receipted
+decisions: market, offer, buyer intent, asset angle, channel, experiment, and
+next allocation. Deterministic code is limited to browser/API tools, policy hard
+gates, arithmetic, idempotency, public readback, accounting, scheduler ownership,
+and secret boundaries. Codex may trigger and observe the real launchd owner; it
+must not substitute a manual article, manual post, or one-off browser action for
+missing Agent capability. When a real run fails, the default fix is the smallest
+harness/tool/observation repair that lets the same job finish itself. Source-code
+self-modification is not currently proven; current self-healing means durable
+resume, exact external reconciliation, typed recovery, and continued healthy-lane
+operation.
+
+#### Remaining autonomous money-loop work — canonical order
+
+This list contains implementation work only. Time passing, an organic visitor,
+provider approval, and commission settlement are observed acceptance gates, not
+tasks and not reasons to stop safe work.
+
+1. **M2.1-O — Correct owner observability.** Build the natural-language daily
+   summary from the canonical placement ledger, not a partial provider report.
+   Report canonical placements, dedicated links, measured clicks, unknown click
+   rows, commission states, actual/unknown costs, current campaign, recovery, and
+   the next Agent action without converting unknown to zero.
+2. **M2.1-P — Grow six comparable English placements to ten.** The existing
+   source→composition→policy→dedicated-link→owned/X→readback→ledger path advances
+   four more campaigns. The Agent performs the work; a human or Codex does not
+   author or publish a replacement. Each row needs independent click/exposure,
+   provider usage, cost, and commission lineage.
+3. **E1-H — Close the first real transaction path.** On the first provider row,
+   the loop normalizes provider transaction ID and status, joins the exact
+   placement, appends one replay-safe economic transition, reports
+   pending/approved/paid/reversed correctly, and never counts clicks, pending
+   rewards, estimates, tests, or screenshots as revenue.
+4. **M2.2 — Add a second executable English offer/provider.** The Agent researches
+   official terms and allowed channels, applies or resumes through the Skill,
+   authenticates, creates a usable tracking link, and proves provider readback.
+   Rejected Kit is not resubmitted unchanged and ElevenLabs keeps running.
+5. **M2.3-S — Close strategy learning.** Every post-E1 campaign gets a receipted
+   hypothesis and one changed variable. The strategy Agent ranks mature cohorts
+   by approved net commission per 1,000 qualified impressions, includes
+   reversals and observed cost, assigns 80% of bounded campaign capacity to
+   winners and 20% to exploration, and records why it continued, changed, or
+   stopped a strategy.
+6. **M2.3-D — Diversify the USD 10,000 portfolio.** Admit at least three
+   independently receipted providers/offers and keep provider, offer, and channel
+   concentration at or below 40% of approved net commission. Compute required
+   visits and conversions only from observed cohort economics.
+7. **M2.4 — Add the next measurable native channel.** Reuse a winning evidence-
+   bound asset only where reach, click, disclosure, publish readback, and recovery
+   are Skill-owned and independently measurable. Do not add volume that cannot be
+   attributed.
+8. **M3.1 — Add isolated locale pods.** After English unit economics, add Japanese
+   and then Spanish with separate identity, browser profile, membership, link,
+   disclosure, evidence, ledger, report, and recovery. Never mix languages on one
+   social identity.
+9. **M4.1 — Package the proven local loop.** After real approved revenue, remove
+   machine-specific paths and ship one-command macOS install, minimal credential
+   intake, launchd ownership, health, update, rollback, uninstall, privacy-safe
+   ledger verification, and clean-user reproduction.
+10. **M5.1 — Reproduce the proven contracts in cloud/web.** Only after unattended
+    positive net local operation and clean-Mac proof, replace launchd/browser
+    ownership with tenant-isolated scheduling and browser workers while preserving
+    the same jobs, receipts, attribution, recovery, deletion, audit, and
+    Telegram/web owner UX.
+
 The active implementation method is direct primary-model execution. The primary
 Sol reads the complete existing call path, edits the smallest production surface,
 and verifies the installed launchd owner itself. Superpowers, TDD/RED scaffolding,

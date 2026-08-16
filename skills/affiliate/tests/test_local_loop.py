@@ -42,6 +42,20 @@ class LocalLoopTest(unittest.TestCase):
                     "current_click_count": 0,
                 }]},
             )
+            MODULE.atomic_json(state / "placement-ledger.json", {
+                "placements": [
+                    {
+                        "placement_id": "alpha-en-1",
+                        "provider_link_key": "link-alpha",
+                        "provider_clicks": {"count": 0},
+                    },
+                    {
+                        "placement_id": "beta-en-1",
+                        "provider_link_key": "link-beta",
+                        "provider_clicks": {"count": None},
+                    },
+                ],
+            })
             wake = {
                 "provider_state": "AUTHENTICATED",
                 "impact_state": "APPLICATION_PENDING",
@@ -63,6 +77,14 @@ class LocalLoopTest(unittest.TestCase):
             self.assertIn("専用リンクで最初の外部クリック", first["body"])
             self.assertIn("英語campaign 1件の制作stage", first["body"])
             self.assertIn("次のJST予算で同じ仕事を自動再開", first["body"])
+            self.assertIn("正規台帳には2配信面", first["body"])
+            self.assertIn("残り1本のクリック値はprovider未観測", first["body"])
+            summary = json.loads(
+                (state / "daily-summaries" / "2026-08-16.json").read_text()
+            )
+            self.assertEqual(summary["placement_count"], 2)
+            self.assertEqual(summary["provider_click_measurement_count"], 1)
+            self.assertEqual(summary["provider_click_unknown_count"], 1)
             self.assertNotIn("SIGN_IN_REQUIRED", unknown["body"])
             self.assertIn("確認が必要な状態", unknown["body"])
 

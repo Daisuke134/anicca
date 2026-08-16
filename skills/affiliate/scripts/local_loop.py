@@ -418,8 +418,43 @@ def daily_summary_event(state, wake_event, now=None):
         )
     except (OSError, ValueError):
         links = {}
-    placements = links.get("placements") if isinstance(links.get("placements"), list) else []
-    link_clicks = sum(int(row.get("current_click_count", 0)) for row in placements)
+    link_report_placements = (
+        links.get("placements") if isinstance(links.get("placements"), list) else []
+    )
+    try:
+        placement_ledger = json.loads(
+            (state / "placement-ledger.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        placement_ledger = {}
+    ledger_placements = (
+        placement_ledger.get("placements")
+        if isinstance(placement_ledger.get("placements"), list)
+        else []
+    )
+    if ledger_placements:
+        placements = ledger_placements
+        dedicated_link_count = sum(bool(row.get("provider_link_key")) for row in placements)
+        observed_clicks = [
+            row.get("provider_clicks", {}).get("count")
+            for row in placements
+            if isinstance(row.get("provider_clicks"), dict)
+            and isinstance(row.get("provider_clicks", {}).get("count"), int)
+        ]
+        click_measurement_count = len(observed_clicks)
+        click_unknown_count = max(dedicated_link_count - click_measurement_count, 0)
+        link_clicks = sum(observed_clicks)
+    else:
+        placements = link_report_placements
+        dedicated_link_count = len(placements)
+        observed_clicks = [
+            row.get("current_click_count")
+            for row in placements
+            if isinstance(row.get("current_click_count"), int)
+        ]
+        click_measurement_count = len(observed_clicks)
+        click_unknown_count = max(dedicated_link_count - click_measurement_count, 0)
+        link_clicks = sum(observed_clicks)
     try:
         devto_metrics = json.loads(
             (state / "distribution-metrics" / "devto.json").read_text(encoding="utf-8")
@@ -468,7 +503,10 @@ def daily_summary_event(state, wake_event, now=None):
         "owned_live": owned_live,
         "x_live": x_live,
         "placement_count": len(placements),
+        "dedicated_link_count": dedicated_link_count,
         "provider_link_clicks": link_clicks,
+        "provider_click_measurement_count": click_measurement_count,
+        "provider_click_unknown_count": click_unknown_count,
         "devto_article_count": devto_metrics.get("article_count"),
         "devto_page_views": devto_metrics.get("total_page_views"),
         "devto_page_view_delta": devto_metrics.get("delta_page_views"),
@@ -524,7 +562,17 @@ def daily_summary_event(state, wake_event, now=None):
         "Life Manager Affiliate::: 今日の運用報告です。",
         f"{report_date}は、Affiliate loopが{receipt['wake_count_today']}回動きました。",
         f"現在、owned記事は{owned_live}本、X投稿は{x_live}件が公開状態です。",
-        f"PartnerStackで追跡中の専用リンクは{len(placements)}本で、確認できた外部クリックは{link_clicks}件です。",
+        (
+            f"正規台帳には{len(placements)}配信面、PartnerStack専用リンクは"
+            f"{dedicated_link_count}本あります。配信面別に観測できた"
+            f"{click_measurement_count}本の外部クリックは合計{link_clicks}件です。"
+        ),
+        (
+            f"残り{click_unknown_count}本のクリック値はprovider未観測のため、"
+            "0件として扱っていません。"
+            if click_unknown_count
+            else "全専用リンクの配信面別クリック値をproviderから観測できています。"
+        ),
         (
             f"DEVではAffiliate記事{devto_metrics.get('article_count', 0)}本が"
             f"合計{devto_metrics.get('total_page_views', 0)}回閲覧され、"
