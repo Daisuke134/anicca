@@ -20,7 +20,7 @@
     "service_id": {"type": ["string", "null"], "pattern": "^[0-9]+$", "maxLength": 32},
     "changed_field": {
       "type": ["string", "null"],
-      "enum": ["title", "body", "package", "FAQ", "price", null]
+      "enum": ["image", "title", "body", "package", "FAQ", "price", null]
     },
     "proposed_value": {"type": ["string", "null"], "maxLength": 12000},
     "proposed_price_jpy": {"type": ["integer", "null"], "minimum": 500, "maximum": 1000000},
