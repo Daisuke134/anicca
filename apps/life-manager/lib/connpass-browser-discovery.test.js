@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const {
   normalizeConnpassEventDetail,
+  readCalendarBindings,
   readEventDetail,
 } = require("./connpass-browser-discovery.js");
 
@@ -23,6 +24,67 @@ function raw(overrides = {}) {
     ...overrides,
   };
 }
+
+function calendarPage(anchors) {
+  return {
+    async evaluate(callback) {
+      const previousDocument = global.document;
+      const previousLocation = global.location;
+      global.location = { href: "https://connpass.com/calendar/?ym=202608&prefectures=13" };
+      global.document = {
+        querySelectorAll(selector) {
+          return selector === 'a[href*="/event/"]' ? anchors : [];
+        },
+      };
+      try { return await callback(); }
+      finally {
+        global.document = previousDocument;
+        global.location = previousLocation;
+      }
+    },
+  };
+}
+
+test("Connpass calendar bindings read the date from the hidden `.tooltip` text via textContent (innerText hides it)", async () => {
+  // Real connpass.com/calendar/?ym=202608&prefectures=13 markup: each row is
+  // `<li>・<a href="...">Title</a><span class="tooltip">...日時: 2026/08/01 05:30〜...</span></li>`
+  // and connpass.css sets `.tooltip{display:none}`, so a real browser's
+  // `li.innerText` omits the date while `li.textContent` still contains it.
+  const li = {
+    innerText: "・IT系勉強会【第1507回】朝からもくもく",
+    textContent: "・IT系勉強会【第1507回】朝からもくもく IT系勉強会【第1507回】朝からもくもく会 "
+      + "日時: 2026/08/01 05:30〜 会場: (場所未定) 人数: 2/5人",
+  };
+  const anchor = {
+    href: "https://connpass.com/event/401581/",
+    closest(tag) { return tag === "li" ? li : null; },
+  };
+  const rows = await readCalendarBindings(calendarPage([anchor]));
+  assert.deepEqual(rows, [{
+    event_ref: "connpass-event://event/401581",
+    canonical_url: "https://connpass.com/event/401581/",
+    calendar_date: "2026-08-01",
+  }]);
+});
+
+test("Connpass calendar bindings return a null date when the anchor has no enclosing li", async () => {
+  const anchor = {
+    href: "https://openforce.connpass.com/event/399614/",
+    closest() { return null; },
+  };
+  const rows = await readCalendarBindings(calendarPage([anchor]));
+  assert.deepEqual(rows, [{
+    event_ref: "connpass-event://event/399614",
+    canonical_url: "https://openforce.connpass.com/event/399614/",
+    calendar_date: null,
+  }]);
+});
+
+test("Connpass calendar bindings skip anchors whose href is not an event path", async () => {
+  const anchor = { href: "https://connpass.com/calendar/?ym=202609&prefectures=13", closest() { return null; } };
+  const rows = await readCalendarBindings(calendarPage([anchor]));
+  assert.deepEqual(rows, []);
+});
 
 test("Connpass detail normalization requires explicit free price and open registration", () => {
   assert.deepEqual(normalizeConnpassEventDetail(raw()), {
