@@ -33,6 +33,9 @@ DEFAULT_RUNNER = RUNNER_DIR / "agent_runner.py"
 DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
 DEFAULT_REPLY_TRANSCRIPTS = Path.home() / "gig" / "reply-transcripts.jsonl"
+DEFAULT_APPLIED = Path.home() / "gig" / "applied.jsonl"
+DEFAULT_EARNINGS = Path.home() / "gig" / "earnings.jsonl"
+DEFAULT_PROJECTS = Path.home() / "gig" / "projects"
 DEFAULT_CAPABILITIES = (
     Path.home() / "gig" / "projects" / "5138597" / "state.json",
     Path.home() / "gig" / "projects" / "5138597" / "acceptance" / "v4-acceptance-evidence.json",
@@ -42,7 +45,7 @@ DEFAULT_TELEGRAM_RECEIPTS = Path.home() / "gig" / "telegram-delivery-receipts"
 STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
-    "new-listing-drafts.jsonl",
+    "new-listing-drafts.jsonl", "funnel-events.jsonl",
 )
 TARGET_SERVICE_ID = "4330368"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
@@ -125,6 +128,11 @@ def _report_message(row: dict) -> str:
         if isinstance(catalog.get("metric_unknown_services"), dict) else {}
     )
     draft = row.get("new_listing_draft") if isinstance(row.get("new_listing_draft"), dict) else {}
+    funnel = row.get("funnel") if isinstance(row.get("funnel"), dict) else {}
+    by_origin = funnel.get("by_origin") if isinstance(funnel.get("by_origin"), dict) else {}
+    storefront_funnel = by_origin.get("storefront", {})
+    apply_funnel = by_origin.get("apply", {})
+    unknown_funnel = by_origin.get("unknown", {})
     effect = max(int(row.get("effect") or 0), int(draft.get("effect") or 0),
                  int(draft.get("public_effect") or 0))
     next_action = (
@@ -148,6 +156,14 @@ def _report_message(row: dict) -> str:
          f"お気に入り {int(totals.get('favorites') or 0)} | 前回比 閲覧 {int(changes.get('views') or 0):+d} / "
          f"販売 {int(changes.get('purchases') or 0):+d} / 現在値不明 {int(metric_unknown.get('views') or 0)}件 / "
          f"前回比不明 {int(catalog.get('change_unknown_services') or 0)}件"),
+        (f"✅ Storefront funnel: 問合せ {int(storefront_funnel.get('inquiries') or 0)} / "
+         f"入金 {int(storefront_funnel.get('payments') or 0)} / 純入金 ¥{float(storefront_funnel.get('net_jpy') or 0):,.0f}"),
+        (f"✅ Apply funnel: 問合せ {int(apply_funnel.get('inquiries') or 0)} / "
+         f"入金 {int(apply_funnel.get('payments') or 0)} / 純入金 ¥{float(apply_funnel.get('net_jpy') or 0):,.0f}"),
+        (f"❓ attribution不明: 問合せ {int(unknown_funnel.get('inquiries') or 0)} / "
+         f"入金 {int(unknown_funnel.get('payments') or 0)} / source error {len(funnel.get('unknown_sources') or [])}"),
+        f"⚠️ bad: {'確定入金0' if int(storefront_funnel.get('payments') or 0) == 0 else 'なし'}",
+        f"❌ errors: {', '.join(funnel.get('unknown_sources') or []) or 'なし'}",
         f"🧪 次候補 {hypothesis.get('service_id') or 'なし'} / {hypothesis.get('field') or 'なし'} / 実行可能 {str(bool(hypothesis.get('executable'))).lower()}",
         f"🛡️ fence {hypothesis.get('guard_reason') or row.get('reason') or 'なし'}",
         f"🔧 次の一手: {next_action}",
@@ -273,6 +289,105 @@ def _append_key_once(path: Path, field: str, value: dict) -> bool:
                 return False
     _append(path, value)
     return True
+
+
+def _jsonl_rows(path: Path) -> tuple[list[dict], str | None]:
+    if not path.is_file():
+        return [], f"{path.name}_missing"
+    rows = []
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                row = json.loads(line)
+                if isinstance(row, dict):
+                    rows.append(row)
+    except (OSError, json.JSONDecodeError):
+        return [], f"{path.name}_invalid"
+    return rows, None
+
+
+def _join_funnel(
+    state_dir: Path, contracts: list[dict], reply_transcripts: Path, applied_path: Path,
+    earnings_path: Path, projects_dir: Path, now: int,
+) -> dict:
+    transcripts, transcript_error = _jsonl_rows(reply_transcripts)
+    applied, applied_error = _jsonl_rows(applied_path)
+    earnings, earnings_error = _jsonl_rows(earnings_path)
+    versions = {row["service_id"]: row["service_version_sha256"] for row in contracts}
+    applied_ids = {str(row.get("requestId") or "") for row in applied if row.get("status") == "applied"}
+    apply_talkrooms = set()
+    if projects_dir.is_dir():
+        for path in projects_dir.glob("*/state.json"):
+            try:
+                project = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            request_id, talkroom_id = str(project.get("request_id") or ""), str(project.get("talkroom_id") or "")
+            if request_id in applied_ids and talkroom_id:
+                apply_talkrooms.add(talkroom_id)
+    conversations: dict[str, dict] = {}
+    for row in transcripts:
+        talkroom_id = str(row.get("talkroom_id") or "")
+        if not talkroom_id:
+            continue
+        evidence = json.dumps({"buyer_last_said": row.get("buyer_last_said"),
+                               "conversation": row.get("conversation")}, ensure_ascii=False)
+        service_ids = {value for value in re.findall(r"coconala\.com/services/(\d+)", evidence)
+                       if value in versions}
+        current = conversations.setdefault(talkroom_id, {"service_ids": set(), "observed_at": row.get("sent_at")})
+        current["service_ids"].update(service_ids)
+        if type(row.get("sent_at")) is int:
+            prior = current.get("observed_at")
+            current["observed_at"] = min(row["sent_at"], prior) if type(prior) is int else row["sent_at"]
+    origins = {}
+    appended = 0
+    for talkroom_id, value in conversations.items():
+        ids = value["service_ids"]
+        service_id = next(iter(ids)) if len(ids) == 1 else None
+        origin = "storefront" if service_id else "apply" if talkroom_id in apply_talkrooms else "unknown"
+        origins[talkroom_id] = (origin, service_id)
+        event = {
+            "version": 1, "source_event_id": f"coconala:conversation:{talkroom_id}",
+            "event_kind": "inquiry", "platform": "coconala", "origin": origin,
+            "service_id": service_id, "listing_version": versions.get(service_id),
+            "conversation_id": talkroom_id, "order_id": None,
+            "observed_at_epoch": value.get("observed_at"), "ingested_at_epoch": now,
+        }
+        appended += int(_append_key_once(state_dir / "funnel-events.jsonl", "source_event_id", event))
+        _append_key_once(state_dir / "attribution-map.jsonl", "attribution_key", {
+            **event, "attribution_key": f"coconala:conversation:{talkroom_id}",
+        })
+    for row in earnings:
+        talkroom_id = str(row.get("talkroom_id") or "")
+        origin, service_id = origins.get(talkroom_id, ("unknown", None))
+        idem = str(row.get("idem_key") or "")
+        if not idem or type(row.get("jpy")) not in {int, float} or row.get("net_of_fee") is not True:
+            continue
+        event = {
+            "version": 1, "source_event_id": f"coconala:payment:{idem}",
+            "event_kind": "payment", "platform": "coconala", "origin": origin,
+            "service_id": service_id, "listing_version": versions.get(service_id),
+            "conversation_id": talkroom_id or None, "order_id": str(row.get("requestId") or "") or None,
+            "gross_jpy": None, "fee_jpy": None, "refund_jpy": None,
+            "net_receipt_jpy": row["jpy"], "observed_at_epoch": row.get("ts"),
+            "ingested_at_epoch": now, "immutable_receipt_id": idem,
+            "revision_count": None, "rating": None, "review_id": None, "repeat_purchase": None,
+        }
+        appended += int(_append_key_once(state_dir / "funnel-events.jsonl", "source_event_id", event))
+    events, ledger_error = _jsonl_rows(state_dir / "funnel-events.jsonl")
+    summary = {origin: {"inquiries": 0, "payments": 0, "net_jpy": 0.0}
+               for origin in ("storefront", "apply", "unknown")}
+    for event in events:
+        origin = event.get("origin") if event.get("origin") in summary else "unknown"
+        if event.get("event_kind") == "inquiry":
+            summary[origin]["inquiries"] += 1
+        elif event.get("event_kind") == "payment" and type(event.get("net_receipt_jpy")) in {int, float}:
+            summary[origin]["payments"] += 1
+            summary[origin]["net_jpy"] += float(event["net_receipt_jpy"])
+    errors = [value for value in (transcript_error, applied_error, earnings_error, ledger_error) if value]
+    cursor = hashlib.sha256("\n".join(sorted(str(row.get("source_event_id") or "") for row in events)).encode()).hexdigest()
+    return {"version": 1, "appended": appended, "events": len(events), "by_origin": summary,
+            "unknown_sources": errors, "cutoff_cursor": cursor}
 
 
 def _load_image_contract(path: Path) -> dict:
@@ -1651,6 +1766,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
             )
+            funnel = _join_funnel(
+                args.state_dir, validated_contracts,
+                getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),
+                getattr(args, "applied", DEFAULT_APPLIED), getattr(args, "earnings", DEFAULT_EARNINGS),
+                getattr(args, "projects_dir", DEFAULT_PROJECTS), int(time.time()),
+            )
             next_hypothesis = _prepare_next_hypothesis(
                 getattr(args, "scorecard", DEFAULT_SCORECARD),
                 args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
@@ -1950,6 +2071,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 recovered_effect=bool(pending_effect and pending_effect["recovered"]),
                 analytics_snapshot_key=analytics["snapshot_key"],
                 catalog_analytics=analytics.get("catalog_metrics"),
+                funnel=funnel,
                 new_listing_draft=draft_result,
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
@@ -2016,6 +2138,9 @@ def main() -> int:
     )
     parser.add_argument("--new-listing-contract", type=Path, default=DEFAULT_NEW_LISTING_CONTRACT)
     parser.add_argument("--reply-transcripts", type=Path, default=DEFAULT_REPLY_TRANSCRIPTS)
+    parser.add_argument("--applied", type=Path, default=DEFAULT_APPLIED)
+    parser.add_argument("--earnings", type=Path, default=DEFAULT_EARNINGS)
+    parser.add_argument("--projects-dir", type=Path, default=DEFAULT_PROJECTS)
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--timeout-seconds", type=int, default=180)
     parser.add_argument("--capability-evidence", type=Path, action="append", default=list(DEFAULT_CAPABILITIES))
