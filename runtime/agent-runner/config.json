@@ -55,6 +55,14 @@
         {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
+    "storefront-proposal-agent": {
+      "route": "terra-medium-storefront-proposal",
+      "token_reservation": 16384,
+      "timeout_seconds": 180,
+      "candidates": [
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
+      ]
+    },
     "repeatable-agent": {
       "route": "terra-medium-decision",
       "token_reservation": 32768,
