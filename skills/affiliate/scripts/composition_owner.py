@@ -11,6 +11,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -26,6 +27,29 @@ EXPERIMENT_VARIABLES = {"title", "opening_hook", "article_structure", "cta"}
 
 class CompositionError(Exception):
     pass
+
+
+def budget_retry_is_due(skill_root: Path, state_root: Path, bundle: dict, now=None) -> bool:
+    run_id = f"{bundle['plan_id']}-{bundle['source_set_sha256'][:16]}"
+    try:
+        summary = json.loads((
+            state_root / "composition-runs" / run_id / "summary.json"
+        ).read_text(encoding="utf-8"))
+        config = json.loads((
+            skill_root / "config" / "agent-runner.json"
+        ).read_text(encoding="utf-8"))
+        reservation = int(config["task_classes"]["marketing-agent"]["token_reservation"])
+        budget = summary["budget"]
+        today = (now or datetime.now(timezone.utc)).astimezone(
+            ZoneInfo("Asia/Tokyo")
+        ).date().isoformat()
+        return summary.get("status") == "budget_blocked" and (
+            budget.get("day") != today
+            or int(budget["daily_consumed_tokens"]) + reservation
+            <= int(budget["daily_limit_tokens"])
+        )
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
 
 
 def valid_experiment(value) -> bool:
@@ -566,7 +590,14 @@ def wake(
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             return {"state": "ALREADY_RUNNING"}
-        for path in sorted((state_root / "composition-inbox").glob("*.json")):
+        paths = sorted(
+            (state_root / "composition-inbox").glob("*.json"),
+            key=lambda path: (
+                not (state_root / "composition-receipts" / path.name).is_file(),
+                path.name,
+            ),
+        )
+        for path in paths:
             try:
                 bundle = load_bundle(path)
             except CompositionError:
@@ -582,29 +613,12 @@ def wake(
                 previous = json.loads(receipt_path.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 previous = {}
-            budget_retry_due = False
-            if (
+            budget_retry_due = (
                 previous.get("state") == "FAILED"
                 and previous.get("failure_class") == "RUNNER_REJECTED"
                 and previous.get("source_set_sha256") == bundle["source_set_sha256"]
-            ):
-                run_id = f"{bundle['plan_id']}-{bundle['source_set_sha256'][:16]}"
-                try:
-                    summary = json.loads((
-                        state_root / "composition-runs" / run_id / "summary.json"
-                    ).read_text(encoding="utf-8"))
-                    config = json.loads((
-                        skill_root / "config" / "agent-runner.json"
-                    ).read_text(encoding="utf-8"))
-                    reservation = int(config["task_classes"]["marketing-agent"]["token_reservation"])
-                    budget = summary["budget"]
-                    budget_retry_due = (
-                        summary.get("status") == "budget_blocked"
-                        and int(budget["daily_consumed_tokens"]) + reservation
-                        <= int(budget["daily_limit_tokens"])
-                    )
-                except (OSError, ValueError, KeyError, TypeError):
-                    budget_retry_due = False
+                and budget_retry_is_due(skill_root, state_root, bundle)
+            )
             if (
                 previous.get("state") in TERMINAL
                 and previous.get("source_set_sha256") == bundle["source_set_sha256"]

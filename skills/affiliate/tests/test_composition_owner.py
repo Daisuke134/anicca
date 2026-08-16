@@ -5,6 +5,7 @@ import hashlib
 import json
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -13,6 +14,34 @@ SCRIPT = Path(__file__).parents[1] / "scripts" / "composition_owner.py"
 
 
 class CompositionOwnerTests(unittest.TestCase):
+    def test_budget_retry_becomes_due_on_a_new_jst_day(self) -> None:
+        spec = importlib.util.spec_from_file_location("affiliate_composition_owner", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            state = root / "state"
+            config = root / "config"
+            config.mkdir(parents=True)
+            (config / "agent-runner.json").write_text(json.dumps({
+                "task_classes": {"marketing-agent": {"token_reservation": 32768}},
+            }))
+            bundle = {"plan_id": "alpha-en", "source_set_sha256": "a" * 64}
+            run = state / "composition-runs" / f"alpha-en-{'a' * 16}"
+            run.mkdir(parents=True)
+            (run / "summary.json").write_text(json.dumps({
+                "status": "budget_blocked",
+                "budget": {
+                    "day": "2026-08-16", "daily_consumed_tokens": 101310,
+                    "daily_limit_tokens": 131072,
+                },
+            }))
+            same_day = datetime.fromisoformat("2026-08-16T12:00:00+09:00")
+            next_day = datetime.fromisoformat("2026-08-17T00:00:00+09:00")
+            self.assertFalse(module.budget_retry_is_due(root, state, bundle, same_day))
+            self.assertTrue(module.budget_retry_is_due(root, state, bundle, next_day))
+
     def test_wake_advances_only_one_due_source_set_and_dedupes_terminal_receipt(self) -> None:
         spec = importlib.util.spec_from_file_location("affiliate_composition_owner", SCRIPT)
         module = importlib.util.module_from_spec(spec)
