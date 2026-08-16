@@ -20,6 +20,10 @@ class PinError(Exception):
     pass
 
 
+class EvidenceError(Exception):
+    pass
+
+
 PASSTHROUGH_ENV = (
     "LANG",
     "LC_ALL",
@@ -75,6 +79,81 @@ def allowlisted_environment(source: dict[str, str], executable: Path) -> dict[st
     return child
 
 
+def secure_evidence_tree(evidence_dir: Path) -> None:
+    if evidence_dir.is_symlink():
+        raise EvidenceError
+    evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    for path in (evidence_dir, *evidence_dir.rglob("*")):
+        if path.is_symlink():
+            raise EvidenceError
+        if path.is_dir():
+            path.chmod(0o700)
+        elif path.is_file():
+            path.chmod(0o600)
+        else:
+            raise EvidenceError
+
+
+def seal_evidence(evidence_dir: Path, runner_exit_code: int) -> Path:
+    secure_evidence_tree(evidence_dir)
+    summary_path = evidence_dir / "summary.json"
+    attempts_path = evidence_dir / "attempts.jsonl"
+    try:
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        if not isinstance(summary, dict):
+            raise EvidenceError
+        attempt_count = int(summary.get("attempt_count", 0))
+        attempt_rows = []
+        if attempts_path.is_file():
+            attempt_rows = [
+                json.loads(line) for line in attempts_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+        if any(not isinstance(row, dict) for row in attempt_rows) or len(attempt_rows) != attempt_count:
+            raise EvidenceError
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        raise EvidenceError
+    seal_path = evidence_dir / "evidence-seal.json"
+    inventory.write_receipt(seal_path, {
+        "schema_version": 1,
+        "status": "SEALED",
+        "runner_exit_code": runner_exit_code,
+        "summary_sha256": hashlib.sha256(summary_path.read_bytes()).hexdigest(),
+        "attempts_sha256": (
+            hashlib.sha256(attempts_path.read_bytes()).hexdigest()
+            if attempts_path.is_file() else None
+        ),
+    })
+    seal_path.chmod(0o600)
+    return seal_path
+
+
+def verify_evidence_seal(evidence_dir: Path) -> dict:
+    seal_path = evidence_dir / "evidence-seal.json"
+    summary_path = evidence_dir / "summary.json"
+    attempts_path = evidence_dir / "attempts.jsonl"
+    try:
+        if evidence_dir.is_symlink() or evidence_dir.stat().st_mode & 0o077:
+            raise EvidenceError
+        for path in evidence_dir.rglob("*"):
+            if path.is_symlink() or path.stat().st_mode & 0o077:
+                raise EvidenceError
+        seal = json.loads(seal_path.read_text(encoding="utf-8"))
+        expected_attempts = (
+            hashlib.sha256(attempts_path.read_bytes()).hexdigest()
+            if attempts_path.is_file() else None
+        )
+        if (
+            seal.get("status") != "SEALED"
+            or seal.get("summary_sha256") != hashlib.sha256(summary_path.read_bytes()).hexdigest()
+            or seal.get("attempts_sha256") != expected_attempts
+        ):
+            raise EvidenceError
+        return seal
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        raise EvidenceError
+
+
 def verified_codex_record(receipt_path: Path) -> dict:
     try:
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -123,18 +202,24 @@ def main() -> int:
         evidence_dir = Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     except (ValueError, IndexError):
         raise PinError
+    secure_evidence_tree(evidence_dir)
+    (evidence_dir / "evidence-seal.json").unlink(missing_ok=True)
     write_model_call_pin(receipt_path, evidence_dir)
     child_environment = allowlisted_environment(parent_environment, executable)
     os.environ.clear()
     os.environ.update(child_environment)
     sys.path.insert(0, str(VENDOR))
     import agent_runner
-    return agent_runner.run()
+    runner_exit_code = agent_runner.run()
+    secure_evidence_tree(evidence_dir)
+    if (evidence_dir / "summary.json").is_file():
+        seal_evidence(evidence_dir, runner_exit_code)
+    return runner_exit_code
 
 
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except PinError:
-        print("affiliate agent runner: Codex binary pin rejected", file=sys.stderr)
+    except (PinError, EvidenceError):
+        print("affiliate agent runner: execution boundary rejected", file=sys.stderr)
         raise SystemExit(1)

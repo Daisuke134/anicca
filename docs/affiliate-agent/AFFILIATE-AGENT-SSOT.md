@@ -1396,7 +1396,7 @@ a due judgment or bounded diagnosis after budget and privacy gates pass.
 | U04 | CLEARED | Affiliate config binds `marketing-agent` to the single-candidate `affiliate-terra-high-strategy` route and `escalation-agent` to the fallback-free `affiliate-sol-one-use-repair` route. One read-only canary per route returned schema-valid output and recorded the selected model, high effort, route, duration, and provider-reported usage | Keep both routes explicit-escalation-only; the business loop cannot call either until U05–U10 close |
 | U05 | CLEARED | `machine_capability_inventory.py` now admits only the named `codex_cli` capability, records its canonical path/version/SHA, and `scripts/agent_runner.py` re-observes the same binary before every provider launch. The real Mac receipt pins Codex `0.147.0` SHA `19c4f144…d37`; a Terra-high read-only call stored the same pin beside its attempt receipt, while a corrupted SHA produced exit `1` with no provider attempt | All Affiliate model calls use the gate and a current private machine receipt; direct vendor-runner execution remains diagnostic-only |
 | U06 | CLEARED | `scripts/agent_runner.py` now discards the parent environment before importing d150 and admits only a fixed executable path, isolated Affiliate `HOME`/`CODEX_HOME`, auth-file path, locale/timezone, and named budget controls. A real Terra-high shell canary started with fake database/AWS/OpenAI/CDP secrets and reported all four names absent plus the isolated homes; evidence search found no sentinel and all canary artifacts were private | Keep this wrapper as the only production entrypoint; additions to the environment require an exact-name contract and a privacy canary |
-| U07 | OPEN-BEFORE-CODE | Runner result/stdout/stderr/attempt ledgers can be `0644` | Force directories `0700`, files `0600`, atomic writes, and install/readback checks |
+| U07 | CLEARED | The production wrapper now secures the complete evidence tree as directories `0700` and files `0600`, rejects symlinks, invalidates stale seals before invocation, validates the atomic d150 summary plus every attempt JSONL row, and atomically writes a hash-bound `evidence-seal.json`. Downstream verification rejects changed hashes or public modes. The real U06 Terra artifact was sealed and read back as `SEALED`, exit `0`; malformed and post-seal-tampered evidence failed closed | Treat only `verify_evidence_seal()` success as a usable Agent result; stdout/stderr remain raw diagnostic streams and may be partial after interruption |
 | U08 | OPEN-BEFORE-CODE | Runner validation ignores `enum`, `additionalProperties`, limits, and several JSON Schema constraints | Add complete domain validation proving exactly one allowlisted action and rejecting unknown fields/tools |
 | U09 | OPEN-BEFORE-CODE | Context packet defaults to 8 KiB and truncates without secret filtering | Define measured Affiliate context cap, provenance selection, and key/value redaction before model input |
 | U10 | OPEN-BEFORE-CODE | Budget is disabled; candidate fallback conflicts with pass-limit reservation | Set mandatory Affiliate daily/pass/scope budgets and either fix fallback admission or fail into a durable wait |
@@ -1416,6 +1416,14 @@ the new process environment instead of relying on ambient inheritance
 The checked-in config resolves the authentication source and automation home
 only through wrapper-created path variables; secret values themselves are never
 placed in that mapping or in the canary result.
+
+U07 deliberately does not claim that streamed provider logs are atomic. It uses
+the same durable boundary as NanoClaw's separate delivery receipt: state is
+admitted only after a terminal receipt exists ([NanoClaw `markDelivered` /
+`markDeliveryFailed`](https://github.com/nanocoai/nanoclaw/blob/d7d9887eb4acae8d60e327afc21955e3f10b77eb/src/db/session-db.ts#L273-L290)).
+The seal itself is written through a same-directory temporary file, `fsync`, and
+atomic replacement, matching Python's replacement contract
+([Python `os.replace`](https://docs.python.org/3/library/os.html#os.replace)).
 
 #### Tool and money-contract uncertainties
 

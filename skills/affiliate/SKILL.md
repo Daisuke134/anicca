@@ -47,6 +47,13 @@ and only the named budget variables. Parent API keys, database URLs, browser
 routes, and every other ambient variable are absent. Never add a wildcard or
 copy `os.environ` into this boundary.
 
+The same wrapper owns model evidence. It applies `0700` to directories and
+`0600` to files, rejects symlinks, and removes a stale seal before each run.
+After the vendored runner writes its atomic summary, the wrapper validates the
+attempt JSONL and atomically writes `evidence-seal.json` with the summary and
+attempt hashes. Consumers call `verify_evidence_seal`; raw output without a
+valid seal is incomplete evidence, never a model result.
+
 F0 provides four deterministic, non-publishing primitives:
 
 - `bootstrap/install.sh` verifies a reviewed pinned manifest and writes an

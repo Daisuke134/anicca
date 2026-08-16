@@ -213,6 +213,38 @@ class MachineCapabilityInventoryTests(unittest.TestCase):
                 self.assertNotIn(forbidden, child)
             self.assertNotIn("AUTHORITY_SECRET_SENTINEL", json.dumps(child, sort_keys=True))
 
+    def test_runner_evidence_requires_private_atomic_seal(self) -> None:
+        gate = self.load_module(RUNNER_GATE)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            evidence = root / "evidence"
+            evidence.mkdir(mode=0o755)
+            (evidence / "summary.json").write_text(
+                '{"status":"success","attempt_count":1}\n', encoding="utf-8"
+            )
+            (evidence / "attempts.jsonl").write_text('{"attempt":1}\n', encoding="utf-8")
+            (evidence / "attempt-01.stdout.log").write_text("raw\n", encoding="utf-8")
+            for path in evidence.iterdir():
+                path.chmod(0o644)
+
+            seal_path = gate.seal_evidence(evidence, 0)
+            seal = json.loads(seal_path.read_text(encoding="utf-8"))
+            self.assertEqual(seal["status"], "SEALED")
+            self.assertEqual(seal["runner_exit_code"], 0)
+            self.assertEqual(evidence.stat().st_mode & 0o777, 0o700)
+            self.assertTrue(all(path.stat().st_mode & 0o777 == 0o600 for path in evidence.iterdir()))
+            self.assertEqual(gate.verify_evidence_seal(evidence), seal)
+            (evidence / "summary.json").write_text('{"status":"tampered"}\n', encoding="utf-8")
+            with self.assertRaises(gate.EvidenceError):
+                gate.verify_evidence_seal(evidence)
+
+            incomplete = root / "incomplete"
+            incomplete.mkdir()
+            (incomplete / "attempts.jsonl").write_text('{"attempt":1}\n{"broken"', encoding="utf-8")
+            with self.assertRaises(gate.EvidenceError):
+                gate.seal_evidence(incomplete, 1)
+            self.assertFalse((incomplete / "evidence-seal.json").exists())
+
     def test_rejects_missing_duplicate_and_secret_inputs_without_receipt(self) -> None:
         script = self.require_script()
         with tempfile.TemporaryDirectory() as temporary:
