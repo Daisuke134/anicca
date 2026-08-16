@@ -1076,9 +1076,12 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M2, grow the English portfolio to ten comparable
-dedicated-link placements and admit additional providers/channels only with exact
-readback and measurable economics**.
+Current execution cursor: **M2.0, migrate the already-live English portfolio from
+shared referral links to one dedicated PartnerStack link per placement before
+creating more content**. This is the shortest money path because it makes the
+existing traffic attributable without paying for another model run or creating
+another public asset. Only after those existing placements are comparable does
+M2 add placements to ten, admit another executable provider, or add a channel.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
 files and zero decision receipts before eligibility. A first real Agent decision
@@ -1103,7 +1106,8 @@ no transition was duplicated or invented.
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
 and Systeme.io remains behind its typed CAPTCHA boundary. Release `50d45beca` is
-current; all six launchd owners are loaded and all three CDP ports respond. The
+the last completed self-heal slice. Release `523026ed9` is the current installed
+M2 runtime; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
 SHA-256 `ebe01c0d4c285ce6d7157c7c851e879cfd024ed0cbb7d4c113a96154d8e03ce6`,
@@ -1135,7 +1139,7 @@ and spend no further execution time on cleanup.
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
 | Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE`; 1 canonical DEV article `LIVE`; 1 receipted Substack article `LIVE` | Real public effects exist and are receipted; one known title-only duplicate remains unchanged by explicit operating decision |
 | Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist; the sixth campaign reached owned/X/DEV/Substack `LIVE` and Telegram before unchanged replays | A real external click is the first unfinished economic stage; provider admission continues in parallel under provider gates |
-| Acquisition | Six public placements share one hash-valid economic ledger. One dedicated PartnerStack placement has exact clicks `0/0`; one DEV placement has exact exposure `0/0/0`; missing historical denominators remain `null` | Placement-level observation is closed; continuous same-stage resume is the first unfinished implementation |
+| Acquisition | Six public placements share one hash-valid economic ledger. TTS and audio-to-text now have dedicated PartnerStack link receipts. The audio-to-text revision is committed at landing SHA `9cda40fcf`; private MD, provider receipt, runtime artifact, and landing markdown have the same URL SHA `4afd761a…`, while Netlify deploy run `31945081437` is still `in_progress` and the public page correctly fails exact-link readback | The loop owns migration and waits fail-closed at `OWNED_NOT_LIVE`; deployment time is an observed gate, not a TODO. After public readback, the same loop continues to the remaining shared-link placements without manual publish |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
 ```mermaid
@@ -1333,26 +1337,39 @@ result will be real external proof, but no implementation waits for the clock.
     `SELF_HEALED` Telegram message ID `21156`. Wake `15` exited `0`, preserved the
     exact job hash and attempt, kept sent rows `14→14`, and returned `NO_PENDING`.
     No generic healer, resubmission, or duplicate login was added.
-16. **M2.1 — Expand profitable distribution.** Reuse a winning owned asset through
-    additional policy-compatible native channels only when their real reach can be
-    observed and their traffic can be joined to a placement. Account creation,
-    login, disclosure, publish, readback, and recovery are all Skill-owned effects.
-17. **M2.2 — Expand executable offers.** Continue polling HubSpot/Impact and admit
+16. **M2.0 — Make existing traffic attributable before producing more.** The
+    installed loop revisits each existing `X_LIVE` generic campaign that lacks a
+    `provider_link_key`, creates exactly one placement-specific PartnerStack link,
+    revises the same owned slug, reconciles the existing X post without posting a
+    duplicate, and rebuilds the placement ledger. Release `523026ed9` enforces one
+    external effect per wake. Real wakes `16–18` created the audio-to-text link and
+    landing revision; exact public link readback remains the external deployment
+    gate. Continue until all eligible existing ElevenLabs placements have dedicated
+    link keys or a typed provider limitation receipt.
+17. **M2.1 — Grow to ten comparable English placements.** After existing migration,
+    let the source→composition→policy→owned/X→measurement loop add four campaigns.
+    Each campaign must have one dedicated provider link, exact public readback, a
+    non-borrowed exposure/click denominator, provider usage, and commission lineage.
+18. **M2.2 — Expand executable offers.** Continue polling HubSpot/Impact and admit
     another English B2B/creator program only through official-terms, allowed-
     channel, application, authentication, executable-link, and provider-readback
     receipts. Never resubmit rejected Kit unchanged or pause ElevenLabs earnings.
-18. **M2.3 — Build the USD 10,000 portfolio.** Maintain at least ten comparable
+19. **M2.3 — Allocate toward USD 10,000.** Maintain at least ten comparable
     mature placements, allocate 80% of bounded effort to observed approved-net
     winners and 20% to one-variable experiments, and keep provider/offer/channel
     concentration at or below 40% of approved net commission.
-19. **M3.1 — Add locale pods after the English loop proves unit economics.** Start
+20. **M2.4 — Add another measurable native channel only after placement economics
+    are comparable.** Reuse a winning owned asset through a policy-compatible
+    channel only when reach and click attribution have exact readback. Signup,
+    login, disclosure, publish, readback, and recovery remain Skill-owned effects.
+21. **M3.1 — Add locale pods after the English loop proves unit economics.** Start
     Japanese, then Spanish, with isolated accounts, browser profiles, provider
     memberships, links, disclosures, ledgers, and native evidence. Never mix
     languages on one social identity.
-20. **M4.1 — Package only the proven local loop.** After real approved revenue,
+22. **M4.1 — Package only the proven local loop.** After real approved revenue,
     remove machine-specific paths, ship one-command macOS install/update/health/
     rollback/uninstall, and publish the Skill plus privacy-safe ledger verifier.
-21. **M5.1 — Move the proven contracts to cloud.** Only after unattended positive
+23. **M5.1 — Move the proven contracts to cloud.** Only after unattended positive
     net operation and clean-Mac reproduction, replace launchd/browser ownership
     with tenant-isolated schedulers and browser workers while preserving the same
     job, receipt, attribution, recovery, deletion, audit, and Telegram/web UX.
