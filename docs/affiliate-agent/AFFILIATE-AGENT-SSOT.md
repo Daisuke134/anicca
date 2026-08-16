@@ -1846,7 +1846,11 @@ observable outcome exists.
 - [ ] **A15.5** Publish through the owned site and English X browser, require public
   readback, and refuse duplicate effects.
 - [ ] **A15.6** Reconcile post-baseline clicks and provider transactions on every
-  eligible poll while continuing research and publication work.
+  eligible poll while continuing research and publication work. Source now emits
+  a stable, deduplicated `CLICK_DELTA` Telegram event only when the official
+  PartnerStack overview reports a positive post-baseline delta. Because that
+  overview is aggregate, the event deliberately says `未紐付け` and cannot close
+  E0; a provider row with sub-ID or link fingerprint is still required.
 - [ ] **A15.7 — E0.** Record one real post-baseline provider click connected to a
   live English placement; do not manufacture or self-click it.
 - [ ] **A15.8 — E1.** Record one non-test `approved` commission with public

@@ -117,6 +117,13 @@ def owner_event(state, wake_event):
         cycle = json.loads(cycle_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         cycle = {}
+    try:
+        metrics = json.loads(
+            (state / "provider-metrics" / "elevenlabs.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        metrics = {}
+    click_delta = metrics.get("delta_from_baseline", {}).get("clicks")
     impact_state = wake_event.get("impact_state")
     impact_changed = wake_event.get("impact_changed", False)
     if impact_changed and impact_state in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
@@ -139,6 +146,17 @@ def owner_event(state, wake_event):
             f"{transition.get('status')} / gross={transition.get('gross_commission_minor')} minor "
             f"net={transition.get('net_commission_minor')} minor / {transition.get('currency') or 'currency unknown'}"
         )
+    elif isinstance(click_delta, int) and click_delta > 0:
+        kind = "CLICK_DELTA"
+        identity = {
+            "kind": kind,
+            "provider": "elevenlabs",
+            "metrics_sha256": metrics.get("metrics_sha256"),
+            "clicks": metrics.get("metrics", {}).get("clicks"),
+        }
+        money = f"post-baseline clicks=+{click_delta} / commission not observed yet"
+        transition = None
+        campaign = {}
     elif campaign:
         kind = "PLACEMENT_LIVE"
         identity = {"kind": kind, "plan_id": campaign.get("plan_id"), "x_url": campaign["x_url"]}
@@ -154,7 +172,7 @@ def owner_event(state, wake_event):
     else:
         return None
     event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
-    public_url = None if kind.startswith("PROGRAM_") else (
+    public_url = None if kind.startswith("PROGRAM_") or kind == "CLICK_DELTA" else (
         (transition or {}).get("placement", {}).get("public_url") or (
             campaign.get("x_url") if kind == "PLACEMENT_LIVE" else None
         ) or wake_event.get("publication_url") or latest_live_url(state)
@@ -163,6 +181,8 @@ def owner_event(state, wake_event):
     next_job = (
         "同じ申請を再提出せず、Impactの審査状態を継続確認"
         if kind.startswith("PROGRAM_")
+        else "provider transactionを待ち、sub-IDまたはlink fingerprintでplacementへ照合"
+        if kind == "CLICK_DELTA"
         else "buyer-intentを収集し、次の公開・収益照合を継続"
     )
     program = "HubSpot / Impact" if kind.startswith("PROGRAM_") else "ElevenLabs / PartnerStack"
