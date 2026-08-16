@@ -1166,7 +1166,16 @@ tasks and not reasons to stop safe work.
    canonical placement ledger. This is required before placement eight because
    otherwise clicks and commissions cannot teach the strategy Agent whether its
    selected hypothesis worked. It reuses the existing experiment lineage rather
-   than adding another workflow or service.
+   than adding another workflow or service. Release
+   `d99fea310e311a3a8cc3046c891b7d50dae89307` is installed and carries the
+   selected family, decision ID, hypothesis, evidence, and success metric through
+   the source-set hash, composition prompt, policy lineage check, generic public
+   campaign receipt, and placement ledger. The focused existing suite passed
+   `26/26`. Real money-loop wake `47` then exited `0`, kept ElevenLabs
+   `AUTHENTICATED`, existing publication `X_LIVE`, and six canonical placements
+   `LEDGER_READY`; revenue remained an honest `COOLDOWN` and Telegram returned
+   `NO_PENDING` without replaying an old event. The first post-fix placement row
+   with a non-null decision remains the automatic end-to-end acceptance gate.
 3. **E1-H — Close the first real transaction path.** On the first provider row,
    the loop normalizes provider transaction ID and status, joins the exact
    placement, appends one replay-safe economic transition, reports
