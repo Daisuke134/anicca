@@ -66,6 +66,19 @@ def valid_experiment(value) -> bool:
     )
 
 
+def valid_opportunity_decision(value) -> bool:
+    required = (
+        "decision_id", "selected_family", "hypothesis", "success_metric",
+    )
+    return value is None or (
+        isinstance(value, dict)
+        and all(isinstance(value.get(key), str) and value[key] for key in required)
+        and isinstance(value.get("evidence"), list)
+        and bool(value["evidence"])
+        and all(isinstance(item, str) and item for item in value["evidence"])
+    )
+
+
 def load_bundle(path: Path) -> dict:
     try:
         bundle = json.loads(path.read_text(encoding="utf-8"))
@@ -76,6 +89,7 @@ def load_bundle(path: Path) -> dict:
             or bundle.get("locale") not in {"en", "ja", "es"}
             or not SHA256.fullmatch(bundle.get("source_set_sha256", ""))
             or not isinstance(bundle.get("sources"), list)
+            or not valid_opportunity_decision(bundle.get("opportunity_decision"))
             or not valid_experiment(bundle.get("experiment"))
         ):
             raise CompositionError
@@ -131,6 +145,16 @@ def source_text(state_root: Path, bundle: dict) -> str:
 
 
 def prompt_for(state_root: Path, bundle: dict) -> str:
+    opportunity = bundle.get("opportunity_decision")
+    opportunity_prompt = ""
+    if opportunity:
+        opportunity_prompt = f"""
+The strategy Agent selected product family `{opportunity['selected_family']}` under
+decision `{opportunity['decision_id']}`.
+Its falsifiable hypothesis is: {opportunity['hypothesis']}
+The success metric is: {opportunity['success_metric']}
+Use this as strategy context. Do not state the hypothesis as a proven outcome.
+"""
     experiment = bundle.get("experiment")
     experiment_prompt = ""
     if experiment:
@@ -174,6 +198,7 @@ Include `Disclosure: This article contains an affiliate link.` before the CTA.
 Use the literal placeholder {{{{AFFILIATE_LINK}}}} exactly once; no real tracking URL is available.
 Return JSON with exactly `title` and `markdown`. The markdown must be at least 800 characters.
 {experiment_prompt}
+{opportunity_prompt}
 
 {source_text(state_root, bundle)}
 """
@@ -269,6 +294,8 @@ def build_handoff(skill_root: Path, state_root: Path, bundle: dict, receipt: dic
         "content_fingerprint": hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
         "result_fingerprint": verified["result_sha256"],
     }
+    if bundle.get("opportunity_decision"):
+        handoff["opportunity_decision"] = bundle["opportunity_decision"]
     if bundle.get("experiment"):
         handoff["experiment"] = bundle["experiment"]
     handoff["handoff_fingerprint"] = hashlib.sha256(
@@ -356,10 +383,12 @@ def policy_inputs(
         core = dict(handoff)
         fingerprint = core.pop("handoff_fingerprint")
         source_material = {"sources": bundle["sources"]}
+        if bundle.get("opportunity_decision"):
+            source_material["opportunity_decision"] = bundle["opportunity_decision"]
         if bundle.get("experiment"):
             source_material["experiment"] = bundle["experiment"]
         computed_source_set = hashlib.sha256(json.dumps(
-            source_material if bundle.get("experiment") else bundle["sources"],
+            source_material if len(source_material) > 1 else bundle["sources"],
             sort_keys=True, separators=(",", ":")
         ).encode()).hexdigest()
         source_rows = {
@@ -421,6 +450,15 @@ def policy_inputs(
                     valid_experiment(bundle.get("experiment"))
                     and bundle.get("experiment") == plan.get("experiment")
                     == handoff.get("experiment")
+                )
+            ),
+            "opportunity_lineage": (
+                not bundle.get("opportunity_decision")
+                or (
+                    valid_opportunity_decision(bundle.get("opportunity_decision"))
+                    and bundle.get("opportunity_decision")
+                    == plan.get("opportunity_decision")
+                    == handoff.get("opportunity_decision")
                 )
             ),
             "content_fingerprint": handoff.get("content_fingerprint") == hashlib.sha256(
@@ -573,6 +611,8 @@ def build_policy(
         "checks": checks,
         "semantic_audit": audit,
     }
+    if bundle.get("opportunity_decision"):
+        policy["opportunity_decision"] = bundle["opportunity_decision"]
     if bundle.get("experiment"):
         policy["experiment"] = bundle["experiment"]
     path = state_root / "campaign-policy" / f"{bundle['plan_id']}.json"

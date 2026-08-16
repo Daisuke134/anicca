@@ -913,6 +913,8 @@ def advance_generic_publication(
             "provider_link_key": dedicated.get("provider_link_key"),
             "tracking_custom_link_id": dedicated.get("tracking_custom_link_id"),
         }
+        if handoff.get("opportunity_decision"):
+            progress["opportunity_decision"] = handoff["opportunity_decision"]
         if handoff.get("experiment"):
             progress["experiment"] = handoff["experiment"]
         atomic_json(progress_path, progress)
@@ -928,12 +930,14 @@ def advance_generic_publication(
             "readback_links": [link],
             "project": "AFFILIATE DECISION GUIDE",
             "built_at": created_at,
+            "opportunity_decision": handoff.get("opportunity_decision"),
             "experiment": handoff.get("experiment"),
         })
         atomic_json(state / "policy" / f"{slug}.json", {
             "decision": "PASS",
             "content_sha256": content_sha256,
             "generic_policy_sha256": hashlib.sha256(policy_path.read_bytes()).hexdigest(),
+            "opportunity_decision": handoff.get("opportunity_decision"),
             "experiment": handoff.get("experiment"),
         })
 

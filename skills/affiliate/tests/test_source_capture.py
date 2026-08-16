@@ -50,6 +50,16 @@ class SourceCaptureTest(unittest.TestCase):
             self.assertEqual(
                 plan["opportunity_decision"]["decision_id"], "decision-1",
             )
+            receipts = [{
+                "source_id": "official-speech-to-text",
+                "locator": "https://elevenlabs.io/speech-to-text",
+                "evidence_class": "official_product",
+                "raw_sha256": "a" * 64,
+            }]
+            bundle = MODULE.write_composition_bundle(state, plan, receipts)
+            self.assertEqual(
+                bundle["opportunity_decision"], plan["opportunity_decision"],
+            )
             candidates = selector.call_args.args[2]
             self.assertEqual([row["family"] for row in candidates], [
                 "text-to-speech", "speech-to-text",

@@ -1160,6 +1160,13 @@ tasks and not reasons to stop safe work.
    pre-fix YouTube campaign is still unfinished; it did not skip ahead or create
    an unreceipted eighth plan. The post-`X_LIVE` decision/readback remains the live
    acceptance gate, not a manual authoring or waiting task.
+   The next harness slice closes the strategy lineage that the selector exposed:
+   the exact opportunity decision travels through the source-set hash,
+   composition prompt, semantic-policy receipt, public campaign receipt, and
+   canonical placement ledger. This is required before placement eight because
+   otherwise clicks and commissions cannot teach the strategy Agent whether its
+   selected hypothesis worked. It reuses the existing experiment lineage rather
+   than adding another workflow or service.
 3. **E1-H — Close the first real transaction path.** On the first provider row,
    the loop normalizes provider transaction ID and status, joins the exact
    placement, appends one replay-safe economic transition, reports

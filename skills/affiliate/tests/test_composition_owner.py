@@ -169,7 +169,7 @@ class CompositionOwnerTests(unittest.TestCase):
                     "locator": source["locator"],
                     "raw_sha256": raw_sha256,
                 }],
-                "x_copy": "Affiliate disclosure: Alpha Product Guide\n\n{{OWNED_ARTICLE_URL}}",
+                "x_copy": "Affiliate link disclosure: Alpha Product Guide\n\n{{OWNED_ARTICLE_URL}}",
                 "source_set_sha256": source_set_sha256,
                 "content_fingerprint": hashlib.sha256(article.encode()).hexdigest(),
                 "result_fingerprint": "b" * 64,

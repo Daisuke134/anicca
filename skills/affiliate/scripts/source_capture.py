@@ -312,9 +312,12 @@ def discover_official_plan(root, state_root, now, opportunity_selector=select_op
         "buyer_intent": f"Creators evaluating ElevenLabs {display} before paying",
         "slug": f"elevenlabs-{family}-for-creators",
         "opportunity_decision": {
-            key: decision[key] for key in (
-                "decision_id", "hypothesis", "evidence", "success_metric"
-            )
+            "selected_family": family,
+            **{
+                key: decision[key] for key in (
+                    "decision_id", "hypothesis", "evidence", "success_metric"
+                )
+            },
         },
         "sources": [
             {
@@ -475,10 +478,12 @@ def write_composition_bundle(state_root, plan, receipts):
         key: row[key] for key in ("source_id", "locator", "evidence_class", "raw_sha256")
     } for row in receipts]
     source_material = {"sources": sources}
+    if plan.get("opportunity_decision"):
+        source_material["opportunity_decision"] = plan["opportunity_decision"]
     if plan.get("experiment"):
         source_material["experiment"] = plan["experiment"]
     source_set = hashlib.sha256(json.dumps(
-        source_material if plan.get("experiment") else sources,
+        source_material if len(source_material) > 1 else sources,
         sort_keys=True, separators=(",", ":")
     ).encode()).hexdigest()
     bundle = {
@@ -486,6 +491,8 @@ def write_composition_bundle(state_root, plan, receipts):
         "plan_id": plan["plan_id"], "locale": plan["locale"],
         "source_set_sha256": source_set, "sources": sources,
     }
+    if plan.get("opportunity_decision"):
+        bundle["opportunity_decision"] = plan["opportunity_decision"]
     if plan.get("experiment"):
         bundle["experiment"] = plan["experiment"]
     atomic_write(state_root / "composition-inbox" / f"{plan['plan_id']}.json", bundle)

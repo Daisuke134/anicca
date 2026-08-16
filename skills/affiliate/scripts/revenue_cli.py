@@ -279,6 +279,9 @@ def placement_candidates(state):
         placement_id = campaign.get("placement_id")
         if placement_id in candidates:
             candidates[placement_id]["public_url"] = campaign.get("owned_url")
+            candidates[placement_id]["opportunity_decision"] = campaign.get(
+                "opportunity_decision"
+            )
             candidates[placement_id]["experiment"] = campaign.get("experiment")
             candidates[placement_id]["plan_id"] = campaign.get("plan_id")
     content_root = state / "content"
@@ -309,6 +312,7 @@ def placement_candidates(state):
                 set(prior.get("link_fingerprints", []))
                 if dedicated else link_fingerprints(links[0])
             ),
+            "opportunity_decision": campaign.get("opportunity_decision"),
             "experiment": campaign.get("experiment"),
             "plan_id": campaign.get("plan_id"),
         }
@@ -406,6 +410,7 @@ def build_placement_ledger(state):
         rows.append({
             "placement_id": placement_id,
             "plan_id": plan_id,
+            "opportunity_decision": candidate.get("opportunity_decision"),
             "experiment": candidate.get("experiment"),
             "public_url": candidate.get("public_url"),
             "provider_link_key": candidate.get("provider_link_key"),
