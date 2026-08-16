@@ -71,5 +71,27 @@ def test_short_term_zero_sales_alone_never_reaches_the_retire_action():
         render(allocation={**ALLOCATION, "action": "IMPROVE"})
 
 
+def test_replace_plan_requires_a_ready_candidate_and_keeps_a_republish_rollback():
+    retire = render()
+    create = {"draft_service_id": "4356229", "contract_sha256": "c" * 64,
+              "expected_public_url": "https://coconala.com/services/4356229"}
+    allocation = {**ALLOCATION, "action": "REPLACE"}
+    plan = sd._render_replace_plan(retire, create, allocation)
+    assert plan["sequence"] == ["retire", "create"]
+    assert plan["retired_service_id"] == SERVICE_ID and plan["created_service_id"] == "4356229"
+    # A failed creation must be able to put the old listing back.
+    assert plan["rollback"] == {"republish_service_id": SERVICE_ID, "submit_mode": "open",
+                                "on": "create_failed_after_retire"}
+    assert len(plan["plan_sha256"]) == 64
+
+    # Never retire a slot before the replacement contract exists.
+    with pytest.raises(RuntimeError, match="storefront_replace_without_ready_candidate"):
+        sd._render_replace_plan(retire, None, allocation)
+    with pytest.raises(RuntimeError, match="storefront_replace_identity_invalid"):
+        sd._render_replace_plan(retire, {**create, "draft_service_id": SERVICE_ID}, allocation)
+    with pytest.raises(RuntimeError, match="storefront_replace_allocation_invalid"):
+        sd._render_replace_plan(retire, create, ALLOCATION)
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
