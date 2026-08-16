@@ -1464,10 +1464,25 @@ is the effect owner.
   rendered form identity, user-facing country/submit locators, private-profile
   readback, and the existing `PROVIDER_APPLICATION` write-ahead fence.
 - Connect it to `local_loop.py` only when ElevenLabs provider auth is healthy.
-  Submit once, restore ElevenLabs home in `finally`, and never retry an unresolved
-  submit. A terminal application receipt deduplicates every later wake.
+  Resume the same write-ahead job after an unverified pre-submit attempt, restore
+  ElevenLabs home in `finally`, and never create a second unresolved job. A
+  terminal application receipt deduplicates every later wake.
 - No new scheduler, browser, agent, database, Superpowers stage, TDD/RED cycle,
   subagent implementation, or generalized application framework.
+
+#### Live reconciliation evidence before the final submit
+
+The first installed attempt observed PartnerStack's preliminary
+`POST /api/applications/access` and therefore wrote
+`SUBMISSION_AMBIGUOUS`; official `GET network_applications/<program>` returned
+no application key and the dashboard still showed zero partnerships. The
+external job remains the same unresolved job; it is not discarded or replaced.
+The currently served `ApplicationFormContainer-C3aVCGn4.js` and main bundle show
+that the form first calls `checkUserAccess`, then calls `postApplicationForm`,
+whose actual effect is `POST applications`. The response fence therefore matches
+only `https://api.partnerstack.com/api/applications`, waits for the official
+application key, verifies only a keyed 2xx or terminal 4xx, and leaves every
+ambiguous result unresolved. This is real effect reconciliation, not a dry run.
 
 #### A. Close revenue truth for the live ElevenLabs placement
 

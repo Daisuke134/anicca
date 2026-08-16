@@ -14,7 +14,7 @@ import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
-from job_journal import JobStateError, start_effect, unresolved_effect, verify_effect
+from job_journal import JobStateError, resume_effect, start_effect, unresolved_effect, verify_effect
 
 
 REQUIRED = {
@@ -24,6 +24,7 @@ REQUIRED = {
 }
 
 GETRESPONSE_URL = "https://dash.partnerstack.com/application?company=getresponse&group=default"
+GETRESPONSE_APPLICATION_API = "https://api.partnerstack.com/api/network_applications/stck_NCzCmpfaODzjl3"
 ELEVENLABS_HOME = "https://elevenlabs.io/app/home"
 GETRESPONSE_PROMOTION = (
     "We publish evidence-led English software buying guides on aniccaai.com and disclose "
@@ -256,14 +257,11 @@ def apply_getresponse(state, cdp_port, profile_path):
     receipt_path = state / "program-applications" / "getresponse.json"
     if receipt_path.is_file():
         prior = json.loads(receipt_path.read_text(encoding="utf-8"))
-        if prior.get("state") in {"APPLICATION_PENDING", "APPROVED", "REJECTED"}:
+        if prior.get("state") in {
+            "APPLICATION_PENDING", "APPROVED", "REJECTED", "SUBMISSION_REJECTED",
+        }:
             return {**prior, "deduplicated": True}
-    if unresolved_effect(state, "PROVIDER_APPLICATION", "getresponse"):
-        return {
-            "schema_version": 1, "receipt_type": "PROGRAM_APPLICATION",
-            "program": "getresponse", "state": "RECONCILE_REQUIRED",
-            "deduplicated": True,
-        }
+    pending_job = unresolved_effect(state, "PROVIDER_APPLICATION", "getresponse")
     profile = json.loads(profile_path.expanduser().read_text(encoding="utf-8"))
     linkedin = str(profile.get("candidate", {}).get("linkedin_url", ""))
     if not linkedin.startswith(("https://linkedin.com/", "https://www.linkedin.com/")):
@@ -283,6 +281,33 @@ def apply_getresponse(state, cdp_port, profile_path):
         try:
             page.goto(GETRESPONSE_URL, wait_until="domcontentloaded", timeout=20_000)
             page.get_by_text("GetResponse Affiliate Application", exact=True).wait_for(timeout=15_000)
+            provider_application = page.evaluate(
+                """async url => {
+                    const response = await fetch(url, {credentials: 'include'});
+                    const body = await response.json();
+                    const data = body && body.data || {};
+                    return {http: response.status, key: data.key || null,
+                            status: data.status || null, created_at: data.created_at || null};
+                }""",
+                GETRESPONSE_APPLICATION_API,
+            )
+            if provider_application.get("key"):
+                external = {
+                    "state": "APPLICATION_PENDING",
+                    "url": page.url,
+                    "provider_key_sha256": hashlib.sha256(
+                        str(provider_application["key"]).encode()
+                    ).hexdigest(),
+                    "provider_status": provider_application.get("status"),
+                }
+                if pending_job:
+                    verify_effect(state, pending_job["job_id"], external)
+                result = {
+                    "schema_version": 1, "receipt_type": "PROGRAM_APPLICATION",
+                    "program": "getresponse", **external, "deduplicated": True,
+                }
+                atomic_receipt(receipt_path, result)
+                return result
             required_locked = page.locator("input[required][disabled]")
             if required_locked.count() != 3 or not all(
                 required_locked.nth(index).input_value().strip() for index in range(3)
@@ -314,45 +339,81 @@ def apply_getresponse(state, cdp_port, profile_path):
             )
             if not submit.is_enabled():
                 raise ValueError("GetResponse application is not submittable")
-            job = start_effect(
-                state, "PROVIDER_APPLICATION", "getresponse",
-                {
-                    "operation": "submit_application", "program": "getresponse",
-                    "application_url": GETRESPONSE_URL,
-                    "website": "https://aniccaai.com",
-                    "promotion_sha256": hashlib.sha256(GETRESPONSE_PROMOTION.encode()).hexdigest(),
-                },
-                {"state": "FORM_READY", "url": page.url}, 86400,
+            if pending_job:
+                job = resume_effect(state, "PROVIDER_APPLICATION", "getresponse")
+            else:
+                job = start_effect(
+                    state, "PROVIDER_APPLICATION", "getresponse",
+                    {
+                        "operation": "submit_application", "program": "getresponse",
+                        "application_url": GETRESPONSE_URL,
+                        "website": "https://aniccaai.com",
+                        "promotion_sha256": hashlib.sha256(GETRESPONSE_PROMOTION.encode()).hexdigest(),
+                    },
+                    {"state": "FORM_READY", "url": page.url}, 86400,
+                )
+            with page.expect_response(
+                lambda response: (
+                    response.request.method == "POST"
+                    and response.url.rstrip("/") == "https://api.partnerstack.com/api/applications"
+                ),
+                timeout=20_000,
+            ) as response_info:
+                submit.click(timeout=5_000)
+            response = response_info.value
+            if 200 <= response.status < 300:
+                try:
+                    page.wait_for_function(
+                        """async url => {
+                            const response = await fetch(url, {credentials: 'include'});
+                            const body = await response.json();
+                            return !!(body && body.data && body.data.key);
+                        }""",
+                        arg=GETRESPONSE_APPLICATION_API,
+                        timeout=10_000,
+                        polling=500,
+                    )
+                except Exception:
+                    pass
+            provider_application = page.evaluate(
+                """async url => {
+                    const response = await fetch(url, {credentials: 'include'});
+                    const body = await response.json();
+                    const data = body && body.data || {};
+                    return {http: response.status, key: data.key || null,
+                            status: data.status || null, created_at: data.created_at || null};
+                }""",
+                GETRESPONSE_APPLICATION_API,
             )
-            before = page.locator("body").inner_text()
-            submit.click(timeout=5_000)
-            page.wait_for_function(
-                "before => document.body.innerText !== before", arg=before, timeout=20_000,
+            accepted = 200 <= response.status < 300 and bool(provider_application.get("key"))
+            rejected = 400 <= response.status < 500
+            state_name = (
+                "APPLICATION_PENDING" if accepted
+                else "SUBMISSION_REJECTED" if rejected
+                else "SUBMISSION_AMBIGUOUS"
             )
             rendered = page.locator("body").inner_text()
-            lowered = rendered.casefold()
-            accepted = (
-                "application" in lowered
-                and any(marker in lowered for marker in (
-                    "submitted", "under review", "in review", "thank you for applying",
-                ))
-                and not page.get_by_role(
-                    "button", name=re.compile(r"^(申し込みを提出|Submit application)$", re.I),
-                ).count()
-            )
-            state_name = "APPLICATION_PENDING" if accepted else "SUBMISSION_AMBIGUOUS"
             result = {
                 "schema_version": 1, "receipt_type": "PROGRAM_APPLICATION",
                 "program": "getresponse", "state": state_name,
                 "application_url": GETRESPONSE_URL,
                 "observed_url": page.url,
                 "rendered_text_sha256": hashlib.sha256(rendered.encode()).hexdigest(),
+                "submit_http_status": response.status,
+                "provider_readback_http_status": provider_application.get("http"),
+                "provider_key_sha256": (
+                    hashlib.sha256(str(provider_application["key"]).encode()).hexdigest()
+                    if provider_application.get("key") else None
+                ),
+                "provider_status": provider_application.get("status"),
                 "job_id": job["job_id"], "deduplicated": False,
             }
-            if accepted:
+            if accepted or rejected:
                 verify_effect(state, job["job_id"], {
                     "state": state_name, "url": page.url,
-                    "rendered_text_sha256": result["rendered_text_sha256"],
+                    "submit_http_status": response.status,
+                    "provider_key_sha256": result["provider_key_sha256"],
+                    "provider_status": result["provider_status"],
                 })
             atomic_receipt(receipt_path, result)
         finally:
