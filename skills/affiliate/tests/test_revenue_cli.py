@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -13,6 +14,39 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RevenueCliTest(unittest.TestCase):
+    def test_placement_economics_separates_api_estimate_from_actual_cash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            (state / "campaign-publications").mkdir(parents=True)
+            (state / "program-links").mkdir(parents=True)
+            (state / "telemetry").mkdir(parents=True)
+            (state / "distribution-metrics").mkdir(parents=True)
+            (state / "campaign-publications" / "alpha-en.json").write_text(json.dumps({
+                "plan_id": "alpha-en", "placement_id": "alpha-en-1",
+                "slug": "alpha", "state": "X_LIVE",
+                "owned_url": "https://example.com/alpha",
+            }))
+            (state / "program-links" / "alpha-en-1.json").write_text(json.dumps({
+                "placement": "alpha-en-1", "state": "VERIFIED",
+                "provider_link_key": "link-1", "link_fingerprints": ["f" * 64],
+            }))
+            (state / "telemetry" / "agent-usage.jsonl").write_text(json.dumps({
+                "task_label": "alpha-en-sourcehash", "measurement": "provider_reported",
+                "tokens": {"total": 1200}, "provider_cost_usd": 0.12,
+                "cost_basis": "api_equivalent_estimate",
+            }) + "\n")
+            (state / "distribution-metrics" / "devto.json").write_text(json.dumps({
+                "articles": [{"placement_id": "alpha-en-1", "page_views_count": 0}],
+            }))
+
+            row = MODULE.build_placement_ledger(state)["placements"][0]
+
+            self.assertEqual(row["cost"]["model_usage"]["total_tokens"], 1200)
+            self.assertEqual(row["cost"]["model_usage"]["api_equivalent_estimate_usd"], 0.12)
+            self.assertIsNone(row["cost"]["model_actual_billed_usd"])
+            self.assertEqual(row["unit_economics"]["actual_net_profit_state"], "UNKNOWN_COST")
+            self.assertEqual(row["unit_economics"]["exposure_denominator_state"], "INSUFFICIENT_DENOMINATOR")
+
     def test_classifies_tax_and_provider_setup_without_bank_data(self):
         readiness = MODULE.payout_readiness(
             "納税登録が必要\n出金するための税金情報を記入する\n"

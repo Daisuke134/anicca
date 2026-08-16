@@ -59,6 +59,12 @@ COMMISSION_FIELDS = {
     "target_type": ("ターゲット・タイプ", "Target type"),
 }
 
+KNOWN_PLAN_BY_PLACEMENT = {
+    "elevenlabs-plans-for-solo-creators": "elevenlabs-en",
+    "elevenagents-for-customer-support": "elevenagents-en",
+    "elevenlabs-text-to-speech-api-for-developers": "elevenlabs-tts-api-en",
+}
+
 COMMISSION_STATUS = {
     "pending": "pending",
     "hold": "pending",
@@ -343,6 +349,7 @@ def build_placement_ledger(state):
         transaction_id = transition.get("provider_transaction_id")
         if transaction_id:
             latest_transactions[transaction_id] = transition
+    usage_rows = _json_rows(state / "telemetry" / "agent-usage.jsonl")
     rows = []
     for placement_id, candidate in sorted(candidates.items()):
         link = link_rows.get(placement_id, {})
@@ -359,9 +366,39 @@ def build_placement_ledger(state):
             approved[currency] = approved.get(currency, 0) + int(
                 row.get("net_commission_minor") or 0
             )
+        plan_id = candidate.get("plan_id") or KNOWN_PLAN_BY_PLACEMENT.get(placement_id)
+        placement_usage = [
+            row for row in usage_rows
+            if plan_id and str(row.get("task_label", "")).startswith(f"{plan_id}-")
+        ]
+        measured_usage = [
+            row for row in placement_usage
+            if row.get("measurement") == "provider_reported"
+            and isinstance((row.get("tokens") or {}).get("total"), int)
+        ]
+        estimated_costs = [
+            float(row["provider_cost_usd"]) for row in placement_usage
+            if row.get("cost_basis") == "api_equivalent_estimate"
+            and isinstance(row.get("provider_cost_usd"), (int, float))
+            and not isinstance(row.get("provider_cost_usd"), bool)
+        ]
+        actual_costs = [
+            float(row["provider_cost_usd"]) for row in placement_usage
+            if row.get("cost_basis") == "actual_billed"
+            and isinstance(row.get("provider_cost_usd"), (int, float))
+            and not isinstance(row.get("provider_cost_usd"), bool)
+        ]
+        page_views = dev.get("page_views_count")
+        per_thousand = (
+            {
+                currency: round(minor * 1000 / page_views)
+                for currency, minor in approved.items()
+            }
+            if isinstance(page_views, int) and page_views > 0 else None
+        )
         rows.append({
             "placement_id": placement_id,
-            "plan_id": candidate.get("plan_id"),
+            "plan_id": plan_id,
             "experiment": candidate.get("experiment"),
             "public_url": candidate.get("public_url"),
             "provider_link_key": candidate.get("provider_link_key"),
@@ -384,7 +421,37 @@ def build_placement_ledger(state):
                 },
                 "approved_or_paid_net_minor_by_currency": approved,
             },
-            "cost": {"state": "UNKNOWN", "amount_minor_by_currency": None},
+            "cost": {
+                "actual_cash_state": "UNKNOWN",
+                "actual_cash_amount_by_currency": None,
+                "model_actual_billed_usd": (
+                    round(sum(actual_costs), 8)
+                    if placement_usage and len(actual_costs) == len(placement_usage)
+                    else None
+                ),
+                "tool_cash_state": "UNKNOWN",
+                "channel_cash_state": "UNKNOWN",
+                "model_usage": {
+                    "attempt_count": len(placement_usage),
+                    "provider_measured_attempt_count": len(measured_usage),
+                    "total_tokens": sum(
+                        int(row["tokens"]["total"]) for row in measured_usage
+                    ),
+                    "api_equivalent_estimate_usd": (
+                        round(sum(estimated_costs), 8) if estimated_costs else None
+                    ),
+                    "api_equivalent_is_not_invoice": True,
+                },
+            },
+            "unit_economics": {
+                "approved_or_paid_net_per_1000_devto_views_minor_by_currency": per_thousand,
+                "exposure_denominator_state": (
+                    "OBSERVED" if isinstance(page_views, int) and page_views > 0
+                    else "INSUFFICIENT_DENOMINATOR"
+                ),
+                "actual_net_profit_state": "UNKNOWN_COST",
+                "actual_net_profit_minor_by_currency": None,
+            },
         })
     core = {
         "schema_version": 1,
