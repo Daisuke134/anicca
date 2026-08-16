@@ -95,17 +95,23 @@ test("verified registration becomes one durable Calendar PNG Telegram applied bu
   assert.equal(calls.filter(([name]) => name === "calendar-read").length, 2);
   assert.equal(calls.filter(([name]) => name === "telegram-message").length, 1);
   assert.equal(calls.filter(([name]) => name === "telegram-photo").length, 1);
+  const deliveredMessage = calls.find(([name]) => name === "telegram-message")[1];
   assert.equal(
-    calls.find(([name]) => name === "telegram-message")[1],
+    deliveredMessage,
     [
       "Connector::: イベント申込を確認しました",
-      "provider: luma",
       "event: Verified Technology Event",
+      "starts at: 2026/8/10(月) 19:00 Asia/Tokyo",
+      "venue: Tokyo",
+      "provider: luma",
       "status: registered",
-      "starts at: 2026-08-10T10:00:00.000Z",
-      "calendar event ID: google-event-1",
+      "event url: https://luma.com/verified-one",
+      "calendar: https://www.google.com/calendar/event?eid=verified-one",
     ].join("\n"),
   );
+  assert.equal(deliveredMessage.includes("2026-08-10T10:00:00.000Z"), false);
+  assert.equal(deliveredMessage.includes("https://luma.com/verified-one"), true);
+  assert.equal(deliveredMessage.includes("https://www.google.com/calendar/event?eid=verified-one"), true);
   assert.equal(
     calls.find(([name]) => name === "telegram-message")[2].idempotencyKey,
     `connector-evidence:${calls.find(([name]) => name === "calendar-create")[1].idempotencyValue}`,

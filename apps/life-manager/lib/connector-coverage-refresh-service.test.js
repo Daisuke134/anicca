@@ -128,8 +128,6 @@ function makeService(input) {
     receiptReader: input.receiptReader,
     calendar: input.calendar,
     calendarId: "primary",
-    homeLocation: "Tokyo",
-    routeMinutes: input.routeMinutes || (async () => 20),
     now: () => NOW,
     readDateInventory: input.readDateInventory,
     readBusyCalendar: input.readBusyCalendar || (async () => busyInventory()),
@@ -156,7 +154,6 @@ function makeService(input) {
     })),
     profile: input.profile || { tenant_id: TENANT },
     apiKey: "fixture-key",
-    homeLocation: "home://dais-local",
   });
 }
 
@@ -172,7 +169,6 @@ test("verified RSVP becomes a Calendar event and coverage while a real all-day b
       requiredCanonicalUrls = input.requiredCanonicalUrls;
       return inventory;
     },
-    routeMinutes: async () => { throw new Error("route must not run after registration"); },
     calendar: {
       async findConnectorEvents() { return []; },
       async createConnectorEvent(input) {
@@ -203,12 +199,10 @@ test("a retried Connector registration remains covered_new when its exact Calend
   const coverage = currentCoverage();
   const inventory = await dateInventory(coverage);
   const registration = await completedRegistration();
-  let routeCalls = 0;
   let creates = 0;
   const refresh = makeService({
     receiptReader: { async listForCoverage() { return [registration]; } },
     readDateInventory: async () => inventory,
-    routeMinutes: async () => { routeCalls += 1; throw new Error("route unavailable"); },
     calendar: {
       async findConnectorEvents() {
         return [{
@@ -225,7 +219,6 @@ test("a retried Connector registration remains covered_new when its exact Calend
   assert.equal(result.coverage.counts.covered_new, 1);
   assert.equal(result.coverage.counts.unavailable, 1);
   assert.equal(result.coverage.counts.open, 19);
-  assert.equal(routeCalls, 0);
   assert.equal(creates, 0);
 });
 

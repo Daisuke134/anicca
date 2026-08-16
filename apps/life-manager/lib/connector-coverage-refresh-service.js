@@ -193,8 +193,6 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
           busyInventory,
           profile: dependencies.profile,
           apiKey: dependencies.apiKey,
-          homeLocation: dependencies.homeLocation,
-          routeMinutes: dependencies.routeMinutes,
         });
       } catch (error) {
         const code = String(error && error.code || "");

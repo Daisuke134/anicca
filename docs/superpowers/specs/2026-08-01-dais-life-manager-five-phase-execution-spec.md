@@ -92,9 +92,9 @@ Telegram evidence、local scheduleの復旧で判定する。fallback provider�
 
 | 順序 | ID | 状態 | 完了条件 |
 |---:|---|---|---|
-| 1 | C-CORE-01 single-owner cleanup | READY | 壊れたhealthcheck・Healer・retired host bridgeだけをunloadし、nativeだけloaded。削除済みworktree参照、`EX_CONFIG`、port `18793` consumerを0にする。plist/stateは削除しない |
-| 2 | C-CORE-02 browser readiness | READY | Connector専用CloakBrowser daily-driver `127.0.0.1:9222`の正規ownerを復旧し、Gig `:9223`や他profileを変更せずhealth endpointとpage inventoryをreadbackする |
-| 3 | C-CORE-03 remove travel dependency | READY | `connector-native-runtime.js`のcandidate eligibilityから`createConnectorRouteMinutes`、`homeLocation`、`routeMinutes`依存を除去し、無料・受付中・東京・14日内・Google Calendar busy非衝突だけをgateにする。Connectorがroute APIやtravel Calendar writeを呼ばないregressionを残す |
+| 1 | C-CORE-01 single-owner cleanup | DONE 2026-08-16（証拠は`docs/superpowers/plans/2026-08-16-connector-core-recovery-execution-notes.md`。unload後にnativeだけloaded、`EX_CONFIG` 0件、`18793` listener 0、plist 7件とstate 27件を保持、Gig `9223`無変更） | 壊れたhealthcheck・Healer・retired host bridgeだけをunloadし、nativeだけloaded。削除済みworktree参照、`EX_CONFIG`、port `18793` consumerを0にする。plist/stateは削除しない |
+| 2 | C-CORE-02 browser readiness | DONE 2026-08-16（`9222`= UUID `c97821e3`で到達、Gig `9223`= UUID `75a81661`は無変更、guard collisions 0、lease下でpage inventory 4 targetをreadbackし解放。Connectorがendpointをhardcodeしlease非取得である点は執行notesに記録） | Connector専用CloakBrowser daily-driver `127.0.0.1:9222`の正規ownerを復旧し、Gig `:9223`や他profileを変更せずhealth endpointとpage inventoryをreadbackする |
+| 3 | C-CORE-03 remove travel dependency | DONE 2026-08-16（travel gateを`calendar-candidate-gate.js`から除去、dead moduleの`connector-native-runtime.js`と`connector-route-minutes.js`を削除、`connector-no-travel.test.js`をregressionとして追加、`0.2.6`のTelegram driftを是正。証拠と、specが名指した実装が実はlive path外だった件は執行notes参照） | `connector-native-runtime.js`のcandidate eligibilityから`createConnectorRouteMinutes`、`homeLocation`、`routeMinutes`依存を除去し、無料・受付中・東京・14日内・Google Calendar busy非衝突だけをgateにする。Connectorがroute APIやtravel Calendar writeを呼ばないregressionを残す。あわせて`0.2.6`の実測driftどおりuser-facing Telegram文面を14日窓・移動時間非言及・provider非決め打ちへ合わせる |
 | 4 | C-CORE-04 canonical primary-first wake | BLOCKED_BY_01_02_03 | native labelをexact 1回supervised kickstartし、Luma→Connpass→fallbackの順序、main entrypoint、session/target各1、terminal report、process/lock/owned-page cleanup、exit contractを実測する |
 | 5 | C-CORE-05 Luma current-runtime E2E | READY_AFTER_04_AND_CANDIDATE | Daisの既存Luma accountで無料・受付中・Calendar非衝突候補を実申込し、official readback→official QRがあればticket delivery→Calendar event本体exact 1→Telegram positive IDs→`applied_bundle`をcurrent main/runtimeで再証明する |
 | 6 | C-CORE-06 Connpass current-runtime E2E | READY_AFTER_04_AND_CANDIDATE | Daisの既存Connpass accountで無料・受付中・Calendar非衝突候補を実申込し、official readback→Calendar event本体exact 1→Telegram registration evidence positive IDs→`applied_bundle`をcurrent main/runtimeで再証明する |
@@ -342,6 +342,66 @@ Connectorは移動時間、前後buffer、経路を計算・作成せず、Calen
 旧rolling-21計画、旧「Item19だけ残る」という記述は履歴であり、現在TODOを上書きしない。
 current coreの残TODOはC-CORE-01〜07だけであり、fallback providerの追加live proofは含めない。
 live acceptanceは対話中のCodexや臨時scriptではなく、official native entrypointの外部receiptでのみ閉じる。
+
+#### 0.2.5 Connector code layout SSOT — 一箇所に畳む
+
+Connectorは「skillをloopが回す」構造にする。loop（launchd）はscheduleとsingle ownerだけを持ち、
+仕事の中身は全部skill側に置く。同じ形をgig-work、earn、video、youtube-channel-creatorなど他skillと共有し、
+利用者は「skillを1つ選んでloopに載せる」だけで済ませる。OSS利用者にも同じ配置を配る。
+
+canonical repositoryは`github.com/Daisuke134/life-manager`だけであり、local canonical checkoutは
+`/Users/anicca/Projects/life-manager-main`である。Connector実装を別repository、別home、別ad-hoc directoryへ置かない。
+
+```text
+life-manager/
+├── skills/                       # skillのSSOT。1 skill = 1 directory = 1 CLI
+│   ├── registry.json             # skill slotのSSOT
+│   ├── connector/                # ★ event application skill
+│   │   ├── run.sh                # official entrypoint。loopもagentもこれだけを起動する
+│   │   ├── native-pass.js        # 1 wakeの本体
+│   │   ├── healthcheck.sh / healer-shadow.sh
+│   │   ├── lib/                  # lock・env・heartbeat・outbox
+│   │   └── test/
+│   ├── gig-work/ earn/ video/ youtube-channel-creator/ social/ report/ ...
+│   └── _shared/
+├── apps/life-manager/lib/        # connector-*.js（provider workflow・Calendar・Telegram・evidence）
+├── apps/life-manager/scripts/    # host bridge・deploy補助
+├── deploy/local/                 # local compose定義
+└── docs/superpowers/specs/       # spec正本
+```
+
+現状の実測では、Connector production logicは`skills/connector/`（薄いentrypoint）と
+`apps/life-manager/lib/connector-*.js`（production 41 file）へ分かれている。
+最終形は1 skillのcode・test・docを`skills/connector/`配下へ寄せ、`apps/life-manager`側には
+skillに依存しない共有基盤だけを残すことである。ただしこのlayout統合は`C-CORE-01`〜`C-CORE-07`のscope外の
+`DEFERRED_NON_BLOCKING`とし、coreを閉じる途中でfile移動を混ぜない。移動時はentrypoint path、launchd plist、
+`registry.json`、test pathを同一commitで更新し、`skills/connector/run.sh`というofficial entrypoint pathは変えない。
+
+#### 0.2.6 Telegram delivery contract — 実文面と既知drift
+
+DaisがConnectorの成果を知る唯一の通常surfaceはTelegramである。Google CalendarやProvider管理画面を
+自分で開かなくても、届いたmessageだけで「何が予約できたか」「次に何が起きるか」が分かる状態をuser-facing acceptanceにする。
+mail通知はTelegramの代替として同じ内容を送る将来optionであり、現行coreの完了条件には含めない。
+
+送るmessageは次の3種類だけとする。
+
+| 種類 | 実装 | 内容 |
+|---|---|---|
+| 申込完了（photo + caption） | `apps/life-manager/lib/connector-ticket-telegram.js` | event名、日時、場所、申込者、選定理由、確認receipt、Calendar登録済み表示、event URL、Calendar URL。official QRを出すproviderではQR画像、無いproviderは検証済みregistration page画像 |
+| 期間brief | `apps/life-manager/lib/connector-coverage-telegram.js` | 対象期間、既存の対面予定、Connectorが新規予約した日数、追加不可、未処理の空き、新規予約eventの明細、Calendar link |
+| 本人操作依頼 | outbound guardian経由 | OAuth・CAPTCHA・本人確認など本人しか完了できない一操作だけ。完了後は同じcontinuationから自動再開する |
+
+いずれもprovider message IDがpositiveでなければ成功として扱わない。Telegram本文にstack trace、内部runner語彙、
+secretを出さない（`connector-coverage-telegram.js`は`runner`/`bounded`混入とsecret語をrejectする）。
+
+2026-08-16の実測で、user-facing文面が`0.1.1`のcurrent contractに未追従である。以下は`C-CORE-03`で
+実装をcontractへ合わせる対象とし、新規itemを増やさない。
+
+| drift | 実測箇所 | contract上の正 |
+|---|---|---|
+| 期間が21日固定 | `connector-coverage-telegram.js`が`horizon_days !== 21`をinvalidにし、本文へ「今後3週間」と書く | 現行acceptance窓は今日を含む14日 |
+| 移動時間の文言 | 同fileが「既存予定と移動時間が重なる予約もありません」を出力する | Connectorは移動時間・buffer・経路を扱わない。Calendar衝突だけを述べる |
+| provider決め打ち | `connector-ticket-telegram.js` captionが「Lumaの確認メールを受信済み」固定 | LumaとConnpassがprimary、他はfallback。実際に検証したproviderのreceipt名を出す |
 
 ### 0.3 現在のlocal-only gate
 
