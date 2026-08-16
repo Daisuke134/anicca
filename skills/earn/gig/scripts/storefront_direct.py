@@ -1096,6 +1096,60 @@ def _render_listing_state_mutation(
     }, capability_families)
 
 
+CREATE_MIN_INTERVAL_SECONDS = 86_400
+
+
+def _score_demand_cluster(cluster: dict) -> dict:
+    """Score one official demand cluster from what the marketplace actually shows.
+
+    Demand is only credited when comparables prove buyers pay: a query with results but
+    no sold comparable scores zero rather than being called demand.
+    """
+    results = cluster.get("visible_result_count")
+    comparables = [row for row in cluster.get("comparables") or [] if isinstance(row, dict)]
+    sold = [row for row in comparables if type(row.get("sales_count")) is int and row["sales_count"] > 0]
+    reviewed = [row for row in comparables if type(row.get("review_count")) is int and row["review_count"] > 0]
+    prices = [row["display_price_jpy"] for row in comparables
+              if type(row.get("display_price_jpy")) is int and row["display_price_jpy"] > 0]
+    if type(results) is not int or not comparables:
+        return {"status": "unknown", "reason": "official_demand_evidence_incomplete", "score": None}
+    return {
+        "status": "known",
+        "score": len(sold) * 3 + len(reviewed),
+        "visible_result_count": results,
+        "sold_comparables": len(sold),
+        "reviewed_comparables": len(reviewed),
+        "median_price_jpy": sorted(prices)[len(prices) // 2] if prices else None,
+    }
+
+
+def _demand_cluster_key(query: str, category_url: str) -> str:
+    identity = json.dumps({"query": query.strip(), "category": category_url.strip()},
+                          ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return "storefront:demand:v1:" + hashlib.sha256(identity.encode()).hexdigest()
+
+
+def _last_published_create_epoch(state_dir: Path) -> int | None:
+    """When this loop last published a brand-new listing, read from its own wake receipts."""
+    path = state_dir / "wakes.jsonl"
+    if not path.is_file():
+        return None
+    latest = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        draft = row.get("new_listing_draft") if isinstance(row.get("new_listing_draft"), dict) else {}
+        if (int(draft.get("public_effect") or 0) == 1
+                and str(draft.get("candidate_key") or "").startswith("storefront:create:v1:")
+                and type(row.get("observed_at_epoch")) is int):
+            latest = max(latest or 0, row["observed_at_epoch"])
+    return latest
+
+
 def _render_replace_plan(retire_contract: dict, create_contract: dict | None, allocation: dict) -> dict:
     """One atomic REPLACE: free the slot recoverably, then fill it, or restore the old listing.
 
@@ -4064,7 +4118,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 for line in (args.state_dir / "new-listing-drafts.jsonl").read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ) if (args.state_dir / "new-listing-drafts.jsonl").exists() else False
-            if fixed_candidate_public and not demand_already_sold and next_hypothesis is None and observed < 20:
+            # A catalogue fills over days, not over consecutive full wakes.
+            last_create = _last_published_create_epoch(args.state_dir)
+            create_spacing_open = (last_create is None
+                                   or int(time.time()) - last_create >= CREATE_MIN_INTERVAL_SECONDS)
+            if (fixed_candidate_public and not demand_already_sold and create_spacing_open
+                    and next_hypothesis is None and observed < 20):
                 source_service_id = new_listing_contract["draft_service_id"]
                 create_source = next((row for row in validated_contracts
                                       if row["service_id"] == source_service_id), None)
@@ -4353,7 +4412,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     pass
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """The one place the runtime contract is declared, so tests cannot drift from it."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state-dir", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--output", type=Path)
@@ -4401,7 +4461,11 @@ def main() -> int:
     parser.add_argument("--telegram-receipt-dir", type=Path, default=DEFAULT_TELEGRAM_RECEIPTS)
     parser.add_argument("--telegram-target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     parser.add_argument("--openclaw", type=Path, default=Path("/opt/homebrew/bin/openclaw"))
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
     code, row = run_once(args)
     print(json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
     return code

@@ -15,20 +15,25 @@ sys.path.insert(0, str(SCRIPTS))
 import storefront_direct as direct  # noqa: E402
 
 
-def _args(tmp_path: Path) -> SimpleNamespace:
-    return SimpleNamespace(
-        pass_id="storefront-test",
-        state_dir=tmp_path / "state",
-        output=None,
-        operator_brake=tmp_path / "storefront.operator.brake",
-        lease_script=tmp_path / "lease.py",
-        runner=tmp_path / "runner.py",
-        schema=tmp_path / "schema.json",
-        workdir=tmp_path,
-        timeout_seconds=10,
-        capability_evidence=[],
-        effect=False,
-    )
+def _args(tmp_path: Path):
+    """Start from the real CLI contract so the fixture cannot drift from the runtime."""
+    args = direct.build_parser().parse_args([])
+    args.pass_id = "storefront-test"
+    args.state_dir = tmp_path / "state"
+    args.output = None
+    args.operator_brake = tmp_path / "storefront.operator.brake"
+    args.lease_script = tmp_path / "lease.py"
+    args.runner = tmp_path / "runner.py"
+    args.schema = tmp_path / "schema.json"
+    args.workdir = tmp_path
+    args.timeout_seconds = 10
+    args.capability_evidence = []
+    args.effect = False
+    # Never let a unit test reach the real outbox, receipts or state.
+    args.telegram_database = tmp_path / "telegram-outbox.sqlite3"
+    args.telegram_receipt_dir = tmp_path / "telegram-receipts"
+    args.telegram_target = ""
+    return args
 
 
 def test_noop_observes_on_one_lease_and_commits_only_after_release(tmp_path, monkeypatch):
@@ -71,7 +76,7 @@ def test_noop_observes_on_one_lease_and_commits_only_after_release(tmp_path, mon
     monkeypatch.setattr(listing_inventory, "observe_storefront", observe)
     code, row = direct.run_once(_args(tmp_path))
 
-    assert code == 0
+    assert code == 0, row
     assert events == ["acquire", ("observe", lease["ws"]), "heartbeat", "release"]
     assert row["status"] == "completed" and row["effect"] == row["duplicate"] == 0
     assert row["official_services_read"] == 11 and row["lease"]["released"] is True
@@ -174,7 +179,7 @@ def test_storefront_brake_prevents_lease_and_observation(tmp_path, monkeypatch):
 
     code, row = direct.run_once(args)
 
-    assert code == 0
+    assert code == 0, row
     assert row["status"] == "operator_brake" and row["effect"] == 0
 
 
@@ -238,10 +243,11 @@ def test_launchagent_is_immutable_dedicated_and_storefront_braked():
     env = data["EnvironmentVariables"]
 
     assert data["Label"] == "ai.anicca.hf-gig-storefront-direct"
-    assert data["StartInterval"] == 1800
+    # Minute cadence with an auto-cadence full wake, not a thirty-minute scheduler.
+    assert data["StartInterval"] == 60
     assert argv == ["/opt/homebrew/bin/python3",
                     "__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/storefront_direct.py",
-                    "--effect"]
+                    "--effect", "--auto-cadence"]
     assert env["GIG_OPERATOR_BRAKE_FILE"].endswith("/storefront.operator.brake")
     assert not any("BUDGET" in key for key in env)
     serialized = PLIST.read_text(encoding="utf-8")
