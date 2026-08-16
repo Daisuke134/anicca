@@ -250,7 +250,8 @@ def _report_message(row: dict) -> str:
          f"入金 {_display_count(apply_funnel.get('payments'))} / "
          f"純入金 {_display_money(apply_funnel.get('net_jpy'))}"),
         (f"❓ 帰属未確定: 問合せ {_display_count(unknown_funnel.get('inquiries'))} / "
-         f"入金 {_display_count(unknown_funnel.get('payments'))}"),
+         f"入金 {_display_count(unknown_funnel.get('payments'))} / "
+         f"純入金 {_display_money(unknown_funnel.get('net_jpy'))}"),
         (f"🧭 Portfolio: KEEP {_display_count(portfolio_counts.get('KEEP'))} / "
          f"IMPROVE {_display_count(portfolio_counts.get('IMPROVE'))} / "
          f"RETIRE {_display_count(portfolio_counts.get('RETIRE'))} / "
