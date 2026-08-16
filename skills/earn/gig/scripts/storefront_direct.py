@@ -28,6 +28,7 @@ DEFAULT_STATE = STATE_DIR / "storefront-direct"
 DEFAULT_BRAKE = HOST_STATE_DIR / "gig-work" / "storefront.operator.brake"
 DEFAULT_LEASE = BROWSER_DIR / "scripts" / "cdp_context_lease.py"
 DEFAULT_TAB = BROWSER_DIR / "scripts" / "cdp_default_tab.py"
+DEFAULT_ENSURE_BROWSER = BROWSER_DIR / "ensure_browser.sh"
 DEFAULT_RUNNER = RUNNER_DIR / "agent_runner.py"
 DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
@@ -1474,6 +1475,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
         lease = None
         released = False
         try:
+            browser = subprocess.run(
+                ["/bin/bash", str(args.ensure_browser_script)],
+                capture_output=True, text=True, check=False, timeout=60,
+            )
+            if browser.returncode != 0 or browser.stdout.strip() not in {"ALIVE", "RECOVERED"}:
+                detail = (browser.stdout.strip() or browser.stderr.strip() or "unknown")[:200]
+                raise RuntimeError(f"storefront_browser_unavailable:{detail}")
             task = f"gig-storefront-direct-{pass_id}"
             lease = _lease(args.lease_script, "acquire", task)
             ws_url = str(lease.get("ws") or "")
@@ -1893,6 +1901,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--operator-brake", type=Path, default=Path(os.environ.get("GIG_OPERATOR_BRAKE_FILE", DEFAULT_BRAKE)))
     parser.add_argument("--lease-script", type=Path, default=DEFAULT_LEASE)
+    parser.add_argument("--ensure-browser-script", type=Path, default=DEFAULT_ENSURE_BROWSER)
     parser.add_argument("--default-tab-script", type=Path, default=DEFAULT_TAB)
     parser.add_argument("--runner", type=Path, default=DEFAULT_RUNNER)
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
