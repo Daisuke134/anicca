@@ -184,7 +184,7 @@ cat > "$SOURCE_PLIST" <<EOF
 <plist version="1.0"><dict>
 <key>Label</key><string>ai.anicca.affiliate-source-refresh</string>
 <key>ProgramArguments</key><array><string>/bin/sh</string><string>$CURRENT/affiliate</string><string>sources</string><string>wake</string></array>
-<key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
+<key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME_ROOT</string><key>PATH</key><string>$HOME_ROOT/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
 <key>RunAtLoad</key><true/><key>StartInterval</key><integer>86400</integer><key>ThrottleInterval</key><integer>60</integer>
 <key>StandardOutPath</key><string>$LOG_DIR/source-refresh.out.log</string><key>StandardErrorPath</key><string>$LOG_DIR/source-refresh.err.log</string>
 </dict></plist>

@@ -150,7 +150,7 @@ def refresh_all(root, state_root, now=None, cooldown_seconds=86400):
         previous = json.loads(receipt_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         previous = {}
-    if previous.get("completed_at") is not None and now - int(previous["completed_at"]) < cooldown_seconds:
+    if previous.get("state") == "COMPLETE" and now - int(previous["completed_at"]) < cooldown_seconds:
         return {"state": "COOLDOWN", "completed_at": previous.get("completed_at"), "plans": []}
     with (state_root / ".source-refresh.lock").open("a+") as lock:
         try:
