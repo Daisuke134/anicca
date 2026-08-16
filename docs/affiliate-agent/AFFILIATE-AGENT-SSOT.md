@@ -2091,7 +2091,7 @@ resubmitted.
   duplicating the underlying publication or money transition.
 - [ ] **A13.5** Prove real messages for `PLACEMENT_LIVE`, `CLICK_DELTA`,
   `COMMISSION_PENDING`, `COMMISSION_APPROVED`, `SELF_HEALED`, and `BLOCKED`.
-- [ ] **A13.6** Send one daily metrics summary even when no business transition
+- [x] **A13.6** Send one daily metrics summary even when no business transition
   occurs. Reuse the existing 10-minute owner and Telegram outbox; do not add a
   scheduler. Instant transition events retain priority, and the daily summary is
   deferred to the next otherwise-eventless wake. Its deterministic receipt may
@@ -2105,6 +2105,19 @@ resubmitted.
   enumerates every append-only commission and click transition and selects the
   first unsent UUID in priority order; a multi-row provider burst therefore
   drains across later wakes without silently losing any event.
+
+  Installed release `e7c8aee00edf2381ca3d44d1cb61e38abcb0ac7d`
+  completed real launchd run `44` and sent one natural-language daily summary
+  through the existing Telegram transport as provider message ID `21046`. The
+  private receipt was derived from `173` real same-day wakes, `7` owned articles
+  in `LIVE`, `6` X placements in `LIVE`, one dedicated PartnerStack link with
+  `0` provider-observed clicks, and `0` pending/approved/paid/reversed commission
+  rows. It reported ElevenLabs authenticated, HubSpot/Impact application pending,
+  Systeme.io awaiting the external CAPTCHA challenge, and correctly stated that
+  click and pending commission are not revenue. Immediate real launchd replay
+  `45` exited `0`, returned `Telegram=NO_PENDING`, preserved the sent ledger at
+  `12` rows, and kept `21046` as the last provider message ID; no second daily
+  message was emitted.
 
 `SELF_HEALED` is live-proven with Telegram `messageId=20298`; `BLOCKED` is
 live-proven with `messageId=20305`. The other four event classes remain bound to
