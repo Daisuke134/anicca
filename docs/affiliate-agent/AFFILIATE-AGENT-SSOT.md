@@ -1548,6 +1548,14 @@ fills names from the private profile, both password fields from the repaired
 private Markdown, receipts only response URL/body hashes and HTTP status, and
 requires a final `/login` or `/dashboard` URL before `EMAIL_VERIFIED`.
 
+Attempt `2` filled the four controls but produced no API request. Official bundle
+readback and the live frame prove that the client also requires a normal Google
+reCAPTCHA checkbox token. The loop now clicks that checkbox through the existing
+CloakBrowser, proceeds only after `g-recaptcha-response` is non-empty, and emits
+`CAPTCHA_CHALLENGE` without submitting if an interactive challenge appears. A
+challenge or Playwright timeout is isolated to the Systeme lane so ElevenLabs,
+Impact, publication, revenue, and Telegram continue in the same wake.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
