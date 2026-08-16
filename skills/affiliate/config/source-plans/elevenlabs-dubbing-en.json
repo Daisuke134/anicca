@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "plan_id": "elevenlabs-dubbing-en",
+  "locale": "en",
+  "offer_id": "elevenlabs-dubbing",
+  "buyer_intent": "Video and podcast creators evaluating paid AI dubbing before localizing existing content",
+  "slug": "elevenlabs-ai-dubbing-for-video-creators",
+  "sources": [
+    {"id": "elevenlabs-dubbing-capability", "adapter": "crwl", "url": "https://elevenlabs.io/docs/overview/capabilities/dubbing", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},
+    {"id": "elevenlabs-dubbing-product-guide", "adapter": "crwl", "url": "https://elevenlabs.io/docs/eleven-creative/products/dubbing", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},
+    {"id": "elevenlabs-dubbing-studio", "adapter": "crwl", "url": "https://elevenlabs.io/dubbing-studio", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},
+    {"id": "elevenlabs-pricing", "adapter": "crwl", "url": "https://elevenlabs.io/pricing", "evidence_class": "official_price", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 7}
+  ]
+}
