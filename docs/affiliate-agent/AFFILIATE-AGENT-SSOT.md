@@ -1018,10 +1018,15 @@ flowchart LR
    49-test Affiliate suite passed. Two installed launchd wakes produced two
    sealed outputs, each with one placeholder and no private link; wake two left
    wake one's receipt byte-identical. No Git, X, or commission effect occurred.
-3. **P0 — Define the generic campaign handoff.** Require offer ID, locale, buyer
+3. **P0 — Define the generic campaign handoff — GREEN in source; release pending.** Require offer ID, locale, buyer
    intent, title, slug, owned-article Markdown, disclosure, one CTA placeholder,
    cited source IDs/hashes, X copy, and content/result fingerprints. The model
-   never receives the private tracking link.
+   never receives the private tracking link. Reuse the already sealed article;
+   derive the handoff deterministically from its exact result, source bundle,
+   and versioned source-plan metadata instead of paying for another model call.
+   The contract rejects uncited external URLs, a private link, disclosure after
+   CTA, invalid slug/locale metadata, oversized X copy, or a broken result seal;
+   all 49 Affiliate tests pass before the installed-owner gate.
 4. **P0 — Generalize the policy gate.** Validate cited URLs and source hashes,
    disclosure-before-CTA, claim support, locale, forbidden guarantees, one CTA,
    article/X length, and provider/channel rules. FAIL returns to the same job;

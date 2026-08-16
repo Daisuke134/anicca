@@ -2,6 +2,9 @@
   "schema_version": 1,
   "plan_id": "elevenagents-en",
   "locale": "en",
+  "offer_id": "elevenlabs-elevenagents",
+  "buyer_intent": "Customer-support teams comparing a voice-agent deployment before paying",
+  "slug": "elevenagents-for-customer-support",
   "sources": [
     {"id": "elevenagents-overview", "adapter": "crwl", "url": "https://elevenlabs.io/docs/eleven-agents/overview", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},
     {"id": "elevenagents-quickstart", "adapter": "crwl", "url": "https://elevenlabs.io/docs/eleven-agents/quickstart", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},

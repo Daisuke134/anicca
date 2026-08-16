@@ -39,17 +39,24 @@ class CompositionOwnerTests(unittest.TestCase):
                 "result_sha256": "b" * 64,
             }
             run_model = mock.Mock(return_value=completed)
+            build_handoff = mock.Mock(return_value="c" * 64)
 
-            first = module.wake(root, state, run_model=run_model)
-            second = module.wake(root, state, run_model=run_model)
+            first = module.wake(
+                root, state, run_model=run_model, handoff_builder=build_handoff
+            )
+            second = module.wake(
+                root, state, run_model=run_model, handoff_builder=build_handoff
+            )
 
             self.assertEqual(first["state"], "READY_FOR_POLICY")
             self.assertEqual(second["state"], "IDLE")
             self.assertEqual(run_model.call_count, 1)
+            self.assertEqual(build_handoff.call_count, 1)
             receipt = json.loads(
                 (state / "composition-receipts" / "alpha-en.json").read_text(encoding="utf-8")
             )
             self.assertEqual(receipt["source_set_sha256"], "a" * 64)
+            self.assertEqual(receipt["handoff_sha256"], "c" * 64)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,9 @@
   "schema_version": 1,
   "plan_id": "elevenlabs-en",
   "locale": "en",
+  "offer_id": "elevenlabs-creator",
+  "buyer_intent": "Solo creators comparing AI voice plans before paying",
+  "slug": "elevenlabs-plans-for-solo-creators",
   "sources": [
     {"id": "elevenlabs-affiliate", "adapter": "crwl", "url": "https://elevenlabs.io/affiliates", "evidence_class": "official_terms", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 7},
     {"id": "elevenlabs-pricing", "adapter": "crwl", "url": "https://elevenlabs.io/pricing", "evidence_class": "official_price", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 1},

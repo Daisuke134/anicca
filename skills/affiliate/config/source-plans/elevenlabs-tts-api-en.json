@@ -2,6 +2,9 @@
   "schema_version": 1,
   "plan_id": "elevenlabs-tts-api-en",
   "locale": "en",
+  "offer_id": "elevenlabs-tts-api",
+  "buyer_intent": "Developers benchmarking a production TTS integration before paying",
+  "slug": "elevenlabs-text-to-speech-api-for-developers",
   "sources": [
     {"id": "elevenlabs-api-quickstart", "adapter": "crwl", "url": "https://elevenlabs.io/docs/eleven-api/quickstart", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},
     {"id": "elevenlabs-api-reference", "adapter": "crwl", "url": "https://elevenlabs.io/docs/api-reference/introduction", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},

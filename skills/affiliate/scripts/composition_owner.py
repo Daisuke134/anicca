@@ -19,6 +19,7 @@ import machine_capability_inventory as inventory
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 TERMINAL = {"READY_FOR_POLICY", "FAILED", "QUARANTINED"}
+DISCLOSURE = "Disclosure: This article contains an affiliate link."
 
 
 class CompositionError(Exception):
@@ -117,6 +118,81 @@ def _ready_from_seal(evidence_dir: Path, bundle: dict) -> dict:
     }
 
 
+def build_handoff(skill_root: Path, state_root: Path, bundle: dict, receipt: dict) -> str:
+    try:
+        plan = json.loads(
+            (skill_root / "config" / "source-plans" / f"{bundle['plan_id']}.json")
+            .read_text(encoding="utf-8")
+        )
+        offer_id = plan["offer_id"]
+        buyer_intent = plan["buyer_intent"]
+        slug = plan["slug"]
+        if (
+            plan.get("locale") != bundle["locale"]
+            or not all(isinstance(value, str) and value for value in (
+                offer_id, buyer_intent, slug
+            ))
+            or not re.fullmatch(r"[a-z0-9][a-z0-9-]+", slug)
+        ):
+            raise CompositionError
+        verified = _ready_from_seal(Path(receipt["evidence_dir"]), bundle)
+        summary = json.loads(
+            (Path(receipt["evidence_dir"]) / "summary.json").read_text(encoding="utf-8")
+        )
+        result = json.loads(Path(summary["result_path"]).read_text(encoding="utf-8"))
+        markdown = result["markdown"]
+    except (
+        OSError, TypeError, ValueError, KeyError, json.JSONDecodeError,
+        agent_runner.EvidenceError,
+    ):
+        raise CompositionError
+    locators = {row["locator"]: row for row in bundle["sources"]}
+    cited = [
+        {
+            "source_id": row["source_id"],
+            "locator": locator,
+            "raw_sha256": row["raw_sha256"],
+        }
+        for locator, row in locators.items() if locator in markdown
+    ]
+    observed_urls = set(re.findall(r"https://[^\s)>\]]+", markdown))
+    if (
+        not cited
+        or not observed_urls.issubset(locators)
+        or markdown.find(DISCLOSURE) >= markdown.find("{{AFFILIATE_LINK}}")
+        or "try.elevenlabs.io" in markdown
+    ):
+        raise CompositionError
+    x_copy = f"Affiliate disclosure: {result['title']}\n\n{{{{OWNED_ARTICLE_URL}}}}"
+    if len(x_copy) > 280:
+        raise CompositionError
+    handoff = {
+        "schema_version": 1,
+        "receipt_type": "CAMPAIGN_HANDOFF",
+        "state": "READY_FOR_POLICY",
+        "plan_id": bundle["plan_id"],
+        "offer_id": offer_id,
+        "locale": bundle["locale"],
+        "buyer_intent": buyer_intent,
+        "title": result["title"],
+        "slug": slug,
+        "owned_article_markdown": markdown,
+        "disclosure": DISCLOSURE,
+        "cta_placeholder": "{{AFFILIATE_LINK}}",
+        "cited_sources": cited,
+        "x_copy": x_copy,
+        "source_set_sha256": bundle["source_set_sha256"],
+        "content_fingerprint": hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+        "result_fingerprint": verified["result_sha256"],
+    }
+    handoff["handoff_fingerprint"] = hashlib.sha256(
+        json.dumps(handoff, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    path = state_root / "campaign-handoffs" / f"{bundle['plan_id']}.json"
+    atomic_write(path, handoff)
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def run_model(skill_root: Path, state_root: Path, bundle: dict) -> dict:
     run_id = f"{bundle['plan_id']}-{bundle['source_set_sha256'][:16]}"
     evidence_dir = state_root / "composition-runs" / run_id
@@ -183,7 +259,10 @@ def run_model(skill_root: Path, state_root: Path, bundle: dict) -> dict:
         }
 
 
-def wake(skill_root: Path, state_root: Path, run_model=run_model) -> dict:
+def wake(
+    skill_root: Path, state_root: Path, run_model=run_model,
+    handoff_builder=build_handoff,
+) -> dict:
     state_root.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (state_root / ".composition.lock").open("a+") as lock:
         try:
@@ -210,6 +289,15 @@ def wake(skill_root: Path, state_root: Path, run_model=run_model) -> dict:
                 previous.get("state") in TERMINAL
                 and previous.get("source_set_sha256") == bundle["source_set_sha256"]
             ):
+                if (
+                    previous.get("state") == "READY_FOR_POLICY"
+                    and not SHA256.fullmatch(previous.get("handoff_sha256", ""))
+                ):
+                    previous["handoff_sha256"] = handoff_builder(
+                        skill_root, state_root, bundle, previous
+                    )
+                    atomic_write(receipt_path, previous)
+                    return previous
                 continue
             result = run_model(skill_root, state_root, bundle)
             if (
@@ -221,6 +309,10 @@ def wake(skill_root: Path, state_root: Path, run_model=run_model) -> dict:
             receipt = {
                 "schema_version": 1, "receipt_type": "COMPOSITION_RESULT", **result
             }
+            if receipt["state"] == "READY_FOR_POLICY":
+                receipt["handoff_sha256"] = handoff_builder(
+                    skill_root, state_root, bundle, receipt
+                )
             atomic_write(receipt_path, receipt)
             return receipt
         return {"state": "IDLE"}
