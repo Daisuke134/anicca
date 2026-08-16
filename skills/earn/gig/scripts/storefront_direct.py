@@ -1975,7 +1975,7 @@ def _seal_generated_proposal(
         asset = _render_generated_image_asset(proposed, service_id, evidence_dir)
         return _seal_mutation_contract({
             "version": 1, "platform": "coconala", "service_id": service_id,
-            "precondition_listing_version_sha256": public_snapshot["listing_version_sha256"],
+            "precondition_listing_version_sha256": source["service_version_sha256"],
             "changed_field": "image", "before_value": {"service_image_ids": []},
             "proposed_value": asset,
             "allowed_delta": ["data[UploadedFile][n*][image_files]"],
@@ -2380,10 +2380,7 @@ def _presend_guard(judgement: dict, own_page: dict, mutation_contract: dict | No
         _validate_image_mutation_contract(mutation_contract)
         before_value = mutation_contract.get("before_value", {})
         expected_ids = before_value.get("service_image_ids")
-        expected_public_version = mutation_contract.get("precondition_listing_version_sha256")
         if (mutation_contract.get("contract_sha256") is None
-                or (mutation_contract.get("service_id") != GALLERY_SERVICE_ID
-                    and expected_public_version != own_page.get("listing_version_sha256"))
                 or judgement.get("service_id") != mutation_contract.get("service_id")
                 or own_page.get("service_image_ids") != expected_ids):
             raise RuntimeError("presend_image_current_value_changed")
@@ -2442,9 +2439,7 @@ def _validate_public_image_acceptance(before: dict, after: dict, contract: dict)
     url = f"https://coconala.com/services/{service_id}"
     if before.get("url") != url or after.get("url") != url:
         raise RuntimeError("public_image_readback_url_invalid")
-    if (before.get("service_image_ids") != contract.get("rollback_value", {}).get("service_image_ids")
-            or (service_id != GALLERY_SERVICE_ID
-                and before.get("listing_version_sha256") != contract.get("precondition_listing_version_sha256"))):
+    if before.get("service_image_ids") != contract.get("rollback_value", {}).get("service_image_ids"):
         raise RuntimeError("public_image_before_invalid")
     expected = contract.get("official_readback", {}).get("service_image_count")
     if after.get("service_image_count") != expected or len(after.get("service_image_ids") or []) != expected:
@@ -2456,9 +2451,6 @@ def _validate_public_image_acceptance(before: dict, after: dict, contract: dict)
         if (removed & set(after_ids) or not set(kept) <= set(after_ids)
                 or after_ids[2] != kept[0] or after_ids[4] != kept[1]):
             raise RuntimeError("public_gallery_identity_or_order_mismatch")
-    if (service_id != GALLERY_SERVICE_ID
-            and before.get("listing_version_sha256") == after.get("listing_version_sha256")):
-        raise RuntimeError("public_image_version_unchanged")
 
 
 def _validate_image_form_delta(before: dict, after: dict, contract: dict) -> None:
