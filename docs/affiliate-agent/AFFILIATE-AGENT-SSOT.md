@@ -974,9 +974,11 @@ The completed history remains in the evidence tables below. The following list i
 the only canonical remaining order; later work MUST NOT jump ahead of an unmet
 gate.
 
-Current execution cursor: **step 4**. Installed release `64093fd3e` has six
-healthy launchd owners, 15 refreshed official sources, three source-hash-bound
-composition inputs, three sealed outputs, and three generic campaign handoffs.
+Current execution cursor: **step 4 live recovery**. Before the failed policy
+install, release `64093fd3e` had six healthy launchd owners, 15 refreshed official
+sources, three source-hash-bound composition inputs, three sealed outputs, and
+three generic campaign handoffs. Safe release `2067b62a6` is now staged, but the
+current desktop bootstrap context cannot reload the six stopped owners.
 All three handoffs are `READY_FOR_POLICY` and have no generic `policy_sha256`.
 Separately, the existing deterministic path has three English owned articles and
 three matching X placements with `LIVE` readback. Provider auth is
