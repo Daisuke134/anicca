@@ -1106,7 +1106,7 @@ no transition was duplicated or invented.
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
 and Systeme.io remains behind its typed CAPTCHA boundary. Release `50d45beca` is
-the last completed self-heal slice. Release `523026ed9` is the current installed
+the last completed self-heal slice. Release `abbc41d1a` is the current installed
 M2 runtime; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -1139,7 +1139,7 @@ and spend no further execution time on cleanup.
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
 | Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE`; 1 canonical DEV article `LIVE`; 1 receipted Substack article `LIVE` | Real public effects exist and are receipted; one known title-only duplicate remains unchanged by explicit operating decision |
 | Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist; the sixth campaign reached owned/X/DEV/Substack `LIVE` and Telegram before unchanged replays | A real external click is the first unfinished economic stage; provider admission continues in parallel under provider gates |
-| Acquisition | Six public placements share one hash-valid economic ledger. TTS and audio-to-text now have dedicated PartnerStack links; real wake `19` read back audio-to-text `LIVE` and reconciled the existing X status without a duplicate. Wakes `20–22` created the video-to-text dedicated link and pushed landing revision `bdef60de4`; Netlify run `31945505796` is still `in_progress`, so exact public readback correctly remains `OWNED_NOT_LIVE` | The loop owns migration and waits fail-closed at deployment boundaries; deployment time is an observed gate, not a TODO. After video-to-text readback, the same loop migrates dubbing without manual publish |
+| Acquisition | Six public placements share one hash-valid economic ledger. TTS, audio-to-text, video-to-text, and dubbing now have dedicated PartnerStack link receipts. Real wakes `19` and `23` read back audio/video `LIVE` and reconciled their existing X statuses without duplicates. Wakes `25–27` created the dubbing link and pushed landing revision `64a5e3e1`; Netlify run `31945984672` is `in_progress`, so exact readback remains `OWNED_NOT_LIVE` | The loop owns migration and waits fail-closed at deployment boundaries; deployment time is an observed gate, not a TODO. Release `abbc41d1a` also connects the legacy plans and ElevenAgents articles to the same one-link-per-wake migration after dubbing is public |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
 ```mermaid
@@ -1338,17 +1338,18 @@ result will be real external proof, but no implementation waits for the clock.
     exact job hash and attempt, kept sent rows `14→14`, and returned `NO_PENDING`.
     No generic healer, resubmission, or duplicate login was added.
 16. **M2.0 — Make existing traffic attributable before producing more.** The
-    installed loop revisits each existing `X_LIVE` generic campaign that lacks a
+    installed loop revisits each existing `X_LIVE` campaign that lacks a
     `provider_link_key`, creates exactly one placement-specific PartnerStack link,
     revises the same owned slug, reconciles the existing X post without posting a
-    duplicate, and rebuilds the placement ledger. Release `523026ed9` enforces one
-    external effect per wake. Real wakes `16–19` created and publicly verified the
-    audio-to-text dedicated link, preserving the original owned URL and X status.
-    Wakes `20–22` created the video-to-text link and landing revision; its exact
-    public readback is the current external deployment gate. Dubbing is the final
-    generic shared-link migration. Continue until every eligible existing
-    ElevenLabs placement has a dedicated link key or a typed provider limitation
-    receipt.
+    duplicate, and rebuilds the placement ledger. Release `abbc41d1a` enforces one
+    external effect per wake and extends the same existing builders/policy/publisher
+    fences to the two legacy plans/ElevenAgents articles; no new scheduler or
+    posting path exists. Real wakes `16–23` publicly verified audio/video while
+    preserving the original owned and X URLs. Wakes `25–27` created the dubbing
+    link and landing revision; its exact public readback is the current deployment
+    gate. Plans and ElevenAgents follow next. Continue until every eligible
+    existing ElevenLabs placement has a dedicated link key or a typed provider
+    limitation receipt.
 17. **M2.1 — Grow to ten comparable English placements.** After existing migration,
     let the source→composition→policy→owned/X→measurement loop add four campaigns.
     Each campaign must have one dedicated provider link, exact public readback, a
