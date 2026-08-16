@@ -152,10 +152,10 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `83300a89c` and four Affiliate launchd owners are installed. The loop wakes every 600 seconds and exits `0` | Current `wake()` only checks link/browser/provider, runs hourly revenue reconciliation when authenticated, writes receipts, and flushes limited Telegram events. It does not yet autonomously research, choose, build, publish, or repair |
+| Runtime | Immutable local release `e33e716c9` is current and the four existing Affiliate launchd owners remain installed without restart. The loop wakes every 600 seconds and last exits `0` | Current `wake()` only checks link/browser/provider, runs hourly revenue reconciliation when authenticated, writes receipts, and flushes limited Telegram events. It does not yet autonomously advance owned/X publication or recover the current signed-out provider session |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
-| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED + AUTHENTICATED`; HubSpot/Impact is authenticated `APPLICATION_PENDING`; Kit is `APPLICATION_REJECTED`; Notion is `PROGRAM_PAUSED`; Systeme.io is `EXTERNAL_CHALLENGE` at visible reCAPTCHA; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | ElevenLabs is the only currently executable earning offer. HubSpot cannot issue a link until approval. No commission, approved transaction, reversal, or payout is claimed yet |
+| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED` and earning-enabled, but the latest scheduled observation is `SIGN_IN_REQUIRED`; HubSpot/Impact was application-reconciled to `APPLICATION_PENDING`, while its browser session also requires recovery. Kit is `APPLICATION_REJECTED`; Notion is `PROGRAM_PAUSED`; Systeme.io is `EXTERNAL_CHALLENGE`; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten is `AUTH_REQUIRED` | ElevenLabs is the only currently executable earning offer. The loop does not yet invoke the already live-proven provider recovery command. No commission, approved transaction, reversal, or payout is claimed |
 | Publication | The first English owned Affiliate article and matching disclosed `@selawmqt` X post are live. The second ElevenAgents article deploy succeeded and serves HTTP `200`; its Agent receipt still needs `DELIVERED → LIVE` reconciliation before X distribution | The second X placement, provider click readback, and every Japanese placement remain unproven |
 | Attribution | Local placement receipts and direct provider-link resolution are implemented | No public placement or provider-side click/commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
@@ -958,6 +958,40 @@ replay, SSOT update, commit, and push. A check is minimal: one normal path plus
 only money corruption, secret leak, duplicate external effect, or data-loss
 regressions relevant to that step.
 
+#### Revenue-first priority override
+
+Until E1, work follows the shortest external-value path below. Runner
+generalization, generic action schemas, clean-Mac packaging, multilingual lanes,
+cloud work, and broad self-repair do not start unless one is the measured blocker
+for the next external state. Known stages are deterministic; the model writes or
+diagnoses only when an existing deterministic tool cannot advance them.
+
+1. Correct the owned-site readback route from `/research/<slug>` to the deployed
+   `/blog/<slug>`. The ElevenAgents page already returns HTTP `200` with its title;
+   this change reconciles the existing `DELIVERED` effect to `LIVE` and MUST NOT
+   push a duplicate commit.
+2. Run the existing ElevenAgents X builder and `x post publish` against that LIVE
+   receipt. Require one disclosed `@selawmqt` status plus timeline/public URL
+   readback; an ambiguous result reconciles by fingerprint before retry.
+3. Let `loop wake` invoke the existing ElevenLabs `provider resume` when it reads
+   `SIGN_IN_REQUIRED`, then continue the already-wired revenue observe/capture/
+   reconcile cycle. A provider-specific auth failure MUST NOT block owned/X work.
+4. Wire only those three proven stage transitions into `local_loop.py`: owned
+   readback, X build/publish, and provider recovery. Emit `PLACEMENT_LIVE` and the
+   next-job Telegram receipt from the same job lineage.
+5. Run the installed launchd owner twice: the first pass advances the unfinished
+   ElevenAgents job; the second proves exact-once behavior and no duplicate post.
+6. Add the next English ElevenLabs buyer-intent job by reusing CRWL capture,
+   Writer/content generation, policy, owned publish, X publish, and revenue tools.
+   Stage choice remains deterministic; model admission is added only for the
+   content artifact that cannot be produced by a fixed tool.
+7. Continue this same pipeline until E0 and E1 provide real click and approved-
+   commission receipts. Repair only failures observed in this live path, then
+   encode each successful repair into the Skill.
+8. After E1, add another executable English provider, ten comparable placements,
+   cohort allocation, Japanese isolation, clean-Mac packaging, and cloud in the
+   existing B/C/D gate order.
+
 #### A. Close revenue truth for the live ElevenLabs placement
 
 - [x] **A12.1** Preserve the first PartnerStack overview as an immutable baseline;
@@ -1168,7 +1202,7 @@ observable outcome exists.
 | 3 | DONE: Affiliate X Article is `CHANNEL_UNAVAILABLE`; owned article + normal X remain active | Writer `scripts/x-publish/*` and canonical `/compose/articles` route were read-only checked | No code change. Parameterize only if `@selawmqt:9326` later exposes the editor |
 | 4 | DONE: the next buyer intent has a fresh official evidence pack | Existing CRWL source capture and PartnerStack Resources selection signal | Installed `6f377563c`; `elevenagents-en` captured four official sources |
 | 5 | DONE: create and privately retain one product-specific ElevenAgents referral link | Existing PartnerStack custom-link UI and secret-refusing runtime state | Installed `6623f2e02`; provider readback and private mode-0600 Markdown readback both passed without printing or committing the URL |
-| 6 | IN PROGRESS: the second source-bound owned article is `DELIVERED`; public readback and its bounded X placement remain | Existing `content.py`, `owned_publish.py`, `x_post_cli.py`, and Writer patterns | Installed `83300a89c` reproduced artifact hash `3c799335…` and policy `PASS`; `owned publish` pushed only the target article as main commit `756c54064`, while production remains HTTP 404 until deployment completes |
+| 6 | IN PROGRESS: the second source-bound owned article is publicly HTTP `200`, but its receipt is falsely stuck at `DELIVERED`; reconcile it to `LIVE`, then publish its bounded X placement | Existing `owned_publish.py`, `content.build_x_agents`, `x_post_cli.py`, and Writer patterns | Commit `756c54064` has a successful [GitHub deploy check](https://github.com/Daisuke134/anicca-products/actions/runs/31914449913/job/95084174975). [`/blog/elevenagents-for-customer-support`](https://aniccaai.com/blog/elevenagents-for-customer-support) returns the title at HTTP `200`; only the adapter's incorrect `/research/<slug>` readback returns `404` |
 | 7 | PartnerStack click/signup/commission joins to the exact placement and reports to Telegram | Existing `revenue_cli.py`, placement receipt, commission ledger, Telegram outbox | `revenue_cli.py` and `local_loop.py`; provider money remains pending/approved/reversed/paid, never inferred from clicks |
 | 8 | The loop repairs selector/auth/source failures and resumes the same job while healthy lanes continue | Existing job journal, semantic playbooks, Writer same-ID repair, Franklin lost-task pattern | `local_loop.py`, provider/source playbooks, minimal repair registry; no general multi-agent framework |
 | 9 | First non-test approved commission closes E1 | No code substitute: provider receipt is required | Git-external ledger/receipt plus SSOT truth update; tests, self-clicks, estimates, and screenshots cannot close E1 |
@@ -1388,6 +1422,12 @@ a due judgment or bounded diagnosis after budget and privacy gates pass.
 
 #### Runner and local-runtime uncertainties
 
+This register is a gate list, not the active execution order. U08 is required
+before a model-led stage selector exists; U09/U10/U12 are required before the
+first new model-generated content job; U13 is required before clean-Mac
+packaging; U14 is required before code-repair authority. None blocks the current
+deterministic ElevenAgents `LIVE → X → revenue` path.
+
 | ID | State | Uncertainty / observed answer | Closure condition |
 |---|---|---|---|
 | U01 | CLEARED | Runner provenance is GitHub `Daisuke134/life-manager@d150e4b1…`; `skills/affiliate/vendor/agent-runner/` preserves the five byte-matching runtime files, MIT license, source record, and verified SHA manifest | Keep the pinned snapshot and manifest as source; never substitute a branch head or writable installed release |
@@ -1397,13 +1437,13 @@ a due judgment or bounded diagnosis after budget and privacy gates pass.
 | U05 | CLEARED | `machine_capability_inventory.py` now admits only the named `codex_cli` capability, records its canonical path/version/SHA, and `scripts/agent_runner.py` re-observes the same binary before every provider launch. The real Mac receipt pins Codex `0.147.0` SHA `19c4f144…d37`; a Terra-high read-only call stored the same pin beside its attempt receipt, while a corrupted SHA produced exit `1` with no provider attempt | All Affiliate model calls use the gate and a current private machine receipt; direct vendor-runner execution remains diagnostic-only |
 | U06 | CLEARED | `scripts/agent_runner.py` now discards the parent environment before importing d150 and admits only a fixed executable path, isolated Affiliate `HOME`/`CODEX_HOME`, auth-file path, locale/timezone, and named budget controls. A real Terra-high shell canary started with fake database/AWS/OpenAI/CDP secrets and reported all four names absent plus the isolated homes; evidence search found no sentinel and all canary artifacts were private | Keep this wrapper as the only production entrypoint; additions to the environment require an exact-name contract and a privacy canary |
 | U07 | CLEARED | The production wrapper now secures the complete evidence tree as directories `0700` and files `0600`, rejects symlinks, invalidates stale seals before invocation, validates the atomic d150 summary plus every attempt JSONL row, and atomically writes a hash-bound `evidence-seal.json`. Downstream verification rejects changed hashes or public modes. The real U06 Terra artifact was sealed and read back as `SEALED`, exit `0`; malformed and post-seal-tampered evidence failed closed | Treat only `verify_evidence_seal()` success as a usable Agent result; stdout/stderr remain raw diagnostic streams and may be partial after interruption |
-| U08 | OPEN-BEFORE-CODE | Runner validation ignores `enum`, `additionalProperties`, limits, and several JSON Schema constraints | Add complete domain validation proving exactly one allowlisted action and rejecting unknown fields/tools |
-| U09 | OPEN-BEFORE-CODE | Context packet defaults to 8 KiB and truncates without secret filtering | Define measured Affiliate context cap, provenance selection, and key/value redaction before model input |
-| U10 | OPEN-BEFORE-CODE | Budget is disabled; candidate fallback conflicts with pass-limit reservation | Set mandatory Affiliate daily/pass/scope budgets and either fix fallback admission or fail into a durable wait |
+| U08 | GATED-BEFORE-MODEL-SELECTOR | Runner validation ignores `enum`, `additionalProperties`, limits, and several JSON Schema constraints | Add complete domain validation only before a model can choose runtime actions; the first earning pipeline uses deterministic stage order |
+| U09 | GATED-BEFORE-NEW-MODEL-CONTENT | Context packet defaults to 8 KiB and truncates without secret filtering | Define measured Affiliate context cap, provenance selection, and key/value redaction before generating the next new article |
+| U10 | GATED-BEFORE-NEW-MODEL-CONTENT | Budget is disabled; candidate fallback conflicts with pass-limit reservation | Set mandatory Affiliate daily/pass/scope budgets before generating the next new article; the current LIVE/X/revenue reconciliation invokes no model |
 | U11 | CLEARED | Every-ten-minute model invocation is economically and contextually wasteful | Ten-minute deterministic reconcile; model only for due judgment/diagnosis; persist next model due-time |
-| U12 | OPEN-BEFORE-CODE | Budget day uses `Asia/Tokyo`, even for English campaigns | Set explicit owner billing timezone and keep locale publication time separate |
-| U13 | OPEN-BEFORE-CODE | Current Mac meets requirements, but clean-Mac cert, CLI, timezone DB, and auth references are unproven | Extend machine capability receipt and later reproduce on a clean arm64 macOS user |
-| U14 | OPEN-BEFORE-CODE | Authority for self-modifying code repair is undefined | Routine Agent executes tools only; code repair uses one isolated Sol escalation, clean worktree, bounded diff, verification, install receipt, and rollback |
+| U12 | GATED-BEFORE-NEW-MODEL-CONTENT | Budget day uses `Asia/Tokyo`, even for English campaigns | Set explicit owner billing timezone before the first budgeted new-content model call; keep locale publication time separate |
+| U13 | POST-E1-PACKAGING-GATE | Current Mac meets requirements, but clean-Mac cert, CLI, timezone DB, and auth references are unproven | Extend machine capability receipt and reproduce on a clean arm64 macOS user only after the current Mac earns E1 |
+| U14 | GATED-BEFORE-CODE-REPAIR | Authority for self-modifying code repair is undefined | Routine deterministic tools continue; before the first observed code repair, use one isolated Sol escalation, clean worktree, bounded diff, verification, install receipt, and rollback |
 
 U05 follows the Python subprocess contract for fixed argument vectors, bounded
 timeouts, and explicit return-code handling ([Python `subprocess.run`](https://docs.python.org/3/library/subprocess.html#subprocess.run)). The exact operational
@@ -1571,21 +1611,22 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 #### 6. Execution steps
 
 1. **DONE:** pin and vendor the d150 runner snapshot with license/SHA provenance. `SHA256SUMS` verifies all six preserved files, each runtime file byte-matches the fixed Git commit, three support modules import under the host Python, and the existing 37 Affiliate tests pass.
-2. Close U04–U14: routing, binary, privacy, schema, context, budget, timezone,
-   machine capability, and repair authority contracts.
-3. Add common Run/ToolAttempt/StageTrajectory and typed failure schemas.
-4. Fix revenue transition identity and remove secret-bearing placement output.
-5. Add missing application/Terms/link and auth recovery tool contracts needed by
-   current approved/pending providers.
-6. Add typed failure receipts to source, policy, owned, X, revenue, Telegram, and
-   browser-owner boundaries.
-7. Connect the existing tools to one Affiliate decision prompt and allowlist.
-8. Replace fixed `wake()` orchestration while retaining one launchd scheduler and
-   deterministic due-time admission.
-9. Run the minimal matrix, install the immutable release, and verify ownership,
-   permissions, budget, and read-only model boundary.
-10. Let the installed loop close the existing ElevenAgents trajectory.
-11. Inject and recover one isolated fault; update receipts and this SSOT.
+2. Fix only the owned-publication `/blog/<slug>` readback, reconcile the existing
+   ElevenAgents commit to `LIVE`, and prove no second Git effect.
+3. Reuse the existing X builder/publisher to create and verify the one missing
+   ElevenAgents placement on `@selawmqt`.
+4. Connect existing provider recovery, owned readback, X publication, revenue,
+   and Telegram calls to the scheduled `wake()` in that order; do not introduce a
+   model-led stage selector for this known pipeline.
+5. Install and run the actual launchd owner twice, proving progress on pass one
+   and exact-once reconciliation on pass two.
+6. Reuse CRWL, Writer/content, policy, owned, X, and revenue primitives for one
+   new English job. Add the smallest bounded model call only where content cannot
+   be produced deterministically.
+7. Close E0 and E1 from real provider receipts, then add failure repair from the
+   failures actually observed while earning.
+8. Only after E1, resume generic action schema, broad model context/budget work,
+   provider expansion, clean-Mac packaging, locales, and cloud gates.
 
 ### 11.1 Cleared implementation decisions
 
