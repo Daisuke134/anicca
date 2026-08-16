@@ -1445,14 +1445,25 @@ shared abstraction to make the diff appear smaller.
 
 ##### Phase E0-A — Freeze current truth before code
 
-- [ ] **E0-A01** Read `git status`, source HEAD, installed release symlink, six
+- [x] **E0-A01** Read `git status`, source HEAD, installed release symlink, six
   launchd labels, run counts, last exits, CDP `9324/9326/9327`, unresolved jobs,
   latest provider metrics, commission row count, and Telegram sent tail.
-- [ ] **E0-A02** Write one redacted pre-change receipt containing release SHA,
+- [x] **E0-A02** Write one redacted pre-change receipt containing release SHA,
   click baseline, zero/nonzero row presence, and current public placement IDs.
-- [ ] **E0-A03** Verify PartnerStack remains authenticated and ElevenLabs remains
+- [x] **E0-A03** Verify PartnerStack remains authenticated and ElevenLabs remains
   accepted/earning-enabled; auth repair is a separate same-job action only if the
   readback says `SIGN_IN_REQUIRED`.
+
+  Installed proof: source HEAD `5456f0f90` was clean; immutable release
+  `804eb4eaa` remained current; all six owners were loaded, the three browser
+  owners were running, and the source/composition/money owners had last exit
+  `0`. CDP `9324/9326/9327` each returned HTTP `200`. The mode-0600
+  `AFFILIATE_E0_PRECHANGE` receipt binds baseline/current clicks `1/1`,
+  post-baseline delta `0`, commission rows `0`, three non-earning unresolved
+  provider jobs, and Telegram message `20934`. Fresh semantic provider receipts
+  classify ElevenLabs `AUTHENTICATED` and HubSpot/Impact
+  `APPLICATION_PENDING / In Review`; no login, application, publication, or
+  money effect occurred.
 - [ ] **E0-A04** Inspect the authenticated Links create surface without submitting;
   receipt allowed destinations, title/description/slug requirements, and result
   identity. This closes E0-Q1.
