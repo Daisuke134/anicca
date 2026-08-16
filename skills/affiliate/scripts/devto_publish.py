@@ -97,6 +97,8 @@ def publish(state, plan_id):
     artifact = json.loads((state / "content" / f"{slug}.json").read_text(encoding="utf-8"))
     policy = json.loads((state / "policy" / f"{slug}.json").read_text(encoding="utf-8"))
     markdown = artifact.get("markdown", "")
+    links = artifact.get("readback_links", [])
+    tracking_link = links[0] if len(links) == 1 else ""
     digest = hashlib.sha256(markdown.encode()).hexdigest()
     if not all((
         digest == campaign.get("content_sha256"),
@@ -104,7 +106,8 @@ def publish(state, plan_id):
         artifact.get("disclosure") == "affiliate_link",
         policy.get("decision") == "PASS",
         policy.get("content_sha256") == digest,
-        "affiliate link" in markdown[:800].casefold(),
+        tracking_link and markdown.count(tracking_link) == 1,
+        "affiliate link" in markdown[:markdown.find(tracking_link)].casefold(),
     )):
         raise DevtoError("campaign artifact does not match publication receipt")
     placement = campaign["placement_id"]
