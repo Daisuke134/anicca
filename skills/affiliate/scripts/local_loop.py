@@ -273,20 +273,34 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "job_id": wake_event["impact_login_reconciled_job_id"],
         }, "login effect reconciled from fresh authenticated readback", scope="impact-login")
     wake_history = json_rows(state / "events.jsonl")
-    if len(wake_history) >= 2:
-        previous = wake_history[-2]
+    for previous, current in zip(wake_history, wake_history[1:]):
         if (
             previous.get("publication_state") == "PUBLICATION_FAILED"
-            and wake_event.get("publication_state") != "PUBLICATION_FAILED"
+            and current.get("publication_state") != "PUBLICATION_FAILED"
         ):
             kind = "SELF_HEALED"
             add(kind, {
                 "kind": kind, "scope": "publication",
                 "failed_at": previous.get("ts"),
-                "recovered_state": wake_event.get("publication_state"),
+                "recovered_state": current.get("publication_state"),
             }, "publication retry recovered / commission not observed yet",
-                wake_event.get("publication_url") or latest_live_url(state),
+                current.get("publication_url") or latest_live_url(state),
                 scope="publication")
+        if (
+            previous.get("revenue_state") == "REVENUE_CYCLE_FAILED"
+            and current.get("revenue_state")
+            in {"NO_TRANSACTIONS", "TRANSACTIONS_RECONCILED"}
+        ):
+            kind = "SELF_HEALED"
+            add(kind, {
+                "kind": kind, "scope": "revenue",
+                "failed_at": previous.get("ts"),
+                "recovered_state": current.get("revenue_state"),
+            }, (
+                "revenue capture recovered / transactions="
+                f"{current.get('revenue_source_rows')} / no estimated revenue counted"
+            ), current.get("publication_url") or latest_live_url(state),
+                scope="revenue")
     if wake_event.get("acquisition_decision_changed"):
         kind = "ACQUISITION_DECISION_READY"
         add(kind, {
@@ -344,6 +358,8 @@ def owner_event(state, wake_event, sent_event_ids=None):
     recovery = (
         "次のwakeが同じpublicationを再開し、重複作用なしで進行を回復しました"
         if kind == "SELF_HEALED" and selected.get("scope") == "publication"
+        else "次のwakeが同じ収益captureを再実行し、provider readbackを回復しました"
+        if kind == "SELF_HEALED" and selected.get("scope") == "revenue"
         else "Impactの認証済み画面から、未解決だった同じlogin jobを完了しました"
         if kind == "SELF_HEALED"
         else "なし" if kind != "BLOCKED"
@@ -352,6 +368,8 @@ def owner_event(state, wake_event, sent_event_ids=None):
     next_job = (
         "同じcampaignのpublic readbackと収益計測を継続"
         if kind == "SELF_HEALED" and selected.get("scope") == "publication"
+        else "同じprovider transaction台帳を継続監視し、実取引だけをplacementへ照合"
+        if kind == "SELF_HEALED" and selected.get("scope") == "revenue"
         else
         "同じ申請を再提出せず、Impactの審査状態を継続確認"
         if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"
@@ -361,7 +379,7 @@ def owner_event(state, wake_event, sent_event_ids=None):
     )
     program = (
         "ElevenLabs / PartnerStack"
-        if kind == "SELF_HEALED" and selected.get("scope") == "publication"
+        if kind == "SELF_HEALED" and selected.get("scope") in {"publication", "revenue"}
         else
         "HubSpot / Impact"
         if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"

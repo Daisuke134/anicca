@@ -1118,6 +1118,15 @@ tasks and not reasons to stop safe work.
    canonical live `plan_id` values, report the one unfinished campaign by its
    natural buyer-intent label, preserve the same one-per-JST-day Telegram UUID,
    and prove `4→1` in an installed wake before this item returns to `DONE`.
+   Release `105820eff3a5a734a6374c2dbeabf1f401f3bc3e` and real wake `41`
+   prove that correction: six placements remain live while the daily receipt
+   names only the unfinished YouTube Transcript Generator campaign. The same wake
+   observed a transient `capture/NONZERO_EXIT`; isolated live readback then
+   succeeded with zero rows, and real wake `42` recovered to `NO_TRANSACTIONS`
+   with no invented revenue. The remaining current acceptance is durable owner
+   visibility: enumerate unsent adjacent failure→recovery transitions from the
+   append-only wake journal, send exactly one natural `SELF_HEALED` event for
+   wake `41→42`, and replay without a duplicate.
 2. **M2.1-P — Grow six comparable English placements to ten.** The existing
    source→composition→policy→dedicated-link→owned/X→readback→ledger path advances
    four more campaigns. The Agent performs the work; a human or Codex does not
