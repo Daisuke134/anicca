@@ -267,6 +267,7 @@ def provider_poll(state, cdp_port, attempts=15, provider="elevenlabs"):
         provider=provider,
         cdp_host="127.0.0.1",
         cdp_port=cdp_port,
+        state=state,
         receipt=state / "providers" / f"{provider}.json",
     )
     for attempt in range(attempts):
