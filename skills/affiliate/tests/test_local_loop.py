@@ -28,17 +28,22 @@ class LocalLoopTest(unittest.TestCase):
                 "state": "LIVE", "public_url": "https://x.com/selawmqt/status/1",
             }))
             expected = {"state": "X_LIVE", "public_url": "https://x.com/selawmqt/status/1"}
-            with (
-                patch.object(MODULE, "advance_generic_publication", return_value={
-                    "state": "ALREADY_LIVE", "public_url": None,
-                }),
-                patch.object(MODULE, "advance_tts_api_publication", return_value=expected) as advance,
-            ):
-                result = MODULE.advance_known_publication(
-                    state, Path(root) / "landing", 9326, Path(root) / "private.md",
-                )
-            self.assertEqual(result, expected)
-            advance.assert_called_once()
+            for generic_state in ("ALREADY_LIVE", "PUBLICATION_CONFLICT"):
+                with self.subTest(generic_state=generic_state):
+                    with (
+                        patch.object(MODULE, "advance_generic_publication", return_value={
+                            "state": generic_state, "public_url": None,
+                        }),
+                        patch.object(
+                            MODULE, "advance_tts_api_publication",
+                            return_value=dict(expected),
+                        ) as advance,
+                    ):
+                        result = MODULE.advance_known_publication(
+                            state, Path(root) / "landing", 9326, Path(root) / "private.md",
+                        )
+                    self.assertEqual(result, {**expected, "generic_state": generic_state})
+                    advance.assert_called_once()
 
     def test_wake_recovers_provider_and_advances_publication_without_cross_lane_blocking(self):
         with tempfile.TemporaryDirectory() as root:

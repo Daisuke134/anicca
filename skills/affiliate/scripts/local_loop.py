@@ -610,7 +610,12 @@ def advance_known_publication(state, landing_root, x_cdp_port, private_markdown=
     generic = advance_generic_publication(
         state, landing_root, x_cdp_port, private_markdown,
     )
-    if generic["state"] not in ("NO_DUE_PUBLICATION", "ALREADY_LIVE"):
+    generic_non_blocking = {
+        "NO_DUE_PUBLICATION", "ALREADY_LIVE", "PUBLICATION_CONFLICT",
+        "POLICY_RECEIPT_INVALID", "CAMPAIGN_METADATA_INVALID",
+        "CAMPAIGN_CONTENT_INVALID",
+    }
+    if generic["state"] not in generic_non_blocking:
         return generic
     slug = "elevenagents-for-customer-support"
     placement = "elevenagents-en-1"
@@ -620,10 +625,12 @@ def advance_known_publication(state, landing_root, x_cdp_port, private_markdown=
     except (OSError, ValueError):
         x_receipt = {}
     if x_receipt.get("state") == "LIVE":
-        return advance_tts_api_publication(
+        result = advance_tts_api_publication(
             state, landing_root, x_cdp_port, private_markdown,
             x_receipt.get("public_url"),
         )
+        result["generic_state"] = generic["state"]
+        return result
 
     artifact_path = state / "content" / f"{slug}.json"
     policy_path = state / "policy" / f"{slug}.json"
@@ -1116,6 +1123,7 @@ def wake(args):
         "publication_state": publication["state"],
         "publication_url": publication["public_url"],
         "publication_failure_type": publication.get("failure_type"),
+        "publication_generic_state": publication.get("generic_state"),
         "distribution_state": distribution["state"],
         "distribution_url": distribution.get("public_url"),
         "distribution_plan_id": distribution.get("plan_id"),

@@ -1592,6 +1592,16 @@ shared abstraction to make the diff appear smaller.
   campaign and continue to the next known campaign; return early only for an
   actionable/nonterminal generic state. The focused local-loop regression binds
   this exact cascade behavior.
+  The following loop-owned revision produced commit
+  `341b04082f80142fff1ae28e452b4fb4ff6c1946`; Netlify deployment and its
+  post-deploy money-path smoke passed. Anonymous HTTP then showed the dedicated
+  placement link and disclosure-before-link order, while the X receipt remained
+  the pre-existing status (no second post). The reconciliation wake exposed an
+  independent stale generic-campaign `PUBLICATION_CONFLICT`, which blocked the
+  TTS `DELIVERED → LIVE` readback even though HTTP was correct. Generic
+  fail-closed states remain observable as `publication_generic_state` but cannot
+  block a separate known campaign lane. Active generic delivery states still
+  retain ownership and return immediately.
 - [ ] **E0-C07** Kick an unchanged replay and require the same provider link,
   public URLs, job count, Git HEAD, and `Telegram=NO_PENDING`.
 - [ ] **E0-C08** Capture Link Performance baseline for that link; an unchanged
