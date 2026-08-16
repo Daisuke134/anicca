@@ -187,8 +187,7 @@ def _report_message(row: dict) -> str:
     accounting = row.get("accounting") if isinstance(row.get("accounting"), dict) else None
     if accounting is not None:
         lines.append(
-            f"⚡ incremental / minute {accounting.get('minute')} / "
-            f"hour {accounting.get('hour')} / day {accounting.get('day')} / "
+            f"⚡ hourly / hour {accounting.get('hour')} / day {accounting.get('day')} / "
             f"全KPI更新 {accounting.get('analytics_observed_at_epoch') or 'unknown'}"
         )
     if draft.get("public_url"):
@@ -225,7 +224,7 @@ def _report_identity(row: dict, message: str) -> tuple[str, str, bool]:
     # Runtime remains in the durable receipt, not the idempotent notification.
     # v2 separates stable incremental payloads from the historical runtime-bound key.
     digest = hashlib.sha256(message.encode()).hexdigest()
-    key_version = "v2" if isinstance(row.get("accounting"), dict) else "v1"
+    key_version = "v3" if isinstance(row.get("accounting"), dict) else "v1"
     return f"gig:telegram:storefront-noop:{key_version}:{digest}", "storefront_direct_noop", True
 
 
