@@ -523,8 +523,11 @@ def _join_funnel(
     applied, applied_error = _jsonl_rows(applied_path)
     earnings, earnings_error = _jsonl_rows(earnings_path)
     versions = {row["service_id"]: row["service_version_sha256"] for row in contracts}
-    applied_ids = {str(row.get("requestId") or "") for row in applied if row.get("status") == "applied"}
-    apply_talkrooms = set()
+    applied_rows = {
+        str(row.get("requestId") or ""): row
+        for row in applied if row.get("status") == "applied" and row.get("requestId")
+    }
+    apply_talkrooms: dict[str, dict] = {}
     if projects_dir.is_dir():
         for path in projects_dir.glob("*/state.json"):
             try:
@@ -532,8 +535,16 @@ def _join_funnel(
             except (OSError, json.JSONDecodeError):
                 continue
             request_id, talkroom_id = str(project.get("request_id") or ""), str(project.get("talkroom_id") or "")
-            if request_id in applied_ids and talkroom_id:
-                apply_talkrooms.add(talkroom_id)
+            application = applied_rows.get(request_id)
+            if application is not None and talkroom_id:
+                apply_talkrooms[talkroom_id] = {
+                    "request_id": request_id,
+                    "project_state_path": str(path.resolve()),
+                    "project_state_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    "application_evidence_sha256": hashlib.sha256(json.dumps(
+                        application, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                    ).encode()).hexdigest(),
+                }
     conversations: dict[str, dict] = {}
     for row in transcripts:
         talkroom_id = str(row.get("talkroom_id") or "")
@@ -566,14 +577,18 @@ def _join_funnel(
         _append_key_once(state_dir / "attribution-map.jsonl", "attribution_key", {
             **event, "attribution_key": f"coconala:conversation:{talkroom_id}",
         })
+    attribution_corrections_appended = 0
     for row in earnings:
         talkroom_id = str(row.get("talkroom_id") or "")
         origin, service_id = origins.get(talkroom_id, ("unknown", None))
+        if origin == "unknown" and talkroom_id in apply_talkrooms:
+            origin = "apply"
         idem = str(row.get("idem_key") or "")
         if not idem or type(row.get("jpy")) not in {int, float} or row.get("net_of_fee") is not True:
             continue
+        source_event_id = f"coconala:payment:{idem}"
         event = {
-            "version": 1, "source_event_id": f"coconala:payment:{idem}",
+            "version": 1, "source_event_id": source_event_id,
             "event_kind": "payment", "platform": "coconala", "origin": origin,
             "service_id": service_id, "listing_version": versions.get(service_id),
             "conversation_id": talkroom_id or None, "order_id": str(row.get("requestId") or "") or None,
@@ -583,19 +598,55 @@ def _join_funnel(
             "revision_count": None, "rating": None, "review_id": None, "repeat_purchase": None,
         }
         appended += int(_append_key_once(state_dir / "funnel-events.jsonl", "source_event_id", event))
+        if origin == "apply":
+            evidence = apply_talkrooms[talkroom_id]
+            evidence_sha = hashlib.sha256(json.dumps(
+                evidence, sort_keys=True, separators=(",", ":"),
+            ).encode()).hexdigest()
+            correction = {
+                "version": 1,
+                "attribution_key": f"{source_event_id}:origin:apply:evidence:{evidence_sha}",
+                "event_kind": "attribution_correction",
+                "source_event_id": source_event_id,
+                "platform": "coconala",
+                "origin": "apply",
+                "conversation_id": talkroom_id,
+                "order_id": str(row.get("requestId") or "") or None,
+                "immutable_receipt_id": idem,
+                "evidence": evidence,
+                "observed_at_epoch": now,
+            }
+            attribution_corrections_appended += int(_append_key_once(
+                state_dir / "attribution-map.jsonl", "attribution_key", correction,
+            ))
     events, ledger_error = _jsonl_rows(state_dir / "funnel-events.jsonl")
+    attributions, attribution_error = _jsonl_rows(state_dir / "attribution-map.jsonl")
+    corrections = {
+        str(row.get("source_event_id")): row
+        for row in attributions
+        if row.get("event_kind") == "attribution_correction"
+        and row.get("origin") in {"storefront", "apply", "unknown"}
+        and row.get("source_event_id")
+    }
     summary = {origin: {"inquiries": 0, "payments": 0, "net_jpy": 0.0}
                for origin in ("storefront", "apply", "unknown")}
     for event in events:
-        origin = event.get("origin") if event.get("origin") in summary else "unknown"
+        correction = corrections.get(str(event.get("source_event_id") or ""), {})
+        corrected_origin = correction.get("origin", event.get("origin"))
+        origin = corrected_origin if corrected_origin in summary else "unknown"
         if event.get("event_kind") == "inquiry":
             summary[origin]["inquiries"] += 1
         elif event.get("event_kind") == "payment" and type(event.get("net_receipt_jpy")) in {int, float}:
             summary[origin]["payments"] += 1
             summary[origin]["net_jpy"] += float(event["net_receipt_jpy"])
-    errors = [value for value in (transcript_error, applied_error, earnings_error, ledger_error) if value]
-    cursor = hashlib.sha256("\n".join(sorted(str(row.get("source_event_id") or "") for row in events)).encode()).hexdigest()
+    errors = [value for value in (
+        transcript_error, applied_error, earnings_error, ledger_error, attribution_error,
+    ) if value]
+    cursor_inputs = [str(row.get("source_event_id") or "") for row in events]
+    cursor_inputs.extend(str(row.get("attribution_key") or "") for row in attributions)
+    cursor = hashlib.sha256("\n".join(sorted(cursor_inputs)).encode()).hexdigest()
     return {"version": 1, "appended": appended, "events": len(events), "by_origin": summary,
+            "attribution_corrections_appended": attribution_corrections_appended,
             "unknown_sources": errors, "cutoff_cursor": cursor}
 
 
