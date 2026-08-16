@@ -78,3 +78,56 @@ OpenClaw config file when the env key is absent. The OpenClaw gateway is up (PID
 so the earlier `gateway timeout after 10000ms` in `connector-native.err.log` is a historical failure
 from the now-unloaded deleted-worktree owner, not a current one.
 
+## Container rail removal — 2026-08-16
+
+Dais confirmed Docker is unused; Connector runs natively. Removed `deploy/local/compose.connector.yaml`,
+`connector-host-bridge-server.js`, `connector-host-bridge-boot.sh`, `deploy-connector-runtime.sh`,
+`install-connector-host-bridge-launchd.sh`, their tests, and the host bridge launchd template.
+`outbound-guardian.test.js` now asserts the rail stays gone instead of asserting the compose file exists.
+The installed plists were left in place. `npm run test:outbound` passed after the removal.
+
+## C-CORE-03 remove travel dependency — DONE 2026-08-16
+
+The spec named `connector-native-runtime.js` as the file to fix. Measurement contradicted that premise
+and changed the shape of the work:
+
+| claim | measurement |
+|---|---|
+| `connector-native-runtime.js` is the live candidate gate | it is required by nothing in production, only by its own test |
+| the live wake gates on travel | `connector-minimal-production.js`, `connector-minimal-runner.js`, `connector-minimal-operations.js` and `connector-minimal-evidence.js` contain zero travel references |
+| travel is confined to that one file | the real travel gate was `calendar-candidate-gate.js`, live through `connector-events-pack.js`, `connector-coverage-assembler.js` and `event-spend-policy.js` |
+| `connector-native-write-pipeline.js` delivers the Telegram booking message | it also has zero production requirers; the live message is built in `connector-minimal-evidence.js` |
+
+Work done:
+
+1. `calendar-candidate-gate.js` no longer accepts, forwards or calls `routeMinutes`/`homeLocation`.
+   A candidate is eligible when its own interval does not overlap a timed busy interval. The
+   `route_unavailable` recovery branch is gone because no route call can fail any more.
+2. Deleted the dead travel-gated modules `connector-native-runtime.js` and `connector-route-minutes.js`
+   with their tests, and removed the dead travel pass-throughs in `connector-events-pack.js`,
+   `connector-open-date-planner.js`, `connector-coverage-runtime-services.js`,
+   `connector-coverage-refresh-service.js` and the `route.minutes` capability of `connector-host-bridge.js`.
+3. Added `connector-no-travel.test.js`, a source-level regression that fails if travel plumbing returns
+   to the live modules, the gate, or the Calendar sync path.
+4. Aligned the user-facing text with `0.2.6`: the coverage brief derives every string from the actual
+   `coverage.horizon_days` instead of hard-failing on `21`, and its travel claim is replaced with what
+   Connector actually verified. The booking caption no longer asserts a Luma confirmation mail for
+   every provider; it requires a receipt reference it can prove.
+5. Fixed the live booking message in `connector-minimal-evidence.js`. It previously emitted a raw UTC
+   timestamp and a bare Calendar event ID, so Dais could not open either link. It now carries the event
+   name, the start time in the run timezone, venue, provider, status, the event URL and the Calendar
+   `htmlLink`. `connector-minimal-production.js` passes its already-enforced production timezone into the chain.
+
+Remaining honest gaps:
+
+- The booking message still has no selection reason, because no reason value exists anywhere in the
+  evidence chain's scope. It must come from the discovery/ranking layer, which is not wired into it.
+- `rolling-event-coverage.js` still hard-codes a 21-day horizon and its store rejects any other value,
+  so the coverage brief will say 21 until that producer is changed. The delivered text now follows the
+  data instead of contradicting it, which is the part that could mislead Dais.
+
+Verification, re-run by the parent rather than trusted from the executor: `npm run test:outbound`
+33 + 341 pass / 0 fail, `npm run test:runtime-job` 18 pass / 0 fail, `npm run test:runtime-adapters`
+125 pass / 0 fail. Residual `routeMinutes` matches in production are only `transport/maps-gog.js`
+and `late-notice.js`, which belong to other organs.
+
