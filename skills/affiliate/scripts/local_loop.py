@@ -13,6 +13,7 @@ import sys
 import tempfile
 import time
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 from types import SimpleNamespace
@@ -260,7 +261,166 @@ def recover_provider(state, cdp_port, private_markdown):
     return poll(poll_args, recovered)
 
 
+def advance_generic_publication(
+    state, landing_root, x_cdp_port, private_markdown,
+    owned_publisher=None, x_publisher=None,
+):
+    """Advance one policy-PASS generic campaign through existing effect fences."""
+    from owned_publish import publish as default_owned_publisher
+    from x_post_cli import publish as default_x_publisher
+
+    owned_publisher = owned_publisher or default_owned_publisher
+    x_publisher = x_publisher or default_x_publisher
+    completed = False
+    for policy_path in sorted((state / "campaign-policy").glob("*.json")):
+        plan_id = policy_path.stem
+        handoff_path = state / "campaign-handoffs" / f"{plan_id}.json"
+        try:
+            policy = json.loads(policy_path.read_text(encoding="utf-8"))
+            handoff_bytes = handoff_path.read_bytes()
+            handoff = json.loads(handoff_bytes)
+            core = dict(handoff)
+            fingerprint = core.pop("handoff_fingerprint")
+        except (OSError, ValueError, KeyError, json.JSONDecodeError):
+            return {"state": "POLICY_RECEIPT_INVALID", "public_url": None}
+        if policy.get("decision") != "PASS":
+            continue
+        valid = all((
+            policy.get("receipt_type") == "GENERIC_CAMPAIGN_POLICY",
+            policy.get("state") == "PASS",
+            policy.get("plan_id") == handoff.get("plan_id") == plan_id,
+            policy.get("locale") == handoff.get("locale") == "en",
+            policy.get("handoff_sha256") == hashlib.sha256(handoff_bytes).hexdigest(),
+            policy.get("handoff_fingerprint") == fingerprint,
+            policy.get("source_set_sha256") == handoff.get("source_set_sha256"),
+            isinstance(policy.get("checks"), dict) and policy["checks"]
+            and all(policy["checks"].values()),
+            (policy.get("semantic_audit") or {}).get("decision") == "PASS",
+            handoff.get("receipt_type") == "CAMPAIGN_HANDOFF",
+            handoff.get("state") == "READY_FOR_POLICY",
+            fingerprint == hashlib.sha256(json.dumps(
+                core, sort_keys=True, separators=(",", ":")
+            ).encode()).hexdigest(),
+        ))
+        if not valid:
+            return {"state": "POLICY_RECEIPT_INVALID", "public_url": None}
+
+        slug = handoff.get("slug", "")
+        placement = f"{plan_id}-1"
+        if (
+            not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,100}", slug)
+            or not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,80}", placement)
+        ):
+            return {"state": "CAMPAIGN_METADATA_INVALID", "public_url": None}
+        progress_path = state / "campaign-publications" / f"{plan_id}.json"
+        try:
+            progress = json.loads(progress_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            progress = {}
+        if progress:
+            if progress.get("handoff_fingerprint") != fingerprint:
+                return {"state": "PUBLICATION_CONFLICT", "public_url": None}
+            if progress.get("state") == "X_LIVE":
+                completed = True
+                continue
+
+        owned_receipt_path = state / "owned-publications" / f"{slug}.json"
+        x_receipt_path = state / "x-posts" / f"{placement}.json"
+        try:
+            existing_owned = json.loads(owned_receipt_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            existing_owned = {}
+        try:
+            existing_x = json.loads(x_receipt_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            existing_x = {}
+        if not progress and existing_owned.get("state") == existing_x.get("state") == "LIVE":
+            completed = True
+            continue
+        if not progress and (existing_owned or existing_x):
+            return {"state": "PUBLICATION_CONFLICT", "public_url": None}
+
+        link = elevenlabs_link(private_markdown)
+        markdown = handoff.get("owned_article_markdown", "")
+        x_copy = handoff.get("x_copy", "")
+        disclosure = handoff.get("disclosure", "")
+        if (
+            not link
+            or markdown.count("{{AFFILIATE_LINK}}") != 1
+            or markdown.find(disclosure) < 0
+            or markdown.find(disclosure) >= markdown.find("{{AFFILIATE_LINK}}")
+            or x_copy.count("{{OWNED_ARTICLE_URL}}") != 1
+        ):
+            return {"state": "CAMPAIGN_CONTENT_INVALID", "public_url": None}
+        published_markdown = markdown.replace("{{AFFILIATE_LINK}}", link)
+        content_sha256 = hashlib.sha256(published_markdown.encode()).hexdigest()
+        created_at = progress.get("created_at") or datetime.now(timezone.utc).isoformat()
+        progress = {
+            "schema_version": 1,
+            "receipt_type": "GENERIC_CAMPAIGN_PUBLICATION",
+            "plan_id": plan_id,
+            "slug": slug,
+            "placement_id": placement,
+            "handoff_fingerprint": fingerprint,
+            "content_sha256": content_sha256,
+            "state": progress.get("state", "MATERIALIZED"),
+            "created_at": created_at,
+        }
+        atomic_json(progress_path, progress)
+        atomic_json(state / "content" / f"{slug}.json", {
+            "slug": slug,
+            "title": handoff["title"],
+            "state": "READY_FOR_PUBLICATION",
+            "markdown": published_markdown,
+            "content_sha256": content_sha256,
+            "disclosure": "affiliate_link",
+            "source_hashes": [row["raw_sha256"] for row in handoff["cited_sources"]],
+            "readback_markers": [disclosure],
+            "readback_links": [link],
+            "project": "AFFILIATE DECISION GUIDE",
+            "built_at": created_at,
+        })
+        atomic_json(state / "policy" / f"{slug}.json", {
+            "decision": "PASS",
+            "content_sha256": content_sha256,
+            "generic_policy_sha256": hashlib.sha256(policy_path.read_bytes()).hexdigest(),
+        })
+
+        owned = owned_publisher(SimpleNamespace(
+            state=state, landing_root=landing_root, slug=slug,
+            base_url="https://aniccaai.com", remote="origin", branch="main",
+        ))
+        if owned.get("state") != "LIVE":
+            progress.update(state="OWNED_NOT_LIVE", public_url=owned.get("public_url"))
+            atomic_json(progress_path, progress)
+            return {"state": "OWNED_NOT_LIVE", "public_url": owned.get("public_url")}
+        progress.update(state="OWNED_LIVE", owned_url=owned["public_url"])
+        atomic_json(progress_path, progress)
+        x_content = x_copy.replace("{{OWNED_ARTICLE_URL}}", owned["public_url"])
+        x_content_path = state / "x-content" / f"{placement}.txt"
+        x_content_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        x_content_path.write_text(x_content + "\n", encoding="utf-8")
+        posted = x_publisher(SimpleNamespace(
+            state=state, content=x_content_path, placement=placement,
+            cdp_host="127.0.0.1", cdp_port=x_cdp_port,
+        ))
+        if posted.get("state") != "LIVE":
+            return {"state": "X_NOT_LIVE", "public_url": posted.get("public_url")}
+        progress.update(state="X_LIVE", x_url=posted["public_url"])
+        atomic_json(progress_path, progress)
+        return {"state": "X_LIVE", "public_url": posted["public_url"]}
+    return {
+        "state": "ALREADY_LIVE" if completed else "NO_DUE_PUBLICATION",
+        "public_url": None,
+    }
+
+
 def advance_known_publication(state, landing_root, x_cdp_port, private_markdown=None):
+    generic = advance_generic_publication(
+        state, landing_root, x_cdp_port, private_markdown,
+    )
+    if generic["state"] != "NO_DUE_PUBLICATION":
+        return generic
     slug = "elevenagents-for-customer-support"
     placement = "elevenagents-en-1"
     x_receipt_path = state / "x-posts" / f"{placement}.json"
