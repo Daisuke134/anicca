@@ -2121,7 +2121,8 @@ duplicate or merely rephrase any current_catalog_titles. Use the demand page onl
 never copy seller wording, reviews, sales, guarantees or unsupported claims. Include exact evidence
 refs for the official offer, owned family and demand evidence. The title_stem excludes the final
 Japanese `ます`. head must state outcome, exact inclusions, exclusions, required inputs and support
-boundary. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
+boundary. Write head and body as buyer-facing Japanese prose: never emit a schema field name or an
+English label such as `outcome:`, and never prefix a sentence with a bare label like `含むもの:`. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
 lines: headline, supporting line, and two or three short badges separated by `｜`; do not include price,
 speed, sales, reviews or guarantees. Price and paid option must be conservative. Choose create only
 when the proposal is clearly distinct and supported. Otherwise choose no_op, set every nullable
@@ -2210,6 +2211,10 @@ def _seal_create_contract(
             or len([line for line in image_copy.splitlines() if line.strip()]) != 3
             or "｜" not in image_copy.splitlines()[-1]):
         raise RuntimeError("storefront_create_content_invalid")
+    # Buyer-visible copy must not leak the schema: an English `outcome:` prefix reached a live listing.
+    if any(re.match(r"^[A-Za-z_]{3,}\s*[:：]", line.strip())
+           for line in f"{head}\n{body}".splitlines()):
+        raise RuntimeError("storefront_create_copy_leaks_schema_labels")
     select_options = seller_snapshot.get("select_options") or {}
     display_price = proposal.get("display_price_jpy")
     price_option = next((row for row in select_options.get("data[Service][price]", [])
