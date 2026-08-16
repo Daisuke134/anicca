@@ -7,6 +7,7 @@
     "service_id",
     "changed_field",
     "proposed_value",
+    "proposed_price_jpy",
     "hypothesis",
     "evidence",
     "success_metric",
@@ -22,6 +23,7 @@
       "enum": ["title", "body", "package", "FAQ", "price", null]
     },
     "proposed_value": {"type": ["string", "null"], "maxLength": 12000},
+    "proposed_price_jpy": {"type": ["integer", "null"], "minimum": 500, "maximum": 1000000},
     "hypothesis": {"type": "string", "minLength": 1, "maxLength": 1000},
     "evidence": {
       "type": "array",
