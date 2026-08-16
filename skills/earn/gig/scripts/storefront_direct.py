@@ -77,7 +77,7 @@ FAQ_PATTERN = re.compile(
     r"(?:よくある質問\s*)?Q[.．]\s*(?P<question>.+?)\s*\n+A[.．]\s*(?P<answer>.+)\Z",
     re.DOTALL,
 )
-SELLER_FORM_EXPRESSION = r'''JSON.stringify((()=>{const form=document.forms[0];return{url:location.href,action:form?.action||null,method:form?.method||null,fields:form?[...form.elements].filter(e=>e.name).map(e=>({name:e.name,type:e.type||null,value:e.value||'',checked:!!e.checked,maxLength:Number.isInteger(e.maxLength)&&e.maxLength>=0?e.maxLength:null})):[],select_options:form?Object.fromEntries([...form.elements].filter(e=>e.name&&e.tagName==='SELECT').map(e=>[e.name,[...e.options].map(o=>({value:o.value,label:(o.textContent||'').trim()}))])):{}}})())'''
+SELLER_FORM_EXPRESSION = r'''JSON.stringify((()=>{const form=document.forms[0];return{url:location.href,action:form?.action||null,method:form?.method||null,fields:form?[...form.elements].filter(e=>e.name).map(e=>({name:e.name,type:e.type||null,value:e.value||'',checked:!!e.checked,maxLength:Number.isInteger(e.maxLength)&&e.maxLength>=0?e.maxLength:null})):[],select_options:form?Object.fromEntries([...form.elements].filter(e=>e.name&&e.tagName==='SELECT').map(e=>[e.name,[...e.options].map(o=>({value:o.value,label:(o.textContent||'').trim()}))])):{},submit_controls:form?[...form.querySelectorAll('button[type=submit],input[type=submit]')].map(e=>({mode:e.dataset?e.dataset.mode||null:null,label:((e.innerText||e.value||'')+'').trim(),disabled:!!e.disabled})):[]}})())'''
 COMPETITOR_SOURCES = (
     ("category", "https://coconala.com/categories/230/66"),
     ("search", "https://coconala.com/search?keyword=%E6%A5%AD%E5%8B%99%E8%87%AA%E5%8B%95%E5%8C%96"),
@@ -88,8 +88,11 @@ COMPETITOR_SOURCES = (
     ("service", "https://coconala.com/services/3122692"),
     ("service", "https://coconala.com/services/3741646"),
 )
-MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
+MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price", "listing_state"}
 GENERATED_MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
+# The seller listing-state control is the form's own hidden `mode` field, not a `data[...]` input.
+LISTING_STATE_DELTA = "mode"
+PUBLIC_LISTING_STATE = "公開中"
 MUTATION_CONTRACT_FIELDS = {
     "version", "platform", "service_id", "precondition_listing_version_sha256",
     "changed_field", "before_value", "proposed_value", "allowed_delta", "rollback_value",
@@ -791,13 +794,16 @@ def _allocate_portfolio(
         weak_demand = demand.get(service_id) in {0, 1}
         replacement = next((row for row in replacements if isinstance(row, dict)
                             and row.get("replaces_service_id") == service_id), None)
-        replace_ready = bool(
+        retire_ready = bool(
             minimum_sample and inquiries.get(service_id, 0) == 0 and purchases == 0
-            and payments.get(service_id, 0) == 0 and weak_demand and replacement and capacity_pressure
+            and payments.get(service_id, 0) == 0 and weak_demand and capacity_pressure
         )
+        replace_ready = bool(retire_ready and replacement)
         gap = gaps.get(service_id)
         if replace_ready:
             action, reason = "REPLACE", "all_replacement_gates_met"
+        elif retire_ready:
+            action, reason = "RETIRE", "recoverable_retire_gates_met_without_stronger_candidate"
         elif payments.get(service_id, 0) > 0 or (known and purchases > 0):
             action, reason = "KEEP", "verified_purchase_or_payment"
         elif gap is not None:
@@ -815,7 +821,8 @@ def _allocate_portfolio(
                         "verified_net_jpy": net.get(service_id, 0.0)},
             "gates": {"metrics_known": known, "minimum_sample_met": minimum_sample,
                       "weak_demand_evidence": weak_demand, "stronger_replacement_candidate": bool(replacement),
-                      "slot_capacity_pressure": capacity_pressure},
+                      "slot_capacity_pressure": capacity_pressure,
+                      "recoverable_retire_gates_met": retire_ready},
             "improvement_field": gap.get("field") if gap else None,
             "rollback_version": contract["service_version_sha256"],
             "official_readback_required": action in {"IMPROVE", "RETIRE", "REPLACE"},
@@ -993,6 +1000,13 @@ def _validate_mutation_contract(contract: dict, capability_families: dict[str, s
     service_id = str(contract.get("service_id") or "")
     allowed_delta = contract.get("allowed_delta")
     evidence = contract.get("evidence")
+    delta_ok = (
+        isinstance(allowed_delta, list) and len(allowed_delta) == 1
+        and isinstance(allowed_delta[0], str)
+        and (allowed_delta[0] == LISTING_STATE_DELTA
+             if contract.get("changed_field") == "listing_state"
+             else allowed_delta[0].startswith("data["))
+    )
     if (set(contract) != MUTATION_CONTRACT_FIELDS or contract.get("version") != 1
             or contract.get("platform") != "coconala" or not service_id.isdigit()
             or capability_families.get(service_id) != contract.get("capability_family")
@@ -1000,8 +1014,7 @@ def _validate_mutation_contract(contract: dict, capability_families: dict[str, s
             or contract.get("changed_field") not in MUTATION_FIELDS
             or contract.get("before_value") == contract.get("proposed_value")
             or contract.get("rollback_value") != contract.get("before_value")
-            or not isinstance(allowed_delta, list) or len(allowed_delta) != 1
-            or not isinstance(allowed_delta[0], str) or not allowed_delta[0].startswith("data[")
+            or not delta_ok
             or not isinstance(contract.get("official_readback"), dict) or not contract["official_readback"]
             or not isinstance(contract.get("success_metric"), str) or not contract["success_metric"].strip()
             or type(contract.get("observation_window_days")) is not int
@@ -1017,6 +1030,64 @@ def _seal_mutation_contract(unsigned: dict, capability_families: dict[str, str])
     contract = {**unsigned, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
     _validate_mutation_contract(contract, capability_families)
     return contract
+
+
+def _non_public_submit_control(seller_snapshot: dict) -> dict:
+    """Return the seller control that moves a published listing to a non-public state.
+
+    The published listing keeps its versions, sales history and reviews; only its buyer
+    visibility changes, which is what makes retirement recoverable. Fails closed when the
+    authenticated form does not actually expose such a control.
+    """
+    controls = [row for row in seller_snapshot.get("submit_controls") or [] if isinstance(row, dict)]
+    if not controls:
+        raise RuntimeError("storefront_retire_controls_unobserved")
+    control = next(
+        (row for row in controls
+         if isinstance(row.get("mode"), str) and row["mode"].strip()
+         and row["mode"] != "open" and not row.get("disabled")),
+        None,
+    )
+    if control is None:
+        raise RuntimeError("storefront_retire_control_missing")
+    return control
+
+
+def _render_listing_state_mutation(
+    source: dict, inventory_row: dict, seller_snapshot: dict,
+    capability_families: dict[str, str], allocation: dict,
+) -> dict:
+    service_id = str(source["service_id"])
+    if str(inventory_row.get("state") or "") != PUBLIC_LISTING_STATE:
+        raise RuntimeError("storefront_retire_listing_not_public")
+    if allocation.get("action") not in {"RETIRE", "REPLACE"} or allocation.get("service_id") != service_id:
+        raise RuntimeError("storefront_retire_allocation_invalid")
+    gates = allocation.get("gates") or {}
+    if not gates.get("recoverable_retire_gates_met"):
+        raise RuntimeError("storefront_retire_gates_unmet")
+    if seller_snapshot.get("url") != f"https://coconala.com/mypage/services/{service_id}":
+        raise RuntimeError("storefront_retire_seller_form_invalid")
+    control = _non_public_submit_control(seller_snapshot)
+    return _seal_mutation_contract({
+        "version": 1, "platform": "coconala", "service_id": service_id,
+        "precondition_listing_version_sha256": source["service_version_sha256"],
+        "changed_field": "listing_state",
+        "before_value": {"listing_state": PUBLIC_LISTING_STATE, "submit_mode": "open"},
+        "proposed_value": {"listing_state": str(control["label"]) or control["mode"],
+                           "submit_mode": str(control["mode"])},
+        "allowed_delta": [LISTING_STATE_DELTA],
+        "rollback_value": {"listing_state": PUBLIC_LISTING_STATE, "submit_mode": "open"},
+        "official_readback": {"service_id": service_id, "public_listing_absent": True,
+                              "seller_submit_mode": str(control["mode"]),
+                              "recoverable": True, "deletion": False},
+        "success_metric": "inquiries",
+        "observation_window_days": 14,
+        "capability_family": capability_families.get(service_id),
+        "evidence": [
+            f"official:offer-contract:{service_id}:{source['service_version_sha256']}",
+            f"storefront:portfolio-allocation:{allocation['allocation_key']}",
+        ],
+    }, capability_families)
 
 
 def _render_text_mutation(
