@@ -383,6 +383,77 @@ test("Calendar create/readback crash recovery reuses the one idempotent event", 
   fs.rmSync(stateDir, { recursive: true, force: true });
 });
 
+test("delivery block stage failures tag the thrown error with a stable per-stage code, not the generic fallback", async () => {
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 24)]);
+  const cases = [
+    ["EVIDENCE_SCREENSHOT_CAPTURE_FAILED", (calls) => ({
+      calendar: durableCalendar(calls),
+      sendMessage: async () => ({ messageId: 9401 }),
+      sendPhoto: async () => ({ messageId: 9402 }),
+      page: { ...recoveryPage(png, calls), async screenshot() { throw new Error("screenshot device gone"); } },
+    })],
+    ["EVIDENCE_CALENDAR_CREATE_FAILED", (calls) => ({
+      calendar: { async findConnectorEvents() { calls.push(["calendar-read"]); return []; }, async createConnectorEvent() { calls.push(["calendar-create"]); throw new Error("calendar create gone"); } },
+      sendMessage: async () => ({ messageId: 9401 }),
+      sendPhoto: async () => ({ messageId: 9402 }),
+      page: recoveryPage(png, calls),
+    })],
+    ["EVIDENCE_CALENDAR_READBACK_FAILED", (calls) => ({
+      calendar: { async findConnectorEvents() { calls.push(["calendar-read"]); throw new Error("calendar readback gone"); }, async createConnectorEvent() { calls.push(["calendar-create"]); throw new Error("must not create"); } },
+      sendMessage: async () => ({ messageId: 9401 }),
+      sendPhoto: async () => ({ messageId: 9402 }),
+      page: recoveryPage(png, calls),
+    })],
+    ["EVIDENCE_TELEGRAM_MESSAGE_FAILED", (calls) => ({
+      calendar: durableCalendar(calls),
+      sendMessage: async () => { throw new Error("telegram message gone"); },
+      sendPhoto: async () => ({ messageId: 9402 }),
+      page: recoveryPage(png, calls),
+    })],
+    ["EVIDENCE_TELEGRAM_PHOTO_FAILED", (calls) => ({
+      calendar: durableCalendar(calls),
+      sendMessage: async () => ({ messageId: 9401 }),
+      sendPhoto: async () => { throw new Error("telegram photo gone"); },
+      page: recoveryPage(png, calls),
+    })],
+  ];
+  for (const [code, build] of cases) {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-stage-code-"));
+    const calls = [];
+    const { calendar, sendMessage, sendPhoto, page } = build(calls);
+    const chain = createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar, calendarId: "primary", telegramTarget: "private-target", peatixEvidenceStore: recoveryStore(png, calls), now: () => new Date("2026-08-07T08:30:00.000Z"), sendMessage, sendPhoto });
+    try {
+      await assert.rejects(
+        chain.completeEvidence({ provider: "peatix", candidate: recoveryCandidate(), page, providerState: { status: "registered" } }),
+        (error) => { assert.equal(error.code, code, code); assert.doesNotMatch(String(error.message), /gone|crash/i, code); return true; },
+      );
+    } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+  }
+
+  // Bundle write: everything succeeds through Telegram delivery (same fixture as "Telegram checkpoints
+  // survive bundle failure" above), then the applied-bundles directory is flipped read-only inside the
+  // sendPhoto callback so only the final immutableJson write fails.
+  const bundleStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-stage-code-bundle-"));
+  fs.mkdirSync(path.join(bundleStateDir, "applied-bundles"), { mode: 0o700 });
+  try {
+    const calls = [];
+    const chain = createMinimalEvidenceChain({
+      stateDir: bundleStateDir, tenantId: "dais-local", calendar: durableCalendar(calls), calendarId: "primary",
+      telegramTarget: "private-target", peatixEvidenceStore: recoveryStore(png, calls),
+      now: () => new Date("2026-08-07T08:30:00.000Z"),
+      sendMessage: async () => ({ messageId: 9401 }),
+      sendPhoto: async () => { fs.chmodSync(path.join(bundleStateDir, "applied-bundles"), 0o500); return { messageId: 9402 }; },
+    });
+    await assert.rejects(
+      chain.completeEvidence({ provider: "peatix", candidate: recoveryCandidate(), page: recoveryPage(png, calls), providerState: { status: "registered" } }),
+      (error) => { assert.equal(error.code, "EVIDENCE_BUNDLE_WRITE_FAILED"); return true; },
+    );
+  } finally {
+    fs.chmodSync(path.join(bundleStateDir, "applied-bundles"), 0o700);
+    fs.rmSync(bundleStateDir, { recursive: true, force: true });
+  }
+});
+
 test("Peatix evidence resets the owned page and parent-writes the receipt without setContent", async () => {
   const fixture = peatixFixture({ setContentNeverSettles: true });
   try {
