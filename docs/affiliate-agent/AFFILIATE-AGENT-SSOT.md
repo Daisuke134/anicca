@@ -970,49 +970,88 @@ cloud work, and broad self-repair do not start unless one is the measured blocke
 for the next external state. Known stages are deterministic; the model writes or
 diagnoses only when an existing deterministic tool cannot advance them.
 
-1. **DONE:** Re-run the already-correct `/blog/<slug>` readback from the current
-   installed Skill. It reconciled the existing ElevenAgents `DELIVERED` effect to
-   `LIVE`, preserved Git HEAD `756c54064`, and independently re-read the title at
-   HTTP `200`; no code change or duplicate push was needed.
-2. **DONE:** The installed Skill built a 253-character disclosed X artifact and
-   published `elevenagents-en-1` at
-   `https://x.com/selawmqt/status/2088797086871666703`. Immediate replay returned
-   the same URL, proving timeline/public readback exact-once behavior.
-3. **DONE:** `loop wake` invokes ElevenLabs recovery on
-   `SIGN_IN_REQUIRED` and continues owned/X independently. Live DOM readback found
-   the current single-page form had `email_nonempty=false`,
-   `password_nonempty=true`, and a disabled submit: the old two-step assumption
-   skipped email whenever password was already visible. Release `05e9b68ec` fills
-   every rendered required field, waits for enabled submit, and bounds ambiguous
-   retries to five-minute cooldowns and three total sends.
-4. **DONE:** Wire only those three proven stage transitions into `local_loop.py`: owned
-   readback, X build/publish, and provider recovery. Emit `PLACEMENT_LIVE` and the
-   next-job Telegram receipt from the same job lineage.
-5. **DONE:** Installed launchd replay preserved the same ElevenAgents X URL and
-   one X external job, repaired the provider session with the same fenced login
-   job, and then converged with `AUTHENTICATED`, `recovery=NOT_NEEDED`, and no
-   duplicate external effect. The latest revenue cycle is honestly in cooldown.
-6. **DONE:** Added the English TTS API buyer-intent job. The versioned CRWL plan
-   captured `5/5` official sources and replayed with `new=0`; release `7b43ae847`
-   built the source-gated artifact, passed policy, pushed owned commit `5be0d43db`,
-   waited for the successful Netlify production deployment and HTTP `200`, then
-   published `elevenlabs-tts-api-en-1` through the launchd loop at
-   `https://x.com/selawmqt/status/2088809159932465497`.
-7. **DONE:** Replayed the installed loop after TTS publication. X URL stayed
-   identical, the unique X external-job count stayed `1 → 1`, and public Git HEAD
-   stayed `5be0d43db → 5be0d43db`; no duplicate effect occurred.
-8. Continue this same pipeline until E0 and E1 provide real click and approved-
-   commission receipts. Repair only failures observed in this live path, then
-   encode each successful repair into the Skill.
-9. **PARTIAL:** Installed a separate daily official-source owner. Release
-   `11789537a` captured `4 + 6 + 5` sources, produced `COMPLETE`, and replayed as
-   `COOLDOWN` with ledger rows `17 → 17`; the money owner remained exit `0`.
-   Release `dc78b3bd9` then emitted three credential-free, source-set-SHA-bound
-   composition inputs. Still add the bounded composition executor and validate
-   its result hash before deterministic publishing can consume it.
-10. After E1, add another executable English provider, ten comparable placements,
-   cohort allocation, Japanese isolation, clean-Mac packaging, and cloud in the
-   existing B/C/D gate order.
+The completed history remains in the evidence tables below. The following list is
+the only canonical remaining order; later work MUST NOT jump ahead of an unmet
+gate.
+
+1. **P0 — Seal composition output.** Extend the existing runner receipt so it
+   hashes the final result, binds it to exactly one `source_set_sha256`, records
+   model/effort/token usage, and rejects an output whose source set changed.
+2. **P0 — Add the bounded composition owner.** Give it only one due
+   `composition-inbox` receipt, no Affiliate credential Markdown, no provider/X
+   browser, no money ledger, a separate lock, one attempt budget, and a terminal
+   `READY_FOR_POLICY|FAILED|QUARANTINED` receipt. It MUST NOT run inside the
+   ten-minute money owner.
+3. **P0 — Define the generic campaign handoff.** Require offer ID, locale, buyer
+   intent, title, slug, owned-article Markdown, disclosure, one CTA placeholder,
+   cited source IDs/hashes, X copy, and content/result fingerprints. The model
+   never receives the private tracking link.
+4. **P0 — Generalize the policy gate.** Validate cited URLs and source hashes,
+   disclosure-before-CTA, claim support, locale, forbidden guarantees, one CTA,
+   article/X length, and provider/channel rules. FAIL returns to the same job;
+   only PASS permits private-link injection.
+5. **P0 — Connect the handoff to deterministic effects.** The money owner consumes
+   only a policy-PASS artifact, injects the executable link locally, publishes the
+   owned article, waits for HTTP `200`, publishes X, and performs exact public
+   readback under the existing Git/X fences.
+6. **P0 — Prove a fourth English campaign end to end.** The installed launchd
+   owners MUST advance a newly composed campaign through source → composition →
+   policy → owned `LIVE` → X `LIVE` → revenue poll → Telegram. A second wake MUST
+   preserve one Git effect, one X object, and one job lineage.
+7. **P0 — Add open-ended opportunity discovery.** The daily research owner uses
+   CRWL, `gh`, authenticated read-only X, official provider resources, and the
+   executable-program registry to create or refresh candidate source plans. It
+   admits only official/first-party evidence, stores typed adapter failures, and
+   never treats creator income claims as our revenue.
+8. **P0 — Automate eligible program admission.** For each English candidate,
+   receipt official terms, allowed channels, payout, audience/site requirements,
+   login authority, application identity, review status, and executable tracking
+   link. Poll HubSpot/Impact; do not resubmit rejected Kit unchanged.
+9. **P0 — Complete observed self-healing.** Add typed failure receipts, bounded
+   retry/backoff, stale-lock watchdog, disk/token/action caps, provider/channel
+   quarantine, one allowlisted repair, postcondition readback, and `SELF_HEALED`
+   Telegram reporting while healthy lanes continue.
+10. **Gate E0 — Record real acquisition.** Reconcile one organic post-baseline
+    provider click to a live placement. Self-clicks, tests, impressions, and local
+    redirects do not close E0.
+11. **Gate E1 — Record real money.** Normalize the first non-test provider row,
+    join or explicitly fail to join it to a placement, replay it without a
+    duplicate transition, then record the first externally `approved` commission.
+12. **After E1 — Build comparable English cohorts.** Reach ten mature placements,
+    change one variable per experiment, and allocate by approved net commission
+    per 1,000 qualified impressions and per content cost—not engagement.
+13. **After E1 — Diversify providers.** Add at least three independently receipted
+    offers and keep provider, offer, and channel concentration at or below 40% of
+    approved net commission.
+14. **Gate A2 — Prove unattended profitability.** Complete four consecutive
+    revenue-positive weeks with positive net margin, zero manual execution, and
+    at least one live self-heal.
+15. **Gate A3 — Prove USD 10,000/month.** Use observed conversion and approved net
+    commission to compute required qualified traffic; reconcile three consecutive
+    months at USD 10,000 gross while reporting net, costs, reversals, payout delay,
+    and concentration separately.
+16. **After E0 — Add Japanese isolation.** Use a separate account/browser/provider
+    membership/link, native evidence pack, disclosure, placement ledger, and J0/J1
+    canary. Never mix Japanese and English on one social account.
+17. **After English and Japanese proof — Add Spanish.** Apply the same locale gate;
+    later languages are ranked by executable-offer economics rather than audience
+    population alone.
+18. **After E1 — Package clean macOS installation.** Remove machine-specific paths,
+    ship one-command install/update/health/rollback/uninstall, and reproduce
+    pre-publication readiness on a clean macOS user without copying secrets,
+    sessions, or mutable receipts.
+19. **After E1 — Publish OSS proof.** Release the local Skill, privacy-safe ledger
+    verifier, dated prior-art registry, exact limitations, and reproducible
+    receipts; do not claim “money printer” from clicks or model output.
+20. **After A2 + clean-Mac proof — Build cloud product.** Replace local launchd and
+    browser owners with tenant-isolated scheduler/browser workers while preserving
+    the same job, receipt, policy, attribution, deletion, audit, and Telegram/web
+    UX contracts.
+
+External user authority is required only before withdrawal: truthful tax/KYC and
+one payment provider must be completed with the user's legal/payment data. The
+Agent MUST NOT invent or infer those facts, and payout setup does not block E0/E1
+earning work.
 
 #### A. Close revenue truth for the live ElevenLabs placement
 
