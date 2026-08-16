@@ -91,7 +91,10 @@ async function readCalendarBindings(page) {
   return page.evaluate(() => [...document.querySelectorAll('a[href*="/event/"]')].map((anchor) => {
     const url = new URL(anchor.href, location.href);
     const match = /^\/event\/([1-9][0-9]*)\/?$/.exec(url.pathname);
-    const rowText = String(anchor.closest("li")?.innerText || "").replace(/\s+/g, " ");
+    // connpass renders the full date only inside `.tooltip` (`display:none` in
+    // connpass.css), so `innerText` (render-aware) strips it on every calendar
+    // row; `textContent` reads the DOM regardless of CSS visibility.
+    const rowText = String(anchor.closest("li")?.textContent || "").replace(/\s+/g, " ");
     const dateMatch = /(20\d{2})[\/-](\d{1,2})[\/-](\d{1,2})/.exec(rowText);
     return match ? {
       event_ref: `connpass-event://event/${match[1]}`,
