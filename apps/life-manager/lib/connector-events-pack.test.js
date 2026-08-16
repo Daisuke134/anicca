@@ -296,7 +296,7 @@ test("the pack turns browser-only saved-card evidence into an opaque verified me
   assert.doesNotMatch(JSON.stringify(method), /provider_binding|cccccccc/);
 });
 
-test("the pack owns exhaustive busy-calendar read and travel-aware gate operations", async () => {
+test("the pack owns exhaustive busy-calendar read and calendar gate operations", async () => {
   const calls = [];
   const pack = createConnectorEventsPack({
     dailyDriver: { withLumaPage: async () => {} },
@@ -309,11 +309,10 @@ test("the pack owns exhaustive busy-calendar read and travel-aware gate operatio
   });
   const calendar = { kind: "gog" };
   assert.equal(await pack.readBusyCalendar(calendar, { timeMin: "min", timeMax: "max", timeZone: "tz", now: "now" }), "busy");
-  const routeMinutes = async () => 10;
-  assert.equal(await pack.gateDateCalendar("inventory", "busy", "date", "home", routeMinutes), "gate");
+  assert.equal(await pack.gateDateCalendar("inventory", "busy", "date"), "gate");
   assert.deepEqual(calls, [
     ["read", { calendar, timeMin: "min", timeMax: "max", timeZone: "tz", now: "now" }],
-    ["gate", { dateInventory: "inventory", busyInventory: "busy", date: "date", homeLocation: "home", routeMinutes }],
+    ["gate", { dateInventory: "inventory", busyInventory: "busy", date: "date" }],
   ]);
 });
 

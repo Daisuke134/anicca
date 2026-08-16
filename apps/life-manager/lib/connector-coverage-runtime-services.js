@@ -105,20 +105,11 @@ function createConnectorCoverageRuntimeServices(env = {}, runtime = {}, override
       receiptReader,
       calendar: bridge.calendar,
       calendarId: String(env.LM_CONNECTOR_CALENDAR_ID || "primary").trim(),
-      homeLocation: `home://${tenantId}`,
-      routeMinutes: bridge.routeMinutes,
       now,
       readDateInventory: ({ coverage, now: observedAt }) => (
         pack.readDateInventory(coverage, { now: observedAt })
       ),
       readBusyCalendar: ({ calendar, ...window }) => pack.readBusyCalendar(calendar, window),
-      gateDateCalendar: (input) => pack.gateDateCalendar(
-        input.dateInventory,
-        input.busyInventory,
-        input.date,
-        input.homeLocation,
-        input.routeMinutes,
-      ),
       syncRegistrationCalendar: (input) => pack.syncRegistrationCalendar(input),
       buildRegistrationCoverageEvidence: (input) => pack.buildRegistrationCoverageEvidence(input),
       proveUnavailableDay: (input) => pack.proveUnavailableDay(input),

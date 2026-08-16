@@ -122,9 +122,7 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
       )
     ));
     const gate = await stage("CONNECTOR_COVERAGE_APPLICATION_CALENDAR_GATE_FAILED", () => (
-      dependencies.gateDateCalendar(
-        dateInventory, busyInventory, open.date, input.homeLocation, input.routeMinutes,
-      )
+      dependencies.gateDateCalendar(dateInventory, busyInventory, open.date)
     ));
     const sequence = await stage("CONNECTOR_COVERAGE_APPLICATION_SPEND_PLAN_FAILED", async () => {
       const policy = await dependencies.createSpendPolicy({

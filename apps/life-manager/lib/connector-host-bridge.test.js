@@ -18,11 +18,10 @@ function services() {
       async findConnectorEvents(input) { return [{ id: input.idempotencyValue }]; },
       async createConnectorEvent(input) { return { id: "created", htmlLink: input.canonicalUrl }; },
     },
-    async routeMinutes(input) { return input.from === "A" && input.to === "B" ? 17 : null; },
   };
 }
 
-test("host bridge dispatches only the five authenticated Connector operations", async () => {
+test("host bridge dispatches only the four authenticated Connector operations", async () => {
   const deps = services();
   const auth = `Bearer ${TOKEN}`;
   assert.deepEqual(await dispatchConnectorHostBridge({
@@ -39,9 +38,6 @@ test("host bridge dispatches only the five authenticated Connector operations", 
     authorization: auth,
     body: { operation: "calendar.create", input: { canonicalUrl: "https://luma.com/event" } },
   }, { token: TOKEN, ...deps }), { id: "created", htmlLink: "https://luma.com/event" });
-  assert.equal(await dispatchConnectorHostBridge({
-    authorization: auth, body: { operation: "route.minutes", input: { from: "A", to: "B" } },
-  }, { token: TOKEN, ...deps }), 17);
 });
 
 test("host bridge rejects missing auth, unknown operations, extra envelope fields, and invalid services", async () => {
@@ -53,24 +49,26 @@ test("host bridge rejects missing auth, unknown operations, extra envelope field
     authorization: `Bearer ${TOKEN}`, body: { operation: "shell.exec", input: {} },
   }, { token: TOKEN, ...deps }), /bridge invalid/i);
   await assert.rejects(dispatchConnectorHostBridge({
+    authorization: `Bearer ${TOKEN}`, body: { operation: "route.minutes", input: { from: "A", to: "B" } },
+  }, { token: TOKEN, ...deps }), /bridge invalid/i);
+  await assert.rejects(dispatchConnectorHostBridge({
     authorization: `Bearer ${TOKEN}`, body: { operation: "calendar.list", input: {}, secret: "x" },
   }, { token: TOKEN, ...deps }), /bridge invalid/i);
   await assert.rejects(dispatchConnectorHostBridge({
-    authorization: `Bearer ${TOKEN}`, body: { operation: "route.minutes", input: { from: "A", to: "B" } },
-  }, { token: TOKEN, calendar: deps.calendar }), /bridge unavailable/i);
+    authorization: `Bearer ${TOKEN}`, body: { operation: "calendar.list", input: {} },
+  }, { token: TOKEN }), /bridge unavailable/i);
 });
 
-test("Docker client implements the Calendar and route interfaces without reflecting its token", async () => {
+test("Docker client implements the Calendar interface without reflecting its token", async () => {
   const calls = [];
   const client = createConnectorHostBridgeClient({
     baseUrl: "http://host.docker.internal:18793",
     token: TOKEN,
     async fetchImpl(url, init) {
       calls.push({ url, init });
-      const request = JSON.parse(init.body);
       return {
         ok: true,
-        async json() { return { ok: true, result: request.operation === "route.minutes" ? 23 : [] }; },
+        async json() { return { ok: true, result: [] }; },
       };
     },
   });
@@ -80,17 +78,17 @@ test("Docker client implements the Calendar and route interfaces without reflect
   }), []);
   assert.deepEqual(await client.calendar.findConnectorEvents({ idempotencyValue: "b".repeat(64) }), []);
   assert.deepEqual(await client.calendar.createConnectorEvent({ canonicalUrl: "https://luma.com/event" }), []);
-  assert.equal(await client.routeMinutes({ from: "A", to: "B" }), 23);
-  assert.equal(calls.length, 5);
+  assert.equal(calls.length, 4);
   assert.ok(calls.every((call) => call.url === "http://host.docker.internal:18793/v1/connector"));
   assert.ok(calls.every((call) => call.init.headers.Authorization === `Bearer ${TOKEN}`));
+  assert.equal(client.routeMinutes, undefined);
 
   const broken = createConnectorHostBridgeClient({
     baseUrl: "http://host.docker.internal:18793",
     token: TOKEN,
     async fetchImpl() { return { ok: false, async json() { throw new Error(TOKEN); } }; },
   });
-  await assert.rejects(broken.routeMinutes({ from: "A", to: "B" }), (error) => (
+  await assert.rejects(broken.calendar.listCalendarsRaw({ strict: true }), (error) => (
     /bridge unavailable/i.test(error.message) && !error.message.includes(TOKEN)
   ));
 });
