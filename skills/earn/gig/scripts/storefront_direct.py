@@ -2502,7 +2502,8 @@ async def _execute_image_effect_async(
         after = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
         _validate_image_form_delta(before, after, contract)
         preview = json.loads(str(await evaluate(
-            "JSON.stringify((()=>{const p=[...document.querySelectorAll('.js_image-thumbnail[style*=\"blob:\"]')];"
+            "JSON.stringify((()=>{const p=[...document.querySelectorAll('input[type=file]')]"
+            ".filter(input=>input.files&&input.files.length===1);"
             "const s=document.querySelector('button.submitButton.js_button-edit[type=submit]');"
             f"if(p.length<{len(uploads)})return {{ok:false,reason:'preview_missing',count:p.length}};"
             "if(!s)return {ok:false,reason:'submit_missing'};"
