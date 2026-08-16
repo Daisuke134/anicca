@@ -152,7 +152,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `2c84600464934915028779060a5bdb7eaf8da02b` is current. All six isolated Affiliate launchd owners are loaded; real money wake `11` and composition run `9` have last exit `0`. The ten-minute money loop owns bounded ElevenLabs recovery, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake economic-ledger projection, natural-language daily/transition reporting, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner resumes existing due stages before new inbox work and consumes at most one credential-free due stage per wake | Cash/tool/channel cost capture, general repair beyond observed failures, and cohort allocation remain open |
+| Runtime | Immutable local release `5c2e297e5a28ab5c27fe8e2ab29b83fff46a7ac3` is current. All six isolated Affiliate launchd owners are loaded; real money wake `12` and composition run `9` have last exit `0`. The ten-minute money loop owns bounded ElevenLabs recovery, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake placement economics, natural-language reporting, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner resumes existing due stages before new inbox work and consumes at most one credential-free due stage per wake | Cohort allocation and general repair beyond observed failures remain open |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
@@ -160,7 +160,7 @@ live autonomous operation.
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, real `PLACEMENT_LIVE`, and one real-data natural-language daily summary are live-proven. The daily summary is bound to provider message ID `21046`; same-day real replay returns `NO_PENDING` without growing the sent ledger | `CLICK_DELTA` and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, official-source refresh, source-hash-bound composition, bounded Terra-high composition, same-ID budget recovery, generic handoff/policy, exact placement-link acquisition, owned/X publication, DEV/Substack syndication, acquisition/revenue observation, economic ledger, receipts, and Telegram are live. Release `2c8460046` records real exposure/click/money/provider state plus the next Agent action in Japanese and deduplicates the same JST daily UUID | Cash/tool/channel costs, provider/channel quarantine, watchdog, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery/refresh, source-hash-bound composition, bounded Terra-high composition, same-ID recovery, policy, exact placement-link acquisition, publication/distribution, acquisition/revenue observation, placement economics, receipts, and Telegram are live. Release `5c2e297e5` joins provider-reported usage to placements but keeps API-equivalent estimates separate from actual cash | Actual billed/tool/channel cash receipts, provider/channel quarantine, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -1076,8 +1076,8 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **M1.1, attach real cash/model/tool/channel costs to
-each placement and compute unit economics only where observed denominators exist**.
+Current execution cursor: **M1.2, allocate the next campaign only from comparable
+mature cohort evidence and make the no-evidence path invoke no model**.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
 files and zero decision receipts before eligibility. A first real Agent decision
@@ -1101,7 +1101,7 @@ no transition was duplicated or invented.
 
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
-and Systeme.io remains behind its typed CAPTCHA boundary. Release `2c8460046` is
+and Systeme.io remains behind its typed CAPTCHA boundary. Release `5c2e297e5` is
 current; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -1294,10 +1294,20 @@ result will be real external proof, but no implementation waits for the clock.
     `X_LIVE`, and ledger `LEDGER_READY`, and preserved Telegram sent rows `13→13`.
     The same-day UUID was therefore not sent twice; the next JST daily event uses
     the new natural-language action text automatically.
-13. **M1.1 — Add approved unit economics.** Join real cash/model/tool/channel costs
-    to each placement and compute approved net commission per 1,000 observed
-    qualified exposures and per content dollar. Views and engagement remain
-    acquisition diagnostics; only provider-approved commission ranks profit.
+13. **DONE — M1.1 add truthful placement unit economics.** Release `5c2e297e5`
+    joins each campaign's existing provider-reported model attempts and token
+    usage to its placement. API-price-equivalent USD remains a separately labeled
+    planning estimate; it is never subtracted as an invoice. This follows OpenAI
+    Help, [Using Codex with your ChatGPT plan](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan):
+    “Codex is included across ChatGPT plans” and estimated dollar conversion
+    “should be treated as a planning estimate, not an invoice.” Actual model,
+    tool, and channel cash stay `UNKNOWN` without a payment receipt. Approved net
+    per 1,000 DEV views is computed only for a positive observed denominator;
+    actual net profit stays unknown until actual cash cost is complete. Focused
+    money/loop checks pass `15/15`. Installed wake `12` exited `0` and produced a
+    hash-valid six-row ledger. The audio-to-text placement records 28,602 tokens
+    and API-equivalent USD 0.080955; TTS records 71,350 tokens and USD 0.2061235.
+    Both correctly retain `UNKNOWN_COST` and insufficient exposure denominator.
 14. **M1.2 — Allocate the next campaign.** The Agent receives comparable mature
     cohort receipts, selects one offer/channel/creative variable, and writes a
     budget-capped allocation receipt. It cannot infer a winner before the required
