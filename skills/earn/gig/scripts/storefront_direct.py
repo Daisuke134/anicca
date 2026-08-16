@@ -1033,24 +1033,28 @@ def _seal_mutation_contract(unsigned: dict, capability_families: dict[str, str])
     return contract
 
 
-def _non_public_submit_control(seller_snapshot: dict) -> dict:
-    """Return the seller control that moves a published listing to a non-public state.
+def _listing_state_control(inventory_row: dict, service_id: str) -> dict:
+    """Bind the observed seller control that unpublishes one listing.
 
-    The published listing keeps its versions, sales history and reviews; only its buyer
-    visibility changes, which is what makes retirement recoverable. Fails closed when the
-    authenticated form does not actually expose such a control.
+    Measured on the seller list page: each card exposes `公開設定`, whose confirmation is
+    `a.js_change-open-status` pointing at `/services/archive/<id>`. Archiving keeps the
+    listing, its versions and its sales history, which is what makes retirement
+    recoverable. The published service edit form carries no such control at all, so this
+    binds the card control or fails closed.
     """
-    controls = [row for row in seller_snapshot.get("submit_controls") or [] if isinstance(row, dict)]
+    controls = [row for row in inventory_row.get("state_controls") or [] if isinstance(row, dict)]
     if not controls:
         raise RuntimeError("storefront_retire_controls_unobserved")
     control = next(
         (row for row in controls
-         if isinstance(row.get("mode"), str) and row["mode"].strip()
-         and row["mode"] != "open" and not row.get("disabled")),
+         if "js_change-open-status" in str(row.get("cls") or "")
+         and str(row.get("href") or "") == f"/services/archive/{service_id}"),
         None,
     )
     if control is None:
         raise RuntimeError("storefront_retire_control_missing")
+    if not str(control.get("context") or "").strip():
+        raise RuntimeError("storefront_retire_control_wording_unobserved")
     return control
 
 
@@ -1068,18 +1072,19 @@ def _render_listing_state_mutation(
         raise RuntimeError("storefront_retire_gates_unmet")
     if seller_snapshot.get("url") != f"https://coconala.com/mypage/services/{service_id}":
         raise RuntimeError("storefront_retire_seller_form_invalid")
-    control = _non_public_submit_control(seller_snapshot)
+    control = _listing_state_control(inventory_row, service_id)
     return _seal_mutation_contract({
         "version": 1, "platform": "coconala", "service_id": service_id,
         "precondition_listing_version_sha256": source["service_version_sha256"],
         "changed_field": "listing_state",
-        "before_value": {"listing_state": PUBLIC_LISTING_STATE, "submit_mode": "open"},
-        "proposed_value": {"listing_state": str(control["label"]) or control["mode"],
-                           "submit_mode": str(control["mode"])},
+        "before_value": {"listing_state": PUBLIC_LISTING_STATE, "action": "none"},
+        "proposed_value": {"listing_state": "非公開", "action": str(control["href"]),
+                           "control_class": str(control["cls"]),
+                           "platform_wording": str(control["context"])},
         "allowed_delta": [LISTING_STATE_DELTA],
-        "rollback_value": {"listing_state": PUBLIC_LISTING_STATE, "submit_mode": "open"},
+        "rollback_value": {"listing_state": PUBLIC_LISTING_STATE, "action": "none"},
         "official_readback": {"service_id": service_id, "public_listing_absent": True,
-                              "seller_submit_mode": str(control["mode"]),
+                              "seller_state": "非公開",
                               "recoverable": True, "deletion": False},
         "success_metric": "inquiries",
         "observation_window_days": 14,
@@ -1119,7 +1124,7 @@ def _render_replace_plan(retire_contract: dict, create_contract: dict | None, al
             "created": {"public_url": create_contract["expected_public_url"]},
         },
         "rollback": {"republish_service_id": retired_id,
-                     "submit_mode": retire_contract["rollback_value"]["submit_mode"],
+                     "restore_to": retire_contract["rollback_value"]["listing_state"],
                      "on": "create_failed_after_retire"},
     }
     canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
