@@ -592,6 +592,33 @@ def revenue_cycle_due(state, now=None, cooldown_seconds=3600):
     return (int(time.time()) if now is None else now) - completed_at >= cooldown_seconds
 
 
+def revenue_failure(state, stage, failure_type, return_code, error_text):
+    now = int(time.time())
+    try:
+        latest = json.loads(
+            (state / "provider-reports" / "partnerstack" / "latest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        source_hash = latest.get("rendered_artifact_sha256")
+    except (OSError, ValueError):
+        source_hash = None
+    failure = {
+        "schema_version": 1,
+        "receipt_type": "REVENUE_CYCLE_FAILURE",
+        "state": "REVENUE_CYCLE_FAILED",
+        "stage": stage,
+        "failure_type": failure_type,
+        "return_code": return_code,
+        "error_sha256": hashlib.sha256(error_text.encode()).hexdigest(),
+        "latest_source_artifact_sha256": source_hash,
+        "observed_at": now,
+        "retry_after": now + 3_600,
+    }
+    atomic_json(state / "revenue-cycle-failure.json", failure)
+    return {"state": failure["state"], "source_rows": None, "appended_transitions": None}
+
+
 def run_revenue_cycle(state, cdp_port):
     if not revenue_cycle_due(state):
         return {"state": "COOLDOWN", "source_rows": None, "appended_transitions": None}
@@ -599,16 +626,23 @@ def run_revenue_cycle(state, cdp_port):
     common = ["--state", str(state), "--cdp-port", str(cdp_port)]
     result = None
     for command in ("observe", "capture", "reconcile"):
-        completed = subprocess.run(
-            [sys.executable, str(script), command, *common],
-            check=False, capture_output=True, text=True, timeout=90,
-        )
+        try:
+            completed = subprocess.run(
+                [sys.executable, str(script), command, *common],
+                check=False, capture_output=True, text=True, timeout=90,
+            )
+        except subprocess.TimeoutExpired as error:
+            return revenue_failure(state, command, "TIMEOUT", None, str(error))
         if completed.returncode:
-            return {"state": "REVENUE_CYCLE_FAILED", "source_rows": None, "appended_transitions": None}
+            return revenue_failure(
+                state, command, "NONZERO_EXIT", completed.returncode, completed.stderr,
+            )
         try:
             result = json.loads(completed.stdout)
         except ValueError:
-            return {"state": "REVENUE_CYCLE_FAILED", "source_rows": None, "appended_transitions": None}
+            return revenue_failure(
+                state, command, "INVALID_JSON", completed.returncode, completed.stdout,
+            )
     cycle = {
         "state": result["money_state"],
         "source_rows": result["source_rows"],
