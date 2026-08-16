@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. Active item: S5 installed proof for the Storefront-owned append-only funnel joiner, unknown-preserving immutable receipt consumer and emoji report. S4 mutation guards are complete. Finish order is fixed: S5 attribution/reporting → S6 repeated installed E2E → S7 four-lane legacy cleanup → S8 cleanup-aftercare E2E. No earlier milestone may be called complete while a later finish gate remains open. This document owns Storefront implementation and records the final cross-owner cleanup contract without modifying another owner's code or live state.
+Status: INCOMPLETE. Active item: S5d, build the evidence-gated portfolio allocator that decides KEEP, IMPROVE, RETIRE or REPLACE per listing, then publish the exact Storefront context handoff required by Negotiate. S4 mutation guards and S5 funnel/reporting are complete. Finish order is fixed: portfolio allocation + context handoff → S6 repeated installed E2E → S7 four-lane legacy cleanup → S8 cleanup-aftercare E2E. No earlier milestone may be called complete while a later finish gate remains open. This document owns Storefront implementation and records the final cross-owner cleanup contract without modifying another owner's code or live state.
 
 ## 1. Overview
 
@@ -87,6 +87,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - Commit `448904405` is on GitHub `main` and installed as readonly Storefront release `4489044058a5ae5798bbb506f67f672409864498`; only the Storefront label was reloaded. Pass `storefront-direct-1786855932818098000-44055` completed with official/competitor `12/8`, six common-contract renders for image/title/body/package/FAQ/price, exact family/precondition/readback, one allowed delta, rollback equality and `published=false`. It retained KPI `441/0/3`, public SEO readback `1`, effect/readback/duplicate `0/0/0`, Telegram `deduped/20596`, exit `0` and a released Storefront lease. Every non-Storefront plist hash stayed unchanged. This closes S4g.
 - The S5 joiner reads Negotiate transcripts, project linkage, Apply applications and immutable earnings receipts without modifying any source owner. Its isolated live-data reconciliation emits 110 stable events: one exact Storefront inquiry for conversation `10083449` and service `4313386`, zero presently provable Apply inquiries, 101 unknown-origin inquiries and eight unknown-origin net receipts totalling JPY126,438. Replay appends zero. Missing cross-owner links remain visible unknowns; money is not assigned to Storefront or Apply by title guessing. Each payment schema keeps gross/fee/refund/revision/rating/review/repeat unknown when its source receipt does not prove them. The installed wake and Telegram send/dedupe proof remain open.
 - First installed S5 pass `storefront-direct-1786856329756823000-52997` failed before funnel append because the authenticated seller edit page returned a partially hydrated form; it emitted bounded Telegram error `20690` and released its lease. A direct official reread then matched all five existing mutation preconditions exactly, proving no listing drift. The seller snapshot reader now requires the universal title/body/price controls and retries the official DOM up to three times; it does not relax any mutation contract. Recovery and replay remain the active proof.
+- Recovery pass `storefront-direct-1786856545678548000-64105` appended 110 stable funnel events, exact-attributed conversation `10083449` to Storefront service `4313386`, retained 101 inquiries and eight net receipts / JPY126,438 as unknown origin, sent emoji report `20696`, exited `0` and released its lease. Installed replay `storefront-direct-1786856694910219000-68172` appended zero, retained cutoff cursor `38c0856b...`, deduped Telegram to `20696`, exited `0` and released its lease. S5 attribution/reporting is complete.
 - Storefront commit `85eaa6d86` is on GitHub `main` and in readonly immutable release `/Users/anicca/gig/releases/life-manager/85eaa6d...`. Only `ai.anicca.hf-gig-storefront-direct` was reloaded. Its natural installed wake `storefront-direct-1786843673261706000-46042` exited `0` with official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, draft `0/1/1/0`, active publication fence, Telegram `deduped/20527`, and released lease. Before/after SHA comparison found zero changes to every non-Storefront gig plist.
 - Official analytics now retries each service independently and records an exhausted readback as `unknown`, never zero and never a reason to skip the rest of the Storefront wake. Reports separate unknown current values from unknown comparisons.
 
@@ -104,6 +105,8 @@ The Storefront loop is complete only when all are true:
 8. Storefront code/spec/config are on Life Manager `main`; the installed Storefront release is built from a main ancestor; all four earning owners must graduate from the obsolete gig-pass shell before its tracked driver, backup plists and mixed audit worktree are removed. Hermes gateway remains a separate continuing service and is not part of gig-pass retirement.
 9. Storefront does not alter or restart Negotiate, Paid, or Apply owners during implementation or verification.
 10. An open experiment blocks another mutation only when it can contaminate the same listing-level metric: the same `service_id` is blocked; a distinct new service with independent per-service attribution is not catalog-globally blocked.
+11. Portfolio allocation evaluates every public listing as an asset and emits exactly one of `KEEP`, `IMPROVE`, `RETIRE`, or `REPLACE`. A niche label or short period with zero sales is never sufficient evidence to retire it. Replacement requires adequate exposure evidence or an explicitly unknown verdict, a stronger evidence-backed candidate, delivery capability, a slot/capacity reason, rollback, and official readback. Retirement is recoverable unpublication/archive before deletion so reviews, versions and evidence are preserved.
+12. Storefront publishes an immutable inquiry-context envelope containing `platform`, `service_id`, `listing_version`, `origin=storefront`, `conversation_id`, offer/scope, required inputs, pricing/add-ons, exclusions and the inquiry playbook. Negotiate must acknowledge consuming that exact envelope before the end-to-end Storefront funnel is complete; application context alone is insufficient.
 
 ## 6. KPI contract
 
@@ -206,14 +209,25 @@ Verification: each adapter produces a one-field deterministic diff from the curr
 - [x] Read official views, purchases and favorites for every owned service; retain unavailable impressions and revenue as unavailable rather than zero.
 - [x] Persist service-ID snapshots, catalog totals and same-window deltas; keep missing baselines as unknown.
 - [x] Emit the catalog totals/deltas in the natural-language hourly Telegram report and prove changed-state send plus identical-state dedupe.
-- [ ] Add the Storefront-owned append-only funnel joiner keyed by `platform`, `service_id`, `listing_version`, `origin`, `conversation_id`, `order_id` and source event ID.
-- [ ] Consume immutable Negotiate/Paid receipts when present without modifying those owners; missing cross-owner IDs remain `unknown` and never become zero or guessed Storefront revenue.
-- [ ] Keep `origin=storefront` and `origin=apply` mutually exclusive and report both funnels side by side from the same cutoff cursor.
-- [ ] Add verified gross, fee, refund, net, revision, rating/review and repeat-purchase fields; count money only from real immutable payment receipts.
-- [ ] Emit one hourly natural-language Telegram report with `✅ good`, `⚠️ bad`, `❌ errors`, `❓ unknowns`, and `➡️ next action`; changed state sends once and identical state dedupes.
+- [x] Add the Storefront-owned append-only funnel joiner keyed by `platform`, `service_id`, `listing_version`, `origin`, `conversation_id`, `order_id` and source event ID.
+- [x] Consume immutable Negotiate/Paid receipts when present without modifying those owners; missing cross-owner IDs remain `unknown` and never become zero or guessed Storefront revenue.
+- [x] Keep `origin=storefront` and `origin=apply` mutually exclusive and report both funnels side by side from the same cutoff cursor.
+- [x] Add verified gross, fee, refund, net, revision, rating/review and repeat-purchase fields; count money only from real immutable payment receipts and preserve unproved fields as unknown.
+- [x] Emit one hourly natural-language Telegram report with `✅ good`, `⚠️ bad`, `❌ errors`, `❓ unknowns`, and `➡️ next action`; changed state sends once and identical state dedupes.
 - External owner contract (not a Storefront TODO): Negotiate attaches `conversation_id` plus exact `service_id/listing_version/origin`; Paid attaches `order_id` and immutable payment receipt.
 
 Verification: reconcile ledger totals against official browser screens and real receipts; inject one replay and prove no double count/no duplicate Telegram send; inject missing view data and prove `unknown`, not zero.
+
+### S5d — Allocate the listing portfolio and hand context to Negotiate
+
+- [ ] Score every official listing from per-service exposure, inquiries, accepted orders, verified net receipts, reviews/repeat, evidence age, delivery capability and slot cost; missing evidence remains `unknown`.
+- [ ] Emit one deterministic action per listing: `KEEP`, `IMPROVE`, `RETIRE`, or `REPLACE`, with reason, evidence cursor, minimum-sample gate and rollback. Never use short-term sales `0` alone as a retirement reason.
+- [ ] For a weak niche such as Italian UI translation, improve its first weak funnel edge when evidence is sufficient; retire it recoverably and replace it only when a stronger demand+capability candidate wins the same constrained slot.
+- [ ] Execute at most one eligible portfolio action per service/version, require exact precondition and official public readback, and replay with effect `0`.
+- [ ] Materialize the immutable Storefront inquiry-context envelope keyed by exact `service_id/listing_version/conversation_id/origin` and include scope, inputs, price/add-ons, exclusions and inquiry playbook.
+- External Negotiate-owner gate: consume and ACK that exact envelope before composing a Storefront inquiry. Until its owner implements this consumer, report `negotiate_context=missing`; do not silently fall back to Apply context or patch Negotiate from Storefront.
+
+Verification: controlled current-data allocation produces one reasoned action per listing without publishing; one eligible action has official effect/readback/replay proof; conversation `10083449` resolves service `4313386` and its versioned VBA playbook, while a missing/mismatched version fails closed.
 
 ### S6 — Prove the installed loop repeats safely before cleanup
 
@@ -295,13 +309,11 @@ The exact final tree may reuse existing directories to minimize churn, but Store
 
 Remaining execution order is authoritative and may not be reordered:
 
-1. S4g: apply stale-version, unsupported-family, multi-field, rollback and official-readback guards to every adapter; run the installed fenced owner.
-2. S5a: add the append-only Storefront funnel joiner and immutable cross-owner receipt consumer without editing Negotiate or Paid.
-3. S5b: keep Storefront and Apply origins exclusive; add verified money, quality and repeat fields with unknown-preserving reconciliation.
-4. S5c: complete the emoji-led hourly Telegram report and prove changed-state send plus identical-state dedupe.
-5. S6a: run three consecutive installed wakes, measure duration and prove effect/readback/dedupe/lease behavior plus one contained failure recovery.
-6. S6b: prove minute/hour/day cutoffs by immediate controlled replays; minute capability requires a sub-60-second incremental path or truthful locked no-op.
-7. S7a: inventory all four direct owners and fix missing provenance/references through their owners on GitHub `main`.
-8. S7b: remove registry/docs references, then tracked gig-pass files and obsolete backup plists after reachability is zero.
-9. S7c: after Paid evidence handoff, remove the mixed worktree/branch and publish the canonical four-lane inventory.
-10. S8: build the post-cleanup release, run Storefront twice, verify other owners read-only, prove no resurrection path and only then mark the spec complete.
+1. S5d: build the per-listing `KEEP/IMPROVE/RETIRE/REPLACE` allocator with minimum-sample, unknown, slot, rollback and official-readback gates.
+2. S5e: publish the exact Storefront inquiry-context envelope and verify conversation `10083449` resolves service `4313386`; Negotiate owner must consume/ACK it before end-to-end completion.
+3. S6a: run three consecutive installed wakes, measure duration and prove effect/readback/dedupe/lease behavior plus one contained failure recovery.
+4. S6b: prove minute/hour/day cutoffs by immediate controlled replays; minute capability requires a sub-60-second incremental path or truthful locked no-op.
+5. S7a: inventory all four direct owners and fix missing provenance/references through their owners on GitHub `main`.
+6. S7b: remove registry/docs references, then tracked gig-pass files and obsolete backup plists after reachability is zero.
+7. S7c: after Paid evidence handoff, remove the mixed worktree/branch and publish the canonical four-lane inventory.
+8. S8: build the post-cleanup release, run Storefront twice, verify other owners read-only, prove no resurrection path and only then mark the spec complete.
