@@ -69,13 +69,7 @@ test("verified registration becomes one durable Calendar PNG Telegram applied bu
     ends_at: "2026-08-10T11:00:00.000Z",
     venue_name: "Tokyo",
   });
-  const page = {
-    async setContent(content) { calls.push(["set-content", content]); },
-    async screenshot(input) {
-      calls.push(["screenshot", input]);
-      return png;
-    },
-  };
+  const page = lumaRenderPage(calls, png);
 
   const bundle = await chain.completeEvidence({
     provider: "luma",
@@ -87,8 +81,9 @@ test("verified registration becomes one durable Calendar PNG Telegram applied bu
 
   assert.equal(bundle.status, "applied_bundle");
   assert.match(bundle.bundle_id, /^applied-bundle:[0-9a-f]{64}$/);
-  assert.equal(calls.filter(([name]) => name === "set-content").length, 1);
-  assert.equal(calls.some(([name]) => ["goto", "url", "evaluate", "document-open", "document-write", "document-close"].includes(name)), false);
+  assert.equal(calls.filter(([name]) => name === "set-content").length, 0);
+  assert.deepEqual(calls.find(([name]) => name === "goto"), ["goto", "about:blank", { waitUntil: "domcontentloaded", timeout: 30_000 }]);
+  assert.ok(calls.find(([name]) => name === "document-write"));
   assert.equal(calls.filter(([name]) => name === "screenshot").length, 1);
   assert.deepEqual(calls.find(([name]) => name === "screenshot")[1], { type: "png", fullPage: true });
   assert.equal(calls.filter(([name]) => name === "calendar-create").length, 1);
@@ -188,10 +183,7 @@ test("hasAppliedBundle reports false before completion and true after, without t
     ends_at: "2026-08-10T11:00:00.000Z",
     venue_name: "Tokyo",
   });
-  const page = {
-    async setContent() {},
-    async screenshot() { return png; },
-  };
+  const page = lumaRenderPage(calls, png);
 
   assert.equal(
     await chain.hasAppliedBundle({ provider: "luma", event_ref: candidate.event_ref, provider_status: "registered" }),
@@ -234,6 +226,98 @@ test("hasAppliedBundle rejects an unknown provider or an out-of-contract provide
   await assert.rejects(chain.hasAppliedBundle({ provider: "not-a-real-provider", event_ref: "x", provider_status: "registered" }));
   await assert.rejects(chain.hasAppliedBundle({ provider: "luma", event_ref: "luma-event://event/x", provider_status: "not-a-real-status" }));
   await assert.rejects(chain.hasAppliedBundle({ provider: "luma", event_ref: "not-a-real-ref", provider_status: "registered" }));
+  fs.rmSync(stateDir, { recursive: true, force: true });
+});
+
+// Same about:blank + document.write technique the Peatix page uses (page.setContent() hangs on the
+// live CloakBrowser daily-driver over CDP, verified 2026-08-16). Shared by every Luma test below so
+// each one proves the real production path renders through goto/url/evaluate, never setContent.
+function lumaRenderPage(calls, png, options = {}) {
+  let url = "about:blank";
+  return {
+    async goto(target, input) { calls.push(["goto", target, input]); if (options.gotoThrows) throw new Error("reset failed"); url = options.gotoReadback || target; },
+    url() { calls.push(["url"]); return url; },
+    async evaluate(fn, payload) {
+      calls.push(["evaluate", payload]);
+      if (options.evaluateThrows) throw new Error("receipt write failed");
+      const previousDocument = global.document;
+      global.document = {
+        open() { calls.push(["document-open"]); },
+        write(value) { calls.push(["document-write", value]); },
+        close() { calls.push(["document-close"]); },
+        querySelector() { return options.receiptValid === false ? null : {}; },
+        querySelectorAll() { return options.receiptValid === false ? [] : [{}, {}, {}]; },
+      };
+      try {
+        const result = await fn(payload);
+        return options.evaluateResult === undefined ? result : options.evaluateResult;
+      } finally { global.document = previousDocument; }
+    },
+    async screenshot(input) { calls.push(["screenshot", input]); return png; },
+  };
+}
+
+test("Luma evidence renders the receipt via about:blank + document.write, never setContent, and refuses when it does not render", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-luma-render-"));
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 11)]);
+  const pngSha = createHash("sha256").update(png).digest("hex");
+  const calendarReceipt = { id: "google-luma-render", htmlLink: "https://www.google.com/calendar/event?eid=luma-render" };
+  const candidate = Object.freeze({
+    provider: "luma", event_ref: "luma-event://event/render-check", canonical_url: "https://luma.com/render-check",
+    title: "Render Check Event", starts_at: "2026-08-10T10:00:00.000Z", ends_at: "2026-08-10T11:00:00.000Z", venue_name: "Tokyo",
+  });
+
+  // Happy path: goto(about:blank) -> url() readback -> evaluate(document.open/write/close) -> screenshot.
+  {
+    const calls = [];
+    let reads = 0;
+    const chain = createMinimalEvidenceChain({
+      stateDir, tenantId: "dais-local", calendarId: "primary", telegramTarget: "private-target",
+      calendar: {
+        async findConnectorEvents() { return reads++ === 0 ? [] : [calendarReceipt]; },
+        async createConnectorEvent() { return calendarReceipt; },
+      },
+      evidenceStore: { async record(input) {
+        const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${pngSha}`).digest("hex");
+        return { external_receipt_ref: `provider-receipt://luma/${receiptId}`, artifact_ref: `object://sha256/${pngSha}` };
+      } },
+      now: () => new Date("2026-08-07T08:30:00.000Z"),
+      sendMessage: async () => ({ messageId: 9301 }),
+      sendPhoto: async () => ({ messageId: 9302 }),
+    });
+    const page = lumaRenderPage(calls, png);
+    const bundle = await chain.completeEvidence({ provider: "luma", candidate, page, providerState: { status: "registered" } });
+    assert.equal(bundle.status, "applied_bundle");
+    assert.equal(calls.filter(([name]) => name === "set-content").length, 0);
+    assert.deepEqual(calls.find(([name]) => name === "goto"), ["goto", "about:blank", { waitUntil: "domcontentloaded", timeout: 30_000 }]);
+    const write = calls.find(([name]) => name === "document-write");
+    assert.ok(write);
+    assert.match(write[1], /<dt>provider<\/dt><dd>luma<\/dd>/i);
+    assert.match(write[1], /<dt>status<\/dt><dd>registered<\/dd>/i);
+    assert.deepEqual(calls.filter(([name]) => ["document-open", "document-close"].includes(name)).map(([name]) => name), ["document-open", "document-close"]);
+    assert.ok(calls.findIndex(([name]) => name === "document-close") < calls.findIndex(([name]) => name === "screenshot"));
+  }
+
+  // Refuses when the receipt does not render (structural dt/dd check fails) — no downstream effects.
+  {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+    fs.mkdirSync(stateDir, { recursive: true });
+    const calls = [];
+    const chain = createMinimalEvidenceChain({
+      stateDir, tenantId: "dais-local", calendarId: "primary", telegramTarget: "private-target",
+      calendar: { async findConnectorEvents() { calls.push(["calendar-read"]); return []; }, async createConnectorEvent() { calls.push(["calendar-create"]); return calendarReceipt; } },
+      evidenceStore: { async record(input) { calls.push(["evidence-record", input]); return { external_receipt_ref: "provider-receipt://luma/deadbeef", artifact_ref: "object://sha256/deadbeef" }; } },
+      now: () => new Date("2026-08-07T08:30:00.000Z"),
+      sendMessage: async () => { calls.push(["telegram-message"]); return { messageId: 1 }; },
+      sendPhoto: async () => { calls.push(["telegram-photo"]); return { messageId: 2 }; },
+    });
+    const page = lumaRenderPage(calls, png, { receiptValid: false });
+    await assert.rejects(chain.completeEvidence({ provider: "luma", candidate, page, providerState: { status: "registered" } }));
+    for (const name of ["evidence-record", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) {
+      assert.equal(calls.filter(([callName]) => callName === name).length, 0, name);
+    }
+  }
+
   fs.rmSync(stateDir, { recursive: true, force: true });
 });
 

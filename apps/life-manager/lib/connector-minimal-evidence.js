@@ -469,21 +469,22 @@ async function validateExistingCheckpoints(stateDir, provider, candidate, identi
 
 async function captureProviderEvidence({ provider, providerName, page, candidate, providerStatus, tenantId, now, canonicalUrlSha256 }) {
   const observedAt = exactInstant(now());
-  if (providerName === "peatix"
-    ? typeof page.goto !== "function" || typeof page.url !== "function" || typeof page.evaluate !== "function"
-    : providerName === "connpass" || providerName === "meetup" || providerName === "doorkeeper" || providerName === "eventbrite" || providerName === "techplay" ? typeof page.screenshot !== "function"
-    : typeof page.setContent !== "function") invalid();
+  // Luma and Peatix are the only two providers left once connpass/meetup/doorkeeper/eventbrite/techplay
+  // are excluded, and they now render the receipt with the identical about:blank + document.write
+  // technique (see below) because page.setContent() hangs on the live CloakBrowser daily-driver over
+  // CDP (verified 2026-08-16). One shared branch, one shared capability requirement.
+  if (providerName === "connpass" || providerName === "meetup" || providerName === "doorkeeper" || providerName === "eventbrite" || providerName === "techplay"
+    ? typeof page.screenshot !== "function"
+    : typeof page.goto !== "function" || typeof page.url !== "function" || typeof page.evaluate !== "function") invalid();
   if (typeof page.screenshot !== "function") invalid();
   const receipt = providerName === "meetup" ? null : receiptHtml(providerName, providerStatus, candidate.event_ref);
-  if (providerName === "peatix") {
+  if (providerName !== "connpass" && providerName !== "meetup" && providerName !== "doorkeeper" && providerName !== "eventbrite" && providerName !== "techplay") {
     try {
       await page.goto("about:blank", { waitUntil: "domcontentloaded", timeout: 30_000 });
       if (String(page.url()) !== "about:blank") invalid();
       const rendered = await page.evaluate((html) => { document.open(); document.write(html); document.close(); const root = document.querySelector("body > dl"); return root !== null && document.querySelectorAll("body > dl > dt").length === 3 && document.querySelectorAll("body > dl > dd").length === 3; }, receipt);
       if (rendered !== true) invalid();
     } catch { invalid(); }
-  } else if (providerName !== "connpass" && providerName !== "meetup" && providerName !== "doorkeeper" && providerName !== "eventbrite" && providerName !== "techplay") {
-    try { await page.setContent(receipt); } catch { invalid(); }
   }
   const screenshot = await page.screenshot({ type: "png", fullPage: true });
   if (!Buffer.isBuffer(screenshot) || screenshot.length < 5_000 || !screenshot.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) invalid();
