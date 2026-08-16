@@ -7,6 +7,7 @@ import platform
 import plistlib
 import re
 import stat
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -17,6 +18,7 @@ SECRET = re.compile(
 )
 CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 VERSION = re.compile(r"^[0-9][A-Za-z0-9.+-]{0,63}$")
+CODEX_VERSION = re.compile(r"^codex-cli ([0-9][A-Za-z0-9.+-]{0,63})$")
 class InventoryError(Exception):
     pass
 def reject_secret(value):
@@ -134,6 +136,33 @@ def inspect_app(entry):
         for fd in (binary_fd, info_fd, macos_fd, contents_fd, root_fd):
             if fd >= 0:
                 os.close(fd)
+def inspect_codex_cli(entry):
+    executable = real(entry["path"])
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    fd = open_at(executable, os.O_RDONLY | nofollow)
+    try:
+        digest, size, before = fd_hash(fd, True)
+        completed = subprocess.run(
+            [str(executable), "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+            env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "LC_ALL": "C"},
+        )
+        match = CODEX_VERSION.fullmatch(completed.stdout.strip())
+        after = os.fstat(fd)
+        current = os.lstat(executable)
+        if (completed.returncode != 0 or completed.stderr or not match or
+                signature(before) != signature(after) or
+                stat.S_ISLNK(current.st_mode) or signature(before) != signature(current)):
+            raise InventoryError
+        return record(entry["name"], "codex_cli", executable,
+                      version_text(match.group(1)), digest, size)
+    except (OSError, subprocess.SubprocessError):
+        raise InventoryError
+    finally:
+        os.close(fd)
 def record(name, kind, canonical, version, digest, size):
     return {"name": name, "kind": kind, "canonical_path": str(canonical),
             "version": version, "size_bytes": size, "sha256": digest}
@@ -141,9 +170,13 @@ def inspect(entry):
     if not isinstance(entry, dict):
         raise InventoryError
     name, kind = text(entry.get("name")), entry.get("kind")
-    if not NAME.fullmatch(name) or kind != "macos_app":
+    if not NAME.fullmatch(name):
         raise InventoryError
-    return inspect_app(entry)
+    if kind == "macos_app":
+        return inspect_app(entry)
+    if kind == "codex_cli" and name == "codex-cli":
+        return inspect_codex_cli(entry)
+    raise InventoryError
 def parse_request(path):
     try:
         raw = path.read_bytes()
@@ -164,8 +197,9 @@ def parse_request(path):
         if not NAME.fullmatch(name) or name in names:
             raise InventoryError
         kind = entry.get("kind")
-        allowed = {"name", "kind", "path", "executable"}
-        if kind != "macos_app" or set(entry) != allowed:
+        allowed = ({"name", "kind", "path", "executable"}
+                   if kind == "macos_app" else {"name", "kind", "path"})
+        if kind not in ("macos_app", "codex_cli") or set(entry) != allowed:
             raise InventoryError
         names.add(name)
     return raw, entries

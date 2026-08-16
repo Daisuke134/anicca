@@ -34,6 +34,13 @@ strategy and a fallback-free, one-use Sol-high repair escalation. Both routes
 are live-proven read-only, but remain disconnected from `loop wake` until the
 remaining binary, privacy, schema, context, and budget gates close.
 
+Production callers use `scripts/agent_runner.py`, never the vendored runner
+directly. The gate requires `AFFILIATE_CODEX_CAPABILITY_RECEIPT`, rechecks the
+canonical Codex path, `--version`, and SHA-256, writes the verified pin beside
+the model-call receipts, and refuses to start a provider after any mismatch.
+`machine_capability_inventory.py` creates the private receipt from an explicitly
+requested `codex_cli`; it does not admit arbitrary executables or commands.
+
 F0 provides four deterministic, non-publishing primitives:
 
 - `bootstrap/install.sh` verifies a reviewed pinned manifest and writes an

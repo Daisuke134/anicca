@@ -14,6 +14,7 @@ from typing import Any, Dict
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = REPO_ROOT / "skills" / "affiliate" / "scripts" / "machine_capability_inventory.py"
+RUNNER_GATE = REPO_ROOT / "skills" / "affiliate" / "scripts" / "agent_runner.py"
 
 
 class MachineCapabilityInventoryTests(unittest.TestCase):
@@ -44,7 +45,7 @@ class MachineCapabilityInventoryTests(unittest.TestCase):
         return hashlib.sha256(path.read_bytes()).hexdigest()
 
     def load_module(self, script: Path) -> Any:
-        spec = importlib.util.spec_from_file_location("machine_capability_inventory", script)
+        spec = importlib.util.spec_from_file_location(script.stem, script)
         self.assertIsNotNone(spec)
         self.assertIsNotNone(spec.loader)
         module = importlib.util.module_from_spec(spec)
@@ -132,6 +133,44 @@ class MachineCapabilityInventoryTests(unittest.TestCase):
                 with self.assertRaises(module.InventoryError):
                     module.main()
             self.assertFalse(unsupported_receipt.exists())
+
+    def test_codex_cli_receipt_pins_path_version_and_hash_before_runner(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            executable = root / "codex"
+            executable.write_text(
+                "#!/bin/sh\nprintf 'codex-cli 9.8.7\\n'\n",
+                encoding="utf-8",
+            )
+            executable.chmod(0o755)
+            request = root / "request.json"
+            receipt = root / "machine-capability.json"
+            self.write_json(request, {"capabilities": [{
+                "name": "codex-cli",
+                "kind": "codex_cli",
+                "path": str(executable),
+            }]})
+
+            result = self.run_inventory(self.require_script(), request, receipt)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(receipt.read_text(encoding="utf-8"))["capabilities"][0]
+            self.assertEqual(record["canonical_path"], str(executable.resolve()))
+            self.assertEqual(record["version"], "9.8.7")
+            self.assertEqual(record["sha256"], self.sha256(executable))
+
+            gate = self.load_module(RUNNER_GATE)
+            self.assertEqual(gate.verify_codex_pin(receipt), executable.resolve())
+            evidence = root / "evidence"
+            model_receipt = gate.write_model_call_pin(receipt, evidence)
+            model_record = json.loads(model_receipt.read_text(encoding="utf-8"))
+            self.assertEqual(model_record["canonical_path"], str(executable.resolve()))
+            self.assertEqual(model_record["version"], "9.8.7")
+            self.assertEqual(model_record["sha256"], self.sha256(executable))
+            self.assertEqual(model_receipt.stat().st_mode & 0o777, 0o600)
+            executable.write_text("#!/bin/sh\nprintf 'codex-cli 9.8.8\\n'\n", encoding="utf-8")
+            executable.chmod(0o755)
+            with self.assertRaises(gate.PinError):
+                gate.verify_codex_pin(receipt)
 
     def test_rejects_missing_duplicate_and_secret_inputs_without_receipt(self) -> None:
         script = self.require_script()

@@ -1394,7 +1394,7 @@ a due judgment or bounded diagnosis after budget and privacy gates pass.
 | U02 | CLEARED | d150 and canonical `main` diverge; `agent_runner.py` and `config.json` differ, while three support files match | Base Affiliate on d150 and review later main changes explicitly; no blind latest-main copy |
 | U03 | CLEARED | Current Codex auth plus Terra-medium structured output works read-only | Preserve a sanitized installed canary receipt; it is capability proof, not economic proof |
 | U04 | CLEARED | Affiliate config binds `marketing-agent` to the single-candidate `affiliate-terra-high-strategy` route and `escalation-agent` to the fallback-free `affiliate-sol-one-use-repair` route. One read-only canary per route returned schema-valid output and recorded the selected model, high effort, route, duration, and provider-reported usage | Keep both routes explicit-escalation-only; the business loop cannot call either until U05–U10 close |
-| U05 | OPEN-BEFORE-CODE | Interactive PATH resolves Codex `0.147.0`; launchd PATH resolves `0.145.0` | Pin absolute executable, version, and hash in machine capability and model-call receipts |
+| U05 | CLEARED | `machine_capability_inventory.py` now admits only the named `codex_cli` capability, records its canonical path/version/SHA, and `scripts/agent_runner.py` re-observes the same binary before every provider launch. The real Mac receipt pins Codex `0.147.0` SHA `19c4f144…d37`; a Terra-high read-only call stored the same pin beside its attempt receipt, while a corrupted SHA produced exit `1` with no provider attempt | All Affiliate model calls use the gate and a current private machine receipt; direct vendor-runner execution remains diagnostic-only |
 | U06 | OPEN-BEFORE-CODE | d150 inherits most parent environment and restores the real HOME inside Codex | Replace with an allowlisted environment and isolated Affiliate `CODEX_HOME`; prove forbidden secrets are absent |
 | U07 | OPEN-BEFORE-CODE | Runner result/stdout/stderr/attempt ledgers can be `0644` | Force directories `0700`, files `0600`, atomic writes, and install/readback checks |
 | U08 | OPEN-BEFORE-CODE | Runner validation ignores `enum`, `additionalProperties`, limits, and several JSON Schema constraints | Add complete domain validation proving exactly one allowlisted action and rejecting unknown fields/tools |
@@ -1404,6 +1404,11 @@ a due judgment or bounded diagnosis after budget and privacy gates pass.
 | U12 | OPEN-BEFORE-CODE | Budget day uses `Asia/Tokyo`, even for English campaigns | Set explicit owner billing timezone and keep locale publication time separate |
 | U13 | OPEN-BEFORE-CODE | Current Mac meets requirements, but clean-Mac cert, CLI, timezone DB, and auth references are unproven | Extend machine capability receipt and later reproduce on a clean arm64 macOS user |
 | U14 | OPEN-BEFORE-CODE | Authority for self-modifying code repair is undefined | Routine Agent executes tools only; code repair uses one isolated Sol escalation, clean worktree, bounded diff, verification, install receipt, and rollback |
+
+U05 follows the Python subprocess contract for fixed argument vectors, bounded
+timeouts, and explicit return-code handling ([Python `subprocess.run`](https://docs.python.org/3/library/subprocess.html#subprocess.run)). The exact operational
+pattern is also independently present in OSS: [`ctx` hashes the selected binary,
+rejects a mismatch, and only then calls `--version`](https://github.com/ctxrs/ctx/blob/79db15ba445622375a07a67204c00175747de11d/scripts/check-loc.py).
 
 #### Tool and money-contract uncertainties
 
