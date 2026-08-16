@@ -21,10 +21,37 @@ class CaptureError(Exception):
     pass
 
 
-def load_plan(root, plan_id):
+DISCOVERY_INDEX = "https://elevenlabs.io/sitemap.xml"
+DISCOVERY_SITEMAP = "https://elevenlabs.io/sitemap/pagesv2__en.xml"
+PRODUCT_MARKERS = (
+    "audio", "caption", "dubbing", "music", "podcast", "speech", "studio",
+    "subtitle", "text", "transcript", "translate", "video", "voice",
+)
+EXCLUDED_MARKERS = (
+    "affiliate", "application", "archived", "career", "contact", "jobs",
+    "legal", "policy", "privacy", "program", "safety", "terms",
+)
+
+
+def plan_paths(root, state_root=None):
+    paths = list((root / "config" / "source-plans").glob("*.json"))
+    if state_root is not None:
+        paths.extend((state_root / "discovered-source-plans").glob("*.json"))
+    by_id = {}
+    for path in sorted(paths):
+        if path.stem in by_id:
+            raise CaptureError("duplicate source plan id")
+        by_id[path.stem] = path
+    return list(by_id.values())
+
+
+def load_plan(root, plan_id, state_root=None):
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]+", plan_id):
         raise CaptureError("invalid source plan id")
-    path = root / "config" / "source-plans" / f"{plan_id}.json"
+    matches = [path for path in plan_paths(root, state_root) if path.stem == plan_id]
+    if len(matches) != 1:
+        raise CaptureError("source plan is unavailable")
+    path = matches[0]
     try:
         plan = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, ValueError) as error:
@@ -32,6 +59,122 @@ def load_plan(root, plan_id):
     if plan.get("schema_version") != 1 or plan.get("plan_id") != plan_id:
         raise CaptureError("unsupported source plan")
     return plan
+
+
+def product_family(url):
+    parsed = re.fullmatch(r"https://elevenlabs\.io/([a-z0-9-]+)/?", url)
+    if not parsed:
+        return None
+    family = parsed.group(1)
+    tokens = set(family.split("-"))
+    if any(marker in family for marker in EXCLUDED_MARKERS):
+        return None
+    if not any(marker in tokens for marker in PRODUCT_MARKERS):
+        return None
+    return family
+
+
+def fetch_sitemap_xml(url):
+    binary = shutil.which("scrapy")
+    if not binary:
+        raise CaptureError("scrapy is unavailable")
+    result = subprocess.run(
+        [binary, "fetch", "--nolog", url], capture_output=True, text=True,
+        timeout=90, check=False,
+    )
+    failure = classify_failure(result.returncode, result.stdout + result.stderr)
+    if failure:
+        raise CaptureError(failure)
+    return result.stdout
+
+
+def discover_official_plan(root, state_root, now):
+    receipt_path = state_root / "opportunity-discovery.json"
+    try:
+        previous = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    if previous.get("completed_day") == datetime.fromtimestamp(now, timezone.utc).date().isoformat():
+        return {**previous, "state": "COOLDOWN"}
+    index_raw = run_adapter({"adapter": "crwl", "url": DISCOVERY_INDEX})
+    if DISCOVERY_SITEMAP not in index_raw:
+        raise CaptureError("official English product sitemap is not indexed")
+    raw = fetch_sitemap_xml(DISCOVERY_SITEMAP)
+    index_sha256 = hashlib.sha256(index_raw.encode("utf-8")).hexdigest()
+    sitemap_sha256 = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    observed = []
+    seen = set()
+    for url in re.findall(r"https://elevenlabs\.io/[a-z0-9/-]+", raw):
+        url = url.rstrip("/")
+        family = product_family(url)
+        if family and url not in seen:
+            observed.append((family, url))
+            seen.add(url)
+    plans = [load_plan(root, path.stem, state_root) for path in plan_paths(root, state_root)]
+    covered_urls = {
+        source.get("url", "").rstrip("/")
+        for plan in plans for source in plan.get("sources", [])
+    }
+    covered_families = {
+        family for url in covered_urls if (family := product_family(url))
+    }
+    selected = next(
+        ((family, url) for family, url in observed
+         if family not in covered_families and url not in covered_urls),
+        None,
+    )
+    completed_day = datetime.fromtimestamp(now, timezone.utc).date().isoformat()
+    if selected is None:
+        receipt = {
+            "schema_version": 1, "receipt_type": "OPPORTUNITY_DISCOVERY",
+            "state": "NO_NEW_PRODUCT", "completed_at": now,
+            "completed_day": completed_day, "sitemap_index_url": DISCOVERY_INDEX,
+            "sitemap_index_sha256": index_sha256, "sitemap_url": DISCOVERY_SITEMAP,
+            "sitemap_sha256": sitemap_sha256, "observed_candidates": len(observed),
+        }
+        atomic_write(receipt_path, receipt)
+        return receipt
+    family, product_url = selected
+    display = family.replace("-", " ").title()
+    plan_id = f"elevenlabs-discovered-{family}-en"
+    plan = {
+        "schema_version": 1,
+        "plan_id": plan_id,
+        "locale": "en",
+        "offer_id": f"elevenlabs-{family}",
+        "buyer_intent": f"Creators evaluating ElevenLabs {display} before paying",
+        "slug": f"elevenlabs-{family}-for-creators",
+        "sources": [
+            {
+                "id": f"elevenlabs-{family}-product", "adapter": "crwl",
+                "url": product_url, "evidence_class": "official_product",
+                "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30,
+            },
+            {
+                "id": f"elevenlabs-{family}-pricing", "adapter": "crwl",
+                "url": "https://elevenlabs.io/pricing", "evidence_class": "official_price",
+                "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 7,
+            },
+        ],
+    }
+    plan_path = state_root / "discovered-source-plans" / f"{plan_id}.json"
+    if plan_path.is_file():
+        if json.loads(plan_path.read_text(encoding="utf-8")) != plan:
+            raise CaptureError("discovered plan conflict")
+    else:
+        atomic_write(plan_path, plan)
+    receipt = {
+        "schema_version": 1, "receipt_type": "OPPORTUNITY_DISCOVERY",
+        "state": "CREATED", "completed_at": now, "completed_day": completed_day,
+        "sitemap_index_url": DISCOVERY_INDEX, "sitemap_index_sha256": index_sha256,
+        "sitemap_url": DISCOVERY_SITEMAP, "sitemap_sha256": sitemap_sha256,
+        "observed_candidates": len(observed), "selected_family": family,
+        "selected_url": product_url, "plan_id": plan_id,
+        "plan_path": str(plan_path),
+        "plan_sha256": hashlib.sha256(plan_path.read_bytes()).hexdigest(),
+    }
+    atomic_write(receipt_path, receipt)
+    return receipt
 
 
 def classify_failure(returncode, output):
@@ -142,9 +285,9 @@ def capture(plan, state_root):
     return receipts
 
 
-def plan_set_sha256(root):
+def plan_set_sha256(root, state_root=None):
     digest = hashlib.sha256()
-    for path in sorted((root / "config" / "source-plans").glob("*.json")):
+    for path in plan_paths(root, state_root):
         digest.update(path.name.encode("utf-8") + b"\0" + path.read_bytes() + b"\0")
     return digest.hexdigest()
 
@@ -171,7 +314,16 @@ def refresh_all(root, state_root, now=None, cooldown_seconds=86400):
         previous = json.loads(receipt_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         previous = {}
-    plan_set = plan_set_sha256(root)
+    try:
+        discovery = discover_official_plan(root, state_root, now)
+    except (CaptureError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+        discovery = {
+            "schema_version": 1, "receipt_type": "OPPORTUNITY_DISCOVERY",
+            "state": "FAILED", "completed_at": now,
+            "failure_type": type(error).__name__,
+        }
+        atomic_write(state_root / "opportunity-discovery.json", discovery)
+    plan_set = plan_set_sha256(root, state_root)
     if (previous.get("state") == "COMPLETE"
             and previous.get("plan_set_sha256") == plan_set
             and now - int(previous["completed_at"]) < cooldown_seconds):
@@ -182,10 +334,10 @@ def refresh_all(root, state_root, now=None, cooldown_seconds=86400):
         except BlockingIOError:
             return {"state": "ALREADY_RUNNING", "completed_at": None, "plans": []}
         results = []
-        for path in sorted((root / "config" / "source-plans").glob("*.json")):
+        for path in plan_paths(root, state_root):
             plan_id = path.stem
             try:
-                plan = load_plan(root, plan_id)
+                plan = load_plan(root, plan_id, state_root)
                 receipts = capture(plan, state_root)
                 bundle = write_composition_bundle(state_root, plan, receipts)
                 results.append({
@@ -198,7 +350,8 @@ def refresh_all(root, state_root, now=None, cooldown_seconds=86400):
         receipt = {
             "schema_version": 1, "receipt_type": "SOURCE_REFRESH",
             "state": "COMPLETE" if results and all(row["state"] == "CAPTURED" for row in results) else "PARTIAL",
-            "completed_at": now, "plan_set_sha256": plan_set, "plans": results,
+            "completed_at": now, "plan_set_sha256": plan_set,
+            "discovery_state": discovery["state"], "plans": results,
         }
         atomic_write(receipt_path, receipt)
         return receipt
@@ -214,7 +367,7 @@ def main():
     if args.command == "wake":
         result = refresh_all(root, args.state.expanduser())
     else:
-        receipts = capture(load_plan(root, args.plan), args.state.expanduser())
+        receipts = capture(load_plan(root, args.plan, args.state.expanduser()), args.state.expanduser())
         result = {"plan_id": args.plan, "captured": len(receipts), "new": sum(row["new_capture"] for row in receipts)}
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0

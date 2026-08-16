@@ -52,6 +52,17 @@ def atomic_write(path: Path, value: dict) -> None:
     os.replace(stage, path)
 
 
+def load_campaign_plan(skill_root: Path, state_root: Path, plan_id: str) -> dict:
+    paths = [
+        skill_root / "config" / "source-plans" / f"{plan_id}.json",
+        state_root / "discovered-source-plans" / f"{plan_id}.json",
+    ]
+    matches = [path for path in paths if path.is_file()]
+    if len(matches) != 1:
+        raise CompositionError
+    return json.loads(matches[0].read_text(encoding="utf-8"))
+
+
 def source_text(state_root: Path, bundle: dict) -> str:
     sections = []
     for row in bundle["sources"]:
@@ -121,10 +132,7 @@ def _ready_from_seal(evidence_dir: Path, bundle: dict) -> dict:
 
 def build_handoff(skill_root: Path, state_root: Path, bundle: dict, receipt: dict) -> str:
     try:
-        plan = json.loads(
-            (skill_root / "config" / "source-plans" / f"{bundle['plan_id']}.json")
-            .read_text(encoding="utf-8")
-        )
+        plan = load_campaign_plan(skill_root, state_root, bundle["plan_id"])
         offer_id = plan["offer_id"]
         buyer_intent = plan["buyer_intent"]
         slug = plan["slug"]
@@ -267,9 +275,7 @@ def policy_inputs(
     try:
         handoff_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
         handoff = json.loads(path.read_text(encoding="utf-8"))
-        plan = json.loads((
-            skill_root / "config" / "source-plans" / f"{bundle['plan_id']}.json"
-        ).read_text(encoding="utf-8"))
+        plan = load_campaign_plan(skill_root, state_root, bundle["plan_id"])
         core = dict(handoff)
         fingerprint = core.pop("handoff_fingerprint")
         computed_source_set = hashlib.sha256(json.dumps(
