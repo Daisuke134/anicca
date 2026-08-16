@@ -197,10 +197,22 @@ def _report_message(row: dict) -> str:
     source_error_text = (
         ", ".join(source_errors) or "なし" if isinstance(source_errors, list) else "不明"
     )
+    selected_text = (
+        f"{portfolio_selected.get('service_id')} / "
+        f"{portfolio_selected.get('improvement_field')} / "
+        f"{portfolio_selected.get('action')}"
+        if portfolio_selected.get("service_id")
+        and portfolio_selected.get("improvement_field")
+        and portfolio_selected.get("action") else "不明"
+    )
     hypothesis_executable = hypothesis.get("executable")
     executable_text = (
-        str(hypothesis_executable).lower()
-        if type(hypothesis_executable) is bool else "不明"
+        f"{hypothesis.get('service_id')} / {hypothesis.get('field')}"
+        if hypothesis and hypothesis_executable is True
+        else f"なし（{hypothesis.get('guard_reason') or hypothesis.get('reason')}）"
+        if hypothesis and hypothesis_executable is False
+        else "不明" if failed
+        else "なし"
     )
     next_action = (
         "失敗stageを自動修復して同じ境界から再開" if failed
@@ -209,7 +221,9 @@ def _report_message(row: dict) -> str:
               "全出品adapterをversioned mutation contractへ共通化") if draft.get("status") == "already_public"
         else "公式readbackとoutcome ledgerを照合" if effect
         else f"{hypothesis.get('service_id')}/{hypothesis.get('field')}の実行harnessを継続"
-        if hypothesis else "scorecard先頭の実行可能gapを選択"
+        if hypothesis else
+        f"{portfolio_selected.get('service_id')}/{portfolio_selected.get('improvement_field')}の実行contractを準備"
+        if portfolio_selected else "scorecard先頭の改善gapを選択"
     )
     lines = [
         "Codex::: 🏪 ココナラ Storefront hourly",
@@ -250,8 +264,7 @@ def _report_message(row: dict) -> str:
          else "⚠️ bad: Storefront入金不明" if type(storefront_funnel.get("payments")) is not int
          else "⚠️ bad: なし"),
         f"❌ source file errors: {source_error_text}",
-        (f"🧪 次候補 {hypothesis.get('service_id') or '不明'} / "
-         f"{hypothesis.get('field') or '不明'} / 実行可能 {executable_text}"),
+        f"🧪 改善選定 {selected_text} | 実行contract {executable_text}",
         f"🛡️ fence {hypothesis.get('guard_reason') or row.get('reason') or 'なし'}",
         f"🔧 次の一手: {next_action}",
     ]
