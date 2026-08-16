@@ -41,11 +41,15 @@ DEFAULT_TELEGRAM_RECEIPTS = Path.home() / "gig" / "telegram-delivery-receipts"
 STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
+    "new-listing-drafts.jsonl",
 )
 TARGET_SERVICE_ID = "91000001"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
 DEFAULT_LISTING_CONTRACT_DIR = GIG_DIR / "contracts" / "storefront"
 DEFAULT_LISTING_CONTRACT_FAMILIES = GIG_DIR / "config" / "storefront-contract-families.json"
+DEFAULT_NEW_LISTING_CONTRACT = (
+    GIG_DIR / "contracts" / "storefront" / "new" / "seo-article-v1.json"
+)
 JUDGEMENT_FIELDS = {
     "decision", "service_id", "changed_field", "before_value", "proposed_value",
     "hypothesis", "competitor_evidence_paths", "capability_evidence_paths",
@@ -104,6 +108,7 @@ def _report_message(row: dict) -> str:
     catalog = row.get("catalog_analytics") if isinstance(row.get("catalog_analytics"), dict) else {}
     totals = catalog.get("totals") if isinstance(catalog.get("totals"), dict) else {}
     changes = catalog.get("changes") if isinstance(catalog.get("changes"), dict) else {}
+    draft = row.get("new_listing_draft") if isinstance(row.get("new_listing_draft"), dict) else {}
     next_action = (
         "失敗stageを自動修復して同じ境界から再開" if failed
         else "公式readbackとoutcome ledgerを照合" if effect
@@ -114,7 +119,10 @@ def _report_message(row: dict) -> str:
         "Codex::: 🏪 ココナラ Storefront hourly",
         f"✅ 公式出品 {int(row.get('official_services_read') or 0)}件 / 競合証拠 {int(row.get('competitor_evidence_count') or 0)}件",
         f"📊 actionable {int(row.get('actionable') or 0)} / effect {effect} / readback {int(row.get('readback') or 0)} / duplicate {int(row.get('duplicate') or 0)}",
-        f"📚 出品contract {int(row.get('listing_contracts_total') or 0)}件 / 今回追加 {contract_delta}件",
+        (f"📚 公開contract {int(row.get('listing_contracts_active') or 0)}件 / "
+         f"version履歴 {int(row.get('listing_contracts_total') or 0)}件 / 今回追加 {contract_delta}件"),
+        (f"📝 新規出品draft {draft.get('draft_service_id') or 'なし'} / "
+         f"更新 {int(draft.get('effect') or 0)} / 照合 {int(draft.get('readback') or 0)} / 公開 0"),
         (f"📈 直近30日: 閲覧 {int(totals.get('views') or 0)} / 販売 {int(totals.get('purchases') or 0)} / "
          f"お気に入り {int(totals.get('favorites') or 0)} | 前回比 閲覧 {int(changes.get('views') or 0):+d} / "
          f"販売 {int(changes.get('purchases') or 0):+d} / 未確定 {int(catalog.get('change_unknown_services') or 0)}件"),
@@ -392,30 +400,40 @@ def _collect_analytics(
     snapshots = []
     for service_id in service_ids:
         url = f"https://coconala.com/mypage/analytics/{service_id}"
-        opened = subprocess.run(
-            [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-             "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
-        )
-        tab = None
-        try:
-            tab = json.loads(opened.stdout)
-            if opened.returncode != 0 or tab.get("ok") is not True:
-                raise RuntimeError("official_analytics_tab_open_failed")
-            observed = asyncio.run(listing_inventory._eval_json(
-                str(tab["ws"]), url,
-                "JSON.stringify({url:location.href,title:document.title,body:document.body?document.body.innerText.slice(0,120000):''})",
-            ))
-        except (KeyError, json.JSONDecodeError) as error:
-            raise RuntimeError("official_analytics_tab_open_invalid") from error
-        finally:
-            if isinstance(tab, dict) and tab.get("target_id"):
-                subprocess.run(
-                    [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-                     "close", str(tab["target_id"])], capture_output=True, text=True, check=False, timeout=30,
-                )
-        body = str(observed.get("body") or "")
-        period = re.search(r"対象期間：([0-9]{4}/[0-9]{2}/[0-9]{2})\s*-\s*([0-9]{4}/[0-9]{2}/[0-9]{2})", body)
-        if observed.get("url") != url or period is None or "サービス別分析" not in body:
+        observed: dict = {}
+        period = None
+        for attempt in range(3):
+            opened = subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
+            )
+            tab = None
+            try:
+                tab = json.loads(opened.stdout)
+                if opened.returncode != 0 or tab.get("ok") is not True:
+                    raise RuntimeError("official_analytics_tab_open_failed")
+                observed = asyncio.run(listing_inventory._eval_json(
+                    str(tab["ws"]), url,
+                    "JSON.stringify({url:location.href,title:document.title,body:document.body?document.body.innerText.slice(0,120000):''})",
+                ))
+            except (KeyError, json.JSONDecodeError) as error:
+                raise RuntimeError("official_analytics_tab_open_invalid") from error
+            finally:
+                if isinstance(tab, dict) and tab.get("target_id"):
+                    subprocess.run(
+                        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                         "close", str(tab["target_id"])], capture_output=True, text=True,
+                        check=False, timeout=30,
+                    )
+            body = str(observed.get("body") or "")
+            period = re.search(
+                r"対象期間：([0-9]{4}/[0-9]{2}/[0-9]{2})\s*-\s*([0-9]{4}/[0-9]{2}/[0-9]{2})", body,
+            )
+            if observed.get("url") == url and period is not None and "サービス別分析" in body:
+                break
+            if attempt < 2:
+                time.sleep(1)
+        if period is None or observed.get("url") != url or "サービス別分析" not in body:
             raise RuntimeError(f"official_analytics_readback_invalid:{service_id}")
         raw_path = evidence_dir / f"official-analytics-{service_id}.json"
         _atomic_write(raw_path, observed)
@@ -1458,6 +1476,29 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             if not released:
                 raise RuntimeError("lease_release_unproven")
 
+            import storefront_draft
+
+            new_listing_contract = storefront_draft.load_contract(
+                getattr(args, "new_listing_contract", DEFAULT_NEW_LISTING_CONTRACT)
+            )
+            draft_result = (
+                storefront_draft.prepare_draft(
+                    new_listing_contract,
+                    getattr(args, "default_tab_script", DEFAULT_TAB),
+                    inventory_path.parent,
+                )
+                if args.effect else {
+                    "version": 1,
+                    "candidate_key": new_listing_contract["candidate_key"],
+                    "contract_sha256": new_listing_contract["contract_sha256"],
+                    "draft_service_id": new_listing_contract["draft_service_id"],
+                    "status": "effect_disabled",
+                    "effect": 0,
+                    "readback": 0,
+                    "public_effect": 0,
+                }
+            )
+
             for name in STATE_FILES:
                 path = args.state_dir / name
                 if not path.exists():
@@ -1476,6 +1517,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             listing_contract_total = sum(
                 1 for line in (args.state_dir / "listing-contracts.jsonl").read_text(encoding="utf-8").splitlines()
                 if line.strip()
+            )
+            _append_key_once(
+                args.state_dir / "new-listing-drafts.jsonl",
+                "contract_sha256",
+                draft_result,
             )
             accepted_effect = 0
             accepted_readback = 0
@@ -1545,6 +1591,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 official_services_read=observed,
                 offer_contracts_appended=contract_count,
                 listing_contracts_appended=listing_contract_count,
+                listing_contracts_active=len(listing_contracts),
                 listing_contracts_total=listing_contract_total,
                 competitor_evidence_count=len(competitor_manifest["sources"]),
                 inventory_content_sha256=inventory.get("content_sha256"),
@@ -1556,6 +1603,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 recovered_effect=bool(pending_effect and pending_effect["recovered"]),
                 analytics_snapshot_key=analytics["snapshot_key"],
                 catalog_analytics=analytics.get("catalog_metrics"),
+                new_listing_draft=draft_result,
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
                 lease={
@@ -1602,6 +1650,7 @@ def main() -> int:
     parser.add_argument(
         "--listing-contract-families", type=Path, default=DEFAULT_LISTING_CONTRACT_FAMILIES,
     )
+    parser.add_argument("--new-listing-contract", type=Path, default=DEFAULT_NEW_LISTING_CONTRACT)
     parser.add_argument("--reply-transcripts", type=Path, default=DEFAULT_REPLY_TRANSCRIPTS)
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--timeout-seconds", type=int, default=180)
