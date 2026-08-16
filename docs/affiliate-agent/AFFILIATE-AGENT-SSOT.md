@@ -1256,11 +1256,15 @@ they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
 
 Latest restart truth: installed release
-`7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25` is byte-identical to that commit and
-is pushed to `origin` and `canonical`. Spec HEAD advances past it only with
-docs-only commits that leave `skills/affiliate` unchanged, so
+`88e8447bad8ad00c77afc59dbaf48a170ba86656` is byte-identical to that commit and
+is pushed to `origin` and `canonical`; the publication fix below landed in
+`7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25`. Any commit that touches
+`skills/affiliate` MUST be reinstalled, so
 `git diff <installed-release> HEAD -- skills/affiliate` must stay empty; a
-non-empty diff means the runtime is stale and must be reinstalled. All six launchd
+non-empty diff means the runtime is stale. The focused suite runs
+`python3 -m unittest $(ls tests/test_*.py | sed 's#/#.#;s#\.py##')` from
+`skills/affiliate` and is `65/65` green, with no tolerated red baseline.
+All six launchd
 owners are loaded; the three job owners read back 600-second intervals and last
 exit `0`, and the three isolated browser owners are running.
 
