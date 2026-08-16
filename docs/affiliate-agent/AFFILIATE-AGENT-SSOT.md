@@ -1256,14 +1256,14 @@ they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
 
 Latest restart truth: installed release
-`88e8447bad8ad00c77afc59dbaf48a170ba86656` is byte-identical to that commit and
+`9e482de486f4fef85e50c3d6af3b278ec3cbf16e` is byte-identical to that commit and
 is pushed to `origin` and `canonical`; the publication fix below landed in
 `7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25`. Any commit that touches
 `skills/affiliate` MUST be reinstalled, so
 `git diff <installed-release> HEAD -- skills/affiliate` must stay empty; a
 non-empty diff means the runtime is stale. The focused suite runs
 `python3 -m unittest $(ls tests/test_*.py | sed 's#/#.#;s#\.py##')` from
-`skills/affiliate` and is `65/65` green, with no tolerated red baseline.
+`skills/affiliate` and is `66/66` green, with no tolerated red baseline.
 All six launchd
 owners are loaded; the three job owners read back 600-second intervals and last
 exit `0`, and the three isolated browser owners are running.
@@ -1289,6 +1289,24 @@ the X browser was not driven at all. Publication failures now also record
 future `XPostError` meaning "X composer is unavailable" stays distinguishable
 from "X effect is ambiguous", which is the only duplicate-effect boundary in this
 path.
+
+A read-only adversarial review of that fix upheld all six claims (root cause,
+no-duplicate, fix correctness, money accuracy, secret boundary, test repair) and
+raised one real gap: terminating on content equality also removed the only
+recurring proof that a post still exists, so a deleted or suspended post would
+report `ALREADY_LIVE` forever against a dead URL. The two sibling publication
+paths already carried that blind spot. Release
+`9e482de486f4fef85e50c3d6af3b278ec3cbf16e` closes it with
+`sweep_publication_liveness`: once per `Asia/Tokyo` day the loop re-verifies every
+live X receipt through the existing publisher, which cannot post because the
+compose branch is unreachable once a receipt carries a public URL. The JST day is
+recorded even when a placement fails, so one bad scrape cannot drag verification
+back onto the per-wake cadence that caused the original bug; failures stay visible
+in the wake event and in `publication-liveness.json`. Real installed wake
+`23:52:00 JST` returned `ALL_LIVE` with `checked=6` and no unverified placement,
+which is the first independent confirmation that all six public posts are live at
+once, and the replay wake `23:52:17 JST` returned `COOLDOWN` with `checked=0`,
+proving the sweep does not re-drive the browser. Both exited `0`.
 
 Campaign seven remains source-captured but composition is budget-blocked for JST
 `2026-08-16` (`101310` consumed plus a `32768` reservation exceeds the `131072`
