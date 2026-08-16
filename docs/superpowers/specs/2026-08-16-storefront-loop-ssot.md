@@ -299,6 +299,9 @@ Verification: controlled current-data allocation produces one reasoned action pe
 - [x] Publish through installed main release `c2bbac685...`. Pass `storefront-direct-1786876690791092000-80877` completed `public_accepted` with official services `12`, `4313386/image`, actionable/effect/readback/duplicate `1/1/1/0`, Telegram `21095`, exit `0` and released lease. Official public readback contains six images in order: new `9534017`, new `9534018`, kept `9401028`, new `9534019`, kept `9407806`, new `9534020`; all four unsafe prior IDs are absent. The effect and experiment ledgers each contain exactly one accepted key `storefront:v1:4313386:image:da1b5cc4...`.
 - Publication attempt `storefront-direct-1786876490070613000-76061` selected `4313386/image`, bound a non-null contract SHA, set and validated the exact four file inputs with all non-image seller fields unchanged, then failed closed before submit because Coconala did not expose replacement previews as `blob:` URLs. It produced effect/readback `0/0`, Telegram `21089`, exit `1` and a released lease. The submit gate now reads the browser-native `input.files.length=1` evidence already bound to the exact form delta instead of assuming one preview URL representation.
 - [x] Immediate full replay `storefront-direct-1786876973027656000-88633` from main release `3d4b35c4c...` completed `no_executable_unfenced_mutation_contract`: official services `12`, actionable/effect/readback/duplicate `0/0/0/0`, Telegram `21098`, exit `0` and released lease. It validated the confirmed public gallery, performed no upload, and left exactly one accepted `4313386/image` row in each effect and experiment ledger. Final readonly main release `84c41cb17...` restores `--effect --auto-cadence` at 60 seconds. Installed incremental pass `storefront-direct-1786877155391027000-93401` completed with official `12`, last-known-good KPI `441/0/3`, Storefront `1/0/JPY0`, Apply `0/3/JPY27,378`, unknown `102/5/JPY99,060`, effect/readback/duplicate `0/0/0`, Telegram `21101`, exit `0` and released lease.
+- [ ] Prepare one exact, version-bound `4244910/scope` mutation contract from its authenticated current listing and retained competitor evidence. The delta MUST add explicit inclusions, exclusions, required inputs and support boundary; it MUST NOT copy unsupported speed, guarantee or outcome claims.
+- [ ] Execute that contract through the installed Storefront loop, require one official public effect and exact readback, then replay immediately and require zero duplicate effect. A manual browser edit does not close this item.
+- [ ] After the second distinct field adapter is proven, leave subsequent KEEP/IMPROVE/RETIRE/REPLACE choices to the recurring scorecard loop. Continuous portfolio improvement is operation, not an infinite completion TODO.
 
 Verification: authenticated seller form → exact four upload inputs → one submit → authenticated public image identity/order → durable effect/experiment ledger → identical replay. Calendar time and the 14-day outcome window are not TODOs.
 
@@ -336,9 +339,9 @@ Verification: tracked files, installed plists, launchctl, registry, imports, sub
 
 ### S8 — Cleanup-aftercare and final completion gate
 
-- [ ] Build or confirm the final readonly Storefront release from GitHub `main` after mixed-worktree cleanup; reload only Storefront if its installed SHA must change.
+- [ ] Build or confirm the final readonly Storefront release from GitHub `main` after the last Storefront-owned change; reload only Storefront if its installed SHA must change. The currently installed release is `84c41cb17f1f664c69d063b5346dde9693e80d01`, is an ancestor of GitHub `main`, and runs `--effect --auto-cadence` with `StartInterval=60`.
 - [ ] Run Storefront twice after cleanup and require official catalog/readback, KPI ledger, Telegram send-or-dedupe, exit `0` and released lease. Full-wake contract renders remain proven by the retained installed full wake; incremental wakes intentionally do not render mutation forms.
-- [ ] Verify the final installed three-lane inventory after migration. Current evidence: Storefront is enabled/green on main-derived `b4463cf90...`; Apply is enabled on main-derived `c2d971c88...` with one confirmed green replay; Negotiate is enabled/green on non-main `d150e4b1d...`; Paid is intentionally excluded. This gate remains open for Apply replay closure and Negotiate provenance/context integration, not for Storefront runtime recovery.
+- [ ] Verify the final installed three-lane inventory after owner migrations. Storefront is currently enabled/green on main-derived `84c41cb17...`; Apply and Negotiate provenance/context gates remain external-owner work; Paid is intentionally excluded. This gate is a global product-cleanliness gate, not a Storefront runtime-recovery gate.
 - [ ] Re-prove after branch cleanup that deleted legacy names cannot be resurrected by installer, recovery, launchd backup, registry or current docs. Historical evidence and immutable releases are non-executable records.
 - [ ] Reconcile repository/worktree/branch inventory: main clean and pushed, with no temporary or mixed Storefront worktree/branch.
 - [ ] Mark this spec `COMPLETE` only after every S4–S8 checkbox is closed with evidence. Revenue and elapsed time never substitute for implementation or verification.
@@ -383,17 +386,20 @@ The exact final tree may reuse existing directories to minimize churn, but Store
 | UI change | Yes: Coconala seller listing publication and official public service readback |
 | Judgment | Maestro not applicable; verification MUST use the authenticated official browser DOM, fresh public URL/readback, durable effect ledger and replay |
 
-Remaining global cleanup order is authoritative and may not be reordered. Functional operation and clean-main provenance are separate gates:
+### Authoritative remaining order
 
-1. S7p-a: preserve the complete Apply direct runtime from `d150e4b1d...` on reviewed `main` ancestry and close its current `parent_failed_rc_2` through its owner; do not change behavior merely to move files.
-2. S7p-b: preserve the complete Negotiate direct runtime from `d150e4b1d...` on reviewed `main` ancestry, then add its separately required Storefront-context consumer/ACK through the Negotiate owner.
-3. S7p-c: Paid owner finishes its clean implementation/main integration independently. Storefront does not inspect, change, reload or enable it.
-4. S7c-a: confirm all three non-Storefront owners no longer depend on the mixed ref and prove no live process/session uses `.worktrees/storefront-revenue-os`.
-5. S7c-b: remove the mixed worktree plus local/remote `fix/storefront-revenue-os`, then scan launchd, installers, registries, imports, subprocesses, symlinks and current authoritative docs for executable legacy resurrection paths.
-6. S7c-c: publish the canonical four-direct-owner inventory with truthful loaded state and ancestry.
-7. S8-a: build or confirm the final readonly Storefront main-ancestor release and reload only Storefront if required.
-8. S8-b: run two post-cleanup Storefront wakes and reconcile official `12/12`, analytics `441/0/3`, corrected funnel totals, coverage `102/106`, competitor last-full `8`, effect/readback/duplicate, Telegram send/dedupe, exit and lease release.
-9. S8-c: reconcile repository/worktree/branch inventory, leave `main` clean/pushed, record pass/message/release evidence, and mark this spec `COMPLETE`.
+The following order is the Storefront finish line. Time-dependent measurement is never a TODO and Paid work never blocks Storefront-owned implementation.
+
+1. **Scope adapter proof:** create the exact `4244910/scope` contract from current official state and retained competitor evidence. Change only Storefront-owned contract/config/code when the existing adapter cannot represent the exact delta.
+2. **Candidate release:** commit and push that Storefront-owned change to `main`, build an immutable main-ancestor release and install only the Storefront label. Never execute a public mutation from a writable checkout.
+3. **One real effect:** run the installed Storefront loop, publish that scope delta once, verify the exact official service ID/version/content, record effect/readback/Telegram receipts and confirm Apply/Negotiate/Paid files, plists and state are unchanged.
+4. **Idempotent replay:** run the same installed release immediately and require effect/readback/duplicate `0/0/0`, exit `0`, released lease and truthful Telegram send-or-dedupe. Do not wait for the analytics window.
+5. **Normal cadence proof:** retain or build the final readonly main-ancestor release with only `--effect --auto-cadence`, then prove two normal launchd wakes without a manual verification cutoff.
+6. **Storefront cleanup:** prove zero executable dependency on `gig_pass.sh`, Hermes-as-executor, temporary Storefront branches or a writable development checkout. Remove only Storefront-owned obsolete reachability; Hermes gateway remains.
+7. **Storefront completion record:** reconcile official catalog, last-known-good analytics, funnel attribution/unknowns, portfolio decision, experiment/effect ledgers, Telegram receipts, launchd status and repository status. Mark Storefront complete when these agree and `main` is clean/pushed.
+8. **External integration tail:** Negotiate owner consumes and ACKs the Storefront context envelope; Apply and Negotiate owners finish their own main-provenance gates; Paid owner finishes Paid independently. Only after every owner releases the mixed ref may the shared worktree/branch be deleted and the global four-loop/open-source gate close.
+
+Items 1–7 are Storefront work in this spec. Item 8 remains visible so it is not forgotten, but Storefront MUST NOT edit or reload Apply, Negotiate or Paid to close it.
 
 ### External four-loop integration TODOs — not removed
 
