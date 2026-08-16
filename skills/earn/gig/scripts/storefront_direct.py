@@ -908,21 +908,61 @@ def _experiment_key(service_id: str, field: str, proposed: str) -> str:
     return f"storefront:v1:{service_id}:{field}:{digest}"
 
 
-def _image_judgement(hypothesis: dict, own_page: dict, contract: dict) -> dict:
+def _image_mutation_contract(hypothesis: dict, own_page: dict, asset: dict) -> dict:
     if (hypothesis.get("service_id") != TARGET_SERVICE_ID or hypothesis.get("field") != "image"
             or hypothesis.get("before") != 0 or hypothesis.get("executable") is not True
             or hypothesis.get("success_metric") != "views_to_inquiry"):
         raise RuntimeError("storefront_image_hypothesis_invalid")
     if own_page.get("service_image_count") != 0 or own_page.get("service_image_ids") != []:
         raise RuntimeError("storefront_image_before_not_current")
-    digest = str(contract["asset_sha256"])
+    contract = {
+        "version": 1, "platform": "coconala", "service_id": TARGET_SERVICE_ID,
+        "precondition_listing_version_sha256": own_page["listing_version_sha256"],
+        "changed_field": "image", "before_value": {"service_image_ids": []},
+        "proposed_value": {
+            "asset_sha256": asset["asset_sha256"],
+            "asset_path": str(Path(asset["asset_path"]).resolve().relative_to(GIG_DIR.resolve())),
+        },
+        "allowed_delta": ["data[UploadedFile][n*][image_files]"],
+        "rollback_value": {"service_image_ids": []},
+        "official_readback": {"service_image_count": 1},
+        "success_metric": "views_to_inquiry", "observation_window_days": 14,
+    }
+    canonical = json.dumps(contract, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {**contract, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+
+
+def _validate_image_mutation_contract(contract: dict) -> None:
+    required = {
+        "version", "platform", "service_id", "precondition_listing_version_sha256",
+        "changed_field", "before_value", "proposed_value", "allowed_delta", "rollback_value",
+        "official_readback", "success_metric", "observation_window_days", "contract_sha256",
+    }
+    unsigned = {key: value for key, value in contract.items() if key != "contract_sha256"}
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    proposed = contract.get("proposed_value")
+    if (set(contract) != required or contract.get("version") != 1 or contract.get("platform") != "coconala"
+            or not str(contract.get("service_id") or "").isdigit() or contract.get("changed_field") != "image"
+            or contract.get("before_value") != {"service_image_ids": []}
+            or contract.get("allowed_delta") != ["data[UploadedFile][n*][image_files]"]
+            or contract.get("rollback_value") != {"service_image_ids": []}
+            or contract.get("official_readback") != {"service_image_count": 1}
+            or not isinstance(proposed, dict) or set(proposed) != {"asset_sha256", "asset_path"}
+            or not re.fullmatch(r"[0-9a-f]{64}", str(proposed.get("asset_sha256") or ""))
+            or contract.get("contract_sha256") != hashlib.sha256(canonical.encode()).hexdigest()):
+        raise RuntimeError("storefront_image_mutation_contract_invalid")
+
+
+def _image_judgement(hypothesis: dict, contract: dict) -> dict:
+    _validate_image_mutation_contract(contract)
+    digest = str(contract["proposed_value"]["asset_sha256"])
     return {
-        "decision": "change", "service_id": TARGET_SERVICE_ID, "changed_field": "image",
+        "decision": "change", "service_id": contract["service_id"], "changed_field": "image",
         "before_value": 0, "proposed_value": digest,
         "hypothesis": str(hypothesis["reason"]), "competitor_evidence_paths": [],
-        "capability_evidence_paths": [], "success_metric": "views_to_inquiry",
-        "observation_window_days": 14, "no_op_reason": None,
-        "experiment_key": _experiment_key(TARGET_SERVICE_ID, "image", digest), "uncertainty": [],
+        "capability_evidence_paths": [], "success_metric": contract["success_metric"],
+        "observation_window_days": contract["observation_window_days"], "no_op_reason": None,
+        "experiment_key": _experiment_key(contract["service_id"], "image", digest), "uncertainty": [],
     }
 
 
@@ -1024,11 +1064,16 @@ def _guard_judgement(
     return {**value, "experiment_key": key, "no_op_reason": None}
 
 
-def _presend_guard(judgement: dict, own_page: dict) -> None:
+def _presend_guard(judgement: dict, own_page: dict, mutation_contract: dict | None = None) -> None:
     if judgement.get("decision") != "change":
         return
     if judgement.get("changed_field") == "image":
-        if (judgement.get("service_id") != TARGET_SERVICE_ID or judgement.get("before_value") != 0
+        if not isinstance(mutation_contract, dict):
+            raise RuntimeError("presend_image_mutation_contract_missing")
+        _validate_image_mutation_contract(mutation_contract)
+        if (mutation_contract.get("contract_sha256") is None
+                or mutation_contract.get("precondition_listing_version_sha256") != own_page.get("listing_version_sha256")
+                or judgement.get("service_id") != mutation_contract.get("service_id") or judgement.get("before_value") != 0
                 or own_page.get("service_image_count") != 0 or own_page.get("service_image_ids") != []):
             raise RuntimeError("presend_image_current_value_changed")
         return
@@ -1080,20 +1125,25 @@ def _validate_public_acceptance(before: dict, after: dict, question: str, answer
         raise RuntimeError("public_faq_readback_mismatch")
 
 
-def _validate_public_image_acceptance(before: dict, after: dict) -> None:
-    url = f"https://coconala.com/services/{TARGET_SERVICE_ID}"
+def _validate_public_image_acceptance(before: dict, after: dict, contract: dict) -> None:
+    _validate_image_mutation_contract(contract)
+    service_id = str(contract.get("service_id") or "")
+    url = f"https://coconala.com/services/{service_id}"
     if before.get("url") != url or after.get("url") != url:
         raise RuntimeError("public_image_readback_url_invalid")
-    if before.get("service_image_count") != 0 or before.get("service_image_ids") != []:
+    if (before.get("listing_version_sha256") != contract.get("precondition_listing_version_sha256")
+            or before.get("service_image_ids") != contract.get("rollback_value", {}).get("service_image_ids")):
         raise RuntimeError("public_image_before_invalid")
-    if after.get("service_image_count") != 1 or len(after.get("service_image_ids") or []) != 1:
+    expected = contract.get("official_readback", {}).get("service_image_count")
+    if after.get("service_image_count") != expected or len(after.get("service_image_ids") or []) != expected:
         raise RuntimeError("public_image_count_mismatch")
     if before.get("listing_version_sha256") == after.get("listing_version_sha256"):
         raise RuntimeError("public_image_version_unchanged")
 
 
-def _validate_image_form_delta(before: dict, after: dict) -> None:
-    url = f"https://coconala.com/mypage/services/{TARGET_SERVICE_ID}"
+def _validate_image_form_delta(before: dict, after: dict, contract: dict) -> None:
+    _validate_image_mutation_contract(contract)
+    url = f"https://coconala.com/mypage/services/{contract['service_id']}"
     if before.get("url") != url or after.get("url") != url:
         raise RuntimeError("seller_image_form_url_invalid")
     before_fields = [row for row in _form_base_fields(before) if not str(row.get("name") or "").startswith("data[UploadedFile]")]
@@ -1239,7 +1289,8 @@ async def _execute_image_effect_async(
     import websockets
     import listing_inventory
 
-    edit_url = f"https://coconala.com/mypage/services/{TARGET_SERVICE_ID}"
+    _validate_image_mutation_contract(contract)
+    edit_url = f"https://coconala.com/mypage/services/{contract['service_id']}"
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
         cid = 1
         await listing_inventory._call(ws, "Page.enable", {}, cid); cid += 1
@@ -1271,11 +1322,11 @@ async def _execute_image_effect_async(
         if node_id <= 0:
             raise RuntimeError("seller_image_file_input_missing")
         await listing_inventory._call(ws, "DOM.setFileInputFiles", {
-            "nodeId": node_id, "files": [str(contract["asset_path"])],
+            "nodeId": node_id, "files": [str((GIG_DIR / contract["proposed_value"]["asset_path"]).resolve())],
         }, cid); cid += 1
         await asyncio.sleep(2)
         after = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
-        _validate_image_form_delta(before, after)
+        _validate_image_form_delta(before, after, contract)
         preview = json.loads(str(await evaluate(
             "JSON.stringify((()=>{const p=document.querySelector('.js_image-thumbnail[style*=\"blob:\"]');"
             "const s=document.querySelector('button.submitButton.js_button-edit[type=submit]');"
@@ -1290,9 +1341,10 @@ async def _execute_image_effect_async(
         _atomic_write(after_path, after)
         intent_path = _effect_intent_path(state_dir, str(judgement["experiment_key"]))
         intent = {
-            "version": 1, "status": "prepared", "service_id": TARGET_SERVICE_ID,
+            "version": 1, "status": "prepared", "service_id": contract["service_id"],
             "changed_field": "image", "experiment_key": judgement["experiment_key"],
-            "asset_path": str(contract["asset_path"]), "asset_sha256": contract["asset_sha256"],
+            "asset_path": str(contract["proposed_value"]["asset_path"]),
+            "asset_sha256": contract["proposed_value"]["asset_sha256"], "mutation_contract": contract,
             "public_before_path": str(public_before_path), "seller_form_before_path": str(before_path),
             "prepared_at_epoch": int(time.time()), "effect_origin_pass_id": evidence_dir.name,
             "judgement": judgement,
@@ -1411,7 +1463,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 seller_before = json.loads(Path(recovery["seller_form_before_path"]).read_text(encoding="utf-8"))
                 seller_after = _seller_snapshot(ws_url)
                 if recovery["changed_field"] == "image":
-                    _validate_public_image_acceptance(public_before, own_page)
+                    mutation_contract = recovery.get("mutation_contract")
+                    if not isinstance(mutation_contract, dict):
+                        raise RuntimeError("pending_image_mutation_contract_missing")
+                    _validate_public_image_acceptance(public_before, own_page, mutation_contract)
                 else:
                     question, answer = str(recovery["question"]), str(recovery["answer"])
                     _validate_public_acceptance(public_before, own_page, question, answer)
@@ -1439,6 +1494,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     pending_effect.update({"question": question, "answer": answer})
             else:
                 capability_paths = {str(Path(path).resolve()) for path in args.capability_evidence}
+                mutation_contract = None
                 if next_hypothesis is not None and not next_hypothesis["executable"]:
                     raw_judgement = {
                         "decision": "no_op", "service_id": None, "changed_field": None,
@@ -1457,8 +1513,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         now=int(time.time()),
                     )
                 elif next_hypothesis is not None and next_hypothesis.get("field") == "image":
-                    image_contract = _load_image_contract(getattr(args, "image_contract", DEFAULT_IMAGE_CONTRACT))
-                    judgement = _image_judgement(next_hypothesis, own_page, image_contract)
+                    image_asset = _load_image_contract(getattr(args, "image_contract", DEFAULT_IMAGE_CONTRACT))
+                    mutation_contract = _image_mutation_contract(next_hypothesis, own_page, image_asset)
+                    _atomic_write(inventory_path.parent / "mutation-contract.json", mutation_contract)
+                    judgement = _image_judgement(next_hypothesis, mutation_contract)
                 else:
                     raw_judgement = _invoke_judge(
                         runner=args.runner, schema=args.schema, workdir=args.workdir,
@@ -1478,11 +1536,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 if judgement["decision"] == "change":
                     presend_path = inventory_path.parent / "presend-own-page.json"
                     presend = _observe_own_page(ws_url, inventory_path.parent, presend_path.name)
-                    _presend_guard(judgement, presend)
+                    _presend_guard(judgement, presend, mutation_contract)
                     if args.effect:
                         if judgement["changed_field"] == "image":
                             seller_before, _, intent_path = _execute_image_effect(
-                                ws_url=ws_url, contract=image_contract, judgement=judgement,
+                                ws_url=ws_url, contract=mutation_contract, judgement=judgement,
                                 public_before_path=presend_path, evidence_dir=inventory_path.parent,
                                 state_dir=args.state_dir,
                             )
@@ -1497,7 +1555,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         public_after = _observe_own_page(ws_url, inventory_path.parent, public_after_path.name)
                         seller_after = _seller_snapshot(ws_url)
                         if judgement["changed_field"] == "image":
-                            _validate_public_image_acceptance(presend, public_after)
+                            _validate_public_image_acceptance(presend, public_after, mutation_contract)
                         else:
                             _validate_public_acceptance(presend, public_after, question, answer)
                             _validate_form_delta(seller_before, seller_after, question, answer)

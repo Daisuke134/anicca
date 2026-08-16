@@ -1,6 +1,6 @@
 # Storefront Revenue Loop SSOT
 
-Status: INCOMPLETE. The Storefront loop has published its first evidence-qualified new service exactly once. Active item: S4, make every supported listing mutation consume one versioned contract. This document owns Storefront only.
+Status: INCOMPLETE. The Storefront loop has published its first evidence-qualified new service exactly once. Active item: S4b, migrate title/outcome to the common versioned mutation contract. This document owns Storefront only.
 
 ## 1. Overview
 
@@ -71,6 +71,7 @@ These sources determine the listing contract: one buyer-visible outcome, exact i
 - The publication conflict is scoped by `service_id`, so the open experiment on `91000001` remains protected without blocking distinct draft `91000003`. Pass `storefront-direct-1786846676934847000-88255` published `https://coconala.com/services/91000003` once with public effect/readback `1/1`, duplicate `0`, official count `12`, exit `0`, and released lease.
 - Public verification no longer accepts an arbitrary page image. Seller image identity `eab2ab35-9531685.png` must appear in the public CDN images, while title, catchphrase, full service body, buyer-input body, price and all three category labels must match the versioned contract. Passes `storefront-direct-1786847133578052000-66056`, `storefront-direct-1786847461472084000-2443`, and `storefront-direct-1786847667444581000-30337` proved `already_public`, effect `0`, exact readback `1`, duplicate `0`, and exit `0`.
 - The first two publication reports timed out after send start and remain quarantined as `delivery_unknown`; they are never resent. Reporting now uses the real draft/public state, includes the official URL, permits a bounded 180-second provider ACK, and classifies a real public effect separately from a no-op. The corrected current-state report is provider-acked as Telegram `20596`; the identical replay is deduped to `20596` with send `0`.
+- The image adapter now renders one immutable mutation contract from the latest official listing snapshot before any seller form action. Real snapshot `ba309b9b...` binds service `91000001`, only the image upload field, asset SHA `207e699e...`, rollback to zero images, official readback of exactly one image, metric `views_to_inquiry`, and a 14-day observation window. The executor, pre-send gate, public readback and crash recovery consume the same contract; stale versions, changed contract SHA and multi-field deltas fail closed. This proof renders and diffs only and does not publish.
 - Storefront commit `85eaa6d86` is on GitHub `main` and in readonly immutable release `/Users/operator/gig/releases/life-manager/85eaa6d...`. Only `ai.anicca.hf-gig-storefront-direct` was reloaded. Its natural installed wake `storefront-direct-1786843673261706000-46042` exited `0` with official/competitor `11/8`, active contracts `11`, KPI `441/0/3`, draft `0/1/1/0`, active publication fence, Telegram `deduped/20527`, and released lease. Before/after SHA comparison found zero changes to every non-Storefront gig plist.
 - Official analytics now retries each service independently and records an exhausted readback as `unknown`, never zero and never a reason to skip the rest of the Storefront wake. Reports separate unknown current values from unknown comparisons.
 
@@ -171,6 +172,9 @@ Verification: the existing experiment on `91000001` remains unchanged; official 
 
 ### S4 — Generalize supported listing mutations
 
+- [x] Define the common versioned mutation envelope and migrate the proven image adapter, including exact official-version precondition, one allowed field delta, rollback and readback.
+- [ ] Migrate title/outcome to the same envelope and prove one deterministic no-publish diff.
+- [ ] Migrate body/scope, package/add-ons, FAQ and price one at a time with the same no-publish proof.
 - [ ] Make image, title/outcome, body/scope, package/add-ons, FAQ and price adapters consume one versioned mutation contract instead of service-specific control flow.
 - [ ] Require every adapter to declare exact precondition hash, changed field, allowed delta, rollback value and official readback contract.
 - [ ] Render and diff one existing service per adapter without publishing; fail closed on unsupported family, stale version, unknown option value or multi-field delta.
