@@ -127,6 +127,7 @@ test("official production factory persists the Connpass discovery audit from its
       window_count: 0,
       free_open_count: 0,
       calendar_free_count: 0,
+      skipped_count: 0,
     }]);
   } finally {
     fs.rmSync(stateDir, { recursive: true, force: true });
