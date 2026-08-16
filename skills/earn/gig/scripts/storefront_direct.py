@@ -741,6 +741,32 @@ def _render_text_mutation(
     return {"version": 1, "contract": contract, "before": before, "after": after, "delta": delta, "published": False}
 
 
+def _render_prepared_mutation(
+    state_dir: Path, seller_snapshot: dict, service_id: str, changed_field: str,
+    capability_families: dict[str, str],
+) -> dict | None:
+    for path in sorted((state_dir / "effect-intents").glob("*.json")):
+        try:
+            intent = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (intent.get("status") != "prepared" or intent.get("service_id") != service_id
+                or intent.get("changed_field") != changed_field):
+            continue
+        contract = intent.get("mutation_contract")
+        if not isinstance(contract, dict):
+            raise RuntimeError("prepared_mutation_contract_missing")
+        _validate_mutation_contract(contract, capability_families)
+        field = contract["allowed_delta"][0]
+        values = {str(row.get("name") or ""): str(row.get("value") or "")
+                  for row in seller_snapshot.get("fields") or [] if isinstance(row, dict)}
+        if values.get(field) != contract["proposed_value"]:
+            return None
+        return {"version": 1, "contract": contract, "before": {field: contract["before_value"]},
+                "after": {field: contract["proposed_value"]}, "delta": [field], "published": True}
+    return None
+
+
 def _load_listing_contracts(
     root: Path, observed_contracts: list[dict], families_path: Path = DEFAULT_LISTING_CONTRACT_FAMILIES,
 ) -> list[dict]:
@@ -2094,7 +2120,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
             )
             presentation_snapshot = _seller_snapshot_for(ws_url, "91000004")
-            title_render = _render_text_mutation(
+            title_render = _render_prepared_mutation(
+                args.state_dir, presentation_snapshot, "91000004", "title", capability_families,
+            ) or _render_text_mutation(
                 getattr(args, "title_mutation", DEFAULT_TITLE_MUTATION), validated_contracts,
                 presentation_snapshot, capability_families,
             )
