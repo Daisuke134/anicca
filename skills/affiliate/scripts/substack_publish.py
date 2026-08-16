@@ -164,9 +164,11 @@ def publish(state, plan_id):
             return {**prior, "deduplicated": True}
     placement, cookie = campaign["placement_id"], _cookie()
     marker = f"affiliate-intent:{placement} content-sha256:{digest}"
-    target = _existing(cookie, marker)
-    created = target is None
     job = unresolved_effect(state, "SUBSTACK_PUBLICATION", placement)
+    target = _existing(cookie, marker)
+    if job and target is None:
+        raise SubstackError("unresolved Substack effect requires public recovery; refusing a new draft")
+    created = target is None
     if target is None:
         body = _owned_html(campaign["owned_url"]) + f"<!-- {marker} -->"
         action = {"operation": "publish_substack", "placement": placement,
