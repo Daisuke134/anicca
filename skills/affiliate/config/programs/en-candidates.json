@@ -66,7 +66,7 @@
       "id": "pipedrive",
       "priority": 6,
       "network": "PartnerStack",
-      "decision": "DEFER_CONTENT_GATE",
+      "decision": "ELIGIBILITY_BLOCKED",
       "program_url": "https://www.pipedrive.com/en/affiliate-partnership",
       "terms_url": null,
       "commission": "20% revenue share for the first 12 months at the entry tier",
@@ -82,8 +82,8 @@
       "program_url": "https://www.getresponse.com/affiliate-programs",
       "terms_url": null,
       "commission": "40% recurring for 12 months at the entry tier",
-      "next_action": "PUBLISH_RELEVANT_SMALL_BUSINESS_MARKETING_CONTENT_BEFORE_APPLICATION",
-      "evidence": "our team will review your website, distribution channels, and audience to ensure alignment",
+      "next_action": "WAIT_FOR_FIRST_PARTNERSTACK_COMMISSION_BEFORE_RECHECKING_MARKETPLACE_ACCESS",
+      "evidence": "Live application readback hides submit and requires one commission in an existing program before PartnerStack Marketplace unlocks",
       "credential_ref": null
     },
     {

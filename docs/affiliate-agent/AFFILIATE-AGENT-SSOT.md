@@ -1434,7 +1434,7 @@ No Git, X, application-submit, or Telegram effect was duplicated.
 
 ### 9.0.5 Current slice contract — one new executable English application
 
-**Status: IN PROGRESS.** Official GetResponse evidence says signup is free through
+**Status: CLOSED AS PROVIDER-BLOCKED; A15.2 REMAINS OPEN.** Official GetResponse evidence says signup is free through
 PartnerStack, each accepted affiliate receives a unique link, and the entry tier
 earns 40% recurring commission for 12 months. The live application requires
 account-locked identity/email, business name, website, country, and a specific
@@ -1492,6 +1492,14 @@ joined program. GetResponse is therefore **not submitted** and is classified
 `ELIGIBILITY_BLOCKED`, not pending. The existing write-ahead job is terminally
 reconciled to that rendered provider evidence, and later wakes must not retry it.
 The next A15.2 candidate must be outside this PartnerStack Marketplace gate.
+Installed release `71eb120dd` reconciled job
+`8a64e9d47a412749d8b6c7503a1310d98560e0fd6672aa38140bd3456c13f5d1`
+at attempt `2` to `VERIFIED / ELIGIBILITY_BLOCKED`. A loop-only
+bootout/bootstrap replay returned `deduplicated=true`, preserved attempt `2`,
+and exited `0`; ElevenLabs remained `AUTHENTICATED`, HubSpot remained
+`APPLICATION_PENDING`, the fifth placement remained `ALREADY_LIVE`, revenue
+remained in its normal cooldown, and Telegram had no pending event. The program
+registry now carries the same block and cannot present GetResponse as eligible.
 
 #### A. Close revenue truth for the live ElevenLabs placement
 
