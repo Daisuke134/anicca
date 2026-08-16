@@ -55,7 +55,7 @@ class ProviderResumeTest(unittest.TestCase):
             patch.object(provider_cli, "read_login_credentials", return_value=("person@example.com", "secret")),
             patch.object(provider_cli, "create_connection", return_value=socket),
             patch.object(provider_cli, "cdp_call"),
-            patch.object(provider_cli, "selector_exists", return_value=(False, 3)),
+            patch.object(provider_cli, "selector_exists", side_effect=((True, 3), (False, 4))),
             patch.object(provider_cli, "focus_and_type", side_effect=(10, 20)) as typed,
             patch.object(provider_cli, "playwright_click_text") as clicked,
             patch.object(provider_cli, "wait_for_selector", return_value=18) as waited,
@@ -65,7 +65,7 @@ class ProviderResumeTest(unittest.TestCase):
             })
 
         self.assertEqual(typed.call_args_list, [
-            call(socket, 3, "input[type='email']", "person@example.com"),
+            call(socket, 4, "input[type='email']", "person@example.com"),
             call(socket, 18, "input[type='password']", "secret"),
         ])
         self.assertEqual(clicked.call_count, 2)
@@ -92,17 +92,46 @@ class ProviderResumeTest(unittest.TestCase):
             patch.object(provider_cli, "read_login_credentials", return_value=("person@example.com", "secret")),
             patch.object(provider_cli, "create_connection", return_value=socket),
             patch.object(provider_cli, "cdp_call"),
-            patch.object(provider_cli, "selector_exists", return_value=(True, 3)),
+            patch.object(provider_cli, "selector_exists", side_effect=((False, 3), (True, 4))),
             patch.object(provider_cli, "focus_and_type", return_value=8) as typed,
             patch.object(provider_cli, "playwright_click_text") as clicked,
         ):
             provider_cli.submit_login(args, playbook, {
                 "id": "impact-tab", "url": "https://app.impact.com/login.user",
             })
-        typed.assert_called_once_with(socket, 3, "input[type='password']", "secret")
+        typed.assert_called_once_with(socket, 4, "input[type='password']", "secret")
         clicked.assert_called_once_with(
             "127.0.0.1", 9327, "https://app.impact.com/login.user", ["Sign In"],
         )
+
+    def test_single_page_login_fills_email_before_password(self):
+        args = argparse.Namespace(
+            cdp_host="127.0.0.1", cdp_port=9324,
+            private_markdown=Path("/private/credentials.md"),
+        )
+        playbook = {"login": {
+            "credential_section": "ElevenLabs",
+            "username_selector": "input[name='email']",
+            "password_selector": "input[name='password']",
+            "submit_selector": "button:not([disabled])",
+        }}
+        socket = MagicMock()
+        with (
+            patch.object(provider_cli, "read_login_credentials", return_value=("person@example.com", "secret")),
+            patch.object(provider_cli, "create_connection", return_value=socket),
+            patch.object(provider_cli, "cdp_call"),
+            patch.object(provider_cli, "selector_exists", side_effect=((True, 3), (True, 4))),
+            patch.object(provider_cli, "focus_and_type", side_effect=(8, 12)) as typed,
+            patch.object(provider_cli, "wait_for_selector", return_value=13),
+            patch.object(provider_cli, "click"),
+        ):
+            provider_cli.submit_login(args, playbook, {
+                "id": "elevenlabs-tab", "url": "https://elevenlabs.io/app/sign-in",
+            })
+        self.assertEqual(typed.call_args_list, [
+            call(socket, 4, "input[name='email']", "person@example.com"),
+            call(socket, 8, "input[name='password']", "secret"),
+        ])
 
     def test_reads_plain_and_inconsistently_wrapped_private_fields(self):
         with tempfile.TemporaryDirectory() as temporary:

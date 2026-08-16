@@ -318,9 +318,13 @@ def submit_login(args, playbook, target):
     )
     try:
         cdp_call(ws, 1, "DOM.enable")
-        password_ready, request_id = selector_exists(ws, 2, login["password_selector"])
-        if not password_ready:
+        username_ready, request_id = selector_exists(ws, 2, login["username_selector"])
+        password_ready, request_id = selector_exists(ws, request_id, login["password_selector"])
+        if username_ready:
             request_id = focus_and_type(ws, request_id, login["username_selector"], username)
+        if not password_ready:
+            if not username_ready:
+                raise ProviderError("username and password controls are unavailable")
             if login.get("username_submit_text_any"):
                 playwright_click_text(
                     args.cdp_host, args.cdp_port, target["url"],
