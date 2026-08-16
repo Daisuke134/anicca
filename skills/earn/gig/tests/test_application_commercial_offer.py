@@ -36,4 +36,4 @@ def test_proposal_opens_with_commitment_and_has_no_pre_contract_question() -> No
     assert "？" not in proposal and "?" not in proposal
     assert "99,000円" in proposal
     assert "2026-08-20" in proposal
-    assert "ご納得いただけるまで" in proposal
+    assert "契約範囲内でご納得いただけるまで" in proposal
