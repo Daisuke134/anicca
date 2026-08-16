@@ -145,8 +145,46 @@ def advance_devto_distribution(state, now=None, cooldown_seconds=86400):
     result = publish(state, selected["plan_id"])
     return {
         "state": result["state"], "public_url": result.get("public_url"),
-        "plan_id": selected["plan_id"], "changed": not result.get("deduplicated", False),
+        "plan_id": selected["plan_id"], "channel": "devto",
+        "changed": not result.get("deduplicated", False),
     }
+
+
+def advance_substack_distribution(state, now=None, cooldown_seconds=86400):
+    """Syndicate at most one X_LIVE campaign per day through Substack."""
+    from substack_publish import publish
+
+    now = int(time.time()) if now is None else now
+    receipts = []
+    for path in (state / "substack-publications").glob("*.json"):
+        try:
+            receipts.append(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            continue
+    observed = []
+    for row in receipts:
+        try:
+            observed.append(int(datetime.fromisoformat(row["observed_at"].replace("Z", "+00:00")).timestamp()))
+        except (KeyError, TypeError, ValueError):
+            continue
+    if observed and now - max(observed) < cooldown_seconds:
+        return {"state": "COOLDOWN", "public_url": None, "changed": False, "channel": "substack"}
+    done = {row.get("plan_id") for row in receipts if row.get("state") == "LIVE"}
+    due = []
+    for path in (state / "campaign-publications").glob("*.json"):
+        try:
+            row = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if row.get("state") == "X_LIVE" and row.get("plan_id") not in done:
+            due.append(row)
+    if not due:
+        return {"state": "ALREADY_LIVE", "public_url": None, "changed": False, "channel": "substack"}
+    selected = max(due, key=lambda row: row.get("created_at", ""))
+    result = publish(state, selected["plan_id"])
+    return {"state": result["state"], "public_url": result.get("public_url"),
+            "plan_id": selected["plan_id"], "channel": "substack",
+            "changed": not result.get("deduplicated", False)}
 
 
 def owner_event(state, wake_event):
@@ -170,7 +208,7 @@ def owner_event(state, wake_event):
     if wake_event.get("distribution_changed") and wake_event.get("distribution_state") == "LIVE":
         kind = "DISTRIBUTION_LIVE"
         identity = {
-            "kind": kind, "channel": "devto",
+            "kind": kind, "channel": wake_event.get("distribution_channel"),
             "plan_id": wake_event.get("distribution_plan_id"),
             "public_url": wake_event.get("distribution_url"),
         }
@@ -966,6 +1004,8 @@ def wake(args):
         }
     try:
         distribution = advance_devto_distribution(state)
+        if not distribution.get("changed"):
+            distribution = advance_substack_distribution(state)
     except Exception as error:
         distribution = {
             "state": "DISTRIBUTION_FAILED", "public_url": None,
@@ -1008,6 +1048,7 @@ def wake(args):
         "distribution_state": distribution["state"],
         "distribution_url": distribution.get("public_url"),
         "distribution_plan_id": distribution.get("plan_id"),
+        "distribution_channel": distribution.get("channel"),
         "distribution_changed": distribution.get("changed", False),
         "distribution_failure_type": distribution.get("failure_type"),
         "revenue_state": revenue["state"],

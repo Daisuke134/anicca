@@ -168,11 +168,15 @@ def publish(state, plan_id):
 
 def main():
     parser = argparse.ArgumentParser(prog="affiliate distribution")
-    parser.add_argument("command", choices=("publish-devto",))
+    parser.add_argument("command", choices=("publish-devto", "publish-substack"))
     parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
     parser.add_argument("--plan", required=True)
     args = parser.parse_args()
-    print(json.dumps(publish(args.state, args.plan), sort_keys=True, separators=(",", ":")))
+    if args.command == "publish-substack":
+        from substack_publish import publish as selected
+    else:
+        selected = publish
+    print(json.dumps(selected(args.state, args.plan), sort_keys=True, separators=(",", ":")))
 
 
 if __name__ == "__main__":

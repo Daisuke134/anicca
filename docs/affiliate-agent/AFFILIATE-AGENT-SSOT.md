@@ -1911,6 +1911,15 @@ observable outcome exists.
   `COOLDOWN / NO_PENDING / exit 0`, with one unique external job and one sent
   event. The distribution surface is live; E0 remains open until PartnerStack
   records a real post-baseline click connected to a placement.
+  The next parallel acquisition canary reuses Writer's current autonomous
+  Substack API transport rather than its retired manual-sentinel shell path.
+  Read-only preflight proves the session owns `aniccabuddha.substack.com`, the
+  target marker does not already exist, and the owned server-rendered article is
+  a single `<article>` containing the disclosure, CTA, and tracking link. The
+  Affiliate adapter copies the verified `profile/self → draft → publish → draft
+  readback` sequence, sends no email, records its own stable target/job, and uses
+  no unpinned Markdown dependency. Live publication remains open until the
+  installed launchd owner produces a public receipt.
 - [ ] **A15.8 — E1.** Record one non-test `approved` commission with public
   placement, provider source hash, transaction lineage, costs, and Telegram event.
 

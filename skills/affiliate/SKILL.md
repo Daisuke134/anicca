@@ -235,6 +235,23 @@ The current host reads `DEVTO_API_KEY` from the process environment,
 `~/.config/anicca/affiliate.env`, or the already-provisioned Writer private env;
 the key never enters a receipt, log, prompt, or Git.
 
+The same distribution command exposes the current Writer Substack API shape
+without importing Writer state or its retired manual sentinel path:
+
+```bash
+skills/affiliate/affiliate distribution publish-substack \
+  --plan elevenlabs-discovered-audio-to-text-en
+```
+
+The adapter verifies `profile/self` ownership of `aniccabuddha.substack.com`,
+extracts the already-public owned `<article>` HTML instead of adding a Markdown
+renderer dependency, preserves disclosure and the exact tracking link, creates a
+newsletter draft with `should_send_email=false`, publishes with `send=false`, and
+requires authenticated draft readback plus anonymous public title/disclosure
+readback. It uses a separate one-per-24-hour receipt and the shared external-
+effect journal. `SUBSTACK_SESSION_COOKIE` is read from the process environment or
+the same private env locations as DEV and never enters receipts or Git.
+
 Build the second source-bound product campaign with the same publisher and X
 adapter:
 
