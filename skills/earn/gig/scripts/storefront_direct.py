@@ -1905,6 +1905,35 @@ def _render_gallery_mutation(
     }
 
 
+def _render_published_gallery_mutation(state_dir: Path, own_page: dict) -> dict:
+    for path in sorted((state_dir / "effect-intents").glob("*.json")):
+        try:
+            intent = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (intent.get("status") != "confirmed" or intent.get("effect_ledger_appended") is not True
+                or intent.get("service_id") != GALLERY_SERVICE_ID
+                or intent.get("changed_field") != "image"):
+            continue
+        contract = intent.get("mutation_contract")
+        if not isinstance(contract, dict):
+            raise RuntimeError("published_gallery_contract_missing")
+        _validate_image_mutation_contract(contract)
+        try:
+            public_before = json.loads(Path(intent["public_before_path"]).read_text(encoding="utf-8"))
+        except (OSError, KeyError, json.JSONDecodeError) as error:
+            raise RuntimeError("published_gallery_before_evidence_missing") from error
+        _validate_public_image_acceptance(public_before, own_page, contract)
+        logical_field = contract["allowed_delta"][0]
+        return {
+            "version": 1, "contract": contract,
+            "before": {logical_field: contract["before_value"]},
+            "after": {logical_field: contract["proposed_value"]},
+            "delta": contract["allowed_delta"], "published": True,
+        }
+    raise RuntimeError("storefront_gallery_before_not_current")
+
+
 def _image_judgement(hypothesis: dict, contract: dict) -> dict:
     _validate_image_mutation_contract(contract)
     proposed = contract["proposed_value"]
@@ -2755,10 +2784,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             if gallery_source is None:
                 raise RuntimeError("storefront_gallery_offer_contract_missing")
-            gallery_render = _render_gallery_mutation(
+            gallery_render = (_render_gallery_mutation(
                 gallery_page, gallery_source["service_version_sha256"],
                 gallery_asset, capability_families,
-            )
+            ) if gallery_page.get("service_image_ids") == gallery_asset["before_image_ids"]
+                else _render_published_gallery_mutation(args.state_dir, gallery_page))
             gallery_render_path = inventory_path.parent / "mutation-render-gallery.json"
             _atomic_write(gallery_render_path, gallery_render)
             mutation_contracts = [render["contract"] for render in (
