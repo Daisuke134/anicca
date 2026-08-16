@@ -152,15 +152,15 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `64b17eb94` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded ElevenLabs recovery, HubSpot/Impact application polling, generic policy-PASS owned/X publication, one-per-day canonical DEV syndication, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and advances composition handoffs through generic policy | New-program application/link acquisition, general repair beyond observed failures, and cohort allocation are not yet scheduled owners |
+| Runtime | Immutable local release `804eb4eaa` is current. All six isolated Affiliate launchd owners are loaded; the three browser owners are running, the source/composition/money owners have last exit `0`, and CDP `9324`, `9326`, and `9327` respond. The ten-minute money loop owns bounded ElevenLabs recovery, HubSpot/Impact application polling, generic policy-PASS owned/X publication, one-per-day canonical DEV and Substack syndication, hourly revenue reconciliation, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the ten-minute composition owner consumes at most one credential-free due stage per wake and advances composition handoffs through generic policy | New-program application/link acquisition, general repair beyond observed failures, and cohort allocation are not yet scheduled owners |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
-| Publication | Six English owned Affiliate articles and their matching disclosed `@selawmqt` X posts are live. The latest autonomous campaign is also canonically syndicated at `https://dev.to/anicca_301094325e/elevenlabs-audio-to-text-a-practical-fit-check-before-you-choose-31p3`. Anonymous DEV readback returned HTTP `200`, the owned canonical URL, disclosure, and CTA. External job `6674a07c…e421` is `VERIFIED`; Telegram message `20912` reports the live lane; replay is `COOLDOWN / NO_PENDING / exit 0` with one unique job and one outbox/sent event | Post-baseline provider click readback and every Japanese placement remain unproven |
+| Publication | Six English owned Affiliate articles and their matching disclosed `@selawmqt` X posts are live. The latest campaign is also on canonical DEV and at `https://aniccabuddha.substack.com/p/elevenlabs-audio-to-text-a-practical`. Anonymous Substack readback returns the full body, disclosure, and one tracking link; external job `3a7c7b28…78c2` is `VERIFIED`, Telegram message `20934` reports it, and replay is `COOLDOWN / NO_PENDING / exit 0`. A lost-target recovery defect created one additional title-only Substack duplicate at `https://aniccabuddha.substack.com/p/elevenlabs-audio-to-text-a-practical-ac1`; the fixed adapter journals the ID before publish and fences unresolved effects, but public deletion awaits explicit authorization | Post-baseline provider click readback and every Japanese placement remain unproven |
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, and real `PLACEMENT_LIVE` are live-proven. The sixth campaign notification is bound to provider message ID `20895`; replay returns `NO_PENDING` | `CLICK_DELTA` and commission events remain bound to their real external transitions |
-| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, budget-blocked same-job recovery, generic handoff and policy receipt creation, two-provider auth/polling, generic policy-PASS owned/X publication, canonical DEV syndication, revenue polling, receipts, and Telegram are live. Release `64b17eb94` keeps ElevenLabs `AUTHENTICATED` and HubSpot/Impact `APPLICATION_PENDING` while DEV replay returns `COOLDOWN / NO_PENDING` | New-program application/link acquisition, provider/channel quarantine, watchdog, post-baseline acquisition, and positive money evidence remain absent. The loop discovers, composes, validates, distributes, and measures one executable provider while polling one pending provider; it has not yet earned a commission |
+| Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery, daily official-source refresh, source-hash-bound composition inbox, bounded Terra-high composition, budget-blocked same-job recovery, generic handoff and policy receipt creation, two-provider auth/polling, generic policy-PASS owned/X publication, canonical DEV and Substack syndication, revenue polling, receipts, and Telegram are live. Release `804eb4eaa` keeps ElevenLabs `AUTHENTICATED` and HubSpot/Impact `APPLICATION_PENDING`; unchanged Substack replay returns `COOLDOWN / NO_PENDING` | New-program application/link acquisition, provider/channel quarantine, watchdog, post-baseline acquisition, and positive money evidence remain absent. The loop discovers, composes, validates, distributes, and measures one executable provider while polling one pending provider; it has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
 
@@ -1079,7 +1079,7 @@ gate.
 Current execution cursor: **A15.7, acquire the first external post-baseline click**.
 Provider admission continues in the same wake: HubSpot/Impact is polled without
 resubmission, GetResponse remains provider-gated until an existing commission,
-and Systeme.io remains behind its typed CAPTCHA boundary. Release `64b17eb94` is
+and Systeme.io remains behind its typed CAPTCHA boundary. Release `804eb4eaa` is
 current; all six launchd owners are loaded and all three CDP ports respond. The
 real `elevenlabs-discovered-audio-to-text-en` lineage also
 closes a same-day continuation proof: official sitemap discovery, source-set
@@ -1097,19 +1097,27 @@ unique DEV job ID and one Telegram outbox/sent row. Revenue remains zero
 post-baseline clicks and zero commission. No human login-support request or
 six-digit-code handoff is outstanding.
 
+The same launchd owner now also owns Substack. It recovered public ID
+`211393132`, replaced a non-rendering raw-HTML body with seven native
+ProseMirror paragraphs, verified the full anonymous body/disclosure/tracking
+link, closed external job `3a7c7b28…78c2`, and sent Telegram message `20934`.
+Replay is `COOLDOWN / NO_PENDING / exit 0`. The failed first recovery also
+created title-only public duplicate `211393237`; the unresolved-effect fence now
+prevents recurrence, while deletion remains an explicit public-cleanup action.
+
 | Current surface | Verified state | Meaning |
 |---|---|---|
 | Local scheduler | Six Affiliate launchd owners; last exits are `0` | The local runtime is installed and healthy |
 | Provider | ElevenLabs authenticated; executable referral link already held privately | New signup is not on the critical path |
-| Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE`; 1 canonical DEV article `LIVE` | Real public effects exist and are receipted |
-| Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist; the sixth campaign reached owned/X/DEV `LIVE` and Telegram before unchanged replays | A real external click is the first unfinished economic stage; provider admission continues in parallel under provider gates |
+| Existing distribution | 6 owned articles `LIVE`; 6 X posts `LIVE`; 1 canonical DEV article `LIVE`; 1 receipted Substack article `LIVE` | Real public effects exist and are receipted; one title-only Substack duplicate is visible and pending cleanup authorization |
+| Generic pipeline | Official sitemap discovery created mutable-state plans; six sealed handoffs and six hash-bound policy receipts exist; the sixth campaign reached owned/X/DEV/Substack `LIVE` and Telegram before unchanged replays | A real external click is the first unfinished economic stage; provider admission continues in parallel under provider gates |
 | Acquisition | 0 post-baseline provider clicks | E0 is open |
 | Money | 0 provider transactions / USD 0 commission | E1 and every revenue scale gate are open |
 
 ```mermaid
 flowchart LR
   C[Composition] --> P[Policy and deterministic publish]
-  P --> F[6 English campaigns LIVE]
+  P --> F[6 campaigns + DEV + Substack LIVE]
   F --> E0[E0 real click]
   E0 --> E1[E1 approved commission]
   E1 --> T[10 comparable placements]
@@ -1918,8 +1926,20 @@ observable outcome exists.
   a single `<article>` containing the disclosure, CTA, and tracking link. The
   Affiliate adapter copies the verified `profile/self → draft → publish → draft
   readback` sequence, sends no email, records its own stable target/job, and uses
-  no unpinned Markdown dependency. Live publication remains open until the
-  installed launchd owner produces a public receipt.
+  no unpinned Markdown dependency. The first live attempt exposed two real
+  boundaries: published posts disappear from the draft listing, and Substack's
+  public renderer omits a `rawHtml` node. Before the missing target journal was
+  fixed, response-loss recovery created title-only posts `211393132` and
+  `211393237`. Releases `d8e573737` and `a579f83c7` now refuse a new draft while
+  an effect is unresolved, persist the target before publish, recover the oldest
+  public identity, and render this campaign as native paragraph/text/link nodes.
+  Release `804eb4eaa` verifies the full body at
+  `https://aniccabuddha.substack.com/p/elevenlabs-audio-to-text-a-practical`,
+  with disclosure and exactly one tracking link, marks job `3a7c7b28…78c2`
+  `VERIFIED`, sends Telegram message `20934`, and replays as
+  `COOLDOWN / NO_PENDING / exit 0`. The second title-only URL remains visible;
+  deletion is not silently folded into recovery because it is a public deletion.
+  Neither DEV nor Substack closes E0 without a real provider click.
 - [ ] **A15.8 — E1.** Record one non-test `approved` commission with public
   placement, provider source hash, transaction lineage, costs, and Telegram event.
 
