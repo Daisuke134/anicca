@@ -102,7 +102,6 @@ def _append(path: Path, value: dict) -> None:
 
 def _report_message(row: dict) -> str:
     failed = int(row.get("status") == "failed")
-    effect = int(row.get("effect") or 0)
     hypothesis = row.get("next_hypothesis") if isinstance(row.get("next_hypothesis"), dict) else {}
     contract_delta = int(row.get("listing_contracts_appended") or 0)
     catalog = row.get("catalog_analytics") if isinstance(row.get("catalog_analytics"), dict) else {}
@@ -113,8 +112,11 @@ def _report_message(row: dict) -> str:
         if isinstance(catalog.get("metric_unknown_services"), dict) else {}
     )
     draft = row.get("new_listing_draft") if isinstance(row.get("new_listing_draft"), dict) else {}
+    effect = max(int(row.get("effect") or 0), int(draft.get("effect") or 0),
+                 int(draft.get("public_effect") or 0))
     next_action = (
         "失敗stageを自動修復して同じ境界から再開" if failed
+        else "全出品adapterをversioned mutation contractへ共通化" if draft.get("status") == "already_public"
         else "公式readbackとoutcome ledgerを照合" if effect
         else f"{hypothesis.get('service_id')}/{hypothesis.get('field')}の実行harnessを継続"
         if hypothesis else "scorecard先頭の実行可能gapを選択"
@@ -127,7 +129,8 @@ def _report_message(row: dict) -> str:
          f"version履歴 {int(row.get('listing_contracts_total') or 0)}件 / 今回追加 {contract_delta}件"),
         (f"📝 新規出品draft {draft.get('draft_service_id') or 'なし'} / "
          f"更新 {int(draft.get('effect') or 0)} / 照合 {int(draft.get('readback') or 0)} / "
-         f"画像 {int(draft.get('image_count') or 0)} / 公開 0"),
+         f"画像 {int(draft.get('image_count') or 0)} / 公開 {int(draft.get('public_effect') or 0)} / "
+         f"状態 {draft.get('status') or 'なし'}"),
         (f"📈 直近30日: 閲覧 {int(totals.get('views') or 0)} / 販売 {int(totals.get('purchases') or 0)} / "
          f"お気に入り {int(totals.get('favorites') or 0)} | 前回比 閲覧 {int(changes.get('views') or 0):+d} / "
          f"販売 {int(changes.get('purchases') or 0):+d} / 現在値不明 {int(metric_unknown.get('views') or 0)}件 / "
@@ -136,6 +139,8 @@ def _report_message(row: dict) -> str:
         f"🛡️ fence {hypothesis.get('guard_reason') or row.get('reason') or 'なし'}",
         f"🔧 次の一手: {next_action}",
     ]
+    if draft.get("public_url"):
+        lines.extend(("✅ 新規SEOサービスは公式公開中", f"🔗 {draft['public_url']}"))
     if failed:
         lines.extend((f"reason: {str(row.get('reason') or 'unknown')[:300]}",
                       f"pass_id: {str(row.get('pass_id') or '')[:200]}"))
@@ -149,6 +154,13 @@ def _report_message(row: dict) -> str:
 
 
 def _report_identity(row: dict, message: str) -> tuple[str, str, bool]:
+    draft = row.get("new_listing_draft") if isinstance(row.get("new_listing_draft"), dict) else {}
+    if int(draft.get("public_effect") or 0) == 1:
+        identity = ":".join((str(draft.get("candidate_key") or ""),
+                             str(draft.get("contract_sha256") or ""),
+                             str(draft.get("draft_service_id") or "")))
+        digest = hashlib.sha256(identity.encode()).hexdigest()
+        return f"gig:telegram:storefront-public-effect:v1:{digest}", "storefront_public_effect", False
     if int(row.get("readback") or 0) > 0 and row.get("experiment_key"):
         identity = ":".join((str(row.get("service_id") or ""),
                              str(row.get("changed_field") or ""),
@@ -166,7 +178,7 @@ def _send_telegram(args: argparse.Namespace, message: str, event_key: str) -> st
     completed = subprocess.run(
         [str(args.openclaw), "message", "send", "--channel", "telegram",
          "--target", str(args.telegram_target), "--message", message, "--json"],
-        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False,
+        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     if completed.returncode != 0:
         raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
