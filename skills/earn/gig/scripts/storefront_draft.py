@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import re
 import struct
 import subprocess
 import sys
@@ -182,6 +183,20 @@ def _snapshot_image_count(snapshot: dict[str, Any]) -> int:
     if not isinstance(images, list):
         return -1
     return len(images)
+
+
+def _snapshot_image_identity(snapshot: dict[str, Any]) -> str:
+    identities = set()
+    for image in snapshot.get("images") or []:
+        if not isinstance(image, dict):
+            continue
+        text = f"{image.get('src') or ''} {image.get('style') or ''}"
+        match = re.search(r"service_images/(?:original/|[^/]+/)([A-Za-z0-9-]+\.(?:png|jpe?g|webp))", text)
+        if match:
+            identities.add(match.group(1))
+    if len(identities) != 1:
+        raise RuntimeError("storefront_draft_image_identity_invalid")
+    return identities.pop()
 
 
 DRAFT_SNAPSHOT_EXPRESSION = (
@@ -426,7 +441,7 @@ def prepare_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
     }
 
 
-async def _submit_public(ws_url: str, contract: dict[str, Any]) -> None:
+async def _submit_public(ws_url: str, contract: dict[str, Any]) -> str:
     import websockets
 
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
@@ -440,6 +455,7 @@ async def _submit_public(ws_url: str, contract: dict[str, Any]) -> None:
             raw, cid = await _evaluate(ws, DRAFT_SNAPSHOT_EXPRESSION, cid)
             snapshot = json.loads(str(raw or "{}"))
             if _snapshot_matches(snapshot, contract) and _snapshot_image_count(snapshot) == 1:
+                image_identity = _snapshot_image_identity(snapshot)
                 break
             await asyncio.sleep(0.25)
         else:
@@ -453,9 +469,12 @@ async def _submit_public(ws_url: str, contract: dict[str, Any]) -> None:
         if submitted is not True:
             raise RuntimeError("storefront_publish_control_missing")
         await asyncio.sleep(5)
+        return image_identity
 
 
-async def _public_readback(ws_url: str, contract: dict[str, Any]) -> dict[str, Any]:
+async def _public_readback(
+    ws_url: str, contract: dict[str, Any], image_identity: str,
+) -> dict[str, Any]:
     import websockets
 
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
@@ -469,12 +488,16 @@ async def _public_readback(ws_url: str, contract: dict[str, Any]) -> dict[str, A
             ), cid)
             snapshot = json.loads(str(raw or "{}"))
             body = str(snapshot.get("body") or "")
+            images = [str(value) for value in snapshot.get("images") or []]
             if (
                 snapshot.get("url") == contract["expected_public_url"]
                 and contract["public_fields"]["expected_title"] in body
                 and contract["public_fields"]["catchphrase"] in body
+                and contract["public_fields"]["head"] in body
+                and contract["public_fields"]["body"] in body
                 and f"{contract['public_fields']['display_price_jpy']:,}円" in body
-                and len(snapshot.get("images") or []) > 0
+                and all(contract["category"][level]["label"] in body for level in ("master", "sub", "type"))
+                and any(image_identity in value for value in images)
             ):
                 return snapshot
             await asyncio.sleep(0.5)
@@ -492,7 +515,7 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
         tab = json.loads(opened.stdout)
         if opened.returncode != 0 or tab.get("ok") is not True:
             raise RuntimeError("storefront_publish_tab_open_failed")
-        asyncio.run(_submit_public(str(tab["ws"]), contract))
+        image_identity = asyncio.run(_submit_public(str(tab["ws"]), contract))
     finally:
         if isinstance(tab, dict) and tab.get("target_id"):
             subprocess.run(
@@ -510,7 +533,7 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
         public_tab = json.loads(public_opened.stdout)
         if public_opened.returncode != 0 or public_tab.get("ok") is not True:
             raise RuntimeError("storefront_publish_readback_tab_open_failed")
-        snapshot = asyncio.run(_public_readback(str(public_tab["ws"]), contract))
+        snapshot = asyncio.run(_public_readback(str(public_tab["ws"]), contract, image_identity))
     finally:
         if isinstance(public_tab, dict) and public_tab.get("target_id"):
             subprocess.run(
@@ -525,5 +548,59 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
         "contract_sha256": contract["contract_sha256"], "draft_service_id": contract["draft_service_id"],
         "status": "published", "effect": 1, "readback": 1, "image_count": 1,
         "public_effect": 1, "public_url": contract["expected_public_url"],
+        "public_image_identity": image_identity,
         "asset_sha256": contract["hero_image"]["asset_sha256"], "evidence_path": str(evidence_path),
+    }
+
+
+def readback_published_draft(
+    contract: dict[str, Any], default_tab_script: Path, evidence_dir: Path,
+) -> dict[str, Any]:
+    draft_opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", contract["draft_url"]], capture_output=True, text=True,
+        check=False, timeout=30,
+    )
+    draft_tab = None
+    try:
+        draft_tab = json.loads(draft_opened.stdout)
+        if draft_opened.returncode != 0 or draft_tab.get("ok") is not True:
+            raise RuntimeError("storefront_published_draft_tab_open_failed")
+        draft_snapshot = asyncio.run(_readback(str(draft_tab["ws"]), contract))
+        image_identity = _snapshot_image_identity(draft_snapshot)
+    finally:
+        if isinstance(draft_tab, dict) and draft_tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(draft_tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+    public_opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", contract["expected_public_url"]], capture_output=True, text=True,
+        check=False, timeout=30,
+    )
+    public_tab = None
+    try:
+        public_tab = json.loads(public_opened.stdout)
+        if public_opened.returncode != 0 or public_tab.get("ok") is not True:
+            raise RuntimeError("storefront_published_readback_tab_open_failed")
+        snapshot = asyncio.run(_public_readback(str(public_tab["ws"]), contract, image_identity))
+    finally:
+        if isinstance(public_tab, dict) and public_tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(public_tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+    evidence_path = evidence_dir / "new-listing-public-readback.json"
+    evidence_path.write_text(json.dumps(snapshot, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    return {
+        "version": 1, "candidate_key": contract["candidate_key"],
+        "contract_sha256": contract["contract_sha256"], "draft_service_id": contract["draft_service_id"],
+        "status": "already_public", "effect": 0, "readback": 1, "image_count": 1,
+        "public_effect": 0, "public_url": contract["expected_public_url"],
+        "public_image_identity": image_identity,
+        "asset_sha256": contract["hero_image"]["asset_sha256"], "evidence_path": str(evidence_path),
+        "publication_guard": "already_public",
     }
