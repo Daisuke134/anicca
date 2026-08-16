@@ -295,7 +295,9 @@ def build_transition(row, source_hash, observed_at):
         "provider_transaction_id": row["provider_transaction_id"],
         "provider_status": row["provider_status"],
         "gross_commission_minor": row["gross_commission_minor"],
-        "source_artifact_sha256": source_hash,
+        "reversal_minor": row["reversal_minor"],
+        "net_commission_minor": row["net_commission_minor"],
+        "currency": row["currency"],
     }
     transition_id = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
     return {
@@ -303,10 +305,8 @@ def build_transition(row, source_hash, observed_at):
         "receipt_type": "COMMISSION_TRANSITION",
         "transition_id": transition_id,
         **identity,
+        "source_artifact_sha256": source_hash,
         "status": row["status"],
-        "currency": row["currency"],
-        "reversal_minor": row["reversal_minor"],
-        "net_commission_minor": row["net_commission_minor"],
         "created_at": row["created_at"],
         "offer": row["offer"],
         "target_type": row["target_type"],
