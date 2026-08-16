@@ -1255,23 +1255,42 @@ a commission being approved are external acceptance gates observed by launchd;
 they are not implementation TODOs and never block safe work on the next missing
 harness boundary.
 
-Latest restart truth: source/spec HEAD `50eb883f3c9a2ab695484e1bc4b69cfc7e4ddeb1`
-and installed release `c2c1aa60d3375e9e6abb0156d9da803077fef697`
-remain clean/current. All six launchd owners are loaded; the three job owners
-read back 600-second intervals and last exit `0`, and the three isolated browser
-owners are running. Money wakes immediately before the latest wake returned
-`X_LIVE`; the latest wake at runtime timestamp `1786889338` returned
-`PUBLICATION_FAILED / XPostError` while retaining ElevenLabs `AUTHENTICATED`,
-revenue `NO_TRANSACTIONS`, six placements `LEDGER_READY`, and Telegram
-`NO_PENDING`. This is an unresolved real-runtime failure, not proof that an
-external post failed or duplicated. Resume by reading the exact X target and
-publication/job receipts, then trigger and watch the existing launchd money owner;
-if the same class repeats, repair the X observation/reconciliation harness rather
-than posting manually. Campaign seven remains source-captured but composition is
-budget-blocked for JST `2026-08-16` (`101310` consumed plus a `32768`
-reservation exceeds the `131072` daily cap); its same durable job retries when
-the next budget day becomes eligible. Official provider transactions and
-approved/paid Affiliate commission remain exactly zero.
+Latest restart truth: source/spec HEAD `7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25`
+and installed release `7fef8d02ca5aec3fdd1295edb7d0ebff3fc63a25`
+are clean, identical, and pushed to `origin` and `canonical`. All six launchd
+owners are loaded; the three job owners read back 600-second intervals and last
+exit `0`, and the three isolated browser owners are running.
+
+The recurring `PUBLICATION_FAILED / XPostError` is resolved at its root cause,
+not merely observed to recover. `advance_tts_api_publication` short-circuited
+only while the dedicated link was still not `VERIFIED`. Runtime state showed the
+link `VERIFIED`, the placement receipt `LIVE`, and the built X artifact hash
+equal to the receipt hash, so every 10-minute wake rebuilt the article and
+re-drove a full X profile/timeline scrape for a settled effect that could never
+publish anything new; any transient scrape failure then failed the whole wake.
+Three real wakes failed this way (`1786858531`, `1786866671`, `1786889338`), and
+each next wake returned to `X_LIVE` on the identical URL. The code path proves no
+duplicate was possible: for a placement whose receipt already carries a
+`public_url`, the compose/fence branch is unreachable, and no `X_POST_EFFECT_FENCE`
+receipt exists in `x-posts/`. Release `7fef8d02c` terminates the relink republish
+on content equality instead. Real installed wake `23:28:36 JST` exited `0` and
+returned `ALREADY_LIVE` with the same public URL, six placements `LEDGER_READY`,
+ElevenLabs `AUTHENTICATED`; the replay wake `23:29:40 JST` repeated it. The
+`x-posts/elevenlabs-tts-api-en-1.json` receipt mtime stayed `23:19:20`, proving
+the X browser was not driven at all. Publication failures now also record
+`failure_detail` exactly as the adjacent distribution handler already did, so a
+future `XPostError` meaning "X composer is unavailable" stays distinguishable
+from "X effect is ambiguous", which is the only duplicate-effect boundary in this
+path.
+
+Campaign seven remains source-captured but composition is budget-blocked for JST
+`2026-08-16` (`101310` consumed plus a `32768` reservation exceeds the `131072`
+daily cap; the budget day is computed in `Asia/Tokyo`). Its same durable job
+retries unattended when the JST day rolls over, because the composition owner
+wakes every 600 seconds. The cap implies at most four sealed compositions per JST
+day, so the six-to-ten placement growth is throughput-bound, not blocked.
+Official provider transactions and approved/paid Affiliate commission remain
+exactly zero.
 M0.3 is installed in release `30f7862ab579a1416fd272c3643cce1b3f0f2ff1`.
 Real launchd wake `10` exited `0`, kept provider `AUTHENTICATED` and publication
 `X_LIVE`, and rebuilt a mode-0600, hash-valid six-placement economic ledger even
