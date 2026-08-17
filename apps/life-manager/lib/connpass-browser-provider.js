@@ -106,6 +106,42 @@ async function selectParticipationTier(participationGroup) {
   await participationGroup.nth(index).check();
 }
 
+// Real Connpass join pages (measured live, see
+// connector-production-browser-harness.js's connpassJoin handling and
+// docs/superpowers/plans/2026-08-11-connector-connpass-real-dom-observation-14e.md)
+// wrap the participation-type tier radios AND any organizer-added custom
+// questions in the same `.question_list` container structure, each with a
+// direct `.question` child whose text starts with `必須` (required) or `任意`
+// (optional). The tier group is excluded here — it is validated and clicked
+// by selectParticipationTier above, not by this check — leaving only
+// organizer questionnaire groups. Connpass silently no-ops the confirm click
+// when a required questionnaire field is empty, so this must run before any
+// radio is checked or the confirm button is clicked.
+async function hasUnansweredRequiredQuestionnaire(page) {
+  const groups = page.locator(".question_list");
+  return groups.evaluateAll((elements) => elements.some((group) => {
+    if (group.querySelector('input[name="participation_type"]')) return false;
+    const questionElement = group.querySelector(":scope > .question");
+    const questionText = String((questionElement && (questionElement.textContent || questionElement.innerText)) || "")
+      .replace(/\s+/g, " ").trim();
+    if (!/^必須/.test(questionText)) return false;
+    const fields = [...group.querySelectorAll("input,textarea,select")]
+      .filter((field) => String(field.type || "").toLowerCase() !== "hidden" && field.disabled !== true);
+    if (fields.length === 0) return false;
+    const answered = (field) => {
+      const type = String(field.type || "").toLowerCase();
+      if (type === "radio" || type === "checkbox") {
+        const name = String(field.name || "");
+        return name
+          ? fields.some((candidate) => String(candidate.name || "") === name && candidate.checked === true)
+          : field.checked === true;
+      }
+      return String(field.value || "").trim().length > 0;
+    };
+    return !fields.every(answered);
+  }));
+}
+
 async function submitConnpassOnPage(page, _contract, dependencies = {}) {
   const readState = dependencies.readState || readConnpassRegistrationStateOnPage;
   const before = await readState(page);
@@ -144,6 +180,14 @@ async function submitConnpassOnPage(page, _contract, dependencies = {}) {
   try {
     await joinControl.click();
     await page.waitForTimeout(1_000);
+
+    // Fail closed before touching anything else on the join page: a required
+    // organizer questionnaire field left empty makes Connpass silently no-op
+    // the confirm click later (page stays on /join/, nothing registers). See
+    // hasUnansweredRequiredQuestionnaire above for what this matches on.
+    if (await hasUnansweredRequiredQuestionnaire(page)) {
+      throw providerError("Connpass questionnaire requires an answer", "CONNPASS_QUESTIONNAIRE_REQUIRED", false);
+    }
 
     // On the join page: validate BOTH the participation-type radio and the
     // free-confirm control before touching either. Fail closed — nothing is
