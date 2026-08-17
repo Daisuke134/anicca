@@ -1334,7 +1334,7 @@ copied exactly from the official lists in CONTEXT_JSON; never invent an id.\nCON
         "provider": summary.get("selected_provider"), "model": summary.get("selected_model")}
 
 
-def _validate_category_choice(chosen_value: str, options: list) -> dict:
+def _validate_category_choice(chosen_value: str, options: list, level: str = "category") -> dict:
     """Bind a category to an option the official seller form actually offers.
 
     Category ids are not transferable between listings: the committed contract's
@@ -1342,10 +1342,10 @@ def _validate_category_choice(chosen_value: str, options: list) -> dict:
     """
     rows = [row for row in options or [] if isinstance(row, dict) and str(row.get("value") or "").strip()]
     if not rows:
-        raise RuntimeError("storefront_category_options_unobserved")
+        raise RuntimeError(f"storefront_category_options_unobserved:{level}")
     match = next((row for row in rows if str(row["value"]) == str(chosen_value).strip()), None)
     if match is None:
-        raise RuntimeError("storefront_category_choice_not_official")
+        raise RuntimeError(f"storefront_category_choice_not_official:{level}:{chosen_value}")
     return {"value": str(match["value"]), "label": str(match.get("label") or "").strip()}
 
 
@@ -4754,7 +4754,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     if choice.get("decision") != "choose":
                         raise RuntimeError(
                             f"storefront_category_no_op:{str(choice.get('no_op_reason'))[:120]}")
-                    bound = _validate_category_choice(choice.get("master_category_value"), master_options)
+                    bound = _validate_category_choice(choice.get("master_category_value"), master_options, "master")
                     _append_key_once(category_ledger, "cluster_key", {
                         "version": 1, "cluster_key": unused_cluster.get("cluster_key"),
                         "query": unused_cluster.get("query"),
@@ -4915,7 +4915,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         )
                         sub = _validate_category_choice(
                             picked.get("sub_value"),
-                            children.get("data[Service][master_sub_category]") or [])
+                            children.get("data[Service][master_sub_category]") or [], "sub")
                         # Type options only exist once the sub category is set, so read again.
                         typed = storefront_draft.read_category_children(
                             getattr(args, "default_tab_script", DEFAULT_TAB),
@@ -4937,7 +4937,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             # The site rejects a listing whose type is unset, so the type the
                             # form offers is always read and always chosen from what it offers.
                             "type": _validate_category_choice(picked_type.get("type_value"),
-                                                              type_options),
+                                                              type_options, "type"),
                         }}
                         demand_derivation = {**(demand_derivation or {}),
                                              "category_triple": blueprint["category"],
