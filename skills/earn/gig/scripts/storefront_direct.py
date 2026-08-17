@@ -3595,6 +3595,99 @@ def _validate_package_form_delta(before: dict, after: dict, contract: dict) -> N
         raise RuntimeError("seller_package_non_target_changed")
 
 
+async def _execute_listing_state_effect_async(
+    ws_url: str, *, contract: dict, evidence_dir: Path,
+) -> dict:
+    """Archive one listing from its own seller card, then prove it can come back.
+
+    Archiving is the platform's recoverable unpublish: the listing, its versions and its
+    sales history survive. The restore control is verified on the archived card before the
+    effect is accepted, so retirement is never a one-way door.
+    """
+    import websockets
+    import listing_inventory
+
+    mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
+    _validate_mutation_contract(contract, mappings)
+    if contract.get("changed_field") != "listing_state":
+        raise RuntimeError("storefront_retire_contract_invalid")
+    service_id = str(contract["service_id"])
+    action = str(contract["proposed_value"]["action"])
+    if action != f"/services/archive/{service_id}":
+        raise RuntimeError("storefront_retire_action_invalid")
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10,
+                                  max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        await listing_inventory._call(ws, "Page.enable", {}, cid); cid += 1
+        await ws.send(json.dumps({"id": cid, "method": "Page.navigate",
+                                  "params": {"url": "https://coconala.com/mypage/services_lists"}})); cid += 1
+        _, cid = await listing_inventory._wait_for_load(ws, asyncio.get_event_loop().time() + 15, cid)
+        clicked, cid = await _evaluate(ws, (
+            "(()=>{const a=[...document.querySelectorAll('a.js_change-open-status')]"
+            f".find(e=>e.getAttribute('href')==={json.dumps(action)});"
+            "if(!a)return false;a.click();return true})()"
+        ), cid)
+        if clicked is not True:
+            raise RuntimeError("storefront_retire_control_absent_at_submit")
+        await asyncio.sleep(5)
+        await ws.send(json.dumps({"id": cid, "method": "Page.navigate",
+                                  "params": {"url": "https://coconala.com/mypage/services_lists"}})); cid += 1
+        _, cid = await listing_inventory._wait_for_load(ws, asyncio.get_event_loop().time() + 15, cid)
+        raw, cid = await _evaluate(ws, (
+            "JSON.stringify([...document.querySelectorAll('.serviceListContentBox')]"
+            f".filter(c=>(c.innerHTML||'').includes({json.dumps('/services/' + service_id)}))"
+            ".map(c=>({text:(c.innerText||'').slice(0,200),restore:[...c.querySelectorAll('a')]"
+            ".map(a=>a.getAttribute('href')||'').filter(h=>/\\/services\\/(open|public)\\//.test(h))})))"
+        ), cid)
+        cards = json.loads(str(raw or "[]"))
+    readback = {"service_id": service_id, "cards": cards,
+                "observed_at_epoch": int(time.time())}
+    _atomic_write(evidence_dir / f"listing-state-readback-{service_id}.json", readback)
+    if not cards:
+        raise RuntimeError("storefront_retire_card_missing_after_archive")
+    if "公開中" in str(cards[0].get("text") or ""):
+        raise RuntimeError("storefront_retire_still_public")
+    if not (cards[0].get("restore") or []):
+        raise RuntimeError("storefront_retire_restore_control_unverified")
+    return {**readback, "restore_href": cards[0]["restore"][0]}
+
+
+async def _restore_listing_state_async(ws_url: str, *, service_id: str, restore_href: str) -> dict:
+    """Put an archived listing back, using the restore control observed on its own card."""
+    import websockets
+    import listing_inventory
+
+    if not restore_href.startswith("/services/"):
+        raise RuntimeError("storefront_restore_href_invalid")
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10,
+                                  max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        await listing_inventory._call(ws, "Page.enable", {}, cid); cid += 1
+        await ws.send(json.dumps({"id": cid, "method": "Page.navigate",
+                                  "params": {"url": "https://coconala.com/mypage/services_lists"}})); cid += 1
+        _, cid = await listing_inventory._wait_for_load(ws, asyncio.get_event_loop().time() + 15, cid)
+        clicked, cid = await _evaluate(ws, (
+            "(()=>{const a=[...document.querySelectorAll('a')]"
+            f".find(e=>e.getAttribute('href')==={json.dumps(restore_href)});"
+            "if(!a)return false;a.click();return true})()"
+        ), cid)
+        if clicked is not True:
+            raise RuntimeError("storefront_restore_control_absent")
+        await asyncio.sleep(5)
+        await ws.send(json.dumps({"id": cid, "method": "Page.navigate",
+                                  "params": {"url": "https://coconala.com/mypage/services_lists"}})); cid += 1
+        _, cid = await listing_inventory._wait_for_load(ws, asyncio.get_event_loop().time() + 15, cid)
+        raw, cid = await _evaluate(ws, (
+            "JSON.stringify([...document.querySelectorAll('.serviceListContentBox')]"
+            f".filter(c=>(c.innerHTML||'').includes({json.dumps('/services/' + service_id)}))"
+            ".map(c=>(c.innerText||'').slice(0,120)))"
+        ), cid)
+        cards = json.loads(str(raw or "[]"))
+    if not cards or "公開中" not in str(cards[0]):
+        raise RuntimeError("storefront_restore_not_public")
+    return {"service_id": service_id, "restored": True, "observed_at_epoch": int(time.time())}
+
+
 async def _execute_text_effect_async(
     ws_url: str, *, contract: dict, judgement: dict, public_before_path: Path,
     evidence_dir: Path, state_dir: Path,
