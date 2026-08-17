@@ -29647,3 +29647,9 @@
 {"ts":1786980140,"wake_id":"00MSXDU5AH3986B61035C44082","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana paid API for agents [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model to try "}
 {"ts":1786980274,"wake_id":"00MSXDX0CQ31BA48D229154B3F","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
 {"ts":1786980413,"wake_id":"00MSXDZZK9E5DAFD2D7EFB4A78","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786980563,"wake_id":"00MSXE37O122A17BFC43C74AE9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786980705,"wake_id":"00MSXE68R08BC9AF7D34D14319","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786980849,"wake_id":"00MSXE9BR4EDC6CFC2EB9E41C9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786980985,"wake_id":"00MSXEC8U3EB137206886640B7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786981183,"wake_id":"00MSXEGI1F4DFCAC2DD3B74769","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1786981324,"wake_id":"00MSXEJIBTC83E70890CD54210","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
