@@ -2523,6 +2523,39 @@ caused KPI improvement.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=Fal
     return prompt, allowed_refs
 
 
+def _create_blueprint_from_cluster(committed: dict, cluster: dict, category_row: dict) -> dict:
+    """Turn a self-derived demand cluster into the blueprint CREATE builds a listing from.
+
+    Only the parts that belong to the market change: the demand evidence and the official
+    category. Delivery policy, ladder and subscription terms stay as the owner committed
+    them, because those describe how the work is done rather than which market it serves.
+    """
+    master = (category_row or {}).get("master_category") or {}
+    subs = (category_row or {}).get("sub_options") or []
+    types = (category_row or {}).get("type_options") or []
+    if not str(master.get("value") or "").isdigit():
+        raise RuntimeError("storefront_cluster_category_unbound")
+    if not subs or not types:
+        raise RuntimeError("storefront_cluster_category_children_unread")
+    if (cluster.get("status") != "known" or int(cluster.get("score") or 0) <= 0
+            or not str(cluster.get("query") or "").strip()
+            or not str(cluster.get("evidence_path") or "").strip()):
+        raise RuntimeError("storefront_cluster_demand_unproven")
+    return {
+        **committed,
+        "capability_family": cluster.get("capability_family"),
+        "demand_evidence": {
+            "search_url": cluster.get("search_url"),
+            "visible_result_count": cluster.get("visible_result_count"),
+            "comparables": cluster.get("comparables") or [],
+        },
+        "demand_evidence_path": str(cluster["evidence_path"]),
+        "category": {"master": master, "sub": None, "type": None},
+        "category_options": {"sub": subs, "type": types},
+        "cluster_key": cluster.get("cluster_key"),
+    }
+
+
 def _invoke_create_proposal(
     *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path, source: dict,
     family_name: str, family: dict, demand: dict, capability_paths: set[str],
