@@ -104,6 +104,67 @@ test("Connpass detail normalization requires explicit free price and open regist
   assert.equal(normalizeConnpassEventDetail(raw({ controls: ["受付終了"] })).registration_status, "closed");
 });
 
+// Real `<p class="join_fee">` text captured 2026-08-17 from live
+// connpass.com/event/<id>/ pages (matches `[class*="fee"]` in readEventDetail
+// so it already reaches price_labels without any selector change):
+//   free, single tier   -> event/399995, event/403863, event/392421: "無料"
+//   paid, single tier    -> event/390309: "2000円（前払い）"
+//   mixed tiers          -> event/391962: ["無料", "2000円（会場払い）"]
+//                           ("管理者"=staff tier free, "一般枠"=general
+//                           tier costs money — a real registrant pays)
+test("Connpass price recognizes the real single-tier free join_fee wording", () => {
+  const result = normalizeConnpassEventDetail(raw({ offers: [], price_labels: ["無料"] }));
+  assert.equal(result.ticket_price_status, "free");
+  assert.equal(result.ticket_price_minor, 0);
+});
+
+test("Connpass price does NOT report free for a real single-tier paid event", () => {
+  const result = normalizeConnpassEventDetail(raw({ offers: [], price_labels: ["2000円（前払い）"] }));
+  assert.equal(result.ticket_price_status, "unknown");
+  assert.equal(result.ticket_price_minor, null);
+});
+
+test("Connpass price does NOT report free when one real ticket tier is free and another costs money", () => {
+  const result = normalizeConnpassEventDetail(raw({
+    offers: [],
+    price_labels: ["無料", "2000円（会場払い）"],
+  }));
+  assert.equal(result.ticket_price_status, "unknown");
+  assert.equal(result.ticket_price_minor, null);
+});
+
+test("Connpass price still reports free when every real ticket tier is free", () => {
+  const result = normalizeConnpassEventDetail(raw({ offers: [], price_labels: ["無料", "無料"] }));
+  assert.equal(result.ticket_price_status, "free");
+});
+
+// Real anonymous-session strings captured 2026-08-17 from 10 live Tokyo
+// connpass.com event pages: connpass swaps the join button
+// (id="ParticipateButton") to a login prompt when the browsing session
+// isn't authenticated. Neither string may ever be read as an open
+// registration — a false "available" would try to register into a login
+// wall instead of the real join flow.
+test("Connpass registration status does not treat the real anonymous-session login prompt as available", () => {
+  assert.equal(
+    normalizeConnpassEventDetail(raw({ controls: ["ログイン・会員登録"] })).registration_status,
+    "unknown",
+  );
+  assert.equal(
+    normalizeConnpassEventDetail(raw({ controls: ["イベントに申し込むには"] })).registration_status,
+    "unknown",
+  );
+});
+
+// The 4 exact strings connpass renders on the join button for an
+// authenticated, eligible user (same list `submitConnpassOnPage` targets via
+// getByRole so the direct-submit flow and this discovery check stay in
+// sync) must all still be recognized as open.
+test("Connpass registration status recognizes every real open-button wording", () => {
+  for (const label of ["このイベントに申し込む", "イベントに申し込む", "参加申し込み", "申し込む"]) {
+    assert.equal(normalizeConnpassEventDetail(raw({ controls: [label] })).registration_status, "available");
+  }
+});
+
 test("Connpass browser detail reads public offers controls and price labels", async () => {
   const previousDocument = global.document;
   const previousLocation = global.location;

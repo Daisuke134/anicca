@@ -235,3 +235,46 @@ Peatix is unchanged across all five wakes: 10 Calendar-free candidates, three su
 
 `C-CORE-07` is untouched and cannot be forced honestly: it needs the next natural 09:00 wake or an
 equivalent login/reload recovery.
+
+## C-CORE-05 Luma — DONE 2026-08-17, end to end on the live loop
+
+`BLOCKED_EXTERNAL` was the wrong call. It was true that Dais's evenings were mostly taken, but three
+real defects were hiding behind that, and all three are now fixed and proven by live wakes.
+
+**1. Luma was logged out.** `luma.com/home` redirected to `/signin` on the daily-driver, so no RSVP
+could ever complete. Recovered by requesting the sign-in code and reading it from Gmail through `gog`,
+the same path `gog-luma-code-reader.js` exists for. Without this the loop can never register anything.
+
+**2. Nineteen `[Travel]` blocks written by the removed travel feature were still in the calendar and
+were blocking candidates.** They are contract violations by definition — Connector must not write
+travel. Removed all of them; the list of ids, times and titles is kept at
+`~/.local/state/life-manager/connector-native/removed-travel-blocks-20260817.txt`. Luma's Calendar-free
+count went from 0 to 2 immediately.
+
+**3. `page.setContent()` hangs on this browser over CDP.** Measured directly against the live
+daily-driver: it timed out with the default `waitUntil` and again with `commit`, while
+`goto about:blank` + `document.write` rendered the same receipt in 102 ms and produced a 15810-byte PNG.
+That single call was the first step of the evidence chain for Luma, so every evidence run died there.
+The peatix branch already used the working technique; both providers now share it.
+
+A fourth problem surfaced in between: a registration whose evidence chain failed became invisible,
+because discovery filters out events Dais is already registered for. That left him signed up for an
+event he was never told about and which was not on his calendar. Wakes now reconcile registered events
+that have no bundle through the evidence chain only — never through a submit path — bounded to three
+per wake.
+
+Live result, two consecutive wakes, `applied_bundle` both times, bundles 14 → 16:
+
+| event | Calendar event id | Calendar readback | Telegram |
+|---|---|---|---|
+| 8/18 19:30–21:00 皇居ラン | `jlcv9apqtn51rbpi5k4857jr18` | exact 1 | message `21446`, photo `21447` |
+| 8/20 19:00–21:00 Yarn and Yap Vol. 12 | `pfmv6pi9uf7knjv2trpoa0tbhk` | exact 1 | message `21452`, photo `21454` |
+
+Both Calendar ids were read back independently with `gog` and matched the durable bundle exactly.
+
+Measured evening availability for the rest of the window: 08-22, 08-25 and 08-26 are open; 08-22 is in
+fact taken by `One Day with VITURE`, which runs 08-22 13:30 to 08-23 18:00.
+
+A read-only `skills/connector/discover.js` was added along the way. It prints, per candidate, the
+date, the free/open verdict, the Calendar verdict and the blocking interval — that is how the travel
+blocks were caught. It imports no submit path, so it cannot register anything.
