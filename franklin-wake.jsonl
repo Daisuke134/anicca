@@ -29428,3 +29428,10 @@
 {"ts":1786947233,"wake_id":"00MSWU8TRJA0712B33371F4D52","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786947378,"wake_id":"00MSWUBXW3091214F554104366","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana paid microtask platform [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model to "}
 {"ts":1786947543,"wake_id":"00MSWUFH1D57A7B9386FBB4CD9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786947696,"wake_id":"00MSWUIR6C1DE92406AA10496F","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786947854,"wake_id":"00MSWUM5BME590BBF5F363470B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786948002,"wake_id":"00MSWUPASY18AE12346B3B4E5B","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786948160,"wake_id":"00MSWUSOVF5DC05536F3574C78","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786948306,"wake_id":"00MSWUVTRI24328C7B394341FC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786948440,"wake_id":"00MSWUYPHS60AC9A76032A4636","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786948587,"wake_id":"00MSWV1ULG8E325C5BB1444A75","kind":"narrate","sleep_s":120,"model":"auto"}
