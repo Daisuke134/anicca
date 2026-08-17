@@ -113,9 +113,12 @@ test("parent readback separates login, absence, unavailable, pending, and regist
 // https://hfs.connpass.com/event/398207/join/:
 //   input[name="participation_type"] (radio, id="ptype1")
 //   button#FreeButton ("申し込みを確定する")
+const EVENT_PAGE_URL = "https://hfs.connpass.com/event/398207/";
+
 function joinFlowFixture({
   radioCount = 1, confirmCount = 1, confirmVisible = true,
   confirmLabel = "申し込みを確定する", confirmClickError = null, states,
+  eventUrl = EVENT_PAGE_URL, gotoError = null,
 } = {}) {
   const calls = [];
   const joinLink = {
@@ -141,6 +144,11 @@ function joinFlowFixture({
   const stateQueue = [...(states || [])];
   const page = {
     calls,
+    url() { calls.push("url"); return eventUrl; },
+    async goto(url) {
+      calls.push(`goto:${url}`);
+      if (gotoError) throw gotoError;
+    },
     getByRole(role, options) {
       assert.match(role, /link|button/); assert.equal(options.exact, true);
       assert.equal(options.name.test("このイベントに申し込む"), true);
@@ -157,10 +165,12 @@ function joinFlowFixture({
   return page;
 }
 
-test("submit clicks join link, selects the first participation radio, then confirms — in order", async () => {
+test("submit clicks join link, selects the first participation radio, then confirms, then navigates back to the event page before reading the result — in order", async () => {
   const page = joinFlowFixture({ states: [{ state: "absent" }, { state: "registered" }] });
   assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
-  assert.deepEqual(page.calls, ["click-join", "wait", "check-radio", "click-confirm", "wait"]);
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
 });
 
 test("already-registered/pending state returns immediately and clicks nothing", async () => {
@@ -197,7 +207,7 @@ test("missing participation-type radio fails closed before the confirm control i
     assert.equal(error.unknownEffect, false);
     return true;
   });
-  assert.deepEqual(page.calls, ["click-join", "wait"]);
+  assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
 });
 
 test("a failure after the confirm click is always reported as an unknown effect", async () => {
@@ -210,7 +220,38 @@ test("a failure after the confirm click is always reported as an unknown effect"
     assert.equal(error.unknownEffect, true);
     return true;
   });
-  assert.deepEqual(page.calls, ["click-join", "wait", "check-radio", "click-confirm"]);
+  assert.deepEqual(page.calls, ["url", "click-join", "wait", "check-radio", "click-confirm"]);
+});
+
+test("a failure navigating back to the event page after confirming is still reported as an unknown effect", async () => {
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }],
+    gotoError: new Error("navigation timeout"),
+  });
+  await assert.rejects(submitConnpassOnPage(page), (error) => {
+    assert.equal(error.code, "CONNPASS_BROWSER_ACTION_FAILED");
+    assert.equal(error.unknownEffect, true);
+    return true;
+  });
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
+});
+
+test("a failure reading state back on the event page after confirming is still reported as an unknown effect", async () => {
+  // Only one state is queued (the pre-check "absent"); the post-navigation
+  // readState call finds the queue empty, which readConnpassRegistrationStateOnPage
+  // treats as CONNPASS_READBACK_UNAVAILABLE (unknownEffect: false) on its own —
+  // proving the post-click boundary overrides that classification too.
+  const page = joinFlowFixture({ states: [{ state: "absent" }] });
+  await assert.rejects(submitConnpassOnPage(page), (error) => {
+    assert.equal(error.code, "CONNPASS_BROWSER_ACTION_FAILED");
+    assert.equal(error.unknownEffect, true);
+    return true;
+  });
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
 });
 
 test("pre-click failures are known and post-click uncertainty is unknown", async () => {
