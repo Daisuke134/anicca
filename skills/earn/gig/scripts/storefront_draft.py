@@ -295,7 +295,7 @@ async def _prepare(ws_url: str, contract: dict[str, Any]) -> tuple[dict[str, Any
         configured, cid = await _evaluate(ws, (
             "(()=>{const sets=" + json.dumps(checkbox_values) + ";"
             "for(const [name,wanted] of Object.entries(sets)){const els=[...document.getElementsByName(name)];"
-            "if(!els.length)return 'absent';for(const e of els){e.checked=wanted.includes(e.value);"
+            "for(const e of els){e.checked=wanted.includes(e.value);"
             "e.dispatchEvent(new Event('change',{bubbles:true}))}}"
             "const radio=[...document.getElementsByName('data[Service][provision_format]')]"
             f".find(e=>e.value==={json.dumps(category_specific['provision_format'])});"
@@ -303,20 +303,16 @@ async def _prepare(ws_url: str, contract: dict[str, Any]) -> tuple[dict[str, Any
             "const unit=document.querySelector('[name=\"data[Service][unit_price]\"]');"
             "const subscribe=document.querySelector('[name=\"data[Service][can_subscribe]\"][type=checkbox]');"
             "const discount=document.querySelector('[name=\"data[ServiceSubscription][discount_ratio]\"]');"
-            "if(!radio&&!fix&&!unit&&!subscribe&&!discount)return 'absent';"
-            "if(!radio||!fix||!unit||!subscribe||!discount)return false;"
-            "radio.checked=true;radio.dispatchEvent(new Event('change',{bubbles:true}));"
-            f"fix.value={json.dumps(category_specific['fix_limit'])};fix.dispatchEvent(new Event('change',{{bubbles:true}}));"
-            f"unit.value={json.dumps(category_specific['unit_price_jpy_per_character'])};unit.dispatchEvent(new Event('input',{{bubbles:true}}));"
-            "subscribe.checked=true;subscribe.dispatchEvent(new Event('change',{bubbles:true}));"
-            f"discount.value={json.dumps(contract['subscription']['discount_ratio'])};discount.dispatchEvent(new Event('change',{{bubbles:true}}));"
+            "if(radio){radio.checked=true;radio.dispatchEvent(new Event('change',{bubbles:true}))}"
+            f"if(fix){{fix.value={json.dumps(category_specific['fix_limit'])};fix.dispatchEvent(new Event('change',{{bubbles:true}}))}}"
+            f"if(unit){{unit.value={json.dumps(category_specific['unit_price_jpy_per_character'])};unit.dispatchEvent(new Event('input',{{bubbles:true}}))}}"
+            "if(subscribe){subscribe.checked=true;subscribe.dispatchEvent(new Event('change',{bubbles:true}))}"
+            f"if(discount){{discount.value={json.dumps(contract['subscription']['discount_ratio'])};discount.dispatchEvent(new Event('change',{{bubbles:true}}))}}"
             "return true})()"
         ), cid)
-        if configured == "absent":
-            # These controls belong to the writing category. A different official category
-            # simply does not render them, so there is nothing to set rather than a fault.
-            pass
-        elif configured is not True:
+        # Each control is set only where the category renders it. A form that omits one has
+        # nothing to set; readback still fails closed on anything present and left wrong.
+        if configured is not True:
             raise RuntimeError("storefront_draft_category_specific_missing")
         option = contract["paid_options"][0]
         has_option, cid = await _evaluate(
