@@ -1992,6 +1992,12 @@ def _prepare_next_hypothesis(
     applied_pairs = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
                      for row in effects
                      if row.get("status") == "accepted" and row.get("effect") == 1}
+    # Only the exact proposal already published is spent. A newly written proposal for the same
+    # field is a different experiment and must stay available.
+    applied_values = {(str(row.get("service_id")), str(row.get("changed_field")).lower(),
+                       json.dumps(row.get("after_value"), ensure_ascii=False, sort_keys=True))
+                      for row in effects
+                      if row.get("status") == "accepted" and row.get("effect") == 1}
     versions = {str(row["service_id"]): row["service_version_sha256"] for row in contracts}
     # A candidate whose contract the live listing has already moved past stays skipped until
     # that listing changes again, so the loop advances to the next gap instead of re-picking it.
@@ -2030,7 +2036,11 @@ def _prepare_next_hypothesis(
             # A committed contract carries one fixed proposal, so replaying it produces the same
             # experiment key and is correctly refused as a duplicate. Once it has been applied,
             # further improvement has to be newly written rather than replayed.
-            mutation_contract = None if (service_id, field) in (applied_pairs or set()) else contract
+            spent = isinstance(contract, dict) and (
+                service_id, field,
+                json.dumps(contract.get("proposed_value"), ensure_ascii=False, sort_keys=True),
+            ) in applied_values
+            mutation_contract = None if spent else contract
             break
     if candidate is None:
         candidate = _scorecard_gap_candidate(
