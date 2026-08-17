@@ -278,3 +278,49 @@ fact taken by `One Day with VITURE`, which runs 08-22 13:30 to 08-23 18:00.
 A read-only `skills/connector/discover.js` was added along the way. It prints, per candidate, the
 date, the free/open verdict, the Calendar verdict and the blocking interval — that is how the travel
 blocks were caught. It imports no submit path, so it cannot register anything.
+
+## C-CORE-07 natural schedule recovery — DONE 2026-08-17
+
+The unforced 09:00 JST wake ran on its own: `2026-08-17T00:01:32Z`, status `applied_bundle`,
+`consecutive_failure_count 0`, wake report delivered to Telegram with provider id `21820`.
+`launchctl list` shows only `ai.anicca.life-manager-connector-native` for Connector, and the label's
+`last exit code` is now `0` rather than the earlier non-zero circuit exits.
+
+## Bookings the loop completed by itself — 2026-08-17
+
+Applied bundles went from 14 to 21 across the night and morning. Calendar entries read back independently
+with `gog`, each exactly one:
+
+| event | Calendar event id | Telegram |
+|---|---|---|
+| 8/18 19:30–21:00 皇居ラン | `jlcv9apqtn51rbpi5k4857jr18` | `21446` / `21447` |
+| 8/20 19:00–21:00 Yarn and Yap Vol. 12 | `pfmv6pi9uf7knjv2trpoa0tbhk` | `21452` / `21454` |
+| 8/22 09:30–11:30 Gradations, Thirdspace Thirdweeks | `hone3ha1bjio654ucn6vpb4vk4` | `21818` / `21819` |
+| 8/22 19:00–22:30 Reading Rhythm vol.2 | `72897jonq9afhqnl195ojv22e4` | `21938` / `21941` |
+
+## C-CORE-06 Connpass — one narrow blocker left
+
+Two more real causes were found and fixed on the way:
+
+1. **Connpass was logged out** in the daily-driver, exactly like Luma. The join control is replaced by a
+   login wall for anonymous visitors, so every event read as `registration_status: unknown` and nothing
+   could ever pass the free-and-open gate. Logged in with the credentials already in `~/.openclaw/.env`.
+2. **The fee wording never matched.** Connpass prints the fee inside a `join_fee` element as plain `無料`,
+   while the label regex demanded whitespace or `参加費` around it. Every free event was scored as paid.
+   Fixed, with a yen amount now overriding any free label so a paid or mixed-tier event cannot pass.
+
+Measured before and after on the same discovery, read-only:
+
+```
+before login + fee fix : observed=767 normalized=40 window=40 free_open=0  calendar_free=0
+after                  : observed=767 normalized=40 window=40 free_open=29 calendar_free=7
+```
+
+Remaining blocker, narrow and reproducible: Connpass discovery **succeeds standalone and fails inside a
+wake**, always after about 30 seconds, with the generic `provider_discovery_failed`. Every stage code the
+workflow throws is already mapped by `safeDiscoveryReason`, so the thrown error carries no code — it comes
+from a plain `invalid()` somewhere on that path. Page reuse was ruled out by measurement: navigating the
+same page from the Luma discovery URL to the Connpass calendar URL takes 783 ms and succeeds.
+
+Next step: capture the uncoded throw's error class in durable state, or replay the wake's exact provider
+cursor against discovery, rather than guessing again.
