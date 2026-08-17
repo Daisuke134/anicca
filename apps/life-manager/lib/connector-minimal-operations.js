@@ -9,10 +9,15 @@ const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/;
 const SAFE_REASON = /^[a-z0-9][a-z0-9_:-]{1,99}$/;
 const SAFE_METHOD = /^[a-z][a-z0-9_]{1,63}$/;
 const SAFE_PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
+// Bounded, non-sensitive: a JS class/constructor name only (see
+// connector-minimal-runner.js's safeErrorClass), never a message, stack,
+// URL, or env value.
+const ERROR_CLASS = /^[A-Za-z][A-Za-z0-9]{0,63}$/;
 const PURPOSE = /^(?:navigate|observe|fill|submit|readback)$/;
 const RESULT = /^(?:success|failed)$/;
 const ACTION_KEYS = "duration_ms,method,purpose,result,timestamp";
 const ACTION_FAILURE_CONTEXT_KEYS = "duration_ms,method,provider,purpose,result,safe_reason,timestamp";
+const ACTION_FAILURE_CONTEXT_WITH_CLASS_KEYS = "duration_ms,error_class,method,provider,purpose,result,safe_reason,timestamp";
 const REPORT_KEYS = "consecutive_failure_count,created_at,safe_reason,schema_version,status,wake_id";
 const DELIVERY_KEYS = "delivered_at,schema_version,telegram_provider_id,wake_id";
 const POSITIVE_PROVIDER_ID = /^[1-9][0-9]*$/;
@@ -58,7 +63,8 @@ function append(file, value) {
 function safeAction(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) invalid();
   const keys = Object.keys(input).sort().join(",");
-  const hasFailureContext = keys === ACTION_FAILURE_CONTEXT_KEYS;
+  const hasErrorClass = keys === ACTION_FAILURE_CONTEXT_WITH_CLASS_KEYS;
+  const hasFailureContext = keys === ACTION_FAILURE_CONTEXT_KEYS || hasErrorClass;
   if (
     (keys !== ACTION_KEYS && !hasFailureContext)
     || !PURPOSE.test(String(input.purpose || ""))
@@ -70,6 +76,7 @@ function safeAction(input) {
       || !SAFE_PROVIDER.test(String(input.provider || ""))
       || !SAFE_REASON.test(String(input.safe_reason || ""))
     ))
+    || (hasErrorClass && !ERROR_CLASS.test(String(input.error_class || "")))
   ) invalid();
   return Object.freeze({
     purpose: input.purpose,
@@ -78,6 +85,7 @@ function safeAction(input) {
     result: input.result,
     duration_ms: input.duration_ms,
     ...(hasFailureContext ? { provider: input.provider, safe_reason: input.safe_reason } : {}),
+    ...(hasErrorClass ? { error_class: input.error_class } : {}),
   });
 }
 

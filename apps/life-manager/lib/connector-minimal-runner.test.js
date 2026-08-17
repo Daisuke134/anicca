@@ -209,6 +209,89 @@ test("provider discovery failure continues and still reports the wake", async ()
   assert.deepEqual(discoveryFailure && [discoveryFailure.provider, discoveryFailure.safe_reason], [
     "luma", "connpass_detail_start_invalid_failed",
   ]);
+  // A coded stage error still maps to its own safe_reason (asserted above)
+  // and also carries the plain-Error class name alongside it.
+  assert.equal(discoveryFailure.error_class, "Error");
+});
+
+test("an uncoded discovery throw still carries a bounded error_class next to the fallback reason", async () => {
+  const state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      if (provider === "luma") throw new Error("private stubbed page failure detail");
+      return [];
+    },
+  });
+
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-1",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  assert.deepEqual(state.calls.find(([name]) => name === "report").slice(1), [
+    "completed_no_effect", "provider_discovery_failed",
+  ]);
+  assert.equal(result.status, "completed_no_effect");
+
+  const discoveryFailure = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .find((row) => row.purpose === "observe" && row.method === "provider_discovery" && row.result === "failed");
+  assert.deepEqual(
+    discoveryFailure && [discoveryFailure.safe_reason, discoveryFailure.error_class],
+    ["provider_discovery_failed", "Error"],
+  );
+  assert.equal(JSON.stringify(discoveryFailure).includes("private stubbed page failure detail"), false);
+});
+
+test("a non-Error external throw records its real constructor name as error_class", async () => {
+  class ProviderTimeoutError extends Error {}
+  const state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      if (provider === "luma") throw new ProviderTimeoutError("private timeout detail");
+      return [];
+    },
+  });
+
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-1",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  const discoveryFailure = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .find((row) => row.purpose === "observe" && row.method === "provider_discovery" && row.result === "failed");
+  assert.equal(discoveryFailure.error_class, "ProviderTimeoutError");
+});
+
+test("an unsafe or missing constructor name drops error_class instead of storing it", async () => {
+  const state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      if (provider === "luma") {
+        // No prototype chain: constructor is undefined, so extraction must
+        // fall back to .name, which here is oversized and must be rejected.
+        const error = Object.assign(Object.create(null), {
+          message: "boom", name: "A".repeat(100),
+        });
+        throw error;
+      }
+      return [];
+    },
+  });
+
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-1",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  const discoveryFailure = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .find((row) => row.purpose === "observe" && row.method === "provider_discovery" && row.result === "failed");
+  assert.equal(Object.hasOwn(discoveryFailure, "error_class"), false);
 });
 
 test("malformed provider candidates report the parent contract boundary", async () => {

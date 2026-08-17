@@ -125,11 +125,13 @@ function spreadAcrossDates(sortedBindings, budget) {
 
 function createDefaultDiscovery({ now, readBindings, readDetail }) {
   return async ({ page }) => {
-    if (!page || typeof page.goto !== "function") invalid();
-    const dates = discoveryDates(now);
+    if (!page || typeof page.goto !== "function") throw stageError("CONNPASS_DISCOVERY_PAGE_CONTRACT_FAILED");
+    let dates;
+    try { dates = discoveryDates(now); }
+    catch { throw stageError("CONNPASS_DISCOVERY_DATES_FAILED"); }
     const allowedDates = new Set(dates);
     const months = [...new Set(dates.map((date) => date.slice(0, 7).replace("-", "")))];
-    if (months.length < 1 || months.length > 2) invalid();
+    if (months.length < 1 || months.length > 2) throw stageError("CONNPASS_DISCOVERY_MONTHS_CONTRACT_FAILED");
     const bindings = [];
     const seen = new Set();
     let discoveredCount = 0;
@@ -232,7 +234,7 @@ function createConnpassScriptFirstWorkflow(options = {}) {
   const onDiscoveryAudit = options.onDiscoveryAudit || (() => {});
   if ([now, readBindings, readDetail, discoverOnPage, isCalendarFree, submitOnPage, readStateOnPage,
     onDiscoveryAudit]
-    .some((value) => typeof value !== "function")) invalid();
+    .some((value) => typeof value !== "function")) throw stageError("CONNPASS_WORKFLOW_DEPENDENCIES_INVALID_FAILED");
 
   return Object.freeze({
     async discoverCandidates({ page, calendar }) {
@@ -240,7 +242,9 @@ function createConnpassScriptFirstWorkflow(options = {}) {
       if (!Array.isArray(observed) || observed.length > 500) {
         throw stageError("CONNPASS_DISCOVERY_RESULT_CONTRACT_FAILED");
       }
-      const window = candidateWindow(now);
+      let window;
+      try { window = candidateWindow(now); }
+      catch { throw stageError("CONNPASS_CANDIDATE_WINDOW_FAILED"); }
       const registeredExisting = [];
       const result = [];
       let normalizedCount = 0;
@@ -267,13 +271,15 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         if (!calendarFree) continue;
         result.push(Object.freeze({ ...candidate }));
       }
-      await onDiscoveryAudit(Object.freeze({
-        observed_count: typeof observed.discoveredCount === "number" ? observed.discoveredCount : observed.length,
-        normalized_count: normalizedCount,
-        window_count: windowCount,
-        free_open_count: freeOpenCount,
-        calendar_free_count: registeredExisting.length + result.length,
-      }));
+      try {
+        await onDiscoveryAudit(Object.freeze({
+          observed_count: typeof observed.discoveredCount === "number" ? observed.discoveredCount : observed.length,
+          normalized_count: normalizedCount,
+          window_count: windowCount,
+          free_open_count: freeOpenCount,
+          calendar_free_count: registeredExisting.length + result.length,
+        }));
+      } catch { throw stageError("CONNPASS_DISCOVERY_AUDIT_FAILED"); }
       return Object.freeze([...registeredExisting, ...result]);
     },
     async runDirectAction({ page, candidate }) {
