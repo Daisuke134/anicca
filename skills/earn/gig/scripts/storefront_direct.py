@@ -1944,6 +1944,49 @@ def _prepare_next_hypothesis(
     }
 
 
+def _portfolio_policy(scorecard_path: Path) -> dict:
+    try:
+        policy = json.loads(scorecard_path.read_text(encoding="utf-8")).get("portfolio_policy")
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_portfolio_policy_invalid") from error
+    if not isinstance(policy, dict) or policy.get("version") != 1:
+        raise RuntimeError("storefront_portfolio_policy_invalid")
+    return policy
+
+
+def _measurement_feasible(analytics_path: Path, service_id: str, window_days: int, minimum_views: int) -> dict:
+    """Can this experiment's metric move enough to be read at all?
+
+    Official views are a rolling thirty-day figure, so this projects that rate onto the
+    observation window. It states whether measurement is possible, never a KPI result: a
+    window that cannot reach the policy's minimum exposure buys noise while locking the
+    listing, so the experiment closes as unknown instead of being waited out.
+    """
+    if not analytics_path.is_file():
+        return {"status": "unknown", "reason": "official_analytics_missing"}
+    latest = None
+    try:
+        for line in analytics_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if (str(row.get("service_id") or "") == service_id
+                    and ((row.get("metrics") or {}).get("views") or {}).get("status") == "known"
+                    and type(row.get("observed_at_epoch")) is int
+                    and (latest is None or row["observed_at_epoch"] > latest["observed_at_epoch"])):
+                latest = row
+    except json.JSONDecodeError:
+        return {"status": "unknown", "reason": "official_analytics_invalid"}
+    if latest is None:
+        return {"status": "unknown", "reason": "no_official_views_for_service"}
+    monthly = int(latest["metrics"]["views"]["value"])
+    projected = int(monthly * window_days / 30)
+    return {"status": "known", "official_30d_views": monthly,
+            "projected_window_views": projected, "minimum_views": minimum_views,
+            "feasible": projected >= minimum_views,
+            "basis": "rolling_30d_view_rate_projected_onto_window"}
+
+
 def _close_outcome(
     state_dir: Path, analytics: dict, reply_transcripts: Path, scorecard_path: Path, now: int,
 ) -> dict | None:
@@ -1963,7 +2006,15 @@ def _close_outcome(
     eligible_at = accepted_at + window_days * 86400
     inquiry = {"status": "not_evaluated"}
     decision, terminal_state, reason = "NO_OP", False, "measurement_window_ineligible"
-    if now >= eligible_at:
+    # A window that cannot reach the policy's minimum exposure locks the listing without
+    # buying evidence, so close it as unknown rather than wait the calendar out.
+    feasibility = _measurement_feasible(
+        state_dir / "analytics.jsonl", str(experiment.get("service_id") or ""), window_days,
+        int(_portfolio_policy(scorecard_path).get("minimum_views_for_measurement", 100)),
+    )
+    if now < eligible_at and feasibility.get("status") == "known" and not feasibility["feasible"]:
+        terminal_state, reason = True, "metric_unmeasurable_insufficient_exposure"
+    elif now >= eligible_at:
         inquiry = _measure_experiment_metric(
             str(experiment.get("success_metric") or ""),
             reply_transcripts=reply_transcripts, analytics_path=state_dir / "analytics.jsonl",
@@ -1985,6 +2036,7 @@ def _close_outcome(
         ).encode()).hexdigest(),
         "analytics_snapshot_key": analytics["snapshot_key"],
         "inquiry_source_sha256": inquiry.get("source_sha256"),
+        "measurement_feasibility": feasibility,
     }
     identity = json.dumps({
         "experiment_key": experiment["experiment_key"], "decision": decision,

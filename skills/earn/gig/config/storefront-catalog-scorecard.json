@@ -294,6 +294,7 @@
     "slot_limit": 20,
     "minimum_complete_window_days": 30,
     "minimum_views_for_retirement": 100,
+    "minimum_views_for_measurement": 100,
     "replacement_requires": [
       "minimum_sample_met",
       "zero_inquiries",
