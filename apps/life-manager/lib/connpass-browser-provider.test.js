@@ -115,8 +115,23 @@ test("parent readback separates login, absence, unavailable, pending, and regist
 //   button#FreeButton ("申し込みを確定する")
 const EVENT_PAGE_URL = "https://hfs.connpass.com/event/398207/";
 
+// The default single qualifying tier — keeps every pre-existing flow test
+// (single-tier events) selecting index 0, exactly as before this change.
+const SOLE_TIER = [{ label: "参加 無料 先着順 5/10人", disabled: false }];
+
+// The five real tiers read live from
+// https://mobilus.connpass.com/event/395464/join/ (see task brief). Correct
+// pick is ptype2 (index 1): だれでも枠, free, room (17/20), unrestricted, in-person.
+const MULTI_TIER_EVENT = [
+  { label: "学生ゆうせん枠 無料 先着順 9/15人", disabled: false },
+  { label: "だれでも枠 無料 先着順 17/20人", disabled: false },
+  { label: "26新卒LT枠 無料 先着順 2/2人", disabled: false },
+  { label: "【招待した方のみ】LT枠 無料 先着順 3/3人", disabled: false },
+  { label: "オンライン視聴枠 (Google meet) 無料 参加者数 3人", disabled: false },
+];
+
 function joinFlowFixture({
-  radioCount = 1, confirmCount = 1, confirmVisible = true,
+  tiers = SOLE_TIER, confirmCount = 1, confirmVisible = true,
   confirmLabel = "申し込みを確定する", confirmClickError = null, states,
   eventUrl = EVENT_PAGE_URL, gotoError = null,
 } = {}) {
@@ -128,9 +143,11 @@ function joinFlowFixture({
     async click() { calls.push("click-join"); },
   };
   const radioLocator = {
-    first() { return this; },
-    async count() { return radioCount; },
-    async check() { calls.push("check-radio"); },
+    async count() { return tiers.length; },
+    async evaluateAll() { return tiers.map((tier) => ({ disabled: !!tier.disabled, label: tier.label })); },
+    nth(index) {
+      return { async check() { calls.push(`check-radio:${index}`); } };
+    },
   };
   const confirmLocator = {
     async count() { return confirmCount; },
@@ -165,12 +182,68 @@ function joinFlowFixture({
   return page;
 }
 
-test("submit clicks join link, selects the first participation radio, then confirms, then navigates back to the event page before reading the result — in order", async () => {
+test("submit clicks join link, selects the sole participation radio on a single-tier event, then confirms, then navigates back to the event page before reading the result — in order", async () => {
   const page = joinFlowFixture({ states: [{ state: "absent" }, { state: "registered" }] });
   assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
   assert.deepEqual(page.calls, [
-    "url", "click-join", "wait", "check-radio", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+    "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
   ]);
+});
+
+test("on a multi-tier event, selects the first free open unrestricted in-person tier (ptype2, index 1), skipping student/full/invite/LT/online tiers", async () => {
+  const page = joinFlowFixture({
+    tiers: MULTI_TIER_EVENT, states: [{ state: "absent" }, { state: "registered" }],
+  });
+  assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio:1", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
+});
+
+test("an online tier is selected only when it is the sole qualifying tier", async () => {
+  const page = joinFlowFixture({
+    tiers: [
+      { label: "学生ゆうせん枠 無料 先着順 9/15人", disabled: false },
+      MULTI_TIER_EVENT[4], // オンライン視聴枠 (Google meet) 無料 参加者数 3人
+    ],
+    states: [{ state: "absent" }, { state: "registered" }],
+  });
+  assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio:1", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
+});
+
+test("a tier showing a yen amount is never selected, even when it is otherwise open and unrestricted", async () => {
+  const page = joinFlowFixture({
+    tiers: [
+      { label: "一般参加 ¥3,000 先着順 1/10人", disabled: false },
+      { label: "懇親会付き 5000円 先着順 1/5人", disabled: false },
+      { label: "だれでも枠 無料 先着順 1/10人", disabled: false },
+    ],
+    states: [{ state: "absent" }, { state: "registered" }],
+  });
+  assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio:2", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
+});
+
+test("when every tier is full or restricted, submit clicks nothing and fails closed with CONNPASS_TIER_UNAVAILABLE", async () => {
+  const page = joinFlowFixture({
+    tiers: [
+      MULTI_TIER_EVENT[0], // 学生ゆうせん枠 (restricted)
+      MULTI_TIER_EVENT[2], // 26新卒LT枠 (restricted + full 2/2)
+      MULTI_TIER_EVENT[3], // 招待した方のみ (restricted + full 3/3)
+    ],
+    states: [{ state: "absent" }],
+  });
+  await assert.rejects(submitConnpassOnPage(page), (error) => {
+    assert.equal(error.code, "CONNPASS_TIER_UNAVAILABLE");
+    assert.equal(error.unknownEffect, false);
+    return true;
+  });
+  assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
 });
 
 test("already-registered/pending state returns immediately and clicks nothing", async () => {
@@ -195,13 +268,13 @@ test("missing or duplicated confirm control fails closed before any click on the
     });
     // join-link click (navigation only) may have happened; nothing on the
     // join page itself (radio check, confirm click) may have.
-    assert.equal(page.calls.includes("check-radio"), false);
+    assert.equal(page.calls.some((call) => call.startsWith("check-radio")), false);
     assert.equal(page.calls.includes("click-confirm"), false);
   }
 });
 
 test("missing participation-type radio fails closed before the confirm control is touched", async () => {
-  const page = joinFlowFixture({ states: [{ state: "absent" }], radioCount: 0 });
+  const page = joinFlowFixture({ states: [{ state: "absent" }], tiers: [] });
   await assert.rejects(submitConnpassOnPage(page), (error) => {
     assert.equal(error.code, "CONNPASS_CONTROL_UNAVAILABLE");
     assert.equal(error.unknownEffect, false);
@@ -220,7 +293,7 @@ test("a failure after the confirm click is always reported as an unknown effect"
     assert.equal(error.unknownEffect, true);
     return true;
   });
-  assert.deepEqual(page.calls, ["url", "click-join", "wait", "check-radio", "click-confirm"]);
+  assert.deepEqual(page.calls, ["url", "click-join", "wait", "check-radio:0", "click-confirm"]);
 });
 
 test("a failure navigating back to the event page after confirming is still reported as an unknown effect", async () => {
@@ -234,7 +307,7 @@ test("a failure navigating back to the event page after confirming is still repo
     return true;
   });
   assert.deepEqual(page.calls, [
-    "url", "click-join", "wait", "check-radio", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+    "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
   ]);
 });
 
@@ -250,7 +323,7 @@ test("a failure reading state back on the event page after confirming is still r
     return true;
   });
   assert.deepEqual(page.calls, [
-    "url", "click-join", "wait", "check-radio", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+    "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
   ]);
 });
 
