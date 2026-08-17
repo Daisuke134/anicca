@@ -50,6 +50,39 @@ def test_the_policy_states_the_threshold_it_enforces():
     assert policy["short_term_zero_sales_can_retire"] is False
 
 
+
+def test_a_stale_hand_authored_contract_is_skipped_not_fatal(tmp_path):
+    """One listing moving on must not stop the wake for every other listing."""
+    import pytest
+
+    root = tmp_path / "contracts"
+    root.mkdir()
+    (root / "4313386.json").write_text(json.dumps({
+        "version": 1, "platform": "coconala", "service_id": "4313386",
+        "public_url": "https://coconala.com/services/4313386",
+        "service_version_sha256": "a" * 64,
+        "offer": {"base_price_jpy": 6000, "required_inputs": ["x"]},
+        "inquiry_playbook": {"answer_patterns": [
+            {"intent": "i", "triggers": ["t"], "response": "r"}]},
+    }), encoding="utf-8")
+    observed = [{"service_id": "4313386",
+                 "public_url": "https://coconala.com/services/4313386",
+                 "service_version_sha256": "b" * 64, "price_jpy": 6000,
+                 "title": "請求書・日報のVBA自動化を支援します", "state": "公開中",
+                 "category": "IT・プログラミング", "public_text": "サービス内容"}]
+
+    families = Path(__file__).resolve().parents[1] / "config" / "storefront-contract-families.json"
+    loaded = sd._load_listing_contracts(root, observed, families_path=families)
+    # The stale hand-authored file is recorded rather than raised...
+    assert sd._stale_listing_contracts
+    assert sd._stale_listing_contracts[0]["service_id"] == "4313386"
+    assert sd._stale_listing_contracts[0]["reason"] == "listing_contract_binding_stale"
+    # ...and the listing still gets a contract, derived from its capability family, bound to
+    # the version actually observed rather than the one the stale file remembered.
+    derived = [row for row in loaded if row["service_id"] == "4313386"]
+    assert derived and derived[0]["service_version_sha256"] == "b" * 64
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
