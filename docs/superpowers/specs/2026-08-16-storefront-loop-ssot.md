@@ -520,6 +520,10 @@ the same mistake.
 | A committed backlog that empties as it is completed | the loop finished its to-do list and stopped forever |
 | Legacy judge that only knows the zero-image seed | proposed a closed gap on every wake and failed |
 | A single malformed model proposal | ended the whole wake instead of the candidate |
+| The executor split an FAQ answer with no guard | a malformed answer killed three wakes in a row |
+| My own closed-gap guard written too broadly | demoted legitimate gallery work to a no-op |
+| The pre-send guard raising instead of refusing | a superseded contract ended the wake |
+| A demoted candidate keeping its place in the queue | every wake re-picked it and no-opped: alive, not iterating |
 
 The rule: **a satisfied assumption and a rejected candidate are both finished work, not faults.**
 Anything pinned to a live value — a version hash, an image count, a to-do row, a model's one
