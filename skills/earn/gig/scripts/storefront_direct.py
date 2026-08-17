@@ -35,6 +35,7 @@ DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json
 DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
 DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_proposal.schema.json"
 DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_proposal.schema.json"
+DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
 MEASURABLE_SUCCESS_METRICS = {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase",
                               "net_receipt"}
@@ -1298,6 +1299,41 @@ category fits the cluster.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=
         "provider": summary.get("selected_provider"), "model": summary.get("selected_model")}
 
 
+def _invoke_category_child_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
+    cluster: dict, master: dict, children: dict, timeout_seconds: int,
+) -> tuple[dict, dict]:
+    """Pick the official sub category and type inside an already chosen top-level category."""
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    context = {
+        "demand_cluster": {k: cluster.get(k) for k in ("query", "capability_family")},
+        "chosen_master_category": master,
+        "official_sub_categories": children.get("data[Service][master_sub_category]") or [],
+        "official_category_types": children.get("data[Service][master_category_type_id]") or [],
+    }
+    prompt = """Choose the official sub category and category type for this demand cluster inside the
+already chosen top-level category, and return only the strict schema object. Both values must be
+copied exactly from the official lists in CONTEXT_JSON; never invent an id.\nCONTEXT_JSON=""" + json.dumps(
+        context, ensure_ascii=False, separators=(",", ":"))
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-category-child", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"storefront_category_child_failed:{completed.returncode}")
+    summary = json.loads((evidence_dir / "summary.json").read_text(encoding="utf-8"))
+    result_path = Path(str(summary["result_path"])).resolve()
+    result_path.relative_to(evidence_dir.resolve())
+    if summary.get("status") != "success" or summary.get("selected_model") != "gpt-5.6-terra":
+        raise RuntimeError("storefront_category_child_evidence_invalid")
+    return json.loads(result_path.read_text(encoding="utf-8")), {
+        "provider": summary.get("selected_provider"), "model": summary.get("selected_model")}
+
+
 def _validate_category_choice(chosen_value: str, options: list) -> dict:
     """Bind a category to an option the official seller form actually offers.
 
@@ -2535,8 +2571,6 @@ def _create_blueprint_from_cluster(committed: dict, cluster: dict, category_row:
     types = (category_row or {}).get("type_options") or []
     if not str(master.get("value") or "").isdigit():
         raise RuntimeError("storefront_cluster_category_unbound")
-    if not subs or not types:
-        raise RuntimeError("storefront_cluster_category_children_unread")
     if (cluster.get("status") != "known" or int(cluster.get("score") or 0) <= 0
             or not str(cluster.get("query") or "").strip()
             or not str(cluster.get("evidence_path") or "").strip()):
@@ -4593,6 +4627,34 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     blueprint = cluster_blueprint or {
                         **new_listing_contract,
                         "demand_evidence_path": str(Path(new_listing_path).resolve())}
+                    if cluster_blueprint is not None:
+                        # The category's sub and type options only exist once a draft holds the
+                        # chosen top-level category, so they are read and picked here.
+                        draft_id = str(create_draft_claim["draft_service_id"])
+                        children = storefront_draft.read_category_children(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            draft_id, blueprint["category"]["master"]["value"],
+                        )
+                        picked, child_route = _invoke_category_child_proposal(
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
+                            workdir=args.workdir,
+                            evidence_dir=inventory_path.parent / "category-child-agent",
+                            cluster=unused_cluster, master=blueprint["category"]["master"],
+                            children=children, timeout_seconds=args.timeout_seconds,
+                        )
+                        blueprint = {**blueprint, "category": {
+                            "master": blueprint["category"]["master"],
+                            "sub": _validate_category_choice(
+                                picked.get("sub_value"),
+                                children.get("data[Service][master_sub_category]") or []),
+                            "type": _validate_category_choice(
+                                picked.get("type_value"),
+                                children.get("data[Service][master_category_type_id]") or []),
+                        }}
+                        demand_derivation = {**(demand_derivation or {}),
+                                             "category_triple": blueprint["category"],
+                                             "category_child_route": child_route.get("model")}
                     new_listing_contract = _seal_create_contract(
                         create_proposal, source=create_source, family_name=create_family,
                         allowed_refs=create_allowed_refs, blueprint=blueprint,
@@ -4868,6 +4930,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--create-proposal-schema", type=Path, default=DEFAULT_CREATE_PROPOSAL_SCHEMA)
     parser.add_argument("--demand-proposal-schema", type=Path, default=DEFAULT_DEMAND_PROPOSAL_SCHEMA)
     parser.add_argument("--category-proposal-schema", type=Path, default=DEFAULT_CATEGORY_PROPOSAL_SCHEMA)
+    parser.add_argument("--category-child-schema", type=Path, default=DEFAULT_CATEGORY_CHILD_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
     parser.add_argument("--gallery-contract", type=Path, default=DEFAULT_GALLERY_CONTRACT)
