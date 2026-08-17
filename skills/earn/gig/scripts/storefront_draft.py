@@ -450,20 +450,6 @@ async def _submit_public(ws_url: str, contract: dict[str, Any]) -> str:
         cid = await _wait_for_option(
             ws, "data[Service][master_category]", contract["category"]["master"]["value"], cid,
         )
-        if sub_value:
-            # Category type only appears once its sub category is chosen, so the two levels are
-            # read in the order the form itself fills them.
-            cid = await _wait_for_option(ws, "data[Service][master_sub_category]", sub_value, cid)
-            applied_sub, cid = await _evaluate(ws, (
-                "(()=>{const s=document.querySelector('[name=\"data[Service][master_sub_category]\"]');"
-                f"if(!s||![...s.options].some(o=>o.value==={json.dumps(sub_value)}))return false;"
-                f"s.value={json.dumps(sub_value)};"
-                "s.dispatchEvent(new Event('change',{bubbles:true}));return true})()"
-            ), cid)
-            if applied_sub is not True:
-                raise RuntimeError("storefront_category_sub_not_selectable")
-        wanted = ("data[Service][master_category_type_id]" if sub_value
-                  else "data[Service][master_sub_category]")
         deadline = asyncio.get_running_loop().time() + 12
         while asyncio.get_running_loop().time() < deadline:
             raw, cid = await _evaluate(ws, DRAFT_SNAPSHOT_EXPRESSION, cid)
@@ -760,6 +746,20 @@ async def _read_category_children_async(
         ), cid)
         if applied is not True:
             raise RuntimeError("storefront_category_master_not_selectable")
+        if sub_value:
+            # Category type only appears once its sub category is chosen, so the levels are
+            # read in the order the form itself fills them.
+            cid = await _wait_for_option(ws, "data[Service][master_sub_category]", sub_value, cid)
+            applied_sub, cid = await _evaluate(ws, (
+                "(()=>{const s=document.querySelector('[name=\"data[Service][master_sub_category]\"]');"
+                f"if(!s||![...s.options].some(o=>o.value==={json.dumps(sub_value)}))return false;"
+                f"s.value={json.dumps(sub_value)};"
+                "s.dispatchEvent(new Event('change',{bubbles:true}));return true})()"
+            ), cid)
+            if applied_sub is not True:
+                raise RuntimeError("storefront_category_sub_not_selectable")
+        wanted = ("data[Service][master_category_type_id]" if sub_value
+                  else "data[Service][master_sub_category]")
         deadline = asyncio.get_running_loop().time() + 12
         while asyncio.get_running_loop().time() < deadline:
             raw, cid = await _evaluate(ws, (
