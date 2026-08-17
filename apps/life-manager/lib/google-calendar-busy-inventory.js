@@ -43,6 +43,21 @@ function privateLocation(value) {
   return text && text.length <= 2_000 && !/[\x00-\x1f\x7f]/.test(text) ? text : null;
 }
 
+// A Life Manager travel block, verified 2026-08-16 on the live calendar (apps/life-manager/lib/travel.js
+// createTravelBlock, lines ~225 and ~229):
+//   summary     : "[Travel] 🚆 新宿区南元町15-27→KOPI KALYAN Tokyo（コピカリアン トーキョー）"
+//   description : "Auto-inserted by Life Manager — adjust if the route is wrong."
+// Both signals are required. Either one alone stays busy: a wrongly dropped REAL commitment causes a
+// double-booking, which is far worse than Connector missing one candidate slot.
+const LIFE_MANAGER_TRAVEL_SUMMARY_PREFIX = "[Travel] 🚆 ";
+const LIFE_MANAGER_TRAVEL_DESCRIPTION = "Auto-inserted by Life Manager — adjust if the route is wrong.";
+
+function isLifeManagerTravelBlock(event) {
+  const summary = String(event.summary == null ? "" : event.summary);
+  const description = String(event.description == null ? "" : event.description).trim();
+  return summary.startsWith(LIFE_MANAGER_TRAVEL_SUMMARY_PREFIX) && description === LIFE_MANAGER_TRAVEL_DESCRIPTION;
+}
+
 function connectorMarker(event) {
   if (!Object.hasOwn(event, "extendedProperties")) return null;
   const extended = event.extendedProperties;
@@ -76,6 +91,7 @@ function normalizeBusyEvent(event, calendars, seen) {
   seen.add(identity);
   if (String(event.status || "").toLowerCase() === "cancelled") return null;
   if (String(event.transparency || "").toLowerCase() === "transparent") return null;
+  if (isLifeManagerTravelBlock(event)) return null;
   const connectorIdempotency = connectorMarker(event);
   const calendarRef = `calendar-evidence://google/calendar/${digest(calendarId)}`;
   const eventRef = `calendar-evidence://google/event/${digest(identity)}`;
