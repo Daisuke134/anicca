@@ -78,6 +78,112 @@ test("reads every calendar and emits reference-only timed and all-day busy inter
   ]);
 });
 
+test("real-shaped Life Manager travel block (marker summary + auto-insert description) is excluded", async () => {
+  const result = await inspectGoogleCalendarBusyInventory({
+    ...WINDOW,
+    calendar: transport({
+      async listAllEventsRaw() {
+        return [
+          {
+            CalendarID: "primary", id: "travel-1", status: "confirmed",
+            summary: "[Travel] 🚆 新宿区南元町15-27→KOPI KALYAN Tokyo（コピカリアン トーキョー）",
+            description: "Auto-inserted by Life Manager — adjust if the route is wrong.",
+            start: { dateTime: "2026-08-05T08:00:00+09:00" }, end: { dateTime: "2026-08-05T08:30:00+09:00" },
+          },
+        ];
+      },
+    }),
+  });
+  assert.equal(result.source_event_count, 1);
+  assert.equal(result.busy_event_count, 0);
+  assert.equal(result.excluded_event_count, 1);
+});
+
+test("summary matches the travel marker but description is missing/different — stays busy", async () => {
+  const result = await inspectGoogleCalendarBusyInventory({
+    ...WINDOW,
+    calendar: transport({
+      async listAllEventsRaw() {
+        return [
+          {
+            CalendarID: "primary", id: "not-travel-1", status: "confirmed",
+            summary: "[Travel] 🚆 新宿区南元町15-27→KOPI KALYAN Tokyo（コピカリアン トーキョー）",
+            start: { dateTime: "2026-08-05T08:00:00+09:00" }, end: { dateTime: "2026-08-05T08:30:00+09:00" },
+          },
+          {
+            CalendarID: "primary", id: "not-travel-2", status: "confirmed",
+            summary: "[Travel] 🚆 新宿区南元町15-27→KOPI KALYAN Tokyo（コピカリアン トーキョー）",
+            description: "Some other note",
+            start: { dateTime: "2026-08-05T09:00:00+09:00" }, end: { dateTime: "2026-08-05T09:30:00+09:00" },
+          },
+        ];
+      },
+    }),
+  });
+  assert.equal(result.source_event_count, 2);
+  assert.equal(result.busy_event_count, 2);
+  assert.equal(result.excluded_event_count, 0);
+});
+
+test("description matches the auto-insert sentence but summary is a normal title — stays busy", async () => {
+  const result = await inspectGoogleCalendarBusyInventory({
+    ...WINDOW,
+    calendar: transport({
+      async listAllEventsRaw() {
+        return [
+          {
+            CalendarID: "primary", id: "not-travel-3", status: "confirmed",
+            summary: "Team standup",
+            description: "Auto-inserted by Life Manager — adjust if the route is wrong.",
+            start: { dateTime: "2026-08-05T08:00:00+09:00" }, end: { dateTime: "2026-08-05T08:30:00+09:00" },
+          },
+        ];
+      },
+    }),
+  });
+  assert.equal(result.source_event_count, 1);
+  assert.equal(result.busy_event_count, 1);
+  assert.equal(result.excluded_event_count, 0);
+});
+
+test("a normal event with neither travel signal is unaffected", async () => {
+  const result = await inspectGoogleCalendarBusyInventory({
+    ...WINDOW,
+    calendar: transport({
+      async listAllEventsRaw() {
+        return [
+          {
+            CalendarID: "primary", id: "normal-1", status: "confirmed", summary: "Dentist",
+            start: { dateTime: "2026-08-05T08:00:00+09:00" }, end: { dateTime: "2026-08-05T08:30:00+09:00" },
+          },
+        ];
+      },
+    }),
+  });
+  assert.equal(result.busy_event_count, 1);
+  assert.equal(result.excluded_event_count, 0);
+});
+
+test("no title or description ever appears on a returned busy interval, travel or otherwise", async () => {
+  const result = await inspectGoogleCalendarBusyInventory({
+    ...WINDOW,
+    calendar: transport({
+      async listAllEventsRaw() {
+        return [
+          {
+            CalendarID: "primary", id: "kept-1", status: "confirmed", summary: "Secret meeting title",
+            description: "Secret meeting notes",
+            start: { dateTime: "2026-08-05T08:00:00+09:00" }, end: { dateTime: "2026-08-05T08:30:00+09:00" },
+          },
+        ];
+      },
+    }),
+  });
+  assert.equal(result.busy_intervals.length, 1);
+  assert.deepEqual(Object.keys(result.busy_intervals[0]).sort(), ["calendar_ref", "end_at", "event_ref", "kind", "start_at"]);
+  assert.doesNotMatch(JSON.stringify(result), /Secret meeting/);
+});
+
 test("empty calendars are valid only when both exhaustive reads succeed", async () => {
   const result = await inspectGoogleCalendarBusyInventory({
     ...WINDOW,
