@@ -55,7 +55,7 @@ STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
     "new-listing-drafts.jsonl", "funnel-events.jsonl", "portfolio-allocations.jsonl",
-    "inquiry-context-envelopes.jsonl", "demand-evidence.jsonl",
+    "inquiry-context-envelopes.jsonl", "demand-evidence.jsonl", "superseded-candidates.jsonl",
     "demand-category.jsonl", "demand-category-options.jsonl",
 )
 TARGET_SERVICE_ID = "91000001"
@@ -1989,7 +1989,37 @@ def _prepare_next_hypothesis(
     # experiment closes, so the loop keeps improving instead of running out of committed work.
     open_pairs = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
                   for row in active}
+    applied_pairs = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
+                     for row in effects
+                     if row.get("status") == "accepted" and row.get("effect") == 1}
+    # The executor holds each changed listing for seven days so one experiment cannot
+    # contaminate the next on the same page. With a catalogue of thirteen there is always
+    # another listing to improve, so the selector honours that hold instead of re-picking a
+    # service the executor is about to refuse.
+    cooling = {str(row.get("service_id") or "") for row in effects
+               if row.get("status") == "accepted" and row.get("effect") == 1
+               and now - int(row.get("accepted_at_epoch") or 0) < 604800}
+    # Only the exact proposal already published is spent. A newly written proposal for the same
+    # field is a different experiment and must stay available.
+    applied_values = {(str(row.get("service_id")), str(row.get("changed_field")).lower(),
+                       json.dumps(row.get("after_value"), ensure_ascii=False, sort_keys=True))
+                      for row in effects
+                      if row.get("status") == "accepted" and row.get("effect") == 1}
     versions = {str(row["service_id"]): row["service_version_sha256"] for row in contracts}
+    # A candidate whose contract the live listing has already moved past stays skipped until
+    # that listing changes again, so the loop advances to the next gap instead of re-picking it.
+    superseded = set()
+    superseded_path = effects_path.parent / "superseded-candidates.jsonl"
+    if superseded_path.exists():
+        for line in superseded_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if versions.get(str(row.get("service_id"))) == row.get("listing_version"):
+                superseded.add((str(row.get("service_id")), str(row.get("field")).lower()))
     field_alias = {"outcome": "title", "scope": "body"}
     rendered = {
         (str(row.get("service_id") or ""), str(row.get("changed_field") or "").lower()): row
@@ -2006,16 +2036,24 @@ def _prepare_next_hypothesis(
         contract_current = (isinstance(contract, dict)
                             and contract.get("precondition_listing_version_sha256") == versions.get(service_id))
         if (service_id in versions and service_id not in active_services
+                and service_id not in cooling
                 and (service_id, field) not in open_pairs
+                and (service_id, field) not in superseded
                 and (contract_current or field in GENERATED_MUTATION_FIELDS)):
-            candidate, mutation_contract = row, contract
+            candidate = row
+            # A committed contract carries one fixed proposal, so replaying it produces the same
+            # experiment key and is correctly refused as a duplicate. Once it has been applied,
+            # further improvement has to be newly written rather than replayed.
+            spent = isinstance(contract, dict) and (
+                service_id, field,
+                json.dumps(contract.get("proposed_value"), ensure_ascii=False, sort_keys=True),
+            ) in applied_values
+            mutation_contract = None if spent else contract
             break
     if candidate is None:
         candidate = _scorecard_gap_candidate(
-            scorecard_path, versions, active_services, open_pairs, field_alias,
-            done_pairs={(str(row.get("service_id")), str(row.get("changed_field")).lower())
-                        for row in effects
-                        if row.get("status") == "accepted" and row.get("effect") == 1})
+            scorecard_path, versions, active_services | cooling, open_pairs | superseded, field_alias,
+            done_pairs=applied_pairs)
         if candidate is None:
             return None
         field = field_alias.get(str(candidate.get("field") or "").lower(),
@@ -4301,6 +4339,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, listing_contracts,
                 getattr(args, "negotiate_context_acks", DEFAULT_NEGOTIATE_CONTEXT_ACKS), int(time.time()),
             )
+            versions_by_service = {str(row["service_id"]): row["service_version_sha256"]
+                                   for row in validated_contracts}
             next_hypothesis = _prepare_next_hypothesis(
                 getattr(args, "scorecard", DEFAULT_SCORECARD),
                 args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
@@ -4547,13 +4587,33 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     if judgement["decision"] != "change":
                         pass
                     elif (judgement["changed_field"] == "image"
-                            and int(presend.get("service_image_count") or 0) > 0):
+                            and int(presend.get("service_image_count") or 0) > 0
+                            and (mutation_contract or {}).get("before_value", {}).get(
+                                "service_image_ids") == []):
                         judgement = {**judgement, "decision": "no_op",
                                      "no_op_reason": "image_gap_already_closed",
                                      "changed_field": None, "experiment_key": None}
                         _atomic_write(judgement_path, judgement)
                     elif judgement["changed_field"] not in {"title", "body", "package", "price"}:
-                        _presend_guard(judgement, presend, mutation_contract)
+                        try:
+                            _presend_guard(judgement, presend, mutation_contract)
+                        except RuntimeError as error:
+                            # The guard's job is to stop the change, not the wake. A contract whose
+                            # recorded before-state no longer matches the live listing describes
+                            # work that is already done or superseded, so record it and move on.
+                            _append_key_once(args.state_dir / "superseded-candidates.jsonl", "candidate_key", {
+                                "version": 1,
+                                "candidate_key": f"{judgement['service_id']}:{judgement['changed_field']}:"
+                                                 f"{versions_by_service.get(str(judgement['service_id']), '')}",
+                                "service_id": str(judgement["service_id"]),
+                                "field": str(judgement["changed_field"]),
+                                "listing_version": versions_by_service.get(str(judgement["service_id"]), ""),
+                                "reason": str(error)[:160], "observed_at_epoch": int(time.time()),
+                            })
+                            judgement = {**judgement, "decision": "no_op",
+                                         "no_op_reason": f"precondition_superseded:{error}",
+                                         "changed_field": None, "experiment_key": None}
+                            _atomic_write(judgement_path, judgement)
                     if args.effect and judgement["decision"] == "change":
                         if judgement["changed_field"] == "image":
                             seller_before, _, intent_path = _execute_image_effect(
