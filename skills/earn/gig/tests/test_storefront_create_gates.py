@@ -263,6 +263,24 @@ def test_a_derived_market_is_sourced_from_its_own_capability_family():
     assert by_service.get("91000003") == "seo_writing"
 
 
+
+def test_a_two_level_category_writes_no_type_field():
+    """Some official categories stop at two levels; inventing a type would be a false claim."""
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "scripts"))
+    import storefront_draft as sdraft
+
+    fields = {"overview_input": "o", "catchphrase": "c", "head": "h",
+              "price_option_value": "3300", "delivery_days": 5, "order_limit": 1, "body": "b"}
+    three = {"public_fields": fields, "category": {
+        "master": {"value": "11"}, "sub": {"value": "230"}, "type": {"value": "2274"}}}
+    two = {"public_fields": fields, "category": {
+        "master": {"value": "11"}, "sub": {"value": "230"}, "type": None}}
+    assert "data[Service][master_category_type_id]" in sdraft._expected_values(three)
+    assert "data[Service][master_category_type_id]" not in sdraft._expected_values(two)
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))

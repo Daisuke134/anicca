@@ -131,7 +131,8 @@ def _expected_values(contract: dict[str, Any]) -> dict[str, str]:
     return {
         "data[Service][master_category]": category["master"]["value"],
         "data[Service][master_sub_category]": category["sub"]["value"],
-        "data[Service][master_category_type_id]": category["type"]["value"],
+        **({"data[Service][master_category_type_id]": category["type"]["value"]}
+           if isinstance(category.get("type"), dict) else {}),
         "data[Service][overview]": fields["overview_input"],
         "data[Service][catchphrase]": fields["catchphrase"],
         "data[Service][head]": fields["head"],
@@ -233,6 +234,9 @@ async def _prepare(ws_url: str, contract: dict[str, Any]) -> tuple[dict[str, Any
             return before, False
         if not _snapshot_matches(before, contract):
             for name in ("master_category", "master_sub_category", "master_category_type_id"):
+                if name == "master_category_type_id" and not isinstance(
+                        contract["category"].get("type"), dict):
+                    continue  # Coconala offers only two levels in some categories.
                 value = contract["category"][{"master_category": "master", "master_sub_category": "sub",
                                               "master_category_type_id": "type"}[name]]["value"]
                 field_name = f"data[Service][{name}]"
@@ -364,7 +368,8 @@ async def _readback(ws_url: str, contract: dict[str, Any]) -> dict[str, Any]:
         for field_name, value in (
             ("data[Service][master_category]", contract["category"]["master"]["value"]),
             ("data[Service][master_sub_category]", contract["category"]["sub"]["value"]),
-            ("data[Service][master_category_type_id]", contract["category"]["type"]["value"]),
+            *(( ("data[Service][master_category_type_id]", contract["category"]["type"]["value"]), )
+              if isinstance(contract["category"].get("type"), dict) else ()),
         ):
             cid = await _wait_for_option(ws, field_name, value, cid)
         deadline = asyncio.get_running_loop().time() + 15
@@ -770,6 +775,10 @@ async def _read_category_children_async(
             ), cid)
             children = json.loads(str(raw or "{}"))
             if children.get(wanted):
+                return children
+            if sub_value and children.get("data[Service][master_sub_category]"):
+                # The sub list is present but this category offers no third level, which is a
+                # real two-level category rather than a page still loading.
                 return children
             await asyncio.sleep(0.25)
     raise RuntimeError("storefront_category_children_not_loaded")
