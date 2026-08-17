@@ -74,8 +74,16 @@ async function submitConnpassOnPage(page, _contract, dependencies = {}) {
   }
   if (
     !page || typeof page.getByRole !== "function" || typeof page.waitForTimeout !== "function"
-    || typeof page.locator !== "function"
+    || typeof page.locator !== "function" || typeof page.url !== "function" || typeof page.goto !== "function"
   ) {
+    throw providerError("Connpass control unavailable", "CONNPASS_CONTROL_UNAVAILABLE", false);
+  }
+  // Captured before anything is clicked: the confirm click lands on
+  // connpass's own post-submission page, not the event page, so the
+  // readback below needs to navigate back here to see the registered
+  // controls at all.
+  const eventUrl = String(page.url() || "");
+  if (!eventUrl) {
     throw providerError("Connpass control unavailable", "CONNPASS_CONTROL_UNAVAILABLE", false);
   }
   const joinControl = page.getByRole("link", {
@@ -117,10 +125,14 @@ async function submitConnpassOnPage(page, _contract, dependencies = {}) {
 
   // Past this point the confirm control is about to be clicked. Any failure
   // from here on is an unknown external effect — never safe to retry — even
-  // if the underlying error would otherwise look like a known/safe one.
+  // if the underlying error would otherwise look like a known/safe one. That
+  // includes the navigation back to the event page and the readback below:
+  // the registration itself already happened, so neither can be treated as
+  // safe-to-retry just because their own error code would normally be.
   try {
     await confirmControl.click();
     await page.waitForTimeout(1_000);
+    await page.goto(eventUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
     const after = await readState(page);
     return { status: after.state, effect_started: true };
   } catch {

@@ -322,6 +322,11 @@ function createMinimalProductionDependencies(options = {}) {
   const connpassWorkflow = options.connpassWorkflow || createConnpassScriptFirstWorkflow({
     now,
     onDiscoveryAudit: operations.recordConnpassDiscoveryAudit || (() => {}),
+    hasAppliedBundle: (candidate) => evidenceChain.hasAppliedBundle({
+      provider: "connpass",
+      event_ref: candidate.event_ref,
+      provider_status: "registered",
+    }),
   });
   const peatixWorkflow = options.peatixWorkflow || createPeatixDiscoveryWorkflow({
     now,
