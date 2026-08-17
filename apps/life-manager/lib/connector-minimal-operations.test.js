@@ -133,6 +133,81 @@ test("recordAction persists provider and stage safe_reason for a failed discover
   }
 });
 
+test("recordAction persists a bounded error_class and rejects malformed or oversized values", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-error-class-"));
+  try {
+    const operations = createMinimalProductionOperations({
+      stateDir,
+      wakeId: "wake-20260817-connpass-class",
+      telegramTarget: "private-target",
+      now: () => new Date("2026-08-17T09:00:00.000Z"),
+      async sendMessage() { return { messageId: 7003 }; },
+    });
+
+    await operations.recordAction({
+      purpose: "observe",
+      method: "provider_discovery",
+      timestamp: "2026-08-17T09:00:00.000Z",
+      result: "failed",
+      duration_ms: 30021,
+      provider: "connpass",
+      safe_reason: "provider_discovery_failed",
+      error_class: "TimeoutError",
+    });
+
+    const historyFile = path.join(stateDir, "action-history.jsonl");
+    const row = JSON.parse(fs.readFileSync(historyFile, "utf8").trim());
+    assert.deepEqual(row, {
+      schema_version: 1,
+      wake_id: "wake-20260817-connpass-class",
+      purpose: "observe",
+      method: "provider_discovery",
+      timestamp: "2026-08-17T09:00:00.000Z",
+      result: "failed",
+      duration_ms: 30021,
+      provider: "connpass",
+      safe_reason: "provider_discovery_failed",
+      error_class: "TimeoutError",
+    });
+
+    await assert.rejects(() => operations.recordAction({
+      purpose: "observe",
+      method: "provider_discovery",
+      timestamp: "2026-08-17T09:00:01.000Z",
+      result: "failed",
+      duration_ms: 100,
+      provider: "connpass",
+      safe_reason: "provider_discovery_failed",
+      error_class: "Type Error: boom",
+    }), "an error_class containing spaces or a colon must be rejected");
+
+    await assert.rejects(() => operations.recordAction({
+      purpose: "observe",
+      method: "provider_discovery",
+      timestamp: "2026-08-17T09:00:02.000Z",
+      result: "failed",
+      duration_ms: 100,
+      provider: "connpass",
+      safe_reason: "provider_discovery_failed",
+      error_class: "A".repeat(65),
+    }), "an oversized error_class must be rejected");
+
+    await assert.rejects(() => operations.recordAction({
+      purpose: "observe",
+      method: "provider_discovery",
+      timestamp: "2026-08-17T09:00:03.000Z",
+      result: "success",
+      duration_ms: 100,
+      error_class: "TimeoutError",
+    }), "error_class must not appear on a success row");
+
+    const rows = fs.readFileSync(historyFile, "utf8").trim().split("\n");
+    assert.equal(rows.length, 1, "rejected rows must never be appended");
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("duplicate report uses stored created_at and rejects business-field drift", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-duplicate-"));
   let clock = Date.parse("2026-08-08T08:30:00.000Z"); const sent = [];
