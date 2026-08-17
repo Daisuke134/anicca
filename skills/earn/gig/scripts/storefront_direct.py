@@ -1992,6 +1992,13 @@ def _prepare_next_hypothesis(
     applied_pairs = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
                      for row in effects
                      if row.get("status") == "accepted" and row.get("effect") == 1}
+    # The executor holds each changed listing for seven days so one experiment cannot
+    # contaminate the next on the same page. With a catalogue of thirteen there is always
+    # another listing to improve, so the selector honours that hold instead of re-picking a
+    # service the executor is about to refuse.
+    cooling = {str(row.get("service_id") or "") for row in effects
+               if row.get("status") == "accepted" and row.get("effect") == 1
+               and now - int(row.get("accepted_at_epoch") or 0) < 604800}
     # Only the exact proposal already published is spent. A newly written proposal for the same
     # field is a different experiment and must stay available.
     applied_values = {(str(row.get("service_id")), str(row.get("changed_field")).lower(),
@@ -2029,6 +2036,7 @@ def _prepare_next_hypothesis(
         contract_current = (isinstance(contract, dict)
                             and contract.get("precondition_listing_version_sha256") == versions.get(service_id))
         if (service_id in versions and service_id not in active_services
+                and service_id not in cooling
                 and (service_id, field) not in open_pairs
                 and (service_id, field) not in superseded
                 and (contract_current or field in GENERATED_MUTATION_FIELDS)):
@@ -2044,7 +2052,7 @@ def _prepare_next_hypothesis(
             break
     if candidate is None:
         candidate = _scorecard_gap_candidate(
-            scorecard_path, versions, active_services, open_pairs | superseded, field_alias,
+            scorecard_path, versions, active_services | cooling, open_pairs | superseded, field_alias,
             done_pairs=applied_pairs)
         if candidate is None:
             return None
