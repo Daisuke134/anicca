@@ -554,7 +554,9 @@ async def _public_readback(
                     ("catchphrase", public["catchphrase"] in body),
                     ("head", public["head"] in body),
                     ("body", public["body"] in body),
-                    ("price", f"{public['display_price_jpy']:,}円" in body),
+                    # The public page renders the amount and its unit as separate nodes, so the
+                    # text can carry a newline between them where the seller form does not.
+                    ("price", re.search(rf"{public['display_price_jpy']:,}\s*円", body) is not None),
                     # A two-level category carries no type, so only the levels it has are checked.
                     ("category", all(
                         level["label"] in body for level in contract["category"].values()
