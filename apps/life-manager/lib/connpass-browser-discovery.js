@@ -44,6 +44,18 @@ function localDate(instant, timeZone) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+// The 4 accepted phrases below are the exact strings connpass renders on its
+// join button (id="ParticipateButton") for an authenticated, eligible user —
+// they are the same 4 strings `submitConnpassOnPage` targets via
+// `getByRole("link", { name: /^(?:...)$/ })`, so this list is load-bearing
+// for the working direct-submit flow and must not be loosened without new
+// real evidence. A real anonymous fetch of 10 current Tokyo events
+// (2026-08-17) shows connpass swaps that SAME button element to a login
+// prompt ("ログイン・会員登録") plus a separate `<p class="em mb_5">イベント
+// に申し込むには<br />ログインしてください</p>` when the session isn't
+// logged in — that paragraph is not a button/link/input, so it never reaches
+// `controls`, and none of these anonymous-session strings must ever be read
+// as "available".
 function normalizedRegistrationStatus(controls) {
   const text = (Array.isArray(controls) ? controls : []).map((value) => String(value).trim());
   if (text.some((value) => /^(?:参加票を表示|受付票を見る|申し込みをキャンセル|キャンセルする|Registered)$/.test(value))) return "registered";
@@ -52,13 +64,32 @@ function normalizedRegistrationStatus(controls) {
   return "unknown";
 }
 
+// Real connpass.com/event/<id>/ pages (2026-08-17 sample: 390309, 391962,
+// 392421, 399995, 403863, 403896, 403917, 403936, 403957, 403960) render the
+// participation fee inside `<p class="join_fee">` per ticket tier — bare
+// "無料" for a free tier, "2000円（前払い）"/"2000円（会場払い）" for a paid
+// tier. That element matches the existing `[class*="fee"]` selector, so it
+// already reaches `labels` (= `price_labels`); no selector change needed.
+// Some events (391962) show TWO tiers, one free ("管理者" = staff) and one
+// paid ("一般枠" = general) — treating that as free would register Dais into
+// a page whose real ticket costs money, so ANY paid-looking label must win
+// over a free-looking label from a different tier.
+const PAID_LABEL = /[1-9][0-9,]*\s*(?:円|¥)/;
+const FREE_LABEL = /(?:^|\s|参加費|費用|料金)(?:無料|free)(?:\s|$)/i;
+
 function normalizedPrice(offers, labels) {
   const rows = Array.isArray(offers) ? offers : [];
-  const explicitFree = rows.some((offer) => offer && typeof offer === "object"
-    && /^(?:0|0\.0+)$/.test(String(offer.price == null ? "" : offer.price).trim()));
-  const labelFree = (Array.isArray(labels) ? labels : [])
-    .some((value) => /(?:^|\s|参加費)(?:無料|free)(?:\s|$)/i.test(String(value)));
-  return explicitFree || labelFree
+  const offerPrices = rows.filter((offer) => offer && typeof offer === "object")
+    .map((offer) => String(offer.price == null ? "" : offer.price).trim())
+    .filter((value) => value !== "");
+  const explicitFree = offerPrices.length > 0 && offerPrices.every((value) => /^(?:0|0\.0+)$/.test(value));
+  const explicitPaid = offerPrices.some((value) => !/^(?:0|0\.0+)$/.test(value));
+
+  const feeLabels = (Array.isArray(labels) ? labels : []).map((value) => String(value));
+  const labelPaid = feeLabels.some((value) => PAID_LABEL.test(value));
+  const labelFree = feeLabels.some((value) => FREE_LABEL.test(value));
+
+  return !explicitPaid && !labelPaid && (explicitFree || labelFree)
     ? Object.freeze({ ticket_price_status: "free", ticket_price_minor: 0 })
     : Object.freeze({ ticket_price_status: "unknown", ticket_price_minor: null });
 }
