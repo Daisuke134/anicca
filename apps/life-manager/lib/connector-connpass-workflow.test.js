@@ -214,6 +214,51 @@ test("Connpass direct action and parent readback use the supplied owned page", a
   assert.equal(calls.every((entry) => entry[1] === page), true);
 });
 
+// Placeholder name only — never Dais's real name in a test fixture (see
+// connpass-browser-provider.test.js's PLACEHOLDER_IDENTITY comment). Proves
+// the workflow layer threads whatever readAttendeeName resolves straight
+// through to submitOnPage's third argument, the same shape
+// connector-peatix-workflow.js already threads readAttendeeProfile through
+// (see "Peatix direct action carries the exact ticket/profile..." in
+// connector-peatix-workflow.test.js).
+test("Connpass direct action threads the injected attendee name to submitOnPage, resolved after discovery", async () => {
+  const candidate = event(109);
+  const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
+  const calls = [];
+  const workflow = createConnpassScriptFirstWorkflow({
+    async discoverOnPage() { return []; },
+    readAttendeeName: async () => { calls.push("name"); return "Placeholder Taro"; },
+    async submitOnPage(suppliedPage, suppliedCandidate, suppliedDependencies) {
+      calls.push(["submit", suppliedPage, suppliedCandidate, suppliedDependencies]);
+      return { status: "registered", effect_started: true };
+    },
+  });
+  assert.deepEqual(await workflow.runDirectAction({ page, candidate }), {
+    status: "completed", method: "connpass_direct_submit",
+  });
+  assert.deepEqual(calls, [
+    "name",
+    ["submit", page, candidate, { attendeeName: "Placeholder Taro" }],
+  ]);
+});
+
+test("Connpass direct action with no attendee-name injector still submits with an undefined name, never a guess", async () => {
+  const candidate = event(110);
+  const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
+  let receivedDependencies;
+  const workflow = createConnpassScriptFirstWorkflow({
+    async discoverOnPage() { return []; },
+    async submitOnPage(suppliedPage, suppliedCandidate, suppliedDependencies) {
+      receivedDependencies = suppliedDependencies;
+      return { status: "registered", effect_started: true };
+    },
+  });
+  assert.deepEqual(await workflow.runDirectAction({ page, candidate }), {
+    status: "completed", method: "connpass_direct_submit",
+  });
+  assert.deepEqual(receivedDependencies, { attendeeName: undefined });
+});
+
 test("Connpass direct action requires exact canonical URL without browser side effects", async () => {
   const candidate = event(106);
   const cases = [

@@ -327,6 +327,16 @@ function createMinimalProductionDependencies(options = {}) {
       event_ref: candidate.event_ref,
       provider_status: "registered",
     }),
+    // Same attendee name Peatix already gets via peatixAttendeeProfile.name
+    // (see native-pass.js's productionConfig -> attendeeName) — reused here
+    // rather than adding a second config field for the same fact. Read
+    // options.peatixAttendeeProfile exactly once per call (it may be a lazy
+    // getter — see the "keeps attendee profile lazy" test) rather than
+    // twice via a short-circuit expression.
+    readAttendeeName: () => {
+      const profile = options.peatixAttendeeProfile;
+      return profile ? profile.name : undefined;
+    },
   });
   const peatixWorkflow = options.peatixWorkflow || createPeatixDiscoveryWorkflow({
     now,

@@ -1,5 +1,51 @@
 "use strict";
 
+const os = require("node:os");
+const path = require("node:path");
+const { readLumaFormProfile } = require("./luma-form-profile.js");
+
+// Same private profile file the Luma join path already reads (see
+// luma-form-profile.js / connector-minimal-production.js's
+// lumaFormProfilePath), reused here rather than inventing a second
+// mechanism. form_answers is keyed by the organizer's own Japanese label
+// (e.g. "所属企業（学校）名"), exactly like the Luma answer policy expects.
+const DEFAULT_FORM_PROFILE_PATH = path.join(
+  os.homedir(), ".local", "state", "life-manager", "private", "connector-luma-form-profile.json",
+);
+
+function safeIdentityText(value) {
+  const text = String(value == null ? "" : value).trim();
+  return text && text.length <= 200 && !/[\x00-\x1f\x7f]/.test(text) ? text : "";
+}
+
+// Owner-decided policy (2026-08-17): a required Connpass question is only
+// ever pre-filled when it is free text asking for the two facts Dais already
+// keeps on file — his name and his affiliation — never anything that
+// expresses a choice, commitment, or consent (see the knownLabel matcher in
+// planConnpassQuestionnaire below, which is only ever applied to a group's
+// single text/textarea field — never to a radio/checkbox/select).
+//
+// `injectedName` is the attendee name resolved upstream (same value Peatix
+// already threads in as peatixAttendeeProfile.name — see native-pass.js's
+// productionConfig -> attendeeName, and connector-minimal-production.js's
+// readAttendeeName wiring for the Connpass workflow). This function never
+// reads process.env itself: called with no injected name (e.g. a test, or a
+// caller that never wired one), name resolves to "" and any required
+// name-shaped question stays unanswered — fails closed, not silently wrong.
+function defaultIdentityAnswers(injectedName) {
+  let profile = null;
+  try { profile = readLumaFormProfile({ path: DEFAULT_FORM_PROFILE_PATH }); } catch { profile = null; }
+  const answers = (profile && profile.form_answers) || {};
+  const affiliation = safeIdentityText(answers["所属企業（学校）名"]);
+  // The profile file is checked first for a name-shaped answer (there is
+  // none today); only when it has nothing does this fall back to the
+  // injected name above.
+  const nameFromProfile = ["氏名", "お名前", "Name", "name"]
+    .map((key) => answers[key]).find((value) => typeof value === "string" && value.trim());
+  const name = safeIdentityText(nameFromProfile) || safeIdentityText(injectedName);
+  return Object.freeze({ name, affiliation });
+}
+
 function providerError(message, code, unknownEffect) {
   const error = new Error(message);
   error.code = code;
@@ -117,33 +163,73 @@ async function selectParticipationTier(participationGroup) {
 // organizer questionnaire groups. Connpass silently no-ops the confirm click
 // when a required questionnaire field is empty, so this must run before any
 // radio is checked or the confirm button is clicked.
-async function hasUnansweredRequiredQuestionnaire(page) {
+// Extends the original hard-fail guard: a required organizer question is
+// only ever answered by this code when ALL of these hold — (1) it is left
+// unanswered, (2) its group holds exactly one free-text (input[type=text] or
+// textarea) field, never a radio/checkbox/select — those always express a
+// choice, commitment, or consent (the slide-sharing radio on
+// mobilus.connpass.com/event/395464/join/ is exactly that: it commits Dais
+// to presenting) and this code never touches them — and (3) its stripped
+// question label conservatively matches a known factual field (name or
+// affiliation). If ANY required question fails that test, nothing is
+// filled and nothing is clicked (matches the original all-or-nothing
+// fail-closed behaviour) — see submitConnpassOnPage below.
+async function planConnpassQuestionnaire(page, identity) {
   const groups = page.locator(".question_list");
-  return groups.evaluateAll((elements) => elements.some((group) => {
-    if (group.querySelector('input[name="participation_type"]')) return false;
-    const questionElement = group.querySelector(":scope > .question");
-    const questionText = String((questionElement && (questionElement.textContent || questionElement.innerText)) || "")
-      .replace(/\s+/g, " ").trim();
-    if (!/^必須/.test(questionText)) return false;
-    const fields = [...group.querySelectorAll("input,textarea,select")]
-      .filter((field) => String(field.type || "").toLowerCase() !== "hidden" && field.disabled !== true);
-    if (fields.length === 0) return false;
-    const answered = (field) => {
-      const type = String(field.type || "").toLowerCase();
-      if (type === "radio" || type === "checkbox") {
-        const name = String(field.name || "");
-        return name
-          ? fields.some((candidate) => String(candidate.name || "") === name && candidate.checked === true)
-          : field.checked === true;
-      }
-      return String(field.value || "").trim().length > 0;
+  return groups.evaluateAll((elements, ctx) => {
+    const knownLabel = {
+      name: /^(?:氏名|お名前|名前)$/,
+      affiliation: /所属.*(?:学校|会社|企業)|(?:学校|会社|企業).*所属/,
     };
-    return !fields.every(answered);
-  }));
+    const pending = [];
+    for (const group of elements) {
+      if (group.querySelector('input[name="participation_type"]')) continue;
+      const questionElement = group.querySelector(":scope > .question");
+      const questionText = String((questionElement && (questionElement.textContent || questionElement.innerText)) || "")
+        .replace(/\s+/g, " ").trim();
+      if (!/^必須/.test(questionText)) continue;
+      const fields = [...group.querySelectorAll("input,textarea,select")]
+        .filter((field) => String(field.type || "").toLowerCase() !== "hidden" && field.disabled !== true);
+      if (fields.length === 0) continue;
+      const answered = (field) => {
+        const type = String(field.type || "").toLowerCase();
+        if (type === "radio" || type === "checkbox") {
+          const name = String(field.name || "");
+          return name
+            ? fields.some((candidate) => String(candidate.name || "") === name && candidate.checked === true)
+            : field.checked === true;
+        }
+        return String(field.value || "").trim().length > 0;
+      };
+      if (fields.every(answered)) continue;
+      const label = questionText.replace(/^必須\s*/, "").trim();
+      const key = knownLabel.name.test(label) ? "name" : knownLabel.affiliation.test(label) ? "affiliation" : null;
+      const kind = fields.length === 1
+        ? (String(fields[0].tagName || "").toLowerCase() === "textarea" ? "textarea" : String(fields[0].type || "text").toLowerCase())
+        : null;
+      const value = key ? String(ctx[key] || "") : "";
+      const eligible = Boolean(key) && ["text", "textarea"].includes(kind) && value.length > 0;
+      pending.push({ field: eligible ? fields[0] : null, value, eligible });
+    }
+    if (pending.some((entry) => !entry.eligible)) return { blocked: true, filled: 0 };
+    let filled = 0;
+    for (const entry of pending) {
+      entry.field.value = entry.value;
+      if (typeof entry.field.dispatchEvent === "function" && typeof Event === "function") {
+        try {
+          entry.field.dispatchEvent(new Event("input", { bubbles: true }));
+          entry.field.dispatchEvent(new Event("change", { bubbles: true }));
+        } catch { /* best-effort reactivity nudge only */ }
+      }
+      filled += 1;
+    }
+    return { blocked: false, filled };
+  }, { name: identity.name, affiliation: identity.affiliation });
 }
 
 async function submitConnpassOnPage(page, _contract, dependencies = {}) {
   const readState = dependencies.readState || readConnpassRegistrationStateOnPage;
+  const identity = dependencies.identity || defaultIdentityAnswers(dependencies.attendeeName);
   const before = await readState(page);
   if (["registered", "pending"].includes(before.state)) {
     return { status: before.state, effect_started: false };
@@ -184,8 +270,9 @@ async function submitConnpassOnPage(page, _contract, dependencies = {}) {
     // Fail closed before touching anything else on the join page: a required
     // organizer questionnaire field left empty makes Connpass silently no-op
     // the confirm click later (page stays on /join/, nothing registers). See
-    // hasUnansweredRequiredQuestionnaire above for what this matches on.
-    if (await hasUnansweredRequiredQuestionnaire(page)) {
+    // planConnpassQuestionnaire above for what this matches on and fills.
+    const questionnairePlan = await planConnpassQuestionnaire(page, identity);
+    if (!questionnairePlan || questionnairePlan.blocked !== false) {
       throw providerError("Connpass questionnaire requires an answer", "CONNPASS_QUESTIONNAIRE_REQUIRED", false);
     }
 
