@@ -4547,8 +4547,19 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             last_create = _last_published_create_epoch(args.state_dir)
             create_spacing_open = (last_create is None
                                    or int(time.time()) - last_create >= CREATE_MIN_INTERVAL_SECONDS)
-            if (fixed_candidate_public and not demand_already_sold and create_spacing_open
-                    and next_hypothesis is None and observed < 20):
+            # A self-derived market is a second way in: the committed demand file may be spent
+            # while a scored cluster with an official category is waiting.
+            cluster_blueprint = None
+            if unused_cluster is not None and bound_category is not None:
+                try:
+                    cluster_blueprint = _create_blueprint_from_cluster(
+                        new_listing_contract, unused_cluster, bound_category)
+                except RuntimeError as error:
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "blueprint_blocked": str(error)[:120]}
+            if (fixed_candidate_public and create_spacing_open and next_hypothesis is None
+                    and observed < 20
+                    and (not demand_already_sold or cluster_blueprint is not None)):
                 source_service_id = new_listing_contract["draft_service_id"]
                 create_source = next((row for row in validated_contracts
                                       if row["service_id"] == source_service_id), None)
@@ -4556,8 +4567,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 create_template = capability_templates.get(str(create_family or ""))
                 if create_source is None or not isinstance(create_family, str) or not isinstance(create_template, dict):
                     raise RuntimeError("storefront_create_source_contract_missing")
-                demand = {**new_listing_contract["demand_evidence"],
-                          "evidence_path": str(Path(new_listing_path).resolve())}
+                demand = ({**cluster_blueprint["demand_evidence"],
+                           "evidence_path": cluster_blueprint["demand_evidence_path"]}
+                          if cluster_blueprint is not None else
+                          {**new_listing_contract["demand_evidence"],
+                           "evidence_path": str(Path(new_listing_path).resolve())})
                 create_seller_snapshot = _seller_snapshot_from_fresh_tab(
                     getattr(args, "default_tab_script", DEFAULT_TAB), source_service_id,
                 )
@@ -4576,8 +4590,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     create_draft_claim = storefront_draft.create_or_claim_blank_draft(
                         getattr(args, "default_tab_script", DEFAULT_TAB)
                     )
-                    blueprint = {**new_listing_contract,
-                                 "demand_evidence_path": str(Path(new_listing_path).resolve())}
+                    blueprint = cluster_blueprint or {
+                        **new_listing_contract,
+                        "demand_evidence_path": str(Path(new_listing_path).resolve())}
                     new_listing_contract = _seal_create_contract(
                         create_proposal, source=create_source, family_name=create_family,
                         allowed_refs=create_allowed_refs, blueprint=blueprint,
