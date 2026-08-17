@@ -847,11 +847,17 @@ async def _read_category_children_async(
             children = json.loads(str(raw or "{}"))
             if children.get(wanted):
                 return children
+            selects, cid = await _evaluate(ws, (
+                "JSON.stringify([...document.querySelectorAll('select')].map(s=>"
+                "s.name+':'+s.options.length+(s.disabled?'D':'')))"
+            ), cid)
             await asyncio.sleep(0.25)
     # A type list that never arrives is reported as its own case: the sub list being ready is
     # not evidence that the category has no third level, only that this one is still empty.
+    # Every select on the form is named, because the field carrying the type is a guess until
+    # the page says otherwise.
     if sub_value:
-        raise RuntimeError(f"storefront_category_type_absent:{sub_value}")
+        raise RuntimeError(f"storefront_category_type_absent:{sub_value}:{selects}")
     raise RuntimeError("storefront_category_children_not_loaded")
 
 
