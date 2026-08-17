@@ -1989,6 +1989,9 @@ def _prepare_next_hypothesis(
     # experiment closes, so the loop keeps improving instead of running out of committed work.
     open_pairs = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
                   for row in active}
+    applied_pairs = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
+                     for row in effects
+                     if row.get("status") == "accepted" and row.get("effect") == 1}
     versions = {str(row["service_id"]): row["service_version_sha256"] for row in contracts}
     # A candidate whose contract the live listing has already moved past stays skipped until
     # that listing changes again, so the loop advances to the next gap instead of re-picking it.
@@ -2023,14 +2026,16 @@ def _prepare_next_hypothesis(
                 and (service_id, field) not in open_pairs
                 and (service_id, field) not in superseded
                 and (contract_current or field in GENERATED_MUTATION_FIELDS)):
-            candidate, mutation_contract = row, contract
+            candidate = row
+            # A committed contract carries one fixed proposal, so replaying it produces the same
+            # experiment key and is correctly refused as a duplicate. Once it has been applied,
+            # further improvement has to be newly written rather than replayed.
+            mutation_contract = None if (service_id, field) in (applied_pairs or set()) else contract
             break
     if candidate is None:
         candidate = _scorecard_gap_candidate(
             scorecard_path, versions, active_services, open_pairs | superseded, field_alias,
-            done_pairs={(str(row.get("service_id")), str(row.get("changed_field")).lower())
-                        for row in effects
-                        if row.get("status") == "accepted" and row.get("effect") == 1})
+            done_pairs=applied_pairs)
         if candidate is None:
             return None
         field = field_alias.get(str(candidate.get("field") or "").lower(),
