@@ -361,3 +361,38 @@ plist now carries three `StartCalendarInterval` entries, 09:00, 17:00 and 01:00 
 single-entry plist is kept at
 `~/.local/state/life-manager/connector-native/plist-backup-daily-20260817.plist`, and the label was
 reloaded and read back, showing all three intervals registered with launchd.
+
+## Life Manager travel blocks vs Connector gating — fixed 2026-08-17
+
+Dais corrected an earlier reading in these notes. The `[Travel]` entries are **not** leftovers from the
+removed Connector travel feature; the Life Manager **web app** writes them around each booked event, and
+that is its job. A live sample proves the author:
+
+```
+summary     : [Travel] 🚆 新宿区南元町15-27→KOPI KALYAN Tokyo（コピカリアン トーキョー）
+created     : 2026-08-16T16:48:05Z          (after the manual cleanup)
+description : Auto-inserted by Life Manager — adjust if the route is wrong.
+```
+
+So deleting them was treating a symptom. The real defect was on the Connector side: it counted those
+blocks as Dais's own commitments, so every booking it made fenced off the surrounding time and closed the
+door on its own next candidate.
+
+| calendar state | Luma calendar-free candidates |
+|---|---|
+| 19 travel blocks present | 0 |
+| after deleting them | 2 |
+| after the web app re-inserted them | 0 again |
+
+The busy inventory now drops a block only when the summary marker and the auto-insert description BOTH
+match, both taken verbatim from `travel.js`'s `createTravelBlock`, so a partial match can never drop a
+real commitment. Titles and descriptions still never reach the inventory output.
+
+Verified after the fix with the read-only discovery CLI: no `[Travel]` entry appears as a blocker any
+more; every remaining rejection is a genuine event (`SPARK JAPAN`, `One Day with VITURE`, the day-job
+block, and Connector's own earlier bookings). `calendar_free` is still 0 for Luma right now, which is now
+an honest result rather than a self-inflicted one.
+
+Side finding worth keeping: because those inserts are still arriving, the Life Manager web app is alive.
+Dais reports its departure calls and route messages stopped, and the caller lives in
+`apps/life-manager/server.js`, which does not run locally. That is a separate track from Connector.
