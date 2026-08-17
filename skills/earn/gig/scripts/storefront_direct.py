@@ -4547,7 +4547,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     if judgement["decision"] != "change":
                         pass
                     elif (judgement["changed_field"] == "image"
-                            and int(presend.get("service_image_count") or 0) > 0):
+                            and int(presend.get("service_image_count") or 0) > 0
+                            and (mutation_contract or {}).get("before_value", {}).get(
+                                "service_image_ids") == []):
                         judgement = {**judgement, "decision": "no_op",
                                      "no_op_reason": "image_gap_already_closed",
                                      "changed_field": None, "experiment_key": None}
