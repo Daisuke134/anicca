@@ -3845,17 +3845,38 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             import listing_inventory
 
             inventory_path = args.state_dir / "evidence" / pass_id / "official-inventory.json"
-            inventory = listing_inventory.observe_storefront(
-                output_path=inventory_path, ws_url=ws_url, include_contract_sources=True,
-            )
-            observed = int(inventory.get("service_count") or 0)
-            if observed <= 0 or observed != len(inventory.get("services") or []):
-                raise RuntimeError("official_inventory_empty_or_invalid")
-            contract_sources = inventory.get("_contract_sources")
-            source_dicts = isinstance(contract_sources, list) and all(
-                isinstance(source, dict) for source in contract_sources
-            )
-            source_ids = [source.get("service_id") for source in contract_sources] if source_dicts else []
+            def _read_official_catalog() -> tuple[dict, list, int]:
+                """Read and validate the official catalogue, retrying a partial dashboard.
+
+                A half-hydrated seller dashboard is a transient, not a catalogue change, and
+                failing the whole wake on it costs a decision cycle for nothing.
+                """
+                failure = "official_inventory_empty_or_invalid"
+                for attempt in range(3):
+                    read = listing_inventory.observe_storefront(
+                        output_path=inventory_path, ws_url=ws_url, include_contract_sources=True,
+                    )
+                    count = int(read.get("service_count") or 0)
+                    sources = read.get("_contract_sources")
+                    if count <= 0 or count != len(read.get("services") or []):
+                        failure = "official_inventory_empty_or_invalid"
+                    else:
+                        ids = [source.get("service_id") for source in sources] if isinstance(
+                            sources, list) and all(isinstance(s, dict) for s in sources) else None
+                        listed = {str(service.get("service_id")) for service in read["services"]
+                                  if isinstance(service, dict)}
+                        if (ids is not None and len(sources) == count
+                                and all(type(value) is str and value.isdigit() for value in ids)
+                                and len(set(ids)) == len(ids) and set(ids) == listed):
+                            return read, sources, count
+                        failure = "official_service_contract_invalid"
+                    if attempt < 2:
+                        time.sleep(2)
+                raise RuntimeError(failure)
+
+            inventory, contract_sources, observed = _read_official_catalog()
+            source_dicts = True
+            source_ids = [source.get("service_id") for source in contract_sources]
             if source_dicts:
                 # Kept out of the hashed catalogue payload on purpose: this is adapter input,
                 # not listing identity.
