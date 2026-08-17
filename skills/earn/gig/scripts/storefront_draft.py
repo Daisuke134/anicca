@@ -723,3 +723,58 @@ def create_or_claim_blank_draft(default_tab_script: Path) -> dict[str, Any]:
                 check=False, timeout=30,
             )
     return {"draft_service_id": draft_id, "effect": 1, "recovered": False}
+
+
+async def _read_category_children_async(ws_url: str, master_value: str) -> dict[str, Any]:
+    import websockets
+
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10,
+                                  max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        await _call(ws, "Page.enable", {}, cid); cid += 1
+        # Selecting a category only changes the live form; nothing is submitted or saved.
+        applied, cid = await _evaluate(ws, (
+            "(()=>{const s=document.querySelector('[name=\"data[Service][master_category]\"]');"
+            f"if(!s||![...s.options].some(o=>o.value==={json.dumps(master_value)}))return false;"
+            f"s.value={json.dumps(master_value)};"
+            "s.dispatchEvent(new Event('change',{bubbles:true}));return true})()"
+        ), cid)
+        if applied is not True:
+            raise RuntimeError("storefront_category_master_not_selectable")
+        deadline = asyncio.get_running_loop().time() + 12
+        while asyncio.get_running_loop().time() < deadline:
+            raw, cid = await _evaluate(ws, (
+                "JSON.stringify(Object.fromEntries(['data[Service][master_sub_category]',"
+                "'data[Service][master_category_type_id]'].map(n=>{const s=document.querySelector"
+                "('[name=\"'+n+'\"]');return [n, s?[...s.options].filter(o=>o.value)"
+                ".map(o=>({value:o.value,label:(o.textContent||'').trim()})):[]]})))"
+            ), cid)
+            children = json.loads(str(raw or "{}"))
+            if children.get("data[Service][master_sub_category]"):
+                return children
+            await asyncio.sleep(0.25)
+    raise RuntimeError("storefront_category_children_not_loaded")
+
+
+def read_category_children(
+    default_tab_script: Path, draft_service_id: str, master_value: str,
+) -> dict[str, Any]:
+    """Read the sub and type options an official category offers, without saving anything."""
+    opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", f"https://coconala.com/mypage/services/{draft_service_id}"],
+        capture_output=True, text=True, check=False, timeout=30,
+    )
+    tab = None
+    try:
+        tab = json.loads(opened.stdout)
+        if opened.returncode != 0 or tab.get("ok") is not True:
+            raise RuntimeError("storefront_category_tab_open_failed")
+        return asyncio.run(_read_category_children_async(str(tab["ws"]), master_value))
+    finally:
+        if isinstance(tab, dict) and tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
