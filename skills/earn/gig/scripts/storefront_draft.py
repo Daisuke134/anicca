@@ -520,6 +520,7 @@ async def _public_readback(
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
         cid = 1
         deadline = asyncio.get_running_loop().time() + 15
+        missing: list[str] = ["page_unread"]
         while asyncio.get_running_loop().time() < deadline:
             raw, cid = await _evaluate(ws, (
                 "JSON.stringify({url:location.href,title:document.title,"
@@ -529,19 +530,27 @@ async def _public_readback(
             snapshot = json.loads(str(raw or "{}"))
             body = str(snapshot.get("body") or "")
             images = [str(value) for value in snapshot.get("images") or []]
-            if (
-                snapshot.get("url") == contract["expected_public_url"]
-                and contract["public_fields"]["expected_title"] in body
-                and contract["public_fields"]["catchphrase"] in body
-                and contract["public_fields"]["head"] in body
-                and contract["public_fields"]["body"] in body
-                and f"{contract['public_fields']['display_price_jpy']:,}円" in body
-                and all(contract["category"][level]["label"] in body for level in ("master", "sub", "type"))
-                and any(image_identity in value for value in images)
-            ):
+            public = contract["public_fields"]
+            missing = [
+                name for name, ok in (
+                    ("url", snapshot.get("url") == contract["expected_public_url"]),
+                    ("title", public["expected_title"] in body),
+                    ("catchphrase", public["catchphrase"] in body),
+                    ("head", public["head"] in body),
+                    ("body", public["body"] in body),
+                    ("price", f"{public['display_price_jpy']:,}円" in body),
+                    # A two-level category carries no type, so only the levels it has are checked.
+                    ("category", all(
+                        level["label"] in body for level in contract["category"].values()
+                        if isinstance(level, dict)
+                    )),
+                    ("image", any(image_identity in value for value in images)),
+                ) if not ok
+            ]
+            if not missing:
                 return snapshot
             await asyncio.sleep(0.5)
-    raise RuntimeError("storefront_publish_public_readback_mismatch")
+    raise RuntimeError("storefront_publish_public_readback_mismatch:" + ",".join(missing))
 
 
 def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_dir: Path) -> dict[str, Any]:
