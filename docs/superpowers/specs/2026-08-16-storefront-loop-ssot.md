@@ -504,6 +504,8 @@ when the views accumulated since acceptance cannot reach the policy's minimum sa
 the metric was unmeasurable rather than claim a result, and let the selector take the next action on
 that listing. Never convert an unmeasurable window into a claimed improvement.
 
+Implemented and observed on 2026-08-17 through readonly main release `6fa087999`. Forced full wake `1786927267` closed the first fence: experiment `4330368/inquiries` recorded `decision=NO_OP`, `terminal=true`, `reason=metric_unmeasurable_insufficient_exposure`, with the feasibility evidence `official_30d_views=16`, `projected_window_views=7`, `minimum_views=100`, `basis=rolling_30d_view_rate_projected_onto_window`. The baseline stays null, so nothing is claimed about the experiment's outcome; only the listing is released. Isolated evaluation against the live analytics ledger shows all eleven open experiments fall under the threshold, projecting between three and forty-three window views, so the fence clears one experiment per full wake rather than all at once.
+
 ### Authoritative remaining order
 
 The following order is the finish line. Time-dependent measurement is never a TODO and Paid work never blocks Storefront-owned implementation.
