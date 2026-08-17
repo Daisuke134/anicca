@@ -360,6 +360,50 @@ test("Connpass classifies remaining parent discovery contracts without leaking e
   );
 });
 
+// Regression for the 2026-08-16 measured wake failure: every code below used
+// to be an uncoded `invalid()` throw that escaped createDefaultDiscovery /
+// discoverCandidates without ever being wrapped by a stageError() try/catch,
+// so connector-minimal-runner.js's safeDiscoveryReason() fell back to the
+// generic "provider_discovery_failed" no matter which of these actually
+// fired. Each one must now surface its own stage code.
+test("Connpass gives a stable stage code to every previously uncoded discovery throw", async () => {
+  const noPageWorkflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T03:00:00.000Z"),
+  });
+  await assert.rejects(
+    noPageWorkflow.discoverCandidates({ page: null, calendar: [] }),
+    (error) => error.code === "CONNPASS_DISCOVERY_PAGE_CONTRACT_FAILED",
+  );
+
+  const badClockWorkflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("not-a-real-date"),
+  });
+  await assert.rejects(
+    badClockWorkflow.discoverCandidates({ page: { async goto() {} }, calendar: [] }),
+    (error) => error.code === "CONNPASS_DISCOVERY_DATES_FAILED",
+  );
+
+  const badWindowWorkflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("also-not-a-real-date"),
+    async discoverOnPage() { return []; },
+  });
+  await assert.rejects(
+    badWindowWorkflow.discoverCandidates({ page: {}, calendar: [] }),
+    (error) => error.code === "CONNPASS_CANDIDATE_WINDOW_FAILED",
+  );
+
+  const auditSinkWorkflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T03:00:00.000Z"),
+    async discoverOnPage() { return []; },
+    onDiscoveryAudit() { throw new Error("private audit sink error"); },
+  });
+  await assert.rejects(
+    auditSinkWorkflow.discoverCandidates({ page: {}, calendar: [] }),
+    (error) => error.code === "CONNPASS_DISCOVERY_AUDIT_FAILED"
+      && !String(error.message).includes("private audit sink error"),
+  );
+});
+
 test("Connpass filters large calendar noise before enforcing the eligible binding cap", async () => {
   const noise = Array.from({ length: 501 }, (_, index) => ({
     event_ref: `connpass-event://event/${500000 + index}`,

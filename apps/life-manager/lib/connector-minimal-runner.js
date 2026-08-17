@@ -3,6 +3,9 @@
 const PURPOSE = /^(?:navigate|observe|fill|submit|readback)$/;
 const METHOD = /^[a-z][a-z0-9_]{1,63}$/;
 const SAFE_REASON = /^[a-z0-9][a-z0-9_:-]{1,99}$/;
+// Bounded, non-sensitive: a JS class/constructor name only, never a message,
+// stack, URL, or env value.
+const ERROR_CLASS = /^[A-Za-z][A-Za-z0-9]{0,63}$/;
 
 function invalid() {
   throw new Error("Connector minimal runner invalid");
@@ -94,8 +97,22 @@ function operationSafeReason(value, fallback) {
 function safeDiscoveryReason(error) {
   const code = String(error && error.code || "");
   if (code === "PROVIDER_CANDIDATE_CONTRACT_FAILED") return "provider_candidate_contract_failed";
-  return /^CONNPASS_(?:CALENDAR_NAVIGATION|CALENDAR_BINDINGS|CALENDAR_BINDING_VALIDATION|CALENDAR_ROWS_CONTRACT|DETAIL_NAVIGATION|DETAIL_READ|DETAIL_TITLE_INVALID|DETAIL_START_INVALID|DETAIL_END_INVALID|DETAIL_RANGE_INVALID|DETAIL_IDENTITY_MISMATCH|CANDIDATE_VALIDATION|DISCOVERY_RESULT_CONTRACT|CALENDAR_CONFLICT_CHECK)_FAILED$/.test(code)
+  return /^CONNPASS_(?:CALENDAR_NAVIGATION|CALENDAR_BINDINGS|CALENDAR_BINDING_VALIDATION|CALENDAR_ROWS_CONTRACT|DETAIL_NAVIGATION|DETAIL_READ|DETAIL_TITLE_INVALID|DETAIL_START_INVALID|DETAIL_END_INVALID|DETAIL_RANGE_INVALID|DETAIL_IDENTITY_MISMATCH|CANDIDATE_VALIDATION|DISCOVERY_RESULT_CONTRACT|CALENDAR_CONFLICT_CHECK|DISCOVERY_PAGE_CONTRACT|DISCOVERY_DATES|DISCOVERY_MONTHS_CONTRACT|CANDIDATE_WINDOW|DISCOVERY_AUDIT)_FAILED$/.test(code)
     ? code.toLowerCase() : "provider_discovery_failed";
+}
+
+// Every other error stays private (message/stack/URL/env are never touched)
+// but the class name alone is bounded and safe to keep — it is what turns an
+// unrecognised stage into "some TimeoutError" instead of a silent fallback
+// with no lead at all. Prefer constructor.name (works for both Error
+// subclasses and, if the caller ever threw a class instance, Playwright's
+// own error classes); fall back to .name only when constructor.name is
+// unavailable. A value that fails the pattern is dropped, not truncated.
+function safeErrorClass(error) {
+  const constructorName = error && error.constructor && typeof error.constructor.name === "string"
+    ? error.constructor.name : "";
+  const candidate = constructorName || String((error && error.name) || "");
+  return ERROR_CLASS.test(candidate) ? candidate : "";
 }
 
 // Mirrors connector-minimal-evidence.js's EVIDENCE_SAFE_CODES: reads the .code a stageError()
@@ -193,7 +210,14 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         }
         const discovered = await action(
           "observe", "provider_discovery", () => deps.discoverCandidates(provider, gaps, owned.page),
-          (error) => ({ provider, safe_reason: safeDiscoveryReason(error) }),
+          (error) => {
+            const errorClass = safeErrorClass(error);
+            return Object.freeze({
+              provider,
+              safe_reason: safeDiscoveryReason(error),
+              ...(errorClass ? { error_class: errorClass } : {}),
+            });
+          },
         );
         try { candidates = verifiedCandidates(discovered, provider); }
         catch {
