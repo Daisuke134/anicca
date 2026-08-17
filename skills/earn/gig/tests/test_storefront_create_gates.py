@@ -246,6 +246,23 @@ def test_an_unproven_or_unbound_market_never_becomes_a_blueprint():
         sd._create_blueprint_from_cluster(COMMITTED, {**CLUSTER, "status": "unknown"}, CATEGORY)
 
 
+
+def test_a_derived_market_is_sourced_from_its_own_capability_family():
+    """Handing the model one market's demand beside another family's offer is incoherent."""
+    import json as _json
+    from pathlib import Path as _Path
+    families = _json.loads((_Path(__file__).resolve().parents[1] / "config"
+                            / "storefront-contract-families.json").read_text(encoding="utf-8"))
+    by_service = families["service_families"]
+    wanted = "excel_automation"
+    candidates = sorted(sid for sid, fam in by_service.items() if fam == wanted)
+    # The catalogue really does own listings in this family, so a source exists to copy
+    # official constraints from; picking one from a different family is what made Terra refuse.
+    assert candidates
+    assert all(by_service[sid] == wanted for sid in candidates)
+    assert by_service.get("91000003") == "seo_writing"
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
