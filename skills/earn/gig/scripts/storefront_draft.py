@@ -143,6 +143,16 @@ def _expected_values(contract: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def _field_detail(rows: list[dict[str, Any]], name: str) -> str:
+    row = next((r for r in rows if r.get("name") == name), None)
+    if not isinstance(row, dict):
+        return ""
+    marks = "".join(m for m, on in (("D", row.get("disabled")), ("R", row.get("readonly"))) if on)
+    options = row.get("options")
+    tail = f"opts={','.join(str(o) for o in options[:8])}" if isinstance(options, list) else ""
+    return f"[{row.get('tag') or '?'}/{row.get('type') or ''}{marks}{'/' + tail if tail else ''}]"
+
+
 def _snapshot_mismatches(snapshot: dict[str, Any], contract: dict[str, Any]) -> list[str]:
     if snapshot.get("url") != contract["draft_url"] or snapshot.get("action") != contract["draft_url"]:
         return ["draft_url"]
@@ -179,7 +189,7 @@ def _snapshot_mismatches(snapshot: dict[str, Any], contract: dict[str, Any]) -> 
          contract["subscription"]["discount_ratio"]),
     ):
         if name in present and actual != wanted:
-            mismatches.append(name)
+            mismatches.append(f"{name}{_field_detail(rows, name)}={actual!r}!={wanted!r}")
     for name, wanted in (
         ("data[Option][0][title]", option["title"]),
         ("data[Option][0][price]", str(option["price_jpy"])),
@@ -217,7 +227,9 @@ def _snapshot_image_identity(snapshot: dict[str, Any]) -> str:
 
 DRAFT_SNAPSHOT_EXPRESSION = (
     "JSON.stringify((()=>{const f=document.forms[0],p=f?.querySelector('[name=\"data[Service][price]\"]');"
-    "return{url:location.href,action:f?.action||'',fields:f?[...f.elements].filter(e=>e.name).map(e=>({name:e.name,value:e.value,checked:!!e.checked})):[],"
+    "return{url:location.href,action:f?.action||'',fields:f?[...f.elements].filter(e=>e.name).map(e=>({name:e.name,value:e.value,checked:!!e.checked,"
+    "tag:e.tagName,type:e.type||'',disabled:!!e.disabled,readonly:!!e.readOnly,"
+    "options:e.tagName==='SELECT'?[...e.options].map(o=>o.value):null})):[],"
     "price_options:p?[...p.options].map(o=>({value:o.value,text:o.text})):[],"
     "images:[...document.querySelectorAll('.js_image-thumbnail')].map(e=>({style:e.getAttribute('style')||'',src:e.getAttribute('src')||''}))"
     ".filter(e=>e.style||e.src)}})())"
