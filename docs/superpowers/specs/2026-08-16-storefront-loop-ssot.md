@@ -506,6 +506,25 @@ that listing. Never convert an unmeasurable window into a claimed improvement.
 
 Implemented and observed on 2026-08-17 through readonly main release `6fa087999`. Forced full wake `1786927267` closed the first fence: experiment `91000001/inquiries` recorded `decision=NO_OP`, `terminal=true`, `reason=metric_unmeasurable_insufficient_exposure`, with the feasibility evidence `official_30d_views=16`, `projected_window_views=7`, `minimum_views=100`, `basis=rolling_30d_view_rate_projected_onto_window`. The baseline stays null, so nothing is claimed about the experiment's outcome; only the listing is released. Isolated evaluation against the live analytics ledger shows all eleven open experiments fall under the threshold, projecting between three and forty-three window views, so the fence clears one experiment per full wake rather than all at once. Releasing it immediately paid for itself by exposing two defects the fence had been hiding. The static scorecard still listed `91000001/image` as a zero-image gap long after that listing had one, and the committed image render is pinned to that service and precondition and runs on every full wake regardless of the backlog, so once the listing gained an image the render raised `storefront_image_before_not_current` and took the entire wake down before selection, demand work or category reading could run. Commits `088c44cd9` and `a21136177` remove the satisfied backlog row and make a closed gap render nothing instead of failing. The very next full wake `1786928431` completed as `public_accepted` with readback `1`, closed a second fence on `91000004`, and recorded the twelfth accepted effect: `91000001/image` with `recovered=true`, before `0` and after asset `207e699e...`. The image had in fact been published by the loop earlier without its acceptance ever being recorded, so the ledger and the marketplace now agree.
 
+### A stale config must never take the loop down with it
+
+Between `1786932066` and `1786938141` the loop stopped doing anything: forty-seven of
+forty-eight consecutive full wakes died at `listing_contract_binding_invalid:91000002` before
+selection, fence release or demand work could run. The cause was one hand-authored listing
+contract pinned to an exact `service_version_sha256`. When that listing's public page moved on,
+the loader raised, and a single stale file took the other twelve listings down with it.
+
+Commit `d439bd711` records the stale file in the wake receipt and skips it. The listing does not
+lose its contract: the capability-family path regenerates one bound to the version actually
+observed. Full wake `1786938580` completed immediately afterwards, reported
+`stale_listing_contracts` for `91000002`, released the fence on `4312985`, and named `Excel 自動化`
+as the market it would pursue next.
+
+The general rule this earns: configuration that pins an exact live version is guaranteed to go
+stale, so the loop must treat staleness as a recorded skip rather than an exception. The same
+shape appeared twice today — the satisfied image seed and this contract — and both stopped every
+listing to protect one.
+
 ### Authoritative remaining order
 
 The following order is the finish line. Time-dependent measurement is never a TODO and Paid work never blocks Storefront-owned implementation.

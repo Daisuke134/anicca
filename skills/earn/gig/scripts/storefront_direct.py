@@ -1523,11 +1523,16 @@ def _render_prepared_mutation(
     return None
 
 
+# Recorded per run so a stale hand-authored contract is visible instead of fatal.
+_stale_listing_contracts: list[dict] = []
+
+
 def _load_listing_contracts(
     root: Path, observed_contracts: list[dict], families_path: Path = DEFAULT_LISTING_CONTRACT_FAMILIES,
     created_path: Path | None = None,
 ) -> list[dict]:
     observed = {row["service_id"]: row for row in observed_contracts}
+    _stale_listing_contracts.clear()
     loaded = []
     for path in sorted(root.glob("*.json")):
         try:
@@ -1543,7 +1548,14 @@ def _load_listing_contracts(
                 or contract.get("service_version_sha256") != source["service_version_sha256"]
                 or not isinstance(offer, dict) or offer.get("base_price_jpy") != source["price_jpy"]
                 or not isinstance(playbook, dict)):
-            raise RuntimeError(f"listing_contract_binding_invalid:{service_id or path.name}")
+            # A hand-authored contract binds one exact listing version. When the live listing
+            # moves on, that contract is stale, not the catalogue: skipping it loses this
+            # listing's playbook until it is re-authored, while failing here would stop every
+            # full wake for every other listing too.
+            _stale_listing_contracts.append({"service_id": service_id or path.name,
+                                             "source_path": str(path.resolve()),
+                                             "reason": "listing_contract_binding_stale"})
+            continue
         patterns = playbook.get("answer_patterns")
         required_inputs = offer.get("required_inputs")
         if (not isinstance(patterns, list) or not patterns
@@ -4959,6 +4971,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 inquiry_context=inquiry_context,
                 new_listing_draft=draft_result,
                 demand_derivation=demand_derivation,
+                stale_listing_contracts=list(_stale_listing_contracts),
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
                 proposal_agent=proposal_agent,
