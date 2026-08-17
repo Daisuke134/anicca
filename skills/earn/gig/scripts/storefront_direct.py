@@ -4913,14 +4913,29 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             cluster=unused_cluster, master=blueprint["category"]["master"],
                             children=children, timeout_seconds=args.timeout_seconds,
                         )
+                        sub = _validate_category_choice(
+                            picked.get("sub_value"),
+                            children.get("data[Service][master_sub_category]") or [])
+                        # Type options only exist once the sub category is set, so read again.
+                        typed = storefront_draft.read_category_children(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            draft_id, blueprint["category"]["master"]["value"], sub["value"],
+                        )
+                        picked_type, _ = _invoke_category_child_proposal(
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
+                            workdir=args.workdir,
+                            evidence_dir=inventory_path.parent / "category-type-agent",
+                            cluster=unused_cluster, master=blueprint["category"]["master"],
+                            children={**typed, "data[Service][master_sub_category]": [sub]},
+                            timeout_seconds=args.timeout_seconds,
+                        )
                         blueprint = {**blueprint, "category": {
                             "master": blueprint["category"]["master"],
-                            "sub": _validate_category_choice(
-                                picked.get("sub_value"),
-                                children.get("data[Service][master_sub_category]") or []),
+                            "sub": sub,
                             "type": _validate_category_choice(
-                                picked.get("type_value"),
-                                children.get("data[Service][master_category_type_id]") or []),
+                                picked_type.get("type_value"),
+                                typed.get("data[Service][master_category_type_id]") or []),
                         }}
                         demand_derivation = {**(demand_derivation or {}),
                                              "category_triple": blueprint["category"],
