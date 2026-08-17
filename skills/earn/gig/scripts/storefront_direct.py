@@ -4523,7 +4523,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     presend = _observe_own_page(
                         ws_url, inventory_path.parent, presend_path.name, str(judgement["service_id"]),
                     )
-                    if judgement["changed_field"] not in {"title", "body", "package", "price"}:
+                    # The legacy judge only knows the zero-image seed. Once that listing has an
+                    # image the gap is closed, which is a finished job, not a failed wake.
+                    if (judgement["changed_field"] == "image"
+                            and int(presend.get("service_image_count") or 0) > 0):
+                        judgement = {**judgement, "decision": "no_op",
+                                     "no_op_reason": "image_gap_already_closed",
+                                     "changed_field": None, "experiment_key": None}
+                        _atomic_write(judgement_path, judgement)
+                    elif judgement["changed_field"] not in {"title", "body", "package", "price"}:
                         _presend_guard(judgement, presend, mutation_contract)
                     if args.effect:
                         if judgement["changed_field"] == "image":
