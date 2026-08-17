@@ -527,23 +527,54 @@ listing to protect one.
 
 ### Authoritative remaining order
 
-The following order is the finish line. Time-dependent measurement is never a TODO and Paid work never blocks Storefront-owned implementation.
+Reordered on Dais's instruction 2026-08-17: prove this machine's four lanes actually run and
+actually earn before anything portable is built. Portability and the open-source release come
+last, because a loop that stops on this Mac will stop on every Mac.
 
-1. **[DONE] Install the committed scope slice:** readonly main release `f9005da7f...` publishes and recovers `91000005/body` into exactly one accepted effect, proves official full-body readback, immediate zero-duplicate replay and a green normal-cadence wake without changing another owner plist.
-2. **[DONE] Remove human contract authoring for the current eligible gap and pin intelligence:** the Storefront-only `storefront-proposal-agent` uses Codex `gpt-5.6-terra`, effort `medium`; installed release `b4f426d4a...` generates, seals, publishes and replays `4312985/body` without a developer mutation file. Minute wakes use no model and the full wake persists exact route evidence.
-3. **Finish CREATE E2E:** installed `5e02c5659...` used Terra plus official seller constraints to fill and publish recovered draft `4356229`, exact-read the public service and byte-identical image, persisted one effect, sent Telegram `21357` and released its lease. The remaining part of this item is the zero-duplicate replay on the next natural full wake plus the buyer-visible label cleanup recorded in S5h.
-4. **Implement recoverable RETIRE and atomic REPLACE:** the allocator now emits `RETIRE`, the contract binds the measured `/services/archive/<id>` control with a public rollback and no deletion, and `REPLACE` renders as an atomic retire-then-create plan that refuses to retire without a ready candidate. Remaining: the executor that performs the archive, verifies the restore control on the archived card as its first post-effect gate, and republishes on failure. Its terminal event is the first listing that clears the full gate; capacity pressure is false at 13/20 today.
-5. **Complete measurable learning:** inquiries, official purchases, verified net receipt and official rating/lifetime sales are measured with explicit unknown states, and a view-based ratio is reported unknown rather than invented because the official figure rolls thirty days. Remaining: a windowed rating ledger once an experiment targets it, and an honest per-service repeat-purchase source, which the platform does not currently expose.
-6. **[DONE] Prove generated-contract autonomy:** `4312985/body` and `4313100/package` are consecutive loop-generated contracts with real official effect/readback, immediate zero-effect replay, normal Telegram recovery, exit `0` and released lease; neither uses a developer-authored mutation JSON.
-7. **Prove normal cadence:** install the final readonly main-ancestor release with only `--effect --auto-cadence`; verify repeated incremental/full wakes remain green and keep selecting work indefinitely.
-8. **Canonicalize the three-lane operating floor:** Apply is operationally green but MUST move its split non-main release paths into one readonly GitHub-`main`-ancestor release; Negotiate is operationally green but MUST move its non-main release into its own readonly GitHub-`main`-ancestor release and consume/ACK the Storefront context envelope; Storefront MUST remain green. Paid remains excluded until its owner enables it.
-9. **Cleanup:** prove zero executable dependency on `gig_pass.sh`, Hermes-as-executor, mixed or temporary Storefront branches, and writable checkouts. Remove the shared mixed worktree/ref only after every external owner releases it; Hermes gateway remains.
-10. **Storefront completion record:** reconcile official catalog, analytics, both earning funnels, portfolio decisions, contracts, effect/outcome ledgers, Telegram receipts, launchd status and clean pushed `main`; only then mark Storefront complete.
-11. **Four-lane Mac mini acceptance:** after the Paid owner finishes and enables Paid, require Apply→Negotiate→Paid and Storefront→Negotiate→Paid real official E2E, exact origin attribution, four owner-isolated main-derived releases, scheduled wake evidence, zero duplicate external effects and owner-by-owner launchd recovery. Do not reboot the production Mac mini to manufacture proof. Only then call the Mac mini Coconala system complete.
-12. **Open-source productization:** replace machine-specific paths and private state assumptions with a documented bootstrap/config contract, Keychain-safe secrets, per-owner launchd installation, healthcheck, update/rollback and non-destructive uninstall. Keep login/CAPTCHA/policy exceptions explicit instead of claiming absolute zero-human operation. The Storefront-owned portability debt is measured rather than guessed, and splits into two kinds. Machine layout is already indirected through `Path.home()` and the `GIG_STATE_DIR` / `LIFE_MANAGER_HOME` / `GIG_ENV_FILE` / `CLOAK_*` environment contract, so it needs a documented config file and defaults rather than a rewrite; the exceptions are the hardcoded Negotiate log path `~/.openclaw/logs/gig-reply-detector-launchd.out.log` and the two capability-evidence paths under `~/gig/projects/5138597/`, which are this operator's private state. Account-specific identity is the harder debt: `TARGET_SERVICE_ID`, `GALLERY_SERVICE_ID` and the literal services `91000004` and `91000005` are wired into the mutation-render path, so a second Mac with a different Coconala catalogue cannot run this code as-is. A portable release must select those render targets from the observed catalogue and capability families instead of constants.
-13. **Clean-Mac portability proof:** install the public repository on a second clean supported Mac or disposable macOS test host, provide only documented user inputs and marketplace login, and run the same four-lane health and bounded E2E gates. Verify login/startup behavior first by owner-isolated launchd reload. A real reboot is an optional final canary only on that non-production host with explicit coordination; it never blocks work on the production Mac mini.
+**Stage 1 — Storefront keeps improving the store, unattended.**
 
-Items 1–7 and the Storefront portion of 9–10 are Storefront-owned. Item 11 is the cross-owner Mac mini acceptance gate. Items 12–13 are the later open-source product gate. Apply/Negotiate/Paid changes stay with their owners.
+1. Prove `CREATE` publishes the market it found by itself. The blueprint, official category
+   binding and draft-side sub/type selection are installed; the 24-hour spacing brake opens the
+   morning of 2026-08-18 and the first full wake after that must publish `Excel 自動化` with
+   exact public readback and zero duplicate effect.
+2. Drain the remaining measurement fences. Seven experiments are still inside windows their own
+   exposure cannot fill; each full wake releases one as `unknown`, and the selector must then
+   choose real improvement work instead of idling.
+3. Fire `RETIRE` for real once a listing clears the full gate, and prove the restore control on
+   the archived card before accepting the effect.
+4. Keep measuring full-wake reliability. Ten of today's fifteen failures came from defects fixed
+   the same day; the residual rate decides whether more work is needed here.
+
+**Stage 2 — the loops cannot be stopped by the things that will actually stop them.**
+
+5. Detect an expired session as its own state instead of a generic DOM mismatch. There is no
+   such detection today: a logged-out browser produces `seller_form_not_fully_hydrated` or
+   `official_inventory_empty_or_invalid` on every wake, and every lane fails silently forever.
+6. Log back in without a human. The loop holds no credentials — authentication lives only in the
+   `gig-daily-driver` browser profile's cookies — so an expired cookie is currently terminal.
+7. Wire CAPTCHA solving into the gig browser path. This loop contains no CAPTCHA handling at all;
+   the capability exists elsewhere in the system and is simply not connected here.
+
+**Stage 3 — four lanes earning on this Mac.**
+
+8. Prove both earning paths end to end with real work: `Storefront → Negotiate → Paid` and
+   `Apply → Negotiate → Paid`, with exact origin attribution, immutable receipts, Telegram and
+   zero duplicate effect. Paid is owned by another agent and is currently off by its own brake.
+9. Close the attribution gap that makes revenue unreadable: 105 of 106 inquiries and all eight
+   payments totalling JPY126,438 are still `unknown` origin. Storefront publishes the context
+   envelope; Negotiate must consume and acknowledge it.
+10. Recover each of the four owners independently through `plutil → bootout → bootstrap →
+    kickstart` without rebooting the production host.
+
+**Stage 4 — only then, portability and the public release.**
+
+11. Move account-specific identity out of the code. `TARGET_SERVICE_ID`, `GALLERY_SERVICE_ID`
+    and the literal services wired into the mutation renders mean a second Mac with a different
+    catalogue cannot run this as-is.
+12. Move machine-specific paths into a documented config contract, add Keychain-safe secrets, an
+    installer, healthcheck, update, rollback and a non-destructive uninstall.
+13. Install on a clean non-production Mac, pass the same health and bounded E2E gates, then tag
+    the first versioned open-source release.
 
 ### External four-loop integration TODOs — not removed
 
