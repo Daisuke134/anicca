@@ -86,6 +86,91 @@ test("official production factory installs the Connpass workflow into the defaul
   }
 });
 
+// Fake Connpass join page, shaped exactly like joinFlowFixture in
+// connpass-browser-provider.test.js (sole free tier, one required 氏名
+// question) — reused here at the wiring layer instead of stubbing
+// connpassWorkflow, so the factory's own readAttendeeName closure actually
+// runs end to end, the same way the Peatix harness test above
+// ("...composes the default Peatix Harness with the attendee profile")
+// drives its real default workflow through a fake page rather than a stub.
+function connpassNameQuestionnairePageFixture({ canonicalUrl, nameField }) {
+  const joinLink = { first() { return this; }, async count() { return 1; }, async isVisible() { return true; }, async click() {} };
+  const radioLocator = {
+    async count() { return 1; },
+    async evaluateAll() { return [{ disabled: false, label: "参加 無料 先着順 5/10人" }]; },
+    nth() { return { async check() {} }; },
+  };
+  const confirmLocator = {
+    async count() { return 1; }, async isVisible() { return true; },
+    async innerText() { return "申し込みを確定する"; }, async click() {},
+  };
+  const nameQuestionGroup = {
+    querySelector(selector) {
+      if (selector === 'input[name="participation_type"]') return null;
+      if (selector === ":scope > .question") return { textContent: "必須 氏名" };
+      return null;
+    },
+    querySelectorAll(selector) { return selector === "input,textarea,select" ? [nameField] : []; },
+  };
+  const questionnaireLocator = { async evaluateAll(callback, arg) { return callback([nameQuestionGroup], arg); } };
+  const stateQueue = [{ state: "absent" }, { state: "registered" }];
+  return {
+    url() { return canonicalUrl; },
+    async goto() {},
+    getByRole() { return joinLink; },
+    locator(selector) {
+      if (selector === 'input[name="participation_type"]') return radioLocator;
+      if (selector === "button#FreeButton") return confirmLocator;
+      if (selector === ".question_list") return questionnaireLocator;
+      throw new Error(`unexpected selector ${selector}`);
+    },
+    async waitForTimeout() {},
+    async evaluate() { return stateQueue.shift(); },
+  };
+}
+
+// Placeholder name/email only — never Dais's real identity in a test
+// fixture (see connpass-browser-provider.test.js's PLACEHOLDER_IDENTITY
+// comment). Proves the same fact reaches the Connpass questionnaire that
+// the existing "composes the default Peatix Harness with the attendee
+// profile" test above proves for Peatix: both read
+// options.peatixAttendeeProfile, nothing hardcoded or duplicated.
+test("official production factory threads the Peatix attendee profile's name into the default Connpass workflow's required 氏名 question", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-connpass-name-"));
+  const profile = { name: "Placeholder Taro", email: "placeholder@example.test", accept_organizer_privacy: true };
+  const candidate = {
+    provider: "connpass",
+    event_ref: "connpass-event://event/501001",
+    canonical_url: "https://tokyo-builders.connpass.com/event/501001/",
+    title: "Wiring Test Event",
+    starts_at: "2026-08-10T10:00:00.000Z",
+    ends_at: "2026-08-10T11:00:00.000Z",
+  };
+  const nameField = { tagName: "INPUT", type: "text", name: "q_name", value: "", disabled: false };
+  const page = connpassNameQuestionnairePageFixture({ canonicalUrl: candidate.canonical_url, nameField });
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-connpass-name-1",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      browserRail: { open() {}, navigate() {}, close() {} },
+      calendarReader: { async readCalendarGaps() { return []; } },
+      lumaWorkflow: emptyWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} },
+      browserHarness: { async runFallback() {}, async performAction() {} },
+      evidenceChain: { async completeEvidence() {} },
+      operations: { async reportWake() {}, async recordAction() {} },
+      peatixAttendeeProfile: profile,
+    });
+    const result = await dependencies.runDirectAction({ provider: "connpass", candidate, page });
+    assert.deepEqual(result, { status: "completed", method: "connpass_direct_submit" });
+    assert.equal(nameField.value, profile.name);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("official production factory persists the Connpass discovery audit from its default workflow", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-connpass-audit-"));
   const audits = [];
