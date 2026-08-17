@@ -4433,7 +4433,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                  and json.loads(line).get("cluster_key") == (unused_cluster or {}).get("cluster_key")),
                 None,
             ) if unused_cluster is not None and category_ledger.exists() else None
-            if bound_category is not None and bound_category.get("cluster_key") not in option_keys:
+            # A published listing's form does not offer its category select, so the options
+            # can only be read on a draft. When the candidate is already public this waits
+            # for the CREATE flow, which selects the category on the draft it claims.
+            if (bound_category is not None and not fixed_candidate_public
+                    and bound_category.get("cluster_key") not in option_keys):
                 try:
                     children = storefront_draft.read_category_children(
                         getattr(args, "default_tab_script", DEFAULT_TAB),
