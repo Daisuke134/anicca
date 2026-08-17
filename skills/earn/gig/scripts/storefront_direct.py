@@ -1928,6 +1928,45 @@ def _next_hypothesis(scorecard_path: Path, experiment: dict) -> dict | None:
     )), None)
 
 
+def _scorecard_gap_candidate(
+    scorecard_path: Path, versions: dict, active_services: set, open_pairs: set, field_alias: dict,
+    done_pairs: set | None = None,
+) -> dict | None:
+    """Derive the next improvement from the scorecard's own scores.
+
+    The committed backlog is a finite list; once it is spent the loop must still find work.
+    Every dimension a listing scores below the maximum is an open gap, largest gap first, so
+    improvement continues from the state of the catalogue rather than from a to-do list.
+    """
+    try:
+        document = json.loads(scorecard_path.read_text(encoding="utf-8"))
+        services = document["services"]
+    except (OSError, KeyError, TypeError, json.JSONDecodeError):
+        return None
+    ranked = []
+    for service in services if isinstance(services, list) else []:
+        service_id = str(service.get("service_id") or "")
+        scores = service.get("scores")
+        if service_id not in versions or service_id in active_services or not isinstance(scores, dict):
+            continue
+        for dimension, score in scores.items():
+            if type(score) is not int or score >= 2:
+                continue
+            field = field_alias.get(str(dimension).lower(), str(dimension).lower())
+            if field not in GENERATED_MUTATION_FIELDS or (service_id, field) in open_pairs:
+                continue
+            # Scores are static config and go stale once a field is improved, so an untouched
+            # gap always outranks one this loop has already published a change for.
+            revisit = 1 if (service_id, field) in (done_pairs or set()) else 0
+            ranked.append((revisit, score, service_id, dimension))
+    if not ranked:
+        return None
+    _, score, service_id, dimension = sorted(ranked)[0]
+    return {"service_id": service_id, "field": dimension, "before": score,
+            "success_metric": "inquiries",
+            "reason": f"scorecard gap: {dimension} scores {score} of 2 on the current catalogue"}
+
+
 def _prepare_next_hypothesis(
     scorecard_path: Path, effects_path: Path, outcomes_path: Path,
     contracts: list[dict], now: int, mutation_contracts: list[dict] | None = None,
@@ -1946,8 +1985,10 @@ def _prepare_next_hypothesis(
     active = [row for row in effects if row.get("status") == "accepted"
               and row.get("effect") == 1 and row.get("experiment_key") not in terminal]
     active_services = {str(row.get("service_id") or "") for row in active}
-    completed = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
-                 for row in effects if row.get("status") == "accepted" and row.get("effect") == 1}
+    # A field improved once is not finished forever. It becomes eligible again as soon as its
+    # experiment closes, so the loop keeps improving instead of running out of committed work.
+    open_pairs = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
+                  for row in active}
     versions = {str(row["service_id"]): row["service_version_sha256"] for row in contracts}
     field_alias = {"outcome": "title", "scope": "body"}
     rendered = {
@@ -1965,12 +2006,21 @@ def _prepare_next_hypothesis(
         contract_current = (isinstance(contract, dict)
                             and contract.get("precondition_listing_version_sha256") == versions.get(service_id))
         if (service_id in versions and service_id not in active_services
-                and (service_id, field) not in completed
+                and (service_id, field) not in open_pairs
                 and (contract_current or field in GENERATED_MUTATION_FIELDS)):
             candidate, mutation_contract = row, contract
             break
     if candidate is None:
-        return None
+        candidate = _scorecard_gap_candidate(
+            scorecard_path, versions, active_services, open_pairs, field_alias,
+            done_pairs={(str(row.get("service_id")), str(row.get("changed_field")).lower())
+                        for row in effects
+                        if row.get("status") == "accepted" and row.get("effect") == 1})
+        if candidate is None:
+            return None
+        field = field_alias.get(str(candidate.get("field") or "").lower(),
+                                str(candidate.get("field") or "").lower())
+        mutation_contract = rendered.get((str(candidate["service_id"]), field))
     identity = json.dumps(candidate, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return {
         "version": 1,
