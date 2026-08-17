@@ -396,3 +396,42 @@ an honest result rather than a self-inflicted one.
 Side finding worth keeping: because those inserts are still arriving, the Life Manager web app is alive.
 Dais reports its departure calls and route messages stopped, and the caller lives in
 `apps/life-manager/server.js`, which does not run locally. That is a separate track from Connector.
+
+## Connpass fresh applications — 2026-08-17, two causes fixed, one lane left open
+
+The 17:00 wake attempted three Connpass candidates and closed `direct_action_unverified` with nothing
+registered. Two separate defects were behind it, both measured by replaying the real flow.
+
+**Tier selection.** The flow checked the first participation radio. On a real multi-tier page that is the
+wrong ticket:
+
+```
+ptype1 学生ゆうせん枠 無料 先着順 9/15人      <- student only
+ptype2 だれでも枠 無料 先着順 17/20人        <- the correct pick
+ptype3 26新卒LT枠 無料 先着順 2/2人          <- full
+ptype4 【招待した方のみ】LT枠 無料 先着順 3/3人 <- invite only, full
+ptype5 オンライン視聴枠 (Google meet) 無料     <- online
+```
+
+None of those radios is `disabled`, so the DOM never says a tier is full — only the label does. Selection
+now requires free with no yen amount, room by the `n/m人` label, and no student, invite, presenter or
+staff marker, preferring an in-person tier, and clicks nothing when nothing qualifies.
+
+**Required organizer questionnaire.** Even with the right tier checked, the confirm click left the page
+where it was:
+
+```
+after confirm url : https://mobilus.connpass.com/event/395464/join/   (unchanged)
+after confirm body: ... 主催者からのアンケート ※回答は主催者のみに公開されます。 必須 ...
+FINAL STATE       : ["このイベントに申し込む"]                          (still not registered)
+```
+
+Some events require answers before the application is accepted. The join page is now checked for an
+unanswered required question before anything is clicked, and those events are skipped with their own safe
+code. Live readback after the fix: the wake's three attempts now end as fast, safe `direct_action_failed`
+rather than as unknown effects, so no attempt is wasted and no orphan is created.
+
+What is still open: every Connpass candidate available right now carries a required questionnaire, so the
+loop has nothing it can complete on that provider today. Answering them is the remaining lane, and it is
+exactly the "unknown UI, bounded model action" path the contract already describes. Luma already has the
+machinery to model — `luma-form-answer-policy.js`, `luma-form-fill.js`, `luma-form-profile.js`.
