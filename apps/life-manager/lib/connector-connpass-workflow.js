@@ -18,6 +18,12 @@ const TIME_ZONE = "Asia/Tokyo";
 // earliest-dated bindings per wake, even when a busy window discovers
 // hundreds of candidates. One constant, one place (Dais 2026-08-16).
 const CONNPASS_DETAIL_WALK_BUDGET = 40;
+// A wake must stay bounded: reconcile (readback -> evidence chain, never
+// re-submit) at most this many already-registered-but-unbundled events per
+// wake, even if a backlog of missed applied_bundle writes exists. Mirrors
+// LUMA_RECONCILE_LIMIT in connector-luma-workflow.js (Dais 2026-08-17
+// connector-core-recovery).
+const CONNPASS_RECONCILE_LIMIT = 3;
 
 function invalid() { throw new Error("Connpass script-first workflow invalid"); }
 const DETAIL_FIELD_CODES = new Set([
@@ -232,8 +238,12 @@ function createConnpassScriptFirstWorkflow(options = {}) {
   const submitOnPage = options.submitOnPage || submitConnpassOnPage;
   const readStateOnPage = options.readStateOnPage || readConnpassRegistrationStateOnPage;
   const onDiscoveryAudit = options.onDiscoveryAudit || (() => {});
+  // Fail closed: until production wiring proves an event has no bundle,
+  // treat it as bundled so a mis-wired caller can never re-surface it.
+  // Mirrors createLumaScriptFirstWorkflow's hasAppliedBundle default.
+  const hasAppliedBundle = options.hasAppliedBundle || (() => true);
   if ([now, readBindings, readDetail, discoverOnPage, isCalendarFree, submitOnPage, readStateOnPage,
-    onDiscoveryAudit]
+    onDiscoveryAudit, hasAppliedBundle]
     .some((value) => typeof value !== "function")) throw stageError("CONNPASS_WORKFLOW_DEPENDENCIES_INVALID_FAILED");
 
   return Object.freeze({
@@ -245,6 +255,12 @@ function createConnpassScriptFirstWorkflow(options = {}) {
       let window;
       try { window = candidateWindow(now); }
       catch { throw stageError("CONNPASS_CANDIDATE_WINDOW_FAILED"); }
+      // Registrations the provider already reports but that never produced
+      // an applied_bundle (evidence chain failed mid-way on a prior wake).
+      // These skip the direct-registration path entirely downstream — the
+      // runner's existing pre-submit readback sees "registered" and jumps
+      // straight to completeEvidence(). Bounded so a backlog can't make a
+      // wake unbounded; see CONNPASS_RECONCILE_LIMIT.
       const registeredExisting = [];
       const result = [];
       let normalizedCount = 0;
@@ -259,6 +275,8 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         if (startsAt < window.start || startsAt >= window.end) continue;
         windowCount += 1;
         if (candidate.registration_status === "registered") {
+          if (registeredExisting.length >= CONNPASS_RECONCILE_LIMIT) continue;
+          if (await hasAppliedBundle(candidate)) continue;
           registeredExisting.push(Object.freeze({ ...candidate }));
           continue;
         }
