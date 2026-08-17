@@ -310,6 +310,99 @@ test("malformed provider candidates report the parent contract boundary", async 
   ]);
 });
 
+test("a failed provider_direct submit records the provider and its mapped connpass code", async () => {
+  const state = fixture({
+    async runDirectAction({ provider, candidate: selected, page: suppliedPage }) {
+      state.calls.push(["direct", selected.event_ref, suppliedPage.page_id]);
+      if (provider !== "connpass") return Object.freeze({ status: "failed", safe_reason: "direct_action_unavailable" });
+      const error = new Error("Connpass participation tier unavailable");
+      error.code = "CONNPASS_TIER_UNAVAILABLE";
+      throw error;
+    },
+  });
+
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-submit-1",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  const directFailure = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .find((row) => row.purpose === "submit" && row.method === "provider_direct" && row.result === "failed" && row.provider === "connpass");
+  assert.deepEqual(directFailure && [directFailure.safe_reason, directFailure.error_class], [
+    "connpass_tier_unavailable", "Error",
+  ]);
+  assert.equal(JSON.stringify(directFailure).includes("participation tier unavailable"), false);
+});
+
+test("a failed provider_cache submit records the provider and a different mapped connpass code", async () => {
+  const state = fixture({
+    async runCachedAction({ provider, candidate: selected, page: suppliedPage }) {
+      state.calls.push(["cache", selected.event_ref, suppliedPage.page_id]);
+      if (provider !== "connpass") return Object.freeze({ status: "cache_miss" });
+      const error = new Error("Connpass questionnaire requires an answer");
+      error.code = "CONNPASS_QUESTIONNAIRE_REQUIRED";
+      throw error;
+    },
+  });
+
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-submit-2",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  const cacheFailure = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .find((row) => row.purpose === "submit" && row.method === "provider_cache" && row.result === "failed" && row.provider === "connpass");
+  assert.deepEqual(cacheFailure && [cacheFailure.safe_reason, cacheFailure.error_class], [
+    "connpass_questionnaire_required", "Error",
+  ]);
+});
+
+test("an uncoded browser_harness throw still records the fallback reason and a populated error_class", async () => {
+  const state = fixture({
+    async runAgentFallback({ provider, candidate: selected, page: suppliedPage, maxSteps }) {
+      state.calls.push(["agent", selected.event_ref, suppliedPage.page_id, maxSteps]);
+      if (provider !== "connpass") return Object.freeze({ status: "failed", safe_reason: "agent_action_unavailable" });
+      throw new Error("private stubbed harness failure detail");
+    },
+  });
+
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-submit-3",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  const harnessFailure = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .find((row) => row.purpose === "submit" && row.method === "browser_harness" && row.result === "failed" && row.provider === "connpass");
+  assert.deepEqual(harnessFailure && [harnessFailure.safe_reason, harnessFailure.error_class], [
+    "agent_action_failed", "Error",
+  ]);
+  assert.equal(JSON.stringify(harnessFailure).includes("private stubbed harness failure detail"), false);
+});
+
+test("a successful submit action row stays exactly the same shape as before (no provider/safe_reason/error_class)", async () => {
+  const state = fixture();
+
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-submit-4",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  const cacheRows = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .filter((row) => row.purpose === "submit" && row.method === "provider_cache" && row.result === "success");
+  assert.ok(cacheRows.length > 0);
+  for (const row of cacheRows) {
+    assert.deepEqual(Object.keys(row).sort(), ["duration_ms", "method", "purpose", "result", "timestamp"]);
+  }
+});
+
 test("a failed direct action invokes at most ten agent steps on the exact same page", async () => {
   const state = fixture({
     async runAgentFallback(input) {
