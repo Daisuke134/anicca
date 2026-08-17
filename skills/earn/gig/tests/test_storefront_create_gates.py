@@ -235,8 +235,9 @@ def test_a_derived_market_changes_the_market_not_the_delivery_policy():
 
 def test_an_unproven_or_unbound_market_never_becomes_a_blueprint():
     sd = _sd()
-    with pytest.raises(RuntimeError, match="storefront_cluster_category_children_unread"):
-        sd._create_blueprint_from_cluster(COMMITTED, CLUSTER, {**CATEGORY, "sub_options": []})
+    # Children are read on the draft CREATE claims, so their absence is not a blueprint error.
+    assert sd._create_blueprint_from_cluster(
+        COMMITTED, CLUSTER, {**CATEGORY, "sub_options": []})["category_options"]["sub"] == []
     with pytest.raises(RuntimeError, match="storefront_cluster_category_unbound"):
         sd._create_blueprint_from_cluster(COMMITTED, CLUSTER, {**CATEGORY, "master_category": {}})
     with pytest.raises(RuntimeError, match="storefront_cluster_demand_unproven"):
