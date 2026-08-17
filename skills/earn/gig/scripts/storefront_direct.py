@@ -3372,6 +3372,16 @@ def _seller_snapshot(ws_url: str) -> dict:
     return _seller_snapshot_for(ws_url, TARGET_SERVICE_ID)
 
 
+def _looks_signed_out(observed_url: str | None) -> bool:
+    """True when an authenticated page sent us somewhere that is not the seller area."""
+    parts = urlsplit(str(observed_url or ""))
+    if not parts.path:
+        return False
+    if parts.hostname not in {"coconala.com", "www.coconala.com"}:
+        return True
+    return not parts.path.startswith("/mypage/")
+
+
 def _seller_snapshot_for(ws_url: str, service_id: str) -> dict:
     import listing_inventory
 
@@ -3383,6 +3393,11 @@ def _seller_snapshot_for(ws_url: str, service_id: str) -> dict:
         names = {str(row.get("name") or "") for row in last.get("fields", []) if isinstance(row, dict)}
         if last.get("url") == url and required <= names:
             return last
+        if _looks_signed_out(last.get("url")):
+            # Being sent away from an authenticated seller page is an expired session, which
+            # no amount of retrying fixes. Name it so the owner sees the real cause instead of
+            # a hydration error repeating on every wake.
+            raise RuntimeError(f"storefront_session_expired:{last.get('url')}")
         if attempt < 2:
             time.sleep(1)
     raise RuntimeError("seller_form_not_fully_hydrated")
