@@ -450,6 +450,20 @@ async def _submit_public(ws_url: str, contract: dict[str, Any]) -> str:
         cid = await _wait_for_option(
             ws, "data[Service][master_category]", contract["category"]["master"]["value"], cid,
         )
+        if sub_value:
+            # Category type only appears once its sub category is chosen, so the two levels are
+            # read in the order the form itself fills them.
+            cid = await _wait_for_option(ws, "data[Service][master_sub_category]", sub_value, cid)
+            applied_sub, cid = await _evaluate(ws, (
+                "(()=>{const s=document.querySelector('[name=\"data[Service][master_sub_category]\"]');"
+                f"if(!s||![...s.options].some(o=>o.value==={json.dumps(sub_value)}))return false;"
+                f"s.value={json.dumps(sub_value)};"
+                "s.dispatchEvent(new Event('change',{bubbles:true}));return true})()"
+            ), cid)
+            if applied_sub is not True:
+                raise RuntimeError("storefront_category_sub_not_selectable")
+        wanted = ("data[Service][master_category_type_id]" if sub_value
+                  else "data[Service][master_sub_category]")
         deadline = asyncio.get_running_loop().time() + 12
         while asyncio.get_running_loop().time() < deadline:
             raw, cid = await _evaluate(ws, DRAFT_SNAPSHOT_EXPRESSION, cid)
@@ -725,7 +739,9 @@ def create_or_claim_blank_draft(default_tab_script: Path) -> dict[str, Any]:
     return {"draft_service_id": draft_id, "effect": 1, "recovered": False}
 
 
-async def _read_category_children_async(ws_url: str, master_value: str) -> dict[str, Any]:
+async def _read_category_children_async(
+    ws_url: str, master_value: str, sub_value: str | None = None,
+) -> dict[str, Any]:
     import websockets
 
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10,
@@ -753,7 +769,7 @@ async def _read_category_children_async(ws_url: str, master_value: str) -> dict[
                 ".map(o=>({value:o.value,label:(o.textContent||'').trim()})):[]]})))"
             ), cid)
             children = json.loads(str(raw or "{}"))
-            if children.get("data[Service][master_sub_category]"):
+            if children.get(wanted):
                 return children
             await asyncio.sleep(0.25)
     raise RuntimeError("storefront_category_children_not_loaded")
@@ -761,6 +777,7 @@ async def _read_category_children_async(ws_url: str, master_value: str) -> dict[
 
 def read_category_children(
     default_tab_script: Path, draft_service_id: str, master_value: str,
+    sub_value: str | None = None,
 ) -> dict[str, Any]:
     """Read the sub and type options an official category offers, without saving anything."""
     opened = subprocess.run(
