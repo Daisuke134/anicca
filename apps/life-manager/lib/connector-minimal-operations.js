@@ -22,6 +22,16 @@ const REPORT_KEYS = "consecutive_failure_count,created_at,safe_reason,schema_ver
 const DELIVERY_KEYS = "delivered_at,schema_version,telegram_provider_id,wake_id";
 const POSITIVE_PROVIDER_ID = /^[1-9][0-9]*$/;
 const STATUSES = new Set(["applied_bundle", "completed_no_effect", "circuit_open"]);
+// Ceiling for observed/normalized/window/free_open/calendar_free counts: matches the
+// `rows.length > 5_000` per-page guard in connector-connpass-workflow.js, the real limit
+// on how many rows discovery can ever observe (measured live: connpass can legitimately
+// observe 767 Tokyo events in-window, so 500 rejected a genuine result).
+const DISCOVERY_AUDIT_COUNT_CEILING = 5_000;
+// Ceiling for discovered/within_window/eligible/calendar_free/selected counts: matches
+// the highest per-page listing guard among this validator's callers (kokuchpro's
+// `rows.length > 800` in connector-kokuchpro-workflow.js; eventbrite=500, techplay=50
+// are already within the old 500 bound). Raised for the same reason as above.
+const DOORKEEPER_DISCOVERY_AUDIT_COUNT_CEILING = 800;
 
 function invalid() {
   throw new Error("Connector minimal operations invalid");
@@ -127,7 +137,7 @@ function safeDiscoveryAudit(input, wakeId, recordedAt) {
   if (
     !input || typeof input !== "object" || Array.isArray(input)
     || Object.keys(input).sort().join(",") !== keys.join(",")
-    || keys.some((key) => !Number.isInteger(input[key]) || input[key] < 0 || input[key] > 500)
+    || keys.some((key) => !Number.isInteger(input[key]) || input[key] < 0 || input[key] > DISCOVERY_AUDIT_COUNT_CEILING)
     || input.normalized_count > input.observed_count
     || input.window_count > input.normalized_count
     || input.free_open_count > input.window_count
@@ -148,7 +158,7 @@ function safeDoorkeeperDiscoveryAudit(input, wakeId, recordedAt) {
   if (
     !input || typeof input !== "object" || Array.isArray(input)
     || Object.keys(input).sort().join(",") !== keys.join(",")
-    || keys.some((key) => !Number.isInteger(input[key]) || input[key] < 0 || input[key] > 500)
+    || keys.some((key) => !Number.isInteger(input[key]) || input[key] < 0 || input[key] > DOORKEEPER_DISCOVERY_AUDIT_COUNT_CEILING)
     || input.selected_count > input.calendar_free_count
     || input.calendar_free_count > input.eligible_count
     || input.eligible_count > input.within_window_count
