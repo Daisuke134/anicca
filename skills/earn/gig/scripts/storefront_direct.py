@@ -4416,18 +4416,26 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         family_name=family_name, family=family, manifest=competitor_manifest,
                         capability_paths=capability_paths, timeout_seconds=args.timeout_seconds,
                     )
-                    generated_contract = _seal_generated_proposal(
-                        proposal, next_hypothesis, proposal_source, proposal_snapshot,
-                        family_name, capability_families, allowed_refs, inventory_path.parent,
-                        proposal_public,
-                    )
+                    proposal_rejected = None
+                    try:
+                        generated_contract = _seal_generated_proposal(
+                            proposal, next_hypothesis, proposal_source, proposal_snapshot,
+                            family_name, capability_families, allowed_refs, inventory_path.parent,
+                            proposal_public,
+                        )
+                    except RuntimeError as error:
+                        # One malformed proposal is a rejected candidate, not a broken wake: the
+                        # guards did their job, so record why and let the next wake try another gap.
+                        generated_contract = None
+                        proposal_rejected = str(error)[:160]
                     _atomic_write(inventory_path.parent / "proposal-record.json", {
                         "version": 1, "proposal": proposal, "route": proposal_agent,
                         "service_id": proposal_service_id, "changed_field": next_hypothesis["field"],
                         "contract_sha256": (generated_contract or {}).get("contract_sha256"),
                     })
                     if generated_contract is None:
-                        proposal_noop = proposal
+                        proposal_noop = ({**proposal, "rejected": proposal_rejected}
+                                         if proposal_rejected else proposal)
                     else:
                         field = generated_contract["allowed_delta"][0]
                         generated_render = {
