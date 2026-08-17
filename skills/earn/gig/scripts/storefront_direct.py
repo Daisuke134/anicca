@@ -4922,7 +4922,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             draft_id, blueprint["category"]["master"]["value"], sub["value"],
                         )
                         type_options = typed.get("data[Service][master_category_type_id]") or []
-                        picked_type, _ = ({"type_value": None}, None) if not type_options else _invoke_category_child_proposal(
+                        picked_type, _ = _invoke_category_child_proposal(
                             runner=getattr(args, "runner", DEFAULT_RUNNER),
                             schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
                             workdir=args.workdir,
@@ -4934,11 +4934,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         blueprint = {**blueprint, "category": {
                             "master": blueprint["category"]["master"],
                             "sub": sub,
-                            # Some official categories stop at two levels; binding a type that
-                            # the form never offered would be inventing one.
-                            "type": (_validate_category_choice(picked_type.get("type_value"),
-                                                               type_options)
-                                     if type_options else None),
+                            # The site rejects a listing whose type is unset, so the type the
+                            # form offers is always read and always chosen from what it offers.
+                            "type": _validate_category_choice(picked_type.get("type_value"),
+                                                              type_options),
                         }}
                         demand_derivation = {**(demand_derivation or {}),
                                              "category_triple": blueprint["category"],

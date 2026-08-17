@@ -847,11 +847,11 @@ async def _read_category_children_async(
             children = json.loads(str(raw or "{}"))
             if children.get(wanted):
                 return children
-            if sub_value and children.get("data[Service][master_sub_category]"):
-                # The sub list is present but this category offers no third level, which is a
-                # real two-level category rather than a page still loading.
-                return children
             await asyncio.sleep(0.25)
+    # A type list that never arrives is reported as its own case: the sub list being ready is
+    # not evidence that the category has no third level, only that this one is still empty.
+    if sub_value:
+        raise RuntimeError(f"storefront_category_type_absent:{sub_value}")
     raise RuntimeError("storefront_category_children_not_loaded")
 
 
