@@ -876,7 +876,7 @@ def read_category_children(
         tab = json.loads(opened.stdout)
         if opened.returncode != 0 or tab.get("ok") is not True:
             raise RuntimeError("storefront_category_tab_open_failed")
-        return asyncio.run(_read_category_children_async(str(tab["ws"]), master_value))
+        return asyncio.run(_read_category_children_async(str(tab["ws"]), master_value, sub_value))
     finally:
         if isinstance(tab, dict) and tab.get("target_id"):
             subprocess.run(
