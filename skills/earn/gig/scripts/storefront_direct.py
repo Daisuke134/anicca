@@ -4555,7 +4555,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                      "changed_field": None, "experiment_key": None}
                         _atomic_write(judgement_path, judgement)
                     elif judgement["changed_field"] not in {"title", "body", "package", "price"}:
-                        _presend_guard(judgement, presend, mutation_contract)
+                        try:
+                            _presend_guard(judgement, presend, mutation_contract)
+                        except RuntimeError as error:
+                            # The guard's job is to stop the change, not the wake. A contract whose
+                            # recorded before-state no longer matches the live listing describes
+                            # work that is already done or superseded, so record it and move on.
+                            judgement = {**judgement, "decision": "no_op",
+                                         "no_op_reason": f"precondition_superseded:{error}",
+                                         "changed_field": None, "experiment_key": None}
+                            _atomic_write(judgement_path, judgement)
                     if args.effect and judgement["decision"] == "change":
                         if judgement["changed_field"] == "image":
                             seller_before, _, intent_path = _execute_image_effect(
