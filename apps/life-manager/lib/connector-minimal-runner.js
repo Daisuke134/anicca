@@ -101,6 +101,29 @@ function safeDiscoveryReason(error) {
     ? code.toLowerCase() : "provider_discovery_failed";
 }
 
+// Sibling of safeDiscoveryReason for the submit stage: connpass-browser-provider.js's
+// submitConnpassOnPage / readConnpassRegistrationStateOnPage throw these precise codes
+// when a specific submit-stage guard fires (tier selection, questionnaire, confirm
+// control, etc). Recording the mapped reason next to the failed action row (instead of
+// only the caller's generic per-method fallback) names which guard tripped without ever
+// touching the private message/stack. Every code not in this set keeps the caller's
+// fallback, unchanged.
+const CONNPASS_SUBMIT_CODES = /^CONNPASS_(?:REGISTRATION_UNAVAILABLE|CONTROL_UNAVAILABLE|CONFIRM_UNAVAILABLE|TIER_UNAVAILABLE|QUESTIONNAIRE_REQUIRED|PAGE_UNAVAILABLE|READBACK_UNAVAILABLE|BROWSER_ACTION_FAILED)$/;
+
+function safeSubmitReason(error, fallback) {
+  const code = String(error && error.code || "");
+  return CONNPASS_SUBMIT_CODES.test(code) ? code.toLowerCase() : fallback;
+}
+
+function submitFailureContext(provider, error, fallback) {
+  const errorClass = safeErrorClass(error);
+  return Object.freeze({
+    provider,
+    safe_reason: safeSubmitReason(error, fallback),
+    ...(errorClass ? { error_class: errorClass } : {}),
+  });
+}
+
 // Every other error stays private (message/stack/URL/env are never touched)
 // but the class name alone is bounded and safe to keep — it is what turns an
 // unrecognised stage into "some TimeoutError" instead of a silent fallback
@@ -275,11 +298,11 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         if (!registered(providerState)) providerState = null;
         if (!providerState) {
         try {
-          operation = await action("submit", "provider_cache", () => deps.runCachedAction({
-            provider,
-            candidate: selected,
-            page: owned.page,
-          }));
+          operation = await action(
+            "submit", "provider_cache",
+            () => deps.runCachedAction({ provider, candidate: selected, page: owned.page }),
+            (error) => submitFailureContext(provider, error, "cached_action_failed"),
+          );
         } catch {
           operation = Object.freeze({ status: "failed", safe_reason: "cached_action_failed" });
         }
@@ -290,11 +313,11 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
 
         if (!providerState) {
         try {
-          operation = await action("submit", "provider_direct", () => deps.runDirectAction({
-            provider,
-            candidate: selected,
-            page: owned.page,
-          }));
+          operation = await action(
+            "submit", "provider_direct",
+            () => deps.runDirectAction({ provider, candidate: selected, page: owned.page }),
+            (error) => submitFailureContext(provider, error, "direct_action_failed"),
+          );
         } catch {
           operation = Object.freeze({ status: "failed", safe_reason: "direct_action_failed" });
         }
@@ -307,14 +330,18 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             return finish("circuit_open", "effect_unknown");
           }
           try {
-            operation = await action("submit", "browser_harness", () => deps.runAgentFallback({
-              provider,
-              candidate: selected,
-              page: owned.page,
-              pageWebsocket: owned.page_websocket,
-              maxSteps: settings.maxAgentSteps,
-              expectedState: "registered_or_pending",
-            }));
+            operation = await action(
+              "submit", "browser_harness",
+              () => deps.runAgentFallback({
+                provider,
+                candidate: selected,
+                page: owned.page,
+                pageWebsocket: owned.page_websocket,
+                maxSteps: settings.maxAgentSteps,
+                expectedState: "registered_or_pending",
+              }),
+              (error) => submitFailureContext(provider, error, "agent_action_failed"),
+            );
             usedFallback = operation && operation.status === "completed";
             ambiguousAgentEffect = Boolean(operation && operation.status === "failed" && operation.safe_reason === "effect_unknown");
           } catch {
