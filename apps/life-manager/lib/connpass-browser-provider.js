@@ -72,23 +72,58 @@ async function submitConnpassOnPage(page, _contract, dependencies = {}) {
   if (before.state !== "absent") {
     throw providerError(`Connpass registration ${before.state}`, "CONNPASS_REGISTRATION_UNAVAILABLE", false);
   }
-  if (!page || typeof page.getByRole !== "function" || typeof page.waitForTimeout !== "function") {
+  if (
+    !page || typeof page.getByRole !== "function" || typeof page.waitForTimeout !== "function"
+    || typeof page.locator !== "function"
+  ) {
     throw providerError("Connpass control unavailable", "CONNPASS_CONTROL_UNAVAILABLE", false);
   }
-  const control = page.getByRole("link", {
+  const joinControl = page.getByRole("link", {
     name: /^(?:このイベントに申し込む|イベントに申し込む|参加申し込み|申し込む)$/,
     exact: true,
   }).first();
-  if (await control.count() !== 1 || !await control.isVisible()) {
+  if (await joinControl.count() !== 1 || !await joinControl.isVisible()) {
     throw providerError("Connpass control unavailable", "CONNPASS_CONTROL_UNAVAILABLE", false);
   }
+
+  // Clicking the join link only navigates to the /join/ page — it does not
+  // register anyone. Nothing below this point has an external effect until
+  // the confirm control is clicked, so failures here are safe to retry.
+  let confirmControl;
   try {
-    await control.click();
+    await joinControl.click();
+    await page.waitForTimeout(1_000);
+
+    // On the join page: validate BOTH the participation-type radio and the
+    // free-confirm control before touching either. Fail closed — nothing is
+    // clicked on this page until both targets are proven present.
+    const participationGroup = page.locator('input[name="participation_type"]');
+    if (await participationGroup.count() < 1) {
+      throw providerError("Connpass control unavailable", "CONNPASS_CONTROL_UNAVAILABLE", false);
+    }
+    confirmControl = page.locator("button#FreeButton");
+    const confirmLabel = (await confirmControl.count() === 1 && await confirmControl.isVisible())
+      ? String((await confirmControl.innerText()) || "").replace(/\s+/g, " ").trim()
+      : "";
+    if (confirmLabel !== "申し込みを確定する") {
+      throw providerError("Connpass confirm control unavailable", "CONNPASS_CONFIRM_UNAVAILABLE", false);
+    }
+    // Deterministic pick: first participation-type radio in document order.
+    await participationGroup.first().check();
+  } catch (error) {
+    if (error && typeof error.unknownEffect === "boolean") throw error;
+    throw providerError("Connpass control unavailable", "CONNPASS_CONTROL_UNAVAILABLE", false);
+  }
+
+  // Past this point the confirm control is about to be clicked. Any failure
+  // from here on is an unknown external effect — never safe to retry — even
+  // if the underlying error would otherwise look like a known/safe one.
+  try {
+    await confirmControl.click();
     await page.waitForTimeout(1_000);
     const after = await readState(page);
     return { status: after.state, effect_started: true };
-  } catch (error) {
-    if (error && typeof error.unknownEffect === "boolean") throw error;
+  } catch {
     throw providerError("Connpass browser action failed", "CONNPASS_BROWSER_ACTION_FAILED", true);
   }
 }

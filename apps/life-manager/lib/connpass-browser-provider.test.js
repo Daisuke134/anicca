@@ -109,24 +109,108 @@ test("parent readback separates login, absence, unavailable, pending, and regist
   }
 });
 
-test("submit uses one exact parent-page control and proves its effect before screenshot", async () => {
+// Fake join-page built from the real DOM structure captured live from
+// https://hfs.connpass.com/event/398207/join/:
+//   input[name="participation_type"] (radio, id="ptype1")
+//   button#FreeButton ("申し込みを確定する")
+function joinFlowFixture({
+  radioCount = 1, confirmCount = 1, confirmVisible = true,
+  confirmLabel = "申し込みを確定する", confirmClickError = null, states,
+} = {}) {
   const calls = [];
-  const control = {
-    first() { return this; }, async count() { return 1; }, async isVisible() { return true; },
-    async click() { calls.push("click"); },
+  const joinLink = {
+    first() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async click() { calls.push("click-join"); },
   };
-  const states = [{ state: "absent" }, { state: "registered" }];
+  const radioLocator = {
+    first() { return this; },
+    async count() { return radioCount; },
+    async check() { calls.push("check-radio"); },
+  };
+  const confirmLocator = {
+    async count() { return confirmCount; },
+    async isVisible() { return confirmVisible; },
+    async innerText() { return confirmLabel; },
+    async click() {
+      calls.push("click-confirm");
+      if (confirmClickError) throw confirmClickError;
+    },
+  };
+  const stateQueue = [...(states || [])];
   const page = {
+    calls,
     getByRole(role, options) {
       assert.match(role, /link|button/); assert.equal(options.exact, true);
       assert.equal(options.name.test("このイベントに申し込む"), true);
-      return control;
+      return joinLink;
     },
-    async waitForTimeout() {},
-    async evaluate() { return states.shift(); },
+    locator(selector) {
+      if (selector === 'input[name="participation_type"]') return radioLocator;
+      if (selector === "button#FreeButton") return confirmLocator;
+      throw new Error(`unexpected selector ${selector}`);
+    },
+    async waitForTimeout() { calls.push("wait"); },
+    async evaluate() { return stateQueue.shift(); },
   };
+  return page;
+}
+
+test("submit clicks join link, selects the first participation radio, then confirms — in order", async () => {
+  const page = joinFlowFixture({ states: [{ state: "absent" }, { state: "registered" }] });
   assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
-  assert.deepEqual(calls, ["click"]);
+  assert.deepEqual(page.calls, ["click-join", "wait", "check-radio", "click-confirm", "wait"]);
+});
+
+test("already-registered/pending state returns immediately and clicks nothing", async () => {
+  for (const state of ["registered", "pending"]) {
+    const page = joinFlowFixture({ states: [] });
+    const readState = async () => ({ state });
+    assert.deepEqual(
+      await submitConnpassOnPage(page, undefined, { readState }),
+      { status: state, effect_started: false },
+    );
+    assert.deepEqual(page.calls, []);
+  }
+});
+
+test("missing or duplicated confirm control fails closed before any click on the join page", async () => {
+  for (const overrides of [{ confirmCount: 0 }, { confirmCount: 2 }, { confirmVisible: false }, { confirmLabel: "支払いに進む" }]) {
+    const page = joinFlowFixture({ states: [{ state: "absent" }], ...overrides });
+    await assert.rejects(submitConnpassOnPage(page), (error) => {
+      assert.equal(error.code, "CONNPASS_CONFIRM_UNAVAILABLE");
+      assert.equal(error.unknownEffect, false);
+      return true;
+    });
+    // join-link click (navigation only) may have happened; nothing on the
+    // join page itself (radio check, confirm click) may have.
+    assert.equal(page.calls.includes("check-radio"), false);
+    assert.equal(page.calls.includes("click-confirm"), false);
+  }
+});
+
+test("missing participation-type radio fails closed before the confirm control is touched", async () => {
+  const page = joinFlowFixture({ states: [{ state: "absent" }], radioCount: 0 });
+  await assert.rejects(submitConnpassOnPage(page), (error) => {
+    assert.equal(error.code, "CONNPASS_CONTROL_UNAVAILABLE");
+    assert.equal(error.unknownEffect, false);
+    return true;
+  });
+  assert.deepEqual(page.calls, ["click-join", "wait"]);
+});
+
+test("a failure after the confirm click is always reported as an unknown effect", async () => {
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }],
+    confirmClickError: Object.assign(new Error("connpass 500"), { unknownEffect: false, code: "CONNPASS_READBACK_UNAVAILABLE" }),
+  });
+  await assert.rejects(submitConnpassOnPage(page), (error) => {
+    assert.equal(error.code, "CONNPASS_BROWSER_ACTION_FAILED");
+    assert.equal(error.unknownEffect, true);
+    return true;
+  });
+  assert.deepEqual(page.calls, ["click-join", "wait", "check-radio", "click-confirm"]);
 });
 
 test("pre-click failures are known and post-click uncertainty is unknown", async () => {
