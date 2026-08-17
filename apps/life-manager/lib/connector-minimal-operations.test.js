@@ -396,6 +396,39 @@ test("operations persist only safe Connpass discovery aggregate counts", async (
   }
 });
 
+test("Connpass discovery audit accepts a busy Tokyo listing and still bounds the count", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-connpass-busy-"));
+  try {
+    const operations = createMinimalProductionOperations({
+      stateDir,
+      wakeId: "wake-20260816-connpass-busy",
+      telegramTarget: "private-target",
+      now: () => new Date("2026-08-16T14:04:21.714Z"),
+      async sendMessage() { return { messageId: 7001 }; },
+    });
+    const busy = { observed_count: 767, normalized_count: 40, window_count: 40, free_open_count: 29, calendar_free_count: 7 };
+    await operations.recordConnpassDiscoveryAudit(busy);
+
+    const file = path.join(stateDir, "connpass-discovery-audits.jsonl");
+    const row = JSON.parse(fs.readFileSync(file, "utf8").trim());
+    assert.deepEqual(
+      [row.observed_count, row.normalized_count, row.window_count, row.free_open_count, row.calendar_free_count],
+      [767, 40, 40, 29, 7],
+      "a real, measured 767-observed listing must be accepted and written",
+    );
+
+    await assert.rejects(() => operations.recordConnpassDiscoveryAudit({
+      ...busy, window_count: 41,
+    }), "window_count exceeding normalized_count must still be rejected");
+
+    await assert.rejects(() => operations.recordConnpassDiscoveryAudit({
+      ...busy, observed_count: 5_001,
+    }), "a count above the new ceiling must still be rejected");
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("operations persist only safe Peatix discovery aggregate counts", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-peatix-discovery-"));
   try {
@@ -505,7 +538,7 @@ test("operations persist only safe Doorkeeper discovery aggregate counts", async
       missingKey,
       { ...valid, selected_count: 0.5 },
       { ...valid, discovered_count: -1 },
-      { ...valid, discovered_count: 501 },
+      { ...valid, discovered_count: 801 },
       { ...valid, selected_count: "0" },
       [],
       null,
@@ -542,7 +575,7 @@ test("operations persist only safe Eventbrite discovery aggregate counts", async
     const { selected_count: _selectedCount, ...missingKey } = valid;
     for (const input of [
       { ...valid, calendar_free_count: 9 }, { ...valid, private_url: "https://private.example/fixture" }, missingKey,
-      { ...valid, selected_count: 0.5 }, { ...valid, discovered_count: -1 }, { ...valid, discovered_count: 501 },
+      { ...valid, selected_count: 0.5 }, { ...valid, discovered_count: -1 }, { ...valid, discovered_count: 801 },
       { ...valid, selected_count: "1" }, [], null,
     ]) await assert.rejects(() => operations.recordEventbriteDiscoveryAudit(input));
     assert.equal(fs.readFileSync(file, "utf8").trim().split("\n").length, 1);
@@ -572,7 +605,7 @@ test("operations persist only safe TECH PLAY discovery aggregate counts", async 
     const { selected_count: _selectedCount, ...missingKey } = valid;
     for (const input of [
       { ...valid, private_url: "https://private.example/fixture" }, missingKey,
-      { ...valid, selected_count: 0.5 }, { ...valid, discovered_count: -1 }, { ...valid, discovered_count: 501 },
+      { ...valid, selected_count: 0.5 }, { ...valid, discovered_count: -1 }, { ...valid, discovered_count: 801 },
       { ...valid, calendar_free_count: 9 }, { ...valid, within_window_count: 51 }, [], null,
     ]) await assert.rejects(() => operations.recordTechPlayDiscoveryAudit(input));
     assert.equal(fs.readFileSync(file, "utf8").trim().split("\n").length, 1);
@@ -602,7 +635,7 @@ test("operations persist only safe KokuchPro discovery aggregate counts", async 
     const { selected_count: _selectedCount, ...missingKey } = valid;
     for (const input of [
       { ...valid, private_url: "https://private.example/fixture" }, missingKey,
-      { ...valid, selected_count: 0.5 }, { ...valid, discovered_count: -1 }, { ...valid, discovered_count: 501 },
+      { ...valid, selected_count: 0.5 }, { ...valid, discovered_count: -1 }, { ...valid, discovered_count: 801 },
       { ...valid, selected_count: "1" }, { ...valid, calendar_free_count: 9 }, { ...valid, eligible_count: 13 },
       { ...valid, within_window_count: 101 }, [], null,
     ]) await assert.rejects(() => operations.recordKokuchProDiscoveryAudit(input));
