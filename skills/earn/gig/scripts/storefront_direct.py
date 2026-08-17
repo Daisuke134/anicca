@@ -55,7 +55,7 @@ STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
     "new-listing-drafts.jsonl", "funnel-events.jsonl", "portfolio-allocations.jsonl",
-    "inquiry-context-envelopes.jsonl", "demand-evidence.jsonl",
+    "inquiry-context-envelopes.jsonl", "demand-evidence.jsonl", "superseded-candidates.jsonl",
     "demand-category.jsonl", "demand-category-options.jsonl",
 )
 TARGET_SERVICE_ID = "91000001"
@@ -1990,6 +1990,20 @@ def _prepare_next_hypothesis(
     open_pairs = {(str(row.get("service_id")), str(row.get("changed_field")).lower())
                   for row in active}
     versions = {str(row["service_id"]): row["service_version_sha256"] for row in contracts}
+    # A candidate whose contract the live listing has already moved past stays skipped until
+    # that listing changes again, so the loop advances to the next gap instead of re-picking it.
+    superseded = set()
+    superseded_path = effects_path.parent / "superseded-candidates.jsonl"
+    if superseded_path.exists():
+        for line in superseded_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if versions.get(str(row.get("service_id"))) == row.get("listing_version"):
+                superseded.add((str(row.get("service_id")), str(row.get("field")).lower()))
     field_alias = {"outcome": "title", "scope": "body"}
     rendered = {
         (str(row.get("service_id") or ""), str(row.get("changed_field") or "").lower()): row
@@ -2007,12 +2021,13 @@ def _prepare_next_hypothesis(
                             and contract.get("precondition_listing_version_sha256") == versions.get(service_id))
         if (service_id in versions and service_id not in active_services
                 and (service_id, field) not in open_pairs
+                and (service_id, field) not in superseded
                 and (contract_current or field in GENERATED_MUTATION_FIELDS)):
             candidate, mutation_contract = row, contract
             break
     if candidate is None:
         candidate = _scorecard_gap_candidate(
-            scorecard_path, versions, active_services, open_pairs, field_alias,
+            scorecard_path, versions, active_services, open_pairs | superseded, field_alias,
             done_pairs={(str(row.get("service_id")), str(row.get("changed_field")).lower())
                         for row in effects
                         if row.get("status") == "accepted" and row.get("effect") == 1})
@@ -4301,6 +4316,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, listing_contracts,
                 getattr(args, "negotiate_context_acks", DEFAULT_NEGOTIATE_CONTEXT_ACKS), int(time.time()),
             )
+            versions_by_service = {str(row["service_id"]): row["service_version_sha256"]
+                                   for row in validated_contracts}
             next_hypothesis = _prepare_next_hypothesis(
                 getattr(args, "scorecard", DEFAULT_SCORECARD),
                 args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
@@ -4561,6 +4578,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             # The guard's job is to stop the change, not the wake. A contract whose
                             # recorded before-state no longer matches the live listing describes
                             # work that is already done or superseded, so record it and move on.
+                            _append_key_once(args.state_dir / "superseded-candidates.jsonl", "candidate_key", {
+                                "version": 1,
+                                "candidate_key": f"{judgement['service_id']}:{judgement['changed_field']}:"
+                                                 f"{versions_by_service.get(str(judgement['service_id']), '')}",
+                                "service_id": str(judgement["service_id"]),
+                                "field": str(judgement["changed_field"]),
+                                "listing_version": versions_by_service.get(str(judgement["service_id"]), ""),
+                                "reason": str(error)[:160], "observed_at_epoch": int(time.time()),
+                            })
                             judgement = {**judgement, "decision": "no_op",
                                          "no_op_reason": f"precondition_superseded:{error}",
                                          "changed_field": None, "experiment_key": None}
