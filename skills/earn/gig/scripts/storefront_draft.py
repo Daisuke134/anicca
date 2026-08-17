@@ -686,14 +686,22 @@ def readback_published_draft(
     }
 
 
-async def _blank_draft_ids(ws_url: str) -> list[str]:
+async def _blank_draft_ids(ws_url: str) -> tuple[list[str], list[dict[str, Any]]]:
     import websockets
 
+    # Every draft card is recorded, not just the untouched ones, because an attempt that fails
+    # after filling leaves a draft behind and nothing yet knows what can be done with it.
     expression = r"""JSON.stringify((()=>{const cards=[...document.querySelectorAll('.serviceListContentBox')];
-      return{cards:cards.length,ids:cards.map(card=>({text:(card.innerText||'').trim(),
+      const rows=cards.map(card=>({text:(card.innerText||'').trim(),
       ids:[...card.querySelectorAll('a[href*="/mypage/services/"]')]
-      .map(a=>(a.href.match(/\/mypage\/services\/(\d+)/)||[])[1]).filter(Boolean)}))
-      .filter(row=>row.text.includes('下書き中')&&row.text.includes('サービスタイトル未設定'))
+      .map(a=>(a.href.match(/\/mypage\/services\/(\d+)/)||[])[1]).filter(Boolean),
+      controls:[...card.querySelectorAll('a,button')].map(e=>({tag:e.tagName,
+      label:(e.innerText||'').trim().slice(0,24),href:e.getAttribute('href')||'',
+      cls:(e.className||'').toString().slice(0,80)}))}));
+      return{cards:cards.length,
+      drafts:rows.filter(row=>row.text.includes('下書き中')).map(row=>({ids:row.ids,
+      titled:!row.text.includes('サービスタイトル未設定'),controls:row.controls})),
+      ids:rows.filter(row=>row.text.includes('下書き中')&&row.text.includes('サービスタイトル未設定'))
       .flatMap(row=>row.ids)}})())"""
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10,
                                   max_size=40 * 1024 * 1024) as ws:
@@ -704,11 +712,12 @@ async def _blank_draft_ids(ws_url: str) -> list[str]:
             observed = json.loads(str(raw or "{}"))
             if int(observed.get("cards") or 0) > 0:
                 values = observed.get("ids") or []
+                drafts = [row for row in observed.get("drafts") or [] if isinstance(row, dict)]
                 break
             await asyncio.sleep(0.25)
         else:
             raise RuntimeError("storefront_create_inventory_not_hydrated")
-    return sorted({str(value) for value in values if str(value).isdigit()})
+    return sorted({str(value) for value in values if str(value).isdigit()}), drafts
 
 
 async def _submit_blank_draft(ws_url: str) -> str:
@@ -755,7 +764,7 @@ def create_or_claim_blank_draft(default_tab_script: Path) -> dict[str, Any]:
         list_tab = json.loads(list_opened.stdout)
         if list_opened.returncode != 0 or list_tab.get("ok") is not True:
             raise RuntimeError("storefront_create_inventory_tab_open_failed")
-        blank_ids = asyncio.run(_blank_draft_ids(str(list_tab["ws"])))
+        blank_ids, draft_cards = asyncio.run(_blank_draft_ids(str(list_tab["ws"])))
     finally:
         if isinstance(list_tab, dict) and list_tab.get("target_id"):
             subprocess.run(
@@ -763,10 +772,12 @@ def create_or_claim_blank_draft(default_tab_script: Path) -> dict[str, Any]:
                  "close", str(list_tab["target_id"])], capture_output=True, text=True,
                 check=False, timeout=30,
             )
+    abandoned = [row for row in draft_cards if row.get("titled") is True]
     if len(blank_ids) > 1:
         raise RuntimeError("storefront_create_multiple_blank_drafts")
     if blank_ids:
-        return {"draft_service_id": blank_ids[0], "effect": 0, "recovered": True}
+        return {"draft_service_id": blank_ids[0], "effect": 0, "recovered": True,
+                "abandoned_drafts": abandoned}
 
     add_opened = subprocess.run(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
@@ -786,7 +797,8 @@ def create_or_claim_blank_draft(default_tab_script: Path) -> dict[str, Any]:
                  "close", str(add_tab["target_id"])], capture_output=True, text=True,
                 check=False, timeout=30,
             )
-    return {"draft_service_id": draft_id, "effect": 1, "recovered": False}
+    return {"draft_service_id": draft_id, "effect": 1, "recovered": False,
+            "abandoned_drafts": abandoned}
 
 
 async def _read_category_children_async(
