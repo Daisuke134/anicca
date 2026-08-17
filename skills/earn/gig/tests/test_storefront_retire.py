@@ -106,5 +106,32 @@ def test_replace_plan_requires_a_ready_candidate_and_keeps_a_republish_rollback(
         sd._render_replace_plan(retire, create, ALLOCATION)
 
 
+
+def test_the_archive_executor_refuses_a_contract_that_is_not_a_recoverable_retire():
+    import asyncio
+
+    contract = render()
+    wrong_field = {**contract, "changed_field": "title"}
+    with pytest.raises(RuntimeError, match="storefront_mutation_contract_invalid"):
+        asyncio.run(sd._execute_listing_state_effect_async(
+            "ws://127.0.0.1:1/none", contract=wrong_field, evidence_dir=Path("/tmp")))
+
+    # An action pointing anywhere but this listing's archive endpoint is refused before any
+    # browser work, so a bad contract can never reach the marketplace.
+    wrong_action = dict(contract)
+    wrong_action["proposed_value"] = {**contract["proposed_value"], "action": "/services/archive/999"}
+    with pytest.raises(RuntimeError, match="storefront_mutation_contract_invalid"):
+        asyncio.run(sd._execute_listing_state_effect_async(
+            "ws://127.0.0.1:1/none", contract=wrong_action, evidence_dir=Path("/tmp")))
+
+
+def test_restore_refuses_an_href_that_is_not_a_service_control():
+    import asyncio
+
+    with pytest.raises(RuntimeError, match="storefront_restore_href_invalid"):
+        asyncio.run(sd._restore_listing_state_async(
+            "ws://127.0.0.1:1/none", service_id=SERVICE_ID, restore_href="https://evil.example/x"))
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
