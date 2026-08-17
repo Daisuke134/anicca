@@ -186,6 +186,66 @@ def test_a_no_op_must_say_why_and_carry_no_queries():
         sd._seal_demand_proposal({"decision": "no_op", "no_op_reason": None, "queries": []}, FAMILIES, [])
 
 
+
+def test_demand_exploration_never_kills_a_wake(monkeypatch, tmp_path):
+    """A failing exploration must be recorded, not raised into the wake."""
+    sd = _sd()
+    calls = {}
+
+    def boom(*_a, **_k):
+        raise OSError("server rejected WebSocket connection: HTTP 500")
+
+    monkeypatch.setattr(sd, "_crawl_demand_cluster", boom)
+    # Mirror the wake's guard: any exception is captured as evidence, never re-raised.
+    try:
+        try:
+            sd._crawl_demand_cluster(tmp_path, tmp_path, "Excel 自動化")
+        except Exception as error:
+            calls["error"] = f"{type(error).__name__}:{str(error)[:160]}"
+    except Exception:  # pragma: no cover - the guard above must swallow it
+        raise AssertionError("exploration failure escaped the guard")
+    assert calls["error"].startswith("OSError:")
+
+
+
+COMMITTED = {"category": {"master": {"value": "19", "label": "ライティング・翻訳"}},
+             "category_specific": {"languages": ["366"]},
+             "subscription": {"enabled": True, "discount_ratio": "5"}}
+CLUSTER = {"status": "known", "score": 12, "query": "Excel 自動化",
+           "capability_family": "excel_automation", "cluster_key": "storefront:demand:v1:abc",
+           "search_url": "https://coconala.com/search?keyword=Excel", "visible_result_count": 9011,
+           "comparables": [{"review_count": 3, "display_price_jpy": 10000}],
+           "evidence_path": "/evidence/demand-search-abc.json"}
+CATEGORY = {"master_category": {"value": "11", "label": "IT相談・システム開発"},
+            "sub_options": [{"value": "1004", "label": "AI導入・活用支援"}],
+            "type_options": [{"value": "786", "label": "AI導入コンサルティング"}]}
+
+
+def test_a_derived_market_changes_the_market_not_the_delivery_policy():
+    sd = _sd()
+    blueprint = sd._create_blueprint_from_cluster(COMMITTED, CLUSTER, CATEGORY)
+    assert blueprint["capability_family"] == "excel_automation"
+    assert blueprint["category"]["master"]["label"] == "IT相談・システム開発"
+    assert blueprint["demand_evidence"]["visible_result_count"] == 9011
+    assert blueprint["demand_evidence_path"] == "/evidence/demand-search-abc.json"
+    # How the work is delivered is the owner's commitment, not a property of the market.
+    assert blueprint["category_specific"] == COMMITTED["category_specific"]
+    assert blueprint["subscription"] == COMMITTED["subscription"]
+
+
+def test_an_unproven_or_unbound_market_never_becomes_a_blueprint():
+    sd = _sd()
+    # Children are read on the draft CREATE claims, so their absence is not a blueprint error.
+    assert sd._create_blueprint_from_cluster(
+        COMMITTED, CLUSTER, {**CATEGORY, "sub_options": []})["category_options"]["sub"] == []
+    with pytest.raises(RuntimeError, match="storefront_cluster_category_unbound"):
+        sd._create_blueprint_from_cluster(COMMITTED, CLUSTER, {**CATEGORY, "master_category": {}})
+    with pytest.raises(RuntimeError, match="storefront_cluster_demand_unproven"):
+        sd._create_blueprint_from_cluster(COMMITTED, {**CLUSTER, "score": 0}, CATEGORY)
+    with pytest.raises(RuntimeError, match="storefront_cluster_demand_unproven"):
+        sd._create_blueprint_from_cluster(COMMITTED, {**CLUSTER, "status": "unknown"}, CATEGORY)
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
