@@ -733,6 +733,9 @@ async def _read_category_children_async(ws_url: str, master_value: str) -> dict[
         cid = 1
         await _call(ws, "Page.enable", {}, cid); cid += 1
         # Selecting a category only changes the live form; nothing is submitted or saved.
+        # The draft form hydrates its category list after load, so wait for the option to exist
+        # rather than calling a page that is still rendering unselectable.
+        cid = await _wait_for_option(ws, "data[Service][master_category]", master_value, cid)
         applied, cid = await _evaluate(ws, (
             "(()=>{const s=document.querySelector('[name=\"data[Service][master_category]\"]');"
             f"if(!s||![...s.options].some(o=>o.value==={json.dumps(master_value)}))return false;"
