@@ -158,7 +158,10 @@ def _snapshot_mismatches(snapshot: dict[str, Any], contract: dict[str, Any]) -> 
         return ["draft_url"]
     rows = [row for row in snapshot.get("fields") or [] if isinstance(row, dict)]
     values = {str(row.get("name") or ""): str(row.get("value") or "") for row in rows}
-    present = {str(row.get("name") or "") for row in rows}
+    # A control the category greys out cannot hold a value for anyone, so it carries nothing
+    # to verify. Only controls the form actually lets us set are held to the contract.
+    settable = {str(row.get("name") or "") for row in rows
+                if not row.get("disabled") and not row.get("readonly")}
     checked = lambda name: {
         str(row.get("value") or "") for row in rows
         if row.get("name") == name and row.get("checked") is True
@@ -188,7 +191,7 @@ def _snapshot_mismatches(snapshot: dict[str, Any], contract: dict[str, Any]) -> 
         ("data[ServiceSubscription][discount_ratio]", values.get("data[ServiceSubscription][discount_ratio]"),
          contract["subscription"]["discount_ratio"]),
     ):
-        if name in present and actual != wanted:
+        if name in settable and actual != wanted:
             mismatches.append(f"{name}{_field_detail(rows, name)}={actual!r}!={wanted!r}")
     for name, wanted in (
         ("data[Option][0][title]", option["title"]),
@@ -311,10 +314,11 @@ async def _prepare(ws_url: str, contract: dict[str, Any]) -> tuple[dict[str, Any
             "e.dispatchEvent(new Event('change',{bubbles:true}))}}"
             "const radio=[...document.getElementsByName('data[Service][provision_format]')]"
             f".find(e=>e.value==={json.dumps(category_specific['provision_format'])});"
-            "const fix=document.querySelector('[name=\"data[Service][fix_limit]\"]');"
-            "const unit=document.querySelector('[name=\"data[Service][unit_price]\"]');"
-            "const subscribe=document.querySelector('[name=\"data[Service][can_subscribe]\"][type=checkbox]');"
-            "const discount=document.querySelector('[name=\"data[ServiceSubscription][discount_ratio]\"]');"
+            "const live=s=>{const e=document.querySelector(s);return e&&!e.disabled&&!e.readOnly?e:null};"
+            "const fix=live('[name=\"data[Service][fix_limit]\"]');"
+            "const unit=live('[name=\"data[Service][unit_price]\"]');"
+            "const subscribe=live('[name=\"data[Service][can_subscribe]\"][type=checkbox]');"
+            "const discount=live('[name=\"data[ServiceSubscription][discount_ratio]\"]');"
             "if(radio){radio.checked=true;radio.dispatchEvent(new Event('change',{bubbles:true}))}"
             f"if(fix){{fix.value={json.dumps(category_specific['fix_limit'])};fix.dispatchEvent(new Event('change',{{bubbles:true}}))}}"
             f"if(unit){{unit.value={json.dumps(category_specific['unit_price_jpy_per_character'])};unit.dispatchEvent(new Event('input',{{bubbles:true}}))}}"
