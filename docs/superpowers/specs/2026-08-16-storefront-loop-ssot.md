@@ -506,6 +506,27 @@ that listing. Never convert an unmeasurable window into a claimed improvement.
 
 Implemented and observed on 2026-08-17 through readonly main release `6fa087999`. Forced full wake `1786927267` closed the first fence: experiment `4330368/inquiries` recorded `decision=NO_OP`, `terminal=true`, `reason=metric_unmeasurable_insufficient_exposure`, with the feasibility evidence `official_30d_views=16`, `projected_window_views=7`, `minimum_views=100`, `basis=rolling_30d_view_rate_projected_onto_window`. The baseline stays null, so nothing is claimed about the experiment's outcome; only the listing is released. Isolated evaluation against the live analytics ledger shows all eleven open experiments fall under the threshold, projecting between three and forty-three window views, so the fence clears one experiment per full wake rather than all at once. Releasing it immediately paid for itself by exposing two defects the fence had been hiding. The static scorecard still listed `4330368/image` as a zero-image gap long after that listing had one, and the committed image render is pinned to that service and precondition and runs on every full wake regardless of the backlog, so once the listing gained an image the render raised `storefront_image_before_not_current` and took the entire wake down before selection, demand work or category reading could run. Commits `088c44cd9` and `a21136177` remove the satisfied backlog row and make a closed gap render nothing instead of failing. The very next full wake `1786928431` completed as `public_accepted` with readback `1`, closed a second fence on `4308502`, and recorded the twelfth accepted effect: `4330368/image` with `recovered=true`, before `0` and after asset `207e699e...`. The image had in fact been published by the loop earlier without its acceptance ever being recorded, so the ledger and the marketplace now agree.
 
+### Seven ways this loop stopped improving, and the one rule behind them
+
+Measured and fixed on 2026-08-17, in the order they surfaced. Each looks unrelated; all seven are
+the same mistake.
+
+| Stale assumption | What it did |
+|---|---|
+| Fence tied to the calendar, not to measurable exposure | every listing locked for about twelve days |
+| Hand-authored contract pinned to one listing version | 47 consecutive full wakes died before any work |
+| Image seed pinned to "this listing has zero images" | every full wake failed once the listing had one |
+| Scorecard row describing a gap the listing had closed | the adapter nearly acted on a false premise |
+| A committed backlog that empties as it is completed | the loop finished its to-do list and stopped forever |
+| Legacy judge that only knows the zero-image seed | proposed a closed gap on every wake and failed |
+| A single malformed model proposal | ended the whole wake instead of the candidate |
+
+The rule: **a satisfied assumption and a rejected candidate are both finished work, not faults.**
+Anything pinned to a live value — a version hash, an image count, a to-do row, a model's one
+output — will stop matching reality precisely because the loop is doing its job. Each of these
+must be recorded and skipped, with the next action derived from the current observed state.
+Raising instead of skipping punishes every unrelated listing for one stale line.
+
 ### A stale config must never take the loop down with it
 
 Between `1786932066` and `1786938141` the loop stopped doing anything: forty-seven of
