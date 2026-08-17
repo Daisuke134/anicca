@@ -2846,7 +2846,15 @@ def _validate_image_mutation_contract(
 
 def _render_image_mutation(
     own_page: dict, asset: dict, capability_families: dict[str, str],
-) -> dict:
+) -> dict | None:
+    """Render the committed zero-image seed, or nothing once that gap is closed.
+
+    The seed is pinned to one service and one precondition of zero images. Once that
+    listing has an image the gap is satisfied, which is a finished job rather than a
+    failure, and generic zero-image services are handled by the generated-image path.
+    """
+    if int(own_page.get("service_image_count") or 0) > 0:
+        return None
     contract = _image_mutation_contract({
         "service_id": TARGET_SERVICE_ID, "field": "image", "before": 0,
         "executable": True, "success_metric": "views_to_inquiry",
@@ -4007,7 +4015,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             image_asset = _load_image_contract(getattr(args, "image_contract", DEFAULT_IMAGE_CONTRACT))
             image_render = _render_image_mutation(own_page, image_asset, capability_families)
             image_render_path = inventory_path.parent / "mutation-render-image.json"
-            _atomic_write(image_render_path, image_render)
+            if image_render is not None:
+                _atomic_write(image_render_path, image_render)
             gallery_page = _observe_own_page(
                 ws_url, inventory_path.parent, "own-gallery-candidate.json", GALLERY_SERVICE_ID,
             )
@@ -4029,7 +4038,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             mutation_contracts = [render["contract"] for render in (
                 image_render, gallery_render, title_render, body_render, scope_render,
                 package_render, faq_render, price_render,
-            )]
+            ) if render is not None]
             analytics = _collect_analytics(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
@@ -4735,7 +4744,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     (title_render, title_render_path), (body_render, body_render_path),
                     (package_render, package_render_path), (faq_render, faq_render_path),
                     (price_render, price_render_path),
-                )] + ([{
+                ) if render is not None] + ([{
                     "changed_field": generated_render["contract"]["changed_field"],
                     "service_id": generated_render["contract"]["service_id"],
                     "contract_sha256": generated_render["contract"]["contract_sha256"],
