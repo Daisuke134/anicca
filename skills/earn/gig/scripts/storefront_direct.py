@@ -4854,6 +4854,17 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     and observed < 20
                     and (not demand_already_sold or cluster_blueprint is not None)):
                 source_service_id = new_listing_contract["draft_service_id"]
+                if cluster_blueprint is not None:
+                    # The source listing must belong to the market's own capability family.
+                    # Handing the model Excel demand next to an SEO writing offer asks it to
+                    # justify one with the other, and it correctly refuses.
+                    wanted = str(cluster_blueprint.get("capability_family") or "")
+                    source_service_id = next(
+                        (sid for sid in sorted(capability_families)
+                         if capability_families.get(sid) == wanted
+                         and any(row["service_id"] == sid for row in validated_contracts)),
+                        source_service_id,
+                    )
                 create_source = next((row for row in validated_contracts
                                       if row["service_id"] == source_service_id), None)
                 create_family = capability_families.get(source_service_id)
