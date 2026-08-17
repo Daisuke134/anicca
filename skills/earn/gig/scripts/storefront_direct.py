@@ -55,7 +55,7 @@ STATE_FILES = (
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
     "new-listing-drafts.jsonl", "funnel-events.jsonl", "portfolio-allocations.jsonl",
     "inquiry-context-envelopes.jsonl", "demand-evidence.jsonl",
-    "demand-category.jsonl",
+    "demand-category.jsonl", "demand-category-options.jsonl",
 )
 TARGET_SERVICE_ID = "91000001"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
@@ -4412,6 +4412,39 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 except Exception as error:  # category selection must never end a wake
                     demand_derivation = {**(demand_derivation or {}),
                                          "category_error": f"{type(error).__name__}:{str(error)[:140]}"}
+            # The sub and type options a category offers only exist inside a service form, so
+            # they are read there and stored separately. The form is never submitted.
+            options_ledger = args.state_dir / "demand-category-options.jsonl"
+            option_keys = {json.loads(line).get("cluster_key")
+                           for line in options_ledger.read_text(encoding="utf-8").splitlines()
+                           if line.strip()} if options_ledger.exists() else set()
+            bound_category = next(
+                (json.loads(line) for line in category_ledger.read_text(encoding="utf-8").splitlines()
+                 if line.strip()
+                 and json.loads(line).get("cluster_key") == (unused_cluster or {}).get("cluster_key")),
+                None,
+            ) if unused_cluster is not None and category_ledger.exists() else None
+            if bound_category is not None and bound_category.get("cluster_key") not in option_keys:
+                try:
+                    children = storefront_draft.read_category_children(
+                        getattr(args, "default_tab_script", DEFAULT_TAB),
+                        str(new_listing_contract["draft_service_id"]),
+                        str((bound_category.get("master_category") or {}).get("value")),
+                    )
+                    subs = children.get("data[Service][master_sub_category]") or []
+                    types = children.get("data[Service][master_category_type_id]") or []
+                    _append_key_once(options_ledger, "cluster_key", {
+                        "version": 1, "cluster_key": bound_category.get("cluster_key"),
+                        "master_category": bound_category.get("master_category"),
+                        "sub_options": subs, "type_options": types,
+                        "observed_at_epoch": int(time.time()),
+                    })
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "category_sub_options": len(subs),
+                                         "category_type_options": len(types)}
+                except Exception as error:  # reading options must never end a wake
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "category_options_error": f"{type(error).__name__}:{str(error)[:140]}"}
             if demand_already_sold and unused_cluster is None:
                 try:
                     proposal, route = _invoke_demand_proposal(
