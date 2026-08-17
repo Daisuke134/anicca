@@ -29829,3 +29829,10 @@
 {"ts":1787006608,"wake_id":"00MSXTLFT8758C7646F5F04A80","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787006741,"wake_id":"00MSXTOAFX420F0B28ABD64769","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787006871,"wake_id":"00MSXTR2HGF6E9969D94614C4B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787007005,"wake_id":"00MSXTTY0GEA82D4A32CBF402D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787007154,"wake_id":"00MSXTX52K1C2F40EC8BAC4B4D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787007284,"wake_id":"00MSXTZXR65FEFD39185D24A3E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787007431,"wake_id":"00MSXU32SFF748B7E655A24AB5","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1787007591,"wake_id":"00MSXU6I5P0CE72015A26D4164","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: new x402 paid API agents pay for [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model t"}
+{"ts":1787007721,"wake_id":"00MSXU9AJP9462FA3442544B22","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787007885,"wake_id":"00MSXUCT6ZADCABC16D3264BDE","kind":"narrate","sleep_s":120,"model":"auto"}
