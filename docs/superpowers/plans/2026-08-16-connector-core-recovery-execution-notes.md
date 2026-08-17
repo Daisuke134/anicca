@@ -324,3 +324,40 @@ same page from the Luma discovery URL to the Connpass calendar URL takes 783 ms 
 
 Next step: capture the uncoded throw's error class in durable state, or replay the wake's exact provider
 cursor against discovery, rather than guessing again.
+
+## C-CORE-06 Connpass — DONE 2026-08-17
+
+Five real causes stood between Connpass and a booking. Each was measured, not guessed:
+
+1. **Logged out.** The join control is swapped for a login wall, so every event read as `unknown` and
+   nothing could pass the free-and-open gate. Logged in with the credentials already in `~/.openclaw/.env`.
+2. **The fee wording never matched.** Connpass prints the fee inside a `join_fee` element; the label test
+   demanded whitespace or `参加費` around `無料`. Every free event was scored as paid. A yen amount now
+   overrides any free label, so a paid or mixed-tier event still cannot pass.
+3. **The audit rejected the truth.** `safeDiscoveryAudit` capped every count at 500. Connpass legitimately
+   observes 767 Tokyo events in the window, so discovery did 25 seconds of real work and then died on its
+   own bookkeeping. Proven by the durable reason `connpass_discovery_audit_failed`, which only became
+   visible after the uncoded-throw instrumentation landed.
+4. **The application stopped at the form.** Clicking `このイベントに申し込む` only navigates to `/join/`,
+   which carries a `participation_type` radio and a `FreeButton` confirm. The flow now completes it.
+5. **The readback looked at the wrong page.** After confirming, state was read on connpass's
+   post-submission page, so a real registration reported `direct_action_unverified`. Confirmed by reading
+   the event page directly: `受付票を見る`, `申し込みキャンセル`, participants 2 → 3. It now returns to the
+   event page before reading, with the unknown-effect boundary still starting at the confirm click.
+
+Connpass also gained the registered-without-bundle reconciliation Luma already had, which is what closed
+the orphan that fix 5 had created.
+
+Live result: `applied_bundle`, bundle 23.
+
+| event | Calendar event id | readback | Telegram |
+|---|---|---|---|
+| 8/25 19:00–22:00 毎週火曜にやってる！プログラミング&ITなんでも勉強部屋 | `05subh7mj519f7f0erjgil814g` | confirmed, description carries the connpass URL | `22138` / `22139` |
+
+## Schedule — every 8 hours from 2026-08-17
+
+Dais asked for the Connector to run like the gig lanes: three times a day rather than once. The native
+plist now carries three `StartCalendarInterval` entries, 09:00, 17:00 and 01:00 JST. The previous
+single-entry plist is kept at
+`~/.local/state/life-manager/connector-native/plist-backup-daily-20260817.plist`, and the label was
+reloaded and read back, showing all three intervals registered with launchd.
