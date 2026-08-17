@@ -32,8 +32,11 @@ def load_contract(path: Path) -> dict[str, Any]:
         or value.get("draft_url") != f"https://coconala.com/mypage/services/{value.get('draft_service_id')}"
         or value.get("expected_public_url") != f"https://coconala.com/services/{value.get('draft_service_id')}"
         or not isinstance(fields, dict) or not isinstance(category, dict) or not isinstance(gate, dict)
-        or any(not isinstance(category.get(level), dict) for level in ("master", "sub", "type"))
-        or any(not str(category[level].get("value") or "").isdigit() for level in ("master", "sub", "type"))
+        # Some official categories stop at two levels, so a type is optional but never partial.
+        or any(not isinstance(category.get(level), dict) for level in ("master", "sub"))
+        or (category.get("type") is not None and not isinstance(category.get("type"), dict))
+        or any(not str(level.get("value") or "").isdigit()
+               for level in category.values() if isinstance(level, dict))
         or fields.get("expected_title") != f"{fields.get('overview_input')}ます"
         or not (15 <= len(str(fields.get("catchphrase") or "")) <= 30)
         or not str(fields.get("head") or "") or len(str(fields["head"])) > 1000
@@ -481,7 +484,7 @@ def prepare_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
     }
 
 
-async def _submit_public(ws_url: str, contract: dict[str, Any]) -> str:
+async def _submit_public(ws_url: str, contract: dict[str, Any], evidence_dir: Path) -> str:
     import websockets
 
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
@@ -509,6 +512,18 @@ async def _submit_public(ws_url: str, contract: dict[str, Any]) -> str:
         if submitted is not True:
             raise RuntimeError("storefront_publish_control_missing")
         await asyncio.sleep(5)
+        # Whatever the site says after 公開する is the only account of what publishing did:
+        # a review queue, a validation error or a live listing all look the same from outside.
+        raw, cid = await _evaluate(ws, (
+            "JSON.stringify({url:location.href,title:document.title,"
+            "errors:[...document.querySelectorAll('[class*=error],[class*=alert],.c-alert')]"
+            ".map(e=>(e.innerText||'').trim()).filter(Boolean).slice(0,10),"
+            "body:document.body?document.body.innerText.slice(0,4000):''})"
+        ), cid)
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        (evidence_dir / "new-listing-publish-submit.json").write_text(
+            json.dumps(json.loads(str(raw or "{}")), ensure_ascii=False, indent=2), encoding="utf-8",
+        )
         return image_identity
 
 
@@ -564,7 +579,7 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
         tab = json.loads(opened.stdout)
         if opened.returncode != 0 or tab.get("ok") is not True:
             raise RuntimeError("storefront_publish_tab_open_failed")
-        image_identity = asyncio.run(_submit_public(str(tab["ws"]), contract))
+        image_identity = asyncio.run(_submit_public(str(tab["ws"]), contract, evidence_dir))
     finally:
         if isinstance(tab, dict) and tab.get("target_id"):
             subprocess.run(
