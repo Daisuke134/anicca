@@ -484,7 +484,7 @@ def prepare_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
     }
 
 
-async def _submit_public(ws_url: str, contract: dict[str, Any], evidence_dir: Path) -> str:
+async def _submit_public(ws_url: str, contract: dict[str, Any], evidence_dir: Path) -> tuple[str, str]:
     import websockets
 
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
@@ -521,10 +521,11 @@ async def _submit_public(ws_url: str, contract: dict[str, Any], evidence_dir: Pa
             "body:document.body?document.body.innerText.slice(0,4000):''})"
         ), cid)
         evidence_dir.mkdir(parents=True, exist_ok=True)
+        answer = json.loads(str(raw or "{}"))
         (evidence_dir / "new-listing-publish-submit.json").write_text(
-            json.dumps(json.loads(str(raw or "{}")), ensure_ascii=False, indent=2), encoding="utf-8",
+            json.dumps(answer, ensure_ascii=False, indent=2), encoding="utf-8",
         )
-        return image_identity
+        return image_identity, str(answer.get("url") or "")
 
 
 async def _public_readback(
@@ -579,7 +580,7 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
         tab = json.loads(opened.stdout)
         if opened.returncode != 0 or tab.get("ok") is not True:
             raise RuntimeError("storefront_publish_tab_open_failed")
-        image_identity = asyncio.run(_submit_public(str(tab["ws"]), contract, evidence_dir))
+        image_identity, submit_url = asyncio.run(_submit_public(str(tab["ws"]), contract, evidence_dir))
     finally:
         if isinstance(tab, dict) and tab.get("target_id"):
             subprocess.run(
@@ -598,6 +599,17 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
         if public_opened.returncode != 0 or public_tab.get("ok") is not True:
             raise RuntimeError("storefront_publish_readback_tab_open_failed")
         snapshot = asyncio.run(_public_readback(str(public_tab["ws"]), contract, image_identity))
+        verification_error = None
+    except RuntimeError as error:
+        # The site answers an accepted publication on its own confirmation page. Once that has
+        # happened the listing is live whatever the public page later fails to match, and a
+        # listing that is not written down is one the next wake would publish all over again.
+        accepted = str(submit_url).startswith(
+            f"https://coconala.com/services/new_open/{contract['draft_service_id']}"
+        )
+        if not accepted:
+            raise
+        snapshot, verification_error = {"unverified": str(error)}, str(error)
     finally:
         if isinstance(public_tab, dict) and public_tab.get("target_id"):
             subprocess.run(
@@ -610,9 +622,9 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
     return {
         "version": 1, "candidate_key": contract["candidate_key"],
         "contract_sha256": contract["contract_sha256"], "draft_service_id": contract["draft_service_id"],
-        "status": "published", "effect": 1, "readback": 1, "image_count": 1,
+        "status": "published", "effect": 1, "readback": int(verification_error is None), "image_count": 1,
         "public_effect": 1, "public_url": contract["expected_public_url"],
-        "public_image_identity": image_identity,
+        "public_image_identity": image_identity, "public_readback_error": verification_error,
         "asset_sha256": contract["hero_image"]["asset_sha256"], "evidence_path": str(evidence_path),
     }
 
