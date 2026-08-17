@@ -407,7 +407,14 @@ function bindingRow(id, date) {
   };
 }
 
-test("Connpass default discovery walks only the earliest budget-sized events from a busy window", async () => {
+test("Connpass default discovery spreads the walk budget across dates instead of draining the earliest date", async () => {
+  // Regression for the measured 2026-08-16 bias: 767 Tokyo events observed,
+  // 40 walked, 0 free+open — because the old pass sorted (date, id) then
+  // took the first 40, which a busy earliest date fills entirely, so a wake
+  // only ever inspected today/tomorrow. Here the earliest date alone has 40
+  // events (>= the whole budget) and a later date has 5; a correct fix must
+  // still visit some of the later date instead of exhausting the budget on
+  // the earliest date alone.
   const now = () => new Date("2026-08-07T08:30:00.000Z");
   const earlyDate = "2026-08-07";
   const lateDate = "2026-08-08";
@@ -420,13 +427,14 @@ test("Connpass default discovery walks only the earliest budget-sized events fro
     ...[...earlyIds].reverse().map((id) => bindingRow(id, earlyDate)),
   ];
   const navigatedIds = [];
+  const detailDateOf = (id) => (id >= 800000 ? lateDate : earlyDate);
   const workflow = createConnpassScriptFirstWorkflow({
     now,
     async readCalendarBindings() { return rows; },
     async readEventDetail(page) {
       const id = Number(page.current.match(/event\/(\d+)\//)[1]);
       navigatedIds.push(id);
-      return detailFor(id, earlyDate);
+      return detailFor(id, detailDateOf(id));
     },
     async submitOnPage() { return { status: "registered" }; },
     async readStateOnPage() { return { state: "registered" }; },
@@ -435,12 +443,21 @@ test("Connpass default discovery walks only the earliest budget-sized events fro
 
   const result = await workflow.discoverCandidates({ page, calendar: [] });
 
+  // Total visits is still exactly the budget — spreading must not raise it.
   assert.equal(navigatedIds.length, 40);
-  assert.deepEqual([...navigatedIds].sort((a, b) => a - b), earlyIds);
-  assert.deepEqual(
-    result.map((candidate) => Number(candidate.event_ref.split("/").pop())).sort((a, b) => a - b),
-    earlyIds,
-  );
+  // Every later-date event is represented: the whole point of spreading is
+  // that a busy earliest date can no longer crowd every other date out.
+  assert.deepEqual([...navigatedIds].filter((id) => id >= 800000).sort((a, b) => a - b), lateIds);
+  // The earliest date is bounded (not all 40 of its own events survive) —
+  // proves the budget is genuinely shared, not just "late date appended".
+  const earlyVisited = navigatedIds.filter((id) => id < 800000);
+  assert.equal(earlyVisited.length, 35);
+  assert.ok(earlyVisited.every((id) => earlyIds.includes(id)));
+  // Candidate selection priority is unchanged: earliest-first even though
+  // the walk itself sampled out of chronological order.
+  const resultIds = result.map((candidate) => Number(candidate.event_ref.split("/").pop()));
+  assert.deepEqual(resultIds, [...resultIds].sort((a, b) => a - b));
+  assert.deepEqual(resultIds.filter((id) => id >= 800000).sort((a, b) => a - b), lateIds);
 });
 
 test("Connpass default discovery survives a busy month without tripping the binding cap and reports the true observed count", async () => {
