@@ -143,40 +143,55 @@ def _expected_values(contract: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def _snapshot_matches(snapshot: dict[str, Any], contract: dict[str, Any]) -> bool:
+def _snapshot_mismatches(snapshot: dict[str, Any], contract: dict[str, Any]) -> list[str]:
     if snapshot.get("url") != contract["draft_url"] or snapshot.get("action") != contract["draft_url"]:
-        return False
-    values = {str(row.get("name") or ""): str(row.get("value") or "")
-              for row in snapshot.get("fields") or [] if isinstance(row, dict)}
-    expected = _expected_values(contract)
-    if any(values.get(name) != value for name, value in expected.items()):
-        return False
-    price = next((row for row in snapshot.get("price_options") or []
-                  if str(row.get("value") or "") == expected["data[Service][price]"]), None)
-    if not isinstance(price, dict) or str(price.get("text") or "").replace(",", "") != (
-        f"{contract['public_fields']['display_price_jpy']}円"
-    ):
-        return False
+        return ["draft_url"]
     rows = [row for row in snapshot.get("fields") or [] if isinstance(row, dict)]
+    values = {str(row.get("name") or ""): str(row.get("value") or "") for row in rows}
+    present = {str(row.get("name") or "") for row in rows}
     checked = lambda name: {
         str(row.get("value") or "") for row in rows
         if row.get("name") == name and row.get("checked") is True
     }
     category_specific = contract["category_specific"]
     option = contract["paid_options"][0]
-    return (
-        checked("data[facets][163][]") == set(category_specific["features"])
-        and checked("data[facets][164][]") == set(category_specific["industries"])
-        and checked("data[facets][165][]") == set(category_specific["languages"])
-        and checked("data[Service][provision_format]") == {category_specific["provision_format"]}
-        and checked("data[Service][can_subscribe]") == {"1"}
-        and values.get("data[Service][fix_limit]") == category_specific["fix_limit"]
-        and values.get("data[Service][unit_price]") == category_specific["unit_price_jpy_per_character"]
-        and values.get("data[ServiceSubscription][discount_ratio]") == contract["subscription"]["discount_ratio"]
-        and values.get("data[Option][0][title]") == option["title"]
-        and values.get("data[Option][0][price]") == str(option["price_jpy"])
-        and values.get("data[Option][0][opened]") == option["opened"]
-    )
+    price = next((row for row in snapshot.get("price_options") or []
+                  if str(row.get("value") or "") == _expected_values(contract)["data[Service][price]"]), None)
+    display = f"{contract['public_fields']['display_price_jpy']}円"
+
+    mismatches = [name for name, value in _expected_values(contract).items() if values.get(name) != value]
+    if not isinstance(price, dict) or str(price.get("text") or "").replace(",", "") != display:
+        mismatches.append("price_option_text")
+    # Feature, industry and language facets, per-character pricing, revision limits and
+    # subscription belong to the writing category. Another official category simply does not
+    # render them, so there is nothing to verify rather than a fault.
+    for name, actual, wanted in (
+        ("data[facets][163][]", checked("data[facets][163][]"), set(category_specific["features"])),
+        ("data[facets][164][]", checked("data[facets][164][]"), set(category_specific["industries"])),
+        ("data[facets][165][]", checked("data[facets][165][]"), set(category_specific["languages"])),
+        ("data[Service][provision_format]", checked("data[Service][provision_format]"),
+         {category_specific["provision_format"]}),
+        ("data[Service][can_subscribe]", checked("data[Service][can_subscribe]"), {"1"}),
+        ("data[Service][fix_limit]", values.get("data[Service][fix_limit]"), category_specific["fix_limit"]),
+        ("data[Service][unit_price]", values.get("data[Service][unit_price]"),
+         category_specific["unit_price_jpy_per_character"]),
+        ("data[ServiceSubscription][discount_ratio]", values.get("data[ServiceSubscription][discount_ratio]"),
+         contract["subscription"]["discount_ratio"]),
+    ):
+        if name in present and actual != wanted:
+            mismatches.append(name)
+    for name, wanted in (
+        ("data[Option][0][title]", option["title"]),
+        ("data[Option][0][price]", str(option["price_jpy"])),
+        ("data[Option][0][opened]", option["opened"]),
+    ):
+        if values.get(name) != wanted:
+            mismatches.append(name)
+    return mismatches
+
+
+def _snapshot_matches(snapshot: dict[str, Any], contract: dict[str, Any]) -> bool:
+    return not _snapshot_mismatches(snapshot, contract)
 
 
 def _snapshot_image_count(snapshot: dict[str, Any]) -> int:
@@ -378,13 +393,16 @@ async def _readback(ws_url: str, contract: dict[str, Any]) -> dict[str, Any]:
         ):
             cid = await _wait_for_option(ws, field_name, value, cid)
         deadline = asyncio.get_running_loop().time() + 15
+        mismatches: list[str] = ["snapshot_unread"]
         while asyncio.get_running_loop().time() < deadline:
             raw, cid = await _evaluate(ws, DRAFT_SNAPSHOT_EXPRESSION, cid)
             snapshot = json.loads(str(raw or "{}"))
-            if _snapshot_matches(snapshot, contract) and _snapshot_image_count(snapshot) == 1:
+            images = _snapshot_image_count(snapshot)
+            mismatches = _snapshot_mismatches(snapshot, contract) + ([] if images == 1 else [f"images={images}"])
+            if not mismatches:
                 return snapshot
             await asyncio.sleep(0.25)
-    raise RuntimeError("storefront_draft_readback_mismatch")
+    raise RuntimeError("storefront_draft_readback_mismatch:" + ",".join(mismatches[:6]))
 
 
 def prepare_draft(contract: dict[str, Any], default_tab_script: Path, evidence_dir: Path) -> dict[str, Any]:
@@ -587,7 +605,7 @@ def readback_published_draft(
             last_error = error
             retryable = (
                 str(error).startswith("storefront_draft_category_option_missing")
-                or str(error) == "storefront_draft_readback_mismatch"
+                or str(error).startswith("storefront_draft_readback_mismatch")
             )
             if not retryable or attempt >= 2:
                 raise
