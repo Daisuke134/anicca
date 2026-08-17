@@ -87,6 +87,42 @@ function byCalendarDateThenEventId(a, b) {
   return eventIdOf(a.event_ref) - eventIdOf(b.event_ref);
 }
 
+function byStartsAtThenEventId(a, b) {
+  const diff = Date.parse(a.starts_at) - Date.parse(b.starts_at);
+  return diff !== 0 ? diff : eventIdOf(a.event_ref) - eventIdOf(b.event_ref);
+}
+
+// A busy window's earliest date alone can hold more than the budget (measured
+// ~767 Tokyo events/14-day window), so taking the earliest N bindings only
+// ever walks today/tomorrow and never learns whether later dates have any
+// free+open seats. Round-robin across calendar dates (ascending) instead:
+// one binding per date per round, so every date already-observed gets a
+// bounded, deterministic share of the same total budget before a busier date
+// is allowed a second pass.
+function spreadAcrossDates(sortedBindings, budget) {
+  const byDate = new Map();
+  for (const binding of sortedBindings) {
+    const bucket = byDate.get(binding.calendar_date);
+    if (bucket) bucket.push(binding); else byDate.set(binding.calendar_date, [binding]);
+  }
+  const dates = [...byDate.keys()].sort();
+  const cursors = new Array(dates.length).fill(0);
+  const result = [];
+  let progressed = true;
+  while (result.length < budget && progressed) {
+    progressed = false;
+    for (let i = 0; i < dates.length && result.length < budget; i += 1) {
+      const bucket = byDate.get(dates[i]);
+      if (cursors[i] < bucket.length) {
+        result.push(bucket[cursors[i]]);
+        cursors[i] += 1;
+        progressed = true;
+      }
+    }
+  }
+  return result;
+}
+
 function createDefaultDiscovery({ now, readBindings, readDetail }) {
   return async ({ page }) => {
     if (!page || typeof page.goto !== "function") invalid();
@@ -122,21 +158,24 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
         discoveredCount += 1;
         monthBindings.push(Object.freeze({ event_ref: eventRef, canonical_url: url, calendar_date: date }));
       }
-      // Bound accumulation per month, sorted earliest-first, BEFORE it ever
-      // reaches the 500-binding hard guard below — a legitimate busy month
-      // (measured ~748 Tokyo events/14-day window) must never trip it.
+      // Bound accumulation per month, spread across the month's calendar
+      // dates, BEFORE it ever reaches the 500-binding hard guard below — a
+      // legitimate busy month (measured ~748 Tokyo events/14-day window)
+      // must never trip it, and a busy single date must never crowd out
+      // every other date in the month's own budget share.
       monthBindings.sort(byCalendarDateThenEventId);
-      for (const binding of monthBindings.slice(0, CONNPASS_DETAIL_WALK_BUDGET)) {
+      for (const binding of spreadAcrossDates(monthBindings, CONNPASS_DETAIL_WALK_BUDGET)) {
         bindings.push(binding);
         if (bindings.length > 500) {
           throw stageError("CONNPASS_CALENDAR_ROWS_CONTRACT_FAILED");
         }
       }
     }
-    // Months are chronological and each already budget-truncated, so this is
-    // already earliest-first; re-sort defensively in case a page's spillover
-    // rows blurred the month boundary, then apply the wake-level budget.
-    const walkList = bindings.slice().sort(byCalendarDateThenEventId).slice(0, CONNPASS_DETAIL_WALK_BUDGET);
+    // Each month's contribution is already spread across its own dates, so
+    // combine both months and spread once more across the full window
+    // (dates ascending) to apply the wake-level budget without letting one
+    // month's dates crowd out the other's.
+    const walkList = spreadAcrossDates(bindings.slice().sort(byCalendarDateThenEventId), CONNPASS_DETAIL_WALK_BUDGET);
     const result = [];
     for (const binding of walkList) {
       try {
@@ -153,6 +192,11 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
       }
       result.push(detail);
     }
+    // The walk itself is now spread across dates (see spreadAcrossDates
+    // above) so later dates get visited too, but candidate SELECTION
+    // priority is unchanged: sort back to earliest-first so a downstream
+    // caller still tries the soonest eligible event first.
+    result.sort(byStartsAtThenEventId);
     // observed_count in the audit must reflect what the window really
     // listed, not the walked/truncated count — carry the true total on the
     // array itself so discoverCandidates can report it honestly.
