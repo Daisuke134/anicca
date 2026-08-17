@@ -29422,3 +29422,9 @@
 {"ts":1786946325,"wake_id":"00MSWTPDEWEF775FB49A214C9B","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786946455,"wake_id":"00MSWTS5LCCE5D18040F7346C9","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
 {"ts":1786946604,"wake_id":"00MSWTVCFF670F1FE8364D4634","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786946736,"wake_id":"00MSWTY6OYBFA655DFCC5A4535","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1786946884,"wake_id":"00MSWU1CNW3A05FB608D434C5A","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786947048,"wake_id":"00MSWU4UTKB36350A470614979","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786947233,"wake_id":"00MSWU8TRJA0712B33371F4D52","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786947378,"wake_id":"00MSWUBXW3091214F554104366","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana paid microtask platform [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model to "}
+{"ts":1786947543,"wake_id":"00MSWUFH1D57A7B9386FBB4CD9","kind":"narrate","sleep_s":120,"model":"auto"}
