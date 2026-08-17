@@ -4533,7 +4533,20 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                     # The legacy judge only knows the zero-image seed. Once that listing has an
                     # image the gap is closed, which is a finished job, not a failed wake.
-                    if (judgement["changed_field"] == "image"
+                    # A proposal the executor cannot parse is a rejected candidate. Check it here,
+                    # before any browser work, so a malformed model answer costs the candidate and
+                    # not the wake.
+                    if judgement["changed_field"] == "FAQ":
+                        try:
+                            _split_faq(str(judgement.get("proposed_value") or ""))
+                        except RuntimeError as error:
+                            judgement = {**judgement, "decision": "no_op",
+                                         "no_op_reason": f"rejected_proposal:{error}",
+                                         "changed_field": None, "experiment_key": None}
+                            _atomic_write(judgement_path, judgement)
+                    if judgement["decision"] != "change":
+                        pass
+                    elif (judgement["changed_field"] == "image"
                             and int(presend.get("service_image_count") or 0) > 0):
                         judgement = {**judgement, "decision": "no_op",
                                      "no_op_reason": "image_gap_already_closed",
@@ -4541,7 +4554,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         _atomic_write(judgement_path, judgement)
                     elif judgement["changed_field"] not in {"title", "body", "package", "price"}:
                         _presend_guard(judgement, presend, mutation_contract)
-                    if args.effect:
+                    if args.effect and judgement["decision"] == "change":
                         if judgement["changed_field"] == "image":
                             seller_before, _, intent_path = _execute_image_effect(
                                 ws_url=ws_url, contract=mutation_contract, judgement=judgement,
