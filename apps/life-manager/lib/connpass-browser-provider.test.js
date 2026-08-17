@@ -130,10 +130,35 @@ const MULTI_TIER_EVENT = [
   { label: "オンライン視聴枠 (Google meet) 無料 参加者数 3人", disabled: false },
 ];
 
+// Fake organizer-questionnaire `.question_list` group, shaped after the real
+// DOM measured on Connpass join pages (see
+// docs/superpowers/plans/2026-08-11-connector-connpass-real-dom-observation-14e.md
+// and connector-production-browser-harness.js's connpassJoin handling):
+// `.question_list > .question` holds the `必須`/`任意` marker, and the
+// answer field(s) — radio/checkbox/input/textarea/select — live in the same
+// group. `hasParticipationType` simulates the tier group sharing the same
+// container structure, which must be excluded from questionnaire detection.
+function questionnaireGroupFixture({
+  hasParticipationType = false,
+  questionText = "必須 このイベントは何を見て知りましたか？",
+  fields = [],
+} = {}) {
+  return {
+    querySelector(selector) {
+      if (selector === 'input[name="participation_type"]') return hasParticipationType ? {} : null;
+      if (selector === ":scope > .question") return { textContent: questionText };
+      return null;
+    },
+    querySelectorAll(selector) {
+      return selector === "input,textarea,select" ? fields : [];
+    },
+  };
+}
+
 function joinFlowFixture({
   tiers = SOLE_TIER, confirmCount = 1, confirmVisible = true,
   confirmLabel = "申し込みを確定する", confirmClickError = null, states,
-  eventUrl = EVENT_PAGE_URL, gotoError = null,
+  eventUrl = EVENT_PAGE_URL, gotoError = null, questionnaireGroups = [],
 } = {}) {
   const calls = [];
   const joinLink = {
@@ -158,6 +183,9 @@ function joinFlowFixture({
       if (confirmClickError) throw confirmClickError;
     },
   };
+  const questionnaireLocator = {
+    async evaluateAll(callback) { return callback(questionnaireGroups); },
+  };
   const stateQueue = [...(states || [])];
   const page = {
     calls,
@@ -174,6 +202,7 @@ function joinFlowFixture({
     locator(selector) {
       if (selector === 'input[name="participation_type"]') return radioLocator;
       if (selector === "button#FreeButton") return confirmLocator;
+      if (selector === ".question_list") return questionnaireLocator;
       throw new Error(`unexpected selector ${selector}`);
     },
     async waitForTimeout() { calls.push("wait"); },
@@ -244,6 +273,72 @@ test("when every tier is full or restricted, submit clicks nothing and fails clo
     return true;
   });
   assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
+});
+
+test("a required unanswered organizer questionnaire clicks nothing and fails closed with CONNPASS_QUESTIONNAIRE_REQUIRED", async () => {
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }],
+    questionnaireGroups: [questionnaireGroupFixture({
+      fields: [{ tagName: "INPUT", type: "radio", name: "q1", checked: false, disabled: false }],
+    })],
+  });
+  await assert.rejects(submitConnpassOnPage(page), (error) => {
+    assert.equal(error.code, "CONNPASS_QUESTIONNAIRE_REQUIRED");
+    assert.equal(error.unknownEffect, false);
+    return true;
+  });
+  // Nothing on the join page itself (radio check, confirm click) may have happened.
+  assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
+});
+
+test("an optional-only organizer questionnaire does not block registration", async () => {
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }, { state: "registered" }],
+    questionnaireGroups: [questionnaireGroupFixture({
+      questionText: "任意 ご質問があればどうぞ",
+      fields: [{ tagName: "TEXTAREA", type: "textarea", name: "q2", value: "", disabled: false }],
+    })],
+  });
+  assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
+});
+
+test("a required organizer questionnaire question that already has an answer does not block registration", async () => {
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }, { state: "registered" }],
+    questionnaireGroups: [questionnaireGroupFixture({
+      fields: [{ tagName: "SELECT", type: "select-one", name: "q3", value: "Connpass", disabled: false }],
+    })],
+  });
+  assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
+});
+
+test("a .question_list group wrapping the participation-type tier radios is not treated as an organizer questionnaire", async () => {
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }, { state: "registered" }],
+    questionnaireGroups: [questionnaireGroupFixture({
+      hasParticipationType: true,
+      questionText: "必須 参加枠",
+      fields: [{ tagName: "INPUT", type: "radio", name: "participation_type", checked: false, disabled: false }],
+    })],
+  });
+  assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
+});
+
+test("no questionnaire on the page (the default fixture) behaves exactly as before this change", async () => {
+  const page = joinFlowFixture({ states: [{ state: "absent" }, { state: "registered" }] });
+  assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
 });
 
 test("already-registered/pending state returns immediately and clicks nothing", async () => {
