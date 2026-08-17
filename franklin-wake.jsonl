@@ -29640,3 +29640,10 @@
 {"ts":1786979097,"wake_id":"00MSXD7SLIB4EFC258E355401A","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786979254,"wake_id":"00MSXDB5384C067408C7E84FA1","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786979419,"wake_id":"00MSXDEOFD53BDC84488D1435F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786979574,"wake_id":"00MSXDI0E9A902A87AEF094A1D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786979724,"wake_id":"00MSXDL7MY597C1364FAB24B35","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786979875,"wake_id":"00MSXDOGWE485C9AA5F8804BBD","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786980008,"wake_id":"00MSXDRBF332A0794AFF9E4D0A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786980140,"wake_id":"00MSXDU5AH3986B61035C44082","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana paid API for agents [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model to try "}
+{"ts":1786980274,"wake_id":"00MSXDX0CQ31BA48D229154B3F","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1786980413,"wake_id":"00MSXDZZK9E5DAFD2D7EFB4A78","kind":"narrate","sleep_s":120,"model":"auto"}
