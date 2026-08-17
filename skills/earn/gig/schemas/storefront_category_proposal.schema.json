@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "master_category_value", "rationale", "no_op_reason"],
+  "properties": {
+    "decision": {"type": "string", "enum": ["choose", "no_op"]},
+    "master_category_value": {"type": ["string", "null"], "pattern": "^[0-9]+$"},
+    "rationale": {"type": ["string", "null"], "minLength": 1, "maxLength": 400},
+    "no_op_reason": {"type": ["string", "null"], "minLength": 1, "maxLength": 400}
+  }
+}

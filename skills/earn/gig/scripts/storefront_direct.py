@@ -16,7 +16,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 SCRIPTS = Path(__file__).resolve().parent
 if str(SCRIPTS) not in sys.path:
@@ -33,6 +33,9 @@ DEFAULT_RUNNER = RUNNER_DIR / "agent_runner.py"
 DEFAULT_SCHEMA = GIG_DIR / "schemas" / "storefront_judgement.schema.json"
 DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json"
 DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
+DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_proposal.schema.json"
+DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_proposal.schema.json"
+DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child.schema.json"
 DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
 MEASURABLE_SUCCESS_METRICS = {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase",
                               "net_receipt"}
@@ -52,7 +55,8 @@ STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
     "new-listing-drafts.jsonl", "funnel-events.jsonl", "portfolio-allocations.jsonl",
-    "inquiry-context-envelopes.jsonl",
+    "inquiry-context-envelopes.jsonl", "demand-evidence.jsonl",
+    "demand-category.jsonl", "demand-category-options.jsonl",
 )
 TARGET_SERVICE_ID = "4330368"
 DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
@@ -1172,6 +1176,179 @@ def _seal_demand_proposal(proposal: dict, family_names: set[str], catalog_titles
     return sealed
 
 
+def _invoke_demand_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
+    families: dict, catalog_titles: list[str], timeout_seconds: int,
+) -> tuple[dict, dict]:
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    context = {"owned_capability_families": families, "current_catalog_titles": catalog_titles}
+    prompt = """Name at most three official Coconala search queries worth measuring as demand for
+work this seller can already deliver, and return only the strict schema object. Every query must
+name one owned capability family from CONTEXT_JSON and must not repeat what current_catalog_titles
+already sell. Do not claim demand exists, do not estimate volume, revenue or competition: the loop
+decides that by crawling the official search page. Choose no_op with a reason when no distinct
+query is supported by an owned family.\nCONTEXT_JSON=""" + json.dumps(
+        context, ensure_ascii=False, separators=(",", ":"))
+    started = time.time()
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-demand", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "").strip()[-400:]
+        raise RuntimeError(f"storefront_demand_proposal_failed:{completed.returncode}:{detail}")
+    try:
+        summary_path = evidence_dir / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        result_path = Path(str(summary["result_path"])).resolve()
+        result_path.relative_to(evidence_dir.resolve())
+        if (summary.get("status") != "success"
+                or summary.get("task_class") != "storefront-proposal-agent"
+                or summary.get("selected_provider") != "codex"
+                or summary.get("selected_model") != "gpt-5.6-terra"
+                or min(summary_path.stat().st_mtime, result_path.stat().st_mtime) < started):
+            raise ValueError("stale_or_wrong_route")
+        proposal = json.loads(result_path.read_text(encoding="utf-8"))
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_demand_proposal_evidence_invalid") from error
+    route = {"task_class": summary["task_class"], "provider": summary["selected_provider"],
+             "model": summary["selected_model"], "effort": summary.get("selected_effort")}
+    return proposal, route
+
+
+def _crawl_demand_cluster(default_tab_script: Path, evidence_dir: Path, query: str) -> dict:
+    """Crawl one official search page and read the demand it states.
+
+    Uses its own tab: by the time this runs the wake has opened and closed many targets,
+    and reusing the leased page's socket is what made a whole wake die on HTTP 500.
+    """
+    import listing_inventory
+
+    url = "https://coconala.com/search?keyword=" + quote(query)
+    opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
+    )
+    tab = None
+    try:
+        tab = json.loads(opened.stdout)
+        if opened.returncode != 0 or tab.get("ok") is not True:
+            raise RuntimeError("storefront_demand_tab_open_failed")
+        observed = asyncio.run(listing_inventory._eval_json(
+            str(tab["ws"]), url,
+            "JSON.stringify({url:location.href,body:document.body ? document.body.innerText.slice(0,120000) : ''})",
+        ))
+    finally:
+        if isinstance(tab, dict) and tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+    final = urlsplit(str(observed.get("url") or ""))
+    body = str(observed.get("body") or "")
+    if final.scheme != "https" or final.hostname not in {"coconala.com", "www.coconala.com"}:
+        raise RuntimeError("storefront_demand_source_not_official")
+    if not body.strip():
+        raise RuntimeError("storefront_demand_source_empty")
+    path = evidence_dir / f"demand-search-{hashlib.sha256(url.encode()).hexdigest()[:12]}.json"
+    _atomic_write(path, {"official": True, "query": query, "url": str(observed.get("url")),
+                         "body": body, "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
+                         "observed_at_epoch": int(time.time())})
+    demand = _extract_search_demand(body)
+    return {**demand, "query": query, "search_url": url, "evidence_path": str(path)}
+
+
+def _invoke_category_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
+    cluster: dict, options: list, timeout_seconds: int,
+) -> tuple[dict, dict]:
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    context = {
+        "demand_cluster": {k: cluster.get(k) for k in
+                           ("query", "capability_family", "visible_result_count", "median_price_jpy")},
+        "official_master_categories": [
+            {"value": str(row.get("value")), "label": str(row.get("label") or "")}
+            for row in options if isinstance(row, dict) and str(row.get("value") or "").strip()
+        ],
+    }
+    prompt = """Choose the one official Coconala top-level category a service for this demand cluster
+belongs in, and return only the strict schema object. master_category_value must be copied exactly
+from official_master_categories; never invent an id. Choose no_op with a reason when no official
+category fits the cluster.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-category", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"storefront_category_proposal_failed:{completed.returncode}")
+    summary = json.loads((evidence_dir / "summary.json").read_text(encoding="utf-8"))
+    result_path = Path(str(summary["result_path"])).resolve()
+    result_path.relative_to(evidence_dir.resolve())
+    if summary.get("status") != "success" or summary.get("selected_model") != "gpt-5.6-terra":
+        raise RuntimeError("storefront_category_proposal_evidence_invalid")
+    return json.loads(result_path.read_text(encoding="utf-8")), {
+        "provider": summary.get("selected_provider"), "model": summary.get("selected_model")}
+
+
+def _invoke_category_child_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
+    cluster: dict, master: dict, children: dict, timeout_seconds: int,
+) -> tuple[dict, dict]:
+    """Pick the official sub category and type inside an already chosen top-level category."""
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    context = {
+        "demand_cluster": {k: cluster.get(k) for k in ("query", "capability_family")},
+        "chosen_master_category": master,
+        "official_sub_categories": children.get("data[Service][master_sub_category]") or [],
+        "official_category_types": children.get("data[Service][master_category_type_id]") or [],
+    }
+    prompt = """Choose the official sub category and category type for this demand cluster inside the
+already chosen top-level category, and return only the strict schema object. Both values must be
+copied exactly from the official lists in CONTEXT_JSON; never invent an id.\nCONTEXT_JSON=""" + json.dumps(
+        context, ensure_ascii=False, separators=(",", ":"))
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-category-child", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"storefront_category_child_failed:{completed.returncode}")
+    summary = json.loads((evidence_dir / "summary.json").read_text(encoding="utf-8"))
+    result_path = Path(str(summary["result_path"])).resolve()
+    result_path.relative_to(evidence_dir.resolve())
+    if summary.get("status") != "success" or summary.get("selected_model") != "gpt-5.6-terra":
+        raise RuntimeError("storefront_category_child_evidence_invalid")
+    return json.loads(result_path.read_text(encoding="utf-8")), {
+        "provider": summary.get("selected_provider"), "model": summary.get("selected_model")}
+
+
+def _validate_category_choice(chosen_value: str, options: list) -> dict:
+    """Bind a category to an option the official seller form actually offers.
+
+    Category ids are not transferable between listings: the committed contract's
+    `19/372/150` belongs to writing, and a new market needs its own official triple.
+    """
+    rows = [row for row in options or [] if isinstance(row, dict) and str(row.get("value") or "").strip()]
+    if not rows:
+        raise RuntimeError("storefront_category_options_unobserved")
+    match = next((row for row in rows if str(row["value"]) == str(chosen_value).strip()), None)
+    if match is None:
+        raise RuntimeError("storefront_category_choice_not_official")
+    return {"value": str(match["value"]), "label": str(match.get("label") or "").strip()}
+
+
 def _demand_cluster_key(query: str, category_url: str) -> str:
     identity = json.dumps({"query": query.strip(), "category": category_url.strip()},
                           ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -1803,6 +1980,49 @@ def _prepare_next_hypothesis(
     }
 
 
+def _portfolio_policy(scorecard_path: Path) -> dict:
+    try:
+        policy = json.loads(scorecard_path.read_text(encoding="utf-8")).get("portfolio_policy")
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("storefront_portfolio_policy_invalid") from error
+    if not isinstance(policy, dict) or policy.get("version") != 1:
+        raise RuntimeError("storefront_portfolio_policy_invalid")
+    return policy
+
+
+def _measurement_feasible(analytics_path: Path, service_id: str, window_days: int, minimum_views: int) -> dict:
+    """Can this experiment's metric move enough to be read at all?
+
+    Official views are a rolling thirty-day figure, so this projects that rate onto the
+    observation window. It states whether measurement is possible, never a KPI result: a
+    window that cannot reach the policy's minimum exposure buys noise while locking the
+    listing, so the experiment closes as unknown instead of being waited out.
+    """
+    if not analytics_path.is_file():
+        return {"status": "unknown", "reason": "official_analytics_missing"}
+    latest = None
+    try:
+        for line in analytics_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if (str(row.get("service_id") or "") == service_id
+                    and ((row.get("metrics") or {}).get("views") or {}).get("status") == "known"
+                    and type(row.get("observed_at_epoch")) is int
+                    and (latest is None or row["observed_at_epoch"] > latest["observed_at_epoch"])):
+                latest = row
+    except json.JSONDecodeError:
+        return {"status": "unknown", "reason": "official_analytics_invalid"}
+    if latest is None:
+        return {"status": "unknown", "reason": "no_official_views_for_service"}
+    monthly = int(latest["metrics"]["views"]["value"])
+    projected = int(monthly * window_days / 30)
+    return {"status": "known", "official_30d_views": monthly,
+            "projected_window_views": projected, "minimum_views": minimum_views,
+            "feasible": projected >= minimum_views,
+            "basis": "rolling_30d_view_rate_projected_onto_window"}
+
+
 def _close_outcome(
     state_dir: Path, analytics: dict, reply_transcripts: Path, scorecard_path: Path, now: int,
 ) -> dict | None:
@@ -1822,7 +2042,15 @@ def _close_outcome(
     eligible_at = accepted_at + window_days * 86400
     inquiry = {"status": "not_evaluated"}
     decision, terminal_state, reason = "NO_OP", False, "measurement_window_ineligible"
-    if now >= eligible_at:
+    # A window that cannot reach the policy's minimum exposure locks the listing without
+    # buying evidence, so close it as unknown rather than wait the calendar out.
+    feasibility = _measurement_feasible(
+        state_dir / "analytics.jsonl", str(experiment.get("service_id") or ""), window_days,
+        int(_portfolio_policy(scorecard_path).get("minimum_views_for_measurement", 100)),
+    )
+    if now < eligible_at and feasibility.get("status") == "known" and not feasibility["feasible"]:
+        terminal_state, reason = True, "metric_unmeasurable_insufficient_exposure"
+    elif now >= eligible_at:
         inquiry = _measure_experiment_metric(
             str(experiment.get("success_metric") or ""),
             reply_transcripts=reply_transcripts, analytics_path=state_dir / "analytics.jsonl",
@@ -1844,6 +2072,7 @@ def _close_outcome(
         ).encode()).hexdigest(),
         "analytics_snapshot_key": analytics["snapshot_key"],
         "inquiry_source_sha256": inquiry.get("source_sha256"),
+        "measurement_feasibility": feasibility,
     }
     identity = json.dumps({
         "experiment_key": experiment["experiment_key"], "decision": decision,
@@ -2330,6 +2559,37 @@ caused KPI improvement.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=Fal
     return prompt, allowed_refs
 
 
+def _create_blueprint_from_cluster(committed: dict, cluster: dict, category_row: dict) -> dict:
+    """Turn a self-derived demand cluster into the blueprint CREATE builds a listing from.
+
+    Only the parts that belong to the market change: the demand evidence and the official
+    category. Delivery policy, ladder and subscription terms stay as the owner committed
+    them, because those describe how the work is done rather than which market it serves.
+    """
+    master = (category_row or {}).get("master_category") or {}
+    subs = (category_row or {}).get("sub_options") or []
+    types = (category_row or {}).get("type_options") or []
+    if not str(master.get("value") or "").isdigit():
+        raise RuntimeError("storefront_cluster_category_unbound")
+    if (cluster.get("status") != "known" or int(cluster.get("score") or 0) <= 0
+            or not str(cluster.get("query") or "").strip()
+            or not str(cluster.get("evidence_path") or "").strip()):
+        raise RuntimeError("storefront_cluster_demand_unproven")
+    return {
+        **committed,
+        "capability_family": cluster.get("capability_family"),
+        "demand_evidence": {
+            "search_url": cluster.get("search_url"),
+            "visible_result_count": cluster.get("visible_result_count"),
+            "comparables": cluster.get("comparables") or [],
+        },
+        "demand_evidence_path": str(cluster["evidence_path"]),
+        "category": {"master": master, "sub": None, "type": None},
+        "category_options": {"sub": subs, "type": types},
+        "cluster_key": cluster.get("cluster_key"),
+    }
+
+
 def _invoke_create_proposal(
     *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path, source: dict,
     family_name: str, family: dict, demand: dict, capability_paths: set[str],
@@ -2653,7 +2913,15 @@ def _validate_image_mutation_contract(
 
 def _render_image_mutation(
     own_page: dict, asset: dict, capability_families: dict[str, str],
-) -> dict:
+) -> dict | None:
+    """Render the committed zero-image seed, or nothing once that gap is closed.
+
+    The seed is pinned to one service and one precondition of zero images. Once that
+    listing has an image the gap is satisfied, which is a finished job rather than a
+    failure, and generic zero-image services are handled by the generated-image path.
+    """
+    if int(own_page.get("service_image_count") or 0) > 0:
+        return None
     contract = _image_mutation_contract({
         "service_id": TARGET_SERVICE_ID, "field": "image", "before": 0,
         "executable": True, "success_metric": "views_to_inquiry",
@@ -3644,17 +3912,38 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             import listing_inventory
 
             inventory_path = args.state_dir / "evidence" / pass_id / "official-inventory.json"
-            inventory = listing_inventory.observe_storefront(
-                output_path=inventory_path, ws_url=ws_url, include_contract_sources=True,
-            )
-            observed = int(inventory.get("service_count") or 0)
-            if observed <= 0 or observed != len(inventory.get("services") or []):
-                raise RuntimeError("official_inventory_empty_or_invalid")
-            contract_sources = inventory.get("_contract_sources")
-            source_dicts = isinstance(contract_sources, list) and all(
-                isinstance(source, dict) for source in contract_sources
-            )
-            source_ids = [source.get("service_id") for source in contract_sources] if source_dicts else []
+            def _read_official_catalog() -> tuple[dict, list, int]:
+                """Read and validate the official catalogue, retrying a partial dashboard.
+
+                A half-hydrated seller dashboard is a transient, not a catalogue change, and
+                failing the whole wake on it costs a decision cycle for nothing.
+                """
+                failure = "official_inventory_empty_or_invalid"
+                for attempt in range(3):
+                    read = listing_inventory.observe_storefront(
+                        output_path=inventory_path, ws_url=ws_url, include_contract_sources=True,
+                    )
+                    count = int(read.get("service_count") or 0)
+                    sources = read.get("_contract_sources")
+                    if count <= 0 or count != len(read.get("services") or []):
+                        failure = "official_inventory_empty_or_invalid"
+                    else:
+                        ids = [source.get("service_id") for source in sources] if isinstance(
+                            sources, list) and all(isinstance(s, dict) for s in sources) else None
+                        listed = {str(service.get("service_id")) for service in read["services"]
+                                  if isinstance(service, dict)}
+                        if (ids is not None and len(sources) == count
+                                and all(type(value) is str and value.isdigit() for value in ids)
+                                and len(set(ids)) == len(ids) and set(ids) == listed):
+                            return read, sources, count
+                        failure = "official_service_contract_invalid"
+                    if attempt < 2:
+                        time.sleep(2)
+                raise RuntimeError(failure)
+
+            inventory, contract_sources, observed = _read_official_catalog()
+            source_dicts = True
+            source_ids = [source.get("service_id") for source in contract_sources]
             if source_dicts:
                 # Kept out of the hashed catalogue payload on purpose: this is adapter input,
                 # not listing identity.
@@ -3814,7 +4103,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             image_asset = _load_image_contract(getattr(args, "image_contract", DEFAULT_IMAGE_CONTRACT))
             image_render = _render_image_mutation(own_page, image_asset, capability_families)
             image_render_path = inventory_path.parent / "mutation-render-image.json"
-            _atomic_write(image_render_path, image_render)
+            if image_render is not None:
+                _atomic_write(image_render_path, image_render)
             gallery_page = _observe_own_page(
                 ws_url, inventory_path.parent, "own-gallery-candidate.json", GALLERY_SERVICE_ID,
             )
@@ -3836,7 +4126,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             mutation_contracts = [render["contract"] for render in (
                 image_render, gallery_render, title_render, body_render, scope_render,
                 package_render, faq_render, price_render,
-            )]
+            ) if render is not None]
             analytics = _collect_analytics(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
@@ -4167,12 +4457,143 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 for line in (args.state_dir / "new-listing-drafts.jsonl").read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ) if (args.state_dir / "new-listing-drafts.jsonl").exists() else False
+            # When the committed demand is spent, look for the next market instead of idling.
+            demand_ledger = args.state_dir / "demand-evidence.jsonl"
+            known_clusters = _jsonl_rows(demand_ledger)[0] if demand_ledger.exists() else []
+            unused_cluster = next(
+                (row for row in sorted(known_clusters, key=lambda c: -(c.get("score") or 0))
+                 if row.get("status") == "known" and (row.get("score") or 0) > 0
+                 and not row.get("consumed_at_epoch")),
+                None,
+            )
+            # A no-op must name the market it would go after next, not just say it did nothing.
+            demand_derivation = None if unused_cluster is None else {
+                "proposed": 0, "appended": 0,
+                "selected_cluster": unused_cluster.get("query"),
+                "selected_score": unused_cluster.get("score"),
+                "selected_family": unused_cluster.get("capability_family"),
+                "reason": "unused_demand_cluster_available",
+            }
+            # Choosing a category reads official options only, so it does not wait on the
+            # publication brake: a waiting cluster gets its category as soon as it exists.
+            category_ledger = args.state_dir / "demand-category.jsonl"
+            categorised = {json.loads(line).get("cluster_key")
+                           for line in category_ledger.read_text(encoding="utf-8").splitlines()
+                           if line.strip()} if category_ledger.exists() else set()
+            if unused_cluster is not None and unused_cluster.get("cluster_key") not in categorised:
+                try:
+                    master_options = (presentation_snapshot.get("select_options") or {}).get(
+                        "data[Service][master_category]") or []
+                    choice, category_route = _invoke_category_proposal(
+                        runner=getattr(args, "runner", DEFAULT_RUNNER),
+                        schema=getattr(args, "category_proposal_schema", DEFAULT_CATEGORY_PROPOSAL_SCHEMA),
+                        workdir=args.workdir,
+                        evidence_dir=inventory_path.parent / "category-proposal-agent",
+                        cluster=unused_cluster, options=master_options,
+                        timeout_seconds=args.timeout_seconds,
+                    )
+                    if choice.get("decision") != "choose":
+                        raise RuntimeError(
+                            f"storefront_category_no_op:{str(choice.get('no_op_reason'))[:120]}")
+                    bound = _validate_category_choice(choice.get("master_category_value"), master_options)
+                    _append_key_once(category_ledger, "cluster_key", {
+                        "version": 1, "cluster_key": unused_cluster.get("cluster_key"),
+                        "query": unused_cluster.get("query"),
+                        "capability_family": unused_cluster.get("capability_family"),
+                        "master_category": bound, "rationale": str(choice.get("rationale") or "")[:400],
+                        "route": category_route, "observed_at_epoch": int(time.time()),
+                    })
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "master_category": bound["label"],
+                                         "master_category_value": bound["value"]}
+                except Exception as error:  # category selection must never end a wake
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "category_error": f"{type(error).__name__}:{str(error)[:140]}"}
+            # The sub and type options a category offers only exist inside a service form, so
+            # they are read there and stored separately. The form is never submitted.
+            options_ledger = args.state_dir / "demand-category-options.jsonl"
+            option_keys = {json.loads(line).get("cluster_key")
+                           for line in options_ledger.read_text(encoding="utf-8").splitlines()
+                           if line.strip()} if options_ledger.exists() else set()
+            bound_category = next(
+                (json.loads(line) for line in category_ledger.read_text(encoding="utf-8").splitlines()
+                 if line.strip()
+                 and json.loads(line).get("cluster_key") == (unused_cluster or {}).get("cluster_key")),
+                None,
+            ) if unused_cluster is not None and category_ledger.exists() else None
+            # A published listing's form does not offer its category select, so the options
+            # can only be read on a draft. When the candidate is already public this waits
+            # for the CREATE flow, which selects the category on the draft it claims.
+            if (bound_category is not None and not fixed_candidate_public
+                    and bound_category.get("cluster_key") not in option_keys):
+                try:
+                    children = storefront_draft.read_category_children(
+                        getattr(args, "default_tab_script", DEFAULT_TAB),
+                        str(new_listing_contract["draft_service_id"]),
+                        str((bound_category.get("master_category") or {}).get("value")),
+                    )
+                    subs = children.get("data[Service][master_sub_category]") or []
+                    types = children.get("data[Service][master_category_type_id]") or []
+                    _append_key_once(options_ledger, "cluster_key", {
+                        "version": 1, "cluster_key": bound_category.get("cluster_key"),
+                        "master_category": bound_category.get("master_category"),
+                        "sub_options": subs, "type_options": types,
+                        "observed_at_epoch": int(time.time()),
+                    })
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "category_sub_options": len(subs),
+                                         "category_type_options": len(types)}
+                except Exception as error:  # reading options must never end a wake
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "category_options_error": f"{type(error).__name__}:{str(error)[:140]}"}
+            if demand_already_sold and unused_cluster is None:
+                try:
+                    proposal, route = _invoke_demand_proposal(
+                        runner=getattr(args, "runner", DEFAULT_RUNNER),
+                        schema=getattr(args, "demand_proposal_schema", DEFAULT_DEMAND_PROPOSAL_SCHEMA),
+                        workdir=args.workdir,
+                        evidence_dir=inventory_path.parent / "demand-proposal-agent",
+                        families=capability_templates,
+                        catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
+                        timeout_seconds=args.timeout_seconds,
+                    )
+                    sealed = _seal_demand_proposal(
+                        proposal, set(capability_templates),
+                        [str(row.get("title") or "") for row in inventory["services"]],
+                    )
+                    appended = 0
+                    for candidate in sealed:
+                        cluster = _crawl_demand_cluster(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            inventory_path.parent, candidate["query"])
+                        scored = _score_demand_cluster(cluster)
+                        row = {**cluster, **scored, "capability_family": candidate["capability_family"],
+                               "rationale": candidate["rationale"], "route": route,
+                               "observed_at_epoch": int(time.time()),
+                               "cluster_key": _demand_cluster_key(candidate["query"], "")}
+                        appended += int(_append_key_once(demand_ledger, "cluster_key", row))
+                    demand_derivation = {"proposed": len(sealed), "appended": appended,
+                                         "route": route.get("model")}
+                except Exception as error:  # exploration is optional; a wake must survive it
+                    demand_derivation = {"proposed": 0, "appended": 0,
+                                         "error": f"{type(error).__name__}:{str(error)[:160]}"}
             # A catalogue fills over days, not over consecutive full wakes.
             last_create = _last_published_create_epoch(args.state_dir)
             create_spacing_open = (last_create is None
                                    or int(time.time()) - last_create >= CREATE_MIN_INTERVAL_SECONDS)
-            if (fixed_candidate_public and not demand_already_sold and create_spacing_open
-                    and next_hypothesis is None and observed < 20):
+            # A self-derived market is a second way in: the committed demand file may be spent
+            # while a scored cluster with an official category is waiting.
+            cluster_blueprint = None
+            if unused_cluster is not None and bound_category is not None:
+                try:
+                    cluster_blueprint = _create_blueprint_from_cluster(
+                        new_listing_contract, unused_cluster, bound_category)
+                except RuntimeError as error:
+                    demand_derivation = {**(demand_derivation or {}),
+                                         "blueprint_blocked": str(error)[:120]}
+            if (fixed_candidate_public and create_spacing_open and next_hypothesis is None
+                    and observed < 20
+                    and (not demand_already_sold or cluster_blueprint is not None)):
                 source_service_id = new_listing_contract["draft_service_id"]
                 create_source = next((row for row in validated_contracts
                                       if row["service_id"] == source_service_id), None)
@@ -4180,8 +4601,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 create_template = capability_templates.get(str(create_family or ""))
                 if create_source is None or not isinstance(create_family, str) or not isinstance(create_template, dict):
                     raise RuntimeError("storefront_create_source_contract_missing")
-                demand = {**new_listing_contract["demand_evidence"],
-                          "evidence_path": str(Path(new_listing_path).resolve())}
+                demand = ({**cluster_blueprint["demand_evidence"],
+                           "evidence_path": cluster_blueprint["demand_evidence_path"]}
+                          if cluster_blueprint is not None else
+                          {**new_listing_contract["demand_evidence"],
+                           "evidence_path": str(Path(new_listing_path).resolve())})
                 create_seller_snapshot = _seller_snapshot_from_fresh_tab(
                     getattr(args, "default_tab_script", DEFAULT_TAB), source_service_id,
                 )
@@ -4200,8 +4624,37 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     create_draft_claim = storefront_draft.create_or_claim_blank_draft(
                         getattr(args, "default_tab_script", DEFAULT_TAB)
                     )
-                    blueprint = {**new_listing_contract,
-                                 "demand_evidence_path": str(Path(new_listing_path).resolve())}
+                    blueprint = cluster_blueprint or {
+                        **new_listing_contract,
+                        "demand_evidence_path": str(Path(new_listing_path).resolve())}
+                    if cluster_blueprint is not None:
+                        # The category's sub and type options only exist once a draft holds the
+                        # chosen top-level category, so they are read and picked here.
+                        draft_id = str(create_draft_claim["draft_service_id"])
+                        children = storefront_draft.read_category_children(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            draft_id, blueprint["category"]["master"]["value"],
+                        )
+                        picked, child_route = _invoke_category_child_proposal(
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
+                            workdir=args.workdir,
+                            evidence_dir=inventory_path.parent / "category-child-agent",
+                            cluster=unused_cluster, master=blueprint["category"]["master"],
+                            children=children, timeout_seconds=args.timeout_seconds,
+                        )
+                        blueprint = {**blueprint, "category": {
+                            "master": blueprint["category"]["master"],
+                            "sub": _validate_category_choice(
+                                picked.get("sub_value"),
+                                children.get("data[Service][master_sub_category]") or []),
+                            "type": _validate_category_choice(
+                                picked.get("type_value"),
+                                children.get("data[Service][master_category_type_id]") or []),
+                        }}
+                        demand_derivation = {**(demand_derivation or {}),
+                                             "category_triple": blueprint["category"],
+                                             "category_child_route": child_route.get("model")}
                     new_listing_contract = _seal_create_contract(
                         create_proposal, source=create_source, family_name=create_family,
                         allowed_refs=create_allowed_refs, blueprint=blueprint,
@@ -4412,6 +4865,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 portfolio=portfolio,
                 inquiry_context=inquiry_context,
                 new_listing_draft=draft_result,
+                demand_derivation=demand_derivation,
                 outcome=outcome,
                 next_hypothesis=next_hypothesis,
                 proposal_agent=proposal_agent,
@@ -4425,7 +4879,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     (title_render, title_render_path), (body_render, body_render_path),
                     (package_render, package_render_path), (faq_render, faq_render_path),
                     (price_render, price_render_path),
-                )] + ([{
+                ) if render is not None] + ([{
                     "changed_field": generated_render["contract"]["changed_field"],
                     "service_id": generated_render["contract"]["service_id"],
                     "contract_sha256": generated_render["contract"]["contract_sha256"],
@@ -4474,6 +4928,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     parser.add_argument("--proposal-schema", type=Path, default=DEFAULT_PROPOSAL_SCHEMA)
     parser.add_argument("--create-proposal-schema", type=Path, default=DEFAULT_CREATE_PROPOSAL_SCHEMA)
+    parser.add_argument("--demand-proposal-schema", type=Path, default=DEFAULT_DEMAND_PROPOSAL_SCHEMA)
+    parser.add_argument("--category-proposal-schema", type=Path, default=DEFAULT_CATEGORY_PROPOSAL_SCHEMA)
+    parser.add_argument("--category-child-schema", type=Path, default=DEFAULT_CATEGORY_CHILD_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
     parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
     parser.add_argument("--gallery-contract", type=Path, default=DEFAULT_GALLERY_CONTRACT)

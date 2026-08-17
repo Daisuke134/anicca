@@ -194,14 +194,6 @@
   "priority_backlog": [
     {
       "priority": 1,
-      "service_id": "4330368",
-      "field": "image",
-      "before": 0,
-      "success_metric": "views_to_inquiry",
-      "reason": "verified demand + owned quantified claim + 0 images"
-    },
-    {
-      "priority": 2,
       "service_id": "4313386",
       "field": "image",
       "before": 1,
@@ -209,7 +201,7 @@
       "reason": "verified demand + owned VBA capability; replace four unsupported 24-hour image claims while preserving two safe role-specific images"
     },
     {
-      "priority": 3,
+      "priority": 2,
       "service_id": "4308502",
       "field": "outcome",
       "before": 1,
@@ -217,7 +209,7 @@
       "reason": "strong presentation demand but the buyer outcome remains broad"
     },
     {
-      "priority": 4,
+      "priority": 3,
       "service_id": "4244910",
       "field": "scope",
       "before": 1,
@@ -225,7 +217,7 @@
       "reason": "strong Excel automation demand but exclusions remain partial"
     },
     {
-      "priority": 5,
+      "priority": 4,
       "service_id": "4312985",
       "field": "scope",
       "before": 1,
@@ -233,7 +225,7 @@
       "reason": "verified translation demand and quantified proof but exclusions remain partial"
     },
     {
-      "priority": 6,
+      "priority": 5,
       "service_id": "4313100",
       "field": "package",
       "before": 1,
@@ -241,7 +233,7 @@
       "reason": "strong web-update demand but the offer has no verified add-on ladder"
     },
     {
-      "priority": 7,
+      "priority": 6,
       "service_id": "4330753",
       "field": "image",
       "before": 0,
@@ -249,7 +241,7 @@
       "reason": "buyer outcome is specific but the listing has 0 images"
     },
     {
-      "priority": 8,
+      "priority": 7,
       "service_id": "4330105",
       "field": "image",
       "before": 0,
@@ -257,7 +249,7 @@
       "reason": "buyer outcome and scope are clear but the listing has 0 images"
     },
     {
-      "priority": 9,
+      "priority": 8,
       "service_id": "4244912",
       "field": "scope",
       "before": 1,
@@ -265,7 +257,7 @@
       "reason": "handover outcome is clear but exclusions remain partial"
     },
     {
-      "priority": 10,
+      "priority": 9,
       "service_id": "4302213",
       "field": "outcome",
       "before": 1,
@@ -273,7 +265,7 @@
       "reason": "AI-use offer needs a more specific buyer-visible result"
     },
     {
-      "priority": 11,
+      "priority": 10,
       "service_id": "4244556",
       "field": "scope",
       "before": 1,
@@ -294,6 +286,7 @@
     "slot_limit": 20,
     "minimum_complete_window_days": 30,
     "minimum_views_for_retirement": 100,
+    "minimum_views_for_measurement": 100,
     "replacement_requires": [
       "minimum_sample_met",
       "zero_inquiries",
