@@ -184,7 +184,7 @@ function joinFlowFixture({
     },
   };
   const questionnaireLocator = {
-    async evaluateAll(callback) { return callback(questionnaireGroups); },
+    async evaluateAll(callback, arg) { return callback(questionnaireGroups, arg); },
   };
   const stateQueue = [...(states || [])];
   const page = {
@@ -316,6 +316,135 @@ test("a required organizer questionnaire question that already has an answer doe
   assert.deepEqual(page.calls, [
     "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
   ]);
+});
+
+// Placeholder identity values only — never real personal data in a test
+// fixture (Dais's actual name/affiliation come from
+// ~/.config/anicca/job-search/profile.json / DAIS_LEGAL_NAME_ROMAJI at
+// runtime, injected here via the same `dependencies` DI point `readState`
+// already uses).
+const PLACEHOLDER_IDENTITY = Object.freeze({ name: "Placeholder Taro", affiliation: "Placeholder University" });
+
+test("required 氏名 and 所属 questionnaire fields are filled from identity and confirm proceeds", async () => {
+  const nameField = { tagName: "INPUT", type: "text", name: "q_name", value: "", disabled: false };
+  const affiliationField = { tagName: "INPUT", type: "text", name: "q_affiliation", value: "", disabled: false };
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }, { state: "registered" }],
+    questionnaireGroups: [
+      questionnaireGroupFixture({ questionText: "必須 氏名", fields: [nameField] }),
+      questionnaireGroupFixture({ questionText: "必須 所属学校名or会社名", fields: [affiliationField] }),
+    ],
+  });
+  assert.deepEqual(
+    await submitConnpassOnPage(page, undefined, { identity: PLACEHOLDER_IDENTITY }),
+    { status: "registered", effect_started: true },
+  );
+  assert.equal(nameField.value, "Placeholder Taro");
+  assert.equal(affiliationField.value, "Placeholder University");
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
+});
+
+test("a required radio question (e.g. the slide-sharing commitment) is skipped with nothing clicked, even with identity available", async () => {
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }],
+    questionnaireGroups: [questionnaireGroupFixture({
+      questionText: "必須 26新卒LT枠・招待LT枠について：当日スライドファイル（GoogleスライドやPDFなど）をご共有いただき、弊社の用意するPCにて投影いたします。",
+      fields: [
+        { tagName: "INPUT", type: "radio", name: "q_slide", value: "共有できる", checked: false, disabled: false },
+        { tagName: "INPUT", type: "radio", name: "q_slide", value: "共有できない", checked: false, disabled: false },
+      ],
+    })],
+  });
+  await assert.rejects(submitConnpassOnPage(page, undefined, { identity: PLACEHOLDER_IDENTITY }), (error) => {
+    assert.equal(error.code, "CONNPASS_QUESTIONNAIRE_REQUIRED");
+    assert.equal(error.unknownEffect, false);
+    return true;
+  });
+  assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
+});
+
+// Proof that a commitment-style control can never be answered: this radio's
+// own group question is literally "必須 氏名" — the exact label the name
+// policy matches — but the control itself is a radio (a choice/commitment
+// control), so the control-type gate in planConnpassQuestionnaire must
+// reject it regardless of the label. If this ever passed, it would mean a
+// commitment question got silently pre-answered because its wording
+// happened to resemble a factual field.
+test("label match alone never answers a radio/checkbox/select — control type gates before label", async () => {
+  const radioField = { tagName: "INPUT", type: "radio", name: "q_commit", checked: false, disabled: false };
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }],
+    questionnaireGroups: [questionnaireGroupFixture({
+      questionText: "必須 氏名",
+      fields: [radioField],
+    })],
+  });
+  await assert.rejects(submitConnpassOnPage(page, undefined, { identity: PLACEHOLDER_IDENTITY }), (error) => {
+    assert.equal(error.code, "CONNPASS_QUESTIONNAIRE_REQUIRED");
+    return true;
+  });
+  assert.equal(radioField.checked, false);
+  assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
+});
+
+test("one answerable and one unanswerable required question together are skipped with nothing filled and nothing clicked", async () => {
+  const nameField = { tagName: "INPUT", type: "text", name: "q_name", value: "", disabled: false };
+  const radioField = { tagName: "INPUT", type: "radio", name: "q_slide", checked: false, disabled: false };
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }],
+    questionnaireGroups: [
+      questionnaireGroupFixture({ questionText: "必須 氏名", fields: [nameField] }),
+      questionnaireGroupFixture({
+        questionText: "必須 26新卒LT枠・招待LT枠について：当日スライドファイルをご共有いただき投影いたします。",
+        fields: [radioField],
+      }),
+    ],
+  });
+  await assert.rejects(submitConnpassOnPage(page, undefined, { identity: PLACEHOLDER_IDENTITY }), (error) => {
+    assert.equal(error.code, "CONNPASS_QUESTIONNAIRE_REQUIRED");
+    return true;
+  });
+  assert.equal(nameField.value, "");
+  assert.equal(radioField.checked, false);
+  assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
+});
+
+test("an optional-only organizer questionnaire is unchanged even when identity data is available", async () => {
+  const optionalField = { tagName: "TEXTAREA", type: "textarea", name: "q_opt", value: "", disabled: false };
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }, { state: "registered" }],
+    questionnaireGroups: [questionnaireGroupFixture({
+      questionText: "任意 ご質問があればどうぞ",
+      fields: [optionalField],
+    })],
+  });
+  assert.deepEqual(
+    await submitConnpassOnPage(page, undefined, { identity: PLACEHOLDER_IDENTITY }),
+    { status: "registered", effect_started: true },
+  );
+  assert.equal(optionalField.value, "");
+  assert.deepEqual(page.calls, [
+    "url", "click-join", "wait", "check-radio:0", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
+  ]);
+});
+
+test("an unrecognized required free-text label is never guessed at, even with identity available", async () => {
+  const unknownField = { tagName: "INPUT", type: "text", name: "q_unknown", value: "", disabled: false };
+  const page = joinFlowFixture({
+    states: [{ state: "absent" }],
+    questionnaireGroups: [questionnaireGroupFixture({
+      questionText: "必須 好きな技術スタックを教えてください",
+      fields: [unknownField],
+    })],
+  });
+  await assert.rejects(submitConnpassOnPage(page, undefined, { identity: PLACEHOLDER_IDENTITY }), (error) => {
+    assert.equal(error.code, "CONNPASS_QUESTIONNAIRE_REQUIRED");
+    return true;
+  });
+  assert.equal(unknownField.value, "");
+  assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
 });
 
 test("a .question_list group wrapping the participation-type tier radios is not treated as an organizer questionnaire", async () => {

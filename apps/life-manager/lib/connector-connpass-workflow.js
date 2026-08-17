@@ -242,9 +242,19 @@ function createConnpassScriptFirstWorkflow(options = {}) {
   // treat it as bundled so a mis-wired caller can never re-surface it.
   // Mirrors createLumaScriptFirstWorkflow's hasAppliedBundle default.
   const hasAppliedBundle = options.hasAppliedBundle || (() => true);
+  // Same shape as createPeatixDiscoveryWorkflow's readAttendeeProfile: an
+  // optional injector for the attendee's own name, resolved upstream (see
+  // connector-minimal-production.js) and threaded down to submitOnPage so
+  // connpass-browser-provider.js never reads process.env itself. Absent
+  // (undefined) is valid — the provider then fails closed on any required
+  // name-shaped questionnaire field instead of guessing.
+  const readAttendeeName = options.readAttendeeName;
   if ([now, readBindings, readDetail, discoverOnPage, isCalendarFree, submitOnPage, readStateOnPage,
     onDiscoveryAudit, hasAppliedBundle]
-    .some((value) => typeof value !== "function")) throw stageError("CONNPASS_WORKFLOW_DEPENDENCIES_INVALID_FAILED");
+    .some((value) => typeof value !== "function")
+    || (readAttendeeName != null && typeof readAttendeeName !== "function")) {
+    throw stageError("CONNPASS_WORKFLOW_DEPENDENCIES_INVALID_FAILED");
+  }
 
   return Object.freeze({
     async discoverCandidates({ page, calendar }) {
@@ -302,7 +312,8 @@ function createConnpassScriptFirstWorkflow(options = {}) {
     },
     async runDirectAction({ page, candidate }) {
       const selected = exactCandidate(candidate);
-      const outcome = await submitOnPage(page, selected);
+      const attendeeName = typeof readAttendeeName === "function" ? await readAttendeeName() : undefined;
+      const outcome = await submitOnPage(page, selected, { attendeeName });
       let currentUrl = "";
       if (outcome && ["registered", "pending"].includes(outcome.status)) {
         try {
