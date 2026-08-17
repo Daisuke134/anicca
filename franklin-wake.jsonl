@@ -29664,3 +29664,4 @@
 {"ts":1786982634,"wake_id":"00MSXFBLJ5D87DE92FBFA04290","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786982773,"wake_id":"00MSXFEL0FD0A872192B594F20","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786982946,"wake_id":"00MSXFIACJ160F4D249F954530","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786983093,"wake_id":"00MSXFLFBR02B5497219C5411B","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
