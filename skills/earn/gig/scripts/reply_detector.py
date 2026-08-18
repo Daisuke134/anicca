@@ -19,7 +19,7 @@ from typing import Any
 SCRIPTS = Path(__file__).resolve().parent
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
-from gig_paths import RUNNER_DIR  # noqa: E402
+from gig_paths import BROWSER_DIR, RUNNER_DIR  # noqa: E402
 
 try:
     from connector_outbox import ConnectorOutbox
@@ -526,7 +526,7 @@ def main() -> int:
     parser.add_argument("--estimate-schema", type=Path, default=gig_root / "schemas/estimate_category_selection.schema.json")
     parser.add_argument(
         "--cdp-helper", type=Path,
-        default=home / "anicca/skills/browser/scripts/cdp_default_tab.py",
+        default=BROWSER_DIR / "scripts" / "cdp_default_tab.py",
     )
     parser.add_argument("--snapshot-script", type=Path, default=gig_root / "scripts/coconala_queue_snapshot.py")
     parser.add_argument("--queue-script", type=Path, default=gig_root / "scripts/reply_queue.py")

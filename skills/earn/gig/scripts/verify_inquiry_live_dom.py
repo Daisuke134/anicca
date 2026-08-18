@@ -15,9 +15,13 @@ import json
 import time
 from pathlib import Path
 import importlib.util
-
+import sys
 
 HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+from gig_paths import BROWSER_DIR  # noqa: E402
+
 _spec = importlib.util.spec_from_file_location("coconala_queue_snapshot", HERE / "coconala_queue_snapshot.py")
 if _spec is None or _spec.loader is None:
     raise RuntimeError("cannot load Coconala collector")
@@ -120,7 +124,7 @@ def main() -> int:
     parser.add_argument("--evidence-dir", required=True, type=Path)
     parser.add_argument("--expected-ids", required=True, type=Path)
     parser.add_argument("--cdp-helper", type=Path,
-                        default=Path.home() / "anicca/skills/browser/scripts/cdp_default_tab.py")
+                        default=BROWSER_DIR / "scripts" / "cdp_default_tab.py")
     args = parser.parse_args()
     return run(args.phase, args.evidence_dir, read_ids(args.expected_ids), args.cdp_helper)
 

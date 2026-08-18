@@ -8,12 +8,18 @@ import importlib.util
 import json
 import os
 import re
+import sys
 import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 import websockets
+
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from gig_paths import BROWSER_DIR  # noqa: E402
 
 
 def _load(name: str):
@@ -126,7 +132,7 @@ class CoconalaEstimateBrowser:
     """One tab held from fresh thread read through final submit/readback."""
 
     def __init__(self, helper: Path | None, thread_url: str, estimate_url: str, *, hidden: bool = False):
-        default_helper = Path.home() / "anicca/skills/browser/scripts/cdp_default_tab.py"
+        default_helper = BROWSER_DIR / "scripts" / "cdp_default_tab.py"
         self.helper, self.thread_url, self.estimate_url = Path(helper or os.environ.get("GIG_CDP_HELPER", default_helper)), thread_url, estimate_url
         self.hidden = hidden
         self.tab: Any = None
