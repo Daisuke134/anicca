@@ -5368,10 +5368,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # One external effect per wake. When nothing else changed, a duplicate listing is
             # taken down through the platform's own archive control, which keeps it restorable.
             retire_result = None
-            retire_allocation = next(
-                (row for row in portfolio.get("allocations") or []
-                 if row.get("action") == "RETIRE"
-                 and (row.get("gates") or {}).get("duplicate_of_service_id")), None)
+            # The allocator returns the single row it selected, preferring retirement, not the
+            # whole catalogue; reading a list it never returns is how this silently did nothing.
+            selected_allocation = portfolio.get("selected") or {}
+            retire_allocation = (
+                selected_allocation
+                if selected_allocation.get("action") == "RETIRE"
+                and (selected_allocation.get("gates") or {}).get("duplicate_of_service_id")
+                else None)
             if (args.effect and pending_effect is None and judgement["decision"] != "change"
                     and retire_allocation is not None):
                 retire_service_id = str(retire_allocation["service_id"])
