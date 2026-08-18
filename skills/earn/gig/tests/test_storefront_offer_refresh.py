@@ -176,3 +176,19 @@ def test_a_seed_the_listing_has_moved_past_is_skipped_not_raised(monkeypatch, tm
         assert "storefront_text_mutation_before_not_current" in str(error)
     else:
         raise AssertionError("a snapshot of the wrong listing was accepted")
+
+
+def test_the_listing_people_look_at_and_never_contact_comes_first(tmp_path):
+    """474 views produced one inquiry, so the break is at views to inquiry."""
+    analytics = tmp_path / "analytics.jsonl"
+    analytics.write_text("".join(json.dumps({
+        "service_id": service_id, "metrics": {"views": {"value": views}},
+    }) + "\n" for service_id, views in (("A", 91), ("B", 64), ("C", 10), ("D", 73))), encoding="utf-8")
+    funnel = tmp_path / "funnel-events.jsonl"
+    funnel.write_text(json.dumps({"event_kind": "inquiry", "service_id": "D"}) + "\n", encoding="utf-8")
+
+    ranked = storefront_direct._traffic_without_inquiries(analytics, funnel)
+
+    assert ranked == ["A", "B"], "most viewed first, contacted and low-traffic listings excluded"
+    assert storefront_direct._traffic_without_inquiries(
+        tmp_path / "absent.jsonl", funnel) == []

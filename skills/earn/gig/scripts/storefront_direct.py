@@ -1915,6 +1915,37 @@ def _delete_one_draft(
     return result
 
 
+def _traffic_without_inquiries(
+    analytics_path: Path, funnel_path: Path, minimum_views: int = 30,
+) -> list[str]:
+    """Listings people look at and never contact, most-looked-at first.
+
+    Measured 2026-08-18: 474 views across the catalogue produced one attributed inquiry and no
+    purchases, so the break is at views to inquiry rather than inquiry to purchase. The
+    scorecard ranks by which field is emptiest, which cannot see that.
+    """
+    views: dict[str, int] = {}
+    if analytics_path.exists():
+        for line in analytics_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            value = ((row.get("metrics") or {}).get("views") or {}).get("value")
+            if str(row.get("service_id") or "") and type(value) is int:
+                views[str(row["service_id"])] = value
+    contacted = set()
+    if funnel_path.exists():
+        for line in funnel_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if row.get("event_kind") == "inquiry" and str(row.get("service_id") or ""):
+                contacted.add(str(row["service_id"]))
+    ranked = [(count, service_id) for service_id, count in views.items()
+              if count >= minimum_views and service_id not in contacted]
+    return [service_id for _, service_id in sorted(ranked, reverse=True)]
+
+
 def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
     """Drafts this loop abandoned, never those with publication history.
 
@@ -2447,6 +2478,7 @@ def _prepare_next_hypothesis(
     contracts: list[dict], now: int, mutation_contracts: list[dict] | None = None,
     compliance_violations: list[dict] | None = None,
     offer_refresh: list[dict] | None = None,
+    unread_traffic: list[str] | None = None,
 ) -> dict | None:
     try:
         backlog = json.loads(scorecard_path.read_text(encoding="utf-8"))["priority_backlog"]
@@ -2504,6 +2536,18 @@ def _prepare_next_hypothesis(
     }
     candidate = None
     mutation_contract = None
+    # Before the scorecard's own ranking, prefer a listing people look at and never contact:
+    # the break in this catalogue is at views to inquiry, which a ranking by emptiest field
+    # cannot see. The seven-day hold still applies, because this is an experiment.
+    backlog_order = {}
+    for position, service_id in enumerate(unread_traffic or []):
+        backlog_order[service_id] = position
+    if backlog_order:
+        backlog = sorted(
+            backlog,
+            key=lambda row: backlog_order.get(str((row or {}).get("service_id") or ""), 10_000)
+            if isinstance(row, dict) else 10_000,
+        )
     # A live listing that names a prohibited tool is the platform's own stated reason for taking
     # a listing down, so repairing it outranks the scorecard and is not held by the cooldown.
     for stale in offer_refresh or []:
@@ -4966,6 +5010,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 except Exception as error:  # cleanup never ends a wake
                     _atomic_write(inventory_path.parent / "draft-delete-error.json",
                                   {"error": f"{type(error).__name__}:{str(error)[:140]}"})
+            unread_traffic = _traffic_without_inquiries(
+                args.state_dir / "analytics.jsonl", args.state_dir / "funnel-events.jsonl")
             compliance_violations, duplicate_listings = _scan_public_copy(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB), scan_families,
@@ -4999,7 +5045,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "scorecard", DEFAULT_SCORECARD),
                 args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
                 validated_contracts, int(time.time()), mutation_contracts,
-                compliance_violations, offer_refresh,
+                compliance_violations, offer_refresh, unread_traffic,
             )
             pending_effect = None
             proposal_agent = None
@@ -5149,7 +5195,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             getattr(args, "scorecard", DEFAULT_SCORECARD),
                             args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
                             validated_contracts, int(time.time()), mutation_contracts,
-                            compliance_violations, offer_refresh,
+                            compliance_violations, offer_refresh, unread_traffic,
                         )
                 mutation_contract = None
                 if proposal_noop is not None:
