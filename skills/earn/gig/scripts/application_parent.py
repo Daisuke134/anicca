@@ -3512,6 +3512,10 @@ def _invoke_isolated_planner_once(
         "--loop", "gig",
         "--workdir", str(workdir),
         "--timeout-seconds", str(timeout_seconds),
+        # This one call decides whether to apply and writes the proposal the client reads, so it
+        # takes the explicit escalation route rather than the cheapest candidate that fits.
+        "--escalation-reason",
+        "application decision and client-facing proposal text come from this single call",
     ]
     completed = subprocess.run(
         command,

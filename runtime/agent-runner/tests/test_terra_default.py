@@ -18,10 +18,26 @@ class TerraDefaultTest(unittest.TestCase):
                 ]
                 if name == "application-intent-planner":
                     expected = [
-                        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
+                        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high"},
                         {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
                     ]
                 self.assertEqual(candidates, expected)
+
+    def test_a_restricted_candidate_carries_its_escalation_route(self):
+        """Without the route the runner raises at the first wake, not at review time."""
+        config_path = Path(__file__).resolve().parents[1] / "config.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+
+        for name, task_class in config["task_classes"].items():
+            restricted = [
+                candidate for candidate in task_class.get("candidates", [])
+                if candidate.get("effort") in {"high", "xhigh", "max"}
+                or "sol" in str(candidate.get("model") or "").lower()
+            ]
+            if not restricted:
+                continue
+            with self.subTest(task_class=name):
+                self.assertTrue(task_class.get("requires_explicit_escalation"))
 
 
 if __name__ == "__main__":
