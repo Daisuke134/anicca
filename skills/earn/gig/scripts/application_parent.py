@@ -3444,29 +3444,44 @@ def _degrade_id_mismatch(
         if isinstance(request_id, str):
             id_counts[request_id] = id_counts.get(request_id, 0) + 1
     kept: list[object] = []
-    dropped_ids: list[str] = []
+    # Four different things get a row dropped here, and they used to share one word.
+    # "unexpected_request_ids" was printed whether the planner named a listing that was not in the
+    # snapshot, named one twice, returned something that was not an object, or returned a perfectly
+    # addressed row that failed schema validation. Measured 2026-08-18: 17 of 58 passes logged that
+    # line and the reason could not be read off it, so the lane's drop to one application a day was
+    # undiagnosable from the log. Same defect the B2 gate already documents: one red meaning several
+    # things. Carry the reason with the id.
+    dropped: list[tuple[str, str]] = []
     for row in rows:
         request_id = row.get("request_id") if isinstance(row, dict) else None
         row_errors = validate_decisions(
             snapshot, {"decisions": [row]}, require_complete=False
         ) if isinstance(row, dict) else ["decision_must_be_object"]
-        if (
-            isinstance(request_id, str)
-            and request_id in expected_ids
-            and id_counts.get(request_id) == 1
-            and not row_errors
-        ):
-            kept.append(row)
+        if not isinstance(row, dict):
+            reason = "not_an_object"
+        elif not isinstance(request_id, str):
+            reason = "request_id_not_a_string"
+        elif request_id not in expected_ids:
+            reason = "request_id_not_in_snapshot"
+        elif id_counts.get(request_id) != 1:
+            reason = f"request_id_repeated_{id_counts.get(request_id)}x"
+        elif row_errors:
+            reason = "schema:" + ",".join(str(error) for error in row_errors[:3])
         else:
-            dropped_ids.append(str(request_id))
+            reason = ""
+        if reason:
+            dropped.append((str(request_id), reason))
+        else:
+            kept.append(row)
     clean_decisions = {"decisions": kept}
     if not kept and not allow_empty:
         raise ParentContractError(
             "application_intent_planner_contract:decisions_empty_after_row_sanitization"
         )
-    if dropped_ids:
+    if dropped:
         print(
-            "planner_decision_dropped_unexpected_request_ids: " + ",".join(sorted(set(dropped_ids))),
+            "planner_decision_dropped: "
+            + "; ".join(f"{request_id}={reason}" for request_id, reason in sorted(set(dropped))),
             file=sys.stderr,
         )
     kept_ids = {str(row["request_id"]) for row in kept}

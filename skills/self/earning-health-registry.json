@@ -39,7 +39,10 @@
       "escalateEveryHrs": 24,
       "probe": {
         "kind": "launchd-ledger",
-        "ledgerPath": "gig/storefront-direct/wakes.jsonl",
+        "ledgerPaths": [
+          "gig/storefront-direct/wakes.jsonl",
+          "gig/apply-direct/wakes.jsonl"
+        ],
         "launchdLabels": [
           "ai.anicca.hf-gig-apply-direct",
           "ai.anicca.hf-gig-reply-detector",

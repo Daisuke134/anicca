@@ -60,7 +60,15 @@ DIRECT_MAX_APPLICATIONS = 20
 def _official_open_scan_prep(prep: dict[str, Any]) -> dict[str, Any]:
     """Keep pass metadata, but retire legacy category/budget filtering for Direct Apply."""
     thresholds = dict(prep.get("apply_skip_thresholds") or {})
+    # Dais 2026-08-18: drop all three gates — competition is not a reason to skip and a ¥500 job is
+    # worth taking. Budget was already zeroed here. The other two turned out to be dead settings:
+    # `passprep.py` defines max_applicants and min_contracted_to_skip, and grepping both this tree
+    # and the running release finds no reader for either. Zeroing them is therefore a statement of
+    # intent, not a behaviour change — the applications those two were blamed for were never
+    # actually filtered by them. Anything that starts reading these later must treat 0 as "no gate".
     thresholds["min_budget_jpy"] = 0
+    thresholds["max_applicants"] = 0
+    thresholds["min_contracted_to_skip"] = 0
     return {
         **prep,
         "target_apply_per_pass": DIRECT_MAX_APPLICATIONS,
@@ -991,6 +999,21 @@ def _finish(
     if transport_errors:
         payload["transport_error"] = transport_errors[0]
     _atomic_json(output, payload)
+    # One row per wake, same filename storefront uses. Without this the lane has no heartbeat:
+    # skills/self/earning-health-registry.json lists all four gig labels but probes a single ledger,
+    # gig/storefront-direct/wakes.jsonl, so storefront's minute-by-minute rows were standing in for
+    # apply's health. Measured 2026-08-18: apply ran a two-day-old release and fell from 38
+    # applications a day to 1, and the slot stayed green the whole time, because the lane that
+    # reports was not the lane that broke.
+    try:
+        ledger = args.state_dir / "wakes.jsonl"
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        with ledger.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+            handle.flush()
+    except OSError as ledger_error:
+        # A wake that ran is worth more than a wake that logged; never fail the pass over this.
+        print(f"wake_ledger_write_failed: {type(ledger_error).__name__}", file=sys.stderr)
     print("\n\n".join(reports))
     print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
     return 0 if status == "ok" else 1

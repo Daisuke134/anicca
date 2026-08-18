@@ -355,11 +355,11 @@ export async function observeSlot(slot, {
   }
 
   if (probe.kind === "launchd-ledger") {
-    const ledgerPath = resolveProbePath(probe.ledgerPath, {
-      base: "home",
-      runtimeRoot,
-      homeDir,
-    });
+    // resolveProbePath rejects an empty path, so only resolve the singular spelling when a slot
+    // still uses it. Slots that list ledgerPaths do not carry ledgerPath at all.
+    const ledgerPath = probe.ledgerPath
+      ? resolveProbePath(probe.ledgerPath, { base: "home", runtimeRoot, homeDir })
+      : null;
     const labels = Object.fromEntries((probe.launchdLabels || []).map((label) => {
       const checked = process.platform === "darwin"
         ? spawnSyncImpl("launchctl", ["print", `gui/${process.getuid()}/${label}`], {
@@ -368,12 +368,24 @@ export async function observeSlot(slot, {
         : { status: 1 };
       return [label, checked.status === 0];
     }));
-    const exists = fs.existsSync(ledgerPath);
+    // A slot may own several lanes, and each one needs its own heartbeat. With a single ledgerPath
+    // the freshest lane spoke for all of them: measured 2026-08-18, the gig slot probed only
+    // gig/storefront-direct/wakes.jsonl while apply-direct ran a two-day-old release and fell from
+    // 38 applications a day to 1 — loaded was true, storefront's rows were seconds old, and the
+    // slot read operational throughout. Take the oldest ledger, so one silent lane cannot hide
+    // behind a busy sibling. `ledgerPath` stays valid as the single-lane spelling.
+    const ledgerPaths = (Array.isArray(probe.ledgerPaths) ? probe.ledgerPaths : [])
+      .map((entry) => resolveProbePath(entry, { base: "home", runtimeRoot, homeDir }));
+    const allPaths = ledgerPaths.length > 0 ? ledgerPaths : (ledgerPath ? [ledgerPath] : []);
+    const present = allPaths.filter((entry) => fs.existsSync(entry));
+    const exists = present.length === allPaths.length;
+    const mtimes = present.map((entry) => fs.statSync(entry).mtimeMs);
     return {
       loaded: Object.keys(labels).length > 0 && Object.values(labels).every(Boolean),
       labels,
       exists,
-      mtimeMs: exists ? fs.statSync(ledgerPath).mtimeMs : null,
+      missingLedgers: allPaths.filter((entry) => !fs.existsSync(entry)),
+      mtimeMs: exists && mtimes.length > 0 ? Math.min(...mtimes) : null,
     };
   }
 
