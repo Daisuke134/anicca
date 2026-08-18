@@ -26,6 +26,9 @@ HERE = Path(__file__).resolve().parent
 # validator after the provider exits.
 OPENCLAW_WRITE_TOOLS = frozenset(("write", "file_write", "edit", "apply_patch", "exec"))
 OPENCLAW_THINKING_VALUES = frozenset(("off", "minimal", "low", "medium", "high", "xhigh", "adaptive", "max"))
+# Every effort above medium costs the same order of money as Sol does, so all of them take the
+# explicit escalation route. Naming only "high" here let "xhigh" and "max" past the gate.
+RESTRICTED_EFFORTS = frozenset(("high", "xhigh", "max"))
 OPENCLAW_JSON_FENCE = re.compile(r"\A```json\r?\n(?P<body>.*?)\r?\n```\Z", re.DOTALL)
 DEFAULT_USAGE_LEDGER = Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "agent-usage.jsonl"
 CLAUDE_PROVIDERS = {"claude", "claude-direct"}
@@ -948,7 +951,7 @@ def run() -> int:
         )
         restricted_candidates = [
             candidate for candidate in candidates
-            if candidate.get("effort") == "high"
+            if str(candidate.get("effort") or "") in RESTRICTED_EFFORTS
             or "sol" in str(candidate.get("model") or "").lower()
         ]
         requires_explicit_escalation = bool(
