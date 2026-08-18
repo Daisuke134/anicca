@@ -41,3 +41,12 @@ def test_a_listing_whose_title_could_not_be_read_is_not_compared():
     rows = [{"service_id": "4357844", "title_stem": None},
             {"service_id": "4357869", "title_stem": "請求書作成のExcel自動化仕様を整理し"}]
     assert storefront_direct._near_duplicate_listings(rows, FAMILIES) == []
+
+
+def test_a_pair_stays_a_pair_after_one_of_them_is_reworded():
+    """Improving one listing pushed the titles apart and the pair stopped being reported."""
+    reworded = [
+        {"service_id": "4357844", "title_stem": "請求書の転記・集計をExcelマクロで自動化し"},
+        {"service_id": "4357869", "title_stem": "請求書作成のExcel自動化仕様を整理し"},
+    ]
+    assert storefront_direct._near_duplicate_listings(reworded, FAMILIES) == []
