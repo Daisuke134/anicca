@@ -30204,3 +30204,10 @@
 {"ts":1787060672,"wake_id":"00MSYPS86M994C4FEA22AD42DF","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
 {"ts":1787060821,"wake_id":"00MSYPVENS2C80D7663D2F46BA","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1787060979,"wake_id":"00MSYPYSQ3E46A631D854E41FA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787061127,"wake_id":"00MSYQ1Z80143AF88B580C45E7","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: new x402 paid API agents pay for [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model t"}
+{"ts":1787061256,"wake_id":"00MSYQ4QDX8D680B671FC640FB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787061424,"wake_id":"00MSYQ8BSIAFCDC99F4C5643E3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787061554,"wake_id":"00MSYQB4MS105A5B95421A4DA4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787061681,"wake_id":"00MSYQDUJV3CC6A6B01650431F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787061811,"wake_id":"00MSYQGMDW10EC476177704581","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787061958,"wake_id":"00MSYQJSDM5376FE872D1E4EA2","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
