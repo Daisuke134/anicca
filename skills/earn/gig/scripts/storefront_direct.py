@@ -1802,19 +1802,29 @@ def _scan_public_copy(
     )
     due = [value for value in service_ids
            if value in changed_since_scan or value in never_read] + rotation[:4]
-    for service_id in [value for value in service_ids if value in set(due)]:
-        url = f"https://coconala.com/mypage/services/{service_id}"
-        observed: dict = {}
+    due_ids = [value for value in service_ids if value in set(due)]
+    # One tab for the whole scan. Opening a tab per listing left tabs behind whenever a wake
+    # failed part way, and the browser answered later connections with HTTP 500 four times.
+    scan_tab = None
+    if due_ids:
         opened = subprocess.run(
             [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-             "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
+             "--background", "open", "about:blank"],
+            capture_output=True, text=True, check=False, timeout=30,
         )
-        tab = None
         try:
-            tab = json.loads(opened.stdout)
-            if opened.returncode == 0 and tab.get("ok") is True:
+            candidate = json.loads(opened.stdout)
+            if opened.returncode == 0 and candidate.get("ok") is True:
+                scan_tab = candidate
+        except (ValueError, KeyError):
+            scan_tab = None
+    for service_id in due_ids:
+        url = f"https://coconala.com/mypage/services/{service_id}"
+        observed: dict = {}
+        try:
+            if scan_tab is not None:
                 observed = asyncio.run(listing_inventory._eval_json(
-                    str(tab["ws"]), url,
+                    str(scan_tab["ws"]), url,
                     "JSON.stringify({url:location.href,"
                     "title:(()=>{const e=document.forms[0]?.querySelector('[name=\"data[Service][overview]\"]');"
                     "return e?e.value||'':''})(),"
@@ -1827,16 +1837,6 @@ def _scan_public_copy(
                 ))
         except (KeyError, ValueError, OSError, RuntimeError):
             observed = {}
-        finally:
-            if isinstance(tab, dict) and tab.get("target_id"):
-                try:
-                    subprocess.run(
-                        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-                         "close", str(tab["target_id"])], capture_output=True, text=True,
-                        check=False, timeout=30,
-                    )
-                except subprocess.TimeoutExpired:
-                    pass
         body = str(observed.get("body") or "")
         # The seller page reloads itself with a cache-busting query, so the path is what identifies
         # it. An empty read is not evidence of clean copy, only of a form that was not there.
@@ -1862,6 +1862,15 @@ def _scan_public_copy(
         scanned.append(row)
         if terms:
             findings.append(row)
+    if isinstance(scan_tab, dict) and scan_tab.get("target_id"):
+        try:
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(scan_tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+        except subprocess.TimeoutExpired:
+            pass
     # A listing not read this wake still has its last reading, and the catalogue view has to be
     # the whole catalogue or a duplicate pair disappears whenever one half is not due.
     read_now = {str(row["service_id"]) for row in scanned}
