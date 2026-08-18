@@ -284,6 +284,11 @@ async def _eval_json(ws_url: str, url: str, expression: str) -> dict:
             return {}
 
 
+# The tabs observed on the most recent list page. A listing left every page of this list while
+# still rendering to a buyer, and whichever tab holds it is the answer.
+LAST_PAGE_TABS: list[dict] = []
+
+
 async def _fetch_list_page(
     cdp_base: str | None, page: int, *, ws_url: str | None = None,
 ) -> list[dict]:
@@ -300,10 +305,18 @@ async def _fetch_list_page(
         "context:/js_change-open-status/.test((e.className||'')+'')?(()=>{let n=e,best='';"
         "for(let i=0;i<5&&n;i++){const t=((n.innerText||'')+'').trim();"
         "if(t.length>best.length&&t.length<=400)best=t;n=n.parentElement}return best})():null})),"
-        "text:card.innerText||''})).filter(card=>/^\\/services\\/\\d+$/.test(card.href))})"
+        "text:card.innerText||''})).filter(card=>/^\\/services\\/\\d+$/.test(card.href)),"
+        # A listing vanished from every page of this list while still rendering to a buyer, so
+        # the list's own tabs are recorded: whichever one holds it is the answer.
+        "tabs:[...document.querySelectorAll('a,button,[role=tab]')]"
+        ".map(e=>({label:((e.innerText||'')+'').trim().slice(0,24),"
+        "href:e.getAttribute('href')||null}))"
+        ".filter(e=>e.label&&(/services_lists|status|public|open|draft|stop/i.test(e.href||'')"
+        "||/公開|下書き|停止|非公開|審査/.test(e.label))).slice(0,20)})"
     )
     if ws_url is not None:
         data = await _eval_json(ws_url, url, expression)
+        LAST_PAGE_TABS[:] = data.get("tabs") or []
         return data.get("cards", [])
     if cdp_base is None:
         raise ValueError("cdp_base_required_without_ws")
@@ -312,6 +325,7 @@ async def _fetch_list_page(
     os.environ["CLOAK_CDP_BASE_URL"] = cdp_base
     async with hidden_page_target(url) as ws_url:
         data = await _eval_json(ws_url, url, expression)
+    LAST_PAGE_TABS[:] = data.get("tabs") or []
     return data.get("cards", [])
 
 

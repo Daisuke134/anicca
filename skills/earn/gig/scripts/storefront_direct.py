@@ -4568,6 +4568,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 _atomic_write(inventory_path.parent / "listing-state-controls.json", {
                     "version": 1,
                     "observed_at": inventory.get("observed_at"),
+                    "list_page_tabs": getattr(listing_inventory, "LAST_PAGE_TABS", []),
                     "controls": {str(source.get("service_id")): source.get("state_controls") or []
                                  for source in contract_sources},
                 })
