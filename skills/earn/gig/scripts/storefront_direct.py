@@ -1018,6 +1018,34 @@ def _prohibited_copy_terms(*texts: str) -> list[str]:
     return sorted({term for term in PROHIBITED_COPY_TERMS if term in joined})
 
 
+def _offer_refresh_due(
+    effects_path: Path, service_id: str, family_name: str, family: dict,
+) -> str | None:
+    """Report a listing still selling an offer its capability family no longer promises.
+
+    Deliverables are what the listing may claim, so changing them changes what the copy must
+    say. The Excel family moved from handing over a design document to handing over a working
+    macro; until the body is rewritten, the page sells the old promise.
+    """
+    if not isinstance(family, dict):
+        return None
+    digest = hashlib.sha256(json.dumps(
+        {key: family.get(key) for key in ("inclusions", "deliverables")},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if not effects_path.exists():
+        return digest
+    for line in effects_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        effect = json.loads(line)
+        if (str(effect.get("service_id") or "") == str(service_id)
+                and effect.get("status") == "accepted" and effect.get("effect") == 1
+                and str(effect.get("changed_field") or "") == "body"
+                and effect.get("offer_digest") == digest):
+            return None
+    return digest
+
+
 def _platform_withdrew_listing(ledger_path: Path, service_id: str, is_public: bool) -> bool:
     """Report a listing this loop published that the platform has since taken down.
 
@@ -1774,19 +1802,29 @@ def _scan_public_copy(
     )
     due = [value for value in service_ids
            if value in changed_since_scan or value in never_read] + rotation[:4]
-    for service_id in [value for value in service_ids if value in set(due)]:
-        url = f"https://coconala.com/mypage/services/{service_id}"
-        observed: dict = {}
+    due_ids = [value for value in service_ids if value in set(due)]
+    # One tab for the whole scan. Opening a tab per listing left tabs behind whenever a wake
+    # failed part way, and the browser answered later connections with HTTP 500 four times.
+    scan_tab = None
+    if due_ids:
         opened = subprocess.run(
             [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-             "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
+             "--background", "open", "about:blank"],
+            capture_output=True, text=True, check=False, timeout=30,
         )
-        tab = None
         try:
-            tab = json.loads(opened.stdout)
-            if opened.returncode == 0 and tab.get("ok") is True:
+            candidate = json.loads(opened.stdout)
+            if opened.returncode == 0 and candidate.get("ok") is True:
+                scan_tab = candidate
+        except (ValueError, KeyError):
+            scan_tab = None
+    for service_id in due_ids:
+        url = f"https://coconala.com/mypage/services/{service_id}"
+        observed: dict = {}
+        try:
+            if scan_tab is not None:
                 observed = asyncio.run(listing_inventory._eval_json(
-                    str(tab["ws"]), url,
+                    str(scan_tab["ws"]), url,
                     "JSON.stringify({url:location.href,"
                     "title:(()=>{const e=document.forms[0]?.querySelector('[name=\"data[Service][overview]\"]');"
                     "return e?e.value||'':''})(),"
@@ -1799,16 +1837,6 @@ def _scan_public_copy(
                 ))
         except (KeyError, ValueError, OSError, RuntimeError):
             observed = {}
-        finally:
-            if isinstance(tab, dict) and tab.get("target_id"):
-                try:
-                    subprocess.run(
-                        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-                         "close", str(tab["target_id"])], capture_output=True, text=True,
-                        check=False, timeout=30,
-                    )
-                except subprocess.TimeoutExpired:
-                    pass
         body = str(observed.get("body") or "")
         # The seller page reloads itself with a cache-busting query, so the path is what identifies
         # it. An empty read is not evidence of clean copy, only of a form that was not there.
@@ -1834,6 +1862,15 @@ def _scan_public_copy(
         scanned.append(row)
         if terms:
             findings.append(row)
+    if isinstance(scan_tab, dict) and scan_tab.get("target_id"):
+        try:
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(scan_tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+        except subprocess.TimeoutExpired:
+            pass
     # A listing not read this wake still has its last reading, and the catalogue view has to be
     # the whole catalogue or a duplicate pair disappears whenever one half is not due.
     read_now = {str(row["service_id"]) for row in scanned}
@@ -2176,6 +2213,7 @@ def _prepare_next_hypothesis(
     scorecard_path: Path, effects_path: Path, outcomes_path: Path,
     contracts: list[dict], now: int, mutation_contracts: list[dict] | None = None,
     compliance_violations: list[dict] | None = None,
+    offer_refresh: list[dict] | None = None,
 ) -> dict | None:
     try:
         backlog = json.loads(scorecard_path.read_text(encoding="utf-8"))["priority_backlog"]
@@ -2235,6 +2273,31 @@ def _prepare_next_hypothesis(
     mutation_contract = None
     # A live listing that names a prohibited tool is the platform's own stated reason for taking
     # a listing down, so repairing it outranks the scorecard and is not held by the cooldown.
+    for stale in offer_refresh or []:
+        service_id = str(stale.get("service_id") or "")
+        # Not held by the cooldown: the page is advertising something this seller no longer
+        # offers, which is a correction rather than another experiment on the same listing.
+        if service_id in versions and (service_id, "body") not in open_pairs:
+            return {
+                "version": 1,
+                "hypothesis_key": "storefront:hypothesis:v1:" + hashlib.sha256(
+                    f"offer:{service_id}:{stale.get('offer_digest')}".encode()).hexdigest(),
+                "prepared_at_epoch": now,
+                "service_id": service_id,
+                "service_version_sha256": versions[service_id],
+                "field": "body", "portfolio_field": "scope",
+                "before": None, "success_metric": "inquiries",
+                "reason": f"listing still sells the previous offer of family {stale.get('family')}",
+                "offer_digest": stale.get("offer_digest"),
+                "executable": rendered.get((service_id, "body")) is not None,
+                "guard_reason": (None if rendered.get((service_id, "body")) is not None
+                                 else "proposal_contract_required"),
+                "active_experiment_key": active[0].get("experiment_key") if active else None,
+                "mutation_contract_sha256": (
+                    rendered[(service_id, "body")]["contract_sha256"]
+                    if rendered.get((service_id, "body")) is not None else None
+                ),
+            }
     for violation in compliance_violations or []:
         service_id = str(violation.get("service_id") or "")
         # An open experiment on the same field does not hold it either: a withdrawn listing
@@ -4594,6 +4657,17 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             and isinstance(created.get("capability_family"), str)):
                         scan_families.setdefault(str(created.get("draft_service_id") or ""),
                                                  created["capability_family"])
+            # A listing whose family now promises something else is selling the old promise until
+            # its body is rewritten, so it is queued the same way a rule breach is.
+            offer_refresh = []
+            for row in validated_contracts:
+                family_name = str(row.get("generated_from_family") or "")
+                digest = _offer_refresh_due(
+                    args.state_dir / "effects.jsonl", str(row["service_id"]), family_name,
+                    capability_templates.get(family_name) or {})
+                if digest:
+                    offer_refresh.append({"service_id": str(row["service_id"]),
+                                          "offer_digest": digest, "family": family_name})
             compliance_violations, duplicate_listings = _scan_public_copy(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB), scan_families,
@@ -4620,7 +4694,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "scorecard", DEFAULT_SCORECARD),
                 args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
                 validated_contracts, int(time.time()), mutation_contracts,
-                compliance_violations,
+                compliance_violations, offer_refresh,
             )
             pending_effect = None
             proposal_agent = None
@@ -4767,7 +4841,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             getattr(args, "scorecard", DEFAULT_SCORECARD),
                             args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
                             validated_contracts, int(time.time()), mutation_contracts,
-                            compliance_violations,
+                            compliance_violations, offer_refresh,
                         )
                 mutation_contract = None
                 if proposal_noop is not None:
@@ -5365,6 +5439,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         .get("effect_origin_pass_id", pass_id)
                     ),
                     "service_id": str(judgement["service_id"]), "changed_field": pending_effect["changed_field"],
+                    "offer_digest": (next_hypothesis or {}).get("offer_digest"),
                     "before_value": judgement.get("before_value"), "after_value": judgement.get("proposed_value"),
                     "experiment_key": judgement["experiment_key"],
                     "public_before_path": str(pending_effect["public_before_path"]),
@@ -5393,6 +5468,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 _append_effect_once(args.state_dir / "experiments.jsonl", {
                     "version": 1, "status": "accepted", "experiment_key": judgement["experiment_key"],
                     "service_id": str(judgement["service_id"]), "changed_field": pending_effect["changed_field"],
+                    "offer_digest": (next_hypothesis or {}).get("offer_digest"),
                     "accepted_at_epoch": effect_row["accepted_at_epoch"],
                     "success_metric": judgement.get("success_metric"),
                     "observation_window_days": judgement.get("observation_window_days"),
