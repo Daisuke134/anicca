@@ -1800,6 +1800,53 @@ def _analytics_count(body: str, label: str, unit: str) -> int:
     return int(digits.replace(",", ""))
 
 
+def _observe_draft_controls(
+    evidence_dir: Path, draft_ids: list[str], default_tab_script: Path = DEFAULT_TAB,
+) -> dict:
+    """Record what a draft's own edit page offers, so a cleanup binds an observed control.
+
+    Nine drafts accumulated from failed publications. The card in the seller list offers only
+    編集する, and the delete control was seen once in a publish error page's text with no
+    element behind it, which is not something to act on.
+    """
+    import listing_inventory
+
+    if not draft_ids:
+        return {"observed": 0}
+    service_id = sorted(draft_ids)[0]
+    url = f"https://coconala.com/mypage/services/{service_id}"
+    opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", "about:blank"],
+        capture_output=True, text=True, check=False, timeout=30,
+    )
+    observed: dict = {}
+    tab = None
+    try:
+        tab = json.loads(opened.stdout)
+        if opened.returncode == 0 and tab.get("ok") is True:
+            observed = asyncio.run(listing_inventory._eval_json(
+                str(tab["ws"]), url,
+                "JSON.stringify({url:location.href,controls:[...document.querySelectorAll('a,button')]"
+                ".map(e=>({tag:e.tagName,label:((e.innerText||'')+'').trim().slice(0,20),"
+                "href:e.getAttribute('href')||null,cls:((e.className||'')+'').slice(0,60)}))"
+                ".filter(e=>e.label&&/削除|取り消|停止|下書き|公開/.test(e.label)).slice(0,20)})",
+            ))
+    except (KeyError, ValueError, OSError, RuntimeError) as error:
+        observed = {"error": f"{type(error).__name__}:{str(error)[:120]}"}
+    finally:
+        if isinstance(tab, dict) and tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+    record = {"version": 1, "draft_service_id": service_id, "draft_count": len(draft_ids),
+              "drafts": sorted(draft_ids), "observed": observed}
+    _atomic_write(evidence_dir / "draft-controls.json", record)
+    return record
+
+
 def _near_duplicate_listings(rows: list[dict], families: dict[str, str]) -> list[dict]:
     """Report live listings that sell the same thing under nearly the same name.
 
@@ -4798,6 +4845,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                               "offer_digest": digest, "family": family_name,
                                               "offer_field": offer_field})
                         break
+            # Drafts are the cards whose link points at the seller page rather than a public one.
+            draft_ids = sorted({
+                match.group(1)
+                for row in getattr(listing_inventory, "PAGE_WALK", [])
+                for href in row.get("raw_hrefs") or []
+                for match in [re.fullmatch(r"/mypage/services/(\d+)", str(href))] if match
+            })
+            _observe_draft_controls(inventory_path.parent, draft_ids,
+                                    getattr(args, "default_tab_script", DEFAULT_TAB))
             compliance_violations, duplicate_listings = _scan_public_copy(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB), scan_families,
