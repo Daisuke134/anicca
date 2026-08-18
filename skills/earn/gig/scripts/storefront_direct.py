@@ -1020,6 +1020,7 @@ def _prohibited_copy_terms(*texts: str) -> list[str]:
 
 def _offer_refresh_due(
     effects_path: Path, service_id: str, family_name: str, family: dict,
+    already_advertised: set[str] | None = None,
 ) -> str | None:
     """Report a listing still selling an offer its capability family no longer promises.
 
@@ -1032,6 +1033,11 @@ def _offer_refresh_due(
     digest = hashlib.sha256(json.dumps(
         {key: family.get(key) for key in ("inclusions", "deliverables")},
         ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    # An offer the live listings already advertise is not a change. Without this, having no
+    # record of a rewrite reads the same as having a new promise, and the whole catalogue gets
+    # rewritten and put into a seven-day hold for offers that never moved.
+    if digest in (already_advertised or set()):
+        return None
     if not effects_path.exists():
         return digest
     for line in effects_path.read_text(encoding="utf-8").splitlines():
@@ -4661,6 +4667,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # A listing whose family now promises something else is selling the old promise until
             # its body is rewritten, so it is queued the same way a rule breach is.
             offer_refresh = []
+            advertised_path = args.state_dir / "advertised-offers.json"
+            try:
+                advertised_offers = set(json.loads(
+                    advertised_path.read_text(encoding="utf-8"))["digests"])
+            except (OSError, ValueError, KeyError, TypeError):
+                advertised_offers = set()
             for row in validated_contracts:
                 # The service-to-family mapping is the authoritative one; the contract row does
                 # not always carry it, and an empty name silently digests an empty family.
@@ -4668,7 +4680,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 template = capability_templates.get(family_name)
                 digest = _offer_refresh_due(
                     args.state_dir / "effects.jsonl", str(row["service_id"]), family_name,
-                    template) if isinstance(template, dict) and template else None
+                    template, advertised_offers) if isinstance(template, dict) and template else None
                 if digest:
                     offer_refresh.append({"service_id": str(row["service_id"]),
                                           "offer_digest": digest, "family": family_name})
