@@ -289,6 +289,8 @@ async def _eval_json(ws_url: str, url: str, expression: str) -> dict:
 LAST_PAGE_TABS: list[dict] = []
 # What each page of the seller list returned on the most recent walk.
 PAGE_WALK: list[dict] = []
+# Raw hrefs of every card on the most recent page read, before any filtering.
+LAST_RAW_HREFS: list[str] = []
 
 
 async def _fetch_list_page(
@@ -307,7 +309,13 @@ async def _fetch_list_page(
         "context:/js_change-open-status/.test((e.className||'')+'')?(()=>{let n=e,best='';"
         "for(let i=0;i<5&&n;i++){const t=((n.innerText||'')+'').trim();"
         "if(t.length>best.length&&t.length<=400)best=t;n=n.parentElement}return best})():null})),"
-        "text:card.innerText||''})).filter(card=>/^\\/services\\/\\d+$/.test(card.href)),"
+        "text:card.innerText||''})),"
+        # Every card is returned with its raw href. A filter demanding an exact /services/<id>
+        # dropped cards silently, and a listing that is live for buyers went missing from the
+        # catalogue for hours with no way to see why.
+        "raw_hrefs:[...document.querySelectorAll('#serviceListContent .serviceListContentBox')]"
+        ".map(card=>card.querySelector('a[href*=\"/services/\"]')?.getAttribute('href')||'')"
+        ".slice(0,40),"
         # A listing vanished from every page of this list while still rendering to a buyer, so
         # the list's own tabs are recorded: whichever one holds it is the answer.
         "tabs:[...document.querySelectorAll('a,button,[role=tab]')]"
@@ -335,6 +343,7 @@ async def _fetch_list_page(
                     break
             await asyncio.sleep(1.0)
         LAST_PAGE_TABS[:] = data.get("tabs") or []
+        LAST_RAW_HREFS[:] = data.get("raw_hrefs") or []
         return best
     if cdp_base is None:
         raise ValueError("cdp_base_required_without_ws")
@@ -428,6 +437,7 @@ async def collect_live(identity: str = IDENTITY, *, ws_url: str | None = None) -
                 "page": page, "url": LISTINGS_URL if page == 1 else f"{LISTINGS_URL}/page:{page}",
                 "observed_ids": [str(row.get("service_id") or "") for row in cards],
                 "new_ids": [str(row.get("service_id") or "") for row in new_cards],
+                "raw_hrefs": list(LAST_RAW_HREFS),
             }]
             if not new_cards:
                 break
