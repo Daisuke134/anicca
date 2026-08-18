@@ -35,7 +35,7 @@ Two more jobs support them:
 | A **Codex subscription** and the `codex` CLI signed in | This is the only thing you pay for. Every judgement the loop makes goes through it. `codex login`, then check `~/.codex/auth.json` exists. |
 | A **Coconala seller account** with at least one listing | This is the only account you create. You do not need to finish identity verification or add a bank account to start — those matter when you withdraw, not when you sell. |
 | Python 3.13 or newer | `brew install python@3.14`. Then `pip3 install websockets beautifulsoup4 jsonschema`. |
-| A CloakBrowser Chromium build under `~/.cloakbrowser/chromium-*/` | An ordinary Chrome will not do: the lanes attach over CDP and the build is launched with a stable fingerprint so a shared residential IP does not look like a bot farm. |
+| A CloakBrowser Chromium build under `~/.cloakbrowser/chromium-*/` | An ordinary Chrome will not do: the lanes attach over CDP, and the launcher passes `--fingerprint`, a flag only this build has. See [the browser](#the-browser) below — the version matters. |
 
 Optional: the `openclaw` CLI, if you want the loop to narrate itself to your
 Telegram. Without it the loop runs the same and simply does not report.
@@ -70,7 +70,30 @@ Every key and its default is listed under [Configuration](#configuration). If
 you are happy with all of them, an empty `{}` is a valid file, and so is no file
 at all.
 
-### 3. Start the browser and log in — the one manual step
+### 3. The browser
+
+The lanes drive [CloakBrowser](https://github.com/CloakHQ/CloakBrowser), a Chromium
+whose fingerprint is patched at the C++ source level. `pip install cloakbrowser`
+installs the wrapper; the ~200 MB browser binary downloads on first use and caches
+itself under `~/.cloakbrowser/chromium-<version>/`. The free tier needs a GitHub
+sign-in at [cloakbrowser.dev/free](https://cloakbrowser.dev/free) to pick which
+binary you get.
+
+```bash
+pip3 install cloakbrowser
+python3 -c "from cloakbrowser import launch; b = launch(headless=True); b.close()"
+ls ~/.cloakbrowser/          # chromium-<version>/ should now exist
+```
+
+**The version matters.** `scripts/launch_gig_browser.sh` picks the highest version it
+finds, and it carries a TLS compatibility switch that is deliberately bounded to
+Chromium 145 and 146: newer builds offer ML-KEM by default, and on at least one real
+network path the larger ClientHello is dropped, so Chromium reaches TCP and then
+returns `ERR_TIMED_OUT` while `curl` still works. If the version you get is outside
+that range, the switch will not be applied and the site may simply never load. Qualify
+the newer major before trusting it — do not widen the range on faith.
+
+### 4. Start the browser and log in — the one manual step
 
 ```bash
 python3 skills/earn/gig/scripts/gig_release.py activate --jobs ai.anicca.hf-gig-browser
@@ -89,7 +112,7 @@ restore the session instead of asking you again.
 Leave this browser running. It is the only thing standing between the loop and
 a login prompt.
 
-### 4. Describe what you sell
+### 5. Describe what you sell
 
 `config/storefront-catalog-scorecard.json` is the loop's model of the seller:
 one entry per listing, what it promises, what evidence backs the promise, and
@@ -98,7 +121,7 @@ its author's catalogue. **Replace it with yours** — the apply lane uses it to
 decide what it is allowed to claim, and the storefront lane uses it to decide
 what to edit.
 
-### 5. Start the lanes
+### 6. Start the lanes
 
 ```bash
 python3 skills/earn/gig/scripts/gig_release.py activate
@@ -115,7 +138,7 @@ To also keep them following `main` by themselves:
 python3 skills/earn/gig/scripts/gig_release.py activate --jobs ai.anicca.hf-gig-release-watch
 ```
 
-### 6. Watch it work
+### 7. Watch it work
 
 ```bash
 python3 skills/earn/gig/scripts/gig_release.py status

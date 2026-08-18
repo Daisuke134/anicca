@@ -8,21 +8,24 @@ The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 
 ---
 
-## 1. A stranger cannot complete the install — the browser step has no source
+## 1. ~~The browser step had no source~~ — RESOLVED, with one thing left to qualify
 
-**Blocks:** open sourcing. Everything else in the README works; this step cannot be followed.
+The binary comes from [CloakBrowser](https://github.com/CloakHQ/CloakBrowser)
+(`pip install cloakbrowser`, PyPI `cloakbrowser`): the wrapper downloads its patched
+Chromium on first use and caches it under `~/.cloakbrowser/chromium-<version>/`, which
+is exactly the layout `scripts/launch_gig_browser.sh` globs for, and `--fingerprint` is
+that build's flag. The install step is now written up in the README.
 
-`scripts/launch_gig_browser.sh` requires a Chromium at
-`~/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium`. On the machine that
-runs the loop today that directory exists, but nothing on it can produce it: `cloak` and
-`cloakbrowser` are not on `PATH`, no pip package by that name is installed, and no
-installer exists in this repository. So the README currently tells a reader to have a
-binary it cannot tell them how to get.
+**Left open:** `launch_gig_browser.sh` takes the highest installed version, and its TLS
+compatibility switch is bounded to Chromium 145 and 146. A fresh install today gets
+whatever CloakBrowser ships now, which may be outside that range — and outside it the
+switch is silently not applied, which is the `ERR_TIMED_OUT`-while-curl-works failure the
+script's own comment describes. Nobody has qualified a newer major. Until someone does,
+a new machine may install a browser that cannot reach the site, and the loop will look
+broken for a reason that has nothing to do with the loop.
 
-Find the real source, pin the version, and write the step. If there is no distributable
-source, the loop needs a different browser story — an ordinary Chromium with
-`--remote-debugging-port` is the fallback to evaluate, and the cost of losing the
-fingerprint flag has to be measured rather than assumed.
+Do not widen the `145|146` case on faith. Qualify it against the real site, on the real
+network path, and record what you measured.
 
 ---
 
