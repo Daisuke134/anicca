@@ -312,7 +312,7 @@ def main() -> int:
     run_parser.add_argument("--schema", type=Path)
     run_parser.add_argument("--runner-config", type=Path)
     run_parser.add_argument("--workdir", type=Path, default=Path.home())
-    run_parser.add_argument("--telegram-target", default="8547730585")
+    run_parser.add_argument("--telegram-target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     run_parser.add_argument("--calendar-account", default=DEFAULT_CALENDAR_ACCOUNT)
     run_parser.add_argument("--max-model-calls", type=int, default=DEFAULT_MAX_MODEL_CALLS)
     run_parser.add_argument("--hidden-browser", action="store_true")

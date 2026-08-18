@@ -53,7 +53,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import telegram_outbox  # noqa: E402  -- the ONE durable send queue, reused as-is
 
 DEFAULT_GIG_DIR = Path.home() / "gig"
-DEFAULT_TARGET = "8547730585"  # same default gig_daily_report.sh / telegram_report.py use
+DEFAULT_TARGET = os.environ.get("GIG_REPORT_CHAT", "")  # set by launchd job; empty = no report
 CHECKPOINT_DIR_NAME = "checkpoints"
 
 # A checkpoint question with an empty or placeholder decision context is exactly the

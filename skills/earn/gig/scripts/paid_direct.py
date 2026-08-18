@@ -3280,7 +3280,7 @@ def _parser():
     parser.add_argument("--decision-schema", type=Path, default=HERE.parent / "schemas/paid_work_decision.schema.json")
     parser.add_argument("--telegram-database", type=Path, default=DEFAULT_TELEGRAM_DATABASE)
     parser.add_argument("--telegram-receipt-dir", type=Path, default=DEFAULT_TELEGRAM_RECEIPTS)
-    parser.add_argument("--telegram-target", default="8547730585")
+    parser.add_argument("--telegram-target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     parser.add_argument("--openclaw", type=Path, default=Path("/opt/homebrew/bin/openclaw"))
     parser.add_argument("--operator-brake", type=Path,
                         default=Path(os.environ.get("GIG_OPERATOR_BRAKE_FILE", DEFAULT_BRAKE)))

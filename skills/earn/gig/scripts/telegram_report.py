@@ -2201,7 +2201,7 @@ def main() -> int:
         "--runner-config", type=Path,
         default=RUNNER_DIR / "config.json",
     )
-    parser.add_argument("--target", default="8547730585")
+    parser.add_argument("--target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     parser.add_argument("--output", type=Path)
     parser.add_argument("--audit-state", type=Path)
     parser.add_argument("--now", default="")
