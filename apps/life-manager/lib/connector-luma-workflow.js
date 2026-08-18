@@ -200,6 +200,16 @@ function createLumaScriptFirstWorkflow(options = {}) {
 
     async runDirectAction({ page, candidate }) {
       const selected = exactEvent(candidate);
+      // normalizeLumaEventDetail (luma-event-detail.js) already computed
+      // auth_status for this exact candidate during discovery, by checking
+      // for a "ログイン"/"sign in"/"log in" control on the event page — the
+      // same signal a daily-driver logout leaves behind. Reusing it here
+      // costs no extra page read and reports the session problem before an
+      // attempt that would only fail with a generic control-unavailable
+      // reason.
+      if (selected.auth_status === "login_required") {
+        return Object.freeze({ status: "failed", safe_reason: "luma_session_expired" });
+      }
       try {
         const outcome = await submitOnPage(page, selected, {
           readLumaFormProfile,

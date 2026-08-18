@@ -219,6 +219,40 @@ test("Luma direct action uses the retained submit function without agent assista
   assert.equal(typeof calls[0].dependencies.readLumaFormProfile, "function");
 });
 
+test("Luma direct action reports a login-wall candidate as a session problem without attempting the submit", async () => {
+  const selected = event("login-walled", { auth_status: "login_required" });
+  let submitCalls = 0;
+  const workflow = createLumaScriptFirstWorkflow({
+    async discoverOnPage() { return [selected]; },
+    isCalendarFree() { return true; },
+    async submitOnPage() { submitCalls += 1; return { status: "registered" }; },
+    async readProviderStateOnPage() { return { status: "absent" }; },
+  });
+
+  const result = await workflow.runDirectAction({ page: {}, candidate: selected });
+
+  assert.deepEqual(result, { status: "failed", safe_reason: "luma_session_expired" });
+  assert.equal(submitCalls, 0);
+});
+
+test("a closed/full candidate without a login-wall control is never reported as a session problem", async () => {
+  const selected = event("closed-not-logged-out", { auth_status: "unknown" });
+  const workflow = createLumaScriptFirstWorkflow({
+    async discoverOnPage() { return [selected]; },
+    isCalendarFree() { return true; },
+    async submitOnPage() {
+      const error = new Error("Luma RSVP control unavailable");
+      error.code = "LUMA_CONTROL_UNAVAILABLE";
+      throw error;
+    },
+    async readProviderStateOnPage() { return { status: "absent" }; },
+  });
+
+  const result = await workflow.runDirectAction({ page: {}, candidate: selected });
+
+  assert.deepEqual(result, { status: "failed", safe_reason: "direct_action_requires_fallback" });
+});
+
 test("unknown required fields and changed controls request bounded fallback without claiming success", async () => {
   for (const code of [
     "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",

@@ -313,7 +313,22 @@ function createConnpassScriptFirstWorkflow(options = {}) {
     async runDirectAction({ page, candidate }) {
       const selected = exactCandidate(candidate);
       const attendeeName = typeof readAttendeeName === "function" ? await readAttendeeName() : undefined;
-      const outcome = await submitOnPage(page, selected, { attendeeName });
+      let outcome;
+      try {
+        outcome = await submitOnPage(page, selected, { attendeeName });
+      } catch (error) {
+        // connpass-browser-provider.js's submitConnpassOnPage throws this one
+        // code (rather than returning a status, unlike every other guard on
+        // that path) when the join control is a login wall. Caught here —
+        // instead of propagating like every other submit error still does —
+        // so the runner's own safe_reason (not just the action-history row)
+        // names the session problem instead of falling back to the generic
+        // direct_action_failed every other thrown connpass error still gets.
+        if (String(error && error.code || "") === "CONNPASS_SESSION_EXPIRED") {
+          return Object.freeze({ status: "failed", safe_reason: "connpass_session_expired" });
+        }
+        throw error;
+      }
       let currentUrl = "";
       if (outcome && ["registered", "pending"].includes(outcome.status)) {
         try {

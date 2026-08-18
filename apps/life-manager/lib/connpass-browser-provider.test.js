@@ -482,6 +482,28 @@ test("already-registered/pending state returns immediately and clicks nothing", 
   }
 });
 
+test("a login-wall join page fails closed with CONNPASS_SESSION_EXPIRED, clicking nothing", async () => {
+  const page = joinFlowFixture({ states: [{ state: "login_required" }] });
+  await assert.rejects(submitConnpassOnPage(page), (error) => {
+    assert.equal(error.code, "CONNPASS_SESSION_EXPIRED");
+    assert.equal(error.unknownEffect, false);
+    return true;
+  });
+  // Thrown straight off the readState check — before the join link itself
+  // is ever located, let alone clicked.
+  assert.deepEqual(page.calls, []);
+});
+
+test("a genuinely unavailable (closed/full) event is never reported as a session problem", async () => {
+  const page = joinFlowFixture({ states: [{ state: "unavailable", reason: "closed" }] });
+  await assert.rejects(submitConnpassOnPage(page), (error) => {
+    assert.equal(error.code, "CONNPASS_REGISTRATION_UNAVAILABLE");
+    assert.equal(error.unknownEffect, false);
+    return true;
+  });
+  assert.deepEqual(page.calls, []);
+});
+
 test("missing or duplicated confirm control fails closed before any click on the join page", async () => {
   for (const overrides of [{ confirmCount: 0 }, { confirmCount: 2 }, { confirmVisible: false }, { confirmLabel: "支払いに進む" }]) {
     const page = joinFlowFixture({ states: [{ state: "absent" }], ...overrides });
