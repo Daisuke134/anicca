@@ -133,6 +133,18 @@ its author's catalogue. **Replace it with yours** — the apply lane uses it to
 decide what it is allowed to claim, and the storefront lane uses it to decide
 what to edit.
 
+Two more directories are seller-specific in the same way, and ship filled in as
+worked examples rather than as templates:
+
+| | |
+|---|---|
+| `contracts/` | What each listing offers, in the shape the lanes reason over. |
+| `assets/storefront/<service_id>/` | The gallery images the storefront lane uploads to a listing, keyed by that listing's id. The ids here are its author's. |
+
+Yours will not have those ids. Nothing breaks if you leave them — no listing of
+yours matches — but the storefront lane has nothing to publish for your listings
+until you put your own contracts and images beside them.
+
 ### 6. Start the lanes
 
 ```bash
