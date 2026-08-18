@@ -4165,17 +4165,16 @@ async def _execute_listing_state_effect_async(
     readback = {"service_id": service_id, "cards": cards,
                 "observed_at_epoch": int(time.time())}
     _atomic_write(evidence_dir / f"listing-state-readback-{service_id}.json", readback)
-    # Measured on the real account: an archived listing leaves this list entirely rather than
-    # staying on it as a non-public card. Its absence is therefore the archive succeeding, and
-    # treating that as a fault is what reported a working retirement as broken.
+    # An earlier reading of this took the card leaving the seller list as proof the archive had
+    # worked. An anonymous rendered fetch of the same listing then showed it complete to a
+    # buyer, so absence from this list proves nothing and must never be reported as success.
     if not cards:
-        return {**readback, "archived": True, "restore_href": None,
-                "restore_control": "not_on_public_list"}
+        raise RuntimeError("storefront_retire_card_missing_after_archive")
     if "公開中" in str(cards[0].get("text") or ""):
         raise RuntimeError("storefront_retire_still_public")
-    return {**readback, "archived": True,
-            "restore_href": (cards[0].get("restore") or [None])[0],
-            "restore_control": "on_card" if cards[0].get("restore") else "absent"}
+    if not (cards[0].get("restore") or []):
+        raise RuntimeError("storefront_retire_restore_control_unverified")
+    return {**readback, "archived": True, "restore_href": cards[0]["restore"][0]}
 
 
 async def _restore_listing_state_async(ws_url: str, *, service_id: str, restore_href: str) -> dict:
