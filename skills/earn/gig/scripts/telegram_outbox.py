@@ -378,6 +378,37 @@ class TelegramOutbox:
             reconciled += 1
         return {"reconciled": reconciled, "invalid": invalid}
 
+    def redrive_unresolved(
+        self, *, now: int, older_than_seconds: int = 600, max_attempts: int = 3
+    ) -> int:
+        """Give a stale delivery_unknown row one more shot after reconciliation gave up on it.
+
+        reconcile_receipts() runs first on every invocation and turns any delivery_unknown
+        row the provider actually acked back into 'sent'. Whatever is still delivery_unknown
+        after that has no matching receipt -- the closest thing this channel has to proof the
+        message never arrived. Left alone it is terminal: claim() only ever picks up 'pending'
+        or an expired 'claimed' lease, so the health report is silently dropped forever, and
+        this channel is the operator's only signal the loops are alive. A duplicate line is
+        cheap (dispatch_one already treats a resend as at-most-once per event_key on success);
+        permanent silence is expensive. older_than_seconds keeps this from racing
+        reconcile_receipts on the same row; max_attempts stops a permanently-broken transport
+        from retrying forever. fencing_token already increments once per claim(), so it is the
+        attempt count -- no new column needed.
+        """
+        now = self._integer("now", now)
+        older_than_seconds = self._integer(
+            "older_than_seconds", older_than_seconds, positive=True
+        )
+        max_attempts = self._integer("max_attempts", max_attempts, positive=True)
+        with self._write() as connection:
+            cursor = connection.execute(
+                """UPDATE telegram_reports
+                   SET state='pending',owner=NULL,lease_until=0,error_class=NULL,updated_at=?
+                   WHERE state='delivery_unknown' AND updated_at<=? AND fencing_token<?""",
+                (now, now - older_than_seconds, max_attempts),
+            )
+            return int(cursor.rowcount)
+
     def counts(self) -> dict[str, int]:
         with closing(self._connect()) as connection:
             rows = connection.execute(

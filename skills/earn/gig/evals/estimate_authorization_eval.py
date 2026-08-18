@@ -51,7 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import requested_estimate as estimate  # noqa: E402
 
 DEFAULT_CASES = Path(__file__).resolve().parent / "estimate_authorization_cases.json"
-DEFAULT_RUNNER = Path.home() / "profitable-claude/skills/agent-runner/agent_runner.py"
+DEFAULT_RUNNER = Path(__file__).resolve().parents[1] / "agent-runner" / "agent_runner.py"
 DEFAULT_SCHEMA = (
     Path(__file__).resolve().parents[1] / "schemas/reply_semantic_judgement.schema.json"
 )

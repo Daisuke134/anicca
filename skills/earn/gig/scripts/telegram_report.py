@@ -2227,6 +2227,7 @@ def main() -> int:
         target=args.target,
         now=now_epoch,
     )
+    outbox.redrive_unresolved(now=now_epoch)
     # The outage alarm must not depend on anything the outage may have broken --
     # least of all the model-routing config, which it never mentions to Dais.
     route = (
@@ -2240,6 +2241,24 @@ def main() -> int:
         executable=args.openclaw,
         receipt_dir=args.gig_dir / "telegram-delivery-receipts",
     )
+    # Drain a few of the rows redrive_unresolved() just reopened, so a redriven
+    # health report goes out on this same wake instead of waiting for the next
+    # one. This is a drain, not a scheduler -- 3 is a bound, not a target -- and
+    # it must never take down this lane's own report, which is why it is fenced
+    # off in its own try/except.
+    try:
+        redrive_tick = iter(range(now_epoch, now_epoch + 10000)).__next__
+        for _ in range(3):
+            drained = dispatch_one(
+                outbox,
+                owner=f"gig-telegram-{uuid.uuid4().hex}",
+                now=redrive_tick,
+                transport=transport,
+            )
+            if drained["status"] == "queue_empty":
+                break
+    except Exception:
+        pass
     if args.command in PASS_OUTAGE_COMMANDS:
         result = publish_pass_outage(
             command=args.command,
