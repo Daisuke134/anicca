@@ -4987,6 +4987,20 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     # is None in that case, and printing that told four wakes' receipts nothing.
                     noop_reason = str(proposal_noop.get("rejected")
                                       or proposal_noop.get("no_op_reason") or "proposal_rejected")
+                    # A candidate refused for a structural reason stays refused until the listing
+                    # changes: three consecutive wakes proposed an FAQ for a listing that already
+                    # has one, each refusing with the same sentence.
+                    if next_hypothesis is not None:
+                        refused_service = str(next_hypothesis.get("service_id") or "")
+                        refused_version = versions_by_service.get(refused_service, "")
+                        _append_key_once(args.state_dir / "superseded-candidates.jsonl", "candidate_key", {
+                            "version": 1,
+                            "candidate_key": f"{refused_service}:{next_hypothesis.get('field')}:{refused_version}",
+                            "service_id": refused_service,
+                            "field": str(next_hypothesis.get("field") or ""),
+                            "listing_version": refused_version,
+                            "reason": noop_reason[:160], "observed_at_epoch": int(time.time()),
+                        })
                     judgement = _guarded_noop({
                         "decision": "no_op", "service_id": None, "changed_field": None,
                         "before_value": None, "proposed_value": None,
