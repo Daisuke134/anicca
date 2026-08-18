@@ -4104,6 +4104,33 @@ async def _execute_listing_state_effect_async(
         ), cid)
         if clicked is not True:
             raise RuntimeError("storefront_retire_control_absent_at_submit")
+        # The card control only opens a confirmation; the archive happens when that dialog is
+        # accepted. Clicking the anchor alone left the listing public and the readback then
+        # reported a missing card, which read like a broken selector rather than a missing step.
+        await asyncio.sleep(2)
+        confirmed = None
+        for _ in range(10):
+            confirmed, cid = await _evaluate(ws, (
+                "(()=>{const visible=e=>{const r=e.getBoundingClientRect();"
+                "return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=='hidden'};"
+                "const controls=[...document.querySelectorAll('a,button')]"
+                ".filter(e=>['OK','ok','はい','公開停止する','停止する','削除する']"
+                ".includes((e.innerText||'').trim())&&visible(e));"
+                "if(!controls.length)return null;const target=controls[0];"
+                "target.click();return (target.innerText||'').trim()})()"
+            ), cid)
+            if confirmed:
+                break
+            await asyncio.sleep(1)
+        dialog, cid = await _evaluate(ws, (
+            "JSON.stringify({confirmed_label:null,"
+            "visible_controls:[...document.querySelectorAll('a,button')]"
+            ".map(e=>(e.innerText||'').trim()).filter(Boolean).slice(0,40)})"
+        ), cid)
+        _atomic_write(evidence_dir / f"listing-state-confirm-{service_id}.json",
+                      {"clicked_confirmation": confirmed, "page_controls": json.loads(str(dialog or "{}"))})
+        if not confirmed:
+            raise RuntimeError("storefront_retire_confirmation_absent")
         await asyncio.sleep(5)
         await ws.send(json.dumps({"id": cid, "method": "Page.navigate",
                                   "params": {"url": "https://coconala.com/mypage/services_lists"}})); cid += 1
