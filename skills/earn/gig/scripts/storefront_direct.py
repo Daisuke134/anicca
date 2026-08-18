@@ -985,6 +985,29 @@ def _load_gallery_contract(path: Path) -> dict:
     return {**contract, "replacements": loaded}
 
 
+def _platform_withdrew_listing(ledger_path: Path, service_id: str, is_public: bool) -> bool:
+    """Report a listing this loop published that the platform has since taken down.
+
+    Coconala withdrew service `91000003` twice for naming an external tool in its copy, and each
+    time the next full wake saw a non-public listing, refilled the draft and published it again.
+    Republishing is arguing with moderation and risks the account that earns the money, so a
+    listing that was live by this loop's own ledger and is no longer public stays down.
+    """
+    if is_public or not ledger_path.exists():
+        return False
+    for line in ledger_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise RuntimeError("new_listing_draft_ledger_invalid") from error
+        if (str(row.get("draft_service_id") or "") == str(service_id)
+                and row.get("status") == "published" and row.get("public_effect") == 1):
+            return True
+    return False
+
+
 def _load_capability_families(path: Path) -> tuple[dict[str, str], dict[str, dict]]:
     try:
         config = json.loads(path.read_text(encoding="utf-8"))
@@ -4962,6 +4985,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             known_draft_image_identity = None
             draft_ledger_path = args.state_dir / "new-listing-drafts.jsonl"
+            platform_withdrawn = _platform_withdrew_listing(
+                draft_ledger_path, candidate_id, candidate_public)
             if draft_ledger_path.exists():
                 for line in reversed(draft_ledger_path.read_text(encoding="utf-8").splitlines()):
                     try:
@@ -5000,12 +5025,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     getattr(args, "default_tab_script", DEFAULT_TAB),
                     inventory_path.parent,
                 )
-                if args.effect else {
+                if args.effect and not platform_withdrawn else {
                     "version": 1,
                     "candidate_key": new_listing_contract["candidate_key"],
                     "contract_sha256": new_listing_contract["contract_sha256"],
                     "draft_service_id": new_listing_contract["draft_service_id"],
-                    "status": "effect_disabled",
+                    "status": "platform_withdrawn" if platform_withdrawn else "effect_disabled",
                     "effect": 0,
                     "readback": 0,
                     "public_effect": 0,
@@ -5020,6 +5045,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             publication_guard = (
                 "already_public" if candidate_public
+                else "platform_withdrew_listing" if platform_withdrawn
                 else "duplicate_listing_title" if duplicate_title
                 else "catalog_capacity_exhausted" if observed >= 20
                 else "existing_listing_effect_open" if pending_effect is not None
