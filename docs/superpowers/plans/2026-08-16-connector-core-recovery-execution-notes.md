@@ -536,3 +536,30 @@ locally, matching how Luma and Peatix already return structured failures.
 Live readback after the merge: the wake no longer stalls on Peatix. It now walks past it into the deeper
 fallback chain (`doorkeeper_direct_requires_harness`), with Peatix reporting 58 free-and-open and 6
 Calendar-free candidates and zero failed submits.
+
+## Doorkeeper says it is logged out, and Peatix gained a rescue lane — 2026-08-18
+
+Doorkeeper turned out to be logged out as well, the fourth provider in a row, and its header carries the
+same two markers Peatix does. It now reports `doorkeeper_session_expired` instead of
+`doorkeeper_direct_requires_harness`, which read like an unimplemented feature. Live readback: a wake now
+closes with exactly that reason, so the report tells Dais what to do instead of describing plumbing.
+
+The other four fallback providers were deliberately left alone and are recorded here as unverified rather
+than covered: Eventbrite and TECH PLAY have stub direct actions with no login-wall code at all, Meetup only
+has a fuzzy body-text match that would risk calling an unrelated "log in to see more" a session failure,
+and KokuchPro's wall only appears after an entry POST redirects, which cannot be checked without causing a
+navigation. Guessing any of these would risk reporting a closed event as a logout.
+
+Peatix also gained the registered-without-bundle reconciliation Luma and Connpass already had, but for a
+different reason than theirs. Peatix's discovery JSON has no per-viewer registration field, so an event
+Dais already holds a ticket for still reads `available` — it is not discovery-filtered like Luma's, it is
+dropped by the Calendar-conflict gate, which is irrelevant for an event he is already attending. Those
+candidates now reach the evidence chain, bounded to three per wake, gated on the same bundle store
+`completeEvidence` reads, and structurally unable to reach a submit path.
+
+First live wake after that change reconciled nothing, which is the good outcome: it means the earlier
+`effect_unknown` wake did not leave a Peatix registration stranded without a Calendar entry.
+
+Residual gap recorded rather than guessed: a Peatix event that has since sold out loses its ticket id, and
+both the candidate constructors shared with the submit path hard-require an available status, so a
+registration stranded on a now-closed event has no safe recovery signal in the public data.
