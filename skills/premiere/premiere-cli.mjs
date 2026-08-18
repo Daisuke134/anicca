@@ -24,8 +24,9 @@
  *   premiere-cli info
  *   premiere-cli graphics                 # every text graphic with track/clip/time
  *   premiere-cli retime SPEC.json         # move/trim clips by clip name
- *   premiere-cli export OUT.mp4 [--preset EPR]
- *   premiere-cli collect DEST_DIR
+ *   premiere-cli export OUT.mp4 [--preset EPR] [--quit-when-done]
+ *   premiere-cli collect DEST_DIR [--quit-when-done]
+ *   premiere-cli quit
  *   premiere-cli close
  *   premiere-cli eval 'return String(app.project.name);'
  */
@@ -197,6 +198,7 @@ const cmds = {
     console.log(JSON.stringify(r, null, 1));
     if (!fs.existsSync(path.resolve(out))) die('export reported but file is missing');
     console.log(JSON.stringify({ bytes: fs.statSync(path.resolve(out)).size }));
+    if (args.includes('--quit-when-done')) await cmds.quit([]);
   },
 
   async collect(args) {
@@ -240,10 +242,43 @@ const cmds = {
       : false;
     console.log(JSON.stringify({ collectedProjectFound: found }));
     if (!found) die('collect reported success but no .prproj landed in the destination');
+    if (args.includes('--quit-when-done')) await cmds.quit([]);
   },
 
   async close() {
     console.log(JSON.stringify(await run('app.project.closeDocument(0,0); return JSON.stringify({closed:true});', 120000)));
+  },
+
+  // Leaving Premiere up is what filled the swap file: one instance sat for
+  // 10h32m and pushed /System/Volumes/VM to 20GB, so deleting 9.5GB of cache
+  // bought back only 1GB. Closing is cheaper than cleaning.
+  async quit() {
+    try {
+      await run('if (app.project) { app.project.save(); } return JSON.stringify({saved:true});', 120000);
+    } catch {
+      console.log(JSON.stringify({ note: 'save skipped (bridge already gone)' }));
+    }
+    spawnSync('osascript', ['-e', `tell application "${APP}" to quit`], { timeout: 60000 });
+
+    // Give it 60s, then escalate. A process stuck in an uninterruptible exit
+    // (STAT "UE") survives even SIGKILL - report it rather than pretend.
+    for (let i = 0; i < 12; i++) {
+      if (healthyPids().length === 0) break;
+      spawnSync('sleep', ['5']);
+    }
+    if (healthyPids().length) spawnSync('pkill', ['-x', APP]);
+    for (let i = 0; i < 6; i++) {
+      if (healthyPids().length === 0) break;
+      spawnSync('sleep', ['5']);
+    }
+
+    const alive = healthyPids();
+    const wedged = (spawnSync('pgrep', ['-x', APP], { encoding: 'utf8' }).stdout || '')
+      .split('\n')
+      .filter(Boolean)
+      .filter((pid) => (spawnSync('ps', ['-o', 'stat=', '-p', pid], { encoding: 'utf8' }).stdout || '').includes('E'));
+    console.log(JSON.stringify({ quit: alive.length === 0, stillHealthy: alive, wedgedExiting: wedged }));
+    if (alive.length) process.exit(6);
   },
 
   async eval(args) {
