@@ -1693,19 +1693,20 @@ def _scan_public_copy(
     state_dir: Path, evidence_dir: Path, now: int, service_ids: list[str],
     default_tab_script: Path = DEFAULT_TAB,
 ) -> list[dict]:
-    """Read each live listing and report the ones whose copy names a prohibited tool.
+    """Read the copy this seller wrote for each listing and report prohibited tool names.
 
     The platform states the rule by withdrawing a listing, and it withdrew the same one twice
-    while the wording sat unread in the loop's own catalogue. Reading the copy is therefore part
-    of knowing the catalogue, not an extra feature. A page that cannot be read is recorded as
-    unknown; an unreadable page is never reported as compliant.
+    while the wording sat unread in the loop's own catalogue. Only the seller's own fields are
+    read: the public page also carries Coconala's category navigation, which names spreadsheets
+    on every listing and made the first whole-page scan report all fourteen as violations.
+    A form that cannot be read is recorded as unreadable, never as compliant.
     """
     import listing_inventory
 
     findings: list[dict] = []
     ledger = state_dir / "compliance-scan.jsonl"
     for service_id in service_ids:
-        url = f"https://coconala.com/services/{service_id}"
+        url = f"https://coconala.com/mypage/services/{service_id}"
         observed: dict = {}
         opened = subprocess.run(
             [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
@@ -1717,7 +1718,12 @@ def _scan_public_copy(
             if opened.returncode == 0 and tab.get("ok") is True:
                 observed = asyncio.run(listing_inventory._eval_json(
                     str(tab["ws"]), url,
-                    "JSON.stringify({url:location.href,body:document.body?document.body.innerText.slice(0,120000):''})",
+                    "JSON.stringify({url:location.href,body:(()=>{const f=document.forms[0];"
+                    "if(!f)return '';const own=['data[Service][overview]','data[Service][catchphrase]',"
+                    "'data[Service][head]','data[Service][body]','data[Option][0][title]',"
+                    "'data[Option][1][title]','data[Option][2][title]'];"
+                    "return own.map(n=>{const e=f.querySelector('[name=\"'+n+'\"]');"
+                    "return e?e.value||'':''}).join('\\n')})()})",
                 ))
         except (KeyError, ValueError, OSError, RuntimeError):
             observed = {}
@@ -1732,7 +1738,9 @@ def _scan_public_copy(
                 except subprocess.TimeoutExpired:
                     pass
         body = str(observed.get("body") or "")
-        readable = observed.get("url") == url and bool(body)
+        # The seller page reloads itself with a cache-busting query, so the path is what identifies
+        # it. An empty read is not evidence of clean copy, only of a form that was not there.
+        readable = str(observed.get("url") or "").startswith(url) and bool(body.strip())
         terms = _prohibited_copy_terms(body) if readable else []
         row = {
             "version": 1, "service_id": service_id, "observed_at_epoch": now, "source_url": url,
