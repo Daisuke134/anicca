@@ -1773,7 +1773,7 @@ def _scan_public_copy(
         key=lambda value: int(previous[value].get("observed_at_epoch") or 0),
     )
     due = [value for value in service_ids
-           if value in changed_since_scan or value in never_read] + rotation[:2]
+           if value in changed_since_scan or value in never_read] + rotation[:4]
     for service_id in [value for value in service_ids if value in set(due)]:
         url = f"https://coconala.com/mypage/services/{service_id}"
         observed: dict = {}
@@ -1822,8 +1822,12 @@ def _scan_public_copy(
             # listing one word away from the first and see nothing wrong.
             "title_stem": str(observed.get("title") or "") if readable else None,
             "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
+            # The title belongs to the key: a listing whose row predates title recording has
+            # unchanged copy, so without it that listing would never append a titled row and
+            # would stay invisible to the duplicate check for good.
             "scan_key": "storefront:compliance:v1:" + hashlib.sha256(
-                f"{service_id}:{hashlib.sha256(body.encode()).hexdigest()}:{readable}".encode()
+                f"{service_id}:{hashlib.sha256(body.encode()).hexdigest()}:{readable}"
+                f":{observed.get('title') or ''}".encode()
             ).hexdigest(),
         }
         _append_key_once(ledger, "scan_key", row)
