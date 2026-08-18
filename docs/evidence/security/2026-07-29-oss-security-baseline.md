@@ -80,3 +80,18 @@ internet.” The database no longer has a public TCP proxy.
 PR #1274 merged after gitleaks, PII, TruffleHog, Python, and Shell all
 reported green on the merged head. `OSS-SECURITY-BASELINE-1` is complete.
 The ordered program cursor advances to `REPO-V0-RETIRE-1`.
+
+## Addendum 2026-08-18 — twelve fingerprints adjudicated
+
+The history scan failed on every pull request because twelve findings post-date
+this baseline. All twelve were read at the commit that introduced them.
+
+| finding | commit | what it actually is |
+|---|---|---|
+| eleven `generic-api-key` hits in `skills/earn/gig/tests/` | `f1209ea69` | the literal fixture `0123456789abcdef0123456789abcdef`, used as a fencing token in state-machine tests |
+| one `generic-api-key` hit in `.claude/handovers/2026-08-13_1236_capafy-observability.md` | `54a8fac78` | the 40-hex git commit SHA `22dfc0cb983c763732b483edc73b33278854e52c` |
+
+Neither shape can authenticate anything, so nothing is rotated. The
+fingerprints are pinned to commit, path, rule and line, so the baseline still
+fails on a real secret at a new location — verified by the gate continuing to
+run the full history scan rather than being narrowed.
