@@ -991,6 +991,21 @@ def _finish(
     if transport_errors:
         payload["transport_error"] = transport_errors[0]
     _atomic_json(output, payload)
+    # One row per wake, same filename storefront uses. Without this the lane has no heartbeat:
+    # skills/self/earning-health-registry.json lists all four gig labels but probes a single ledger,
+    # gig/storefront-direct/wakes.jsonl, so storefront's minute-by-minute rows were standing in for
+    # apply's health. Measured 2026-08-18: apply ran a two-day-old release and fell from 38
+    # applications a day to 1, and the slot stayed green the whole time, because the lane that
+    # reports was not the lane that broke.
+    try:
+        ledger = args.state_dir / "wakes.jsonl"
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        with ledger.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+            handle.flush()
+    except OSError as ledger_error:
+        # A wake that ran is worth more than a wake that logged; never fail the pass over this.
+        print(f"wake_ledger_write_failed: {type(ledger_error).__name__}", file=sys.stderr)
     print("\n\n".join(reports))
     print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
     return 0 if status == "ok" else 1
