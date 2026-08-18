@@ -12,6 +12,12 @@ const TIME_ZONE = "Asia/Tokyo";
 const EVENT_ID = /^[1-9][0-9]*$/;
 const EVENT_PATH = /^\/event\/([1-9][0-9]*)\/?$/;
 const EVENT_URL = /^https:\/\/peatix\.com\/event\/([1-9][0-9]*)\/?$/i;
+// A wake must stay bounded: reconcile (readback -> evidence chain, never
+// re-submit) at most this many already-registered-but-unbundled events per
+// wake, even if a backlog of missed applied_bundle writes exists. Mirrors
+// LUMA_RECONCILE_LIMIT / CONNPASS_RECONCILE_LIMIT (Dais 2026-08-18
+// connector-core-recovery).
+const PEATIX_RECONCILE_LIMIT = 3;
 const SAFE_CODES = new Set([
   "PEATIX_SEARCH_NAVIGATION_FAILED",
   "PEATIX_SEARCH_READ_FAILED",
@@ -393,9 +399,14 @@ function createPeatixDiscoveryWorkflow(options = {}) {
   const submitOnPage = options.submitOnPage || submitPeatixOnPage;
   const readStateOnPage = options.readStateOnPage || readPeatixRegistrationStateOnPage;
   const readAttendeeProfile = options.readAttendeeProfile;
+  // Fail closed: until production wiring proves an event has no bundle,
+  // treat it as bundled so a mis-wired caller can never re-surface it.
+  // Mirrors createLumaScriptFirstWorkflow's / createConnpassScriptFirst
+  // Workflow's hasAppliedBundle default.
+  const hasAppliedBundle = options.hasAppliedBundle || (() => true);
   if ([now, readSearchBindings, readEventViewData, isCalendarFree, onDiscoveryAudit]
     .some((value) => typeof value !== "function") || typeof submitOnPage !== "function"
-    || typeof readStateOnPage !== "function"
+    || typeof readStateOnPage !== "function" || typeof hasAppliedBundle !== "function"
     || (readAttendeeProfile != null && typeof readAttendeeProfile !== "function")) invalid();
 
   return Object.freeze({
@@ -446,6 +457,21 @@ function createPeatixDiscoveryWorkflow(options = {}) {
       const nowMs = observed.getTime();
       const exactCovered = [];
       const unprocessed = [];
+      // Registrations Peatix already reports (a ticket link on the event
+      // page, the same signal readProviderState/readStateOnPage uses) but
+      // that never produced an applied_bundle (evidence chain failed
+      // mid-way on a prior wake). Unlike Luma/Connpass, Peatix's own
+      // free/open ticket availability never encodes the viewer's personal
+      // registration state -- a still-open event that Dais already holds a
+      // ticket for stays "available" and reaches the runner's own
+      // pre-submit readback safety net unaided. The one place that safety
+      // net is unreachable is a calendar conflict: an unrelated busy
+      // interval would otherwise drop an already-registered candidate
+      // before it ever reaches the runner. So this only checks the
+      // registration signal right there, on the same page readEventViewData
+      // already navigated to, before honoring that conflict. Bounded so a
+      // backlog can't make a wake unbounded; see PEATIX_RECONCILE_LIMIT.
+      const reconcile = [];
       let normalizedCount = 0;
       let windowCount = 0;
       let freeOpenCount = 0;
@@ -477,22 +503,35 @@ function createPeatixDiscoveryWorkflow(options = {}) {
         } catch {
           throw stageError("PEATIX_CALENDAR_CONFLICT_CHECK_FAILED");
         }
-        if (!calendarFree) continue;
+        if (!calendarFree) {
+          let registeredState;
+          try {
+            registeredState = await readStateOnPage(page, normalized.candidate);
+          } catch {
+            registeredState = null;
+          }
+          if (registeredState && registeredState.status === "registered"
+            && reconcile.length < PEATIX_RECONCILE_LIMIT
+            && !await hasAppliedBundle(normalized.candidate)) {
+            reconcile.push(Object.freeze({ ...normalized.candidate }));
+          }
+          continue;
+        }
         const candidate = Object.freeze({ ...normalized.candidate });
         const isExactCovered = calendarIntervals(calendar)
           .some((busy) => exactCalendarCoverage(candidate, busy));
         (isExactCovered ? exactCovered : unprocessed).push(candidate);
       }
-      const result = [...exactCovered, ...unprocessed];
+      const eligible = [...exactCovered, ...unprocessed];
       const audit = Object.freeze({
         observed_count: bindings.length,
         normalized_count: normalizedCount,
         window_count: windowCount,
         free_open_count: freeOpenCount,
-        calendar_free_count: result.length,
+        calendar_free_count: reconcile.length + eligible.length,
       });
       await onDiscoveryAudit(audit);
-      return Object.freeze(result);
+      return Object.freeze([...reconcile, ...eligible]);
     },
   });
 }
