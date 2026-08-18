@@ -144,3 +144,35 @@ def test_a_refresh_does_not_replay_a_contract_already_published():
     assert storefront_direct._refresh_contract(rendered, spent, "4244910", "body") is None
     assert storefront_direct._refresh_contract(rendered, set(), "4244910", "body") is contract
     assert storefront_direct._refresh_contract(rendered, set(), "4244910", "title") is None
+
+
+def test_a_seed_the_listing_has_moved_past_is_skipped_not_raised(monkeypatch, tmp_path):
+    """Improving a listing invalidates its committed seed; that is finished work, not a fault."""
+    spec = tmp_path / "seed.json"
+    spec.write_text(json.dumps({
+        "version": 1, "platform": "coconala", "service_id": "4244910",
+        "capability_family": "excel_automation",
+        "changed_field": "body", "form_field": "data[Service][head]",
+        "before_value": "古い本文", "rollback_value": "古い本文", "proposed_value": "新しい本文",
+        "official_readback": {"public_body_sha256": "d" * 64},
+        "success_metric": "inquiries", "observation_window_days": 14,
+        "evidence": ["official:seller-form:4244910"],
+    }, ensure_ascii=False), encoding="utf-8")
+    contracts = [{"service_id": "4244910", "service_version_sha256": "a" * 64,
+                  "public_url": "https://coconala.com/services/4244910"}]
+    snapshot = {
+        "url": "https://coconala.com/mypage/services/4244910",
+        "fields": [{"name": "data[Service][head]", "value": "すでに書き換えた本文"}],
+    }
+
+    assert storefront_direct._render_text_mutation(
+        spec, contracts, snapshot, {"4244910": "excel_automation"}) is None
+
+    wrong_page = {**snapshot, "url": "https://coconala.com/mypage/services/9999999"}
+    try:
+        storefront_direct._render_text_mutation(
+            spec, contracts, wrong_page, {"4244910": "excel_automation"})
+    except RuntimeError as error:
+        assert "storefront_text_mutation_before_not_current" in str(error)
+    else:
+        raise AssertionError("a snapshot of the wrong listing was accepted")
