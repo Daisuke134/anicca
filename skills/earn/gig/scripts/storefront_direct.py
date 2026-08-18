@@ -4540,9 +4540,23 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
             )
+            # A listing the loop created carries its family in the drafts ledger rather than in
+            # the committed config, and a listing with no family is invisible to the duplicate
+            # check — which is how the second Excel listing stayed unnoticed.
+            scan_families = dict(capability_families)
+            draft_ledger = args.state_dir / "new-listing-drafts.jsonl"
+            if draft_ledger.exists():
+                for line in draft_ledger.read_text(encoding="utf-8").splitlines():
+                    if not line.strip():
+                        continue
+                    created = json.loads(line)
+                    if (created.get("status") == "published"
+                            and isinstance(created.get("capability_family"), str)):
+                        scan_families.setdefault(str(created.get("draft_service_id") or ""),
+                                                 created["capability_family"])
             compliance_violations, duplicate_listings = _scan_public_copy(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
-                getattr(args, "default_tab_script", DEFAULT_TAB), capability_families,
+                getattr(args, "default_tab_script", DEFAULT_TAB), scan_families,
             )
             funnel = _join_funnel(
                 args.state_dir, validated_contracts,
@@ -5204,12 +5218,23 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # would stop the wake that performs the repair.
             awaiting_repair = any(str(row.get("service_id") or "") == candidate_id
                                   for row in compliance_violations)
+            # A creation contract describes what a listing was published as, not what it must
+            # stay. Every accepted improvement moves the live copy away from it, so once the
+            # loop has changed a listing that contract is history rather than a precondition.
+            improved_since_publication = (args.state_dir / "effects.jsonl").exists() and any(
+                json.loads(line).get("service_id") == candidate_id
+                and json.loads(line).get("status") == "accepted"
+                and json.loads(line).get("effect") == 1
+                for line in (args.state_dir / "effects.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line.strip()
+            )
             draft_result = ({
                 "version": 1, "candidate_key": new_listing_contract["candidate_key"],
                 "contract_sha256": new_listing_contract["contract_sha256"],
-                "draft_service_id": candidate_id, "status": "compliance_repair_pending",
+                "draft_service_id": candidate_id,
+                "status": "compliance_repair_pending" if awaiting_repair else "improved_since_publication",
                 "effect": 0, "readback": 0, "public_effect": 0,
-            } if awaiting_repair else storefront_draft.readback_published_draft(
+            } if awaiting_repair or improved_since_publication else storefront_draft.readback_published_draft(
                 new_listing_contract,
                 getattr(args, "default_tab_script", DEFAULT_TAB),
                 inventory_path.parent,
