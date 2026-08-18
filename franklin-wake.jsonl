@@ -30335,3 +30335,9 @@
 {"ts":1787079875,"wake_id":"00MSZ17SQF11995B0A66F641AD","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
 {"ts":1787080020,"wake_id":"00MSZ1AX8Y1EA60A93D1E94B32","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
 {"ts":1787080186,"wake_id":"00MSZ1EHCB60DE55A250F048E2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787080356,"wake_id":"00MSZ1I4CS3A1048F42C284C47","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1787080503,"wake_id":"00MSZ1L9MI5C173CC6FA874912","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1787080687,"wake_id":"00MSZ1P7ASB6CC5386DDDE4F93","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787080816,"wake_id":"00MSZ1RZC02B21F9952677427D","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1787080993,"wake_id":"00MSZ1VRDP118D6E159E3E4954","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787081173,"wake_id":"00MSZ1ZMAJ732D686BD0474031","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
