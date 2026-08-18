@@ -85,13 +85,25 @@ python3 -c "from cloakbrowser import launch; b = launch(headless=True); b.close(
 ls ~/.cloakbrowser/          # chromium-<version>/ should now exist
 ```
 
-**The version matters.** `scripts/launch_gig_browser.sh` picks the highest version it
-finds, and it carries a TLS compatibility switch that is deliberately bounded to
-Chromium 145 and 146: newer builds offer ML-KEM by default, and on at least one real
-network path the larger ClientHello is dropped, so Chromium reaches TCP and then
-returns `ERR_TIMED_OUT` while `curl` still works. If the version you get is outside
-that range, the switch will not be applied and the site may simply never load. Qualify
-the newer major before trusting it — do not widen the range on faith.
+**The version matters, and today you will get a newer one than is qualified here.**
+CloakBrowser currently ships Chromium 150/151; the loop was qualified on 145.
+`scripts/launch_gig_browser.sh` carries a TLS compatibility switch bounded to 145 and
+146, because newer Chromium offers ML-KEM by default and on at least one real network
+path the larger ClientHello is dropped — the browser completes TCP and then returns
+`ERR_TIMED_OUT` while `curl` on the same machine is fine.
+
+Outside that range the switch is not applied and the launcher says so on stderr. It
+still starts, because plenty of networks never drop that ClientHello and there is no
+reason to block those. **If the site loads under `curl` but not in this browser**, that
+warning is your answer:
+
+```bash
+# after qualifying it on your own network
+GIG_BROWSER_TLS_COMPAT=force  # set it in ~/.config/anicca/gig/install.json
+```
+
+Do not widen the `145|146` case on faith. Qualify the major you actually have, against
+the real site, and record what you measured.
 
 ### 4. Start the browser and log in — the one manual step
 

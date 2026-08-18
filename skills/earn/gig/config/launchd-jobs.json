@@ -23,6 +23,7 @@
     "SESSION_VAULT_DIR": "{{HOME}}/.cloak/vault/gig-daily-driver",
     "CLOAK_VAULT_DIR": "{{HOME}}/.cloak/vault",
     "GIG_BROWSER_FINGERPRINT": "",
+    "GIG_BROWSER_TLS_COMPAT": "",
     "GIG_REPORT_CHAT": "",
     "GIG_SANDBOX_DENY": "",
     "ANICCA_JOB_PROFILE": "{{HOME}}/.config/anicca/job-search/profile.json"
@@ -180,7 +181,8 @@
       "env": {
         "GIG_BROWSER_PORT": "{{CDP_PORT}}",
         "GIG_BROWSER_PROFILE": "{{CDP_DAILY_DRIVER_PROFILE}}",
-        "GIG_BROWSER_FINGERPRINT": "{{GIG_BROWSER_FINGERPRINT}}"
+        "GIG_BROWSER_FINGERPRINT": "{{GIG_BROWSER_FINGERPRINT}}",
+        "GIG_BROWSER_TLS_COMPAT": "{{GIG_BROWSER_TLS_COMPAT}}"
       },
       "RunAtLoad": true,
       "KeepAlive": true,
