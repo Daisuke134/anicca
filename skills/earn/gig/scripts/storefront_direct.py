@@ -985,6 +985,23 @@ def _load_gallery_contract(path: Path) -> dict:
     return {**contract, "replacements": loaded}
 
 
+# Coconala withdrew a live listing twice for naming an external tool in its copy, because a file
+# service the platform cannot see can become direct contact off the platform. These names are
+# quoted from those takedown notices rather than guessed, and any new one belongs here only after
+# the platform has said it.
+PROHIBITED_COPY_TERMS = (
+    "Googleドキュメント", "Google ドキュメント", "Googleドライブ", "Google ドライブ",
+    "Googleスプレッドシート", "スプレッドシート", "Google Docs", "Google Drive",
+    "Googleフォーム", "Dropbox", "ギガファイル", "ギガファイル便", "firestorage",
+)
+
+
+def _prohibited_copy_terms(*texts: str) -> list[str]:
+    """Name the platform-prohibited terms buyer-visible copy contains, if any."""
+    joined = "\n".join(str(text or "") for text in texts)
+    return sorted({term for term in PROHIBITED_COPY_TERMS if term in joined})
+
+
 def _platform_withdrew_listing(ledger_path: Path, service_id: str, is_public: bool) -> bool:
     """Report a listing this loop published that the platform has since taken down.
 
@@ -1051,6 +1068,12 @@ def _validate_mutation_contract(contract: dict, capability_families: dict[str, s
             or not all(isinstance(value, str) and value.strip() for value in evidence)
             or contract.get("contract_sha256") != hashlib.sha256(canonical.encode()).hexdigest()):
         raise RuntimeError("storefront_mutation_contract_invalid")
+    # A proposal that puts a prohibited tool back into a live listing is how the account loses
+    # one. The value already on the listing is not judged here; only what this loop would write.
+    prohibited = _prohibited_copy_terms(
+        json.dumps(contract.get("proposed_value"), ensure_ascii=False))
+    if prohibited:
+        raise RuntimeError("storefront_copy_names_prohibited_tool:" + ",".join(prohibited))
 
 
 def _seal_mutation_contract(unsigned: dict, capability_families: dict[str, str]) -> dict:
@@ -2801,6 +2824,9 @@ def _seal_create_contract(
     if any(re.match(r"^[A-Za-z_]{3,}\s*[:：]", line.strip())
            for line in f"{head}\n{body}".splitlines()):
         raise RuntimeError("storefront_create_copy_leaks_schema_labels")
+    prohibited = _prohibited_copy_terms(title_stem, catchphrase, head, body, option_title, image_copy)
+    if prohibited:
+        raise RuntimeError("storefront_copy_names_prohibited_tool:" + ",".join(prohibited))
     select_options = seller_snapshot.get("select_options") or {}
     display_price = proposal.get("display_price_jpy")
     price_option = next((row for row in select_options.get("data[Service][price]", [])
