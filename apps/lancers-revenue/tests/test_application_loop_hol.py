@@ -391,6 +391,9 @@ class ApplicationLoopHolTests(unittest.TestCase):
             "lancers-application",
             "--workdir",
             str(application_loop.SKILLS_ROOT.parent),
+            # The planner runs on the explicit escalation route; without this the runner refuses.
+            "--escalation-reason",
+            application_loop.ESCALATION_REASON,
         ):
             self.assertIn(argument, command)
         self.assertEqual(result, {"decisions": []})
