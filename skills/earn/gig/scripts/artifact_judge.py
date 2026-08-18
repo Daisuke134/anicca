@@ -81,6 +81,11 @@ import zipfile
 from pathlib import Path
 from typing import Any, Callable
 
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from gig_paths import RUNNER_DIR  # noqa: E402
+
 
 DELIVERABLE = "deliverable"
 ABOUT_THE_DEAL = "about_the_deal"
@@ -149,7 +154,7 @@ except Exception:  # noqa: BLE001 - instrumentation may never break its host
     def record_trajectory(**_kwargs: Any) -> None:  # type: ignore[misc]
         return None
 
-DEFAULT_RUNNER = Path.home() / "profitable-claude" / "skills" / "agent-runner" / "agent_runner.py"
+DEFAULT_RUNNER = RUNNER_DIR / "agent_runner.py"
 
 # ★ Read-only by construction, verified in config.json + agent_runner.command_for. ★
 # ``diagnostic-agent`` is one of the three task classes for which the codex adapter
@@ -888,7 +893,7 @@ def default_judge(project_root: str | Path, artifact_path: str | Path,
     bytes plus the prompt version, so a stale answer cannot attach to changed input.
 
     It lives under ``~/.local/state`` rather than in the project: the project tree is the
-    builder's sandbox workspace (``/Users/anicca/gig/projects``, workspaceAccess rw), and a
+    builder's sandbox workspace (``~/gig/projects``, workspaceAccess rw), and a
     verdict the builder could write is a verdict the builder could forge -- which is the
     failure this whole module exists to stop.
     """

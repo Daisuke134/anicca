@@ -19,6 +19,11 @@ from typing import Any
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from gig_paths import RUNNER_DIR  # noqa: E402
+
 
 def _load_local(name: str):
     spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(f"{name}.py"))
@@ -1972,7 +1977,7 @@ def main(argv: list[str] | None = None, *, process: Any = process_snapshot) -> i
     parser.add_argument("--snapshot", type=Path, required=True)
     parser.add_argument("--database", type=Path, default=home / "gig/connector-outbox.sqlite3")
     parser.add_argument("--manifest", type=Path, default=gig_root / "config/connectors/coconala.json")
-    parser.add_argument("--runner", type=Path, default=home / "profitable-claude/skills/agent-runner/agent_runner.py")
+    parser.add_argument("--runner", type=Path, default=RUNNER_DIR / "agent_runner.py")
     parser.add_argument("--schema", type=Path, default=gig_root / "schemas/estimate_composition.schema.json")
     parser.add_argument("--workdir", type=Path, default=home)
     parser.add_argument("--helper", type=Path, default=home / "anicca/skills/browser/scripts/cdp_default_tab.py")

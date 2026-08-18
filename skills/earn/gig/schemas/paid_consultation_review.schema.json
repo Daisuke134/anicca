@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "customer_message", "reviewed_attachments", "issues"],
+  "properties": {
+    "status": {"type": "string", "enum": ["ok", "blocked"]},
+    "customer_message": {"type": "string", "minLength": 1, "maxLength": 4000},
+    "reviewed_attachments": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["filename", "sha256", "observation"],
+        "properties": {
+          "filename": {"type": "string", "minLength": 1, "maxLength": 255},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "observation": {"type": "string", "minLength": 1, "maxLength": 1000}
+        }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1000}
+    }
+  }
+}

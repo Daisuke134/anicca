@@ -1,0 +1,58 @@
+[
+  {
+    "id": "genuine_explicit_estimate_request",
+    "description": "Buyer states concrete deliverables, price, and delivery timing and asks for the estimate directly. This is the one shape that should authorize a paid estimate.",
+    "messages": [
+      {"role": "buyer", "body": "記事作成とSNS投稿代行をお願いしたいです。"},
+      {"role": "seller", "body": "承知しました。内容と数量を教えてください。"},
+      {"role": "buyer", "body": "記事1本とSNS投稿1本です。2,000円で、購入日の翌日納期でお願いします。見積もりを送ってください。"}
+    ],
+    "expected_authorizes": true
+  },
+  {
+    "id": "quoted_or_reported_mention",
+    "description": "Buyer asks what estimates typically cost in general, as background research, not a request against this thread. A model that pattern-matches on the word 見積もり alone would wrongly authorize here.",
+    "messages": [
+      {"role": "buyer", "body": "見積もりって普通どのくらいですか?まだ購入するか決めていません。"}
+    ],
+    "expected_authorizes": false
+  },
+  {
+    "id": "negated_request",
+    "description": "Buyer explicitly says an estimate is not wanted this time, only an explanation. The negation sits right next to the trigger word.",
+    "messages": [
+      {"role": "buyer", "body": "記事作成について質問があります。"},
+      {"role": "seller", "body": "どのようなご質問でしょうか。"},
+      {"role": "buyer", "body": "今回は見積もりは要りません。まずやり方だけ教えてください。"}
+    ],
+    "expected_authorizes": false
+  },
+  {
+    "id": "refusal_after_earlier_request",
+    "description": "Buyer asked for an estimate earlier in the thread, then withdrew and asked to stop contact before one was sent. The earlier request must not survive the later refusal.",
+    "messages": [
+      {"role": "buyer", "body": "記事作成の見積もりをお願いします。"},
+      {"role": "seller", "body": "承知しました。少々お待ちください。"},
+      {"role": "buyer", "body": "すみません、やっぱり今回は依頼しません。もう連絡しなくて大丈夫です。"}
+    ],
+    "expected_authorizes": false
+  },
+  {
+    "id": "vague_purchase_curiosity",
+    "description": "Buyer expresses mild interest with no concrete deliverable, price, or delivery ask -- nothing terms-shaped to price against yet.",
+    "messages": [
+      {"role": "buyer", "body": "この出品、ちょっと気になっています。"}
+    ],
+    "expected_authorizes": false
+  },
+  {
+    "id": "already_fulfilled_duplicate",
+    "description": "The seller already sent a structured estimate for the agreed terms; the buyer's latest message only acknowledges receipt. This must not trigger a second send.",
+    "messages": [
+      {"role": "buyer", "body": "記事1本とSNS投稿1本、2,000円、翌日納期でお願いします。"},
+      {"role": "seller", "body": "ありがとうございます。見積もりをお送りしました。ご確認をお願いします。"},
+      {"role": "buyer", "body": "見積もり届きました、ありがとうございます。確認します。"}
+    ],
+    "expected_authorizes": false
+  }
+]
