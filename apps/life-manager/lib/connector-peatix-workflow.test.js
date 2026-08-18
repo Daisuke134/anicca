@@ -343,6 +343,80 @@ test("Peatix action/readback reject non-claimable candidates before private/prov
   }
 });
 
+test("Peatix discovery surfaces an already-registered event with no bundle for reconciliation on a calendar conflict, without ever submitting", async () => {
+  const bundleChecks = [];
+  const workflow = createPeatixDiscoveryWorkflow({
+    now: () => NOW,
+    async readSearchBindings() { return [binding(501)]; },
+    async readEventViewData() { return detail(501); },
+    isCalendarFree() { return false; },
+    async submitOnPage() { throw new Error("must not be called for a reconciliation candidate"); },
+    async readStateOnPage(suppliedPage, candidate) {
+      assert.equal(candidate.event_ref, "peatix-event://event/501");
+      return { status: "registered" };
+    },
+    async hasAppliedBundle(candidate) { bundleChecks.push(candidate.event_ref); return false; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["peatix-event://event/501"]);
+  assert.deepEqual(bundleChecks, ["peatix-event://event/501"]);
+});
+
+test("Peatix discovery drops an already-registered calendar-conflicted event once it already has an applied bundle", async () => {
+  const workflow = createPeatixDiscoveryWorkflow({
+    now: () => NOW,
+    async readSearchBindings() { return [binding(502), binding(503)]; },
+    async readEventViewData(_page, canonicalUrl) {
+      return canonicalUrl.endsWith("/502") ? detail(502) : detail(503);
+    },
+    isCalendarFree(candidate) { return candidate.event_ref === "peatix-event://event/503"; },
+    async readStateOnPage() { return { status: "registered" }; },
+    async hasAppliedBundle() { return true; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["peatix-event://event/503"]);
+});
+
+test("Peatix discovery defaults to treating a calendar-conflicted already-registered candidate as already bundled when no bundle check is wired", async () => {
+  const workflow = createPeatixDiscoveryWorkflow({
+    now: () => NOW,
+    async readSearchBindings() { return [binding(504)]; },
+    async readEventViewData() { return detail(504); },
+    isCalendarFree() { return false; },
+    async readStateOnPage() { return { status: "registered" }; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(result, []);
+});
+
+test("Peatix discovery reconciles at most three already-registered unbundled calendar-conflicted events per wake, even with a larger backlog", async () => {
+  const backlogIds = [601, 602, 603, 604, 605];
+  const workflow = createPeatixDiscoveryWorkflow({
+    now: () => NOW,
+    async readSearchBindings() { return backlogIds.map(binding); },
+    async readEventViewData(_page, canonicalUrl) {
+      return detail(Number(canonicalUrl.split("/").pop()));
+    },
+    isCalendarFree() { return false; },
+    async readStateOnPage() { return { status: "registered" }; },
+    async hasAppliedBundle() { return false; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [
+    "peatix-event://event/601",
+    "peatix-event://event/602",
+    "peatix-event://event/603",
+  ]);
+});
+
 test("Peatix reports the ordered five-count discovery audit", async () => {
   const audits = [];
   const fixture = eligibilityFixture();
