@@ -563,3 +563,32 @@ First live wake after that change reconciled nothing, which is the good outcome:
 Residual gap recorded rather than guessed: a Peatix event that has since sold out loses its ticket id, and
 both the candidate constructors shared with the submit path hard-require an available status, so a
 registration stranded on a now-closed event has no safe recovery signal in the public data.
+
+## Doorkeeper session restored — 2026-08-18
+
+Doorkeeper had no stored credentials anywhere and offers email/password or Facebook, Twitter, GitHub and
+LinkedIn — no Google, so the blocked Google path was moot. Recovered through Doorkeeper's own password
+reset: request from `manage.doorkeeper.jp/user/password/new`, read the reset link out of Gmail with `gog`,
+set a fresh 24-character password and sign in. The credential lives in `~/.cloak/doorkeeper-account.json`
+at 0600 and was never printed to a terminal or a log.
+
+Login confirmed on both hosts, which matters because the loop reads `www` while the account lives on
+`manage`: `manage.doorkeeper.jp/user/events` loaded, and `www.doorkeeper.jp` now shows the account name
+with the `ログイン` and `新規登録` markers gone.
+
+Effect on discovery, measured across the login boundary:
+
+| state | discovered | in window |
+|---|---|---|
+| logged out | 150 | 14 |
+| logged in | 282 | 0 |
+
+More of the site is visible now; nothing it can see falls inside the current 14-day window, which is an
+honest empty result rather than a failure.
+
+## New operational problem: the wake now runs out of time
+
+That same wake ended `circuit_open / wake_deadline`. With every provider logged in, the chain walks Luma,
+Connpass, Peatix, Meetup and Doorkeeper, each doing a discovery pass plus per-event detail visits, and the
+run exceeded its deadline before reaching the end. A wake that dies on the clock cannot book, so this is
+now the first thing to fix rather than another provider login.
