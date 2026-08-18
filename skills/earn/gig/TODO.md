@@ -71,19 +71,34 @@ before anything widens what reads this file.
 
 ---
 
-## 3. The estimate lane loses one submission per pass to a form race
+## 3. The estimate lane refuses one thread forever — the counts disagree
 
-**Blocks:** estimate revenue, at a measured rate of one in six.
+**Blocks:** estimate revenue on one thread. Not a race; waiting longer cannot help.
 
-Every retained pass fails with `dependent_category_types_not_loaded`. The wait lives in the
-injected script in `scripts/coconala_estimate_browser.py`: after selecting the sub-category it
-polls for five seconds for the dependent category-type control to populate, and gives up.
-The same pass confirms five other estimates officially submitted, so this is a race on one
-form, not a dead lane.
+`dependent_category_types_not_loaded` sounded like a slow page and is not: the same thread
+fails every pass while five siblings submit. The failure now records what it saw, and it says:
 
-Measure the real population time before changing the number. A fixed five seconds that is
-sometimes too short will also sometimes be too long; the control's own readiness signal is
-already computed in `categoryTypeContract()`.
+```json
+{"mapping_loaded": true, "sub_value": "644", "mapping_has_sub": true,
+ "mapped_option_count": 3, "control_disabled": false, "row_hidden": false,
+ "enabled_option_count": 6}
+```
+
+The `required` branch in `scripts/coconala_estimate_browser.py` demands
+`enabled_option_count === mapped_option_count`. The page offers **six** selectable
+category-type options while `data-master-category-types` maps **three** for that
+sub-category, so neither the optional nor the required shape ever holds and the five-second
+poll always expires.
+
+Six against three, with three mapped, has the shape of the previous sub-category's options
+still sitting in the `<select>` alongside the new ones. Confirm that before fixing it: the
+readback records counts, not values, so the next step is to capture the option values and the
+mapped ids together and see whether the extra three are the stale set.
+
+The count equality is a proxy for the real invariant, which is that the enabled options *are*
+the mapped ones. Comparing values instead of counts would be correct whether or not stale
+options linger — but this lane submits priced offers to buyers, so the change wants a fresh
+adversary before it ships, not just a green test.
 
 ---
 
