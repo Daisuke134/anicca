@@ -5113,8 +5113,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 if selected_allocation.get("action") == "RETIRE"
                 and (selected_allocation.get("gates") or {}).get("duplicate_of_service_id")
                 else None)
-            if (args.effect and pending_effect is None and judgement["decision"] != "change"
-                    and retire_allocation is not None):
+            # One experiment per listing, not one action per wake: archiving a duplicate touches
+            # a different listing and is recoverable, so it no longer waits for a wake that did
+            # nothing, which the refresh queue would have postponed for hours.
+            changed_service = str(judgement.get("service_id") or "")
+            if (args.effect and retire_allocation is not None
+                    and str(retire_allocation["service_id"]) != changed_service):
                 retire_service_id = str(retire_allocation["service_id"])
                 try:
                     # The card's own controls are adapter input and are kept out of the hashed
