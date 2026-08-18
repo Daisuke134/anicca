@@ -2345,6 +2345,18 @@ def _scorecard_gap_candidate(
             "reason": f"scorecard gap: {dimension} scores {score} of 2 on the current catalogue"}
 
 
+def _refresh_contract(
+    rendered: dict, applied_values: set, service_id: str, field: str,
+) -> dict | None:
+    """Return a rendered contract for this field unless its exact value is already published."""
+    contract = rendered.get((service_id, field))
+    if not isinstance(contract, dict):
+        return None
+    spent = (service_id, field, json.dumps(
+        contract.get("proposed_value"), ensure_ascii=False, sort_keys=True)) in applied_values
+    return None if spent else contract
+
+
 def _prepare_next_hypothesis(
     scorecard_path: Path, effects_path: Path, outcomes_path: Path,
     contracts: list[dict], now: int, mutation_contracts: list[dict] | None = None,
@@ -2427,13 +2439,18 @@ def _prepare_next_hypothesis(
                 "before": None, "success_metric": "inquiries",
                 "reason": f"listing still sells the previous offer of family {stale.get('family')}",
                 "offer_digest": stale.get("offer_digest"),
-                "executable": rendered.get((service_id, offer_field)) is not None,
-                "guard_reason": (None if rendered.get((service_id, offer_field)) is not None
-                                 else "proposal_contract_required"),
+                # A rendered contract whose exact value was already published is spent: replaying
+                # it produces the same experiment key and is refused, which left the refresh
+                # picking the same committed seed every wake and never asking for new copy.
+                "executable": _refresh_contract(rendered, applied_values, service_id, offer_field)
+                is not None,
+                "guard_reason": (None if _refresh_contract(
+                    rendered, applied_values, service_id, offer_field) is not None
+                    else "proposal_contract_required"),
                 "active_experiment_key": active[0].get("experiment_key") if active else None,
                 "mutation_contract_sha256": (
-                    rendered[(service_id, offer_field)]["contract_sha256"]
-                    if rendered.get((service_id, offer_field)) is not None else None
+                    (_refresh_contract(rendered, applied_values, service_id, offer_field) or {})
+                    .get("contract_sha256")
                 ),
             }
     for violation in compliance_violations or []:

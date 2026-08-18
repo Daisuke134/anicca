@@ -132,3 +132,15 @@ def test_every_text_field_set_knows_the_catchphrase():
     sets = re.findall(r'\{"[A-Za-z_", ]*"title"[A-Za-z_", ]*\}', source)
     assert sets, "no field set found; this test guards the wrong thing"
     assert [item for item in sets if "catchphrase" not in item] == []
+
+
+def test_a_refresh_does_not_replay_a_contract_already_published():
+    """A committed seed whose exact value is live is spent; the refresh must ask for new copy."""
+    contract = {"service_id": "4244910", "changed_field": "body",
+                "proposed_value": "旧本文", "contract_sha256": "c" * 64}
+    rendered = {("4244910", "body"): contract}
+    spent = {("4244910", "body", json.dumps("旧本文", ensure_ascii=False, sort_keys=True))}
+
+    assert storefront_direct._refresh_contract(rendered, spent, "4244910", "body") is None
+    assert storefront_direct._refresh_contract(rendered, set(), "4244910", "body") is contract
+    assert storefront_direct._refresh_contract(rendered, set(), "4244910", "title") is None
