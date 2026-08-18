@@ -435,3 +435,46 @@ What is still open: every Connpass candidate available right now carries a requi
 loop has nothing it can complete on that provider today. Answering them is the remaining lane, and it is
 exactly the "unknown UI, bounded model action" path the contract already describes. Luma already has the
 machinery to model — `luma-form-answer-policy.js`, `luma-form-fill.js`, `luma-form-profile.js`.
+
+## Three-times-a-day cadence — all three slots observed unattended, 2026-08-18
+
+| slot | wake report timestamp | local |
+|---|---|---|
+| 09:00 | `2026-08-18T00:05:46Z` | 09:05 JST |
+| 17:00 | `2026-08-17T08:01:32Z` | 17:01 JST |
+| 01:00 | `2026-08-17T16:06:12Z` | 01:06 JST |
+
+Nobody kickstarted any of them. The schedule change from one daily wake to three is proven end to end.
+
+## Booking proof with a before and after, 2026-08-17
+
+The clearest single piece of evidence that the loop books by itself, captured on `connpass.com/event/395811/`
+(【キックオフイベント】LINKS:POWER of DATA x DATA 2026, 8/28 19:00–20:00):
+
+| | before the wake | after the wake |
+|---|---|---|
+| provider page | `["このイベントに申し込む"]` — not registered | `["このイベントに参加できます","受付票を見る","申し込みキャンセル","参加者（96人）"]` |
+| Google Calendar | no such event on 08-28 | `2anb5lfpk54kv7fmpchnjc527k`, 19:00–20:00, `confirmed`, description carries the connpass URL |
+| duplicates | — | exactly 1 matching event |
+| Telegram | — | message `22506`, photo `22507` |
+| bundles | 23 | 24, `applied_bundle` |
+
+The same wake also recorded, for the two candidates it declined,
+`connpass_registration_unavailable` and `connpass_questionnaire_required` — which is the first time a
+declined submit said why. Three tried, one booked, two safely skipped is a healthy pass.
+
+## Connpass questionnaire answering — merged, not yet proven live
+
+The flow can now fill free-text identity questions (name, affiliation) and refuses anything that asks Dais
+to choose, consent or commit: radio, checkbox and select are rejected on control type before the label is
+even read. If a single required question cannot be answered honestly, nothing is filled and nothing is
+clicked.
+
+One real gap was caught before it shipped: the first implementation read the attendee name from
+`process.env.DAIS_LEGAL_NAME_ROMAJI`, which is never in the wake's environment — `run.sh` does not export
+the shared env file, `native-pass.js` loads it itself. The name is now threaded from the same attendee
+profile Peatix already receives.
+
+Status is honest: unit-proven, live-unproven. The wakes since the merge found `calendar_free 0` on both
+primaries, because Dais's evenings are now taken partly by the loop's own bookings, so no questionnaire
+event has reached the flow yet.
