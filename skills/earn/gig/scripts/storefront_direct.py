@@ -44,7 +44,12 @@ DEFAULT_APPLIED = Path.home() / "gig" / "applied.jsonl"
 DEFAULT_EARNINGS = Path.home() / "gig" / "earnings.jsonl"
 DEFAULT_PROJECTS = Path.home() / "gig" / "projects"
 DEFAULT_NEGOTIATE_CONTEXT_ACKS = Path.home() / "gig" / "negotiate-context-acks.jsonl"
-DEFAULT_NEGOTIATE_RUN_LOG = Path.home() / ".openclaw" / "logs" / "gig-reply-detector-launchd.out.log"
+# The negotiate lane runs from a separate runtime, so its log path is machine configuration rather
+# than source. Operators point at it with GIG_NEGOTIATE_RUN_LOG or --negotiate-run-log.
+DEFAULT_NEGOTIATE_RUN_LOG = Path(
+    os.environ.get("GIG_NEGOTIATE_RUN_LOG")
+    or Path.home() / "gig" / "logs" / "gig-reply-detector-launchd.out.log"
+)
 DEFAULT_CAPABILITIES = (
     Path.home() / "gig" / "projects" / "5138597" / "state.json",
     Path.home() / "gig" / "projects" / "5138597" / "acceptance" / "v4-acceptance-evidence.json",
