@@ -1600,9 +1600,13 @@ def _render_text_mutation(
         not faq_fields and spec["before_value"] == "FAQ_ABSENT"
         if spec["changed_field"] == "FAQ" else fields.get(spec["form_field"]) == spec["before_value"]
     )
-    if (seller_snapshot.get("url") != f'https://coconala.com/mypage/services/{source["service_id"]}'
-            or not current_matches):
+    if seller_snapshot.get("url") != f'https://coconala.com/mypage/services/{source["service_id"]}':
         raise RuntimeError("storefront_text_mutation_before_not_current")
+    if not current_matches:
+        # A committed seed whose before-state the live listing has moved past describes work
+        # that is already done. The loop improving that listing is what makes this happen, so
+        # failing the wake here means every success breaks the next wake.
+        return None
     if spec["changed_field"] == "title":
         if spec["official_readback"].get("public_title") != f'{spec["proposed_value"]}ます':
             raise RuntimeError("storefront_title_readback_contract_invalid")
