@@ -411,3 +411,45 @@ test("Doorkeeper direct action is a stable safe failure and never submits", asyn
     status: "failed", safe_reason: "doorkeeper_direct_requires_harness",
   });
 });
+
+test("a logged-out doorkeeper header (both login and signup controls) is reported as a session problem, not a generic harness requirement", async () => {
+  const candidate = {
+    ...binding("998"),
+    provider: "doorkeeper",
+    title: "Tokyo Free Event",
+    starts_at: "2026-08-20T09:00:00.000Z",
+    ends_at: "2026-08-20T10:00:00.000Z",
+    registration_status: "available",
+    ticket_price_status: "free",
+    ticket_price_minor: 0,
+  };
+  const workflow = createDoorkeeperScriptFirstWorkflow();
+  const page = { evaluate: async () => ({ login: true, signup: true }) };
+  assert.deepEqual(await workflow.runDirectAction({ page, candidate }), {
+    status: "failed", safe_reason: "doorkeeper_session_expired",
+  });
+});
+
+test("only one of the login/signup header controls keeps the ordinary requires-harness reason, never misreporting a closed or full event as a logout", async () => {
+  const candidate = {
+    ...binding("997"),
+    provider: "doorkeeper",
+    title: "Tokyo Free Event",
+    starts_at: "2026-08-20T09:00:00.000Z",
+    ends_at: "2026-08-20T10:00:00.000Z",
+    registration_status: "available",
+    ticket_price_status: "free",
+    ticket_price_minor: 0,
+  };
+  const workflow = createDoorkeeperScriptFirstWorkflow();
+  for (const observed of [
+    { login: true, signup: false },
+    { login: false, signup: true },
+    { login: false, signup: false },
+  ]) {
+    const page = { evaluate: async () => observed };
+    assert.deepEqual(await workflow.runDirectAction({ page, candidate }), {
+      status: "failed", safe_reason: "doorkeeper_direct_requires_harness",
+    }, JSON.stringify(observed));
+  }
+});
