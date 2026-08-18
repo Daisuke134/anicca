@@ -1885,6 +1885,28 @@ def _scan_public_copy(
     findings += [row for row in catalogue
                  if row.get("prohibited_terms") and str(row["service_id"]) not in read_now]
     duplicates = _near_duplicate_listings(catalogue, capability_families or {})
+    # Rewriting one half of a pair pushes their titles apart, and the pair stopped being
+    # reported the moment one listing was improved. Two listings selling the same thing do not
+    # stop doing so because their wording diverged, so a pair once observed stays observed
+    # until one of them is no longer live.
+    pair_ledger = state_dir / "duplicate-listings.jsonl"
+    for pair in duplicates:
+        _append_key_once(pair_ledger, "pair_key", {
+            **pair, "observed_at_epoch": now,
+            "pair_key": ":".join(sorted(str(value) for value in pair["service_ids"])),
+        })
+    live = set(service_ids)
+    if pair_ledger.exists():
+        seen = {":".join(sorted(str(value) for value in pair["service_ids"])) for pair in duplicates}
+        for line in pair_ledger.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            ids = [str(value) for value in row.get("service_ids") or []]
+            if (row.get("pair_key") not in seen and len(ids) == 2
+                    and all(value in live for value in ids)):
+                duplicates.append({**row, "still_live": True})
+                seen.add(row.get("pair_key"))
     _atomic_write(evidence_dir / "compliance-scan.json",
                   {"read_now": len(scanned), "carried_over": len(catalogue) - len(scanned),
                    "violations": findings, "near_duplicates": duplicates})
