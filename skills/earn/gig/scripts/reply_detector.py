@@ -546,7 +546,7 @@ def main() -> int:
         "--runner-config", type=Path,
         default=RUNNER_DIR / "config.json",
     )
-    parser.add_argument("--telegram-target", default="0000000000")
+    parser.add_argument("--telegram-target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     args = parser.parse_args()
 
     os.environ["CLOAK_BROWSER_OWNER"] = "gig-reply-detector"

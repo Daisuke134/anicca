@@ -349,7 +349,7 @@ def main() -> int:
     tell = sub.add_parser("report")
     tell.add_argument("--queue", required=True)
     tell.add_argument("--answer", required=True)
-    tell.add_argument("--target", default="0000000000")
+    tell.add_argument("--target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     tell.set_defaults(handler=report)
 
     done = sub.add_parser("record")

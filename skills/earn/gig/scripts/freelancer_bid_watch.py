@@ -94,7 +94,7 @@ WATCHED = ("status", "sub_status", "frontend_status")
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--target", default=os.environ.get("GIG_REPORT_CHAT", "0000000000"))
+    parser.add_argument("--target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     parser.add_argument("--timeout", type=float, default=25.0)
     parser.add_argument("--quiet", action="store_true", help="record but never notify")
     args = parser.parse_args()
