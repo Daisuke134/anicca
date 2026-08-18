@@ -733,6 +733,7 @@ def _join_funnel(
 
 def _allocate_portfolio(
     state_dir: Path, contracts: list[dict], funnel: dict, scorecard_path: Path, now: int,
+    duplicate_listings: list[dict] | None = None,
 ) -> dict:
     try:
         scorecard = json.loads(scorecard_path.read_text(encoding="utf-8"))
@@ -785,6 +786,14 @@ def _allocate_portfolio(
         evidence_identity, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
     ).encode()).hexdigest()
     capacity_pressure = len(contract_by_id) >= policy["slot_limit"]
+    # A listing that duplicates another needs no measurement window to justify removing it: it
+    # should never have been published, and the pair splits the same buyers between two pages.
+    # The later listing is the one that goes, so the older page keeps whatever history it has.
+    duplicate_of = {}
+    for pair in duplicate_listings or []:
+        first, second = sorted(str(value) for value in pair.get("service_ids") or [])
+        if first and second:
+            duplicate_of[second] = first
     replacements = policy["replacement_candidates"]
     allocations = []
     appended = 0
@@ -799,7 +808,11 @@ def _allocate_portfolio(
         weak_demand = demand.get(service_id) in {0, 1}
         replacement = next((row for row in replacements if isinstance(row, dict)
                             and row.get("replaces_service_id") == service_id), None)
-        retire_ready = bool(
+        untouched_by_buyers = (inquiries.get(service_id, 0) == 0
+                               and payments.get(service_id, 0) == 0
+                               and (purchases == 0 or purchases is None))
+        duplicates = duplicate_of.get(service_id) if untouched_by_buyers else None
+        retire_ready = bool(duplicates) or bool(
             minimum_sample and inquiries.get(service_id, 0) == 0 and purchases == 0
             and payments.get(service_id, 0) == 0 and weak_demand and capacity_pressure
         )
@@ -808,7 +821,9 @@ def _allocate_portfolio(
         if replace_ready:
             action, reason = "REPLACE", "all_replacement_gates_met"
         elif retire_ready:
-            action, reason = "RETIRE", "recoverable_retire_gates_met_without_stronger_candidate"
+            action = "RETIRE"
+            reason = (f"duplicate_of_service_{duplicates}" if duplicates
+                      else "recoverable_retire_gates_met_without_stronger_candidate")
         elif payments.get(service_id, 0) > 0 or (known and purchases > 0):
             action, reason = "KEEP", "verified_purchase_or_payment"
         elif gap is not None:
@@ -827,6 +842,7 @@ def _allocate_portfolio(
             "gates": {"metrics_known": known, "minimum_sample_met": minimum_sample,
                       "weak_demand_evidence": weak_demand, "stronger_replacement_candidate": bool(replacement),
                       "slot_capacity_pressure": capacity_pressure,
+                      "duplicate_of_service_id": duplicates,
                       "recoverable_retire_gates_met": retire_ready},
             "improvement_field": gap.get("field") if gap else None,
             "rollback_version": contract["service_version_sha256"],
@@ -1716,7 +1732,7 @@ def _near_duplicate_listings(rows: list[dict], families: dict[str, str]) -> list
 def _scan_public_copy(
     state_dir: Path, evidence_dir: Path, now: int, service_ids: list[str],
     default_tab_script: Path = DEFAULT_TAB, capability_families: dict[str, str] | None = None,
-) -> list[dict]:
+) -> tuple[list[dict], list[dict]]:
     """Read the copy this seller wrote for each listing and report prohibited tool names.
 
     The platform states the rule by withdrawing a listing, and it withdrew the same one twice
@@ -1789,7 +1805,7 @@ def _scan_public_copy(
     duplicates = _near_duplicate_listings(scanned, capability_families or {})
     _atomic_write(evidence_dir / "compliance-scan.json",
                   {"scanned": len(service_ids), "violations": findings, "near_duplicates": duplicates})
-    return findings
+    return findings, duplicates
 
 
 def _collect_analytics(
@@ -4524,7 +4540,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
             )
-            compliance_violations = _scan_public_copy(
+            compliance_violations, duplicate_listings = _scan_public_copy(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB), capability_families,
             )
@@ -4538,6 +4554,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             portfolio = _allocate_portfolio(
                 args.state_dir, validated_contracts, funnel,
                 getattr(args, "scorecard", DEFAULT_SCORECARD), int(time.time()),
+                duplicate_listings=duplicate_listings,
             )
             inquiry_context = _materialize_inquiry_context(
                 args.state_dir, listing_contracts,
