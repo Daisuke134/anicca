@@ -1,0 +1,21 @@
+{
+  "url": "https://coconala.com/message",
+  "title": "メッセージ | マイページ | ココナラ",
+  "container_present": true,
+  "not_found_present": false,
+  "error_present": false,
+  "cards": [
+    {
+      "talkroom_url": "https://coconala.com/talkrooms/4201",
+      "title": "buyer-last",
+      "last_message_side": "buyer",
+      "unread": true
+    },
+    {
+      "talkroom_url": "https://coconala.com/talkrooms/4202",
+      "title": "seller-last",
+      "last_message_side": "seller",
+      "unread": false
+    }
+  ]
+}

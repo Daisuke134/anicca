@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gig application snapshot envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "pass_id",
+    "lease_fence",
+    "observed_at",
+    "objective",
+    "search_sources",
+    "request_details",
+    "already_applied_ids",
+    "snapshot_sha256"
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "pass_id": {"type": "string", "minLength": 1},
+    "lease_fence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task", "token", "generation"],
+      "properties": {
+        "task": {"type": "string", "minLength": 1},
+        "token": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+        "generation": {"type": "integer", "minimum": 1}
+      }
+    },
+    "observed_at": {"type": "string", "minLength": 1},
+    "objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_applications",
+        "max_applications",
+        "required_search_source_ids"
+      ],
+      "properties": {
+        "target_applications": {"type": "integer", "minimum": 1},
+        "max_applications": {"type": "integer", "minimum": 1, "maximum": 7},
+        "required_search_source_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "search_sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "url",
+          "page_index",
+          "card_request_ids",
+          "has_next",
+          "exhausted",
+          "screenshot_sha256",
+          "dom_sha256"
+        ],
+        "properties": {
+          "source_id": {"type": "string", "minLength": 1},
+          "url": {"type": "string", "minLength": 1},
+          "page_index": {"type": "integer", "minimum": 1},
+          "card_request_ids": {
+            "type": "array",
+            "maxItems": 40,
+            "uniqueItems": true,
+            "items": {"type": "string", "pattern": "^[0-9]+$"}
+          },
+          "has_next": {"type": "boolean"},
+          "exhausted": {"type": "boolean"},
+          "screenshot_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "dom_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "request_details": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "canonical_url",
+          "title",
+          "category",
+          "visible_text",
+          "accepting_applications",
+          "budget_min_jpy",
+          "budget_max_jpy",
+          "applicants_count",
+          "contracted_count",
+          "observed_at",
+          "content_sha256"
+        ],
+        "properties": {
+          "request_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "canonical_url": {"type": "string", "minLength": 1},
+          "title": {"type": "string", "minLength": 1},
+          "category": {"type": "string", "minLength": 1},
+          "visible_text": {"type": "string", "minLength": 1},
+          "accepting_applications": {"type": "boolean"},
+          "budget_min_jpy": {"type": ["integer", "null"], "minimum": 0},
+          "budget_max_jpy": {"type": ["integer", "null"], "minimum": 0},
+          "applicants_count": {"type": ["integer", "null"], "minimum": 0},
+          "contracted_count": {"type": ["integer", "null"], "minimum": 0},
+          "observed_at": {"type": "string", "minLength": 1},
+          "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "already_applied_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[0-9]+$"}
+    },
+    "snapshot_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

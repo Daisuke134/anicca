@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "summary", "evidence", "current_b1"],
+  "properties": {
+    "status": {"type": "string", "const": "ok"},
+    "summary": {"type": "string"},
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"}
+    },
+    "current_b1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "context_path",
+        "context_sha256",
+        "inbox_url",
+        "inbox_status",
+        "inbox_screenshot_path",
+        "inbox_live_dom_path",
+        "inspected_talkrooms"
+      ],
+      "properties": {
+        "context_path": {"type": "string"},
+        "context_sha256": {"type": "string"},
+        "inbox_url": {"type": "string", "const": "https://coconala.com/message?fromMyPage=true"},
+        "inbox_status": {"type": "string", "const": "ok"},
+        "inbox_screenshot_path": {"type": "string"},
+        "inbox_live_dom_path": {"type": "string"},
+        "inspected_talkrooms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["talkroom_id", "url", "outcome", "screenshot_path", "live_dom_path"],
+            "properties": {
+              "talkroom_id": {"type": "string"},
+              "url": {"type": "string"},
+              "outcome": {"type": "string"},
+              "screenshot_path": {"type": "string"},
+              "live_dom_path": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

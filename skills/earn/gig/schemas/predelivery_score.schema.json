@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["score", "dimensions"],
+  "properties": {
+    "score": {"type": "integer"},
+    "dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "score", "reason"],
+        "properties": {
+          "name": {"type": "string"},
+          "score": {"type": "integer"},
+          "reason": {"type": "string"}
+        }
+      }
+    }
+  }
+}

@@ -16,6 +16,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from gig_paths import RUNNER_DIR  # noqa: E402
+
 try:
     from connector_outbox import ConnectorOutbox
 except ModuleNotFoundError:
@@ -508,7 +513,7 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, default=gig_root / "config/connectors/coconala.json")
     parser.add_argument(
         "--runner", type=Path,
-        default=home / "profitable-claude/skills/agent-runner/agent_runner.py",
+        default=RUNNER_DIR / "agent_runner.py",
     )
     parser.add_argument("--schema", type=Path, default=gig_root / "schemas/reply_composition.schema.json")
     parser.add_argument(
@@ -539,7 +544,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--runner-config", type=Path,
-        default=home / "profitable-claude/skills/agent-runner/config.json",
+        default=RUNNER_DIR / "config.json",
     )
     parser.add_argument("--telegram-target", default="0000000000")
     args = parser.parse_args()

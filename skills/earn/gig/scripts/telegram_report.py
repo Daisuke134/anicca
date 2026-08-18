@@ -25,6 +25,7 @@ import daily_verdict  # noqa: E402  -- A19 four-layer health verdict (no false-O
 import listing_ledger  # noqa: E402  -- the single source of truth for listing counts
 import paid_progress_ledger  # noqa: E402  -- buyer-visible progress on paid contracts
 import report_envelope  # noqa: E402  -- canonical human/agent report snapshot
+from gig_paths import RUNNER_DIR  # noqa: E402
 
 
 JST = timezone(timedelta(hours=9))
@@ -2198,7 +2199,7 @@ def main() -> int:
     parser.add_argument("--gig-dir", type=Path, default=home / "gig")
     parser.add_argument(
         "--runner-config", type=Path,
-        default=home / "profitable-claude/skills/agent-runner/config.json",
+        default=RUNNER_DIR / "config.json",
     )
     parser.add_argument("--target", default="0000000000")
     parser.add_argument("--output", type=Path)
