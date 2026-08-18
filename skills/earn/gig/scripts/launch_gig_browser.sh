@@ -26,17 +26,34 @@ chromium_bin="$(
 #
 # Keep this bounded to the two installed/supported majors.  A later Chromium
 # must be re-qualified instead of silently carrying a removed policy forever.
+#
+# CloakBrowser ships 150+ now, so a machine installing today lands outside that
+# range and used to get no switch and not a word about it -- the worst shape this
+# failure has, because the symptom is a browser that completes TCP and then times
+# out while curl on the same box is fine, with nothing pointing at the cause.
+# Say it instead, and still launch: plenty of networks never drop the larger
+# ClientHello, and refusing to start would break them for a risk they do not have.
+# GIG_BROWSER_TLS_COMPAT=force applies it once someone has qualified a newer major.
+apply_tls_compat() {
+  /usr/bin/defaults write \
+    org.chromium.Chromium PostQuantumKeyAgreementEnabled -bool false
+  [ "$(/usr/bin/defaults read \
+    org.chromium.Chromium PostQuantumKeyAgreementEnabled)" = "0" ]
+}
+
 chromium_version="${chromium_bin#"$HOME/.cloakbrowser/chromium-"}"
 chromium_major="${chromium_version%%.*}"
-case "$chromium_major" in
-  145|146)
-    /usr/bin/defaults write \
-      org.chromium.Chromium PostQuantumKeyAgreementEnabled -bool false
-    [ "$(/usr/bin/defaults read \
-      org.chromium.Chromium PostQuantumKeyAgreementEnabled)" = "0" ] || {
+case "${GIG_BROWSER_TLS_COMPAT:-auto}:$chromium_major" in
+  auto:145|auto:146|force:*)
+    apply_tls_compat || {
       echo "Gig CloakBrowser TLS compatibility policy was not persisted" >&2
       exit 78
     }
+    ;;
+  *)
+    echo "Gig CloakBrowser: Chromium $chromium_major is outside the qualified 145-146 range," \
+         "so the ML-KEM compatibility switch was NOT applied. If the site loads under curl but" \
+         "this browser times out, that is why -- relaunch with GIG_BROWSER_TLS_COMPAT=force." >&2
     ;;
 esac
 
