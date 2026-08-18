@@ -17,6 +17,11 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from gig_paths import REPO_ROOT  # noqa: E402
+
 
 SCHEMAS = Path(__file__).resolve().parents[1] / "schemas"
 DIAGNOSTIC_CLASSES = frozenset(
@@ -39,7 +44,7 @@ def _patch_handoff(
     diagnosis: dict[str, Any],
     runner: Callable[..., Any],
 ) -> dict[str, Any]:
-    self_fix = Path.home() / "anicca" / "skills" / "self" / "self-fix.sh"
+    self_fix = REPO_ROOT / "skills" / "self" / "self-fix.sh"
     incident_id = (
         int(incident.get("incident_id") or 0)
         if isinstance(incident, dict)

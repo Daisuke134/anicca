@@ -29,7 +29,7 @@ import websockets
 SCRIPTS = Path(__file__).resolve().parent
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
-from gig_paths import RUNNER_DIR  # noqa: E402
+from gig_paths import BROWSER_DIR, RUNNER_DIR  # noqa: E402
 
 try:
     from delivery_cadence import inquiries_from_dom as normalize_inquiries
@@ -2812,7 +2812,7 @@ def argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--evidence-dir", required=True, type=Path)
     parser.add_argument("--cdp-helper", type=Path,
-                        default=Path.home() / "anicca/skills/browser/scripts/cdp_default_tab.py")
+                        default=BROWSER_DIR / "scripts" / "cdp_default_tab.py")
     parser.add_argument("--projects-root", type=Path, default=Path.home() / "gig/projects")
     parser.add_argument(
         "--semantic-runner", type=Path,

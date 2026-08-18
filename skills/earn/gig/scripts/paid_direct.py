@@ -16,7 +16,7 @@ import reconcile_paid_delivery  # noqa: E402
 import step_result_status  # noqa: E402
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from telegram_report import OpenClawTelegramTransport  # noqa: E402
-from gig_paths import REPO_ROOT, RUNNER_DIR  # noqa: E402
+from gig_paths import BROWSER_DIR, REPO_ROOT, RUNNER_DIR  # noqa: E402
 
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
 # Runtime state location is machine configuration, not source. The plist supplies
@@ -3244,7 +3244,7 @@ def _parser():
     parser.add_argument("--formal-browser", type=Path, default=HERE / "coconala_formal_delivery_browser.py")
     parser.add_argument("--delivery-evidence-dir", type=Path, default=Path.home() / "gig" / "delivery-evidence")
     parser.add_argument("--cdp-lock-dir", type=Path, default=Path.home() / "gig" / ".cdp-gig.lock")
-    parser.add_argument("--cdp-helper", type=Path, default=Path.home() / "anicca/skills/browser/scripts/cdp_default_tab.py"); parser.add_argument("--lock-file", type=Path)
+    parser.add_argument("--cdp-helper", type=Path, default=BROWSER_DIR / "scripts" / "cdp_default_tab.py"); parser.add_argument("--lock-file", type=Path)
     parser.add_argument("--context-compiler", type=Path, default=HERE / "project_context_compiler.py"); parser.add_argument("--agent-runner", type=Path, default=RUNNER_DIR / "agent_runner.py")
     parser.add_argument("--runner-schema", type=Path, default=HERE.parent / "schemas/gig_step_result.schema.json")
     parser.add_argument("--artifact-schema", type=Path, default=HERE.parent / "schemas/paid_file_judgement.schema.json")

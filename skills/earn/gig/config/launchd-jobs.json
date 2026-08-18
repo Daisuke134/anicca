@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "_note": [
+    "The four coconala lanes plus the browser they share, as data instead of five",
+    "hand-maintained plists. gig_release.py renders these against a release tree and",
+    "loads them. Values in {{...}} come from `defaults` below, overridden per machine",
+    "by ~/.config/anicca/gig/install.json, so a fresh Mac gets working paths and this",
+    "machine keeps the exact ones its lanes already run on.",
+    "Anything that is a real secret belongs in neither file: no lane reads a credential",
+    "from its environment -- the browser profile carries the coconala login."
+  ],
+
+  "defaults": {
+    "PYTHON": "/opt/homebrew/bin/python3",
+    "HOME": "{{HOME}}",
+    "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    "GIG_STATE_DIR": "{{HOME}}/gig",
+    "GIG_LOG_DIR": "{{GIG_STATE_DIR}}/logs",
+    "GIG_BRAKE_DIR": "{{GIG_STATE_DIR}}/state",
+    "LIFE_MANAGER_HOME": "{{HOME}}/.local/state/life-manager",
+    "CDP_PORT": "9223",
+    "CDP_DAILY_DRIVER_PROFILE": "{{HOME}}/.cloak/profiles/gig-daily-driver",
+    "SESSION_VAULT_DIR": "{{HOME}}/.cloak/vault/gig-daily-driver",
+    "CLOAK_VAULT_DIR": "{{HOME}}/.cloak/vault",
+    "GIG_BROWSER_FINGERPRINT": "",
+    "GIG_REPORT_CHAT": "",
+    "ANICCA_JOB_PROFILE": "{{HOME}}/.config/anicca/job-search/profile.json"
+  },
+
+  "shared_env": {
+    "HOME": "{{HOME}}",
+    "PATH": "{{PATH}}",
+    "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.hf-gig-browser",
+    "CLOAK_CDP_BASE_URL": "http://127.0.0.1:{{CDP_PORT}}",
+    "CDP_DAILY_DRIVER_PORT": "{{CDP_PORT}}",
+    "CDP_DAILY_DRIVER_PROFILE": "{{CDP_DAILY_DRIVER_PROFILE}}",
+    "GIG_STATE_DIR": "{{GIG_STATE_DIR}}",
+    "GIG_ENV_FILE": "{{LIFE_MANAGER_HOME}}/.env",
+    "GIG_REPORT_CHAT": "{{GIG_REPORT_CHAT}}",
+    "LIFE_MANAGER_HOME": "{{LIFE_MANAGER_HOME}}",
+    "LIFE_MANAGER_REPO": "{{RELEASE}}",
+    "ANICCA_JOB_PROFILE": "{{ANICCA_JOB_PROFILE}}"
+  },
+
+  "jobs": [
+    {
+      "label": "ai.anicca.hf-gig-apply-direct",
+      "lane": "apply",
+      "summary": "Reads the coconala job board and submits applications.",
+      "program": [
+        "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/application_direct.py",
+        "--all-eligible",
+        "--planner-runner",
+        "{{RELEASE}}/skills/earn/gig/agent-runner/agent_runner.py"
+      ],
+      "env": {
+        "CLOAK_BROWSER_OWNER": "gig-apply-direct",
+        "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
+        "CDP_LOCK_DIR": "{{GIG_STATE_DIR}}/.cdp-gig.lock",
+        "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/apply.operator.brake"
+      },
+      "StartInterval": 60,
+      "ThrottleInterval": 60,
+      "ProcessType": "Background",
+      "log_basename": "gig-apply-direct-launchd"
+    },
+    {
+      "label": "ai.anicca.hf-gig-storefront-direct",
+      "lane": "storefront",
+      "summary": "Watches the seller storefront and edits listings that earn nothing.",
+      "program": [
+        "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/storefront_direct.py",
+        "--effect",
+        "--auto-cadence",
+        "--full-interval-seconds",
+        "60"
+      ],
+      "env": {
+        "CLOAK_BROWSER_OWNER": "gig-storefront-direct",
+        "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
+        "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/storefront.operator.brake",
+        "GIG_NEGOTIATE_RUN_LOG": "{{GIG_LOG_DIR}}/gig-reply-detector-launchd.out.log"
+      },
+      "StartInterval": 60,
+      "ThrottleInterval": 60,
+      "ProcessType": "Background",
+      "log_basename": "gig-storefront-direct-launchd"
+    },
+    {
+      "label": "ai.anicca.hf-gig-reply-detector",
+      "lane": "negotiate",
+      "summary": "Reads buyer threads before purchase and answers them.",
+      "program": [
+        "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/reply_detector.py",
+        "--trigger",
+        "fallback",
+        "--runner",
+        "{{RELEASE}}/skills/earn/gig/agent-runner/agent_runner.py",
+        "--runner-config",
+        "{{RELEASE}}/skills/earn/gig/agent-runner/config.json"
+      ],
+      "env": {
+        "CLOAK_BROWSER_OWNER": "gig-reply-detector",
+        "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
+        "CLOAK_TARGET_OWNERS_FILE": "{{CLOAK_VAULT_DIR}}/gig-target-owners.json",
+        "CLOAK_SESSION_VAULT_FILE": "{{SESSION_VAULT_DIR}}/auth-state.json",
+        "SESSION_VAULT_DIR": "{{SESSION_VAULT_DIR}}",
+        "SESSION_VAULT_PORT": "{{CDP_PORT}}",
+        "CDP_LOCK_DIR": "{{GIG_STATE_DIR}}/.cdp-gig.lock",
+        "CDP_GUARD_LOCK": "{{GIG_STATE_DIR}}/.cdp-gig-guard.lock",
+        "CDP_GUARD_LOG": "{{GIG_LOG_DIR}}/cdp-gig-browser-guard.log",
+        "GIG_CDP_HEALTH_URL": "http://127.0.0.1:{{CDP_PORT}}/json/version"
+      },
+      "StartInterval": 180,
+      "ThrottleInterval": 30,
+      "RunAtLoad": true,
+      "ProcessType": "Background",
+      "log_basename": "gig-reply-detector-launchd"
+    },
+    {
+      "label": "ai.anicca.hf-gig-paid-direct",
+      "lane": "paid",
+      "summary": "Works paid orders and judges whether they are deliverable.",
+      "program": [
+        "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/paid_direct.py",
+        "--output",
+        "{{GIG_STATE_DIR}}/evidence/paid-direct-live/latest.json",
+        "--evidence-dir",
+        "{{GIG_STATE_DIR}}/evidence/paid-direct-live",
+        "--projects-root",
+        "{{GIG_STATE_DIR}}/projects",
+        "--lock-file",
+        "{{GIG_STATE_DIR}}/.paid-direct.lock",
+        "--cdp-lock-dir",
+        "{{GIG_STATE_DIR}}/.cdp-gig.lock"
+      ],
+      "env": {
+        "CLOAK_BROWSER_OWNER": "gig-paid-direct",
+        "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
+        "CDP_LOCK_DIR": "{{GIG_STATE_DIR}}/.cdp-gig.lock",
+        "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/paid.operator.brake"
+      },
+      "StartInterval": 300,
+      "ThrottleInterval": 60,
+      "RunAtLoad": true,
+      "ProcessType": "Background",
+      "log_basename": "gig-paid-direct-launchd"
+    },
+    {
+      "label": "ai.anicca.hf-gig-browser",
+      "lane": "browser",
+      "summary": "Keeps the one logged-in Chromium the four lanes share on the CDP port.",
+      "_warning": "Reloading this evicts every lane's browser session. gig_release.py leaves it alone unless you name it explicitly.",
+      "program": [
+        "/bin/bash",
+        "{{RELEASE}}/skills/earn/gig/scripts/launch_gig_browser.sh"
+      ],
+      "env": {
+        "GIG_BROWSER_PORT": "{{CDP_PORT}}",
+        "GIG_BROWSER_PROFILE": "{{CDP_DAILY_DRIVER_PROFILE}}",
+        "GIG_BROWSER_FINGERPRINT": "{{GIG_BROWSER_FINGERPRINT}}"
+      },
+      "RunAtLoad": true,
+      "KeepAlive": true,
+      "ThrottleInterval": 30,
+      "ProcessType": "Interactive",
+      "log_basename": "gig-browser-launchd"
+    }
+  ]
+}

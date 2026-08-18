@@ -37,6 +37,11 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from gig_paths import BROWSER_DIR  # noqa: E402
+
 
 COLLECTOR_PATH = Path(__file__).with_name("coconala_queue_snapshot.py")
 _COLLECTOR = None
@@ -547,7 +552,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--thread-id")
     parser.add_argument("--observed-at", default="")
     parser.add_argument("--cdp-helper", type=Path,
-                        default=Path.home() / "anicca" / "skills" / "browser" / "scripts" / "cdp_default_tab.py")
+                        default=BROWSER_DIR / "scripts" / "cdp_default_tab.py")
     parser.add_argument("--owner", default=os.environ.get("CLOAK_BROWSER_OWNER") or None)
     parser.add_argument("--no-attachments", action="store_true")
     parser.add_argument(
