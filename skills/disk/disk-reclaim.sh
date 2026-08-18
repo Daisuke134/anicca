@@ -44,6 +44,72 @@ if [ "$BEFORE" -lt "$LOW_WATER_GB" ]; then
     ps -p "$pid" >/dev/null 2>&1 && continue
     "$HOME/.config/ai/bin/browser-guard.sh" release "$ident" >/dev/null 2>&1
   done
+
+  # --- gig releases no plist points at --------------------------------------
+  # On 2026-08-18 ~/gig/releases held 95 life-manager builds while the live
+  # plists referenced 6. The disk filled, apply died with ENOSPC and reported
+  # effect 0, which read as a quality problem until the log was opened. Five
+  # janitors had been running and none of them could see this pile.
+  #
+  # Same rule as the clones above: referenced, not old. A release is a plain
+  # `git archive` export of a sha, so an unreferenced one costs seconds to
+  # rebuild - but deleting a referenced one takes a money lane down.
+  releases_freed=$(python3 - <<'PY'
+import pathlib, plistlib, re, shutil, subprocess, os, time
+
+SHA = re.compile(r"^[0-9a-f]{40}$")
+# A builder cuts releases every few minutes and repoints the plist afterwards, so a young
+# unreferenced release is usually one that is mid-promotion rather than one nobody wants.
+MIN_AGE_SECONDS = 7200
+
+home = pathlib.Path.home()
+keep = set()
+for p in (home / "Library/LaunchAgents").glob("*.plist"):
+    try:
+        payload = plistlib.loads(p.read_bytes())
+    except Exception:
+        continue
+    keep |= set(re.findall(r"releases/[a-z-]+/([0-9a-f]{40})", str(payload)))
+ps = subprocess.run(["ps", "-axww", "-o", "command"], capture_output=True, text=True).stdout
+keep |= set(re.findall(r"releases/[a-z-]+/([0-9a-f]{40})", ps))
+
+# `current` and `previous` are how a lane rolls forward and back. Their targets are claimed even
+# when no plist spells the sha out.
+for lane in (home / "gig/releases").glob("*"):
+    if not lane.is_dir():
+        continue
+    for link in lane.iterdir():
+        if link.is_symlink():
+            keep |= set(re.findall(r"([0-9a-f]{40})", os.path.realpath(link)))
+
+# Refuse to run blind: if nothing claims a release, the readback failed rather
+# than every lane being idle, and deleting on that reading wipes production.
+freed = 0
+if keep:
+    for lane in (home / "gig/releases").glob("*"):
+        if not lane.is_dir():
+            continue
+        for release in lane.iterdir():
+            # `current` is a symlink to the live release; only sha-named real directories qualify.
+            if release.is_symlink() or not release.is_dir() or not SHA.match(release.name):
+                continue
+            if release.name in keep or time.time() - release.stat().st_mtime < MIN_AGE_SECONDS:
+                continue
+            size = sum(f.stat().st_size for f in release.rglob("*") if f.is_file())
+            for root, dirs, files in os.walk(release):
+                os.chmod(root, 0o755)
+                for name in files:
+                    try:
+                        os.chmod(os.path.join(root, name), 0o644)
+                    except OSError:
+                        pass
+            shutil.rmtree(release, ignore_errors=True)
+            if not release.exists():
+                freed += size
+print(freed // 1048576)
+PY
+)
+  freed_mb=$((freed_mb + ${releases_freed:-0}))
 fi
 
 AFTER=$(avail_gb)
