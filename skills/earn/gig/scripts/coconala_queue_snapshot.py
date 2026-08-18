@@ -15,6 +15,7 @@ import os
 import re
 import select
 import subprocess
+import sys
 import tempfile
 import time
 from datetime import datetime, timezone
@@ -24,6 +25,11 @@ from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
 import websockets
+
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from gig_paths import RUNNER_DIR  # noqa: E402
 
 try:
     from delivery_cadence import inquiries_from_dom as normalize_inquiries
@@ -2810,7 +2816,7 @@ def argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--projects-root", type=Path, default=Path.home() / "gig/projects")
     parser.add_argument(
         "--semantic-runner", type=Path,
-        default=Path.home() / "profitable-claude/skills/agent-runner/agent_runner.py",
+        default=RUNNER_DIR / "agent_runner.py",
     )
     parser.add_argument(
         "--semantic-schema", type=Path,

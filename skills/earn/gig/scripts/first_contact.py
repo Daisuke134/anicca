@@ -67,12 +67,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import ask_buyer  # noqa: E402
 import paid_work_evidence  # noqa: E402
+from gig_paths import RUNNER_DIR  # noqa: E402
 
 
 HERE = Path(__file__).resolve().parent
 SKILL_ROOT = HERE.parent
 SCHEMA_PATH = SKILL_ROOT / "schemas" / "first_contact_decision.schema.json"
-DEFAULT_RUNNER = Path.home() / "profitable-claude" / "skills" / "agent-runner" / "agent_runner.py"
+DEFAULT_RUNNER = RUNNER_DIR / "agent_runner.py"
 
 # Toolless, read-only, one question -- the same class artifact_judge uses, for the same
 # reason: this session decides, it does not touch the project.

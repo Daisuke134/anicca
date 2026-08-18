@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "gig B0 (listing lane) step result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "summary", "evidence", "current_b0"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "const": "ok"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "current_b0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "context_path",
+        "context_sha256",
+        "action",
+        "service_id",
+        "url",
+        "title",
+        "screenshot_path",
+        "live_dom_path",
+        "reason"
+      ],
+      "properties": {
+        "context_path": {
+          "type": "string"
+        },
+        "context_sha256": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["published", "created", "updated", "verified_noop"]
+        },
+        "service_id": {
+          "type": ["string", "null"]
+        },
+        "url": {
+          "type": ["string", "null"]
+        },
+        "title": {
+          "type": ["string", "null"]
+        },
+        "screenshot_path": {
+          "type": ["string", "null"]
+        },
+        "live_dom_path": {
+          "type": ["string", "null"]
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
