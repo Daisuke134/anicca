@@ -211,11 +211,13 @@ def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
         print(f"  {label}: bootstrap failed: {loaded.stderr.strip()}")
         return False
 
+    # launchd runs the definition it loaded, so the file we just wrote proves
+    # nothing. Compare what launchd hands back with what we meant to install.
     argv = loaded_program(label)
-    script = next((a for a in argv if a.endswith(".py") or a.endswith(".sh")), "")
-    if not script.startswith(str(release)):
-        print(f"  {label}: readback still on {script or '(no program)'}")
+    if argv != body["ProgramArguments"]:
+        print(f"  {label}: readback disagrees -> {argv or '(no program)'}")
         return False
+    script = next((a for a in argv if a.endswith((".py", ".sh"))), "")
     print(f"  {label}: running {script}")
     return True
 
