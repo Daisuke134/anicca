@@ -1746,7 +1746,35 @@ def _scan_public_copy(
     findings: list[dict] = []
     scanned: list[dict] = []
     ledger = state_dir / "compliance-scan.jsonl"
-    for service_id in service_ids:
+    # Reading every listing on every full wake doubled this wake's browser work and took full-wake
+    # success from 59 of 60 down to 3 of 8. Copy only changes when this loop changes it, so a
+    # listing it just changed is read now and the rest rotate, oldest read first.
+    previous: dict[str, dict] = {}
+    if ledger.exists():
+        for line in ledger.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                row = json.loads(line)
+                previous[str(row.get("service_id") or "")] = row
+    changed_since_scan = set()
+    effects_path = state_dir / "effects.jsonl"
+    if effects_path.exists():
+        for line in effects_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            effect = json.loads(line)
+            service_id = str(effect.get("service_id") or "")
+            if (effect.get("status") == "accepted" and effect.get("effect") == 1
+                    and int(effect.get("accepted_at_epoch") or 0)
+                    >= int((previous.get(service_id) or {}).get("observed_at_epoch") or 0)):
+                changed_since_scan.add(service_id)
+    never_read = [value for value in service_ids if value not in previous]
+    rotation = sorted(
+        (value for value in service_ids if value in previous and value not in changed_since_scan),
+        key=lambda value: int(previous[value].get("observed_at_epoch") or 0),
+    )
+    due = [value for value in service_ids
+           if value in changed_since_scan or value in never_read] + rotation[:2]
+    for service_id in [value for value in service_ids if value in set(due)]:
         url = f"https://coconala.com/mypage/services/{service_id}"
         observed: dict = {}
         opened = subprocess.run(
@@ -1802,9 +1830,17 @@ def _scan_public_copy(
         scanned.append(row)
         if terms:
             findings.append(row)
-    duplicates = _near_duplicate_listings(scanned, capability_families or {})
+    # A listing not read this wake still has its last reading, and the catalogue view has to be
+    # the whole catalogue or a duplicate pair disappears whenever one half is not due.
+    read_now = {str(row["service_id"]) for row in scanned}
+    catalogue = scanned + [row for service_id, row in previous.items()
+                           if service_id in set(service_ids) and service_id not in read_now]
+    findings += [row for row in catalogue
+                 if row.get("prohibited_terms") and str(row["service_id"]) not in read_now]
+    duplicates = _near_duplicate_listings(catalogue, capability_families or {})
     _atomic_write(evidence_dir / "compliance-scan.json",
-                  {"scanned": len(service_ids), "violations": findings, "near_duplicates": duplicates})
+                  {"read_now": len(scanned), "carried_over": len(catalogue) - len(scanned),
+                   "violations": findings, "near_duplicates": duplicates})
     return findings, duplicates
 
 
