@@ -314,8 +314,17 @@ async def _fetch_list_page(
         ".filter(e=>e.label&&(/services_lists|status|public|open|draft|stop/i.test(e.href||'')"
         "||/公開|下書き|停止|非公開|審査/.test(e.label))).slice(0,20)})"
     )
+    # A page read before its cards hydrate looks empty, and an empty page ends the walk. The
+    # fourteenth listing sat on page two for hours while the loop reported it gone, so a page is
+    # only called empty after it has been given time to render.
     if ws_url is not None:
-        data = await _eval_json(ws_url, url, expression)
+        data = {}
+        for attempt in range(4):
+            data = await _eval_json(ws_url, url, expression)
+            if data.get("cards"):
+                break
+            if attempt < 3:
+                await asyncio.sleep(1.5)
         LAST_PAGE_TABS[:] = data.get("tabs") or []
         return data.get("cards", [])
     if cdp_base is None:
