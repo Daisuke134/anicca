@@ -108,7 +108,7 @@ function safeDiscoveryReason(error) {
 // only the caller's generic per-method fallback) names which guard tripped without ever
 // touching the private message/stack. Every code not in this set keeps the caller's
 // fallback, unchanged.
-const CONNPASS_SUBMIT_CODES = /^CONNPASS_(?:REGISTRATION_UNAVAILABLE|CONTROL_UNAVAILABLE|CONFIRM_UNAVAILABLE|TIER_UNAVAILABLE|QUESTIONNAIRE_REQUIRED|PAGE_UNAVAILABLE|READBACK_UNAVAILABLE|BROWSER_ACTION_FAILED)$/;
+const CONNPASS_SUBMIT_CODES = /^CONNPASS_(?:REGISTRATION_UNAVAILABLE|CONTROL_UNAVAILABLE|CONFIRM_UNAVAILABLE|TIER_UNAVAILABLE|QUESTIONNAIRE_REQUIRED|PAGE_UNAVAILABLE|READBACK_UNAVAILABLE|BROWSER_ACTION_FAILED|SESSION_EXPIRED)$/;
 
 function safeSubmitReason(error, fallback) {
   const code = String(error && error.code || "");

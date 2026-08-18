@@ -303,6 +303,22 @@ test("Peatix direct action carries the exact ticket/profile and readback stays p
   await assert.rejects(workflow.runDirectAction({ page, candidate: { ...selected, ticket_id: "" } }));
 });
 
+test("Peatix direct action maps a login-wall submit outcome to the shared session-expired reason", async () => {
+  const selected = {
+    provider: "peatix", event_ref: "peatix-event://event/106", canonical_url: "https://peatix.com/event/106",
+    title: "Eligible Event 106", starts_at: "2026-08-10T01:00:00.000Z", ends_at: "2026-08-10T02:00:00.000Z",
+    registration_status: "available", ticket_price_status: "free", ticket_price_minor: 0, ticket_id: "6",
+  };
+  const page = Object.freeze({});
+  const workflow = createPeatixDiscoveryWorkflow({
+    readAttendeeProfile: async () => ({ name: "Private Name", email: "private@example.test", accept_organizer_privacy: true }),
+    async submitOnPage() { return { status: "unavailable", reason: "session_expired" }; },
+  });
+  assert.deepEqual(await workflow.runDirectAction({ page, candidate: selected }), {
+    status: "failed", safe_reason: "peatix_session_expired",
+  });
+});
+
 test("Peatix workflow readback exposes only registered, absent, or unavailable", async () => {
   const candidate = { provider: "peatix", event_ref: "peatix-event://event/106", canonical_url: "https://peatix.com/event/106", title: "Event", starts_at: "2026-08-10T01:00:00.000Z", ends_at: "2026-08-10T02:00:00.000Z", registration_status: "available", ticket_price_status: "free", ticket_price_minor: 0, ticket_id: "6" };
   for (const observed of ["registered", "absent", "unavailable"]) {
