@@ -4697,6 +4697,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB), scan_families,
             )
+            # Rewriting a listing that is about to come down is work nobody reads, and because
+            # retirement only runs on a wake that changed nothing else, the rewrite would keep
+            # postponing it forever.
+            retiring = {sorted(str(value) for value in pair.get("service_ids") or [])[-1]
+                        for pair in duplicate_listings}
+            offer_refresh = [row for row in offer_refresh
+                             if str(row.get("service_id")) not in retiring]
             funnel = _join_funnel(
                 args.state_dir, validated_contracts,
                 getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),
