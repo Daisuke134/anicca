@@ -93,8 +93,8 @@ COMPETITOR_SOURCES = (
     ("service", "https://coconala.com/services/3122692"),
     ("service", "https://coconala.com/services/3741646"),
 )
-MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price", "listing_state"}
-GENERATED_MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
+MUTATION_FIELDS = {"image", "title", "catchphrase", "body", "package", "FAQ", "price", "listing_state"}
+GENERATED_MUTATION_FIELDS = {"image", "title", "catchphrase", "body", "package", "FAQ", "price"}
 # The seller listing-state control is the form's own hidden `mode` field, not a `data[...]` input.
 LISTING_STATE_DELTA = "mode"
 PUBLIC_LISTING_STATE = "公開中"
@@ -1052,6 +1052,24 @@ def _offer_refresh_due(
     return digest
 
 
+async def _evaluate(ws: object, expression: str, cid: int) -> tuple[object, int]:
+    """Evaluate one expression on an open page and return its value with the next id.
+
+    The listing-state executor called a helper this module never had, which is what a branch
+    that has never run looks like: it type-checks, ships and raises NameError the first time
+    the loop actually needs it.
+    """
+    import listing_inventory
+
+    response = await listing_inventory._call(ws, "Runtime.evaluate", {
+        "expression": expression, "returnByValue": True, "awaitPromise": True,
+    }, cid)
+    result = response.get("result", {}).get("result", {})
+    if result.get("subtype") == "error" or "exceptionDetails" in response.get("result", {}):
+        raise RuntimeError("storefront_browser_evaluation_failed")
+    return result.get("value"), cid + 1
+
+
 def _platform_withdrew_listing(ledger_path: Path, service_id: str, is_public: bool) -> bool:
     """Report a listing this loop published that the platform has since taken down.
 
@@ -1217,6 +1235,44 @@ def _extract_search_demand(body: str) -> dict:
         "visible_result_count": int(total.group(1).replace(",", "")) if total else None,
         "comparables": comparables[:12],
     }
+
+
+def _family_traffic_without_sales(
+    analytics_path: Path, families: dict[str, str], family_name: str, minimum_views: int = 100,
+) -> dict | None:
+    """Report a capability family whose own listings get looked at and never bought.
+
+    Competitor search volume says a market exists; it does not say this seller can sell in it.
+    Two Excel listings reached hundreds of views and no purchase while the demand score for
+    that market read twelve, which is the loop proposing to repeat something it has already
+    failed at.
+    """
+    if not family_name or not analytics_path.exists():
+        return None
+    latest: dict[str, dict] = {}
+    for line in analytics_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if str(row.get("service_id") or ""):
+            latest[str(row["service_id"])] = row
+    views = purchases = 0
+    counted = 0
+    for service_id, snapshot in latest.items():
+        if families.get(service_id) != family_name:
+            continue
+        metrics = snapshot.get("metrics") if isinstance(snapshot.get("metrics"), dict) else {}
+        service_views = (metrics.get("views") or {}).get("value")
+        service_purchases = (metrics.get("purchases") or {}).get("value")
+        if type(service_views) is not int or type(service_purchases) is not int:
+            continue
+        views += service_views
+        purchases += service_purchases
+        counted += 1
+    if counted == 0 or views < minimum_views or purchases > 0:
+        return None
+    return {"capability_family": family_name, "listings": counted,
+            "views": views, "purchases": purchases}
 
 
 def _score_demand_cluster(cluster: dict) -> dict:
@@ -1521,7 +1577,7 @@ def _render_text_mutation(
     }
     source = next((row for row in sources if row["service_id"] == str(spec.get("service_id") or "")), None)
     if (set(spec) != required or spec.get("version") != 1 or spec.get("platform") != "coconala"
-            or spec.get("changed_field") not in {"title", "body", "package", "FAQ", "price"} or source is None
+            or spec.get("changed_field") not in {"title", "catchphrase", "body", "package", "FAQ", "price"} or source is None
             or capability_families.get(str(spec.get("service_id") or "")) != spec.get("capability_family")
             or not str(spec.get("form_field") or "").startswith("data[")
             or not all(isinstance(spec.get(key), str) and spec[key].strip()
@@ -1885,6 +1941,28 @@ def _scan_public_copy(
     findings += [row for row in catalogue
                  if row.get("prohibited_terms") and str(row["service_id"]) not in read_now]
     duplicates = _near_duplicate_listings(catalogue, capability_families or {})
+    # Rewriting one half of a pair pushes their titles apart, and the pair stopped being
+    # reported the moment one listing was improved. Two listings selling the same thing do not
+    # stop doing so because their wording diverged, so a pair once observed stays observed
+    # until one of them is no longer live.
+    pair_ledger = state_dir / "duplicate-listings.jsonl"
+    for pair in duplicates:
+        _append_key_once(pair_ledger, "pair_key", {
+            **pair, "observed_at_epoch": now,
+            "pair_key": ":".join(sorted(str(value) for value in pair["service_ids"])),
+        })
+    live = set(service_ids)
+    if pair_ledger.exists():
+        seen = {":".join(sorted(str(value) for value in pair["service_ids"])) for pair in duplicates}
+        for line in pair_ledger.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            ids = [str(value) for value in row.get("service_ids") or []]
+            if (row.get("pair_key") not in seen and len(ids) == 2
+                    and all(value in live for value in ids)):
+                duplicates.append({**row, "still_live": True})
+                seen.add(row.get("pair_key"))
     _atomic_write(evidence_dir / "compliance-scan.json",
                   {"read_now": len(scanned), "carried_over": len(catalogue) - len(scanned),
                    "violations": findings, "near_duplicates": duplicates})
@@ -2293,7 +2371,7 @@ def _prepare_next_hypothesis(
                 "service_id": service_id,
                 "service_version_sha256": versions[service_id],
                 "field": str(stale.get("offer_field") or "body"),
-                "portfolio_field": "scope" if stale.get("offer_field") != "title" else "outcome",
+                "portfolio_field": "outcome" if stale.get("offer_field") in {"title", "catchphrase"} else "scope",
                 "before": None, "success_metric": "inquiries",
                 "reason": f"listing still sells the previous offer of family {stale.get('family')}",
                 "offer_digest": stale.get("offer_digest"),
@@ -2807,7 +2885,8 @@ wording, images, reviews, sales, speed, guarantees or results. evidence entries 
 from allowed_evidence_refs and must include the official offer ref and owned capability-family ref.
 gap.executable=false with guard_reason=proposal_contract_required means this proposal must create the
 missing contract; it is not a no-op reason and mutation_contract_sha256 is intentionally absent.
-For title, return only the seller-form title stem (Coconala appends ます). For body, return a complete
+For title, return only the seller-form title stem (Coconala appends ます). For catchphrase,
+return the single line shown under the title, 15 to 30 characters, stating the same offer. For body, return a complete
 Japanese replacement with outcome, inclusions, exclusions, required inputs and support boundary.
 For image, proposed_value must be exactly three non-empty lines: a short headline, a supporting line,
 then two or three short badges separated by `｜`. Use only supported offer/capability claims; do not put
@@ -3176,6 +3255,12 @@ def _seal_generated_proposal(
               if isinstance(row, dict)}
     if field == "title":
         form_field = "data[Service][overview]"
+    elif field == "catchphrase":
+        # The line search results print under the title. It contradicted the offer while the
+        # title and body already carried the new one.
+        if not 15 <= len(str(proposed)) <= 30:
+            raise RuntimeError("storefront_generated_catchphrase_length_invalid")
+        form_field = "data[Service][catchphrase]"
     elif field == "body":
         form_field = "data[Service][head]"
     elif field == "price":
@@ -3443,7 +3528,7 @@ def _text_judgement(hypothesis: dict, contract: dict, effects_path: Path, now: i
     _validate_mutation_contract(contract, mappings)
     if (hypothesis.get("service_id") != contract.get("service_id")
             or hypothesis.get("field") != contract.get("changed_field")
-            or contract.get("changed_field") not in {"title", "body", "package", "price"}
+            or contract.get("changed_field") not in {"title", "catchphrase", "body", "package", "price"}
             or hypothesis.get("mutation_contract_sha256") != contract.get("contract_sha256")
             or hypothesis.get("executable") is not True):
         raise RuntimeError("storefront_text_hypothesis_invalid")
@@ -3832,7 +3917,7 @@ def _pending_recovery(
             if image_ids == contract["rollback_value"]["service_image_ids"]:
                 continue
             raise RuntimeError("pending_image_effect_public_readback_invalid")
-        if intent.get("changed_field") in {"title", "body", "package", "price"}:
+        if intent.get("changed_field") in {"title", "catchphrase", "body", "package", "price"}:
             contract = intent.get("mutation_contract")
             if not isinstance(contract, dict) or ws_url is None or evidence_dir is None:
                 raise RuntimeError("pending_text_contract_missing")
@@ -4057,6 +4142,33 @@ async def _execute_listing_state_effect_async(
         ), cid)
         if clicked is not True:
             raise RuntimeError("storefront_retire_control_absent_at_submit")
+        # The card control only opens a confirmation; the archive happens when that dialog is
+        # accepted. Clicking the anchor alone left the listing public and the readback then
+        # reported a missing card, which read like a broken selector rather than a missing step.
+        await asyncio.sleep(2)
+        confirmed = None
+        for _ in range(10):
+            confirmed, cid = await _evaluate(ws, (
+                "(()=>{const visible=e=>{const r=e.getBoundingClientRect();"
+                "return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=='hidden'};"
+                "const controls=[...document.querySelectorAll('a,button')]"
+                ".filter(e=>['OK','ok','はい','公開停止する','停止する','削除する']"
+                ".includes((e.innerText||'').trim())&&visible(e));"
+                "if(!controls.length)return null;const target=controls[0];"
+                "target.click();return (target.innerText||'').trim()})()"
+            ), cid)
+            if confirmed:
+                break
+            await asyncio.sleep(1)
+        dialog, cid = await _evaluate(ws, (
+            "JSON.stringify({confirmed_label:null,"
+            "visible_controls:[...document.querySelectorAll('a,button')]"
+            ".map(e=>(e.innerText||'').trim()).filter(Boolean).slice(0,40)})"
+        ), cid)
+        _atomic_write(evidence_dir / f"listing-state-confirm-{service_id}.json",
+                      {"clicked_confirmation": confirmed, "page_controls": json.loads(str(dialog or "{}"))})
+        if not confirmed:
+            raise RuntimeError("storefront_retire_confirmation_absent")
         await asyncio.sleep(5)
         await ws.send(json.dumps({"id": cid, "method": "Page.navigate",
                                   "params": {"url": "https://coconala.com/mypage/services_lists"}})); cid += 1
@@ -4125,7 +4237,7 @@ async def _execute_text_effect_async(
 
     mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
     _validate_mutation_contract(contract, mappings)
-    if contract.get("changed_field") not in {"title", "body", "price"} or judgement.get("experiment_key") != _experiment_key(
+    if contract.get("changed_field") not in {"title", "catchphrase", "body", "price"} or judgement.get("experiment_key") != _experiment_key(
         contract["service_id"], str(contract["changed_field"]), str(contract["proposed_value"]),
     ):
         raise RuntimeError("seller_text_contract_invalid")
@@ -4684,7 +4796,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     continue
                 # The body carries the promise and the title is what search shows, so a listing
                 # whose offer moved needs both; the body goes first and the title follows it.
-                for offer_field in ("body", "title"):
+                for offer_field in ("body", "title", "catchphrase"):
                     digest = _offer_refresh_due(
                         args.state_dir / "effects.jsonl", str(row["service_id"]), family_name,
                         template, advertised_offers, offer_field)
@@ -5055,6 +5167,81 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         }
                         if judgement["changed_field"] == "FAQ":
                             pending_effect.update({"question": question, "answer": answer})
+            # One external effect per wake. When nothing else changed, a duplicate listing is
+            # taken down through the platform's own archive control, which keeps it restorable.
+            retire_result = None
+            # The allocator returns the single row it selected, preferring retirement, not the
+            # whole catalogue; reading a list it never returns is how this silently did nothing.
+            selected_allocation = portfolio.get("selected") or {}
+            retire_allocation = (
+                selected_allocation
+                if selected_allocation.get("action") == "RETIRE"
+                and (selected_allocation.get("gates") or {}).get("duplicate_of_service_id")
+                else None)
+            # One experiment per listing, not one action per wake: archiving a duplicate touches
+            # a different listing and is recoverable, so it no longer waits for a wake that did
+            # nothing, which the refresh queue would have postponed for hours.
+            changed_service = str(judgement.get("service_id") or "")
+            if (args.effect and retire_allocation is not None
+                    and str(retire_allocation["service_id"]) != changed_service):
+                retire_service_id = str(retire_allocation["service_id"])
+                try:
+                    # The card's own controls are adapter input and are kept out of the hashed
+                    # catalogue, so the state row is rebuilt from the source card here.
+                    retire_source_card = next(
+                        row for row in contract_sources
+                        if str(row.get("service_id")) == retire_service_id)
+                    retire_contract = _render_listing_state_mutation(
+                        next(row for row in validated_contracts
+                             if row["service_id"] == retire_service_id),
+                        {"service_id": retire_service_id,
+                         "state": next(str(row.get("state") or "") for row in inventory["services"]
+                                       if str(row.get("service_id")) == retire_service_id),
+                         "state_controls": retire_source_card.get("state_controls") or []},
+                        _seller_snapshot_for(ws_url, retire_service_id),
+                        capability_families, retire_allocation,
+                    )
+                    _atomic_write(inventory_path.parent / f"retire-contract-{retire_service_id}.json",
+                                  retire_contract)
+                    # Its own tab: reusing the wake's leased socket after a full pass of
+                    # browsing is what returns HTTP 500, which is the same fault the demand
+                    # crawl hit and the same fix.
+                    retire_opened = subprocess.run(
+                        [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
+                         "--owner", "gig-storefront-direct", "--background", "open", "about:blank"],
+                        capture_output=True, text=True, check=False, timeout=30,
+                    )
+                    retire_tab = json.loads(retire_opened.stdout)
+                    if retire_opened.returncode != 0 or retire_tab.get("ok") is not True:
+                        raise RuntimeError("storefront_retire_tab_open_failed")
+                    try:
+                        retire_result = asyncio.run(_execute_listing_state_effect_async(
+                            str(retire_tab["ws"]), contract=retire_contract,
+                            evidence_dir=inventory_path.parent))
+                    finally:
+                        if retire_tab.get("target_id"):
+                            subprocess.run(
+                                [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
+                                 "--owner", "gig-storefront-direct", "close",
+                                 str(retire_tab["target_id"])], capture_output=True, text=True,
+                                check=False, timeout=30,
+                            )
+                    _append_key_once(args.state_dir / "effects.jsonl", "experiment_key", {
+                        "version": 1, "status": "accepted", "effect": 1,
+                        "service_id": retire_service_id, "changed_field": "listing_state",
+                        "experiment_key": _experiment_key(
+                            retire_service_id, "listing_state", retire_contract["proposed_value"]),
+                        "contract_sha256": retire_contract["contract_sha256"],
+                        "after_value": retire_contract["proposed_value"],
+                        "before_value": retire_contract["before_value"],
+                        "accepted_at_epoch": int(time.time()),
+                        "reason": retire_allocation["reason"],
+                        "restore_href": retire_result.get("restore_href"),
+                    })
+                except Exception as error:  # retiring a duplicate never ends a wake
+                    retire_result = {"error": f"{type(error).__name__}:{str(error)[:160]}"}
+                _atomic_write(inventory_path.parent / "retire-result.json",
+                              {"allocation": retire_allocation, "result": retire_result})
             _lease(args.lease_script, "heartbeat", task, lease)
             release = _lease(args.lease_script, "release", task, lease)
             released = release.get("released") == task
@@ -5211,7 +5398,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # A self-derived market is a second way in: the committed demand file may be spent
             # while a scored cluster with an official category is waiting.
             cluster_blueprint = None
-            if unused_cluster is not None and bound_category is not None:
+            # Search volume says a market exists; it does not say this seller can sell in it.
+            unsold_family = (_family_traffic_without_sales(
+                args.state_dir / "analytics.jsonl", capability_families,
+                str((unused_cluster or {}).get("capability_family") or ""))
+                if unused_cluster is not None else None)
+            if unsold_family is not None:
+                demand_derivation = {**(demand_derivation or {}),
+                                     "create_blocked": "own_family_has_traffic_without_sales",
+                                     "own_family_evidence": unsold_family}
+            if unused_cluster is not None and bound_category is not None and unsold_family is None:
                 try:
                     cluster_blueprint = _create_blueprint_from_cluster(
                         new_listing_contract, unused_cluster, bound_category)
@@ -5513,77 +5709,6 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 })
                 accepted_effect = int(appended and not pending_effect["recovered"])
                 accepted_readback = 1
-            # One external effect per wake. When nothing else changed, a duplicate listing is
-            # taken down through the platform's own archive control, which keeps it restorable.
-            retire_result = None
-            # The allocator returns the single row it selected, preferring retirement, not the
-            # whole catalogue; reading a list it never returns is how this silently did nothing.
-            selected_allocation = portfolio.get("selected") or {}
-            retire_allocation = (
-                selected_allocation
-                if selected_allocation.get("action") == "RETIRE"
-                and (selected_allocation.get("gates") or {}).get("duplicate_of_service_id")
-                else None)
-            if (args.effect and pending_effect is None and judgement["decision"] != "change"
-                    and retire_allocation is not None):
-                retire_service_id = str(retire_allocation["service_id"])
-                try:
-                    # The card's own controls are adapter input and are kept out of the hashed
-                    # catalogue, so the state row is rebuilt from the source card here.
-                    retire_source_card = next(
-                        row for row in contract_sources
-                        if str(row.get("service_id")) == retire_service_id)
-                    retire_contract = _render_listing_state_mutation(
-                        next(row for row in validated_contracts
-                             if row["service_id"] == retire_service_id),
-                        {"service_id": retire_service_id,
-                         "state": next(str(row.get("state") or "") for row in inventory["services"]
-                                       if str(row.get("service_id")) == retire_service_id),
-                         "state_controls": retire_source_card.get("state_controls") or []},
-                        _seller_snapshot_for(ws_url, retire_service_id),
-                        capability_families, retire_allocation,
-                    )
-                    _atomic_write(inventory_path.parent / f"retire-contract-{retire_service_id}.json",
-                                  retire_contract)
-                    # Its own tab: reusing the wake's leased socket after a full pass of
-                    # browsing is what returns HTTP 500, which is the same fault the demand
-                    # crawl hit and the same fix.
-                    retire_opened = subprocess.run(
-                        [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
-                         "--owner", "gig-storefront-direct", "--background", "open", "about:blank"],
-                        capture_output=True, text=True, check=False, timeout=30,
-                    )
-                    retire_tab = json.loads(retire_opened.stdout)
-                    if retire_opened.returncode != 0 or retire_tab.get("ok") is not True:
-                        raise RuntimeError("storefront_retire_tab_open_failed")
-                    try:
-                        retire_result = asyncio.run(_execute_listing_state_effect_async(
-                            str(retire_tab["ws"]), contract=retire_contract,
-                            evidence_dir=inventory_path.parent))
-                    finally:
-                        if retire_tab.get("target_id"):
-                            subprocess.run(
-                                [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
-                                 "--owner", "gig-storefront-direct", "close",
-                                 str(retire_tab["target_id"])], capture_output=True, text=True,
-                                check=False, timeout=30,
-                            )
-                    _append_key_once(args.state_dir / "effects.jsonl", "experiment_key", {
-                        "version": 1, "status": "accepted", "effect": 1,
-                        "service_id": retire_service_id, "changed_field": "listing_state",
-                        "experiment_key": _experiment_key(
-                            retire_service_id, "listing_state", retire_contract["proposed_value"]),
-                        "contract_sha256": retire_contract["contract_sha256"],
-                        "after_value": retire_contract["proposed_value"],
-                        "before_value": retire_contract["before_value"],
-                        "accepted_at_epoch": int(time.time()),
-                        "reason": retire_allocation["reason"],
-                        "restore_href": retire_result.get("restore_href"),
-                    })
-                except Exception as error:  # retiring a duplicate never ends a wake
-                    retire_result = {"error": f"{type(error).__name__}:{str(error)[:160]}"}
-                _atomic_write(inventory_path.parent / "retire-result.json",
-                              {"allocation": retire_allocation, "result": retire_result})
             outcome = _close_outcome(
                 args.state_dir, analytics,
                 getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),

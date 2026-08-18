@@ -97,3 +97,21 @@ def test_the_title_is_still_due_after_the_body_is_rewritten(tmp_path):
         effects, "4357844", "excel_automation", MACRO_FAMILY, field="body") is None
     assert storefront_direct._offer_refresh_due(
         effects, "4357844", "excel_automation", MACRO_FAMILY, field="title") == digest
+
+
+def test_the_catchphrase_follows_the_title(tmp_path):
+    effects = tmp_path / "effects.jsonl"
+    digest = storefront_direct._offer_refresh_due(effects, "4357844", "excel_automation", MACRO_FAMILY)
+    effects.write_text("".join(json.dumps({
+        "service_id": "4357844", "status": "accepted", "effect": 1,
+        "changed_field": field, "offer_digest": digest,
+    }) + "\n" for field in ("body", "title")), encoding="utf-8")
+    assert storefront_direct._offer_refresh_due(
+        effects, "4357844", "excel_automation", MACRO_FAMILY, field="title") is None
+    assert storefront_direct._offer_refresh_due(
+        effects, "4357844", "excel_automation", MACRO_FAMILY, field="catchphrase") == digest
+
+
+def test_the_catchphrase_is_a_field_the_loop_may_change():
+    assert "catchphrase" in storefront_direct.MUTATION_FIELDS
+    assert "catchphrase" in storefront_direct.GENERATED_MUTATION_FIELDS
