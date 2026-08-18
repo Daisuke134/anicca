@@ -24,6 +24,7 @@
     "CLOAK_VAULT_DIR": "{{HOME}}/.cloak/vault",
     "GIG_BROWSER_FINGERPRINT": "",
     "GIG_REPORT_CHAT": "",
+    "GIG_SANDBOX_DENY": "",
     "ANICCA_JOB_PROFILE": "{{HOME}}/.config/anicca/job-search/profile.json"
   },
 
@@ -142,7 +143,8 @@
         "CLOAK_BROWSER_OWNER": "gig-paid-direct",
         "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
         "CDP_LOCK_DIR": "{{GIG_STATE_DIR}}/.cdp-gig.lock",
-        "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/paid.operator.brake"
+        "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/paid.operator.brake",
+        "GIG_SANDBOX_DENY": "{{GIG_SANDBOX_DENY}}"
       },
       "StartInterval": 300,
       "ThrottleInterval": 60,

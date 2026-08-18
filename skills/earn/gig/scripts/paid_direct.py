@@ -27,6 +27,23 @@ DEFAULT_BRAKE = Path(
 )
 DEFAULT_TELEGRAM_DATABASE = Path.home() / "gig" / "telegram-outbox.sqlite3"
 DEFAULT_TELEGRAM_RECEIPTS = Path.home() / "gig" / "telegram-delivery-receipts"
+
+
+def _operator_denied_paths() -> list[str]:
+    """Extra directories the sandboxed builder must not read on this machine.
+
+    The sandbox profiles allow by default and name what is forbidden, so anything
+    unnamed is readable. The release tree and the order workspace are derivable and
+    always denied; a second checkout or another loop's state directory is not -- only
+    the operator knows those exist. GIG_SANDBOX_DENY is how they say so, colon
+    separated, and an empty setting simply means there is nothing else to hide.
+    """
+    raw = os.environ.get("GIG_SANDBOX_DENY", "")
+    return [str(Path(part).expanduser()) for part in raw.split(":") if part.strip()]
+
+
+def _deny_reads(paths: list[str]) -> str:
+    return "".join(f"(deny file-read* (subpath {json.dumps(path)}))\n" for path in paths)
 # These orders are worked by hand and must never be answered, delivered, or submitted by this lane.
 # They are the ones where a wrong send is expensive: LBJ's video edit already sits at AWAITING_BUYER
 # on an exact cut, and both BUYMA jobs are listing work inside a client's own account, where the
@@ -691,7 +708,8 @@ def _prepare_blind_output_audit(
             "(version 1)\n(allow default)\n"
             f"(deny file-read* (subpath {json.dumps(str(root.resolve().parent))}))\n"
             f"(deny file-read* (subpath {json.dumps(str(REPO_ROOT))}))\n"
-            f"(deny file-write* (subpath {json.dumps(str(root.resolve().parent))}))\n",
+            + _deny_reads(_operator_denied_paths())
+            + f"(deny file-write* (subpath {json.dumps(str(root.resolve().parent))}))\n",
             encoding="utf-8",
         )
         evidence_dir = isolated / "evidence"
@@ -1553,7 +1571,8 @@ def _prepare_source_census(args, root: Path, requirements_sha256: str, code_root
             f"(deny file-read* (subpath {quoted_delivery_evidence}))\n"
             f"(deny file-read* (subpath {quoted_releases}))\n"
             f"(deny file-read* (subpath {quoted_checkout}))\n"
-            f"(deny file-write* (subpath {quoted_projects}))\n",
+            + _deny_reads(_operator_denied_paths())
+            + f"(deny file-write* (subpath {quoted_projects}))\n",
             encoding="utf-8",
         )
         started = time.time_ns()
