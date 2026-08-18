@@ -381,6 +381,30 @@ function completionCount(text) {
   return first + second;
 }
 
+// Measured live 2026-08-18 (see docs/superpowers/plans/2026-08-16-connector-core-recovery-execution-notes.md,
+// "Doorkeeper is logged out too"): a logged-out doorkeeper.jp shows both a
+// "ログイン" and a "新規登録" control in the page header, on every page —
+// including the event page runDirectAction already has open (the runner
+// navigates there before calling this), so no extra navigation is needed.
+// Requiring both (not just one) keeps this from firing on an unrelated
+// control that merely contains one of the two words, e.g. a genuinely
+// closed or full event. Mirrors peatixSessionExpired in
+// peatix-browser-provider.js.
+async function doorkeeperSessionExpired(page) {
+  if (!page || typeof page.evaluate !== "function") return false;
+  let observed;
+  try {
+    observed = await page.evaluate(() => {
+      const clean = (x) => String(x || "").replace(/\s+/g, " ").trim();
+      const texts = new Set([...document.querySelectorAll("a,button")].map((el) => (
+        clean(el.innerText || el.value || el.getAttribute("aria-label") || "")
+      )));
+      return { login: texts.has("ログイン"), signup: texts.has("新規登録") };
+    });
+  } catch { return false; }
+  return Boolean(observed && observed.login === true && observed.signup === true);
+}
+
 function createDoorkeeperScriptFirstWorkflow(options = {}) {
   const now = options.now || (() => new Date());
   const readListingPage = options.readListingPage || defaultReadListingPage;
@@ -461,7 +485,9 @@ function createDoorkeeperScriptFirstWorkflow(options = {}) {
 
     async runDirectAction({ page, candidate }) {
       exactCandidate(candidate);
-      void page;
+      if (await doorkeeperSessionExpired(page)) {
+        return Object.freeze({ status: "failed", safe_reason: "doorkeeper_session_expired" });
+      }
       return Object.freeze({ status: "failed", safe_reason: "doorkeeper_direct_requires_harness" });
     },
 
