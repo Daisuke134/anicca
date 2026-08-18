@@ -83,18 +83,23 @@ doctor                    # 固着プロセス(STAT=UE)を検出して報告
 
 | # | 内容 | 効果 | 状態 |
 |---|---|---|---|
-| A1 | 孤児 `code_sign_clone` 27個を削除（`lsof` で使用中を除外） | **+9.5GB** | Dais 指示待ち |
-| A2 | stale lease 解放（`interactive:dais` / 死んだ PID 40915） | 他ジョブのブラウザ取得を回復 | Dais 指示待ち |
-| A3 | gig 旧バージョン削除（v98-audit / v94-95-base / v22-v30-package / v98-v106-review） | +2.3GB | 未 |
+| A1 | 孤児 `code_sign_clone` 27個を削除（`lsof` で使用中を除外） | 9,504MB 削除、`var/folders` 11GB→1.76GB | **完了** 2026-08-18 |
+| A2 | stale lease 解放（`interactive:dais` / 死んだ PID 40915） | 残存 lease 0 | **完了** 2026-08-18 |
+| A3 | gig 旧バージョン削除（v98-audit / v94-95-base / v22-v30-package / v98-v106-review 他13件） | 2,753MB、案件 9.5GB→6.8GB | **完了** 2026-08-18 |
+
+**A で分かった重要な事実**: クローンを 9.5GB 消しても空きは 1GB しか増えなかった。
+`/System/Volumes/VM`（スワップ）が **20GB** まで育っていたため。原因は 1日14時間稼働の
+ブラウザ2個と 10時間半起動しっぱなしの Premiere。Premiere を終了させて空きが回復し始めた。
+**ディスク不足の真因もプロセスのライフサイクルだった。** 空き 2GB → 5.3GB。
 
 ### B. 再発防止（A の後）
 
 | # | 内容 | 状態 |
 |---|---|---|
-| B1 | `disk-reclaim.sh` 作成 + cron 登録（毎時、`lsof` 判定、8GB未満で Telegram 通知） | 未 |
+| B1 | `disk-reclaim.sh` + launchd 登録（毎時、`lsof` 判定、8GB未満で Telegram 通知） | **完了** 2026-08-18。`~/anicca/skills/disk/disk-reclaim.sh` / `ai.anicca.disk-reclaim`。OpenClaw cron はエージェント実行でトークンを食うため launchd を採用 |
 | B2 | `premiere-cli` に `quit` / `--quit-when-done` 追加 | 未 |
 | B3 | lease を trap で必ず解放（タイムアウトで殺されても release） | 未 |
-| B4 | 固着 Premiere 52973 の始末 | 未 |
+| B4 | 固着 Premiere の始末 | 47087 は終了済み。**52973 は `UE` のまま残存**（13時間超、`kill -9` 不可。カーネルI/O待ちのため再起動でしか消えない） |
 
 ### C. LBJ 案件（待ち・こちらの手番ではない）
 
