@@ -4569,6 +4569,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "version": 1,
                     "observed_at": inventory.get("observed_at"),
                     "list_page_tabs": getattr(listing_inventory, "LAST_PAGE_TABS", []),
+                    "page_walk": getattr(listing_inventory, "PAGE_WALK", []),
                     "controls": {str(source.get("service_id")): source.get("state_controls") or []
                                  for source in contract_sources},
                 })

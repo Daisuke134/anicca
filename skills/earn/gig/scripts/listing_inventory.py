@@ -287,6 +287,8 @@ async def _eval_json(ws_url: str, url: str, expression: str) -> dict:
 # The tabs observed on the most recent list page. A listing left every page of this list while
 # still rendering to a buyer, and whichever tab holds it is the answer.
 LAST_PAGE_TABS: list[dict] = []
+# What each page of the seller list returned on the most recent walk.
+PAGE_WALK: list[dict] = []
 
 
 async def _fetch_list_page(
@@ -397,6 +399,7 @@ async def collect_live(identity: str = IDENTITY, *, ws_url: str | None = None) -
     try:
         inventory: list[dict] = []
         seen_ids: set[str] = set()
+        PAGE_WALK.clear()
         for page in range(1, MAX_PAGES + 1):
             live_cards = await _fetch_list_page(cdp_base, page, ws_url=ws_url)
             cards = []
@@ -412,6 +415,13 @@ async def collect_live(identity: str = IDENTITY, *, ws_url: str | None = None) -
                         row["state_controls"] = live_card.get("state_controls") or []
                     cards.extend(parsed)
             new_cards = new_cards_only(cards, seen_ids)
+            # Twice today a page was declared empty and the conclusion drawn from its absence
+            # was wrong, so each page records what it actually returned before the walk stops.
+            PAGE_WALK[:] = PAGE_WALK + [{
+                "page": page, "url": LISTINGS_URL if page == 1 else f"{LISTINGS_URL}/page:{page}",
+                "observed_ids": [str(row.get("service_id") or "") for row in cards],
+                "new_ids": [str(row.get("service_id") or "") for row in new_cards],
+            }]
             if not new_cards:
                 break
             seen_ids.update(c["service_id"] for c in new_cards)
