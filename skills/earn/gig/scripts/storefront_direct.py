@@ -3289,6 +3289,10 @@ def _seal_generated_proposal(
         raise RuntimeError("storefront_generated_value_invalid")
     if field == "title":
         readback = {"public_title": f"{proposed}ます"}
+    elif field == "catchphrase":
+        # It appears verbatim under the title. Without this branch the field fell through to the
+        # price option handling and every proposal was rejected as an invalid price option.
+        readback = {"public_catchphrase": proposed}
     elif field == "body":
         readback = {"public_body_sha256": hashlib.sha256(proposed.encode()).hexdigest()}
     elif field == "FAQ":
