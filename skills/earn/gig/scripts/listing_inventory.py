@@ -316,19 +316,26 @@ async def _fetch_list_page(
         ".filter(e=>e.label&&(/services_lists|status|public|open|draft|stop/i.test(e.href||'')"
         "||/公開|下書き|停止|非公開|審査/.test(e.label))).slice(0,20)})"
     )
-    # A page read before its cards hydrate looks empty, and an empty page ends the walk. The
-    # fourteenth listing sat on page two for hours while the loop reported it gone, so a page is
-    # only called empty after it has been given time to render.
+    # This list renders its cards progressively, so a single read catches whatever exists at
+    # that instant: one walk returned 3, 8, 2 and 0 cards across four pages and missed the
+    # fourteenth listing entirely, which then looked like it had left the catalogue. The page is
+    # read until its card count stops growing, and the largest reading is the one kept.
     if ws_url is not None:
-        data = {}
-        for attempt in range(4):
+        best: list[dict] = []
+        stable = 0
+        data: dict = {}
+        for _ in range(8):
             data = await _eval_json(ws_url, url, expression)
-            if data.get("cards"):
-                break
-            if attempt < 3:
-                await asyncio.sleep(1.5)
+            cards = data.get("cards") or []
+            if len(cards) > len(best):
+                best, stable = cards, 0
+            else:
+                stable += 1
+                if stable >= 2:
+                    break
+            await asyncio.sleep(1.0)
         LAST_PAGE_TABS[:] = data.get("tabs") or []
-        return data.get("cards", [])
+        return best
     if cdp_base is None:
         raise ValueError("cdp_base_required_without_ws")
     from cdp_nav_snapshot import hidden_page_target

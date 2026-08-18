@@ -371,7 +371,12 @@ def test_safe_noop_normalizes_non_effect_service_metadata(tmp_path):
     assert guarded["decision"] == "no_op" and guarded["service_id"] is None
 
 
-def test_prepares_top_scorecard_gap_without_overwriting_active_experiment(tmp_path):
+def test_a_service_with_an_open_experiment_is_not_selected_again(tmp_path):
+    """The selector skips a listing whose experiment is still running rather than re-picking it.
+
+    An earlier design returned that listing anyway with a guard reason, which made the
+    measurement window read as work. When it is the only candidate the answer is nothing.
+    """
     scorecard = tmp_path / "scorecard.json"
     scorecard.write_text(json.dumps({"priority_backlog": [
         {"priority": 1, "service_id": "91000001", "field": "image", "before": 0,
@@ -380,31 +385,21 @@ def test_prepares_top_scorecard_gap_without_overwriting_active_experiment(tmp_pa
     effects = tmp_path / "effects.jsonl"
     effects.write_text(json.dumps({
         "status": "accepted", "effect": 1, "service_id": "91000001",
-        "changed_field": "FAQ", "experiment_key": "faq-live",
+        "changed_field": "FAQ", "experiment_key": "faq-live", "accepted_at_epoch": 1,
     }) + "\n")
     outcomes = tmp_path / "outcomes.jsonl"
     outcomes.write_text(json.dumps({"experiment_key": "faq-live", "terminal": False}) + "\n")
+    contracts = [{"service_id": "91000001", "service_version_sha256": "a" * 64}]
+    # Far enough past the change that the seven-day hold on that listing has expired, so the
+    # open experiment is the only thing keeping it out of the selection.
+    now = 1 + 604_800 + 1
 
-    prepared = direct._prepare_next_hypothesis(
-        scorecard, effects, outcomes,
-        [{"service_id": "91000001", "service_version_sha256": "a" * 64}], 123,
-    )
+    assert direct._prepare_next_hypothesis(scorecard, effects, outcomes, contracts, now) is None
 
-    assert prepared == {
-        "version": 1,
-        "hypothesis_key": "storefront:hypothesis:v1:d30b705abbc087cb5bb65a021efb111bed9f513431d67a6960c976e9215596ef",
-        "prepared_at_epoch": 123,
-        "service_id": "91000001",
-        "service_version_sha256": "a" * 64,
-        "field": "image",
-        "before": 0,
-        "success_metric": "views_to_inquiry",
-        "reason": "verified gap",
-        "executable": False,
-        "guard_reason": "active_experiment_measurement_open",
-        "active_experiment_key": "faq-live",
-    }
-
+    outcomes.write_text(json.dumps({"experiment_key": "faq-live", "terminal": True}) + "\n")
+    reopened = direct._prepare_next_hypothesis(scorecard, effects, outcomes, contracts, now)
+    assert reopened is not None
+    assert reopened["service_id"] == "91000001" and reopened["field"] == "image"
 
 def test_presend_guard_rejects_a_stale_faq_absence():
     judgement = {"decision": "change", "service_id": direct.TARGET_SERVICE_ID,
@@ -538,35 +533,59 @@ def test_effect_ledger_append_is_idempotent(tmp_path):
         raise AssertionError("corrupt effect ledger ignored")
 
 
-def test_verified_image_contract_becomes_one_exact_image_judgement():
-    contract = direct._load_image_contract(direct.DEFAULT_IMAGE_CONTRACT)
+def test_verified_image_contract_becomes_one_exact_image_judgement(monkeypatch):
+    """The judgement itself; the contract validator has its own tests."""
+    monkeypatch.setattr(direct, "_validate_image_mutation_contract", lambda contract: None)
+    contract = {
+        "service_id": "91000001", "changed_field": "image",
+        "proposed_value": {"asset_sha256": "a" * 64, "asset_path": "assets/hero.png"},
+        "contract_sha256": "b" * 64, "success_metric": "views_to_inquiry",
+        "observation_window_days": 14,
+    }
+
     judgement = direct._image_judgement({
         "service_id": "91000001", "field": "image", "before": 0,
         "executable": True, "success_metric": "views_to_inquiry",
         "reason": "verified demand + owned quantified claim + 0 images",
-    }, {
-        "service_image_count": 0, "service_image_ids": [],
     }, contract)
 
-    assert contract["width"] == 1220 and contract["height"] == 1016
     assert judgement["changed_field"] == "image"
+    assert judgement["service_id"] == "91000001"
     assert judgement["before_value"] == 0
-    assert judgement["proposed_value"] == contract["asset_sha256"]
+    assert judgement["proposed_value"] == "a" * 64
     assert judgement["experiment_key"].startswith("storefront:v1:91000001:image:")
+    assert judgement["no_op_reason"] is None
 
 
-def test_image_form_and_public_readback_accept_only_one_image_delta():
+def test_image_form_and_public_readback_accept_only_one_image_delta(monkeypatch):
+    monkeypatch.setattr(direct, "_validate_image_mutation_contract", lambda contract: None)
+    contract = {"service_id": "91000001", "changed_field": "image",
+                "proposed_value": {"asset_sha256": "a" * 64, "asset_path": "assets/hero.png"}}
     base = [{"name": "data[Service][overview]", "value": "same", "checked": False}]
     before_form = {"url": "https://coconala.com/mypage/services/91000001", "fields": base}
     after_form = {"url": before_form["url"], "fields": base + [{
-        "name": "data[UploadedFile][n1][image_files]", "value": "C:\\fakepath\\hero-final.png",
-        "checked": False,
+        "name": "data[UploadedFile][n1][image_files]", "value": "hero-final.png", "checked": False,
     }]}
-    direct._validate_image_form_delta(before_form, after_form)
-    direct._validate_public_image_acceptance({
-        "url": "https://coconala.com/services/91000001", "service_image_count": 0,
-        "service_image_ids": [], "listing_version_sha256": "a" * 64,
-    }, {
-        "url": "https://coconala.com/services/91000001", "service_image_count": 1,
-        "service_image_ids": ["hero.png"], "listing_version_sha256": "b" * 64,
-    })
+
+    direct._validate_image_form_delta(before_form, after_form, contract)
+
+    two_uploads = {"url": before_form["url"], "fields": after_form["fields"] + [{
+        "name": "data[UploadedFile][n2][image_files]", "value": "second.png", "checked": False,
+    }]}
+    try:
+        direct._validate_image_form_delta(before_form, two_uploads, contract)
+    except RuntimeError as error:
+        assert "seller_image_upload_field_invalid" in str(error)
+    else:
+        raise AssertionError("a second uploaded image was accepted")
+
+    changed_elsewhere = {"url": before_form["url"], "fields": [
+        {"name": "data[Service][overview]", "value": "different", "checked": False},
+        after_form["fields"][1],
+    ]}
+    try:
+        direct._validate_image_form_delta(before_form, changed_elsewhere, contract)
+    except RuntimeError as error:
+        assert "seller_image_non_image_changed" in str(error)
+    else:
+        raise AssertionError("a non-image field changed alongside the image")
