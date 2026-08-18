@@ -1689,9 +1689,33 @@ def _analytics_count(body: str, label: str, unit: str) -> int:
     return int(digits.replace(",", ""))
 
 
+def _near_duplicate_listings(rows: list[dict], families: dict[str, str]) -> list[dict]:
+    """Report live listings that sell the same thing under nearly the same name.
+
+    Two Excel listings went live one word apart, `…要件を整理します` and `…仕様を整理します`,
+    because the only duplicate guard compared titles for exact equality.
+    """
+    import difflib
+
+    pairs = []
+    titled = [row for row in rows if row.get("title_stem")]
+    for index, first in enumerate(titled):
+        for second in titled[index + 1:]:
+            family = families.get(str(first["service_id"]))
+            if family is None or family != families.get(str(second["service_id"])):
+                continue
+            ratio = difflib.SequenceMatcher(
+                None, str(first["title_stem"]), str(second["title_stem"])).ratio()
+            if ratio >= 0.9:
+                pairs.append({"service_ids": [str(first["service_id"]), str(second["service_id"])],
+                              "capability_family": family, "title_similarity": round(ratio, 3),
+                              "titles": [first["title_stem"], second["title_stem"]]})
+    return pairs
+
+
 def _scan_public_copy(
     state_dir: Path, evidence_dir: Path, now: int, service_ids: list[str],
-    default_tab_script: Path = DEFAULT_TAB,
+    default_tab_script: Path = DEFAULT_TAB, capability_families: dict[str, str] | None = None,
 ) -> list[dict]:
     """Read the copy this seller wrote for each listing and report prohibited tool names.
 
@@ -1704,6 +1728,7 @@ def _scan_public_copy(
     import listing_inventory
 
     findings: list[dict] = []
+    scanned: list[dict] = []
     ledger = state_dir / "compliance-scan.jsonl"
     for service_id in service_ids:
         url = f"https://coconala.com/mypage/services/{service_id}"
@@ -1718,7 +1743,10 @@ def _scan_public_copy(
             if opened.returncode == 0 and tab.get("ok") is True:
                 observed = asyncio.run(listing_inventory._eval_json(
                     str(tab["ws"]), url,
-                    "JSON.stringify({url:location.href,body:(()=>{const f=document.forms[0];"
+                    "JSON.stringify({url:location.href,"
+                    "title:(()=>{const e=document.forms[0]?.querySelector('[name=\"data[Service][overview]\"]');"
+                    "return e?e.value||'':''})(),"
+                    "body:(()=>{const f=document.forms[0];"
                     "if(!f)return '';const own=['data[Service][overview]','data[Service][catchphrase]',"
                     "'data[Service][head]','data[Service][body]','data[Option][0][title]',"
                     "'data[Option][1][title]','data[Option][2][title]'];"
@@ -1746,16 +1774,21 @@ def _scan_public_copy(
             "version": 1, "service_id": service_id, "observed_at_epoch": now, "source_url": url,
             "status": "scanned" if readable else "unreadable",
             "prohibited_terms": terms,
+            # The loop had no record of its own listing titles, so it could publish a second
+            # listing one word away from the first and see nothing wrong.
+            "title_stem": str(observed.get("title") or "") if readable else None,
             "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
             "scan_key": "storefront:compliance:v1:" + hashlib.sha256(
                 f"{service_id}:{hashlib.sha256(body.encode()).hexdigest()}:{readable}".encode()
             ).hexdigest(),
         }
         _append_key_once(ledger, "scan_key", row)
+        scanned.append(row)
         if terms:
             findings.append(row)
+    duplicates = _near_duplicate_listings(scanned, capability_families or {})
     _atomic_write(evidence_dir / "compliance-scan.json",
-                  {"scanned": len(service_ids), "violations": findings})
+                  {"scanned": len(service_ids), "violations": findings, "near_duplicates": duplicates})
     return findings
 
 
@@ -4493,7 +4526,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             compliance_violations = _scan_public_copy(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
-                getattr(args, "default_tab_script", DEFAULT_TAB),
+                getattr(args, "default_tab_script", DEFAULT_TAB), capability_families,
             )
             funnel = _join_funnel(
                 args.state_dir, validated_contracts,
