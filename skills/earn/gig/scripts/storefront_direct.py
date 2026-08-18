@@ -5340,6 +5340,52 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 })
                 accepted_effect = int(appended and not pending_effect["recovered"])
                 accepted_readback = 1
+            # One external effect per wake. When nothing else changed, a duplicate listing is
+            # taken down through the platform's own archive control, which keeps it restorable.
+            retire_result = None
+            retire_allocation = next(
+                (row for row in portfolio.get("allocations") or []
+                 if row.get("action") == "RETIRE"
+                 and (row.get("gates") or {}).get("duplicate_of_service_id")), None)
+            if (args.effect and pending_effect is None and judgement["decision"] != "change"
+                    and retire_allocation is not None):
+                retire_service_id = str(retire_allocation["service_id"])
+                try:
+                    # The card's own controls are adapter input and are kept out of the hashed
+                    # catalogue, so the state row is rebuilt from the source card here.
+                    retire_source_card = next(
+                        row for row in contract_sources
+                        if str(row.get("service_id")) == retire_service_id)
+                    retire_contract = _render_listing_state_mutation(
+                        next(row for row in validated_contracts
+                             if row["service_id"] == retire_service_id),
+                        {"service_id": retire_service_id,
+                         "state": next(str(row.get("state") or "") for row in inventory["services"]
+                                       if str(row.get("service_id")) == retire_service_id),
+                         "state_controls": retire_source_card.get("state_controls") or []},
+                        _seller_snapshot_for(ws_url, retire_service_id),
+                        capability_families, retire_allocation,
+                    )
+                    _atomic_write(inventory_path.parent / f"retire-contract-{retire_service_id}.json",
+                                  retire_contract)
+                    retire_result = asyncio.run(_execute_listing_state_effect_async(
+                        ws_url, contract=retire_contract, evidence_dir=inventory_path.parent))
+                    _append_key_once(args.state_dir / "effects.jsonl", "experiment_key", {
+                        "version": 1, "status": "accepted", "effect": 1,
+                        "service_id": retire_service_id, "changed_field": "listing_state",
+                        "experiment_key": _experiment_key(
+                            retire_service_id, "listing_state", retire_contract["proposed_value"]),
+                        "contract_sha256": retire_contract["contract_sha256"],
+                        "after_value": retire_contract["proposed_value"],
+                        "before_value": retire_contract["before_value"],
+                        "accepted_at_epoch": int(time.time()),
+                        "reason": retire_allocation["reason"],
+                        "restore_href": retire_result.get("restore_href"),
+                    })
+                except (RuntimeError, StopIteration) as error:
+                    retire_result = {"error": f"{type(error).__name__}:{str(error)[:160]}"}
+                _atomic_write(inventory_path.parent / "retire-result.json",
+                              {"allocation": retire_allocation, "result": retire_result})
             outcome = _close_outcome(
                 args.state_dir, analytics,
                 getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),
