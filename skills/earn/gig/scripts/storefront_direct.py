@@ -4142,33 +4142,10 @@ async def _execute_listing_state_effect_async(
         ), cid)
         if clicked is not True:
             raise RuntimeError("storefront_retire_control_absent_at_submit")
-        # The card control only opens a confirmation; the archive happens when that dialog is
-        # accepted. Clicking the anchor alone left the listing public and the readback then
-        # reported a missing card, which read like a broken selector rather than a missing step.
-        await asyncio.sleep(2)
-        confirmed = None
-        for _ in range(10):
-            confirmed, cid = await _evaluate(ws, (
-                "(()=>{const visible=e=>{const r=e.getBoundingClientRect();"
-                "return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=='hidden'};"
-                "const controls=[...document.querySelectorAll('a,button')]"
-                ".filter(e=>['OK','ok','はい','公開停止する','停止する','削除する']"
-                ".includes((e.innerText||'').trim())&&visible(e));"
-                "if(!controls.length)return null;const target=controls[0];"
-                "target.click();return (target.innerText||'').trim()})()"
-            ), cid)
-            if confirmed:
-                break
-            await asyncio.sleep(1)
-        dialog, cid = await _evaluate(ws, (
-            "JSON.stringify({confirmed_label:null,"
-            "visible_controls:[...document.querySelectorAll('a,button')]"
-            ".map(e=>(e.innerText||'').trim()).filter(Boolean).slice(0,40)})"
-        ), cid)
-        _atomic_write(evidence_dir / f"listing-state-confirm-{service_id}.json",
-                      {"clicked_confirmation": confirmed, "page_controls": json.loads(str(dialog or "{}"))})
-        if not confirmed:
-            raise RuntimeError("storefront_retire_confirmation_absent")
+        # Measured 2026-08-18: the anchor alone archives. The listing left the 公開中 list at
+        # 12:25:22 after the 12:23:18 attempt, which clicked nothing else. An earlier version
+        # of this step hunted for a confirmation control by label and would have clicked a
+        # 削除する on that page, so it is gone: nothing here clicks a control it did not bind.
         await asyncio.sleep(5)
         await ws.send(json.dumps({"id": cid, "method": "Page.navigate",
                                   "params": {"url": "https://coconala.com/mypage/services_lists"}})); cid += 1
@@ -4183,13 +4160,17 @@ async def _execute_listing_state_effect_async(
     readback = {"service_id": service_id, "cards": cards,
                 "observed_at_epoch": int(time.time())}
     _atomic_write(evidence_dir / f"listing-state-readback-{service_id}.json", readback)
+    # Measured on the real account: an archived listing leaves this list entirely rather than
+    # staying on it as a non-public card. Its absence is therefore the archive succeeding, and
+    # treating that as a fault is what reported a working retirement as broken.
     if not cards:
-        raise RuntimeError("storefront_retire_card_missing_after_archive")
+        return {**readback, "archived": True, "restore_href": None,
+                "restore_control": "not_on_public_list"}
     if "公開中" in str(cards[0].get("text") or ""):
         raise RuntimeError("storefront_retire_still_public")
-    if not (cards[0].get("restore") or []):
-        raise RuntimeError("storefront_retire_restore_control_unverified")
-    return {**readback, "restore_href": cards[0]["restore"][0]}
+    return {**readback, "archived": True,
+            "restore_href": (cards[0].get("restore") or [None])[0],
+            "restore_control": "on_card" if cards[0].get("restore") else "absent"}
 
 
 async def _restore_listing_state_async(ws_url: str, *, service_id: str, restore_href: str) -> dict:
