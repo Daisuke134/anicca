@@ -128,6 +128,25 @@ async def _eval(ws: Any, expression: str) -> Any:
         return value
 
 
+class EstimateFormRefused(RuntimeError):
+    """The estimate form JS reported ok:false; the readback rides along.
+
+    ``str(exc)`` stays the bare durable error token (e.g.
+    ``dependent_category_types_not_loaded``) because
+    ``requested_estimate.py:_error_code()`` truncates any exception message to
+    its first token and must keep working untouched. The category-type
+    contract (booleans/counts: mapping_loaded, sub_value, mapped_option_count,
+    control_disabled, row_hidden, enabled_option_count) is pure machine state,
+    not customer/offer text, so it travels as ``.contract`` instead of being
+    folded into the message.
+    """
+
+    def __init__(self, code: str, contract: dict[str, Any] | None = None) -> None:
+        super().__init__(code)
+        self.code = code
+        self.contract = contract
+
+
 class CoconalaEstimateBrowser:
     """One tab held from fresh thread read through final submit/readback."""
 
@@ -238,7 +257,7 @@ class CoconalaEstimateBrowser:
         return self.read_form()
 
     @staticmethod
-    def _failure(value: Any, fallback: str) -> str:
+    def _refused(value: Any, fallback: str) -> "EstimateFormRefused":
         """Say what the page looked like, not only what we concluded about it.
 
         The category-type wait used to give up with a bare
@@ -246,26 +265,26 @@ class CoconalaEstimateBrowser:
         not: the same thread fails every pass while its siblings submit, so the
         form is settling into a state the contract admits neither as optional nor
         as required. Which state that is was thrown away here and in the browser,
-        so nobody could tell. Carry the readback out with the error.
+        so nobody could tell. Carry the readback out as the exception's
+        ``.contract`` (not folded into the message — ``_error_code()`` in
+        requested_estimate.py truncates the message to a durable first token).
         """
         if not isinstance(value, dict):
-            return fallback
+            return EstimateFormRefused(fallback)
         error = str(value.get("error") or fallback)
         contract = value.get("category_type_contract")
-        if isinstance(contract, dict):
-            return f"{error}: {json.dumps(contract, ensure_ascii=False, sort_keys=True)}"
-        return error
+        return EstimateFormRefused(error, contract if isinstance(contract, dict) else None)
 
     def select_sub(self, label: str) -> dict[str, Any]:
         value = asyncio.run(_eval(self.tab.ws, select_sub_expression(label)))
         if not isinstance(value, dict) or value.get("ok") is not True:
-            raise RuntimeError(self._failure(value, "sub_category_select_failed"))
+            raise self._refused(value, "sub_category_select_failed")
         return self.read_form()
 
     def fill(self, terms: dict[str, Any], completion_date: str) -> dict[str, Any]:
         value = asyncio.run(_eval(self.tab.ws, fill_expression(terms, completion_date)))
         if not isinstance(value, dict) or value.get("ok") is not True:
-            raise RuntimeError(self._failure(value, "estimate_fill_failed"))
+            raise self._refused(value, "estimate_fill_failed")
         return value
 
     def select_related_service(self, service_id: str) -> dict[str, Any]:

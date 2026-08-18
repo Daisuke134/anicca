@@ -1829,6 +1829,11 @@ def execute_requested_estimate(
                 pass
         result = _result(item, status="failed", event_key=event_key, failed=1)
         result["errors"] = [_error_code(error)]
+        # The category-type contract (booleans/counts, never customer/offer
+        # text) rides on EstimateFormRefused.contract, separate from the
+        # durable error token _error_code() truncates the message to.
+        if isinstance(getattr(error, "contract", None), dict):
+            result["category_type_contract"] = error.contract
         return result
 
 
@@ -1856,6 +1861,8 @@ def process_snapshot(
         }
         if isinstance(result.get("attribution"), dict):
             event["attribution"] = result["attribution"]
+        if isinstance(result.get("category_type_contract"), dict):
+            event["category_type_contract"] = result["category_type_contract"]
         base["estimate_events"].append(event)
         base["estimate_effect"] += int(result.get("effect") or 0)
         base["estimate_readback"] += int(result.get("official_readback") or 0)
