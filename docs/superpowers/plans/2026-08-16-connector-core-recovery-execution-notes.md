@@ -510,3 +510,29 @@ Operational lesson worth keeping: **a provider session expiring is invisible fro
 codes.** Luma reported `LUMA_RSVP_UNAVAILABLE`, Connpass reported `registration_status: unknown`, Peatix
 reported `form_navigation_failed` — three different symptoms, one cause. A session-liveness check per
 provider would have found all three in one pass.
+
+## Provider session expiry is now a first-class outcome — 2026-08-18
+
+Three providers stopped booking for the same reason today and each described it differently, so the same
+diagnosis was made three times from scratch:
+
+| provider | what the loop said | what it meant |
+|---|---|---|
+| Luma | `LUMA_RSVP_UNAVAILABLE` | `luma.com/home` redirected to `/signin` |
+| Connpass | `registration_status: unknown` | the join control was replaced by a `ログイン・会員登録` wall |
+| Peatix | `peatix_form_navigation_failed` | the step after `#next-button` never appears behind a login wall |
+
+Each provider now reports `<provider>_session_expired`, which reaches the wake report Dais receives, so a
+fourth investigation is unnecessary. Luma reuses the `auth_status` discovery already computes per event
+page, Connpass stops folding its existing `login_required` state into the generic unavailable branch, and
+Peatix checks the header of the page it already has open, requiring BOTH `ログイン` and `新規登録` so a
+genuinely closed event is never mistaken for a logout.
+
+One pre-existing gap was found and documented rather than widened: the runner's outer catch around the
+direct-action call discards the thrown error and hardcodes `direct_action_failed` into the wake report, so
+Connpass reasons only ever reached the action-history row. The session-expired case bypasses that catch
+locally, matching how Luma and Peatix already return structured failures.
+
+Live readback after the merge: the wake no longer stalls on Peatix. It now walks past it into the deeper
+fallback chain (`doorkeeper_direct_requires_harness`), with Peatix reporting 58 free-and-open and 6
+Calendar-free candidates and zero failed submits.
