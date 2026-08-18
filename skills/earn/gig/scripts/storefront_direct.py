@@ -1874,6 +1874,14 @@ def _delete_one_draft(
         tab = json.loads(opened.stdout)
         if opened.returncode != 0 or tab.get("ok") is not True:
             raise RuntimeError("storefront_draft_delete_tab_open_failed")
+        # The page is reached first and reported on its own, because a click that never returns
+        # cannot say whether the navigation or the click was what hung.
+        result["reached"] = asyncio.run(listing_inventory._eval_json(
+            str(tab["ws"]), url,
+            "JSON.stringify({url:location.href,"
+            "has_control:!!document.querySelector('a.js_prevent-secession-confirm'),"
+            "title:(document.title||'').slice(0,40)})",
+        ))
         result["clicked"] = asyncio.run(listing_inventory._eval_json(
             str(tab["ws"]), url,
             "JSON.stringify((()=>{const a=document.querySelector('a.js_prevent-secession-confirm');"
