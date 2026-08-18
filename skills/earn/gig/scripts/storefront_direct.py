@@ -4953,6 +4953,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         "version": 1, "proposal": proposal, "route": proposal_agent,
                         "service_id": proposal_service_id, "changed_field": next_hypothesis["field"],
                         "contract_sha256": (generated_contract or {}).get("contract_sha256"),
+                        # The reason a proposal was rejected existed only in memory, so four
+                        # wakes in a row produced a no_op whose receipt read `None`.
+                        "rejected": proposal_rejected,
                     })
                     if generated_contract is None:
                         proposal_noop = ({**proposal, "rejected": proposal_rejected}
@@ -4976,15 +4979,19 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         )
                 mutation_contract = None
                 if proposal_noop is not None:
+                    # A proposal the guards rejected has a reason; the model's own no_op_reason
+                    # is None in that case, and printing that told four wakes' receipts nothing.
+                    noop_reason = str(proposal_noop.get("rejected")
+                                      or proposal_noop.get("no_op_reason") or "proposal_rejected")
                     judgement = _guarded_noop({
                         "decision": "no_op", "service_id": None, "changed_field": None,
                         "before_value": None, "proposed_value": None,
                         "hypothesis": str(proposal_noop["hypothesis"]),
                         "competitor_evidence_paths": [], "capability_evidence_paths": [],
                         "success_metric": None, "observation_window_days": None,
-                        "no_op_reason": str(proposal_noop["no_op_reason"]),
+                        "no_op_reason": noop_reason,
                         "experiment_key": None, "uncertainty": proposal_noop.get("uncertainty", []),
-                    }, str(proposal_noop["no_op_reason"]))
+                    }, noop_reason)
                 elif next_hypothesis is None:
                     judgement = _guarded_noop({
                         "decision": "no_op", "service_id": None, "changed_field": None,
