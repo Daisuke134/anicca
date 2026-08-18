@@ -5149,7 +5149,17 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         if not known_draft_image_identity:
                             raise RuntimeError("published_draft_image_identity_missing")
                         break
-            draft_result = (storefront_draft.readback_published_draft(
+            # A listing awaiting a compliance repair is known to differ from its contract, because
+            # the contract is what the copy has to become. Verifying that difference as a fault
+            # would stop the wake that performs the repair.
+            awaiting_repair = any(str(row.get("service_id") or "") == candidate_id
+                                  for row in compliance_violations)
+            draft_result = ({
+                "version": 1, "candidate_key": new_listing_contract["candidate_key"],
+                "contract_sha256": new_listing_contract["contract_sha256"],
+                "draft_service_id": candidate_id, "status": "compliance_repair_pending",
+                "effect": 0, "readback": 0, "public_effect": 0,
+            } if awaiting_repair else storefront_draft.readback_published_draft(
                 new_listing_contract,
                 getattr(args, "default_tab_script", DEFAULT_TAB),
                 inventory_path.parent,
