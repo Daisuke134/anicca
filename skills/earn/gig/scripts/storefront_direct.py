@@ -1897,10 +1897,13 @@ def _delete_one_draft(
         result["after"] = asyncio.run(listing_inventory._eval_json(
             str(tab["ws"]), url,
             "JSON.stringify({url:location.href,"
+            # Unfiltered: the click reported success and the filtered view came back empty, so
+            # the filter was hiding whatever the page actually put on screen.
+            "dialogs:[...document.querySelectorAll('[class*=modal],[class*=dialog],[role=dialog]')]"
+            ".map(e=>((e.innerText||'')+'').trim().slice(0,120)).filter(Boolean).slice(0,4),"
             "controls:[...document.querySelectorAll('a,button')]"
             ".map(e=>({tag:e.tagName,label:((e.innerText||'')+'').trim().slice(0,16),"
-            "cls:((e.className||'')+'').slice(0,50)}))"
-            ".filter(e=>/削除|OK|はい|キャンセル/.test(e.label)).slice(0,12)})",
+            "cls:((e.className||'')+'').slice(0,50)})).filter(e=>e.label).slice(0,30)})",
         ))
     except (KeyError, ValueError, OSError, RuntimeError) as error:
         result["error"] = f"{type(error).__name__}:{str(error)[:140]}"
