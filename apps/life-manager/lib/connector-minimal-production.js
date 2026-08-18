@@ -342,6 +342,11 @@ function createMinimalProductionDependencies(options = {}) {
     now,
     onDiscoveryAudit: operations.recordPeatixDiscoveryAudit || (() => {}),
     readAttendeeProfile: () => options.peatixAttendeeProfile,
+    hasAppliedBundle: (candidate) => evidenceChain.hasAppliedBundle({
+      provider: "peatix",
+      event_ref: candidate.event_ref,
+      provider_status: "registered",
+    }),
   });
   const meetupWorkflow = options.meetupWorkflow || createMeetupScriptFirstWorkflow({
     now,
