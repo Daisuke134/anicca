@@ -1123,8 +1123,12 @@ def main(argv: list[str] | None = None) -> int:
     empty = {"observed": 0, "actionable": 0, "effect": 0, "readback": 0, "failed": 0, "pending": 0, "oldest": None}
 
     env = os.environ.copy()
-    env.setdefault("ANICCA_BUDGET_SCOPE_ID", pass_id)
-    env.setdefault("ANICCA_BUDGET_DAILY_SCOPE", "gig-apply-direct")
+    # The runner accepts a budget scope only together with the budgets it scopes --
+    # naming one without them is rejected outright. So opt in only once an operator
+    # has set the budgets, and otherwise run unmetered, the way this lane always has.
+    if env.get("ANICCA_PASS_TOKEN_BUDGET") and env.get("ANICCA_LOOP_DAILY_TOKEN_BUDGET"):
+        env.setdefault("ANICCA_BUDGET_SCOPE_ID", pass_id)
+        env.setdefault("ANICCA_BUDGET_DAILY_SCOPE", "gig-apply-direct")
     run_dir.mkdir(parents=True, exist_ok=True)
     brake_status = _operator_brake_status(args.operator_brake)
     if brake_status == "held":
