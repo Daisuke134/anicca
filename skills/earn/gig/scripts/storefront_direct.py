@@ -5205,10 +5205,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     getattr(args, "default_tab_script", DEFAULT_TAB),
                     inventory_path.parent,
                 )
+            # A listing derived from a market cluster must record that cluster, not the committed
+            # contract it borrowed its policy from. Recording the wrong one left the Excel cluster
+            # looking unused and produced a second near-identical Excel listing.
             draft_result = {**draft_result,
                             "capability_family": create_family or capability_families.get(candidate_id),
                             "blank_draft_claim": create_draft_claim,
-                            "demand_evidence_path": demand_evidence_path}
+                            "demand_evidence_path": (
+                                cluster_blueprint["demand_evidence_path"]
+                                if cluster_blueprint is not None else demand_evidence_path)}
 
             for name in STATE_FILES:
                 path = args.state_dir / name
