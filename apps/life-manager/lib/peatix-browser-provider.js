@@ -110,6 +110,23 @@ async function evaluate(page, fn, payload) {
   try { const x = await page.evaluate(fn, payload); return x && typeof x === "object" && !Array.isArray(x) ? x : null; } catch { return null; }
 }
 
+// Measured live 2026-08-18 (see docs/superpowers/plans/2026-08-16-connector-core-recovery-execution-notes.md,
+// "Peatix was logged out too"): a logged-out peatix.com shows both a
+// "ログイン" and a "新規登録" control in the page header, on every page —
+// including the ticket page this runs on, so no extra navigation is needed.
+// Requiring both (not just one) keeps this from firing on an unrelated
+// control that merely contains one of the two words.
+async function peatixSessionExpired(page) {
+  const observed = await evaluate(page, () => {
+    const clean = (x) => String(x || "").replace(/\s+/g, " ").trim();
+    const texts = new Set([...document.querySelectorAll("a,button")].map((el) => (
+      clean(el.innerText || el.value || el.getAttribute("aria-label") || "")
+    )));
+    return { login: texts.has("ログイン"), signup: texts.has("新規登録") };
+  }, { mode: "session_check" });
+  return Boolean(observed && observed.login === true && observed.signup === true);
+}
+
 async function readPeatixRegistrationStateOnPage(page, raw) {
   const c = candidate(raw); if (!c || !page || typeof page.evaluate !== "function") return out("unavailable", "invalid_input");
   const observed = await evaluate(page, (p) => {
@@ -199,7 +216,10 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
     const ticket = await control(page, `input[name=number_of_tickets_${c.ticket}]`); if (!ticket || typeof ticket.fill !== "function") return out("unavailable", "ticket_control_unavailable"); await ticket.fill("1");
     const next = await control(page, "#next-button"); if (!next || typeof next.click !== "function") return out("unavailable", "next_control_unavailable"); if (typeof page.waitForURL !== "function") return out("unavailable", "form_navigation_failed"); const nextNavigation = waitForFormOrConfirm(page, c.id); await next.click();
     const nextStep = await nextNavigation;
-    if (!nextStep) return out("unavailable", "form_navigation_failed");
+    if (!nextStep) {
+      if (await peatixSessionExpired(page)) return out("unavailable", "session_expired");
+      return out("unavailable", "form_navigation_failed");
+    }
     if (nextStep === "form") {
     const form = await evaluate(page, () => {
       const norm = (x) => String(x || "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();

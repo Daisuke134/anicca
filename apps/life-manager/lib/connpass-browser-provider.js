@@ -234,6 +234,14 @@ async function submitConnpassOnPage(page, _contract, dependencies = {}) {
   if (["registered", "pending"].includes(before.state)) {
     return { status: before.state, effect_started: false };
   }
+  // The join control is already known to be a login wall for anonymous
+  // visitors (see readConnpassRegistrationStateOnPage's own "login_required"
+  // detection above) — distinguished from every other non-absent state so
+  // the caller can report a session problem instead of a generic
+  // registration-unavailable symptom. Nothing has been clicked yet.
+  if (before.state === "login_required") {
+    throw providerError("Connpass session expired", "CONNPASS_SESSION_EXPIRED", false);
+  }
   if (before.state !== "absent") {
     throw providerError(`Connpass registration ${before.state}`, "CONNPASS_REGISTRATION_UNAVAILABLE", false);
   }

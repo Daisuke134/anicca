@@ -251,6 +251,30 @@ test("billing停留 and malformed direct confirm transitions fail before final c
   }
 });
 
+test("a login-wall header at the stalled next-button step is reported as a session problem, not a generic navigation failure", async () => {
+  const f = fixture({ nextPath: "billing" });
+  const originalEvaluate = f.page.evaluate.bind(f.page);
+  f.page.evaluate = async (fn, payload) => (
+    payload && payload.mode === "session_check"
+      ? { login: true, signup: true }
+      : originalEvaluate(fn, payload)
+  );
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "unavailable", reason: "session_expired" });
+  assert.equal(f.finalCount(), 0);
+  assert.equal(f.calls.some(([name, selector]) => name === "click" && ["#form-submit-button", "#confirm-button"].includes(selector)), false);
+});
+
+test("a login control alone, without the signup control, keeps the ordinary navigation-failed reason", async () => {
+  const f = fixture({ nextPath: "billing" });
+  const originalEvaluate = f.page.evaluate.bind(f.page);
+  f.page.evaluate = async (fn, payload) => (
+    payload && payload.mode === "session_check"
+      ? { login: true, signup: false }
+      : originalEvaluate(fn, payload)
+  );
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "unavailable", reason: "form_navigation_failed" });
+});
+
 test("visible Kana controls require enabled, editable, boolean editable probes before final click", async () => {
   const family = '#confirm-form [name="lastname_edit"]'; const given = '#confirm-form [name="firstname_edit"]';
   for (const invalid of [
