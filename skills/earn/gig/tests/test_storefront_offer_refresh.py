@@ -84,3 +84,16 @@ def test_a_genuinely_new_offer_is_still_due_with_a_baseline(tmp_path):
     assert storefront_direct._offer_refresh_due(
         tmp_path / "effects.jsonl", "4244910", "excel_automation", MACRO_FAMILY,
         already_advertised={other})
+
+
+def test_the_title_is_still_due_after_the_body_is_rewritten(tmp_path):
+    effects = tmp_path / "effects.jsonl"
+    digest = storefront_direct._offer_refresh_due(effects, "4357844", "excel_automation", MACRO_FAMILY)
+    effects.write_text(json.dumps({
+        "service_id": "4357844", "status": "accepted", "effect": 1,
+        "changed_field": "body", "offer_digest": digest,
+    }) + "\n", encoding="utf-8")
+    assert storefront_direct._offer_refresh_due(
+        effects, "4357844", "excel_automation", MACRO_FAMILY, field="body") is None
+    assert storefront_direct._offer_refresh_due(
+        effects, "4357844", "excel_automation", MACRO_FAMILY, field="title") == digest
