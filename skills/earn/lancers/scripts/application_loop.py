@@ -33,7 +33,8 @@ PUBLIC_SOFTWARE_PROOF = {
     "description": "API、scheduler、worker、Postgres、object store、Telegram reporting、公式readback付き外部action loopを同一repositoryで実装したMIT公開のpersonal managerです。",
 }
 PLANNER_TASK_CLASS = "application-intent-planner"
-PLANNER_TIMEOUT_SECONDS = 180
+ESCALATION_REASON = "application decision and client-facing proposal text come from this single call"
+PLANNER_TIMEOUT_SECONDS = 420
 DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json"
 DEFAULT_EVIDENCE_ROOT = Path.home() / ".local/state/anicca/lancers/planner"
 DEFAULT_EVIDENCE_DIR = DEFAULT_EVIDENCE_ROOT
@@ -199,17 +200,19 @@ def build_planner_prompt(rows: Sequence[Mapping[str, object]], today: date) -> s
     return PLANNER_RULES + json.dumps(_snapshot(rows, _tick_date(today)), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 def _invoke_agent(prompt: str, evidence_dir: Path, task_class: str, schema_path: Path, label: str) -> Mapping[str, object]:
-    command = [sys.executable, str(AGENT_RUNNER), "--task-class", task_class, "--prompt-stdin", "--schema", str(schema_path), "--evidence-dir", str(evidence_dir), "--task-label", label, "--loop", "lancers-application", "--workdir", str(SKILLS_ROOT.parent)]
+    command = [sys.executable, str(AGENT_RUNNER), "--task-class", task_class, "--prompt-stdin", "--schema", str(schema_path), "--evidence-dir", str(evidence_dir), "--task-label", label, "--loop", "lancers-application", "--workdir", str(SKILLS_ROOT.parent), "--escalation-reason", ESCALATION_REASON]
     try:
-        completed = subprocess.run(command, input=prompt, text=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False, timeout=PLANNER_TIMEOUT_SECONDS + 30)
-        if completed.returncode != 0: raise ValueError
+        # stderr is kept, not discarded. The runner refuses on configuration this loop cannot see,
+        # and a refusal that reaches no log is a lane that stops applying without ever saying so.
+        completed = subprocess.run(command, input=prompt, text=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=False, timeout=PLANNER_TIMEOUT_SECONDS + 30)
+        if completed.returncode != 0: raise ValueError(((completed.stderr or "").strip().splitlines() or ["no stderr"])[-1])
         evidence = Path(evidence_dir); summary = json.loads((evidence / "summary.json").read_text(encoding="utf-8"))
         result_path = Path(str(summary["result_path"])).resolve(); result_path.relative_to(evidence.resolve())
         if summary.get("status") != "success": raise ValueError
         result = json.loads(result_path.read_text(encoding="utf-8"))
         if not isinstance(result, Mapping): raise ValueError
         return result
-    except Exception: raise RuntimeError("agent_runner_failed") from None
+    except Exception as error: raise RuntimeError(f"agent_runner_failed: {error}") from None
 
 def _planner_runtime_schema(prompt: str, evidence_dir: Path) -> Path:
     snapshot = json.loads(prompt.rsplit("SNAPSHOT:\n", 1)[1])

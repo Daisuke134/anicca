@@ -44,14 +44,28 @@ class ApplicationIntentIsolationTest(unittest.TestCase):
         config = json.loads(config_path.read_text(encoding="utf-8"))
 
         self.assertEqual(config["task_classes"]["application-intent-planner"], {
-            "route": "luna-medium-isolated-application-intent",
+            "route": "luna-high-isolated-application-intent",
+            "requires_explicit_escalation": True,
             "token_reservation": 24576,
-            "timeout_seconds": 180,
+            "timeout_seconds": 420,
             "candidates": [
-                {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
+                {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high"},
                 {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
             ],
         })
+
+    def test_every_caller_of_the_planner_passes_an_escalation_reason(self):
+        """Two lanes share this task class. A caller that omits the reason dies on its first wake."""
+        repo_root = ROOT.parents[1]
+        callers = (
+            repo_root / "skills/earn/gig/scripts/application_parent.py",
+            repo_root / "skills/earn/lancers/scripts/application_loop.py",
+        )
+        for caller in callers:
+            with self.subTest(caller=caller.name):
+                source = caller.read_text(encoding="utf-8")
+                self.assertIn("application-intent-planner", source)
+                self.assertIn("--escalation-reason", source)
 
 
 if __name__ == "__main__":
