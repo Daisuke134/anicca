@@ -2891,7 +2891,9 @@ from allowed_evidence_refs and must include the official offer ref and owned cap
 gap.executable=false with guard_reason=proposal_contract_required means this proposal must create the
 missing contract; it is not a no-op reason and mutation_contract_sha256 is intentionally absent.
 For title, return only the seller-form title stem (Coconala appends ます). For catchphrase,
-return the single line shown under the title, 15 to 30 characters, stating the same offer. For body, return a complete
+return the single line shown under the title, 15 to 30 characters, carrying what the title
+cannot: who it is for, what arrives, or the condition of delivery. It must not restate the
+title in other words; a search result showing the same sentence twice wastes its second line. For body, return a complete
 Japanese replacement with outcome, inclusions, exclusions, required inputs and support boundary.
 For image, proposed_value must be exactly three non-empty lines: a short headline, a supporting line,
 then two or three short badges separated by `｜`. Use only supported offer/capability claims; do not put
