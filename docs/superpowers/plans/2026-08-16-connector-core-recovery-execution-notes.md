@@ -478,3 +478,35 @@ profile Peatix already receives.
 Status is honest: unit-proven, live-unproven. The wakes since the merge found `calendar_free 0` on both
 primaries, because Dais's evenings are now taken partly by the loop's own bookings, so no questionnaire
 event has reached the flow yet.
+
+## Peatix was logged out too — 2026-08-18
+
+Every wake was ending `circuit_open / peatix_form_navigation_failed` with three candidates burned, even
+though Peatix was offering the largest supply of the day (6 Calendar-free candidates against 0 from both
+primaries). `peatix-browser-provider.js:200-202` emits that reason when the step after `#next-button` never
+appears, which is exactly what a login wall looks like from inside the ticket flow.
+
+`peatix.com` showed `ログイン / 新規登録` — logged out, the same root cause already found on Luma and on
+Connpass. Three providers, one failure class.
+
+Recovery used Peatix's own email code path (`認証コードを受け取る`), reading the six-digit code from Gmail
+through `gog`, mirroring the Luma recovery. Google sign-in was deliberately NOT used: `google-login`'s
+pointer file requires reading a canonical document at `~/profitable-claude/skills/google-login/SKILL.md`
+before any Google login action, that file does not exist on this machine, and the pointer says not to
+proceed when it cannot be read. Login confirmed by `peatix.com/user/tickets` rendering the account name.
+
+First wake after the login booked immediately:
+
+| field | value |
+|---|---|
+| provider | peatix |
+| event | `peatix-event://event/5129394` — 【参加無料】前十字靭帯損傷から選手を守るための… |
+| when | 2026-08-30 20:00–21:00 |
+| Calendar | `ndr5tv5crmfb4r39tp1ttsi294`, `confirmed`, description carries the Peatix URL |
+| Telegram | message `23250`, photo `23251` |
+| bundles | 24 → 25, `applied_bundle`, failure count 0 |
+
+Operational lesson worth keeping: **a provider session expiring is invisible from the loop's own reason
+codes.** Luma reported `LUMA_RSVP_UNAVAILABLE`, Connpass reported `registration_status: unknown`, Peatix
+reported `form_navigation_failed` — three different symptoms, one cause. A session-liveness check per
+provider would have found all three in one pass.
