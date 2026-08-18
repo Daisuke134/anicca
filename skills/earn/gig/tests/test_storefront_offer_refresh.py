@@ -68,3 +68,19 @@ def test_the_excel_family_now_ships_a_working_macro():
     deliverables = families["excel_automation"]["deliverables"]
     assert any("マクロ" in item for item in deliverables)
     assert not any("設計書" in item for item in deliverables)
+
+
+def test_an_offer_the_listings_already_advertise_is_not_a_change(tmp_path):
+    digest = storefront_direct._offer_refresh_due(
+        tmp_path / "effects.jsonl", "4244910", "excel_automation", MACRO_FAMILY)
+    assert storefront_direct._offer_refresh_due(
+        tmp_path / "effects.jsonl", "4244910", "excel_automation", MACRO_FAMILY,
+        already_advertised={digest}) is None
+
+
+def test_a_genuinely_new_offer_is_still_due_with_a_baseline(tmp_path):
+    other = storefront_direct._offer_refresh_due(
+        tmp_path / "effects.jsonl", "4244910", "excel_automation", DOCUMENT_FAMILY)
+    assert storefront_direct._offer_refresh_due(
+        tmp_path / "effects.jsonl", "4244910", "excel_automation", MACRO_FAMILY,
+        already_advertised={other})
