@@ -46,7 +46,7 @@ OVERRIDES = Path(
 LAUNCH_AGENTS = Path.home() / "Library" / "LaunchAgents"
 # The browser owns the one authenticated session the lanes share. Reloading it
 # throws that session away, so it is never in the default set.
-DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser"}
+DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-release-watch"}
 PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 
 
@@ -91,6 +91,8 @@ def settings(release: Path) -> tuple[dict, dict[str, str]]:
             raise SystemExit(f"{OVERRIDES}: expected a flat object of overrides")
         table.update({k: str(v) for k, v in machine.items()})
     table["RELEASE"] = str(release)
+    # The watcher is the one job that runs from the checkout: it has to fetch.
+    table["CHECKOUT"] = str(REPO_ROOT)
     return manifest, resolve(table)
 
 
@@ -165,12 +167,24 @@ def loaded_program(label: str) -> list[str]:
     return argv
 
 
-def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool) -> bool:
+def is_running(label: str) -> bool:
+    printed = subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/{label}"],
+                             capture_output=True, text=True)
+    return "state = running" in printed.stdout
+
+
+def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
+             skip_busy: bool = False) -> bool:
     label = job["label"]
     path = LAUNCH_AGENTS / f"{label}.plist"
     body = plist_for(job, table)
     if dry_run:
         print(json.dumps(body, indent=1))
+        return True
+    if skip_busy and is_running(label):
+        # Booting out mid-pass kills the browser lease and leaves locks behind.
+        # An unattended switch can always wait for the next tick; a person cannot.
+        print(f"  {label}: mid-pass, leaving it for the next tick")
         return True
 
     Path(table["GIG_LOG_DIR"]).mkdir(parents=True, exist_ok=True)
@@ -209,14 +223,34 @@ def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool) -> 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=("build", "activate", "status"))
+    parser.add_argument("command", choices=("build", "activate", "status", "watch"))
     parser.add_argument("--sha", help="release this commit instead of HEAD")
     parser.add_argument("--jobs", help="comma-separated labels; default is the four lanes")
     parser.add_argument("--dry-run", action="store_true", help="print the plists, load nothing")
     args = parser.parse_args()
 
-    sha = git("rev-parse", args.sha or "HEAD")
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+    if args.command == "watch":
+        # Fast-forward only: a lane must never run a merge nobody wrote down.
+        git("fetch", "--quiet", "origin", "main")
+        if git("rev-parse", "HEAD") != git("rev-parse", "origin/main"):
+            git("merge", "--ff-only", "--quiet", "origin/main")
+        sha = git("rev-parse", "HEAD")
+        wanted = {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED
+        behind = [job for job in manifest["jobs"] if job["label"] in wanted
+                  and not next((a for a in loaded_program(job["label"])
+                                if a.endswith((".py", ".sh"))), "").startswith(
+                                    str(release_dir(sha)))]
+        if not behind:
+            return 0
+        release = build(sha)
+        print(f"release {sha[:12]} -> {release}")
+        for job in behind:
+            activate(job, settings(release)[1], release, False, skip_busy=True)
+        return 0
+
+    sha = git("rev-parse", args.sha or "HEAD")
 
     if args.command == "status":
         for job in manifest["jobs"]:
