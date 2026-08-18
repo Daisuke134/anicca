@@ -50,3 +50,17 @@ def test_a_pair_stays_a_pair_after_one_of_them_is_reworded():
         {"service_id": "4357869", "title_stem": "請求書作成のExcel自動化仕様を整理し"},
     ]
     assert storefront_direct._near_duplicate_listings(reworded, FAMILIES) == []
+
+
+def test_a_withdrawn_listing_is_never_deleted_as_litter(tmp_path):
+    """4356229 is a draft because the platform withdrew it, not because a publication failed."""
+    import json as _json
+
+    ledger = tmp_path / "new-listing-drafts.jsonl"
+    ledger.write_text(_json.dumps({
+        "draft_service_id": "4356229", "status": "published", "public_effect": 1,
+    }) + "\n", encoding="utf-8")
+    drafts = ["4356229", "4356299", "4357788"]
+
+    assert storefront_direct._deletable_drafts(ledger, drafts) == ["4356299", "4357788"]
+    assert storefront_direct._deletable_drafts(tmp_path / "absent.jsonl", drafts) == sorted(drafts)

@@ -1847,6 +1847,76 @@ def _observe_draft_controls(
     return record
 
 
+def _delete_one_draft(
+    evidence_dir: Path, service_id: str, default_tab_script: Path = DEFAULT_TAB,
+) -> dict:
+    """Delete one abandoned draft through the control its own page names.
+
+    Bound to `a.js_prevent-secession-confirm` (`下書きを削除`) by class, never by label: the
+    same page also carries `削除する`, which removes a paid option. Whatever the click produces
+    is recorded, and nothing else is clicked, because a deletion cannot be undone.
+    """
+    import listing_inventory
+
+    url = f"https://coconala.com/mypage/services/{service_id}"
+    opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", "about:blank"],
+        capture_output=True, text=True, check=False, timeout=30,
+    )
+    result: dict = {"service_id": service_id}
+    tab = None
+    try:
+        tab = json.loads(opened.stdout)
+        if opened.returncode != 0 or tab.get("ok") is not True:
+            raise RuntimeError("storefront_draft_delete_tab_open_failed")
+        result["clicked"] = asyncio.run(listing_inventory._eval_json(
+            str(tab["ws"]), url,
+            "JSON.stringify((()=>{const a=document.querySelector('a.js_prevent-secession-confirm');"
+            "if(!a)return{found:false};a.click();return{found:true,"
+            "label:((a.innerText||'')+'').trim()}})())",
+        ))
+        if not (result["clicked"] or {}).get("found"):
+            raise RuntimeError("storefront_draft_delete_control_absent")
+        time.sleep(3)
+        result["after"] = asyncio.run(listing_inventory._eval_json(
+            str(tab["ws"]), url,
+            "JSON.stringify({url:location.href,"
+            "controls:[...document.querySelectorAll('a,button')]"
+            ".map(e=>({tag:e.tagName,label:((e.innerText||'')+'').trim().slice(0,16),"
+            "cls:((e.className||'')+'').slice(0,50)}))"
+            ".filter(e=>/削除|OK|はい|キャンセル/.test(e.label)).slice(0,12)})",
+        ))
+    except (KeyError, ValueError, OSError, RuntimeError) as error:
+        result["error"] = f"{type(error).__name__}:{str(error)[:140]}"
+    finally:
+        if isinstance(tab, dict) and tab.get("target_id"):
+            subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "close", str(tab["target_id"])], capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+    _atomic_write(evidence_dir / f"draft-delete-{service_id}.json", result)
+    return result
+
+
+def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
+    """Drafts this loop abandoned, never those with publication history.
+
+    `4356229` is a draft because the platform withdrew it, not because a publication failed:
+    it carries views and a listing history, so it is repaired or left alone, never deleted.
+    """
+    published = set()
+    if ledger_path.exists():
+        for line in ledger_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if row.get("status") == "published":
+                published.add(str(row.get("draft_service_id") or ""))
+    return [value for value in sorted(draft_ids) if value not in published]
+
+
 def _near_duplicate_listings(rows: list[dict], families: dict[str, str]) -> list[dict]:
     """Report live listings that sell the same thing under nearly the same name.
 
@@ -4871,6 +4941,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             })
             _observe_draft_controls(inventory_path.parent, draft_ids,
                                     getattr(args, "default_tab_script", DEFAULT_TAB))
+            # One draft per wake: a deletion cannot be undone, so the next wake's own card census
+            # is what confirms the previous one rather than a claim made in the same breath.
+            deletable = _deletable_drafts(args.state_dir / "new-listing-drafts.jsonl", draft_ids)
+            if args.effect and deletable:
+                try:
+                    _delete_one_draft(inventory_path.parent, deletable[0],
+                                      getattr(args, "default_tab_script", DEFAULT_TAB))
+                except Exception as error:  # cleanup never ends a wake
+                    _atomic_write(inventory_path.parent / "draft-delete-error.json",
+                                  {"error": f"{type(error).__name__}:{str(error)[:140]}"})
             compliance_violations, duplicate_listings = _scan_public_copy(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB), scan_families,
