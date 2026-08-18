@@ -1689,6 +1689,68 @@ def _analytics_count(body: str, label: str, unit: str) -> int:
     return int(digits.replace(",", ""))
 
 
+def _scan_public_copy(
+    state_dir: Path, evidence_dir: Path, now: int, service_ids: list[str],
+    default_tab_script: Path = DEFAULT_TAB,
+) -> list[dict]:
+    """Read each live listing and report the ones whose copy names a prohibited tool.
+
+    The platform states the rule by withdrawing a listing, and it withdrew the same one twice
+    while the wording sat unread in the loop's own catalogue. Reading the copy is therefore part
+    of knowing the catalogue, not an extra feature. A page that cannot be read is recorded as
+    unknown; an unreadable page is never reported as compliant.
+    """
+    import listing_inventory
+
+    findings: list[dict] = []
+    ledger = state_dir / "compliance-scan.jsonl"
+    for service_id in service_ids:
+        url = f"https://coconala.com/services/{service_id}"
+        observed: dict = {}
+        opened = subprocess.run(
+            [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+             "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
+        )
+        tab = None
+        try:
+            tab = json.loads(opened.stdout)
+            if opened.returncode == 0 and tab.get("ok") is True:
+                observed = asyncio.run(listing_inventory._eval_json(
+                    str(tab["ws"]), url,
+                    "JSON.stringify({url:location.href,body:document.body?document.body.innerText.slice(0,120000):''})",
+                ))
+        except (KeyError, ValueError, OSError, RuntimeError):
+            observed = {}
+        finally:
+            if isinstance(tab, dict) and tab.get("target_id"):
+                try:
+                    subprocess.run(
+                        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                         "close", str(tab["target_id"])], capture_output=True, text=True,
+                        check=False, timeout=30,
+                    )
+                except subprocess.TimeoutExpired:
+                    pass
+        body = str(observed.get("body") or "")
+        readable = observed.get("url") == url and bool(body)
+        terms = _prohibited_copy_terms(body) if readable else []
+        row = {
+            "version": 1, "service_id": service_id, "observed_at_epoch": now, "source_url": url,
+            "status": "scanned" if readable else "unreadable",
+            "prohibited_terms": terms,
+            "content_sha256": hashlib.sha256(body.encode()).hexdigest(),
+            "scan_key": "storefront:compliance:v1:" + hashlib.sha256(
+                f"{service_id}:{hashlib.sha256(body.encode()).hexdigest()}:{readable}".encode()
+            ).hexdigest(),
+        }
+        _append_key_once(ledger, "scan_key", row)
+        if terms:
+            findings.append(row)
+    _atomic_write(evidence_dir / "compliance-scan.json",
+                  {"scanned": len(service_ids), "violations": findings})
+    return findings
+
+
 def _collect_analytics(
     state_dir: Path, evidence_dir: Path, now: int, service_ids: list[str],
     default_tab_script: Path = DEFAULT_TAB,
@@ -2016,6 +2078,7 @@ def _scorecard_gap_candidate(
 def _prepare_next_hypothesis(
     scorecard_path: Path, effects_path: Path, outcomes_path: Path,
     contracts: list[dict], now: int, mutation_contracts: list[dict] | None = None,
+    compliance_violations: list[dict] | None = None,
 ) -> dict | None:
     try:
         backlog = json.loads(scorecard_path.read_text(encoding="utf-8"))["priority_backlog"]
@@ -2073,6 +2136,34 @@ def _prepare_next_hypothesis(
     }
     candidate = None
     mutation_contract = None
+    # A live listing that names a prohibited tool is the platform's own stated reason for taking
+    # a listing down, so repairing it outranks the scorecard and is not held by the cooldown.
+    for violation in compliance_violations or []:
+        service_id = str(violation.get("service_id") or "")
+        # An open experiment on the same field does not hold it either: a withdrawn listing
+        # measures nothing, so a contaminated experiment is the cheaper loss.
+        if service_id in versions:
+            return {
+                "version": 1,
+                "hypothesis_key": "storefront:hypothesis:v1:" + hashlib.sha256(
+                    f"compliance:{service_id}:{violation.get('content_sha256')}".encode()).hexdigest(),
+                "prepared_at_epoch": now,
+                "service_id": service_id,
+                "service_version_sha256": versions[service_id],
+                "field": "body", "portfolio_field": "scope",
+                "before": None, "success_metric": "inquiries",
+                "reason": "listing copy names a tool the platform withdraws listings for: "
+                          + ",".join(violation.get("prohibited_terms") or []),
+                "compliance_repair": True,
+                "executable": rendered.get((service_id, "body")) is not None,
+                "guard_reason": (None if rendered.get((service_id, "body")) is not None
+                                 else "proposal_contract_required"),
+                "active_experiment_key": active[0].get("experiment_key") if active else None,
+                "mutation_contract_sha256": (
+                    rendered[(service_id, "body")]["contract_sha256"]
+                    if rendered.get((service_id, "body")) is not None else None
+                ),
+            }
     for row in backlog:
         if not isinstance(row, dict):
             continue
@@ -3206,7 +3297,11 @@ def _text_judgement(hypothesis: dict, contract: dict, effects_path: Path, now: i
             accepted_at = int(effect.get("accepted_at_epoch") or 0)
             if effect.get("experiment_key") == value["experiment_key"]:
                 return _guarded_noop(value, "experiment_already_succeeded")
-            if str(effect.get("service_id") or "") == contract["service_id"] and now - accepted_at < 604800:
+            # The hold keeps one experiment from contaminating the next. A repair the platform
+            # has already acted on is not an experiment, so it is not held behind one.
+            if (str(effect.get("service_id") or "") == contract["service_id"]
+                    and now - accepted_at < 604800
+                    and hypothesis.get("compliance_repair") is not True):
                 return _guarded_noop(value, "service_cooldown_7d")
     return value
 
@@ -4388,6 +4483,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB),
             )
+            compliance_violations = _scan_public_copy(
+                args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
+                getattr(args, "default_tab_script", DEFAULT_TAB),
+            )
             funnel = _join_funnel(
                 args.state_dir, validated_contracts,
                 getattr(args, "reply_transcripts", DEFAULT_REPLY_TRANSCRIPTS),
@@ -4409,6 +4508,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 getattr(args, "scorecard", DEFAULT_SCORECARD),
                 args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
                 validated_contracts, int(time.time()), mutation_contracts,
+                compliance_violations,
             )
             pending_effect = None
             proposal_agent = None
@@ -4555,6 +4655,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             getattr(args, "scorecard", DEFAULT_SCORECARD),
                             args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
                             validated_contracts, int(time.time()), mutation_contracts,
+                            compliance_violations,
                         )
                 mutation_contract = None
                 if proposal_noop is not None:
