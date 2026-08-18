@@ -3461,7 +3461,8 @@ def _text_judgement(hypothesis: dict, contract: dict, effects_path: Path, now: i
             # has already acted on is not an experiment, so it is not held behind one.
             if (str(effect.get("service_id") or "") == contract["service_id"]
                     and now - accepted_at < 604800
-                    and hypothesis.get("compliance_repair") is not True):
+                    and hypothesis.get("compliance_repair") is not True
+                    and not hypothesis.get("offer_digest")):
                 return _guarded_noop(value, "service_cooldown_7d")
     return value
 
@@ -4661,10 +4662,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # its body is rewritten, so it is queued the same way a rule breach is.
             offer_refresh = []
             for row in validated_contracts:
-                family_name = str(row.get("generated_from_family") or "")
+                # The service-to-family mapping is the authoritative one; the contract row does
+                # not always carry it, and an empty name silently digests an empty family.
+                family_name = str(capability_families.get(str(row["service_id"])) or "")
+                template = capability_templates.get(family_name)
                 digest = _offer_refresh_due(
                     args.state_dir / "effects.jsonl", str(row["service_id"]), family_name,
-                    capability_templates.get(family_name) or {})
+                    template) if isinstance(template, dict) and template else None
                 if digest:
                     offer_refresh.append({"service_id": str(row["service_id"]),
                                           "offer_digest": digest, "family": family_name})
@@ -5513,8 +5517,29 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                     _atomic_write(inventory_path.parent / f"retire-contract-{retire_service_id}.json",
                                   retire_contract)
-                    retire_result = asyncio.run(_execute_listing_state_effect_async(
-                        ws_url, contract=retire_contract, evidence_dir=inventory_path.parent))
+                    # Its own tab: reusing the wake's leased socket after a full pass of
+                    # browsing is what returns HTTP 500, which is the same fault the demand
+                    # crawl hit and the same fix.
+                    retire_opened = subprocess.run(
+                        [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
+                         "--owner", "gig-storefront-direct", "--background", "open", "about:blank"],
+                        capture_output=True, text=True, check=False, timeout=30,
+                    )
+                    retire_tab = json.loads(retire_opened.stdout)
+                    if retire_opened.returncode != 0 or retire_tab.get("ok") is not True:
+                        raise RuntimeError("storefront_retire_tab_open_failed")
+                    try:
+                        retire_result = asyncio.run(_execute_listing_state_effect_async(
+                            str(retire_tab["ws"]), contract=retire_contract,
+                            evidence_dir=inventory_path.parent))
+                    finally:
+                        if retire_tab.get("target_id"):
+                            subprocess.run(
+                                [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
+                                 "--owner", "gig-storefront-direct", "close",
+                                 str(retire_tab["target_id"])], capture_output=True, text=True,
+                                check=False, timeout=30,
+                            )
                     _append_key_once(args.state_dir / "effects.jsonl", "experiment_key", {
                         "version": 1, "status": "accepted", "effect": 1,
                         "service_id": retire_service_id, "changed_field": "listing_state",
@@ -5527,7 +5552,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         "reason": retire_allocation["reason"],
                         "restore_href": retire_result.get("restore_href"),
                     })
-                except (RuntimeError, StopIteration) as error:
+                except Exception as error:  # retiring a duplicate never ends a wake
                     retire_result = {"error": f"{type(error).__name__}:{str(error)[:160]}"}
                 _atomic_write(inventory_path.parent / "retire-result.json",
                               {"allocation": retire_allocation, "result": retire_result})
