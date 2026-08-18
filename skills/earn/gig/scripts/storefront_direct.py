@@ -93,8 +93,8 @@ COMPETITOR_SOURCES = (
     ("service", "https://coconala.com/services/3122692"),
     ("service", "https://coconala.com/services/3741646"),
 )
-MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price", "listing_state"}
-GENERATED_MUTATION_FIELDS = {"image", "title", "body", "package", "FAQ", "price"}
+MUTATION_FIELDS = {"image", "title", "catchphrase", "body", "package", "FAQ", "price", "listing_state"}
+GENERATED_MUTATION_FIELDS = {"image", "title", "catchphrase", "body", "package", "FAQ", "price"}
 # The seller listing-state control is the form's own hidden `mode` field, not a `data[...]` input.
 LISTING_STATE_DELTA = "mode"
 PUBLIC_LISTING_STATE = "公開中"
@@ -1052,6 +1052,24 @@ def _offer_refresh_due(
     return digest
 
 
+async def _evaluate(ws: object, expression: str, cid: int) -> tuple[object, int]:
+    """Evaluate one expression on an open page and return its value with the next id.
+
+    The listing-state executor called a helper this module never had, which is what a branch
+    that has never run looks like: it type-checks, ships and raises NameError the first time
+    the loop actually needs it.
+    """
+    import listing_inventory
+
+    response = await listing_inventory._call(ws, "Runtime.evaluate", {
+        "expression": expression, "returnByValue": True, "awaitPromise": True,
+    }, cid)
+    result = response.get("result", {}).get("result", {})
+    if result.get("subtype") == "error" or "exceptionDetails" in response.get("result", {}):
+        raise RuntimeError("storefront_browser_evaluation_failed")
+    return result.get("value"), cid + 1
+
+
 def _platform_withdrew_listing(ledger_path: Path, service_id: str, is_public: bool) -> bool:
     """Report a listing this loop published that the platform has since taken down.
 
@@ -1521,7 +1539,7 @@ def _render_text_mutation(
     }
     source = next((row for row in sources if row["service_id"] == str(spec.get("service_id") or "")), None)
     if (set(spec) != required or spec.get("version") != 1 or spec.get("platform") != "coconala"
-            or spec.get("changed_field") not in {"title", "body", "package", "FAQ", "price"} or source is None
+            or spec.get("changed_field") not in {"title", "catchphrase", "body", "package", "FAQ", "price"} or source is None
             or capability_families.get(str(spec.get("service_id") or "")) != spec.get("capability_family")
             or not str(spec.get("form_field") or "").startswith("data[")
             or not all(isinstance(spec.get(key), str) and spec[key].strip()
@@ -2315,7 +2333,7 @@ def _prepare_next_hypothesis(
                 "service_id": service_id,
                 "service_version_sha256": versions[service_id],
                 "field": str(stale.get("offer_field") or "body"),
-                "portfolio_field": "scope" if stale.get("offer_field") != "title" else "outcome",
+                "portfolio_field": "outcome" if stale.get("offer_field") in {"title", "catchphrase"} else "scope",
                 "before": None, "success_metric": "inquiries",
                 "reason": f"listing still sells the previous offer of family {stale.get('family')}",
                 "offer_digest": stale.get("offer_digest"),
@@ -2829,7 +2847,8 @@ wording, images, reviews, sales, speed, guarantees or results. evidence entries 
 from allowed_evidence_refs and must include the official offer ref and owned capability-family ref.
 gap.executable=false with guard_reason=proposal_contract_required means this proposal must create the
 missing contract; it is not a no-op reason and mutation_contract_sha256 is intentionally absent.
-For title, return only the seller-form title stem (Coconala appends ます). For body, return a complete
+For title, return only the seller-form title stem (Coconala appends ます). For catchphrase,
+return the single line shown under the title, 15 to 30 characters, stating the same offer. For body, return a complete
 Japanese replacement with outcome, inclusions, exclusions, required inputs and support boundary.
 For image, proposed_value must be exactly three non-empty lines: a short headline, a supporting line,
 then two or three short badges separated by `｜`. Use only supported offer/capability claims; do not put
@@ -3198,6 +3217,12 @@ def _seal_generated_proposal(
               if isinstance(row, dict)}
     if field == "title":
         form_field = "data[Service][overview]"
+    elif field == "catchphrase":
+        # The line search results print under the title. It contradicted the offer while the
+        # title and body already carried the new one.
+        if not 15 <= len(str(proposed)) <= 30:
+            raise RuntimeError("storefront_generated_catchphrase_length_invalid")
+        form_field = "data[Service][catchphrase]"
     elif field == "body":
         form_field = "data[Service][head]"
     elif field == "price":
@@ -3465,7 +3490,7 @@ def _text_judgement(hypothesis: dict, contract: dict, effects_path: Path, now: i
     _validate_mutation_contract(contract, mappings)
     if (hypothesis.get("service_id") != contract.get("service_id")
             or hypothesis.get("field") != contract.get("changed_field")
-            or contract.get("changed_field") not in {"title", "body", "package", "price"}
+            or contract.get("changed_field") not in {"title", "catchphrase", "body", "package", "price"}
             or hypothesis.get("mutation_contract_sha256") != contract.get("contract_sha256")
             or hypothesis.get("executable") is not True):
         raise RuntimeError("storefront_text_hypothesis_invalid")
@@ -3854,7 +3879,7 @@ def _pending_recovery(
             if image_ids == contract["rollback_value"]["service_image_ids"]:
                 continue
             raise RuntimeError("pending_image_effect_public_readback_invalid")
-        if intent.get("changed_field") in {"title", "body", "package", "price"}:
+        if intent.get("changed_field") in {"title", "catchphrase", "body", "package", "price"}:
             contract = intent.get("mutation_contract")
             if not isinstance(contract, dict) or ws_url is None or evidence_dir is None:
                 raise RuntimeError("pending_text_contract_missing")
@@ -4147,7 +4172,7 @@ async def _execute_text_effect_async(
 
     mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
     _validate_mutation_contract(contract, mappings)
-    if contract.get("changed_field") not in {"title", "body", "price"} or judgement.get("experiment_key") != _experiment_key(
+    if contract.get("changed_field") not in {"title", "catchphrase", "body", "price"} or judgement.get("experiment_key") != _experiment_key(
         contract["service_id"], str(contract["changed_field"]), str(contract["proposed_value"]),
     ):
         raise RuntimeError("seller_text_contract_invalid")
@@ -4706,7 +4731,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     continue
                 # The body carries the promise and the title is what search shows, so a listing
                 # whose offer moved needs both; the body goes first and the title follows it.
-                for offer_field in ("body", "title"):
+                for offer_field in ("body", "title", "catchphrase"):
                     digest = _offer_refresh_due(
                         args.state_dir / "effects.jsonl", str(row["service_id"]), family_name,
                         template, advertised_offers, offer_field)
