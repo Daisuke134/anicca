@@ -81,6 +81,22 @@ const LEGACY_LITERAL_FIXTURES = new Set([
   "skills/earn/hl-trade/tests/test_reconcile.py",
 ]);
 
+// A tracked image is product source, not a build artifact, when a tracked JSON contract declares
+// its digest. Undeclared binaries stay violations, so a stray render cannot enter by sitting in an
+// assets folder.
+function declaredAssetDigests(root, entries) {
+  const digests = new Set();
+  for (const entry of entries) {
+    if (!entry.path.endsWith(".json") || !isActivePath(entry.path)) continue;
+    const absolute = resolve(root, entry.path);
+    if (!existsSync(absolute)) continue;
+    for (const match of readFileSync(absolute, "utf8").matchAll(/\b[0-9a-f]{64}\b/gu)) {
+      digests.add(match[0]);
+    }
+  }
+  return digests;
+}
+
 function isWithinRoot(root, candidate) {
   const rel = relative(root, candidate);
   return rel === "" || (!rel.startsWith(`..${sep}`) && rel !== ".." && !isAbsolute(rel));
@@ -210,6 +226,7 @@ export function verifyRepository(inputRoot) {
   const root = realpathSync(resolve(inputRoot));
   const violations = [];
   const entries = trackedEntries(root);
+  const declaredDigests = declaredAssetDigests(root, entries);
 
   for (const entry of entries) {
     const absolute = resolve(root, entry.path);
@@ -237,7 +254,9 @@ export function verifyRepository(inputRoot) {
       continue;
     }
     if (generatedArtifact(entry.path)) {
-      violations.push({ code: "generated_artifact", path: entry.path, detail: "generated binary is tracked" });
+      if (!declaredDigests.has(sha256(readFileSync(absolute)))) {
+        violations.push({ code: "generated_artifact", path: entry.path, detail: "generated binary is tracked" });
+      }
       continue;
     }
     const bytes = readFileSync(absolute);
