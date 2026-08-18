@@ -1020,7 +1020,7 @@ def _prohibited_copy_terms(*texts: str) -> list[str]:
 
 def _offer_refresh_due(
     effects_path: Path, service_id: str, family_name: str, family: dict,
-    already_advertised: set[str] | None = None,
+    already_advertised: set[str] | None = None, field: str = "body",
 ) -> str | None:
     """Report a listing still selling an offer its capability family no longer promises.
 
@@ -1046,7 +1046,7 @@ def _offer_refresh_due(
         effect = json.loads(line)
         if (str(effect.get("service_id") or "") == str(service_id)
                 and effect.get("status") == "accepted" and effect.get("effect") == 1
-                and str(effect.get("changed_field") or "") == "body"
+                and str(effect.get("changed_field") or "") == field
                 and effect.get("offer_digest") == digest):
             return None
     return digest
@@ -2281,6 +2281,7 @@ def _prepare_next_hypothesis(
     # a listing down, so repairing it outranks the scorecard and is not held by the cooldown.
     for stale in offer_refresh or []:
         service_id = str(stale.get("service_id") or "")
+        offer_field = str(stale.get("offer_field") or "body")
         # Not held by the cooldown: the page is advertising something this seller no longer
         # offers, which is a correction rather than another experiment on the same listing.
         if service_id in versions and (service_id, "body") not in open_pairs:
@@ -2291,17 +2292,18 @@ def _prepare_next_hypothesis(
                 "prepared_at_epoch": now,
                 "service_id": service_id,
                 "service_version_sha256": versions[service_id],
-                "field": "body", "portfolio_field": "scope",
+                "field": str(stale.get("offer_field") or "body"),
+                "portfolio_field": "scope" if stale.get("offer_field") != "title" else "outcome",
                 "before": None, "success_metric": "inquiries",
                 "reason": f"listing still sells the previous offer of family {stale.get('family')}",
                 "offer_digest": stale.get("offer_digest"),
-                "executable": rendered.get((service_id, "body")) is not None,
-                "guard_reason": (None if rendered.get((service_id, "body")) is not None
+                "executable": rendered.get((service_id, offer_field)) is not None,
+                "guard_reason": (None if rendered.get((service_id, offer_field)) is not None
                                  else "proposal_contract_required"),
                 "active_experiment_key": active[0].get("experiment_key") if active else None,
                 "mutation_contract_sha256": (
-                    rendered[(service_id, "body")]["contract_sha256"]
-                    if rendered.get((service_id, "body")) is not None else None
+                    rendered[(service_id, offer_field)]["contract_sha256"]
+                    if rendered.get((service_id, offer_field)) is not None else None
                 ),
             }
     for violation in compliance_violations or []:
@@ -4678,12 +4680,19 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 # not always carry it, and an empty name silently digests an empty family.
                 family_name = str(capability_families.get(str(row["service_id"])) or "")
                 template = capability_templates.get(family_name)
-                digest = _offer_refresh_due(
-                    args.state_dir / "effects.jsonl", str(row["service_id"]), family_name,
-                    template, advertised_offers) if isinstance(template, dict) and template else None
-                if digest:
-                    offer_refresh.append({"service_id": str(row["service_id"]),
-                                          "offer_digest": digest, "family": family_name})
+                if not (isinstance(template, dict) and template):
+                    continue
+                # The body carries the promise and the title is what search shows, so a listing
+                # whose offer moved needs both; the body goes first and the title follows it.
+                for offer_field in ("body", "title"):
+                    digest = _offer_refresh_due(
+                        args.state_dir / "effects.jsonl", str(row["service_id"]), family_name,
+                        template, advertised_offers, offer_field)
+                    if digest:
+                        offer_refresh.append({"service_id": str(row["service_id"]),
+                                              "offer_digest": digest, "family": family_name,
+                                              "offer_field": offer_field})
+                        break
             compliance_violations, duplicate_listings = _scan_public_copy(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB), scan_families,
