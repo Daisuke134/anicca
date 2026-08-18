@@ -284,3 +284,31 @@ def test_a_two_level_category_writes_no_type_field():
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+def test_a_family_with_traffic_and_no_sales_is_reported(tmp_path):
+    """Competitor demand said twelve for Excel while our own Excel listings sold nothing."""
+    import json as _json
+
+    import storefront_direct
+
+    ledger = tmp_path / "analytics.jsonl"
+    rows = [
+        {"service_id": "1", "metrics": {"views": {"value": 90}, "purchases": {"value": 0}}},
+        {"service_id": "2", "metrics": {"views": {"value": 80}, "purchases": {"value": 0}}},
+        {"service_id": "3", "metrics": {"views": {"value": 10}, "purchases": {"value": 0}}},
+    ]
+    ledger.write_text("".join(_json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    families = {"1": "excel_automation", "2": "excel_automation", "3": "seo_writing"}
+
+    blocked = storefront_direct._family_traffic_without_sales(ledger, families, "excel_automation")
+    assert blocked["views"] == 170 and blocked["purchases"] == 0 and blocked["listings"] == 2
+    assert storefront_direct._family_traffic_without_sales(ledger, families, "seo_writing") is None
+
+    sold = tmp_path / "sold.jsonl"
+    sold.write_text("".join(_json.dumps(row) + "\n" for row in [
+        {"service_id": "1", "metrics": {"views": {"value": 90}, "purchases": {"value": 1}}},
+        {"service_id": "2", "metrics": {"views": {"value": 80}, "purchases": {"value": 0}}},
+    ]), encoding="utf-8")
+    assert storefront_direct._family_traffic_without_sales(sold, families, "excel_automation") is None
+    assert storefront_direct._family_traffic_without_sales(ledger, families, "") is None

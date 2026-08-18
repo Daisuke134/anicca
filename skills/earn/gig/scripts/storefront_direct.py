@@ -1237,6 +1237,44 @@ def _extract_search_demand(body: str) -> dict:
     }
 
 
+def _family_traffic_without_sales(
+    analytics_path: Path, families: dict[str, str], family_name: str, minimum_views: int = 100,
+) -> dict | None:
+    """Report a capability family whose own listings get looked at and never bought.
+
+    Competitor search volume says a market exists; it does not say this seller can sell in it.
+    Two Excel listings reached hundreds of views and no purchase while the demand score for
+    that market read twelve, which is the loop proposing to repeat something it has already
+    failed at.
+    """
+    if not family_name or not analytics_path.exists():
+        return None
+    latest: dict[str, dict] = {}
+    for line in analytics_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if str(row.get("service_id") or ""):
+            latest[str(row["service_id"])] = row
+    views = purchases = 0
+    counted = 0
+    for service_id, snapshot in latest.items():
+        if families.get(service_id) != family_name:
+            continue
+        metrics = snapshot.get("metrics") if isinstance(snapshot.get("metrics"), dict) else {}
+        service_views = (metrics.get("views") or {}).get("value")
+        service_purchases = (metrics.get("purchases") or {}).get("value")
+        if type(service_views) is not int or type(service_purchases) is not int:
+            continue
+        views += service_views
+        purchases += service_purchases
+        counted += 1
+    if counted == 0 or views < minimum_views or purchases > 0:
+        return None
+    return {"capability_family": family_name, "listings": counted,
+            "views": views, "purchases": purchases}
+
+
 def _score_demand_cluster(cluster: dict) -> dict:
     """Score one official demand cluster from what the marketplace actually shows.
 
@@ -5360,7 +5398,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # A self-derived market is a second way in: the committed demand file may be spent
             # while a scored cluster with an official category is waiting.
             cluster_blueprint = None
-            if unused_cluster is not None and bound_category is not None:
+            # Search volume says a market exists; it does not say this seller can sell in it.
+            unsold_family = (_family_traffic_without_sales(
+                args.state_dir / "analytics.jsonl", capability_families,
+                str((unused_cluster or {}).get("capability_family") or ""))
+                if unused_cluster is not None else None)
+            if unsold_family is not None:
+                demand_derivation = {**(demand_derivation or {}),
+                                     "create_blocked": "own_family_has_traffic_without_sales",
+                                     "own_family_evidence": unsold_family}
+            if unused_cluster is not None and bound_category is not None and unsold_family is None:
                 try:
                     cluster_blueprint = _create_blueprint_from_cluster(
                         new_listing_contract, unused_cluster, bound_category)
