@@ -60,7 +60,15 @@ DIRECT_MAX_APPLICATIONS = 20
 def _official_open_scan_prep(prep: dict[str, Any]) -> dict[str, Any]:
     """Keep pass metadata, but retire legacy category/budget filtering for Direct Apply."""
     thresholds = dict(prep.get("apply_skip_thresholds") or {})
+    # Dais 2026-08-18: drop all three gates — competition is not a reason to skip and a ¥500 job is
+    # worth taking. Budget was already zeroed here. The other two turned out to be dead settings:
+    # `passprep.py` defines max_applicants and min_contracted_to_skip, and grepping both this tree
+    # and the running release finds no reader for either. Zeroing them is therefore a statement of
+    # intent, not a behaviour change — the applications those two were blamed for were never
+    # actually filtered by them. Anything that starts reading these later must treat 0 as "no gate".
     thresholds["min_budget_jpy"] = 0
+    thresholds["max_applicants"] = 0
+    thresholds["min_contracted_to_skip"] = 0
     return {
         **prep,
         "target_apply_per_pass": DIRECT_MAX_APPLICATIONS,
