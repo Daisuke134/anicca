@@ -39,7 +39,17 @@ def _operator_denied_paths() -> list[str]:
     separated, and an empty setting simply means there is nothing else to hide.
     """
     raw = os.environ.get("GIG_SANDBOX_DENY", "")
-    return [str(Path(part).expanduser()) for part in raw.split(":") if part.strip()]
+    denied = []
+    for part in raw.split(":"):
+        if not part.strip():
+            continue
+        path = Path(part.strip()).expanduser()
+        # A relative entry compiles fine and matches nothing, so a typo would read as
+        # protection while protecting nothing. Refuse the pass instead of pretending.
+        if not path.is_absolute():
+            raise ValueError(f"GIG_SANDBOX_DENY needs absolute paths, got {part.strip()!r}")
+        denied.append(str(path))
+    return denied
 
 
 def _deny_reads(paths: list[str]) -> str:
