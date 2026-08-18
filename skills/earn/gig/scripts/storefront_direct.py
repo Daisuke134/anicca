@@ -4841,7 +4841,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 judgement = recovery.get("judgement")
                 if not isinstance(judgement, dict):
                     raise RuntimeError("pending_effect_judgement_missing")
-                if (recovery.get("changed_field") not in {"FAQ", "image", "title", "body", "package", "price"}
+                if (recovery.get("changed_field") not in {"FAQ", "image", "title", "catchphrase", "body", "package", "price"}
                         or (recovery.get("changed_field") == "FAQ"
                             and recovery.get("service_id") != TARGET_SERVICE_ID)
                         or recovery.get("experiment_key") != judgement.get("experiment_key")):
@@ -4859,7 +4859,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     if not isinstance(recovery_page, dict):
                         raise RuntimeError("pending_image_public_readback_missing")
                     _validate_public_image_acceptance(public_before, recovery_page, mutation_contract)
-                elif recovery["changed_field"] in {"title", "body", "package", "price"}:
+                elif recovery["changed_field"] in {"title", "catchphrase", "body", "package", "price"}:
                     mutation_contract = recovery.get("mutation_contract")
                     if not isinstance(mutation_contract, dict):
                         raise RuntimeError("pending_text_mutation_contract_missing")
@@ -4887,7 +4887,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "public_after_path": str(
                         inventory_path.parent / (
                             f"recovery-public-{recovery['service_id']}.json"
-                            if recovery["changed_field"] in {"title", "body", "package", "price", "image"}
+                            if recovery["changed_field"] in {"title", "catchphrase", "body", "package", "price", "image"}
                             and recovery["service_id"] != TARGET_SERVICE_ID else "own-candidate.json"
                         )
                     ),
@@ -4899,7 +4899,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "public_before_path": Path(recovery["public_before_path"]),
                     "public_after_path": inventory_path.parent / (
                         f"recovery-public-{recovery['service_id']}.json"
-                        if recovery["changed_field"] in {"title", "body", "package", "price", "image"}
+                        if recovery["changed_field"] in {"title", "catchphrase", "body", "package", "price", "image"}
                         and recovery["service_id"] != TARGET_SERVICE_ID else "own-candidate.json"
                     ),
                     "seller_form_before_path": Path(recovery["seller_form_before_path"]),
@@ -5046,7 +5046,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     _atomic_write(inventory_path.parent / "mutation-contract.json", mutation_contract)
                     judgement = _image_judgement(next_hypothesis, mutation_contract)
                 elif next_hypothesis is not None and next_hypothesis.get("field") in {
-                    "title", "body", "package", "price",
+                    # A field missing from this set has its sealed contract silently ignored and
+                    # the wake falls through to the general judge, which then answers about some
+                    # other listing entirely. The catchphrase spent several wakes in that state.
+                    "title", "catchphrase", "body", "package", "price",
                 }:
                     mutation_contract = next((contract for contract in mutation_contracts
                                               if contract["contract_sha256"]
@@ -5101,7 +5104,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                      "no_op_reason": "image_gap_already_closed",
                                      "changed_field": None, "experiment_key": None}
                         _atomic_write(judgement_path, judgement)
-                    elif judgement["changed_field"] not in {"title", "body", "package", "price"}:
+                    elif judgement["changed_field"] not in {"title", "catchphrase", "body", "package", "price"}:
                         try:
                             _presend_guard(judgement, presend, mutation_contract)
                         except RuntimeError as error:
@@ -5134,7 +5137,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                 public_before_path=presend_path, evidence_dir=inventory_path.parent,
                                 state_dir=args.state_dir,
                             )
-                        elif judgement["changed_field"] in {"title", "body", "price"}:
+                        elif judgement["changed_field"] in {"title", "catchphrase", "body", "price"}:
                             seller_before, _, intent_path = _execute_text_effect(
                                 ws_url=ws_url, contract=mutation_contract, judgement=judgement,
                                 public_before_path=presend_path, evidence_dir=inventory_path.parent,
@@ -5154,7 +5157,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         seller_after = _seller_snapshot_for(ws_url, str(judgement["service_id"]))
                         if judgement["changed_field"] == "image":
                             _validate_public_image_acceptance(presend, public_after, mutation_contract)
-                        elif judgement["changed_field"] in {"title", "body", "package", "price"}:
+                        elif judgement["changed_field"] in {"title", "catchphrase", "body", "package", "price"}:
                             _validate_text_public_acceptance(presend, public_after, mutation_contract)
                             if judgement["changed_field"] == "package":
                                 _validate_package_form_delta(seller_before, seller_after, mutation_contract)

@@ -115,3 +115,20 @@ def test_the_catchphrase_follows_the_title(tmp_path):
 def test_the_catchphrase_is_a_field_the_loop_may_change():
     assert "catchphrase" in storefront_direct.MUTATION_FIELDS
     assert "catchphrase" in storefront_direct.GENERATED_MUTATION_FIELDS
+
+
+def test_every_text_field_set_knows_the_catchphrase():
+    """A field missing from one of these sets has its sealed contract silently ignored.
+
+    The catchphrase reached the field set, the form mapping and the readback mapping but not
+    the executor branch, so a valid contract fell through to the general judge and the wake
+    answered about a different listing.
+    """
+    import re
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "scripts" / "storefront_direct.py").read_text(
+        encoding="utf-8")
+    sets = re.findall(r'\{"[A-Za-z_", ]*"title"[A-Za-z_", ]*\}', source)
+    assert sets, "no field set found; this test guards the wrong thing"
+    assert [item for item in sets if "catchphrase" not in item] == []
