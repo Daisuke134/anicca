@@ -7,7 +7,6 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterator
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[2]
 if str(HERE) not in sys.path: sys.path.insert(0, str(HERE))
 import delivery_project  # noqa: E402
 import delivery_queue  # noqa: E402
@@ -17,9 +16,15 @@ import reconcile_paid_delivery  # noqa: E402
 import step_result_status  # noqa: E402
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from telegram_report import OpenClawTelegramTransport  # noqa: E402
+from gig_paths import REPO_ROOT, RUNNER_DIR  # noqa: E402
 
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
-DEFAULT_BRAKE = Path.home() / ".openclaw" / "state" / "gig-work" / "paid.operator.brake"
+# Runtime state location is machine configuration, not source. The plist supplies
+# GIG_OPERATOR_BRAKE_FILE; this is only the fallback for a checkout that has none.
+DEFAULT_BRAKE = Path(
+    os.environ.get("GIG_OPERATOR_BRAKE_FILE")
+    or Path.home() / "gig" / "state" / "paid.operator.brake"
+)
 DEFAULT_TELEGRAM_DATABASE = Path.home() / "gig" / "telegram-outbox.sqlite3"
 DEFAULT_TELEGRAM_RECEIPTS = Path.home() / "gig" / "telegram-delivery-receipts"
 # These orders are worked by hand and must never be answered, delivered, or submitted by this lane.
@@ -685,8 +690,7 @@ def _prepare_blind_output_audit(
         profile.write_text(
             "(version 1)\n(allow default)\n"
             f"(deny file-read* (subpath {json.dumps(str(root.resolve().parent))}))\n"
-            f"(deny file-read* (subpath {json.dumps(str(HERE.parents[2].resolve()))}))\n"
-            f"(deny file-read* (subpath {json.dumps(str(Path.home() / 'profitable-claude'))}))\n"
+            f"(deny file-read* (subpath {json.dumps(str(REPO_ROOT))}))\n"
             f"(deny file-write* (subpath {json.dumps(str(root.resolve().parent))}))\n",
             encoding="utf-8",
         )
@@ -1541,7 +1545,7 @@ def _prepare_source_census(args, root: Path, requirements_sha256: str, code_root
         quoted_live_evidence = json.dumps(str(root.resolve().parent.parent / "evidence"))
         quoted_delivery_evidence = json.dumps(str(root.resolve().parent.parent / "delivery-evidence"))
         quoted_releases = json.dumps(str(code_root.resolve().parent))
-        quoted_checkout = json.dumps(str(Path.home() / "profitable-claude"))
+        quoted_checkout = json.dumps(str(REPO_ROOT))
         profile.write_text(
             "(version 1)\n(allow default)\n"
             f"(deny file-read* (subpath {quoted_projects}))\n"
@@ -3241,7 +3245,7 @@ def _parser():
     parser.add_argument("--delivery-evidence-dir", type=Path, default=Path.home() / "gig" / "delivery-evidence")
     parser.add_argument("--cdp-lock-dir", type=Path, default=Path.home() / "gig" / ".cdp-gig.lock")
     parser.add_argument("--cdp-helper", type=Path, default=Path.home() / "anicca/skills/browser/scripts/cdp_default_tab.py"); parser.add_argument("--lock-file", type=Path)
-    parser.add_argument("--context-compiler", type=Path, default=HERE / "project_context_compiler.py"); parser.add_argument("--agent-runner", type=Path, default=REPO / "skills/agent-runner/agent_runner.py")
+    parser.add_argument("--context-compiler", type=Path, default=HERE / "project_context_compiler.py"); parser.add_argument("--agent-runner", type=Path, default=RUNNER_DIR / "agent_runner.py")
     parser.add_argument("--runner-schema", type=Path, default=HERE.parent / "schemas/gig_step_result.schema.json")
     parser.add_argument("--artifact-schema", type=Path, default=HERE.parent / "schemas/paid_file_judgement.schema.json")
     parser.add_argument("--decision-schema", type=Path, default=HERE.parent / "schemas/paid_work_decision.schema.json")

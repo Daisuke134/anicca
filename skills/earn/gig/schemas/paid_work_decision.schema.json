@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "mode",
+    "feedback_sha256",
+    "requirements_sha256",
+    "latest_message_identity",
+    "required_output",
+    "required_effect",
+    "delivery_stage",
+    "formal_approval_evidence",
+    "unresolved"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["actionable", "await_buyer", "satisfied_noop", "blocked"]
+    },
+    "mode": {
+      "type": ["string", "null"],
+      "enum": ["file", "remote", "answer", null]
+    },
+    "feedback_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "requirements_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "latest_message_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["message_id", "content_sha256", "side"],
+      "properties": {
+        "message_id": {"type": "string", "minLength": 1},
+        "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "side": {"type": "string", "enum": ["buyer", "seller", "system"]}
+      }
+    },
+    "required_output": {"type": "string", "minLength": 1},
+    "required_effect": {"type": "string", "minLength": 1},
+    "delivery_stage": {
+      "type": "string",
+      "enum": ["formal", "review", "none"]
+    },
+    "formal_approval_evidence": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["message_id", "content_sha256", "side"],
+      "properties": {
+        "message_id": {"type": "string", "minLength": 1},
+        "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "side": {"type": "string", "const": "buyer"}
+      }
+    },
+    "unresolved": {"type": "array", "items": {"type": "string"}}
+  }
+}

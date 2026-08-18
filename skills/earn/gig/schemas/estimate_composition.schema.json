@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Coconala requested estimate composition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "content",
+    "price_jpy",
+    "purchase_plan",
+    "delivery_days",
+    "master_category_label",
+    "sub_category_label",
+    "category_type_label"
+  ],
+  "properties": {
+    "title": {"type": "string", "minLength": 1, "maxLength": 200},
+    "content": {"type": "string", "minLength": 1, "maxLength": 3000},
+    "price_jpy": {"type": "integer", "minimum": 1, "maximum": 10000000},
+    "purchase_plan": {"type": "string", "enum": ["single", "subscription"]},
+    "delivery_days": {"type": "integer", "minimum": 1, "maximum": 365},
+    "master_category_label": {"type": "string", "minLength": 1, "maxLength": 100},
+    "sub_category_label": {"type": "string", "minLength": 1, "maxLength": 100},
+    "category_type_label": {"type": "string", "minLength": 1, "maxLength": 100}
+  }
+}
