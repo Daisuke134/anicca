@@ -30118,3 +30118,10 @@
 {"ts":1787049096,"wake_id":"00MSYIW3GY783C436403AF4A3D","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787049237,"wake_id":"00MSYIZ4G793A97872BFA844B3","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787049380,"wake_id":"00MSYJ26O8509A97583A174EA5","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1787049559,"wake_id":"00MSYJ60ZV01A333F01BD6415F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787049717,"wake_id":"00MSYJ9ERQB49982B185D34B49","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787049863,"wake_id":"00MSYJCJW9DACC0E4CE3AC4053","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1787049997,"wake_id":"00MSYJFF684E604E87FB1F4F74","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787050125,"wake_id":"00MSYJI5R1897B3AE4E99A4DB4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787050270,"wake_id":"00MSYJL9H0740992F718004913","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787050428,"wake_id":"00MSYJONMU5A0FA9A886FF4E03","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
