@@ -1882,11 +1882,14 @@ def _delete_one_draft(
             "has_control:!!document.querySelector('a.js_prevent-secession-confirm'),"
             "title:(document.title||'').slice(0,40)})",
         ))
+        # The control opens a native confirm, which blocks every CDP evaluation until it is
+        # answered: the page was reached with the control present and the click never returned.
+        # Answering it in the page is simpler than driving the dialog protocol.
         result["clicked"] = asyncio.run(listing_inventory._eval_json(
             str(tab["ws"]), url,
             "JSON.stringify((()=>{const a=document.querySelector('a.js_prevent-secession-confirm');"
-            "if(!a)return{found:false};a.click();return{found:true,"
-            "label:((a.innerText||'')+'').trim()}})())",
+            "if(!a)return{found:false};window.confirm=()=>true;window.onbeforeunload=null;"
+            "a.click();return{found:true,label:((a.innerText||'')+'').trim()}})())",
         ))
         if not (result["clicked"] or {}).get("found"):
             raise RuntimeError("storefront_draft_delete_control_absent")
