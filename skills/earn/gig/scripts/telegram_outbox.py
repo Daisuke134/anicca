@@ -379,7 +379,8 @@ class TelegramOutbox:
         return {"reconciled": reconciled, "invalid": invalid}
 
     def redrive_unresolved(
-        self, *, now: int, older_than_seconds: int = 600, max_attempts: int = 3
+        self, *, now: int, older_than_seconds: int = 600, max_attempts: int = 3,
+        newer_than_seconds: int = 3600,
     ) -> int:
         """Give a stale delivery_unknown row one more shot after reconciliation gave up on it.
 
@@ -394,18 +395,29 @@ class TelegramOutbox:
         reconcile_receipts on the same row; max_attempts stops a permanently-broken transport
         from retrying forever. fencing_token already increments once per claim(), so it is the
         attempt count -- no new column needed.
+
+        newer_than_seconds is the other half of that, learned the hard way: the first
+        run of this reopened every unresolved row this database had ever accumulated,
+        390 of them, and queued hours of yesterday's noop lines to be replayed one wake
+        at a time. A health report is only worth resending while it is still news. Older
+        than this window it stays where it is -- unresolved is the honest record of a
+        report that never landed, and replaying it tells the operator nothing about now.
         """
         now = self._integer("now", now)
         older_than_seconds = self._integer(
             "older_than_seconds", older_than_seconds, positive=True
+        )
+        newer_than_seconds = self._integer(
+            "newer_than_seconds", newer_than_seconds, positive=True
         )
         max_attempts = self._integer("max_attempts", max_attempts, positive=True)
         with self._write() as connection:
             cursor = connection.execute(
                 """UPDATE telegram_reports
                    SET state='pending',owner=NULL,lease_until=0,error_class=NULL,updated_at=?
-                   WHERE state='delivery_unknown' AND updated_at<=? AND fencing_token<?""",
-                (now, now - older_than_seconds, max_attempts),
+                   WHERE state='delivery_unknown' AND updated_at<=? AND fencing_token<?
+                     AND CAST(created_at AS INTEGER)>=?""",
+                (now, now - older_than_seconds, max_attempts, now - newer_than_seconds),
             )
             return int(cursor.rowcount)
 

@@ -87,3 +87,17 @@ def test_sent_row_is_never_touched(tmp_path):
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+def test_a_report_too_old_to_be_news_is_left_where_it_died(tmp_path):
+    """The first live run reopened 390 rows and queued hours of stale noop lines.
+
+    A health report is only worth resending while it still describes now.
+    """
+    outbox = TelegramOutbox(tmp_path / "outbox.sqlite3")
+    report_id = _make_unknown(outbox, event_key="ancient", created_at=1000)
+    moved = outbox.redrive_unresolved(
+        now=1000 + 86400, older_than_seconds=600, max_attempts=3, newer_than_seconds=3600,
+    )
+    assert moved == 0
+    assert _state(outbox, report_id)["state"] == "delivery_unknown"
