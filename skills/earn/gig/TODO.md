@@ -31,23 +31,43 @@ network path, and record what you measured.
 
 ## 2. One paid order is stuck on an unstable feedback digest
 
-**Blocks:** real money on a real order.
+**Blocks:** the lane finishing an order by itself. Measured 2026-08-19: the buyer on this
+order is **not** waiting — their two newest messages confirm the work and say they are done
+for the day. The lane holding still is currently the correct outcome, for the wrong reason.
 
-The paid lane holds one live order in `pending`. Its `active_feedback_cycle` carries a
-`buyer_feedback_sha256` that does not equal the digest of the current buyer message, so
-`_remote_revision_required()` returns false and the cycle never advances.
+`active_feedback_cycle.buyer_feedback_sha256` is pinned to one value while the live
+`feedback_sha256` is another, so `_remote_revision_required()` stays false and the cycle
+never advances.
 
-The digest itself is the thing that is broken. The same day's artifacts disagree: the item
-snapshot and the remote intent hold one digest, while the live buyer reply and the work
-decision written nineteen minutes later hold an older one, whose text includes an exchange
-that was already resolved. `persist_latest_paid_buyer_reply`'s accumulation window is
-regressing to older history.
+**Root cause: the digest describes a window that is defined to move.**
+`persist_latest_paid_buyer_reply()` (`scripts/coconala_queue_snapshot.py:1532`) sets the
+revision boundary to `latest_seller_attachment` — the index of the last seller message
+carrying an attachment — and `feedback_text` is every buyer message after it. That index is
+computed over `talkroom["messages"]`, which is only what the page currently renders;
+Coconala lazy-loads older messages on scroll. So the same conversation produces a different
+boundary, a different concatenation and a different digest from one poll to the next. The
+function already defends the *delivery* consequence of that capture variance, at length, in
+its own comment — but not this one. Pinning a hash of a growing, capture-dependent
+concatenation means the pin can essentially never match again.
 
-Fix the window first. `_feedback_cycle_patch()` in `scripts/delivery_project.py:144` is wired
-but guarded at `scripts/paid_direct.py` by `if not (root/"state.json").is_file()`, so it only
-ever fires during a project's first bootstrap. **Do not loosen that guard while the digest is
-unstable** — a stale digest reaching the remote builder means it edits a customer's live site
-against instructions the customer already withdrew.
+Two further facts to design against, both measured on the live file:
+- `feedback_sha256` is **not** the SHA-256 of `feedback_text` in the same file, nor of the
+  accumulated rows, nor of their joined hashes. Whatever it digests is not reconstructible
+  from what is stored, which makes the mismatch unauditable after the fact.
+- Every accumulated row already carries its own stable per-message `sha256`. A cycle that
+  named the specific messages it answers, rather than a rolling window, would be stable by
+  construction.
+
+`_feedback_cycle_patch()` in `scripts/delivery_project.py:144` is wired but guarded at
+`scripts/paid_direct.py` by `if not (root/"state.json").is_file()`, so it only fires during a
+project's first bootstrap. **Do not loosen that guard while the digest moves with the capture
+window** — the concatenation currently opens with a request the customer already had answered,
+and a builder acting on it would redo resolved work on a live customer site.
+
+**Related, and worse:** the buyer text stored under `requirements/` includes a customer's
+WordPress admin username and password in plain text, and that text is what gets packed for the
+model. Neither the file nor the packet treats it as a credential. That needs its own decision
+before anything widens what reads this file.
 
 ---
 
