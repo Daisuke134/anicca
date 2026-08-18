@@ -100,7 +100,7 @@
       "executable_fallbacks": [
         "~/.local/bin/claude"
       ],
-      "account": "keiodaisuke@gmail.com",
+      "account": "",
       "capabilities": {
         "structured_json": true,
         "tools": true,
@@ -120,7 +120,7 @@
         "sandbox": {
           "mode": "all",
           "workspaceAccess": "rw",
-          "workspace": "/Users/anicca/gig/projects",
+          "workspace": "~/gig/projects",
           "containerWorkspace": "/workspace",
           "sessionIsSandboxed": true,
           "elevated": false,
