@@ -50,6 +50,10 @@ FAILED_PREFIXES = (
     "quarantined_wedging_form",
 )
 PENDING_PREFIXES = ("awaiting_", "prepared", "confirmed_unverified", "crash_injected", "cap_reached")
+# A CDP call that ran out of time says the browser hiccupped on one listing, not that the listing
+# was judged. Classifying it as a plain failure stopped the whole wake from scanning deeper, so one
+# slow page cost every listing behind it.
+TRANSIENT_REASON_MARKERS = ("_timeout_after_", "cdp_disconnected", "target_closed")
 SUBMIT_REQUIRED = "submit_required"
 HARD_PROHIBITED = "hard_prohibited"
 DUPLICATE_FENCED = "duplicate_fenced"
@@ -598,6 +602,13 @@ def summarize(
     )
     effect = sum(status in EFFECT_STATUSES for status in statuses)
     readback = sum(status in CONFIRMED for status in statuses)
+
+    def _is_transient_reason(reason: object) -> bool:
+        if isinstance(reason, (list, tuple)):
+            return any(_is_transient_reason(item) for item in reason)
+        text = str(reason or "")
+        return any(marker in text for marker in TRANSIENT_REASON_MARKERS)
+
     report_results = []
     for row in rows:
         application = row.get("application") if isinstance(row.get("application"), dict) else {}
@@ -615,6 +626,7 @@ def summarize(
             else HARD_PROHIBITED if business_class == HARD_PROHIBITED or status == HARD_PROHIBITED
             else "prepared" if status == "prepared_unconfirmed"
             else "pending" if status.startswith(PENDING_PREFIXES)
+            else "failed_transient" if _is_transient_reason(reason)
             else "failed"
         )
         report_results.append({
