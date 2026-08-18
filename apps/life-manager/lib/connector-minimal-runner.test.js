@@ -790,6 +790,35 @@ test("discovery circuit reports the exact bounded provider stage", async () => {
   ]);
 });
 
+test("each provider's session-expired reason reaches the recorded wake report unambiguously", async () => {
+  for (const [provider, safeReason] of [
+    ["luma", "luma_session_expired"],
+    ["connpass", "connpass_session_expired"],
+    ["peatix", "peatix_session_expired"],
+  ]) {
+    let state;
+    state = fixture({
+      async discoverCandidates(suppliedProvider) {
+        state.calls.push(["discover", suppliedProvider]);
+        return [candidate(suppliedProvider, "one")];
+      },
+      async runDirectAction({ candidate: selected }) {
+        state.calls.push(["direct", selected.event_ref]);
+        return Object.freeze({ status: "failed", safe_reason: safeReason });
+      },
+    });
+
+    const result = await runMinimalConnectorWake({
+      ownerToken: `owner-token-connector-session-expired-${provider}`,
+      providers: [provider],
+      maxConsecutiveFailures: 1,
+    }, state.dependencies);
+
+    assert.deepEqual(result, { status: "circuit_open", safe_reason: safeReason, telegram_provider_id: "9001" });
+    assert.deepEqual(state.calls.find(([name]) => name === "report").slice(1), ["circuit_open", safeReason]);
+  }
+});
+
 test("the ten-minute wake deadline stops browser churn and still reports the wake", async () => {
   let state;
   state = fixture({

@@ -259,6 +259,41 @@ test("Connpass direct action with no attendee-name injector still submits with a
   assert.deepEqual(receivedDependencies, { attendeeName: undefined });
 });
 
+test("Connpass direct action reports a login-wall submit as a session problem, not a generic failure", async () => {
+  const candidate = event(111);
+  const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
+  const workflow = createConnpassScriptFirstWorkflow({
+    async discoverOnPage() { return []; },
+    async submitOnPage() {
+      const error = new Error("Connpass session expired");
+      error.code = "CONNPASS_SESSION_EXPIRED";
+      error.unknownEffect = false;
+      throw error;
+    },
+  });
+  assert.deepEqual(await workflow.runDirectAction({ page, candidate }), {
+    status: "failed", safe_reason: "connpass_session_expired",
+  });
+});
+
+test("Connpass direct action still propagates every other submit error unchanged, never mistaking it for a session problem", async () => {
+  const candidate = event(112);
+  const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
+  const workflow = createConnpassScriptFirstWorkflow({
+    async discoverOnPage() { return []; },
+    async submitOnPage() {
+      const error = new Error("Connpass participation tier unavailable");
+      error.code = "CONNPASS_TIER_UNAVAILABLE";
+      error.unknownEffect = false;
+      throw error;
+    },
+  });
+  await assert.rejects(workflow.runDirectAction({ page, candidate }), (error) => {
+    assert.equal(error.code, "CONNPASS_TIER_UNAVAILABLE");
+    return true;
+  });
+});
+
 test("Connpass direct action requires exact canonical URL without browser side effects", async () => {
   const candidate = event(106);
   const cases = [

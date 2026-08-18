@@ -22,7 +22,7 @@ const SAFE_CODES = new Set([
   "PEATIX_CANDIDATE_VALIDATION_FAILED",
   "PEATIX_CALENDAR_CONFLICT_CHECK_FAILED",
 ]);
-const DIRECT_REASONS = new Set("invalid_input readback_unavailable tickets_navigation_failed ticket_control_unavailable next_control_unavailable form_navigation_failed unknown_required_field required_field_unavailable privacy_control_unavailable form_submit_unavailable confirm_event_mismatch confirm_navigation_failed confirm_control_unavailable kana_control_unavailable confirm_validation_failed browser_action_failed".split(" "));
+const DIRECT_REASONS = new Set("invalid_input readback_unavailable tickets_navigation_failed ticket_control_unavailable next_control_unavailable form_navigation_failed unknown_required_field required_field_unavailable privacy_control_unavailable form_submit_unavailable confirm_event_mismatch confirm_navigation_failed confirm_control_unavailable kana_control_unavailable confirm_validation_failed browser_action_failed session_expired".split(" "));
 
 function invalid() {
   throw new Error("Peatix discovery workflow invalid");
