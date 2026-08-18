@@ -2,3 +2,4 @@
 scripts/security/test_pii_shape_scan.py
 scripts/security/test_sec_scan_contract.py
 skills/video/tests/test_x_owner_launch_gate.py
+runtime/agent-runner/tests/test_terra_default.py
