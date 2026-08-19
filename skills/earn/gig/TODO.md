@@ -134,6 +134,13 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 
 #### C. Close Addres88 and prove fast Negotiate
 
+Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action,
+selects the newest coalesced event for restart dispatch, and closes seller-last stale work without
+sending. The semantic route prefers Luna and falls back to the existing tool-less providers under
+the 120-second bound. The source release was built, but the activation attempt for all four
+business jobs returned `141: Reentrancy avoided`; the live PIDs still point at older immutable
+releases, so the first checklist item remains open until loaded-definition and natural readback.
+
 - [ ] Stop the repeated `targeted_inbox_identity_changed` cycle by binding the targeted job to the
   current official thread and latest buyer-authored event instead of a stale inbox identity.
 - [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
