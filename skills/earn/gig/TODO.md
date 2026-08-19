@@ -6,6 +6,31 @@ evidence does not belong on this list.
 The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 `gig_release.py`. See `README.md` for how the whole thing is installed.
 
+## Current scoped milestone: finish the public Coconala package
+
+The repository and `skills/earn/gig/` tree are already public on
+`Daisuke134/life-manager` under the repository MIT licence. Publication is not the
+remaining work. The current milestone is complete when a third party can inspect and
+validate this package without this seller's private checkout, credentials, customer data,
+or runtime state.
+
+Execute only these items, in order:
+
+1. Close the missing fresh adversarial review for the priced-estimate category fix in item 3.
+   Production already proves the behavior; the review must try to falsify its safety contract.
+2. Audit the tracked `skills/earn/gig/` tree and its reachable Git history for credentials,
+   customer content, account identifiers, absolute owner paths, and committed runtime evidence.
+   Remove or redact any public-data violation before continuing.
+3. From a fresh clone of public `main`, run the package's non-mutating tests and configuration /
+   plist generation using only documented local configuration. Do not reuse this machine's
+   private state as proof of portability.
+4. Make `README.md` match that clean-clone evidence: exact dependencies, local secret/state
+   boundaries, install, status, upgrade and uninstall steps. Every documented command must be
+   exercised from the fresh clone.
+5. Re-run the public-tree audit and clean-clone acceptance, then record the exact commit and
+   evidence here. That closes this milestone. Items 0b, 1, 2, 4, 5 and 6 remain product/runtime
+   work and do not block publishing the package unless the audit finds private data in them.
+
 ---
 
 ## 0a. ~~The apply lane refuses 35% of the board for work it can actually do~~ — WRONG, CLOSED
@@ -25,6 +50,18 @@ nothing is not a system problem to be unlocked. Six of seven classes are correct
 seventh is correct too.** The board genuinely does not have much this seller can do well, and
 the remaining lever is on the storefront and negotiate side — being faster and clearer on the
 work that does fit — not on widening what gets accepted.
+
+Fresh production readback confirms the same conclusion. The durable application ledger has
+632 `status: applied` rows. Its newest successful row has both `submit_verified: true` and
+`applied_page_verified: true`. The latest full pass observes 117 official postings and reports
+`actionable/effect/readback/failed/pending = 0/0/0/0/0`; zero is an exhausted eligible set, not
+a broken submit path.
+
+Request `5220025` is a separate bounded case: a CDP navigation timeout produced one transient
+submission failure and the existing three-strike fence put it into the 48-hour wedge quarantine.
+That safety stop does not justify changing Apply's filters or submit path. Release it only through
+the existing official-absence readback workflow; unknown submission state is not permission to
+retry a potentially duplicate priced proposal.
 
 ### The measurement, kept because it is still the map of the board
 
@@ -133,9 +170,21 @@ before anything widens what reads this file.
 
 ---
 
-## 3. The estimate lane refuses one thread forever — the counts disagree
+## 3. ~~The estimate lane refuses one thread forever — the counts disagree~~ — FIXED LIVE, REVIEW OPEN
 
-**Blocks:** estimate revenue on one thread. Not a race; waiting longer cannot help.
+Commit `9b3572533` removes the false DOM/mapping count equality from both category waits while
+retaining the control-enabled, row-visible, non-empty-option and exact-label requirements. The
+installed immutable release `056ee1f1c...` contains that commit. Fresh natural Negotiate passes
+now complete with `estimate_required: 6`, `estimate_readback: 6`, and `estimate_failed: 0`; the
+former 55-of-56 pass failure is no longer present.
+
+The code was shipped before the required fresh adversarial review was recorded. Do not reopen
+the implementation based on the stale symptom below. The only remaining action for this item is
+a read-only adversarial review of the priced-offer safety contract; record its evidence here and
+then mark the item fully closed.
+
+**Historical root cause:** estimate revenue on one thread was blocked. It was not a race, and
+waiting longer could not help.
 
 `dependent_category_types_not_loaded` sounded like a slow page and is not: the same thread
 fails every pass while five siblings submit. The failure now records what it saw, and it says:
@@ -176,8 +225,9 @@ select, and the mapping is a hint that is allowed to be behind. The properties a
 holding are the ones the next step already needs: the control is enabled, its row is visible,
 and the intended label appears exactly once among the enabled options.
 
-Dropping the count equality is a change to the lane that sends priced offers to buyers, so it
-goes through a fresh adversary before it ships — not just a green test.
+Dropping the count equality changes a lane that sends priced offers to buyers. Live readback
+proves the operational result, but it does not replace the missing fresh adversarial review
+named above.
 
 ---
 
