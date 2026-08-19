@@ -34,6 +34,7 @@ import sys
 import tarfile
 import tempfile
 import time
+from urllib.parse import urlparse
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -51,8 +52,34 @@ PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 
 
 def git(*args: str, cwd: Path = REPO_ROOT) -> str:
-    return subprocess.run(("git", *args), cwd=cwd, check=True,
-                          capture_output=True, text=True).stdout.strip()
+    command = ("git", *args)
+    try:
+        return subprocess.run(command, cwd=cwd, check=True,
+                              capture_output=True, text=True).stdout.strip()
+    except subprocess.CalledProcessError:
+        # The release watcher is itself a launchd job. On this Mac the system resolver can
+        # answer GitHub while libcurl's resolver intermittently cannot, which otherwise leaves
+        # the watcher on an old immutable release forever. Retry fetches through the resolved
+        # IPv4 address while retaining the TLS host name via curl's resolve option.
+        if not args or args[0] != "fetch":
+            raise
+        remote = subprocess.run(
+            ("git", "config", "--get", "remote.origin.url"), cwd=cwd,
+            capture_output=True, text=True, check=False,
+        ).stdout.strip()
+        host = urlparse(remote).hostname or ""
+        if not host:
+            raise
+        resolved = subprocess.run(
+            ("nslookup", "-type=A", host), capture_output=True, text=True, check=False,
+        )
+        addresses = re.findall(r"^Address:\s+(\d{1,3}(?:\.\d{1,3}){3})$",
+                               resolved.stdout, flags=re.MULTILINE)
+        if not addresses:
+            raise
+        fallback = ("git", "-c", f"http.curloptResolve={host}:443:{addresses[-1]}", *args)
+        return subprocess.run(fallback, cwd=cwd, check=True,
+                              capture_output=True, text=True).stdout.strip()
 
 
 def resolve(values: dict[str, str]) -> dict[str, str]:
