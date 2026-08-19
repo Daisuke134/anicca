@@ -107,24 +107,32 @@ adversary before it ships, not just a green test.
 **Blocks:** the negotiate lane answering a storefront inquiry with the offer it was made
 against. Two independent causes, both proven from the live receipt.
 
-**4a. The envelope is matched against the current pass's listings only.**
-`_materialize_inquiry_context()` (`scripts/storefront_direct.py:876`) is handed
-`listing_contracts` from the pass that is running, and looks up
-`(service_id, listing_version)`. The one storefront-origin inquiry on record cites a listing
-version that has since been superseded. That version is present in
-`~/gig/storefront-direct/listing-contracts.jsonl` — eight versions exist for that service —
-but not in the set the function receives, so the inquiry lands in `missing_contracts` and no
-envelope is ever written. A buyer inquires about the listing they saw, which by definition
-may not be the listing that exists now.
+**4a. The lane retires its own contracts by doing its job.**
+`_load_listing_contracts()` (`scripts/storefront_direct.py:1691`) reads the hand-authored
+contracts under `contracts/storefront/`, and each one is bound to one exact listing version:
+if `service_version_sha256` no longer equals the live listing's, the contract is dropped as
+stale. Editing listings is this lane's entire purpose, so **the lane invalidates its own
+contracts**, and with them that listing's inquiry playbook, until a human re-authors the file.
 
-**4b. Nothing acknowledges an envelope.**
+There is exactly one hand-authored contract, `contracts/storefront/91000002.json`, and the live
+receipt shows it stale right now. The single storefront-origin inquiry on record is on that
+same service, so its identity lookup finds nothing and no envelope is written.
+
+That was recorded in the wake row as `stale_listing_contracts` and never said out loud — the
+report kept printing a healthy-looking active count beside it. It now prints the binding
+breakage too. Re-authoring `91000002.json` against the current version is content work, not
+code work, and is the fastest thing here that changes an outcome.
+
+**4b. Nothing consumes an envelope.**
 `negotiate_context` reports `ready` only when every context key is also present in
 `negotiate-context-acks.jsonl` with `status: consumed`. That file has never been created, and
-`storefront_direct.py` is the only file in the repository that names it. The negotiate lane
-does not know this protocol exists. Even with 4a fixed, the state stays `missing` forever.
+`storefront_direct.py` is the only file in the repository that names either it or
+`inquiry-context-envelopes.jsonl` — which does exist on disk, written and then read by nobody.
+The negotiate lane does not know this protocol exists, so even with 4a fixed the state stays
+`missing` forever, and `missing` reads as a transient failure when it means "no consumer".
 
-Decide whether the protocol is worth completing or whether the context should be passed the
-way the lanes already pass everything else. Do not "fix" this by relaxing the readiness test.
+Decide whether to build the consumer or to delete the protocol. Do not "fix" this by relaxing
+the readiness test — that would only make an unbuilt half look finished.
 
 ---
 
