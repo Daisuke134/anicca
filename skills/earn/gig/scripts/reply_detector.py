@@ -966,6 +966,9 @@ def _collect_targeted_head(
     if len(rows) != 1:
         raise ValueError("targeted head thread missing")
     row = rows[0]
+    expected_url = f"https://coconala.com/mypage/direct_message/{thread_id}"
+    if str(row.get("talkroom_url") or "") != expected_url:
+        raise ValueError("targeted head route mismatch")
     if row.get("last_message_identity_sha256") != identity_sha256:
         raise TargetedIdentityChanged(row)
     return row
