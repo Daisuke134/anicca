@@ -160,7 +160,7 @@ def test_semantic_judge_uses_fast_task_class_and_bounded_outer_timeout(tmp_path,
     assert kwargs["timeout"] == 90
 
 
-def test_semantic_judge_rejects_old_receipt_and_accepts_new_profile(tmp_path):
+def test_semantic_judge_accepts_compatible_receipts_and_rejects_unknown_profile(tmp_path):
     schema = GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json"
     judge = requested_estimate.SemanticJudge(
         runner=RUNNER_PATH,
@@ -168,21 +168,57 @@ def test_semantic_judge_rejects_old_receipt_and_accepts_new_profile(tmp_path):
         workdir=tmp_path,
         evidence_root=tmp_path / "evidence",
     )
+    dom = {
+        "url": "https://coconala.com/messages/123",
+        "title": "メッセージ詳細",
+        "container_present": True,
+        "own_user_path": "/users/seller",
+        "messages": [
+            {"message_id": "seller-1", "author_path": "/users/seller",
+             "body": "こんにちは", "sent_at": "2026-08-19T00:00:00Z"},
+            {"message_id": "buyer-1", "author_path": "/users/buyer",
+             "body": "質問です", "sent_at": "2026-08-19T00:01:00Z"},
+        ],
+    }
     current = {
         "version": requested_estimate.SEMANTIC_RECEIPT_VERSION,
         "prompt_version": requested_estimate.SEMANTIC_PROMPT_VERSION,
         "runner_profile": requested_estimate.SEMANTIC_RUNNER_PROFILE,
         "schema_sha256": judge.schema_sha256,
         "seller_facts_sha256": judge.seller_facts_sha256,
-        "context_sha256": "a" * 64,
+        "context_sha256": requested_estimate.semantic_context_sha256(
+            requested_estimate.semantic_conversation(dom),
+        ),
         "official_context_sha256": "b" * 64,
         "latest_message_identity": "buyer-1",
-        "judgement": {},
+        "judgement": {
+            "conversation_state": "question",
+            "next_action": "reply",
+            "cycle_start_message_id": "buyer-1",
+            "evidence_message_ids": ["buyer-1"],
+            "required_official_context": "none",
+            "estimate_terms": None,
+            "reply_body": "回答です",
+            "reply_audit": {
+                "answered_buyer_message_ids": ["buyer-1"],
+                "unanswered_questions": [],
+                "unsupported_claims": [],
+                "unrequested_cta": False,
+                "repeats_seller_message": False,
+                "off_platform_contact": False,
+            },
+            "uncertainty": [],
+        },
     }
 
     assert requested_estimate.SEMANTIC_RUNNER_PROFILE == "reply-semantic-agent"
     assert judge.receipt_current(current) is True
-    assert judge.receipt_current({**current, "runner_profile": "composition-agent"}) is False
+    legacy = {**current, "runner_profile": "composition-agent"}
+    assert judge.receipt_current(legacy) is True
+    assert requested_estimate.project_semantic_receipt(
+        dom, "https://coconala.com/messages/123", legacy,
+    )["semantic_reply_body"] == "回答です"
+    assert judge.receipt_current({**current, "runner_profile": "unknown-agent"}) is False
 
 
 def test_semantic_judge_uses_one_bounded_runner_attempt(tmp_path, monkeypatch):

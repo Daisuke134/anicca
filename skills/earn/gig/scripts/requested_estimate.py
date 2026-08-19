@@ -65,6 +65,9 @@ NA15_CATEGORY_IDS = {
 SEMANTIC_RECEIPT_VERSION = 1
 SEMANTIC_PROMPT_VERSION = "reply-negotiate-v14"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
+SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
+    "composition-agent", SEMANTIC_RUNNER_PROFILE,
+})
 SEMANTIC_STATES = frozenset({
     "question", "negotiating", "ready_to_buy", "explicit_estimate_request",
     "clarify", "gratitude", "considering", "declined", "stop_contact",
@@ -410,7 +413,7 @@ class SemanticJudge:
             isinstance(value, dict)
             and value.get("version") == SEMANTIC_RECEIPT_VERSION
             and semantic_prompt_compatible(value)
-            and value.get("runner_profile") == SEMANTIC_RUNNER_PROFILE
+            and value.get("runner_profile") in SEMANTIC_COMPATIBLE_RUNNER_PROFILES
             and value.get("schema_sha256") == self.schema_sha256
             and value.get("seller_facts_sha256") == self.seller_facts_sha256
             and re.fullmatch(r"[0-9a-f]{64}", str(value.get("context_sha256") or ""))
@@ -521,7 +524,7 @@ def project_semantic_receipt(
         not isinstance(receipt, dict)
         or receipt.get("version") != SEMANTIC_RECEIPT_VERSION
         or not semantic_prompt_compatible(receipt)
-        or receipt.get("runner_profile") != SEMANTIC_RUNNER_PROFILE
+        or receipt.get("runner_profile") not in SEMANTIC_COMPATIBLE_RUNNER_PROFILES
         or receipt.get("context_sha256") != semantic_context_sha256(rows)
         or receipt.get("latest_message_identity") != rows[-1]["message_id"]
     ):
