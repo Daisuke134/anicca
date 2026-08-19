@@ -1,0 +1,26 @@
+# x-repost — the first loop declared rather than hand-wired.
+#
+# Everything launchd needs is here; the absolute paths are produced at install time by
+# bin/plistgen.py, which is what makes this file portable to another Mac.
+
+name      = "x-repost"
+state_dir = "~/loops/x-repost"
+
+[env]
+X_REPOST_BROWSER_IDENTITY = "x:anicca"
+
+# One pass an hour. The pass itself refuses to publish twice in an hour and stops at a daily
+# ceiling, so the schedule is a floor on attempts, not a promise of output.
+[jobs.pass]
+program          = "skills/x-repost/x-repost-cli.sh"
+interval_seconds = 3600
+
+# The schedule and the session are what can die silently here, so this checks both.
+[jobs.healthcheck]
+program          = "skills/x-repost/x-repost-healthcheck.sh"
+interval_seconds = 300
+
+# Evaluate, refill the seed well, then report the trend once a day.
+[jobs.digest]
+program  = "skills/x-repost/x-repost-digest.sh"
+calendar = { hour = 9, minute = 12 }
