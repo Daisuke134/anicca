@@ -213,15 +213,10 @@ def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
         print(json.dumps(body, indent=1))
         return True
     if skip_busy:
-        # Booting out mid-pass kills the browser lease and leaves locks behind, so
-        # wait for the gap between passes. A lane whose pass is long and whose
-        # interval is short is idle only briefly, and a watcher that only sampled
-        # once would keep missing that window forever.
-        for _ in range(60):
-            if not is_running(label):
-                break
-            time.sleep(5)
-        else:
+        # Booting out mid-pass kills the browser lease and leaves locks behind.  Do
+        # not block the watcher while waiting for one long pass: leave only this
+        # periodic lane for the next tick so the other lanes can activate now.
+        if is_running(label):
             print(f"  {label}: still mid-pass, leaving it for the next tick")
             return True
 
