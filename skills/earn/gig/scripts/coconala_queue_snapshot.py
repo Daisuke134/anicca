@@ -2889,7 +2889,7 @@ def argument_parser() -> argparse.ArgumentParser:
         "--mode",
         choices=(
             "full", "orders-only", "selected-talkroom-only",
-            "direct-inbox-only", "direct-inbox-head-only",
+            "direct-inbox-only", "direct-inbox-head-only", "direct-thread-only",
         ),
         default="full",
     )
@@ -2915,25 +2915,31 @@ def main() -> int:
     args = argument_parser().parse_args()
     mode = args.mode if isinstance(getattr(args, "mode", None), str) else "full"
     selected_order: dict[str, Any] | None = None
-    if mode == "selected-talkroom-only":
+    if mode in {"selected-talkroom-only", "direct-thread-only"}:
         talkroom_id = str(getattr(args, "talkroom_id", "") or "")
-        project_id = str(getattr(args, "project_id", "") or "")
-        if not re.fullmatch(r"\d+", talkroom_id):
+        if mode == "direct-thread-only" and not re.fullmatch(
+            r"[A-Za-z0-9_-]{1,128}", talkroom_id,
+        ):
             print(json.dumps({"status": "failed", "error": "invalid_talkroom_id", "read_only": True}))
             return 1
-        if (
+        project_id = str(getattr(args, "project_id", "") or "")
+        if mode == "selected-talkroom-only" and not re.fullmatch(r"\d+", talkroom_id):
+            print(json.dumps({"status": "failed", "error": "invalid_talkroom_id", "read_only": True}))
+            return 1
+        if mode == "selected-talkroom-only" and (
             project_id in {".", ".."}
             or not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", project_id)
         ):
             print(json.dumps({"status": "failed", "error": "invalid_project_id", "read_only": True}))
             return 1
-        try:
-            selected_order = load_selected_order_input(
-                getattr(args, "selected_order_input", None), talkroom_id,
-            )
-        except ValueError as error:
-            print(json.dumps({"status": "failed", "error": str(error), "read_only": True}))
-            return 1
+        if mode == "selected-talkroom-only":
+            try:
+                selected_order = load_selected_order_input(
+                    getattr(args, "selected_order_input", None), talkroom_id,
+                )
+            except ValueError as error:
+                print(json.dumps({"status": "failed", "error": str(error), "read_only": True}))
+                return 1
     else:
         talkroom_id = ""
         project_id = ""
@@ -2941,7 +2947,7 @@ def main() -> int:
     observed_at = datetime.now(timezone.utc).isoformat()
     hidden = args.hidden_no_screenshot
     semantic_judge: Any = None
-    if mode in {"full", "direct-inbox-only"}:
+    if mode in {"full", "direct-inbox-only", "direct-thread-only"}:
         semantic_module = _requested_estimate_module()
         try:
             semantic_judge = semantic_module.SemanticJudge(
@@ -2959,11 +2965,14 @@ def main() -> int:
     source = (
         "orders" if mode == "orders-only"
         else "selected_talkroom" if mode == "selected-talkroom-only"
+        else "direct_thread" if mode == "direct-thread-only"
         else "direct_inbox" if mode in {"direct-inbox-only", "direct-inbox-head-only"}
         else None
     )
     requested_url = OPEN_ORDERS_URL if mode == "orders-only" else (
-        f"https://coconala.com/talkrooms/{talkroom_id}" if mode == "selected-talkroom-only" else None
+        f"https://coconala.com/talkrooms/{talkroom_id}" if mode == "selected-talkroom-only"
+        else f"https://coconala.com/mypage/direct_message/{talkroom_id}"
+        if mode == "direct-thread-only" else None
     )
     if mode in {"direct-inbox-only", "direct-inbox-head-only"}:
         requested_url = MESSAGES_URL
@@ -3072,6 +3081,58 @@ def main() -> int:
             print(json.dumps({
                 "status": "success", "collector_mode": mode, "talkroom_id": talkroom_id,
                 "output": str(args.output), "evidence_dir": str(args.evidence_dir),
+            }, ensure_ascii=False))
+            return 0
+
+        if mode == "direct-thread-only":
+            # Targeted dispatch owns one fresh default-context tab and never
+            # navigates through the inbox.  Keeping the URL construction here
+            # (rather than accepting an arbitrary URL) is the route fence for
+            # the fast path.
+            thread_url = f"https://coconala.com/mypage/direct_message/{talkroom_id}"
+            with DefaultTab(args.cdp_helper, thread_url, hidden=hidden) as tab:
+                inquiry_dom = asyncio.run(inspect_message_page(
+                    tab.ws, DIRECT_MESSAGE_EXPRESSION, thread_url,
+                ))
+            source_dom = inquiry_dom
+            inquiry = {
+                "talkroom_id": talkroom_id,
+                "talkroom_url": thread_url,
+                "title": "purchase_preorder_message",
+            }
+            inquiry.update(direct_message_event(
+                inquiry_dom,
+                thread_url,
+                semantic_judge=semantic_judge,
+                semantic_effects_enabled=args.semantic_effects_enabled,
+                official_context_provider=lambda exact_url: verified_application_context(
+                    args.cdp_helper, exact_url,
+                ),
+            ))
+            inquiry["thread_read_at"] = observed_at
+            receipt = source_receipt(
+                source="direct_thread", requested_url=thread_url,
+                observed_at=observed_at, dom=inquiry_dom,
+            )
+            atomic_json(args.evidence_dir / "direct-thread-route.json", {
+                "url": thread_url, "not_found": False, "observed_at": observed_at,
+                "source_receipt": receipt,
+            })
+            atomic_json(args.evidence_dir / "inquiries.json", {
+                "observed_at": observed_at, "inquiries": [inquiry],
+            })
+            snapshot = mode_snapshot(
+                "direct-thread-only", ["direct_thread"],
+                talkroom_id=talkroom_id,
+                inquiries=[inquiry], orders=[], source_receipt=receipt,
+                semantic_ssot=True,
+            )
+            atomic_json(args.output, snapshot)
+            print(json.dumps({
+                "status": "success", "collector_mode": mode,
+                "talkroom_id": talkroom_id, "inquiries": 1,
+                "semantic_ssot": True, "output": str(args.output),
+                "evidence_dir": str(args.evidence_dir),
             }, ensure_ascii=False))
             return 0
 

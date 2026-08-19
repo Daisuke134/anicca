@@ -8,6 +8,7 @@ import fcntl
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -498,6 +499,349 @@ def install_token_budget(environ: dict[str, str], *, run_id: str) -> None:
             str(Path.home() / ".local/state/anicca/telemetry/token-budget.jsonl"),
         ),
     )
+
+
+_TARGETED_THREAD_ID = re.compile(r"[A-Za-z0-9_-]{1,128}")
+_TARGETED_INTENTIONAL_NO_SEND = frozenset({
+    "wait", "stop_contact", "terminal_acknowledgement", "observe",
+    "officially_unrepliable",
+})
+
+
+def _targeted_arg(args: Any, name: str, default: Any) -> Any:
+    """Read a worker argument while keeping the public helper testable."""
+    value = getattr(args, name, None)
+    return default if value is None else value
+
+
+def _targeted_failure(thread_id: str, run_id: str, step: str, error: Any) -> dict[str, Any]:
+    return {
+        "status": "failed",
+        "thread_id": thread_id,
+        "run_id": run_id,
+        "failed_step": step,
+        "replied": 0,
+        "official_readback": 0,
+        "duplicate_effect": 0,
+        "closed_without_send": 0,
+        "pending": 0,
+        "errors": [{"type": type(error).__name__, "message": str(error)[:300]}],
+        "events": [],
+    }
+
+
+def _targeted_snapshot(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("targeted snapshot must be an object")
+    return value
+
+
+def _targeted_inquiry(snapshot: dict[str, Any], thread_id: str) -> dict[str, Any]:
+    if (
+        snapshot.get("collector_mode") != "direct-thread-only"
+        or snapshot.get("semantic_ssot") is not True
+        or not isinstance(snapshot.get("inquiries"), list)
+        or len(snapshot["inquiries"]) != 1
+    ):
+        raise ValueError("targeted collector must emit one semantic inquiry")
+    inquiry = snapshot["inquiries"][0]
+    if not isinstance(inquiry, dict) or str(inquiry.get("talkroom_id") or "") != thread_id:
+        raise ValueError("targeted inquiry thread mismatch")
+    expected_url = f"https://coconala.com/mypage/direct_message/{thread_id}"
+    if inquiry.get("talkroom_url") != expected_url:
+        raise ValueError("targeted inquiry route mismatch")
+    if inquiry.get("last_message_side") == "buyer":
+        has_message_id = bool(
+            isinstance(inquiry.get("message_id"), str)
+            and re.fullmatch(r"[A-Za-z0-9._-]{1,128}", inquiry["message_id"])
+        )
+        has_fallback_id = (
+            isinstance(inquiry.get("message_sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", inquiry["message_sha256"]) is not None
+            and type(inquiry.get("stable_ordinal")) is int
+            and inquiry["stable_ordinal"] >= 0
+        )
+        if not (has_message_id or has_fallback_id):
+            raise ValueError("targeted inquiry missing message identity")
+        if not inquiry.get("buyer_sent_at"):
+            raise ValueError("targeted inquiry missing buyer timestamp")
+    return inquiry
+
+
+def _targeted_presemantic_snapshot(
+    snapshot: dict[str, Any], inquiry: dict[str, Any], *, semantic: bool,
+) -> dict[str, Any]:
+    """Create the one-item queue projection without re-reading customer prose."""
+    projected = dict(snapshot)
+    row = dict(inquiry)
+    if not semantic:
+        for key in (
+            "semantic_receipt", "semantic_context_sha256", "semantic_reply_body",
+            "semantic_estimate_terms", "semantic_failure", "semantic_candidate_action",
+            "semantic_official_context_required",
+        ):
+            row.pop(key, None)
+        row["estimate_required"] = False
+        row["reply_required"] = row.get("last_message_side") == "buyer"
+        row["next_action"] = "reply" if row["reply_required"] else "observe"
+    projected["inquiries"] = [row]
+    projected["orders"] = []
+    projected["semantic_ssot"] = semantic
+    return projected
+
+
+def _targeted_event_key(row: dict[str, Any], thread_id: str) -> str:
+    """Mirror reply_queue's event identity for exact pre-semantic coalescing."""
+    if isinstance(row.get("message_id"), str) and re.fullmatch(
+        r"[A-Za-z0-9._-]{1,128}", row["message_id"]
+    ):
+        return f"coconala:message:v1:{thread_id}:{row['message_id']}"
+    digest = str(row.get("message_sha256") or "")
+    ordinal = row.get("stable_ordinal")
+    if (
+        re.fullmatch(r"[0-9a-f]{64}", digest)
+        and type(ordinal) is int and ordinal >= 0
+    ):
+        from datetime import datetime
+        origin = datetime.fromisoformat(str(row["buyer_sent_at"]).replace("Z", "+00:00"))
+        return (
+            f"coconala:fallback:v1:{thread_id}:{int(origin.timestamp())}:{ordinal}:"
+            f"sha256_v1:{digest}"
+        )
+    raise ValueError("targeted inquiry missing event identity")
+
+
+def _targeted_close_no_send(
+    *, database: Path, manifest: Path, thread_id: str, event_key: str,
+    reason: str, run_id: str,
+) -> dict[str, Any] | None:
+    """Claim and close the exact pre-semantic action, never marking it replied."""
+    outbox = ConnectorOutbox(database, manifest)
+    pending_candidates = [
+        action for action in outbox.pending_actions()
+        if str(action.get("thread_id") or "") == thread_id
+        and (
+            str(action.get("event_key") or "") == event_key
+            or str(action.get("event_key") or "").startswith(
+                f"coconala:inbox:v1:{thread_id}:"
+            )
+        )
+    ]
+    if len(pending_candidates) != 1:
+        return None
+    pending = pending_candidates[0]
+    if pending is None or pending.get("state") != "pending" or pending.get("dlq_at") is not None:
+        return None
+    now = max(int(time.time()), int(pending.get("updated_at") or 0))
+    owner = f"gig-targeted-{run_id}"
+    claimed = outbox.claim(
+        owner=owner, now=now, lease_seconds=30,
+        action_id=int(pending["action_id"]),
+    )
+    if claimed is None:
+        return None
+    closed = outbox.close_nothing_to_say(
+        int(claimed["action_id"]), owner=owner,
+        fencing_token=int(claimed["fencing_token"]),
+        reason=reason[:120], now=now,
+    )
+    return {
+        "action_id": int(closed["action_id"]),
+        "revision": int(closed["revision"]),
+        "status": "nothing_to_say",
+    }
+
+
+def run_targeted_thread(
+    args: Any, *, thread_id: str, evidence: Path, run_id: str,
+) -> dict[str, Any]:
+    """Collect, enqueue and execute exactly one changed direct-message thread."""
+    if not isinstance(thread_id, str) or _TARGETED_THREAD_ID.fullmatch(thread_id) is None:
+        return _targeted_failure(thread_id, run_id, "validate_thread", ValueError("invalid thread id"))
+    evidence = Path(evidence)
+    try:
+        evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
+        evidence.chmod(0o700)
+        gig_root = Path(__file__).resolve().parents[1]
+        home = Path.home()
+        snapshot_script = Path(_targeted_arg(args, "snapshot_script", gig_root / "scripts/coconala_queue_snapshot.py"))
+        queue_script = Path(_targeted_arg(args, "queue_script", gig_root / "scripts/reply_queue.py"))
+        lane_script = Path(_targeted_arg(args, "lane_script", gig_root / "scripts/reply_lane.py"))
+        database = Path(_targeted_arg(args, "database", home / "gig/connector-outbox.sqlite3"))
+        manifest = Path(_targeted_arg(args, "manifest", gig_root / "config/connectors/coconala.json"))
+        runner = Path(_targeted_arg(args, "runner", RUNNER_DIR / "agent_runner.py"))
+        semantic_schema = Path(_targeted_arg(args, "semantic_schema", gig_root / "schemas/reply_semantic_judgement.schema.json"))
+        estimate_schema = Path(_targeted_arg(args, "estimate_schema", gig_root / "schemas/estimate_category_selection.schema.json"))
+        reply_schema = Path(_targeted_arg(args, "schema", gig_root / "schemas/reply_composition.schema.json"))
+        helper = Path(_targeted_arg(args, "cdp_helper", BROWSER_DIR / "scripts/cdp_default_tab.py"))
+
+        snapshot_path = evidence / "marketplace-snapshot.json"
+        queue_path = evidence / "reply-queue.json"
+        lane_path = evidence / "reply-lane-result.json"
+        normal_snapshot_path = evidence / "normal-reply-snapshot.json"
+        estimate_path = evidence / "requested-estimate-result.json"
+        supplied_fences = _targeted_arg(args, "fences", None)
+        fences_path = Path(supplied_fences) if supplied_fences else evidence / "project-fences.json"
+        collect_command = [
+            sys.executable, str(snapshot_script),
+            "--output", str(snapshot_path), "--evidence-dir", str(evidence / "direct-thread"),
+            "--mode", "direct-thread-only", "--talkroom-id", thread_id,
+            "--hidden-no-screenshot", "--semantic-runner", str(runner),
+            "--semantic-schema", str(semantic_schema), "--semantic-workdir", str(home),
+            "--database", str(database), "--manifest", str(manifest),
+        ]
+        if _targeted_arg(args, "semantic_effects_enabled", True):
+            collect_command.append("--semantic-effects-enabled")
+        _run("collect", collect_command)
+        snapshot = _targeted_snapshot(snapshot_path)
+        inquiry = _targeted_inquiry(snapshot, thread_id)
+        next_action = str(inquiry.get("next_action") or "")
+        semantic_receipt = inquiry.get("semantic_receipt")
+        semantic_failure = inquiry.get("semantic_failure")
+        send_action = next_action in {"reply", "clarify", "requested_estimate", "send_estimate"}
+        intentional_no_send = (
+            next_action in _TARGETED_INTENTIONAL_NO_SEND
+            or (not send_action and not semantic_failure and inquiry.get("last_message_side") != "buyer")
+            or (not send_action and not semantic_failure and isinstance(semantic_receipt, dict))
+        )
+        semantic_ready = (
+            isinstance(semantic_receipt, dict)
+            and not semantic_failure
+            and send_action
+            and inquiry.get("last_message_side") == "buyer"
+        )
+
+        # Estimate processing stays additive and runs before normal queue work,
+        # exactly as in the existing detector pass.
+        estimate_result: dict[str, Any] = {
+            "estimate_required": 0, "estimate_effect": 0,
+            "estimate_readback": 0, "estimate_pending": 0,
+            "estimate_failed": 0, "estimate_events": [], "errors": [],
+        }
+        if inquiry.get("estimate_required") is True:
+            estimate_args = argparse.Namespace(
+                database=database, manifest=manifest, runner=runner,
+                estimate_schema=estimate_schema, cdp_helper=helper,
+            )
+            estimate_result = run_requested_estimate(
+                snapshot, args=estimate_args,
+                owner=f"gig-estimate-targeted-{run_id}", now=int(time.time()),
+            )
+        _atomic_json(estimate_path, estimate_result)
+        _owner_only(estimate_path)
+
+        queue_snapshot = _targeted_presemantic_snapshot(
+            snapshot, inquiry, semantic=semantic_ready,
+        )
+        if semantic_ready and inquiry.get("estimate_required") is True:
+            queue_snapshot["inquiries"] = []
+        _atomic_json(normal_snapshot_path, queue_snapshot)
+        _owner_only(normal_snapshot_path)
+        _run("queue_build", [
+            sys.executable, str(queue_script), "build",
+            "--snapshot", str(normal_snapshot_path), "--output", str(queue_path),
+        ])
+        _owner_only(queue_path)
+        _run("outbox_enqueue", [
+            sys.executable, str(queue_script), "enqueue",
+            "--queue", str(queue_path), "--database", str(database),
+            "--manifest", str(manifest),
+        ])
+        queue_value = json.loads(queue_path.read_text(encoding="utf-8"))
+        if not isinstance(queue_value, dict):
+            raise ValueError("targeted queue must be an object")
+
+        if semantic_failure or not semantic_ready and not intentional_no_send:
+            return {
+                "status": "pending", "thread_id": thread_id, "run_id": run_id,
+                "replied": 0, "official_readback": 0, "duplicate_effect": 0,
+                "closed_without_send": 0, "pending": 1,
+                "semantic_failure": str(semantic_failure or "semantic_pending")[:160],
+                "events": [], "errors": [],
+                **{key: estimate_result.get(key, 0) for key in (
+                    "estimate_required", "estimate_effect", "estimate_readback",
+                    "estimate_pending", "estimate_failed", "estimate_events",
+                )},
+            }
+        if intentional_no_send:
+            closed = _targeted_close_no_send(
+                database=database, manifest=manifest, thread_id=thread_id,
+                event_key=_targeted_event_key(inquiry, thread_id),
+                reason=next_action or "intentional_no_send", run_id=run_id,
+            )
+            if closed is None:
+                return {
+                    "status": "pending", "thread_id": thread_id, "run_id": run_id,
+                    "replied": 0, "official_readback": 0, "duplicate_effect": 0,
+                    "closed_without_send": 0, "pending": 1,
+                    "events": [], "errors": ["presemantic_action_not_claimable"],
+                }
+            return {
+                "status": "completed", "thread_id": thread_id, "run_id": run_id,
+                "replied": 0, "official_readback": 0, "duplicate_effect": 0,
+                "closed_without_send": 1, "pending": 0,
+                "events": [], "errors": [],
+            }
+
+        # A targeted snapshot intentionally has no paid-order proof.  Rebuilding
+        # an empty fence from it would unfence a paid room, so only a caller-owned
+        # registry (normally produced by the full reconciliation) may authorize
+        # this effect lane.  If none is supplied, reply_lane receives a missing
+        # path and refuses the write fail-closed.
+        if supplied_fences is None:
+            fences_path.unlink(missing_ok=True)
+        _run("reply_lane", [
+            sys.executable, str(lane_script),
+            "--queue", str(queue_path), "--database", str(database),
+            "--manifest", str(manifest), "--runner", str(runner),
+            "--schema", str(reply_schema), "--cdp-helper", str(helper),
+            "--max-model-calls", "0", "--output", str(lane_path),
+            "--workdir", str(home), "--owner-prefix", f"gig-targeted-{run_id}",
+            "--fences", str(fences_path),
+        ], accepted=(0, 2))
+        lane = json.loads(lane_path.read_text(encoding="utf-8"))
+        if not isinstance(lane, dict):
+            raise ValueError("targeted lane result must be an object")
+        events = lane.get("events") if isinstance(lane.get("events"), list) else []
+        counts = {
+            key: _count(lane.get(key)) or 0
+            for key in (
+                "replied", "reconciled", "pending_verify", "reconcile_pending",
+                "already_delivered", "nothing_to_say", "failed", "blocked",
+                "deferred", "dlq",
+            )
+        }
+        verified = _verified_events(events, counts["replied"])
+        result = {
+            "status": str(lane.get("status") or "failed"),
+            "thread_id": thread_id, "run_id": run_id,
+            **counts,
+            "replied": counts["replied"],
+            "official_readback": len(verified) if verified is not None else 0,
+            "duplicate_effect": sum(
+                1 for event in events
+                if isinstance(event, dict)
+                and event.get("status") in {"duplicate_effect", "duplicate_sent"}
+            ),
+            "closed_without_send": counts["nothing_to_say"],
+            "pending": counts["pending_verify"] + counts["reconcile_pending"],
+            "effect": max(0, counts["replied"] - counts["reconciled"]),
+            "events": events,
+            "errors": list(lane.get("errors") or []),
+        }
+        result.update({
+            key: estimate_result.get(key, 0)
+            for key in (
+                "estimate_required", "estimate_effect", "estimate_readback",
+                "estimate_pending", "estimate_failed", "estimate_events",
+            )
+        })
+        return result
+    except StepFailure as error:
+        return _targeted_failure(thread_id, run_id, error.step, error)
+    except Exception as error:
+        return _targeted_failure(thread_id, run_id, "targeted", error)
 
 
 def main() -> int:
