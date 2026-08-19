@@ -2743,7 +2743,9 @@ def direct_message_event(
     if identity is None:
         raise CollectorUnhealthy("missing_message_identity")
     result["last_message_identity_sha256"] = identity
-    requested_estimate = _requested_estimate_module()
+    requested_estimate = (
+        _requested_estimate_module() if semantic_judge is not None else None
+    )
     receipt: Any = None
     if semantic_judge is None:
         result.update({
@@ -2834,6 +2836,28 @@ def direct_message_event(
     elif marker_present and result.get("next_action") == "stop_contact":
         result["sending_unavailable"] = False
     return result
+
+
+_DIRECT_THREAD_HEAD_FIELDS = (
+    "talkroom_id", "talkroom_url", "last_message_identity_sha256",
+    "last_message_side", "buyer_sent_at", "seller_sent_at", "reply_required",
+)
+
+
+def direct_thread_head_projection(
+    dom: dict[str, Any], expected_url: str, *, talkroom_id: str,
+) -> dict[str, Any]:
+    """Project one exact direct-thread head without semantic judgement or prose."""
+    event = direct_message_event(dom, expected_url, semantic_judge=None)
+    row = {
+        key: event[key]
+        for key in _DIRECT_THREAD_HEAD_FIELDS
+        if key in event
+    }
+    row["talkroom_id"] = talkroom_id
+    row["talkroom_url"] = expected_url
+    row["reply_required"] = row.get("last_message_side") == "buyer"
+    return row
 
 
 def last_message_side_from_dom(talkroom: dict[str, Any]) -> str:
@@ -2949,7 +2973,8 @@ def argument_parser() -> argparse.ArgumentParser:
         "--mode",
         choices=(
             "full", "orders-only", "selected-talkroom-only",
-            "direct-inbox-only", "direct-inbox-head-only", "direct-thread-only",
+            "direct-inbox-only", "direct-inbox-head-only",
+            "direct-thread-only", "direct-thread-head-only",
         ),
         default="full",
     )
@@ -2975,9 +3000,11 @@ def main() -> int:
     args = argument_parser().parse_args()
     mode = args.mode if isinstance(getattr(args, "mode", None), str) else "full"
     selected_order: dict[str, Any] | None = None
-    if mode in {"selected-talkroom-only", "direct-thread-only"}:
+    if mode in {
+        "selected-talkroom-only", "direct-thread-only", "direct-thread-head-only",
+    }:
         talkroom_id = str(getattr(args, "talkroom_id", "") or "")
-        if mode == "direct-thread-only" and not re.fullmatch(
+        if mode in {"direct-thread-only", "direct-thread-head-only"} and not re.fullmatch(
             r"[A-Za-z0-9_-]{1,128}", talkroom_id,
         ):
             print(json.dumps({"status": "failed", "error": "invalid_talkroom_id", "read_only": True}))
@@ -3025,14 +3052,14 @@ def main() -> int:
     source = (
         "orders" if mode == "orders-only"
         else "selected_talkroom" if mode == "selected-talkroom-only"
-        else "direct_thread" if mode == "direct-thread-only"
+        else "direct_thread" if mode in {"direct-thread-only", "direct-thread-head-only"}
         else "direct_inbox" if mode in {"direct-inbox-only", "direct-inbox-head-only"}
         else None
     )
     requested_url = OPEN_ORDERS_URL if mode == "orders-only" else (
         f"https://coconala.com/talkrooms/{talkroom_id}" if mode == "selected-talkroom-only"
         else f"https://coconala.com/mypage/direct_message/{talkroom_id}"
-        if mode == "direct-thread-only" else None
+        if mode in {"direct-thread-only", "direct-thread-head-only"} else None
     )
     if mode in {"direct-inbox-only", "direct-inbox-head-only"}:
         requested_url = MESSAGES_URL
@@ -3140,6 +3167,44 @@ def main() -> int:
             atomic_json(args.output, snapshot)
             print(json.dumps({
                 "status": "success", "collector_mode": mode, "talkroom_id": talkroom_id,
+                "output": str(args.output), "evidence_dir": str(args.evidence_dir),
+            }, ensure_ascii=False))
+            return 0
+
+        if mode == "direct-thread-head-only":
+            # This read-only preflight owns one exact direct-thread tab.  It
+            # deliberately does not construct a semantic provider and stores
+            # only the bounded identity projection plus the official receipt.
+            thread_url = f"https://coconala.com/mypage/direct_message/{talkroom_id}"
+            with DefaultTab(args.cdp_helper, thread_url, hidden=hidden) as tab:
+                inquiry_dom = asyncio.run(inspect_message_page(
+                    tab.ws, DIRECT_MESSAGE_EXPRESSION, thread_url,
+                ))
+            source_dom = inquiry_dom
+            inquiry = direct_thread_head_projection(
+                inquiry_dom, thread_url, talkroom_id=talkroom_id,
+            )
+            receipt = source_receipt(
+                source="direct_thread", requested_url=thread_url,
+                observed_at=observed_at, dom=inquiry_dom,
+            )
+            atomic_json(args.evidence_dir / "direct-thread-route.json", {
+                "url": thread_url, "not_found": False, "observed_at": observed_at,
+                "source_receipt": receipt,
+            })
+            atomic_json(args.evidence_dir / "inquiries.json", {
+                "observed_at": observed_at, "inquiries": [inquiry],
+            })
+            snapshot = mode_snapshot(
+                "direct-thread-head-only", ["direct_thread"],
+                talkroom_id=talkroom_id, inquiries=[inquiry], orders=[],
+                source_receipt=receipt, semantic_ssot=False, head_only=True,
+            )
+            atomic_json(args.output, snapshot)
+            print(json.dumps({
+                "status": "success", "collector_mode": mode,
+                "talkroom_id": talkroom_id, "inquiries": 1,
+                "semantic_ssot": False, "head_only": True, "read_only": True,
                 "output": str(args.output), "evidence_dir": str(args.evidence_dir),
             }, ensure_ascii=False))
             return 0

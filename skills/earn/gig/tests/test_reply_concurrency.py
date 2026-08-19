@@ -199,6 +199,18 @@ def _fake_targeted_scripts(
                         "last_message_side": "buyer", "last_message_identity_sha256": {head_identity!r},
                     }}],
                 }}))
+            elif mode == "direct-thread-head-only":
+                output.write_text(json.dumps({{
+                    "version": 1, "collector_mode": "direct-thread-head-only", "semantic_ssot": False,
+                    "captured_at": captured_at, "read_only": True, "head_only": True,
+                    "orders": [], "source_receipt": {{"source": "direct_thread"}},
+                    "inquiries": [{{
+                        "talkroom_id": "123", "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+                        "last_message_side": "buyer", "reply_required": True,
+                        "buyer_sent_at": "2026-08-19T00:01:00+00:00",
+                        "last_message_identity_sha256": {head_identity!r},
+                    }}],
+                }}))
             else:
                 output.write_text(json.dumps({{
                     "version": 1, "collector_mode": "direct-thread-only", "semantic_ssot": True,
@@ -427,8 +439,8 @@ def test_orders_proof_is_fresh_and_precedes_estimate_effect(tmp_path, monkeypatc
     )
     assert result["status"] == "completed"
     assert observed_modes_at_estimate == [[
-        "direct-inbox-head-only", "direct-thread-only",
-        "direct-inbox-head-only", "orders-only",
+        "direct-thread-head-only", "direct-thread-only",
+        "direct-thread-head-only", "orders-only",
     ]]
     assert not send_record.exists() or not send_record.read_text().strip()
 
@@ -995,9 +1007,9 @@ def test_fresh_proof_is_ordered_after_head_and_before_effect(tmp_path):
     assert any(
         index > enqueue_index
         for index, label in enumerate(labels)
-        if label == "direct-inbox-head-only"
+        if label == "direct-thread-head-only"
     )
-    assert labels.index("direct-inbox-head-only") < labels.index("orders-only")
+    assert labels.index("direct-thread-head-only") < labels.index("orders-only")
     assert labels.index("orders-only") < labels.index("fence") < labels.index("lane")
 
 
@@ -1380,6 +1392,7 @@ def test_targeted_preflight_uses_exact_thread_head_not_inbox_list(tmp_path, monk
             }
             snapshot_value = {
                 "collector_mode": mode, "head_only": True, "read_only": True,
+                "semantic_ssot": False,
                 "inquiries": [row],
             }
         else:
@@ -1393,6 +1406,7 @@ def test_targeted_preflight_uses_exact_thread_head_not_inbox_list(tmp_path, monk
             }
             snapshot_value = {
                 "collector_mode": mode, "head_only": True, "read_only": True,
+                "semantic_ssot": False,
                 "inquiries": [row],
                 "source_receipt": {"source": "direct_thread"},
             }
