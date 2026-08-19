@@ -136,17 +136,29 @@ the readiness test — that would only make an unbuilt half look finished.
 
 ---
 
-## 5. The funnel attributes most payments to nobody
+## 5. Storefront attribution depends on the buyer pasting a URL
 
-**Blocks:** knowing which lane earns.
+**Blocks:** knowing which lane earns. Measured on `~/gig/storefront-direct/funnel-events.jsonl`:
+of 111 inquiry events, **110 are `unknown` and 1 is `storefront`** — exactly the one that
+carries a `service_id`. All 8 payment events are `unknown`.
 
-The storefront receipt reports its own source as
-`source_status: "latest_completed_log_noncanonical"` — the funnel is reconstructed by parsing
-the negotiate lane's launchd stdout log, because no canonical inventory is provided. The
-result, honestly labelled: 110 of 116 inquiries and 5 of 8 payments have origin `unknown`.
+The rule is in `_funnel_events()` (`scripts/storefront_direct.py:~636`): a conversation is
+attributed to storefront only when a regex finds `coconala.com/services/<id>` **in the buyer's
+own message text**, for exactly one of the seller's current listings. A buyer who opens an
+inquiry from a listing page does not then paste that page's URL into their first message, so
+the test almost never passes. It fired once in 111, and on the one listing whose contract is
+also the stale one from item 4.
 
-A log is a rendering, not a ledger. Give the funnel the negotiate lane's own state as its
-source, and keep the log path only as the fallback it already declares itself to be.
+That is a proxy standing in for a fact the platform already knows: the talkroom belongs to a
+service. `apply` attribution works precisely because it is not a proxy — the apply lane keeps
+`applied.jsonl` and therefore knows which postings it answered. Storefront keeps no equivalent
+record of which of its listings an inquiry arrived from.
+
+Fixing it means recording that fact where it is observable — the negotiate lane already opens
+every talkroom — rather than sharpening the regex. Note also that `source_status:
+"latest_completed_log_noncanonical"` is narrower than it sounds: it labels only where the
+*observed conversation count* came from, not the attribution. The attribution problem is the
+regex, not the log.
 
 ---
 
