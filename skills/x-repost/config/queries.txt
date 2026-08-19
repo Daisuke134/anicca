@@ -1,9 +1,26 @@
-# X search queries for the daily recon pass. One per line, '#' = comment.
-# Kept as data so the queries can be tuned without touching x_collect.py.
+# Search queries for the recon pass. One per line, '#' = comment.
+# Kept as data so the surface can be tuned without touching x_collect.py.
+#
+# These aim at the audience this account sells to -- AI tools, building things alone, and the
+# creator economy -- rather than at "AI and crypto" in general. A wider net is not the goal; being
+# in the same room as the people who would buy what this account promotes is. Crypto is thin here
+# on purpose: it drew engagement but almost none of it was that audience.
+#
 # min_faves keeps the recon on posts that are actually moving.
+
+# --- English: the account's own language and its buyers ---
 AI agent min_faves:300 -filter:replies
-LLM min_faves:500 -filter:replies
-AI 自動化 min_faves:150 -filter:replies
-crypto min_faves:400 -filter:replies
-onchain OR stablecoin min_faves:200 -filter:replies
+AI tools min_faves:400 -filter:replies
+claude code OR cursor min_faves:200 -filter:replies
+building in public min_faves:150 -filter:replies
+indie hacker OR solopreneur min_faves:150 -filter:replies
+automation workflow min_faves:200 -filter:replies
+creator economy OR newsletter growth min_faves:200 -filter:replies
+
+# --- Japanese: taken when the conversation is genuinely Japanese, answered in Japanese ---
 AI エージェント min_faves:100 -filter:replies
+個人開発 min_faves:100 -filter:replies
+AI 自動化 min_faves:150 -filter:replies
+
+# --- kept thin: engaged well, but not the buyers ---
+onchain OR stablecoin min_faves:400 -filter:replies

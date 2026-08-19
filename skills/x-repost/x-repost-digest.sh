@@ -28,9 +28,10 @@ SEEDS="$STATE/seeds.jsonl"
 CLAUDE_BIN="$(command -v claude || echo "$HOME/.local/bin/claude")"
 {
   echo "以下は実在の出力だけを貼ったものだ。ここに**書かれていること**からのみ、"
-  echo "この運用者が実際に観測した具体的な事実を **1つ** 抜き出せ。"
+  echo "この運用者が実際に観測した具体的な事実を **${X_REPOST_HARVEST_COUNT:-5}件** 抜き出せ。"
   echo "条件: ①数値か日付か固有名詞を含む ②既存の種と内容が重複しない ③このループの配管以外の話題を優先する"
-  echo "貼られていない数値・日付・固有名詞を書いたら失格。該当が無ければ {\"fact\": null} を返す。"
+  echo "貼られていない数値・日付・固有名詞を書いたら失格。書けるものが少なければ少ない件数でよい。"
+  echo "★観点を変えて複数取る: 同じ材料でも「何が起きたか」「なぜ気づけなかったか」「一般化すると何か」は別の種になる。"
   echo; echo "## 既存の種"
   "$PY" "$SKILL/scripts/x_seeds.py" --seeds "$SEEDS" --available 2>/dev/null || echo "[]"
   echo; echo "## この loop の日次ダイジェスト（実測）"
@@ -45,8 +46,8 @@ print("registered:",dict(collections.Counter(x.get("registered") for x in a)))
 print("state:",dict(collections.Counter(x.get("actual_state") for x in a)))' 2>/dev/null
   echo; echo "## 直近のパスのログ"
   tail -12 "${X_REPOST_LOG:-$HOME/.openclaw/logs/x-repost-pass.out.log}" 2>/dev/null
-  echo; echo '## 出力（最後に JSON オブジェクトだけを1つ）'
-  echo '{"fact":"...","measured_on":"YYYY-MM-DD","source":"どのセクションから取ったか"}'
+  echo; echo '## 出力（最後に JSON 配列だけを1つ）'
+  echo '[{"fact":"...","measured_on":"YYYY-MM-DD","source":"どのセクションから取ったか"}]'
 } >"$STATE/last-harvest-prompt.txt"
 
 if timeout "${X_REPOST_MODEL_TIMEOUT:-600}" env -u ANTHROPIC_API_KEY "$CLAUDE_BIN" \
@@ -64,11 +65,27 @@ for candidate in reversed(re.findall(r"\{.*\}", raw, re.S)):
             continue
 raise SystemExit(1)
 PYEOF
-  if "$PY" -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("fact") else 1)' \
-       "$STATE/last-harvest.json" 2>/dev/null; then
-    "$PY" "$SKILL/scripts/x_seeds.py" --seeds "$SEEDS" --add <"$STATE/last-harvest.json" \
-      >>"$STATE/seeds.log" 2>&1 && echo "x-repost-digest: harvested $(tail -1 "$STATE/seeds.log")"
-  fi
+  # The well drains far faster than it fills: the pass may publish up to twelve times a day and
+  # each published post spends a seed, while this job used to add exactly one. Harvest several at
+  # once, from different angles on the same material.
+  ADDED=0
+  while IFS= read -r seed; do
+    [ -n "$seed" ] || continue
+    printf '%s' "$seed" | "$PY" "$SKILL/scripts/x_seeds.py" --seeds "$SEEDS" --add \
+      >>"$STATE/seeds.log" 2>&1 && ADDED=$((ADDED + 1))
+  done < <("$PY" - "$STATE/last-harvest.json" <<'PYINNER'
+import json, sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+except Exception:
+    raise SystemExit(0)
+rows = data if isinstance(data, list) else [data]
+for row in rows:
+    if isinstance(row, dict) and (row.get("fact") or "").strip():
+        print(json.dumps(row, ensure_ascii=False))
+PYINNER
+)
+  echo "x-repost-digest: harvested $ADDED seed(s)"
 fi
 
 BODY="$("$PY" "$SKILL/scripts/x_digest.py" --posted "$STATE/posted.jsonl" --window-hours "$WINDOW")" || {
