@@ -171,6 +171,7 @@ def semantic_prompt(
 - send_estimateはbuyerが現在のcycleで購入または見積り送付を承認し、title、内容、数量、合計価格、購入プラン、購入起点の納期が一意な場合だけです。各fieldへ根拠buyer message IDを付けます。別cycleを混ぜません。
 - estimate_terms.quantityは案件project数ではなく、buyerへ渡すdistinct deliverable unitの合計です。記事1本＋SNS投稿1本はquantity=2です。title/contentに列挙した本数合計とquantityを一致させてから返します。
 - buyerがseller提示の納期rangeを受諾済みなら、短い側を約束せず、最も遅い上限をdelivery_daysにします。「購入当日または翌日」は1日、「2〜3日」は3日です。これは不確実性ではなくsellerに安全な確定値です。
+- selection sample/roughのexplicit buyer deadlineはinterim deadlineとして扱い、later official final delivery dateとは別で、applied scope内ならclarifyせず受諾して進みます。後日のofficial final delivery dateと矛盾しない中間成果物期限として、選定用ラフをその期限までに提出します。
 - reply/clarifyは最新buyerの質問・依頼へ直接答えるsend-readyな日本語本文をreply_bodyへ返します。未依頼の購入催促、同じ案内の反復、根拠のない職歴・実績・本人属性を作りません。
 - 最新messageがbuyerで、明確なdecline/stop、unknown、必要official context待ちのいずれでもない場合、waitにしません。question/negotiating/ready stateはreply/clarify/send_estimateで前進させ、gratitude/consideringにも同じmessage identityへ一度だけ短いcontextual acknowledgementを返します。購入催促やseller既送文の反復は加えません。
 - buyerが対応可否を尋ね、current conversationまたはverified factsに根拠がある場合、reply_bodyの冒頭で「対応可能です」等の明確な回答を先に述べ、その後に根拠と条件を短く続けます。根拠がない能力をyesにせず、確認できる範囲を正直に区別します。

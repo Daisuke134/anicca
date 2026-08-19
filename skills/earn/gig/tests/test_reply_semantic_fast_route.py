@@ -301,6 +301,8 @@ def test_semantic_prompt_v15_uses_verified_application_scope_without_blanket_ref
     assert "application contextと無関係な一般的な経験・能力・稼働可否の質問だけでは使いません" in prompt
     assert "この会話で確認できる事実としては断言できません" not in prompt
     assert "未確認historyの不在や経験不足を自発的に説明したり、対応不可を先頭に置いたりしません" in prompt
+    assert "selection sample/roughのexplicit buyer deadlineはinterim deadline" in prompt
+    assert "later official final delivery dateとは別で、applied scope内ならclarifyせず受諾" in prompt
     assert "動画編集、字幕・テロップ挿入、映像加工、完成動画書き出しは対応不能です。" not in prompt
     assert "Care Earth Mart" in prompt
     assert "選定用ラフ" in prompt
