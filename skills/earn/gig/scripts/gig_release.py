@@ -237,6 +237,14 @@ def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
     if dry_run:
         print(json.dumps(body, indent=1))
         return True
+    # Persist the desired immutable release before the busy fence. The loaded
+    # launchd definition is unchanged while a pass is live, but the next natural
+    # gap must already have the new plist waiting on disk.
+    Path(table["GIG_LOG_DIR"]).mkdir(parents=True, exist_ok=True)
+    Path(table["GIG_BRAKE_DIR"]).mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("wb") as handle:
+        plistlib.dump(body, handle)
     if skip_busy or label in CONTINUOUS_RELOADABLE:
         # Booting out mid-pass kills the browser lease and leaves locks behind.  A
         # continuous lane is also fenced when launchd's control plane is returning
@@ -246,12 +254,6 @@ def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
         if is_running(label):
             print(f"  {label}: still mid-pass, leaving it for the next tick")
             return True
-
-    Path(table["GIG_LOG_DIR"]).mkdir(parents=True, exist_ok=True)
-    Path(table["GIG_BRAKE_DIR"]).mkdir(parents=True, exist_ok=True)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("wb") as handle:
-        plistlib.dump(body, handle)
 
     domain = f"gui/{os.getuid()}"
     subprocess.run(["launchctl", "bootout", f"{domain}/{label}"], capture_output=True)
