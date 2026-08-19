@@ -231,10 +231,14 @@ upper-first-view CTA and copy scope. Both reply audits have no unsupported claim
 question. The next active slice is the two-consumer supervisor; 0b remains open until natural
 official under-five-minute readback passes.
 
-The two-consumer supervisor is deployed from immutable release `1f849cf4b`. Launchctl holds
+The two-consumer supervisor is deployed from immutable release `2ce5474f7`. Launchctl holds
 one running KeepAlive process with exact argv `--continuous --poll-seconds 30 --workers 2`;
-Apply, Paid and Storefront remain on their previous release. Three live bounded head probes
-completed about 34 seconds apart, retained only message digests, and produced no new stderr.
+Apply, Paid and Storefront remain on their previous release. The producer now schedules from a
+monotonic start deadline rather than sleeping after each probe. Four live bounded head probes
+started at epoch seconds `1787141037`, `1787141067`, `1787141097` and `1787141127` — exactly
+30/30/30 seconds apart — retained only message digests, and produced no new stderr. A probe that
+overruns its deadline may trigger one immediate recovery pass, then resets to a full poll interval;
+the exact-duration boundary is not treated as an overrun.
 No unread buyer message existed during this observation, so the natural buyer-origin → official
 readback latency gate is still pending and no after-speed claim is made.
 
