@@ -314,6 +314,8 @@ def test_launchagent_is_immutable_dedicated_and_storefront_braked(monkeypatch):
     # plist_for() substituted from, so that assertion could never fail and a
     # regression in the manifest's default would go straight through.
     assert argv == ["/opt/homebrew/bin/python3",
+                    f"{release}/skills/earn/gig/scripts/gig_disk_guard.py",
+                    "/opt/homebrew/bin/python3",
                     f"{release}/skills/earn/gig/scripts/storefront_direct.py",
                     "--effect", "--auto-cadence", "--full-interval-seconds", "60"]
     assert env["GIG_OPERATOR_BRAKE_FILE"].endswith("/storefront.operator.brake")
