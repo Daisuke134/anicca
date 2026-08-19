@@ -2494,6 +2494,31 @@ def inquiries_from_dom(dom: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+_HEAD_ONLY_INQUIRY_FIELDS = (
+    "talkroom_id", "talkroom_url", "title", "reply_required", "next_action",
+    "unread", "last_message_side", "preview_sha256",
+    "last_message_identity_sha256", "buyer_sent_at", "seller_sent_at",
+    "last_message_at", "thread_read_at",
+)
+
+
+def _head_only_inquiry_projection(inquiries: Any) -> list[dict[str, Any]]:
+    """Keep only bounded dispatch metadata from a first-page inquiry result."""
+    projected: list[dict[str, Any]] = []
+    for inquiry in inquiries if isinstance(inquiries, list) else []:
+        if not isinstance(inquiry, dict):
+            continue
+        row = {
+            key: inquiry[key]
+            for key in _HEAD_ONLY_INQUIRY_FIELDS
+            if key in inquiry
+        }
+        if row.get("title") not in {None, "purchase_preorder_message"}:
+            row.pop("title", None)
+        projected.append(row)
+    return projected
+
+
 def retainer_applications_from_dom(dom: dict[str, Any]) -> list[dict[str, Any]]:
     """Normalize the applied-retainer tab through its own module (A4)."""
     validate_page_identity(
@@ -3061,7 +3086,7 @@ def main() -> int:
             # even when the first page happens to expose a terminal paginator.
             messages_dom["coverage_complete"] = False
             messages_dom["head_only"] = True
-            inquiries = inquiries_from_dom(messages_dom)
+            inquiries = _head_only_inquiry_projection(inquiries_from_dom(messages_dom))
             receipt = source_receipt(
                 source="direct_inbox", requested_url=MESSAGES_URL,
                 observed_at=observed_at, dom=messages_dom,

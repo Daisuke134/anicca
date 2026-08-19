@@ -56,6 +56,15 @@ def test_head_only_snapshot_is_bounded_read_only_and_semantic_free(tmp_path, mon
     evidence = tmp_path / "evidence"
     opened = []
     seen = {}
+    forbidden_fields = {
+        "body", "preview", "preview_text", "raw_preview", "seller_id",
+        "seller_name", "seller_user_id", "user_id", "user_name", "user_identity",
+    }
+    forbidden_sentinels = {
+        "BUYER_BODY_SENTINEL", "BUYER_PREVIEW_SENTINEL", "SELLER_ID_SENTINEL",
+        "SELLER_NAME_SENTINEL", "SELLER_USER_ID_SENTINEL", "USER_ID_SENTINEL",
+        "USER_NAME_SENTINEL", "USER_IDENTITY_SENTINEL",
+    }
 
     class FakeTab:
         ws = "ws://head-only"
@@ -83,17 +92,50 @@ def test_head_only_snapshot_is_bounded_read_only_and_semantic_free(tmp_path, mon
                 "unread": True,
                 "preview_sha256": "a" * 64,
                 "last_message_identity_sha256": "b" * 64,
+                "body": "BUYER_BODY_SENTINEL",
+                "preview": "BUYER_PREVIEW_SENTINEL",
+                "preview_text": "BUYER_PREVIEW_SENTINEL",
+                "raw_preview": "BUYER_PREVIEW_SENTINEL",
+                "seller_id": "SELLER_ID_SENTINEL",
+                "seller_name": "SELLER_NAME_SENTINEL",
+                "seller_user_id": "SELLER_USER_ID_SENTINEL",
+                "user_id": "USER_ID_SENTINEL",
+                "user_name": "USER_NAME_SENTINEL",
+                "user_identity": "USER_IDENTITY_SENTINEL",
             }],
             "cards_count": 1,
             "coverage_complete": True,
             "termination_reason": "pagination_end",
         }
 
+    def unsafe_inquiries_from_dom(dom):
+        card = dom["cards"][0]
+        return [{
+            "talkroom_id": "123",
+            "talkroom_url": card["talkroom_url"],
+            "title": "purchase_preorder_message",
+            "reply_required": True,
+            "next_action": "reply",
+            "preview_sha256": card["preview_sha256"],
+            "last_message_identity_sha256": card["last_message_identity_sha256"],
+            "body": card["body"],
+            "preview": card["preview"],
+            "preview_text": card["preview_text"],
+            "raw_preview": card["raw_preview"],
+            "seller_id": card["seller_id"],
+            "seller_name": card["seller_name"],
+            "seller_user_id": card["seller_user_id"],
+            "user_id": card["user_id"],
+            "user_name": card["user_name"],
+            "user_identity": card["user_identity"],
+        }]
+
     def semantic_must_not_load():
         raise AssertionError("head-only must not initialize SemanticJudge")
 
     monkeypatch.setattr(snapshot, "DefaultTab", FakeTab)
     monkeypatch.setattr(snapshot, "inspect_message_page", fake_inspect_message_page)
+    monkeypatch.setattr(snapshot, "inquiries_from_dom", unsafe_inquiries_from_dom)
     monkeypatch.setattr(snapshot, "load_connector_manifest", lambda: {})
     monkeypatch.setattr(snapshot, "_requested_estimate_module", semantic_must_not_load)
     monkeypatch.setattr(
@@ -106,8 +148,13 @@ def test_head_only_snapshot_is_bounded_read_only_and_semantic_free(tmp_path, mon
     )
 
     assert snapshot.main() == 0
-    cli = json.loads(capsys.readouterr().out)
+    cli_output = capsys.readouterr().out
+    cli = json.loads(cli_output)
     saved = json.loads(output.read_text(encoding="utf-8"))
+    evidence_payloads = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in evidence.rglob("*.json")
+    ]
 
     assert cli["collector_mode"] == "direct-inbox-head-only"
     assert isinstance(cli["captured_at"], str) and cli["captured_at"]
@@ -124,5 +171,20 @@ def test_head_only_snapshot_is_bounded_read_only_and_semantic_free(tmp_path, mon
     assert seen["inspect"][3]["coverage_expression"] == snapshot.direct_inbox_coverage_expression(1)
     assert seen["inspect"][3]["validate_coverage"] is False
     assert len(opened) == 1
-    for inquiry in saved["inquiries"]:
-        assert not {"body", "preview", "preview_text", "raw_preview"}.intersection(inquiry)
+    persisted = [saved, *evidence_payloads]
+    serialized = json.dumps(persisted, ensure_ascii=False)
+    assert not forbidden_sentinels.intersection(serialized.split('"'))
+    assert not forbidden_sentinels.intersection(cli_output.split('"'))
+
+    def assert_allowed_keys(value):
+        if isinstance(value, dict):
+            assert not forbidden_fields.intersection(value)
+            for child in value.values():
+                assert_allowed_keys(child)
+        elif isinstance(value, list):
+            for child in value:
+                assert_allowed_keys(child)
+
+    for payload in persisted:
+        assert_allowed_keys(payload)
+    assert_allowed_keys(cli)
