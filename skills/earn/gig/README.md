@@ -15,7 +15,7 @@ replays, `tests/` the tests.
 |---|---|---|---|
 | apply | `ai.anicca.hf-gig-apply-direct` | 60s | Reads the public job board, judges which postings this seller can actually do, and submits an application with a proposal. |
 | storefront | `ai.anicca.hf-gig-storefront-direct` | 60s | Reads the seller's own listings and their view/inquiry counts, and edits the ones people look at and never contact. |
-| negotiate | `ai.anicca.hf-gig-reply-detector` | 180s | Watches talkrooms opened *before* purchase and answers the buyer's questions and estimate requests. |
+| negotiate | `ai.anicca.hf-gig-reply-detector` | continuous, 30s discovery | Watches talkrooms opened *before* purchase and answers the buyer's questions and estimate requests with two independent workers. |
 | paid | `ai.anicca.hf-gig-paid-direct` | 300s | Works orders that have been paid for: reads the requirement, builds or reviews the deliverable, and decides whether it is good enough to hand over. |
 
 Two more jobs support them:
@@ -34,11 +34,13 @@ Two more jobs support them:
 | A Mac, Apple Silicon, macOS 14 or newer | The jobs are launchd user agents and the browser build is a macOS app bundle. |
 | A **Codex subscription** and the `codex` CLI signed in | This is the only thing you pay for. Every judgement the loop makes goes through it. `codex login`, then check `~/.codex/auth.json` exists. |
 | A **Coconala seller account** with at least one listing | This is the only account you create. You do not need to finish identity verification or add a bank account to start — those matter when you withdraw, not when you sell. |
-| Python 3.13 or newer | `brew install python@3.14`. Then `pip3 install websockets beautifulsoup4 jsonschema`. |
+| Python 3.13 or newer | `brew install python@3.14`. Then `pip3 install websockets beautifulsoup4 jsonschema`. These are the package's only third-party Python imports. |
 | A CloakBrowser Chromium build under `~/.cloakbrowser/chromium-*/` | An ordinary Chrome will not do: the lanes attach over CDP, and the launcher passes `--fingerprint`, a flag only this build has. See [the browser](#the-browser) below — the version matters. |
 
-Optional: the `openclaw` CLI, if you want the loop to narrate itself to your
-Telegram. Without it the loop runs the same and simply does not report.
+Owner reports default to email. Install a sendmail-compatible client such as
+`msmtp` (`brew install msmtp`), connect it to Gmail in `~/.msmtprc`, then set
+`GIG_NOTIFY_EMAIL` and `GIG_SENDMAIL`. The existing `openclaw` Telegram path is
+only a fallback when no email recipient is configured.
 
 ---
 
@@ -60,8 +62,10 @@ things that differ from the defaults:
 mkdir -p ~/.config/anicca/gig
 cat > ~/.config/anicca/gig/install.json <<'JSON'
 {
-  "GIG_REPORT_CHAT": "",
-  "GIG_BROWSER_FINGERPRINT": "80136"
+  "GIG_NOTIFY_EMAIL": "you@example.com",
+  "GIG_NOTIFY_FROM": "you@example.com",
+  "GIG_SENDMAIL": "/opt/homebrew/bin/msmtp",
+  "GIG_BROWSER_FINGERPRINT": ""
 }
 JSON
 ```
@@ -201,8 +205,16 @@ no lane reads a credential from its environment.
 | `CDP_DAILY_DRIVER_PROFILE` | `~/.cloak/profiles/gig-daily-driver` | The Chromium profile that holds your login. |
 | `SESSION_VAULT_DIR` | `~/.cloak/vault/gig-daily-driver` | Cookie snapshots used to restore the session after a restart. |
 | `GIG_BROWSER_FINGERPRINT` | *(empty)* | Fingerprint seed passed to the browser build. |
-| `GIG_REPORT_CHAT` | *(empty)* | Telegram chat id for reports. Empty means the loop does not report. |
+| `GIG_NOTIFY_EMAIL` | *(empty)* | Preferred owner-report recipient. When set, all four lanes use email. |
+| `GIG_NOTIFY_FROM` | recipient address | Envelope-visible sender passed to the local sendmail client. |
+| `GIG_SENDMAIL` | `/usr/sbin/sendmail` | A sendmail-compatible executable; use `/opt/homebrew/bin/msmtp` for Gmail. |
+| `GIG_REPORT_CHAT` | *(empty)* | Optional legacy Telegram fallback when email is unset. |
 | `GIG_SANDBOX_DENY` | *(empty)* | Colon-separated absolute paths the sandboxed paid builder must not read — other checkouts, other loops' state. Must be absolute; a relative entry is refused rather than silently ignored. |
+| `GIG_STOREFRONT_ROOT` | *(empty)* | Absolute private seller-bundle root; Storefront refuses to start without it. |
+| `GIG_STOREFRONT_TARGET_SERVICE_ID` | *(empty)* | Listing used for the target image/FAQ experiment. |
+| `GIG_STOREFRONT_GALLERY_SERVICE_ID` | *(empty)* | Listing whose gallery contract is applied. |
+| `GIG_STOREFRONT_PRESENTATION_SERVICE_ID` | *(empty)* | Listing bound to title/body/package mutations. |
+| `GIG_STOREFRONT_SCOPE_SERVICE_ID` | *(empty)* | Listing bound to the scope mutation. |
 
 The job definitions themselves are `config/launchd-jobs.json`. Editing that file
 and re-running `gig_release.py activate` is how you change a schedule, an
@@ -242,12 +254,10 @@ These are enforced in code, not by convention.
 
 Honest list. These are measured, not suspected.
 
-- **The negotiate lane is slower than its own freshness rule.** It revalidates
-  one talkroom per wake, every 180 seconds. With ~115 rooms a full sweep takes
-  about 5.8 hours, while a room is considered stale after 30 minutes. The fast
-  path exists — a change detector that would revalidate only rooms that moved —
-  but it reports zero changes and no alarm fires when it does. In practice a
-  buyer question can wait hours rather than minutes.
+- **A natural buyer-message latency sample is still pending.** Negotiate now keeps
+  discovery alive every 30 seconds and dispatches exact-thread work to two workers;
+  idle probes and process liveness are verified. The next real unread message is
+  still needed to record end-to-end official-readback latency under five minutes.
 - **The paid lane's feedback digest is not stable.** The window that assembles
   the latest buyer feedback has been observed regressing to older concatenated
   text within the same day, which means the digest a builder would act on cannot
@@ -272,3 +282,10 @@ gets picked up on the next tick instead.
 Old releases accumulate under `~/gig/releases/`. They are ~50 MB each and safe to
 delete once no loaded job points at one; `gig_release.py status` prints exactly
 which ones are in use.
+
+Upgrade with `git pull --ff-only` followed by
+`python3 skills/earn/gig/scripts/gig_release.py activate`. To inspect generated
+plists without loading them, add `--dry-run`. To uninstall, boot out the six
+`ai.anicca.hf-gig-*` labels shown above and remove their matching files from
+`~/Library/LaunchAgents/`; private state under `~/gig`, the browser profile and
+`~/.config/anicca/gig/install.json` remain yours and are not deleted automatically.

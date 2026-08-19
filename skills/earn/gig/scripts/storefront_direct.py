@@ -22,6 +22,7 @@ SCRIPTS = Path(__file__).resolve().parent
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
+from owner_notify import send_email_if_configured  # noqa: E402
 from gig_paths import BROWSER_DIR, GIG_DIR, HOST_STATE_DIR, RUNNER_DIR, STATE_DIR  # noqa: E402
 
 DEFAULT_STATE = STATE_DIR / "storefront-direct"
@@ -449,27 +450,30 @@ def _report_identity(row: dict, message: str) -> tuple[str, str, bool]:
 
 
 def _send_telegram(args: argparse.Namespace, message: str, event_key: str) -> str:
-    completed = subprocess.run(
-        [str(args.openclaw), "message", "send", "--channel", "telegram",
-         "--target", str(args.telegram_target), "--message", message, "--json"],
-        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
-    result = json.loads(completed.stdout)
-    payload = result.get("payload") if isinstance(result, dict) else None
-    if isinstance(payload, dict) and payload.get("ok") is False:
-        raise RuntimeError("Telegram provider rejected message")
-    message_id = result.get("messageId") if isinstance(result, dict) else None
-    if not message_id and isinstance(payload, dict):
-        message_id = payload.get("messageId")
-    if not message_id:
-        raise RuntimeError("Telegram ACK has no message ID")
+    message_id = send_email_if_configured(message, event_key=event_key)
+    if message_id is None:
+        completed = subprocess.run(
+            [str(args.openclaw), "message", "send", "--channel", "telegram",
+             "--target", str(args.telegram_target), "--message", message, "--json"],
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
+        result = json.loads(completed.stdout)
+        payload = result.get("payload") if isinstance(result, dict) else None
+        if isinstance(payload, dict) and payload.get("ok") is False:
+            raise RuntimeError("Telegram provider rejected message")
+        message_id = result.get("messageId") if isinstance(result, dict) else None
+        if not message_id and isinstance(payload, dict):
+            message_id = payload.get("messageId")
+        if not message_id:
+            raise RuntimeError("Telegram ACK has no message ID")
     receipt_path = Path(args.telegram_receipt_dir) / (
         hashlib.sha256(event_key.encode()).hexdigest() + ".json"
     )
     _atomic_write(receipt_path, {
-        "version": 1, "event_key": event_key, "target": str(args.telegram_target),
+        "version": 1, "event_key": event_key,
+        "target": os.environ.get("GIG_NOTIFY_EMAIL", "").strip() or str(args.telegram_target),
         "message_sha256": hashlib.sha256(message.encode()).hexdigest(),
         "message_id": str(message_id), "provider_acked_at_epoch_ms": int(time.time() * 1000),
     })

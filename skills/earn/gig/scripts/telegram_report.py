@@ -48,11 +48,14 @@ def _load_local(name: str):
 
 try:
     from telegram_outbox import TelegramOutbox, TelegramOutboxError, dispatch_one
+    from owner_notify import send_email_if_configured
 except ModuleNotFoundError:
     _outbox_module = _load_local("telegram_outbox")
+    _notify_module = _load_local("owner_notify")
     TelegramOutbox = _outbox_module.TelegramOutbox
     TelegramOutboxError = _outbox_module.TelegramOutboxError
     dispatch_one = _outbox_module.dispatch_one
+    send_email_if_configured = _notify_module.send_email_if_configured
 
 
 def _timestamp(value: Any) -> datetime:
@@ -2020,38 +2023,40 @@ class OpenClawTelegramTransport:
         return self.send_report(message, event_key=f"legacy:{hashlib.sha256(message.encode()).hexdigest()}")
 
     def send_report(self, message: str, *, event_key: str) -> str:
-        completed = self.run(
-            [
-                str(self.executable), "message", "send",
-                "--channel", "telegram", "--target", self.target,
-                "--message", message, "--json",
-            ],
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-        )
-        if completed.returncode != 0:
-            raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
-        try:
-            result = json.loads(completed.stdout)
-        except json.JSONDecodeError as error:
-            raise RuntimeError("Telegram transport returned invalid JSON") from error
-        payload = result.get("payload") if isinstance(result, dict) else None
-        if isinstance(payload, dict) and payload.get("ok") is False:
-            raise RuntimeError("Telegram provider rejected message")
-        message_id = result.get("messageId") if isinstance(result, dict) else None
-        if not message_id and isinstance(payload, dict):
-            message_id = payload.get("messageId")
-        if not message_id:
-            raise RuntimeError("Telegram ACK has no message ID")
+        message_id = send_email_if_configured(message, event_key=event_key, run=self.run)
+        if message_id is None:
+            completed = self.run(
+                [
+                    str(self.executable), "message", "send",
+                    "--channel", "telegram", "--target", self.target,
+                    "--message", message, "--json",
+                ],
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+            if completed.returncode != 0:
+                raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
+            try:
+                result = json.loads(completed.stdout)
+            except json.JSONDecodeError as error:
+                raise RuntimeError("Telegram transport returned invalid JSON") from error
+            payload = result.get("payload") if isinstance(result, dict) else None
+            if isinstance(payload, dict) and payload.get("ok") is False:
+                raise RuntimeError("Telegram provider rejected message")
+            message_id = result.get("messageId") if isinstance(result, dict) else None
+            if not message_id and isinstance(payload, dict):
+                message_id = payload.get("messageId")
+            if not message_id:
+                raise RuntimeError("Telegram ACK has no message ID")
         self.receipt_dir.mkdir(parents=True, exist_ok=True)
         event_digest = hashlib.sha256(event_key.encode("utf-8")).hexdigest()
         receipt = {
             "version": 1,
             "event_key": event_key,
-            "target": self.target,
+            "target": os.environ.get("GIG_NOTIFY_EMAIL", "").strip() or self.target,
             "message_sha256": hashlib.sha256(message.encode("utf-8")).hexdigest(),
             "message_id": str(message_id),
             "provider_acked_at_epoch_ms": int(self.now_ms()),
