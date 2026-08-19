@@ -160,8 +160,11 @@ releases, so the first checklist item remains open until loaded-definition and n
   configuration via `GIG_STOREFRONT_CAPABILITY_EVIDENCE`.
 - [ ] Activate `f90898caf` or a descendant for the loaded Storefront job, then read back the loaded
   environment with two configured evidence paths without exposing their values.
-- [ ] Make the sellable product truth exact: either publish the stale ¥3,000/¥5,000 upsells or remove
-  them from the contract; never quote an option that cannot be bought.
+- [x] Reconcile the sellable product truth before any mutation: the private 4313386 contract now
+  binds to the latest official version `3c862a33…`, and the official seller form reads back both
+  paid options (¥3,000 and ¥5,000). The natural pass at 2026-08-19 23:22 JST reports
+  `stale_listing_contracts=[]` across all 13 observed services; no option is quoted from a stale
+  contract.
 - [ ] Either implement the listing-envelope consumer end to end or delete the unused protocol.
 - [ ] Produce one valid, scoped, unfenced create/update mutation contract.
 - [ ] Execute exactly one official listing create/update and read back the resulting live listing.
@@ -585,26 +588,26 @@ if `service_version_sha256` no longer equals the live listing's, the contract is
 stale. Editing listings is this lane's entire purpose, so **the lane invalidates its own
 contracts**, and with them that listing's inquiry playbook, until a human re-authors the file.
 
-There is exactly one hand-authored contract, `contracts/storefront/91000002.json`, and the live
-receipt shows it stale right now. The single storefront-origin inquiry on record is on that
-same service, so its identity lookup finds nothing and no envelope is written.
+There is exactly one hand-authored contract in the historical snapshot, and the live receipt at
+that time showed it stale. The single storefront-origin inquiry on record was on that same
+service, so its identity lookup found nothing and no envelope was written.
 
 That was recorded in the wake row as `stale_listing_contracts` and never said out loud — the
 report kept printing a healthy-looking active count beside it. It now prints the binding
 breakage too.
 
-**This is not a rebind, and rebinding it would be worse than leaving it stale.** Comparing the
-hand-authored contract with the listing as last observed: five of six `offer` fields differ in
-substance — `outcome`, `inclusions`, `deliverables` and `required_inputs` are all rewritten, and
-`options` holds two paid add-ons (¥3,000 for an extra macro, ¥5,000 for monthly maintenance)
-that **the published listing no longer offers at all**. The contract describes a product that is
-not on sale. Moving the version hash to make the binding pass would hand the negotiate lane
-add-ons a buyer cannot buy.
+**Resolution recorded 2026-08-19:** the private contract was re-authored against the current
+official version and the next natural pass read back `stale_listing_contracts=[]`. The historical
+pricing concern is therefore closed for the observed listing; no hash-only rebind was used.
 
-So the decision is which one is wrong: bring the contract down to what is published, or put the
-add-ons back on the listing. That is seller copy and a pricing choice, not a code change. Worth
-noting the second reading is a revenue one — an upsell that used to exist is gone from the
-listing, and only this file still remembers it.
+**This is not a rebind, and rebinding it would be worse than leaving it stale.** Comparing the
+hand-authored contract with the listing as last observed: five of six `offer` fields differed in
+substance in that historical snapshot. The current official seller form now reads back the two
+paid add-ons (¥3,000 for an extra macro, ¥5,000 for monthly maintenance), and the contract is
+bound to the same observed listing version.
+
+The product-truth decision is therefore closed. Any later price or copy change must again be
+observed in the official seller form before its contract hash is advanced.
 
 **4b. Nothing consumes an envelope.**
 `negotiate_context` reports `ready` only when every context key is also present in
