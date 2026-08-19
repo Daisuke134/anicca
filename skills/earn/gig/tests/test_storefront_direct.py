@@ -257,7 +257,10 @@ def test_launchagent_is_immutable_dedicated_and_storefront_braked(monkeypatch):
     assert data["Label"] == "ai.anicca.hf-gig-storefront-direct"
     # Minute cadence with an auto-cadence full wake, not a thirty-minute scheduler.
     assert data["StartInterval"] == 60
-    assert argv == [table["PYTHON"],
+    # Pin the interpreter literally. Comparing against table["PYTHON"] is what
+    # plist_for() substituted from, so that assertion could never fail and a
+    # regression in the manifest's default would go straight through.
+    assert argv == ["/opt/homebrew/bin/python3",
                     f"{release}/skills/earn/gig/scripts/storefront_direct.py",
                     "--effect", "--auto-cadence", "--full-interval-seconds", "60"]
     assert env["GIG_OPERATOR_BRAKE_FILE"].endswith("/storefront.operator.brake")
