@@ -581,7 +581,8 @@ def reusable_semantic_receipt(
 
 _DIRECT_READBACK_FIELDS = (
     "last_message_side", "reply_required", "next_action", "buyer_sent_at",
-    "seller_sent_at", "message_id", "message_sha256", "stable_ordinal", "thread_read_at",
+    "seller_sent_at", "message_id", "message_sha256", "stable_ordinal",
+    "last_message_identity_sha256", "thread_read_at",
     "estimate_required", "estimate_url", "estimate_request_identity",
     "estimate_request_sent_at", "estimate_request_sha256", "estimate_failure",
     "sending_unavailable", "reply_unavailable_reason",
