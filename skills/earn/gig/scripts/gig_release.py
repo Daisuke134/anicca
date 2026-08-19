@@ -48,6 +48,10 @@ LAUNCH_AGENTS = Path.home() / "Library" / "LaunchAgents"
 # The browser owns the one authenticated session the lanes share. Reloading it
 # throws that session away, so it is never in the default set.
 DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-release-watch"}
+# Negotiate is a durable supervisor rather than a periodic one-shot pass.  Waiting for
+# ``is_running`` would therefore postpone every source release forever; its outbox is the
+# restart boundary, so the watcher may reload it while periodic lanes wait for a gap.
+CONTINUOUS_RELOADABLE = {"ai.anicca.hf-gig-reply-detector"}
 PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 
 
@@ -283,7 +287,10 @@ def main() -> int:
         release = build(sha)
         print(f"release {sha[:12]} -> {release}")
         for job in behind:
-            activate(job, settings(release)[1], release, False, skip_busy=True)
+            activate(
+                job, settings(release)[1], release, False,
+                skip_busy=job["label"] not in CONTINUOUS_RELOADABLE,
+            )
         return 0
 
     sha = git("rev-parse", args.sha or "HEAD")
