@@ -101,8 +101,12 @@ The public-package regression gate remains:
 4. Re-run the public-tree audit and clean-clone acceptance, then record the exact commit and
    evidence here. That closes this milestone. Items 0b, 1, 2, 4, 5 and 6 remain product/runtime
    work and do not block publishing the package unless the audit finds private data in them.
-   **DONE:** the exact commit and clean-clone evidence are recorded above; the public Coconala
-   package milestone is closed.
+   **DONE:** exact public tree `f90898caf` passes 194 package tests, four-lane compilation,
+   four non-loading dry-run plists from an empty HOME, current-tree gitleaks, the PII-shape scan,
+   and the known owner-ID/absolute-owner-path denylist. The final audit found one real capability
+   project ID still embedded in Storefront defaults; that default is now empty and the operator's
+   evidence paths enter only through `GIG_STOREFRONT_CAPABILITY_EVIDENCE` or the existing repeatable
+   CLI option. The public Coconala package milestone is closed.
 
 ---
 
