@@ -577,6 +577,58 @@ def test_inbox_event_key_is_thread_bound_and_rejects_non_sha_identity():
         )
 
 
+def test_head_and_direct_thread_identity_use_one_canonical_builder():
+    """Representative outputs from both real expressions must share identity."""
+    head_expression = snapshot.direct_inbox_coverage_expression(1)
+    assert all(
+        field in head_expression
+        for field in ("directMessagesRoomId", "fromUserId", "createdAt", "body")
+    )
+    assert "last_message_identity_fields" in head_expression
+    assert all(
+        field in snapshot.DIRECT_MESSAGE_EXPRESSION
+        for field in ("message_id", "author_path", "sent_at", "body")
+    )
+    head_fields = {
+        "directMessagesRoomId": 123,
+        "fromUserId": 456,
+        "createdAt": 1_755_520_860_000,
+        "body": "質問です",
+    }
+    head_dom = {
+        "url": snapshot.MESSAGES_URL,
+        "title": "メッセージ",
+        "container_present": True,
+        "coverage_complete": False,
+        "cards": [{
+            "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+            "title": "purchase_preorder_message",
+            "last_message_side": "buyer",
+            "unread": True,
+            "preview_sha256": "a" * 64,
+            "last_message_identity_fields": head_fields,
+        }],
+    }
+    head_inquiry = snapshot.inquiries_from_dom(head_dom)[0]
+    direct_dom = {
+        "url": "https://coconala.com/mypage/direct_message/123",
+        "title": "メッセージ詳細",
+        "container_present": True,
+        "own_user_path": "/users/seller",
+        "messages": [{
+            "message_id": "buyer-2", "author_path": "/users/buyer",
+            "sent_at": "2026-08-19T00:01:00+00:00", "body": "質問です",
+        }],
+    }
+    direct_inquiry = snapshot.direct_message_event(
+        direct_dom, "https://coconala.com/mypage/direct_message/123",
+        semantic_judge=None,
+    )
+    assert head_inquiry["last_message_identity_sha256"] == direct_inquiry[
+        "last_message_identity_sha256"
+    ]
+
+
 def test_head_expression_reads_one_page_without_changing_full_expression():
     assert snapshot.direct_inbox_coverage_expression() == snapshot.DIRECT_INBOX_COVERAGE_EXPRESSION
     head = snapshot.direct_inbox_coverage_expression(1)

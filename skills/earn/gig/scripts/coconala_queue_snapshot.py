@@ -185,8 +185,8 @@ ORDERS_ONLY_EXPRESSION = r'''(()=>{const container=document.querySelector('.d-tr
 QUOTES_EXPRESSION = r'''JSON.stringify({url:location.href,title:document.title,cards:[...document.querySelectorAll("a[href*='/customize/requests/']")].map(a=>a.closest('.d-transactionListProviderMain_item')||a.closest('li')||a.parentElement).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).map(card=>{const req=card.querySelector("a[href*='/customize/requests/']");const buyer=card.querySelector("a[href*='/users/']");const proposal=card.querySelector("a[href*='/customize/offers/add/']");return {text:card.innerText,request_url:req&&req.href,buyer:buyer&&buyer.innerText.trim(),title:req&&req.innerText.trim(),proposal_url:proposal&&proposal.href}})})'''
 MESSAGES_EXPRESSION = r'''(()=>{const title=document.title;const cards=[...document.querySelectorAll("a.c-messageItemWrap[href*='/mypage/direct_message/']")].map(room=>({talkroom_url:room.href,title:'purchase_preorder_message',last_message_side:'',unread:!!room.querySelector('[aria-label*="未読"],[class*="unread"],[class*="Unread"]')}));return JSON.stringify({url:location.href,title,container_present:!!document.querySelector('main.c-layoutMypage #c-main .c-content'),not_found_present:/404|ページが見つかりません|お探しのページ/.test(title)||!!document.querySelector('[class*="not-found"],[class*="notFound"]'),error_present:/エラー|error|メンテナンス/i.test(title)||!!document.querySelector('[class*="error-page"],[class*="errorPage"]'),cards})})()'''
 B1_MESSAGES_EXPRESSION = r'''JSON.stringify({url:location.href,title:document.title,not_found:/ご指定のページが見つかりませんでした|ページが見つかりません/.test((document.title||'')+' '+(document.querySelector('h1')?.innerText||'')),cards:[...document.querySelectorAll("a[href*='/talkrooms/']")].map(a=>a.closest('li[data-talkroom-id],li,[data-talkroom-id]')||a.parentElement).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).map(card=>{const room=card.querySelector("a[href*='/talkrooms/']");const text=(card.innerText||'').trim();const unread=!!card.querySelector('[aria-label*="未読"],[class*="unread"],[class*="Unread"]');const declared=(card.getAttribute('data-last-message-side')||'').toLowerCase();const messages=[...card.querySelectorAll('.d-talkroomMessage')].filter(m=>{const owner=m.closest('li[data-talkroom-id],li,[data-talkroom-id]');return !owner||owner===card});const last=messages[messages.length-1];const lastSide=declared==='buyer'||declared==='seller'?declared:(last?(last.classList.contains('d-talkroomMessage-isOthers')?'buyer':'seller'):'');return {talkroom_url:room&&room.href,title:(room&&room.innerText||text.split('\\n')[0]||'').trim(),last_message_side:lastSide,unread}})})'''
-DIRECT_MESSAGE_EXPRESSION = r'''(()=>{const title=document.title;const container=document.querySelector('.js_thread-wrapper');const rows=container?[...container.querySelectorAll('.threadColomun')]:[];const messageRows=rows.filter(row=>row.querySelector('.threadMessage'));const own=document.querySelector('.sidebar-profile a[href*="/users/"]');const path=a=>a?new URL(a.href,location.origin).pathname:null;const messages=messageRows.map(row=>{const author=row.querySelector('.threadUser a[href*="/users/"]');const time=row.querySelector('.threadPostTime');const body=row.querySelector('.js-translateMessageOriginalMessage')||row.querySelector('.threadMessage');return{message_id:row.getAttribute('data-message-id')||row.id||null,author_path:path(author),sent_at:(time&&time.innerText||'').trim()||null,body:(body&&body.innerText)||''}});const estimate_url=([...document.querySelectorAll('a[href]')].map(a=>path(a)).find(value=>/^\/direct_offers\/add\/[A-Za-z0-9_-]+$/.test(value||''))||null);const structured_offers=[...rows.flatMap(row=>[...row.querySelectorAll('.message-customize')].map(card=>({card,row})))].map(({card,row})=>{const offer=card.closest('.threadMessage')||card;const link=offer.querySelector('.customize-title-link[href]');const text=(offer.innerText||'').replace(/\s+/g,' ').trim();const titleNode=offer.querySelector('.customize-title');const contentNode=offer.querySelector('p.customize-content.wa_add-mt-4')||offer.querySelector('.customize-content');const price=(text.match(/提案額\s*([0-9][0-9,]*)\s*円/)||[])[1];const completion=(text.match(/完了予定日\s*(20\d{2}[\\/-]\d{1,2}[\\/-]\d{1,2}|20\d{2}年\d{1,2}月\d{1,2}日)/)||[])[1]||null;const time=row.querySelector('.threadPostTime');return{offer_url:path(link),message_kind:(card.querySelector('.message-customize-title')||card).innerText.includes('見積り提案をしました')?'見積り提案をしました':'',title:(titleNode&&titleNode.innerText||'').trim()||null,content:(contentNode&&contentNode.innerText||'').trim()||null,price_jpy:price?Number(price.replace(/,/g,'')):null,completion_date:completion?completion.replace(/[年月]/g,'-').replace('日','').replace(/\//g,'-'):null,sent_at:(time&&time.innerText||'').trim()||null}}).filter(card=>card.offer_url||card.message_kind);return JSON.stringify({url:location.href,title,container_present:!!container,not_found_present:/404|ページが見つかりません|お探しのページ/.test(title)||!!document.querySelector('[class*="not-found"],[class*="notFound"]'),error_present:/エラー|error|メンテナンス/i.test(title)||!!document.querySelector('[class*="error-page"],[class*="errorPage"]'),own_user_path:path(own),estimate_url,structured_offers,messages})})()'''
 B1_INBOX_COVERAGE_EXPRESSION = r'''(async()=>{const sleep=ms=>new Promise(r=>setTimeout(r,ms)),direct=false,sel=direct?"a[href*='/talkrooms/']":"a[href*='/talkrooms/']",root=document.querySelector('main.c-layoutMypage #c-main .c-content')||document.body,records=new Map();let stable=0,iterations=0,lastHeight=-1,lastKeys='';const read=()=>[...document.querySelectorAll(sel)].map(a=>{const card=direct?a:(a.closest('li[data-talkroom-id],li,[data-talkroom-id]')||a.parentElement),room=direct?a:card?.querySelector("a[href*='/talkrooms/']"),url=room?.href||a.href;if(!url)return null;const text=(card?.innerText||'').trim(),messages=[...(card?.querySelectorAll('.d-talkroomMessage')||[])],last=messages[messages.length-1],declared=(card?.getAttribute('data-last-message-side')||'').toLowerCase();return {talkroom_url:url,title:direct?'purchase_preorder_message':(room?.innerText||text.split('\n')[0]||'').trim(),last_message_side:direct?'':(declared==='buyer'||declared==='seller'?declared:(last?.classList.contains('d-talkroomMessage-isOthers')?'buyer':'seller')),unread:!!card?.querySelector('[aria-label*="未読"],[class*="unread"],[class*="Unread"]')}}).filter(Boolean);for(;iterations<20&&stable<2;iterations++){for(const row of read())records.set(new URL(row.talkroom_url,location.origin).pathname,row);const keys=[...records.keys()].sort().join('|'),height=Math.max(root.scrollHeight,document.body.scrollHeight);stable=keys===lastKeys&&height===lastHeight?stable+1:0;lastKeys=keys;lastHeight=height;window.scrollTo(0,document.body.scrollHeight);await sleep(100)}const container=root,text=(container.innerText||'').trim(),empty_state_present=/^(メッセージはありません|メッセージがありません|該当するメッセージはありません)$/.test(text)||!!container.querySelector('[data-testid="message-empty"],[data-message-state="empty"]');const rows=[...records.values()];return JSON.stringify({cards:rows,cards_count:rows.length,empty_state_present,coverage_complete:stable>=2,termination_reason:rows.length===0&&empty_state_present?'empty_state':'fixed_point',iterations})})()'''
+DIRECT_MESSAGE_EXPRESSION = r'''(()=>{const title=document.title;const container=document.querySelector('.js_thread-wrapper');const rows=container?[...container.querySelectorAll('.threadColomun')]:[];const messageRows=rows.filter(row=>row.querySelector('.threadMessage'));const own=document.querySelector('.sidebar-profile a[href*="/users/"]');const path=a=>a?new URL(a.href,location.origin).pathname:null;const messages=messageRows.map(row=>{const author=row.querySelector('.threadUser a[href*="/users/"]');const time=row.querySelector('.threadPostTime');const body=row.querySelector('.js-translateMessageOriginalMessage')||row.querySelector('.threadMessage');return{message_id:row.getAttribute('data-message-id')||row.id||null,author_path:path(author),sent_at:(time&&time.innerText||'').trim()||null,body:(body&&body.innerText)||''}});const estimate_url=([...document.querySelectorAll('a[href]')].map(a=>path(a)).find(value=>/^\/direct_offers\/add\/[A-Za-z0-9_-]+$/.test(value||''))||null);const structured_offers=[...rows.flatMap(row=>[...row.querySelectorAll('.message-customize')].map(card=>({card,row})))].map(({card,row})=>{const offer=card.closest('.threadMessage')||card;const link=offer.querySelector('.customize-title-link[href]');const text=(offer.innerText||'').replace(/\s+/g,' ').trim();const titleNode=offer.querySelector('.customize-title');const contentNode=offer.querySelector('p.customize-content.wa_add-mt-4')||offer.querySelector('.customize-content');const price=(text.match(/提案額\s*([0-9][0-9,]*)\s*円/)||[])[1];const completion=(text.match(/完了予定日\s*(20\d{2}[\\/-]\d{1,2}[\\/-]\d{1,2}|20\d{2}年\d{1,2}月\d{1,2}日)/)||[])[1]||null;const time=row.querySelector('.threadPostTime');return{offer_url:path(link),message_kind:(card.querySelector('.message-customize-title')||card).innerText.includes('見積り提案をしました')?'見積り提案をしました':'',title:(titleNode&&titleNode.innerText||'').trim()||null,content:(contentNode&&contentNode.innerText||'').trim()||null,price_jpy:price?Number(price.replace(/,/g,'')):null,completion_date:completion?completion.replace(/[年月]/g,'-').replace('日','').replace(/\//g,'-'):null,sent_at:(time&&time.innerText||'').trim()||null}}).filter(card=>card.offer_url||card.message_kind);return JSON.stringify({url:location.href,title,container_present:!!container,not_found_present:/404|ページが見つかりません|お探しのページ/.test(title)||!!document.querySelector('[class*="not-found"],[class*="notFound"]'),error_present:/エラー|error|メンテナンス/i.test(title)||!!document.querySelector('[class*="error-page"],[class*="errorPage"]'),own_user_path:path(own),estimate_url,structured_offers,messages})})()'''
 DIRECT_INBOX_COVERAGE_EXPRESSION = r'''(async()=>{
 const sleep=ms=>new Promise(r=>setTimeout(r,ms)),
 isB1=location.pathname==='/message'&&new URL(location.href).searchParams.get('fromMyPage')==='true',
@@ -202,9 +202,9 @@ const read=async()=>sel?await Promise.all([...document.querySelectorAll(sel)].ma
  if(!url)return null;
  const preview=(card?.innerText||'').trim();
  const message=a.__vue__?._props?.message||null,
- identity=message&&Number.isSafeInteger(message.directMessagesRoomId)&&Number.isSafeInteger(message.fromUserId)&&Number.isSafeInteger(message.createdAt)&&typeof message.body==='string'?JSON.stringify({directMessagesRoomId:message.directMessagesRoomId,fromUserId:message.fromUserId,createdAt:message.createdAt,body:message.body}):null,
+ identityFields=message&&typeof message.body==='string'?{directMessagesRoomId:message.directMessagesRoomId??null,fromUserId:message.fromUserId??null,createdAt:message.createdAt??null,body:message.body}:null,
  unread=!!card?.querySelector('[aria-label*="未読"],[class*="unread"],[class*="Unread"]')||(typeof message?.unreadCount==='number'&&message.unreadCount>0);
- return {talkroom_url:url,title:'purchase_preorder_message',last_message_side:'',unread,preview_sha256:await digest(preview),last_message_identity_sha256:identity?await digest(identity):null};
+ return {talkroom_url:url,title:'purchase_preorder_message',last_message_side:'',unread,preview_sha256:await digest(preview),last_message_identity_fields:identityFields};
 })).then(rows=>rows.filter(Boolean)):[];
 while(pagesObserved<pageLimit){
  pagesObserved++;
@@ -2448,6 +2448,32 @@ def orders_from_dom(dom: dict[str, Any]) -> list[dict[str, Any]]:
     return result
 
 
+def canonical_message_identity_sha256(
+    fields: Any, *, thread_id: str | None = None,
+) -> str | None:
+    """Build the one identity digest shared by head and direct-thread collectors.
+
+    The identity contract is deliberately ``thread_id + body``: repeated
+    identical text in one thread is one semantic request and therefore dedupes.
+    The raw fields exist only in the in-memory CDP result.  Callers persist only
+    this digest, so head-only snapshots never contain customer message text.
+    """
+    if not isinstance(fields, dict) or not isinstance(fields.get("body"), str):
+        return None
+    identity_thread = str(
+        thread_id or fields.get("thread_id") or fields.get("talkroom_id")
+        or fields.get("directMessagesRoomId") or ""
+    ).strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", identity_thread):
+        return None
+    body = fields["body"]
+    canonical = {"thread_id": identity_thread, "body": body}
+    payload = json.dumps(
+        canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def quotes_from_dom(dom: dict[str, Any]) -> list[dict[str, Any]]:
     result = []
     seen: set[str] = set()
@@ -2489,8 +2515,17 @@ def inquiries_from_dom(dom: dict[str, Any]) -> list[dict[str, Any]]:
         digest = str(card.get("preview_sha256") or "")
         if re.fullmatch(r"[0-9a-f]{64}", digest):
             row["preview_sha256"] = digest
-        identity = str(card.get("last_message_identity_sha256") or "")
-        if re.fullmatch(r"[0-9a-f]{64}", identity):
+        identity_fields = card.get("last_message_identity_fields")
+        if isinstance(identity_fields, dict):
+            identity_fields = {
+                **identity_fields,
+                "thread_id": identity_fields.get("thread_id") or str(row.get("talkroom_id") or ""),
+            }
+        identity = canonical_message_identity_sha256(identity_fields)
+        if identity is None:
+            supplied = str(card.get("last_message_identity_sha256") or "")
+            identity = supplied if re.fullmatch(r"[0-9a-f]{64}", supplied) else None
+        if identity is not None:
             row["last_message_identity_sha256"] = identity
     return rows
 
@@ -2684,22 +2719,30 @@ def direct_message_event(
             1 for previous in messages[:-1]
             if isinstance(previous, dict) and previous.get("sent_at") == last.get("sent_at")
         )
-    supplied_identity = str(last.get("last_message_identity_sha256") or "")
-    if re.fullmatch(r"[0-9a-f]{64}", supplied_identity):
-        result["last_message_identity_sha256"] = supplied_identity
+    identity_fields = last.get("last_message_identity_fields")
+    expected_thread_id_match = re.fullmatch(
+        r"/(?:talkrooms|mypage/direct_message)/([A-Za-z0-9_-]+)",
+        urlsplit(expected_url).path.rstrip("/"),
+    )
+    expected_thread_id = (
+        expected_thread_id_match.group(1) if expected_thread_id_match else None
+    )
+    if isinstance(identity_fields, dict):
+        identity_fields = {
+            **identity_fields,
+            "thread_id": identity_fields.get("thread_id") or expected_thread_id,
+        }
     else:
-        raw_body = last.get("body")
-        if type(raw_body) is not str or not author_path or sent_at is None:
-            raise CollectorUnhealthy("missing_message_identity")
-        identity_payload = json.dumps(
-            {
-                "message_id": message_id or None,
-                "author_path": author_path,
-                "sent_at": sent_at,
-                "body": raw_body,
-            }, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
-        ).encode("utf-8")
-        result["last_message_identity_sha256"] = hashlib.sha256(identity_payload).hexdigest()
+        identity_fields = {
+            "message_id": message_id or None,
+            "sent_at": last.get("sent_at"),
+            "body": last.get("body"),
+            "thread_id": expected_thread_id,
+        }
+    identity = canonical_message_identity_sha256(identity_fields)
+    if identity is None:
+        raise CollectorUnhealthy("missing_message_identity")
+    result["last_message_identity_sha256"] = identity
     requested_estimate = _requested_estimate_module()
     receipt: Any = None
     if semantic_judge is None:
