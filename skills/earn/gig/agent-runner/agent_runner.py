@@ -429,11 +429,33 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
                     except OSError as error:
                         raise ValueError("codex automation auth target invalid") from error
     elif provider in CLAUDE_PROVIDERS and provider == "claude-direct":
-        for name in (
-            "ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN",
-            "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN",
-        ):
-            child_env.pop(name, None)
+        # ``claude-direct`` normally means the user's direct Claude login.  A
+        # configured loopback proxy is an explicit, machine-local fallback:
+        # it keeps the same tool-less JSON boundary while avoiding a DNS or
+        # upstream OAuth outage.  Without the opt-in flag this remains the
+        # original direct-login path and never inherits proxy credentials.
+        if provider_config.get("loopback_proxy") is True:
+            token_file = os.path.expandvars(os.path.expanduser(str(
+                provider_config.get("auth_token_file", "~/.cli-proxy-api-key")
+            )))
+            try:
+                auth_token = Path(token_file).read_text(encoding="utf-8").strip()
+            except OSError as error:
+                raise ValueError("claude loopback proxy auth unavailable") from error
+            if not auth_token:
+                raise ValueError("claude loopback proxy auth unavailable")
+            child_env["ANTHROPIC_BASE_URL"] = str(
+                provider_config.get("base_url", "http://127.0.0.1:8317")
+            )
+            child_env["ANTHROPIC_AUTH_TOKEN"] = auth_token
+            for name in ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"):
+                child_env.pop(name, None)
+        else:
+            for name in (
+                "ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN",
+                "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN",
+            ):
+                child_env.pop(name, None)
     elif provider in CLAUDE_PROVIDERS and not any(child_env.get(name) for name in (
         "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN",
     )):
@@ -1526,7 +1548,7 @@ def run() -> int:
             "quota": provider_config.get("quota"),
             "usage": usage,
         }
-        provider_name = usage.get("upstream_provider") or {
+        provider_name = usage.get("upstream_provider") or provider_config.get("provider_name") or {
             "codex": "openai", "claude": "anthropic",
             "claude-direct": "anthropic",
         }.get(provider, provider)

@@ -104,11 +104,15 @@
         "~/.local/bin/claude"
       ],
       "account": "",
+      "loopback_proxy": true,
+      "base_url": "http://127.0.0.1:8317",
+      "auth_token_file": "~/.cli-proxy-api-key",
       "capabilities": {
         "structured_json": true,
         "tools": true,
         "browser": true
       },
+      "provider_name": "openai-cli-proxy",
       "cost_tier": "subscription",
       "quota": {
         "source": "provider"
@@ -175,7 +179,7 @@
         },
         {
           "provider": "claude-direct",
-          "model": "sonnet",
+          "model": "gpt-5.3-codex-spark",
           "timeout_seconds": 40
         },
         {
