@@ -27,6 +27,10 @@
     "GIG_REPORT_CHAT": "",
     "GIG_SANDBOX_DENY": "",
     "GIG_STOREFRONT_ROOT": "",
+    "GIG_STOREFRONT_TARGET_SERVICE_ID": "",
+    "GIG_STOREFRONT_GALLERY_SERVICE_ID": "",
+    "GIG_STOREFRONT_PRESENTATION_SERVICE_ID": "",
+    "GIG_STOREFRONT_SCOPE_SERVICE_ID": "",
     "ANICCA_JOB_PROFILE": "{{HOME}}/.config/anicca/job-search/profile.json"
   },
 
@@ -85,7 +89,11 @@
         "CLOAK_BROWSER_OWNER": "gig-storefront-direct",
         "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
         "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/storefront.operator.brake",
-        "GIG_NEGOTIATE_RUN_LOG": "{{GIG_LOG_DIR}}/gig-reply-detector-launchd.out.log"
+        "GIG_NEGOTIATE_RUN_LOG": "{{GIG_LOG_DIR}}/gig-reply-detector-launchd.out.log",
+        "GIG_STOREFRONT_TARGET_SERVICE_ID": "{{GIG_STOREFRONT_TARGET_SERVICE_ID}}",
+        "GIG_STOREFRONT_GALLERY_SERVICE_ID": "{{GIG_STOREFRONT_GALLERY_SERVICE_ID}}",
+        "GIG_STOREFRONT_PRESENTATION_SERVICE_ID": "{{GIG_STOREFRONT_PRESENTATION_SERVICE_ID}}",
+        "GIG_STOREFRONT_SCOPE_SERVICE_ID": "{{GIG_STOREFRONT_SCOPE_SERVICE_ID}}"
       },
       "StartInterval": 60,
       "ThrottleInterval": 60,

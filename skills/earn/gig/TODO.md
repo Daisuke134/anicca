@@ -40,11 +40,11 @@ After 0b closes, execute the public-package items in order:
    **IN PROGRESS:** allowlist-free current-tree gitleaks and PII-shape scans are clean, but the
    semantic audit found tracked seller storefront ids/profile/contracts/assets. Reachable history
    also contains the real customer messages, delivery files, attachment/account paths and operator
-   address introduced by `944ca1fc1` and only deleted—not purged—by `478b8a1b2`. Slice A adds the
-   reviewed `GIG_STOREFRONT_ROOT` boundary: strict pre-browser validation, private-family binding,
-   symlink containment and runtime-state asset snapshots. Focused tests are 17 + 4 + 21 passing;
-   fresh Sol/High review verdict is `ship`. Next, atomically move the seller bundle to the private
-   root and remove the tracked fallback before rewriting the affected public history.
+   address introduced by `944ca1fc1` and only deleted—not purged—by `478b8a1b2`. The seller bundle
+   now lives under the configured private root, passes the pre-browser bundle check, and launchd
+   reads that root back. Public source no longer carries the seller contracts/assets or real service
+   IDs, and the repository fallback is inert. Next, purge the already-deleted customer artifacts and
+   removed seller bundle from reachable public history, then prove the result from a fresh clone.
 2. From a fresh clone of public `main`, run the package's non-mutating tests and configuration /
    plist generation using only documented local configuration. Do not reuse this machine's
    private state as proof of portability.

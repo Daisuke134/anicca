@@ -36,7 +36,10 @@ DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_propos
 DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_proposal.schema.json"
 DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_proposal.schema.json"
 DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child.schema.json"
-DEFAULT_SCORECARD = GIG_DIR / "config" / "storefront-catalog-scorecard.json"
+DEFAULT_STOREFRONT_ROOT = Path(
+    os.environ.get("GIG_STOREFRONT_ROOT") or "/nonexistent/storefront-root-required"
+)
+DEFAULT_SCORECARD = DEFAULT_STOREFRONT_ROOT / "scorecard.json"
 MEASURABLE_SUCCESS_METRICS = {"inquiries", "purchases", "views_to_inquiry", "views_to_purchase",
                               "net_receipt"}
 DEFAULT_REPLY_TRANSCRIPTS = Path.home() / "gig" / "reply-transcripts.jsonl"
@@ -63,21 +66,21 @@ STATE_FILES = (
     "inquiry-context-envelopes.jsonl", "demand-evidence.jsonl", "superseded-candidates.jsonl",
     "demand-category.jsonl", "demand-category-options.jsonl",
 )
-TARGET_SERVICE_ID = "91000001"
-DEFAULT_IMAGE_CONTRACT = GIG_DIR / "assets" / "storefront" / TARGET_SERVICE_ID / "image-contract.json"
-GALLERY_SERVICE_ID = "91000002"
-DEFAULT_GALLERY_CONTRACT = GIG_DIR / "assets" / "storefront" / GALLERY_SERVICE_ID / "gallery-contract.json"
-DEFAULT_TITLE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "91000004-title-v1.json"
-DEFAULT_BODY_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "91000004-body-v1.json"
-DEFAULT_SCOPE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "91000005-body-v1.json"
-DEFAULT_PACKAGE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "91000004-package-v1.json"
-DEFAULT_FAQ_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "91000004-faq-v1.json"
-DEFAULT_PRICE_MUTATION = GIG_DIR / "contracts" / "storefront" / "mutations" / "91000004-price-v1.json"
-DEFAULT_LISTING_CONTRACT_DIR = GIG_DIR / "contracts" / "storefront"
-DEFAULT_LISTING_CONTRACT_FAMILIES = GIG_DIR / "config" / "storefront-contract-families.json"
-DEFAULT_NEW_LISTING_CONTRACT = (
-    GIG_DIR / "contracts" / "storefront" / "new" / "seo-article-v1.json"
-)
+TARGET_SERVICE_ID = os.environ.get("GIG_STOREFRONT_TARGET_SERVICE_ID", "91000001").strip()
+GALLERY_SERVICE_ID = os.environ.get("GIG_STOREFRONT_GALLERY_SERVICE_ID", "91000002").strip()
+PRESENTATION_SERVICE_ID = os.environ.get("GIG_STOREFRONT_PRESENTATION_SERVICE_ID", "91000004").strip()
+SCOPE_SERVICE_ID = os.environ.get("GIG_STOREFRONT_SCOPE_SERVICE_ID", "91000005").strip()
+DEFAULT_IMAGE_CONTRACT = DEFAULT_STOREFRONT_ROOT / "assets" / "image-contract.json"
+DEFAULT_GALLERY_CONTRACT = DEFAULT_STOREFRONT_ROOT / "assets" / "gallery-contract.json"
+DEFAULT_TITLE_MUTATION = DEFAULT_STOREFRONT_ROOT / "contracts" / "mutations" / "title.json"
+DEFAULT_BODY_MUTATION = DEFAULT_STOREFRONT_ROOT / "contracts" / "mutations" / "body.json"
+DEFAULT_SCOPE_MUTATION = DEFAULT_STOREFRONT_ROOT / "contracts" / "mutations" / "scope.json"
+DEFAULT_PACKAGE_MUTATION = DEFAULT_STOREFRONT_ROOT / "contracts" / "mutations" / "package.json"
+DEFAULT_FAQ_MUTATION = DEFAULT_STOREFRONT_ROOT / "contracts" / "mutations" / "faq.json"
+DEFAULT_PRICE_MUTATION = DEFAULT_STOREFRONT_ROOT / "contracts" / "mutations" / "price.json"
+DEFAULT_LISTING_CONTRACT_DIR = DEFAULT_STOREFRONT_ROOT / "contracts" / "listings"
+DEFAULT_LISTING_CONTRACT_FAMILIES = DEFAULT_STOREFRONT_ROOT / "families.json"
+DEFAULT_NEW_LISTING_CONTRACT = DEFAULT_STOREFRONT_ROOT / "contracts" / "new-listing.json"
 
 
 def _walk_json_items(value: object):
@@ -1110,8 +1113,13 @@ def _load_gallery_contract(path: Path) -> dict:
 
 def _preflight_storefront_bundle() -> None:
     """Reject an explicit bundle before any browser or lease operation."""
-    if not os.environ.get("GIG_STOREFRONT_ROOT", "").strip():
-        return
+    required = (
+        "GIG_STOREFRONT_ROOT", "GIG_STOREFRONT_TARGET_SERVICE_ID",
+        "GIG_STOREFRONT_GALLERY_SERVICE_ID", "GIG_STOREFRONT_PRESENTATION_SERVICE_ID",
+        "GIG_STOREFRONT_SCOPE_SERVICE_ID",
+    )
+    if any(not os.environ.get(name, "").strip() for name in required):
+        raise RuntimeError("storefront_service_ids_required")
     paths = _storefront_paths()
     _load_portfolio_scorecard(paths["scorecard"])
     for path in paths["listings"].glob("*.json"):
@@ -1206,7 +1214,7 @@ async def _evaluate(ws: object, expression: str, cid: int) -> tuple[object, int]
 def _platform_withdrew_listing(ledger_path: Path, service_id: str, is_public: bool) -> bool:
     """Report a listing this loop published that the platform has since taken down.
 
-    Coconala withdrew service `91000003` twice for naming an external tool in its copy, and each
+    Coconala withdrew a generated listing twice for naming an external tool in its copy, and each
     time the next full wake saw a non-public listing, refilled the draft and published it again.
     Republishing is arguing with moderation and risks the account that earns the money, so a
     listing that was live by this loop's own ledger and is no longer public stays down.
@@ -3148,8 +3156,8 @@ def _judgement_prompt(own_page: dict, manifest: dict, capability_paths: set[str]
     }
     return """Judge one Coconala Storefront experiment from the JSON evidence below.
 Return only the strict schema object. Model judgement may choose change or no_op; code owns every
-mechanical guard and no seller effect occurs in this turn. The only supported change is service
-91000001 field FAQ. Its exact current sentinel is FAQ_ABSENT only when the own public body has no
+mechanical guard and no seller effect occurs in this turn. The only supported change is the
+configured target service's FAQ field. Its exact current sentinel is FAQ_ABSENT only when the own public body has no
 よくある質問 section. Propose one original Japanese FAQ grounded in this account's capability and
 generalized competitor structure. Do not copy competitor prose, images, reviews, sales, or claims.
 For change, cite exact supplied paths, choose one metric and 7 or 14 days, and return
@@ -5145,13 +5153,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             capability_families, capability_templates = _load_capability_families(
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
             )
-            presentation_snapshot = _seller_snapshot_for(ws_url, "91000004")
-            scope_snapshot = _seller_snapshot_for(ws_url, "91000005")
+            presentation_snapshot = _seller_snapshot_for(ws_url, PRESENTATION_SERVICE_ID)
+            scope_snapshot = _seller_snapshot_for(ws_url, SCOPE_SERVICE_ID)
             # Retained so the listing-state adapter can bind the real seller submit controls.
-            _atomic_write(inventory_path.parent / "seller-form-91000004.json", presentation_snapshot)
-            _atomic_write(inventory_path.parent / "seller-form-91000005.json", scope_snapshot)
+            _atomic_write(inventory_path.parent / f"seller-form-{PRESENTATION_SERVICE_ID}.json", presentation_snapshot)
+            _atomic_write(inventory_path.parent / f"seller-form-{SCOPE_SERVICE_ID}.json", scope_snapshot)
             title_render = _render_prepared_mutation(
-                args.state_dir, presentation_snapshot, "91000004", "title", capability_families,
+                args.state_dir, presentation_snapshot, PRESENTATION_SERVICE_ID, "title", capability_families,
             ) or _render_text_mutation(
                 getattr(args, "title_mutation", DEFAULT_TITLE_MUTATION), validated_contracts,
                 presentation_snapshot, capability_families,
@@ -5161,7 +5169,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 presentation_snapshot, capability_families,
             )
             scope_render = _render_prepared_mutation(
-                args.state_dir, scope_snapshot, "91000005", "body", capability_families,
+                args.state_dir, scope_snapshot, SCOPE_SERVICE_ID, "body", capability_families,
             ) or _render_text_mutation(
                 getattr(args, "scope_mutation", DEFAULT_SCOPE_MUTATION), validated_contracts,
                 scope_snapshot, capability_families,
@@ -5420,8 +5428,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     if proposal_source is None or not isinstance(family_name, str) or not isinstance(family, dict):
                         raise RuntimeError("storefront_proposal_context_missing")
                     proposal_snapshot = (
-                        presentation_snapshot if proposal_service_id == "91000004"
-                        else scope_snapshot if proposal_service_id == "91000005"
+                        presentation_snapshot if proposal_service_id == PRESENTATION_SERVICE_ID
+                        else scope_snapshot if proposal_service_id == SCOPE_SERVICE_ID
                         else _seller_package_snapshot_for(ws_url, proposal_service_id)
                         if next_hypothesis.get("field") == "package"
                         else _seller_snapshot_for(ws_url, proposal_service_id)

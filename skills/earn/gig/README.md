@@ -126,24 +126,26 @@ a login prompt.
 
 ### 5. Describe what you sell
 
-`config/storefront-catalog-scorecard.json` is the loop's model of the seller:
-one entry per listing, what it promises, what evidence backs the promise, and
-which listings are worth improving first. The one in this repository describes
-its author's catalogue. **Replace it with yours** — the apply lane uses it to
-decide what it is allowed to claim, and the storefront lane uses it to decide
-what to edit.
+Seller listing IDs, contracts, copy and images are private runtime data and are
+not shipped in this repository. Put the bundle outside the checkout and set these
+flat keys in `~/.config/anicca/gig/install.json`:
 
-Two more directories are seller-specific in the same way, and ship filled in as
-worked examples rather than as templates:
+```json
+{
+  "GIG_STOREFRONT_ROOT": "/absolute/private/storefront-bundle",
+  "GIG_STOREFRONT_TARGET_SERVICE_ID": "your-target-id",
+  "GIG_STOREFRONT_GALLERY_SERVICE_ID": "your-gallery-id",
+  "GIG_STOREFRONT_PRESENTATION_SERVICE_ID": "your-presentation-id",
+  "GIG_STOREFRONT_SCOPE_SERVICE_ID": "your-scope-id"
+}
+```
 
-| | |
-|---|---|
-| `contracts/` | What each listing offers, in the shape the lanes reason over. |
-| `assets/storefront/<service_id>/` | The gallery images the storefront lane uploads to a listing, keyed by that listing's id. The ids here are its author's. |
-
-Yours will not have those ids. Nothing breaks if you leave them — no listing of
-yours matches — but the storefront lane has nothing to publish for your listings
-until you put your own contracts and images beside them.
+The root contains `scorecard.json`, `families.json`, `contracts/listings/*.json`,
+`contracts/new-listing.json`, six files under `contracts/mutations/` named
+`title.json`, `body.json`, `scope.json`, `package.json`, `faq.json`, and
+`price.json`, plus `assets/image-contract.json` and
+`assets/gallery-contract.json` with every referenced asset below `assets/`.
+The lane validates the complete bundle before it leases the browser.
 
 ### 6. Start the lanes
 
