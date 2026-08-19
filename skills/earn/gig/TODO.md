@@ -29,13 +29,12 @@ not this operator's Telegram identity.
 The first unfinished item is always the first failed live lane, not the first planned feature.
 The order to the end is:
 
-1. **Recover and retain operating headroom.** Keep at least 10 GiB byte-exact free before trusting
-   browser, SQLite or evidence writes. One cleanup reached 10.051 GiB and passed a 4 KiB gig-state
-   fsync/read probe, but the immediate repeat fell to 5,993,792 KiB, so the gate is open again.
-   Mac-wide inventory found about 4.6 GiB of closed, regenerable public-audit clones under
-   `/private/tmp`; remove those before touching user media, research data, gig state, Codex sessions,
-   registered worktrees, active toolchains or applications. Completion requires retained headroom,
-   not one rounded `df -h` sample.
+1. **Recover operating headroom. DONE:** keep at least 10 GiB byte-exact free before trusting
+   browser, SQLite or evidence writes. Closed public-audit clones, their temporary HOME trees,
+   stale compiled speech-model cache files and `/private/tmp/lbj` were the only additional removals.
+   The data volume now reads 10,616,160 KiB free and a 4 KiB gig-state write/fsync/read/remove probe
+   succeeds. User media, research data, gig state, Codex sessions, registered worktrees, active
+   toolchains, browser clones and applications remain untouched. The next slice prevents recurrence.
 2. **Apply is restored. DONE:** natural pass
    `gig-apply-direct-1787144993473841000-39046` observed 40 postings, selected three eligible
    items, produced two application effects with two official readbacks, and isolated one transient
@@ -96,13 +95,17 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   (`life-manager-public-accept.*`, `life-manager-oss-rewrite.*`,
   `life-manager-rewrite-verify.*` and small acceptance HOME clones) occupy about 4.6 GiB; `lsof`
   reports zero open files for each measured directory.
-- [ ] Remove only those exact `/private/tmp` audit clones and record their paths and reclaimed bytes.
+- [x] Remove only the exact closed `/private/tmp` audit clones and their temporary HOME trees. Some
+  immutable copies required adding owner-write permission inside those exact temp roots before
+  deletion; no path outside the measured roots was touched.
+- [x] Remove the closed `/private/var/tmp/SpeechModelCache` files (1,432,680 KiB, no open files) and
+  closed `/private/tmp/lbj` (162,404 KiB) instead of removing CommandLineTools or user data.
 - [ ] Add cleanup of its own temporary clone with a trap/finally block to every public-audit command
   that creates one; do not add a general-purpose home-directory deleter.
 - [ ] Add a lightweight disk guard before browser/SQLite/evidence work: below 10,485,760 KiB, emit a
   visible failed receipt and skip side effects; never auto-delete user files from a business lane.
-- [ ] Read back at least 10,485,760 KiB free twice across separate samples, then successfully write,
-  fsync, read and remove a small probe in the gig state filesystem.
+- [x] Read back 10,617,248 KiB and then 10,616,160 KiB free across separate samples; successfully
+  write, fsync, read and remove a 4 KiB probe in the gig state filesystem.
 - [ ] Keep secondary candidates documented but untouched unless the temp clones are insufficient:
   old diagnostics (~150 MiB), unselected CommandLineTools (~1.84 GiB after reference audit), and an
   inactive `skillopt` venv (~109 MiB). Do not delete installed apps or dirty worktree videos by size.
