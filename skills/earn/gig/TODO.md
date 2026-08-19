@@ -197,8 +197,12 @@ remain open until the continuous owner runs this release and one authorized acti
   Legacy sidecars keep their old digest while the request text is unchanged, so an already
   accepted artifact is not rebuilt during rollout. New or changed requests use the stable
   identity digest. `py_compile` passes for the collector, paid lane, and context packet.
-- [ ] Complete credential handling and email-first owner notification without public operator
-  identity or secrets.
+- [x] Complete credential handling and email-first owner notification without public operator
+  identity or secrets. Marketplace credentials remain in the private browser/session vault;
+  owner reports use `telegram_report.OpenClawTelegramTransport` → `owner_notify` and sendmail
+  when `GIG_NOTIFY_EMAIL` is configured, with Telegram only as the explicit fallback. This
+  machine leaves email unset, so its latest Paid report is `delivery_unknown` on the fallback;
+  that is notification transport state, not paid-delivery proof.
 - [ ] Detect one new natural paid order from official state.
 - [ ] Build its requested artifact from the accepted scope.
 - [ ] Validate the artifact before delivery.
