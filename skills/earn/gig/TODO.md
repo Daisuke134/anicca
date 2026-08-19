@@ -195,6 +195,21 @@ concurrently, restart resumes the durable claim, and replay produces zero duplic
 acceptance is a natural buyer-origin → detection → judgement → click → official-readback receipt
 within five minutes, with two minutes or less as the operating target.
 
+The first two implementation slices are complete through `6f1c659ba`. The bounded head
+collector durably claims a thread-bound message digest before semantics; the targeted worker
+then binds the exact action, rechecks the current head, collects fresh complete Paid proof,
+uses the shared normal/estimate effect path, and requires exact-thread official readback.
+Focused regression is 32/32 and fresh Sol review is `SHIP`. This is not deployed and does not
+close 0b: the next active slice is the prompt-only correction for the observed applied-scope
+refusals, followed by the two-consumer supervisor and natural under-five-minute proof.
+
+The prompt correction is deliberately not a new lane or subsystem. For a legal, platform-
+permitted request inside a verified official application, Negotiate treats the application as
+the seller's current commitment, answers capability clearly, and completes the requested next
+step through the existing reply/estimate path. It still must not invent an unstated client,
+portfolio item or result number. The observed Care Earth Mart refusal and SaaS LP reply are
+mandatory regression cases.
+
 ---
 
 ## 1. ~~The browser step had no source~~ — RESOLVED, with one thing left to qualify

@@ -27,6 +27,8 @@
 
 ### Task 1: First-page observation and pre-semantic durable identity
 
+**Status:** Complete and fresh-Sol reviewed (`3a8d76338`, `09257bb4a`; verdict `SHIP`).
+
 **Files:**
 - Modify: `skills/earn/gig/scripts/connector_outbox.py`
 - Modify: `skills/earn/gig/scripts/coconala_queue_snapshot.py`
@@ -107,6 +109,9 @@ git commit -m "feat(gig): claim new buyer messages before semantics"
 ---
 
 ### Task 2: One-thread semantic worker using the existing effect lane
+
+**Status:** Complete and fresh-Sol reviewed through `6f1c659ba`; focused regression
+`32 passed`; verdict `SHIP`.
 
 **Files:**
 - Modify: `skills/earn/gig/scripts/coconala_queue_snapshot.py`
@@ -217,6 +222,65 @@ python3 -m py_compile skills/earn/gig/scripts/reply_detector.py skills/earn/gig/
 git add skills/earn/gig/scripts/reply_detector.py skills/earn/gig/scripts/coconala_queue_snapshot.py skills/earn/gig/tests/test_reply_concurrency.py
 git commit -m "feat(gig): process one changed buyer thread"
 ```
+
+---
+
+### Task 2.5: Prompt-only commitment consistency
+
+**Files:**
+- Modify: `skills/earn/gig/scripts/requested_estimate.py`
+- Modify: `skills/earn/gig/tests/test_reply_semantic_fast_route.py`
+- Update private runtime data: `~/.config/anicca/job-search/profile.json`
+
+**Scope:** This is a prompt and verified-fact correction only. Do not add a database,
+business lane, agent service, action type, browser effect, or schema. Keep the existing
+reply and estimate paths.
+
+- [ ] **Step 1: Add RED prompt contracts for the two observed failures**
+
+The prompt must distinguish current capability/commitment from prior-client history. An
+official application is verified proof that the seller committed to the application scope;
+it is not proof of an unstated past client project. When the current buyer asks whether the
+seller can perform work inside that applied scope, missing application context requests
+`required_official_context=application`; after context is present the answer begins with a
+clear `対応可能です` and proceeds with the requested work or concrete submission. It must
+not emit `対応可能とはお約束できません` or volunteer an absence of experience.
+
+Cover the real regressions: the Care Earth Mart applied logo-brush-up/sample request and the
+Wix/SaaS LP implementation-and-CVR question.
+
+- [ ] **Step 2: Register the user-verified SaaS LP fact**
+
+Add one private fact and whitelist its ID: a client SaaS LP improved approximately 3% to 10%
+visitor-to-start conversion after structure/design refinement, moving the CTA into the upper
+first-view area, and rewriting the copy. Do not expose the private path, evidence field or
+internal ID to a buyer.
+
+- [ ] **Step 3: Make the minimum prompt change**
+
+Bump the prompt version. Replace the blanket refusal rules with these bright lines:
+
+1. For legal/platform-permitted work inside a verified current application or seller offer,
+   state capability clearly and fulfill the buyer's requested next step using the existing
+   response path.
+2. Do not fabricate an unstated customer, portfolio item or result number. Do not volunteer
+   missing experience; answer with the verified transferable fact, applied commitment and a
+   concrete deliverable.
+3. Only illegal, unsafe or platform-prohibited work may be refused outright.
+4. Keep explicit purchase/estimate authorization and exact estimate-term gates unchanged.
+
+- [ ] **Step 4: Run deterministic tests and a real-model semantic eval**
+
+Run the focused prompt tests, existing semantic fast-route tests, and one real Luna semantic
+evaluation for each observed regression. Both final replies must answer the buyer directly,
+contain no refusal phrase, contain no unsupported prior-client claim, and pass the existing
+reply audit.
+
+- [ ] **Step 5: Commit and fresh-Sol review**
+
+Commit only the tracked prompt/test change. Private seller facts remain outside Git. A fresh
+read-only Sol reviewer verifies the observed failures, honesty boundary, and unchanged estimate
+authorization before this task closes.
 
 ---
 
