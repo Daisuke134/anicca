@@ -481,8 +481,26 @@ def run_requested_estimate(snapshot: dict[str, Any], *, args: Any, owner: str, n
     )
 
 
+def _estimate_candidate_key(item: dict[str, Any]) -> str | None:
+    thread_id = str(item.get("talkroom_id") or item.get("thread_id") or "")
+    identity = str(
+        item.get("estimate_request_identity")
+        or item.get("buyer_request_identity")
+        or ""
+    )
+    if _TARGETED_THREAD_ID.fullmatch(thread_id) is None or not identity:
+        return None
+    try:
+        module = _requested_estimate_module()
+        key = module.coconala_estimate_event_key(thread_id, identity)
+        return module.validate_estimate_event_key(key, thread_id)
+    except Exception:
+        return None
+
+
 def _normalize_estimate_result(
     estimate_result: dict[str, Any], *, expected_thread: str | None = None,
+    expected_event_keys: set[str] | None = None,
 ) -> dict[str, Any]:
     """Never publish an estimate effect without matching official readback."""
     normalized = dict(estimate_result)
@@ -491,15 +509,38 @@ def _normalize_estimate_result(
     if not effect:
         return normalized
     events = normalized.get("estimate_events")
-    verified = [event for event in events if isinstance(event, dict)
-                and event.get("status") == "verified"
-                and str(event.get("thread_id") or "").strip()
-                and (expected_thread is None or str(event["thread_id"]).strip() == expected_thread)
-                ] if isinstance(events, list) else []
+    proof_valid = isinstance(events, list) and expected_event_keys is not None
+    verified_keys: list[str] = []
+    try:
+        validate_event_key = _requested_estimate_module().validate_estimate_event_key
+    except Exception:
+        validate_event_key = None
+        proof_valid = False
+    for event in events if isinstance(events, list) else []:
+        if not isinstance(event, dict) or event.get("status") != "verified":
+            continue
+        thread_id = str(event.get("thread_id") or "").strip()
+        event_key = str(event.get("event_key") or "")
+        if (
+            validate_event_key is None
+            or _TARGETED_THREAD_ID.fullmatch(thread_id) is None
+            or expected_thread is not None and thread_id != expected_thread
+        ):
+            proof_valid = False
+            continue
+        try:
+            validate_event_key(event_key, thread_id)
+        except Exception:
+            proof_valid = False
+            continue
+        if event_key not in (expected_event_keys or set()):
+            proof_valid = False
+        verified_keys.append(event_key)
+    proof_valid = proof_valid and len(set(verified_keys)) == len(verified_keys)
     if (
-        readback is not None
-        and readback >= effect
-        and len(verified) >= effect
+        readback == effect
+        and len(verified_keys) == effect
+        and proof_valid
     ):
         return normalized
     normalized["estimate_effect"] = 0
@@ -517,10 +558,12 @@ def _normalize_estimate_result(
 def merge_estimate_metrics(
     result: dict[str, Any], estimate_result: dict[str, Any], *,
     normal_actionable: int | None, expected_thread: str | None = None,
+    expected_event_keys: set[str] | None = None,
 ) -> dict[str, Any]:
     """Project estimate outcomes into the one wake truth without relabelling them."""
     estimate_result = _normalize_estimate_result(
         estimate_result, expected_thread=expected_thread,
+        expected_event_keys=expected_event_keys,
     )
     estimate_required = _count(estimate_result.get("estimate_required"))
     estimate_effect = _count(estimate_result.get("estimate_effect"))
@@ -1084,23 +1127,36 @@ def _run_effect_pipeline(
         item for item in (snapshot.get("inquiries") or [])
         if isinstance(item, dict) and item.get("estimate_required") is True
     ]
-    fenced_estimates = [
+    invalid_estimates = [
         item for item in estimate_candidates
+        if not target and _estimate_candidate_key(item) is None
+    ]
+    valid_estimates = [item for item in estimate_candidates if item not in invalid_estimates]
+    fenced_estimates = [
+        item for item in valid_estimates
         if not target and _paid_fence_open_for_thread(
             fences_path, str(item.get("talkroom_id") or item.get("thread_id") or ""),
         )
     ]
+    fenced_ids = {id(item) for item in fenced_estimates}
+    expected_event_keys = {
+        key for item in valid_estimates
+        if id(item) not in fenced_ids
+        and (key := _estimate_candidate_key(item)) is not None
+    }
+    excluded_estimates = invalid_estimates + fenced_estimates
     if estimate_required or (not target and estimate_candidates):
         estimate_args = argparse.Namespace(
             database=database, manifest=manifest, runner=runner,
             estimate_schema=estimate_schema, cdp_helper=helper,
         )
         estimate_snapshot = snapshot
-        if fenced_estimates:
+        if excluded_estimates:
             estimate_snapshot = dict(snapshot)
+            excluded_ids = {id(item) for item in excluded_estimates}
             estimate_snapshot["inquiries"] = [
                 item for item in snapshot.get("inquiries", [])
-                if item not in fenced_estimates
+                if id(item) not in excluded_ids
             ]
         try:
             estimate_result = run_requested_estimate(
@@ -1108,24 +1164,25 @@ def _run_effect_pipeline(
                 owner=f"gig-estimate-{('targeted-' if target else 'detector-')}{run_id}",
                 now=int(time.time()),
             )
-            if fenced_estimates:
-                estimate_result = dict(estimate_result)
-                estimate_result["estimate_required"] = (
-                    _count(estimate_result.get("estimate_required")) or 0
-                ) + len(fenced_estimates)
-                estimate_result["estimate_pending"] = (
-                    _count(estimate_result.get("estimate_pending")) or 0
-                ) + len(fenced_estimates)
-                estimate_result["errors"] = list(estimate_result.get("errors") or []) + [
-                    "estimate_effect_blocked_paid_fence" for _ in fenced_estimates
-                ]
         except Exception as error:
             estimate_result = {
-                "estimate_required": 1, "estimate_effect": 0,
+                "estimate_required": len(estimate_candidates) or 1, "estimate_effect": 0,
                 "estimate_readback": 0, "estimate_pending": 0,
                 "estimate_failed": 1, "estimate_events": [],
                 "errors": [{"type": type(error).__name__, "code": "estimate_lane_failed"}],
             }
+        if excluded_estimates:
+            estimate_result = dict(estimate_result)
+            estimate_result["estimate_required"] = (
+                _count(estimate_result.get("estimate_required")) or 0
+            ) + len(excluded_estimates)
+            estimate_result["estimate_pending"] = (
+                _count(estimate_result.get("estimate_pending")) or 0
+            ) + len(excluded_estimates)
+            estimate_result["errors"] = list(estimate_result.get("errors") or []) + (
+                ["estimate_thread_invalid" for _ in invalid_estimates]
+                + ["estimate_effect_blocked_paid_fence" for _ in fenced_estimates]
+            )
     _atomic_json(estimate_path, estimate_result)
     _owner_only(estimate_path)
     if target and estimate_required:
@@ -1143,6 +1200,7 @@ def _run_effect_pipeline(
         return merge_estimate_metrics(
             result, estimate_result, normal_actionable=0,
             expected_thread=thread_id,
+            expected_event_keys=expected_event_keys,
         )
 
     _run("reply_lane", [
@@ -1166,6 +1224,7 @@ def _run_effect_pipeline(
         result, estimate_result,
         normal_actionable=(len(queue_value.get("items")) if isinstance(queue_value.get("items"), list) else None),
         expected_thread=thread_id if target else None,
+        expected_event_keys=expected_event_keys,
     )
     return result
 
