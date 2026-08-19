@@ -51,6 +51,14 @@ class StepFailure(RuntimeError):
         self.attempts = list(attempts or [])
 
 
+class TargetedIdentityChanged(ValueError):
+    """The official inbox head changed before a targeted effect could start."""
+
+    def __init__(self, row: dict[str, Any]):
+        super().__init__("targeted inbox identity changed")
+        self.row = dict(row)
+
+
 def _atomic_json(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
@@ -957,8 +965,22 @@ def _collect_targeted_head(
         raise ValueError("targeted head thread missing")
     row = rows[0]
     if row.get("last_message_identity_sha256") != identity_sha256:
-        raise ValueError("targeted inbox identity changed")
+        raise TargetedIdentityChanged(row)
     return row
+
+
+def _targeted_identity_pending(
+    thread_id: str, run_id: str, row: dict[str, Any],
+) -> dict[str, Any]:
+    return _targeted_pending(
+        thread_id, run_id, error="targeted_inbox_identity_changed",
+        current_identity_sha256=str(row.get("last_message_identity_sha256") or ""),
+        current_last_message_side=str(row.get("last_message_side") or ""),
+        current_buyer_sent_at=(
+            str(row.get("buyer_sent_at") or "")
+            if row.get("buyer_sent_at") else None
+        ),
+    )
 
 
 def _fresh_capture_time(value: Any) -> datetime:
@@ -1212,6 +1234,8 @@ def _run_effect_pipeline(
                 args, evidence=evidence, thread_id=thread_id,
                 identity_sha256=str(target["identity_sha256"]),
             )
+        except TargetedIdentityChanged as error:
+            return _targeted_identity_pending(thread_id, run_id, error.row)
         except Exception as error:
             return _targeted_pending(thread_id, run_id, error=type(error).__name__ + ":" + str(error)[:180])
         if semantic_failure or not semantic_ready:
@@ -1403,6 +1427,16 @@ def run_targeted_thread(
                 "replied": 0, "official_readback": 0, "duplicate_effect": 0,
                 "closed_without_send": 0, "pending": 0, "events": [], "errors": [],
             }
+        try:
+            # Read only the current inbox head before opening the direct thread.
+            # A stale action is rebound immediately, without paying for semantic
+            # judgement on obsolete customer prose.
+            _collect_targeted_head(
+                args, evidence=evidence, thread_id=thread_id,
+                identity_sha256=str(binding["identity_sha256"]),
+            )
+        except TargetedIdentityChanged as error:
+            return _targeted_identity_pending(thread_id, run_id, error.row)
         snapshot_script = Path(_targeted_arg(args, "snapshot_script", gig_root / "scripts/coconala_queue_snapshot.py"))
         runner = Path(_targeted_arg(args, "runner", RUNNER_DIR / "agent_runner.py"))
         semantic_schema = Path(_targeted_arg(args, "semantic_schema", gig_root / "schemas/reply_semantic_judgement.schema.json"))

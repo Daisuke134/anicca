@@ -427,7 +427,8 @@ def test_orders_proof_is_fresh_and_precedes_estimate_effect(tmp_path, monkeypatc
     )
     assert result["status"] == "completed"
     assert observed_modes_at_estimate == [[
-        "direct-thread-only", "direct-inbox-head-only", "orders-only",
+        "direct-inbox-head-only", "direct-thread-only",
+        "direct-inbox-head-only", "orders-only",
     ]]
     assert not send_record.exists() or not send_record.read_text().strip()
 
@@ -990,7 +991,12 @@ def test_fresh_proof_is_ordered_after_head_and_before_effect(tmp_path):
             labels.append("lane")
     assert labels.index("direct-thread-only") < labels.index("queue_build")
     assert labels.index("queue_build") < labels.index("enqueue")
-    assert labels.index("enqueue") < labels.index("direct-inbox-head-only")
+    enqueue_index = labels.index("enqueue")
+    assert any(
+        index > enqueue_index
+        for index, label in enumerate(labels)
+        if label == "direct-inbox-head-only"
+    )
     assert labels.index("direct-inbox-head-only") < labels.index("orders-only")
     assert labels.index("orders-only") < labels.index("fence") < labels.index("lane")
 

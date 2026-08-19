@@ -1144,6 +1144,16 @@ def run() -> int:
             )
         task_config = config["task_classes"][parsed.task_class]
         candidates = task_config["candidates"]
+        for candidate in candidates:
+            if not isinstance(candidate, dict) or "timeout_seconds" not in candidate:
+                continue
+            candidate_timeout = candidate["timeout_seconds"]
+            if (
+                not isinstance(candidate_timeout, int)
+                or isinstance(candidate_timeout, bool)
+                or candidate_timeout <= 0
+            ):
+                raise ValueError("candidate timeout_seconds must be a positive integer")
         for value, reason in ((parsed.loop, "loop"), (parsed.task_label, "task label")):
             if not isinstance(value, str) or not value.strip() or value != value.strip():
                 raise ValueError(f"{reason} must be a nonempty trimmed string")
@@ -1289,9 +1299,15 @@ def run() -> int:
 
     for index, candidate in enumerate(candidates, 1):
         remaining_timeout = total_deadline - time.monotonic()
-        if remaining_timeout <= 0:
+        remaining_timeout_seconds = math.floor(remaining_timeout)
+        if remaining_timeout_seconds < 1:
             break
-        attempt_timeout_seconds = max(1, math.ceil(remaining_timeout))
+        candidate_timeout_seconds = candidate.get(
+            "timeout_seconds", remaining_timeout_seconds,
+        )
+        attempt_timeout_seconds = min(
+            remaining_timeout_seconds, candidate_timeout_seconds,
+        )
         budget_event_id = f"agent-budget-{uuid.uuid4().hex}"
         if budget_enabled:
             last_budget = budget_ledger.reserve(

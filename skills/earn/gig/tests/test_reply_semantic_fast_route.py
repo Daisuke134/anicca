@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import io
 import json
 import subprocess
 import sys
@@ -48,11 +49,130 @@ def test_reply_semantic_route_prefers_luna_and_has_bounded_provider_fallback():
     assert route["token_reservation"] <= composition["token_reservation"]
     assert route["candidates"][0] == {
         "provider": "codex", "model": "gpt-5.6-luna", "effort": "medium",
+        "timeout_seconds": 40,
     }
     assert [candidate["provider"] for candidate in route["candidates"]] == [
         "codex", "claude-direct", "hermes",
     ]
+    assert [candidate["timeout_seconds"] for candidate in route["candidates"]] == [40, 40, 40]
+    hermes = route["candidates"][2]
+    assert hermes["toolsets"] == ["clarify"]
+    assert hermes["required_capabilities"] == []
+    assert not set(hermes["toolsets"]) & {
+        "browser", "marketplace", "shell", "message_send", "external_effect",
+    }
     assert "reply-semantic-agent" in runner.TOOLLESS_TASK_CLASSES
+
+
+def _minimal_runner_config(candidates, *, total_timeout=120):
+    return {
+        "version": 1,
+        "timeout_seconds": total_timeout,
+        "providers": {
+            "codex": {"executable": "codex", "capabilities": {}},
+            "claude-direct": {"executable": "claude", "capabilities": {}},
+            "hermes": {"executable": "hermes", "capabilities": {}},
+        },
+        "task_classes": {
+            "reply-semantic-agent": {
+                "route": "test-reply-semantic",
+                "token_reservation": 1,
+                "timeout_seconds": total_timeout,
+                "candidates": candidates,
+            },
+        },
+    }
+
+
+def _run_runner_with_config(monkeypatch, tmp_path, config, process):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    schema_path = tmp_path / "schema.json"
+    schema_path.write_text(json.dumps({
+        "type": "object",
+        "required": ["ok"],
+        "properties": {"ok": {"const": True}},
+    }), encoding="utf-8")
+    monkeypatch.setenv("AGENT_RUNNER_CONFIG", str(config_path))
+    monkeypatch.setattr(runner, "run_provider_process", process)
+    monkeypatch.setattr(runner, "append_usage_event", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(sys, "stdin", io.StringIO("bounded semantic prompt"))
+    monkeypatch.setattr(sys, "argv", [
+        str(RUNNER_PATH), "--task-class", "reply-semantic-agent",
+        "--prompt-stdin", "--schema", str(schema_path),
+        "--evidence-dir", str(tmp_path / "evidence"),
+        "--task-label", "semantic-fallback", "--loop", "test-loop",
+        "--workdir", str(tmp_path),
+    ])
+    return runner.run()
+
+
+def test_real_runner_loop_caps_each_candidate_and_reaches_all_fallbacks(tmp_path, monkeypatch):
+    candidates = [
+        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium", "timeout_seconds": 40},
+        {"provider": "claude-direct", "model": "sonnet", "timeout_seconds": 40},
+        {
+            "provider": "hermes", "inference_provider": "gemini", "model": "gemini-2.5-flash",
+            "profile": "gigapply", "toolsets": ["clarify"], "required_capabilities": [],
+            "timeout_seconds": 40,
+        },
+    ]
+    config = _minimal_runner_config(candidates)
+    attempts = []
+    clock = {"now": 0.0}
+    monkeypatch.setattr(runner.time, "monotonic", lambda: clock["now"])
+
+    def provider_process(command, *, stdout, stderr, timeout, **_kwargs):
+        attempts.append((command[0], timeout))
+        clock["now"] += timeout
+        if len(attempts) < 3:
+            raise subprocess.TimeoutExpired(command, timeout)
+        stdout.write(b'{"ok": true}')
+        return 0
+
+    result = _run_runner_with_config(monkeypatch, tmp_path, config, provider_process)
+
+    assert result == 0
+    assert [(Path(executable).name, timeout) for executable, timeout in attempts] == [
+        ("codex", 40), ("claude", 40), ("hermes", 40),
+    ]
+    summary = json.loads((tmp_path / "evidence" / "summary.json").read_text())
+    assert summary["attempt_count"] == 3
+    assert summary["selected_provider"] == "hermes"
+    rows = [json.loads(line) for line in (tmp_path / "evidence" / "attempts.jsonl").read_text().splitlines()]
+    assert [row["error_class"] for row in rows] == [
+        "transient_timeout", "transient_timeout", None,
+    ]
+
+
+@pytest.mark.parametrize("invalid_timeout", [0, -1, True, 40.5, "40", None])
+def test_candidate_timeout_is_positive_integer_or_absent(tmp_path, monkeypatch, invalid_timeout):
+    candidate = {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"}
+    candidate["timeout_seconds"] = invalid_timeout
+    config = _minimal_runner_config([candidate])
+    launched = []
+
+    def should_not_launch(*_args, **_kwargs):
+        launched.append(True)
+        raise AssertionError("invalid candidate timeout launched a provider")
+
+    result = _run_runner_with_config(monkeypatch, tmp_path, config, should_not_launch)
+
+    assert result == 2
+    assert launched == []
+
+
+def test_candidate_timeout_can_be_omitted(tmp_path, monkeypatch):
+    candidate = {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"}
+    config = _minimal_runner_config([candidate])
+
+    def provider_process(command, *, stdout, timeout, **_kwargs):
+        assert 1 <= timeout <= 120
+        result_path = Path(command[command.index("-o") + 1])
+        result_path.write_text('{"ok": true}', encoding="utf-8")
+        return 0
+
+    assert _run_runner_with_config(monkeypatch, tmp_path, config, provider_process) == 0
 
 
 def test_runner_cli_accepts_reply_semantic_task_class():
