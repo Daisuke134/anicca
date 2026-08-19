@@ -159,8 +159,10 @@ producer–consumer concurrency.** A fast producer checks the newest inbox surfa
 `connector-outbox.sqlite3` before model work. An in-process `asyncio.Queue` may dispatch those
 already-durable identities, but it is never the source of truth. A bounded pool starts at two
 consumer tasks. Each task owns its CDP page/target, opens one claimed thread, runs the existing
-60-second-bounded semantic judgement, rechecks freshness, performs at most one authorized send,
-and requires official readback. A lower-priority reconciler retains the full four-page audit but
+60-second-bounded semantic judgement, rechecks the exact head identity, refreshes the official
+open-orders surface so paid-room ownership cannot come from a stale cache, performs at most one
+authorized send, and requires official readback. Missing or invalid paid-order proof stops both
+estimate and reply effects. A lower-priority reconciler retains the full four-page audit but
 yields whenever urgent claimed work exists. Restart resumes durable pending work; a thread/message
 claim prevents duplicate effects.
 
