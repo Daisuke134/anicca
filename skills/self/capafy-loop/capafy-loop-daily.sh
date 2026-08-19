@@ -71,6 +71,31 @@ if [ "$NEVER_ONLINE_COUNT" -ge 5 ]; then
   echo "=== capafy-loop-daily continuing with first-version queue full (never_online=$NEVER_ONLINE_COUNT) ===" >>"$LOG"
 fi
 
+# Deterministic publish handoff (2026-08-19): this money-loop used to invoke the
+# model even when the canonical inventory gate had a ready listing. The model
+# correctly refused to invent sales/economics evidence and wrote no-op, so a
+# live PUBLISHABLE verdict could persist indefinitely without ever reaching the
+# already-verified publish pipeline. Let the inventory gate own this branch;
+# the drainer performs lint, agentic CP1, CP2, CP3, remote readback, and ledger
+# recording. Keep the model for measurement/repair work only when there is no
+# fresh publishable inventory.
+PUBLISH_VERDICT="$(python3 "$HOME/.openclaw/skills/capafy-autopublish/scripts/inventory_status.py" 2>>"$LOG" | sed -n 's/^VERDICT=//p' | head -1)"
+if [ "$PUBLISH_VERDICT" = "PUBLISHABLE" ]; then
+  DRAINER="${CAPAFY_DRAINER:-$HOME/.openclaw/skills/capafy-autopublish/scripts/daily_loop.sh}"
+  if [ ! -x "$DRAINER" ]; then
+    echo "=== capafy-loop-daily blocked: publishable inventory but drainer is missing: $DRAINER ===" >>"$LOG"
+    exit 1
+  fi
+  echo "=== capafy-loop-daily dispatching canonical drainer for live PUBLISHABLE inventory ===" >>"$LOG"
+  if CAPAFY_DRAINER_PASS_ID="${CAPAFY_LOOP_PASS_ID:-$(date +%s)-$$}" bash "$DRAINER" >>"$LOG" 2>&1; then
+    touch "$HOME/.openclaw/state/.capafy-loop-last-pass" 2>/dev/null || true
+    echo "=== capafy-loop-daily publish handoff complete ===" >>"$LOG"
+    exit 0
+  fi
+  echo "=== capafy-loop-daily publish handoff failed; leaving failure for self-heal ===" >>"$LOG"
+  exit 1
+fi
+
 # ── TOKEN BUDGET BREAKER (2026-07-30) ─────────────────────────────────────────
 # Every pass of this loop used to record {"status":"disabled","reason":
 # "budget_not_configured"} in its attempts.jsonl: the runner's breaker only arms
