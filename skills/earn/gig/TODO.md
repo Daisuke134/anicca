@@ -8,6 +8,58 @@ The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 
 ---
 
+## 0a. The apply lane refuses 35% of the board for work it can actually do
+
+**This is the revenue lever.** Measured on `~/gig/b2-ineligible-cache.json`: 249 cached
+ineligible postings, and **every one of them is `hard_prohibited`**. Not one was turned down for
+being unwinnable, mispriced or outside the seller's skill. Every refusal is a policy class this
+loop applies to itself:
+
+| count | class |
+|---:|---|
+| **88** | `video_or_animation` |
+| 55 | `physical_or_onsite` |
+| 39 | `mandatory_human_presence` |
+| 37 | `mandatory_attribute_fabrication` |
+| 21 | `explicit_ai_prohibition` |
+| 8 | `missing_legal_qualification` |
+| 1 | `illegal_or_unsafe` |
+
+Six of those seven are correct and should stay: you cannot go somewhere and assemble a thing,
+appear on camera, hold a licence you do not hold, claim a history you do not have, or take work
+from someone who wrote "no AI".
+
+`video_or_animation` is the one that is wrong, and it is the largest by a distance. Reading what
+the 88 postings actually ask for: "編集（カット、テロップ、BGM/SE挿入、エフェクト）",
+"YouTube動画の編集業務", "30秒ショート動画で333本で10万円", "Instagram縦型広告の冒頭5〜10秒",
+"YouTube横動画の編集". Almost all of it is **editing footage the client supplies**. Only a
+couple need filming.
+
+Editing supplied footage is not a gap in this machine's capability — it is one of the things it
+already does at scale. The class conflates live-action *filming*, which is genuinely impossible,
+with *editing*, which is not, and refuses both. The 333-shorts-for-¥100,000 posting is the shape
+of job where batch automation beats a human editor outright.
+
+Splitting the class is a policy decision, not a code change, and it needs the seller's word
+before anything applies to that work. What the code needs afterwards is a delivery path that
+proves the edit before it is offered.
+
+## 0b. The negotiate lane cannot answer in five minutes; a full sweep takes 5.8 hours
+
+`DIRECT_REVALIDATION_BATCH_SIZE=1` at a 180-second interval means one talkroom re-read per wake.
+Against ~115 rooms that is about 5.8 hours to come back round, while a room is treated as stale
+after 30 minutes — so 114 rooms sit permanently overdue. The fast path exists (revalidate only
+rooms whose list entry changed) but reports `thread_changed_count: 0` and nothing treats that
+silence as a failure.
+
+Sub-five-minute replies are not reachable by tuning the batch size alone: raising the budget
+puts proportionally more DOM reads through the one shared browser, which is what the other three
+lanes are also queued behind. Either the change detector becomes trustworthy enough to be the
+primary path — which means measuring why it reports zero while messages arrive — or the lanes
+stop sharing one browser. Decide which before touching the number.
+
+---
+
 ## 1. ~~The browser step had no source~~ — RESOLVED, with one thing left to qualify
 
 The binary comes from [CloakBrowser](https://github.com/CloakHQ/CloakBrowser)
