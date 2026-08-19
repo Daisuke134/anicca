@@ -1368,6 +1368,16 @@ def _head_row(identity, *, thread_id="123"):
     }
 
 
+def _seed_pending_inbox_event(database, identity):
+    event_key = outbox.coconala_inbox_event_key("123", identity)
+    database.enqueue(
+        event_key=event_key, thread_id="123",
+        thread_url="https://coconala.com/mypage/direct_message/123",
+        observed_at=1_755_555_200,
+    )
+    return event_key
+
+
 def test_supervise_probe_starts_follow_fixed_monotonic_deadline_and_exact_boundary(
     tmp_path, monkeypatch,
 ):
@@ -1537,3 +1547,110 @@ def test_supervise_replied_duplicate_head_has_no_second_effect(tmp_path):
     ))
 
     assert dispatched == []
+
+
+def test_supervise_rebinds_stale_buyer_identity_once_and_replay_is_idempotent(tmp_path):
+    """A stale worker result follows the latest buyer event on the same action."""
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    old_identity = "a" * 64
+    new_identity = "b" * 64
+    old_event_key = _seed_pending_inbox_event(database, old_identity)
+    new_event_key = outbox.coconala_inbox_event_key("123", new_identity)
+    mismatch = {
+        "status": "pending",
+        "errors": ["targeted_inbox_identity_changed"],
+        "current_identity_sha256": new_identity,
+        "current_last_message_side": "buyer",
+    }
+    stop = asyncio.Event()
+    dispatched = []
+    effect_identities = []
+
+    async def probe():
+        # Keep the producer from creating a second observation while the two
+        # exact durable work items (old A, then rebound B) are consumed.
+        await stop.wait()
+        return {"inquiries": [], "captured_at": "2026-08-19T00:00:00+00:00"}
+
+    async def worker(item):
+        dispatched.append(item)
+        if item["identity_sha256"] == old_identity:
+            return mismatch
+        assert item["identity_sha256"] == new_identity
+        effect_identities.append(item["identity_sha256"])
+        stop.set()
+        return {"status": "completed"}
+
+    async def reconcile():
+        return None
+
+    asyncio.run(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+    ))
+
+    assert [item["event_key"] for item in dispatched] == [old_event_key, new_event_key]
+    assert effect_identities == [new_identity]
+
+    pending = database.pending_actions()
+    assert len(pending) == 1
+    assert pending[0]["action_id"] == dispatched[0]["action_id"]
+    assert pending[0]["revision"] == 2
+    # pending_actions resolves the event by newest connector_events rowid.
+    assert pending[0]["event_key"] == new_event_key
+    with sqlite3.connect(args.database) as connection:
+        active_count = connection.execute(
+            """SELECT COUNT(*) FROM connector_actions
+               WHERE platform='coconala' AND thread_id=?
+                 AND state IN ('pending','claimed','intent_ready','reconcile_pending')
+                 AND dlq_at IS NULL""",
+            ("123",),
+        ).fetchone()[0]
+    assert active_count == 1
+
+    replay = detector._supervisor_rebind_targeted_work(
+        database, dispatched[0], mismatch, now=1_755_555_202,
+    )
+    assert replay is not None
+    assert replay["event_key"] == new_event_key
+    assert database.get_action(dispatched[0]["action_id"])["revision"] == 2
+    assert database.pending_actions()[0]["event_key"] == new_event_key
+    with sqlite3.connect(args.database) as connection:
+        event_count = connection.execute(
+            "SELECT COUNT(*) FROM connector_events WHERE action_id=?",
+            (dispatched[0]["action_id"],),
+        ).fetchone()[0]
+    assert event_count == 2
+    assert len(dispatched) == 2
+
+
+def test_supervise_rebind_seller_last_closes_stale_action_without_dispatch(tmp_path):
+    """A stale seller-last observation closes A and never creates buyer work B."""
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    old_identity = "a" * 64
+    new_identity = "b" * 64
+    old_event_key = _seed_pending_inbox_event(database, old_identity)
+    new_event_key = outbox.coconala_inbox_event_key("123", new_identity)
+    mismatch = {
+        "status": "pending",
+        "errors": ["targeted_inbox_identity_changed"],
+        "current_identity_sha256": new_identity,
+        "current_last_message_side": "seller",
+    }
+    work = detector._supervisor_work_from_action(database.pending_actions()[0])
+    assert work is not None
+    rebound = detector._supervisor_rebind_targeted_work(
+        database, work, mismatch, now=1_755_555_201,
+    )
+
+    assert rebound is None
+    assert database.pending_actions() == []
+    assert database.closed_actions(closure="nothing_to_say")
+    with sqlite3.connect(args.database) as connection:
+        events = connection.execute(
+            "SELECT event_key FROM connector_events WHERE action_id=?",
+            (work["action_id"],),
+        ).fetchall()
+    assert [row[0] for row in events] == [old_event_key]
+    assert new_event_key not in {row[0] for row in events}
