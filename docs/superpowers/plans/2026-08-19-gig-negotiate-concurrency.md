@@ -114,9 +114,10 @@ git commit -m "feat(gig): claim new buyer messages before semantics"
 - Modify: `skills/earn/gig/tests/test_reply_concurrency.py`
 
 **Interfaces:**
-- Consumes: typed inbox event already stored in `ConnectorOutbox`
+- Consumes: exact `action_id`, typed inbox `event_key`, thread id and observed head identity already stored in `ConnectorOutbox`
 - Produces CLI mode `direct-thread-only --talkroom-id <id>` with exactly one inquiry and `semantic_ssot: true`
-- Produces: `run_targeted_thread(args, *, thread_id: str, evidence: Path, run_id: str) -> dict[str, Any]`
+- Produces: `run_targeted_thread(args, *, action_id: int, inbox_event_key: str, thread_id: str, evidence: Path, run_id: str) -> dict[str, Any]`
+- Produces: a fresh, complete `orders-only` receipt and paid-room fence collected after semantics and immediately before any reply or estimate effect
 
 - [ ] **Step 1: Write the failing targeted-thread test**
 
@@ -124,7 +125,8 @@ Create a fixture whose direct thread ends with buyer message `buyer-2`, whose se
 
 ```python
 result = detector.run_targeted_thread(
-    args, thread_id="123", evidence=tmp_path / "evidence", run_id="run-1"
+    args, action_id=action_id, inbox_event_key=inbox_event_key,
+    thread_id="123", evidence=tmp_path / "evidence", run_id="run-1"
 )
 assert result["status"] == "completed"
 assert result["replied"] == 1
@@ -147,17 +149,32 @@ Validate the supplied thread id with the existing direct-message route grammar, 
 
 - [ ] **Step 4: Extract the targeted worker from the existing pass**
 
-`run_targeted_thread` must reuse the existing commands and artifacts in this order:
+`run_targeted_thread` must validate that `action_id`, `inbox_event_key` and `thread_id`
+name the same pending durable action. It must then reuse one shared effect pipeline, also called
+by the existing full pass, in this order:
 
 1. `direct-thread-only` collection;
-2. normal/estimate split;
-3. `reply_queue.py build`;
-4. `reply_queue.py enqueue` so the exact message event joins the pre-semantic inbox action;
-5. requested-estimate path when required;
-6. existing `reply_lane.py --max-model-calls 0` for normal replies;
-7. return only bounded counts and verified event metadata.
+2. `reply_queue.py build` and `reply_queue.py enqueue`, confirming the collected message event
+   coalesces into the supplied `action_id` before any marketplace effect;
+3. explicit semantic-action allowlist validation; unknown or failed actions remain pending;
+4. a fresh `direct-inbox-head-only` re-read proving the supplied inbox identity is still current;
+5. a fresh `orders-only` collection with complete coverage, followed by `build-paid`; do not
+   accept a caller-supplied, cached or stale registry;
+6. requested-estimate effect/readback when required, otherwise existing
+   `reply_lane.py --max-model-calls 0` for normal replies;
+7. return only bounded counts and verified event metadata. A positive `replied` count without
+   matching verified official events is recoverable pending/failure, never `completed`.
 
-If semantic judgment says `wait`, `stop_contact`, `terminal_acknowledgement` or another intentional no-send result, claim the pre-semantic action by exact action id and close it through the existing `nothing_to_say` closure. If semantic judgment fails, leave it pending for bounded retry; never close it as success and never send.
+Extract the queue/effect/readback sequence from the existing full-pass block rather than copying
+it into a second 300-line implementation. The full pass and targeted pass must call the same
+function for build/enqueue, estimate ordering, paid fence, reply lane and readback classification.
+
+If semantic judgment is one of the explicitly supported intentional no-send actions, revalidate
+the exact head identity, claim only the supplied unchanged action/revision and close it through
+the existing `nothing_to_say` closure. A catch-all semantic action must never close an action.
+If the head identity changed, semantic judgment failed, orders coverage is incomplete, or the
+fresh paid proof is absent/stale, leave the exact action pending for bounded retry; never close it
+as success and never send.
 
 - [ ] **Step 5: Add replay and no-send tests**
 
@@ -178,6 +195,11 @@ def test_intentional_no_send_closes_claim_without_reply(...):
     assert result["closed_without_send"] == 1
     assert ConnectorOutbox(database, manifest).pending_actions() == []
 ```
+
+Also add negative tests proving: wrong inbox identity cannot close an action; a newer head identity
+prevents send/closure; an unknown semantic action remains pending; orders proof is collected after
+semantics and before normal or estimate effect; stale/incomplete orders proof blocks both effect
+paths; and `replied > 0` without matching official readback cannot return `completed`.
 
 - [ ] **Step 6: Run GREEN and focused regressions**
 
@@ -230,10 +252,10 @@ Expected: FAIL because `supervise_replies` is absent.
 
 - [ ] **Step 3: Implement the standard-library supervisor**
 
-Use one `asyncio.Queue[str]`, one producer task, two consumer tasks and one reconciliation task.
+Use one `asyncio.Queue[InboxWork]`, one producer task, two consumer tasks and one reconciliation task.
 
-- Producer: every `poll_seconds`, execute the head collector with `asyncio.to_thread`; for each unread row with a valid identity, call `ConnectorOutbox.enqueue(coconala_inbox_event_key(...))` before `queue.put`. Skip an already terminal/replied duplicate. A pending duplicate after restart is re-dispatched.
-- Consumers: keep an in-memory set only to suppress duplicate simultaneous dispatch; call `run_targeted_thread` through `asyncio.to_thread`; always release the in-memory marker in `finally`.
+- Producer: every `poll_seconds`, execute the head collector with `asyncio.to_thread`; for each unread row with a valid identity, call `ConnectorOutbox.enqueue(coconala_inbox_event_key(...))` before `queue.put`. Dispatch the returned `action_id`, exact event key, thread id and identity together. Skip an already terminal/replied duplicate. A pending duplicate after restart is re-dispatched with the same durable tuple.
+- Consumers: keep an in-memory set only to suppress duplicate simultaneous dispatch; call `run_targeted_thread` with the exact durable tuple through `asyncio.to_thread`; always release the in-memory marker in `finally`.
 - Reconciler: when the urgent queue and in-flight set are empty, run the existing full pass at the existing five-minute reconciliation cadence. Producer and consumers continue independently while it runs.
 - Shutdown: SIGTERM/SIGINT sets `stop`; cancel tasks, await them, release the lane lock and leave SQLite claims recoverable. Do not delete state.
 
