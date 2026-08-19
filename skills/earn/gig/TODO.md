@@ -173,6 +173,11 @@ action completes.
   `claude-direct / gpt-5.3-codex-spark` in one attempt (about 12 seconds); its conversation-sized
   input receives a 90-second candidate cap inside the existing 120-second route deadline instead
   of expiring at the old 40-second cap. No marketplace effect is part of this canary.
+- [ ] Activate that route in the continuous owner and capture a natural official receipt. The
+  currently loaded owner is still the prior immutable release; its Addres88 run safely produced
+  three provider timeouts at the old 40-second caps and no effect. `launchctl print` for even the
+  system domain currently returns `141: Reentrancy avoided`, so this remains a control-plane
+  activation/readback item rather than a semantic authorization failure.
 - [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
 - [ ] Bind the latest buyer-authored event to its official thread/message identity and classify
   whether it requires an answer, an estimate, both, or no action.
