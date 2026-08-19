@@ -44,16 +44,28 @@ After 0b closes, execute the public-package items in order:
    now lives under the configured private root, passes the pre-browser bundle check, and launchd
    reads that root back. Public source no longer carries the seller contracts/assets or real service
    IDs, and the repository fallback is inert. Next, purge the already-deleted customer artifacts and
-   removed seller bundle from reachable public history, then prove the result from a fresh clone.
+   removed seller bundle from reachable public history. **DONE:** the five affected public heads
+   were rewritten with force-with-lease after a local recovery bundle was created; the 38 private
+   paths and known owner/service identifiers are absent from their reachable history. Coconala-only
+   historical gitleaks findings are zero.
 2. From a fresh clone of public `main`, run the package's non-mutating tests and configuration /
    plist generation using only documented local configuration. Do not reuse this machine's
    private state as proof of portability.
+   **DONE:** public commit `c5eeefce4d568fd4c8236ed49e32c1249e1c3750` compiles the changed runtime,
+   renders all launchd plists with an empty temporary HOME, sends through the email adapter using a
+   local no-op sendmail executable, and passes the package current-tree gitleaks scan. No private
+   install file existed in that HOME. Broad pytest was intentionally omitted per operator direction.
 3. Make `README.md` match that clean-clone evidence: exact dependencies, local secret/state
    boundaries, install, status, upgrade and uninstall steps. Every documented command must be
    exercised from the fresh clone.
+   **DONE:** README documents the private Storefront boundary, exact Python imports, 30-second
+   two-worker Negotiate runtime, email-first owner reports, install/status/upgrade/uninstall and
+   non-mutating plist generation.
 4. Re-run the public-tree audit and clean-clone acceptance, then record the exact commit and
    evidence here. That closes this milestone. Items 0b, 1, 2, 4, 5 and 6 remain product/runtime
    work and do not block publishing the package unless the audit finds private data in them.
+   **DONE:** the exact commit and clean-clone evidence are recorded above; the public Coconala
+   package milestone is closed.
 
 ---
 
