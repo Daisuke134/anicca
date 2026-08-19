@@ -12,8 +12,8 @@ days -- see site_ledger_reconcile.py's own docstring). One-off flickers are not 
 
 Sibling of F1 (selfimprove_consumer.py), called from its main() so on_exit still runs one
 process and prints one summary line -- this is not a second consumer pipeline. It shares F1's
-request ledger (~/gig/selfheal-request.jsonl) and singular slot
-(~/.openclaw/state/.gig-core-selfheal-request.json), the same {kind, reason, ...} shape, and
+request ledger (the configured gig state directory) and one host-state slot, the same
+{kind, reason, ...} shape, and
 the same "never clobber an in-flight request" rule.
 
 STATE: a small persistence file (default ~/gig/.reconcile-selfheal-state.json) keyed by
@@ -196,6 +196,10 @@ def run(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     default_root = Path(os.environ.get("GIG_STATE_DIR", str(Path.home() / "gig")))
+    host_state = Path(os.environ.get(
+        "GIG_HOST_STATE_DIR",
+        str(Path.home() / ".local" / "state" / "life-manager" / "state"),
+    ))
     parser.add_argument("--report", type=Path, default=None, help="override: score this report instead of the newest")
     parser.add_argument("--evidence-root", type=Path, default=default_root / "evidence")
     parser.add_argument("--state", type=Path, default=default_root / ".reconcile-selfheal-state.json")
@@ -203,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--selfheal-req", type=Path,
         default=Path(os.environ.get(
-            "GIG_SELFHEAL_REQ", str(Path.home() / ".openclaw" / "state" / ".gig-core-selfheal-request.json")
+            "GIG_SELFHEAL_REQ", str(host_state / ".gig-core-selfheal-request.json")
         )),
     )
     parser.add_argument("--dry-run", action="store_true", help="report what would happen; write nothing")

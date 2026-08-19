@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import shutil
 import sqlite3
 import time
@@ -26,6 +27,12 @@ TELEGRAM_REPORT_SILENCE_SECONDS = 2 * 60 * 60
 TELEGRAM_BACKLOG_SECONDS = 15 * 60
 REVENUE_LANES = ("apply", "reply", "fulfill", "list")
 HERMES_AUDIT_LANES = ("paid", "reply", "apply", "storefront")
+
+
+def _default_host_state_dir() -> Path:
+    return Path(os.environ.get(
+        "GIG_HOST_STATE_DIR", str(Path.home() / ".local" / "state" / "life-manager" / "state")
+    ))
 
 
 def _incident(
@@ -591,7 +598,7 @@ def collect_snapshot(
     host_state = (
         Path(host_state_dir)
         if host_state_dir is not None
-        else Path.home() / ".openclaw" / "state"
+        else _default_host_state_dir()
     )
     heartbeat = root / ".last-pass"
     try:
@@ -680,7 +687,7 @@ def main() -> int:
     parser.add_argument(
         "--host-state-dir",
         type=Path,
-        default=home / ".openclaw/state",
+        default=_default_host_state_dir(),
     )
     parser.add_argument("--now", type=int, default=None)
     args = parser.parse_args()

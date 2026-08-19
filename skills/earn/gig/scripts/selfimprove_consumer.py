@@ -21,9 +21,9 @@ WHAT THIS SCRIPT DOES (routes and formats only -- it never diagnoses or fixes an
    ledger this task's gate reads) with the same {kind, reason, failure_reason, ts} shape
    gig_reality_verify.sh already writes into the singular selfheal-request file, so it is
    consumable by the same downstream reader without inventing a new schema.
-4. It also feeds the EXISTING self-fix entrypoint: if the singular
-   ~/.openclaw/state/.gig-core-selfheal-request.json slot is not already occupied by a pending
-   request, this writes one there. auditor.sh's already-built wire (unchanged by this script)
+4. It also feeds the EXISTING self-fix entrypoint: if the singular configured host-state slot is
+   not already occupied by a pending request, this writes one there. The existing auditor wire
+   (unchanged by this script)
    picks it up next run and spawns self-fix.sh -- the same fresh-agent diagnose/fix/commit path
    reality-verify failures already use. This script never calls self-fix.sh itself and never
    decides what the fix should be; that judgment stays with the model self-fix.sh spawns.
@@ -227,13 +227,17 @@ def run(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     default_root = Path(os.environ.get("GIG_STATE_DIR", str(Path.home() / "gig")))
+    host_state = Path(os.environ.get(
+        "GIG_HOST_STATE_DIR",
+        str(Path.home() / ".local" / "state" / "life-manager" / "state"),
+    ))
     parser.add_argument("--audit", type=Path, default=default_root / "selfimprove-audit.jsonl")
     parser.add_argument("--cursor", type=Path, default=default_root / ".selfimprove-consumer-cursor")
     parser.add_argument("--request-ledger", type=Path, default=default_root / "selfheal-request.jsonl")
     parser.add_argument(
         "--selfheal-req", type=Path,
         default=Path(os.environ.get(
-            "GIG_SELFHEAL_REQ", str(Path.home() / ".openclaw" / "state" / ".gig-core-selfheal-request.json")
+            "GIG_SELFHEAL_REQ", str(host_state / ".gig-core-selfheal-request.json")
         )),
     )
     parser.add_argument(

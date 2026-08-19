@@ -367,7 +367,8 @@ def self_fix_process_env(child_env: dict[str, str], evidence_dir: Path) -> dict[
       always to a fresh `self-fix/<id>` branch it created, never to the branch it started on.
 
     $HOME is redirected to a scratch directory under this run's own evidence_dir so a
-    tilde-relative path can never resolve to the real ~/.cloak, ~/gig, or ~/.openclaw --
+    tilde-relative path can never resolve to the real browser profile, gig state, or host-agent
+    state roots --
     the same pattern this module already uses for the codex provider's automation_home
     (see provider_process_env's codex branch above). Claude Code's own login lives in the
     macOS Keychain (service "Claude Code-credentials"), not under $HOME, so this redirection
