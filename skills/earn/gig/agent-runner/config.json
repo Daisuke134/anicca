@@ -63,6 +63,9 @@
     },
     "hermes": {
       "executable": "hermes",
+      "executable_fallbacks": [
+        "~/.local/bin/hermes"
+      ],
       "capabilities": {
         "structured_json": true,
         "tools": true,
