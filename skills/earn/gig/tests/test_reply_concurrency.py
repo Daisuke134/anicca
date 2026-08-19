@@ -202,6 +202,7 @@ def _fake_targeted_scripts(
                         "estimate_required": {estimate_required!r},
                         "next_action": {next_action!r}, "buyer_sent_at": "2026-08-19T00:01:00+00:00",
                         "message_id": "buyer-2", "last_message_identity_sha256": "b" * 64,
+                        "estimate_request_identity": "buyer-2",
                         "semantic_receipt": {{"judgement": {{"next_action": {next_action!r}}}}},
                         "semantic_failure": {semantic_failure!r},
                         "semantic_context_sha256": "a" * 64,
@@ -550,17 +551,40 @@ def test_targeted_official_readback_must_match_exact_action_id():
 
 
 @pytest.mark.parametrize(
-    ("estimate_readback", "estimate_events"),
+    ("estimate_effect", "estimate_readback", "estimate_events"),
     [
-        (0, []),
-        (1, [{
+        (1, 0, []),
+        (1, 1, [{
             "thread_id": "999", "status": "verified",
             "event_key": "coconala:estimate:v1:999:buyer-2",
+        }]),
+        (1, 1, [{
+            "thread_id": "123", "status": "verified",
+            "event_key": "coconala:estimate:v1:123:buyer-old",
+        }]),
+        (1, 1, [{
+            "thread_id": "123", "status": "verified",
+            "event_key": "not-an-estimate-key",
+        }]),
+        (1, 2, [{
+            "thread_id": "123", "status": "verified",
+            "event_key": "coconala:estimate:v1:123:buyer-2",
+        }]),
+        (1, 1, [{
+            "thread_id": "123", "status": "verified",
+            "event_key": "coconala:estimate:v1:123:buyer-2",
+        }, {
+            "thread_id": "123", "status": "verified",
+            "event_key": "coconala:estimate:v1:123:buyer-2",
+        }]),
+        (2, 2, [{
+            "thread_id": "123", "status": "verified",
+            "event_key": "coconala:estimate:v1:123:buyer-2",
         }]),
     ],
 )
 def test_unverified_estimate_effect_is_recoverable_pending(
-    estimate_readback, estimate_events,
+    estimate_effect, estimate_readback, estimate_events,
 ):
     result = detector.merge_estimate_metrics(
         {
@@ -568,18 +592,96 @@ def test_unverified_estimate_effect_is_recoverable_pending(
             "pending": 0, "errors": [],
         },
         {
-            "estimate_required": 1, "estimate_effect": 1,
+            "estimate_required": 1, "estimate_effect": estimate_effect,
             "estimate_readback": estimate_readback,
             "estimate_pending": 0, "estimate_failed": 0,
             "estimate_events": estimate_events, "errors": [],
         },
         normal_actionable=0, expected_thread="123",
+        expected_event_keys={"coconala:estimate:v1:123:buyer-2"},
     )
     assert result["status"] == "reconcile_pending"
     assert result["estimate_effect"] == 0
     assert result["estimate_readback"] == 0
     assert result["estimate_pending"] >= 1
     assert result["effect"] == 0
+
+
+def test_full_pass_filters_fenced_and_invalid_estimate_candidates_before_effect(
+    tmp_path, monkeypatch,
+):
+    script, _calls, _send_record = _fake_targeted_scripts(tmp_path)
+    args = _targeted_args(tmp_path, script)
+    looked_up = []
+
+    def fake_fence(_path, thread_id):
+        looked_up.append(thread_id)
+        return thread_id == "123"
+
+    monkeypatch.setattr(detector, "_paid_fence_open_for_thread", fake_fence)
+    estimate_calls = []
+
+    def fake_estimate(filtered_snapshot, **kwargs):
+        estimate_calls.append(filtered_snapshot)
+        assert [
+            item["talkroom_id"] for item in filtered_snapshot["inquiries"]
+        ] == ["456"]
+        return {
+            "estimate_required": 1, "estimate_effect": 1,
+            "estimate_readback": 1, "estimate_pending": 0,
+            "estimate_failed": 0, "estimate_events": [{
+                "thread_id": "456", "status": "verified",
+                "event_key": "coconala:estimate:v1:456:buyer-4",
+            }], "errors": [],
+        }
+
+    monkeypatch.setattr(detector, "run_requested_estimate", fake_estimate)
+    snapshot_value = {"inquiries": [
+        {
+            "talkroom_id": "123", "estimate_required": True,
+            "estimate_request_identity": "buyer-2",
+        },
+        {
+            "talkroom_id": "456", "estimate_required": True,
+            "estimate_request_identity": "buyer-4",
+        },
+        {
+            "talkroom_id": "bad id", "estimate_required": True,
+            "estimate_request_identity": "buyer-bad",
+        },
+        {
+            "estimate_required": True,
+            "estimate_request_identity": "buyer-missing",
+        },
+    ]}
+    result = detector._run_effect_pipeline(
+        args, snapshot=snapshot_value, evidence=tmp_path / "evidence",
+        run_id="mixed-estimates",
+    )
+    assert looked_up == ["123", "456"]
+    assert len(estimate_calls) == 1
+    assert result["estimate_required"] == 4
+    assert result["estimate_effect"] == 1
+    assert result["estimate_readback"] == 1
+    assert result["estimate_pending"] >= 3
+    assert result["errors"].count("estimate_thread_invalid") == 2
+    assert "estimate_effect_blocked_paid_fence" in result["errors"]
+    wrong_fenced_proof = detector.merge_estimate_metrics(
+        {"status": "completed", "effect": 0, "official_readback": 0,
+         "pending": 0, "errors": []},
+        {"estimate_required": 2, "estimate_effect": 2,
+         "estimate_readback": 2, "estimate_pending": 0,
+         "estimate_failed": 0, "errors": [], "estimate_events": [
+             {"thread_id": "456", "status": "verified",
+              "event_key": "coconala:estimate:v1:456:buyer-4"},
+             {"thread_id": "123", "status": "verified",
+              "event_key": "coconala:estimate:v1:123:buyer-2"},
+         ]},
+        normal_actionable=0,
+        expected_event_keys={"coconala:estimate:v1:456:buyer-4"},
+    )
+    assert wrong_fenced_proof["estimate_effect"] == 0
+    assert wrong_fenced_proof["status"] == "reconcile_pending"
 
 
 def test_fresh_proof_is_ordered_after_head_and_before_effect(tmp_path):
