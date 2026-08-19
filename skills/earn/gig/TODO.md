@@ -24,7 +24,15 @@ The public package must not promise guaranteed income or describe unverified act
 revenue. Owner notifications use a provider adapter; the distributable default is email,
 not this operator's Telegram identity.
 
-Execute only these items, in order:
+## Execution order to end
+
+Only the first unfinished item is active: **0b reply speed** → the four clean-public-package
+steps below → **4 listing contract/product truth** → **2 stable paid-feedback identity and
+credential handling** → **5 storefront attribution** → **1 browser-major qualification** →
+**6 merge the already-pushed legacy-removal branch when its unrelated merge clears**. Closed
+items do not reopen without new contradictory evidence.
+
+After 0b closes, execute the public-package items in order:
 
 1. Audit the tracked `skills/earn/gig/` tree and its reachable Git history for credentials,
    customer content, account identifiers, absolute owner paths, and committed runtime evidence.
@@ -145,12 +153,29 @@ schema, seller-facts, conversation, latest-message and official-context identity
 natural pass reports `classification_failed: 0`, `semantic_migration_pending: 0`,
 `estimate_readback: 6`, and no duplicate effect.
 
-The remaining slice stays inside **one long-lived Negotiate process**. It repeatedly performs:
-fast inbox read, collect every changed actionable buyer thread, judge those threads concurrently,
-send each authorized reply, verify each one on the official page, then run lower-priority full
-reconciliation before immediately returning to the fast read. It does not add a second observer
-process, a fifth business lane, another agent, database or queue. The abandoned two-process
-observer draft was never committed, pushed or deployed.
+**Selected architecture (ADR): one Negotiate launchd owner, one long-lived process, internal
+producer–consumer concurrency.** A fast producer checks the newest inbox surface at most every
+30 seconds and durably claims each new buyer-message identity in the existing
+`connector-outbox.sqlite3` before model work. An in-process `asyncio.Queue` may dispatch those
+already-durable identities, but it is never the source of truth. A bounded pool starts at two
+consumer tasks. Each task owns its CDP page/target, opens one claimed thread, runs the existing
+60-second-bounded semantic judgement, rechecks freshness, performs at most one authorized send,
+and requires official readback. A lower-priority reconciler retains the full four-page audit but
+yields whenever urgent claimed work exists. Restart resumes durable pending work; a thread/message
+claim prevents duplicate effects.
+
+This is still one business lane and one supervised process. It does not add a second observer
+service, fifth lane, another agent, database or durable queue. Fully sequential collection before
+effect is rejected because model latency blocks discovery. Two independent services are rejected
+at the current single-account scale because their lifecycle and cross-process ownership add cost
+without improving the required outcome. The primary-source basis is Python's
+[`asyncio.Queue`](https://docs.python.org/3/library/asyncio-queue.html) — “distribute workload
+between several concurrent tasks”; Playwright
+[`Pages`](https://playwright.dev/docs/pages) — “Each page behaves like a focused, active page”;
+and Azure's
+[`Competing Consumers`](https://learn.microsoft.com/en-us/azure/architecture/patterns/competing-consumers)
+— long-running processing does not prevent other consumers from processing concurrently. The
+abandoned two-process observer draft was removed and was never committed, pushed or deployed.
 
 The measured before value is **10 minutes 13 seconds**. The completion gate is not a configured
 interval or a model timeout: it is a natural per-message timeline from buyer origin through
@@ -159,7 +184,11 @@ within five minutes under a healthy authenticated session, with an operating tar
 or less. Explicit stop-contact/返信不要, terminal acknowledgements, duplicates and safety-blocked
 messages are intentionally classified and recorded without sending. Until that live timeline
 passes, the system may describe the 30-second wake request and 60-second semantic bound, but must
-not publish an "after" reply speed or a five-minute guarantee.
+not publish an "after" reply speed or a five-minute guarantee. Tests must prove that a deliberately
+slow semantic task does not block claiming a second message, two changed threads can progress
+concurrently, restart resumes the durable claim, and replay produces zero duplicate sends. Final
+acceptance is a natural buyer-origin → detection → judgement → click → official-readback receipt
+within five minutes, with two minutes or less as the operating target.
 
 ---
 
