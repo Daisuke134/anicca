@@ -130,6 +130,27 @@ Negotiate, acceptance is official send/readback within five minutes of a buyer m
 normal healthy session, with the measured operating target at two minutes or less. Full history
 reconciliation continues after the urgent effect and must not block it.
 
+**Speed slice 1 is deployed, but this item remains open.** Release `52cdc50e5` changes only the
+Negotiate cadence and semantic route: launchd requests a wake every 30 seconds; reply semantic
+judgement uses one tool-disabled Luna-medium candidate with a 60-second runner deadline and no
+slow fallback or same-call retry. The existing real-model authorization eval passed 6/6 cases,
+the focused regression suite passed 8/8, an adversarial Codex invocation could not call shell or
+execution tools, and fresh Sol review returned `ship`.
+
+The first rollout exposed and then proved a migration failure: requiring the new runner profile
+invalidated 117 otherwise-current receipts and reduced official estimate readback from six to
+zero. Production was rolled back before retrying. The corrected rollout accepts only the legacy
+`composition-agent` and current `reply-semantic-agent` profile names while retaining prompt,
+schema, seller-facts, conversation, latest-message and official-context identity checks. Its
+natural pass reports `classification_failed: 0`, `semantic_migration_pending: 0`,
+`estimate_readback: 6`, and no duplicate effect.
+
+The remaining slice is structural: the lightweight inbox observer must keep claiming new buyer
+events while the semantic worker, full reconciliation or owner reporting is still running. Until
+that observer/worker separation and a natural buyer-origin-to-official-readback measurement pass,
+the system may describe the 30-second wake request and 60-second semantic bound, but must not claim
+a two-minute result or five-minute guarantee.
+
 ---
 
 ## 1. ~~The browser step had no source~~ — RESOLVED, with one thing left to qualify
