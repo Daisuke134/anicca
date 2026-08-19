@@ -1384,6 +1384,27 @@ def _seed_pending_inbox_event(database, identity):
     return event_key
 
 
+def test_targeted_pending_projection_keeps_inbox_identity_when_fallback_is_newer(tmp_path):
+    """A fallback queue write must not hide an older exact inbox target."""
+    database = outbox.ConnectorOutbox(
+        tmp_path / "projection.sqlite3", GIG_ROOT / "config" / "connectors" / "coconala.json",
+    )
+    inbox_event_key = _seed_pending_inbox_event(database, "a" * 64)
+    fallback_event_key = outbox.coconala_fallback_event_key(
+        thread_id="123", buyer_sent_at=1_755_555_201, ordinal=0, raw_body="buyer text",
+    )
+    database.enqueue(
+        event_key=fallback_event_key, thread_id="123",
+        thread_url="https://coconala.com/mypage/direct_message/123",
+        observed_at=1_755_555_201,
+    )
+
+    assert database.pending_actions()[0]["event_key"] == fallback_event_key
+    targeted = database.pending_targeted_actions()
+    assert len(targeted) == 1
+    assert targeted[0]["event_key"] == inbox_event_key
+
+
 def test_supervise_probe_starts_follow_fixed_monotonic_deadline_and_exact_boundary(
     tmp_path, monkeypatch,
 ):

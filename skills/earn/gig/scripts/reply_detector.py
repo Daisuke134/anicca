@@ -1632,7 +1632,11 @@ async def supervise_replies(
             })
 
     async def enqueue_pending_actions() -> None:
-        for action in get_outbox().pending_actions():
+        # The direct supervisor must consume an exact inbox identity.  A
+        # fallback detector can append a later fallback event to the same
+        # durable action, so use the outbox's inbox-only projection here rather
+        # than allowing that fallback row to hide the target.
+        for action in get_outbox().pending_targeted_actions():
             work = _supervisor_work_from_action(action)
             if work is not None:
                 await enqueue_work(work)

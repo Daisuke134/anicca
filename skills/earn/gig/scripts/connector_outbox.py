@@ -1126,6 +1126,69 @@ class ConnectorOutbox:
             ) from error
         return actions
 
+    def pending_targeted_actions(self) -> list[dict[str, Any]]:
+        """Return pending actions whose newest typed inbox event can be targeted.
+
+        The five-minute queue may append a fallback event after a continuous
+        detector has already recorded an inbox identity on the same action.
+        Selecting the globally newest event in that case hides the inbox event
+        from the direct-thread supervisor, which only accepts exact inbox
+        identities.  Keep the general ``pending_actions`` projection unchanged
+        for the fallback queue and expose this narrower projection for the
+        targeted supervisor.
+        """
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                """SELECT a.*,
+                          e.event_key,
+                          e.platform AS event_platform,
+                          e.thread_id AS event_thread_id,
+                          e.observed_at AS event_observed_at
+                   FROM connector_actions a
+                   JOIN connector_events e
+                     ON e.event_key=(
+                         SELECT latest_inbox.event_key
+                           FROM connector_events latest_inbox
+                          WHERE latest_inbox.action_id=a.action_id
+                            AND latest_inbox.event_key LIKE 'coconala:inbox:v1:%'
+                          ORDER BY latest_inbox.rowid DESC
+                          LIMIT 1
+                     )
+                   WHERE a.platform='coconala' AND a.state='pending'
+                     AND a.dlq_at IS NULL
+                     AND NOT EXISTS (
+                       SELECT 1 FROM connector_events kind_event
+                        WHERE kind_event.action_id=a.action_id
+                          AND kind_event.event_key LIKE 'coconala:estimate:v1:%'
+                     )
+                   ORDER BY a.created_at,a.action_id"""
+            ).fetchall()
+            actions = [dict(row) for row in rows]
+        try:
+            for action in actions:
+                event_key = action.get("event_key")
+                event_platform = action.get("event_platform")
+                event_thread_id = action.get("event_thread_id")
+                if (
+                    type(event_key) is not str
+                    or type(event_platform) is not str
+                    or type(event_thread_id) is not str
+                    or event_platform != action["platform"]
+                    or event_thread_id != action["thread_id"]
+                ):
+                    raise ValueError("event metadata does not match action")
+                validate_coconala_event_key(event_key, action["thread_id"])
+                if not event_key.startswith("coconala:inbox:v1:"):
+                    raise ValueError("targeted action lacks inbox event identity")
+                self._require_timestamp(
+                    "event_observed_at", action.get("event_observed_at")
+                )
+        except (TypeError, ValueError) as error:
+            raise InvalidTransition(
+                "durable targeted action has invalid event identity"
+            ) from error
+        return actions
+
     def reconciliation_action_for_thread(self, thread_id: str) -> dict[str, Any] | None:
         """Return bounded intent metadata for one delivery-unknown thread."""
         thread_id = self._require_key("thread_id", thread_id)
