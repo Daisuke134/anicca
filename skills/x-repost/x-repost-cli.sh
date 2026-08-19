@@ -29,6 +29,7 @@ IDENTITY="${X_REPOST_BROWSER_IDENTITY:-x:anicca}"
 # Overridable so this loop is not welded to one vendor's model, but defaulted to sonnet because the
 # house rule for every loop core in this repo is sonnet, never a larger model.
 MODEL="${X_REPOST_MODEL:-sonnet}"
+HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
 
@@ -264,6 +265,10 @@ except Exception:
 print("reply" if random.random() < max(0.0, min(1.0, ratio)) else "quote")
 PYEOF
 )"
+TARGET_TONE="$("$PY" -c 'import json,random,sys
+w=(json.load(open(sys.argv[1])).get("tone_weights") or {"primary":1,"empathy":1,"funny":1})
+ks=list(w); print(random.choices(ks,[max(0.0,float(w[k])) for k in ks])[0])' "$STRATEGY" 2>/dev/null || echo primary)"
+log "target tone: $TARGET_TONE"
 log "action this pass: $KIND (reply_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("reply_ratio"))' "$STRATEGY" 2>/dev/null))"
 
 {
@@ -289,6 +294,26 @@ log "action this pass: $KIND (reply_ratio=$("$PY" -c 'import json,sys; print(jso
 
 構成: 共感1〜2文 → 自虐ひとつまみ → 自分だけが言える具体情報ひとつ。
 分量の比率は 共感5 / 自虐3 / 一次情報2。日本語。ハッシュタグと絵文字は使わない。
+
+## ここで失敗している（直近5本すべてに出た欠陥。同じ書き方をするな）
+
+**書き出しを「うち」で始めるな。** 直近5本が全部「うちの/うちも/うちは」で始まっていた。
+これは④の違反で、読み手には「自分語りが始まった」としか見えない。**1文目は相手の話**にする。
+
+**種を数値のまま貼るな。** 実際に出た悪い例:
+
+> うちは自動化を積み上げすぎてMacのlaunchd agentが244個、registered=Falseが173個・disabledが61個。
+
+読む人は私の機械の内訳を知らないし、知りたくもない。種は**その人にとって何を意味するか**に翻訳して使う。
+数字を出すなら **1つだけ**、意味が伝わるものに絞る。良い形:
+
+> 増やすのは一瞬で、数えるのは後回しになる。気づいたら自分でも把握できない数になってた。
+
+**内部用語を持ち込むな。** 引用元がその語を使っていない限り、次は書かない:
+CDPポート / data-testid / exit 0 / BSDのmv / launchd / registered=False / lease / symlink。
+自分の環境でしか通じない語は、その分野の人にも「内輪の話」に見える。
+
+**自分に言及するのは1箇所まで。** 種は主張の根拠として1回出すだけで、主語を自分に戻さない。
 
 ## 長さ（超えると物理的に投稿できない）
 X の上限は 280 だが **日本語1文字は2と数えられる**。引用元URLに23を使うので、本文に使えるのは 230 まで
@@ -346,7 +371,15 @@ fi
 {
   echo "以下の各案について、**内容は一切変えず文体だけ**を直せ。事実・数値・固有名詞・主張・情報量を足しても引いてもいけない。"
   echo
-  cat "$SKILL/config/humanize-checklist.md"
+  # Use the house humanizer rather than a private copy of one. jp-humanizer-pro already exists and
+  # is maintained; a second checklist living here would drift from it, and the drifting one is the
+  # one this loop would keep using.
+  if [ -r "$HUMANIZER_SKILL" ]; then
+    cat "$HUMANIZER_SKILL"
+  else
+    echo "（jp-humanizer-pro が見つからないので同梱の簡易版を使う）"
+    cat "$SKILL/config/humanize-checklist.md"
+  fi
   echo; echo "## 入力（この drafts を直す）"
   "$PY" -c 'import json,sys; json.dump(json.load(open(sys.argv[1]))["drafts"], sys.stdout, ensure_ascii=False, indent=1)' "$EV/select.json"
   echo; echo
@@ -363,6 +396,11 @@ fi
 {
   echo "次の3案から、引用ツイートとして実際に投稿する1案を選べ。"
   echo "基準: 相手をディスっていない / ポジティブ / 自分にしか言えない具体が入っている / 自分語りが過剰でない / 次の行動につながる / AI 文体でない。"
+  echo
+  echo "## 今回 優先するトーン: $TARGET_TONE"
+  echo "同点か僅差ならこのトーンを選ぶ。明確に品質が落ちる場合だけ他を選び、その理由を why に書く。"
+  echo "（理由: 29投稿中25本が同じトーンで、どのトーンが伸びるかを比べる材料が無い。"
+  echo "  比率は strategy.json が持ち、実測の初速で更新される。）"
   echo; echo "## 引用元"; "$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["source_url"]); print(d.get("why",""))' "$EV/select.json"
   echo; echo "## 3案"; cat "$EV/humanized.json"
   echo; echo '## 出力（最後に JSON オブジェクトだけを1つ）'
