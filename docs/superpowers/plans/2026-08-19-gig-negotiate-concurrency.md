@@ -227,6 +227,12 @@ git commit -m "feat(gig): process one changed buyer thread"
 
 ### Task 2.5: Prompt-only commitment consistency
 
+**Status:** Complete through `f97c12d37`; deterministic semantic tests `10 passed`.
+Real Luna evaluation returned direct audited replies for both observed regressions: the logo
+case accepted the explicit August 20 15:00 rough deadline without clarification, and the
+SaaS/Wix case used only the verified approximately 3% to 10% fact and confirmed the applied
+JPY 27,000 implementation scope.
+
 **Files:**
 - Modify: `skills/earn/gig/scripts/requested_estimate.py`
 - Modify: `skills/earn/gig/tests/test_reply_semantic_fast_route.py`

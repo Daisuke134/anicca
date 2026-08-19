@@ -210,6 +210,15 @@ step through the existing reply/estimate path. It still must not invent an unsta
 portfolio item or result number. The observed Care Earth Mart refusal and SaaS LP reply are
 mandatory regression cases.
 
+That prompt-only slice is complete through `f97c12d37`. Deterministic semantic tests pass
+10/10. Two real Luna evaluations also pass: Care Earth Mart now begins with `対応可能です`,
+accepts the explicit August 20 15:00 selection-rough deadline separately from the August 21
+final delivery, and asks no redundant question; SaaS/Wix confirms the JPY 27,000 applied scope
+and states only the verified approximately 3% to 10% conversion result plus its actual design,
+upper-first-view CTA and copy scope. Both reply audits have no unsupported claim or unanswered
+question. The next active slice is the two-consumer supervisor; 0b remains open until natural
+official under-five-minute readback passes.
+
 ---
 
 ## 1. ~~The browser step had no source~~ — RESOLVED, with one thing left to qualify
