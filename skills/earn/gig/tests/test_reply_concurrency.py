@@ -19,6 +19,7 @@ GIG_ROOT = Path(__file__).resolve().parents[1]
 OUTBOX_PATH = GIG_ROOT / "scripts" / "connector_outbox.py"
 SNAPSHOT_PATH = GIG_ROOT / "scripts" / "coconala_queue_snapshot.py"
 DETECTOR_PATH = GIG_ROOT / "scripts" / "reply_detector.py"
+REQUESTED_ESTIMATE_PATH = GIG_ROOT / "scripts" / "requested_estimate.py"
 
 
 def _load_module(name: str, path: Path):
@@ -32,6 +33,9 @@ def _load_module(name: str, path: Path):
 outbox = _load_module("gig_connector_outbox_reply_concurrency_test", OUTBOX_PATH)
 snapshot = _load_module("gig_queue_snapshot_reply_concurrency_test", SNAPSHOT_PATH)
 detector = _load_module("gig_reply_detector_reply_concurrency_test", DETECTOR_PATH)
+requested_estimate = _load_module(
+    "gig_requested_estimate_reply_concurrency_test", REQUESTED_ESTIMATE_PATH,
+)
 
 
 def _fake_targeted_scripts(
@@ -783,6 +787,119 @@ def test_estimate_forged_old_action_cannot_substantiate_effect():
     assert result["estimate_effect"] == 0
     assert result["estimate_readback"] == 0
     assert result["pending"] >= 1
+
+
+def test_only_latest_coalesced_estimate_binds_current_revision(tmp_path):
+    script, _calls, _send_record = _fake_targeted_scripts(tmp_path)
+    args = _targeted_args(tmp_path, script)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    thread_id = "123"
+    thread_url = "https://coconala.com/mypage/direct_message/123"
+    old_key = outbox.coconala_estimate_event_key(thread_id, "buyer-old")
+    new_key = outbox.coconala_estimate_event_key(thread_id, "buyer-new")
+    action = database.enqueue_estimate(
+        event_key=old_key, thread_id=thread_id, thread_url=thread_url, observed_at=100,
+    )
+    advanced = database.enqueue_estimate(
+        event_key=new_key, thread_id=thread_id, thread_url=thread_url, observed_at=101,
+    )
+    assert advanced["action_id"] == action["action_id"]
+    assert advanced["revision"] == 2
+    claimed = database.claim(
+        owner="latest-estimate", now=102, lease_seconds=30,
+        action_id=int(action["action_id"]),
+    )
+    assert claimed is not None
+    intent = database.prepare_intent(
+        int(action["action_id"]), owner="latest-estimate",
+        fencing_token=int(claimed["fencing_token"]), outgoing_body="新しい見積もり",
+        now=103, origin_at=102, store_outgoing_body=True,
+    )
+    database.mark_click_started(
+        int(action["action_id"]), int(intent["revision"]), owner="latest-estimate",
+        fencing_token=int(claimed["fencing_token"]), now=104,
+    )
+    database.reconcile(
+        int(action["action_id"]), thread_url=thread_url,
+        outgoing_hash=str(intent["outgoing_hash"]), seller_sent_at=105,
+        last_sender="seller", observed_at=106, authoritative_absent=False,
+    )
+
+    readback = database.verified_estimate_after_request(thread_id, 1)
+    assert readback is not None
+    assert readback["event_key"] == new_key
+    bindings = detector._expected_estimate_bindings(args.database, {old_key, new_key})
+    assert bindings == {new_key: (int(action["action_id"]), 2)}
+
+    result = detector.merge_estimate_metrics(
+        {"status": "completed", "effect": 0, "official_readback": 0,
+         "pending": 0, "errors": []},
+        {"estimate_required": 2, "estimate_effect": 1,
+         "estimate_readback": 1, "estimate_pending": 1,
+         "estimate_failed": 0, "errors": [], "estimate_events": [
+             {"thread_id": thread_id, "status": "reconcile_pending",
+              "event_key": old_key, "effect": 0, "official_readback": 0},
+             {"thread_id": thread_id, "status": "verified",
+              "event_key": new_key, "action_id": int(action["action_id"]),
+              "revision": 2, "effect": 1, "official_readback": 1},
+         ]},
+        normal_actionable=0, expected_thread=thread_id,
+        expected_event_keys={old_key, new_key}, expected_event_bindings=bindings,
+    )
+    assert result["status"] == "reconcile_pending"
+    assert result["estimate_effect"] == 1
+    assert result["estimate_readback"] == 1
+
+
+def test_missing_expected_estimate_event_cannot_complete_with_zero_counts():
+    old_key = "coconala:estimate:v1:123:buyer-old"
+    new_key = "coconala:estimate:v1:456:buyer-new"
+    result = detector.merge_estimate_metrics(
+        {"status": "completed", "effect": 0, "official_readback": 0,
+         "pending": 0, "errors": []},
+        {"estimate_required": 2, "estimate_effect": 1,
+         "estimate_readback": 1, "estimate_pending": 0,
+         "estimate_failed": 0, "errors": [], "estimate_events": [{
+             "thread_id": "123", "status": "verified", "event_key": old_key,
+             "action_id": 41, "revision": 1, "effect": 1, "official_readback": 1,
+         }]},
+        normal_actionable=0,
+        expected_event_keys={old_key, new_key},
+        expected_event_bindings={old_key: (41, 1), new_key: (42, 1)},
+    )
+    assert result["status"] == "reconcile_pending"
+    assert result["estimate_effect"] == 0
+    assert result["estimate_readback"] == 0
+    assert result["estimate_pending"] >= 1
+
+
+def test_already_delivered_without_exact_estimate_binding_is_recoverable_pending():
+    thread_id = "123"
+    event_key = outbox.coconala_estimate_event_key(thread_id, "buyer-old")
+
+    class Database:
+        def action_lifecycle_for_event(self, key, received_thread_id):
+            assert (key, received_thread_id) == (event_key, thread_id)
+            return {"state": "replied", "dlq_at": None}
+
+        def verified_estimate_after_request(self, received_thread_id, request_sent_at):
+            assert (received_thread_id, request_sent_at) == (thread_id, 1)
+            return {
+                "event_key": outbox.coconala_estimate_event_key(thread_id, "buyer-new"),
+                "action_id": 42, "revision": 2,
+            }
+
+    result = requested_estimate.execute_requested_estimate(
+        {"talkroom_id": thread_id, "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+         "estimate_request_identity": "buyer-old",
+         "estimate_request_sent_at": "1970-01-01T00:00:01+00:00"},
+        database=Database(), composer=object(), browser_factory=object(),
+        helper=None, owner="test", now=10,
+    )
+    assert result["status"] == "reconcile_pending"
+    assert result["pending"] == 1
+    assert result["official_readback"] == 0
+    assert result["errors"] == ["estimate_already_delivered_binding_missing"]
 
 
 def test_fresh_proof_is_ordered_after_head_and_before_effect(tmp_path):

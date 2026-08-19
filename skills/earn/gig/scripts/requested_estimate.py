@@ -1625,14 +1625,24 @@ def execute_requested_estimate(
     event_key = coconala_estimate_event_key(thread_id, request_identity)
     observed_at = max(0, int(now))
     request_at = _timestamp(item.get("estimate_request_sent_at"))
+
+    def binding_missing() -> dict[str, Any]:
+        result = _result(
+            item, status="reconcile_pending", event_key=event_key, pending=1,
+        )
+        result["errors"] = ["estimate_already_delivered_binding_missing"]
+        return result
+
     lifecycle = database.action_lifecycle_for_event(event_key, thread_id)
     if lifecycle is not None and lifecycle.get("state") == "replied" and lifecycle.get("dlq_at") is None:
         action_fields = _readback_action_fields(
             database, item=item, event_key=event_key,
         )
+        if not action_fields:
+            return binding_missing()
         return _result(
             item, status="already_delivered", event_key=event_key,
-            official_readback=1 if action_fields else 0,
+            official_readback=1,
             **action_fields,
         )
     estimate_url = sanitize_estimate_url(item.get("estimate_url"))
@@ -1651,10 +1661,14 @@ def execute_requested_estimate(
         return result
     result_key = str(action.get("event_key") or event_key)
     if action.get("state") == "replied":
+        action_fields = _readback_action_fields(
+            database, item=item, event_key=result_key,
+        )
+        if not action_fields:
+            return binding_missing()
         return _result(
             item, status="already_delivered", event_key=result_key,
-            action_id=int(action["action_id"]), revision=int(action["revision"]),
-            official_readback=1,
+            official_readback=1, **action_fields,
         )
     delivered = (
         database.verified_estimate_after_request(
@@ -1664,6 +1678,12 @@ def execute_requested_estimate(
         else None
     )
     if delivered is not None:
+        if (
+            str(delivered.get("event_key") or "") != result_key
+            or int(delivered.get("action_id") or 0) != int(action["action_id"])
+            or int(delivered.get("revision") or 0) != int(action["revision"])
+        ):
+            return binding_missing()
         stored = database.close_already_delivered(
             int(action["action_id"]), thread_url=thread_url,
             outgoing_hash=str(delivered["outgoing_hash"]),

@@ -509,10 +509,20 @@ def _expected_estimate_bindings(
         with sqlite3.connect(f"file:{Path(database).resolve()}?mode=ro", uri=True) as connection:
             rows = connection.execute(
                 f"""SELECT e.event_key,a.action_id,a.revision
-                       FROM connector_events e
-                       JOIN connector_actions a ON a.action_id=e.action_id
+                      FROM connector_events e
+                      JOIN connector_actions a ON a.action_id=e.action_id
                       WHERE e.event_key IN ({placeholders})
-                        AND a.state='replied' AND a.dlq_at IS NULL""",
+                        AND a.state='replied' AND a.dlq_at IS NULL
+                        AND NOT EXISTS (
+                          SELECT 1 FROM connector_events newer
+                           WHERE newer.action_id=e.action_id
+                             AND newer.event_key LIKE 'coconala:estimate:v1:%'
+                             AND (
+                               newer.observed_at>e.observed_at
+                               OR (newer.observed_at=e.observed_at
+                                   AND newer.event_key>e.event_key)
+                             )
+                        )""",
                 tuple(event_keys),
             ).fetchall()
     except (OSError, sqlite3.Error):
@@ -583,11 +593,11 @@ def _normalize_estimate_result(
         if has_action_binding:
             if action_id is None or revision is None or action_id <= 0 or revision <= 0:
                 proof_valid = False
-            elif (action_id, revision) in action_bindings:
+        if event_effect_value:
+            if (action_id, revision) in action_bindings:
                 proof_valid = False
             else:
                 action_bindings.add((action_id, revision))
-        if event_effect_value:
             if (
                 event.get("status") != "verified"
                 or event_readback_value != 1
@@ -596,12 +606,23 @@ def _normalize_estimate_result(
             ):
                 proof_valid = False
         elif event_readback_value:
+            if (action_id, revision) in action_bindings:
+                proof_valid = False
+            else:
+                action_bindings.add((action_id, revision))
             if (
                 event.get("status") not in {"verified", "already_delivered"}
                 or not has_action_binding
                 or expected_event_bindings.get(event_key) != (action_id, revision)
             ):
                 proof_valid = False
+        elif event.get("status") in {"reconcile_pending", "honestly_pending", "failed"}:
+            if event_readback_value != 0:
+                proof_valid = False
+        else:
+            proof_valid = False
+    if event_keys != (expected_event_keys or set()):
+        proof_valid = False
     if proof_valid and effect == event_effect and readback == event_readback:
         return normalized
     normalized["estimate_effect"] = 0

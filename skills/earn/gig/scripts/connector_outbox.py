@@ -1252,7 +1252,18 @@ class ConnectorOutbox:
                       AND a.seller_sent_at>=?
                       AND i.state='verified' AND i.outgoing_body IS NOT NULL
                       AND e.event_key LIKE 'coconala:estimate:v1:%'
-                    ORDER BY a.seller_sent_at DESC,a.action_id DESC,e.observed_at
+                      AND NOT EXISTS (
+                        SELECT 1 FROM connector_events newer
+                         WHERE newer.action_id=e.action_id
+                           AND newer.event_key LIKE 'coconala:estimate:v1:%'
+                           AND (
+                             newer.observed_at>e.observed_at
+                             OR (newer.observed_at=e.observed_at
+                                 AND newer.event_key>e.event_key)
+                           )
+                      )
+                    ORDER BY a.seller_sent_at DESC,a.action_id DESC,
+                             e.observed_at DESC,e.event_key DESC
                     LIMIT 1""",
                 (thread_id, request_sent_at),
             ).fetchone()
