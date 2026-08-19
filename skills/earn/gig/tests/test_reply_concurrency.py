@@ -801,7 +801,7 @@ def test_only_latest_coalesced_estimate_binds_current_revision(tmp_path):
         event_key=old_key, thread_id=thread_id, thread_url=thread_url, observed_at=100,
     )
     advanced = database.enqueue_estimate(
-        event_key=new_key, thread_id=thread_id, thread_url=thread_url, observed_at=101,
+        event_key=new_key, thread_id=thread_id, thread_url=thread_url, observed_at=100,
     )
     assert advanced["action_id"] == action["action_id"]
     assert advanced["revision"] == 2

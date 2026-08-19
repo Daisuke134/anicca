@@ -517,11 +517,7 @@ def _expected_estimate_bindings(
                           SELECT 1 FROM connector_events newer
                            WHERE newer.action_id=e.action_id
                              AND newer.event_key LIKE 'coconala:estimate:v1:%'
-                             AND (
-                               newer.observed_at>e.observed_at
-                               OR (newer.observed_at=e.observed_at
-                                   AND newer.event_key>e.event_key)
-                             )
+                             AND newer.rowid>e.rowid
                         )""",
                 tuple(event_keys),
             ).fetchall()
