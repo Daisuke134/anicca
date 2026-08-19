@@ -16,18 +16,16 @@ or runtime state.
 
 Execute only these items, in order:
 
-1. Close the missing fresh adversarial review for the priced-estimate category fix in item 3.
-   Production already proves the behavior; the review must try to falsify its safety contract.
-2. Audit the tracked `skills/earn/gig/` tree and its reachable Git history for credentials,
+1. Audit the tracked `skills/earn/gig/` tree and its reachable Git history for credentials,
    customer content, account identifiers, absolute owner paths, and committed runtime evidence.
    Remove or redact any public-data violation before continuing.
-3. From a fresh clone of public `main`, run the package's non-mutating tests and configuration /
+2. From a fresh clone of public `main`, run the package's non-mutating tests and configuration /
    plist generation using only documented local configuration. Do not reuse this machine's
    private state as proof of portability.
-4. Make `README.md` match that clean-clone evidence: exact dependencies, local secret/state
+3. Make `README.md` match that clean-clone evidence: exact dependencies, local secret/state
    boundaries, install, status, upgrade and uninstall steps. Every documented command must be
    exercised from the fresh clone.
-5. Re-run the public-tree audit and clean-clone acceptance, then record the exact commit and
+4. Re-run the public-tree audit and clean-clone acceptance, then record the exact commit and
    evidence here. That closes this milestone. Items 0b, 1, 2, 4, 5 and 6 remain product/runtime
    work and do not block publishing the package unless the audit finds private data in them.
 
@@ -170,7 +168,7 @@ before anything widens what reads this file.
 
 ---
 
-## 3. ~~The estimate lane refuses one thread forever — the counts disagree~~ — FIXED LIVE, REVIEW OPEN
+## 3. ~~The estimate lane refuses one thread forever — the counts disagree~~ — CLOSED
 
 Commit `9b3572533` removes the false DOM/mapping count equality from both category waits while
 retaining the control-enabled, row-visible, non-empty-option and exact-label requirements. The
@@ -178,10 +176,16 @@ installed immutable release `056ee1f1c...` contains that commit. Fresh natural N
 now complete with `estimate_required: 6`, `estimate_readback: 6`, and `estimate_failed: 0`; the
 former 55-of-56 pass failure is no longer present.
 
-The code was shipped before the required fresh adversarial review was recorded. Do not reopen
-the implementation based on the stale symptom below. The only remaining action for this item is
-a read-only adversarial review of the priced-offer safety contract; record its evidence here and
-then mark the item fully closed.
+Fresh Sol/High read-only review returned `ship`. It found one fail-open edge before that verdict:
+an absent category-type row produced `row_hidden: false`, so the required branch did not prove
+that the row existed. The follow-up adds `row_present: !!row` and requires it in both category
+wait paths. A targeted regression test failed before that production change and now passes for
+both paths while preserving the optional disabled+hidden+zero-option shape and exact-one-label
+guard. Final evidence: targeted tests 2/2, Python compilation and `git diff --check` pass; the
+full gig suite is 124 passed with one known unrelated stale Storefront fixture failure. The
+reviewer's residual risk is that the new regression is a generated-JavaScript contract test,
+not a browser execution against a half-rendered DOM. The change only strengthens rejection when
+the row is absent; the prior natural-run evidence remains the proof for the normal live path.
 
 **Historical root cause:** estimate revenue on one thread was blocked. It was not a race, and
 waiting longer could not help.
