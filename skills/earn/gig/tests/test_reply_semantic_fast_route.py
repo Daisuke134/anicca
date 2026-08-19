@@ -293,6 +293,14 @@ def test_semantic_prompt_v15_uses_verified_application_scope_without_blanket_ref
     assert "required_official_context=application" in prompt
     assert "対応可能です" in prompt
     assert "対応可能とはお約束できません" not in prompt
+    assert (
+        "required_official_context=applicationは、特定の応募proposalのexact価格・納期・本文を参照しなければ答えられない時だけです。"
+        "一般的な経験・能力・稼働可否の質問には使いません。"
+    ) not in prompt
+    assert "current buyerのcapability・対応scope・sampleを特定の応募applicationの明示scopeと照合" in prompt
+    assert "application contextと無関係な一般的な経験・能力・稼働可否の質問だけでは使いません" in prompt
+    assert "この会話で確認できる事実としては断言できません" not in prompt
+    assert "未確認historyの不在や経験不足を自発的に説明したり、対応不可を先頭に置いたりしません" in prompt
     assert "動画編集、字幕・テロップ挿入、映像加工、完成動画書き出しは対応不能です。" not in prompt
     assert "Care Earth Mart" in prompt
     assert "選定用ラフ" in prompt
