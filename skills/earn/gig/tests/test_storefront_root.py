@@ -17,6 +17,18 @@ import kpi_readback_audit as kpi  # noqa: E402
 import storefront_direct as storefront  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _synthetic_service_ids(monkeypatch):
+    """Give explicit-bundle preflight a non-private contract boundary."""
+    for name, value in {
+        "GIG_STOREFRONT_TARGET_SERVICE_ID": "90000001",
+        "GIG_STOREFRONT_GALLERY_SERVICE_ID": "90000002",
+        "GIG_STOREFRONT_PRESENTATION_SERVICE_ID": "90000004",
+        "GIG_STOREFRONT_SCOPE_SERVICE_ID": "90000005",
+    }.items():
+        monkeypatch.setenv(name, value)
+
+
 def _bundle(
     root: Path, *, hero_image_contract: str = "../assets/hero.json", image_asset: str = "hero.png",
 ) -> None:

@@ -20,6 +20,8 @@ def _args(tmp_path: Path):
     args.state_dir = tmp_path / "state"
     args.output = None
     args.operator_brake = tmp_path / "storefront.operator.brake"
+    args.ensure_browser_script = tmp_path / "ensure-browser.sh"
+    args.ensure_browser_script.write_text("#!/bin/sh\nprintf 'ALIVE\\n'\n", encoding="utf-8")
     args.lease_script = tmp_path / "lease.py"
     args.runner = tmp_path / "runner.py"
     args.schema = tmp_path / "schema.json"
@@ -32,59 +34,6 @@ def _args(tmp_path: Path):
     args.telegram_receipt_dir = tmp_path / "telegram-receipts"
     args.telegram_target = ""
     return args
-
-
-def test_noop_observes_on_one_lease_and_commits_only_after_release(tmp_path, monkeypatch):
-    events = []
-    lease = {"ok": True, "ws": "ws://127.0.0.1/page/1", "token": "t", "generation": 2,
-             "context_id": "c", "target_id": "p"}
-
-    def lease_call(_script, command, task, value=None):
-        events.append(command)
-        if command == "release":
-            return {"ok": True, "released": task}
-        return lease
-
-    def observe(*, output_path, ws_url, include_contract_sources=False):
-        events.append(("observe", ws_url))
-        sources = [{
-            "service_id": str(i + 1), "public_url": f"https://coconala.com/services/{i + 1}",
-            "title": f"service {i + 1}", "state": "公開中", "price_jpy": 1000,
-            "category": "category", "public_text": f"サービス内容\nscope {i + 1}\n購入にあたってのお願い",
-            "public_content_sha256": direct.hashlib.sha256(
-                f"サービス内容\nscope {i + 1}\n購入にあたってのお願い".encode()
-            ).hexdigest(),
-        } for i in range(11)]
-        return {"service_count": 11, "services": [{"service_id": str(i + 1)} for i in range(11)],
-                "content_sha256": "a" * 64, "observed_at": "2026-08-15T00:00:00+00:00",
-                "_contract_sources": sources if include_contract_sources else []}
-
-    monkeypatch.setattr(direct, "_lease", lease_call)
-    monkeypatch.setattr(direct, "_collect_competitors", lambda *_args: {"sources": [{}] * 7})
-    monkeypatch.setattr(direct, "_observe_own_page", lambda *_args, **_kwargs: {"body": "FAQなし"})
-    monkeypatch.setattr(direct, "_collect_analytics", lambda *_args, **_kwargs: {
-        "snapshot_key": "storefront:analytics:v1:test",
-    })
-    monkeypatch.setattr(direct, "_invoke_judge", lambda **_kwargs: {})
-    monkeypatch.setattr(direct, "_guard_judgement", lambda *_args, **_kwargs: {
-        "decision": "no_op", "no_op_reason": "no evidence", "service_id": None,
-        "changed_field": None, "experiment_key": None,
-    })
-    import listing_inventory
-    monkeypatch.setattr(listing_inventory, "observe_storefront", observe)
-    code, row = direct.run_once(_args(tmp_path))
-
-    assert code == 0, row
-    assert events == ["acquire", ("observe", lease["ws"]), "heartbeat", "release"]
-    assert row["status"] == "completed" and row["effect"] == row["duplicate"] == 0
-    assert row["official_services_read"] == 11 and row["lease"]["released"] is True
-    assert row["offer_contracts_appended"] == 11
-    assert row["competitor_evidence_count"] == 7
-    persisted = json.loads((tmp_path / "state" / "current.json").read_text())
-    assert persisted == row
-    assert json.loads((tmp_path / "state" / "wakes.jsonl").read_text()) == row
-    for name in direct.STATE_FILES:
-        assert (tmp_path / "state" / name).exists()
 
 
 @pytest.mark.parametrize("case", ("missing", "duplicate", "substituted"))
@@ -111,14 +60,17 @@ def test_invalid_official_contract_fails_before_downstream_work_and_releases_lea
             "public_content_sha256": direct.hashlib.sha256(text.encode()).hexdigest(),
         }
 
-    services = [{"service_id": "91000001"}]
+    primary_id = "99000001"
+    duplicate_id = "99000003"
+    substituted_id = "99000009"
+    services = [{"service_id": primary_id}]
     if case == "missing":
         sources = []
     elif case == "duplicate":
-        services = [{"service_id": "91000001"}, {"service_id": "4330369"}]
-        sources = [source("91000001"), source("91000001")]
+        services = [{"service_id": primary_id}, {"service_id": duplicate_id}]
+        sources = [source(primary_id), source(primary_id)]
     else:
-        sources = [source("9999999")]
+        sources = [source(substituted_id)]
 
     def observe(*, output_path, ws_url, include_contract_sources=False):
         return {"service_count": len(services), "services": services,
@@ -156,6 +108,14 @@ def test_invalid_official_contract_fails_before_downstream_work_and_releases_lea
     monkeypatch.setattr(direct, "_invoke_judge", invoke)
     monkeypatch.setattr(direct, "_guard_judgement", lambda *_args, **_kwargs: judgement)
     monkeypatch.setattr(direct, "_execute_faq_effect", lambda **_kwargs: downstream.append("effect"))
+    monkeypatch.setattr(direct, "_dispatch_report", lambda *_args: {
+        "status": "delivery_unknown", "message_id": None, "event_key": "synthetic",
+    })
+    monkeypatch.setattr(direct, "_preflight_storefront_bundle", lambda: None)
+    monkeypatch.setattr(
+        direct.subprocess, "run",
+        lambda argv, **_kwargs: direct.subprocess.CompletedProcess(argv, 0, "ALIVE\n", ""),
+    )
     import listing_inventory
     monkeypatch.setattr(listing_inventory, "observe_storefront", observe)
 
@@ -173,12 +133,96 @@ def test_invalid_official_contract_fails_before_downstream_work_and_releases_lea
 def test_storefront_brake_prevents_lease_and_observation(tmp_path, monkeypatch):
     args = _args(tmp_path)
     args.operator_brake.write_text("held")
-    monkeypatch.setattr(direct, "_lease", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+    blocked = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError())
+    monkeypatch.setattr(direct, "_preflight_storefront_bundle", blocked)
+    monkeypatch.setattr(direct, "_lease", blocked)
+    monkeypatch.setattr(direct.subprocess, "run", blocked)
 
     code, row = direct.run_once(args)
 
     assert code == 0, row
     assert row["status"] == "operator_brake" and row["effect"] == 0
+
+
+def test_incremental_storefront_wake_validates_inventory_releases_lease_and_persists(tmp_path, monkeypatch):
+    """A successful no-op wake keeps the public observation lifecycle intact.
+
+    The inventory boundary is synthetic, but contract-ledger and receipt persistence are
+    production code.  No browser, private bundle, or network transport can run here.
+    """
+    args = _args(tmp_path)
+    args.incremental = True
+    args.accounting_cutoff_epoch = 1_700_000_000
+    args.listing_contract_dir = tmp_path / "listing-contracts"
+    args.listing_contract_families = tmp_path / "families.json"
+    args.reply_transcripts = tmp_path / "reply-transcripts.jsonl"
+    args.applied = tmp_path / "applied.jsonl"
+    args.earnings = tmp_path / "earnings.jsonl"
+    args.projects_dir = tmp_path / "projects"
+    args.negotiate_context_acks = tmp_path / "context-acks.jsonl"
+    events: list[str] = []
+    service_id = "90000001"
+    public_text = "サービス内容\nsynthetic scope\n購入にあたってのお願い"
+    source = {
+        "service_id": service_id,
+        "public_url": f"https://coconala.com/services/{service_id}",
+        "title": "synthetic listing",
+        "state": "公開中",
+        "price_jpy": 1000,
+        "category": "IT相談/プログラミング",
+        "public_text": public_text,
+        "public_content_sha256": direct.hashlib.sha256(public_text.encode()).hexdigest(),
+    }
+    lease = {
+        "ok": True, "ws": "ws://127.0.0.1/page/1", "token": "synthetic-token",
+        "generation": 1, "context_id": "synthetic-context", "target_id": "synthetic-target",
+    }
+
+    def lease_call(_script, command, task, value=None):
+        events.append(command)
+        if command == "release":
+            assert value == lease
+            return {"ok": True, "released": task}
+        return lease
+
+    def browser(argv, **_kwargs):
+        assert argv == ["/bin/bash", str(args.ensure_browser_script)]
+        events.append("browser")
+        return direct.subprocess.CompletedProcess(argv, 0, "ALIVE\n", "")
+
+    def observe(*, output_path, ws_url, include_contract_sources=False):
+        assert ws_url == lease["ws"] and include_contract_sources is True
+        events.append("observe")
+        return {
+            "service_count": 1, "services": [{"service_id": service_id}],
+            "content_sha256": "a" * 64, "observed_at": "2026-08-19T00:00:00+00:00",
+            "_contract_sources": [source],
+        }
+
+    listing_contract = {
+        "service_id": service_id, "service_version_sha256": "b" * 64,
+        "contract_key": "synthetic-contract", "offer": {}, "inquiry_playbook": {},
+    }
+    monkeypatch.setattr(direct, "_preflight_storefront_bundle", lambda: None)
+    monkeypatch.setattr(direct.subprocess, "run", browser)
+    monkeypatch.setattr(direct, "_lease", lease_call)
+    monkeypatch.setattr(direct, "_load_listing_contracts", lambda *_args: [listing_contract])
+    monkeypatch.setattr(direct, "_join_funnel", lambda *_args, **_kwargs: {"version": 1})
+    monkeypatch.setattr(direct, "_allocate_portfolio", lambda *_args, **_kwargs: {"version": 1})
+    monkeypatch.setattr(direct, "_dispatch_report", lambda *_args: {"status": "suppressed"})
+    import listing_inventory
+    monkeypatch.setattr(listing_inventory, "observe_storefront", observe)
+
+    code, row = direct.run_once(args)
+
+    assert code == 0, row
+    assert row["status"] == "completed" and row["effect"] == row["readback"] == 0
+    assert row["official_services_read"] == 1
+    assert row["lease"]["released"] is True
+    assert events == ["browser", "acquire", "observe", "release"]
+    assert len((args.state_dir / "offer-contracts.jsonl").read_text(encoding="utf-8").splitlines()) == 1
+    assert json.loads((args.state_dir / "current.json").read_text(encoding="utf-8")) == row
+    assert json.loads((args.state_dir / "wakes.jsonl").read_text(encoding="utf-8")) == row
 
 
 def test_storefront_report_reuses_outbox_receipt_and_dedupes_noop(tmp_path, monkeypatch):

@@ -4981,6 +4981,17 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
     args.state_dir.mkdir(parents=True, exist_ok=True)
     output = args.output or args.state_dir / "current.json"
     try:
+        brake_held = args.operator_brake.exists()
+    except OSError as error:
+        row = _receipt(pass_id, status="failed", reason=f"operator_brake_check_failed:{error}")
+        row = _persist_receipt(args, output, row)
+        return 1, row
+    if brake_held:
+        row = _receipt(pass_id, status="operator_brake", reason="storefront_operator_brake_held")
+        row = _persist_receipt(args, output, row)
+        return 0, row
+
+    try:
         _preflight_storefront_bundle()
     except RuntimeError as error:
         row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__)
@@ -4995,16 +5006,6 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__)
             row = _persist_receipt(args, output, row)
             return 1, row
-    try:
-        brake_held = args.operator_brake.exists()
-    except OSError as error:
-        row = _receipt(pass_id, status="failed", reason=f"operator_brake_check_failed:{error}")
-        row = _persist_receipt(args, output, row)
-        return 1, row
-    if brake_held:
-        row = _receipt(pass_id, status="operator_brake", reason="storefront_operator_brake_held")
-        row = _persist_receipt(args, output, row)
-        return 0, row
 
     lock_path = args.state_dir / "owner.lock"
     with lock_path.open("a+", encoding="utf-8") as owner_lock:
