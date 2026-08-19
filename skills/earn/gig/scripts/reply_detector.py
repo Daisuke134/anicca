@@ -327,6 +327,7 @@ def _oldest_actionable(items: Any) -> str | None:
 
 def _verified_events(
     events: Any, expected_replied: int | None, *, expected_thread: str | None = None,
+    expected_action_id: int | None = None,
 ) -> list[dict[str, Any]] | None:
     if not isinstance(events, list) or expected_replied is None:
         return None
@@ -337,6 +338,8 @@ def _verified_events(
         action_id = _count(event.get("action_id"))
         revision = _count(event.get("revision"))
         if action_id is None or revision is None or action_id <= 0 or revision <= 0:
+            return None
+        if expected_action_id is not None and action_id != expected_action_id:
             return None
         if not isinstance(event.get("talkroom_id"), str) or not event["talkroom_id"].strip():
             return None
@@ -452,8 +455,47 @@ def run_requested_estimate(snapshot: dict[str, Any], *, args: Any, owner: str, n
     )
 
 
-def merge_estimate_metrics(result: dict[str, Any], estimate_result: dict[str, Any], *, normal_actionable: int | None) -> dict[str, Any]:
+def _normalize_estimate_result(
+    estimate_result: dict[str, Any], *, expected_thread: str | None = None,
+) -> dict[str, Any]:
+    """Never publish an estimate effect without matching official readback."""
+    normalized = dict(estimate_result)
+    effect = _count(normalized.get("estimate_effect"))
+    readback = _count(normalized.get("estimate_readback"))
+    if not effect:
+        return normalized
+    events = normalized.get("estimate_events")
+    verified = [event for event in events if isinstance(event, dict)
+                and event.get("status") == "verified"
+                and str(event.get("thread_id") or "").strip()
+                and (expected_thread is None or str(event["thread_id"]).strip() == expected_thread)
+                ] if isinstance(events, list) else []
+    if (
+        readback is not None
+        and readback >= effect
+        and len(verified) >= effect
+    ):
+        return normalized
+    normalized["estimate_effect"] = 0
+    normalized["estimate_readback"] = 0
+    normalized["estimate_pending"] = max(
+        _count(normalized.get("estimate_pending")) or 0, effect, 1,
+    )
+    errors = list(normalized.get("errors") or [])
+    if "estimate_verified_readback_missing" not in errors:
+        errors.append("estimate_verified_readback_missing")
+    normalized["errors"] = errors
+    return normalized
+
+
+def merge_estimate_metrics(
+    result: dict[str, Any], estimate_result: dict[str, Any], *,
+    normal_actionable: int | None, expected_thread: str | None = None,
+) -> dict[str, Any]:
     """Project estimate outcomes into the one wake truth without relabelling them."""
+    estimate_result = _normalize_estimate_result(
+        estimate_result, expected_thread=expected_thread,
+    )
     estimate_required = _count(estimate_result.get("estimate_required"))
     estimate_effect = _count(estimate_result.get("estimate_effect"))
     estimate_readback = _count(estimate_result.get("estimate_readback"))
@@ -824,7 +866,7 @@ def _paid_fence_open_for_thread(path: Path, thread_id: str) -> bool:
 
 
 def _targeted_effect_result(
-    lane: dict[str, Any], *, thread_id: str,
+    lane: dict[str, Any], *, thread_id: str, action_id: int | None = None,
 ) -> dict[str, Any]:
     events = lane.get("events") if isinstance(lane.get("events"), list) else []
     counts = {
@@ -837,6 +879,7 @@ def _targeted_effect_result(
     }
     verified = _verified_events(
         events, counts["replied"], expected_thread=thread_id or None,
+        expected_action_id=action_id,
     )
     errors = list(lane.get("errors") or [])
     pending = counts["pending_verify"] + counts["reconcile_pending"]
@@ -1011,20 +1054,45 @@ def _run_effect_pipeline(
         "estimate_readback": 0, "estimate_pending": 0,
         "estimate_failed": 0, "estimate_events": [], "errors": [],
     }
-    if estimate_required or (not target and any(
-        isinstance(item, dict) and item.get("estimate_required") is True
-        for item in (snapshot.get("inquiries") or [])
-    )):
+    estimate_candidates = [
+        item for item in (snapshot.get("inquiries") or [])
+        if isinstance(item, dict) and item.get("estimate_required") is True
+    ]
+    fenced_estimates = [
+        item for item in estimate_candidates
+        if not target and _paid_fence_open_for_thread(
+            fences_path, str(item.get("talkroom_id") or item.get("thread_id") or ""),
+        )
+    ]
+    if estimate_required or (not target and estimate_candidates):
         estimate_args = argparse.Namespace(
             database=database, manifest=manifest, runner=runner,
             estimate_schema=estimate_schema, cdp_helper=helper,
         )
+        estimate_snapshot = snapshot
+        if fenced_estimates:
+            estimate_snapshot = dict(snapshot)
+            estimate_snapshot["inquiries"] = [
+                item for item in snapshot.get("inquiries", [])
+                if item not in fenced_estimates
+            ]
         try:
             estimate_result = run_requested_estimate(
-                snapshot, args=estimate_args,
+                estimate_snapshot, args=estimate_args,
                 owner=f"gig-estimate-{('targeted-' if target else 'detector-')}{run_id}",
                 now=int(time.time()),
             )
+            if fenced_estimates:
+                estimate_result = dict(estimate_result)
+                estimate_result["estimate_required"] = (
+                    _count(estimate_result.get("estimate_required")) or 0
+                ) + len(fenced_estimates)
+                estimate_result["estimate_pending"] = (
+                    _count(estimate_result.get("estimate_pending")) or 0
+                ) + len(fenced_estimates)
+                estimate_result["errors"] = list(estimate_result.get("errors") or []) + [
+                    "estimate_effect_blocked_paid_fence" for _ in fenced_estimates
+                ]
         except Exception as error:
             estimate_result = {
                 "estimate_required": 1, "estimate_effect": 0,
@@ -1046,7 +1114,10 @@ def _run_effect_pipeline(
             "closed_without_send": 0, "pending": _count(estimate_result.get("estimate_pending")) or 0,
             "events": [], "errors": list(estimate_result.get("errors") or []),
         }
-        return merge_estimate_metrics(result, estimate_result, normal_actionable=0)
+        return merge_estimate_metrics(
+            result, estimate_result, normal_actionable=0,
+            expected_thread=thread_id,
+        )
 
     _run("reply_lane", [
         sys.executable, str(lane_script), "--queue", str(queue_path),
@@ -1062,11 +1133,13 @@ def _run_effect_pipeline(
         raise ValueError("reply lane result must be an object")
     result = _targeted_effect_result(
         lane, thread_id=thread_id if target else "",
+        action_id=int(target["action_id"]) if target else None,
     )
     result["run_id"] = run_id
     result = merge_estimate_metrics(
         result, estimate_result,
         normal_actionable=(len(queue_value.get("items")) if isinstance(queue_value.get("items"), list) else None),
+        expected_thread=thread_id if target else None,
     )
     return result
 
