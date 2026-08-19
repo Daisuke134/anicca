@@ -944,16 +944,18 @@ def _collect_targeted_head(
     command = [
         sys.executable, str(_targeted_arg(args, "snapshot_script", gig_root / "scripts/coconala_queue_snapshot.py")),
         "--output", str(path), "--evidence-dir", str(evidence / "direct-head"),
-        "--mode", "direct-inbox-head-only", "--hidden-no-screenshot",
+        "--mode", "direct-thread-head-only", "--talkroom-id", thread_id,
+        "--hidden-no-screenshot",
         "--database", str(_targeted_arg(args, "database", Path.home() / "gig/connector-outbox.sqlite3")),
         "--manifest", str(_targeted_arg(args, "manifest", gig_root / "config/connectors/coconala.json")),
     ]
     _run("head_collect", command)
     value = _targeted_snapshot(path)
     if (
-        value.get("collector_mode") != "direct-inbox-head-only"
+        value.get("collector_mode") != "direct-thread-head-only"
         or value.get("head_only") is not True
         or value.get("read_only") is not True
+        or value.get("semantic_ssot") is not False
         or not isinstance(value.get("inquiries"), list)
     ):
         raise ValueError("targeted head proof incomplete")
@@ -1517,7 +1519,12 @@ def _supervisor_rebind_targeted_work(
     side = str(result.get("current_last_message_side") or "")
     event_key = coconala_inbox_event_key(thread_id, identity)
     thread_url = f"https://coconala.com/mypage/direct_message/{thread_id}"
-    if side == "buyer":
+    if side in {"buyer", ""}:
+        # The cheap direct-inbox-head collector does not always expose the
+        # sender side (it can be null while still returning a fresh identity).
+        # Rebind that exact identity and let the authoritative direct-thread
+        # read decide whether it is buyer-actionable; an unknown side is never
+        # itself treated as permission to send.
         action = outbox.enqueue(
             event_key=event_key, thread_id=thread_id,
             thread_url=thread_url, observed_at=now,

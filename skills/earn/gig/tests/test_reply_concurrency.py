@@ -1274,6 +1274,144 @@ def test_head_only_snapshot_is_bounded_read_only_and_semantic_free(tmp_path, mon
     assert_allowed_keys(cli)
 
 
+def test_direct_thread_head_only_is_exact_and_semantic_free(tmp_path, monkeypatch, capsys):
+    output = tmp_path / "thread-head.json"
+    evidence = tmp_path / "evidence"
+    opened = []
+    seen = {}
+    forbidden = "BUYER_BODY_SENTINEL"
+
+    class FakeTab:
+        ws = "ws://thread-head-only"
+
+        def __init__(self, helper, url, *, hidden=False, **kwargs):
+            opened.append((helper, url, hidden, kwargs))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+    async def fake_inspect_message_page(ws_url, expression, expected_url, **kwargs):
+        seen["inspect"] = (ws_url, expression, expected_url, kwargs)
+        return {
+            "url": expected_url,
+            "title": "メッセージ詳細",
+            "container_present": True,
+            "own_user_path": "/users/seller",
+            "messages": [{
+                "message_id": "buyer-2",
+                "author_path": "/users/buyer",
+                "sent_at": "2026-08-19T00:01:00+00:00",
+                "body": forbidden,
+            }],
+        }
+
+    class SemanticMustNotLoad:
+        class SemanticJudge:
+            def __init__(self, **kwargs):
+                raise AssertionError("direct-thread-head-only must not initialize SemanticJudge")
+
+    def semantic_module_must_not_load():
+        raise AssertionError("direct-thread-head-only must not load semantic module")
+
+    monkeypatch.setattr(snapshot, "DefaultTab", FakeTab)
+    monkeypatch.setattr(snapshot, "inspect_message_page", fake_inspect_message_page)
+    monkeypatch.setattr(snapshot, "load_connector_manifest", lambda: {})
+    monkeypatch.setattr(snapshot, "_requested_estimate_module", semantic_module_must_not_load)
+    monkeypatch.setattr(
+        sys, "argv", [
+            "coconala_queue_snapshot.py", "--output", str(output),
+            "--evidence-dir", str(evidence), "--mode", "direct-thread-head-only",
+            "--talkroom-id", "123",
+        ],
+    )
+
+    assert snapshot.main() == 0
+    cli = json.loads(capsys.readouterr().out)
+    saved = json.loads(output.read_text(encoding="utf-8"))
+    persisted = [saved, *(
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in evidence.rglob("*.json")
+    )]
+    assert cli["collector_mode"] == "direct-thread-head-only"
+    assert cli["semantic_ssot"] is False
+    assert saved["collector_mode"] == "direct-thread-head-only"
+    assert saved["semantic_ssot"] is False
+    assert saved["read_only"] is True
+    assert saved["inquiries"] == [{
+        "talkroom_id": "123",
+        "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+        "last_message_identity_sha256": saved["inquiries"][0]["last_message_identity_sha256"],
+        "last_message_side": "buyer",
+        "buyer_sent_at": "2026-08-19T00:01:00+00:00",
+        "reply_required": True,
+    }]
+    assert saved["source_receipt"]["source"] == "direct_thread"
+    assert seen["inspect"][2] == "https://coconala.com/mypage/direct_message/123"
+    assert opened and opened[0][1] == seen["inspect"][2]
+    serialized = json.dumps(persisted, ensure_ascii=False)
+    assert forbidden not in serialized
+
+
+def test_targeted_preflight_uses_exact_thread_head_not_inbox_list(tmp_path, monkeypatch):
+    output = tmp_path / "targeted-head.json"
+    calls = []
+    list_identity = "a" * 64
+    exact_identity = "b" * 64
+    args = SimpleNamespace(
+        snapshot_script=SNAPSHOT_PATH,
+        database=tmp_path / "outbox.sqlite3",
+        manifest=GIG_ROOT / "config" / "connectors" / "coconala.json",
+    )
+
+    def fake_run(step, command):
+        calls.append((step, command))
+        mode = command[command.index("--mode") + 1]
+        output_path = Path(command[command.index("--output") + 1])
+        thread_id = command[command.index("--talkroom-id") + 1] if "--talkroom-id" in command else "123"
+        if mode == "direct-inbox-head-only":
+            row = {
+                "talkroom_id": thread_id,
+                "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+                "last_message_identity_sha256": list_identity,
+                "last_message_side": "seller",
+            }
+            snapshot_value = {
+                "collector_mode": mode, "head_only": True, "read_only": True,
+                "inquiries": [row],
+            }
+        else:
+            row = {
+                "talkroom_id": thread_id,
+                "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+                "last_message_identity_sha256": exact_identity,
+                "last_message_side": "buyer",
+                "buyer_sent_at": "2026-08-19T00:01:00+00:00",
+                "reply_required": True,
+            }
+            snapshot_value = {
+                "collector_mode": mode, "head_only": True, "read_only": True,
+                "inquiries": [row],
+                "source_receipt": {"source": "direct_thread"},
+            }
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(snapshot_value), encoding="utf-8")
+
+    monkeypatch.setattr(detector, "_run", fake_run)
+    row = detector._collect_targeted_head(
+        args, evidence=tmp_path / "evidence", thread_id="123",
+        identity_sha256=exact_identity,
+    )
+
+    assert row["last_message_identity_sha256"] == exact_identity
+    assert len(calls) == 1
+    command = calls[0][1]
+    assert command[command.index("--mode") + 1] == "direct-thread-head-only"
+    assert command[command.index("--talkroom-id") + 1] == "123"
+
+
 def test_direct_thread_only_owns_exact_url_and_emits_one_semantic_inquiry(
     tmp_path, monkeypatch, capsys,
 ):
@@ -1681,6 +1819,36 @@ def test_supervise_rebind_seller_last_closes_stale_action_without_dispatch(tmp_p
         ).fetchall()
     assert [row[0] for row in events] == [old_event_key]
     assert new_event_key not in {row[0] for row in events}
+
+
+def test_supervise_rebinds_unknown_head_side_for_authoritative_thread_read(tmp_path):
+    """A head-only null side rebinds; the full thread read still gates sending."""
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    old_identity = "a" * 64
+    new_identity = "b" * 64
+    old_event_key = _seed_pending_inbox_event(database, old_identity)
+    work = detector._supervisor_work_from_action(database.pending_actions()[0])
+    assert work is not None
+
+    rebound = detector._supervisor_rebind_targeted_work(
+        database,
+        work,
+        {
+            "status": "pending",
+            "errors": ["targeted_inbox_identity_changed"],
+            "current_identity_sha256": new_identity,
+            "current_last_message_side": "",
+        },
+        now=1_755_555_201,
+    )
+
+    assert rebound is not None
+    assert rebound["event_key"] == outbox.coconala_inbox_event_key("123", new_identity)
+    assert rebound["expected_revision"] == 2
+    pending = database.pending_targeted_actions()
+    assert [row["event_key"] for row in pending] == [rebound["event_key"]]
+    assert old_event_key != rebound["event_key"]
 
 
 def test_supervise_rebind_seller_last_does_not_close_newer_buyer_revision(tmp_path):
