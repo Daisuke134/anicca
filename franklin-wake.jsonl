@@ -30647,3 +30647,8 @@
 {"ts":1787126684,"wake_id":"00MSZT3372AA435A1668BC471B","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787126860,"wake_id":"00MSZT6UHT887B0A087197449E","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787127088,"wake_id":"00MSZTBQVV5E5B67B93A374B7A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787127289,"wake_id":"00MSZTG2893AFE92ED1EF34EC7","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787127458,"wake_id":"00MSZTJNZQA464F8CC71864458","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787127695,"wake_id":"00MSZTOQZP6C20CAAF6D304608","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787127892,"wake_id":"00MSZTSYVG957E4983A7194B68","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787128064,"wake_id":"00MSZTWNNE0CEEACB133C3410C","kind":"narrate","sleep_s":120,"model":"auto"}
