@@ -8,9 +8,27 @@ The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 
 ---
 
-## 0a. The apply lane refuses 35% of the board for work it can actually do
+## 0a. ~~The apply lane refuses 35% of the board for work it can actually do~~ — WRONG, CLOSED
 
-**This is the revenue lever.** Measured on `~/gig/b2-ineligible-cache.json`: 249 cached
+**I argued this and the seller corrected it: the loop took video editing work once and
+delivered it badly. It does not do that work again.** `video_or_animation` stays exactly as it
+is, and so do the other six classes. There is no lever here.
+
+The mistake is worth keeping written down, because it is easy to make again: I reasoned from
+"this machine has Remotion, reelclaw, monk-factory, so it edits video" to "it can take video
+editing jobs". Owning the tools is not the same as delivering an edit a paying client accepts,
+and the only evidence that settles it is what happened when it was tried. I had the refusal
+counts and no delivery outcomes, and treated the counts as the whole story.
+
+So the honest reading of the numbers below is the opposite of what I wrote: **apply submitting
+nothing is not a system problem to be unlocked. Six of seven classes are correct, and the
+seventh is correct too.** The board genuinely does not have much this seller can do well, and
+the remaining lever is on the storefront and negotiate side — being faster and clearer on the
+work that does fit — not on widening what gets accepted.
+
+### The measurement, kept because it is still the map of the board
+
+Measured on `~/gig/b2-ineligible-cache.json`: 249 cached
 ineligible postings, and **every one of them is `hard_prohibited`**. Not one was turned down for
 being unwinnable, mispriced or outside the seller's skill. Every refusal is a policy class this
 loop applies to itself:
@@ -25,24 +43,16 @@ loop applies to itself:
 | 8 | `missing_legal_qualification` |
 | 1 | `illegal_or_unsafe` |
 
-Six of those seven are correct and should stay: you cannot go somewhere and assemble a thing,
-appear on camera, hold a licence you do not hold, claim a history you do not have, or take work
-from someone who wrote "no AI".
+All seven are correct and stay. You cannot go somewhere and assemble a thing, appear on camera,
+hold a licence you do not hold, claim a history you do not have, or take work from someone who
+wrote "no AI" — and video editing was tried and delivered badly, which is the same answer
+arrived at the expensive way.
 
-`video_or_animation` is the one that is wrong, and it is the largest by a distance. Reading what
-the 88 postings actually ask for: "編集（カット、テロップ、BGM/SE挿入、エフェクト）",
-"YouTube動画の編集業務", "30秒ショート動画で333本で10万円", "Instagram縦型広告の冒頭5〜10秒",
-"YouTube横動画の編集". Almost all of it is **editing footage the client supplies**. Only a
-couple need filming.
-
-Editing supplied footage is not a gap in this machine's capability — it is one of the things it
-already does at scale. The class conflates live-action *filming*, which is genuinely impossible,
-with *editing*, which is not, and refuses both. The 333-shorts-for-¥100,000 posting is the shape
-of job where batch automation beats a human editor outright.
-
-Splitting the class is a policy decision, not a code change, and it needs the seller's word
-before anything applies to that work. What the code needs afterwards is a delivery path that
-proves the edit before it is offered.
+What the numbers do tell you is the shape of the board: roughly a third of what gets posted is
+video work this seller will not take, another fifth needs a body in a room, and the rest is
+mostly presence, honesty and licensing. The postings that fit are a thin slice, and the way to
+earn more from them is to be first and clearest on that slice — which is items 0b, 3, 4 and 5,
+not a wider filter.
 
 ## 0b. The negotiate lane cannot answer in five minutes; a full sweep takes 5.8 hours
 
