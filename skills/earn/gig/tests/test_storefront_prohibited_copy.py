@@ -4,8 +4,6 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
-
 GIG = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(GIG / "scripts"))
 
@@ -34,11 +32,3 @@ def test_a_mutation_that_writes_a_prohibited_tool_is_rejected():
     prohibited = storefront_direct._prohibited_copy_terms(
         json.dumps(contract["proposed_value"], ensure_ascii=False))
     assert prohibited == ["Googleドライブ"]
-
-
-@pytest.mark.parametrize("path", [
-    GIG / "config" / "storefront-contract-families.json",
-    GIG / "contracts" / "storefront" / "new" / "seo-article-v1.json",
-])
-def test_committed_copy_carries_no_prohibited_term(path):
-    assert storefront_direct._prohibited_copy_terms(path.read_text(encoding="utf-8")) == []

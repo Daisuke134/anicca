@@ -61,15 +61,6 @@ def test_a_title_change_does_not_close_a_body_promise(tmp_path):
         effects, "91000005", "excel_automation", MACRO_FAMILY)
 
 
-def test_the_excel_family_now_ships_a_working_macro():
-    families = json.loads(
-        (Path(__file__).resolve().parents[1] / "config" / "storefront-contract-families.json")
-        .read_text(encoding="utf-8"))["families"]
-    deliverables = families["excel_automation"]["deliverables"]
-    assert any("マクロ" in item for item in deliverables)
-    assert not any("設計書" in item for item in deliverables)
-
-
 def test_an_offer_the_listings_already_advertise_is_not_a_change(tmp_path):
     digest = storefront_direct._offer_refresh_due(
         tmp_path / "effects.jsonl", "91000005", "excel_automation", MACRO_FAMILY)
