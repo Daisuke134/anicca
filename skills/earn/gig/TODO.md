@@ -162,6 +162,10 @@ remain open until the continuous owner runs this release and one authorized acti
   flag is present and selects `gpt-5.3-codex-spark`; a live canary returned a schema-valid object
   in 12.5 seconds. The fallback adds no browser or send capability and is not itself an official
   reply receipt.
+- [x] Tighten the semantic prompt's evidence boundary: after `cycle_start_message_id`, every
+  effect-bearing evidence ID must come from a buyer message in that cycle; older buyer IDs are
+  explicitly forbidden. The previous natural run was rejected safely as
+  `semantic_title_evidence_invalid` for violating this boundary.
 - [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
 - [ ] Bind the latest buyer-authored event to its official thread/message identity and classify
   whether it requires an answer, an estimate, both, or no action.

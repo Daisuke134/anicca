@@ -199,6 +199,10 @@ def semantic_prompt(
 - required_official_contextがnone以外で、そのcontextなしに正確なreply/estimateを作れない場合はnext_action=wait、uncertaintyへ不足を示し、reply_body=nullにします。
 - unknown/conflict/根拠不足は推測しません。安全な確認質問1件で前進できる時だけclarifyとsend-ready reply_bodyを返し、uncertaintyは空にします。それ以外はwaitとuncertaintyです。
 - current cycleの開始messageをcycle_start_message_id、判断根拠のbuyer messageだけをevidence_message_idsへ返します。
+- cycle_start_message_idを決めた後は、そのmessage以降のbuyer message IDだけを
+  evidence_message_idsと全ての*_evidence_message_idsへ使います。cycle開始前のbuyer IDを
+  価格・タイトル・内容・数量・納期・購入プランの根拠へ混ぜることは禁止です。根拠が
+  cycle内にないfieldは推測せず、required_official_context=applicationまたはwaitにします。
 - send_estimate以外はestimate_terms=null。reply/clarify以外はreply_body=nullかつreply_auditの配列は空・booleanはfalse。JSON schema以外を返しません。
 
 official_thread={packet}
