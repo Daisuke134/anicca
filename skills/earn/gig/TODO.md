@@ -145,11 +145,21 @@ schema, seller-facts, conversation, latest-message and official-context identity
 natural pass reports `classification_failed: 0`, `semantic_migration_pending: 0`,
 `estimate_readback: 6`, and no duplicate effect.
 
-The remaining slice is structural: the lightweight inbox observer must keep claiming new buyer
-events while the semantic worker, full reconciliation or owner reporting is still running. Until
-that observer/worker separation and a natural buyer-origin-to-official-readback measurement pass,
-the system may describe the 30-second wake request and 60-second semantic bound, but must not claim
-a two-minute result or five-minute guarantee.
+The remaining slice stays inside **one long-lived Negotiate process**. It repeatedly performs:
+fast inbox read, collect every changed actionable buyer thread, judge those threads concurrently,
+send each authorized reply, verify each one on the official page, then run lower-priority full
+reconciliation before immediately returning to the fast read. It does not add a second observer
+process, a fifth business lane, another agent, database or queue. The abandoned two-process
+observer draft was never committed, pushed or deployed.
+
+The measured before value is **10 minutes 13 seconds**. The completion gate is not a configured
+interval or a model timeout: it is a natural per-message timeline from buyer origin through
+detection, judgement, click and official readback. Every actionable buyer message must complete
+within five minutes under a healthy authenticated session, with an operating target of two minutes
+or less. Explicit stop-contact/返信不要, terminal acknowledgements, duplicates and safety-blocked
+messages are intentionally classified and recorded without sending. Until that live timeline
+passes, the system may describe the 30-second wake request and 60-second semantic bound, but must
+not publish an "after" reply speed or a five-minute guarantee.
 
 ---
 
