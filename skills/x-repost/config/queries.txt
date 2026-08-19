@@ -1,26 +1,33 @@
 # Search queries for the recon pass. One per line, '#' = comment.
 # Kept as data so the surface can be tuned without touching x_collect.py.
 #
-# These aim at the audience this account sells to -- AI tools, building things alone, and the
-# creator economy -- rather than at "AI and crypto" in general. A wider net is not the goal; being
-# in the same room as the people who would buy what this account promotes is. Crypto is thin here
-# on purpose: it drew engagement but almost none of it was that audience.
+# The rule here is EXPAND, never narrow. Every query is another room the account can be seen in,
+# and a zero-follower account's problem is reach, not focus. AI and crypto stay in full -- they
+# were the original surface and they draw the most movement -- and the rest widens outward from
+# them toward what this account actually sells: AI tools, building alone, and the creator economy.
 #
 # min_faves keeps the recon on posts that are actually moving.
 
-# --- English: the account's own language and its buyers ---
+# --- AI ---
 AI agent min_faves:300 -filter:replies
+LLM min_faves:500 -filter:replies
 AI tools min_faves:400 -filter:replies
 claude code OR cursor min_faves:200 -filter:replies
+open source AI min_faves:300 -filter:replies
+
+# --- crypto ---
+crypto min_faves:400 -filter:replies
+onchain OR stablecoin min_faves:200 -filter:replies
+x402 OR agent payments min_faves:150 -filter:replies
+
+# --- what the account sells into ---
 building in public min_faves:150 -filter:replies
 indie hacker OR solopreneur min_faves:150 -filter:replies
 automation workflow min_faves:200 -filter:replies
 creator economy OR newsletter growth min_faves:200 -filter:replies
+saas revenue OR bootstrapped min_faves:200 -filter:replies
 
 # --- Japanese: taken when the conversation is genuinely Japanese, answered in Japanese ---
 AI エージェント min_faves:100 -filter:replies
-個人開発 min_faves:100 -filter:replies
 AI 自動化 min_faves:150 -filter:replies
-
-# --- kept thin: engaged well, but not the buyers ---
-onchain OR stablecoin min_faves:400 -filter:replies
+個人開発 min_faves:100 -filter:replies

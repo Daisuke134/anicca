@@ -24,10 +24,15 @@ which reaches almost nobody in the original post's audience.
 
 ## Topics
 
-Aimed at the room the account sells into — AI tools, building alone, automation, the creator
-economy — rather than "AI and crypto" broadly. Crypto is kept thin on purpose: it drew engagement,
-but not from anyone who would buy what this account promotes. `config/queries.txt` is the surface;
-it is data, so it can be re-aimed without touching code.
+The rule is expand, never narrow. A zero-follower account's problem is reach, so every query is
+another room it can be seen in. AI and crypto stay in full — they were the original surface and they
+draw the most movement — and the surface widens outward from them toward what the account sells:
+AI tools, building alone, automation, the creator economy. `config/queries.txt` is that surface; it
+is data, so it can be re-aimed without touching code.
+
+An earlier version of this cut crypto down to a single query on the theory that it drew the wrong
+audience. That was the wrong instinct: narrowing to the buyers costs the reach that produces buyers
+in the first place.
 
 ## What one pass does
 
