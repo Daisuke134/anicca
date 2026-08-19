@@ -331,8 +331,9 @@ reconciliation continues after the urgent effect and must not block it.
 
 **Speed slice 1 is deployed, but this item remains open.** Release `52cdc50e5` changes only the
 Negotiate cadence and semantic route: launchd requests a wake every 30 seconds; reply semantic
-judgement uses one tool-disabled Luna-medium candidate with a 60-second runner deadline and no
-slow fallback or same-call retry. The existing real-model authorization eval passed 6/6 cases,
+judgement prefers one tool-disabled Luna-medium candidate, then uses the existing tool-disabled
+Claude/Hermes provider candidates within a 120-second runner deadline when the preferred provider
+is unavailable. The existing real-model authorization eval passed 6/6 cases,
 the focused regression suite passed 8/8, an adversarial Codex invocation could not call shell or
 execution tools, and fresh Sol review returned `ship`.
 
@@ -350,7 +351,7 @@ producer–consumer concurrency.** A fast producer checks the newest inbox surfa
 `connector-outbox.sqlite3` before model work. An in-process `asyncio.Queue` may dispatch those
 already-durable identities, but it is never the source of truth. A bounded pool starts at two
 consumer tasks. Each task owns its CDP page/target, opens one claimed thread, runs the existing
-60-second-bounded semantic judgement, rechecks the exact head identity, refreshes the official
+120-second-bounded semantic judgement, rechecks the exact head identity, refreshes the official
 open-orders surface so paid-room ownership cannot come from a stale cache, performs at most one
 authorized send, and requires official readback. Missing or invalid paid-order proof stops both
 estimate and reply effects. A lower-priority reconciler retains the full four-page audit but
@@ -379,7 +380,7 @@ detection, judgement, click and official readback. Every actionable buyer messag
 within five minutes under a healthy authenticated session, with an operating target of two minutes
 or less. Explicit stop-contact/返信不要, terminal acknowledgements, duplicates and safety-blocked
 messages are intentionally classified and recorded without sending. Until that live timeline
-passes, the system may describe the 30-second wake request and 60-second semantic bound, but must
+passes, the system may describe the 30-second wake request and 120-second semantic bound, but must
 not publish an "after" reply speed or a five-minute guarantee. Tests must prove that a deliberately
 slow semantic task does not block claiming a second message, two changed threads can progress
 concurrently, restart resumes the durable claim, and replay produces zero duplicate sends. Final

@@ -735,6 +735,9 @@ def _targeted_failure(thread_id: str, run_id: str, step: str, error: Any) -> dic
 def _targeted_pending(
     thread_id: str, run_id: str, *, error: str, semantic_failure: str | None = None,
     estimate_result: dict[str, Any] | None = None, blocked: int = 0,
+    current_identity_sha256: str | None = None,
+    current_last_message_side: str | None = None,
+    current_buyer_sent_at: str | None = None,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {
         "status": "pending", "thread_id": thread_id, "run_id": run_id,
@@ -758,6 +761,16 @@ def _targeted_pending(
             "estimate_readback": 0, "estimate_pending": 0,
             "estimate_failed": 0, "estimate_events": [],
         })
+    if re.fullmatch(r"[0-9a-f]{64}", str(current_identity_sha256 or "")):
+        result.update({
+            "current_identity_sha256": str(current_identity_sha256),
+            "current_event_key": coconala_inbox_event_key(
+                thread_id, str(current_identity_sha256),
+            ),
+            "current_last_message_side": str(current_last_message_side or ""),
+        })
+        if current_buyer_sent_at:
+            result["current_buyer_sent_at"] = str(current_buyer_sent_at)
     return result
 
 
@@ -1120,6 +1133,12 @@ def _run_effect_pipeline(
         ):
             return _targeted_pending(
                 thread_id, run_id, error="targeted_inbox_identity_changed",
+                current_identity_sha256=observed_identity,
+                current_last_message_side=str(inquiry.get("last_message_side") or ""),
+                current_buyer_sent_at=(
+                    str(inquiry.get("buyer_sent_at") or "")
+                    if inquiry.get("buyer_sent_at") else None
+                ),
             )
         next_action = str(inquiry.get("next_action") or "")
         semantic_failure = str(inquiry.get("semantic_failure") or "") or None
@@ -1438,6 +1457,54 @@ def _supervisor_work_from_action(action: dict[str, Any]) -> dict[str, Any] | Non
     }
 
 
+def _supervisor_rebind_targeted_work(
+    outbox: ConnectorOutbox, work: dict[str, Any], result: Any, *, now: int,
+) -> dict[str, Any] | None:
+    """Bind a stale inbox action to the exact buyer event just read from the thread."""
+    if not isinstance(result, dict) or "targeted_inbox_identity_changed" not in set(
+        str(error) for error in (result.get("errors") or [])
+    ):
+        return None
+    thread_id = str(work.get("thread_id") or "")
+    identity = str(result.get("current_identity_sha256") or "")
+    if (
+        _TARGETED_THREAD_ID.fullmatch(thread_id) is None
+        or re.fullmatch(r"[0-9a-f]{64}", identity) is None
+    ):
+        return None
+    side = str(result.get("current_last_message_side") or "")
+    event_key = coconala_inbox_event_key(thread_id, identity)
+    thread_url = f"https://coconala.com/mypage/direct_message/{thread_id}"
+    if side == "buyer":
+        action = outbox.enqueue(
+            event_key=event_key, thread_id=thread_id,
+            thread_url=thread_url, observed_at=now,
+        )
+        if action.get("state") != "pending":
+            return None
+        return {
+            "action_id": int(action["action_id"]),
+            "event_key": event_key, "thread_id": thread_id,
+            "identity_sha256": identity,
+        }
+    if side != "seller":
+        return None
+    try:
+        action = outbox.get_action(int(work["action_id"]))
+    except Exception:
+        return None
+    if action.get("state") != "pending" or action.get("dlq_at") is not None:
+        return None
+    _targeted_close_no_send(
+        database=outbox.database, manifest=outbox.manifest_path,
+        action_id=int(work["action_id"]), thread_id=thread_id,
+        inbox_event_key=str(work["event_key"]),
+        expected_revision=int(action["revision"]),
+        reason="targeted_identity_superseded_seller_last", run_id=f"rebind-{now}",
+    )
+    return None
+
+
 async def supervise_replies(
     args: Any, *, probe: Any, worker: Any, reconcile: Any, stop: Any,
 ) -> None:
@@ -1549,7 +1616,17 @@ async def supervise_replies(
             except asyncio.TimeoutError:
                 continue
             try:
-                await _supervisor_hook(worker, work)
+                result = await _supervisor_hook(worker, work)
+                try:
+                    rebound = _supervisor_rebind_targeted_work(
+                        outbox, work, result, now=int(time.time()),
+                    )
+                    if rebound is not None:
+                        await enqueue_work(rebound)
+                except Exception:
+                    # A failed rebind leaves the original durable action pending;
+                    # the next producer pass will retry with the same exact event.
+                    pass
             except Exception:
                 pass
             finally:

@@ -38,19 +38,20 @@ queue_snapshot = _load_module(
 )
 
 
-def test_reply_semantic_route_is_one_luna_candidate_and_toolless():
+def test_reply_semantic_route_prefers_luna_and_has_bounded_provider_fallback():
     config = json.loads(RUNNER_CONFIG.read_text(encoding="utf-8"))
     composition = config["task_classes"]["composition-agent"]
     route = config["task_classes"]["reply-semantic-agent"]
 
-    assert route["route"] == "luna-medium-reply-semantic"
-    assert route["timeout_seconds"] == 60
+    assert route["route"] == "luna-medium-reply-semantic-with-provider-fallback"
+    assert route["timeout_seconds"] == 120
     assert route["token_reservation"] <= composition["token_reservation"]
-    assert route["candidates"] == [{
-        "provider": "codex",
-        "model": "gpt-5.6-luna",
-        "effort": "medium",
-    }]
+    assert route["candidates"][0] == {
+        "provider": "codex", "model": "gpt-5.6-luna", "effort": "medium",
+    }
+    assert [candidate["provider"] for candidate in route["candidates"]] == [
+        "codex", "claude-direct", "hermes",
+    ]
     assert "reply-semantic-agent" in runner.TOOLLESS_TASK_CLASSES
 
 
@@ -156,8 +157,8 @@ def test_semantic_judge_uses_fast_task_class_and_bounded_outer_timeout(tmp_path,
     assert len(calls) == 1
     argv, kwargs = calls[0]
     assert argv[argv.index("--task-class") + 1] == "reply-semantic-agent"
-    assert argv[argv.index("--timeout-seconds") + 1] == "60"
-    assert kwargs["timeout"] == 90
+    assert argv[argv.index("--timeout-seconds") + 1] == "120"
+    assert kwargs["timeout"] == 150
 
 
 def test_semantic_judge_accepts_compatible_receipts_and_rejects_unknown_profile(tmp_path):
@@ -255,14 +256,14 @@ def test_semantic_judge_uses_one_bounded_runner_attempt(tmp_path, monkeypatch):
     assert calls[0][1]["timeout"] == judge.timeout_seconds + 30
 
 
-def test_direct_inbox_parser_defaults_semantic_timeout_to_60(tmp_path):
+def test_direct_inbox_parser_defaults_semantic_timeout_to_120(tmp_path):
     args = queue_snapshot.argument_parser().parse_args([
         "--output", str(tmp_path / "out.json"),
         "--evidence-dir", str(tmp_path / "evidence"),
         "--mode", "direct-inbox-only",
     ])
 
-    assert args.semantic_timeout_seconds == 60
+    assert args.semantic_timeout_seconds == 120
 
 
 def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():

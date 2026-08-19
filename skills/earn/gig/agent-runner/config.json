@@ -160,14 +160,28 @@
       ]
     },
     "reply-semantic-agent": {
-      "route": "luna-medium-reply-semantic",
+      "route": "luna-medium-reply-semantic-with-provider-fallback",
       "token_reservation": 16384,
-      "timeout_seconds": 60,
+      "timeout_seconds": 120,
       "candidates": [
         {
           "provider": "codex",
           "model": "gpt-5.6-luna",
           "effort": "medium"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "sonnet"
+        },
+        {
+          "provider": "hermes",
+          "inference_provider": "gemini",
+          "model": "gemini-2.5-flash",
+          "profile": "gigapply",
+          "toolsets": [
+            "clarify"
+          ],
+          "required_capabilities": []
         }
       ]
     },

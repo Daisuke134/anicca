@@ -405,7 +405,7 @@ class SemanticJudge:
 
     def __init__(
         self, *, runner: Path, schema: Path, workdir: Path, evidence_root: Path,
-        timeout_seconds: int = 60,
+        timeout_seconds: int = 120,
     ):
         self.runner, self.schema, self.workdir = Path(runner), Path(schema), Path(workdir)
         self.evidence_root, self.timeout_seconds = Path(evidence_root), int(timeout_seconds)

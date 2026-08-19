@@ -1087,10 +1087,10 @@ class ConnectorOutbox:
                    FROM connector_actions a
                    LEFT JOIN connector_events e
                      ON e.event_key=(
-                         SELECT first_event.event_key
-                           FROM connector_events first_event
-                          WHERE first_event.action_id=a.action_id
-                          ORDER BY first_event.observed_at,first_event.event_key
+                         SELECT latest_event.event_key
+                           FROM connector_events latest_event
+                          WHERE latest_event.action_id=a.action_id
+                          ORDER BY latest_event.rowid DESC
                           LIMIT 1
                      )
                    WHERE a.platform='coconala' AND a.state='pending'
