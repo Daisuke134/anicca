@@ -292,6 +292,11 @@ authorization before this task closes.
 
 ### Task 3: One supervised producer–consumer runtime
 
+**Status:** Implemented and deployed from immutable release `1f849cf4b`. Launchctl
+readback proves one KeepAlive Negotiate process with `--poll-seconds 30 --workers 2`;
+three natural head probes completed about 34 seconds apart with zero new stderr. The natural
+buyer-message-to-official-readback latency gate remains pending the next real unread message.
+
 **Files:**
 - Modify: `skills/earn/gig/scripts/reply_detector.py`
 - Modify: `skills/earn/gig/config/launchd-jobs.json`
