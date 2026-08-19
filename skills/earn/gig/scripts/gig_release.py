@@ -267,11 +267,11 @@ def main() -> int:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
 
     if args.command == "watch":
-        # Fast-forward only: a lane must never run a merge nobody wrote down.
+        # The watcher only needs the immutable commit object.  Do not merge the
+        # operator's checkout: a concurrent local commit or a temporary branch
+        # divergence must not stop release publication after fetch succeeds.
         git("fetch", "--quiet", "origin", "main")
-        if git("rev-parse", "HEAD") != git("rev-parse", "origin/main"):
-            git("merge", "--ff-only", "--quiet", "origin/main")
-        sha = git("rev-parse", "HEAD")
+        sha = git("rev-parse", "origin/main")
         wanted = {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED
         behind = [job for job in manifest["jobs"] if job["label"] in wanted
                   and not next((a for a in loaded_program(job["label"])
