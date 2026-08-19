@@ -48,7 +48,13 @@ def expand(value: str, home: Path) -> str:
 
 def build(loop: dict, job_name: str, job: dict, home: Path, current: Path, logs: Path) -> dict:
     name = loop["name"]
-    label = f"{LABEL_PREFIX}.{name}-{job_name}"
+    # A migration must not rename. Labels on this machine follow no single convention
+    # (ai.anicca.hf-gig-apply-direct, ai.anicca.bounty-core-healthcheck, ai.anicca.hf-bounty-daily),
+    # and they are referenced by healthchecks, self-heal scripts, tests and docs. Renaming while
+    # moving a loop would break those quietly, at the same moment its code moved -- two changes to
+    # untangle instead of one. An existing loop declares the label it already answers to; only new
+    # loops take the generated convention.
+    label = job.get("label") or f"{LABEL_PREFIX}.{name}-{job_name}"
 
     default_path = ":".join(p.format(home=home) for p in DEFAULT_PATH_PARTS)
     env = {"HOME": str(home), "PATH": job.get("path", default_path)}
