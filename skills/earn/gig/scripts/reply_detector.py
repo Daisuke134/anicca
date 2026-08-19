@@ -25,6 +25,7 @@ SCRIPTS = Path(__file__).resolve().parent
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 from gig_paths import BROWSER_DIR, RUNNER_DIR  # noqa: E402
+from gig_disk_guard import disk_headroom_ok  # noqa: E402
 
 try:
     from connector_outbox import ConnectorOutbox, coconala_inbox_event_key
@@ -1528,7 +1529,20 @@ async def supervise_replies(
 
     database = Path(getattr(args, "database"))
     manifest = Path(getattr(args, "manifest"))
-    outbox = ConnectorOutbox(database, manifest)
+    outbox: ConnectorOutbox | None = None
+
+    def get_outbox() -> ConnectorOutbox:
+        nonlocal outbox
+        if outbox is None:
+            outbox = ConnectorOutbox(database, manifest)
+        return outbox
+
+    def headroom_available() -> bool:
+        try:
+            return bool(disk_headroom_ok())
+        except Exception:
+            return False
+
     dispatch: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
     in_flight: set[str] = set()
 
@@ -1536,13 +1550,14 @@ async def supervise_replies(
         event_key = work["event_key"]
         if event_key in in_flight:
             return
-        lifecycle = outbox.action_lifecycle_for_event(event_key, work["thread_id"])
+        lifecycle = get_outbox().action_lifecycle_for_event(event_key, work["thread_id"])
         if lifecycle is not None and lifecycle.get("state") != "pending":
             return
         in_flight.add(event_key)
         await dispatch.put(work)
 
     async def enqueue_head_rows(rows: list[dict[str, Any]]) -> None:
+        outbox = get_outbox()
         for row in rows:
             thread_id = str(row.get("talkroom_id") or "")
             identity = str(row.get("last_message_identity_sha256") or "")
@@ -1571,7 +1586,7 @@ async def supervise_replies(
             })
 
     async def enqueue_pending_actions() -> None:
-        for action in outbox.pending_actions():
+        for action in get_outbox().pending_actions():
             work = _supervisor_work_from_action(action)
             if work is not None:
                 await enqueue_work(work)
@@ -1588,14 +1603,17 @@ async def supervise_replies(
                     pass
                 if stop.is_set():
                     break
-            await enqueue_pending_actions()
-            try:
-                observed = await _supervisor_hook(probe)
-                await enqueue_head_rows(_supervisor_rows(observed))
-            except Exception:
-                # A transient probe failure leaves durable pending rows for the
-                # next pass; it must not tear down the supervised consumers.
-                pass
+            if headroom_available():
+                await enqueue_pending_actions()
+                if headroom_available():
+                    try:
+                        observed = await _supervisor_hook(probe)
+                        if headroom_available():
+                            await enqueue_head_rows(_supervisor_rows(observed))
+                    except Exception:
+                        # A transient probe failure leaves durable pending rows for the
+                        # next pass; it must not tear down the supervised consumers.
+                        pass
             now = time.monotonic()
             if immediate_after_overrun:
                 # One overdue pass is allowed to start immediately.  Reset the
@@ -1616,17 +1634,19 @@ async def supervise_replies(
             except asyncio.TimeoutError:
                 continue
             try:
-                result = await _supervisor_hook(worker, work)
-                try:
-                    rebound = _supervisor_rebind_targeted_work(
-                        outbox, work, result, now=int(time.time()),
-                    )
-                    if rebound is not None:
-                        await enqueue_work(rebound)
-                except Exception:
-                    # A failed rebind leaves the original durable action pending;
-                    # the next producer pass will retry with the same exact event.
-                    pass
+                if headroom_available():
+                    result = await _supervisor_hook(worker, work)
+                    if headroom_available():
+                        try:
+                            rebound = _supervisor_rebind_targeted_work(
+                                get_outbox(), work, result, now=int(time.time()),
+                            )
+                            if rebound is not None:
+                                await enqueue_work(rebound)
+                        except Exception:
+                            # A failed rebind leaves the original durable action pending;
+                            # the next producer pass will retry with the same exact event.
+                            pass
             except Exception:
                 pass
             finally:
@@ -1638,7 +1658,7 @@ async def supervise_replies(
             try:
                 await asyncio.wait_for(stop.wait(), timeout=reconcile_seconds)
             except asyncio.TimeoutError:
-                if dispatch.empty() and not in_flight:
+                if dispatch.empty() and not in_flight and headroom_available():
                     try:
                         await _supervisor_hook(reconcile)
                     except Exception:

@@ -21,6 +21,16 @@ def _state_dir() -> Path:
     return Path(os.environ.get("GIG_STATE_DIR") or (Path.home() / "gig"))
 
 
+def _fsync_directory(directory: Path) -> None:
+    """Flush the directory entry after replacing a receipt, then close the fd."""
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    directory_fd = os.open(str(directory), flags)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
 def _write_receipt(state_dir: Path, receipt: dict[str, object]) -> str:
     """Atomically replace the lane-wide headroom receipt and return its JSON."""
     destination = state_dir / RECEIPT_PATH
@@ -39,6 +49,7 @@ def _write_receipt(state_dir: Path, receipt: dict[str, object]) -> str:
             os.fsync(handle.fileno())
         os.replace(temporary, destination)
         temporary = None
+        _fsync_directory(destination.parent)
     except Exception as exc:  # The guard still fails closed if receipt storage is unavailable.
         print(f"gig_disk_guard: could not persist receipt: {exc}", file=sys.stderr)
     finally:
@@ -66,19 +77,27 @@ def _failure(reason: str, available_bytes: int | None) -> int:
     return 1
 
 
+def disk_headroom_ok() -> bool:
+    """Return whether the gig state filesystem has the required free bytes."""
+    try:
+        available_bytes = int(shutil.disk_usage(_state_dir()).free)
+    except Exception:
+        _failure("disk_headroom_unavailable", None)
+        return False
+    if available_bytes < REQUIRED_BYTES:
+        _failure("disk_headroom_low", available_bytes)
+        return False
+    return True
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     remaining = list(sys.argv[1:] if argv is None else argv)
     if not remaining:
         print("gig_disk_guard: missing child argv", file=sys.stderr)
         return 2
 
-    try:
-        available_bytes = int(shutil.disk_usage(_state_dir()).free)
-    except Exception:
-        return _failure("disk_headroom_unavailable", None)
-
-    if available_bytes < REQUIRED_BYTES:
-        return _failure("disk_headroom_low", available_bytes)
+    if not disk_headroom_ok():
+        return 1
 
     os.execvpe(remaining[0], remaining, os.environ)
     return 0
