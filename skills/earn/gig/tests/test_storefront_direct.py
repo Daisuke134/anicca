@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import json
-import plistlib
 import pytest
 import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
-PLIST = Path(__file__).resolve().parents[1] / "launchd" / "ai.anicca.hf-gig-storefront-direct.plist"
 sys.path.insert(0, str(SCRIPTS))
 import storefront_direct as direct  # noqa: E402
 
@@ -237,21 +235,35 @@ def test_direct_source_has_no_legacy_or_cross_lane_dependency():
         assert forbidden not in source
 
 
-def test_launchagent_is_immutable_dedicated_and_storefront_braked():
-    data = plistlib.loads(PLIST.read_bytes())
+def test_launchagent_is_immutable_dedicated_and_storefront_braked(monkeypatch):
+    """Assert the job that gets installed, not a template sitting beside it.
+
+    This read a checked-in plist under launchd/ that had drifted from what
+    production ran -- it was missing --full-interval-seconds -- so these
+    properties were being asserted about a file nothing installs. They are worth
+    asserting; they just have to be asserted about what the manifest renders.
+    """
+    import gig_release
+
+    monkeypatch.setattr(gig_release, "OVERRIDES", Path("/nonexistent/install.json"))
+    release = Path("/release")
+    manifest, table = gig_release.settings(release)
+    job = next(row for row in manifest["jobs"]
+               if row["label"] == "ai.anicca.hf-gig-storefront-direct")
+    data = gig_release.plist_for(job, table)
     argv = data["ProgramArguments"]
     env = data["EnvironmentVariables"]
 
     assert data["Label"] == "ai.anicca.hf-gig-storefront-direct"
     # Minute cadence with an auto-cadence full wake, not a thirty-minute scheduler.
     assert data["StartInterval"] == 60
-    assert argv == ["/opt/homebrew/bin/python3",
-                    "__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/storefront_direct.py",
-                    "--effect", "--auto-cadence"]
+    assert argv == [table["PYTHON"],
+                    f"{release}/skills/earn/gig/scripts/storefront_direct.py",
+                    "--effect", "--auto-cadence", "--full-interval-seconds", "60"]
     assert env["GIG_OPERATOR_BRAKE_FILE"].endswith("/storefront.operator.brake")
     assert not any("BUDGET" in key for key in env)
-    serialized = PLIST.read_text(encoding="utf-8")
-    for forbidden in ("hermes", "gig_pass.sh", "/operator.brake</string>", "worktree"):
+    serialized = json.dumps(data, ensure_ascii=False)
+    for forbidden in ("hermes", "gig_pass.sh", '"/operator.brake"', "worktree"):
         assert forbidden not in serialized
 
 
