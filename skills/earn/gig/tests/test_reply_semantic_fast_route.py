@@ -277,3 +277,56 @@ def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
     assert (by_lane["release"]["StartInterval"], by_lane["release"]["ThrottleInterval"]) == (300, 60)
     assert by_lane["browser"].get("StartInterval") is None
     assert by_lane["browser"]["ThrottleInterval"] == 30
+
+
+def test_semantic_prompt_v15_uses_verified_application_scope_without_blanket_refusal():
+    prompt = requested_estimate.semantic_prompt(
+        [{"message_id": "buyer-1", "role": "buyer", "sent_at": "2026-08-19T00:00:00Z", "body": "質問です"}],
+        official_context=None,
+        seller_facts=[],
+    )
+
+    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v15"
+    assert "saas_lp_cvr_3_to_10_20260819" in requested_estimate.SELLER_FACT_IDS
+    assert "公式応募" in prompt
+    assert "current capability commitment" in prompt
+    assert "required_official_context=application" in prompt
+    assert "対応可能です" in prompt
+    assert "対応可能とはお約束できません" not in prompt
+    assert "動画編集、字幕・テロップ挿入、映像加工、完成動画書き出しは対応不能です。" not in prompt
+    assert "Care Earth Mart" in prompt
+    assert "選定用ラフ" in prompt
+    assert "SaaS/Wix LP" in prompt
+    assert "3%" in prompt and "10%" in prompt
+    assert "CTA" in prompt and "first-view" in prompt
+    assert "CPA" in prompt
+    assert "違法・危険・プラットフォーム禁止" in prompt
+
+
+def test_verified_seller_facts_only_return_allowlisted_saas_fact(tmp_path):
+    profile = tmp_path / "profile.json"
+    profile.write_text(json.dumps({
+        "facts": [
+            {
+                "id": "saas_lp_cvr_3_to_10_20260819",
+                "claim": "visitor-to-service-start conversion was approximately 3% to 10%",
+                "evidence": "verified SaaS/Wix LP application context",
+            },
+            {
+                "id": "unknown_unverified_fact",
+                "claim": "invented customer result",
+                "evidence": "untrusted note",
+            },
+        ],
+    }, ensure_ascii=False), encoding="utf-8")
+
+    facts = requested_estimate.verified_seller_facts(profile)
+
+    assert facts == [{
+        "id": "saas_lp_cvr_3_to_10_20260819",
+        "claim": "visitor-to-service-start conversion was approximately 3% to 10%",
+        "evidence": "verified SaaS/Wix LP application context",
+    }]
+    prompt = requested_estimate.semantic_prompt([], seller_facts=facts)
+    assert "approximately 3% to 10%" in prompt
+    assert "invented customer result" not in prompt

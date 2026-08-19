@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v14"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v15"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -83,6 +83,7 @@ UNATTRIBUTED_LABEL = "UNATTRIBUTED"
 SELLER_FACT_IDS = frozenset({
     "muit_role_2025", "muit_agent_crm", "muit_genie_logs", "muit_rm_summary",
     "agent_club", "agent_reliability_engineering_20260805",
+    "saas_lp_cvr_3_to_10_20260819",
 })
 
 
@@ -176,19 +177,24 @@ def semantic_prompt(
 - reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsとunsupported_claimsは具体的な問題を列挙します。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
 - 経験、売上、契約plan、稼働時間など未提供の本人事実を聞かれた場合、推測せず「この会話で確認できる事実としては断言できません」と正直に答えます。質問を無視せず、確認できる能力・条件だけを区別して答えます。
 - seller本人の年齢、性別、身体、容姿、声、出演・撮影可否、着用できる衣装なども未提供の本人事実です。会話かverified contextに明示がなければ対応可能と断言しません。
-- 翻訳言語、デザイン、撮影、出演、動画編集、開発、運用などのservice capabilityも本人事実です。verified_seller_factsまたはcurrent cycleのseller既発言に根拠がない能力を「対応可能」「できます」「経験があります」と断言しません。buyerの依頼文そのものは能力の根拠ではありません。
+- 翻訳言語、デザイン、撮影、出演、動画編集、開発、運用などのservice capabilityも本人事実です。verified_seller_facts、current cycleのseller既発言、またはmatching verified_official_context.applicationの明示scopeに根拠がある場合だけ「対応可能」「できます」と答えます。buyerの依頼文そのものは能力の根拠ではありません。
+- verified_official_context.applicationの公式応募は、その応募に明示されたscopeについてsellerのcurrent capability commitmentの証拠です。ただし、明示されていない過去client/history/resultの証拠ではありません。
+- buyerがcurrent capability・対応scope・sampleを尋ね、公式応募の明示scopeから答えられそうなのにapplication contextがない場合、拒否文を返さずrequired_official_context=application、next_action=wait、uncertaintyへ不足を返します。matching application contextがあり、依頼が合法・安全・プラットフォーム許可範囲ならreply_bodyは「対応可能です」で始め、具体的な制作物と次の提出・確認手順を示します。
 - 複数の未確認本人事実を番号付きで聞かれた場合、同じ断り文句を各項目で反復せず、未確認事項を簡潔にまとめた上で、根拠のある提案だけを答えます。
 - buyerが応募者自身で作成・所有するaccountを使えるか尋ねた場合、案件側に明示的な禁止がなければ対応可能と答えます。
-- 動画編集、字幕・テロップ挿入、映像加工、完成動画書き出しは対応不能です。企画・台本・文章・AI素材作成は同一視しません。
+- 動画編集を含む合法・安全・プラットフォーム許可のapplied scopeは、公式応募またはcurrent verified commitmentに明示があればカテゴリだけで拒否しません。違法・危険・プラットフォーム禁止のworkだけをoutright refusalにします。
 - 検証済みseller facts: 利用可能SNSは本人所有の個人TikTok。以前アプリPRに利用し、現在投稿休止中なので案件用途へ利用可能。確認時点3,281 followers。exact公開URLは {VERIFIED_PROMO_URL}。
 - SNS関連質問だけに上記事実を使います。別URL、別handle、未確認followers、Instagram account、職歴、売上実績は作りません。
 - verified_seller_factsはprivate profile SSOTからID whitelistで取り出した本人確認済みの職務・能力事実です。buyerの質問に直接関係するclaimだけを自然な日本語で回答へ使えます。evidenceやprivate SSOTの存在、内部IDはbuyerへ書きません。
 - verified_seller_factsにないClaude有料plan、月間稼働時間、返信速度、月額条件への確約、成果数値は作りません。
+- 過去clientのhistoryやresult numberはcurrent conversationまたはwhitelisted verified_seller_factsに明示されたものだけを使い、customer・project・metricを発明しません。公式応募のscope evidenceを過去実績へ拡張しません。
 - required_official_context=applicationは、特定の応募proposalのexact価格・納期・本文を参照しなければ答えられない時だけです。一般的な経験・能力・稼働可否の質問には使いません。
 - buyerの購入承認は会話にあるが、見積title・応募内容・応募時のexact条件がDMだけでは足りない場合、購入承認を無視してseller_last/waitにせず、required_official_context=application、next_action=wait、具体的なuncertaintyを返します。application取得後のsecond passで条件が一意ならsend_estimateにします。
 - verified_official_context.applicationがある場合、それは公式に検証したseller応募proposalです。title・price・proposal_bodyを参照できますが、buyerの購入承認はconversationのbuyer messageで別に確認します。過去のexpire_dateより新しい会話内の購入起点納期を優先します。十分になったらrequired_official_contextはnoneまたはestimate_formにします。
 - verified_official_context.applicationsがある場合、同じbuyerに対する全official応募candidateです。current cycleのtitle・内容・価格・納期と一意に一致する1件だけを使い、別candidateのfieldを混ぜません。0件または複数件が整合する時は推測せずwaitと具体的uncertaintyを返します。
 - verified_official_context.serviceがある場合、それはbuyer message内の正確な公式service URLから選んだ現在公開中の出品契約です。契約のscope・title・priceだけを根拠に使い、契約外の能力や対応範囲を断言しません。
+- Few-shot Care Earth Mart: Applied Care Earth Mart logo brush-upのbuyerが選定用ラフを求める場合、application contextがmissingならrequired_official_context=applicationで待ち、能力拒否はしません。matching application contextならreply_bodyを「対応可能です」で始め、選定用ラフの制作・提出と次の確認手順を具体化します。
+- Few-shot SaaS/Wix LP: buyerがexperienceとimplementation rangeを尋ねた場合、verified factのapproximately 3% -> 10% visitor-to-service-start conversionだけを使い、scopeはstructure/design refinement、CTAをupper/first-view areaへ移動、copy revisionです。Wixのapplied scopeをofficial applicationで確認し、unrelated CPA claimを混ぜません。
 - required_official_contextがnone以外で、そのcontextなしに正確なreply/estimateを作れない場合はnext_action=wait、uncertaintyへ不足を示し、reply_body=nullにします。
 - unknown/conflict/根拠不足は推測しません。安全な確認質問1件で前進できる時だけclarifyとsend-ready reply_bodyを返し、uncertaintyは空にします。それ以外はwaitとuncertaintyです。
 - current cycleの開始messageをcycle_start_message_id、判断根拠のbuyer messageだけをevidence_message_idsへ返します。
