@@ -30,9 +30,12 @@ The first unfinished item is always the first failed live lane, not the first pl
 The order to the end is:
 
 1. **Recover operating headroom.** Keep at least 10 GiB free before trusting browser, SQLite or
-   evidence writes. The current machine has only 517 MiB free; old Codex sessions/logs, stale Git
-   worktrees and immutable gig releases are the first recoverable targets. Never delete active
-   state, the current release, credentials or the browser profile.
+   evidence writes. **DONE:** the data volume has 10.051 GiB free and a 4 KiB gig-state probe
+   completed write, fsync, read and removal. Cleanup retained the latest verified OpenClaw backup,
+   active state, credentials, browser profile and the four releases still referenced by live
+   processes/rollback; only older regenerable backups, installers, binaries and releases were
+   removed. Codex sessions and Git worktrees were left intact because the threshold no longer
+   required touching them.
 2. **Apply must submit new eligible work again.** The scheduler is starting fresh Apply processes,
    but the last ten completed passes are `parent_failed_rc_2`. Most observed 40 postings and then
    failed because both application-intent providers returned `transient_quota`; the newest failed
@@ -75,12 +78,12 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 
 #### A. Restore safe operating headroom
 
-- [ ] Record the active release, rollback release, browser profile, live state and private-config
-  paths that must not be removed.
-- [ ] Remove or archive only inactive old Codex sessions/logs.
-- [ ] Remove only clean stale Git worktrees with Git's worktree removal/prune flow.
-- [ ] Prune immutable gig releases except the loaded/current release and one verified rollback.
-- [ ] Read back at least 10 GiB free space and successfully write, fsync, read and remove a small
+- [x] Record and retain the active/rollback releases, browser profile, live state and private config.
+- [x] Remove only inactive regenerable backups/installers/binaries; retain all Codex sessions.
+- [x] Leave Git worktrees intact because the free-space gate no longer requires their removal.
+- [x] Prune unused immutable gig releases while retaining `8fefa7a0`, `2ce5474f`, `b2abe2b00` and
+  `f90898ca` for active/rollback use.
+- [x] Read back at least 10 GiB free space and successfully write, fsync, read and remove a small
   probe in the gig state filesystem.
 
 #### B. Restore Apply and prove one new application
