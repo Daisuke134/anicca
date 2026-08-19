@@ -30759,3 +30759,7 @@
 {"ts":1787143453,"wake_id":"00MT032HW8172A4E5C0E6E4ED5","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787143585,"wake_id":"00MT035BNC73E3B610B42F4A41","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787143729,"wake_id":"00MT038F6D4E7636576D084BB9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787143918,"wake_id":"00MT03CGFMACFBD162E7384E8F","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787144099,"wake_id":"00MT03GCNMC6C9DCB3B04F40D2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787144271,"wake_id":"00MT03K1I4C03F727F0E4145F9","kind":"shutdown","sleep_s":0}
+{"ts":1787144710,"wake_id":"00MT03TFVO186C3C2B19A441F4","kind":"narrate","sleep_s":120,"model":"auto"}
