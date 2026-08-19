@@ -64,7 +64,7 @@ NA15_CATEGORY_IDS = {
 
 SEMANTIC_RECEIPT_VERSION = 1
 SEMANTIC_PROMPT_VERSION = "reply-negotiate-v14"
-SEMANTIC_RUNNER_PROFILE = "composition-agent"
+SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_STATES = frozenset({
     "question", "negotiating", "ready_to_buy", "explicit_estimate_request",
     "clarify", "gratitude", "considering", "declined", "stop_contact",
@@ -395,7 +395,7 @@ class SemanticJudge:
 
     def __init__(
         self, *, runner: Path, schema: Path, workdir: Path, evidence_root: Path,
-        timeout_seconds: int = 180,
+        timeout_seconds: int = 60,
     ):
         self.runner, self.schema, self.workdir = Path(runner), Path(schema), Path(workdir)
         self.evidence_root, self.timeout_seconds = Path(evidence_root), int(timeout_seconds)
@@ -469,23 +469,16 @@ class SemanticJudge:
             f"{context_sha256[:12]}-{official_context_sha256[:12]}"
         )
         evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
-        completed = None
-        for attempt in range(2):
-            started = time.monotonic()
-            completed = subprocess.run(
-                [
-                    sys.executable, str(self.runner), "--task-class", SEMANTIC_RUNNER_PROFILE,
-                    "--prompt-stdin", "--schema", str(self.schema), "--evidence-dir", str(evidence),
-                    "--task-label", "gig-reply-semantic", "--loop", "gig",
-                    "--workdir", str(self.workdir), "--timeout-seconds", str(self.timeout_seconds),
-                ],
-                input=semantic_prompt(rows, resolved_official_context, self.seller_facts),
-                text=True, capture_output=True, timeout=self.timeout_seconds + 30, check=False,
-            )
-            elapsed = time.monotonic() - started
-            if completed.returncode == 0 or attempt == 1 or elapsed >= 60:
-                break
-        assert completed is not None
+        completed = subprocess.run(
+            [
+                sys.executable, str(self.runner), "--task-class", SEMANTIC_RUNNER_PROFILE,
+                "--prompt-stdin", "--schema", str(self.schema), "--evidence-dir", str(evidence),
+                "--task-label", "gig-reply-semantic", "--loop", "gig",
+                "--workdir", str(self.workdir), "--timeout-seconds", str(self.timeout_seconds),
+            ],
+            input=semantic_prompt(rows, resolved_official_context, self.seller_facts),
+            text=True, capture_output=True, timeout=self.timeout_seconds + 30, check=False,
+        )
         if completed.returncode != 0:
             raise SemanticJudgementError(f"semantic_runner_failed_rc_{completed.returncode}")
         try:

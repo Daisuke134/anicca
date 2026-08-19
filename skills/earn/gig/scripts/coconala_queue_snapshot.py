@@ -2823,7 +2823,7 @@ def argument_parser() -> argparse.ArgumentParser:
         default=Path(__file__).resolve().parents[1] / "schemas/reply_semantic_judgement.schema.json",
     )
     parser.add_argument("--semantic-workdir", type=Path, default=Path.home())
-    parser.add_argument("--semantic-timeout-seconds", type=int, default=180)
+    parser.add_argument("--semantic-timeout-seconds", type=int, default=60)
     parser.add_argument("--semantic-effects-enabled", action="store_true")
     parser.add_argument(
         "--database", type=Path,

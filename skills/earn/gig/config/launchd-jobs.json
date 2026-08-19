@@ -118,7 +118,7 @@
         "CDP_GUARD_LOG": "{{GIG_LOG_DIR}}/cdp-gig-browser-guard.log",
         "GIG_CDP_HEALTH_URL": "http://127.0.0.1:{{CDP_PORT}}/json/version"
       },
-      "StartInterval": 180,
+      "StartInterval": 30,
       "ThrottleInterval": 30,
       "RunAtLoad": true,
       "ProcessType": "Background",

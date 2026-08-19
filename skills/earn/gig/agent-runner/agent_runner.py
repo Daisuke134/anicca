@@ -608,9 +608,13 @@ def validate_schema(value: Any, schema: dict[str, Any], at: str = "$") -> list[s
 # Classes the runner deliberately starves of tools: they turn data into a decision
 # and must not touch the world. Kept next to the contract so the two cannot drift —
 # telling a tool-less turn to "use tools from that workdir" is an impossible order,
-# and these three classes ran at 100% before the contract existed.
+# and these classes are intentionally tool-less by contract.
 TOOLLESS_TASK_CLASSES = (
     "composition-agent", "diagnostic-agent", "application-intent-planner",
+    "reply-semantic-agent",
+)
+TOOLLESS_CODEX_DISABLED_FEATURES = (
+    "shell_tool", "code_mode_host", "unified_exec",
 )
 
 
@@ -975,7 +979,11 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
         ])
         for image in getattr(args, "image", []) or []:
             command.extend(["--image", str(image)])
-        if args.task_class in TOOLLESS_TASK_CLASSES or getattr(args, "read_only", False):
+        if args.task_class in TOOLLESS_TASK_CLASSES:
+            command.extend(["--sandbox", "read-only"])
+            for feature in TOOLLESS_CODEX_DISABLED_FEATURES:
+                command.extend(["--disable", feature])
+        elif getattr(args, "read_only", False):
             command.extend(["--sandbox", "read-only"])
         else:
             command.append("--dangerously-bypass-approvals-and-sandbox")
@@ -1092,7 +1100,7 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
 def run() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-class", required=True,
-                        choices=("deterministic", "composition-agent", "application-intent-planner", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent", "self-fix"))
+                        choices=("deterministic", "composition-agent", "reply-semantic-agent", "application-intent-planner", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent", "self-fix"))
     prompt_source = parser.add_mutually_exclusive_group(required=True)
     prompt_source.add_argument("--prompt-file", type=Path)
     prompt_source.add_argument("--prompt-stdin", action="store_true")
@@ -1109,7 +1117,7 @@ def run() -> int:
     parser.add_argument("--read-only", action="store_true")
     parsed = parser.parse_args()
 
-    if parsed.task_class in ("composition-agent", "application-intent-planner") and not parsed.prompt_stdin:
+    if parsed.task_class in ("composition-agent", "reply-semantic-agent", "application-intent-planner") and not parsed.prompt_stdin:
         parser.error(f"{parsed.task_class} requires --prompt-stdin")
 
     config_path = Path(os.environ.get("AGENT_RUNNER_CONFIG", HERE / "config.json"))

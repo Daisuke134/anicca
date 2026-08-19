@@ -1,0 +1,243 @@
+"""Contract tests for the bounded, tool-less reply semantic route."""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+
+GIG_ROOT = Path(__file__).resolve().parents[1]
+RUNNER_PATH = GIG_ROOT / "agent-runner" / "agent_runner.py"
+RUNNER_CONFIG = GIG_ROOT / "agent-runner" / "config.json"
+REQUESTED_ESTIMATE_PATH = GIG_ROOT / "scripts" / "requested_estimate.py"
+QUEUE_SNAPSHOT_PATH = GIG_ROOT / "scripts" / "coconala_queue_snapshot.py"
+LAUNCHD_PATH = GIG_ROOT / "config" / "launchd-jobs.json"
+sys.path.insert(0, str(RUNNER_PATH.parent))
+
+
+def _load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+runner = _load_module("gig_agent_runner_reply_semantic_test", RUNNER_PATH)
+requested_estimate = _load_module(
+    "gig_requested_estimate_reply_semantic_test", REQUESTED_ESTIMATE_PATH,
+)
+queue_snapshot = _load_module(
+    "gig_queue_snapshot_reply_semantic_test", QUEUE_SNAPSHOT_PATH,
+)
+
+
+def test_reply_semantic_route_is_one_luna_candidate_and_toolless():
+    config = json.loads(RUNNER_CONFIG.read_text(encoding="utf-8"))
+    composition = config["task_classes"]["composition-agent"]
+    route = config["task_classes"]["reply-semantic-agent"]
+
+    assert route["route"] == "luna-medium-reply-semantic"
+    assert route["timeout_seconds"] == 60
+    assert route["token_reservation"] <= composition["token_reservation"]
+    assert route["candidates"] == [{
+        "provider": "codex",
+        "model": "gpt-5.6-luna",
+        "effort": "medium",
+    }]
+    assert "reply-semantic-agent" in runner.TOOLLESS_TASK_CLASSES
+
+
+def test_runner_cli_accepts_reply_semantic_task_class():
+    result = subprocess.run(
+        [sys.executable, str(RUNNER_PATH), "--help"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "reply-semantic-agent" in result.stdout
+
+
+def test_reply_semantic_task_is_tool_starved_for_codex_and_claude(tmp_path):
+    args = argparse.Namespace(
+        task_class="reply-semantic-agent",
+        schema=tmp_path / "schema.json",
+        workdir=tmp_path,
+        image=[],
+        read_only=False,
+    )
+    args.schema.write_text("{}", encoding="utf-8")
+
+    for task_class in runner.TOOLLESS_TASK_CLASSES:
+        args.task_class = task_class
+        codex_command = runner.command_for(
+            "codex", "codex", {},
+            {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
+            args, "bounded prompt", {}, tmp_path / f"result-{task_class}.json", 60, None,
+            prompt_via_stdin=True,
+        )
+        sandbox_index = codex_command.index("--sandbox")
+        assert codex_command[sandbox_index:sandbox_index + 2] == ["--sandbox", "read-only"]
+        for feature in ("shell_tool", "code_mode_host", "unified_exec"):
+            disable_index = codex_command.index(feature)
+            assert codex_command[disable_index - 1:disable_index + 1] == ["--disable", feature]
+
+    args.task_class = "tool-agent"
+    ordinary_command = runner.command_for(
+        "codex", "codex", {},
+        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
+        args, "bounded prompt", {}, tmp_path / "result-tool.json", 60, None,
+        prompt_via_stdin=True,
+    )
+    assert not any(
+        ordinary_command[index:index + 2] == ["--disable", feature]
+        for index in range(len(ordinary_command) - 1)
+        for feature in ("shell_tool", "code_mode_host", "unified_exec")
+    )
+
+    args.task_class = "reply-semantic-agent"
+    claude_command = runner.command_for(
+        "claude-direct", "claude", {},
+        {"provider": "claude-direct", "model": "sonnet"},
+        args, "bounded prompt", {}, tmp_path / "result-claude.json", 60, None,
+        prompt_via_stdin=True,
+    )
+    tools_index = claude_command.index("--tools")
+    assert claude_command[tools_index:tools_index + 2] == ["--tools", ""]
+
+
+def test_semantic_judge_uses_fast_task_class_and_bounded_outer_timeout(tmp_path, monkeypatch):
+    schema = GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json"
+    calls = []
+
+    def fake_run(argv, **kwargs):
+        calls.append((argv, kwargs))
+        evidence = Path(argv[argv.index("--evidence-dir") + 1])
+        result_path = evidence / "result.json"
+        result_path.write_text("{}", encoding="utf-8")
+        (evidence / "summary.json").write_text(json.dumps({
+            "status": "success", "result_path": str(result_path),
+        }), encoding="utf-8")
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(requested_estimate.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        requested_estimate,
+        "validate_semantic_judgement",
+        lambda _payload, _rows: {"next_action": "reply"},
+    )
+    judge = requested_estimate.SemanticJudge(
+        runner=RUNNER_PATH,
+        schema=schema,
+        workdir=tmp_path,
+        evidence_root=tmp_path / "evidence",
+    )
+    judge({
+        "url": "https://coconala.com/messages/123",
+        "title": "メッセージ詳細",
+        "container_present": True,
+        "own_user_path": "/users/seller",
+        "messages": [
+            {"message_id": "seller-1", "author_path": "/users/seller",
+             "body": "こんにちは", "sent_at": "2026-08-19T00:00:00Z"},
+            {"message_id": "buyer-1", "author_path": "/users/buyer",
+             "body": "質問です", "sent_at": "2026-08-19T00:01:00Z"},
+        ],
+    }, "https://coconala.com/messages/123")
+
+    assert len(calls) == 1
+    argv, kwargs = calls[0]
+    assert argv[argv.index("--task-class") + 1] == "reply-semantic-agent"
+    assert argv[argv.index("--timeout-seconds") + 1] == "60"
+    assert kwargs["timeout"] == 90
+
+
+def test_semantic_judge_rejects_old_receipt_and_accepts_new_profile(tmp_path):
+    schema = GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json"
+    judge = requested_estimate.SemanticJudge(
+        runner=RUNNER_PATH,
+        schema=schema,
+        workdir=tmp_path,
+        evidence_root=tmp_path / "evidence",
+    )
+    current = {
+        "version": requested_estimate.SEMANTIC_RECEIPT_VERSION,
+        "prompt_version": requested_estimate.SEMANTIC_PROMPT_VERSION,
+        "runner_profile": requested_estimate.SEMANTIC_RUNNER_PROFILE,
+        "schema_sha256": judge.schema_sha256,
+        "seller_facts_sha256": judge.seller_facts_sha256,
+        "context_sha256": "a" * 64,
+        "official_context_sha256": "b" * 64,
+        "latest_message_identity": "buyer-1",
+        "judgement": {},
+    }
+
+    assert requested_estimate.SEMANTIC_RUNNER_PROFILE == "reply-semantic-agent"
+    assert judge.receipt_current(current) is True
+    assert judge.receipt_current({**current, "runner_profile": "composition-agent"}) is False
+
+
+def test_semantic_judge_uses_one_bounded_runner_attempt(tmp_path, monkeypatch):
+    schema = GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json"
+    calls = []
+
+    def failed_run(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return subprocess.CompletedProcess(argv, 1, "", "failed")
+
+    monkeypatch.setattr(requested_estimate.subprocess, "run", failed_run)
+    judge = requested_estimate.SemanticJudge(
+        runner=RUNNER_PATH,
+        schema=schema,
+        workdir=tmp_path,
+        evidence_root=tmp_path / "evidence",
+    )
+
+    with pytest.raises(requested_estimate.SemanticJudgementError, match="runner_failed"):
+        judge({
+            "url": "https://coconala.com/messages/123",
+            "title": "メッセージ詳細",
+            "container_present": True,
+            "own_user_path": "/users/seller",
+            "messages": [
+                {"message_id": "seller-1", "author_path": "/users/seller",
+                 "body": "こんにちは", "sent_at": "2026-08-19T00:00:00Z"},
+                {"message_id": "buyer-1", "author_path": "/users/buyer",
+                 "body": "質問です", "sent_at": "2026-08-19T00:01:00Z"},
+            ],
+        }, "https://coconala.com/messages/123")
+
+    assert len(calls) == 1
+    assert calls[0][1]["timeout"] == judge.timeout_seconds + 30
+
+
+def test_direct_inbox_parser_defaults_semantic_timeout_to_60(tmp_path):
+    args = queue_snapshot.argument_parser().parse_args([
+        "--output", str(tmp_path / "out.json"),
+        "--evidence-dir", str(tmp_path / "evidence"),
+        "--mode", "direct-inbox-only",
+    ])
+
+    assert args.semantic_timeout_seconds == 60
+
+
+def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
+    jobs = json.loads(LAUNCHD_PATH.read_text(encoding="utf-8"))["jobs"]
+    by_lane = {job["lane"]: job for job in jobs}
+
+    assert by_lane["negotiate"]["StartInterval"] == 30
+    assert by_lane["negotiate"]["ThrottleInterval"] == 30
+    assert (by_lane["apply"]["StartInterval"], by_lane["apply"]["ThrottleInterval"]) == (60, 60)
+    assert (by_lane["storefront"]["StartInterval"], by_lane["storefront"]["ThrottleInterval"]) == (60, 60)
+    assert (by_lane["paid"]["StartInterval"], by_lane["paid"]["ThrottleInterval"]) == (300, 60)
+    assert (by_lane["release"]["StartInterval"], by_lane["release"]["ThrottleInterval"]) == (300, 60)
+    assert by_lane["browser"].get("StartInterval") is None
+    assert by_lane["browser"]["ThrottleInterval"] == 30
