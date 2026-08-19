@@ -222,6 +222,9 @@ remain open until the continuous owner runs this release and one authorized acti
 
 #### F. Prove four-lane 24/7 control-plane durability
 
+- [x] Make release watching fail closed when `launchctl print` returns macOS
+  `141 Reentrancy avoided`: the watcher now checks the lane's real script process and leaves a
+  busy Apply/Storefront/Paid pass untouched instead of treating it as idle and booting it out.
 - [ ] Restore a valid GUI launchd readback without restarting or killing macOS base services.
 - [ ] Read back loaded definitions for the browser, Apply, Negotiate, Storefront, Paid and watcher;
   each must point to the intended immutable release and private environment.

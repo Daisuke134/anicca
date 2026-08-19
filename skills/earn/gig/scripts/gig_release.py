@@ -53,6 +53,12 @@ DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-release-watch"
 # restart boundary, so the watcher may reload it while periodic lanes wait for a gap.
 CONTINUOUS_RELOADABLE = {"ai.anicca.hf-gig-reply-detector"}
 PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
+JOB_PROCESS_MARKERS = {
+    "ai.anicca.hf-gig-apply-direct": "application_direct.py",
+    "ai.anicca.hf-gig-storefront-direct": "storefront_direct.py",
+    "ai.anicca.hf-gig-paid-direct": "paid_direct.py",
+    "ai.anicca.hf-gig-reply-detector": "reply_detector.py",
+}
 
 
 def git(*args: str, cwd: Path = REPO_ROOT) -> str:
@@ -201,7 +207,26 @@ def loaded_program(label: str) -> list[str]:
 def is_running(label: str) -> bool:
     printed = subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/{label}"],
                              capture_output=True, text=True)
-    return "state = running" in printed.stdout
+    if printed.returncode == 0:
+        return "state = running" in printed.stdout
+    # ``launchctl print`` can fail transiently with macOS' Reentrancy avoided
+    # response while the process itself is healthy. Treating that as idle lets
+    # the watcher bootout a live browser pass. The process table is read-only
+    # and is used only as a conservative busy fence; a missing or unreadable
+    # table still fails closed (busy) rather than reloading.
+    marker = JOB_PROCESS_MARKERS.get(label)
+    if not marker:
+        return True
+    try:
+        processes = subprocess.run(
+            ["ps", "-axo", "command="], capture_output=True, text=True,
+            timeout=5, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return True
+    if processes.returncode != 0:
+        return True
+    return any(marker in line for line in processes.stdout.splitlines())
 
 
 def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
