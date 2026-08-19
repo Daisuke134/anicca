@@ -8,6 +8,8 @@ state_dir = "~/loops/x-repost"
 
 [env]
 X_REPOST_BROWSER_IDENTITY = "x:anicca"
+X_REPOST_MODEL = "gpt-5.6-luna"
+X_REPOST_REASONING_EFFORT = "max"
 
 # One pass an hour. The pass itself refuses to publish twice in an hour and stops at a daily
 # ceiling, so the schedule is a floor on attempts, not a promise of output.

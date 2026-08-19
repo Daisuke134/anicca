@@ -25,7 +25,9 @@ WINDOW="${X_REPOST_DIGEST_WINDOW_HOURS:-24}"
 # model call to every publish and pushed one pass past 35 minutes on an hourly schedule. The
 # cooldown is fourteen days, so a seed a day is more than the loop can spend.
 SEEDS="$STATE/seeds.jsonl"
-CLAUDE_BIN="$(command -v claude || echo "$HOME/.local/bin/claude")"
+CODEX_BIN="$(command -v codex || echo "$HOME/.local/bin/codex")"
+MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
+REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
 {
   echo "以下は実在の出力だけを貼ったものだ。ここに書かれていることからのみ、"
   echo "**読んだ人が自分の状況に当てはめられる教訓** を ${X_REPOST_HARVEST_COUNT:-5}件 取り出せ。"
@@ -58,9 +60,12 @@ print("state:",dict(collections.Counter(x.get("actual_state") for x in a)))' 2>/
   echo '[{"fact":"...","measured_on":"YYYY-MM-DD","source":"どのセクションから取ったか"}]'
 } >"$STATE/last-harvest-prompt.txt"
 
-if timeout "${X_REPOST_MODEL_TIMEOUT:-600}" env -u ANTHROPIC_API_KEY "$CLAUDE_BIN" \
-     -p "$(cat "$STATE/last-harvest-prompt.txt")" --model "${X_REPOST_MODEL:-sonnet}" \
-     --dangerously-skip-permissions >"$STATE/last-harvest.raw" 2>/dev/null; then
+if timeout "${X_REPOST_MODEL_TIMEOUT:-600}" env -u ANTHROPIC_API_KEY "$CODEX_BIN" \
+     exec --ephemeral --model "$MODEL" -c "model_reasoning_effort=\"$REASONING_EFFORT\"" \
+     --ignore-user-config --json -o "$STATE/last-harvest.raw" \
+     --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -C "$SKILL" \
+     --add-dir "$SKILL" "$(cat "$STATE/last-harvest-prompt.txt")" \
+     >"$STATE/last-harvest.stdout" 2>"$STATE/last-harvest.err"; then
   "$PY" - "$STATE/last-harvest.raw" >"$STATE/last-harvest.json" <<'PYEOF'
 import json, re, sys
 raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()

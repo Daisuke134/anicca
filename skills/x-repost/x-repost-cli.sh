@@ -24,11 +24,11 @@ STATE="${X_REPOST_STATE_DIR:-$SKILL/state}"
 POSTED="$STATE/posted.jsonl"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
 UV="$(command -v uv || echo "$HOME/.local/bin/uv")"
-CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
+CODEX="$(command -v codex || echo "$HOME/.local/bin/codex")"
 IDENTITY="${X_REPOST_BROWSER_IDENTITY:-x:anicca}"
-# Overridable so this loop is not welded to one vendor's model, but defaulted to sonnet because the
-# house rule for every loop core in this repo is sonnet, never a larger model.
-MODEL="${X_REPOST_MODEL:-sonnet}"
+# x-repost is Codex-only: Claude's subscription ceiling must not be able to stall this loop.
+MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
+REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
 HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
@@ -58,7 +58,7 @@ report() {
   # and a hardcoded model name would start lying the moment someone runs this on another model.
   local body="x-repost::: $1
 
-— loop x-repost · model ${MODEL} · pass ${PASS_ID}"
+— loop x-repost · model ${MODEL} · effort ${REASONING_EFFORT} · pass ${PASS_ID}"
   for attempt in 1 2 3; do
     if send_telegram "$body"; then
       return 0
@@ -103,16 +103,19 @@ finish() {
   exit "$rc"
 }
 
-# Every claude call in this loop is one-shot, sonnet, and must end in a JSON object. Anything
-# else is a failed step -- the prompt is never "retried creatively", the pass just stops.
+# Every Codex call in this loop is one-shot, Luna/max, and must end in a JSON object. Anything else
+# is a failed step -- the prompt is never "retried creatively", the pass just stops.
 ask_model() {
   local prompt_file="$1" out_file="$2"
   # Bounded, because the cadence is hourly and a model call has no natural end. On 2026-08-19 a
   # single pass spent over half an hour across three calls, which on this schedule means two passes
   # driving the same browser at once. A call that overruns is a failed step, not a slow one.
   timeout "${X_REPOST_MODEL_TIMEOUT:-600}" \
-    env -u ANTHROPIC_API_KEY "$CLAUDE" -p "$(cat "$prompt_file")" \
-    --model "$MODEL" --dangerously-skip-permissions --add-dir "$SKILL" >"$out_file" 2>>"$EV/model.err"
+    env -u ANTHROPIC_API_KEY "$CODEX" exec --ephemeral --model "$MODEL" \
+    -c "model_reasoning_effort=\"$REASONING_EFFORT\"" --ignore-user-config --json \
+    -o "$out_file" --dangerously-bypass-approvals-and-sandbox \
+    --skip-git-repo-check -C "$SKILL" --add-dir "$SKILL" \
+    "$(cat "$prompt_file")" >"$EV/model.stdout" 2>>"$EV/model.err"
   "$PY" - "$out_file" <<'PYEOF'
 import json, re, sys
 raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()

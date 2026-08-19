@@ -15,9 +15,9 @@ the publish itself run through one leased CDP browser.
 | 1 | Lease the dedicated browser (`x:anicca`), restoring the session from `TWITTER_AUTH_TOKEN` if it lapsed | `~/anicca/skills/browser/ensure_provision_browser.sh` |
 | 2 | Scrape live search results for every query | `scripts/x_collect.py --mode recon`, `config/queries.txt` |
 | 3 | Refresh engagement on past posts; the best 5 of the last 10 become this pass's few-shot | `scripts/x_collect.py --mode engagement` |
-| 4 | Pick ONE post and draft 3 comments (funny / empathy / primary-source) | `claude -p --model sonnet`, `config/voice.md` |
-| 5 | Strip the AI register — **a separate call, style only, content frozen** | `claude -p --model sonnet`, `config/humanize-checklist.md` |
-| 6 | Choose the one to publish | `claude -p --model sonnet` |
+| 4 | Pick ONE post and draft 3 comments (funny / empathy / primary-source) | `codex exec --model gpt-5.6-luna` with `max` effort, `config/voice.md` |
+| 5 | Strip the AI register — **a separate call, style only, content frozen** | `codex exec --model gpt-5.6-luna` with `max` effort, `config/humanize-checklist.md` |
+| 6 | Choose the one to publish | `codex exec --model gpt-5.6-luna` with `max` effort |
 | 7 | Publish, then read the permalink back off the timeline | `scripts/x_post.py` |
 | 8 | Append the row, report to Telegram, record the cost estimate | `state/posted.jsonl`, `bin/record-cost-event.sh` |
 
