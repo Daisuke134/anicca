@@ -152,15 +152,32 @@ category-type options while `data-master-category-types` maps **three** for that
 sub-category, so neither the optional nor the required shape ever holds and the five-second
 poll always expires.
 
-Six against three, with three mapped, has the shape of the previous sub-category's options
-still sitting in the `<select>` alongside the new ones. Confirm that before fixing it: the
-readback records counts, not values, so the next step is to capture the option values and the
-mapped ids together and see whether the extra three are the stale set.
+**Severity was understated.** This is not one lost estimate: **55 of the last 56 negotiate
+passes report `status: failed`, and this thread is why.** One form that never satisfies the
+contract marks the whole lane failed, every three minutes, all day.
 
-The count equality is a proxy for the real invariant, which is that the enabled options *are*
-the mapped ones. Comparing values instead of counts would be correct whether or not stale
-options linger — but this lane submits priced offers to buyers, so the change wants a fresh
-adversary before it ships, not just a green test.
+I guessed the extra three were the previous sub-category's options left in the `<select>`. The
+readback now carries the option list, and that guess is **wrong**:
+
+```
+sub_value 644   mapped 3   enabled 6
+選択してください / サイト修正・更新代行 / バグ修正・不具合解消 /
+Webサイトコンサル・集客支援 / サイト高速化・表示速度改善 /
+お問い合わせ・各種フォーム作成 / サーバー設定・WPインストール
+```
+
+Those six are one coherent family — all website work. Nothing stale is mixed in. So the
+`<select>` is right and the `data-master-category-types` blob is the one that disagrees, naming
+three where the page offers six.
+
+That inverts the fix. The contract asserts equality between the live DOM and a data attribute,
+and treats a mismatch as "not loaded yet" — but the DOM is the authority for what a human could
+select, and the mapping is a hint that is allowed to be behind. The properties actually worth
+holding are the ones the next step already needs: the control is enabled, its row is visible,
+and the intended label appears exactly once among the enabled options.
+
+Dropping the count equality is a change to the lane that sends priced offers to buyers, so it
+goes through a fresh adversary before it ships — not just a green test.
 
 ---
 
