@@ -104,7 +104,12 @@
         "--runner",
         "{{RELEASE}}/skills/earn/gig/agent-runner/agent_runner.py",
         "--runner-config",
-        "{{RELEASE}}/skills/earn/gig/agent-runner/config.json"
+        "{{RELEASE}}/skills/earn/gig/agent-runner/config.json",
+        "--continuous",
+        "--poll-seconds",
+        "30",
+        "--workers",
+        "2"
       ],
       "env": {
         "CLOAK_BROWSER_OWNER": "gig-reply-detector",
@@ -118,7 +123,7 @@
         "CDP_GUARD_LOG": "{{GIG_LOG_DIR}}/cdp-gig-browser-guard.log",
         "GIG_CDP_HEALTH_URL": "http://127.0.0.1:{{CDP_PORT}}/json/version"
       },
-      "StartInterval": 30,
+      "KeepAlive": true,
       "ThrottleInterval": 30,
       "RunAtLoad": true,
       "ProcessType": "Background",

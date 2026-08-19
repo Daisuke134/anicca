@@ -269,7 +269,10 @@ def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
     jobs = json.loads(LAUNCHD_PATH.read_text(encoding="utf-8"))["jobs"]
     by_lane = {job["lane"]: job for job in jobs}
 
-    assert by_lane["negotiate"]["StartInterval"] == 30
+    assert by_lane["negotiate"]["KeepAlive"] is True
+    assert "StartInterval" not in by_lane["negotiate"]
+    negotiate_program = by_lane["negotiate"]["program"]
+    assert negotiate_program[-5:] == ["--continuous", "--poll-seconds", "30", "--workers", "2"]
     assert by_lane["negotiate"]["ThrottleInterval"] == 30
     assert (by_lane["apply"]["StartInterval"], by_lane["apply"]["ThrottleInterval"]) == (60, 60)
     assert (by_lane["storefront"]["StartInterval"], by_lane["storefront"]["ThrottleInterval"]) == (60, 60)

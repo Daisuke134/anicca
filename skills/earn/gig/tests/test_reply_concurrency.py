@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib.util
 import json
+import sqlite3
 import sys
 import argparse
 import textwrap
@@ -853,3 +855,151 @@ def test_direct_thread_only_owns_exact_url_and_emits_one_semantic_inquiry(
     assert snapshot.main() == 1
     invalid = json.loads(capsys.readouterr().out)
     assert invalid["error"] == "invalid_talkroom_id"
+
+
+def _supervisor_args(tmp_path):
+    return argparse.Namespace(
+        database=tmp_path / "supervisor.sqlite3",
+        manifest=GIG_ROOT / "config" / "connectors" / "coconala.json",
+        evidence_dir=tmp_path / "evidence",
+        poll_seconds=0.01,
+        workers=2,
+        reconcile_seconds=300,
+    )
+
+
+def _head_row(identity, *, thread_id="123"):
+    return {
+        "talkroom_id": thread_id,
+        "talkroom_url": f"https://coconala.com/mypage/direct_message/{thread_id}",
+        "unread": True,
+        "reply_required": True,
+        "last_message_side": "buyer",
+        "last_message_identity_sha256": identity,
+    }
+
+
+def test_supervise_slow_workers_overlap_and_claim_second_before_first_finishes(tmp_path):
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    stop = asyncio.Event()
+    second_claimed = asyncio.Event()
+    first_finished = asyncio.Event()
+    worker_started = {}
+    worker_finished = {}
+    claim_times = {}
+    active = 0
+    max_active = 0
+    probe_count = 0
+
+    async def probe():
+        nonlocal probe_count
+        probe_count += 1
+        if probe_count == 1:
+            return {"inquiries": [_head_row("a" * 64)], "captured_at": "2026-08-19T00:00:00+00:00"}
+        if probe_count == 2:
+            return {"inquiries": [_head_row("b" * 64)], "captured_at": "2026-08-19T00:00:01+00:00"}
+        await stop.wait()
+        return {"inquiries": [], "captured_at": "2026-08-19T00:00:02+00:00"}
+
+    async def worker(item):
+        nonlocal active, max_active
+        identity = item["identity_sha256"]
+        worker_started[identity] = time.monotonic_ns()
+        active += 1
+        max_active = max(max_active, active)
+        if identity == "a" * 64:
+            await second_claimed.wait()
+        else:
+            event = database.action_lifecycle_for_event(item["event_key"], item["thread_id"])
+            assert event is not None
+            claim_times[identity] = time.monotonic_ns()
+            second_claimed.set()
+        worker_finished[identity] = time.monotonic_ns()
+        active -= 1
+        if len(worker_finished) == 2:
+            first_finished.set()
+            stop.set()
+
+    async def reconcile():
+        return None
+
+    asyncio.run(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+    ))
+
+    assert claim_times["b" * 64] < worker_finished["a" * 64]
+    assert max(worker_started.values()) < min(worker_finished.values())
+    assert max_active == 2
+    assert first_finished.is_set()
+
+
+def test_supervise_restart_replays_pending_inbox_once(tmp_path):
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    event_key = outbox.coconala_inbox_event_key("123", "a" * 64)
+    action = database.enqueue(
+        event_key=event_key, thread_id="123",
+        thread_url="https://coconala.com/mypage/direct_message/123",
+        observed_at=1_755_555_200,
+    )
+    stop = asyncio.Event()
+    dispatched = []
+
+    async def probe():
+        return {"inquiries": [_head_row("a" * 64)], "captured_at": "2026-08-19T00:00:00+00:00"}
+
+    async def worker(item):
+        dispatched.append(item)
+        stop.set()
+
+    async def reconcile():
+        return None
+
+    asyncio.run(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+    ))
+
+    assert len(dispatched) == 1
+    assert dispatched[0]["action_id"] == action["action_id"]
+    assert dispatched[0]["event_key"] == event_key
+    assert dispatched[0]["thread_id"] == "123"
+    assert dispatched[0]["identity_sha256"] == "a" * 64
+
+
+def test_supervise_replied_duplicate_head_has_no_second_effect(tmp_path):
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    event_key = outbox.coconala_inbox_event_key("123", "a" * 64)
+    action = database.enqueue(
+        event_key=event_key, thread_id="123",
+        thread_url="https://coconala.com/mypage/direct_message/123",
+        observed_at=1_755_555_200,
+    )
+    with sqlite3.connect(args.database) as connection:
+        connection.execute(
+            "UPDATE connector_actions SET state='replied',updated_at=? WHERE action_id=?",
+            (1_755_555_201, action["action_id"]),
+        )
+    stop = asyncio.Event()
+    dispatched = []
+    probes = 0
+
+    async def probe():
+        nonlocal probes
+        probes += 1
+        if probes > 1:
+            stop.set()
+        return {"inquiries": [_head_row("a" * 64)], "captured_at": "2026-08-19T00:00:00+00:00"}
+
+    async def worker(item):
+        dispatched.append(item)
+
+    async def reconcile():
+        return None
+
+    asyncio.run(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+    ))
+
+    assert dispatched == []

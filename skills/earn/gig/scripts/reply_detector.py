@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import fcntl
 import importlib.util
+import inspect
 import json
 import os
 import re
+import signal
 import sqlite3
 import subprocess
 import sys
@@ -133,6 +136,29 @@ def _collect_snapshot_with_retry(
         })
         return attempts
     raise AssertionError("unreachable collector retry state")
+
+
+def _collect_head_snapshot(args: Any, evidence: Path) -> dict[str, Any]:
+    """Read the bounded inbox head used by the continuous producer."""
+    snapshot = evidence / "head-snapshot.json"
+    evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
+    command = [
+        sys.executable, str(args.snapshot_script),
+        "--output", str(snapshot), "--evidence-dir", str(evidence / "live-dom"),
+        "--mode", "direct-inbox-head-only", "--hidden-no-screenshot",
+        "--database", str(args.database), "--manifest", str(args.manifest),
+    ]
+    _run("head_collect", command)
+    value = json.loads(snapshot.read_text(encoding="utf-8"))
+    if (
+        not isinstance(value, dict)
+        or value.get("collector_mode") != "direct-inbox-head-only"
+        or value.get("head_only") is not True
+        or not isinstance(value.get("inquiries"), list)
+    ):
+        raise ValueError("head snapshot incomplete")
+    _owner_only(snapshot)
+    return value
 
 
 def _operator_brake_status(
@@ -1122,12 +1148,239 @@ def run_targeted_thread(
         return _targeted_failure(thread_id, run_id, "targeted", error)
 
 
+async def _supervisor_hook(hook: Any, *arguments: Any) -> Any:
+    """Invoke a testable supervisor hook whether it is sync or async."""
+    result = hook(*arguments)
+    return await result if inspect.isawaitable(result) else result
+
+
+def _supervisor_rows(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, dict):
+        value = value.get("inquiries")
+    if not isinstance(value, list):
+        return []
+    return [row for row in value if isinstance(row, dict)]
+
+
+def _supervisor_work_from_action(action: dict[str, Any]) -> dict[str, Any] | None:
+    event_key = str(action.get("event_key") or "")
+    thread_id = str(action.get("thread_id") or "")
+    match = _INBOX_EVENT.fullmatch(event_key)
+    if match is None or match.group("thread") != thread_id:
+        return None
+    return {
+        "action_id": int(action["action_id"]),
+        "event_key": event_key,
+        "thread_id": thread_id,
+        "identity_sha256": match.group("identity"),
+    }
+
+
+async def supervise_replies(
+    args: Any, *, probe: Any, worker: Any, reconcile: Any, stop: Any,
+) -> None:
+    """Supervise one producer, two consumers, and idle reconciliation.
+
+    SQLite is the durable queue.  The in-memory queue only dispatches exact
+    ``action_id``/event/identity tuples and is rebuilt from pending actions on
+    every producer pass, so a process restart cannot lose a claimed inquiry.
+    """
+    poll_seconds = float(getattr(args, "poll_seconds", 30) or 30)
+    worker_count = int(getattr(args, "workers", 2) or 2)
+    reconcile_seconds = float(getattr(args, "reconcile_seconds", 300) or 300)
+    if not 0 < poll_seconds <= 30:
+        raise ValueError("poll_seconds must be in (0, 30]")
+    if worker_count != 2:
+        raise ValueError("supervisor requires exactly two workers")
+    if reconcile_seconds <= 0:
+        raise ValueError("reconcile_seconds must be positive")
+    if not hasattr(stop, "is_set") or not hasattr(stop, "wait"):
+        raise TypeError("stop must be an asyncio.Event-like object")
+
+    database = Path(getattr(args, "database"))
+    manifest = Path(getattr(args, "manifest"))
+    outbox = ConnectorOutbox(database, manifest)
+    dispatch: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+    in_flight: set[str] = set()
+
+    async def enqueue_work(work: dict[str, Any]) -> None:
+        event_key = work["event_key"]
+        if event_key in in_flight:
+            return
+        lifecycle = outbox.action_lifecycle_for_event(event_key, work["thread_id"])
+        if lifecycle is not None and lifecycle.get("state") != "pending":
+            return
+        in_flight.add(event_key)
+        await dispatch.put(work)
+
+    async def enqueue_head_rows(rows: list[dict[str, Any]]) -> None:
+        for row in rows:
+            thread_id = str(row.get("talkroom_id") or "")
+            identity = str(row.get("last_message_identity_sha256") or "")
+            if (
+                _TARGETED_THREAD_ID.fullmatch(thread_id) is None
+                or not re.fullmatch(r"[0-9a-f]{64}", identity)
+                or row.get("last_message_side") == "seller"
+                or not (row.get("unread") is True or row.get("reply_required") is True)
+            ):
+                continue
+            event_key = coconala_inbox_event_key(thread_id, identity)
+            try:
+                action = outbox.enqueue(
+                    event_key=event_key, thread_id=thread_id,
+                    thread_url=str(row.get("talkroom_url") or ""),
+                    observed_at=int(time.time()),
+                )
+            except Exception:
+                continue
+            if action.get("state") != "pending":
+                continue
+            await enqueue_work({
+                "action_id": int(action["action_id"]),
+                "event_key": event_key, "thread_id": thread_id,
+                "identity_sha256": identity,
+            })
+
+    async def enqueue_pending_actions() -> None:
+        for action in outbox.pending_actions():
+            work = _supervisor_work_from_action(action)
+            if work is not None:
+                await enqueue_work(work)
+
+    async def producer() -> None:
+        while not stop.is_set():
+            await enqueue_pending_actions()
+            try:
+                observed = await _supervisor_hook(probe)
+                await enqueue_head_rows(_supervisor_rows(observed))
+            except Exception:
+                # A transient probe failure leaves durable pending rows for the
+                # next pass; it must not tear down the supervised consumers.
+                pass
+            if stop.is_set():
+                break
+            try:
+                await asyncio.wait_for(stop.wait(), timeout=poll_seconds)
+            except asyncio.TimeoutError:
+                continue
+
+    async def consumer() -> None:
+        while not stop.is_set() or not dispatch.empty():
+            try:
+                work = await asyncio.wait_for(dispatch.get(), timeout=0.1)
+            except asyncio.TimeoutError:
+                continue
+            try:
+                await _supervisor_hook(worker, work)
+            except Exception:
+                pass
+            finally:
+                in_flight.discard(work["event_key"])
+                dispatch.task_done()
+
+    async def reconciler() -> None:
+        while not stop.is_set():
+            try:
+                await asyncio.wait_for(stop.wait(), timeout=reconcile_seconds)
+            except asyncio.TimeoutError:
+                if dispatch.empty() and not in_flight:
+                    try:
+                        await _supervisor_hook(reconcile)
+                    except Exception:
+                        pass
+
+    producer_task = asyncio.create_task(producer(), name="gig-reply-producer")
+    consumer_tasks = [
+        asyncio.create_task(consumer(), name=f"gig-reply-consumer-{index}")
+        for index in range(worker_count)
+    ]
+    reconcile_task = asyncio.create_task(reconciler(), name="gig-reply-reconciler")
+    try:
+        await producer_task
+        await dispatch.join()
+    finally:
+        stop.set()
+        await dispatch.join()
+        await asyncio.gather(*consumer_tasks, reconcile_task, return_exceptions=True)
+
+
+def _run_reconciliation_once(args: Any, evidence: Path) -> dict[str, Any]:
+    """Run the existing full four-page pass when urgent work is idle."""
+    run_id = f"reconcile-{int(time.time())}-{os.getpid()}"
+    run_evidence = evidence / "reconciliation" / run_id
+    run_evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
+    snapshot = run_evidence / "marketplace-snapshot.json"
+    attempts = _collect_snapshot_with_retry(args, snapshot, run_evidence)
+    _owner_only(snapshot)
+    snapshot_value = _targeted_snapshot(snapshot)
+    terminal_cleanup = close_officially_unrepliable_pending(
+        snapshot_value, database=args.database, manifest=args.manifest,
+        owner=f"gig-reply-terminal-{run_id}", now=int(time.time()),
+    )
+    _atomic_json(run_evidence / "terminal-action-cleanup.json", terminal_cleanup)
+    pipeline = _run_effect_pipeline(
+        args, snapshot=snapshot_value, evidence=run_evidence, run_id=run_id,
+    )
+    pipeline["collect_attempts"] = len(attempts)
+    return pipeline
+
+
+async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for signum in (signal.SIGTERM, signal.SIGINT):
+        try:
+            loop.add_signal_handler(signum, stop.set)
+        except (NotImplementedError, RuntimeError):
+            pass
+    probe_number = 0
+
+    async def probe() -> dict[str, Any]:
+        nonlocal probe_number
+        probe_number += 1
+        probe_evidence = evidence / "continuous" / f"probe-{probe_number}"
+        return await asyncio.to_thread(_collect_head_snapshot, args, probe_evidence)
+
+    async def worker(work: dict[str, Any]) -> dict[str, Any]:
+        run_id = f"targeted-{int(time.time())}-{os.getpid()}-{work['action_id']}"
+        worker_evidence = evidence / "continuous" / "workers" / run_id
+        result = await asyncio.to_thread(
+            run_targeted_thread, args,
+            action_id=int(work["action_id"]),
+            inbox_event_key=str(work["event_key"]),
+            thread_id=str(work["thread_id"]),
+            evidence=worker_evidence,
+            run_id=run_id,
+        )
+        _atomic_json(worker_evidence / "result.json", result)
+        return result
+
+    async def reconcile() -> dict[str, Any]:
+        return await asyncio.to_thread(_run_reconciliation_once, args, evidence)
+
+    try:
+        await supervise_replies(
+            args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+        )
+    finally:
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            try:
+                loop.remove_signal_handler(signum)
+            except (NotImplementedError, RuntimeError):
+                pass
+    return {"status": "stopped", "workers": 2, "poll_seconds": args.poll_seconds}
+
+
 def main() -> int:
     gig_root = Path(__file__).resolve().parents[1]
     home = Path.home()
     install_token_budget(os.environ, run_id=f"reply-detector-{int(time.time())}-{os.getpid()}")
     parser = argparse.ArgumentParser()
     parser.add_argument("--trigger", choices=("fallback", "gmail_push", "manual"), default="fallback")
+    parser.add_argument("--continuous", action="store_true")
+    parser.add_argument("--poll-seconds", type=float, default=30)
+    parser.add_argument("--workers", type=int, default=2)
+    parser.add_argument("--reconcile-seconds", type=float, default=300)
     parser.add_argument("--evidence-dir", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--lock-file", type=Path, default=home / "gig/reply-detector.lock")
@@ -1239,6 +1492,25 @@ def main() -> int:
             _persist_wake_report(args, output, failure)
             print(json.dumps(failure, ensure_ascii=False, separators=(",", ":")))
             return 1
+
+        if args.continuous:
+            try:
+                continuous = asyncio.run(_run_continuous_runtime(args, evidence))
+                continuous.update({"run_id": run_id, "trigger": args.trigger})
+                _atomic_json(output, continuous)
+                print(json.dumps(continuous, ensure_ascii=False, separators=(",", ":")))
+                return 0
+            except Exception as error:
+                failure = {
+                    **_wake_result(
+                        run_id=run_id, trigger=args.trigger, status="failed",
+                    ),
+                    "failed_step": "continuous",
+                    "errors": [{"type": type(error).__name__, "message": str(error)[:300]}],
+                }
+                _persist_wake_report(args, output, failure)
+                print(json.dumps(failure, ensure_ascii=False, separators=(",", ":")))
+                return 1
 
         snapshot = evidence / "marketplace-snapshot.json"
         queue = evidence / "reply-queue.json"
