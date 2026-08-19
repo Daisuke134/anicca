@@ -177,7 +177,8 @@ remain open until the continuous owner runs this release and one authorized acti
   paid options (¥3,000 and ¥5,000). The natural pass at 2026-08-19 23:22 JST reports
   `stale_listing_contracts=[]` across all 13 observed services; no option is quoted from a stale
   contract.
-- [ ] Either implement the listing-envelope consumer end to end or delete the unused protocol.
+- [x] Delete the unused listing-envelope protocol instead of exposing a half-built consumer;
+  `storefront_direct.py` no longer writes or reports envelopes/ACK state (24 focused tests pass).
 - [ ] Produce one valid, scoped, unfenced create/update mutation contract.
 - [ ] Execute exactly one official listing create/update and read back the resulting live listing.
 - [ ] Replay it and prove zero duplicate or wrong-service mutations.
@@ -592,7 +593,7 @@ named above.
 
 ---
 
-## 4. `negotiate_context` can never become "ready"
+## 4. `negotiate_context` can never become "ready" — CLOSED
 
 **Blocks:** the negotiate lane answering a storefront inquiry with the offer it was made
 against. Two independent causes, both proven from the live receipt.
@@ -625,7 +626,7 @@ bound to the same observed listing version.
 The product-truth decision is therefore closed. Any later price or copy change must again be
 observed in the official seller form before its contract hash is advanced.
 
-**4b. Nothing consumes an envelope.**
+**4b. Nothing consumed an envelope. CLOSED by deletion.**
 `negotiate_context` reports `ready` only when every context key is also present in
 `negotiate-context-acks.jsonl` with `status: consumed`. That file has never been created, and
 `storefront_direct.py` is the only file in the repository that names either it or
@@ -633,8 +634,11 @@ observed in the official seller form before its contract hash is advanced.
 The negotiate lane does not know this protocol exists, so even with 4a fixed the state stays
 `missing` forever, and `missing` reads as a transient failure when it means "no consumer".
 
-Decide whether to build the consumer or to delete the protocol. Do not "fix" this by relaxing
-the readiness test — that would only make an unbuilt half look finished.
+No repository consumer existed, so the unused half-protocol was removed from
+`storefront_direct.py`: the envelope writer, ACK path, state-file touch, CLI flag, receipt field
+and misleading report line are gone. Existing private state is left untouched; no data cleanup was
+required. Storefront now reports only facts it actually owns, and Negotiate remains the sole owner
+of buyer-thread context. Focused Storefront suite: 24 passed.
 
 ---
 
