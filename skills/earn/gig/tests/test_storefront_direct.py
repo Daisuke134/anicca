@@ -550,7 +550,7 @@ def test_effect_ledger_append_is_idempotent(tmp_path):
 
 def test_verified_image_contract_becomes_one_exact_image_judgement(monkeypatch):
     """The judgement itself; the contract validator has its own tests."""
-    monkeypatch.setattr(direct, "_validate_image_mutation_contract", lambda contract: None)
+    monkeypatch.setattr(direct, "_validate_image_mutation_contract", lambda contract, **_kwargs: None)
     contract = {
         "service_id": "91000001", "changed_field": "image",
         "proposed_value": {"asset_sha256": "a" * 64, "asset_path": "assets/hero.png"},
@@ -573,7 +573,7 @@ def test_verified_image_contract_becomes_one_exact_image_judgement(monkeypatch):
 
 
 def test_image_form_and_public_readback_accept_only_one_image_delta(monkeypatch):
-    monkeypatch.setattr(direct, "_validate_image_mutation_contract", lambda contract: None)
+    monkeypatch.setattr(direct, "_validate_image_mutation_contract", lambda contract, **_kwargs: None)
     contract = {"service_id": "91000001", "changed_field": "image",
                 "proposed_value": {"asset_sha256": "a" * 64, "asset_path": "assets/hero.png"}}
     base = [{"name": "data[Service][overview]", "value": "same", "checked": False}]

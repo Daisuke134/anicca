@@ -18,6 +18,7 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 from kpi_reconciler import reconcile_state, verified_application_identities
+from storefront_direct import _storefront_paths
 
 
 APPLIED_URL = "https://coconala.com/mypage/job_matching/applied/offers"
@@ -25,13 +26,16 @@ HASH_KEYS = {
     "storefront_readback", "storefront_contract", "apply_readback", "applied.jsonl",
     "settlement_projection",
 }
-DEFAULT_CONTRACT = HERE.parent / "config" / "storefront-catalog-scorecard.json"
 ULID = re.compile(r"[0-9A-HJKMNP-TV-Z]{26}")
 SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
 class AuditError(ValueError):
     pass
+
+
+def _storefront_contract_path() -> Path:
+    return _storefront_paths()["scorecard"]
 
 
 def _canonical(value: Any) -> bytes:
@@ -294,8 +298,9 @@ def _read_jsonl(path: Path) -> tuple[list[dict[str, Any]], bytes]:
 
 def audit_state(
     state_dir: Path, storefront_path: Path, apply_path: Path, *, observed_at: str,
-    storefront_contract_path: Path = DEFAULT_CONTRACT, max_age_seconds: int = 3600,
+    storefront_contract_path: Path | None = None, max_age_seconds: int = 3600,
 ) -> dict[str, Any]:
+    storefront_contract_path = storefront_contract_path or _storefront_contract_path()
     storefront, storefront_content = _read_json(storefront_path)
     apply, apply_content = _read_json(apply_path)
     applications, applications_content = _read_jsonl(state_dir / "applied.jsonl")
@@ -360,7 +365,7 @@ def main() -> int:
     parser.add_argument("--storefront-readback", type=Path, required=True)
     parser.add_argument("--apply-readback", type=Path, required=True)
     parser.add_argument("--observed-at", required=True)
-    parser.add_argument("--storefront-contract", type=Path, default=DEFAULT_CONTRACT)
+    parser.add_argument("--storefront-contract", type=Path, default=_storefront_contract_path())
     parser.add_argument("--max-age-seconds", type=int, default=3600)
     parser.add_argument("--audit-log", type=Path)
     args = parser.parse_args()

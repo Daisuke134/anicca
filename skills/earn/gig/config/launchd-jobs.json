@@ -26,6 +26,7 @@
     "GIG_BROWSER_TLS_COMPAT": "",
     "GIG_REPORT_CHAT": "",
     "GIG_SANDBOX_DENY": "",
+    "GIG_STOREFRONT_ROOT": "",
     "ANICCA_JOB_PROFILE": "{{HOME}}/.config/anicca/job-search/profile.json"
   },
 
@@ -41,6 +42,7 @@
     "GIG_REPORT_CHAT": "{{GIG_REPORT_CHAT}}",
     "LIFE_MANAGER_HOME": "{{LIFE_MANAGER_HOME}}",
     "LIFE_MANAGER_REPO": "{{RELEASE}}",
+    "GIG_STOREFRONT_ROOT": "{{GIG_STOREFRONT_ROOT}}",
     "ANICCA_JOB_PROFILE": "{{ANICCA_JOB_PROFILE}}"
   },
 

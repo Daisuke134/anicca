@@ -78,6 +78,90 @@ DEFAULT_LISTING_CONTRACT_FAMILIES = GIG_DIR / "config" / "storefront-contract-fa
 DEFAULT_NEW_LISTING_CONTRACT = (
     GIG_DIR / "contracts" / "storefront" / "new" / "seo-article-v1.json"
 )
+
+
+def _walk_json_items(value: object):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            yield key, child
+            yield from _walk_json_items(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _walk_json_items(child)
+
+
+def _asset_reference(path: str) -> str:
+    asset = Path(path).resolve()
+    return str(asset.relative_to(GIG_DIR.resolve())) if asset.is_relative_to(GIG_DIR.resolve()) else str(asset)
+
+
+def _storefront_paths() -> dict[str, Path]:
+    """Bind an explicitly configured seller bundle before the browser is leased."""
+    configured = os.environ.get("GIG_STOREFRONT_ROOT", "").strip()
+    if not configured:
+        return {
+            "scorecard": DEFAULT_SCORECARD, "families": DEFAULT_LISTING_CONTRACT_FAMILIES,
+            "listings": DEFAULT_LISTING_CONTRACT_DIR, "new_listing": DEFAULT_NEW_LISTING_CONTRACT,
+            "image": DEFAULT_IMAGE_CONTRACT, "gallery": DEFAULT_GALLERY_CONTRACT,
+            "title": DEFAULT_TITLE_MUTATION, "body": DEFAULT_BODY_MUTATION,
+            "scope": DEFAULT_SCOPE_MUTATION, "package": DEFAULT_PACKAGE_MUTATION,
+            "faq": DEFAULT_FAQ_MUTATION, "price": DEFAULT_PRICE_MUTATION,
+        }
+    try:
+        root = Path(configured).expanduser().resolve(strict=True)
+    except OSError as error:
+        raise RuntimeError("storefront_root_invalid") from error
+    if not root.is_dir():
+        raise RuntimeError("storefront_root_invalid")
+
+    def inside(path: Path) -> Path:
+        try:
+            resolved = path.resolve(strict=True)
+        except OSError as error:
+            raise RuntimeError("storefront_root_invalid") from error
+        if not resolved.is_relative_to(root):
+            raise RuntimeError("storefront_root_invalid")
+        return resolved
+
+    paths = {
+        "scorecard": root / "scorecard.json", "families": root / "families.json",
+        "listings": root / "contracts" / "listings", "new_listing": root / "contracts" / "new-listing.json",
+        "image": root / "assets" / "image-contract.json",
+        "gallery": root / "assets" / "gallery-contract.json",
+        **{field: root / "contracts" / "mutations" / f"{field}.json"
+           for field in ("title", "body", "scope", "package", "faq", "price")},
+    }
+    paths = {name: inside(path) for name, path in paths.items()}
+    if (not paths["listings"].is_dir() or not inside(root / "assets").is_dir()
+            or any(not path.is_file() for name, path in paths.items() if name != "listings")):
+        raise RuntimeError("storefront_root_invalid")
+    checked: set[Path] = set()
+
+    def check_assets(contract: Path) -> None:
+        if contract in checked:
+            return
+        checked.add(contract)
+        try:
+            document = json.loads(contract.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise RuntimeError("storefront_root_invalid") from error
+        for key, value in _walk_json_items(document):
+            if key not in {"asset", "asset_path", "hero_image_contract"} or not isinstance(value, str):
+                continue
+            relative = Path(value)
+            try:
+                candidate = (contract.parent / relative).resolve(strict=True)
+            except OSError as error:
+                raise RuntimeError("storefront_root_asset_invalid") from error
+            if (relative.is_absolute() or not candidate.is_relative_to(root) or not candidate.is_file()):
+                raise RuntimeError("storefront_root_asset_invalid")
+            if candidate.suffix == ".json":
+                check_assets(candidate)
+
+    listings = [inside(path) for path in paths["listings"].rglob("*.json")]
+    for contract in [path for name, path in paths.items() if name != "listings"] + listings:
+        check_assets(contract)
+    return paths
 JUDGEMENT_FIELDS = {
     "decision", "service_id", "changed_field", "before_value", "proposed_value",
     "hypothesis", "competitor_evidence_paths", "capability_evidence_paths",
@@ -746,10 +830,7 @@ def _join_funnel(
             "coverage": coverage, "unknown_sources": errors, "cutoff_cursor": cursor}
 
 
-def _allocate_portfolio(
-    state_dir: Path, contracts: list[dict], funnel: dict, scorecard_path: Path, now: int,
-    duplicate_listings: list[dict] | None = None,
-) -> dict:
+def _load_portfolio_scorecard(scorecard_path: Path) -> dict:
     try:
         scorecard = json.loads(scorecard_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -765,6 +846,17 @@ def _allocate_portfolio(
             or not isinstance(services, list) or not isinstance(backlog, list)
             or not isinstance(policy.get("replacement_candidates"), list)):
         raise RuntimeError("storefront_portfolio_policy_invalid")
+    return scorecard
+
+
+def _allocate_portfolio(
+    state_dir: Path, contracts: list[dict], funnel: dict, scorecard_path: Path, now: int,
+    duplicate_listings: list[dict] | None = None,
+) -> dict:
+    scorecard = _load_portfolio_scorecard(scorecard_path)
+    policy = scorecard["portfolio_policy"]
+    services = scorecard["services"]
+    backlog = scorecard["priority_backlog"]
     latest_analytics = {}
     analytics_path = state_dir / "analytics.jsonl"
     rows, analytics_error = _jsonl_rows(analytics_path)
@@ -1014,6 +1106,32 @@ def _load_gallery_contract(path: Path) -> dict:
     if set(replaced_ids) != set(before_ids) - set(kept_ids) or len(set(replaced_ids)) != 4:
         raise RuntimeError("storefront_gallery_partition_invalid")
     return {**contract, "replacements": loaded}
+
+
+def _preflight_storefront_bundle() -> None:
+    """Reject an explicit bundle before any browser or lease operation."""
+    if not os.environ.get("GIG_STOREFRONT_ROOT", "").strip():
+        return
+    paths = _storefront_paths()
+    _load_portfolio_scorecard(paths["scorecard"])
+    for path in paths["listings"].glob("*.json"):
+        try:
+            _validate_listing_contract_static(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError) as error:
+            raise RuntimeError("listing_contract_static_invalid") from error
+    # Listing version/url bindings need the live official inventory and remain post-browser.
+    image = _load_image_contract(paths["image"])
+    gallery = _load_gallery_contract(paths["gallery"])
+    mappings, _ = _load_capability_families(paths["families"])
+    if (not mappings.get(str(image["service_id"]))
+            or not mappings.get(str(gallery["service_id"]))):
+        raise RuntimeError("storefront_image_family_unbound")
+    for field in ("title", "body", "scope", "package", "faq", "price"):
+        spec = _load_text_mutation_spec(paths[field])
+        if mappings.get(str(spec["service_id"])) != spec["capability_family"]:
+            raise RuntimeError("storefront_text_mutation_family_unbound")
+    import storefront_draft
+    storefront_draft.load_contract(paths["new_listing"])
 
 
 # Coconala withdrew a live listing twice for naming an external tool in its copy, because a file
@@ -1578,9 +1696,7 @@ def _render_replace_plan(retire_contract: dict, create_contract: dict | None, al
     return {**unsigned, "plan_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
 
 
-def _render_text_mutation(
-    path: Path, sources: list[dict], seller_snapshot: dict, capability_families: dict[str, str],
-) -> dict:
+def _load_text_mutation_spec(path: Path) -> dict:
     try:
         spec = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -1590,16 +1706,25 @@ def _render_text_mutation(
         "before_value", "proposed_value", "rollback_value", "official_readback", "success_metric",
         "observation_window_days", "evidence",
     }
-    source = next((row for row in sources if row["service_id"] == str(spec.get("service_id") or "")), None)
     if (set(spec) != required or spec.get("version") != 1 or spec.get("platform") != "coconala"
-            or spec.get("changed_field") not in {"title", "catchphrase", "body", "package", "FAQ", "price"} or source is None
-            or capability_families.get(str(spec.get("service_id") or "")) != spec.get("capability_family")
+            or spec.get("changed_field") not in {"title", "catchphrase", "body", "package", "FAQ", "price"}
             or not str(spec.get("form_field") or "").startswith("data[")
             or not all(isinstance(spec.get(key), str) and spec[key].strip()
                        for key in ("before_value", "proposed_value", "rollback_value"))
             or spec["before_value"] != spec["rollback_value"]
             or spec["before_value"] == spec["proposed_value"]
             or not isinstance(spec.get("evidence"), list) or not spec["evidence"]):
+        raise RuntimeError("storefront_text_mutation_spec_fields_invalid")
+    return spec
+
+
+def _render_text_mutation(
+    path: Path, sources: list[dict], seller_snapshot: dict, capability_families: dict[str, str],
+) -> dict:
+    spec = _load_text_mutation_spec(path)
+    source = next((row for row in sources if row["service_id"] == str(spec.get("service_id") or "")), None)
+    if (source is None
+            or capability_families.get(str(spec.get("service_id") or "")) != spec.get("capability_family")):
         raise RuntimeError("storefront_text_mutation_spec_fields_invalid")
     fields = {
         str(row.get("name") or ""): str(row.get("value") or "")
@@ -1698,6 +1823,27 @@ def _render_prepared_mutation(
 _stale_listing_contracts: list[dict] = []
 
 
+def _validate_listing_contract_static(contract: object) -> dict:
+    if not isinstance(contract, dict):
+        raise RuntimeError("listing_contract_static_invalid")
+    service_id = str(contract.get("service_id") or "")
+    offer = contract.get("offer")
+    playbook = contract.get("inquiry_playbook")
+    patterns = playbook.get("answer_patterns") if isinstance(playbook, dict) else None
+    required_inputs = offer.get("required_inputs") if isinstance(offer, dict) else None
+    if (contract.get("version") != 1 or contract.get("platform") != "coconala"
+            or not service_id.isdigit()
+            or contract.get("public_url") != f"https://coconala.com/services/{service_id}"
+            or not re.fullmatch(r"[0-9a-f]{64}", str(contract.get("service_version_sha256") or ""))
+            or not isinstance(patterns, list) or not patterns
+            or not all(isinstance(row, dict) and str(row.get("intent") or "").strip()
+                       and isinstance(row.get("triggers"), list) and row["triggers"]
+                       and str(row.get("response") or "").strip() for row in patterns)
+            or not isinstance(required_inputs, list) or not required_inputs):
+        raise RuntimeError("listing_contract_static_invalid")
+    return contract
+
+
 def _load_listing_contracts(
     root: Path, observed_contracts: list[dict], families_path: Path = DEFAULT_LISTING_CONTRACT_FAMILIES,
     created_path: Path | None = None,
@@ -1727,14 +1873,10 @@ def _load_listing_contracts(
                                              "source_path": str(path.resolve()),
                                              "reason": "listing_contract_binding_stale"})
             continue
-        patterns = playbook.get("answer_patterns")
-        required_inputs = offer.get("required_inputs")
-        if (not isinstance(patterns, list) or not patterns
-                or not all(isinstance(row, dict) and str(row.get("intent") or "").strip()
-                           and isinstance(row.get("triggers"), list) and row["triggers"]
-                           and str(row.get("response") or "").strip() for row in patterns)
-                or not isinstance(required_inputs, list) or not required_inputs):
-            raise RuntimeError(f"listing_contract_playbook_invalid:{service_id}")
+        try:
+            _validate_listing_contract_static(contract)
+        except RuntimeError as error:
+            raise RuntimeError(f"listing_contract_playbook_invalid:{service_id}") from error
         canonical = json.dumps(contract, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         loaded.append({
             **contract,
@@ -3558,7 +3700,7 @@ def _image_mutation_contract(
         "changed_field": "image", "before_value": {"service_image_ids": []},
         "proposed_value": {
             "asset_sha256": asset["asset_sha256"],
-            "asset_path": str(Path(asset["asset_path"]).resolve().relative_to(GIG_DIR.resolve())),
+            "asset_path": _asset_reference(asset["asset_path"]),
         },
         "allowed_delta": ["data[UploadedFile][n*][image_files]"],
         "rollback_value": {"service_image_ids": []},
@@ -3571,9 +3713,9 @@ def _image_mutation_contract(
 
 
 def _validate_image_mutation_contract(
-    contract: dict, families_path: Path = DEFAULT_LISTING_CONTRACT_FAMILIES,
+    contract: dict, families_path: Path | None = None, state_dir: Path | None = None,
 ) -> None:
-    mappings, _ = _load_capability_families(families_path)
+    mappings, _ = _load_capability_families(families_path or _storefront_paths()["families"])
     _validate_mutation_contract(contract, mappings)
     proposed = contract.get("proposed_value")
     if contract.get("changed_field") != "image" or not isinstance(proposed, dict):
@@ -3588,7 +3730,8 @@ def _validate_image_mutation_contract(
             raise RuntimeError("storefront_image_mutation_contract_invalid")
         raw_asset = Path(str(proposed.get("asset_path") or ""))
         asset = raw_asset.resolve() if raw_asset.is_absolute() else (GIG_DIR / raw_asset).resolve()
-        allowed_roots = (GIG_DIR.resolve(), (STATE_DIR / "storefront-direct").resolve())
+        allowed_roots = (GIG_DIR.resolve(), (state_dir or DEFAULT_STATE).resolve(),
+                         _storefront_paths()["image"].parent.resolve())
         try:
             if not any(asset.is_relative_to(root) for root in allowed_roots):
                 raise ValueError("outside_allowed_roots")
@@ -3619,6 +3762,116 @@ def _validate_image_mutation_contract(
                 or not re.fullmatch(r"data\[UploadedFile]\[\d+]\[image_files]", str(row.get("upload_field") or ""))
                 or not re.fullmatch(r"[0-9a-f]{64}", str(row.get("asset_sha256") or ""))):
             raise RuntimeError("storefront_gallery_mutation_contract_invalid")
+        raw_asset = Path(str(row["asset_path"]))
+        asset = raw_asset.resolve() if raw_asset.is_absolute() else (GIG_DIR / raw_asset).resolve()
+        allowed_roots = (GIG_DIR.resolve(), (state_dir or DEFAULT_STATE).resolve(),
+                         _storefront_paths()["gallery"].parent.resolve())
+        try:
+            if not any(asset.is_relative_to(root) for root in allowed_roots):
+                raise ValueError("outside_allowed_roots")
+            data = asset.read_bytes()
+        except (OSError, ValueError) as error:
+            raise RuntimeError("storefront_gallery_asset_invalid") from error
+        if hashlib.sha256(data).hexdigest() != row["asset_sha256"]:
+            raise RuntimeError("storefront_gallery_asset_identity_invalid")
+
+
+def _runtime_snapshot_dir(state_dir: Path, *, create: bool) -> Path:
+    try:
+        if create:
+            state_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        state_root = state_dir.resolve(strict=True)
+        if not state_root.is_dir():
+            raise ValueError("state_root_not_directory")
+        candidate = state_root / "asset-snapshots"
+        if candidate.is_symlink():
+            raise ValueError("snapshot_dir_symlink")
+        if create:
+            candidate.mkdir(mode=0o700, exist_ok=True)
+        snapshot_dir = candidate.resolve(strict=True)
+        if (not snapshot_dir.is_dir() or not snapshot_dir.is_relative_to(state_root)
+                or candidate.is_symlink()):
+            raise ValueError("snapshot_dir_outside_state")
+        if create:
+            snapshot_dir.chmod(0o700)
+        return snapshot_dir
+    except (OSError, ValueError) as error:
+        raise RuntimeError("storefront_image_snapshot_invalid") from error
+
+
+def _snapshot_image_contract_assets(contract: dict, state_dir: Path | None = None) -> dict:
+    """Bind each upload to immutable runtime bytes after validating its source."""
+    runtime_state = state_dir or DEFAULT_STATE
+    _validate_image_mutation_contract(contract, state_dir=runtime_state)
+    target_dir = _runtime_snapshot_dir(runtime_state, create=True)
+
+    def snapshot(path: str, digest: str) -> str:
+        source = Path(path)
+        source = source.resolve() if source.is_absolute() else (GIG_DIR / source).resolve()
+        try:
+            data = source.read_bytes()
+        except OSError as error:
+            raise RuntimeError("storefront_image_snapshot_invalid") from error
+        if hashlib.sha256(data).hexdigest() != digest:
+            raise RuntimeError("storefront_image_snapshot_identity_invalid")
+        target = target_dir / f"{digest}{source.suffix}"
+        if target.exists():
+            if target.is_symlink() or hashlib.sha256(target.read_bytes()).hexdigest() != digest:
+                raise RuntimeError("storefront_image_snapshot_identity_invalid")
+            target.chmod(0o400)
+            return str(target)
+        fd, temporary = tempfile.mkstemp(prefix=f".{digest[:12]}-", suffix=source.suffix, dir=target_dir)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(data); handle.flush(); os.fsync(handle.fileno())
+            os.replace(temporary, target)
+            target.chmod(0o400)
+            directory_fd = os.open(target_dir, os.O_RDONLY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        finally:
+            try:
+                Path(temporary).unlink()
+            except FileNotFoundError:
+                pass
+        return str(target)
+
+    bound = json.loads(json.dumps(contract))
+    proposed = bound["proposed_value"]
+    if bound["service_id"] == GALLERY_SERVICE_ID:
+        for row in proposed["replacement_assets"]:
+            row["asset_path"] = snapshot(row["asset_path"], row["asset_sha256"])
+    else:
+        proposed["asset_path"] = snapshot(proposed["asset_path"], proposed["asset_sha256"])
+    mappings, _ = _load_capability_families(_storefront_paths()["families"])
+    snapshotted = _seal_mutation_contract(
+        {key: value for key, value in bound.items() if key != "contract_sha256"}, mappings,
+    )
+    contract.clear()
+    contract.update(snapshotted)
+    return contract
+
+
+def _verified_snapshot_upload_path(
+    asset_path: str | Path, digest: str, state_dir: Path | None = None,
+) -> str:
+    """Return a snapshot only when its bytes still match immediately before upload."""
+    try:
+        snapshot_dir = _runtime_snapshot_dir(state_dir or DEFAULT_STATE, create=False)
+        candidate = Path(asset_path)
+        if candidate.is_symlink():
+            raise ValueError("snapshot_file_symlink")
+        path = candidate.resolve(strict=True)
+        if not path.is_file() or not path.is_relative_to(snapshot_dir):
+            raise ValueError("snapshot_outside_runtime")
+        data = path.read_bytes()
+    except (OSError, ValueError) as error:
+        raise RuntimeError("storefront_image_snapshot_invalid") from error
+    if hashlib.sha256(data).hexdigest() != digest:
+        raise RuntimeError("storefront_image_snapshot_identity_invalid")
+    return str(path)
 
 
 def _render_image_mutation(
@@ -3662,7 +3915,7 @@ def _render_gallery_mutation(
         replacements.append({
             "replace_image_id": row["replace_image_id"],
             "asset_sha256": row["asset_sha256"],
-            "asset_path": str(Path(row["asset_path"]).resolve().relative_to(GIG_DIR.resolve())),
+            "asset_path": _asset_reference(row["asset_path"]),
             "upload_field": f"data[UploadedFile][{match.group(1)}][image_files]",
         })
     upload_fields = [row["upload_field"] for row in replacements]
@@ -3709,12 +3962,12 @@ def _render_published_gallery_mutation(state_dir: Path, own_page: dict) -> dict:
         contract = intent.get("mutation_contract")
         if not isinstance(contract, dict):
             raise RuntimeError("published_gallery_contract_missing")
-        _validate_image_mutation_contract(contract)
+        _validate_image_mutation_contract(contract, state_dir=state_dir)
         try:
             public_before = json.loads(Path(intent["public_before_path"]).read_text(encoding="utf-8"))
         except (OSError, KeyError, json.JSONDecodeError) as error:
             raise RuntimeError("published_gallery_before_evidence_missing") from error
-        _validate_public_image_acceptance(public_before, own_page, contract)
+        _validate_public_image_acceptance(public_before, own_page, contract, state_dir=state_dir)
         logical_field = contract["allowed_delta"][0]
         return {
             "version": 1, "contract": contract,
@@ -3741,7 +3994,7 @@ def _image_judgement(hypothesis: dict, contract: dict) -> dict:
 
 
 def _text_judgement(hypothesis: dict, contract: dict, effects_path: Path, now: int) -> dict:
-    mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
+    mappings, _ = _load_capability_families(_storefront_paths()["families"])
     _validate_mutation_contract(contract, mappings)
     if (hypothesis.get("service_id") != contract.get("service_id")
             or hypothesis.get("field") != contract.get("changed_field")
@@ -3873,13 +4126,16 @@ def _guard_judgement(
     return {**value, "experiment_key": key, "no_op_reason": None}
 
 
-def _presend_guard(judgement: dict, own_page: dict, mutation_contract: dict | None = None) -> None:
+def _presend_guard(
+    judgement: dict, own_page: dict, mutation_contract: dict | None = None,
+    state_dir: Path | None = None,
+) -> None:
     if judgement.get("decision") != "change":
         return
     if judgement.get("changed_field") == "image":
         if not isinstance(mutation_contract, dict):
             raise RuntimeError("presend_image_mutation_contract_missing")
-        _validate_image_mutation_contract(mutation_contract)
+        _validate_image_mutation_contract(mutation_contract, state_dir=state_dir)
         before_value = mutation_contract.get("before_value", {})
         expected_ids = before_value.get("service_image_ids")
         if (mutation_contract.get("contract_sha256") is None
@@ -3935,8 +4191,10 @@ def _validate_public_acceptance(before: dict, after: dict, question: str, answer
         raise RuntimeError("public_faq_readback_mismatch")
 
 
-def _validate_public_image_acceptance(before: dict, after: dict, contract: dict) -> None:
-    _validate_image_mutation_contract(contract)
+def _validate_public_image_acceptance(
+    before: dict, after: dict, contract: dict, state_dir: Path | None = None,
+) -> None:
+    _validate_image_mutation_contract(contract, state_dir=state_dir)
     service_id = str(contract.get("service_id") or "")
     url = f"https://coconala.com/services/{service_id}"
     if before.get("url") != url or after.get("url") != url:
@@ -3955,8 +4213,10 @@ def _validate_public_image_acceptance(before: dict, after: dict, contract: dict)
             raise RuntimeError("public_gallery_identity_or_order_mismatch")
 
 
-def _validate_image_form_delta(before: dict, after: dict, contract: dict) -> None:
-    _validate_image_mutation_contract(contract)
+def _validate_image_form_delta(
+    before: dict, after: dict, contract: dict, state_dir: Path | None = None,
+) -> None:
+    _validate_image_mutation_contract(contract, state_dir=state_dir)
     url = f"https://coconala.com/mypage/services/{contract['service_id']}"
     if before.get("url") != url or after.get("url") != url:
         raise RuntimeError("seller_image_form_url_invalid")
@@ -4112,7 +4372,7 @@ def _pending_recovery(
             contract = intent.get("mutation_contract")
             if not isinstance(contract, dict):
                 raise RuntimeError("pending_image_contract_missing")
-            _validate_image_mutation_contract(contract)
+            _validate_image_mutation_contract(contract, state_dir=state_dir)
             service_id = str(contract["service_id"])
             page = own_page
             if service_id != str(own_page.get("service_id") or ""):
@@ -4138,7 +4398,7 @@ def _pending_recovery(
             contract = intent.get("mutation_contract")
             if not isinstance(contract, dict) or ws_url is None or evidence_dir is None:
                 raise RuntimeError("pending_text_contract_missing")
-            mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
+            mappings, _ = _load_capability_families(_storefront_paths()["families"])
             _validate_mutation_contract(contract, mappings)
             service_id = str(contract["service_id"])
             page = _observe_own_page(
@@ -4337,7 +4597,7 @@ async def _execute_listing_state_effect_async(
     import websockets
     import listing_inventory
 
-    mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
+    mappings, _ = _load_capability_families(_storefront_paths()["families"])
     _validate_mutation_contract(contract, mappings)
     if contract.get("changed_field") != "listing_state":
         raise RuntimeError("storefront_retire_contract_invalid")
@@ -4432,7 +4692,7 @@ async def _execute_text_effect_async(
     import websockets
     import listing_inventory
 
-    mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
+    mappings, _ = _load_capability_families(_storefront_paths()["families"])
     _validate_mutation_contract(contract, mappings)
     if contract.get("changed_field") not in {"title", "catchphrase", "body", "price"} or judgement.get("experiment_key") != _experiment_key(
         contract["service_id"], str(contract["changed_field"]), str(contract["proposed_value"]),
@@ -4505,7 +4765,7 @@ async def _execute_package_effect_async(
     import websockets
     import listing_inventory
 
-    mappings, _ = _load_capability_families(DEFAULT_LISTING_CONTRACT_FAMILIES)
+    mappings, _ = _load_capability_families(_storefront_paths()["families"])
     _validate_mutation_contract(contract, mappings)
     proposed = contract.get("proposed_value")
     if (contract.get("changed_field") != "package" or contract.get("before_value") != "PACKAGE_ABSENT"
@@ -4598,7 +4858,7 @@ async def _execute_image_effect_async(
     import websockets
     import listing_inventory
 
-    _validate_image_mutation_contract(contract)
+    contract = _snapshot_image_contract_assets(contract, state_dir=state_dir)
     edit_url = f"https://coconala.com/mypage/services/{contract['service_id']}"
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
         cid = 1
@@ -4624,15 +4884,17 @@ async def _execute_image_effect_async(
             if click.get("ok") is not True:
                 raise RuntimeError(f"seller_image_add_failed:{click.get('reason')}")
             await asyncio.sleep(0.5)
-            uploads = [("input.js_upload-button", contract["proposed_value"]["asset_path"])]
+            uploads = [("input.js_upload-button", contract["proposed_value"]["asset_path"],
+                        contract["proposed_value"]["asset_sha256"])]
         else:
             uploads = []
             for row in contract["proposed_value"]["replacement_assets"]:
                 match = re.search(r"-(\d+)\.png$", row["replace_image_id"])
                 if match is None:
                     raise RuntimeError("seller_gallery_image_id_invalid")
-                uploads.append((f'input[data-service-image-id="{match.group(1)}"]', row["asset_path"]))
-        for selector, asset_path in uploads:
+                uploads.append((f'input[data-service-image-id="{match.group(1)}"]', row["asset_path"],
+                                row["asset_sha256"]))
+        for selector, asset_path, asset_sha256 in uploads:
             document = await listing_inventory._call(ws, "DOM.getDocument", {"depth": -1, "pierce": True}, cid); cid += 1
             queried = await listing_inventory._call(ws, "DOM.querySelector", {
                 "nodeId": document["result"]["root"]["nodeId"], "selector": selector,
@@ -4640,13 +4902,14 @@ async def _execute_image_effect_async(
             node_id = int(queried.get("result", {}).get("nodeId") or 0)
             if node_id <= 0:
                 raise RuntimeError(f"seller_image_file_input_missing:{selector}")
+            upload_path = _verified_snapshot_upload_path(asset_path, asset_sha256, state_dir=state_dir)
             await listing_inventory._call(ws, "DOM.setFileInputFiles", {
-                "nodeId": node_id, "files": [str((GIG_DIR / asset_path).resolve())],
+                "nodeId": node_id, "files": [upload_path],
             }, cid); cid += 1
             await asyncio.sleep(0.75)
         await asyncio.sleep(2)
         after = json.loads(str(await evaluate(SELLER_FORM_EXPRESSION) or "{}"))
-        _validate_image_form_delta(before, after, contract)
+        _validate_image_form_delta(before, after, contract, state_dir=state_dir)
         preview = json.loads(str(await evaluate(
             "JSON.stringify((()=>{const p=[...document.querySelectorAll('input[type=file]')]"
             ".filter(input=>input.files&&input.files.length===1);"
@@ -4695,6 +4958,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
     minimum_epoch = int(time.time())
     args.state_dir.mkdir(parents=True, exist_ok=True)
     output = args.output or args.state_dir / "current.json"
+    try:
+        _preflight_storefront_bundle()
+    except RuntimeError as error:
+        row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__)
+        row = _persist_receipt(args, output, row)
+        return 1, row
     if getattr(args, "auto_cadence", False):
         try:
             args.incremental = _auto_cadence_is_incremental(
@@ -5087,7 +5356,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     recovery_page = recovery.get("_recovery_public_page", own_page)
                     if not isinstance(recovery_page, dict):
                         raise RuntimeError("pending_image_public_readback_missing")
-                    _validate_public_image_acceptance(public_before, recovery_page, mutation_contract)
+                    _validate_public_image_acceptance(
+                        public_before, recovery_page, mutation_contract, state_dir=args.state_dir,
+                    )
                 elif recovery["changed_field"] in {"title", "catchphrase", "body", "package", "price"}:
                     mutation_contract = recovery.get("mutation_contract")
                     if not isinstance(mutation_contract, dict):
@@ -5335,7 +5606,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         _atomic_write(judgement_path, judgement)
                     elif judgement["changed_field"] not in {"title", "catchphrase", "body", "package", "price"}:
                         try:
-                            _presend_guard(judgement, presend, mutation_contract)
+                            _presend_guard(judgement, presend, mutation_contract, state_dir=args.state_dir)
                         except RuntimeError as error:
                             # The guard's job is to stop the change, not the wake. A contract whose
                             # recorded before-state no longer matches the live listing describes
@@ -5385,7 +5656,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         )
                         seller_after = _seller_snapshot_for(ws_url, str(judgement["service_id"]))
                         if judgement["changed_field"] == "image":
-                            _validate_public_image_acceptance(presend, public_after, mutation_contract)
+                            _validate_public_image_acceptance(
+                                presend, public_after, mutation_contract, state_dir=args.state_dir,
+                            )
                         elif judgement["changed_field"] in {"title", "catchphrase", "body", "package", "price"}:
                             _validate_text_public_acceptance(presend, public_after, mutation_contract)
                             if judgement["changed_field"] == "package":
@@ -6044,6 +6317,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
 
 def build_parser() -> argparse.ArgumentParser:
     """The one place the runtime contract is declared, so tests cannot drift from it."""
+    storefront = _storefront_paths()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state-dir", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--output", type=Path)
@@ -6058,20 +6332,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--demand-proposal-schema", type=Path, default=DEFAULT_DEMAND_PROPOSAL_SCHEMA)
     parser.add_argument("--category-proposal-schema", type=Path, default=DEFAULT_CATEGORY_PROPOSAL_SCHEMA)
     parser.add_argument("--category-child-schema", type=Path, default=DEFAULT_CATEGORY_CHILD_SCHEMA)
-    parser.add_argument("--scorecard", type=Path, default=DEFAULT_SCORECARD)
-    parser.add_argument("--image-contract", type=Path, default=DEFAULT_IMAGE_CONTRACT)
-    parser.add_argument("--gallery-contract", type=Path, default=DEFAULT_GALLERY_CONTRACT)
-    parser.add_argument("--title-mutation", type=Path, default=DEFAULT_TITLE_MUTATION)
-    parser.add_argument("--body-mutation", type=Path, default=DEFAULT_BODY_MUTATION)
-    parser.add_argument("--scope-mutation", type=Path, default=DEFAULT_SCOPE_MUTATION)
-    parser.add_argument("--package-mutation", type=Path, default=DEFAULT_PACKAGE_MUTATION)
-    parser.add_argument("--faq-mutation", type=Path, default=DEFAULT_FAQ_MUTATION)
-    parser.add_argument("--price-mutation", type=Path, default=DEFAULT_PRICE_MUTATION)
-    parser.add_argument("--listing-contract-dir", type=Path, default=DEFAULT_LISTING_CONTRACT_DIR)
+    parser.add_argument("--scorecard", type=Path, default=storefront["scorecard"])
+    parser.add_argument("--image-contract", type=Path, default=storefront["image"])
+    parser.add_argument("--gallery-contract", type=Path, default=storefront["gallery"])
+    parser.add_argument("--title-mutation", type=Path, default=storefront["title"])
+    parser.add_argument("--body-mutation", type=Path, default=storefront["body"])
+    parser.add_argument("--scope-mutation", type=Path, default=storefront["scope"])
+    parser.add_argument("--package-mutation", type=Path, default=storefront["package"])
+    parser.add_argument("--faq-mutation", type=Path, default=storefront["faq"])
+    parser.add_argument("--price-mutation", type=Path, default=storefront["price"])
+    parser.add_argument("--listing-contract-dir", type=Path, default=storefront["listings"])
     parser.add_argument(
-        "--listing-contract-families", type=Path, default=DEFAULT_LISTING_CONTRACT_FAMILIES,
+        "--listing-contract-families", type=Path, default=storefront["families"],
     )
-    parser.add_argument("--new-listing-contract", type=Path, default=DEFAULT_NEW_LISTING_CONTRACT)
+    parser.add_argument("--new-listing-contract", type=Path, default=storefront["new_listing"])
     parser.add_argument("--reply-transcripts", type=Path, default=DEFAULT_REPLY_TRANSCRIPTS)
     parser.add_argument("--applied", type=Path, default=DEFAULT_APPLIED)
     parser.add_argument("--earnings", type=Path, default=DEFAULT_EARNINGS)

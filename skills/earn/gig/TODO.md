@@ -19,6 +19,14 @@ Execute only these items, in order:
 1. Audit the tracked `skills/earn/gig/` tree and its reachable Git history for credentials,
    customer content, account identifiers, absolute owner paths, and committed runtime evidence.
    Remove or redact any public-data violation before continuing.
+   **IN PROGRESS:** allowlist-free current-tree gitleaks and PII-shape scans are clean, but the
+   semantic audit found tracked seller storefront ids/profile/contracts/assets. Reachable history
+   also contains the real customer messages, delivery files, attachment/account paths and operator
+   address introduced by `944ca1fc1` and only deleted—not purged—by `478b8a1b2`. Slice A adds the
+   reviewed `GIG_STOREFRONT_ROOT` boundary: strict pre-browser validation, private-family binding,
+   symlink containment and runtime-state asset snapshots. Focused tests are 17 + 4 + 21 passing;
+   fresh Sol/High review verdict is `ship`. Next, atomically move the seller bundle to the private
+   root and remove the tracked fallback before rewriting the affected public history.
 2. From a fresh clone of public `main`, run the package's non-mutating tests and configuration /
    plist generation using only documented local configuration. Do not reuse this machine's
    private state as proof of portability.
