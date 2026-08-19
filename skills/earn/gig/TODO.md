@@ -120,8 +120,20 @@ same service, so its identity lookup finds nothing and no envelope is written.
 
 That was recorded in the wake row as `stale_listing_contracts` and never said out loud — the
 report kept printing a healthy-looking active count beside it. It now prints the binding
-breakage too. Re-authoring `91000002.json` against the current version is content work, not
-code work, and is the fastest thing here that changes an outcome.
+breakage too.
+
+**This is not a rebind, and rebinding it would be worse than leaving it stale.** Comparing the
+hand-authored contract with the listing as last observed: five of six `offer` fields differ in
+substance — `outcome`, `inclusions`, `deliverables` and `required_inputs` are all rewritten, and
+`options` holds two paid add-ons (¥3,000 for an extra macro, ¥5,000 for monthly maintenance)
+that **the published listing no longer offers at all**. The contract describes a product that is
+not on sale. Moving the version hash to make the binding pass would hand the negotiate lane
+add-ons a buyer cannot buy.
+
+So the decision is which one is wrong: bring the contract down to what is published, or put the
+add-ons back on the listing. That is seller copy and a pricing choice, not a code change. Worth
+noting the second reading is a revenue one — an upsell that used to exist is gone from the
+listing, and only this file still remembers it.
 
 **4b. Nothing consumes an envelope.**
 `negotiate_context` reports `ready` only when every context key is also present in
