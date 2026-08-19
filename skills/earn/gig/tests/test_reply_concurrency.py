@@ -11,6 +11,7 @@ import argparse
 import textwrap
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -1365,6 +1366,51 @@ def _head_row(identity, *, thread_id="123"):
         "last_message_side": "buyer",
         "last_message_identity_sha256": identity,
     }
+
+
+def test_supervise_probe_starts_follow_fixed_monotonic_deadline_and_exact_boundary(
+    tmp_path, monkeypatch,
+):
+    args = _supervisor_args(tmp_path)
+    args.poll_seconds = 0.05
+    stop = asyncio.Event()
+    clock = SimpleNamespace(now=0.0)
+    starts = []
+    probe_durations = [0.02, 0.02, 0.05, 0.07, 0.01, 0.01]
+    original_wait_for = asyncio.wait_for
+
+    monkeypatch.setattr(
+        detector, "time", SimpleNamespace(monotonic=lambda: clock.now, time=time.time),
+    )
+
+    async def deterministic_wait_for(awaitable, timeout):
+        if timeout <= args.poll_seconds + 1e-9:
+            awaitable.close()
+            clock.now += timeout
+            raise asyncio.TimeoutError
+        return await original_wait_for(awaitable, timeout)
+
+    monkeypatch.setattr(detector.asyncio, "wait_for", deterministic_wait_for)
+
+    async def probe():
+        starts.append(clock.now)
+        clock.now += probe_durations[len(starts) - 1]
+        await asyncio.sleep(0)
+        if len(starts) == len(probe_durations):
+            stop.set()
+        return {"inquiries": [], "captured_at": "2026-08-19T00:00:00+00:00"}
+
+    async def worker(item):
+        del item
+
+    async def reconcile():
+        return None
+
+    asyncio.run(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+    ))
+
+    assert starts == pytest.approx([0.0, 0.05, 0.10, 0.15, 0.22, 0.28], abs=1e-9)
 
 
 def test_supervise_slow_workers_overlap_and_claim_second_before_first_finishes(tmp_path):

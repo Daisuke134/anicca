@@ -1510,7 +1510,17 @@ async def supervise_replies(
                 await enqueue_work(work)
 
     async def producer() -> None:
+        next_probe_at = time.monotonic()
+        immediate_after_overrun = False
         while not stop.is_set():
+            remaining = next_probe_at - time.monotonic()
+            if remaining > 0:
+                try:
+                    await asyncio.wait_for(stop.wait(), timeout=remaining)
+                except asyncio.TimeoutError:
+                    pass
+                if stop.is_set():
+                    break
             await enqueue_pending_actions()
             try:
                 observed = await _supervisor_hook(probe)
@@ -1519,12 +1529,18 @@ async def supervise_replies(
                 # A transient probe failure leaves durable pending rows for the
                 # next pass; it must not tear down the supervised consumers.
                 pass
-            if stop.is_set():
-                break
-            try:
-                await asyncio.wait_for(stop.wait(), timeout=poll_seconds)
-            except asyncio.TimeoutError:
-                continue
+            now = time.monotonic()
+            if immediate_after_overrun:
+                # One overdue pass is allowed to start immediately.  Reset the
+                # deadline after that pass so a slow probe cannot cause a
+                # catch-up storm of back-to-back producer calls.
+                next_probe_at = now + poll_seconds
+                immediate_after_overrun = False
+            else:
+                next_probe_at += poll_seconds
+                if next_probe_at < now:
+                    next_probe_at = now
+                    immediate_after_overrun = True
 
     async def consumer() -> None:
         while not stop.is_set() or not dispatch.empty():
