@@ -1,0 +1,9 @@
+# X search queries for the daily recon pass. One per line, '#' = comment.
+# Kept as data so the queries can be tuned without touching x_collect.py.
+# min_faves keeps the recon on posts that are actually moving.
+AI agent min_faves:300 -filter:replies
+LLM min_faves:500 -filter:replies
+AI 自動化 min_faves:150 -filter:replies
+crypto min_faves:400 -filter:replies
+onchain OR stablecoin min_faves:200 -filter:replies
+AI エージェント min_faves:100 -filter:replies
