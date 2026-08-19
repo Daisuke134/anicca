@@ -56,10 +56,10 @@ The order to the end is:
    Apply/Negotiate/Storefront PIDs are visible. Process presence is not yet durable registration
    proof; capture two successive natural starts per lane and a loaded-definition readback from a
    valid GUI launchd context.
-7. Re-close the public-package gate at `f90898caf`: actual capability-evidence project paths are now
-   supplied only through `GIG_STOREFRONT_CAPABILITY_EVIDENCE`, but the clean-clone acceptance was run
-   on its parent and must be re-read after the live outage is fixed. Keep broad repetitive tests off
-   the hot path; use focused evidence and periodic fresh Terra adversarial review.
+7. **Public-package gate is closed at `f90898caf`.** Exact-archive acceptance passes 194 package
+   tests, compilation, four empty-HOME plist renders, gitleaks and the owner-ID/path denylist.
+   Keep broad repetitive tests off the runtime hot path; use focused evidence and periodic fresh
+   Terra adversarial review.
 8. Finish the remaining product items in this file: **4 listing contract/product truth** →
    **2 stable paid-feedback identity and credential handling** → **5 storefront attribution** →
    **1 browser-major qualification** → **6 merge the already-pushed legacy-removal branch when its
@@ -68,6 +68,106 @@ The order to the end is:
 The system is complete only when all four business outcomes have natural official receipts:
 application, buyer reply/estimate, listing create/update, and paid delivery. A running process,
 Telegram/email report, dry run, model response or local ledger row is not completion.
+
+### Atomic remaining checklist
+
+Execute top to bottom. A checked diagnostic is evidence, not lane completion.
+
+#### A. Restore safe operating headroom
+
+- [ ] Record the active release, rollback release, browser profile, live state and private-config
+  paths that must not be removed.
+- [ ] Remove or archive only inactive old Codex sessions/logs.
+- [ ] Remove only clean stale Git worktrees with Git's worktree removal/prune flow.
+- [ ] Prune immutable gig releases except the loaded/current release and one verified rollback.
+- [ ] Read back at least 10 GiB free space and successfully write, fsync, read and remove a small
+  probe in the gig state filesystem.
+
+#### B. Restore Apply and prove one new application
+
+- [x] Diagnose the current outage: recent passes end in `parent_failed_rc_2`; both intent-provider
+  attempts report `transient_quota`, and another pass hits `cdp_Page.enable_timeout_after_30s`.
+- [ ] Route application-intent generation to an available cheap provider/fallback with a bounded
+  deadline; provider exhaustion must fail the item visibly rather than fail the whole pass silently.
+- [ ] Repair the CDP `Page.enable` timeout boundary with a bounded reconnect/retry that cannot submit
+  twice when the first attempt's outcome is unknown.
+- [ ] Cut and activate an immutable Apply-only release without disturbing the other three lanes.
+- [ ] Read back a natural full-source pass with `failed: 0`.
+- [ ] On the next genuinely eligible new posting, read back exactly one official application.
+- [ ] Replay the same posting and prove zero duplicate application effects.
+
+#### C. Close Addres88 and prove fast Negotiate
+
+- [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
+- [ ] Bind the latest buyer-authored event to its official thread/message identity and classify
+  whether it requires an answer, an estimate, both, or no action.
+- [ ] If actionable, send exactly one complete reply through the existing lane and read it back in
+  the same official thread.
+- [ ] If a price is requested, send exactly one estimate through the existing lane and read back its
+  amount and scope in the same official thread.
+- [ ] Replay the event and prove zero duplicate replies and estimates.
+- [ ] For a new natural actionable buyer message, prove official reply/estimate readback within five
+  minutes; retain two minutes as the operating target.
+
+#### D. Make Storefront mutate real listings
+
+- [x] Remove operator capability paths from public defaults and load them from the private install
+  configuration via `GIG_STOREFRONT_CAPABILITY_EVIDENCE`.
+- [ ] Activate `f90898caf` or a descendant for the loaded Storefront job, then read back the loaded
+  environment with two configured evidence paths without exposing their values.
+- [ ] Make the sellable product truth exact: either publish the stale ¥3,000/¥5,000 upsells or remove
+  them from the contract; never quote an option that cannot be bought.
+- [ ] Either implement the listing-envelope consumer end to end or delete the unused protocol.
+- [ ] Produce one valid, scoped, unfenced create/update mutation contract.
+- [ ] Execute exactly one official listing create/update and read back the resulting live listing.
+- [ ] Replay it and prove zero duplicate or wrong-service mutations.
+
+#### E. Prove natural Paid delivery
+
+- [ ] Give paid feedback/delivery a stable order/message identity independent of the capture window.
+- [ ] Complete credential handling and email-first owner notification without public operator
+  identity or secrets.
+- [ ] Detect one new natural paid order from official state.
+- [ ] Build its requested artifact from the accepted scope.
+- [ ] Validate the artifact before delivery.
+- [ ] Deliver it exactly once.
+- [ ] Read the delivery back in the exact official room and prove replay creates no second delivery.
+
+#### F. Prove four-lane 24/7 control-plane durability
+
+- [ ] Restore a valid GUI launchd readback without restarting or killing macOS base services.
+- [ ] Read back loaded definitions for the browser, Apply, Negotiate, Storefront, Paid and watcher;
+  each must point to the intended immutable release and private environment.
+- [ ] Prove each lane has its own overlap fence while all four independent lanes can run in parallel.
+- [ ] Capture two successive natural starts for each lane.
+- [ ] Prove each lane recovers from an isolated process exit without killing shared browser or OS
+  services.
+- [ ] At the next natural login/reboot or an explicitly approved maintenance window, prove automatic
+  persistence and repeat the loaded-definition readback.
+- [ ] Keep reports receipt-based: no process PID, local ledger or notification counts as a business
+  effect.
+
+#### G. Prove the OSS package for another owner
+
+- [x] Remove known operator IDs, private payloads and absolute operator paths from the distributable
+  tree and pass the exact `f90898caf` public acceptance.
+- [x] Provide email-first notification plus documented install, status, upgrade and uninstall.
+- [ ] Perform a fresh third-party/friend install using only that person's email, marketplace account,
+  authenticated browser and private capability bundle; do not copy this operator's configuration.
+- [ ] Prove the clean install causes no marketplace effect before explicit configuration/auth.
+- [ ] After opt-in configuration, prove all four lanes using the same four natural official receipts.
+- [ ] Keep README and reports explicit that income is not guaranteed and revenue exists only after
+  official payment readback.
+
+#### H. Remaining bounded design/merge work
+
+- [ ] Item 4: finish listing-contract/product truth and its real consumer after the Storefront proof.
+- [ ] Item 2: finish stable paid digest identity and credential handling after the Paid proof.
+- [ ] Item 5: record storefront attribution from official facts captured during Negotiate instead of
+  relying on buyers pasting listing URLs.
+- [ ] Item 1: qualify the current CloakBrowser major against the real marketplace before upgrading it.
+- [ ] Item 6: merge the already-pushed profitable-claude removal branch after the unrelated upstream
+  merge clears, and verify no Coconala loop remains there.
 
 The public-package regression gate remains:
 
