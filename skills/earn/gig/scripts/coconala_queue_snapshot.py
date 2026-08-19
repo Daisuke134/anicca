@@ -202,9 +202,13 @@ const read=async()=>sel?await Promise.all([...document.querySelectorAll(sel)].ma
  if(!url)return null;
  const preview=(card?.innerText||'').trim();
  const message=a.__vue__?._props?.message||null,
- identity=message&&Number.isSafeInteger(message.directMessagesRoomId)&&Number.isSafeInteger(message.fromUserId)&&Number.isSafeInteger(message.createdAt)&&typeof message.body==='string'?JSON.stringify({directMessagesRoomId:message.directMessagesRoomId,fromUserId:message.fromUserId,createdAt:message.createdAt,body:message.body}):null,
+ rawMessageId=message&&(message.message_id??message.messageId??message.id??null),
+ rawSentAt=message&&(message.sent_at??message.sentAt??message.createdAt??null),
+ sentAtNumber=typeof rawSentAt==='number'?rawSentAt:(typeof rawSentAt==='string'&&/^\d+(?:\.\d+)?$/.test(rawSentAt)?Number(rawSentAt):null),
+ sentAt=Number.isFinite(sentAtNumber)?new Date(sentAtNumber<100000000000?sentAtNumber*1000:sentAtNumber).toISOString():rawSentAt,
+ identityFields=message&&typeof message.body==='string'?{message_id:rawMessageId,sent_at:sentAt,body:message.body}:null,
  unread=!!card?.querySelector('[aria-label*="未読"],[class*="unread"],[class*="Unread"]')||(typeof message?.unreadCount==='number'&&message.unreadCount>0);
- return {talkroom_url:url,title:'purchase_preorder_message',last_message_side:'',unread,preview_sha256:await digest(preview),last_message_identity_sha256:identity?await digest(identity):null};
+ return {talkroom_url:url,title:'purchase_preorder_message',last_message_side:'',unread,preview_sha256:await digest(preview),...(identityFields||{})};
 })).then(rows=>rows.filter(Boolean)):[];
 while(pagesObserved<pageLimit){
  pagesObserved++;
@@ -2489,8 +2493,12 @@ def inquiries_from_dom(dom: dict[str, Any]) -> list[dict[str, Any]]:
         digest = str(card.get("preview_sha256") or "")
         if re.fullmatch(r"[0-9a-f]{64}", digest):
             row["preview_sha256"] = digest
-        identity = str(card.get("last_message_identity_sha256") or "")
-        if re.fullmatch(r"[0-9a-f]{64}", identity):
+        identity = message_identity_sha256(
+            message_id=card.get("message_id"),
+            body=card.get("body"),
+            sent_at=card.get("sent_at"),
+        )
+        if identity is not None:
             row["last_message_identity_sha256"] = identity
     return rows
 
@@ -2559,6 +2567,33 @@ def _optional_sent_at(value: Any) -> str | None:
             return None
         parsed = parsed.replace(tzinfo=ZoneInfo("Asia/Tokyo"))
     return parsed.astimezone(timezone.utc).isoformat()
+
+
+def message_identity_sha256(
+    message_id: Any = None,
+    body: Any = None,
+    sent_at: Any = None,
+) -> str | None:
+    """Hash one message with the same fields in every collector path.
+
+    A stable message id is the primary identity.  Older/private DOM shapes can
+    expose only a timestamp, so the fallback uses its canonical UTC spelling.
+    `None` means the observation is not strong enough to identify a message.
+    """
+    if type(body) is not str:
+        return None
+    normalized_id = str(message_id or "").strip()
+    if re.fullmatch(r"[A-Za-z0-9._-]{1,128}", normalized_id):
+        fields = {"message_id": normalized_id, "body": body}
+    else:
+        normalized_sent_at = _optional_sent_at(sent_at)
+        if normalized_sent_at is None:
+            return None
+        fields = {"sent_at": normalized_sent_at, "body": body}
+    identity_payload = json.dumps(
+        fields, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(identity_payload).hexdigest()
 
 
 _REQUESTED_ESTIMATE_MODULE: Any = None
@@ -2684,22 +2719,14 @@ def direct_message_event(
             1 for previous in messages[:-1]
             if isinstance(previous, dict) and previous.get("sent_at") == last.get("sent_at")
         )
-    supplied_identity = str(last.get("last_message_identity_sha256") or "")
-    if re.fullmatch(r"[0-9a-f]{64}", supplied_identity):
-        result["last_message_identity_sha256"] = supplied_identity
-    else:
-        raw_body = last.get("body")
-        if type(raw_body) is not str or not author_path or sent_at is None:
-            raise CollectorUnhealthy("missing_message_identity")
-        identity_payload = json.dumps(
-            {
-                "message_id": message_id or None,
-                "author_path": author_path,
-                "sent_at": sent_at,
-                "body": raw_body,
-            }, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
-        ).encode("utf-8")
-        result["last_message_identity_sha256"] = hashlib.sha256(identity_payload).hexdigest()
+    identity = message_identity_sha256(
+        message_id=message_id,
+        body=last.get("body"),
+        sent_at=sent_at,
+    )
+    if identity is None:
+        raise CollectorUnhealthy("missing_message_identity")
+    result["last_message_identity_sha256"] = identity
     requested_estimate = _requested_estimate_module()
     receipt: Any = None
     if semantic_judge is None:

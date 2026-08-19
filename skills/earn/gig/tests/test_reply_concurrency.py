@@ -586,6 +586,46 @@ def test_head_expression_reads_one_page_without_changing_full_expression():
         snapshot.direct_inbox_coverage_expression(0)
 
 
+def test_head_and_direct_thread_normalized_messages_share_identity_sha():
+    thread_url = "https://coconala.com/mypage/direct_message/123"
+    message = {
+        "message_id": "buyer-2",
+        "sent_at": "2026-08-19T00:01:00+00:00",
+        "body": "質問です",
+    }
+    head_dom = {
+        "url": snapshot.MESSAGES_URL,
+        "title": "メッセージ",
+        "container_present": True,
+        "cards": [{
+            "talkroom_url": thread_url,
+            "title": "purchase_preorder_message",
+            "last_message_side": "buyer",
+            "unread": True,
+            **message,
+        }],
+    }
+    thread_dom = {
+        "url": thread_url,
+        "title": "メッセージ詳細",
+        "container_present": True,
+        "own_user_path": "/users/seller",
+        "messages": [{
+            **message,
+            "author_path": "/users/buyer",
+        }],
+    }
+
+    head_row = snapshot.inquiries_from_dom(head_dom)[0]
+    thread_row = snapshot.direct_message_event(thread_dom, thread_url)
+
+    assert head_row["last_message_identity_sha256"] == thread_row[
+        "last_message_identity_sha256"
+    ]
+    projected = snapshot._head_only_inquiry_projection([head_row])[0]
+    assert not {"message_id", "sent_at", "body"}.intersection(projected)
+
+
 def test_head_only_snapshot_is_bounded_read_only_and_semantic_free(tmp_path, monkeypatch, capsys):
     output = tmp_path / "head.json"
     evidence = tmp_path / "evidence"
