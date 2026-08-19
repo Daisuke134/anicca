@@ -44,17 +44,19 @@ The order to the end is:
    is the replay/duplicate-effect proof. Both intent calls used the existing cheap Luna route.
    The earlier quota and CDP failures recovered without a code or release change, so speculative
    provider/reconnect changes are rejected unless the same failure recurs with a reproducible case.
-3. **Negotiate must answer every actionable buyer event.** Perform an official targeted readback
-   for the buyer identified by the operator as `Addres88`; no durable local row matching that
-   display name was found, so do not infer replied or unreplied from local search. If the latest
-   buyer event requests a quote or answer, send it through the existing reply/estimate path and
-   require exact-thread official readback. Then retain the natural under-five-minute acceptance
-   for every new actionable buyer event.
-4. **Storefront must list and improve sellable products.** Reading 13 listings with a no-op is
-   healthy observation but is not proof of listing creation or mutation. Resolve item 4's product
-   truth first, then prove one official create/update readback when a valid unfenced contract exists.
-5. **Paid must build, verify and deliver paid work.** Prove a natural paid order from official paid
-   detection through artifact validation, one delivery effect and exact-room official readback.
+3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
+   with two workers, so another lane no longer delays inbox observation. However the latest ten
+   targeted results all end `pending: 1` with `targeted_inbox_identity_changed`; none records a
+   reply or estimate effect/readback. Therefore it does not yet answer every actionable message.
+   Fix exact thread/event identity first, then close the operator-reported conversation and retain
+   natural under-five-minute acceptance for every new actionable buyer event.
+4. **Storefront observes but does not yet sell/mutate completely.** The current process reads 13
+   official services and completes cleanly, but recent passes remain `actionable: 0 / effect: 0 /
+   readback: 0`. Resolve product truth and prove one official listing create/update readback.
+5. **Paid observes but is not complete.** The latest receipt is `completed / observed: 3 /
+   readback: 2 / failed: 0 / pending: 1`; no Paid process was present at the inspection instant.
+   Prove recurring ownership plus a new natural paid order through validated artifact, one delivery
+   effect, exact-room official readback and replay zero.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
    the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
@@ -100,8 +102,9 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   deletion; no path outside the measured roots was touched.
 - [x] Remove the closed `/private/var/tmp/SpeechModelCache` files (1,432,680 KiB, no open files) and
   closed `/private/tmp/lbj` (162,404 KiB) instead of removing CommandLineTools or user data.
-- [ ] Add cleanup of its own temporary clone with a trap/finally block to every public-audit command
-  that creates one; do not add a general-purpose home-directory deleter.
+- [x] Use the tracked `scripts/verify-fresh-clone.sh` entrypoint for public clone audits. Its EXIT
+  cleanup now restores owner-write permission inside its exact temporary root before removal, so
+  immutable release copies cannot strand the clone. Ad-hoc audit clone commands are not accepted.
 - [ ] Add a lightweight disk guard before browser/SQLite/evidence work: below 10,485,760 KiB, emit a
   visible failed receipt and skip side effects; never auto-delete user files from a business lane.
 - [x] Read back 10,617,248 KiB and then 10,616,160 KiB free across separate samples; successfully
@@ -128,6 +131,8 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 
 #### C. Close Addres88 and prove fast Negotiate
 
+- [ ] Stop the repeated `targeted_inbox_identity_changed` cycle by binding the targeted job to the
+  current official thread and latest buyer-authored event instead of a stale inbox identity.
 - [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
 - [ ] Bind the latest buyer-authored event to its official thread/message identity and classify
   whether it requires an answer, an estimate, both, or no action.

@@ -13,6 +13,7 @@ cleanup() {
   if [ "${LIFE_MANAGER_KEEP_VERIFY_DIR:-0}" = "1" ]; then
     printf 'fresh-clone directory retained: %s\n' "$VERIFY_ROOT"
   else
+    chmod -R u+w "$VERIFY_ROOT" 2>/dev/null || true
     rm -rf "$VERIFY_ROOT"
   fi
 }
