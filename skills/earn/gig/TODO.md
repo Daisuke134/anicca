@@ -29,19 +29,22 @@ not this operator's Telegram identity.
 The first unfinished item is always the first failed live lane, not the first planned feature.
 The order to the end is:
 
-1. **Recover operating headroom.** Keep at least 10 GiB free before trusting browser, SQLite or
-   evidence writes. **DONE:** the data volume has 10.051 GiB free and a 4 KiB gig-state probe
-   completed write, fsync, read and removal. Cleanup retained the latest verified OpenClaw backup,
-   active state, credentials, browser profile and the four releases still referenced by live
-   processes/rollback; only older regenerable backups, installers, binaries and releases were
-   removed. Codex sessions and Git worktrees were left intact because the threshold no longer
-   required touching them.
-2. **Apply must submit new eligible work again.** The scheduler is starting fresh Apply processes,
-   but the last ten completed passes are `parent_failed_rc_2`. Most observed 40 postings and then
-   failed because both application-intent providers returned `transient_quota`; the newest failed
-   earlier on `cdp_Page.enable_timeout_after_30s`. This is a real outage, not an exhausted board.
-   Completion requires a natural eligible posting to produce exactly one official application
-   readback; an exhausted pass is acceptable only with `failed: 0` and terminal source coverage.
+1. **Recover and retain operating headroom.** Keep at least 10 GiB byte-exact free before trusting
+   browser, SQLite or evidence writes. One cleanup reached 10.051 GiB and passed a 4 KiB gig-state
+   fsync/read probe, but the immediate repeat fell to 5,993,792 KiB, so the gate is open again.
+   Mac-wide inventory found about 4.6 GiB of closed, regenerable public-audit clones under
+   `/private/tmp`; remove those before touching user media, research data, gig state, Codex sessions,
+   registered worktrees, active toolchains or applications. Completion requires retained headroom,
+   not one rounded `df -h` sample.
+2. **Apply is restored. DONE:** natural pass
+   `gig-apply-direct-1787144993473841000-39046` observed 40 postings, selected three eligible
+   items, produced two application effects with two official readbacks, and isolated one transient
+   `cdp_Page.navigate_timeout_after_30s` without losing the other effects. The immediately following
+   natural pass `gig-apply-direct-1787145875711446000-90729` exhausted all sources with
+   `observed: 100 / failed: 0 / pending: 0 / effect: 0`; it filtered 45 already-applied items, which
+   is the replay/duplicate-effect proof. Both intent calls used the existing cheap Luna route.
+   The earlier quota and CDP failures recovered without a code or release change, so speculative
+   provider/reconnect changes are rejected unless the same failure recurs with a reproducible case.
 3. **Negotiate must answer every actionable buyer event.** Perform an official targeted readback
    for the buyer identified by the operator as `Addres88`; no durable local row matching that
    display name was found, so do not infer replied or unreplied from local search. If the latest
@@ -79,25 +82,46 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 #### A. Restore safe operating headroom
 
 - [x] Record and retain the active/rollback releases, browser profile, live state and private config.
-- [x] Remove only inactive regenerable backups/installers/binaries; retain all Codex sessions.
+- [x] Remove one bounded set of inactive regenerable backups/installers/binaries; retain all Codex
+  sessions. The first cleanup reached 10.051 GiB and passed the write/read probe.
 - [x] Leave Git worktrees intact because the free-space gate no longer requires their removal.
 - [x] Prune unused immutable gig releases while retaining `8fefa7a0`, `2ce5474f`, `b2abe2b00` and
   `f90898ca` for active/rollback use.
-- [x] Read back at least 10 GiB free space and successfully write, fsync, read and remove a small
-  probe in the gig state filesystem.
+- [x] Inventory the whole Mac by independent lanes: containers/developer assets, media/documents and
+  backups/app support. Docker/Colima is stopped with effectively zero payload; it is not the source.
+- [x] Protect unique/active assets: about 1.96 GB of non-duplicate research CSVs, active Rust,
+  Ollama, crawl4ai, Xcode/Simulator, Adobe, Codex/Claude, credentials, state, memory, dirty worktrees
+  and customer artifacts.
+- [x] Identify the current reclaim source: closed public-audit clones under `/private/tmp`
+  (`life-manager-public-accept.*`, `life-manager-oss-rewrite.*`,
+  `life-manager-rewrite-verify.*` and small acceptance HOME clones) occupy about 4.6 GiB; `lsof`
+  reports zero open files for each measured directory.
+- [ ] Remove only those exact `/private/tmp` audit clones and record their paths and reclaimed bytes.
+- [ ] Add cleanup of its own temporary clone with a trap/finally block to every public-audit command
+  that creates one; do not add a general-purpose home-directory deleter.
+- [ ] Add a lightweight disk guard before browser/SQLite/evidence work: below 10,485,760 KiB, emit a
+  visible failed receipt and skip side effects; never auto-delete user files from a business lane.
+- [ ] Read back at least 10,485,760 KiB free twice across separate samples, then successfully write,
+  fsync, read and remove a small probe in the gig state filesystem.
+- [ ] Keep secondary candidates documented but untouched unless the temp clones are insufficient:
+  old diagnostics (~150 MiB), unselected CommandLineTools (~1.84 GiB after reference audit), and an
+  inactive `skillopt` venv (~109 MiB). Do not delete installed apps or dirty worktree videos by size.
 
 #### B. Restore Apply and prove one new application
 
 - [x] Diagnose the current outage: recent passes end in `parent_failed_rc_2`; both intent-provider
   attempts report `transient_quota`, and another pass hits `cdp_Page.enable_timeout_after_30s`.
-- [ ] Route application-intent generation to an available cheap provider/fallback with a bounded
-  deadline; provider exhaustion must fail the item visibly rather than fail the whole pass silently.
-- [ ] Repair the CDP `Page.enable` timeout boundary with a bounded reconnect/retry that cannot submit
-  twice when the first attempt's outcome is unknown.
-- [ ] Cut and activate an immutable Apply-only release without disturbing the other three lanes.
-- [ ] Read back a natural full-source pass with `failed: 0`.
-- [ ] On the next genuinely eligible new posting, read back exactly one official application.
-- [ ] Replay the same posting and prove zero duplicate application effects.
+- [x] Recheck before changing production: the existing cheap Luna route returned successfully and
+  the lane recovered naturally; do not add an unproven provider fallback.
+- [x] Recheck the CDP boundary before changing production: one navigation timeout was isolated to
+  one item while two other applications completed with official readback; no reconnect change is
+  justified without a reproducible failing case.
+- [x] Keep the loaded Apply release unchanged; no Apply-only release is needed for a non-code fix.
+- [x] Read back a natural terminal full-source pass with `observed: 100 / failed: 0 / pending: 0`.
+- [x] Read back two natural official applications with `submit_verified: true` and
+  `applied_page_verified: true`.
+- [x] Read back the following pass with 45 already-applied filters and zero application effects,
+  proving replay creates no duplicate submission.
 
 #### C. Close Addres88 and prove fast Negotiate
 
