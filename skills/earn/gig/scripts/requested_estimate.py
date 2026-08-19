@@ -1490,6 +1490,8 @@ def _result(item: dict[str, Any], *, status: str, event_key: str | None = None, 
         "thread_id": str(item.get("talkroom_id") or item.get("thread_id") or ""),
         "status": status,
         "event_key": event_key,
+        "action_id": None,
+        "revision": None,
         "effect": 0,
         "official_readback": 0,
         "pending": 0,
@@ -1507,7 +1509,10 @@ def _reconcile_existing(
     now: int,
 ) -> dict[str, Any]:
     """Read a clicked estimate only; this path cannot open/fill/click a form."""
-    base = _result(item, status="reconcile_pending", event_key=str(action.get("event_key") or ""), pending=1)
+    base = _result(
+        item, status="reconcile_pending", event_key=str(action.get("event_key") or ""),
+        action_id=int(action["action_id"]), revision=int(action["revision"]), pending=1,
+    )
 
     def unresolved(code: str) -> dict[str, Any]:
         base["errors"] = [code]
@@ -1575,9 +1580,34 @@ def _reconcile_existing(
         counts: dict[str, Any] = {"official_readback": 1}
         if attribution is not None:
             counts["attribution"] = attribution
-        return _result(item, status="verified", event_key=str(action.get("event_key") or ""), **counts)
+        return _result(
+            item, status="verified", event_key=str(action.get("event_key") or ""),
+            action_id=int(action["action_id"]), revision=int(action["revision"]),
+            **counts,
+        )
     except Exception as error:
         return unresolved(_error_code(error))
+
+
+def _readback_action_fields(
+    database: Any, *, item: dict[str, Any], event_key: str,
+) -> dict[str, int]:
+    request_at = _timestamp(item.get("estimate_request_sent_at"))
+    if request_at is None:
+        return {}
+    try:
+        action = database.verified_estimate_after_request(
+            str(item.get("talkroom_id") or item.get("thread_id") or ""),
+            int(request_at.timestamp()),
+        )
+        if action is None or str(action.get("event_key") or "") != event_key:
+            return {}
+        return {
+            "action_id": int(action["action_id"]),
+            "revision": int(action["revision"]),
+        }
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return {}
 
 
 def execute_requested_estimate(
@@ -1594,9 +1624,17 @@ def execute_requested_estimate(
         return result
     event_key = coconala_estimate_event_key(thread_id, request_identity)
     observed_at = max(0, int(now))
+    request_at = _timestamp(item.get("estimate_request_sent_at"))
     lifecycle = database.action_lifecycle_for_event(event_key, thread_id)
     if lifecycle is not None and lifecycle.get("state") == "replied" and lifecycle.get("dlq_at") is None:
-        return _result(item, status="already_delivered", event_key=event_key, official_readback=1)
+        action_fields = _readback_action_fields(
+            database, item=item, event_key=event_key,
+        )
+        return _result(
+            item, status="already_delivered", event_key=event_key,
+            official_readback=1 if action_fields else 0,
+            **action_fields,
+        )
     estimate_url = sanitize_estimate_url(item.get("estimate_url"))
     if estimate_url is None:
         result = _result(item, status="failed", event_key=event_key, failed=1)
@@ -1613,8 +1651,11 @@ def execute_requested_estimate(
         return result
     result_key = str(action.get("event_key") or event_key)
     if action.get("state") == "replied":
-        return _result(item, status="already_delivered", event_key=result_key, official_readback=1)
-    request_at = _timestamp(item.get("estimate_request_sent_at"))
+        return _result(
+            item, status="already_delivered", event_key=result_key,
+            action_id=int(action["action_id"]), revision=int(action["revision"]),
+            official_readback=1,
+        )
     delivered = (
         database.verified_estimate_after_request(
             thread_id, int(request_at.timestamp()),
@@ -1633,6 +1674,7 @@ def execute_requested_estimate(
             raise RuntimeError("estimate_already_delivered_not_closed")
         return _result(
             item, status="already_delivered", event_key=result_key,
+            action_id=int(action["action_id"]), revision=int(action["revision"]),
             official_readback=1,
         )
     terms_hint = item.get("estimate_terms") if isinstance(item.get("estimate_terms"), dict) else None
@@ -1717,7 +1759,11 @@ def execute_requested_estimate(
                     outgoing_hash=offer_terms_hash(terms), observed_at=observed_at,
                     seller_sent_at=_card_time(before["cards"][0]),
                 )
-                return _result(item, status="already_delivered", event_key=event_key, official_readback=1)
+                return _result(
+                    item, status="already_delivered", event_key=event_key,
+                    action_id=int(action["action_id"]), revision=int(action["revision"]),
+                    official_readback=1,
+                )
             claimed = database.claim(
                 owner=owner, now=observed_at + 1, lease_seconds=ESTIMATE_LEASE_SECONDS,
                 action_id=int(action["action_id"]),
@@ -1810,16 +1856,28 @@ def execute_requested_estimate(
                         authoritative_absent=False,
                     )
                     if stored.get("state") == "replied":
-                        counts: dict[str, Any] = {"effect": 1, "official_readback": 1, "click": 1}
+                        counts: dict[str, Any] = {
+                            "effect": 1, "official_readback": 1, "click": 1,
+                            "action_id": int(intent["action_id"]),
+                            "revision": int(intent["revision"]),
+                        }
                         if attribution is not None:
                             counts["attribution"] = attribution
                         return _result(item, status="verified", event_key=event_key, **counts)
             record_unknown_once()
-            return _result(item, status="reconcile_pending", event_key=event_key, pending=1, click=1)
+            return _result(
+                item, status="reconcile_pending", event_key=event_key,
+                action_id=int(intent["action_id"]), revision=int(intent["revision"]),
+                pending=1, click=1,
+            )
     except Exception as error:
         if authorized and intent is not None and not unknown_recorded:
             record_unknown_once()
-            result = _result(item, status="reconcile_pending", event_key=event_key, pending=1, click=1)
+            result = _result(
+                item, status="reconcile_pending", event_key=event_key,
+                action_id=int(intent["action_id"]), revision=int(intent["revision"]),
+                pending=1, click=1,
+            )
             result["errors"] = ["estimate_delivery_unknown"]
             return result
         if claimed is not None and prepared and not authorized:
@@ -1830,7 +1888,17 @@ def execute_requested_estimate(
                 )
             except Exception:
                 pass
-        result = _result(item, status="failed", event_key=event_key, failed=1)
+        result = _result(
+            item, status="failed", event_key=event_key, failed=1,
+            action_id=(
+                int(intent["action_id"]) if intent is not None
+                else int(claimed["action_id"]) if claimed is not None else None
+            ),
+            revision=(
+                int(intent["revision"]) if intent is not None
+                else int(claimed["revision"]) if claimed is not None else None
+            ),
+        )
         result["errors"] = [_error_code(error)]
         # The category-type contract (booleans/counts, never customer/offer
         # text) rides on EstimateFormRefused.contract, separate from the
@@ -1861,6 +1929,9 @@ def process_snapshot(
         event = {
             "thread_id": result.get("thread_id"), "status": result.get("status"),
             "event_key": result.get("event_key"),
+            "action_id": result.get("action_id"), "revision": result.get("revision"),
+            "effect": int(result.get("effect") or 0),
+            "official_readback": int(result.get("official_readback") or 0),
         }
         if isinstance(result.get("attribution"), dict):
             event["attribution"] = result["attribution"]
@@ -1915,7 +1986,8 @@ def process_snapshot(
         if not semantic_current:
             record(_result(
                 item or {"thread_id": thread_id}, status="honestly_pending",
-                event_key=str(action.get("event_key") or ""), pending=1,
+                event_key=str(action.get("event_key") or ""),
+                action_id=action_id, revision=int(action["revision"]), pending=1,
             ))
             continue
         claimed = db.claim(
@@ -1925,7 +1997,8 @@ def process_snapshot(
         if claimed is None:
             record(_result(
                 item, status="honestly_pending",
-                event_key=str(action.get("event_key") or ""), pending=1,
+                event_key=str(action.get("event_key") or ""),
+                action_id=action_id, revision=int(action["revision"]), pending=1,
             ))
             continue
         db.close_nothing_to_say(
@@ -1935,6 +2008,7 @@ def process_snapshot(
         record(_result(
             item, status="invalidated",
             event_key=str(action.get("event_key") or ""),
+            action_id=action_id, revision=int(claimed["revision"]),
         ))
 
     # A structured card can make the source item non-actionable on the next

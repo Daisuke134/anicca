@@ -243,6 +243,38 @@ def _seed_inbox_action(args):
     return int(action["action_id"]), inbox_event_key
 
 
+def _seed_verified_estimate(args, thread_id, request_identity):
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    event_key = outbox.coconala_estimate_event_key(thread_id, request_identity)
+    now = int(time.time())
+    action = database.enqueue_estimate(
+        event_key=event_key, thread_id=thread_id,
+        thread_url=f"https://coconala.com/mypage/direct_message/{thread_id}",
+        observed_at=now,
+    )
+    claimed = database.claim(
+        owner="estimate-proof", now=now + 1, lease_seconds=30,
+        action_id=int(action["action_id"]),
+    )
+    assert claimed is not None
+    intent = database.prepare_intent(
+        int(action["action_id"]), owner="estimate-proof",
+        fencing_token=int(claimed["fencing_token"]), outgoing_body="見積もりです",
+        now=now + 2, origin_at=now + 1,
+    )
+    database.mark_click_started(
+        int(action["action_id"]), int(intent["revision"]), owner="estimate-proof",
+        fencing_token=int(claimed["fencing_token"]), now=now + 3,
+    )
+    database.reconcile(
+        int(action["action_id"]),
+        thread_url=f"https://coconala.com/mypage/direct_message/{thread_id}",
+        outgoing_hash=str(intent["outgoing_hash"]), seller_sent_at=now + 4,
+        last_sender="seller", observed_at=now + 5, authoritative_absent=False,
+    )
+    return event_key, int(action["action_id"]), int(intent["revision"])
+
+
 def test_targeted_thread_reaches_official_readback(tmp_path):
     script, calls, send_record = _fake_targeted_scripts(tmp_path)
     args = _targeted_args(tmp_path, script)
@@ -369,12 +401,16 @@ def test_orders_proof_is_fresh_and_precedes_estimate_effect(tmp_path, monkeypatc
             argv[argv.index("--mode") + 1]
             for argv in recorded if "--mode" in argv
         ])
+        estimate_event_key, estimate_action_id, estimate_revision = _seed_verified_estimate(
+            args, "123", "buyer-2",
+        )
         return {
             "estimate_required": 1, "estimate_effect": 1,
             "estimate_readback": 1, "estimate_pending": 0,
             "estimate_failed": 0, "estimate_events": [{
                 "thread_id": "123", "status": "verified",
-                "event_key": "coconala:estimate:v1:123:buyer-2",
+                "event_key": estimate_event_key, "action_id": estimate_action_id,
+                "revision": estimate_revision, "effect": 1, "official_readback": 1,
             }], "errors": [],
         }
 
@@ -467,13 +503,17 @@ def test_current_empty_registry_allows_estimate_effect(tmp_path, monkeypatch):
         tmp_path, next_action="requested_estimate", estimate_required=True,
     )
     args = _targeted_args(tmp_path, script)
+    estimate_event_key, estimate_action_id, estimate_revision = _seed_verified_estimate(
+        args, "123", "buyer-2",
+    )
     monkeypatch.setattr(
         detector, "run_requested_estimate",
         lambda *a, **k: {
             "estimate_required": 1, "estimate_effect": 1, "estimate_readback": 1,
             "estimate_pending": 0, "estimate_failed": 0, "estimate_events": [{
                 "thread_id": "123", "status": "verified",
-                "event_key": "coconala:estimate:v1:123:buyer-2",
+                "event_key": estimate_event_key, "action_id": estimate_action_id,
+                "revision": estimate_revision, "effect": 1, "official_readback": 1,
             }], "errors": [],
         },
     )
@@ -622,6 +662,9 @@ def test_full_pass_filters_fenced_and_invalid_estimate_candidates_before_effect(
 
     monkeypatch.setattr(detector, "_paid_fence_open_for_thread", fake_fence)
     estimate_calls = []
+    estimate_event_key, estimate_action_id, estimate_revision = _seed_verified_estimate(
+        args, "456", "buyer-4",
+    )
 
     def fake_estimate(filtered_snapshot, **kwargs):
         estimate_calls.append(filtered_snapshot)
@@ -633,7 +676,8 @@ def test_full_pass_filters_fenced_and_invalid_estimate_candidates_before_effect(
             "estimate_readback": 1, "estimate_pending": 0,
             "estimate_failed": 0, "estimate_events": [{
                 "thread_id": "456", "status": "verified",
-                "event_key": "coconala:estimate:v1:456:buyer-4",
+                "event_key": estimate_event_key, "action_id": estimate_action_id,
+                "revision": estimate_revision, "effect": 1, "official_readback": 1,
             }], "errors": [],
         }
 
@@ -684,6 +728,61 @@ def test_full_pass_filters_fenced_and_invalid_estimate_candidates_before_effect(
     )
     assert wrong_fenced_proof["estimate_effect"] == 0
     assert wrong_fenced_proof["status"] == "reconcile_pending"
+
+
+def test_estimate_partial_success_keeps_new_effect_with_readback_only_event():
+    result = detector.merge_estimate_metrics(
+        {"status": "completed", "effect": 0, "official_readback": 0,
+         "pending": 0, "errors": []},
+        {"estimate_required": 2, "estimate_effect": 1,
+         "estimate_readback": 2, "estimate_pending": 0,
+         "estimate_failed": 0, "errors": [], "estimate_events": [
+             {"thread_id": "123", "status": "already_delivered",
+              "event_key": "coconala:estimate:v1:123:buyer-old",
+              "effect": 0, "official_readback": 1,
+              "action_id": 41, "revision": 1},
+             {"thread_id": "456", "status": "verified",
+              "event_key": "coconala:estimate:v1:456:buyer-new",
+              "effect": 1, "official_readback": 1,
+              "action_id": 42, "revision": 1},
+         ]},
+        normal_actionable=0,
+        expected_event_keys={
+            "coconala:estimate:v1:123:buyer-old",
+            "coconala:estimate:v1:456:buyer-new",
+        },
+        expected_event_bindings={
+            "coconala:estimate:v1:123:buyer-old": (41, 1),
+            "coconala:estimate:v1:456:buyer-new": (42, 1),
+        },
+    )
+    assert result["status"] == "completed"
+    assert result["estimate_effect"] == 1
+    assert result["estimate_readback"] == 2
+    assert result["effect"] == 1
+    assert result["official_readback"] == 2
+
+
+def test_estimate_forged_old_action_cannot_substantiate_effect():
+    result = detector.merge_estimate_metrics(
+        {"status": "completed", "effect": 0, "official_readback": 0,
+         "pending": 0, "errors": []},
+        {"estimate_required": 1, "estimate_effect": 1,
+         "estimate_readback": 1, "estimate_pending": 0,
+         "estimate_failed": 0, "errors": [], "estimate_events": [{
+             "thread_id": "456", "status": "verified",
+             "event_key": "coconala:estimate:v1:456:buyer-new",
+             "effect": 1, "official_readback": 1,
+             "action_id": 41, "revision": 1,
+         }]},
+        normal_actionable=0,
+        expected_event_keys={"coconala:estimate:v1:456:buyer-new"},
+        expected_event_bindings={"coconala:estimate:v1:456:buyer-new": (42, 1)},
+    )
+    assert result["status"] == "reconcile_pending"
+    assert result["estimate_effect"] == 0
+    assert result["estimate_readback"] == 0
+    assert result["pending"] >= 1
 
 
 def test_fresh_proof_is_ordered_after_head_and_before_effect(tmp_path):

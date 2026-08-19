@@ -498,27 +498,68 @@ def _estimate_candidate_key(item: dict[str, Any]) -> str | None:
         return None
 
 
+def _expected_estimate_bindings(
+    database: Path, event_keys: set[str],
+) -> dict[str, tuple[int, int]]:
+    """Read the current durable action/revision for effect-capable estimates."""
+    if not event_keys:
+        return {}
+    try:
+        placeholders = ",".join("?" for _ in event_keys)
+        with sqlite3.connect(f"file:{Path(database).resolve()}?mode=ro", uri=True) as connection:
+            rows = connection.execute(
+                f"""SELECT e.event_key,a.action_id,a.revision
+                       FROM connector_events e
+                       JOIN connector_actions a ON a.action_id=e.action_id
+                      WHERE e.event_key IN ({placeholders})
+                        AND a.state='replied' AND a.dlq_at IS NULL""",
+                tuple(event_keys),
+            ).fetchall()
+    except (OSError, sqlite3.Error):
+        return {}
+    return {
+        str(event_key): (int(action_id), int(revision))
+        for event_key, action_id, revision in rows
+        if int(action_id) > 0 and int(revision) > 0
+    }
+
+
 def _normalize_estimate_result(
     estimate_result: dict[str, Any], *, expected_thread: str | None = None,
     expected_event_keys: set[str] | None = None,
+    expected_event_bindings: dict[str, tuple[int, int]] | None = None,
 ) -> dict[str, Any]:
-    """Never publish an estimate effect without matching official readback."""
+    """Publish aggregate estimate proof only when every event is exact."""
     normalized = dict(estimate_result)
     effect = _count(normalized.get("estimate_effect"))
     readback = _count(normalized.get("estimate_readback"))
-    if not effect:
-        return normalized
     events = normalized.get("estimate_events")
-    proof_valid = isinstance(events, list) and expected_event_keys is not None
-    verified_keys: list[str] = []
+    proof_valid = (
+        effect is not None and readback is not None
+        and isinstance(events, list)
+        and expected_event_keys is not None
+        and expected_event_bindings is not None
+    )
+    event_effect = 0
+    event_readback = 0
+    event_keys: set[str] = set()
+    action_bindings: set[tuple[int, int]] = set()
     try:
         validate_event_key = _requested_estimate_module().validate_estimate_event_key
     except Exception:
         validate_event_key = None
         proof_valid = False
     for event in events if isinstance(events, list) else []:
-        if not isinstance(event, dict) or event.get("status") != "verified":
+        if not isinstance(event, dict):
+            proof_valid = False
             continue
+        event_effect_value = _count(event.get("effect"))
+        event_readback_value = _count(event.get("official_readback"))
+        if event_effect_value not in {0, 1} or event_readback_value not in {0, 1}:
+            proof_valid = False
+            continue
+        event_effect += event_effect_value
+        event_readback += event_readback_value
         thread_id = str(event.get("thread_id") or "").strip()
         event_key = str(event.get("event_key") or "")
         if (
@@ -533,20 +574,40 @@ def _normalize_estimate_result(
         except Exception:
             proof_valid = False
             continue
-        if event_key not in (expected_event_keys or set()):
+        if event_key not in (expected_event_keys or set()) or event_key in event_keys:
             proof_valid = False
-        verified_keys.append(event_key)
-    proof_valid = proof_valid and len(set(verified_keys)) == len(verified_keys)
-    if (
-        readback == effect
-        and len(verified_keys) == effect
-        and proof_valid
-    ):
+        event_keys.add(event_key)
+        action_id = _count(event.get("action_id"))
+        revision = _count(event.get("revision"))
+        has_action_binding = action_id is not None or revision is not None
+        if has_action_binding:
+            if action_id is None or revision is None or action_id <= 0 or revision <= 0:
+                proof_valid = False
+            elif (action_id, revision) in action_bindings:
+                proof_valid = False
+            else:
+                action_bindings.add((action_id, revision))
+        if event_effect_value:
+            if (
+                event.get("status") != "verified"
+                or event_readback_value != 1
+                or not has_action_binding
+                or expected_event_bindings.get(event_key) != (action_id, revision)
+            ):
+                proof_valid = False
+        elif event_readback_value:
+            if (
+                event.get("status") not in {"verified", "already_delivered"}
+                or not has_action_binding
+                or expected_event_bindings.get(event_key) != (action_id, revision)
+            ):
+                proof_valid = False
+    if proof_valid and effect == event_effect and readback == event_readback:
         return normalized
     normalized["estimate_effect"] = 0
     normalized["estimate_readback"] = 0
     normalized["estimate_pending"] = max(
-        _count(normalized.get("estimate_pending")) or 0, effect, 1,
+        _count(normalized.get("estimate_pending")) or 0, effect or 0, 1,
     )
     errors = list(normalized.get("errors") or [])
     if "estimate_verified_readback_missing" not in errors:
@@ -559,11 +620,13 @@ def merge_estimate_metrics(
     result: dict[str, Any], estimate_result: dict[str, Any], *,
     normal_actionable: int | None, expected_thread: str | None = None,
     expected_event_keys: set[str] | None = None,
+    expected_event_bindings: dict[str, tuple[int, int]] | None = None,
 ) -> dict[str, Any]:
     """Project estimate outcomes into the one wake truth without relabelling them."""
     estimate_result = _normalize_estimate_result(
         estimate_result, expected_thread=expected_thread,
         expected_event_keys=expected_event_keys,
+        expected_event_bindings=expected_event_bindings,
     )
     estimate_required = _count(estimate_result.get("estimate_required"))
     estimate_effect = _count(estimate_result.get("estimate_effect"))
@@ -1185,6 +1248,9 @@ def _run_effect_pipeline(
             )
     _atomic_json(estimate_path, estimate_result)
     _owner_only(estimate_path)
+    expected_event_bindings = _expected_estimate_bindings(
+        Path(database), expected_event_keys,
+    )
     if target and estimate_required:
         result = {
             "status": (
@@ -1201,6 +1267,7 @@ def _run_effect_pipeline(
             result, estimate_result, normal_actionable=0,
             expected_thread=thread_id,
             expected_event_keys=expected_event_keys,
+            expected_event_bindings=expected_event_bindings,
         )
 
     _run("reply_lane", [
@@ -1225,6 +1292,7 @@ def _run_effect_pipeline(
         normal_actionable=(len(queue_value.get("items")) if isinstance(queue_value.get("items"), list) else None),
         expected_thread=thread_id if target else None,
         expected_event_keys=expected_event_keys,
+        expected_event_bindings=expected_event_bindings,
     )
     return result
 
