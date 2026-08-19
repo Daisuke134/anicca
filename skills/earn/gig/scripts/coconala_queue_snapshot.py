@@ -1276,6 +1276,90 @@ def talkroom_with_persisted_history(
     return {**talkroom, "messages": merged, "history_complete": True, "message_count": len(merged)}
 
 
+def _paid_message_content_sha256(message: dict[str, Any]) -> str:
+    """Return the capture-independent content key used by the talkroom ledger."""
+    attachments = [
+        {
+            key: attachment.get(key)
+            for key in ("filename", "content_type", "size_text", "href", "reference")
+        }
+        for attachment in message.get("attachments") or []
+        if isinstance(attachment, dict)
+    ]
+    canonical = {
+        "side": message.get("side"),
+        "sent_at": message.get("sent_at"),
+        "text": str(message.get("text") or ""),
+        "attachments": attachments,
+    }
+    return hashlib.sha256(json.dumps(
+        canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")).hexdigest()
+
+
+def _durable_paid_messages(
+    project_root: Path, talkroom_id: str, current: Any,
+) -> list[dict[str, Any]]:
+    """Merge the current capture with the append-only official talkroom ledger.
+
+    Coconala can render only the newest slice of a long room.  The seller-attachment
+    cursor and the feedback digest must therefore run over the durable history, not
+    over whichever slice happened to be visible in this poll.  The ledger's content
+    key is the same one written by ``persist_talkroom_history``; the fresh row wins
+    so a newly captured attachment body is available without changing identity.
+    """
+    current_rows = [row for row in current if isinstance(row, dict)] if isinstance(current, list) else []
+    by_content = {_paid_message_content_sha256(row): row for row in current_rows}
+    ledger = project_root / "source" / "talkroom" / "messages.jsonl"
+    merged: list[dict[str, Any]] = []
+    try:
+        lines = ledger.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        lines = []
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict) or str(row.get("talkroom_id") or "") != str(talkroom_id):
+            continue
+        content_sha = str(row.get("content_sha256") or "")
+        if not re.fullmatch(r"[0-9a-f]{64}", content_sha):
+            content_sha = _paid_message_content_sha256(row)
+        fresh = by_content.pop(content_sha, None)
+        if fresh is None:
+            merged.append(row)
+        else:
+            merged.append({**row, **fresh, "observed_at": row.get("observed_at") or fresh.get("observed_at")})
+    merged.extend(by_content.values())
+    return merged or current_rows
+
+
+def _stable_paid_message_identity(message: dict[str, Any]) -> str:
+    """Return an opaque, durable identity for one buyer-authored message."""
+    message_id = str(message.get("message_id") or "").strip()
+    if message_id and message_id != "unknown":
+        return f"message:{message_id}"
+    return f"content:{_paid_message_content_sha256(message)}"
+
+
+def _stable_paid_feedback_digest(
+    talkroom_id: str, stage: str, buyer_messages: list[dict[str, Any]],
+) -> tuple[str, list[str]]:
+    """Hash message identities, never capture timestamps or download outcomes."""
+    identities = [_stable_paid_message_identity(message) for message in buyer_messages]
+    payload = {
+        "version": 1,
+        "talkroom_id": str(talkroom_id),
+        "stage": stage,
+        "message_identities": identities,
+    }
+    digest = hashlib.sha256(json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")).hexdigest()
+    return digest, identities
+
+
 def _bytes_sha_for_history(path: Path) -> tuple[int, str]:
     digest = hashlib.sha256()
     size = 0
@@ -1457,6 +1541,8 @@ def _request_named_by_existing_sidecar(requirements_path: Path) -> dict[str, Any
     return {
         "requirements_path": str(requirements_path),
         "feedback_sha256": digest,
+        "feedback_identity_sha256": str(payload.get("feedback_identity_sha256") or "") or None,
+        "feedback_message_identities": payload.get("feedback_message_identities") or [],
         "stage": stage,
     }
 
@@ -1567,7 +1653,9 @@ def persist_latest_paid_buyer_reply(
     if identity in {".", ".."} or not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", identity):
         raise CollectorUnhealthy("invalid_paid_project_identity")
     project_root = projects_root.expanduser().resolve() / identity
-    messages = talkroom.get("messages") if isinstance(talkroom.get("messages"), list) else []
+    messages = _durable_paid_messages(
+        project_root, str(source_talkroom_id or project_id), talkroom.get("messages"),
+    )
     requirements_path = project_root / "requirements" / "live-buyer-reply.json"
     existing_payload = _existing_requirements(requirements_path)
     previous = existing_payload.get("accumulated_requirements")
@@ -1708,7 +1796,7 @@ def persist_latest_paid_buyer_reply(
     if not feedback_text:
         keep_accumulation_only()
         return None
-    feedback_sha256 = hashlib.sha256(json.dumps({
+    legacy_feedback_sha256 = hashlib.sha256(json.dumps({
         "feedback_text": feedback_text,
         # The envelope is left exactly as it was on purpose.  An order with no
         # attachments hashes the same bytes it hashed before this change, so the
@@ -1716,6 +1804,22 @@ def persist_latest_paid_buyer_reply(
         # 2026-08-07 keep matching and nothing is asked to rebuild.
         "attachments": buyer_request_identity(attachment_manifest),
     }, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    feedback_identity_sha256, feedback_message_identities = _stable_paid_feedback_digest(
+        str(source_talkroom_id or project_id), stage, buyer_messages,
+    )
+    # Existing sidecars predate the stable message identity. Keep their digest while
+    # the request text is unchanged so a deployment cannot rebuild an already accepted
+    # artifact. A genuinely changed request switches to the stable digest immediately.
+    legacy_compatibility = (
+        re.fullmatch(r"[0-9a-f]{64}", str(existing_payload.get("feedback_sha256") or ""))
+        and existing_payload.get("feedback_identity_version") is None
+        and existing_payload.get("feedback_text") == feedback_text
+        and _existing_stage(existing_payload) == stage
+    )
+    feedback_sha256 = (
+        str(existing_payload.get("feedback_sha256"))
+        if legacy_compatibility else feedback_identity_sha256
+    )
     # Both must match: the same text read at a different stage (our first
     # delivery landed between polls) is a different requirement. A pre-C3a file
     # carries its stage in `source`, so an unchanged poll over a legacy sidecar
@@ -1738,6 +1842,9 @@ def persist_latest_paid_buyer_reply(
         and _existing_stage(existing_payload) == stage
         and existing_payload.get("accumulated_sha256") == accumulated_sha256
         and existing_payload.get("attachments") == attachment_manifest
+        and existing_payload.get("feedback_identity_version") == 1
+        and existing_payload.get("feedback_identity_sha256") == feedback_identity_sha256
+        and existing_payload.get("feedback_message_identities") == feedback_message_identities
         # A sidecar written before this field existed has to gain it once; after
         # that the value is stable, so this cannot become a per-poll rewrite.
         and existing_payload.get("feedback_first_observed_at") == feedback_first_observed_at
@@ -1745,6 +1852,8 @@ def persist_latest_paid_buyer_reply(
         return {
             "requirements_path": str(requirements_path),
             "feedback_sha256": feedback_sha256,
+            "feedback_identity_sha256": feedback_identity_sha256,
+            "feedback_message_identities": feedback_message_identities,
             "stage": stage,
         }
     atomic_json(requirements_path, {
@@ -1756,6 +1865,10 @@ def persist_latest_paid_buyer_reply(
         "observed_at": observed_at,
         "feedback_first_observed_at": feedback_first_observed_at,
         "feedback_sha256": feedback_sha256,
+        "feedback_identity_version": 1,
+        "feedback_identity_sha256": feedback_identity_sha256,
+        "feedback_message_identities": feedback_message_identities,
+        "legacy_feedback_sha256": legacy_feedback_sha256 if feedback_sha256 != legacy_feedback_sha256 else None,
         "feedback_text": feedback_text,
         "attachments": attachment_manifest,
         # Append-only: the current request narrows, the requirements never do.
@@ -1766,6 +1879,8 @@ def persist_latest_paid_buyer_reply(
     return {
         "requirements_path": str(requirements_path),
         "feedback_sha256": feedback_sha256,
+        "feedback_identity_sha256": feedback_identity_sha256,
+        "feedback_message_identities": feedback_message_identities,
         "stage": stage,
     }
 
@@ -2871,6 +2986,7 @@ def last_message_side_from_dom(talkroom: dict[str, Any]) -> str:
 def enrich_order(order: dict[str, Any], talkroom: dict[str, Any], offer: dict[str, Any] | None) -> None:
     for field in (
         "buyer_feedback_sha256", "buyer_feedback_requirements_path", "buyer_feedback_stage",
+        "buyer_feedback_identity_sha256", "buyer_feedback_message_identities",
     ):
         if talkroom.get(field) not in (None, ""):
             order[field] = talkroom[field]
@@ -3146,6 +3262,8 @@ def main() -> int:
             if feedback is not None:
                 talkroom["buyer_feedback_requirements_path"] = feedback["requirements_path"]
                 talkroom["buyer_feedback_sha256"] = feedback["feedback_sha256"]
+                talkroom["buyer_feedback_identity_sha256"] = feedback.get("feedback_identity_sha256")
+                talkroom["buyer_feedback_message_identities"] = feedback.get("feedback_message_identities", [])
                 talkroom["buyer_feedback_stage"] = feedback["stage"]
             merged_order = dict(selected_order or {})
             enrich_order(merged_order, talkroom, None)
@@ -3701,6 +3819,8 @@ def main() -> int:
             if feedback is not None:
                 order["buyer_feedback_requirements_path"] = feedback["requirements_path"]
                 order["buyer_feedback_sha256"] = feedback["feedback_sha256"]
+                order["buyer_feedback_identity_sha256"] = feedback.get("feedback_identity_sha256")
+                order["buyer_feedback_message_identities"] = feedback.get("feedback_message_identities", [])
                 order["buyer_feedback_stage"] = feedback["stage"]
 
         # A4: applications already submitted to 継続 listings live on their own tab

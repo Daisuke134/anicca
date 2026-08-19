@@ -3227,6 +3227,7 @@ def run_once(args, output: Path) -> int:
             root, _ = resolved; private = {key: item[key] for key in (
                 "request_id", "contract_id", "talkroom_id", "title", "marketplace_url", "talkroom_url",
                 "buyer_feedback_sha256", "buyer_feedback_stage", "buyer_feedback_pending_artifact",
+                "buyer_feedback_identity_sha256", "buyer_feedback_message_identities",
                 "buyer_feedback_requirements_path", "buyer_reply_after_artifact_observed",
                 "buyer_formal_delivery_hold", "delivery_date", "status", "talkroom_state",
                 "talkroom_evidence_file", "talkroom_observed_at", "snapshot_captured_at",

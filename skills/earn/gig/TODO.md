@@ -189,7 +189,14 @@ remain open until the continuous owner runs this release and one authorized acti
   read back 2 already-owned/deduplicated states, and left 1 pending with `failed=0`. The pending
   room is an existing revision/owner-decision state, not a new artifact that can be safely built
   or delivered from the current contract; no delivery effect is claimed.
-- [ ] Give paid feedback/delivery a stable order/message identity independent of the capture window.
+- [x] Give paid feedback/delivery a stable order/message identity independent of the capture window.
+  The collector now merges the current talkroom capture with the append-only official
+  message ledger before choosing the seller-attachment boundary. New paid cycles record
+  `feedback_identity_sha256` plus opaque buyer `feedback_message_identities`; that digest
+  excludes capture time, local paths, byte-download success, and display-size guesses.
+  Legacy sidecars keep their old digest while the request text is unchanged, so an already
+  accepted artifact is not rebuilt during rollout. New or changed requests use the stable
+  identity digest. `py_compile` passes for the collector, paid lane, and context packet.
 - [ ] Complete credential handling and email-first owner notification without public operator
   identity or secrets.
 - [ ] Detect one new natural paid order from official state.

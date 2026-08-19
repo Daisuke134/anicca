@@ -28,6 +28,8 @@ PAID_FIELDS = (
     "delivery_date",
     "talkroom_state",
     "buyer_feedback_sha256",
+    "buyer_feedback_identity_sha256",
+    "buyer_feedback_message_identities",
     "buyer_feedback_requirements_path",
     "buyer_feedback_pending_artifact",
     # C3a: initial_request (build v1 from the buyer's brief) vs revision (the
