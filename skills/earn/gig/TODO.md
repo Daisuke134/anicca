@@ -175,7 +175,10 @@ between several concurrent tasks”; Playwright
 and Azure's
 [`Competing Consumers`](https://learn.microsoft.com/en-us/azure/architecture/patterns/competing-consumers)
 — long-running processing does not prevent other consumers from processing concurrently. The
-abandoned two-process observer draft was removed and was never committed, pushed or deployed.
+abandoned two-process observer draft was never committed or pushed. A stale production plist did,
+however, still point at the absent `reply_observer.py`: launchd ran it 63 times, every run exited
+with status 2 before browser or marketplace effect, and it was then booted out and moved
+recoverably to Trash. The selected single-process architecture must not recreate that service.
 
 The measured before value is **10 minutes 13 seconds**. The completion gate is not a configured
 interval or a model timeout: it is a natural per-message timeline from buyer origin through
