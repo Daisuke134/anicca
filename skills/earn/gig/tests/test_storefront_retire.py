@@ -107,9 +107,11 @@ def test_replace_plan_requires_a_ready_candidate_and_keeps_a_republish_rollback(
 
 
 
-def test_the_archive_executor_refuses_a_contract_that_is_not_a_recoverable_retire():
+def test_the_archive_executor_refuses_a_contract_that_is_not_a_recoverable_retire(monkeypatch):
     import asyncio
 
+    monkeypatch.setattr(sd, "_load_capability_families",
+                        lambda _path: (FAMILY, {"ui_translation": {}}))
     contract = render()
     wrong_field = {**contract, "changed_field": "title"}
     with pytest.raises(RuntimeError, match="storefront_mutation_contract_invalid"):
