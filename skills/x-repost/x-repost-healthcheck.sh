@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# x-repost-healthcheck.sh — the loop is a launchd one-shot, so there is no tmux session to keep
+# alive. What can silently die here is the SCHEDULE and the SESSION, so those are what this checks:
+#   1. the pass plist is still bootstrapped (a corrupt/unloaded plist = a loop that never fires)
+#   2. a pass actually reached a decision recently (state/.last-pass heartbeat)
+# It alerts rather than restarting: re-running a pass out of band would risk a second post in a day.
+set -uo pipefail
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LABEL="ai.anicca.x-repost-pass"
+INSTALLED="$HOME/Library/LaunchAgents/$LABEL.plist"
+# The plist is generated from loops/<name>/loop.toml rather than kept as a committed copy, so
+# repairing one means regenerating it. Keeping a checked-in copy alongside the generator would
+# create a second source of truth, and the one that drifts is always the one nobody runs.
+REPO_ROOT="$(cd "$SKILL/../.." && pwd)"
+regenerate_plist() {
+  "${PY:-/opt/homebrew/bin/python3}" "$REPO_ROOT/bin/plistgen.py" \
+    --loops-dir "$REPO_ROOT/loops" --out-dir "$HOME/Library/LaunchAgents" --only x-repost \
+    >/dev/null 2>&1
+}
+HEARTBEAT="${X_REPOST_STATE_DIR:-$SKILL/state}/.last-pass"
+# Hourly cadence, so 3h of silence is already three missed passes -- and the heartbeat is written
+# on every pass that reaches a decision, not only the ones that publish.
+MAX_AGE_SECONDS="${X_REPOST_MAX_PASS_AGE:-10800}"
+
+# shellcheck source=/dev/null
+source "$HOME/.openclaw/skills/_shared/scripts/telegram-notify.sh" 2>/dev/null || \
+  telegram_notify() { echo "telegram_notify unavailable: $1" >&2; }
+
+problems=()
+
+# 1. schedule present and loadable
+if [ ! -f "$INSTALLED" ]; then
+  regenerate_plist && launchctl bootstrap "gui/$(id -u)" "$INSTALLED" 2>/dev/null
+  problems+=("plist was missing from LaunchAgents; regenerated from loop.toml")
+elif ! plutil -lint "$INSTALLED" >/dev/null 2>&1; then
+  regenerate_plist && launchctl bootstrap "gui/$(id -u)" "$INSTALLED" 2>/dev/null
+  problems+=("installed plist was corrupt; regenerated from loop.toml")
+elif ! launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1; then
+  launchctl bootstrap "gui/$(id -u)" "$INSTALLED" 2>/dev/null
+  problems+=("$LABEL was not loaded; bootstrapped it")
+fi
+
+# 2. a pass reached a decision recently
+if [ ! -f "$HEARTBEAT" ]; then
+  problems+=("no pass has ever completed (state/.last-pass absent)")
+else
+  age=$(( $(date +%s) - $(stat -f %m "$HEARTBEAT") ))
+  if [ "$age" -gt "$MAX_AGE_SECONDS" ]; then
+    problems+=("last completed pass was $((age / 3600))h ago (limit $((MAX_AGE_SECONDS / 3600))h)")
+  fi
+fi
+
+if [ "${#problems[@]}" -eq 0 ]; then
+  echo "x-repost: OK"
+  exit 0
+fi
+
+printf 'x-repost: %s\n' "${problems[@]}" >&2
+telegram_notify "x-repost::: healthcheck — $(printf '%s; ' "${problems[@]}")"
+exit 1
