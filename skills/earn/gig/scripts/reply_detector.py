@@ -1447,14 +1447,21 @@ def _supervisor_rows(value: Any) -> list[dict[str, Any]]:
 def _supervisor_work_from_action(action: dict[str, Any]) -> dict[str, Any] | None:
     event_key = str(action.get("event_key") or "")
     thread_id = str(action.get("thread_id") or "")
+    action_id = _count(action.get("action_id"))
+    expected_revision = _count(action.get("revision"))
     match = _INBOX_EVENT.fullmatch(event_key)
-    if match is None or match.group("thread") != thread_id:
+    if (
+        match is None or match.group("thread") != thread_id
+        or action_id is None or action_id <= 0
+        or expected_revision is None or expected_revision <= 0
+    ):
         return None
     return {
-        "action_id": int(action["action_id"]),
+        "action_id": action_id,
         "event_key": event_key,
         "thread_id": thread_id,
         "identity_sha256": match.group("identity"),
+        "expected_revision": expected_revision,
     }
 
 
@@ -1487,6 +1494,7 @@ def _supervisor_rebind_targeted_work(
             "action_id": int(action["action_id"]),
             "event_key": event_key, "thread_id": thread_id,
             "identity_sha256": identity,
+            "expected_revision": int(action["revision"]),
         }
     if side != "seller":
         return None
@@ -1496,11 +1504,14 @@ def _supervisor_rebind_targeted_work(
         return None
     if action.get("state") != "pending" or action.get("dlq_at") is not None:
         return None
+    expected_revision = _count(work.get("expected_revision"))
+    if expected_revision is None or expected_revision <= 0:
+        return None
     _targeted_close_no_send(
         database=outbox.database, manifest=outbox.manifest_path,
         action_id=int(work["action_id"]), thread_id=thread_id,
         inbox_event_key=str(work["event_key"]),
-        expected_revision=int(action["revision"]),
+        expected_revision=expected_revision,
         reason="targeted_identity_superseded_seller_last", run_id=f"rebind-{now}",
     )
     return None
@@ -1583,6 +1594,7 @@ async def supervise_replies(
                 "action_id": int(action["action_id"]),
                 "event_key": event_key, "thread_id": thread_id,
                 "identity_sha256": identity,
+                "expected_revision": int(action["revision"]),
             })
 
     async def enqueue_pending_actions() -> None:

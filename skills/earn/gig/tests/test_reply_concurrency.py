@@ -1654,3 +1654,49 @@ def test_supervise_rebind_seller_last_closes_stale_action_without_dispatch(tmp_p
         ).fetchall()
     assert [row[0] for row in events] == [old_event_key]
     assert new_event_key not in {row[0] for row in events}
+
+
+def test_supervise_rebind_seller_last_does_not_close_newer_buyer_revision(tmp_path):
+    """A buyer coalesced after the stale seller result remains pending."""
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    old_identity = "a" * 64
+    new_identity = "b" * 64
+    old_event_key = _seed_pending_inbox_event(database, old_identity)
+    new_event_key = outbox.coconala_inbox_event_key("123", new_identity)
+    mismatch = {
+        "status": "pending",
+        "errors": ["targeted_inbox_identity_changed"],
+        "current_identity_sha256": new_identity,
+        "current_last_message_side": "seller",
+    }
+
+    work = detector._supervisor_work_from_action(database.pending_actions()[0])
+    assert work is not None
+    assert work["expected_revision"] == 1
+
+    # This is the race window: B is observed and coalesced after A's worker
+    # result, but before the supervisor tries to close the stale seller result.
+    action = database.enqueue(
+        event_key=new_event_key, thread_id="123",
+        thread_url="https://coconala.com/mypage/direct_message/123",
+        observed_at=1_755_555_201,
+    )
+    assert action["revision"] == 2
+
+    rebound = detector._supervisor_rebind_targeted_work(
+        database, work, mismatch, now=1_755_555_202,
+    )
+
+    assert rebound is None
+    pending = database.pending_actions()
+    assert len(pending) == 1
+    assert pending[0]["revision"] == 2
+    assert pending[0]["event_key"] == new_event_key
+    assert database.closed_actions(closure="nothing_to_say") == []
+    with sqlite3.connect(args.database) as connection:
+        events = connection.execute(
+            "SELECT event_key FROM connector_events WHERE action_id=? ORDER BY rowid",
+            (work["action_id"],),
+        ).fetchall()
+    assert [row[0] for row in events] == [old_event_key, new_event_key]
