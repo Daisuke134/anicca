@@ -515,7 +515,7 @@ life-manager/
     ├── config/storefront-catalog-scorecard.json
     ├── contracts/storefront/
     ├── tests/storefront/
-    └── launchd/ai.anicca.hf-gig-storefront-direct.plist
+    └── config/launchd-jobs.json   (job definition; replaced launchd/*.plist 2026-08-19)
 ```
 
 The exact final tree may reuse existing directories to minimize churn, but Storefront-owned production, config, contracts, tests, and launchd ownership must remain identifiable and must not be mixed into Paid implementation files.
