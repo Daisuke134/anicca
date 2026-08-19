@@ -26,13 +26,50 @@ not this operator's Telegram identity.
 
 ## Execution order to end
 
-Only the first unfinished item is active: **0b reply speed** → the four clean-public-package
-steps below → **4 listing contract/product truth** → **2 stable paid-feedback identity and
-credential handling** → **5 storefront attribution** → **1 browser-major qualification** →
-**6 merge the already-pushed legacy-removal branch when its unrelated merge clears**. Closed
-items do not reopen without new contradictory evidence.
+The first unfinished item is always the first failed live lane, not the first planned feature.
+The order to the end is:
 
-After 0b closes, execute the public-package items in order:
+1. **Recover operating headroom.** Keep at least 10 GiB free before trusting browser, SQLite or
+   evidence writes. The current machine has only 517 MiB free; old Codex sessions/logs, stale Git
+   worktrees and immutable gig releases are the first recoverable targets. Never delete active
+   state, the current release, credentials or the browser profile.
+2. **Apply must submit new eligible work again.** The scheduler is starting fresh Apply processes,
+   but the last ten completed passes are `parent_failed_rc_2`. Most observed 40 postings and then
+   failed because both application-intent providers returned `transient_quota`; the newest failed
+   earlier on `cdp_Page.enable_timeout_after_30s`. This is a real outage, not an exhausted board.
+   Completion requires a natural eligible posting to produce exactly one official application
+   readback; an exhausted pass is acceptable only with `failed: 0` and terminal source coverage.
+3. **Negotiate must answer every actionable buyer event.** Perform an official targeted readback
+   for the buyer identified by the operator as `Addres88`; no durable local row matching that
+   display name was found, so do not infer replied or unreplied from local search. If the latest
+   buyer event requests a quote or answer, send it through the existing reply/estimate path and
+   require exact-thread official readback. Then retain the natural under-five-minute acceptance
+   for every new actionable buyer event.
+4. **Storefront must list and improve sellable products.** Reading 13 listings with a no-op is
+   healthy observation but is not proof of listing creation or mutation. Resolve item 4's product
+   truth first, then prove one official create/update readback when a valid unfenced contract exists.
+5. **Paid must build, verify and deliver paid work.** Prove a natural paid order from official paid
+   detection through artifact validation, one delivery effect and exact-room official readback.
+6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
+   survive process exit and start again from the immutable release. The current shell cannot read
+   the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
+   Apply/Negotiate/Storefront PIDs are visible. Process presence is not yet durable registration
+   proof; capture two successive natural starts per lane and a loaded-definition readback from a
+   valid GUI launchd context.
+7. Re-close the public-package gate at `f90898caf`: actual capability-evidence project paths are now
+   supplied only through `GIG_STOREFRONT_CAPABILITY_EVIDENCE`, but the clean-clone acceptance was run
+   on its parent and must be re-read after the live outage is fixed. Keep broad repetitive tests off
+   the hot path; use focused evidence and periodic fresh Terra adversarial review.
+8. Finish the remaining product items in this file: **4 listing contract/product truth** →
+   **2 stable paid-feedback identity and credential handling** → **5 storefront attribution** →
+   **1 browser-major qualification** → **6 merge the already-pushed legacy-removal branch when its
+   unrelated merge clears**.
+
+The system is complete only when all four business outcomes have natural official receipts:
+application, buyer reply/estimate, listing create/update, and paid delivery. A running process,
+Telegram/email report, dry run, model response or local ledger row is not completion.
+
+The public-package regression gate remains:
 
 1. Audit the tracked `skills/earn/gig/` tree and its reachable Git history for credentials,
    customer content, account identifiers, absolute owner paths, and committed runtime evidence.
