@@ -74,6 +74,10 @@ _EVENT_COMPONENT = r"[A-Za-z0-9._-]{1,128}"
 _MESSAGE_EVENT = re.compile(
     rf"coconala:message:v1:(?P<thread>{_EVENT_COMPONENT}):(?P<message>{_EVENT_COMPONENT})"
 )
+_INBOX_EVENT = re.compile(
+    rf"coconala:inbox:v1:(?P<thread>{_EVENT_COMPONENT}):"
+    r"sha256_v1:(?P<identity>[0-9a-f]{64})"
+)
 _FALLBACK_EVENT = re.compile(
     rf"coconala:fallback:v1:(?P<thread>{_EVENT_COMPONENT}):"
     r"(?P<sent_at>0|[1-9][0-9]*):(?P<ordinal>0|[1-9][0-9]*):sha256_v1:(?P<digest>[0-9a-f]{64})"
@@ -100,6 +104,16 @@ def coconala_message_event_key(thread_id: str, message_id: str) -> str:
     thread = _event_component("thread_id", thread_id)
     message = _event_component("message_id", message_id)
     return f"coconala:message:v1:{thread}:{message}"
+
+
+def coconala_inbox_event_key(thread_id: str, identity_sha256: str) -> str:
+    """Build a typed, thread-bound identity for one observed inbox card."""
+    thread = _event_component("thread_id", thread_id)
+    if type(identity_sha256) is not str or not re.fullmatch(
+        r"[0-9a-f]{64}", identity_sha256
+    ):
+        raise ValueError("invalid identity_sha256")
+    return f"coconala:inbox:v1:{thread}:sha256_v1:{identity_sha256}"
 
 
 def coconala_fallback_event_key(
@@ -139,7 +153,7 @@ def validate_coconala_event_key(event_key: str, thread_id: str) -> str:
     if not isinstance(event_key, str) or len(event_key) > 500:
         raise ValueError("invalid event_key")
     expected_thread = _event_component("thread_id", thread_id)
-    for pattern in (_MESSAGE_EVENT, _FALLBACK_EVENT, _ESTIMATE_EVENT):
+    for pattern in (_MESSAGE_EVENT, _INBOX_EVENT, _FALLBACK_EVENT, _ESTIMATE_EVENT):
         match = pattern.fullmatch(event_key)
         if match is not None:
             if match.group("thread") != expected_thread:

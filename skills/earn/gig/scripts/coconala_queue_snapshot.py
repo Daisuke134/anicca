@@ -402,6 +402,17 @@ MAX_PAGINATION_PAGES = 10
 MAX_PAGE_COUNT = 30
 
 
+def direct_inbox_coverage_expression(page_limit: int = 10) -> str:
+    """Return direct-inbox coverage bounded to the requested page count."""
+    if type(page_limit) is not int or not 1 <= page_limit <= MAX_PAGINATION_PAGES:
+        raise ValueError("page_limit must be an integer from 1 to MAX_PAGINATION_PAGES")
+    if page_limit == MAX_PAGINATION_PAGES:
+        return DIRECT_INBOX_COVERAGE_EXPRESSION
+    return DIRECT_INBOX_COVERAGE_EXPRESSION.replace(
+        "pageLimit=10", f"pageLimit={page_limit}", 1,
+    )
+
+
 def bounded_pagination_metadata(dom: dict[str, Any]) -> tuple[int | None, list[int] | None, bool]:
     """Return bounded page metadata and whether the source supplied any metadata."""
     pages = dom.get("pagination_pages")
@@ -2142,6 +2153,8 @@ async def inspect_page(
     expected_url: str | None = None,
     capture_buyer_attachments: bool = False,
     previous_count: int | None = None,
+    coverage_expression: str | None = None,
+    validate_coverage: bool = True,
 ) -> dict[str, Any]:
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=50 * 1024 * 1024) as ws:
         request_id = 1
@@ -2167,10 +2180,14 @@ async def inspect_page(
         if not isinstance(raw, str):
             raise RuntimeError("DOM expression did not return JSON text")
         value = json.loads(raw)
-        coverage_expression = coverage_expression_for_route(expected_url)
-        if coverage_expression is not None:
+        selected_coverage_expression = (
+            coverage_expression
+            if coverage_expression is not None
+            else coverage_expression_for_route(expected_url)
+        )
+        if selected_coverage_expression is not None:
             coverage = await call(ws, request_id, "Runtime.evaluate", {
-                "expression": coverage_expression,
+                "expression": selected_coverage_expression,
                 "returnByValue": True,
                 "awaitPromise": True,
             })
@@ -2179,7 +2196,8 @@ async def inspect_page(
             if not isinstance(coverage_raw, str):
                 raise CollectorUnhealthy("inbox_coverage_missing")
             value.update(json.loads(coverage_raw))
-            value["coverage_receipt"] = validate_inbox_coverage(value, previous_count)
+            if validate_coverage:
+                value["coverage_receipt"] = validate_inbox_coverage(value, previous_count)
         if capture_buyer_attachments:
             captured = await call(ws, request_id, "Runtime.evaluate", {
                 "expression": TALKROOM_ATTACHMENT_EXPRESSION,
@@ -2216,9 +2234,14 @@ async def inspect_message_page(
     expression: str,
     expected_url: str,
     previous_count: int | None = None,
+    coverage_expression: str | None = None,
+    validate_coverage: bool = True,
 ) -> dict[str, Any]:
     """Read private-message DOM without persisting customer-visible pixels."""
     kwargs = {"previous_count": previous_count} if previous_count is not None else {}
+    if coverage_expression is not None:
+        kwargs["coverage_expression"] = coverage_expression
+    kwargs["validate_coverage"] = validate_coverage
     return await inspect_page(ws_url, expression, None, expected_url, **kwargs)
 
 
@@ -2330,6 +2353,8 @@ def inspect_page_with_retry(
     hidden: bool = False,
     capture_buyer_attachments: bool = False,
     previous_count: int | None = None,
+    coverage_expression: str | None = None,
+    validate_coverage: bool = True,
 ) -> dict[str, Any]:
     """Retry only the known transient navigation timeout with fresh tabs."""
     if attempts < 1:
@@ -2343,6 +2368,8 @@ def inspect_page_with_retry(
                     tab.ws, expression, screenshot, url,
                     capture_buyer_attachments=capture_buyer_attachments,
                     previous_count=previous_count,
+                    coverage_expression=coverage_expression,
+                    validate_coverage=validate_coverage,
                 ))
         except RuntimeError as exc:
             if str(exc) != TRANSIENT_NAVIGATION_ERROR or attempt == attempts - 1:
@@ -2835,7 +2862,10 @@ def argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--mode",
-        choices=("full", "orders-only", "selected-talkroom-only", "direct-inbox-only"),
+        choices=(
+            "full", "orders-only", "selected-talkroom-only",
+            "direct-inbox-only", "direct-inbox-head-only",
+        ),
         default="full",
     )
     parser.add_argument("--talkroom-id")
@@ -2904,13 +2934,13 @@ def main() -> int:
     source = (
         "orders" if mode == "orders-only"
         else "selected_talkroom" if mode == "selected-talkroom-only"
-        else "direct_inbox" if mode == "direct-inbox-only"
+        else "direct_inbox" if mode in {"direct-inbox-only", "direct-inbox-head-only"}
         else None
     )
     requested_url = OPEN_ORDERS_URL if mode == "orders-only" else (
         f"https://coconala.com/talkrooms/{talkroom_id}" if mode == "selected-talkroom-only" else None
     )
-    if mode == "direct-inbox-only":
+    if mode in {"direct-inbox-only", "direct-inbox-head-only"}:
         requested_url = MESSAGES_URL
     source_dom: dict[str, Any] = {}
 
@@ -3017,6 +3047,44 @@ def main() -> int:
             print(json.dumps({
                 "status": "success", "collector_mode": mode, "talkroom_id": talkroom_id,
                 "output": str(args.output), "evidence_dir": str(args.evidence_dir),
+            }, ensure_ascii=False))
+            return 0
+
+        if mode == "direct-inbox-head-only":
+            with DefaultTab(args.cdp_helper, MESSAGES_URL, hidden=hidden) as tab:
+                messages_dom = asyncio.run(inspect_message_page(
+                    tab.ws, MESSAGES_EXPRESSION, MESSAGES_URL,
+                    coverage_expression=direct_inbox_coverage_expression(1),
+                    validate_coverage=False,
+                ))
+            # A bounded head is intentionally never a complete inbox receipt,
+            # even when the first page happens to expose a terminal paginator.
+            messages_dom["coverage_complete"] = False
+            messages_dom["head_only"] = True
+            inquiries = inquiries_from_dom(messages_dom)
+            receipt = source_receipt(
+                source="direct_inbox", requested_url=MESSAGES_URL,
+                observed_at=observed_at, dom=messages_dom,
+            )
+            atomic_json(args.evidence_dir / "direct-inbox-route.json", {
+                "url": MESSAGES_URL, "not_found": False, "observed_at": observed_at,
+                "coverage_receipt": receipt,
+            })
+            atomic_json(args.evidence_dir / "inquiries.json", {
+                "observed_at": observed_at, "inquiries": inquiries,
+            })
+            snapshot = mode_snapshot(
+                "direct-inbox-head-only", ["direct_inbox"],
+                inquiries=inquiries, orders=[], source_receipt=receipt,
+                semantic_ssot=False, head_only=True,
+            )
+            atomic_json(args.output, snapshot)
+            print(json.dumps({
+                "status": "success", "collector_mode": mode,
+                "captured_at": snapshot["captured_at"],
+                "inquiries": len(inquiries), "head_only": True,
+                "read_only": True, "output": str(args.output),
+                "evidence_dir": str(args.evidence_dir),
             }, ensure_ascii=False))
             return 0
 
