@@ -362,7 +362,7 @@ def test_orders_proof_is_fresh_and_precedes_estimate_effect(tmp_path, monkeypatc
     action_id, inbox_event_key = _seed_inbox_action(args)
     observed_modes_at_estimate = []
 
-    def fake_estimate(snapshot, *, args, owner, now):
+    def fake_estimate(snapshot, *, args, owner, now, **kwargs):
         recorded = [json.loads(line) for line in calls.read_text().splitlines()]
         observed_modes_at_estimate.append([
             argv[argv.index("--mode") + 1]
@@ -371,7 +371,10 @@ def test_orders_proof_is_fresh_and_precedes_estimate_effect(tmp_path, monkeypatc
         return {
             "estimate_required": 1, "estimate_effect": 1,
             "estimate_readback": 1, "estimate_pending": 0,
-            "estimate_failed": 0, "estimate_events": [], "errors": [],
+            "estimate_failed": 0, "estimate_events": [{
+                "thread_id": "123", "status": "verified",
+                "event_key": "coconala:estimate:v1:123:buyer-2",
+            }], "errors": [],
         }
 
     monkeypatch.setattr(detector, "run_requested_estimate", fake_estimate)
@@ -426,7 +429,10 @@ def test_fresh_orders_proof_blocks_estimate_and_reply_effects(
         detector, "run_requested_estimate",
         lambda *a, **k: estimate_calls.append(True) or {
             "estimate_required": 1, "estimate_effect": 1, "estimate_readback": 1,
-            "estimate_pending": 0, "estimate_failed": 0, "estimate_events": [], "errors": [],
+            "estimate_pending": 0, "estimate_failed": 0, "estimate_events": [{
+                "thread_id": "123", "status": "verified",
+                "event_key": "coconala:estimate:v1:123:buyer-2",
+            }], "errors": [],
         },
     )
     action_id, inbox_event_key = _seed_inbox_action(args)
@@ -464,7 +470,10 @@ def test_current_empty_registry_allows_estimate_effect(tmp_path, monkeypatch):
         detector, "run_requested_estimate",
         lambda *a, **k: {
             "estimate_required": 1, "estimate_effect": 1, "estimate_readback": 1,
-            "estimate_pending": 0, "estimate_failed": 0, "estimate_events": [], "errors": [],
+            "estimate_pending": 0, "estimate_failed": 0, "estimate_events": [{
+                "thread_id": "123", "status": "verified",
+                "event_key": "coconala:estimate:v1:123:buyer-2",
+            }], "errors": [],
         },
     )
     action_id, inbox_event_key = _seed_inbox_action(args)
@@ -476,6 +485,103 @@ def test_current_empty_registry_allows_estimate_effect(tmp_path, monkeypatch):
     assert result["estimate_readback"] == 1
     assert result["replied"] == 0
     assert not send_record.exists()
+
+
+def test_full_pass_fresh_paid_fence_blocks_estimate_effect(tmp_path, monkeypatch):
+    script, _calls, _send_record = _fake_targeted_scripts(
+        tmp_path, next_action="requested_estimate", estimate_required=True,
+        orders_mode="paid",
+    )
+    args = _targeted_args(tmp_path, script)
+    estimate_calls = []
+
+    def fake_estimate(filtered_snapshot, **kwargs):
+        estimate_calls.append(filtered_snapshot)
+        assert not any(
+            isinstance(item, dict) and item.get("estimate_required") is True
+            for item in filtered_snapshot.get("inquiries", [])
+        )
+        return {
+            "estimate_required": 0, "estimate_effect": 0,
+            "estimate_readback": 0, "estimate_pending": 0,
+            "estimate_failed": 0, "estimate_events": [], "errors": [],
+        }
+
+    monkeypatch.setattr(detector, "run_requested_estimate", fake_estimate)
+    snapshot_value = {
+        "collector_mode": "direct-inbox-only",
+        "semantic_ssot": True,
+        "inquiries": [{
+            "talkroom_id": "123",
+            "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+            "last_message_side": "buyer",
+            "estimate_required": True,
+            "next_action": "requested_estimate",
+        }],
+    }
+    result = detector._run_effect_pipeline(
+        args, snapshot=snapshot_value, evidence=tmp_path / "evidence",
+        run_id="full-paid-estimate",
+    )
+    assert len(estimate_calls) == 1
+    assert result["estimate_effect"] == 0
+    assert result["estimate_readback"] == 0
+    assert result["estimate_pending"] >= 1
+    assert result["status"] != "completed"
+
+
+def test_targeted_official_readback_must_match_exact_action_id():
+    lane = {
+        "status": "completed", "replied": 1, "reconciled": 0,
+        "pending_verify": 0, "reconcile_pending": 0,
+        "events": [{
+            "status": "replied", "action_id": 999, "revision": 1,
+            "talkroom_id": "123",
+            "origin_at": "2026-08-19T00:01:00+00:00",
+            "seller_sent_at": "2026-08-19T00:02:00+00:00",
+        }],
+    }
+    result = detector._targeted_effect_result(
+        lane, thread_id="123", action_id=42,
+    )
+    assert result["status"] != "completed"
+    assert result["replied"] == 0
+    assert result["official_readback"] == 0
+    assert result["effect"] == 0
+    assert result["pending"] >= 1
+
+
+@pytest.mark.parametrize(
+    ("estimate_readback", "estimate_events"),
+    [
+        (0, []),
+        (1, [{
+            "thread_id": "999", "status": "verified",
+            "event_key": "coconala:estimate:v1:999:buyer-2",
+        }]),
+    ],
+)
+def test_unverified_estimate_effect_is_recoverable_pending(
+    estimate_readback, estimate_events,
+):
+    result = detector.merge_estimate_metrics(
+        {
+            "status": "completed", "effect": 0, "official_readback": 0,
+            "pending": 0, "errors": [],
+        },
+        {
+            "estimate_required": 1, "estimate_effect": 1,
+            "estimate_readback": estimate_readback,
+            "estimate_pending": 0, "estimate_failed": 0,
+            "estimate_events": estimate_events, "errors": [],
+        },
+        normal_actionable=0, expected_thread="123",
+    )
+    assert result["status"] == "reconcile_pending"
+    assert result["estimate_effect"] == 0
+    assert result["estimate_readback"] == 0
+    assert result["estimate_pending"] >= 1
+    assert result["effect"] == 0
 
 
 def test_fresh_proof_is_ordered_after_head_and_before_effect(tmp_path):
