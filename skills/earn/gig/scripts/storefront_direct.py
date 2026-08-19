@@ -2632,10 +2632,15 @@ def _scorecard_gap_candidate(
 
 def _refresh_contract(
     rendered: dict, applied_values: set, service_id: str, field: str,
+    listing_version: str | None = None,
 ) -> dict | None:
     """Return a rendered contract for this field unless its exact value is already published."""
     contract = rendered.get((service_id, field))
     if not isinstance(contract, dict):
+        return None
+    if listing_version and contract.get("precondition_listing_version_sha256") != listing_version:
+        # A previously published contract is evidence for its old listing version, not permission
+        # to mutate a later version.  Let the proposal path write a fresh contract instead.
         return None
     spent = (service_id, field, json.dumps(
         contract.get("proposed_value"), ensure_ascii=False, sort_keys=True)) in applied_values
@@ -2740,14 +2745,19 @@ def _prepare_next_hypothesis(
                 # A rendered contract whose exact value was already published is spent: replaying
                 # it produces the same experiment key and is refused, which left the refresh
                 # picking the same committed seed every wake and never asking for new copy.
-                "executable": _refresh_contract(rendered, applied_values, service_id, offer_field)
+                "executable": _refresh_contract(
+                    rendered, applied_values, service_id, offer_field, versions[service_id],
+                )
                 is not None,
                 "guard_reason": (None if _refresh_contract(
-                    rendered, applied_values, service_id, offer_field) is not None
-                    else "proposal_contract_required"),
+                    rendered, applied_values, service_id, offer_field, versions[service_id],
+                ) is not None
+                                 else "proposal_contract_required"),
                 "active_experiment_key": active[0].get("experiment_key") if active else None,
                 "mutation_contract_sha256": (
-                    (_refresh_contract(rendered, applied_values, service_id, offer_field) or {})
+                    (_refresh_contract(
+                        rendered, applied_values, service_id, offer_field, versions[service_id],
+                    ) or {})
                     .get("contract_sha256")
                 ),
             }
@@ -2768,13 +2778,19 @@ def _prepare_next_hypothesis(
                 "reason": "listing copy names a tool the platform withdraws listings for: "
                           + ",".join(violation.get("prohibited_terms") or []),
                 "compliance_repair": True,
-                "executable": rendered.get((service_id, "body")) is not None,
-                "guard_reason": (None if rendered.get((service_id, "body")) is not None
+                "executable": (isinstance(rendered.get((service_id, "body")), dict)
+                               and rendered[(service_id, "body")].get(
+                                   "precondition_listing_version_sha256") == versions[service_id]),
+                "guard_reason": (None if (isinstance(rendered.get((service_id, "body")), dict)
+                                         and rendered[(service_id, "body")].get(
+                                             "precondition_listing_version_sha256") == versions[service_id])
                                  else "proposal_contract_required"),
                 "active_experiment_key": active[0].get("experiment_key") if active else None,
                 "mutation_contract_sha256": (
                     rendered[(service_id, "body")]["contract_sha256"]
-                    if rendered.get((service_id, "body")) is not None else None
+                    if (isinstance(rendered.get((service_id, "body")), dict)
+                        and rendered[(service_id, "body")].get(
+                            "precondition_listing_version_sha256") == versions[service_id]) else None
                 ),
             }
     for row in backlog:
@@ -2798,7 +2814,9 @@ def _prepare_next_hypothesis(
                 service_id, field,
                 json.dumps(contract.get("proposed_value"), ensure_ascii=False, sort_keys=True),
             ) in applied_values
-            mutation_contract = None if spent else contract
+            mutation_contract = None if (
+                spent or (isinstance(contract, dict) and not contract_current)
+            ) else contract
             break
     if candidate is None:
         candidate = _scorecard_gap_candidate(
@@ -2809,6 +2827,10 @@ def _prepare_next_hypothesis(
         field = field_alias.get(str(candidate.get("field") or "").lower(),
                                 str(candidate.get("field") or "").lower())
         mutation_contract = rendered.get((str(candidate["service_id"]), field))
+        if (isinstance(mutation_contract, dict)
+                and mutation_contract.get("precondition_listing_version_sha256")
+                != versions.get(str(candidate["service_id"]))):
+            mutation_contract = None
     identity = json.dumps(candidate, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return {
         "version": 1,
