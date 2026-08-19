@@ -45,11 +45,13 @@ The order to the end is:
    The earlier quota and CDP failures recovered without a code or release change, so speculative
    provider/reconnect changes are rejected unless the same failure recurs with a reproducible case.
 3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
-   with two workers, so another lane no longer delays inbox observation. However the latest ten
-   targeted results all end `pending: 1` with `targeted_inbox_identity_changed`; none records a
-   reply or estimate effect/readback. Therefore it does not yet answer every actionable message.
-   Fix exact thread/event identity first, then close the operator-reported conversation and retain
-   natural under-five-minute acceptance for every new actionable buyer event.
+   with two workers, so another lane no longer delays inbox observation. The exact-thread head
+   preflight and stale-event rebind are now deployed (`9aa6a506c`); the latest targeted runs bind
+   the current buyer message correctly and stop before any unauthorized effect. The remaining
+   failure is provider-side semantic judgement (`codex`/`claude-direct` timeout or quota, Hermes
+   unavailable under launchd until `3ed2f3dee`, then provider access failure), so the action stays
+   `pending: 1` with `reply/readback: 0`. Close the official conversation only after semantic
+   authorization, official send/readback, and replay-zero are observed.
 4. **Storefront observes but does not yet sell/mutate completely.** The current process reads 13
    official services and completes cleanly, but recent passes remain `actionable: 0 / effect: 0 /
    readback: 0`. Resolve product truth and prove one official listing create/update readback.
@@ -137,19 +139,22 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action and
 selects the newest coalesced event for restart dispatch. Commit `c366586ac` additionally binds a
 seller-last closure to the dispatch-time revision, so a newer coalesced buyer event cannot be
-silently closed by stale work. Two review findings remain before activation: the first semantic
-provider can still consume the whole 120-second deadline and starve both fallbacks, and stale
-identity is still detected only after an avoidable semantic call. The loaded-definition and natural
-readback gate also remains open until the continuous owner runs the reviewed release.
+silently closed by stale work. `644db7d95`/`9aa6a506c` add the exact direct-thread head preflight
+and URL/identity fence before semantic judgement. `650c8418f` bounds each candidate (Luna,
+Claude, Hermes) to 40 seconds inside the 120-second route deadline; `3ed2f3dee` makes Hermes'
+user-local executable visible under launchd. The loaded-definition and natural readback gate
+remain open until the continuous owner runs this release and one authorized action completes.
 
-- [ ] Stop the repeated `targeted_inbox_identity_changed` cycle by preflighting the exact official
+- [x] Stop the repeated `targeted_inbox_identity_changed` cycle by preflighting the exact official
   thread head before semantic judgement, then binding the targeted job to the latest buyer-authored
-  event without paying for an obsolete event.
+  event without paying for an obsolete event (`644db7d95`, `9aa6a506c`; live result now reaches
+  semantic authorization instead of the stale-identity error).
 - [x] Fence seller-last closure by dispatch-time action revision; a buyer event coalesced after the
   stale result remains pending and cannot be closed by that result (`c366586ac`, 49 concurrency
   tests pass).
-- [ ] Give Luna, Claude and Hermes explicit per-candidate timeout caps within the single 120-second
-  deadline, and keep every reply-semantic candidate unable to call tools.
+- [x] Give Luna, Claude and Hermes explicit per-candidate timeout caps within the single 120-second
+  deadline, and keep every reply-semantic candidate unable to call tools (`650c8418f`; focused
+  route suite passes; Hermes launchd path is fixed in `3ed2f3dee`).
 - [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
 - [ ] Bind the latest buyer-authored event to its official thread/message identity and classify
   whether it requires an answer, an estimate, both, or no action.
