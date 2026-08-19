@@ -3726,6 +3726,7 @@ def _image_mutation_contract(
 
 def _validate_image_mutation_contract(
     contract: dict, families_path: Path | None = None, state_dir: Path | None = None,
+    *, require_assets: bool = True,
 ) -> None:
     mappings, _ = _load_capability_families(families_path or _storefront_paths()["families"])
     _validate_mutation_contract(contract, mappings)
@@ -3740,6 +3741,8 @@ def _validate_image_mutation_contract(
                 or set(proposed) != {"asset_sha256", "asset_path"}
                 or not re.fullmatch(r"[0-9a-f]{64}", str(proposed.get("asset_sha256") or ""))):
             raise RuntimeError("storefront_image_mutation_contract_invalid")
+        if not require_assets:
+            return
         raw_asset = Path(str(proposed.get("asset_path") or ""))
         asset = raw_asset.resolve() if raw_asset.is_absolute() else (GIG_DIR / raw_asset).resolve()
         allowed_roots = (GIG_DIR.resolve(), (state_dir or DEFAULT_STATE).resolve(),
@@ -3774,6 +3777,8 @@ def _validate_image_mutation_contract(
                 or not re.fullmatch(r"data\[UploadedFile]\[\d+]\[image_files]", str(row.get("upload_field") or ""))
                 or not re.fullmatch(r"[0-9a-f]{64}", str(row.get("asset_sha256") or ""))):
             raise RuntimeError("storefront_gallery_mutation_contract_invalid")
+        if not require_assets:
+            continue
         raw_asset = Path(str(row["asset_path"]))
         asset = raw_asset.resolve() if raw_asset.is_absolute() else (GIG_DIR / raw_asset).resolve()
         allowed_roots = (GIG_DIR.resolve(), (state_dir or DEFAULT_STATE).resolve(),
@@ -3974,12 +3979,14 @@ def _render_published_gallery_mutation(state_dir: Path, own_page: dict) -> dict:
         contract = intent.get("mutation_contract")
         if not isinstance(contract, dict):
             raise RuntimeError("published_gallery_contract_missing")
-        _validate_image_mutation_contract(contract, state_dir=state_dir)
+        _validate_image_mutation_contract(contract, state_dir=state_dir, require_assets=False)
         try:
             public_before = json.loads(Path(intent["public_before_path"]).read_text(encoding="utf-8"))
         except (OSError, KeyError, json.JSONDecodeError) as error:
             raise RuntimeError("published_gallery_before_evidence_missing") from error
-        _validate_public_image_acceptance(public_before, own_page, contract, state_dir=state_dir)
+        _validate_public_image_acceptance(
+            public_before, own_page, contract, state_dir=state_dir, require_assets=False,
+        )
         logical_field = contract["allowed_delta"][0]
         return {
             "version": 1, "contract": contract,
@@ -4205,8 +4212,11 @@ def _validate_public_acceptance(before: dict, after: dict, question: str, answer
 
 def _validate_public_image_acceptance(
     before: dict, after: dict, contract: dict, state_dir: Path | None = None,
+    *, require_assets: bool = True,
 ) -> None:
-    _validate_image_mutation_contract(contract, state_dir=state_dir)
+    _validate_image_mutation_contract(
+        contract, state_dir=state_dir, require_assets=require_assets,
+    )
     service_id = str(contract.get("service_id") or "")
     url = f"https://coconala.com/services/{service_id}"
     if before.get("url") != url or after.get("url") != url:
