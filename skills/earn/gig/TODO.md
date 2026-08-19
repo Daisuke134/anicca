@@ -14,6 +14,16 @@ remaining work. The current milestone is complete when a third party can inspect
 validate this package without this seller's private checkout, credentials, customer data,
 or runtime state.
 
+The public product principle is **fast, cheap, accurate, and minimal-human-loop**. A user
+creates and owns the marketplace account, connects their own authenticated browser and
+notification address, and the four independent lanes run in parallel. Apply finds and
+submits only work the configured capability policy permits; Negotiate answers buyers and
+returns estimates; Paid builds, verifies and delivers paid work; Storefront measures and
+improves listings. Revenue claims come only from official marketplace/payment readback.
+The public package must not promise guaranteed income or describe unverified activity as
+revenue. Owner notifications use a provider adapter; the distributable default is email,
+not this operator's Telegram identity.
+
 Execute only these items, in order:
 
 1. Audit the tracked `skills/earn/gig/` tree and its reachable Git history for credentials,
@@ -97,19 +107,28 @@ mostly presence, honesty and licensing. The postings that fit are a thin slice, 
 earn more from them is to be first and clearest on that slice — which is items 0b, 3, 4 and 5,
 not a wider filter.
 
-## 0b. The negotiate lane cannot answer in five minutes; a full sweep takes 5.8 hours
+## 0b. Negotiate misses the five-minute reply target because its own pass is too long
 
-`DIRECT_REVALIDATION_BATCH_SIZE=1` at a 180-second interval means one talkroom re-read per wake.
-Against ~115 rooms that is about 5.8 hours to come back round, while a room is treated as stale
-after 30 minutes — so 114 rooms sit permanently overdue. The fast path exists (revalidate only
-rooms whose list entry changed) but reports `thread_changed_count: 0` and nothing treats that
-silence as a failure.
+The previous diagnosis here was wrong. Change detection is working, and the four lanes are
+already independent launchd jobs that can run concurrently. They share one logged-in Chromium,
+but each owns a distinct target or BrowserContext; there is no global lock serializing all four.
+Production also showed Apply and Negotiate running at the same time under different PIDs.
 
-Sub-five-minute replies are not reachable by tuning the batch size alone: raising the budget
-puts proportionally more DOM reads through the one shared browser, which is what the other three
-lanes are also queued behind. Either the change detector becomes trustworthy enough to be the
-primary path — which means measuring why it reports zero while messages arrive — or the lanes
-stop sharing one browser. Decide which before touching the number.
+The measured incident is buyer message `2026-08-19 13:40:23 JST` to official seller readback at
+`13:50:36`, or **10 minutes 13 seconds**. The pass that snapshotted at `13:39:14` necessarily
+missed the message. The next Negotiate pass started at `13:46:21`, discovered it in its
+`13:46:22` snapshot, completed the four-page/~118-thread collection at `13:50:24`, then sent and
+read back the reply at `13:50:36`. The delay is inside Negotiate's own full collection before
+effect, not another lane holding its browser.
+
+Changing `StartInterval` alone cannot guarantee speed because launchd does not start another
+instance of the same job while its previous pass is still running. The fix must preserve the
+four existing parallel lanes and make each lane maximize its own throughput: prioritize fresh
+incremental work before full reconciliation, claim effects by thread/order/listing/application
+to prevent duplicates, and begin the next same-lane wake immediately after completion. For
+Negotiate, acceptance is official send/readback within five minutes of a buyer message under a
+normal healthy session, with the measured operating target at two minutes or less. Full history
+reconciliation continues after the urgent effect and must not block it.
 
 ---
 
