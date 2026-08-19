@@ -1335,7 +1335,21 @@ def run() -> int:
         remaining_timeout_seconds = math.floor(remaining_timeout)
         if remaining_timeout_seconds < 1:
             break
-        candidate_timeout_seconds = candidate.get(
+        effective_candidate = dict(candidate)
+        provider = effective_candidate["provider"]
+        proxy_timeout = os.environ.get("AGENT_RUNNER_PROXY_TIMEOUT_SECONDS", "").strip()
+        if (
+            provider == "claude-direct"
+            and effective_candidate.get("model") == "gpt-5.3-codex-spark"
+            and proxy_timeout
+        ):
+            try:
+                proxy_timeout_seconds = int(proxy_timeout)
+            except ValueError:
+                proxy_timeout_seconds = 0
+            if proxy_timeout_seconds > 0:
+                effective_candidate["timeout_seconds"] = proxy_timeout_seconds
+        candidate_timeout_seconds = effective_candidate.get(
             "timeout_seconds", remaining_timeout_seconds,
         )
         attempt_timeout_seconds = min(
@@ -1363,20 +1377,6 @@ def run() -> int:
                 # stay in place so one bad pass dies without burning the day.
                 budget_blocked = last_budget
                 break
-        effective_candidate = dict(candidate)
-        provider = effective_candidate["provider"]
-        proxy_timeout = os.environ.get("AGENT_RUNNER_PROXY_TIMEOUT_SECONDS", "").strip()
-        if (
-            provider == "claude-direct"
-            and effective_candidate.get("model") == "gpt-5.3-codex-spark"
-            and proxy_timeout
-        ):
-            try:
-                proxy_timeout_seconds = int(proxy_timeout)
-            except ValueError:
-                proxy_timeout_seconds = 0
-            if proxy_timeout_seconds > 0:
-                effective_candidate["timeout_seconds"] = proxy_timeout_seconds
         attempt_event_id = uuid.uuid4().hex[:24]
         attempt_started = utc_now()
         try:
