@@ -4,7 +4,8 @@ Four background jobs that run a [Coconala](https://coconala.com) seller account
 around the clock: they read the job board and apply, keep the storefront honest,
 answer buyers who ask questions before they buy, and work the orders that get
 paid for. They run on one Mac, as launchd user agents, driving one logged-in
-browser. There is no server and no API key.
+browser. There is no marketplace API key or hosted service; the optional local
+semantic proxy is a private machine credential, never part of the package.
 
 Everything the loop needs is in this folder. `scripts/` is the code, `schemas/`
 the shapes it makes a model answer in, `config/` the catalogue and the job
@@ -32,7 +33,7 @@ Two more jobs support them:
 | | why |
 |---|---|
 | A Mac, Apple Silicon, macOS 14 or newer | The jobs are launchd user agents and the browser build is a macOS app bundle. |
-| A **Codex subscription** and the `codex` CLI signed in | This is the only thing you pay for. Every judgement the loop makes goes through it. `codex login`, then check `~/.codex/auth.json` exists. |
+| A **Codex subscription** and the `codex` CLI signed in | This is the default paid route. `codex login`, then check `~/.codex/auth.json` exists. |
 | A **Coconala seller account** with at least one listing | This is the only account you create. You do not need to finish identity verification or add a bank account to start — those matter when you withdraw, not when you sell. |
 | Python 3.13 or newer | `brew install python@3.14`. Then `pip3 install websockets beautifulsoup4 jsonschema`. These are the package's only third-party Python imports. |
 | A CloakBrowser Chromium build under `~/.cloakbrowser/chromium-*/` | An ordinary Chrome will not do: the lanes attach over CDP, and the launcher passes `--fingerprint`, a flag only this build has. See [the browser](#the-browser) below — the version matters. |
@@ -41,6 +42,14 @@ Owner reports default to email. Install a sendmail-compatible client such as
 `msmtp` (`brew install msmtp`), connect it to Gmail in `~/.msmtprc`, then set
 `GIG_NOTIFY_EMAIL` and `GIG_SENDMAIL`. The existing `openclaw` Telegram path is
 only a fallback when no email recipient is configured.
+
+The semantic reply lane is tool-less. If the machine has a local CLI proxy, put
+its token in `~/.cli-proxy-api-key` and keep the loopback provider enabled in the
+private install configuration; the existing `claude-direct` slot then uses the
+healthy local `gpt-5.3-codex-spark` route before trying the other providers. This
+file is never committed or sent to the marketplace. A machine without that file
+falls through to its normal Codex/Claude/Hermes candidates, and no provider is
+given browser or send tools by this fallback.
 
 ---
 
