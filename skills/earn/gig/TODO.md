@@ -232,6 +232,9 @@ action completes.
 - [x] Make release watching fail closed when `launchctl print` returns macOS
   `141 Reentrancy avoided`: the watcher now checks the lane's real script process and leaves a
   busy Apply/Storefront/Paid pass untouched instead of treating it as idle and booting it out.
+- [x] Extend that fence to the continuous Negotiate owner: when the launchd control plane cannot
+  be read, a live reply-detector process is kept in place instead of being booted out for a
+  reload. The new release stays on disk and is picked up after a natural owner gap.
 - [ ] Restore a valid GUI launchd readback without restarting or killing macOS base services.
 - [ ] Read back loaded definitions for the browser, Apply, Negotiate, Storefront, Paid and watcher;
   each must point to the intended immutable release and private environment.

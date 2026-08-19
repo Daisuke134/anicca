@@ -237,10 +237,12 @@ def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
     if dry_run:
         print(json.dumps(body, indent=1))
         return True
-    if skip_busy:
-        # Booting out mid-pass kills the browser lease and leaves locks behind.  Do
-        # not block the watcher while waiting for one long pass: leave only this
-        # periodic lane for the next tick so the other lanes can activate now.
+    if skip_busy or label in CONTINUOUS_RELOADABLE:
+        # Booting out mid-pass kills the browser lease and leaves locks behind.  A
+        # continuous lane is also fenced when launchd's control plane is returning
+        # ``Reentrancy avoided``: its durable process is safer than a blind reload.
+        # The next watcher tick can activate the new immutable release after a
+        # natural gap, while this tick never creates a second owner.
         if is_running(label):
             print(f"  {label}: still mid-pass, leaving it for the next tick")
             return True
