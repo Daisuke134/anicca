@@ -64,6 +64,8 @@
       "summary": "Reads the coconala job board and submits applications.",
       "program": [
         "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/gig_disk_guard.py",
+        "{{PYTHON}}",
         "{{RELEASE}}/skills/earn/gig/scripts/application_direct.py",
         "--all-eligible",
         "--planner-runner",
@@ -85,6 +87,8 @@
       "lane": "storefront",
       "summary": "Watches the seller storefront and edits listings that earn nothing.",
       "program": [
+        "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/gig_disk_guard.py",
         "{{PYTHON}}",
         "{{RELEASE}}/skills/earn/gig/scripts/storefront_direct.py",
         "--effect",
@@ -113,6 +117,8 @@
       "lane": "negotiate",
       "summary": "Reads buyer threads before purchase and answers them.",
       "program": [
+        "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/gig_disk_guard.py",
         "{{PYTHON}}",
         "{{RELEASE}}/skills/earn/gig/scripts/reply_detector.py",
         "--trigger",
@@ -150,6 +156,8 @@
       "lane": "paid",
       "summary": "Works paid orders and judges whether they are deliverable.",
       "program": [
+        "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/gig_disk_guard.py",
         "{{PYTHON}}",
         "{{RELEASE}}/skills/earn/gig/scripts/paid_direct.py",
         "--output",

@@ -105,8 +105,11 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 - [x] Use the tracked `scripts/verify-fresh-clone.sh` entrypoint for public clone audits. Its EXIT
   cleanup now restores owner-write permission inside its exact temporary root before removal, so
   immutable release copies cannot strand the clone. Ad-hoc audit clone commands are not accepted.
-- [ ] Add a lightweight disk guard before browser/SQLite/evidence work: below 10,485,760 KiB, emit a
-  visible failed receipt and skip side effects; never auto-delete user files from a business lane.
+- [x] Add `scripts/gig_disk_guard.py` before browser/SQLite/evidence work in Apply, Negotiate,
+  Storefront and Paid. Below 10,485,760 KiB it emits `state/disk-headroom.json` with
+  `failed: 1 / effect: 0 / readback: 0` and skips the child; at the exact threshold it preserves
+  the child argv and environment. It fails closed when free-space measurement is unavailable and
+  never auto-deletes user files from a business lane. Focused guard coverage: 4 passed.
 - [x] Read back 10,617,248 KiB and then 10,616,160 KiB free across separate samples; successfully
   write, fsync, read and remove a 4 KiB probe in the gig state filesystem.
 - [ ] Keep secondary candidates documented but untouched unless the temp clones are insufficient:
