@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import pytest
 import sys
 from pathlib import Path
@@ -11,6 +12,14 @@ from types import SimpleNamespace
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 import storefront_direct as direct  # noqa: E402
+
+
+def test_capability_evidence_default_comes_only_from_operator_env(monkeypatch):
+    monkeypatch.delenv("GIG_STOREFRONT_CAPABILITY_EVIDENCE", raising=False)
+    assert direct.build_parser().parse_args([]).capability_evidence == []
+
+    monkeypatch.setenv("GIG_STOREFRONT_CAPABILITY_EVIDENCE", os.pathsep.join(("a", "b")))
+    assert direct.build_parser().parse_args([]).capability_evidence == [Path("a"), Path("b")]
 
 
 def _args(tmp_path: Path):
@@ -308,6 +317,10 @@ def test_launchagent_is_immutable_dedicated_and_storefront_braked(monkeypatch):
                     f"{release}/skills/earn/gig/scripts/storefront_direct.py",
                     "--effect", "--auto-cadence", "--full-interval-seconds", "60"]
     assert env["GIG_OPERATOR_BRAKE_FILE"].endswith("/storefront.operator.brake")
+    assert job["env"]["GIG_STOREFRONT_CAPABILITY_EVIDENCE"] == (
+        "{{GIG_STOREFRONT_CAPABILITY_EVIDENCE}}"
+    )
+    assert "GIG_STOREFRONT_CAPABILITY_EVIDENCE" not in env
     assert not any("BUDGET" in key for key in env)
     serialized = json.dumps(data, ensure_ascii=False)
     for forbidden in ("hermes", "gig_pass.sh", '"/operator.brake"', "worktree"):

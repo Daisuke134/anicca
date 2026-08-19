@@ -54,10 +54,6 @@ DEFAULT_NEGOTIATE_RUN_LOG = Path(
     os.environ.get("GIG_NEGOTIATE_RUN_LOG")
     or Path.home() / "gig" / "logs" / "gig-reply-detector-launchd.out.log"
 )
-DEFAULT_CAPABILITIES = (
-    Path.home() / "gig" / "projects" / "5138597" / "state.json",
-    Path.home() / "gig" / "projects" / "5138597" / "acceptance" / "v4-acceptance-evidence.json",
-)
 DEFAULT_TELEGRAM_DATABASE = Path.home() / "gig" / "telegram-outbox.sqlite3"
 DEFAULT_TELEGRAM_RECEIPTS = Path.home() / "gig" / "telegram-delivery-receipts"
 STATE_FILES = (
@@ -92,6 +88,12 @@ def _walk_json_items(value: object):
     elif isinstance(value, list):
         for child in value:
             yield from _walk_json_items(child)
+
+
+def _capability_evidence_defaults() -> list[Path]:
+    """Read operator-owned capability evidence without shipping its paths."""
+    raw = os.environ.get("GIG_STOREFRONT_CAPABILITY_EVIDENCE", "")
+    return [Path(item) for item in raw.split(os.pathsep) if item]
 
 
 def _asset_reference(path: str) -> str:
@@ -6379,7 +6381,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--negotiate-run-log", type=Path, default=DEFAULT_NEGOTIATE_RUN_LOG)
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--timeout-seconds", type=int, default=180)
-    parser.add_argument("--capability-evidence", type=Path, action="append", default=list(DEFAULT_CAPABILITIES))
+    parser.add_argument(
+        "--capability-evidence", type=Path, action="append",
+        default=_capability_evidence_defaults(),
+    )
     parser.add_argument("--effect", action="store_true")
     parser.add_argument("--incremental", action="store_true")
     parser.add_argument("--auto-cadence", action="store_true")
