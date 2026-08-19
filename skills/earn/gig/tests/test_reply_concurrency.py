@@ -32,17 +32,26 @@ snapshot = _load_module("gig_queue_snapshot_reply_concurrency_test", SNAPSHOT_PA
 detector = _load_module("gig_reply_detector_reply_concurrency_test", DETECTOR_PATH)
 
 
-def _fake_targeted_scripts(tmp_path, *, next_action="reply", semantic_failure=None):
+def _fake_targeted_scripts(
+    tmp_path, *, next_action="reply", semantic_failure=None,
+    orders_mode="empty", head_identity="b" * 64,
+    estimate_required=False, bad_readback=False,
+):
+    """Fake every subprocess while preserving the real outbox lifecycle."""
     script = tmp_path / "fake_targeted_stage.py"
     calls = tmp_path / "calls.jsonl"
-    marker = tmp_path / "lane-count"
+    send_record = tmp_path / "send-record.jsonl"
     connector_path = GIG_ROOT / "scripts" / "connector_outbox.py"
     script.write_text(textwrap.dedent(f"""
-        import importlib.util, json, os, sys, time
+        import importlib.util, json, sys, time
         from pathlib import Path
         spec = importlib.util.spec_from_file_location("fake_outbox", {str(connector_path)!r})
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
         argv = sys.argv[1:]
+        captured_at = (
+            "2020-01-01T00:00:00+00:00" if {orders_mode!r} == "stale"
+            else time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime())
+        )
         with open({str(calls)!r}, "a", encoding="utf-8") as handle:
             handle.write(json.dumps(argv) + "\\n")
         def value(flag):
@@ -75,29 +84,69 @@ def _fake_targeted_scripts(tmp_path, *, next_action="reply", semantic_failure=No
             for item in queue.get("items", []):
                 db.enqueue(event_key=item["event_key"], thread_id=item["talkroom_id"],
                            thread_url=item["talkroom_url"], observed_at=int(time.time()))
+        elif argv and argv[0] == "build-paid":
+            output = value("--output")
+            if {orders_mode!r} == "invalid":
+                output.write_text(json.dumps({{"version": 1, "fences": "invalid"}}))
+            elif {orders_mode!r} == "paid":
+                output.write_text(json.dumps({{
+                    "version": 1, "fences": [{{
+                        "id": "paid-conversation-write:coconala:123",
+                        "state": "open", "platform": "coconala",
+                        "identities": {{"talkroom_id": "123"}},
+                        "capabilities": ["conversation_write"],
+                        "reason": "paid room", "opened_at": "2026-08-19T00:00:00+00:00",
+                        "release": {{"kind": "event", "event": "paid_order_closed:123"}},
+                    }}],
+                }}))
+            else:
+                output.write_text(json.dumps({{"version": 1, "fences": []}}))
         elif "--queue" in argv and "--output" in argv:
             db = module.ConnectorOutbox(value("--database"), value("--manifest"))
-            count_path = Path({str(marker)!r})
-            count = int(count_path.read_text()) if count_path.exists() else 0
-            count_path.write_text(str(count + 1))
+            event_key = "coconala:message:v1:123:buyer-2"
+            lifecycle = db.action_lifecycle_for_event(event_key, "123")
             action = db.pending_action_for_thread("123")
             action_id = int(action["action_id"]) if action else 1
-            fences = Path(value("--fences"))
-            registry = json.loads(fences.read_text()) if fences.exists() else None
-            paid = any(
-                str(row.get("identities", {{}}).get("talkroom_id")) == "123"
-                and row.get("state") == "open"
-                for row in (registry or {{}}).get("fences", [])
-                if isinstance(row, dict)
-            )
-            if paid:
+            if {orders_mode!r} == "paid":
                 lane = {{
                     "status": "completed", "replied": 0, "reconciled": 0,
                     "pending_verify": 0, "reconcile_pending": 0, "already_delivered": 0,
                     "nothing_to_say": 0, "failed": 0, "blocked": 1, "deferred": 0, "dlq": 0,
                     "errors": ["paid_talkroom_write_refused"], "events": [], "dlq_events": [],
                 }}
-            elif count == 0 and {next_action!r} == "reply" and {semantic_failure!r} is None:
+            elif lifecycle is not None and lifecycle.get("state") == "replied":
+                lane = {{
+                    "status": "completed", "replied": 0, "reconciled": 0,
+                    "pending_verify": 0, "reconcile_pending": 0, "already_delivered": 1,
+                    "nothing_to_say": 0, "failed": 0, "blocked": 0, "deferred": 0, "dlq": 0,
+                    "errors": [], "events": [], "dlq_events": [],
+                }}
+            elif {bad_readback!r}:
+                lane = {{
+                    "status": "completed", "replied": 1, "reconciled": 0,
+                    "pending_verify": 0, "reconcile_pending": 0, "already_delivered": 0,
+                    "nothing_to_say": 0, "failed": 0, "blocked": 0, "deferred": 0, "dlq": 0,
+                    "errors": [], "events": [], "dlq_events": [],
+                }}
+            elif lifecycle is not None and lifecycle.get("state") == "pending":
+                owner = "fake-lane"
+                now = int(time.time())
+                claimed = db.claim(owner=owner, now=now, lease_seconds=30, action_id=action_id)
+                intent = db.prepare_intent(
+                    action_id, owner=owner, fencing_token=int(claimed["fencing_token"]),
+                    outgoing_body="回答です", now=now, origin_at=now,
+                )
+                db.mark_click_started(
+                    action_id, int(intent["revision"]), owner=owner,
+                    fencing_token=int(claimed["fencing_token"]), now=now,
+                )
+                db.reconcile(
+                    action_id, thread_url="https://coconala.com/mypage/direct_message/123",
+                    outgoing_hash=intent["outgoing_hash"], seller_sent_at=now,
+                    last_sender="seller", observed_at=now, authoritative_absent=False,
+                )
+                with open({str(send_record)!r}, "a", encoding="utf-8") as handle:
+                    handle.write(json.dumps({{"action_id": action_id, "event_key": event_key}}) + "\\n")
                 lane = {{
                     "status": "completed", "replied": 1, "reconciled": 0,
                     "pending_verify": 0, "reconcile_pending": 0, "already_delivered": 0,
@@ -110,8 +159,8 @@ def _fake_targeted_scripts(tmp_path, *, next_action="reply", semantic_failure=No
                 }}
             else:
                 lane = {{
-                    "status": "completed", "replied": 0, "reconciled": 0,
-                    "pending_verify": 0, "reconcile_pending": 0, "already_delivered": 1,
+                    "status": "pending", "replied": 0, "reconciled": 0,
+                    "pending_verify": 1, "reconcile_pending": 0, "already_delivered": 0,
                     "nothing_to_say": 0, "failed": 0, "blocked": 0, "deferred": 0, "dlq": 0,
                     "errors": [], "events": [], "dlq_events": [],
                 }}
@@ -119,23 +168,48 @@ def _fake_targeted_scripts(tmp_path, *, next_action="reply", semantic_failure=No
         elif "--mode" in argv:
             output = value("--output")
             output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(json.dumps({{
-                "version": 1, "collector_mode": "direct-thread-only", "semantic_ssot": True,
-                "captured_at": "2026-08-19T00:01:00+00:00", "read_only": True,
-                "orders": [], "source_receipt": {{"source": "direct_thread"}},
-                "inquiries": [{{
-                    "talkroom_id": "123", "talkroom_url": "https://coconala.com/mypage/direct_message/123",
-                    "last_message_side": "buyer", "reply_required": {next_action!r} == "reply",
-                    "next_action": {next_action!r}, "buyer_sent_at": "2026-08-19T00:01:00+00:00",
-                    "message_id": "buyer-2",
-                    "semantic_receipt": {{"judgement": {{"next_action": {next_action!r}}}}},
-                    "semantic_failure": {semantic_failure!r},
-                    "semantic_context_sha256": "a" * 64,
-                    "semantic_reply_body": "回答です" if {next_action!r} == "reply" else None,
-                }}],
-            }}))
+            mode = argv[argv.index("--mode") + 1]
+            if mode == "orders-only" and {orders_mode!r} == "failed":
+                raise SystemExit(9)
+            if mode == "orders-only":
+                complete = {orders_mode!r} != "missing"
+                output.write_text(json.dumps({{
+                    "version": 1, "collector_mode": "orders-only", "semantic_ssot": False,
+                    "captured_at": captured_at, "read_only": True,
+                    "orders": [], "inquiries": [],
+                    "source_receipt": {{"source": "orders", "coverage_complete": complete,
+                        "open_orders_list_observed": complete}},
+                }}))
+            elif mode == "direct-inbox-head-only":
+                output.write_text(json.dumps({{
+                    "version": 1, "collector_mode": "direct-inbox-head-only", "semantic_ssot": False,
+                    "captured_at": captured_at, "read_only": True,
+                    "head_only": True, "orders": [],
+                    "source_receipt": {{"source": "direct_inbox", "coverage_complete": False}},
+                    "inquiries": [{{
+                        "talkroom_id": "123", "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+                        "last_message_side": "buyer", "last_message_identity_sha256": {head_identity!r},
+                    }}],
+                }}))
+            else:
+                output.write_text(json.dumps({{
+                    "version": 1, "collector_mode": "direct-thread-only", "semantic_ssot": True,
+                    "captured_at": captured_at, "read_only": True,
+                    "orders": [], "source_receipt": {{"source": "direct_thread"}},
+                    "inquiries": [{{
+                        "talkroom_id": "123", "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+                        "last_message_side": "buyer", "reply_required": {next_action!r} == "reply",
+                        "estimate_required": {estimate_required!r},
+                        "next_action": {next_action!r}, "buyer_sent_at": "2026-08-19T00:01:00+00:00",
+                        "message_id": "buyer-2", "last_message_identity_sha256": "b" * 64,
+                        "semantic_receipt": {{"judgement": {{"next_action": {next_action!r}}}}},
+                        "semantic_failure": {semantic_failure!r},
+                        "semantic_context_sha256": "a" * 64,
+                        "semantic_reply_body": "回答です" if {next_action!r} == "reply" else None,
+                    }}],
+                }}))
     """), encoding="utf-8")
-    return script, calls
+    return script, calls, send_record
 
 
 def _targeted_args(tmp_path, script):
@@ -156,28 +230,41 @@ def _targeted_args(tmp_path, script):
 
 def _seed_inbox_action(args):
     database = outbox.ConnectorOutbox(args.database, args.manifest)
-    database.enqueue(
-        event_key=outbox.coconala_inbox_event_key("123", "b" * 64),
+    inbox_event_key = outbox.coconala_inbox_event_key("123", "b" * 64)
+    action = database.enqueue(
+        event_key=inbox_event_key,
         thread_id="123",
         thread_url="https://coconala.com/mypage/direct_message/123",
         observed_at=int(time.time()),
     )
+    return int(action["action_id"]), inbox_event_key
 
 
 def test_targeted_thread_reaches_official_readback(tmp_path):
-    script, calls = _fake_targeted_scripts(tmp_path)
+    script, calls, send_record = _fake_targeted_scripts(tmp_path)
     args = _targeted_args(tmp_path, script)
-    _seed_inbox_action(args)
+    action_id, inbox_event_key = _seed_inbox_action(args)
     result = detector.run_targeted_thread(
-        args, thread_id="123", evidence=tmp_path / "evidence", run_id="run-1",
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=tmp_path / "evidence", run_id="run-1",
     )
     assert result["status"] == "completed"
     assert result["replied"] == 1
     assert result["thread_id"] == "123"
     assert result["official_readback"] == 1
     recorded = [json.loads(line) for line in calls.read_text().splitlines()]
-    collect = [argv for argv in recorded if "--mode" in argv]
-    assert collect and all("123" in argv for argv in collect)
+    collect = [
+        argv for argv in recorded
+        if "--mode" in argv
+        and argv[argv.index("--mode") + 1] in {
+            "direct-thread-only", "direct-inbox-head-only",
+        }
+    ]
+    assert collect
+    assert any(
+        argv[argv.index("--mode") + 1] == "direct-thread-only"
+        and "123" in argv for argv in collect
+    )
     evidence = tmp_path / "evidence"
     saved_snapshot = json.loads((evidence / "marketplace-snapshot.json").read_text())
     saved_queue = json.loads((evidence / "reply-queue.json").read_text())
@@ -190,29 +277,34 @@ def test_targeted_thread_reaches_official_readback(tmp_path):
     assert saved_queue["items"][0]["talkroom_id"] == "123"
     assert saved_lane["status"] == "completed"
     assert saved_lane["replied"] == 1
+    assert len(send_record.read_text().splitlines()) == 1
 
 
 def test_targeted_replay_has_zero_second_effect(tmp_path):
-    script, _calls = _fake_targeted_scripts(tmp_path)
+    script, _calls, send_record = _fake_targeted_scripts(tmp_path)
     args = _targeted_args(tmp_path, script)
-    _seed_inbox_action(args)
+    action_id, inbox_event_key = _seed_inbox_action(args)
     first = detector.run_targeted_thread(
-        args, thread_id="123", evidence=tmp_path / "evidence-1", run_id="run-1",
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=tmp_path / "evidence-1", run_id="run-1",
     )
     second = detector.run_targeted_thread(
-        args, thread_id="123", evidence=tmp_path / "evidence-2", run_id="run-2",
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=tmp_path / "evidence-2", run_id="run-2",
     )
     assert first["official_readback"] == 1
     assert second["replied"] == 0
     assert second["duplicate_effect"] == 0
+    assert len(send_record.read_text().splitlines()) == 1
 
 
 def test_intentional_no_send_closes_exact_claim_without_reply(tmp_path):
-    script, _calls = _fake_targeted_scripts(tmp_path, next_action="wait")
+    script, _calls, _send_record = _fake_targeted_scripts(tmp_path, next_action="wait")
     args = _targeted_args(tmp_path, script)
-    _seed_inbox_action(args)
+    action_id, inbox_event_key = _seed_inbox_action(args)
     result = detector.run_targeted_thread(
-        args, thread_id="123", evidence=tmp_path / "evidence", run_id="run-wait",
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=tmp_path / "evidence", run_id="run-wait",
     )
     assert result["replied"] == 0
     assert result["closed_without_send"] == 1
@@ -220,13 +312,14 @@ def test_intentional_no_send_closes_exact_claim_without_reply(tmp_path):
 
 
 def test_semantic_failure_stays_pending_without_send(tmp_path):
-    script, _calls = _fake_targeted_scripts(
+    script, _calls, _send_record = _fake_targeted_scripts(
         tmp_path, semantic_failure="runner_failed",
     )
     args = _targeted_args(tmp_path, script)
-    _seed_inbox_action(args)
+    action_id, inbox_event_key = _seed_inbox_action(args)
     result = detector.run_targeted_thread(
-        args, thread_id="123", evidence=tmp_path / "evidence", run_id="run-failed",
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=tmp_path / "evidence", run_id="run-failed",
     )
     assert result["status"] == "pending"
     assert result["replied"] == 0
@@ -236,9 +329,9 @@ def test_semantic_failure_stays_pending_without_send(tmp_path):
 
 
 def test_targeted_paid_fence_refuses_effect(tmp_path):
-    script, _calls = _fake_targeted_scripts(tmp_path)
+    script, _calls, _send_record = _fake_targeted_scripts(tmp_path, orders_mode="paid")
     args = _targeted_args(tmp_path, script)
-    _seed_inbox_action(args)
+    action_id, inbox_event_key = _seed_inbox_action(args)
     args.fences.write_text(json.dumps({
         "version": 1,
         "fences": [{
@@ -251,11 +344,222 @@ def test_targeted_paid_fence_refuses_effect(tmp_path):
         }],
     }), encoding="utf-8")
     result = detector.run_targeted_thread(
-        args, thread_id="123", evidence=tmp_path / "evidence", run_id="run-paid",
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=tmp_path / "evidence", run_id="run-paid",
     )
     assert result["replied"] == 0
     assert result["blocked"] == 1
     assert result["official_readback"] == 0
+
+
+def test_orders_proof_is_fresh_and_precedes_estimate_effect(tmp_path, monkeypatch):
+    script, calls, send_record = _fake_targeted_scripts(
+        tmp_path, next_action="requested_estimate", estimate_required=True,
+    )
+    args = _targeted_args(tmp_path, script)
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    observed_modes_at_estimate = []
+
+    def fake_estimate(snapshot, *, args, owner, now):
+        recorded = [json.loads(line) for line in calls.read_text().splitlines()]
+        observed_modes_at_estimate.append([
+            argv[argv.index("--mode") + 1]
+            for argv in recorded if "--mode" in argv
+        ])
+        return {
+            "estimate_required": 1, "estimate_effect": 1,
+            "estimate_readback": 1, "estimate_pending": 0,
+            "estimate_failed": 0, "estimate_events": [], "errors": [],
+        }
+
+    monkeypatch.setattr(detector, "run_requested_estimate", fake_estimate)
+    result = detector.run_targeted_thread(
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=tmp_path / "evidence", run_id="run-estimate-order",
+    )
+    assert result["status"] == "completed"
+    assert observed_modes_at_estimate == [[
+        "direct-thread-only", "direct-inbox-head-only", "orders-only",
+    ]]
+    assert not send_record.exists() or not send_record.read_text().strip()
+
+
+@pytest.mark.parametrize("orders_mode", ["stale"])
+def test_incomplete_or_stale_orders_proof_blocks_normal_effect(tmp_path, orders_mode):
+    script, _calls, send_record = _fake_targeted_scripts(
+        tmp_path, orders_mode=orders_mode,
+    )
+    args = _targeted_args(tmp_path, script)
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    result = detector.run_targeted_thread(
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=tmp_path / "evidence", run_id=f"run-orders-{orders_mode}",
+    )
+    assert result["status"] == "pending"
+    assert result["replied"] == 0
+    assert not send_record.exists() or not send_record.read_text().strip()
+
+
+def _run_targeted_case(args, action_id, inbox_event_key, evidence, run_id):
+    return detector.run_targeted_thread(
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=evidence, run_id=run_id,
+    )
+
+
+@pytest.mark.parametrize("orders_mode", ["paid", "missing", "invalid", "failed"])
+def test_fresh_orders_proof_blocks_estimate_and_reply_effects(
+    tmp_path, monkeypatch, orders_mode,
+):
+    script, _calls, send_record = _fake_targeted_scripts(
+        tmp_path, orders_mode=orders_mode, estimate_required=True,
+    )
+    args = _targeted_args(tmp_path, script)
+    # A caller-provided open registry is deliberately stale and must not be used.
+    args.fences.write_text(json.dumps({
+        "version": 1, "fences": [{"state": "open", "identities": {"talkroom_id": "123"}}],
+    }), encoding="utf-8")
+    estimate_calls = []
+    monkeypatch.setattr(
+        detector, "run_requested_estimate",
+        lambda *a, **k: estimate_calls.append(True) or {
+            "estimate_required": 1, "estimate_effect": 1, "estimate_readback": 1,
+            "estimate_pending": 0, "estimate_failed": 0, "estimate_events": [], "errors": [],
+        },
+    )
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    result = _run_targeted_case(
+        args, action_id, inbox_event_key, tmp_path / "evidence", "run-proof-" + orders_mode,
+    )
+    assert result.get("replied", 0) == 0
+    assert result.get("estimate_effect", 0) == 0
+    assert result.get("official_readback", 0) == 0
+    assert not estimate_calls
+    assert not send_record.exists()
+
+
+def test_current_empty_registry_allows_normal_effect_and_ignores_stale_caller_fence(tmp_path):
+    script, _calls, send_record = _fake_targeted_scripts(tmp_path, orders_mode="empty")
+    args = _targeted_args(tmp_path, script)
+    args.fences.write_text(json.dumps({
+        "version": 1, "fences": [{"state": "open", "identities": {"talkroom_id": "123"}}],
+    }), encoding="utf-8")
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    result = _run_targeted_case(
+        args, action_id, inbox_event_key, tmp_path / "evidence", "run-empty",
+    )
+    assert result["status"] == "completed"
+    assert result["replied"] == 1
+    assert len(send_record.read_text().splitlines()) == 1
+
+
+def test_current_empty_registry_allows_estimate_effect(tmp_path, monkeypatch):
+    script, _calls, send_record = _fake_targeted_scripts(
+        tmp_path, next_action="requested_estimate", estimate_required=True,
+    )
+    args = _targeted_args(tmp_path, script)
+    monkeypatch.setattr(
+        detector, "run_requested_estimate",
+        lambda *a, **k: {
+            "estimate_required": 1, "estimate_effect": 1, "estimate_readback": 1,
+            "estimate_pending": 0, "estimate_failed": 0, "estimate_events": [], "errors": [],
+        },
+    )
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    result = _run_targeted_case(
+        args, action_id, inbox_event_key, tmp_path / "evidence", "run-estimate",
+    )
+    assert result["status"] == "completed"
+    assert result["estimate_effect"] == 1
+    assert result["estimate_readback"] == 1
+    assert result["replied"] == 0
+    assert not send_record.exists()
+
+
+def test_fresh_proof_is_ordered_after_head_and_before_effect(tmp_path):
+    script, calls, _send_record = _fake_targeted_scripts(tmp_path)
+    args = _targeted_args(tmp_path, script)
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    result = _run_targeted_case(
+        args, action_id, inbox_event_key, tmp_path / "evidence", "run-order",
+    )
+    assert result["status"] == "completed"
+    commands = [json.loads(line) for line in calls.read_text().splitlines()]
+    labels = []
+    for argv in commands:
+        if argv and argv[0] == "build":
+            labels.append("queue_build")
+        elif argv and argv[0] == "enqueue":
+            labels.append("enqueue")
+        elif argv and argv[0] == "build-paid":
+            labels.append("fence")
+        elif "--mode" in argv:
+            labels.append(argv[argv.index("--mode") + 1])
+        elif "--queue" in argv:
+            labels.append("lane")
+    assert labels.index("direct-thread-only") < labels.index("queue_build")
+    assert labels.index("queue_build") < labels.index("enqueue")
+    assert labels.index("enqueue") < labels.index("direct-inbox-head-only")
+    assert labels.index("direct-inbox-head-only") < labels.index("orders-only")
+    assert labels.index("orders-only") < labels.index("fence") < labels.index("lane")
+
+
+def test_newer_head_identity_prevents_send_and_no_send_closure(tmp_path):
+    script, _calls, send_record = _fake_targeted_scripts(
+        tmp_path, next_action="wait", head_identity="c" * 64,
+    )
+    args = _targeted_args(tmp_path, script)
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    result = _run_targeted_case(
+        args, action_id, inbox_event_key, tmp_path / "evidence", "run-new-head",
+    )
+    assert result["status"] == "pending"
+    assert result["closed_without_send"] == 0
+    assert not send_record.exists()
+    assert outbox.ConnectorOutbox(args.database, args.manifest).pending_actions()
+
+
+def test_wrong_inbox_identity_cannot_close_exact_action(tmp_path):
+    script, _calls, _send_record = _fake_targeted_scripts(tmp_path, next_action="wait")
+    args = _targeted_args(tmp_path, script)
+    action_id, _inbox_event_key = _seed_inbox_action(args)
+    wrong_key = outbox.coconala_inbox_event_key("123", "c" * 64)
+    result = _run_targeted_case(
+        args, action_id, wrong_key, tmp_path / "evidence", "run-wrong-key",
+    )
+    assert result["closed_without_send"] == 0
+    assert result["replied"] == 0
+    assert outbox.ConnectorOutbox(args.database, args.manifest).pending_actions()
+
+
+@pytest.mark.parametrize("next_action", ["future_action", ""])
+def test_unknown_or_missing_semantic_action_stays_pending(tmp_path, next_action):
+    script, _calls, _send_record = _fake_targeted_scripts(
+        tmp_path, next_action=next_action,
+    )
+    args = _targeted_args(tmp_path, script)
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    result = _run_targeted_case(
+        args, action_id, inbox_event_key, tmp_path / "evidence", "run-unknown",
+    )
+    assert result["status"] == "pending"
+    assert result["closed_without_send"] == 0
+    assert outbox.ConnectorOutbox(args.database, args.manifest).pending_actions()
+
+
+def test_positive_reply_without_official_readback_is_recoverable_pending(tmp_path):
+    script, _calls, send_record = _fake_targeted_scripts(tmp_path, bad_readback=True)
+    args = _targeted_args(tmp_path, script)
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    result = _run_targeted_case(
+        args, action_id, inbox_event_key, tmp_path / "evidence", "run-bad-readback",
+    )
+    assert result["status"] != "completed"
+    assert result["official_readback"] == 0
+    assert result.get("replied", 0) == 0
+    assert result.get("effect", 0) == 0
+    assert result["pending"] >= 1
+    assert not send_record.exists()
 
 
 def test_inbox_event_key_is_thread_bound_and_rejects_non_sha_identity():
@@ -462,6 +766,7 @@ def test_direct_thread_only_owns_exact_url_and_emits_one_semantic_inquiry(
     monkeypatch.setattr(snapshot, "direct_message_event", lambda dom, url, **kwargs: {
         "last_message_side": "buyer", "reply_required": True, "next_action": "reply",
         "buyer_sent_at": "2026-08-19T00:01:00+00:00", "message_id": "buyer-2",
+        "last_message_identity_sha256": "b" * 64,
         "semantic_receipt": {"judgement": {"next_action": "reply"}},
         "semantic_context_sha256": "a" * 64, "semantic_reply_body": "回答です",
     })
@@ -483,6 +788,7 @@ def test_direct_thread_only_owns_exact_url_and_emits_one_semantic_inquiry(
     assert saved["inquiries"][0]["talkroom_url"] == (
         "https://coconala.com/mypage/direct_message/123"
     )
+    assert saved["inquiries"][0]["last_message_identity_sha256"] == "b" * 64
     assert opened and opened[0][1] == saved["inquiries"][0]["talkroom_url"]
 
     monkeypatch.setattr(

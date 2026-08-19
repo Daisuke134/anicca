@@ -2683,6 +2683,22 @@ def direct_message_event(
             1 for previous in messages[:-1]
             if isinstance(previous, dict) and previous.get("sent_at") == last.get("sent_at")
         )
+    supplied_identity = str(last.get("last_message_identity_sha256") or "")
+    if re.fullmatch(r"[0-9a-f]{64}", supplied_identity):
+        result["last_message_identity_sha256"] = supplied_identity
+    else:
+        raw_body = last.get("body")
+        if type(raw_body) is not str or not author_path or sent_at is None:
+            raise CollectorUnhealthy("missing_message_identity")
+        identity_payload = json.dumps(
+            {
+                "message_id": message_id or None,
+                "author_path": author_path,
+                "sent_at": sent_at,
+                "body": raw_body,
+            }, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")
+        result["last_message_identity_sha256"] = hashlib.sha256(identity_payload).hexdigest()
     requested_estimate = _requested_estimate_module()
     receipt: Any = None
     if semantic_judge is None:
