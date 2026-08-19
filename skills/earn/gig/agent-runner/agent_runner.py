@@ -1189,6 +1189,17 @@ def run() -> int:
             ]
             if not candidates:
                 raise ValueError("selected provider is not a candidate for task class")
+        preferred_provider = os.environ.get("AGENT_RUNNER_PROVIDER_PREFERENCE", "").strip()
+        if preferred_provider and not selected_provider:
+            preferred = [
+                candidate for candidate in candidates
+                if candidate.get("provider") == preferred_provider
+            ]
+            if preferred:
+                candidates = preferred + [
+                    candidate for candidate in candidates
+                    if candidate.get("provider") != preferred_provider
+                ]
         selected_model = str(parsed.candidate_model or "").strip()
         if selected_model:
             candidates = [
@@ -1354,6 +1365,18 @@ def run() -> int:
                 break
         effective_candidate = dict(candidate)
         provider = effective_candidate["provider"]
+        proxy_timeout = os.environ.get("AGENT_RUNNER_PROXY_TIMEOUT_SECONDS", "").strip()
+        if (
+            provider == "claude-direct"
+            and effective_candidate.get("model") == "gpt-5.3-codex-spark"
+            and proxy_timeout
+        ):
+            try:
+                proxy_timeout_seconds = int(proxy_timeout)
+            except ValueError:
+                proxy_timeout_seconds = 0
+            if proxy_timeout_seconds > 0:
+                effective_candidate["timeout_seconds"] = proxy_timeout_seconds
         attempt_event_id = uuid.uuid4().hex[:24]
         attempt_started = utc_now()
         try:

@@ -142,10 +142,12 @@ Source fix `da5e16627` now coalesces a changed buyer identity onto the current d
 selects the newest coalesced event for restart dispatch. Commit `c366586ac` additionally binds a
 seller-last closure to the dispatch-time revision, so a newer coalesced buyer event cannot be
 silently closed by stale work. `644db7d95`/`9aa6a506c` add the exact direct-thread head preflight
-and URL/identity fence before semantic judgement. `650c8418f` bounds each candidate (Luna,
-Claude, Hermes) to 40 seconds inside the 120-second route deadline; `3ed2f3dee` makes Hermes'
-user-local executable visible under launchd. The loaded-definition and natural readback gate
-remain open until the continuous owner runs this release and one authorized action completes.
+and URL/identity fence before semantic judgement. `650c8418f` bounds the normal candidates (Luna,
+Claude, Hermes) to 40 seconds inside the 120-second route deadline; the configured local proxy gets
+90 seconds only when it is preferred and present, while the route still retains fallback candidates.
+`3ed2f3dee` makes Hermes' user-local executable visible under launchd. The loaded-definition and
+natural readback gate remain open until the continuous owner runs this release and one authorized
+action completes.
 
 - [x] Stop the repeated `targeted_inbox_identity_changed` cycle by preflighting the exact official
   thread head before semantic judgement, then binding the targeted job to the latest buyer-authored
@@ -166,6 +168,11 @@ remain open until the continuous owner runs this release and one authorized acti
   effect-bearing evidence ID must come from a buyer message in that cycle; older buyer IDs are
   explicitly forbidden. The previous natural run was rejected safely as
   `semantic_title_evidence_invalid` for violating this boundary.
+- [x] Prefer the configured loopback semantic proxy before the unavailable network Codex route,
+  while retaining the other candidates as fallback. The real schema-boundary canary now selects
+  `claude-direct / gpt-5.3-codex-spark` in one attempt (about 12 seconds); its conversation-sized
+  input receives a 90-second candidate cap inside the existing 120-second route deadline instead
+  of expiring at the old 40-second cap. No marketplace effect is part of this canary.
 - [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
 - [ ] Bind the latest buyer-authored event to its official thread/message identity and classify
   whether it requires an answer, an estimate, both, or no action.
