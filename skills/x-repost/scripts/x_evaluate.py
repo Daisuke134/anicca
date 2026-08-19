@@ -49,6 +49,56 @@ def early_views(samples: list[dict], url: str):
     return min(rows, key=lambda s: s["age_minutes"]).get("views") if rows else None
 
 
+def evaluate_tone(posted, samples, cutoff, state: Path, apply: bool, result: dict) -> dict:
+    """Move the tone mix toward whichever tone earns more early reach."""
+    arms: dict[str, list[int]] = {}
+    for row in posted:
+        at = parse_dt(row.get("posted_at"))
+        if not at or at < cutoff:
+            continue
+        views = early_views(samples, row["post_url"])
+        if views is not None:
+            arms.setdefault(row.get("tone", "primary"), []).append(views)
+
+    strategy_path = state / "strategy.json"
+    try:
+        strategy = json.loads(strategy_path.read_text(encoding="utf-8"))
+    except Exception:
+        strategy = {}
+    weights = strategy.get("tone_weights") or {"primary": 1.0, "empathy": 1.0, "funny": 1.0}
+
+    result.update({"knob": "tone_weights", "from": dict(weights),
+                   "samples": {k: len(v) for k, v in arms.items()},
+                   "median_early_views": {k: float(statistics.median(v)) for k, v in arms.items()}})
+
+    measured = {k: v for k, v in arms.items() if len(v) >= MIN_PER_ARM}
+    if len(measured) < 2:
+        result.update({"to": dict(weights), "verdict": "insufficient-data",
+                       "reason": f"fewer than {MIN_PER_ARM} measured posts for at least two tones"})
+        return result
+
+    best = max(measured, key=lambda k: statistics.median(measured[k]))
+    worst = min(measured, key=lambda k: statistics.median(measured[k]))
+    if statistics.median(measured[best]) == statistics.median(measured[worst]):
+        result.update({"to": dict(weights), "verdict": "tie", "reason": "identical medians"})
+        return result
+
+    weights[best] = round(min(4.0, float(weights.get(best, 1.0)) + 0.5), 2)
+    weights[worst] = round(max(0.25, float(weights.get(worst, 1.0)) - 0.5), 2)
+    # Do not round here. Rounding made a real 16.0-vs-16.5 difference print as "16 vs 16", so the
+    # ledger read as a knob moved for no reason -- a report that argues against its own decision.
+    result.update({"to": dict(weights), "verdict": "moved",
+                   "reason": f"{best} {statistics.median(measured[best]):g} vs "
+                             f"{worst} {statistics.median(measured[worst]):g} early views"})
+    if apply:
+        strategy["tone_weights"] = weights
+        strategy["updated_at"] = result["ts"]
+        strategy["updated_because"] = result["reason"]
+        strategy_path.write_text(json.dumps(strategy, ensure_ascii=False, indent=1) + "\n",
+                                 encoding="utf-8")
+    return result
+
+
 def evaluate(state: Path, window_hours: int, apply: bool) -> dict:
     posted = [r for r in read_jsonl(state / "posted.jsonl") if r.get("post_url")]
     samples = read_jsonl(state / "engagement.jsonl")
@@ -83,10 +133,10 @@ def evaluate(state: Path, window_hours: int, apply: bool) -> dict:
     # An arm that is switched off will never fill, so waiting on it is not patience, it is a report
     # that reads like pending work when nothing is pending. Say the comparison is off instead.
     if current <= 0.0 or current >= 1.0:
-        disabled = "quote" if current >= 1.0 else "reply"
-        result.update({"to": current, "verdict": "one-arm-only",
-                       "reason": f"{disabled} is disabled by strategy, so there is nothing to compare"})
-        return result
+        # One action is switched off, so that arm will never fill. Compare what is still live
+        # instead of waiting forever: with replies off, tone is the only knob the loop can turn,
+        # and a loop that measures but cannot change anything is not closed.
+        return evaluate_tone(posted, samples, cutoff, state, apply, result)
 
     thin = [k for k, v in arms.items() if len(v) < MIN_PER_ARM]
     if thin:
