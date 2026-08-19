@@ -238,6 +238,18 @@ completed about 34 seconds apart, retained only message digests, and produced no
 No unread buyer message existed during this observation, so the natural buyer-origin → official
 readback latency gate is still pending and no after-speed claim is made.
 
+The clean-public-package rollout was then exercised with all four launchd owners live at once.
+Apply observed 40 postings and produced one officially read-back application from two actionable
+rows; the other row remained unconfirmed and was safely counted failed rather than duplicated.
+Storefront read 13 official listings and completed with no effect after the confirmed-gallery
+readback stopped requiring deleted historical asset bytes. Negotiate completed repeatedly with
+121 threads, six required estimates, six official estimate readbacks, zero estimate failures and
+zero pending work. Paid observed three rooms, retained two owner reservations, produced two
+readbacks and zero failures; its one pending room is the already-documented non-waiting case.
+Apply, Storefront and the long-lived Negotiate supervisor were simultaneously visible under
+different PIDs while Paid completed its own pass. This closes four-lane liveness and isolation;
+only the natural new-unread under-five-minute latency sample remains open.
+
 ---
 
 ## 1. ~~The browser step had no source~~ — RESOLVED, with one thing left to qualify
