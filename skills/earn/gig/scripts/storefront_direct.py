@@ -155,6 +155,8 @@ def _report_message(row: dict) -> str:
     failed = int(row.get("status") == "failed")
     hypothesis = row.get("next_hypothesis") if isinstance(row.get("next_hypothesis"), dict) else {}
     contract_delta = row.get("listing_contracts_appended")
+    stale_contracts = [entry for entry in (row.get("stale_listing_contracts") or [])
+                       if isinstance(entry, dict)]
     catalog = row.get("catalog_analytics") if isinstance(row.get("catalog_analytics"), dict) else {}
     totals = catalog.get("totals") if isinstance(catalog.get("totals"), dict) else {}
     changes = catalog.get("changes") if isinstance(catalog.get("changes"), dict) else {}
@@ -260,7 +262,15 @@ def _report_message(row: dict) -> str:
          f"readback {readback} / duplicate {_display_count(row.get('duplicate'))}"),
         (f"📚 公開contract {_display_count(row.get('listing_contracts_active'))}件 / "
          f"version履歴 {_display_count(row.get('listing_contracts_total'))}件 / "
-         f"今回追加 {_display_count(contract_delta)}件"),
+         f"今回追加 {_display_count(contract_delta)}件"
+         # A hand-authored contract binds one exact listing version, and editing the
+         # listing is this lane's whole job -- so it retires its own contracts, and
+         # with them that listing's inquiry playbook. That was recorded in the wake
+         # row and never said out loud, while the line above kept reporting a
+         # healthy-looking active count.
+         + (f" / ⚠️ 束縛切れ {len(stale_contracts)}件: "
+            f"{'/'.join(str(r.get('service_id')) for r in stale_contracts[:4])}"
+            if stale_contracts else "")),
         (f"📝 新規出品draft {draft_id} / "
          f"更新 {_display_count(draft.get('effect'))} / 照合 {_display_count(draft.get('readback'))} / "
          f"画像 {draft_image} / 公開 {_display_count(draft.get('public_effect'))} / "
