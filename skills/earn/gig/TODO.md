@@ -134,15 +134,22 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 
 #### C. Close Addres88 and prove fast Negotiate
 
-Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action,
-selects the newest coalesced event for restart dispatch, and closes seller-last stale work without
-sending. The semantic route prefers Luna and falls back to the existing tool-less providers under
-the 120-second bound. The source release was built, but the activation attempt for all four
-business jobs returned `141: Reentrancy avoided`; the live PIDs still point at older immutable
-releases, so the first checklist item remains open until loaded-definition and natural readback.
+Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action and
+selects the newest coalesced event for restart dispatch. Commit `c366586ac` additionally binds a
+seller-last closure to the dispatch-time revision, so a newer coalesced buyer event cannot be
+silently closed by stale work. Two review findings remain before activation: the first semantic
+provider can still consume the whole 120-second deadline and starve both fallbacks, and stale
+identity is still detected only after an avoidable semantic call. The loaded-definition and natural
+readback gate also remains open until the continuous owner runs the reviewed release.
 
-- [ ] Stop the repeated `targeted_inbox_identity_changed` cycle by binding the targeted job to the
-  current official thread and latest buyer-authored event instead of a stale inbox identity.
+- [ ] Stop the repeated `targeted_inbox_identity_changed` cycle by preflighting the exact official
+  thread head before semantic judgement, then binding the targeted job to the latest buyer-authored
+  event without paying for an obsolete event.
+- [x] Fence seller-last closure by dispatch-time action revision; a buyer event coalesced after the
+  stale result remains pending and cannot be closed by that result (`c366586ac`, 49 concurrency
+  tests pass).
+- [ ] Give Luna, Claude and Hermes explicit per-candidate timeout caps within the single 120-second
+  deadline, and keep every reply-semantic candidate unable to call tools.
 - [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
 - [ ] Bind the latest buyer-authored event to its official thread/message identity and classify
   whether it requires an answer, an estimate, both, or no action.
@@ -172,6 +179,10 @@ releases, so the first checklist item remains open until loaded-definition and n
 
 #### E. Prove natural Paid delivery
 
+- [x] Recheck the natural order boundary: the latest official orders pass observed 3 open cards,
+  read back 2 already-owned/deduplicated states, and left 1 pending with `failed=0`. The pending
+  room is an existing revision/owner-decision state, not a new artifact that can be safely built
+  or delivered from the current contract; no delivery effect is claimed.
 - [ ] Give paid feedback/delivery a stable order/message identity independent of the capture window.
 - [ ] Complete credential handling and email-first owner notification without public operator
   identity or secrets.
