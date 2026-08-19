@@ -151,6 +151,7 @@ def _fake_targeted_scripts(
                     outgoing_hash=intent["outgoing_hash"], seller_sent_at=now,
                     last_sender="seller", observed_at=now, authoritative_absent=False,
                 )
+                revision = int(db.get_action(action_id)["revision"])
                 with open({str(send_record)!r}, "a", encoding="utf-8") as handle:
                     handle.write(json.dumps({{"action_id": action_id, "event_key": event_key}}) + "\\n")
                 lane = {{
@@ -158,7 +159,7 @@ def _fake_targeted_scripts(
                     "pending_verify": 0, "reconcile_pending": 0, "already_delivered": 0,
                     "nothing_to_say": 0, "failed": 0, "blocked": 0, "deferred": 0, "dlq": 0,
                     "errors": [], "events": [{{
-                        "status": "replied", "action_id": action_id, "revision": 1,
+                        "status": "replied", "action_id": action_id, "revision": revision,
                         "talkroom_id": "123", "origin_at": "2026-08-19T00:01:00+00:00",
                         "seller_sent_at": "2026-08-19T00:02:00+00:00",
                     }}], "dlq_events": [],
@@ -594,6 +595,69 @@ def test_targeted_official_readback_must_match_exact_action_id():
     assert result["official_readback"] == 0
     assert result["effect"] == 0
     assert result["pending"] >= 1
+
+
+def test_targeted_official_readback_must_match_exact_revision():
+    lane = {
+        "status": "completed", "replied": 1, "reconciled": 0,
+        "pending_verify": 0, "reconcile_pending": 0,
+        "events": [{
+            "status": "replied", "action_id": 42, "revision": 1,
+            "talkroom_id": "123",
+            "origin_at": "2026-08-19T00:01:00+00:00",
+            "seller_sent_at": "2026-08-19T00:02:00+00:00",
+        }],
+    }
+    result = detector._targeted_effect_result(
+        lane, thread_id="123", action_id=42, expected_revision=2,
+    )
+    assert result["status"] != "completed"
+    assert result["replied"] == 0
+    assert result["official_readback"] == 0
+    assert result["effect"] == 0
+    assert result["pending"] >= 1
+
+
+def test_targeted_official_readback_accepts_exact_post_enqueue_revision():
+    lane = {
+        "status": "completed", "replied": 1, "reconciled": 0,
+        "pending_verify": 0, "reconcile_pending": 0,
+        "events": [{
+            "status": "replied", "action_id": 42, "revision": 2,
+            "talkroom_id": "123",
+            "origin_at": "2026-08-19T00:01:00+00:00",
+            "seller_sent_at": "2026-08-19T00:02:00+00:00",
+        }],
+    }
+    result = detector._targeted_effect_result(
+        lane, thread_id="123", action_id=42, expected_revision=2,
+    )
+    assert result["status"] == "completed"
+    assert result["replied"] == 1
+    assert result["official_readback"] == 1
+    assert result["effect"] == 1
+
+
+def test_intentional_no_send_close_rejects_advanced_revision(tmp_path):
+    script, _calls, _send_record = _fake_targeted_scripts(tmp_path, next_action="wait")
+    args = _targeted_args(tmp_path, script)
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    advanced_event_key = "coconala:message:v1:123:buyer-2"
+    advanced = database.enqueue(
+        event_key=advanced_event_key,
+        thread_id="123",
+        thread_url="https://coconala.com/mypage/direct_message/123",
+        observed_at=int(time.time()) + 1,
+    )
+    assert int(advanced["revision"]) == 2
+    closed = detector._targeted_close_no_send(
+        database=args.database, manifest=args.manifest,
+        action_id=action_id, thread_id="123", inbox_event_key=inbox_event_key,
+        expected_revision=1, reason="wait", run_id="run-stale-close",
+    )
+    assert closed is None
+    assert database.pending_actions()
 
 
 @pytest.mark.parametrize(

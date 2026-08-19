@@ -353,9 +353,13 @@ def _oldest_actionable(items: Any) -> str | None:
 
 def _verified_events(
     events: Any, expected_replied: int | None, *, expected_thread: str | None = None,
-    expected_action_id: int | None = None,
+    expected_action_id: int | None = None, expected_revision: int | None = None,
 ) -> list[dict[str, Any]] | None:
     if not isinstance(events, list) or expected_replied is None:
+        return None
+    if expected_action_id is not None and (
+        type(expected_revision) is not int or expected_revision <= 0
+    ):
         return None
     identities: set[tuple[int, int, str]] = set()
     for event in events:
@@ -366,6 +370,8 @@ def _verified_events(
         if action_id is None or revision is None or action_id <= 0 or revision <= 0:
             return None
         if expected_action_id is not None and action_id != expected_action_id:
+            return None
+        if expected_revision is not None and revision != expected_revision:
             return None
         if not isinstance(event.get("talkroom_id"), str) or not event["talkroom_id"].strip():
             return None
@@ -858,6 +864,9 @@ def _validate_target_binding(
         or bound.get("bound_event_key") != inbox_event_key
     ):
         raise ValueError("target binding mismatch")
+    expected_revision = _count(action.get("revision"))
+    if expected_revision is None or expected_revision <= 0:
+        raise ValueError("target action revision invalid")
     if action.get("state") == "pending" and action.get("dlq_at") is None:
         state = "pending"
     elif action.get("state") == "replied" and action.get("dlq_at") is None:
@@ -868,17 +877,22 @@ def _validate_target_binding(
         raise ValueError("target action is not pending")
     return {
         "action_id": action_id, "inbox_event_key": inbox_event_key,
-        "thread_id": thread_id, "identity_sha256": identity, "state": state,
+        "thread_id": thread_id, "identity_sha256": identity,
+        "expected_revision": expected_revision, "state": state,
     }
 
 
 def _targeted_close_no_send(
     *, database: Path, manifest: Path, action_id: int, thread_id: str,
-    inbox_event_key: str, reason: str, run_id: str,
+    inbox_event_key: str, expected_revision: int, reason: str, run_id: str,
 ) -> dict[str, Any] | None:
     """Claim and close only the exact action named by the durable inbox event."""
+    if type(expected_revision) is not int or expected_revision <= 0:
+        return None
     bound = _durable_event_action(database, inbox_event_key, thread_id)
     if bound is None or int(bound.get("action_id") or 0) != action_id:
+        return None
+    if int(bound.get("revision") or 0) != expected_revision:
         return None
     if bound.get("state") != "pending" or bound.get("dlq_at") is not None:
         return None
@@ -886,12 +900,14 @@ def _targeted_close_no_send(
     owner = f"gig-targeted-{run_id}"
     outbox = ConnectorOutbox(database, manifest)
     claimed = outbox.claim(owner=owner, now=now, lease_seconds=30, action_id=action_id)
-    if claimed is None:
+    if claimed is None or int(claimed.get("revision") or 0) != expected_revision:
         return None
     closed = outbox.close_nothing_to_say(
         action_id, owner=owner, fencing_token=int(claimed["fencing_token"]),
         reason=reason[:120], now=now,
     )
+    if int(closed.get("revision") or 0) != expected_revision:
+        return None
     return {
         "action_id": int(closed["action_id"]),
         "revision": int(closed["revision"]), "status": "nothing_to_say",
@@ -1016,6 +1032,7 @@ def _paid_fence_open_for_thread(path: Path, thread_id: str) -> bool:
 
 def _targeted_effect_result(
     lane: dict[str, Any], *, thread_id: str, action_id: int | None = None,
+    expected_revision: int | None = None,
 ) -> dict[str, Any]:
     events = lane.get("events") if isinstance(lane.get("events"), list) else []
     counts = {
@@ -1029,6 +1046,7 @@ def _targeted_effect_result(
     verified = _verified_events(
         events, counts["replied"], expected_thread=thread_id or None,
         expected_action_id=action_id,
+        expected_revision=expected_revision,
     )
     errors = list(lane.get("errors") or [])
     pending = counts["pending_verify"] + counts["reconcile_pending"]
@@ -1083,6 +1101,15 @@ def _run_effect_pipeline(
     estimate_required = False
     no_send = False
     thread_id = str(target.get("thread_id") or "") if target else ""
+    target_expected_revision = (
+        _count(target.get("expected_revision")) if target else None
+    )
+    if target and (
+        target_expected_revision is None or target_expected_revision <= 0
+    ):
+        return _targeted_pending(
+            thread_id, run_id, error="targeted_action_revision_invalid",
+        )
     if target:
         inquiry = _targeted_inquiry(snapshot, thread_id)
         observed_identity = str(inquiry.get("last_message_identity_sha256") or "")
@@ -1137,18 +1164,28 @@ def _run_effect_pipeline(
         raise ValueError("reply queue must be an object")
     if target:
         items = queue_value.get("items") if isinstance(queue_value.get("items"), list) else []
-        if not items or not any(
-            isinstance(item, dict)
-            and int((_durable_event_action(database, str(item.get("event_key") or ""), thread_id) or {}).get("action_id") or 0)
-            == int(target["action_id"])
-            for item in items
-        ):
+        bound = None
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            candidate = _durable_event_action(
+                database, str(item.get("event_key") or ""), thread_id,
+            )
+            if (
+                candidate is not None
+                and int(candidate.get("action_id") or 0) == int(target["action_id"])
+            ):
+                bound = candidate
+                break
+        if bound is None:
             return _targeted_pending(thread_id, run_id, error="targeted_event_not_coalesced")
         # Re-read the durable binding after enqueue so a queue implementation
         # cannot silently redirect this collected message to another action.
-        bound = _durable_event_action(database, str(items[0].get("event_key") or ""), thread_id)
-        if bound is None or int(bound.get("action_id") or 0) != int(target["action_id"]):
-            return _targeted_pending(thread_id, run_id, error="targeted_action_binding_changed")
+        target_expected_revision = _count(bound.get("revision"))
+        if target_expected_revision is None or target_expected_revision <= 0:
+            return _targeted_pending(
+                thread_id, run_id, error="targeted_action_revision_invalid",
+            )
 
         try:
             _collect_targeted_head(
@@ -1163,10 +1200,17 @@ def _run_effect_pipeline(
                     database=database, manifest=manifest,
                     action_id=int(target["action_id"]), thread_id=thread_id,
                     inbox_event_key=str(target["inbox_event_key"]),
+                    expected_revision=target_expected_revision,
                     reason=next_action or "intentional_no_send", run_id=run_id,
                 )
-                if closed is None:
-                    return _targeted_pending(thread_id, run_id, error="presemantic_action_not_claimable")
+                if (
+                    closed is None
+                    or int(closed.get("revision") or 0) != target_expected_revision
+                ):
+                    return _targeted_pending(
+                        thread_id, run_id,
+                        error="presemantic_action_revision_changed",
+                    )
                 return {
                     "status": "completed", "thread_id": thread_id, "run_id": run_id,
                     "replied": 0, "official_readback": 0, "duplicate_effect": 0,
@@ -1302,6 +1346,7 @@ def _run_effect_pipeline(
     result = _targeted_effect_result(
         lane, thread_id=thread_id if target else "",
         action_id=int(target["action_id"]) if target else None,
+        expected_revision=target_expected_revision if target else None,
     )
     result["run_id"] = run_id
     result = merge_estimate_metrics(
