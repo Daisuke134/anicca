@@ -56,10 +56,17 @@ def _is_apply_control(control: dict[str, Any]) -> bool:
     text = _control_text(control)
     role = _normalized(control.get("role"))
     tag = _normalized(control.get("tag"))
+    visible_text = _normalized(control.get("text"))
+    is_apply_text = visible_text in {
+        "apply",
+        "apply now",
+        "apply for this job",
+        "apply for this role",
+    }
     return (
-        _normalized(control.get("text")) == "apply"
+        is_apply_text
         and (role in {"button", "link"} or tag in {"a", "button"})
-        and "application" not in text
+        and "submit application" not in text
     )
 
 
@@ -191,6 +198,17 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                     }
                 )
                 return base
+        elif any(_is_apply_control(control) for control in controls):
+            base.update(
+                {
+                    "ready": True,
+                    "surface": (
+                        "ashby_job" if provider == "ashby" else "generic_job"
+                    ),
+                    "frame_index": frame_index,
+                }
+            )
+            return base
 
     base["blockers"] = ["application_surface_not_found"]
     return base

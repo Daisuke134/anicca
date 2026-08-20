@@ -141,6 +141,8 @@ raise SystemExit(0)
         self.assertIn("at least five", prompt)
         self.assertIn("AI engineer Tokyo Japan", prompt)
         self.assertIn("AI agent engineer Tokyo Japan", prompt)
+        self.assertIn("candidate-level", prompt)
+        self.assertIn("ashby_job", prompt)
 
         result_schema = json.loads(
             (APP_ROOT / "schemas" / "pass-result.v1.schema.json").read_text(

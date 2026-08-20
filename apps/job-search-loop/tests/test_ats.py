@@ -65,6 +65,54 @@ class AtsReadinessTests(unittest.TestCase):
             },
         )
 
+    def test_ashby_job_surface_is_ready_for_apply_navigation(self):
+        result = evaluate_snapshot(
+            {
+                "version": 1,
+                "url": "https://jobs.ashbyhq.com/acme/role",
+                "navigation_committed": True,
+                "frames": [
+                    {
+                        "url": "https://jobs.ashbyhq.com/acme/role",
+                        "controls": [
+                            {
+                                "tag": "button",
+                                "role": "button",
+                                "text": "Apply for this Job",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+        self.assertEqual(result["surface"], "ashby_job")
+        self.assertTrue(result["ready"])
+        self.assertFalse(result["claim_ready"])
+
+    def test_generic_apply_now_surface_is_ready_for_navigation(self):
+        result = evaluate_snapshot(
+            {
+                "version": 1,
+                "url": "https://careers.example.com/role",
+                "navigation_committed": True,
+                "frames": [
+                    {
+                        "url": "https://careers.example.com/role",
+                        "controls": [
+                            {
+                                "tag": "a",
+                                "role": "link",
+                                "text": "Apply now",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+        self.assertEqual(result["surface"], "generic_job")
+        self.assertTrue(result["ready"])
+        self.assertFalse(result["claim_ready"])
+
     def test_committed_page_without_application_surface_fails_closed(self):
         self.assertEqual(
             evaluate_snapshot(load_fixture("committed-without-surface.json")),

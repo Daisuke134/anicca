@@ -28,8 +28,10 @@ quoted AI/LLM requirements is not eligible. Hard reject citizenship/clearance,
 non-Japan remote, known sub-floor pay, and unmet explicit minimum years.
 The deterministic daily driver exports `JOB_SEARCH_DAILY_WAKE_ID`; the ledger
 enforces one submission claim for that wake even if the model attempts multiple
-claims. Do not attempt a second claim after a claim or a definite
-`not_submitted` result; report the state and stop the wake.
+claims. A claim or `submit_unknown` ends the wake. A candidate-level
+`not_submitted` before any claim releases that candidate only: continue to the
+next distinct eligible URL in the queue. Stop the wake only after a claim,
+`submit_unknown`, or exhaustion of the verified candidate queue.
 
 The private profile already contains the verified legal facts
 `legal_japan_work_authorization` and `legal_no_japan_sponsorship_required`: Daisuke is a
@@ -100,6 +102,12 @@ workday_application
   → claim only when the final submit-bearing form is present
 ```
 
+For non-Workday ATS pages, an evaluated `ashby_job` or `generic_job` surface is
+an apply-navigation step, not a claim. Click its visible `Apply`, `Apply now`, or
+`Apply for this Job` control, recapture the redacted snapshot, and reevaluate
+before filling anything. Never interpret a job-page Apply control as a submitted
+application.
+
 Do not choose `Autofill with Resume` before resume routing, and do not improvise an
 account password or expose credentials in evidence. At a verified
 `workday_account_create` surface, run:
@@ -129,7 +137,8 @@ failure, not proof that the discovery set is empty. Keep a queue of at least fiv
 distinct eligible official URLs when discovery returned them, and do not report
 `no_eligible_job_found` until those candidates are exhausted or a verified
 eligible candidate has been submitted/claimed. The one-candidate wake fence still
-prevents a second claim.
+prevents a second claim, but it does not prevent probing replacement candidates
+before the first successful claim.
 
 Before any submit click, save the complete normalized official posting text in a
 private mode-0600 file beside `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, determine the
