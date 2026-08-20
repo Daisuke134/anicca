@@ -2072,6 +2072,9 @@ class PublicationStore:
                 "public-asset-readback-failed",
                 "destination-media-readback-failed",
             ),
+            "error_prefixes": (
+                "remote-probe-error:URLError:",
+            ),
             "evidence_shapes": (
                 ("x-authenticated-edit-url", "x-cdp-saved-article-editor"),
                 (
@@ -2091,6 +2094,9 @@ class PublicationStore:
                 "canonical-content-readback-failed",
                 "public-asset-readback-failed",
                 "destination-media-readback-failed",
+            ),
+            "error_prefixes": (
+                "remote-probe-error:URLError:",
             ),
             "evidence_shapes": (
                 ("x-authenticated-edit-url", "x-cdp-saved-article-editor"),

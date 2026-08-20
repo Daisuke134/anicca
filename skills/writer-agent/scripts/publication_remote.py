@@ -728,9 +728,11 @@ def prove_remote_descriptors(
     expected: list[dict[str, Any]],
     urls: list[str],
     cover_crop_window: tuple[float, float] | None = None,
+    fetcher=None,
 ) -> list[dict[str, Any]]:
     unique_urls = list(dict.fromkeys(url for url in urls if isinstance(url, str)))
-    remote = [(url, get_bytes(url)) for url in unique_urls]
+    fetch = fetcher or get_bytes
+    remote = [(url, fetch(url)) for url in unique_urls]
     used: set[int] = set()
     proofs: list[dict[str, Any]] = []
     for descriptor_index, descriptor in enumerate(expected):
@@ -1619,6 +1621,37 @@ def x_article(
     playwright = sync_playwright().start()
     browser = playwright.chromium.connect_over_cdp("http://localhost:9222")
     page = browser.contexts[0].new_page()
+    browser_image_bodies: dict[str, bytes] = {}
+
+    def capture_browser_image(response) -> None:
+        if "pbs.twimg.com" not in response.url:
+            return
+        try:
+            if str(response.headers.get("content-type", "")).lower().startswith("image/"):
+                browser_image_bodies[response.url] = response.body()
+        except Exception:
+            # The image may be served from an already-loaded browser cache
+            # entry.  The DOM still proves it rendered; a later fetch path
+            # will decide whether bytes are available for hash verification.
+            return
+
+    page.on("response", capture_browser_image)
+
+    def browser_get_bytes(url: str) -> bytes:
+        cached = browser_image_bodies.get(url)
+        if cached is not None:
+            return cached
+        response = page.request.get(url, timeout=30000)
+        if not response.ok:
+            raise ValueError(f"public image request failed: {response.status}")
+        content_type = str(response.headers.get("content-type", "")).lower()
+        data = response.body()
+        if len(data) > 25 * 1024 * 1024:
+            raise ValueError("public image exceeds verification limit")
+        if not content_type.startswith("image/"):
+            raise ValueError("public asset is not an image")
+        return data
+
     try:
         page.goto(target, wait_until="domcontentloaded", timeout=50000)
         page.wait_for_timeout(5000)
@@ -1743,7 +1776,7 @@ def x_article(
                     if (
                         proof := center_crop_content_proof(
                             headline,
-                            get_bytes(url),
+                            browser_get_bytes(url),
                             url,
                         )
                     )
@@ -1761,6 +1794,7 @@ def x_article(
             body_proofs = prove_remote_descriptors(
                 body_descriptors,
                 list(map(str, body_images)),
+                fetcher=browser_get_bytes,
             )
             proofs = (
                 [cover_proof, *body_proofs]
@@ -1773,6 +1807,7 @@ def x_article(
             table_proofs = prove_remote_descriptors(
                 table_descriptors,
                 list(map(str, body_images)),
+                fetcher=browser_get_bytes,
             )
             table_ok = (
                 len(table_descriptors) == expected_table_count
