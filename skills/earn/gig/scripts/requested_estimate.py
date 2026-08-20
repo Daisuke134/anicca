@@ -241,6 +241,8 @@ def validate_semantic_judgement(
         raise SemanticJudgementError("semantic_enum_invalid")
     if state == "explicit_estimate_request" and action == "reply":
         raise SemanticJudgementError("semantic_estimate_request_reply_conflict")
+    if rows[-1]["role"] == "seller" and action in {"reply", "clarify"}:
+        raise SemanticJudgementError("semantic_seller_last_reply_conflict")
     if official_context not in SEMANTIC_OFFICIAL_CONTEXTS:
         raise SemanticJudgementError("semantic_official_context_invalid")
     all_ids = [row["message_id"] for row in rows]
@@ -528,6 +530,8 @@ class SemanticJudge:
         for correction in (None, (
             "\n前回出力は構造契約違反です。conversation_stateが"
             "explicit_estimate_requestならnext_action=replyは禁止です。"
+            "また最新roleがsellerならreply/clarifyは禁止です。buyerが承認済みで"
+            "sellerの公式見積り送付約束が未履行ならsend_estimate、履行義務がなければwaitです。"
             "条件が一意ならsend_estimateと構造化estimate_termsを返し、"
             "不足時だけclarifyまたは公式context要求を返してください。"
         )):
@@ -556,7 +560,10 @@ class SemanticJudge:
                 judgement = validate_semantic_judgement(payload, rows)
                 break
             except SemanticJudgementError as error:
-                if correction is not None or str(error) != "semantic_estimate_request_reply_conflict":
+                if correction is not None or str(error) not in {
+                    "semantic_estimate_request_reply_conflict",
+                    "semantic_seller_last_reply_conflict",
+                }:
                     raise
             except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
                 raise SemanticJudgementError("semantic_evidence_invalid") from error
