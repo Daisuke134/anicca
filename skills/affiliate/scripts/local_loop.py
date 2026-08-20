@@ -170,6 +170,11 @@ def observe_repost_acquisition(state):
     except (OSError, ValueError):
         pass
     changed = prior.get("transition_id") != transition_id
+    if not changed:
+        changed = not any(
+            (row.get("repost_observation") or {}).get("transition_id") == transition_id
+            for row in json_rows(state / "events.jsonl")
+        )
     if changed:
         append_unique(
             state / "repost-observations.jsonl", receipt, ("transition_id",)

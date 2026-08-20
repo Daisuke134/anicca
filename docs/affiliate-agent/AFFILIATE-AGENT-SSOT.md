@@ -2075,6 +2075,8 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   treating post actions as impressions, visits, clicks, or money. The observer
   runs immediately after the wake lock so a later provider/browser failure cannot
   erase the observation. The source observer and temporary mixed-join replay pass;
+  an unacknowledged transition remains reportable until a matching wake event is
+  durable, so a provider failure cannot swallow its Telegram receipt;
   the first installed attempt exposed a PartnerStack selector timeout before the
   old late observer, so this ordering repair and installed proof remain open.
 - [ ] **D07** Prove one Repost/original-X exposure joins through owned visit and

@@ -17,7 +17,9 @@
   before the late Repost observer could write its receipt. No public effect or
   money was created. The bounded repair moves the read-only observer immediately
   after the wake lock; the next owner wake must show the same Repost counts even
-  if provider recovery remains unhealthy.
+  if provider recovery remains unhealthy. A second small repair keeps an
+  unacknowledged observation transition reportable until a matching wake event is
+  durable, preventing a provider failure from swallowing its Telegram receipt.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
