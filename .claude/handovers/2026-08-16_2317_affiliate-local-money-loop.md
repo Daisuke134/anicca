@@ -104,6 +104,13 @@ validator still required a removed combined legacy sentence. The pending repair
 changes only validator markers in the canonical worktree; no article body,
 provider credential, external link, or public effect is changed.
 
+The validator repair is installed as immutable release
+`3cdd8d875115b733c6fd9b99e3e296c10e7a5207`; installed `require_sources` passes
+all five TTS API sources. The first owner kick after installation at
+`2026-08-20T09:17:16Z` again returned `141: Reentrancy avoided`, no loop process
+started, and `last-run.json` still shows the pre-repair ContentError. The code
+fix is therefore installed/readable but not owner-E2E verified.
+
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
 above; Codex did not create a parallel executor.

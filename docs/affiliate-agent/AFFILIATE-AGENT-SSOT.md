@@ -1384,6 +1384,12 @@ historical evidence below. Read-only inspection of the installed state shows:
   price rows; the installed validator still required a removed combined legacy
   sentence. The worktree repair changes only those validator markers; no
   article body, provider credential, external link, or public effect is changed.
+- the validator repair is installed as immutable release
+  `3cdd8d875115b733c6fd9b99e3e296c10e7a5207`; installed `require_sources` now
+  passes all five TTS API sources. The first owner kick after installation at
+  `2026-08-20T09:17:16Z` again returned `141: Reentrancy avoided`, no loop
+  process started, and `last-run.json` still shows the pre-repair ContentError.
+  Therefore the code fix is installed/readable but not yet owner-E2E verified.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
