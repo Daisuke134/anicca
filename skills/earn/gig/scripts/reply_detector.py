@@ -1469,6 +1469,42 @@ def run_targeted_thread(
         return _targeted_failure(thread_id, run_id, "targeted", error)
 
 
+def run_targeted_estimate(
+    args: Any, *, action_id: int, event_key: str, thread_id: str,
+    expected_revision: int, evidence: Path, run_id: str,
+) -> dict[str, Any]:
+    """Refresh one durable estimate thread and consume only its current decision."""
+    try:
+        binding = _durable_event_action(Path(args.database), event_key, thread_id)
+        if (
+            binding is None or int(binding.get("action_id") or 0) != action_id
+            or int(binding.get("revision") or 0) != expected_revision
+            or binding.get("state") != "pending"
+        ):
+            return _targeted_pending(thread_id, run_id, error="estimate_binding_changed")
+        evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
+        snapshot_path = evidence / "marketplace-snapshot.json"
+        command = [
+            sys.executable, str(args.snapshot_script), "--output", str(snapshot_path),
+            "--evidence-dir", str(evidence / "direct-thread"), "--mode", "direct-thread-only",
+            "--talkroom-id", thread_id, "--hidden-no-screenshot",
+            "--semantic-runner", str(args.runner), "--semantic-schema", str(args.semantic_schema),
+            "--semantic-workdir", str(Path.home()), "--database", str(args.database),
+            "--manifest", str(args.manifest), "--semantic-effects-enabled",
+        ]
+        _run("collect", command)
+        _owner_only(snapshot_path)
+        snapshot = _targeted_snapshot(snapshot_path)
+        _targeted_inquiry(snapshot, thread_id)
+        return _run_effect_pipeline(
+            args, snapshot=snapshot, evidence=evidence, run_id=run_id,
+        )
+    except StepFailure as error:
+        return _targeted_failure(thread_id, run_id, error.step, error)
+    except Exception as error:
+        return _targeted_failure(thread_id, run_id, "targeted_estimate", error)
+
+
 async def _supervisor_hook(hook: Any, *arguments: Any) -> Any:
     """Invoke a testable supervisor hook whether it is sync or async."""
     result = hook(*arguments)
@@ -1496,11 +1532,29 @@ def _supervisor_work_from_action(action: dict[str, Any]) -> dict[str, Any] | Non
     ):
         return None
     return {
+        "kind": "reply",
         "action_id": action_id,
         "event_key": event_key,
         "thread_id": thread_id,
         "identity_sha256": match.group("identity"),
         "expected_revision": expected_revision,
+    }
+
+
+def _supervisor_estimate_work_from_action(action: dict[str, Any]) -> dict[str, Any] | None:
+    event_key = str(action.get("event_key") or "")
+    thread_id = str(action.get("thread_id") or "")
+    action_id = _count(action.get("action_id"))
+    expected_revision = _count(action.get("revision"))
+    try:
+        _requested_estimate_module().validate_estimate_event_key(event_key, thread_id)
+    except Exception:
+        return None
+    if action_id is None or action_id <= 0 or expected_revision is None or expected_revision <= 0:
+        return None
+    return {
+        "kind": "estimate", "action_id": action_id, "event_key": event_key,
+        "thread_id": thread_id, "expected_revision": expected_revision,
     }
 
 
@@ -1650,6 +1704,10 @@ async def supervise_replies(
             work = _supervisor_work_from_action(action)
             if work is not None:
                 await enqueue_work(work)
+        for action in get_outbox().estimate_pending_actions():
+            work = _supervisor_estimate_work_from_action(action)
+            if work is not None:
+                await enqueue_work(work)
 
     async def producer() -> None:
         next_probe_at = time.monotonic()
@@ -1779,6 +1837,16 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
     async def worker(work: dict[str, Any]) -> dict[str, Any]:
         run_id = f"targeted-{int(time.time())}-{os.getpid()}-{work['action_id']}"
         worker_evidence = evidence / "continuous" / "workers" / run_id
+        if work.get("kind") == "estimate":
+            result = await asyncio.to_thread(
+                run_targeted_estimate, args,
+                action_id=int(work["action_id"]), event_key=str(work["event_key"]),
+                thread_id=str(work["thread_id"]),
+                expected_revision=int(work["expected_revision"]),
+                evidence=worker_evidence, run_id=run_id,
+            )
+            _atomic_json(worker_evidence / "result.json", result)
+            return result
         result = await asyncio.to_thread(
             run_targeted_thread, args,
             action_id=int(work["action_id"]),
