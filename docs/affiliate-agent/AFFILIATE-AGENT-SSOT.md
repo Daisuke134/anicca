@@ -186,6 +186,17 @@ live autonomous operation.
 | Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, real `PLACEMENT_LIVE`, program rejection, and one real-data natural-language daily summary are live-proven. Release `0473a3fb5` is installed and the owner at `07:33:59+0900` appended a real linked delivery row with `NO_PENDING/ALREADY_DELIVERED`, provider message `26335`, and no duplicate public effect; outbox and sent ledgers remain `124/124` with no pending event. | `CLICK_DELTA` and commission events remain bound to their real external transitions; provider transactions, approved/paid net, and known-cost economics remain open |
 | Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery/refresh, source-hash-bound composition, bounded Terra-high composition, same-ID recovery, policy, exact placement-link acquisition, publication/distribution, acquisition/revenue observation, placement economics, economics-bound one-variable allocation, typed observed-failure repair, receipts, and Telegram are live. Release `50d45beca` reconciled one stale Impact login job from fresh authenticated readback and replayed without mutation; the installed ledger now has 14 comparable English placements | Actual billed/tool/channel cash receipts, a post-baseline provider click, and positive money evidence remain absent. The loop has not yet earned a commission |
 
+### 1.1.1 Latest B01 capture observation
+
+The existing money owner ran at `2026-08-21T07:55:09+0900` after the official
+capture cooldown. PartnerStack failed closed at `stage=links` with
+`NONZERO_EXIT` and return code `1`; failure receipt `ffdaf00e…5309bf` schedules
+the next owner retry for `2026-08-21T08:55:08+0900`. The latest official artifact
+is still the prior empty `de2287adc…b91d4fe` report, so no transaction,
+settlement, payout, commission transition, or money changed. This is a provider
+path failure, not evidence of zero revenue; B01 remains
+`WAITING_FOR_PROVIDER_TRANSACTION`.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
