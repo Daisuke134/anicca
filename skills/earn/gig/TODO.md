@@ -224,8 +224,14 @@ The order to the end is:
    rejected v6 before delivery because its SVG/PDF files were raster wrappers around repeated source
    PNG sections rather than editable vector reconstruction, and its responsive layout merely scaled
    the PC raster instead of reflowing it. The same live controller persisted that complete finding
-   and launched isolated v7 production automatically. v7 fresh review, one delivery effect,
-   exact-room official readback and replay zero remain to be proved.
+   and launched isolated v7 production automatically. That run exposed an outer-boundary defect:
+   the parent preparation subprocess still used the generic 35-minute step deadline even though
+   the bounded file workflow permits three 60-minute production rounds plus three 30-minute fresh
+   reviews. The parent therefore recorded `remote_resume` and exited while its v7 owner continued
+   orphaned. File preparation now has a six-hour outer deadline, longer than every permitted inner
+   round combined; other Paid steps keep the generic bounded timeout. A fresh non-orphaned v7 run,
+   fresh review, one delivery effect, exact-room official readback and replay zero remain to be
+   proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
    the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new

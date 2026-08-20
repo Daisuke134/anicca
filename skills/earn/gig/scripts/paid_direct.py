@@ -19,6 +19,9 @@ from telegram_report import OpenClawTelegramTransport  # noqa: E402
 from gig_paths import BROWSER_DIR, REPO_ROOT, RUNNER_DIR  # noqa: E402
 
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
+# One prepare child owns up to three 60-minute production rounds plus three 30-minute reviews.
+# Its outer deadline must not expire before those already-bounded inner steps can settle.
+FILE_PREPARE_TIMEOUT_SECONDS = 21600
 # Runtime state location is machine configuration, not source. The plist supplies
 # GIG_OPERATOR_BRAKE_FILE; this is only the fallback for a checkout that has none.
 DEFAULT_BRAKE = Path(
@@ -3365,7 +3368,10 @@ def run_once(args, output: Path) -> int:
             actionable += 1
             prepared_file = item_file.with_name(item_file.stem + "-prepared.json")
             effect_file.unlink(missing_ok=True); prepared_file.unlink(missing_ok=True)
-            prepare = _run_bounded(_prepare_command(args, item_file, prepared_file), env=_fresh_child_env(args))
+            prepare = _run_bounded(
+                _prepare_command(args, item_file, prepared_file),
+                env=_fresh_child_env(args), timeout=FILE_PREPARE_TIMEOUT_SECONDS,
+            )
             try: prepared = _load(prepared_file)
             except (OSError, json.JSONDecodeError): prepared = {"status": "failed", "failed_step": "remote_resume", "effect": 0, "readback": 0}
             if prepare.returncode or prepared.get("_paid_prepare_status") != "prepared":
