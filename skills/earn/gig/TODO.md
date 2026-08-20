@@ -69,6 +69,13 @@ credentials. Coconala balance is not bank income.
 ## Execution order to end
 
 The first unfinished item is always the first failed live lane, not the first planned feature.
+The current product priority is **coverage first, Negotiate latency second, Paid quality over
+latency**. Apply must submit every currently eligible opportunity without omissions or duplicates.
+Negotiate must account for every buyer-authored message, reply to every actionable one quickly, and
+send an estimate exactly once only after the buyer has requested it and scope/price/delivery terms
+are sufficiently settled. Submission/Paid is intentionally not accelerated: preserve the existing
+builder → fresh reviewer → revision loop → quality gate → one official delivery path. Its deadline is
+the accepted buyer deadline, not the Negotiate response SLO.
 The order to the end is:
 
 1. **Recover operating headroom. DONE:** keep at least 10 GiB byte-exact free before trusting
@@ -104,12 +111,18 @@ The order to the end is:
    static job points to `e4337a2f`, but the continuous owner still runs old release `c7fefe404`.
    Addres88 thread `10099067` has pending durable actions 275 and 276. The latest targeted result
    requires an estimate but reports `estimate_effect: 0 / estimate_readback: 0 /
-   estimate_failed: 1`; the estimate is not sent or officially confirmed.
+   estimate_failed: 1`; the estimate is not sent or officially confirmed. Completion requires a
+   durable disposition for every buyer-authored message: replied with official readback, estimate
+   sent with official readback, intentionally no-send with a bounded policy reason, or still pending
+   with an observable retry owner. Missing from the queue is never a valid disposition.
 4. **Storefront observes but does not yet sell/mutate completely.** Its `e4337a2f` process reads 13
    official services and completes cleanly, but the current receipt remains `actionable: 0 /
    effect: 0 / readback: 0` with `no_executable_unfenced_mutation_contract`. Resolve one valid
    mutation contract and prove one official listing create/update readback.
-5. **Submission (Paid/delivery) observes but is not complete.** Its `e4337a2f` process is alive.
+5. **Submission (Paid/delivery) quality architecture is accepted; natural completion proof remains.**
+   Do not shorten its cadence or split it merely for speed. Preserve independent production, fresh
+   review, revision until the quality contract passes, and one fenced official delivery. Its process
+   is alive.
    The latest receipt is `completed / observed: 3 / effect: 0 / readback: 2 / failed: 0 /
    pending: 1`. Prove a new natural paid order through validated artifact, one delivery
    effect, exact-room official readback and replay zero.
@@ -176,6 +189,10 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 
 #### B. Restore Apply and prove one new application
 
+- [ ] Prove full eligible-set coverage on a natural exhaustive pass: every observed open request is
+  either officially applied, already applied, or carries one bounded truthful ineligibility reason.
+  Missing structured decisions, provider failures, candidate wedges and unowned pending rows fail
+  the pass; they must remain durably retryable rather than disappear from the denominator.
 - [x] Restore intent-planner availability without a code change. Pass
   `gig-apply-direct-1787199355888187000-44491` completed four Luna batches successfully and again
   produced official application readbacks; quota failure is no longer the active defect.
@@ -211,6 +228,13 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   proving replay creates no duplicate submission.
 
 #### C. Close Addres88 and prove fast Negotiate
+
+Coverage and speed are both hard gates. Every newly observed buyer-authored message receives one
+durable action identity before semantic work. The producer keeps discovering while both consumers
+are busy. A message may end only as official reply readback, official estimate readback, explicit
+policy no-send, or owned pending retry; it may never disappear because another thread/model/browser
+operation is slow. The five-minute SLO applies to actionable messages, with two minutes as the
+operating target.
 
 Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action and
 selects the newest coalesced event for restart dispatch. Commit `c366586ac` additionally binds a
@@ -283,6 +307,14 @@ action completes.
 - [ ] Replay it and prove zero duplicate or wrong-service mutations.
 
 #### E. Prove natural Paid delivery
+
+**Accepted architecture — do not optimize Paid for lower latency.** A production worker builds the
+buyer-requested artifact, a fresh reviewer checks it independently, the worker incorporates review
+findings and repeats until the quality gate passes, and only then does the delivery owner perform one
+fenced official submission with exact-room readback. Speed changes that reduce review independence,
+iteration depth, artifact validation or duplicate-effect protection are regressions. Paid is complete
+when it meets the agreed buyer deadline with quality and official delivery proof, not when it matches
+Negotiate's reply time.
 
 - [x] Recheck the natural order boundary: the latest official orders pass observed 3 open cards,
   read back 2 already-owned/deduplicated states, and left 1 pending with `failed=0`. The pending
