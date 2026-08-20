@@ -1,8 +1,8 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `c8f6e4a1b`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `c8f6e4a1bb0657fb050ddd5781bdec085b13056f`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T14:45:03Z` through this `current` path, preserved the ledger, and kept the prior empty official revenue artifact while the revenue stage was `COOLDOWN` (no fresh provider capture). Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `be76c390d`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `be76c390d15b664326d2329d6af669b4696ad8db`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T14:55:19Z` through this `current` path, preserved the ledger, and kept the prior empty official revenue artifact while the revenue stage was `COOLDOWN` (no fresh provider capture). Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
@@ -630,3 +630,14 @@ returned only `141: Reentrancy avoided`, and the existing owner naturally ran at
 `2026-08-20T14:45:03Z` with `ALREADY_LIVE`, revenue `COOLDOWN`, no fresh capture,
 zero observed rows, and no duplicate effect. The first official transaction and
 exact placement join remain open.
+The follow-up B01 receipt repair is commit `be76c390d15b664326d2329d6af669b4696ad8db`.
+Commission Telegram events now state provider, official transaction key,
+exact placement ID or `UNKNOWN`, status, gross, reversal, net, currency, and
+optional settlement/payout IDs without exposing tracking links. Existing
+revenue checks `8/8`, local-loop checks `16/16`, Python compilation, and a
+non-persistent receipt-field fixture passed. The immutable installer switched
+`current`; source byte equality passed, browser bootstrap again returned only
+`141: Reentrancy avoided`, and the existing owner naturally ran at
+`2026-08-20T14:55:19Z` with `ALREADY_LIVE`, revenue `COOLDOWN`, no fresh capture,
+zero observed rows, no duplicate effect, and no pending Telegram event. The
+first official transaction and exact placement join remain open.
