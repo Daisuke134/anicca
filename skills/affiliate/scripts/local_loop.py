@@ -386,6 +386,16 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "placement_id": wake_event.get("placement_link_placement"),
             "provider_link_key": wake_event.get("placement_link_key"),
         }, "link verified / commission not observed yet")
+    if (
+        wake_event.get("publication_link_receipt_pending")
+        and wake_event.get("publication_link_state") == "VERIFIED"
+    ):
+        kind = "PLACEMENT_LINK_VERIFIED"
+        add(kind, {
+            "kind": kind, "provider": "elevenlabs",
+            "placement_id": wake_event.get("publication_link_placement"),
+            "provider_link_key": wake_event.get("publication_link_key"),
+        }, "link verified / commission not observed yet")
     if wake_event.get("distribution_changed") and wake_event.get("distribution_state") == "LIVE":
         kind = "DISTRIBUTION_LIVE"
         add(kind, {
@@ -1018,6 +1028,13 @@ def advance_generic_publication(
     link_acquirer = link_acquirer or elevenlabs_link_action
     completed = False
 
+    def generic_link_receipt_pending(placement):
+        return not any(
+            row.get("publication_link_placement") == placement
+            and row.get("publication_link_state") == "VERIFIED"
+            for row in json_rows(state / "events.jsonl")
+        )
+
     def publication_priority(policy_path):
         """Resume an in-flight owned publication before opening another one.
 
@@ -1165,10 +1182,22 @@ def advance_generic_publication(
             title=handoff.get("title"), description=handoff.get("buyer_intent"),
             destination=destination,
         )
+        link_metadata = {
+            "publication_link_state": dedicated.get("state"),
+            "publication_link_placement": placement,
+            "publication_link_key": dedicated.get("provider_link_key"),
+            "publication_link_changed": not dedicated.get("deduplicated", False),
+            "publication_link_deduplicated": dedicated.get("deduplicated"),
+            "publication_link_failure_type": dedicated.get("failure_type"),
+            "publication_link_receipt_pending": (
+                dedicated.get("state") == "VERIFIED"
+                and generic_link_receipt_pending(placement)
+            ),
+        }
         if dedicated.get("state") != "VERIFIED":
-            return {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None}
+            return {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None, **link_metadata}
         if not dedicated.get("deduplicated", False):
-            return {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None}
+            return {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None, **link_metadata}
         link = elevenlabs_link(private_markdown, dedicated.get("private_link_field", ""))
         markdown = handoff.get("owned_article_markdown", "")
         x_copy = handoff.get("x_copy", "")
@@ -1234,7 +1263,7 @@ def advance_generic_publication(
         if owned.get("state") != "LIVE":
             progress.update(state="OWNED_NOT_LIVE", public_url=owned.get("public_url"))
             atomic_json(progress_path, progress)
-            return {"state": "OWNED_NOT_LIVE", "public_url": owned.get("public_url")}
+            return {"state": "OWNED_NOT_LIVE", "public_url": owned.get("public_url"), **link_metadata}
         progress.update(state="OWNED_LIVE", owned_url=owned["public_url"])
         atomic_json(progress_path, progress)
         # Handoffs sealed before the publisher disclosure contract was aligned
@@ -1253,10 +1282,10 @@ def advance_generic_publication(
             cdp_host="127.0.0.1", cdp_port=x_cdp_port,
         ))
         if posted.get("state") != "LIVE":
-            return {"state": "X_NOT_LIVE", "public_url": posted.get("public_url")}
+            return {"state": "X_NOT_LIVE", "public_url": posted.get("public_url"), **link_metadata}
         progress.update(state="X_LIVE", x_url=posted["public_url"])
         atomic_json(progress_path, progress)
-        return {"state": "X_LIVE", "public_url": posted["public_url"]}
+        return {"state": "X_LIVE", "public_url": posted["public_url"], **link_metadata}
     return {
         "state": "ALREADY_LIVE" if completed else "NO_DUE_PUBLICATION",
         "public_url": None,
@@ -2096,6 +2125,13 @@ def wake(args):
         "publication_failure_type": publication.get("failure_type"),
         "publication_failure_detail": publication.get("failure_detail"),
         "publication_generic_state": publication.get("generic_state"),
+        "publication_link_state": publication.get("publication_link_state"),
+        "publication_link_placement": publication.get("publication_link_placement"),
+        "publication_link_key": publication.get("publication_link_key"),
+        "publication_link_changed": publication.get("publication_link_changed"),
+        "publication_link_deduplicated": publication.get("publication_link_deduplicated"),
+        "publication_link_failure_type": publication.get("publication_link_failure_type"),
+        "publication_link_receipt_pending": publication.get("publication_link_receipt_pending"),
         "publication_liveness_state": liveness["state"],
         "publication_liveness_checked": liveness["checked"],
         "publication_liveness_unverified": [
