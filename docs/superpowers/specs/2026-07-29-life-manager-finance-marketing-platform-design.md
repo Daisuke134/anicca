@@ -28,6 +28,13 @@ expand to the remaining Anicca/Honne producers. This incident recovery preserves
 existing behavior under Orders 9 and 11; it does not activate post-migration
 feature work.
 
+**Near-term mobile-marketing target.** This is a restoration, not a new
+marketing-system invention: reuse the retained accounts, creatives, cadence
+contracts, and Postiz routes that already worked, move their execution behind
+Life Manager, and return each approved account to three expected posts per day.
+The return is one account at a time so a known-broken lane is repaired before
+its first post; old OpenClaw cron labels remain disabled as rollback evidence.
+
 **Incident recovery execution correction (2026-08-21 JST).** The original
 OpenClaw marketing runtime was not Docker-, Colima-, Railway-, or
 PostgreSQL-based. The current recovery therefore runs locally from the
@@ -1419,6 +1426,28 @@ schedulers or revive known-broken producers:
 | I-6 | Migrate Honne JA, then remaining Larry/ReelClaw routes | each retained route preserves product/locale/account/cadence behavior and no longer reads OpenClaw or another repository at runtime | open |
 | I-7 | Close observation and bounded learning | 2h/24h/72h/7d/35d metrics join artifact→publication→account→campaign→install→trial→paid→proceeds; unavailable is not zero; one variable changes per challenger and keep/revert is consumed by the next run | open |
 | I-8 | Retire legacy marketing ownership | only after every retained lane passes seven expected cycles, OpenClaw/legacy launch state remains disabled as rollback history and Life Manager is the sole scheduler | open |
+
+### 12.2 Near-term mobile-marketing return TODO
+
+This is the remaining operational list for returning the existing mobile
+marketing fleet. It does not create a second scheduler and it does not enable
+the quarantined OpenClaw fleet. Only the first unchecked item is active.
+
+| ID | Atomic action | Account/lane | Done evidence |
+|---|---|---|---|
+| MKT-01 | Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; duplicate claim/effect/notification count is 0 |
+| MKT-02 | Read the Postiz integration registry and freeze a redacted lane manifest containing integration ID, provider, profile, locale, and disabled state | Honne EN, Honne JA, Anicca JP4, Anicca iOS | every target account has exactly one verified provider route; unknown IDs remain blocked rather than guessed |
+| MKT-03 | Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | one real public URL, one matching Telegram receipt, and replay creates no new effect |
+| MKT-04 | Run the retained Honne EN cadence and prove seven consecutive expected cycles | Honne EN: 07:00 / 11:00 / 20:30 Asia/Tokyo | every expected slot has one generation, publication, direct URL, notification, and observation receipt |
+| MKT-05 | Repair the known hook, asset, poster-argument, and environment-boundary defects before any publication | Honne JA `@honnevideo` | one clean shadow run and one controlled canary; no OpenClaw path/env/asset read |
+| MKT-06 | Restore the retained Honne JA slots, then record and prove a third daily slot in the Life Manager lane manifest | Honne JA: current recovery slots 12:30 / 21:30; third slot is not invented until the lane manifest records it | three expected slots/day pass seven cycles; old `honne-ja-fresh` remains disabled until separately proven |
+| MKT-07 | Repair and canary the JP4 lane, then run its three daily slots | Anicca JP4 `@anicca.jp4` | one account-specific public URL per canary, metrics receipt, and seven-cycle evidence |
+| MKT-08 | Repair and canary the iOS lane, then run its three daily slots | Anicca iOS `@anicca.jp` | one account-specific public URL per canary, metrics receipt, and seven-cycle evidence |
+| MKT-09 | Migrate the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale/cadence contract | remaining Anicca/Honne accounts | each account passes shadow → canary → seven cycles; no mass re-enable |
+| MKT-10 | Enable the three-posts-per-day policy only after the account’s canary and seven-cycle gate pass | every production-armed account | exactly three expected slots/day, no duplicate effects, no missed-slot silence |
+| MKT-11 | Collect Postiz post metrics at 2h/24h/72h/7d and join App Store Connect, RevenueCat, and product analytics by creative lineage | every published account | measured values remain measured; unavailable remains `null`/unavailable and never becomes 0 |
+| MKT-12 | Run bounded learning: change one hook/format/CTA variable, keep or revert from receipts, and prove the next run consumed the decision | Honne and Anicca separately | one-variable challenger, keep/revert receipt, and next-run consumption receipt |
+| MKT-13 | Retire legacy ownership only after every retained account passes the seven-cycle gate | entire mobile fleet | Life Manager is sole scheduler; old disabled state remains archived rollback evidence |
 
 The product-growth sequence after incident recovery remains: (1) close and prove
 marketing, (2) use App Store Connect, RevenueCat, Mixpanel/PostHog, reviews, and
