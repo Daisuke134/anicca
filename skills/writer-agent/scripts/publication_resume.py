@@ -145,6 +145,58 @@ class ResumeExhausted(RuntimeError):
     """The bounded full-invocation resume budget is exhausted."""
 
 
+def configured_destination_identities(
+    environ: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Resolve protected identities without allowing JA/EN Substack conflation."""
+
+    values = os.environ if environ is None else environ
+    identities = dict(EXPECTED_DESTINATION_IDENTITIES)
+    japanese = values.get("SUBSTACK_PUBLICATION_JA", "").strip().lower()
+    english = values.get("SUBSTACK_PUBLICATION_EN", "").strip().lower()
+    if not japanese:
+        japanese = identities["substack/ja"]
+    if not english:
+        raise InvariantError(
+            "SUBSTACK_PUBLICATION_EN is required for active-four initialization"
+        )
+    if japanese == english:
+        raise InvariantError(
+            "English Substack publication must be distinct from Japanese publication"
+        )
+    for pair, identity in (("substack/ja", japanese), ("substack/en", english)):
+        if not identity.endswith(".substack.com") or "/" in identity:
+            raise InvariantError(f"invalid Substack publication identity for {pair}")
+        identities[pair] = identity
+    return identities
+
+
+def validate_destination_identities(identities: Any) -> None:
+    """Validate persisted identity shape before any target or publisher action."""
+
+    if not isinstance(identities, dict):
+        raise InvariantError("destination identities must be an object")
+    if set(identities) != set(EXPECTED_DESTINATION_IDENTITIES):
+        raise InvariantError("destination identities have an unexpected pair set")
+    for pair, identity in identities.items():
+        if not isinstance(identity, str) or not identity.strip():
+            raise InvariantError(f"destination identity is missing for {pair}")
+        if pair not in {"substack/ja", "substack/en"} \
+                and identity.strip().lower() != EXPECTED_DESTINATION_IDENTITIES[pair]:
+            raise InvariantError(f"destination identity changed for {pair}")
+    japanese = identities["substack/ja"].strip().lower()
+    english = identities["substack/en"].strip().lower()
+    if any(
+        not value.endswith(".substack.com") or "/" in value
+        for value in (japanese, english)
+    ):
+        raise InvariantError("invalid Substack publication identity")
+    if japanese == english:
+        raise InvariantError(
+            "persisted English Substack identity must differ from Japanese identity"
+        )
+
+
 def validate_x_post_text(path: Path) -> int:
     """Use the same character contract as the live X publisher before freeze."""
     try:
@@ -584,7 +636,8 @@ def _remote_identity_verified(
 ) -> bool:
     expected = state.get("destination_identities", {}).get(pair)
     return bool(
-        expected == EXPECTED_DESTINATION_IDENTITIES[pair]
+        isinstance(expected, str)
+        and expected.strip()
         and remote.get("destination_identity") == expected
         and remote.get("identity_verified") is True
         and isinstance(remote.get("identity_source"), str)
@@ -965,6 +1018,7 @@ class PublicationStore:
     def _validate_state_boundary_locked(
         self, state: dict[str, Any], expected_run_dir: Path
     ) -> None:
+        validate_destination_identities(state.get("destination_identities"))
         stored_drafts = {
             lang: Path(str(state.get("drafts", {}).get(lang, {}).get("path", "")))
             for lang in ("ja", "en")
@@ -1036,10 +1090,9 @@ class PublicationStore:
         destination_identities = (
             dict(destination_identities)
             if destination_identities is not None
-            else dict(EXPECTED_DESTINATION_IDENTITIES)
+            else configured_destination_identities()
         )
-        if destination_identities != EXPECTED_DESTINATION_IDENTITIES:
-            raise InvariantError("destination identities must match the protected mapping")
+        validate_destination_identities(destination_identities)
         resolved_run = self._validate_layout(
             run_id,
             run_dir,

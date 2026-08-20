@@ -58,6 +58,18 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   commit後、同じCoconala型disk-guard/owner-fence laneで`claim-loop-latest.json`を再生成し、
   `DEMAND_CARD_INVALID`から`FILLED`または既存queueを保持する状態へ戻ることを実receiptで確認する。
 
+### 2026-08-21 Substack identity gate の再固定
+
+- 既存runのstateが`substack/ja`と`substack/en`を同じ`aniccabuddha.substack.com`として
+  保存していたため、英語と日本語を同一publicationへ混載しない契約に反していた。これは
+  live receiptではなく、公開前の誤ったintentである。
+- `publication_resume.py`は、active-four初期化時に`SUBSTACK_PUBLICATION_EN`を必須にし、
+  `SUBSTACK_PUBLICATION_JA`と異なる`.substack.com` hostだけをstateへ保存する。既存stateの
+  identity shapeもtarget/readback前に検証し、同一hostや他platform identityの差し替えはfail-closedにする。
+- focused identity check 2件と需要state check 2件、Python構文確認はPASS。英語publicationの
+  実host/credentialは未設定なので、Substack ENの公開URL・native readback・収益receiptは
+  まだ存在しない。設定が入るまでloopはJA/ENを同一Substackへ送らない。
+
 ### 2026-08-21 Coconala parity 再確認
 
 - Coconalaの実行実体は、常駐Supervisorではなく、launchdが
@@ -205,7 +217,7 @@ publication identity、読者、payout、ledgerを分ける。
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、Life Manager current release、実行時の旧root read=0 | 完了（launchd readbackは別TODO。履歴・互換文字列のcensus 0ではない） |
 | 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | TECHi本文のtransport-success/interstitialを7日以内のhash検証済み外部receiptへbounded reuseするfocused checkはPASS。再実行後のqueue→artifact parityは未確認 | 一部完了 |
-| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | 同一runに3 intent（Note JA、Substack JA、X Article JA）を保持。Substack ENの別publication identityが未設定のため native URL/readbackは未確認 | ブロッカー（EN identity） |
+| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | 同一runにNote JA、Substack JA、X Article JA、誤って同一hostのSubstack EN intentが残る。初期化gateは別`SUBSTACK_PUBLICATION_EN`必須へ修正済み。別publicationの実host/credentialが未設定のため native URL/readbackは未確認 | ブロッカー（EN identity） |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
 | 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID `26075`/`26087` + semantic hash | 一部完了 |
 | 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | Note live境界とidentity gateのfresh review | 進行中 |
