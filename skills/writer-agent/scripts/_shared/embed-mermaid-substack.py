@@ -65,6 +65,11 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+HTTP_DIR = Path(__file__).resolve().parents[1] / "substack-publish"
+if str(HTTP_DIR) not in sys.path:
+    sys.path.insert(0, str(HTTP_DIR))
+from substack_http import json_request as substack_json_request
+
 MIN_PNG_BYTES = 2000  # below this, kroki returned an error blob, not a real diagram
 CACHE_FILE = os.path.expanduser("~/.cloak/note-work/substack-img-cache.json")
 KROKI_UA = "Mozilla/5.0"  # kroki 403s urllib's bare default UA — measured
@@ -135,22 +140,23 @@ def save_cache(cache: dict) -> None:
 def upload_image(png_path: str, publication: str, cookie: str) -> str:
     data_uri = "data:image/png;base64," + base64.b64encode(Path(png_path).read_bytes()).decode("ascii")
     body = urllib.parse.urlencode({"image": data_uri}).encode("utf-8")
-    req = urllib.request.Request(
-        f"https://{publication}/api/v1/image",
-        data=body,
-        method="POST",
-        headers={
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Cookie": cookie,
-            "User-Agent": "Mozilla/5.0",
-        },
-    )
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
+        result = substack_json_request(
+            "POST",
+            f"https://{publication}/api/v1/image",
+            {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Cookie": cookie,
+                "User-Agent": "Mozilla/5.0",
+            },
+            timeout=60,
+            body=body,
+        )
     except urllib.error.HTTPError as e:
         fatal(f"Substack image upload failed for {png_path}: HTTP {e.code} {e.read()[:300]!r}")
     except urllib.error.URLError as e:
+        fatal(f"Substack image upload failed for {png_path}: {e}")
+    except OSError as e:
         fatal(f"Substack image upload failed for {png_path}: {e}")
     url = result.get("url")
     if not url:

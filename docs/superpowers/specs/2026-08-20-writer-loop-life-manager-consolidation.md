@@ -211,6 +211,10 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - Substackのmanaged resumeは、画像upload/同一ID PUTを行うrefreshがlive guardより先に呼ばれるため、refresh自身が
   authenticated draft readbackの`is_published=false`かつ`post_date`空を必須にする。既公開または曖昧なdraftでは
   media upload/PUTを一切行わず拒否し、receipt欠落時の既公開記事上書きを防ぐ。
+- Substackの通常DNSが`nodename nor servname`で失敗し、`nslookup`と`curl --resolve`だけが到達できる環境差を
+  実測した。Coconala release watcherと同じく、通常urllib/curlを先に試し、DNS failure時だけ`nslookup`のIPv4を
+  TLS hostnameへ固定するtransport fallbackを使う。identity hostはSubstack domainに限定し、IP直指定をreceiptやURLへ
+  保存しない。
 
 ## 目標構成
 

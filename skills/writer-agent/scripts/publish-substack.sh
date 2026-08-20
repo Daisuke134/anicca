@@ -9,6 +9,7 @@
 
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$DIR/substack-publish/substack-curl.sh"
 
 MD_FILE=""
 TITLE=""
@@ -39,7 +40,7 @@ SUBDOMAIN="${PUBLICATION%.substack.com}"
 # Resolve the byline from the authenticated publication ownership response.
 # A hard-coded user ID can silently publish under the wrong identity after an
 # account migration; exactly one owned publication/user match is required.
-PROFILE="$(curl -sS --fail-with-body \
+PROFILE="$(substack_curl substack.com -sS --fail-with-body \
   "https://substack.com/api/v1/user/profile/self" \
   -H "Cookie: ${SUBSTACK_SESSION_COOKIE}" \
   -H "User-Agent: Mozilla/5.0" \
@@ -74,7 +75,7 @@ PAYLOAD="$(printf '%s' "$BODY_MD" | python3 \
   --minimum-free-chars "${SUBSTACK_MINIMUM_FREE_CHARS:-1000}")"
 
 # POST to Substack draft creation endpoint
-RESP="$(curl -sS \
+RESP="$(substack_curl "$PUBLICATION" -sS \
   -X POST "https://${PUBLICATION}/api/v1/drafts" \
   -H "Content-Type: application/json" \
   -H "Cookie: ${SUBSTACK_SESSION_COOKIE}" \

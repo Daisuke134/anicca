@@ -13,6 +13,7 @@
 #   publish-substack-mermaid.sh enable-publish | disable-publish
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # .../scripts
+. "$DIR/substack-publish/substack-curl.sh"
 VC="${VC:-$HOME/.openclaw/skills/_shared/venv-cloak/bin/python3}"   # only for the verify-preview vision gate
 WORK="$HOME/.cloak/note-work"; mkdir -p "$WORK"
 
@@ -138,7 +139,7 @@ case "$cmd" in
       # The create/repair request is not evidence that Substack retained the
       # subscriber contract. Refuse the live side effect unless authenticated
       # readback shows only_paid + free preview + exactly one paywall node.
-      PAID_DRAFT_READBACK="$(curl -sS --fail-with-body \
+      PAID_DRAFT_READBACK="$(substack_curl "$SUBSTACK_PUBLICATION" -sS --fail-with-body \
         "https://${SUBSTACK_PUBLICATION}/api/v1/drafts/${DRAFT_ID}" \
         -H "Cookie: ${SUBSTACK_SESSION_COOKIE}" \
         -H "User-Agent: Mozilla/5.0" \
@@ -169,7 +170,7 @@ case "$cmd" in
         echo "WARN: verify-preview venv not found at $VC, skipping the pre-publish vision gate (image-size risk not checked)." >&2
       fi
 
-      RESP="$(curl -sS -X POST "https://${SUBSTACK_PUBLICATION}/api/v1/drafts/${DRAFT_ID}/publish" \
+      RESP="$(substack_curl "$SUBSTACK_PUBLICATION" -sS -X POST "https://${SUBSTACK_PUBLICATION}/api/v1/drafts/${DRAFT_ID}/publish" \
         -H "Content-Type: application/json" \
         -H "Cookie: ${SUBSTACK_SESSION_COOKIE}" \
         -H "User-Agent: Mozilla/5.0" \
@@ -195,7 +196,7 @@ case "$cmd" in
       TITLE_SEEN=0
       for _ATTEMPT in 1 2 3 4 5; do
         sleep 2
-        LIVE_HTML="$(curl -sS -H "User-Agent: Mozilla/5.0" "$LIVE_URL")"
+        LIVE_HTML="$(substack_curl "$SUBSTACK_PUBLICATION" -sS -H "User-Agent: Mozilla/5.0" "$LIVE_URL")"
         case "$LIVE_HTML" in
           *"$TITLE"*) TITLE_SEEN=1; break ;;
         esac

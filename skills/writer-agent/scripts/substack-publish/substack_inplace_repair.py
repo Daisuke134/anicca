@@ -10,7 +10,6 @@ import json
 import os
 import subprocess
 import sys
-import urllib.request
 from pathlib import Path
 # --- fail-closed PII gate wiring ---------------------------------------------------
 # gate_run_dir raises SystemExit (non-zero) on a finding, a missing blocklist, an unreadable
@@ -26,6 +25,11 @@ from pii_gate import gate_run_dir  # noqa: E402
 
 from typing import Any
 from urllib.parse import urlparse
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+from substack_http import json_request
 
 
 class SubstackRepairRefused(RuntimeError):
@@ -94,24 +98,18 @@ def _request(
         if path.startswith("https://")
         else f"https://{_publication()}{path}"
     )
-    data = (
-        json.dumps(payload).encode("utf-8")
-        if payload is not None
-        else None
-    )
-    request = urllib.request.Request(
+    return json_request(
+        method,
         url,
-        data=data,
-        method=method,
-        headers={
+        {
             "Cookie": _cookie(),
             "User-Agent": "Mozilla/5.0",
             "Accept": "application/json",
             "Content-Type": "application/json",
         },
+        payload,
+        timeout=45,
     )
-    with urllib.request.urlopen(request, timeout=45) as response:
-        return json.load(response)
 
 
 def _identity() -> int:

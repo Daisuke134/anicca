@@ -24,6 +24,11 @@ from urllib.parse import quote, unquote, urlparse
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+SUBSTACK_HTTP_DIR = SCRIPT_DIR / "substack-publish"
+if str(SUBSTACK_HTTP_DIR) not in sys.path:
+    sys.path.insert(0, str(SUBSTACK_HTTP_DIR))
+from substack_http import json_request as substack_json_request
+from substack_http import text_request as substack_text_request
 from media_integrity import (
     center_crop_content_proof,
     NOTE_EYECATCH_RATIO_WINDOW,
@@ -540,6 +545,15 @@ def hosted_asset_count(remote_html: str, *, hosts: set[str] | None = None) -> in
 
 
 def get_json(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:
+    if (urlparse(url).hostname or "").lower().endswith(".substack.com") or (
+        urlparse(url).hostname or ""
+    ).lower() == "substack.com":
+        value = substack_json_request(
+            "GET", url, headers or {"User-Agent": "Mozilla/5.0"}, timeout=25
+        )
+        if not isinstance(value, dict):
+            raise ValueError("remote did not return a JSON object")
+        return value
     request = urllib.request.Request(url, headers=headers or {"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(request, timeout=25) as response:
         value = json.load(response)
@@ -549,6 +563,16 @@ def get_json(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:
 
 
 def get_text(url: str, headers: dict[str, str] | None = None) -> str:
+    if (urlparse(url).hostname or "").lower().endswith(".substack.com") or (
+        urlparse(url).hostname or ""
+    ).lower() == "substack.com":
+        value, _ = substack_text_request(
+            url,
+            headers or {"User-Agent": "Mozilla/5.0"},
+            timeout=30,
+            final_url=True,
+        )
+        return value
     request = urllib.request.Request(url, headers=headers or {"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(request, timeout=30) as response:
         return response.read().decode("utf-8", errors="replace")
@@ -558,6 +582,16 @@ def get_text_with_final_url(
     url: str, headers: dict[str, str] | None = None
 ) -> tuple[str, str]:
     """Read a page and retain the URL after urllib follows redirects."""
+    if (urlparse(url).hostname or "").lower().endswith(".substack.com") or (
+        urlparse(url).hostname or ""
+    ).lower() == "substack.com":
+        value, final_url = substack_text_request(
+            url,
+            headers or {"User-Agent": "Mozilla/5.0"},
+            timeout=30,
+            final_url=True,
+        )
+        return value, final_url or url
     request = urllib.request.Request(
         url, headers=headers or {"User-Agent": "Mozilla/5.0"}
     )
