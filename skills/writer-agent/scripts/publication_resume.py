@@ -27,6 +27,9 @@ from urllib.parse import urlparse
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in os.sys.path:
     os.sys.path.insert(0, str(SCRIPT_DIR))
+SUBSTACK_HTTP_DIR = SCRIPT_DIR / "substack-publish"
+if str(SUBSTACK_HTTP_DIR) not in os.sys.path:
+    os.sys.path.insert(0, str(SUBSTACK_HTTP_DIR))
 
 
 def _ensure_media_capable_interpreter() -> None:
@@ -79,6 +82,7 @@ from publication_contract import (
     LEGACY_EXACT8_PAIRS,
     SUPPORTED_PAIRS,
 )
+from substack_http import bytes_request as substack_bytes_request
 from publication_contract_resolver import (
     ACTIVE_ALIAS,
     PublicationContractError,
@@ -637,6 +641,16 @@ def fetch_remote_asset(url: str, _expected: dict[str, Any]) -> bytes:
         and str(expected_path).startswith(("/tmp/", "/private/tmp/"))
     ):
         return expected_path.read_bytes()
+    host = (urlparse(url).hostname or "").lower()
+    if host in {"substack-post-media.s3.amazonaws.com", "substackcdn.com"}:
+        data, content_type = substack_bytes_request(
+            url, {"User-Agent": "writer-agent/1"}, timeout=30
+        )
+        if len(data) > 25 * 1024 * 1024:
+            raise InvariantError("public asset exceeds verification limit")
+        if not content_type.startswith("image/"):
+            raise InvariantError("public asset readback is not an image")
+        return data
     request = urllib.request.Request(url, headers={"User-Agent": "writer-agent/1"})
     with urllib.request.urlopen(request, timeout=30) as response:
         content_type = str(response.headers.get("Content-Type", "")).lower()

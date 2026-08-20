@@ -64,3 +64,23 @@ def test_publication_readback_routes_substack_cdn_through_transport(
         lambda *args, **kwargs: (b"asset", "image/png"),
     )
     assert remote.get_bytes("https://substackcdn.com/image/fetch/a.png") == b"asset"
+
+
+def test_publication_receipt_reread_routes_substack_cdn_through_transport(
+    monkeypatch,
+) -> None:
+    resume_path = Path(__file__).parents[1] / "scripts" / "publication_resume.py"
+    resume_spec = importlib.util.spec_from_file_location(
+        "publication_resume_test_module", resume_path
+    )
+    resume = importlib.util.module_from_spec(resume_spec)
+    assert resume_spec.loader is not None
+    resume_spec.loader.exec_module(resume)
+    monkeypatch.setattr(
+        resume,
+        "substack_bytes_request",
+        lambda *args, **kwargs: (b"asset", "image/png"),
+    )
+    assert resume.fetch_remote_asset(
+        "https://substackcdn.com/image/fetch/a.png", {}
+    ) == b"asset"
