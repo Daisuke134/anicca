@@ -1978,7 +1978,22 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
         )
         if owner.get("status") != "ok" or step_result_status.status_from_evidence(owner_evidence) != "ok":
             raise Failure("file_builder")
-        _promote_staged_file_bundle(staging, root, expected_version)
+        try:
+            _promote_staged_file_bundle(staging, root, expected_version)
+        except (AttributeError, OSError, ValueError, TypeError, json.JSONDecodeError, Failure) as error:
+            manifest = _load(staging / "delivery" / "paid-work-result.json")
+            acceptance_path = Path(_text(manifest.get("acceptance_evidence_path"))) if isinstance(manifest, dict) else Path()
+            if acceptance_path and not acceptance_path.is_absolute():
+                acceptance_path = staging / acceptance_path
+            _write(owner_evidence / "promotion-error.json", {
+                "version": 1,
+                "error_type": type(error).__name__,
+                "error": str(error),
+                "expected_artifact_version": expected_version,
+                "manifest": manifest,
+                "acceptance": _load(acceptance_path) if acceptance_path.is_file() else None,
+            })
+            raise
         return started
 
 
