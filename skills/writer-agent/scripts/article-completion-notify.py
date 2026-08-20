@@ -270,6 +270,11 @@ def openclaw_transport(target: str) -> Transport:
         raise ValueError("Telegram target is required")
 
     def send(message: str) -> str:
+        timeout_seconds = float(
+            os.environ.get("ARTICLE_TELEGRAM_TIMEOUT_SECONDS", "30")
+        )
+        if timeout_seconds <= 0:
+            raise ValueError("ARTICLE_TELEGRAM_TIMEOUT_SECONDS must be positive")
         result = subprocess.run(
             [
                 "openclaw",
@@ -286,6 +291,7 @@ def openclaw_transport(target: str) -> Transport:
             check=True,
             capture_output=True,
             text=True,
+            timeout=timeout_seconds,
         )
         value = json.loads(result.stdout)
         message_id = str(value.get("messageId", "")).strip()
@@ -346,6 +352,7 @@ def main() -> int:
         RuntimeError,
         json.JSONDecodeError,
         subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
     ) as error:
         print(f"completion notification pending: {error}", file=sys.stderr)
         return 75
