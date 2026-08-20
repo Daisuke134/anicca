@@ -201,10 +201,11 @@ receipt is `status: operator_brake / effect: 0`. At the next real watcher tick, 
 published `current -> 7f6e44d4f...`, replaced the legacy `05b75fc29` definition once and read the
 loaded Apply command back as `/current/.../gig_disk_guard.py`. The brake was then released. Apply's
 first post-migration natural business start, PID 90319, resolved both `application_direct.py` and
-`agent_runner.py` through `/current/`; it then submitted request `5222771` at ¥27,000 and found that
-same ID in official application history. The active exhaustive pass was left untouched. One further natural Apply
-start and the absence of any `05b75fc29` respawn remain before this acceptance item is closed.
-Negotiate, Storefront and Paid already run through `current`.
+`agent_runner.py` through `/current/`; it completed with 40 observed, four submitted, four official
+readbacks, zero failed and three durable pending. The next natural start, PID 51887, again resolved
+both entrypoints through `/current/`. The loaded plist contains only `/current/` paths and no live
+process contains `05b75fc29`. Apply therefore joins Negotiate, Storefront and Paid on the stable
+definition and A0 acceptance is closed.
 
 #### A. Restore safe operating headroom
 
@@ -252,7 +253,10 @@ Negotiate, Storefront and Paid already run through `current`.
   navigation timeouts, including `5222409`. Their structured decisions were present; the Telegram
   formatter incorrectly called every transient failure a missing decision. Source now distinguishes
   decision failure from readback failure and retries official readback once on a fresh target without
-  clicking submit again. Live exhaustive-pass proof remains.
+  clicking submit again. Natural `current` pass
+  `gig-apply-direct-1787210299529825000-90319` observed 40, submitted and officially read back four,
+  failed zero and retained three confirmation-pending rows for the next pass. Coverage remains open
+  until those three receive terminal official dispositions and the source traversal exhausts.
 - [x] Restore semantic scope fidelity before another exhaustive pass. Request `5217691`
   (`発泡ウレタンで等身大の女性を製作したい`) had repeatedly been classified correctly as
   `physical_or_onsite`, but pass `gig-apply-direct-1787206162452874000-19745` re-planned it as
