@@ -221,6 +221,7 @@ def planner_prompt(envelope: dict) -> str:
         "For every request, make your own feasibility judgment from its actual visible details. Do not claim\n"
         "that anything was opened, filled, clicked, submitted, verified, or saved. Return JSON that matches\n"
         "the supplied schema exactly, with one decision for every request ID. Order the decision rows for execution: first\n"
+        "Every decision object has exactly these seven fields: request_id, business_class, reason_codes, proposal_text, price_jpy, price_basis, deliver_date. For submit_required, price_basis is exactly buyer_explicit or planner_selected. For hard_prohibited, proposal_text, price_jpy, price_basis, and deliver_date are null.\n"
         "submit_required coding, AI, system, automation, and other high-reward work; within that group prefer higher expected\n"
         "reward, then place every other submit_required row. Never omit lower-priority feasible work. Put hard_prohibited rows\n"
         "after submit_required rows. If more than 20 rows are feasible, the first 20 submit_required rows must be the strongest\n"
