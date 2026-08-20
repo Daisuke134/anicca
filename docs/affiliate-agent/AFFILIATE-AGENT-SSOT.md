@@ -170,6 +170,11 @@ deployment adapter for these same contracts, not a second implementation.
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
+Current override: the installed runtime is `cf7f19241`, not the older release
+identifier retained in historical table rows below. The 08:06 JST owner
+readback and Telegram `26784` recovery receipt in section 1.1.2 are the current
+runtime truth; no official transaction or money exists.
+
 This table prevents tests, fixtures, screenshots, or plans from being reported as
 live autonomous operation.
 
@@ -196,6 +201,21 @@ is still the prior empty `de2287adc…b91d4fe` report, so no transaction,
 settlement, payout, commission transition, or money changed. This is a provider
 path failure, not evidence of zero revenue; B01 remains
 `WAITING_FOR_PROVIDER_TRANSACTION`.
+
+### 1.1.2 Installed revenue-failure receipt repair
+
+Release `cf7f19241` adds a replay-safe `REVENUE_CYCLE_FAILED` Telegram candidate
+from the durable failure receipt. It reports only typed stage/failure state and
+does not expose raw tracking links or secrets. Existing `69/69` tests, Python
+compilation, and a no-network replay fixture passed. The immutable release is
+installed as `current` with source/installed `local_loop.py` SHA-256
+`34c66744…42b13a80`; launchd browser bootstrap still returns `141`, so all-owner
+load is not claimed. The existing owner nevertheless ran the installed release
+at `2026-08-21T08:06:20+0900`, recovered the PartnerStack cycle to
+`NO_TRANSACTIONS` (`source_rows=0`, `appended_transitions=0`), and delivered the
+recovery receipt as Telegram `26784` (`SELF_HEALED`) with linked delivery event
+`7db20f65…6c854`. No transaction, settlement, payout, commission, or money
+changed; the prior `07:55:09+0900` links failure remains historical evidence.
 
 ### 1.2.0 Audited executable boundary
 
