@@ -841,3 +841,32 @@ owner receipt `26604` reports the state. The canonical ledger is now 19 rows,
 19 provider-link keys, 18 owned public URLs, 32 clicks, 16 insufficient plus 3
 observed Dev.to denominators, and zero commission statuses; all real cash costs
 remain unknown. The new row is not mature and cannot receive allocation credit.
+
+At `2026-08-21T05:56:18+0900`, the existing Affiliate owner naturally selected
+`elevenlabs-discovered-realtime-speech-to-text-en-1` from the bounded English
+opportunity path and created one verified PartnerStack link. The durable program
+link receipt is `VERIFIED` and the placement ledger grew to 20 rows: 20 private
+provider-link keys, 19 owned public URLs, 32 provider clicks, 17 insufficient plus
+3 observed Dev.to denominators, and zero pending/approved/paid/reversed rows. The
+wake event stopped at `WAITING_FOR_PLACEMENT_LINK`; its generic placement identity
+was missing from the owner event, so Telegram `26662` contained only the separate
+Repost observation. No public URL, transaction, commission, or money was created.
+
+Codex repaired that observability gap in release
+`1c5faf4ff7d9d70cf3f2a4e607ae11b81e1aca28`: generic publication now returns
+`publication_link_*` receipt fields to the existing owner event, and the owner
+emits one redacted `PLACEMENT_LINK_VERIFIED` Telegram receipt without printing a
+raw tracking link or provider key. The existing Affiliate suite remained `69`
+tests `OK`; Python compilation, source byte equality, the immutable `current`
+symlink, ownership receipt, and CDP `9324/9326/9327` version readback passed. The
+installer still reports only the known launchd bootstrap `141: Reentrancy avoided`;
+no parallel executor or direct public/provider effect was started.
+
+The next natural owner wake at `2026-08-21T06:07:09+0900` read back the same durable
+link as `VERIFIED` with `deduplicated=true`, kept the campaign at
+`publication_state=OWNED_NOT_LIVE`, and sent Telegram `26680` with
+`PLACEMENT_LINK_VERIFIED`. No second link effect, owned page, X post, provider
+transaction, commission, payout, or money was created. Rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, approved/paid net is
+null, status counts are all zero, and real costs remain `UNKNOWN`; B01 still waits
+for the first non-empty official provider transaction and exact placement join.
