@@ -208,6 +208,9 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   `staged:<token>`/`unavailable:<token>`だけをno-effect行として許容する。`provider_receipt`、
   `post_id`、`url`など未知または外部作用を示せるキー、`staged:published`/`unavailable:live`は拒否し、
   それ以外のEN rowはlive不確実性として扱う。
+- Substackのmanaged resumeは、画像upload/同一ID PUTを行うrefreshがlive guardより先に呼ばれるため、refresh自身が
+  authenticated draft readbackの`is_published=false`かつ`post_date`空を必須にする。既公開または曖昧なdraftでは
+  media upload/PUTを一切行わず拒否し、receipt欠落時の既公開記事上書きを防ぐ。
 
 ## 目標構成
 

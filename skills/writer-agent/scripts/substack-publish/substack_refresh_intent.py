@@ -54,6 +54,14 @@ def refresh(pair):
     old=m._request("GET",f"/api/v1/drafts/{target}")
     if not isinstance(old, dict) or str(old.get("id", "")) != target:
         raise m.SubstackRepairRefused("draft identity readback missing")
+    # Refresh uploads media and PUTs the same draft ID.  The managed publisher
+    # may call this before its live-publish guard, so the readback here is an
+    # independent no-mutation boundary: a missing receipt must never turn an
+    # already-live (or ambiguous) draft into an overwrite target.
+    if old.get("is_published") is not False or old.get("post_date"):
+        raise m.SubstackRepairRefused(
+            "exact Substack draft is live or ambiguous; refresh refused"
+        )
     draft_publication=_authenticated_draft_publication_host(old)
     if not draft_publication:
         raise m.SubstackRepairRefused("draft publication identity readback missing")
