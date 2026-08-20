@@ -75,7 +75,7 @@ def _git(repo: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
 
 def stage() -> dict[str, str]:
     article_date = os.environ.get("ARTICLE_DATE", date.today().isoformat())
-    workspace = Path.home() / ".openclaw/workspace/article-writer"
+    workspace = Path.home() / ".openclaw/workspace/writer-agent"
     source_path = workspace / "drafts" / article_date / "ja.md"
     repo = Path(
         os.environ.get(

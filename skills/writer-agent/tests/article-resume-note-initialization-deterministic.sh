@@ -5,11 +5,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-FAKE_ROOT="$TMP/article-writer"
+FAKE_ROOT="$TMP/writer-agent"
 STATE_DIR="$TMP/state"
 RUN_DIR="$STATE_DIR/runs/daily-2026-07-29"
 mkdir -p "$FAKE_ROOT/scripts" "$FAKE_ROOT/runtime" "$RUN_DIR/gates"
 cp "$ROOT/scripts/article-resume-pending.sh" "$FAKE_ROOT/scripts/"
+cp "$ROOT/scripts/publication_contract_resolver.py" "$FAKE_ROOT/scripts/"
+cp "$ROOT/scripts/publication_contract.py" "$FAKE_ROOT/scripts/"
 cp "$ROOT/scripts/execute-initialization-pair.py" "$FAKE_ROOT/scripts/" 2>/dev/null || true
 
 cat >"$FAKE_ROOT/scripts/article_daily_start_control.py" <<'PY'
@@ -53,11 +55,11 @@ open(os.environ["CALL_LOG"], "a").write("called\n")
 PY
 
 cat >"$RUN_DIR/gates/publication-state.json" <<JSON
-{"run_id":"daily-2026-07-29","pairs":{}}
+{"version":1,"publication_contract":"active-six","run_id":"daily-2026-07-29","pairs":{"x-article/en":{"status":"skipped","skip_receipt":{"type":"dormant-destination","pair":"x-article/en","reason":"dormant-destination","slo":"not-applicable","recorded_at":"2026-08-05T00:00:00Z"}},"x-post/ja":{"status":"skipped","skip_receipt":{"type":"dormant-destination","pair":"x-post/ja","reason":"dormant-destination","slo":"not-applicable","recorded_at":"2026-08-05T00:00:00Z"}}}}
 JSON
 : >"$STATE_DIR/articles.jsonl"
 cat >"$RUN_DIR/gates/platform-dispatch.jsonl" <<JSONL
-{"platform":"note","lang":"ja","argv":["python3","$FAKE_ROOT/scripts/fake-note-stage.py"],"env":{"ARTICLE_RUN_DIR":"$RUN_DIR","ARTICLE_PUBLICATION_STATE":"$RUN_DIR/gates/publication-state.json","ARTICLE_LEDGER":"$STATE_DIR/articles.jsonl","ARTICLE_AUTOPUBLISH":"1","ARTICLE_PUBLISH_PAIR":"note/ja","CALL_LOG":"$TMP/calls"}}
+{"platform":"note","lang":"ja","argv":["python3","$FAKE_ROOT/scripts/fake-note-stage.py"],"env":{"ARTICLE_RUN_DIR":"$RUN_DIR","ARTICLE_PUBLICATION_STATE":"$RUN_DIR/gates/publication-state.json","ARTICLE_LEDGER":"$STATE_DIR/articles.jsonl","CALL_LOG":"$TMP/calls"}}
 JSONL
 
 if ! ARTICLE_ROOT="$FAKE_ROOT" \

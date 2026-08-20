@@ -11,7 +11,7 @@
   <array>
     <string>/bin/bash</string>
     <string>-c</string>
-    <string>/Users/anicca/profitable-claude/skills/article-writer/scripts/craft-train.sh; /Users/anicca/profitable-claude/skills/article-writer/scripts/craft-train-notify.sh</string>
+    <string>/Users/anicca/profitable-claude/skills/writer-agent/scripts/craft-train.sh; /Users/anicca/profitable-claude/skills/writer-agent/scripts/craft-train-notify.sh</string>
   </array>
 
   <key>StartCalendarInterval</key>

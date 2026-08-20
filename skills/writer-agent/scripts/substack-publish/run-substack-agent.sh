@@ -5,7 +5,7 @@
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROMPT="$DIR/substack-agent-prompt.md"
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/article-writer/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
 AUTONOMY="${AUTONOMY:-off}"
 MD=""; TITLE=""; PAID_FROM="実際に動かす"
 while [ $# -gt 0 ]; do case "$1" in

@@ -4,7 +4,7 @@
 <!--
   #67 (2026-07-17, docs/loop-engineering/54-orphan-script-audit-2026-07-17.md finding 2):
   learn-whitelist.sh's own header says "Triggered weekly by
-  ai-entity-article-writer-whitelist-learn cron (Sun 03:00 JST)" but no such trigger (cron
+  Writer Agent whitelist-learning cron (Sun 03:00 JST)" but no such trigger (cron
   or launchd) actually existed anywhere on this machine; confirmed via `openclaw cron
   list` (zero hits) and a fresh launchd plist search before this file was added. Weekday
   0 = Sunday (launchd/cron convention).
@@ -20,7 +20,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/profitable-claude/skills/article-writer/scripts/learn-whitelist.sh</string>
+    <string>/Users/anicca/profitable-claude/skills/writer-agent/scripts/learn-whitelist.sh</string>
   </array>
 
   <key>StartCalendarInterval</key>

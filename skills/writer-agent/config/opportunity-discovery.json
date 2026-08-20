@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "index_url": "https://raw.githubusercontent.com/rohitg00/technical-writing-websites/main/readme.md",
+  "verification_budget": 5,
+  "candidate_max_attempts": 3,
+  "candidate_retry_hours": 24,
+  "pitch_budget": 2,
+  "recheck_budget": 5,
+  "recheck_cadence_days": {
+    "DISCOVERED": 1,
+    "VERIFIED_OPEN": 1,
+    "POLICY_CLEAR": 1,
+    "VALUE_UNKNOWN": 7,
+    "CLOSED": 30,
+    "REJECTED_POLICY": 30,
+    "EXPIRED": 30
+  }
+}

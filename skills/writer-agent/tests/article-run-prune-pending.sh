@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-PRUNE="$ROOT/skills/article-writer/scripts/prune-article-runs.py"
-DAILY="$ROOT/skills/article-writer/article-daily.sh"
+PRUNE="$ROOT/skills/writer-agent/scripts/prune-article-runs.py"
+DAILY="$ROOT/skills/writer-agent/article-daily.sh"
 TMP="$(mktemp -d /tmp/article-run-prune.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 RUNS="$TMP/runs"

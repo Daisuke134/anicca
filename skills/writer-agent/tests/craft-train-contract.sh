@@ -11,7 +11,7 @@
 set -uo pipefail
 
 ROOT="${PROFITABLE_CLAUDE_ROOT:-$HOME/profitable-claude}"
-SKILL_DIR="$ROOT/skills/article-writer"
+SKILL_DIR="$ROOT/skills/writer-agent"
 VENDOR_DIR="$SKILL_DIR/vendor/skillopt-writing"
 
 PY="${ARTICLE_PYTHON:-/opt/homebrew/bin/python3}"

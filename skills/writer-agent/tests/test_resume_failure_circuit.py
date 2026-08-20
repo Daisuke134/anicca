@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -177,3 +178,53 @@ def test_run_stops_identical_command_failure_and_notifies_once(tmp_path: Path) -
     assert "note/ja" in messages[0]
     assert "TimeoutError: upload button is absent" in messages[0]
     assert "same-failure-circuit-open" in log.read_text()
+
+
+def test_run_bounds_a_hung_publisher_and_records_timeout(tmp_path: Path) -> None:
+    """A publisher that never returns cannot occupy the resume worker forever."""
+    circuit = tmp_path / "circuit.json"
+    state = tmp_path / "publication-state.json"
+    code = tmp_path / "publisher.py"
+    log = tmp_path / "resume.log"
+    command = tmp_path / "hang"
+    state.write_text('{"pairs":{"note/ja":{"status":"intent"}}}\n')
+    code.write_text("version = 1\n")
+    command.write_text("#!/usr/bin/env bash\nsleep 30\n")
+    command.chmod(0o755)
+    argv = [
+        sys.executable,
+        str(SCRIPT),
+        "run",
+        "--circuit",
+        str(circuit),
+        "--state",
+        str(state),
+        "--code-file",
+        str(code),
+        "--pair",
+        "note/ja",
+        "--threshold",
+        "2",
+        "--timeout-seconds",
+        "0.1",
+        "--log",
+        str(log),
+        "--",
+        str(command),
+    ]
+
+    started = time.monotonic()
+    completed = subprocess.run(argv, text=True, capture_output=True, check=False)
+    elapsed = time.monotonic() - started
+
+    assert completed.returncode == 124
+    assert elapsed < 2
+    decision = json.loads(completed.stdout)
+    assert decision == {
+        "action": "retry",
+        "count": 1,
+        "notify": False,
+        "pair": "note/ja",
+        "signature": "publisher-timeout-seconds=0.1",
+    }
+    assert "publisher-timeout-seconds=0.1" in log.read_text()

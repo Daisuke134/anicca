@@ -19,7 +19,7 @@ def test_worker_recovers_ambiguous_note_then_repairs_same_key(
     tmp_path: Path,
 ) -> None:
     """Two deterministic ticks must recover and repair without a model or new note."""
-    fake_root = tmp_path / "article-writer"
+    fake_root = tmp_path / "writer-agent"
     state_dir = tmp_path / "state"
     note_mcp = tmp_path / "note-mcp"
     run_dir = state_dir / "runs" / "daily-2026-07-30"
@@ -33,6 +33,8 @@ def test_worker_recovers_ambiguous_note_then_repairs_same_key(
     gates.mkdir(parents=True)
     for name in ("article-resume-pending.sh", "resume_failure_circuit.py"):
         shutil.copy(ROOT / "scripts" / name, scripts)
+    shutil.copy(ROOT / "scripts" / "publication_contract_resolver.py", scripts)
+    shutil.copy(ROOT / "scripts" / "publication_contract.py", scripts)
     shutil.copy(ROOT / "scripts" / "_shared" / "notifier.sh", scripts / "_shared")
     (scripts / "note-publish" / "set-eyecatch-draft.py").write_text(
         "selector_version = 1\n"
@@ -110,6 +112,7 @@ def test_worker_recovers_ambiguous_note_then_repairs_same_key(
             {
                 "version": 1,
                 "run_id": "daily-2026-07-30",
+                "publication_contract": "active-six",
                 "pairs": {
                     "note/ja": {
                         "status": "ambiguous",

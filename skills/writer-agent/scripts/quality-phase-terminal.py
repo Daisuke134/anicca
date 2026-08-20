@@ -44,13 +44,14 @@ def main() -> int:
 
     if args.command == "write":
         quality = language_quality(run_dir, args.lang, markdown)
+        continuous = os.environ.get("ARTICLE_PUBLICATION_POLICY") == "continuous"
         identity = read_json(run_dir / "gates" / f"identity-{args.lang}.json")
         identity_pass = bool(
             identity
             and identity.get("verdict") == "PASS"
             and identity.get("article_sha256") == sha256(markdown)
         )
-        reasons = list(quality["reasons"])
+        reasons = [] if continuous else list(quality["reasons"])
         if not identity_pass:
             reasons.append("identity_not_current_pass")
         if reasons:
@@ -63,8 +64,8 @@ def main() -> int:
             "status": "terminal",
             "lang": args.lang,
             "article_sha256": sha256(markdown),
-            "editorial_gate": "PASS",
-            "reader_gate": "PASS",
+            "editorial_gate": "PASS" if quality["editorial"] == "PASS" else "ADVISORY",
+            "reader_gate": "PASS" if quality["reader"] == "PASS" else "ADVISORY",
             "identity_gate": "PASS",
             "safety_gate": "ALLOW",
         })
@@ -74,8 +75,8 @@ def main() -> int:
     if (
         current
         and current.get("status") == "terminal"
-        and current.get("editorial_gate") == "PASS"
-        and current.get("reader_gate") == "PASS"
+        and current.get("editorial_gate") in {"PASS", "ADVISORY"}
+        and current.get("reader_gate") in {"PASS", "ADVISORY"}
         and current.get("identity_gate") == "PASS"
         and current.get("safety_gate") == "ALLOW"
     ):

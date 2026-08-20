@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -316,10 +317,36 @@ def prepare_remote_retry(args: argparse.Namespace, artifact: dict[str, Any], slu
         raise InvariantViolation(str(error)) from error
     if source_title != artifact.get("title"):
         raise InvariantViolation("origin/main title does not match deferred artifact")
-    tree = subprocess.run(
-        ["git", "-C", str(repo), "rev-parse", f"{base}^{{tree}}"],
-        check=True, capture_output=True, text=True,
-    ).stdout.strip()
+    marker = f"<!-- zenn-deferred-retry:{base} -->"
+    retry_source = re.sub(
+        r"(?m)^<!-- zenn-deferred-retry:[0-9a-f]{40} -->\n?",
+        "",
+        source,
+    )
+    retry_source = retry_source.rstrip("\n") + f"\n{marker}\n"
+    with tempfile.TemporaryDirectory(
+        prefix=".zenn-deferred-index-", dir=repo.parent
+    ) as temporary:
+        index_env = {**os.environ, "GIT_INDEX_FILE": str(Path(temporary) / "index")}
+        subprocess.run(
+            ["git", "-C", str(repo), "read-tree", base],
+            check=True, capture_output=True, text=True, env=index_env,
+        )
+        blob = subprocess.run(
+            ["git", "-C", str(repo), "hash-object", "-w", "--stdin"],
+            check=True, capture_output=True, text=True, input=retry_source,
+        ).stdout.strip()
+        subprocess.run(
+            [
+                "git", "-C", str(repo), "update-index", "--add", "--cacheinfo",
+                "100644", blob, f"articles/{slug}.md",
+            ],
+            check=True, capture_output=True, text=True, env=index_env,
+        )
+        tree = subprocess.run(
+            ["git", "-C", str(repo), "write-tree"],
+            check=True, capture_output=True, text=True, env=index_env,
+        ).stdout.strip()
     commit_env = os.environ.copy()
     commit_env.update({
         "GIT_AUTHOR_NAME": "anicca", "GIT_AUTHOR_EMAIL": "anicca@aniccaai.com",
@@ -643,7 +670,18 @@ def process_artifact(args: argparse.Namespace, artifact_path: Path) -> bool:
             return push_budget_consumed
     try:
         subprocess.run(
-            [sys.executable, str(args.complete_bin), "--ledger", str(args.ledger), "--run-id", run_id, "--armed", "1"],
+            [
+                sys.executable,
+                str(args.complete_bin),
+                "--ledger",
+                str(args.ledger),
+                "--run-id",
+                run_id,
+                "--armed",
+                "1",
+                "--publication-state",
+                str(artifact_path.parent / "publication-state.json"),
+            ],
             check=True,
             capture_output=True,
             text=True,

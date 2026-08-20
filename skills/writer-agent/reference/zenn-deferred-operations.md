@@ -38,7 +38,7 @@ message is the operator-visible idempotency key.
 ## Install and inspect
 
 ```bash
-bash skills/article-writer/scripts/install-zenn-deferred-worker.sh
+bash skills/writer-agent/scripts/install-zenn-deferred-worker.sh
 launchctl print "gui/$(id -u)/ai.anicca.article-zenn-retry"
 tail -50 ~/.openclaw/logs/article-zenn-retry.log
 ```

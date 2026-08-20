@@ -7,7 +7,17 @@ import re
 from urllib.parse import urlparse
 
 
-REQUIRED_WITHOUT_ZENN = {
+ACTIVE_REQUIRED_WITHOUT_ZENN = {
+    ("note", "ja"),
+    ("substack", "ja"),
+    ("substack", "en"),
+    ("x-article", "ja"),
+}
+ACTIVE_REQUIRED_LIVE = ACTIVE_REQUIRED_WITHOUT_ZENN
+
+# Compatibility for already-persisted exact-eight runs. New publication state
+# uses ACTIVE_REQUIRED_LIVE and never requires dormant destinations.
+LEGACY_REQUIRED_WITHOUT_ZENN = {
     ("note", "ja"),
     ("devto", "en"),
     ("substack", "ja"),
@@ -16,7 +26,9 @@ REQUIRED_WITHOUT_ZENN = {
     ("x-article", "en"),
     ("x-post", "ja"),
 }
-REQUIRED_LIVE = REQUIRED_WITHOUT_ZENN | {("zenn-article", "ja")}
+LEGACY_REQUIRED_LIVE = LEGACY_REQUIRED_WITHOUT_ZENN | {("zenn-article", "ja")}
+REQUIRED_WITHOUT_ZENN = ACTIVE_REQUIRED_WITHOUT_ZENN
+REQUIRED_LIVE = ACTIVE_REQUIRED_LIVE
 
 
 def valid_http_url(value: object) -> bool:
@@ -37,6 +49,10 @@ def validate_live_set(
         and valid_http_url(row.get("live_url"))
         and isinstance(row.get("topic_id"), str)
         and row["topic_id"]
+    ]
+    live = [
+        row for row in live
+        if (row.get("platform"), row.get("lang")) in required
     ]
     if len(live) != len(required):
         return False, live, None

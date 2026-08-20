@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# article-daily.sh — DETERMINISTIC daily trigger for the AI-entity article loop
+# article-daily.sh — DETERMINISTIC daily trigger for Writer Agent
 # (Dais 2026-07-12: same root cause as capafy/life-manager on 2026-07-12 — a self-registered
 # self-registered recurring-scheduler tool call never verifiably fires on its own; process-alive
 # != daily output. Fix = the proven connector/capafy/life-manager pattern: launchd
@@ -12,14 +12,18 @@
 # void for days.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
+ARTICLE_ROOT="${ARTICLE_ROOT:-$HOME/profitable-claude/skills/writer-agent}"
+STATE_DIR="${ARTICLE_STATE_DIR:-$ARTICLE_ROOT/state}"
+ARTICLE_STATE_DIR="$STATE_DIR"
+export ARTICLE_ROOT ARTICLE_STATE_DIR STATE_DIR
+# Runtime topic stages remain under the mutable state root: state/topics/queue/,
+# state/topics/in-progress/, and state/topics/done/.
 LOG="$HOME/.openclaw/logs/article-daily.log"
 mkdir -p "$(dirname "$LOG")"
 # task #27 (2026-07-16): the Telegram target ID below used to be hardcoded inline in PROMPT
 # (a personal identifier -- other installers cannot run this loop as-is). Default preserves
 # today's exact behavior; override via ~/.openclaw/.env for a different installer.
 set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
-ARTICLE_ROOT="${ARTICLE_ROOT:-$HOME/profitable-claude/skills/writer-agent}"
-STATE_DIR="${ARTICLE_STATE_DIR:-$ARTICLE_ROOT/state}"
 PUBLICATION_PAUSE_FILE="${ARTICLE_PUBLICATION_PAUSE_FILE:-$STATE_DIR/.publication-paused}"
 if [ -f "$PUBLICATION_PAUSE_FILE" ]; then
   echo "article-daily: publication paused file=$PUBLICATION_PAUSE_FILE" >>"$LOG"
@@ -29,8 +33,10 @@ TELEGRAM_TARGET_ID="${TELEGRAM_TARGET_ID:-8547730585}"
 ARTICLE_PROVIDER_COOLDOWN_SECONDS="${ARTICLE_PROVIDER_COOLDOWN_SECONDS:-21600}"
 ARTICLE_PRODUCT_ID="${ARTICLE_PRODUCT_ID:-anicca}"
 ARTICLE_PRODUCT_LANDING_URL="${ARTICLE_PRODUCT_LANDING_URL:-https://aniccaai.com/}"
+ARTICLE_PUBLICATION_POLICY="${ARTICLE_PUBLICATION_POLICY:-continuous}"
 export ARTICLE_PROVIDER_COOLDOWN_SECONDS
 export ARTICLE_PRODUCT_ID ARTICLE_PRODUCT_LANDING_URL
+export ARTICLE_PUBLICATION_POLICY
 export TELEGRAM_ALERT_CHAT_ID="$TELEGRAM_TARGET_ID"
 # spec #22 self-heal L2: telegram_notify() is the shared out-of-band alert path 211 other
 # crons already use (see the script's own header) -- reused here rather than re-implementing
@@ -110,51 +116,174 @@ disk_preflight
 # half-edited DOM and dying on max-turns. mkdir is atomic on every POSIX fs and needs no extra
 # binary (macOS ships no `flock` CLI); a second concurrent invocation exits immediately instead
 # of silently corrupting the first.
-STATE_DIR="$HOME/profitable-claude/skills/article-writer/state"
 mkdir -p "$STATE_DIR"
 RULE_SCAN_RECEIPT="$STATE_DIR/rule-conflicts-latest.json"
 RULE_GATE_RECEIPT="$STATE_DIR/contradiction-gate-latest.json"
-python3 "$HOME/profitable-claude/skills/article-writer/scripts/rule_conflicts.py" \
+python3 "$ARTICLE_ROOT/scripts/rule_conflicts.py" \
   scan --json >"$RULE_SCAN_RECEIPT" 2>>"$LOG" &&
-python3 "$HOME/profitable-claude/skills/article-writer/scripts/contradiction_gate.py" \
+python3 "$ARTICLE_ROOT/scripts/contradiction_gate.py" \
   --scan-json "$RULE_SCAN_RECEIPT" --out "$RULE_GATE_RECEIPT" >>"$LOG" 2>&1 || {
   echo "=== article-daily contradiction gate blocked generation ===" >>"$LOG"
   telegram_notify "Writer blocked: critical rule conflict. receipt=$RULE_GATE_RECEIPT" || true
   exit 1
 }
-python3 "$HOME/profitable-claude/skills/article-writer/scripts/topic_state.py" \
-  --skill-dir "$HOME/profitable-claude/skills/article-writer" >>"$LOG" 2>&1 || {
+python3 "$ARTICLE_ROOT/scripts/topic_state.py" \
+  --skill-dir "$ARTICLE_ROOT" >>"$LOG" 2>&1 || {
   echo "=== article-daily topic-state initialization failed closed ===" >>"$LOG"
   exit 1
 }
 ARTICLE_PROVIDER_HEALTH="${ARTICLE_PROVIDER_HEALTH:-$STATE_DIR/provider-health.json}"
-ARTICLE_MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/article-writer/runtime/model-runner.sh}"
-export ARTICLE_PROVIDER_HEALTH
-LOCK_DIR="$STATE_DIR/.article-daily.lockdir"
-if mkdir "$LOCK_DIR" 2>/dev/null; then
-  trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
+ARTICLE_MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$ARTICLE_ROOT/runtime/model-runner.sh}"
+ARTICLE_SKILL_DIR="$ARTICLE_ROOT"
+export ARTICLE_PROVIDER_HEALTH ARTICLE_MODEL_RUNNER ARTICLE_SKILL_DIR
+# Short acquisition/recovery mutex.  It is released immediately after the
+# canonical CDP lock is acquired; it is never held for the model/publication pass.
+RECOVERY_LOCK_DIR="$STATE_DIR/.article-daily.recovery.lockdir"
+RECOVERY_LOCK_OWNER="$RECOVERY_LOCK_DIR/owner.token"
+RECOVERY_LOCK_TOKEN="article-daily-$$-${RANDOM:-0}-$(date +%s)"
+process_start_token() {
+  ps -p "$1" -o lstart= 2>/dev/null | sed 's/^[[:space:]]*//'
+}
+write_lock_owner() {
+  local lock_path="$1"
+  printf '%s' "$$" >"$lock_path/owner.pid"
+  process_start_token "$$" >"$lock_path/owner.start"
+}
+lock_owner_alive() {
+  local lock_path="$1" owner_pid expected_start actual_start
+  owner_pid="$(cat "$lock_path/owner.pid" 2>/dev/null || true)"
+  expected_start="$(cat "$lock_path/owner.start" 2>/dev/null || true)"
+  case "$owner_pid" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  [ -n "$expected_start" ] || return 1
+  kill -0 "$owner_pid" 2>/dev/null || return 1
+  actual_start="$(process_start_token "$owner_pid")"
+  [ -n "$actual_start" ] && [ "$actual_start" = "$expected_start" ]
+}
+lock_identity() {
+  stat -f '%d:%i:%m' "$1" 2>/dev/null || true
+}
+release_recovery_lock() {
+  local current_owner=""
+  if [ -f "$RECOVERY_LOCK_OWNER" ]; then
+    current_owner="$(cat "$RECOVERY_LOCK_OWNER" 2>/dev/null || true)"
+  fi
+  if [ "$current_owner" = "$RECOVERY_LOCK_TOKEN" ]; then
+    rm -f "$RECOVERY_LOCK_OWNER" 2>/dev/null || true
+    rmdir "$RECOVERY_LOCK_DIR" 2>/dev/null || true
+  fi
+}
+if mkdir "$RECOVERY_LOCK_DIR" 2>/dev/null; then
+  printf '%s' "$RECOVERY_LOCK_TOKEN" >"$RECOVERY_LOCK_OWNER"
+  write_lock_owner "$RECOVERY_LOCK_DIR"
 else
-  # stale-lock guard: a lock dir older than 6h means a prior run crashed without cleaning up
-  # (there is no timeout on the model call below, so a genuinely still-running pass can take
-  # hours — 6h is well past any real article pass, so anything older is a crash, not slowness).
-  AGE=$(( $(date +%s) - $(stat -f %m "$LOCK_DIR" 2>/dev/null || echo 0) ))
-  if [ "$AGE" -gt 21600 ]; then
-    rmdir "$LOCK_DIR" 2>/dev/null; mkdir "$LOCK_DIR" 2>/dev/null
-    trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
-  else
-    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — another instance holds $LOCK_DIR (age ${AGE}s) ===" >>"$LOG"
+  RECOVERY_SNAPSHOT="$(lock_identity "$RECOVERY_LOCK_DIR")"
+  RECOVERY_MTIME="$(stat -f %m "$RECOVERY_LOCK_DIR" 2>/dev/null || echo 0)"
+  RECOVERY_AGE=$(( $(date +%s) - ${RECOVERY_MTIME:-0} ))
+  if [ -z "$RECOVERY_SNAPSHOT" ]; then
+    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — recovery lock identity unavailable ===" >>"$LOG"
     exit 0
   fi
+  if lock_owner_alive "$RECOVERY_LOCK_DIR"; then
+    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — live recovery owner ===" >>"$LOG"
+    exit 0
+  fi
+  if [ ! -s "$RECOVERY_LOCK_DIR/owner.pid" ] || [ ! -s "$RECOVERY_LOCK_DIR/owner.start" ]; then
+    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — recovery owner identity unavailable ===" >>"$LOG"
+    exit 0
+  fi
+  RECOVERY_SNAPSHOT_NOW="$(lock_identity "$RECOVERY_LOCK_DIR")"
+  if [ "$RECOVERY_SNAPSHOT" != "$RECOVERY_SNAPSHOT_NOW" ]; then
+    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — recovery lock identity changed ===" >>"$LOG"
+    exit 0
+  fi
+  RECOVERY_QUARANTINE="$STATE_DIR/.article-daily.recovery.lockdir.stale.$$.$RANDOM"
+  if ! mv "$RECOVERY_LOCK_DIR" "$RECOVERY_QUARANTINE" 2>/dev/null; then
+    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — recovery lock quarantine failed ===" >>"$LOG"
+    exit 0
+  fi
+  if [ "$(lock_identity "$RECOVERY_QUARANTINE")" != "$RECOVERY_SNAPSHOT" ]; then
+    [ ! -e "$RECOVERY_LOCK_DIR" ] && mv "$RECOVERY_QUARANTINE" "$RECOVERY_LOCK_DIR" 2>/dev/null || true
+    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — recovery quarantine identity changed ===" >>"$LOG"
+    exit 0
+  fi
+  rm -f "$RECOVERY_QUARANTINE/owner.token" "$RECOVERY_QUARANTINE/owner.pid" "$RECOVERY_QUARANTINE/owner.start" 2>/dev/null || true
+  if ! rmdir "$RECOVERY_QUARANTINE" 2>/dev/null || ! mkdir "$RECOVERY_LOCK_DIR" 2>/dev/null; then
+    [ ! -e "$RECOVERY_LOCK_DIR" ] && mv "$RECOVERY_QUARANTINE" "$RECOVERY_LOCK_DIR" 2>/dev/null || true
+    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — recovery lock cleanup/reacquire failed ===" >>"$LOG"
+    exit 0
+  fi
+  printf '%s' "$RECOVERY_LOCK_TOKEN" >"$RECOVERY_LOCK_OWNER"
+  write_lock_owner "$RECOVERY_LOCK_DIR"
 fi
+trap 'release_recovery_lock' EXIT
+LOCK_DIR="$STATE_DIR/.article-daily.lockdir"
+if mkdir "$LOCK_DIR" 2>/dev/null; then
+  write_lock_owner "$LOCK_DIR"
+  trap 'rm -f "$LOCK_DIR/owner.pid" "$LOCK_DIR/owner.start"; rmdir "$LOCK_DIR" 2>/dev/null' EXIT
+else
+  # stale-lock guard: a valid live owner always wins; a dead owner is quarantined
+  # after start-token and directory-identity checks, regardless of lock age.
+  if lock_owner_alive "$LOCK_DIR"; then
+    release_recovery_lock
+    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — live publication owner ===" >>"$LOG"
+    exit 0
+  fi
+  if [ ! -s "$LOCK_DIR/owner.pid" ] || [ ! -s "$LOCK_DIR/owner.start" ]; then
+    release_recovery_lock
+    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — publication owner identity unavailable ===" >>"$LOG"
+    exit 0
+  fi
+    LOCK_SNAPSHOT="$(lock_identity "$LOCK_DIR")"
+    LOCK_SNAPSHOT_NOW="$(lock_identity "$LOCK_DIR")"
+    if [ -z "$LOCK_SNAPSHOT" ] || [ "$LOCK_SNAPSHOT" != "$LOCK_SNAPSHOT_NOW" ]; then
+      release_recovery_lock
+      echo "=== $(date '+%F %T %Z') article-daily SKIPPED — stale publication lock identity changed ===" >>"$LOG"
+      exit 0
+    fi
+    STALE_QUARANTINE="$STATE_DIR/.article-daily.lockdir.stale.$$.$RANDOM"
+    if ! mv "$LOCK_DIR" "$STALE_QUARANTINE" 2>/dev/null; then
+      release_recovery_lock
+      echo "=== $(date '+%F %T %Z') article-daily SKIPPED — stale publication lock quarantine failed ===" >>"$LOG"
+      exit 0
+    fi
+    if [ "$(lock_identity "$STALE_QUARANTINE")" != "$LOCK_SNAPSHOT" ]; then
+      [ ! -e "$LOCK_DIR" ] && mv "$STALE_QUARANTINE" "$LOCK_DIR" 2>/dev/null || true
+      release_recovery_lock
+      echo "=== $(date '+%F %T %Z') article-daily SKIPPED — stale quarantine identity changed ===" >>"$LOG"
+      exit 0
+    fi
+    # claim-loop may leave an owner receipt in this shared lockdir.  Remove it
+    # only after the exact stale directory is quarantined; a replacement owner
+    # at the canonical path is never touched.
+    rm -f "$STALE_QUARANTINE/owner.token" "$STALE_QUARANTINE/owner.pid" "$STALE_QUARANTINE/owner.start" 2>/dev/null || true
+    if rmdir "$STALE_QUARANTINE" 2>/dev/null && mkdir "$LOCK_DIR" 2>/dev/null; then
+      write_lock_owner "$LOCK_DIR"
+      trap 'rm -f "$LOCK_DIR/owner.pid" "$LOCK_DIR/owner.start"; rmdir "$LOCK_DIR" 2>/dev/null' EXIT
+    else
+      [ ! -e "$LOCK_DIR" ] && mv "$STALE_QUARANTINE" "$LOCK_DIR" 2>/dev/null || true
+      release_recovery_lock
+      echo "=== $(date '+%F %T %Z') article-daily SKIPPED — stale publication lock recovery failed for $LOCK_DIR ===" >>"$LOG"
+      exit 0
+    fi
+fi
+release_recovery_lock
 
 # SAME-JST-DAY START CONTROL: a manual kickstart shortly before 06:00 must not create one
-# article and let the calendar trigger create another. Durable exact8/resume state,
+# article and let the calendar trigger create another. Durable active-four/resume state,
 # rather than elapsed time, selects skip, worker ownership, same-run resume, or a new run.
-START_CONTROL="$HOME/profitable-claude/skills/article-writer/scripts/article_daily_start_control.py"
+START_CONTROL="$ARTICLE_ROOT/scripts/article_daily_start_control.py"
 TODAY_JST="$(TZ=Asia/Tokyo date +%F)"
 START_DECISION="$(python3 "$START_CONTROL" --state-dir "$STATE_DIR" --local-date "$TODAY_JST" 2>>"$LOG" || printf '%s' '{"action":"block-incomplete","reason":"start-control-error"}')"
 START_ACTION="$(printf '%s' "$START_DECISION" | jq -r '.action // "block-incomplete"')"
 START_RUN_ID="$(printf '%s' "$START_DECISION" | jq -r '.run_id // empty')"
+if [ -n "${ARTICLE_EXPECTED_NEW_DAILY_DATE:-}" ] \
+  && { [ "$TODAY_JST" != "$ARTICLE_EXPECTED_NEW_DAILY_DATE" ] \
+    || [ "$START_ACTION" != "new" ]; }; then
+  echo "=== article-daily missed-schedule catch-up no longer owns a new run expected_date=$ARTICLE_EXPECTED_NEW_DAILY_DATE decision=$START_DECISION; no generation side effect ===" >>"$LOG"
+  exit 0
+fi
 if [ -n "${ARTICLE_EXPECTED_NEW_RUN_ID:-}" ] \
   && { [ "$START_ACTION" != "new-quality-replacement" ] \
     || [ "$START_RUN_ID" != "$ARTICLE_EXPECTED_NEW_RUN_ID" ]; }; then
@@ -168,18 +297,23 @@ if [ -n "${ARTICLE_EXPECTED_RUN_ID:-}" ] \
   exit 0
 fi
 RESUME_GENERATION=0
+if [ "$ARTICLE_PUBLICATION_POLICY" = "continuous" ] \
+  && [ "$START_ACTION" = "skip-quality-miss" ]; then
+  PREVIOUS_QUALITY_RUN="$START_RUN_ID"
+  START_ACTION="new"
+  START_RUN_ID="$(date -u '+%Y%m%d-%H%M%S')"
+  START_DECISION="$(jq -cn --arg run_id "$START_RUN_ID" --arg replaced "$PREVIOUS_QUALITY_RUN" \
+    '{action:"new",run_id:$run_id,replaced_run_id:$replaced,reason:"continuous-publication-after-quality-advisory"}')"
+  echo "=== article-daily continuous policy: quality replacement limit is advisory; starting run=$START_RUN_ID after=$PREVIOUS_QUALITY_RUN $(date '+%F %T %Z') ===" >>"$LOG"
+fi
 case "$START_ACTION" in
   skip-complete)
-    echo "=== article-daily same-day guard: exact8 already complete run=$START_RUN_ID; no second article $(date '+%F %T %Z') ===" >>"$LOG"
+    echo "=== article-daily same-day guard: active-four already complete run=$START_RUN_ID; no second article $(date '+%F %T %Z') ===" >>"$LOG"
     touch "$HOME/.openclaw/state/.article-loop-last-pass" 2>/dev/null || true
     exit 0
     ;;
-  skip-zenn-worker)
-    echo "=== article-daily same-day guard: exact7 Zenn pending remains worker-owned run=$START_RUN_ID; no second article $(date '+%F %T %Z') ===" >>"$LOG"
-    exit 0
-    ;;
   skip-pending-worker)
-    echo "=== article-daily same-day guard: pending exact8 run remains resume-worker-owned run=$START_RUN_ID; no second article $(date '+%F %T %Z') ===" >>"$LOG"
+    echo "=== article-daily same-day guard: pending active-four run remains resume-worker-owned run=$START_RUN_ID; no second article $(date '+%F %T %Z') ===" >>"$LOG"
     exit 0
     ;;
   resume-generation)
@@ -229,9 +363,9 @@ if [ "$START_ACTION" = "new-quality-replacement" ]; then
     }
 fi
 if [ "$RESUME_GENERATION" -ne 1 ]; then
-  (cd "$HOME/profitable-claude" && git log -1 --format='harness_git_hash=%H' -- skills/article-writer/SKILL.md skills/article-writer/scripts skills/article-writer/vendor 2>/dev/null || echo "harness_git_hash=UNKNOWN") > "$RUN_DIR/git-hash.txt"
+  (cd "$ARTICLE_ROOT" && git log -1 --format='harness_git_hash=%H' -- SKILL.md scripts vendor 2>/dev/null || echo "harness_git_hash=UNKNOWN") > "$RUN_DIR/git-hash.txt"
 fi
-python3 "$HOME/profitable-claude/skills/article-writer/scripts/strategy_runtime.py" \
+python3 "$ARTICLE_ROOT/scripts/strategy_runtime.py" \
   consume-active --run-id "$RUN_TS" \
   --active-dir "$STATE_DIR/strategy/active" \
   --out "$RUN_DIR/gates/strategy-consumption.json" >>"$LOG" 2>&1 || {
@@ -239,7 +373,6 @@ python3 "$HOME/profitable-claude/skills/article-writer/scripts/strategy_runtime.
   telegram_notify "Writer blocked: active strategy hash drift. receipt=$RUN_DIR/gates/strategy-consumption.json" || true
   exit 1
 }
-
 # self-heal L2 (spec #22): recover the shared daily-driver browser BEFORE the pass needs it.
 # ensure_browser.sh already does exactly this (relaunch Chromium if :9222 is dead, restore the
 # session vault, GC stale CDP contexts) but this loop never called it -- confirmed by grep,
@@ -249,37 +382,167 @@ python3 "$HOME/profitable-claude/skills/article-writer/scripts/strategy_runtime.
 BROWSER_STATUS="$(bash "$HOME/anicca/skills/browser/ensure_browser.sh" 2>>"$LOG" | tail -1)"
 echo "=== article-daily ensure_browser: ${BROWSER_STATUS:-EMPTY} ===" >>"$LOG"
 
-PROMPT='Run ONE daily AI-entity article pass, no human in the loop. This pass was triggered by a real launchd daily schedule (ai.anicca.article-daily) -- you do NOT need to register your own recurring scheduler; launchd is the only scheduler for this loop, never self-register one via any cron-creation tool. set -a; . ~/.openclaw/.env; set +a.
+# PRE-PUBLICATION RESUME CARD RECOVERY: the first pass legitimately claims its demand card
+# before research.  If that pass stops before publication, the card remains in in-progress while
+# the same immutable run is resumed.  Restore only the exact card bound to this run before the
+# prompt's normal demand-authority + selector steps; never turn an unrelated in-progress card into
+# a fresh topic and never recover after publication state exists.  The receipt is durable evidence
+# of the state transition, not an agent assertion.
+if [ "$RESUME_GENERATION" -eq 1 ]; then
+  python3 - "$RUN_DIR" "$STATE_DIR" "$RUN_TS" >>"$LOG" <<'PYEOF'
+import hashlib
+import json
+import os
+import sys
+from pathlib import Path
+
+run_dir, state_dir, run_id = map(Path, sys.argv[1:])
+run_id = str(run_id)
+gates = run_dir / "gates"
+route_path = gates / "topic-route-input.json"
+publication_state = gates / "publication-state.json"
+receipt_path = gates / "topic-card-resume.json"
+queue = state_dir / "topics" / "queue"
+in_progress = state_dir / "topics" / "in-progress"
+
+def write_receipt(payload: dict) -> None:
+    if receipt_path.is_symlink() or (receipt_path.exists() and not receipt_path.is_file()):
+        raise SystemExit("topic-card resume blocked: receipt path is not a regular file")
+    temporary = receipt_path.with_name(f".{receipt_path.name}.{os.getpid()}.tmp")
+    try:
+        with temporary.open("x", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, receipt_path)
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+
+def fail(reason: str) -> None:
+    write_receipt({"version": 1, "run_id": run_id, "action": "blocked", "reason": reason})
+    raise SystemExit(f"topic-card resume blocked: {reason}")
+
+if publication_state.exists() or publication_state.is_symlink():
+    fail("publication-state-exists")
+if route_path.is_symlink() or not route_path.is_file():
+    fail("topic-route-input-missing")
+try:
+    route = json.loads(route_path.read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError):
+    fail("topic-route-input-invalid")
+topic_id = route.get("topic_id") if isinstance(route, dict) else None
+if not isinstance(topic_id, str) or not topic_id.startswith("paid-demand:"):
+    fail("topic-id-not-paid-demand")
+if queue.is_symlink() or not queue.is_dir() or in_progress.is_symlink() or not in_progress.is_dir():
+    fail("topic-stage-missing-or-symlink")
+
+def card_topic_id(path: Path) -> str | None:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        if line.startswith("topic_id:"):
+            return line.split(":", 1)[1].strip().strip("'\"")
+    return None
+
+matching_queue = [p for p in sorted(queue.glob("*.md")) if p.is_file() and not p.is_symlink() and card_topic_id(p) == topic_id]
+matching_progress = [p for p in sorted(in_progress.glob("*.md")) if p.is_file() and not p.is_symlink() and card_topic_id(p) == topic_id]
+if len(matching_queue) + len(matching_progress) > 1:
+    fail("duplicate-topic-card")
+if matching_queue:
+    source = matching_queue[0]
+    action = "already-queued"
+elif matching_progress:
+    source = matching_progress[0]
+    destination = queue / source.name
+    if destination.exists() or destination.is_symlink():
+        fail("destination-name-conflict")
+    os.replace(source, destination)
+    source = destination
+    action = "restored-in-progress-card"
+else:
+    fail("matching-card-not-found")
+
+digest = hashlib.sha256(source.read_bytes()).hexdigest()
+write_receipt({
+        "version": 1,
+        "run_id": run_id,
+        "action": action,
+        "topic_id": topic_id,
+        "basename": source.name,
+        "sha256": digest,
+        "queue_path": str(source),
+    })
+print(f"topic-card resume: {action} basename={source.name} topic_id={topic_id} sha256={digest}")
+PYEOF
+  if [ "$?" -ne 0 ]; then
+    echo "=== article-daily topic-card resume failed closed ===" >>"$LOG"
+    exit 75
+  fi
+  RESUME_CARD_BASENAME="$(jq -r '.basename // empty' "$RUN_DIR/gates/topic-card-resume.json" 2>/dev/null || true)"
+  if [ -z "$RESUME_CARD_BASENAME" ] || [[ "$RESUME_CARD_BASENAME" == */* ]]; then
+    echo "=== article-daily topic-card resume selector binding failed closed ===" >>"$LOG"
+    exit 75
+  fi
+  export ARTICLE_RESUME_CARD_BASENAME="$RESUME_CARD_BASENAME"
+fi
+
+# DEMAND AUTHORITY PREFLIGHT: this is a wrapper-side gate, before PROMPT construction,
+# generation state, the judge broker, or any provider invocation. A missing/invalid
+# claim-loop supply is a durable pending run, never a reason to spend a model call.
+DEMAND_AUTHORITY_SCRIPT="$ARTICLE_ROOT/scripts/demand_authority.py"
+if ! python3 "$DEMAND_AUTHORITY_SCRIPT" \
+  --skill-dir "$ARTICLE_ROOT" \
+  --demand-mode required >>"$LOG" 2>&1; then
+  echo "=== article-daily demand authority blocked generation; pending claim-loop supply ===" >>"$LOG"
+  if command -v telegram_notify >/dev/null 2>&1; then
+    telegram_notify "Writer pending: required paid-demand claim-loop supply is not ready; no provider invocation occurred." >>"$LOG" 2>&1 || true
+  fi
+  exit 75
+fi
+
+PROMPT='Run ONE daily Writer Agent article pass, no daily human in the loop. This pass was triggered by a real launchd daily schedule (ai.anicca.article-daily) -- you do NOT need to register your own recurring scheduler; launchd is the only scheduler for this loop, never self-register one via any cron-creation tool. set -a; . ~/.openclaw/.env; set +a.
 
 ★ DO THE WORK YOURSELF, IN THIS PASS, IN THE FOREGROUND. ★ Do not hand the job to a background agent and finish. The first real run did exactly that: it spawned a background worker, reported that it was waiting for it, and exited with a green rc=0 having produced zero articles. You are the worker. Research, write, stage, verify and report inside this pass, and only return when the drafts genuinely exist and you have looked at them. A clean exit code with nothing to show for it is the precise failure this loop exists to prevent.
 
 ★ SOURCE IMMUTABILITY — HARD BOUNDARY. ★ Never edit tracked source files during a daily run, including SKILL.md, scripts, tests, references, configuration, or launchd files. Runtime writes are limited to the Article Writer state tree plus the existing platform/browser workspaces exposed by the model runner. If a script or gate has a code defect, record the exact defect under the current run gates, leave the affected pair pending, continue independent pairs, and report it. Do not spawn a fixer, change permissions, bypass the sandbox, commit, or push source.
 
-★ ZENN FRONT MATTER — HARD BOUNDARY. ★ Stage the Zenn file ONLY through scripts/zenn-publish/zenn-adapt.py with its documented arguments. Never hand-write the zenn front matter from the article header: Zenn requires emoji, type and topics keys, and a file missing them is refused by render-verify and silently never published, as observed 2026-07-26.
+★ DORMANT DESTINATIONS — HARD BOUNDARY. ★ Zenn JA, Dev.to EN, X Article EN, and X Post JA are dormant under the current active-four contract. Never stage them, create an intent, invoke an adapter or publisher, hand them to a retry worker, or repair them. Armed runs persist only their explicit durable skip receipts; unarmed runs do not create destination state for them.
 
-★ DESTINATIONS ARE INDEPENDENT — HARD BOUNDARY. ★ A destination that cannot be staged after bounded retries (dead API credential, platform 4xx/5xx, editor unreachable) must never stop the others: run `bash ~/profitable-claude/skills/article-writer/scripts/publication-guard.py mark-unavailable --pair <pair> --reason "<machine-readable reason>"` for only that pair, then continue every stageable destination; never abandon the remaining destinations. This rule applies after one artifact earns its hash-bound quality and safety terminal receipts. Before freeze, editorial/reader failure is an artifact failure, not a destination outage: quality_self_heal.py reroutes once and block_freeze prevents publication state from being created. Never use destination independence to publish an artifact that failed the freeze gate.
+★ ZENN FRONT MATTER — LEGACY-EXACT8 COMPATIBILITY ONLY. ★ The legacy-exact8 adapter remains the only sanctioned path for its historical Zenn artifact: use scripts/zenn-publish/zenn-adapt.py and never hand-write the zenn front matter. The current active-four path never invokes that adapter or stages that destination.
+
+★ DESTINATIONS ARE INDEPENDENT — HARD BOUNDARY. ★ A destination that cannot be staged after bounded retries (dead API credential, platform 4xx/5xx, editor unreachable) must never stop the others: run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/publication-guard.py mark-unavailable --pair <pair> --reason "<machine-readable reason>"` for only that pair, then continue every stageable destination; never abandon the remaining destinations. Editorial and reader findings are advisory under ARTICLE_PUBLICATION_POLICY=continuous: record them for the next learning cycle, but do not stop this run. Identity/safety, secret/PII, duplicate, payload-integrity, and platform-policy failures remain blocking.
 
 ★ JUDGE BROKER — HARD BOUNDARY. ★ Every judge/vision model call is served by the wrapper-side judge broker through the model runner. When invoking any gate or the model runner, never clear, unset, or override ARTICLE_NESTED_SANDBOX, ARTICLE_RUN_DIR, or ARTICLE_JUDGE_BROKER_SERVER, and never bypass the judge broker by spawning a provider CLI directly: a direct provider spawn inside the bounded sandbox always fails, poisons provider health for the whole run, and forces every later safety gate to fail closed. If a judge call returns no verdict, record the failure and leave the pair pending; do not retry with altered environment variables.
 
-STEP 0 (SELF-FIX RESULT CHECK -- existence-guarded, run before STEP 1): read ~/.openclaw/state/.self-fix-article-writer.result if it exists (it will not exist until STEP 6.5 has spawned a fixer at least once -- if absent, skip this step silently and go to STEP 1). If its first word is FAIL, a previous pass hit a render-verify problem its self-fix attempt could not resolve -- read the rest of that line plus the tail of ~/.openclaw/logs/self-fix-article-writer.log for the real diagnosis, and stay extra alert to that same class of defect (which platform, which rule) while writing and staging todays article; this is context only, never a reason to skip or delay todays pass. If its first word is SUCCESS, a prior self-fix genuinely resolved something -- no action needed. If its first word is RUNNING, a fixer may still be active or may have crashed stale (article-self-fix.sh has its own staleness/respawn logic for that, nothing for you to do here).
+STEP 0 (SELF-FIX RESULT CHECK -- existence-guarded, run before STEP 1): read ~/.openclaw/state/.self-fix-writer-agent.result if it exists (it will not exist until STEP 6.5 has spawned a fixer at least once -- if absent, skip this step silently and go to STEP 1). If its first word is FAIL, a previous pass hit a render-verify problem its self-fix attempt could not resolve -- read the rest of that line plus the tail of ~/.openclaw/logs/self-fix-writer-agent.log for the real diagnosis, and stay extra alert to that same class of defect (which platform, which rule) while writing and staging todays article; this is context only, never a reason to skip or delay todays pass. If its first word is SUCCESS, a prior self-fix genuinely resolved something -- no action needed. If its first word is RUNNING, a fixer may still be active or may have crashed stale (article-self-fix.sh has its own staleness/respawn logic for that, nothing for you to do here).
 
-STEP 0.5 (SELF-IMPROVE TODO CHECK -- mandatory, spec docs/loop-engineering/47-writer-loop-quality-and-self-improvement.md §7 principle 7, run before STEP 1): run bash ~/profitable-claude/skills/article-writer/scripts/article-selfimprove-verify.sh. It inspects the most recently completed state/runs/ generation against REAL file evidence (gate JSON content, articles.jsonl rows) -- never self-report, never mtime alone -- and writes state/.selfimprove-todo.json. If its missing array is non-empty, treat every item as this passs first priority: e.g. if a prior run claims all gates passed but has no matching articles.jsonl row with a real staged editor URL, or a gate JSON that STEP 4/4.6/4.7 mandates is missing from a prior runs/ dir, that is a real gap in what got proven, not just reported -- make sure THIS pass writes every gate JSON into its own run dir (STEP 0.6) and its ledger row (STEP 7) without fail, so the same gap is not repeated. Do not skip this step because you believe everything is fine; self-report is not evidence, only real files are.
+STEP 0.5 (SELF-IMPROVE TODO CHECK -- mandatory, spec docs/loop-engineering/47-writer-loop-quality-and-self-improvement.md §7 principle 7, run before STEP 1): run bash ARTICLE_ROOT_PLACEHOLDER/scripts/article-selfimprove-verify.sh. It inspects the most recently completed ARTICLE_STATE_DIR_PLACEHOLDER/runs/ generation against REAL file evidence (gate JSON content, articles.jsonl rows) -- never self-report, never mtime alone -- and writes ARTICLE_STATE_DIR_PLACEHOLDER/.selfimprove-todo.json. If its missing array is non-empty, treat every item as this passs first priority: e.g. if a prior run claims all gates passed but has no matching articles.jsonl row with a real staged editor URL, or a gate JSON that STEP 4/4.6/4.7 mandates is missing from a prior runs/ dir, that is a real gap in what got proven, not just reported -- make sure THIS pass writes every gate JSON into its own run dir (STEP 0.6) and its ledger row (STEP 7) without fail, so the same gap is not repeated. Do not skip this step because you believe everything is fine; self-report is not evidence, only real files are.
 
-STEP 0.6 (RUN RECORD -- persist this passs raw trace, spec docs/loop-engineering/47-writer-loop-quality-and-self-improvement.md, meta-harness ablation): this pass has a fixed record directory already created for you at ~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER/ (git-hash.txt is already written there). As you go: after STEP 3 (write), copy the final ja/en markdown drafts there as article-ja.md and article-en.md; after STEP 4/STEP 4.6 gates, copy each gate JSON verdict there as gates/<gate-name>-<lang>.json (deslop-gate, eval-gate, identity-gate, rubric-judge -- whichever ran, every attempt including revise loops). Never delete or move this directory yourself -- retention/pruning is handled by the wrapper script, not by you.
+STEP 0.6 (RUN RECORD -- persist this passs raw trace, spec docs/loop-engineering/47-writer-loop-quality-and-self-improvement.md, meta-harness ablation): this pass has a fixed record directory already created for you at ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/ (git-hash.txt is already written there). As you go: after STEP 3 (write), copy the final ja/en markdown drafts there as article-ja.md and article-en.md; after STEP 4/STEP 4.6 gates, copy each gate JSON verdict there as gates/<gate-name>-<lang>.json (deslop-gate, eval-gate, identity-gate, rubric-judge -- whichever ran, every attempt including revise loops). Never delete or move this directory yourself -- retention/pruning is handled by the wrapper script, not by you.
 
 STEP 0.7 (MID TOKEN/ATTEMPT BUDGET -- bounded, whole bilingual article): record PASS_STARTED_AT=$(date +%s), QUALITY_REVISE_ATTEMPTS=0, READER_ATTEMPTS=0, plus per-language counters in this runs attempt-budget state. The MID budget is at most $4/day inside the all-lane ceiling of $6/day. scripts/attempt-budget-gate.sh permits at most 6 total editorial and 6 total reader evaluations across both languages. Before every additional evaluation, call the budget gate. STOP_SPENDING preserves the best draft and raw evidence; it never fabricates PASS. Editorial or reader terminal failure proceeds to STEP 4.75 quality self-heal, not publication.
 
-★ SCOPE, READ FIRST: DEFAULT UNARMED MODE (ARTICLE_AUTOPUBLISH unset or not 1) stages DRAFTS ONLY and NEVER publishes. In that default mode, a human (Dais) reads every draft and publishes by hand; run.sh STEP 7 treats a publicly-live article as a SAFETY FAILURE; publish-to-x.sh go and every other live-publish endpoint are forbidden; every ledger publish flag stays false. ARMED MODE is different: only when the ARTICLE_AUTOPUBLISH=1 addendum is appended below, the same immutable package must reach exact8. The foreground publishes note/ja, zenn-article/ja, devto/en, substack/ja, substack/en, and x-article/ja in the specified order; the durable pending worker owns x-article/en after the remote JA timestamp plus six hours and x-post/ja at its one-per-JST-date slot. Use only STEPS 11-20 and never infer permission outside that exact addendum and scope.
+STEP 0.8 (READ VERIFIED ACTIVE STRATEGY AND REPLAY-FIRST CANARY BEFORE TOPIC SELECTION): first read this runs gates/strategy-consumption.json, which the wrapper created from hash-verified active strategy bytes before invoking you. If its versions contains slice=writer-learning, require exactly one such row, read only its immutable weight_file, and remember learning_cycle_id plus consumed_hash. Read the matching ARTICLE_STATE_DIR_PLACEHOLDER/learning/experiments/<learning_cycle_id>/manifest.json and require candidate_strategy_sha256=consumed_hash. Apply the complete immutable strategy object to BOTH native drafts: its playbook is the writing baseline and every other key is an active writing rule. It cannot override safety, citations, identity, active-four, price, platform, schedules, providers, destination accounts, or recovery. Do not call this consumed yet; STEP 4.85 binds the final article bytes and visible excerpts. Then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/writer_learning_worker.py current --skill-dir ARTICLE_ROOT_PLACEHOLDER. If status is NONE, continue without inventing a candidate. If status is CANDIDATE_CANARY, remember its experiment_id, strategy_sha256, exact reader_job, immutable strategy_path, one changed_field, and one rule before entering STEP 1. During STEP 1, use the candidate only if an honest claim/topic can preserve that exact reader_job; otherwise leave the assignment READY, select a normal reader-useful topic, and publish without the candidate. A learning assignment never blocks todays publication.
 
-CANONICAL SKILL: ~/.claude/skills/ai-entity-article-writer is a symlink to ~/profitable-claude/skills/article-writer -- one tree, this is the only pipeline to use.
+★ SCOPE, READ FIRST: DEFAULT UNARMED MODE (ARTICLE_AUTOPUBLISH unset or not 1) stages DRAFTS ONLY and NEVER publishes. In that default mode, a human (Dais) reads every draft and publishes by hand; run.sh STEP 7 treats a publicly-live article as a SAFETY FAILURE; publish-to-x.sh go and every other live-publish endpoint are forbidden; every ledger publish flag stays false. ARMED MODE is different: only when the ARTICLE_AUTOPUBLISH=1 addendum is appended below, the same immutable package must reach active-four. The foreground publishes note/ja, substack/ja, substack/en, and x-article/ja in the specified order; all four dormant destinations receive explicit skip receipts and are never staged or published by this loop. Use only STEPS 11-20 and never infer permission outside that exact addendum and scope.
 
-STEP 1 (TOPIC SELECTION + INDEPENDENT ROUTING -- deterministic): run `bash ~/profitable-claude/skills/article-writer/scripts/select-next-topic.sh ~/profitable-claude/skills/article-writer/state/topics/queue/`. This gitignored runtime queue is operational topic state only; it never selects voice or genre. If it exits 0, move its one stdout card to `state/topics/in-progress/` and use the card as source material. If it exits 1, inspect `state/topic-queue.md` plus prior article state and choose one uncovered topic with a concrete reader job. If `$ARTICLE_RUN_DIR/gates/quality-replacement.json` exists, this is the one bounded recovery candidate for the current JST-date quality slot: its forbidden_topic_id and forbidden_editorial_form MUST both change, and every quality_failure_feedback item MUST be covered by at least one `evidence_plan[].addresses_feedback` ID before research proceeds. `topic_router.py` enforces topic, form, feedback hash, and exact feedback coverage. Before research, write `$ARTICLE_RUN_DIR/gates/topic-route-input.json` with independent topic_source, reader {audience,job,outcome}, evidence_plan, editorial_form, and product_link. Choose editorial_form only from explainer, how-to, case-study, comparison, field-note, opinion, or report. Run `python3 ~/profitable-claude/skills/article-writer/scripts/topic_router.py validate --input "$ARTICLE_RUN_DIR/gates/topic-route-input.json" --out "$ARTICLE_RUN_DIR/gates/topic-route.json" --runs-root ~/profitable-claude/skills/article-writer/state/runs --current-run-id RUN_DIR_PLACEHOLDER`. If the router rejects a third consecutive form or the blocked replacement route, choose a different topic/form that still fits the reader job; never change evidence or fabricate experience merely to pass. The frozen route controls writing: explainer/how-to/comparison/report are reader-centred and not a chronology of our work; field-note/opinion/case-study may use first person only when verified evidence and the reader job justify it. Never present the author as AI. Separately resolve the distribution form with `bash ~/profitable-claude/skills/article-writer/scripts/resolve-form.sh --card <card_path>` (no card means `article`). Distribution form controls length and exits only; it must never override editorial_form. For `article`, continue below. For `xpost`, write one short hook to its target length and stage only to X. For `ebook`, run the same gates per chapter and report its pending exit without fabricating publication.
+CANONICAL SKILL IDENTITY: writer-agent. The tracked ARTICLE_ROOT_PLACEHOLDER path is the current compatibility location for this one pipeline; never start or restore a second article-writing loop.
 
-STEP 1.5 (READ VERIFIED PLAYBOOK -- apply one active evidence-bound experiment): run python3 ~/profitable-claude/skills/article-writer/scripts/self_improve_control.py current --skill-dir ~/profitable-claude/skills/article-writer. If status is NONE, continue without inventing a lesson. If status is APPLIED, read the returned tracked reference/learned-playbook.md and apply that one proposal to BOTH the JA and EN drafts. This surface can change writing guidance only; it never overrides safety, identity, exact8, schedules, providers, destination accounts, or recovery. Remember the returned experiment_id. Do not append a self-reported application row here; STEP 4.85 requires excerpts that software can locate in the frozen drafts.
+STEP 1 (TOPIC SELECTION): the required-demand authority and queue selection below own topic choice; a failed authority check is a hard stop before generation.
+
+Before any topic selection, run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/demand_authority.py --skill-dir ARTICLE_ROOT_PLACEHOLDER --demand-mode required`; a non-zero exit is a hard STOP with no generation or publication. Run `bash ARTICLE_ROOT_PLACEHOLDER/scripts/select-next-topic.sh ARTICLE_STATE_DIR_PLACEHOLDER/topics/queue/`. This required-demand queue is the only topic authority. If it exits 0, move its one stdout card to `ARTICLE_STATE_DIR_PLACEHOLDER/topics/in-progress/` and use the card as source material. If it exits 1, STOP and leave the run pending until claim-loop demand supply is ready; never inspect `ARTICLE_STATE_DIR_PLACEHOLDER/topic-queue.md` or self-select a fallback topic. If `$ARTICLE_RUN_DIR/gates/quality-replacement.json` exists, this is the one bounded recovery candidate for the current JST-date quality slot: its forbidden_topic_id and forbidden_editorial_form MUST both change, and every quality_failure_feedback item MUST be covered by at least one `evidence_plan[].addresses_feedback` ID before research proceeds. `topic_router.py` enforces topic, form, feedback hash, and exact feedback coverage. Before research, write `$ARTICLE_RUN_DIR/gates/topic-route-input.json` with independent topic_source, reader {audience,job,outcome}, evidence_plan, editorial_form, and product_link. Choose editorial_form only from explainer, how-to, case-study, comparison, field-note, opinion, or report. Run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/topic_router.py validate --input "$ARTICLE_RUN_DIR/gates/topic-route-input.json" --demand-mode required --out "$ARTICLE_RUN_DIR/gates/topic-route.json" --runs-root ARTICLE_STATE_DIR_PLACEHOLDER/runs --current-run-id RUN_DIR_PLACEHOLDER`. If the router rejects a third consecutive form or the blocked replacement route, choose a different topic/form that still fits the reader job; never change evidence or fabricate experience merely to pass. The frozen route controls writing: explainer/how-to/comparison/report are reader-centred and not a chronology of our work; field-note/opinion/case-study may use first person only when verified evidence and the reader job justify it. Never present the author as AI. Separately resolve the distribution form with `bash ARTICLE_ROOT_PLACEHOLDER/scripts/resolve-form.sh --card <card_path>` (no card means `article`). Distribution form controls length and exits only; it must never override editorial_form. For `article`, continue below. For `xpost`, write one short hook to its target length and stage only to X. For `ebook`, run the same gates per chapter and report its pending exit without fabricating publication.
+
+STEP 1.5 (APPLY THE PRESELECTED CANDIDATE ONLY TO ITS MATCHED ROUTE): if STEP 0.8 returned CANDIDATE_CANARY and STEP 1 produced topic-route-input.json whose reader.job exactly equals the assignment reader_job, read the immutable strategy_path and apply only its one returned rule to BOTH JA and EN drafts. This is one bounded canary, not an active learned rule: it never mutates reference/learned-playbook.md and never overrides safety, citations, identity, exact8, price, platform, schedules, providers, destination accounts, or recovery. If the exact reader job did not match, do not apply or record the candidate. STEP 4.85 requires excerpts that software can locate in both frozen drafts.
 
 STEP 2 (RESEARCH -- do the real work, no shortcuts): research the topic properly. Use firecrawl (`firecrawl scrape <url> markdown`) for web sources, context7 (`npx ctx7@latest library <name>` then `npx ctx7@latest docs <libraryId> <query>`) for any library/SDK/API docs, and agent-reach/WebSearch for broader discovery. If the topic is a tool, repo, or product, actually RUN it end-to-end yourself and observe the real behavior -- a claim you have not personally verified must not go in the article. Form an honest verdict (should someone use this, who for) grounded in what you actually observed, not marketing copy.
 
-STEP 3 (WRITE, BOTH LANGUAGES, NATIVELY): REQUIRED READ -- before drafting either language title, read ~/profitable-claude/skills/writing-craft/CRAFT.md and ~/profitable-claude/skills/writing-craft/formats/article.md in full, then read ~/profitable-claude/skills/article-writer/SKILL.md section "執筆プロセス standard" and ~/profitable-claude/skills/article-writer/reference/title-best-practices.md in full, and obey all four for BOTH the ja title and the en title, not just one. That reference file is the ONLY source of title rules and this prompt adds none of its own. Its section 1 holds real titles with their real engagement numbers, and its section 2 is the ONLY list of bans -- read it there and apply exactly what it says, no more. Do not restate those bans here or anywhere else and do not derive extra ones from them: every past failure of this step came from a ban being paraphrased into something stricter than the measured original. Abstraction, negation and first person are all rewarded patterns in section 1, so never reject a candidate for being abstract, negative or personal. A number in the headline is NOT required and never breaks a tie; when two candidates are close, take the one carrying tension or reversal, not the one carrying digits. Produce at least five candidates per language spread across different section 1 patterns, then record all of them, chosen and rejected, with python3 ~/profitable-claude/skills/article-writer/scripts/title_candidates.py record --json - --run-dir <this runs record directory> --lang <ja or en>. That recorder refuses a rejection reason stated in rulebook words instead of reader-side words, and refuses a rejection that does not cite the file and line of the rule it applied, so a later pass can score the rejected candidates against real titles and put the loss on the exact line that caused it. If that recorder exits nonzero, read its message, fix the ledger and run it once more; if it still refuses, save the raw ledger JSON as this runs gates/title-candidates-<lang>.raw.json and CONTINUE. Recording is measurement, never a permission to publish -- the PUBLISH ANYWAY boundary above outranks it, and a run that shipped nothing because a ledger would not validate is a worse outcome than a run with one missing measurement. Now write the article in Japanese AND English, each written NATIVELY in that language (not translated from the other -- natural phrasing, idioms, and structure for each language independently). Use the hamburger template documented in the ai-entity-article-writer skill. Invoke the stop-ai-slop-jp skill on the Japanese draft and fix everything it flags (zenkaku dashes, AI pet phrases, missing subject, thesis-style H2s, false balance, uniform rhythm). Then read ~/profitable-claude/skills/article-writer/vendor/writing-skills/humanizer/SKILL.md and apply its final humanize pass to BOTH language drafts (bakeoff-verified final filter). Then, for EACH language draft, run python3 ~/profitable-claude/skills/article-writer/scripts/_shared/citation-strip.py --in-place --report <f> (SKILL.md rule 26: every inline (出典: [label](url)) citation collapses into ONE final 出典/Sources block, deduplicated by URL -- this is mechanical, not a judgment call, so run it as a normalization pass before any gate reads the draft). From the same research, write one independent Japanese short-form X Post into this run as x-post-ja.txt; it is not a summary headline, not an English post, and it remains immutable with the two article drafts. Read ARTICLE_PRODUCT_LANDING_URL and ARTICLE_PRODUCT_ID from the inherited environment. Every one of article-ja.md, article-en.md, and x-post-ja.txt must contain exactly one measurable self-hosted product CTA built from ARTICLE_PRODUCT_LANDING_URL with query keys product_id=ARTICLE_PRODUCT_ID, run_id=RUN_DIR_PLACEHOLDER, artifact_id, variant_id, and click_id. Use artifact_id=article-ja, article-en, and x-post-ja respectively; use three distinct click_id values RUN_DIR_PLACEHOLDER-article-ja, RUN_DIR_PLACEHOLDER-article-en, and RUN_DIR_PLACEHOLDER-x-post-ja; derive each variant_id from the selected title/post variant rather than reusing one value. Build the query with Python urllib.parse.urlencode so values are encoded. Substack, note, or GitHub links remain distribution/citations and do not satisfy this conversion CTA. Generate or select the headline image exactly once with the existing image workflow and save its final bytes as this runs headline-image.png. Author at least one Mermaid-backed explanatory diagram, save its source as this runs body-diagram.mmd, and render its cross-platform PNG once as this runs body-diagram.png (additional body assets use body-<name>.png). Before any gate or publication init reads the final draft, make article-en.md itself begin with YAML frontmatter containing the selected non-empty title and 1-4 non-empty Dev.to tags; never defer this metadata to a platform adapter. Then run python3 ~/profitable-claude/skills/article-writer/scripts/canonical_media.py attach --file <draft> for article-ja.md and article-en.md, then run the same command with validate for each draft. Each canonical draft must contain exactly one selected headline-image.png reference, the Mermaid source, and exactly one body-diagram.png reference. Both native drafts reuse those same immutable media bytes. Never regenerate these media after publication state initialization.
+STEP 3 (WRITE, BOTH LANGUAGES, NATIVELY): REQUIRED READ -- before drafting either language title, read ~/profitable-claude/skills/writing-craft/CRAFT.md and ~/profitable-claude/skills/writing-craft/formats/article.md in full, then read ARTICLE_ROOT_PLACEHOLDER/SKILL.md section "執筆プロセス standard" and ARTICLE_ROOT_PLACEHOLDER/reference/title-best-practices.md in full, and obey all four for BOTH the ja title and the en title, not just one. That reference file is the ONLY source of title rules and this prompt adds none of its own. Its section 1 holds real titles with their real engagement numbers, and its section 2 is the ONLY list of bans -- read it there and apply exactly what it says, no more. Do not restate those bans here or anywhere else and do not derive extra ones from them: every past failure of this step came from a ban being paraphrased into something stricter than the measured original. Abstraction, negation and first person are all rewarded patterns in section 1, so never reject a candidate for being abstract, negative or personal. A number in the headline is NOT required and never breaks a tie; when two candidates are close, take the one carrying tension or reversal, not the one carrying digits. Produce at least five candidates per language spread across different section 1 patterns, then record all of them, chosen and rejected, with python3 ARTICLE_ROOT_PLACEHOLDER/scripts/title_candidates.py record --json - --run-dir <this runs record directory> --lang <ja or en>. That recorder refuses a rejection reason stated in rulebook words instead of reader-side words, and refuses a rejection that does not cite the file and line of the rule it applied, so a later pass can score the rejected candidates against real titles and put the loss on the exact line that caused it. If that recorder exits nonzero, read its message, fix the ledger and run it once more; if it still refuses, save the raw ledger JSON as this runs gates/title-candidates-<lang>.raw.json and CONTINUE. Recording is measurement, never a permission to publish -- the PUBLISH ANYWAY boundary above outranks it, and a run that shipped nothing because a ledger would not validate is a worse outcome than a run with one missing measurement. Now write the article in Japanese AND English, each written NATIVELY in that language (not translated from the other -- natural phrasing, idioms, and structure for each language independently). Use the hamburger template documented in the writer-agent skill. Invoke the stop-ai-slop-jp skill on the Japanese draft and fix everything it flags (zenkaku dashes, AI pet phrases, missing subject, thesis-style H2s, false balance, uniform rhythm). Then read ARTICLE_ROOT_PLACEHOLDER/vendor/writing-skills/humanizer/SKILL.md and apply its final humanize pass to BOTH language drafts (bakeoff-verified final filter). Then, for EACH language draft, run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/_shared/citation-strip.py --in-place --report <f> (SKILL.md rule 26: every inline (出典: [label](url)) citation collapses into ONE final 出典/Sources block, deduplicated by URL -- this is mechanical, not a judgment call, so run it as a normalization pass before any gate reads the draft). From the same research, write one independent Japanese short-form X Post into this run as x-post-ja.txt; it is not a summary headline, not an English post, and it remains immutable with the two article drafts. Read ARTICLE_PRODUCT_LANDING_URL and ARTICLE_PRODUCT_ID from the inherited environment. Every one of article-ja.md, article-en.md, and x-post-ja.txt must contain exactly one measurable self-hosted product CTA built from ARTICLE_PRODUCT_LANDING_URL with query keys product_id=ARTICLE_PRODUCT_ID, run_id=RUN_DIR_PLACEHOLDER, artifact_id, variant_id, and click_id. Use artifact_id=article-ja, article-en, and x-post-ja respectively; use three distinct click_id values RUN_DIR_PLACEHOLDER-article-ja, RUN_DIR_PLACEHOLDER-article-en, and RUN_DIR_PLACEHOLDER-x-post-ja; derive each variant_id from the selected title/post variant rather than reusing one value. Build the query with Python urllib.parse.urlencode so values are encoded. Substack, note, or GitHub links remain distribution/citations and do not satisfy this conversion CTA. Generate or select the headline image exactly once with the existing image workflow and save its final bytes as this runs headline-image.png. Author at least one Mermaid-backed explanatory diagram, save its source as this runs body-diagram.mmd, and render its cross-platform PNG once as this runs body-diagram.png (additional body assets use body-<name>.png). Before any gate or publication init reads the final draft, make article-en.md itself begin with YAML frontmatter containing the selected non-empty title and 1-4 non-empty Dev.to tags; never defer this metadata to a platform adapter. Then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/canonical_media.py attach --file <draft> for article-ja.md and article-en.md, then run the same command with validate for each draft. Each canonical draft must contain exactly one selected headline-image.png reference, the Mermaid source, and exactly one body-diagram.png reference. Both native drafts reuse those same immutable media bytes. Never regenerate these media after publication state initialization.
 
 STEP 3.5 (OPERATOR-IDENTIFIER BAN -- HARD, enforced in code at publish time by scripts/pii-gate.py): write as the AI persona only. Nothing you publish -- body, title, alt text, the 出典/Sources block, the CTA, x-post-ja.txt -- may name the operator (real name, personal GitHub/X/note/Substack handle, personal repo URL, personal email, phone) or give a city-, region- or address-level location for the machine this runs on (東京の…, in Tokyo, a 〒 code, an office). Saying you ran it on your own always-on machine is fine; saying where that machine sits, or who owns it, is not. This bites hardest in 出典/Sources: when the only evidence for a claim lives in a personal repository, describe in prose what that evidence shows, or cite the public product/docs URL -- never paste a https://github.com/<operator-handle>/... link, and never use an operator-owned repo as an exemplar URL. A claim whose only citation would name the operator ships without that link, or does not ship. scripts/pii-gate.py blocks publication on any hit and fails the run, so obfuscating an identifier is not a fix -- remove it.
 
@@ -291,38 +554,36 @@ STEP 4.6 (IDENTITY SAFETY): for EACH language draft run identity-gate.sh. Do NOT
 
 STEP 4.7 (STABLE READER TESTING): for EACH language use one immutable gates/reader-questions-<lang>.json and pass it through --questions-file on every invocation. Run one initial evaluation and at most two revise-then-evaluate cycles. The terminal gates/reader-testing-gate-<lang>.terminal.json must say status=pass, payload.verdict=PASS, and article_sha256 equal to the current draft. Remaining questions, crash, timeout, malformed output, or 429 are non-PASS evidence for STEP 4.75. Never regenerate questions or fabricate PASS.
 
-STEP 4.75 (BOUNDED QUALITY SELF-HEAL -- mandatory before conscience or freeze): run `python3 ~/profitable-claude/skills/article-writer/scripts/quality_self_heal.py assess --run-dir "$ARTICLE_RUN_DIR" --draft-ja "$ARTICLE_RUN_DIR/article-ja.md" --draft-en "$ARTICLE_RUN_DIR/article-en.md"` after both editorial and reader terminals exist or honestly fail. If action=ready_to_freeze, continue to STEP 4.8. If action=reroute, preserve the attempt receipt, choose a new editorial_form different from forbidden_editorial_form, replace the outline as well as the prose, rewrite both languages from STEP 3, and rerun STEPS 4-4.75. If action=evaluate_reroute, do not rewrite again and do not call assess again yet: run editorial-gate.sh, identity-gate.sh, and reader-testing-gate.sh for BOTH languages against the current rerouted bytes until each persisted receipt carries that drafts current SHA-256 or its bounded terminal failure, then call assess once. evaluate_reroute does not consume the second quality attempt; it is the machine-enforced proof that the changed route was actually evaluated. This controller permits exactly one reroute and is idempotent for unchanged bytes. If action=block_freeze, do not stage, initialize publication state, or publish any pair; preserve the drafts and receipts, send the honest quality-blocked Telegram report, and end this run pending. Never weaken a gate, reuse stale PASS, or keep the old form with cosmetic edits.
+STEP 4.75 (QUALITY OBSERVATION -- mandatory, non-blocking for prose quality): run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/quality_self_heal.py assess --run-dir "$ARTICLE_RUN_DIR" --draft-ja "$ARTICLE_RUN_DIR/article-ja.md" --draft-en "$ARTICLE_RUN_DIR/article-en.md"`. With ARTICLE_PUBLICATION_POLICY=continuous, editorial/reader FAIL is persisted as quality_advisory and action=ready_to_freeze; continue immediately to STEP 4.8 and publish. A block_freeze now means identity/safety evidence is not current PASS: do not publish that unsafe artifact. Never reuse stale identity/safety evidence.
 
-STEP 4.8 (CONSCIENCE GATE -- mandatory, quality-independent, fail-closed, NO-SKIP): for EACH language draft that cleared STEP 4.7, run bash ~/profitable-claude/skills/article-writer/scripts/conscience-gate.sh <f> --lang <ja|en>. This fresh, context-zero judge sees only the proposed article and returns ALLOW or BLOCK for gray-zone exposure: internal credentials, non-public information about others, reputational or legal risk, or identifying a real person/organization in order to accuse them. A non-zero exit, missing JSON, or BLOCK is publication-blocking and MUST NOT be bypassed or softened. If either language is BLOCKed, publish neither version of that topic today: append an honest carry-over row for the blocked topic to ~/profitable-claude/skills/article-writer/state/articles.jsonl with published:false and state:\"carry-over:conscience-block:<reason>\", preserve its research and drafts for the next day, and make the carry-over mechanically selectable tomorrow. If this run claimed a card, move that card from state/topics/in-progress/ back to state/topics/queue/ without changing created/priority, remember its basename, and pass one --exclude-basename argument for it on every same-pass STEP 1 restart. If the topic came from fallback state, append an explicit carry-over to state/topic-queue.md and materialize it as a normal state/topics/queue/ card with original topic, research paths, created timestamp, and stable basename; exclude that basename for the rest of this pass. Materialize a genuinely different alternate topic as another normal queue card, then restart through select-next-topic.sh. Both the blocked carry-over and alternate must use queue cards so the selector cannot return the blocked topic today and can return it on the next scheduled pass when exclusions reset. The no-skip invariant applies to the daily publishing obligation, never to forcing a gray-zone topic through this gate. A pass may not proceed to STEP 5 without conscience-gate.sh ALLOW for BOTH ja and en.
+STEP 4.8 (CONSCIENCE GATE -- mandatory, quality-independent, fail-closed, NO-SKIP): for EACH language draft that cleared STEP 4.7, run bash ARTICLE_ROOT_PLACEHOLDER/scripts/conscience-gate.sh <f> --lang <ja|en>. This fresh, context-zero judge sees only the proposed article and returns ALLOW or BLOCK for gray-zone exposure: internal credentials, non-public information about others, reputational or legal risk, or identifying a real person/organization in order to accuse them. A non-zero exit, missing JSON, or BLOCK is publication-blocking and MUST NOT be bypassed or softened. If either language is BLOCKed, publish neither version of that topic today: append an honest carry-over row for the blocked topic to ARTICLE_STATE_DIR_PLACEHOLDER/articles.jsonl with published:false and state:\"carry-over:conscience-block:<reason>\", preserve its research and drafts for the next day, and make the carry-over mechanically selectable tomorrow. If this run claimed a card, move that card from ARTICLE_STATE_DIR_PLACEHOLDER/topics/in-progress/ back to ARTICLE_STATE_DIR_PLACEHOLDER/topics/queue/ without changing created/priority, remember its basename, and pass one --exclude-basename argument for it on every same-pass STEP 1 restart. If the topic came from fallback state, append an explicit carry-over to ARTICLE_STATE_DIR_PLACEHOLDER/topic-queue.md and materialize it as a normal ARTICLE_STATE_DIR_PLACEHOLDER/topics/queue/ card with original topic, research paths, created timestamp, and stable basename; exclude that basename for the rest of this pass. Materialize a genuinely different alternate topic as another normal queue card, then restart through select-next-topic.sh. Both the blocked carry-over and alternate must use queue cards so the selector cannot return the blocked topic today and can return it on the next scheduled pass when exclusions reset. The no-skip invariant applies to the daily publishing obligation, never to forcing a gray-zone topic through this gate. A pass may not proceed to STEP 5 without conscience-gate.sh ALLOW for BOTH ja and en.
 
-STEP 4.85 (EXPERIMENT APPLICATION EVIDENCE -- advisory to publishing, mandatory for learning): after copying the final JA/EN drafts into this runs article-ja.md and article-en.md, if STEP 1.5 returned an APPLIED experiment, write gates/self-improve-application.json with exactly {"experiment_id":"<returned id>","excerpts":{"ja":"<one exact 12+ character excerpt from article-ja.md that demonstrates the rule>","en":"<one exact 12+ character excerpt from article-en.md that demonstrates the rule>"}}. Run python3 ~/profitable-claude/skills/article-writer/scripts/self_improve_control.py record-application --skill-dir ~/profitable-claude/skills/article-writer --run-dir ~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER --evidence ~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER/gates/self-improve-application.json. The controller verifies both excerpts are byte-present and records both artifact hashes exactly once. If it fails, preserve its real error under this runs gates and continue publishing the last-known-good article; absent application proof forces the experiment to revert later and must not block todays exact8.
+STEP 4.85 (ACTIVE STRATEGY CONSUMPTION AND CANDIDATE CANARY EVIDENCE -- advisory to publishing, mandatory for learning): after copying the final JA/EN drafts into this runs article-ja.md and article-en.md, if STEP 0.8 read slice=writer-learning, write gates/writer-learning-consumption.json with exactly {"experiment_id":"<learning_cycle_id>","strategy_sha256":"<consumed_hash>","changed_field":"<manifest changed_field>","excerpts":{"ja":"<one exact 12+ character excerpt in article-ja.md demonstrating that active rule>","en":"<one exact 12+ character excerpt in article-en.md demonstrating that active rule>"}}. Run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/writer_learning_worker.py record-consumption --skill-dir ARTICLE_ROOT_PLACEHOLDER --run-dir ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER --evidence ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/writer-learning-consumption.json. The worker independently rechecks the wrapper receipt, active pointer, weight file hash, experiment, both exact excerpts, and both frozen article hashes before recording consumption. If STEP 1.5 returned status CANDIDATE_CANARY, separately write gates/writer-learning-canary.json with exactly {"experiment_id":"<returned id>","excerpts":{"ja":"<one exact 12+ character excerpt from article-ja.md that demonstrates the one candidate rule>","en":"<one exact 12+ character excerpt from article-en.md that demonstrates the one candidate rule>"}}. Run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/writer_learning_worker.py record-application --skill-dir ARTICLE_ROOT_PLACEHOLDER --run-dir ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER --evidence ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/writer-learning-canary.json. The worker requires the frozen matched reader_job, verifies both excerpts are byte-present, binds the candidate strategy hash to both frozen artifact hashes exactly once, and consumes the assignment so later runs cannot apply it again. If either learning receipt fails, preserve its real error under this runs gates and continue publishing the last-known-good article; absent proof never fabricates learning and must not block todays exact8.
 
-STEP 4.86 (CTA + X POST INVARIANTS -- mandatory, revenue-path, fail-closed): run bash ~/profitable-claude/skills/article-writer/scripts/cta-gate.sh article-ja.md --run-id RUN_DIR_PLACEHOLDER --artifact-id article-ja, then the same for article-en.md/artifact-id article-en and x-post-ja.txt/artifact-id x-post-ja. Save each JSON result as gates/cta-ja.json, gates/cta-en.json, and gates/cta-x-post-ja.json. A missing or mismatched measurable product landing path is not an advisory quality miss: revise that artifact before proceeding. x-post-ja.txt must contain 1..280 characters after stripping outer whitespace; shorten it before freeze rather than letting the pending worker reject the same immutable intent forever. publication_resume.py init independently reruns the CTA gate on all three frozen artifacts, requires distinct click_id values, enforces the X Post length, and refuses to create publication state if any result is not PASS, so no staging or live action can precede the invariant.
+STEP 4.86 (CTA + X POST INVARIANTS -- mandatory, revenue-path, fail-closed): run bash ARTICLE_ROOT_PLACEHOLDER/scripts/cta-gate.sh article-ja.md --run-id RUN_DIR_PLACEHOLDER --artifact-id article-ja, then the same for article-en.md/artifact-id article-en and x-post-ja.txt/artifact-id x-post-ja. Save each JSON result as gates/cta-ja.json, gates/cta-en.json, and gates/cta-x-post-ja.json. A missing or mismatched measurable product landing path is not an advisory quality miss: revise that artifact before proceeding. x-post-ja.txt must contain 1..280 characters after stripping outer whitespace; shorten it before freeze rather than letting the pending worker reject the same immutable intent forever. publication_resume.py init independently reruns the CTA gate on all three frozen artifacts, requires distinct click_id values, enforces the X Post length, and refuses to create publication state if any result is not PASS, so no staging or live action can precede the invariant.
 
-STEP 4.9 (PUBLICATION SSOT -- mandatory before staging or live action): export ARTICLE_RUN_DIR=~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER, ARTICLE_PUBLICATION_STATE=$ARTICLE_RUN_DIR/gates/publication-state.json, and ARTICLE_LEDGER=~/profitable-claude/skills/article-writer/state/articles.jsonl. Keep all three exported through every staging, guard, live, and reconcile command. Copy the final drafts and x-post into this run and require canonical media. After conscience ALLOW has caused quality-phase-terminal.py to write hash-bound editorial=PASS, reader=PASS, identity=PASS, safety=ALLOW markers for both languages, run `python3 ~/profitable-claude/skills/article-writer/scripts/publication_resume.py --state "$ARTICLE_PUBLICATION_STATE" --ledger "$ARTICLE_LEDGER" init --run-id RUN_DIR_PLACEHOLDER --run-dir "$ARTICLE_RUN_DIR" --topic-id <shared_topic_id> --draft-ja "$ARTICLE_RUN_DIR/article-ja.md" --draft-en "$ARTICLE_RUN_DIR/article-en.md" --x-post-ja $ARTICLE_RUN_DIR/x-post-ja.txt --headline-image "$ARTICLE_RUN_DIR/headline-image.png" --body-asset "$ARTICLE_RUN_DIR/body-diagram.png" --safety ALLOW --max-resume-attempts 2 --require-quality` and append one --body-asset for every additional canonical body asset. Initialization must reject missing, stale, or non-PASS quality terminals before publication-state.json exists. It also refuses missing Dev.to frontmatter and CTA/media mismatches. After successful init publish the immutable run media receipt, then stage destinations. Never replace run/topic/artifact identities.
+STEP 4.9 (PUBLICATION SSOT -- mandatory before staging or live action): export ARTICLE_RUN_DIR=ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER, ARTICLE_PUBLICATION_STATE=$ARTICLE_RUN_DIR/gates/publication-state.json, and ARTICLE_LEDGER=ARTICLE_STATE_DIR_PLACEHOLDER/articles.jsonl. Keep all three exported through every staging, guard, live, and reconcile command. Copy the final drafts and x-post into this run and require canonical media. After conscience ALLOW has caused quality-phase-terminal.py to write hash-bound editorial=PASS, reader=PASS, identity=PASS, safety=ALLOW markers for both languages, run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/publication_resume.py --state "$ARTICLE_PUBLICATION_STATE" --ledger "$ARTICLE_LEDGER" init --run-id RUN_DIR_PLACEHOLDER --run-dir "$ARTICLE_RUN_DIR" --topic-id <shared_topic_id> --draft-ja "$ARTICLE_RUN_DIR/article-ja.md" --draft-en "$ARTICLE_RUN_DIR/article-en.md" --x-post-ja $ARTICLE_RUN_DIR/x-post-ja.txt --headline-image "$ARTICLE_RUN_DIR/headline-image.png" --body-asset "$ARTICLE_RUN_DIR/body-diagram.png" --safety ALLOW --max-resume-attempts 2 --require-quality` and append one --body-asset for every additional canonical body asset. Initialization must reject missing, stale, or non-PASS quality terminals before publication-state.json exists. It also refuses missing article frontmatter and CTA/media mismatches. After successful init publish the immutable run media receipt, then stage only the four active destinations. Never replace run/topic/artifact identities.
 
-STEP 5 (STAGE ALL SEVEN ARTICLE DESTINATIONS -- every pass): use the REAL orchestrator ~/profitable-claude/skills/article-writer/scripts/run.sh, which you should read first (case "$CHANNEL" arms) so you use its real flags. Put the seven platform/language jobs below in a JSONL manifest at ~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER/gates/platform-dispatch.jsonl. Each line is exactly {"platform":"...","lang":"ja|en","argv":["one","argument","per","element"],"env":{"NAME":"value"}}. Build it with JSON serialization, never a shell command string: a title such as "$44M / $188K" must be one literal argv element and must not be shell-expanded. Resolve every argv path to an absolute path first because argv does not expand ~, $HOME, or globs. Put ARTICLE_QUALITY_ADVISORY, ARTICLE_QUALITY_ADVISORY_LOG, ARTICLE_RUN_DIR, ARTICLE_PUBLICATION_STATE, ARTICLE_LEDGER, and for both X jobs X_COVER plus ARTICLE_PUBLISH_PAIR=x-article/ja or x-article/en in env. Put ARTICLE_PUBLISH_PAIR=substack/ja or substack/en in the matching Substack env so its first draft ID becomes the stable target. Dev.to consumes the title and tags frontmatter already frozen in canonical article-en.md; do not create a separate adapter in a normal run. Then run platform-dispatch.sh --manifest <that file> --results ~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER/gates/platform-dispatch-results.jsonl. The helper preflights the complete manifest, rejects shell -c/background dispatch, waits for each foreground argv to finish, executes every row after earlier non-zero results, and returns non-zero only after recording all rows:
-  - Zenn (ja):      ARTICLE_QUALITY_ADVISORY=1 ARTICLE_QUALITY_ADVISORY_LOG=~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER/gates/publish-quality-advisory-ja.log bash ~/profitable-claude/skills/article-writer/scripts/run.sh --channel zenn --phase publish --markdown-file <ja.md> --title "<t>" --meta "<m>"
-  - dev.to (en):    ARTICLE_QUALITY_ADVISORY=1 ARTICLE_QUALITY_ADVISORY_LOG=~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER/gates/publish-quality-advisory-en.log bash ~/profitable-claude/skills/article-writer/scripts/run.sh --channel devto --phase publish --markdown-file <en.md> --title "<t>" --meta "<m>"
-  - Substack ja:     ARTICLE_QUALITY_ADVISORY=1 ARTICLE_QUALITY_ADVISORY_LOG=~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER/gates/publish-quality-advisory-ja.log bash ~/profitable-claude/skills/article-writer/scripts/run.sh --channel substack-ja --phase publish --markdown-file <ja.md> --title "<t>" --meta "<m>"
-  - Substack en:     ARTICLE_QUALITY_ADVISORY=1 ARTICLE_QUALITY_ADVISORY_LOG=~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER/gates/publish-quality-advisory-en.log bash ~/profitable-claude/skills/article-writer/scripts/run.sh --channel substack-en --phase publish --markdown-file <en.md> --title "<t>" --meta "<m>"
-  - note (ja):       ARTICLE_QUALITY_ADVISORY=1 ARTICLE_QUALITY_ADVISORY_LOG=~/profitable-claude/skills/article-writer/state/runs/RUN_DIR_PLACEHOLDER/gates/publish-quality-advisory-ja.log bash ~/profitable-claude/skills/article-writer/scripts/run.sh --channel note --phase publish --markdown-file <ja.md> --title "<t>" --meta "<m>"
-  - X (ja + en):     argv ["bash","/Users/anicca/profitable-claude/skills/article-writer/scripts/x-publish/publish-to-x.sh","publish","<absolute-ja-or-en.md>","--mode","draft","--lang","<ja-or-en>"] with env.X_COVER set to the same existing absolute cover PNG for both rows (draft mode only -- never call the `go` subcommand)
-A pass that stages three platforms and calls it done is a FAILED pass -- the results file must contain all seven attempted platform/language rows (note ja, zenn ja, dev.to en, substack ja/en, X ja/en). Every draft creation is subject to the shared CDP :9222 daily-driver browser lock this driver script already holds around this whole model invocation, so no extra locking is needed inside your own actions.
+STEP 5 (STAGE EXACTLY FOUR ACTIVE ARTICLE DESTINATIONS -- every pass): use the REAL orchestrator ARTICLE_ROOT_PLACEHOLDER/scripts/run.sh, which you should read first (case "$CHANNEL" arms) so you use its real flags. Put exactly four platform/language jobs below in a JSONL manifest at ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/platform-dispatch.jsonl: note/ja, substack/ja, substack/en, and x-article/ja. Each line is exactly {"platform":"...","lang":"ja|en","argv":["one","argument","per","element"],"env":{"NAME":"value"}}. Build it with JSON serialization, never a shell command string: a title such as "$44M / $188K" must be one literal argv element and must not be shell-expanded. Resolve every argv path to an absolute path first because argv does not expand ~, $HOME, or globs. Put ARTICLE_QUALITY_ADVISORY, ARTICLE_QUALITY_ADVISORY_LOG, ARTICLE_RUN_DIR, ARTICLE_PUBLICATION_STATE, ARTICLE_LEDGER, and ARTICLE_PUBLISH_PAIR in the matching env. For the X Article JA row, put X_COVER equal to the same existing absolute cover PNG and ARTICLE_PUBLISH_PAIR=x-article/ja; for Substack put ARTICLE_PUBLISH_PAIR=substack/ja or substack/en so its first draft ID becomes the stable target. Then run platform-dispatch.sh --manifest <that file> --results ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/platform-dispatch-results.jsonl. The helper preflights the complete manifest, rejects shell -c/background dispatch, waits for each foreground argv to finish, executes every row after earlier non-zero results, and returns non-zero only after recording all four rows:
+  - note (ja):       ARTICLE_QUALITY_ADVISORY=1 ARTICLE_QUALITY_ADVISORY_LOG=ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/publish-quality-advisory-ja.log bash ARTICLE_ROOT_PLACEHOLDER/scripts/run.sh --channel note --phase publish --markdown-file <ja.md> --title "<t>" --meta "<m>"
+  - Substack ja:     ARTICLE_QUALITY_ADVISORY=1 ARTICLE_QUALITY_ADVISORY_LOG=ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/publish-quality-advisory-ja.log bash ARTICLE_ROOT_PLACEHOLDER/scripts/run.sh --channel substack-ja --phase publish --markdown-file <ja.md> --title "<t>" --meta "<m>"
+  - Substack en:     ARTICLE_QUALITY_ADVISORY=1 ARTICLE_QUALITY_ADVISORY_LOG=ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/publish-quality-advisory-en.log bash ARTICLE_ROOT_PLACEHOLDER/scripts/run.sh --channel substack-en --phase publish --markdown-file <en.md> --title "<t>" --meta "<m>"
+  - X Article ja:   argv ["bash","ARTICLE_ROOT_PLACEHOLDER/scripts/x-publish/publish-to-x.sh","publish","<absolute-ja.md>","--mode","draft","--lang","ja"] with env.X_COVER set to the same existing absolute cover PNG (draft mode only -- never call the `go` subcommand)
+A pass that stages fewer or more than these four rows is a FAILED pass. Every draft creation is subject to the shared CDP :9222 daily-driver browser lock this driver script already holds around this whole model invocation, so no extra locking is needed inside your own actions.
 
-STEP 5.5 (NOTE EYECATCH -- mandatory, no note draft ships without one): immediately after the note dispatch above returns its "DRAFT (unpublished) key=<KEY> ..." line, extract <KEY>. Require $X_COVER to resolve to this immutable runs $ARTICLE_RUN_DIR/headline-image.png and require its SHA-256 to equal publication-state.json media.headline_image.sha256. Copy that exact file to the fixed path the script reads: `cp "$ARTICLE_RUN_DIR/headline-image.png" ~/.cloak/note-work/thumb.png`. Never generate, select, or substitute another cover. Then run: `NOTE_KEY=<KEY> python3 ~/profitable-claude/skills/article-writer/scripts/note-publish/set-eyecatch-draft.py`. This script only sets the draft eyecatch and stops -- it has no code path that can publish. READBACK (mandatory, do not skip): the script itself re-reads the DOM after setting the image and prints "EYECATCH_IN_EDITOR: <src>" -- treat this as success ONLY if <src> is a real assets.st-note.com URL, not "NONE"; also open the screenshot it saves to ~/.cloak/note-work/eyecatch-draft-set.png as a second own-eyes check before deciding this succeeded. If the eyecatch genuinely fails to set (EYECATCH_IN_EDITOR: NONE after a real attempt), report note as a failed step in STEP 8/9 with the real error -- never mark note as fully succeeded without a confirmed EYECATCH_IN_EDITOR hit.
+STEP 5.5 (NOTE EYECATCH -- mandatory, no note draft ships without one): immediately after the note dispatch above returns its "DRAFT (unpublished) key=<KEY> ..." line, extract <KEY>. Require $X_COVER to resolve to this immutable runs $ARTICLE_RUN_DIR/headline-image.png and require its SHA-256 to equal publication-state.json media.headline_image.sha256. Copy that exact file to the fixed path the script reads: `cp "$ARTICLE_RUN_DIR/headline-image.png" ~/.cloak/note-work/thumb.png`. Never generate, select, or substitute another cover. Then run: `NOTE_KEY=<KEY> python3 ARTICLE_ROOT_PLACEHOLDER/scripts/note-publish/set-eyecatch-draft.py`. This script only sets the draft eyecatch and stops -- it has no code path that can publish. READBACK (mandatory, do not skip): the script itself re-reads the DOM after setting the image and prints "EYECATCH_IN_EDITOR: <src>" -- treat this as success ONLY if <src> is a real assets.st-note.com URL, not "NONE"; also open the screenshot it saves to ~/.cloak/note-work/eyecatch-draft-set.png as a second own-eyes check before deciding this succeeded. If the eyecatch genuinely fails to set (EYECATCH_IN_EDITOR: NONE after a real attempt), report note as a failed step in STEP 8/9 with the real error -- never mark note as fully succeeded without a confirmed EYECATCH_IN_EDITOR hit.
 
 STEP 6 (OWN-EYES VERIFY -- mandatory, a 200 from a tool is not evidence): for EVERY draft URL you get back, open it yourself in the already-logged-in daily-driver Chromium (CDP :9222, e.g. `agent-browser --auto-connect` or the camofox/CloakBrowser tooling already configured on this machine) and confirm ON THE REAL RENDERED PAGE that (a) the draft genuinely exists and (b) it is NOT publicly live (still shows as a draft/unpublished in the editor UI). Do not accept an HTTP status code alone as proof -- look at the page. If a draft looks public, STOP, do not report success for that platform, and flag it as a safety concern in your Telegram report.
 
-STEP 6.5 (RENDER-VERIFY -- mandatory, a fresh independent vision judge per platform, catches what STEP 6 own-eyes cannot): STEP 6 is YOUR OWN judgment on the same draft you just wrote, which is exactly the kind of self-graded check this loop keeps failing (same reason deslop-gate.sh/eval-gate.sh use a fresh model call instead of trusting the writer). For EVERY platform whose draft URL supports it (note, zenn, substack-ja, substack-en, devto -- skip X, it has no equivalent editor URL), run bash ~/profitable-claude/skills/article-writer/scripts/render-verify-draft.sh --platform <note|zenn|substack|devto> --url <the draft edit URL from STEP 5> --lang <ja|en>. It takes a real full-page screenshot and a fresh vision judge checks it for rendering defects your own eyes tend to miss: raw frontmatter text leaking into the visible body, a broken-image icon or literal unrendered ```mermaid text where a figure should be. verdict:"FAIL" is BLOCKING (STEP 4.5s rule applies here too -- a script crash with no verdict JSON is ALSO blocking, never treat it as this platform is just fine today). On FAIL: read the problems list, fix only runtime draft content and re-run render-verify-draft.sh -- up to 3 total attempts for that platform. If the failure is in tracked source or still FAILs after 3 attempts, persist the exact blocker and concrete fix hint under the current run gates, leave that pair pending, and continue remaining independent pairs. Never spawn a source fixer or mark a platform done on a render-verify FAIL you did not resolve.
+STEP 6.5 (RENDER-VERIFY -- mandatory, a fresh independent vision judge per platform, catches what STEP 6 own-eyes cannot): STEP 6 is YOUR OWN judgment on the same draft you just wrote, which is exactly the kind of self-graded check this loop keeps failing (same reason deslop-gate.sh/eval-gate.sh use a fresh model call instead of trusting the writer). For EVERY active platform whose draft URL supports it (note, substack-ja, substack-en -- skip X, it has no equivalent editor URL), run bash ARTICLE_ROOT_PLACEHOLDER/scripts/render-verify-draft.sh --platform <note|substack> --url <the draft edit URL from STEP 5> --lang <ja|en>. It takes a real full-page screenshot and a fresh vision judge checks it for rendering defects your own eyes tend to miss: raw frontmatter text leaking into the visible body, a broken-image icon or literal unrendered ```mermaid text where a figure should be. verdict:"FAIL" is BLOCKING (STEP 4.5s rule applies here too -- a script crash with no verdict JSON is ALSO blocking, never treat it as this platform is just fine today). On FAIL: read the problems list, fix only runtime draft content and re-run render-verify-draft.sh -- up to 3 total attempts for that platform. If the failure is in tracked source or still FAILs after 3 attempts, persist the exact blocker and concrete fix hint under the current run gates, leave that pair pending, and continue remaining independent pairs. Never spawn a source fixer or mark a platform done on a render-verify FAIL you did not resolve.
 
-STEP 7 (LEDGER -- one honest STAGING row per platform, never fabricated): choose one stable topic_id shared by both language versions. Append one line per staging attempt with "run_id":"RUN_DIR_PLACEHOLDER", that shared topic_id, localized topic, platform, lang, draft_url or null, exact state, verified_logged_in, published:false, and the frozen topic_source/editorial_form from gates/topic-route.json. In armed mode STEP 19 later appends published:true rows only after each real go-live and reality-gate PASS. Never invent a URL or verification. If a card was claimed, move it from state/topics/in-progress/ to state/topics/done/ only after every attempt is recorded.
+STEP 7 (LEDGER -- one honest STAGING row per active destination, never fabricated): choose one stable topic_id shared by both language versions. Append exactly four rows, one for each active destination, with "run_id":"RUN_DIR_PLACEHOLDER", that shared topic_id, localized topic, platform, lang, draft_url or null, exact state, verified_logged_in, published:false, and the frozen topic_source/editorial_form from gates/topic-route.json. In armed mode STEP 19 later appends published:true rows only after each real go-live and reality-gate PASS. Never invent a URL or verification. If a card was claimed, move it from ARTICLE_STATE_DIR_PLACEHOLDER/topics/in-progress/ to ARTICLE_STATE_DIR_PLACEHOLDER/topics/done/ only after every attempt is recorded.
 
 STEP 8 (PLATFORMS ARE INDEPENDENT): if one platform fails (auth expired, selector changed, rate limit, etc), stage every other platform anyway and record the failed platform for retry. If the root cause is a tracked-source defect, record it under the current run gates and leave that pair pending for a reviewed source deployment. Never edit source, fake a URL, or let one platform short-circuit another.
 
-STEP 9 (TELEGRAM REPORT -- MANDATORY, every pass, success or failure): the built-in local push-notify tool does NOT reach Dais (it silently no-ops when Remote Control is inactive -- proven 2026-07-12). Use: openclaw message send --channel telegram --target 8547730585 --message "<your honest one-screen report>" --json. The message MUST contain: the topic chosen, all seven article destination draft URLs (or the honest failure reason for any that failed), the saved x-post/ja artifact, and what you personally verified on each page. In unarmed mode, explicitly say these are DRAFTS awaiting manual publish and never live. In armed mode, STEP 20 replaces that reminder with immediate live and scheduled-pending evidence. Confirm the send returned a real messageId; if the send fails, retry once, then note the failure in your final report line.
+STEP 9 (TELEGRAM REPORT -- MANDATORY, every pass, success or failure): the built-in local push-notify tool does NOT reach Dais (it silently no-ops when Remote Control is inactive -- proven 2026-07-12). Use: openclaw message send --channel telegram --target 8547730585 --message "<your honest one-screen report>" --json. The message MUST contain: the topic chosen, all four active destination draft URLs (or the honest failure reason for any that failed), and what you personally verified on each page. The compatibility x-post artifact may be retained for the nonpublication CTA gate, but it is not a destination row or publication work. In unarmed mode, explicitly say these are DRAFTS awaiting manual publish and never live. In armed mode, STEP 20 replaces that reminder with immediate live and scheduled-pending evidence. Confirm the send returned a real messageId; if the send fails, retry once, then note the failure in your final report line.
 
-STEP 10 (FINISH -- HONEST DELIVERY): completion requires current-hash editorial PASS, reader PASS, identity safety clear, conscience ALLOW, every configured platform attempted independently, and exact current-run ledger evidence. A block_freeze run is quality-blocked and has no publication state, never shipped. In armed mode article-run-complete.py requires exact8 live reality receipts. Until then report PENDING; never equate foreground exit with shipped.'
+STEP 10 (FINISH -- HONEST DELIVERY): completion requires identity safety clear, conscience ALLOW, every active platform attempted independently, and exact current-run ledger evidence. Editorial/reader FAIL remains a learning advisory and never blocks publication under continuous policy. In armed mode article-run-complete.py requires four active live reality receipts; the four dormant skip receipts are not failures or SLO work. Until then report PENDING; never equate foreground exit with shipped.'
 
 # task #27: PROMPT is single-quoted (the literal text above can't be touched safely -- it is a
 # live production agent instruction, editing it in place risks corrupting it), so the Telegram
@@ -340,7 +601,7 @@ if [ "$BROWSER_STATUS" != "ALIVE" ] && [ "$BROWSER_STATUS" != "RECOVERED" ]; the
 
 ★ BROWSER UNAVAILABLE THIS RUN ★ ensure_browser.sh could not bring the shared CDP :9222
 daily-driver back before this pass started (status: '"$BROWSER_STATUS"'). Any platform whose
-draft-staging or own-eyes verification drives that browser (zenn, substack, x) will not work
+draft-staging or own-eyes verification drives that browser (substack, x) will not work
 today -- treat each as a failed platform per STEP 8, with "browser unavailable" as the honest
 reason, and do not attempt a verification you cannot actually perform. note publishing goes
 through its own separate session, not this browser, so attempt it normally. The research and
@@ -351,42 +612,46 @@ fi
 # 2026-07-14-article-earn-loop-ssot.md PART J/J2): default 0/absent = today's draft-only
 # behavior, byte-identical PROMPT, zero change. Only when the plist injects
 # ARTICLE_AUTOPUBLISH=1 does the addendum below get appended to PROMPT, authorizing this pass
-# to take its own exact8 package live under the persisted schedule. Rollback = flip the plist
+# to take its own active-four package live under the persisted schedule. Rollback = flip the plist
 # env var back to 0/absent, one line, no code change.
 AUTOPUBLISH="${ARTICLE_AUTOPUBLISH:-0}"
 if [ "$AUTOPUBLISH" = "1" ]; then
   PROMPT="${PROMPT}"'
 
-★★★ ARTICLE_AUTOPUBLISH=1 IS SET FOR THIS RUN. THIS run is ARMED for one exact8 package. After all immutable artifacts, identities, and gates exist, publish the immediate group independently and in this exact order: note/ja, zenn-article/ja, devto/en, substack/ja, substack/en, x-article/ja. A failure continues to the next pair. Do NOT publish x-article/en in this foreground pass; the 300-second pending worker owns it only after the remotely observed Japanese publication time plus six hours, with no deadline. Do NOT publish x-post/ja here before its at-or-after-12:00 JST slot; the pending worker owns the one-date FIFO slot. The run remains PENDING until all eight reality-PASS rows exist. Never use an older draft, prior run, replacement target, or a second X Post. ★★★
+★★★ ARTICLE_AUTOPUBLISH=1 IS SET FOR THIS RUN. THIS run is ARMED for one active-four package. After all immutable artifacts, identities, and gates exist, publish exactly these four active destinations independently and in this exact order: note/ja, substack/ja, substack/en, and x-article/ja. A failure continues to the next pair. Before any live side effect, require the platform-dispatch manifest and results to contain exactly these four rows, and record four durable dormant skip receipts through publication-guard.py register-dormant-skip, including x-article/en and x-post/ja. Do not stage, create an intent, repair, or publish any dormant destination. The run remains PENDING until all four active reality-PASS rows exist. Never use an older draft, prior run, replacement target, or a second X Post. ★★★
 
-STEP 11 (CAPTURE ALL STABLE IDENTITIES): extract the note key, Zenn slug, Dev.to authenticated article ID, separate Substack JA/EN draft IDs, and separate X Article JA/EN draft URLs from the seven staging results. The x-post/ja stable intent target is this run ID, RUN_DIR_PLACEHOLDER.
+STEP 11 (CAPTURE ALL STABLE IDENTITIES): extract the note key, separate Substack JA/EN draft IDs, and the X Article JA draft URL from the exactly four staging results. Keep the compatibility x-post artifact outside the publication manifest and do not create a target for it.
 
-STEP 11.5 (REGISTER ALL EXACT8 TARGETS BEFORE THE FIRST LIVE SIDE EFFECT): with the STEP 4.9 ARTICLE_RUN_DIR, ARTICLE_PUBLICATION_STATE, and ARTICLE_LEDGER still exported, use publication-guard.py register-intent once for note/ja note-key=<KEY>, zenn-article/ja zenn-slug=<slug>, devto/en devto-article-id=<ID>, substack/ja and substack/en with their separate substack-draft-id values, x-article/ja and x-article/en with their separate x-draft-url values, and x-post/ja x-post-slot=RUN_DIR_PLACEHOLDER. Never call publication_resume.py intent directly from a managed pass. Exact-repeat is idempotent. Run publication-guard.py plan and require resumable:true with all eight pairs present before STEP 13. A missing, conflicting, or ambiguous target means no live side effect. This complete intent set is mandatory even though the two scheduled pairs remain pending.
+STEP 11.5 (REGISTER EXACTLY FOUR ACTIVE TARGETS AND FOUR DORMANT SKIPS BEFORE THE FIRST LIVE SIDE EFFECT): with the STEP 4.9 ARTICLE_RUN_DIR, ARTICLE_PUBLICATION_STATE, and ARTICLE_LEDGER still exported, use `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/publication-guard.py register-intent` exactly once for each of note/ja, substack/ja, substack/en, and x-article/ja with their stable targets from the four staging results. Then use `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/publication-guard.py register-dormant-skip` exactly once for each of the four dormant pairs with reason=dormant-destination. Never call publication_resume.py intent directly from a managed pass. Exact-repeat is idempotent. Run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/publication-guard.py plan` and require resumable:true with exactly four active intents plus four explicit skip receipts; dormant skip receipts are excluded from pending work. A missing, conflicting, or ambiguous target means no live side effect.
 
-STEP 12 (FIXED MONEY CONTRACT + TAGS): run python3 ~/profitable-claude/skills/article-writer/scripts/note-publish/note_monetization_policy.py desired-state and require the JSON to say access_model=one_time_purchase, currency=JPY, price_minor=500, paywall_required=true, publisher_args=["--price","500"]. This executable desired-state contract is authoritative for every newly published note article; article count, follower count, and price-check suggestions cannot switch it to free or change the price. Separately run bash ~/profitable-claude/skills/article-writer/scripts/_shared/tag-counts.py <6-8 candidate hashtag words for this topic, no leading #> and pick up to 5 from the returned counts, avoiding any tag whose count is in the hundreds of thousands (it will bury this article).
+STEP 12 (FIXED MONEY CONTRACT + TAGS): run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/note-publish/note_monetization_policy.py desired-state and require the JSON to say access_model=one_time_purchase, currency=JPY, price_minor=500, paywall_required=true, publisher_args=["--price","500"]. This executable desired-state contract is authoritative for every newly published note article; article count, follower count, and price-check suggestions cannot switch it to free or change the price. Separately run bash ARTICLE_ROOT_PLACEHOLDER/scripts/_shared/tag-counts.py <6-8 candidate hashtag words for this topic, no leading #> and pick up to 5 from the returned counts, avoiding any tag whose count is in the hundreds of thousands (it will bury this article).
 
-STEP 13 (NOTE JP -- ¥500 go live -- this is the ONLY command in this entire loop that actually clicks the publish button on note.com): immediately before the publish-paid.py attempt, run bash ~/profitable-claude/skills/article-writer/scripts/note-publish/publish-to-note.sh enable-publish to create the 10-minute sentinel; treat it as single-use for that attempt and never reuse it for a retry. Then run NOTE_MODE=go ~/.openclaw/skills/_shared/venv-cloak/bin/python3 ~/profitable-claude/skills/article-writer/scripts/note-publish/publish-paid.py --key <KEY from STEP 11> --price 500 --after-chars <your own editorial judgment of where the useful free preview ends and the paid material begins, in characters> --tags "<up to 5 tags from STEP 12, comma-separated, no leading #>" --arm. Require exit code 0 plus PAID_PUBLISHED verified=true and API_VERIFY price=500 before treating note as live. --free is outside this Writer money contract.
+STEP 13 (NOTE JP -- ¥500 go live -- this is the ONLY command in this entire loop that actually clicks the publish button on note.com): immediately before the publish-paid.py attempt, run bash ARTICLE_ROOT_PLACEHOLDER/scripts/note-publish/publish-to-note.sh enable-publish to create the 10-minute sentinel; treat it as single-use for that attempt and never reuse it for a retry. Then run NOTE_MODE=go ~/.openclaw/skills/_shared/venv-cloak/bin/python3 ARTICLE_ROOT_PLACEHOLDER/scripts/note-publish/publish-paid.py --key <KEY from STEP 11> --price 500 --after-chars <your own editorial judgment of where the useful free preview ends and the paid material begins, in characters> --tags "<up to 5 tags from STEP 12, comma-separated, no leading #>" --arm. Require exit code 0 plus PAID_PUBLISHED verified=true and API_VERIFY price=500 before treating note as live. --free is outside this Writer money contract.
 
-STEP 14 (NOTE CONVERSION PREVIEW, ja only): generate the Japanese free-preview derivative for any adapter that explicitly consumes a note conversion artifact (make-free-version.py hardcodes a Japanese paywall footer, so it has no English equivalent): run bash ~/profitable-claude/skills/article-writer/scripts/_shared/make-free-version.py --markdown-file <the ja.md from STEP 3> --note-url <the live note URL from STEP 13> --price 500 --paid-contents "<your own exact naming of what is behind the paywall>" --summary-file <a small file you write yourself with 3-5 honest summary bullets, no slop> --out <a free.md path> --after-chars <your own editorial judgment, independent of the note paywall line in STEP 13>. Never silently substitute this derivative for the immutable source article; a destination adapter must name it explicitly. X and zenn stage from the raw ja.md/en.md in STEP 5 and are unaffected.
+STEP 14 (NOTE CONVERSION PREVIEW, ja only): generate the Japanese free-preview derivative for any adapter that explicitly consumes a note conversion artifact (make-free-version.py hardcodes a Japanese paywall footer, so it has no English equivalent): run bash ARTICLE_ROOT_PLACEHOLDER/scripts/_shared/make-free-version.py --markdown-file <the ja.md from STEP 3> --note-url <the live note URL from STEP 13> --price 500 --paid-contents "<your own exact naming of what is behind the paywall>" --summary-file <a small file you write yourself with 3-5 honest summary bullets, no slop> --out <a free.md path> --after-chars <your own editorial judgment, independent of the note paywall line in STEP 13>. Never silently substitute this derivative for the immutable source article; a destination adapter must name it explicitly. The four active destinations consume only their own immutable staging rows.
 
-STEP 15 (ZENN JA -- immediate group item 2): the Zenn draft from STEP 5 already exists as articles/<slug>.md with published:false in the Zenn repo. Run bash ~/profitable-claude/skills/article-writer/scripts/zenn-publish/publish-to-zenn.sh enable, then ZENN_MODE=go bash ~/profitable-claude/skills/article-writer/scripts/zenn-publish/publish-to-zenn.sh publish <slug>. The managed pair is zenn-article/ja. If the rolling window is closed, persist and hand the same slug to the dedicated Zenn worker; do not wait, restage, or respawn the article model. Continue to Dev.to.
-
-STEP 16 (DEV.TO EN -- immediate group item 3): run `python3 ~/profitable-claude/skills/article-writer/scripts/devto-publish/devto.py go <the authenticated article ID from STEP 11>`. This performs the mandatory preflight, flips only that already-staged numeric ID to published, and reconciles only after authenticated API plus anonymous canonical English body/headline/body-media readback. Never create a replacement. Unlike the old workflow, Dev.to is a required live exact8 pair.
+STEP 15 (DORMANT DESTINATIONS -- skip-only boundary): do not stage, create intents, run adapters, invoke publishers, or perform repairs for any dormant destination. Persist only the four explicit durable skip receipts; they never count as pending work, a live row, or an SLO breach.
 
 STEP 17 (SUBSTACK JA THEN EN -- paid subscriber contract, immediate group items 4 and 5, no subscriber email): enable the sentinel for each language, then run with ARTICLE_PUBLISH_PAIR=substack/ja SUBSTACK_MODE=go for Japanese and ARTICLE_PUBLISH_PAIR=substack/en SUBSTACK_MODE=go for English. The script reuses each persisted draft ID and reads authenticated GET /api/v1/drafts/{id} before POST, so a resumed run never creates or publishes a replacement. Require that readback to prove audience=only_paid, should_send_free_preview=true, and exactly one paywall node before either live side effect. send:false is mandatory.
 
-STEP 18 (X ARTICLE JA -- immediate group item 6): run python3 ~/profitable-claude/skills/article-writer/scripts/x-publish/x_inplace_repair.py --pair x-article/ja. This command opens only the persisted edit URL, requires its title to match the immutable Japanese artifact before preflight, replaces its body and media from that artifact, and publishes that same edit ID; never use the generic new-article composer or a replacement target here. The mandatory guard skips an already-live pair. Capture the remote publication timestamp from authenticated readback in its record-live evidence. Do not run x-article/en here.
+STEP 18 (X ARTICLE JA -- immediate group item 6): run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/x-publish/x_inplace_repair.py --pair x-article/ja. This command opens only the persisted edit URL, requires its title to match the immutable Japanese artifact before preflight, replaces its body and media from that artifact, and publishes that same edit ID; never use the generic new-article composer or a replacement target here. The mandatory guard skips an already-live pair. Capture the remote publication timestamp from authenticated readback in its record-live evidence. Do not run x-article/en here.
 
-STEP 19 (REALITY + LEDGER RECONCILIATION): immediately after EACH immediate go-live, run that destinations real reality gate and record-live only when authenticated/public readback proves the exact stable identity, public ID, live URL, publication timestamp, artifact hash, language, body, and required media. Never append a live row by hand. A publish-success/ledger-crash is repaired from remote reality without a second publish side effect. Run publication_resume.py worker-plan: x-article/en and x-post/ja must remain pending with their saved targets, while any failed immediate pair remains independently pending. article-run-complete.py succeeds only at exact8, normally after later worker ticks.
+STEP 19 (REALITY + LEDGER RECONCILIATION): immediately after EACH of the four active go-live operations, run the destination real reality gate and record-live only when authenticated/public readback proves the exact stable identity, public ID, live URL, publication timestamp, artifact hash, language, body, and required media. Never append a live row by hand. A publish-success/ledger-crash is repaired from remote reality without a second publish side effect. Run publication_resume.py worker-plan: any failed active pair remains independently pending; dormant skip receipts never enter pending or failure/SLO accounting. article-run-complete.py succeeds only at all four active reality receipts.
 
-STEP 20 (PENDING RECEIPT): send an honest Telegram pending receipt with the run ID, every immediate live URL and reality verdict, every failed immediate pair, x-article/en not_before derived from the remote X JA timestamp, and the x-post/ja slot state. Do not call it shipped and do not send an exact8 success receipt until article-run-complete.py passes with all eight verified rows.'
+STEP 20 (PENDING RECEIPT): send an honest Telegram pending receipt with the run ID, every active live URL and reality verdict, every failed active pair, and the four durable dormant skip receipts. Do not call it shipped and do not send an active-four success receipt until article-run-complete.py passes with all four verified rows.'
 fi
+
+PROMPT="$PROMPT
+
+TELEGRAM REPORT LANGUAGE: every Telegram progress or delivery message sent by this loop must be neutral natural language that a non-technical family member can understand. Do not add harness labels or prefixes such as Codex::: or Claude:::; start directly with the report.
+
+MEDIA CREATE-ONCE OVERRIDE (mandatory; supersedes STEP 3's direct-save wording): the wrapper has already armed an immutable two-asset boundary. Never pass canonical headline-image.png or body-diagram.png directly to an image generator or renderer. Create every output under \$ARTICLE_RUN_DIR/gates/media-candidates/ with a distinct candidate filename. Generate one headline candidate, then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/headline-image.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/headline-image-create.json\" --kind headline. Render one body diagram candidate, then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/body-diagram.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/body-diagram-create.json\" --kind body. A response-loss replay of the exact same commit is allowed; a different second candidate is refused and must never trigger another generator call. Before any gate or publication init, run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py verify --run-dir \"\$ARTICLE_RUN_DIR\"."
 
 # RUN RECORD (spec 47): replace only while writing a new immutable prompt, after every optional
 # addendum has been appended. Bash 3.2's in-memory global replacement becomes superlinear on this
 # large armed prompt; one sed stream preserves the exact bytes without delaying the runner.
 PROMPT_FILE="$RUN_DIR/article-daily-prompt.txt"
-GENERATION_STATE="$HOME/profitable-claude/skills/article-writer/scripts/article_generation_state.py"
+GENERATION_STATE="$ARTICLE_ROOT/scripts/article_generation_state.py"
 LEDGER="$STATE_DIR/articles.jsonl"
 GENERATION_ARGS=(--run-dir "$RUN_DIR" --run-id "$RUN_TS" --prompt-file "$PROMPT_FILE" --ledger "$LEDGER")
 # Quality-gate wrappers use this inherited identity to persist and cap rubric/reader
@@ -397,7 +662,7 @@ export ARTICLE_RUN_DIR="$RUN_DIR"
 # Judge broker: nested judge/vision calls inside the bounded agent sandbox cannot
 # start a provider process, so this unsandboxed sidecar serves their request files
 # from the run-scoped state tree through the same model boundary.
-ARTICLE_MODEL_LOG="$LOG" bash "$HOME/profitable-claude/skills/article-writer/runtime/judge-broker.sh" "$RUN_DIR" &
+ARTICLE_MODEL_LOG="$LOG" bash "$ARTICLE_ROOT/runtime/judge-broker.sh" "$RUN_DIR" &
 JUDGE_BROKER_PID=$!
 trap 'kill "$JUDGE_BROKER_PID" 2>/dev/null; rmdir "$LOCK_DIR" 2>/dev/null' EXIT
 if [ "$RESUME_GENERATION" -eq 1 ]; then
@@ -407,8 +672,17 @@ if [ "$RESUME_GENERATION" -eq 1 ]; then
   }
 else
   printf '%s' "$PROMPT" \
-    | sed "s/RUN_DIR_PLACEHOLDER/$RUN_TS/g" >"$PROMPT_FILE"
+    | sed \
+      -e "s|RUN_DIR_PLACEHOLDER|$RUN_TS|g" \
+      -e "s|ARTICLE_ROOT_PLACEHOLDER|$ARTICLE_ROOT|g" \
+      -e "s|ARTICLE_STATE_DIR_PLACEHOLDER|$STATE_DIR|g" \
+      >"$PROMPT_FILE"
   python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" init >>"$LOG" 2>&1 || exit 1
+  python3 "$ARTICLE_ROOT/scripts/media_create_once.py" \
+    arm --run-dir "$RUN_DIR" >>"$LOG" 2>&1 || {
+    echo "=== article-daily media create-once arm failed closed ===" >>"$LOG"
+    exit 1
+  }
 fi
 
 # The foreground model owns the pass until it exits. A provider failure after agent execution
@@ -464,7 +738,7 @@ PASS_OUTPUT="$(tail -c +$((LOG_OFFSET + 1)) "$LOG" 2>/dev/null)"
 if [ "$RC" -ne 0 ] && printf '%s' "$PASS_OUTPUT" | grep -qE "$AUTH_FAIL_PATTERN"; then
   echo "=== article-daily AUTH FAILURE detected rc=$RC; replay requires a complete current-run resume plan $(date '+%F %T %Z') ===" >>"$LOG"
   if command -v telegram_notify >/dev/null 2>&1; then
-    telegram_notify "article-daily AUTH FAILURE rc=$RC for run $RUN_TS. Automatic re-entry occurs only when the saved current-run publication plan is complete and resumable." >>"$LOG" 2>&1 \
+    telegram_notify "認証の確認で停止しました。記事の公開処理はまだ完了していません。同じ記事の保存済み状態が再開可能になったら、自動的に再試行します。" >>"$LOG" 2>&1 \
       || echo "=== article-daily: auth Telegram notify failed $(date '+%F %T %Z') ===" >>"$LOG"
     ALERT_SENT=1
   fi
@@ -480,8 +754,7 @@ if [ "$RC" -ne 0 ] && [ "$ALERT_SENT" -ne 1 ]; then
   # the whole message.
   TAIL_LOG="$(tail -40 "$LOG" 2>/dev/null | grep -v '"archive_manifest"' | cut -c1-200 | tail -20 | head -c 1200)"
   if command -v telegram_notify >/dev/null 2>&1; then
-    telegram_notify "article-daily FAILED rc=$RC ($(date '+%F %T %Z')). Last log lines:
-$TAIL_LOG" >>"$LOG" 2>&1 \
+    telegram_notify "記事の公開処理が途中で停止しました。公開済みとは数えず、保存済みの状態を次の自動処理で再確認します。" >>"$LOG" 2>&1 \
       || echo "=== article-daily: fallback Telegram notify failed $(date '+%F %T %Z') ===" >>"$LOG"
     ALERT_SENT=1
   fi
@@ -489,27 +762,38 @@ fi
 
 # LEDGER COMPLETION CHECK: rc=0 is not completion evidence. The daily creator runs the
 # side-effecting agent once; every later same-run attempt belongs to the 300-second pending
-# worker. Zenn rolling-window recovery remains isolated in its dedicated worker.
+# worker for the same immutable active-four run.
 pass_is_complete() {
   # Completion is scoped to this immutable run ID. A same-day row, quality carry-over, or one
   # successful platform from another run can never suppress retry of this run.
-  python3 "$HOME/profitable-claude/skills/article-writer/scripts/article-run-complete.py" \
-    --ledger "$LEDGER" --run-id "$RUN_TS" --armed "$AUTOPUBLISH"
+  python3 "$ARTICLE_ROOT/scripts/article-run-complete.py" \
+    --ledger "$LEDGER" --run-id "$RUN_TS" --armed "$AUTOPUBLISH" \
+    --publication-state "$RUN_DIR/gates/publication-state.json"
 }
 
 if ! pass_is_complete; then
-  if [ "$AUTOPUBLISH" = "1" ] && [ -f "$RUN_DIR/gates/zenn-deferred.json" ]; then
-    HANDOFF_JSON=$(python3 "$HOME/profitable-claude/skills/article-writer/scripts/zenn-deferred-control.py" handoff \
-      --ledger "$LEDGER" --run-id "$RUN_TS" --artifact "$RUN_DIR/gates/zenn-deferred.json" 2>>"$LOG" || true)
-    if [ "$(printf '%s' "$HANDOFF_JSON" | jq -r '.action // empty' 2>/dev/null)" = "handed-off" ]; then
-      echo "=== article-daily: Zenn pending handed to its dedicated retry worker $(date '+%F %T %Z') ===" >>"$LOG"
+  QUALITY_ACTION="$(jq -r '.action // empty' "$RUN_DIR/gates/quality-self-heal.json" 2>/dev/null || true)"
+  if [ "$QUALITY_ACTION" = "block_freeze" ] && [ ! -f "$RUN_DIR/gates/publication-state.json" ]; then
+    echo "=== article-daily: quality-blocked with zero publication state; bounded quality-feedback recovery owns same run=$RUN_TS $(date '+%F %T %Z') ===" >>"$LOG"
+    if [ "$ALERT_SENT" -ne 1 ] && command -v telegram_notify >/dev/null 2>&1; then
+      telegram_notify "Writer品質回復へ引継ぎ: run $RUN_TS は公開前の品質ゲートで停止し、現在のpublication stateと公開URLは0件です。同一runのbounded quality-feedback recoveryが、一次証拠を追加した1回限定の再評価を担当します。receipt=$RUN_DIR/gates/quality-self-heal.json" >>"$LOG" 2>&1 \
+        || echo "=== article-daily: quality-block Telegram notify failed $(date '+%F %T %Z') ===" >>"$LOG"
+      ALERT_SENT=1
     fi
-  fi
-  echo "=== article-daily: exact8 incomplete; durable pending worker owns same run=$RUN_TS without full-prompt replay $(date '+%F %T %Z') ===" >>"$LOG"
-  if [ "$ALERT_SENT" -ne 1 ] && command -v telegram_notify >/dev/null 2>&1; then
-    telegram_notify "article-daily: run $RUN_TS remains pending exact8 (rc=$RC). Evidence remains in $RUN_DIR; the 300-second same-run worker owns recovery." >>"$LOG" 2>&1 \
-      || echo "=== article-daily: incomplete-run Telegram notify failed $(date '+%F %T %Z') ===" >>"$LOG"
-    ALERT_SENT=1
+  elif [ -f "$RUN_DIR/gates/publication-state.json" ]; then
+    echo "=== article-daily: active-four incomplete; durable pending worker owns same run=$RUN_TS without full-prompt replay $(date '+%F %T %Z') ===" >>"$LOG"
+    if [ "$ALERT_SENT" -ne 1 ] && command -v telegram_notify >/dev/null 2>&1; then
+      telegram_notify "記事はまだ公開完了ではありません。未確認の公開先を、同じ記事のまま5分ごとの自動処理で再確認します。" >>"$LOG" 2>&1 \
+        || echo "=== article-daily: incomplete-run Telegram notify failed $(date '+%F %T %Z') ===" >>"$LOG"
+      ALERT_SENT=1
+    fi
+  else
+    echo "=== article-daily: generation incomplete before publication state; same-run generation reconciler owns run=$RUN_TS $(date '+%F %T %Z') ===" >>"$LOG"
+    if [ "$ALERT_SENT" -ne 1 ] && command -v telegram_notify >/dev/null 2>&1; then
+      telegram_notify "記事の準備が公開前に停止しました。公開URLはまだ確認できていません。保存済みの準備状態を自動処理が再確認します。" >>"$LOG" 2>&1 \
+        || echo "=== article-daily: generation-incomplete Telegram notify failed $(date '+%F %T %Z') ===" >>"$LOG"
+      ALERT_SENT=1
+    fi
   fi
 fi
 
@@ -517,15 +801,15 @@ fi
 # agent having followed STEP 0.6 -- $PASS_OUTPUT is this run own slice of $LOG regardless), then
 # prune state/runs/ down to the newest 30 generations. Daily run IDs sort chronologically.
 printf '%s\n' "$PASS_OUTPUT" > "$RUN_DIR/model-stdout.log" 2>/dev/null || true
-python3 "$HOME/profitable-claude/skills/article-writer/scripts/prune-article-runs.py" \
+python3 "$ARTICLE_ROOT/scripts/prune-article-runs.py" \
   --runs-root "$RUNS_ROOT" --keep 30 >>"$LOG" 2>&1 || \
   echo "=== article-daily: run pruning failed; retained all generations $(date '+%F %T %Z') ===" >>"$LOG"
 echo "=== article-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
 if pass_is_complete; then
-  python3 "$HOME/profitable-claude/skills/article-writer/scripts/article-completion-notify.py" \
+  python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$RUN_DIR/gates/publication-state.json" --ledger "$LEDGER" \
     --target "$TELEGRAM_TARGET_ID" >>"$LOG" 2>&1 || \
-    echo "=== article-daily: exact8 completion notification remains pending $(date '+%F %T %Z') ===" >>"$LOG"
+    echo "=== article-daily: active-four completion notification remains pending $(date '+%F %T %Z') ===" >>"$LOG"
   touch "$HOME/.openclaw/state/.article-loop-last-pass" 2>/dev/null || true
 fi
 exit 0

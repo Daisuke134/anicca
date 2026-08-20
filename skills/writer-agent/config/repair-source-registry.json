@@ -1,0 +1,78 @@
+{
+  "schema": "writer.self-heal.repair-source-registry",
+  "version": 1,
+  "curated_at": "2026-08-07T09:33:04Z",
+  "why": "SSOT 9.3.1 H2/H3. The repair channel's only egress is writer_repair_candidate.fetch_sources, which takes explicit URLs. The first completed note/ja investigation ran with no network and therefore named zero primary_sources, so a repair handed that verdict would fetch nothing. This registry maps a destination to documents that were actually retrieved, so resolution never depends on a model recalling a URL.",
+  "curation_rule": "Every url below was fetched during curation through writer_repair_candidate.fetch_sources, which is the same guard the channel uses at run time: https only, no credentials in the URL, no host resolving into a private, loopback, link-local, reserved or multicast range, unauthenticated GET, no cookie jar. The recorded sha256 is the curation receipt proving the document was read, NOT a pin: publishers edit their terms, and a changed hash is expected, not a failure. An entry may only be added by fetching it and recording what came back.",
+  "destinations": {
+    "note/ja": {
+      "why": "note rejected an article body with HTTP 422 {\"error\":{\"code\":\"invalid\",\"message\":\"本文に利用できない内容が含まれています。\"}}. Deciding whether that is a content-contract violation requires note's own binding terms, which is where the 禁止事項 clause lives.",
+      "sources": [
+        {
+          "url": "https://terms.help-note.com/hc/ja/articles/44943817565465",
+          "title": "note ご利用規約",
+          "role": "binding-contract",
+          "note": "Canonical target of https://note.com/terms and https://note.jp/terms, both of which returned byte-identical 133193-byte bodies during curation. Contains the 禁止事項 section: 「利用者は、他の利用者および当社への迷惑・損害やそのおそれを発生させる行為を行わないでください。」",
+          "verified": {
+            "fetched_at": "2026-08-07T09:33:04Z",
+            "http_status": 200,
+            "bytes": 133193,
+            "sha256": "58611c94ab98ed175cc87e67d5abd1a1075e26682aa66a010884beb8da93f83c",
+            "document_title": "note ご利用規約 – ご利用規約"
+          }
+        },
+        {
+          "url": "https://terms.help-note.com/hc/ja",
+          "title": "note ご利用規約カテゴリ（拘束力ある規約の一覧）",
+          "role": "contract-index",
+          "note": "Index of every document note publishes as binding, so the repair can discover a term this registry does not yet name without guessing a URL.",
+          "verified": {
+            "fetched_at": "2026-08-07T09:33:04Z",
+            "http_status": 200,
+            "bytes": 9740,
+            "sha256": "bc9457dddb08ab1dd55f3ba8e332c4d1fde8433f5b97c0843956bfd359c764cf",
+            "document_title": "ご利用規約"
+          }
+        },
+        {
+          "url": "https://www.help-note.com/hc/ja/sections/25000747896729",
+          "title": "noteヘルプセンター「エラー」セクション",
+          "role": "error-catalogue",
+          "note": "The only error catalogue note publishes. Measured during curation to list exactly two articles, both about sign-up reCAPTCHA and payment, and none about a rejected article body. That absence is evidence: it is why the verdict must not conclude a content-contract violation from the 422 message alone.",
+          "verified": {
+            "fetched_at": "2026-08-07T09:33:04Z",
+            "http_status": 200,
+            "bytes": 12286,
+            "sha256": "35056c4764b91015cc2d273d3f444e0a9951b3b82c539001cd0e6ff465c8f4a4",
+            "document_title": "エラー – noteヘルプセンター"
+          }
+        }
+      ],
+      "rejected_candidates": [
+        {
+          "url": "https://note.com/guideline",
+          "http_status": 200,
+          "reason": "Returns HTTP 200 and is NOT note's guideline. It is a user profile page titled 「GuideLine@明日のその先へ｜note」 (143493 bytes). This is the exact trap a recalled URL falls into: plausible shape, successful fetch, wrong document. A 200 is evidence of reachability, never of identity."
+        },
+        {
+          "url": "https://note.jp/guideline",
+          "http_status": 200,
+          "reason": "Same user profile page as note.com/guideline (143359 bytes), reached through the note.jp alias."
+        },
+        {
+          "url": "https://help-note.com/api/v2/help_center/ja/articles/search.json",
+          "http_status": 404,
+          "reason": "note's Zendesk help-centre search API is not public; every query returned 404, so the loop cannot discover articles by search and must be handed curated URLs."
+        },
+        {
+          "url": "https://help-note.com/sitemap.xml",
+          "http_status": 404,
+          "reason": "No sitemap is published, so there is no cheap enumeration path either."
+        }
+      ],
+      "known_absent": [
+        "No note document found during curation defines the response body 「本文に利用できない内容が含まれています。」 or the HTTP 422 that carries it. Recorded as absent rather than approximated. A repair that needs it must report it missing in remaining_work, never substitute a nearby document."
+      ]
+    }
+  }
+}

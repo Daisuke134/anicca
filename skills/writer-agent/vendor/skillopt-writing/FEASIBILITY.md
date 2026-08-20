@@ -17,7 +17,7 @@ loop; `writing/rollout.py`'s scorer is an explicit stub per the task brief.
 
 ## What was built
 
-Under `skills/article-writer/vendor/skillopt-writing/` (new directory,
+Under `skills/writer-agent/vendor/skillopt-writing/` (new directory,
 nothing inside `/tmp/SkillOpt` touched, no copy of the upstream repo
 vendored):
 
@@ -61,7 +61,7 @@ not itself a variable in what follows.
 ## Primary probe: the installed tool, exact command and exact failure
 
 ```
-cd skills/article-writer/vendor/skillopt-writing
+cd skills/writer-agent/vendor/skillopt-writing
 OPENAI_COMPATIBLE_BASE_URL="http://127.0.0.1:8317/v1" \
 OPENAI_COMPATIBLE_API_KEY="<the local CLIProxyAPI key from /opt/homebrew/etc/cliproxyapi.conf>" \
 ~/.venvs/skillopt/bin/python3.14 run_train.py --config configs/writing/default.yaml \
@@ -82,7 +82,7 @@ Exact output (unedited):
   ...
 ============================================================
 
-  [WritingDataLoader] train=4 val=1 test=1  (from /Users/anicca/profitable-claude/skills/article-writer/vendor/skillopt-writing/data/writing_split)
+  [WritingDataLoader] train=4 val=1 test=1  (from /Users/anicca/profitable-claude/skills/writer-agent/vendor/skillopt-writing/data/writing_split)
 Traceback (most recent call last):
   File ".../run_train.py", line 35, in <module>
     sys.exit(_train.main())

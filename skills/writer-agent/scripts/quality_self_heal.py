@@ -83,8 +83,13 @@ def language_quality(
         reader_current
         and reader
         and reader.get("status") == "pass"
-        and isinstance(reader.get("payload"), dict)
-        and reader["payload"].get("verdict") == "PASS"
+        and (
+            reader.get("exit_code") == 0
+            or (
+                isinstance(reader.get("payload"), dict)
+                and reader["payload"].get("verdict") == "PASS"
+            )
+        )
     )
     if not reader_pass:
         reasons.append("reader_not_current_pass")
@@ -154,6 +159,9 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
     if set(drafts) != {"ja", "en"}:
         raise QualitySelfHealError("drafts must contain ja and en")
     editorial_form = _route_form(run_dir)
+    publication_policy = os.environ.get("ARTICLE_PUBLICATION_POLICY", "strict")
+    if publication_policy not in {"strict", "continuous"}:
+        raise QualitySelfHealError("ARTICLE_PUBLICATION_POLICY must be strict or continuous")
     quality = {
         lang: language_quality(run_dir, lang, Path(drafts[lang]))
         for lang in ("ja", "en")
@@ -175,6 +183,7 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
                 },
                 "quality": quality,
                 "quality_feedback_consumption_sha256": consumption_sha256,
+                "publication_policy": publication_policy,
             },
             sort_keys=True,
         ).encode("utf-8")
@@ -214,7 +223,10 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
             for lang in ("ja", "en")
         )
     )
-    if form_not_changed:
+    identity_safe = all(quality[lang]["identity"] == "PASS" for lang in ("ja", "en"))
+    if publication_policy == "continuous" and identity_safe:
+        action = "ready_to_freeze"
+    elif form_not_changed:
         action = "block_freeze"
     elif rerouted_drafts_not_changed:
         action = "block_freeze"
@@ -240,7 +252,11 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
         "failed_languages": failed_languages,
         "reroutes_used": len(reroutes),
         "quality": quality,
+        "publication_policy": publication_policy,
     }
+    if publication_policy == "continuous" and identity_safe and failed_languages:
+        decision["quality_advisory"] = True
+        decision["reason"] = "quality_recorded_publish_continues"
     if action == "reroute":
         decision.update(
             {

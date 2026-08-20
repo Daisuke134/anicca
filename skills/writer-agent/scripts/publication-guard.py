@@ -10,7 +10,12 @@ import sys
 from pathlib import Path
 
 from publication_remote import probe
-from publication_resume import InvariantError, PublicationStore, REQUIRED_PAIRS
+from publication_resume import (
+    DORMANT_PAIRS,
+    InvariantError,
+    PublicationStore,
+    SUPPORTED_PAIRS,
+)
 
 
 def store_from_env() -> PublicationStore:
@@ -47,17 +52,20 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     preflight = sub.add_parser("preflight")
-    preflight.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    preflight.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     preflight.add_argument("--target-kind", required=True)
     preflight.add_argument("--target", required=True)
     reconcile = sub.add_parser("reconcile")
-    reconcile.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    reconcile.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     query = sub.add_parser("query-target")
-    query.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    query.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     register = sub.add_parser("register-intent")
-    register.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    register.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     register.add_argument("--target-kind", required=True)
     register.add_argument("--target", required=True)
+    dormant_skip = sub.add_parser("register-dormant-skip")
+    dormant_skip.add_argument("--pair", required=True, choices=DORMANT_PAIRS)
+    dormant_skip.add_argument("--reason", default="dormant-destination")
     correct = sub.add_parser("correct-protected-target")
     correct.add_argument(
         "--pair", required=True, choices=("x-article/ja",)
@@ -79,15 +87,27 @@ def main() -> int:
             "substack/en",
         ),
     )
+    recover_unavailable = sub.add_parser("recover-unavailable")
+    recover_unavailable.add_argument(
+        "--pair",
+        required=True,
+        choices=("devto/en",),
+    )
+    stale_quality = sub.add_parser("recover-stale-quality")
+    stale_quality.add_argument(
+        "--pair",
+        required=True,
+        choices=("devto/en", "substack/ja", "substack/en"),
+    )
     cleared = sub.add_parser("clear-unavailable")
-    cleared.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    cleared.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     unavailable = sub.add_parser("mark-unavailable")
-    unavailable.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    unavailable.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     unavailable.add_argument("--reason", required=True)
     sub.add_parser("terminalize-invalid-x-post")
     sub.add_parser("plan")
     manual = sub.add_parser("manual-check")
-    manual.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    manual.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     args = parser.parse_args()
     store = manual_or_store()
     if store is None:
@@ -99,6 +119,8 @@ def main() -> int:
         result = {"found": bool(entry), "target": entry.get("target") if entry else None}
     elif args.command == "register-intent":
         result = store.register_intent(args.pair, args.target_kind, args.target)
+    elif args.command == "register-dormant-skip":
+        result = store.register_dormant_skip(args.pair, args.reason)
     elif args.command == "correct-protected-target":
         result = store.correct_protected_target(
             args.pair,
@@ -116,6 +138,18 @@ def main() -> int:
             args.pair,
             probe(args.pair, entry["target"], state=store.read()),
         )
+    elif args.command == "recover-unavailable":
+        entry = store.read().get("pairs", {}).get(args.pair)
+        if not entry:
+            raise InvariantError(
+                f"no persisted intent for {args.pair}"
+            )
+        result = store.recover_unavailable_live(
+            args.pair,
+            probe(args.pair, entry["target"], state=store.read()),
+        )
+    elif args.command == "recover-stale-quality":
+        result = store.recover_stale_quality_receipt(args.pair)
     elif args.command == "clear-unavailable":
         result = store.clear_unavailable(args.pair)
     elif args.command == "mark-unavailable":

@@ -16,7 +16,8 @@
 # exit 0 only on PASS.
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/article-writer/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
+READER_STDOUT_SCHEMA_VERSION=2
 
 MD=""; LANG_A="ja"; QUESTIONS_FILE=""
 POSITIONAL=()
@@ -46,6 +47,11 @@ if [ -n "${ARTICLE_RUN_DIR:-}" ]; then
     skip-advisory)
       PAYLOAD=$(printf '%s' "$BEGIN_JSON" | jq -c '.payload // empty')
       if [ -n "$PAYLOAD" ]; then printf '%s\n' "$PAYLOAD"; else printf '%s\n' '{"verdict":"STOP_SPENDING","reason":"terminal gate artifact"}'; fi
+      exit 75
+      ;;
+    skip-revision-required)
+      PAYLOAD=$(printf '%s' "$BEGIN_JSON" | jq -c '.payload // empty')
+      if [ -n "$PAYLOAD" ]; then printf '%s\n' "$PAYLOAD"; else printf '%s\n' '{"verdict":"REVISION_REQUIRED","reason":"same article hash already failed reader testing"}'; fi
       exit 75
       ;;
     run)
@@ -218,15 +224,33 @@ if [ -z "$A_JSON" ]; then
   exit 3
 fi
 
+ARTICLE_HASH=$(shasum -a 256 "$MD" | awk '{print $1}')
 MERGED_JSON=$(python3 -c "
 import json, sys
 q = json.loads(sys.argv[1]).get('questions', [])
 a = json.loads(sys.argv[2])
 unanswered = a.get('unanswered_questions', [])
 verdict = 'PASS' if len(unanswered) == 0 else 'FAIL'
-print(json.dumps({'verdict': verdict, 'questions': q, 'unanswered_questions': unanswered},
-                  separators=(',', ':'), ensure_ascii=False))
-" "$Q_JSON" "$A_JSON" 2>/dev/null)
+payload = {
+    'verdict': verdict,
+    'questions': q,
+    'unanswered_questions': unanswered,
+}
+# Keep the historical top-level shape for callers while making stdout itself
+# a self-describing terminal. An autonomous caller that redirects or copies
+# stdout over the canonical terminal path can no longer erase the article
+# binding required by quality_self_heal.py.
+terminal = {
+    **payload,
+    'gate': 'reader-testing-gate',
+    'lang': sys.argv[4],
+    'status': 'pass' if verdict == 'PASS' else 'fail',
+    'attempts': int(sys.argv[5]),
+    'article_sha256': sys.argv[3],
+    'payload': payload,
+}
+print(json.dumps(terminal, separators=(',', ':'), ensure_ascii=False))
+" "$Q_JSON" "$A_JSON" "$ARTICLE_HASH" "$LANG_A" "${GATE_ATTEMPT:-0}" 2>/dev/null)
 if [ -z "$MERGED_JSON" ]; then
   log_gate_verdict "FATAL:merge-failed"
   echo "FATAL: could not merge question/answer JSON" >&2

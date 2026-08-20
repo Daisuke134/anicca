@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# publish-zenn.sh — wrap article-writer/post-zenn.py for ai-entity-article-writer
+# publish-zenn.sh — managed Zenn boundary for Writer Agent
 # Usage:
 #   bash publish-zenn.sh --markdown-file <f> --title <t> --meta <m>
 # stdout: release URL on success
-# Strategy: copy md to article-writer drafts dir then invoke post-zenn.py
+# Strategy: copy md to the managed Writer Agent draft dir, then invoke post-zenn.py
 
 set -euo pipefail
 
@@ -26,6 +26,11 @@ if ! grep -q '^title:' "$MD_FILE"; then
   echo "FATAL: markdown missing 'title:' frontmatter" >&2; exit 1
 fi
 
+if [[ -z "${ARTICLE_RUN_DIR:-}" || ! -f "${ARTICLE_PUBLICATION_STATE:-}" || ! -f "${ARTICLE_LEDGER:-}" ]]; then
+  echo "FATAL: managed publication state is required" >&2
+  exit 2
+fi
+
 # --- fail-closed PII gate (scripts/pii-gate.py) ---------------------------------------
 # Nothing operator-identifying may reach the PUBLIC zenn-articles repository (a push is public even at published:false). ANY non-zero exit from the gate -- a finding,
 # an unconfigured blocklist, or an internal scanner error -- aborts this publish. Gate output
@@ -33,15 +38,12 @@ fi
 python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pii-gate.py" --stage publish-zenn "$MD_FILE" >&2 || exit $?
 
 
-# DRAFT-ONLY, permanently (Dais 2026-07-12): this loop must never put an unreviewed
-# article on the public internet. Zenn renders the article publicly the instant
-# published:true is pushed to the linked repo, so the LLM's prompt-following is not a
-# safe gate for that flag -- we force it here in code, on a COPY of the file, and never
-# trust whatever the LLM wrote. Publishing is a human decision Dais makes from the
-# pushed repo after reading the draft; there is deliberately no code path here that can
-# set this to true.
+# Initial staging is always draft-only. Zenn renders an article publicly when
+# published:true reaches the linked repository, so this boundary forces false
+# on a copy. The dedicated deferred worker may later flip only the registered
+# slug after the measured platform interval and exact8 readback gates pass.
 TODAY="$(date +%Y-%m-%d)"
-DRAFT_DIR="$HOME/.openclaw/workspace/article-writer/drafts/$TODAY"
+DRAFT_DIR="$HOME/.openclaw/workspace/writer-agent/drafts/$TODAY"
 mkdir -p "$DRAFT_DIR"
 cp "$MD_FILE" "$DRAFT_DIR/ja.md"
 

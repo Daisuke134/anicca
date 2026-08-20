@@ -29,7 +29,7 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - Substack managed publisherのsource／active release契約fixtureは、JAのpublication identityをstateと環境へ明示してPASSした。これはローカル契約の確認で、外部Substack公開receiptではない。
 - 下書きGETのpublication/subdomainと明示bylineを読み戻してから画像upload／PUTへ進むfail-closed判定をsource／releaseへ追加した。identity readbackが欠ける既存英語targetは環境変数だけで再利用しない。
 - managed wrapperにもpair-specific identityとstate一致のゲートを追加し、remote receipt側は下書きidentityとredirect後の公開canonical hostを実読取してからliveを確定する。期待hostからURLを組み立てただけの値はreceiptにしない。
-- Life Managerの `skills/writer-agent` にproduction tree 381 filesを複製し、tree hash `803524464930f8492d0ef893940bb363ea3079a5580a112bf099399e651fd0aa` を `config/writer/runtime-manifest.json` に固定した。ただしLaunchAgentはまだ旧releaseを呼び、state parityとowner fenceが無いためcutoverは未実施。
+- Life Managerの `skills/writer-agent` にactive release相当のproduction tree 475 filesを同期し、tree hash `eb2d1a94916c7dc4ba38ae246b45a82957fa948bd161e15670be1797c55ca0a0` とactive release hash `41037e3b7b64ea39db973956b3ad2c6428cb0051eb0414f97552afb8af5ec6e1` を `config/writer/runtime-manifest.json` に固定した。ただしLaunchAgentはまだ旧releaseを呼び、state parityとowner fenceが無いためcutoverは未実施。
 - fresh adversarial reviewで空き容量は最新約382MiB（公開下限5GiB未満、直前は約704MiB）だったため、resumeにも同じfail-closedディスク判定を追加した。Substackの言語identity比較は正規化し、source circuitのpublisher timeoutをreleaseと同じ300秒へ揃え、間接ガード／readbackファイルも回路manifestへ含めた。EN/Xのidentity・media readbackが未確認なのでpauseは解除しない。
 
 ## 目標構成

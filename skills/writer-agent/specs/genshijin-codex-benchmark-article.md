@@ -6,7 +6,7 @@
 
 Codex で Genshijin を使うと何が変わるかを、通常応答、単純な簡潔指示、英語版 Caveman と同一条件で比較する。日本語版と英語版を別々のネイティブ記事として執筆し、出力トークン削減だけでなく、追加される入力トークン、API 換算コスト、回答品質、読みやすさまで公開する。
 
-記事の主題は Genshijin そのもの。既存の article-writer skill へ Genshijin や Caveman を統合する記事ではない。Caveman は英語圏の原型かつ比較対象として扱う。
+記事の主題は Genshijin そのもの。既存の writer-agent skill へ Genshijin や Caveman を統合する記事ではない。Caveman は英語圏の原型かつ比較対象として扱う。
 
 ### Reader promise
 
@@ -236,7 +236,7 @@ receipts.md
 
 ### MUST NOT
 
-- article-writer skill 自体へ Genshijin/Caveman を統合しない。
+- writer-agent skill 自体へ Genshijin/Caveman を統合しない。
 - README の削減率を Codex 実測値として再利用しない。
 - actual subscription bill を API 換算値から逆算しない。
 - 代表例や task を結果を見た後で差し替えない。

@@ -18,10 +18,14 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 import publication_remote  # noqa: E402
 from publication_resume import (  # noqa: E402
+    ACTIVE_PAIRS,
+    LEGACY_EXACT8_PAIRS,
     PublicationStore,
-    REQUIRED_PAIRS,
     validate_receipt_evidence,
 )
+from publication_contract_resolver import infer_publication_contract  # noqa: E402
+
+REQUIRED_PAIRS = ACTIVE_PAIRS
 
 
 def _atomic_json(path: Path, value: dict[str, Any]) -> None:
@@ -49,13 +53,22 @@ def _json_lines(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _required_pairs(value: dict[str, Any]) -> tuple[str, ...]:
+    return (
+        LEGACY_EXACT8_PAIRS
+        if infer_publication_contract(value) == "legacy-exact8"
+        else ACTIVE_PAIRS
+    )
+
+
 def summarize_run(value: dict[str, Any]) -> dict[str, Any]:
     failures = []
+    required_pairs = _required_pairs(value)
     if value.get("exact8") is not True:
         failures.append("exact8")
     for field in ("remote_readback", "media"):
         evidence = value.get(field, {})
-        for pair in REQUIRED_PAIRS:
+        for pair in required_pairs:
             if evidence.get(pair) != "PASS":
                 failures.append(f"{field}:{pair}")
     for language in ("ja", "en"):
@@ -131,9 +144,10 @@ def audit_run(
     state = store.read()
     run_id = str(state["run_id"])
     exact8 = store.completion_status() == "complete"
+    required_pairs = _required_pairs(state)
     remote_results = {}
     media_results = {}
-    for pair in REQUIRED_PAIRS:
+    for pair in required_pairs:
         entry = state["pairs"].get(pair, {})
         receipt = entry.get("receipt", {})
         expected_url = str(receipt.get("live_url", ""))
@@ -183,7 +197,8 @@ def audit_run(
     return summarize_run(
         {
             "run_id": run_id,
-            "exact8": exact8,
+        "exact8": exact8,
+        "publication_contract": infer_publication_contract(state),
             "remote_readback": remote_results,
             "language": language,
             "media": media_results,

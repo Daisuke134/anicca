@@ -22,7 +22,7 @@ What it does (in order):
 If the document already has a "## 出典" h2, the new URLs are MERGED into
 the existing block (dedup by URL), and no duplicate header is added.
 
-Why a shared script: every AI-entity article we ship runs through this
+Why a shared script: every Writer Agent article we ship runs through this
 cleanup. Keeping the regex + dedup logic in one place stops the per-script
 drift (= the bug that left `ほとんどです。。` on the Frank note draft).
 """

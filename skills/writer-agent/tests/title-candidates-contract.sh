@@ -7,7 +7,7 @@
 # must now be refused, because they are what made the defect invisible.
 set -uo pipefail
 
-SCRIPT="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/article-writer}/scripts/title_candidates.py"
+SCRIPT="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/writer-agent}/scripts/title_candidates.py"
 PY=/opt/homebrew/bin/python3
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT

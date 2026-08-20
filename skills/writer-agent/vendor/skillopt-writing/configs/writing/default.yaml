@@ -58,7 +58,7 @@ env:
   # the file craft-train.sh checks in/out and diffs.
   skill_init: /Users/anicca/profitable-claude/skills/writing-craft/CRAFT.md
   split_mode: split_dir
-  split_dir: /Users/anicca/profitable-claude/skills/article-writer/vendor/skillopt-writing/data/writing_split
+  split_dir: /Users/anicca/profitable-claude/skills/writer-agent/vendor/skillopt-writing/data/writing_split
   workers: 1
   max_completion_tokens: 256
   limit: 20              # was 0 (whole 119-item train split) -- see arithmetic above

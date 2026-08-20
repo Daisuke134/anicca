@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ai-entity-article-writer/scripts/run.sh — orchestrator for daily article publish
+# Writer Agent orchestrator for daily article publication
 # Phases:
 #   --phase propose → context bundle JSON to stdout
 #   --phase publish → SEO gate + publisher dispatch + history record + verify
@@ -33,10 +33,12 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n "$CHANNEL" && -n "$PHASE" ]] || { echo "FATAL: --channel --phase required" >&2; exit 1; }
 
-# Prefer the immutable runtime root supplied by the daily wrapper.  This keeps
-# manual invocations compatible with the historical article-writer path while
-# preventing a release from silently loading helpers from another checkout.
-SKILL_DIR="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$HOME/profitable-claude/skills/article-writer}}"
+# The daily wrapper injects the immutable release root through ARTICLE_SKILL_DIR.
+# Falling back to the historical home path made the orchestrator run quality and
+# publisher helpers from an empty compatibility directory, so every managed
+# destination failed before it could create a draft.  Keep the old default only
+# for standalone/manual invocations.
+SKILL_DIR="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$HOME/profitable-claude/skills/writer-agent}}"
 if [[ ! -d "$SKILL_DIR/scripts" ]]; then
   echo "FATAL: writer skill scripts directory is missing: $SKILL_DIR/scripts" >&2
   exit 1

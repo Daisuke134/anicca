@@ -430,8 +430,12 @@ fi
 
 if [[ -n "${ARTICLE_RUN_DIR:-}" || -n "${ARTICLE_PUBLICATION_STATE:-}" || -n "${ARTICLE_LEDGER:-}" ]]; then
   if [[ "$STAGE2_OK" != "true" || ! "$STAGE2_EMBEDDED" =~ ^[1-9][0-9]*/[1-9][0-9]*$ ]]; then
-    echo "FATAL: managed note staging requires at least one fully embedded body image" >&2
-    exit 8
+    if [[ "${ARTICLE_PUBLICATION_POLICY:-strict}" == "continuous" ]]; then
+      echo "WARN: continuous publication records the body-image failure and continues with the saved note draft" >&2
+    else
+      echo "FATAL: managed note staging requires at least one fully embedded body image" >&2
+      exit 8
+    fi
   fi
   python3 "$SCRIPT_DIR/publication-guard.py" register-intent \
     --pair note/ja --target-kind note-key --target "$DRAFT_KEY" >/dev/null || exit $?

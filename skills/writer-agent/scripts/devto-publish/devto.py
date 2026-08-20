@@ -41,11 +41,23 @@ def _frontmatter(source: str) -> tuple[dict[str, str], str]:
     if not match:
         raise DevtoRefused("Dev.to article requires YAML frontmatter")
     values: dict[str, str] = {}
-    for line in match.group(1).splitlines():
-        if ":" not in line:
+    lines = match.group(1).splitlines()
+    for index, line in enumerate(lines):
+        field = re.match(r"^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$", line)
+        if not field:
             continue
-        key, value = line.split(":", 1)
-        values[key.strip().lower()] = value.strip().strip("\"'")
+        key, raw_value = field.groups()
+        value = raw_value.strip().strip("\"'")
+        if key.lower() == "tags" and not value:
+            block_items: list[str] = []
+            for nested in lines[index + 1 :]:
+                if re.match(r"^[A-Za-z][A-Za-z0-9_-]*:\s*", nested):
+                    break
+                item = re.match(r"^\s+-\s+(.+?)\s*$", nested)
+                if item:
+                    block_items.append(item.group(1).strip().strip("\"'"))
+            value = ",".join(block_items)
+        values[key.lower()] = value
     return values, source[match.end() :]
 
 
@@ -316,7 +328,7 @@ def _assets_available(urls: list[str]) -> bool:
             request = urllib.request.Request(
                 url,
                 headers={
-                    "User-Agent": "article-writer/1",
+                    "User-Agent": "writer-agent/1",
                     "Range": "bytes=0-1023",
                 },
             )

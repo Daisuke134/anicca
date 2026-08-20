@@ -72,18 +72,30 @@ from media_integrity import (
     dhash_distance,
 )
 from canonical_media import MediaContractError, validate_media_contract
-
-
-REQUIRED_PAIRS = (
-    "note/ja",
-    "zenn-article/ja",
-    "devto/en",
-    "substack/ja",
-    "substack/en",
-    "x-article/ja",
-    "x-article/en",
-    "x-post/ja",
+from media_create_once import MediaCreateRefused, verify as verify_media_create_once
+from publication_contract import (
+    ACTIVE_PAIRS,
+    DORMANT_PAIRS,
+    LEGACY_EXACT8_PAIRS,
+    SUPPORTED_PAIRS,
 )
+from publication_contract_resolver import (
+    ACTIVE_ALIAS,
+    PublicationContractError,
+    infer_publication_contract,
+)
+
+# Compatibility name for callers that mean the current required set.  Legacy
+# exact-eight state is selected explicitly from its persisted contract below.
+REQUIRED_PAIRS = ACTIVE_PAIRS
+HISTORICAL_DORMANT_STATUSES = {
+    "intent",
+    "live",
+    "ambiguous",
+    "unavailable",
+    "repair-required",
+    "terminal-invalid",
+}
 TARGET_KINDS = {
     "note/ja": "note-key",
     "zenn-article/ja": "zenn-slug",
@@ -172,12 +184,11 @@ def require_quality_terminals(
             raise InvariantError(
                 f"{lang} quality terminal receipt is missing or malformed"
             ) from error
+        continuous = os.environ.get("ARTICLE_PUBLICATION_POLICY") == "continuous"
         expected = {
             "status": "terminal",
             "lang": lang,
             "article_sha256": sha256(draft),
-            "editorial_gate": "PASS",
-            "reader_gate": "PASS",
             "identity_gate": "PASS",
             "safety_gate": "ALLOW",
         }
@@ -187,9 +198,17 @@ def require_quality_terminals(
             raise InvariantError(
                 f"{lang} quality terminal does not match the current artifact"
             )
+        allowed_quality = {"PASS", "ADVISORY"} if continuous else {"PASS"}
+        if (
+            receipt.get("editorial_gate") not in allowed_quality
+            or receipt.get("reader_gate") not in allowed_quality
+        ):
+            raise InvariantError(
+                f"{lang} quality terminal does not match the current artifact"
+            )
         receipts[lang] = {
             key: receipt[key]
-            for key in expected
+            for key in (*expected, "editorial_gate", "reader_gate")
         }
     return receipts
 
@@ -246,18 +265,31 @@ def _validate_devto_frontmatter(source: str) -> None:
             "English canonical draft requires Dev.to frontmatter before "
             "publication-state initialization"
         )
-    values: dict[str, str] = {}
-    for line in match.group(1).splitlines():
-        if ":" not in line:
+    lines = match.group(1).splitlines()
+    title = ""
+    tags: list[str] = []
+    for index, line in enumerate(lines):
+        field = re.match(r"^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$", line)
+        if not field:
             continue
-        key, value = line.split(":", 1)
-        values[key.strip().lower()] = value.strip().strip("\"'")
-    tags = [
-        item.strip().strip("\"'")
-        for item in values.get("tags", "").strip().strip("[]").split(",")
-        if item.strip()
-    ]
-    if not values.get("title", "").strip() or not tags:
+        key, raw_value = field.groups()
+        value = raw_value.strip().strip("\"'")
+        if key.lower() == "title":
+            title = value
+        elif key.lower() == "tags":
+            tags.extend(
+                item.strip().strip("\"'")
+                for item in value.strip("[]").split(",")
+                if item.strip()
+            )
+            if not value:
+                for nested in lines[index + 1 :]:
+                    if re.match(r"^[A-Za-z][A-Za-z0-9_-]*:\s*", nested):
+                        break
+                    item = re.match(r"^\s+-\s+(.+?)\s*$", nested)
+                    if item:
+                        tags.append(item.group(1).strip().strip("\"'"))
+    if not title or not tags:
         raise InvariantError(
             "English canonical draft requires non-empty Dev.to frontmatter "
             "title and tags before publication-state initialization"
@@ -292,8 +324,37 @@ def _is_nonpublication_quality_audit(
     )
 
 
+def is_self_owned_publication_receipt(
+    row: dict[str, Any], state: dict[str, Any]
+) -> bool:
+    """Recognize a strict adjunct receipt without expanding the exact8 set."""
+    live_url = row.get("live_url")
+    parsed = urlparse(live_url) if isinstance(live_url, str) else None
+    lang = row.get("lang")
+    return (
+        row.get("run_id") == state.get("run_id")
+        and row.get("topic_id") == state.get("topic_id")
+        and row.get("platform") == "self-owned"
+        and lang in {"ja", "en"}
+        and row.get("published") is True
+        and row.get("reality_gate") == "PASS"
+        and row.get("verified") is True
+        and parsed is not None
+        and parsed.scheme == "https"
+        and parsed.hostname == "aniccaai.com"
+        and re.fullmatch(r"/blog/[a-z0-9][a-z0-9-]{0,99}", parsed.path) is not None
+        and row.get("artifact_id") == f"{state.get('run_id')}__self-owned__{lang}"
+        and all(
+            re.fullmatch(r"[0-9a-f]{64}", str(row.get(field, ""))) is not None
+            for field in (
+                "artifact_sha256", "preview_sha256", "paid_sha256"
+            )
+        )
+    )
+
+
 def validate_target(pair: str, kind: str, target: str) -> None:
-    if pair not in REQUIRED_PAIRS or TARGET_KINDS[pair] != kind:
+    if pair not in SUPPORTED_PAIRS or TARGET_KINDS[pair] != kind:
         raise InvariantError(f"target kind {kind!r} is invalid for {pair!r}")
     if not isinstance(target, str) or not target:
         raise InvariantError("stable target is empty")
@@ -375,7 +436,7 @@ def fetch_remote_asset(url: str, _expected: dict[str, Any]) -> bytes:
         and str(expected_path).startswith(("/tmp/", "/private/tmp/"))
     ):
         return expected_path.read_bytes()
-    request = urllib.request.Request(url, headers={"User-Agent": "article-writer/1"})
+    request = urllib.request.Request(url, headers={"User-Agent": "writer-agent/1"})
     with urllib.request.urlopen(request, timeout=30) as response:
         content_type = str(response.headers.get("Content-Type", "")).lower()
         data = response.read(25 * 1024 * 1024 + 1)
@@ -387,7 +448,11 @@ def fetch_remote_asset(url: str, _expected: dict[str, Any]) -> bytes:
 
 
 def _validate_asset_proofs(
-    state: dict[str, Any], pair: str, evidence: dict[str, Any]
+    state: dict[str, Any],
+    pair: str,
+    evidence: dict[str, Any],
+    *,
+    reread_remote_assets: bool = True,
 ) -> None:
     expected = _expected_asset_descriptors(state, pair)
     proofs = evidence.get("asset_proofs")
@@ -461,6 +526,11 @@ def _validate_asset_proofs(
                 )
         else:
             raise InvariantError("receipt public asset proof method is invalid")
+        if not reread_remote_assets:
+            # The irreversible publication boundary already minted and
+            # re-read this proof. Resume planning is local bookkeeping: doing
+            # public network I/O here makes one slow CDN hold every run.
+            continue
         try:
             remote_bytes = fetch_remote_asset(
                 str(proof["remote_url"]), descriptor
@@ -527,6 +597,8 @@ def validate_receipt_evidence(
     pair: str,
     live_url: str,
     evidence: dict[str, Any],
+    *,
+    reread_remote_assets: bool = True,
 ) -> None:
     """Require the donor-proven public identity/content/media readback shape."""
     entry = state.get("pairs", {}).get(pair, {})
@@ -569,7 +641,12 @@ def validate_receipt_evidence(
         raise InvariantError("receipt asset hashes conflict with immutable media")
     if pair != "x-post/ja" and evidence.get("asset_verified") is not True:
         raise InvariantError("receipt did not verify every public media asset")
-    _validate_asset_proofs(state, pair, evidence)
+    _validate_asset_proofs(
+        state,
+        pair,
+        evidence,
+        reread_remote_assets=reread_remote_assets,
+    )
     if pair != "x-post/ja":
         asset_urls = evidence.get("asset_urls")
         if (
@@ -612,6 +689,123 @@ class PublicationStore:
         self.ledger_path = Path(ledger_path)
         self.backup_path = self.state_path.with_name(f"{self.state_path.name}.bak")
         self.lock_path = self.state_path.with_name(f".{self.state_path.name}.lock")
+
+    @staticmethod
+    def _is_legacy_state(state: dict[str, Any]) -> bool:
+        """Recognize the shared explicit or validated pre-migration contract."""
+        try:
+            return infer_publication_contract(state) == "legacy-exact8"
+        except PublicationContractError:
+            return False
+
+    @staticmethod
+    def _is_active_alias_state(state: dict[str, Any]) -> bool:
+        """Recognize only the explicit pre-active-four marker."""
+        return state.get("publication_contract") == ACTIVE_ALIAS
+
+    @classmethod
+    def _required_pairs_for_state(cls, state: dict[str, Any]) -> tuple[str, ...]:
+        """Return the persisted contract without treating dormant skips as work.
+
+        New states use active-four. Persisted explicit legacy state remains
+        resumable as exact-eight so an already-owned publication is not dropped.
+        """
+        if cls._is_legacy_state(state):
+            return LEGACY_EXACT8_PAIRS
+        return ACTIVE_PAIRS
+
+    @classmethod
+    def _assert_pair_mutation_allowed(
+        cls,
+        state: dict[str, Any],
+        pair: str,
+        *,
+        allow_dormant_skip: bool = False,
+    ) -> None:
+        if pair not in SUPPORTED_PAIRS:
+            raise InvariantError(f"unknown pair {pair}")
+        if pair in DORMANT_PAIRS and not cls._is_legacy_state(state):
+            current = state.get("pairs", {}).get(pair)
+            if not (
+                allow_dormant_skip
+                and (
+                    current is None
+                    or (
+                        isinstance(current, dict)
+                        and current.get("status") == "skipped"
+                    )
+                )
+            ):
+                raise InvariantError(
+                    f"{pair} is a dormant destination; use an explicit skip receipt"
+                )
+
+    @classmethod
+    def _pair_set_valid(cls, state: dict[str, Any]) -> bool:
+        required = cls._required_pairs_for_state(state)
+        pairs = state.get("pairs", {})
+        if not isinstance(pairs, dict):
+            return False
+        keys = set(pairs)
+        if required == LEGACY_EXACT8_PAIRS:
+            return keys == set(required)
+        if cls._is_active_alias_state(state):
+            historical = {"zenn-article/ja", "devto/en"}
+            if (
+                not keys <= set(SUPPORTED_PAIRS)
+                or not set(required) <= keys
+                or not {"x-article/en", "x-post/ja"} <= keys
+            ):
+                return False
+            for pair in keys - set(required):
+                entry = pairs[pair]
+                if not isinstance(entry, dict):
+                    return False
+                if pair in historical and entry.get("status") in HISTORICAL_DORMANT_STATUSES:
+                    continue
+                receipt = entry.get("skip_receipt", {})
+                if (
+                    pair not in DORMANT_PAIRS
+                    or entry.get("status") != "skipped"
+                    or not isinstance(receipt, dict)
+                    or receipt.get("type") != "dormant-destination"
+                    or receipt.get("pair") != pair
+                    or not receipt.get("reason")
+                    or receipt.get("slo") != "not-applicable"
+                    or not receipt.get("recorded_at")
+                ):
+                    return False
+            return True
+        if keys != set(SUPPORTED_PAIRS):
+            return False
+        if not keys <= set(SUPPORTED_PAIRS):
+            return False
+        for pair in keys - set(required):
+            entry = pairs[pair]
+            if not isinstance(entry, dict):
+                return False
+            receipt = entry.get("skip_receipt", {})
+            if (
+                pair not in DORMANT_PAIRS
+                or entry.get("status") != "skipped"
+                or not isinstance(receipt, dict)
+                or receipt.get("type") != "dormant-destination"
+                or receipt.get("pair") != pair
+                or not receipt.get("reason")
+                or receipt.get("slo") != "not-applicable"
+                or not receipt.get("recorded_at")
+            ):
+                return False
+        return True
+
+    @classmethod
+    def _intent_requirement_message(cls, state: dict[str, Any]) -> str:
+        if cls._required_pairs_for_state(state) == LEGACY_EXACT8_PAIRS:
+            return "all eight valid stable intents must exist before publication"
+        return (
+            "all active-four valid stable intents and dormant skip receipts "
+            "must exist before publication"
+        )
 
     def _atomic_write_path(self, path: Path, data: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -684,7 +878,7 @@ class PublicationStore:
         run_id: str,
         run_dir: Path,
         drafts: dict[str, Path],
-        x_post: Path,
+        x_post: Path | None,
         headline_image: Path,
         body_assets: list[Path],
         *,
@@ -736,10 +930,11 @@ class PublicationStore:
                     f"{lang} canonical media contract is invalid; run "
                     f"canonical_media.py attach before publication init: {error}"
                 ) from error
-        self._reject_parent_traversal(x_post, "x post path")
-        self._require_regular_file(x_post, "x post")
-        if x_post.resolve(strict=True) != resolved_run / "x-post-ja.txt":
-            raise InvariantError("x post is outside the canonical run boundary")
+        if x_post is not None:
+            self._reject_parent_traversal(x_post, "x post path")
+            self._require_regular_file(x_post, "x post")
+            if x_post.resolve(strict=True) != resolved_run / "x-post-ja.txt":
+                raise InvariantError("x post is outside the canonical run boundary")
         self._reject_parent_traversal(headline_image, "headline image path")
         self._require_regular_file(headline_image, "headline image")
         if headline_image.resolve(strict=True) != resolved_run / "headline-image.png":
@@ -758,6 +953,13 @@ class PublicationStore:
             if resolved_asset in resolved_assets:
                 raise InvariantError("duplicate body media asset")
             resolved_assets.add(resolved_asset)
+        if (resolved_run / "gates/media-create-required.json").exists():
+            try:
+                verify_media_create_once(resolved_run)
+            except (OSError, MediaCreateRefused) as error:
+                raise InvariantError(
+                    f"media create-once boundary is invalid: {error}"
+                ) from error
         return resolved_run
 
     def _validate_state_boundary_locked(
@@ -767,11 +969,16 @@ class PublicationStore:
             lang: Path(str(state.get("drafts", {}).get(lang, {}).get("path", "")))
             for lang in ("ja", "en")
         }
+        stored_x_post = (
+            state.get("x_post", {}).get("path")
+            if self._is_legacy_state(state)
+            else None
+        )
         resolved_run = self._validate_layout(
             str(state.get("run_id", "")),
             expected_run_dir,
             stored_drafts,
-            Path(str(state.get("x_post", {}).get("path", ""))),
+            Path(str(stored_x_post)) if stored_x_post else None,
             Path(
                 str(
                     state.get("media", {})
@@ -813,12 +1020,15 @@ class PublicationStore:
         body_assets: list[Path] | None = None,
         destination_identities: dict[str, str] | None = None,
         require_quality: bool = False,
+        legacy_exact8: bool = False,
     ) -> dict[str, Any]:
         if not run_id or not topic_id or safety_status not in {"ALLOW", "BLOCK", "PENDING"}:
             raise InvariantError("run_id, topic_id, and valid safety status are required")
         if max_resume_attempts < 0:
             raise InvariantError("max resume attempts must be non-negative")
-        x_post = Path(x_post) if x_post is not None else Path(run_dir) / "x-post-ja.txt"
+        x_post_path = Path(x_post) if x_post is not None else None
+        if legacy_exact8 and x_post_path is None:
+            x_post_path = Path(run_dir) / "x-post-ja.txt"
         if headline_image is None or not body_assets:
             raise InvariantError("headline image and body media are required")
         headline_image = Path(headline_image)
@@ -834,27 +1044,47 @@ class PublicationStore:
             run_id,
             run_dir,
             drafts,
-            x_post,
+            x_post_path if legacy_exact8 else None,
             headline_image,
             body_assets,
             require_state=False,
         )
-        validate_x_post_text(x_post)
+        if legacy_exact8:
+            if x_post_path is None:
+                raise InvariantError("legacy exact8 requires an x post artifact")
+            validate_x_post_text(x_post_path)
         quality_receipts = (
             require_quality_terminals(resolved_run, drafts)
             if require_quality
             else None
         )
-        _require_cta(
-            resolved_run,
-            {
-                "ja": Path(drafts["ja"]),
-                "en": Path(drafts["en"]),
-                "x-post-ja": x_post,
-            },
-        )
+        cta_artifacts = {
+            "ja": Path(drafts["ja"]),
+            "en": Path(drafts["en"]),
+        }
+        if legacy_exact8 and x_post_path is not None:
+            cta_artifacts["x-post-ja"] = x_post_path
+        _require_cta(resolved_run, cta_artifacts)
+        publication_contract = "legacy-exact8" if legacy_exact8 else "active-four"
+        dormant_pairs: dict[str, dict[str, Any]] = {}
+        if not legacy_exact8:
+            recorded_at = utc_now()
+            for dormant_pair in DORMANT_PAIRS:
+                dormant_pairs[dormant_pair] = {
+                    "platform": dormant_pair.split("/", 1)[0],
+                    "lang": dormant_pair.split("/", 1)[1],
+                    "status": "skipped",
+                    "skip_receipt": {
+                        "type": "dormant-destination",
+                        "pair": dormant_pair,
+                        "reason": "dormant-destination",
+                        "slo": "not-applicable",
+                        "recorded_at": recorded_at,
+                    },
+                }
         payload = {
             "version": 1,
+            "publication_contract": publication_contract,
             "run_id": run_id,
             "run_dir": str(resolved_run),
             "state_path": str(self.state_path.resolve(strict=False)),
@@ -866,10 +1096,14 @@ class PublicationStore:
                 lang: {"path": str(Path(path).resolve()), "sha256": sha256(Path(path))}
                 for lang, path in drafts.items()
             },
-            "x_post": {
-                "path": str(Path(x_post).resolve()),
-                "sha256": sha256(Path(x_post)),
-            },
+            "x_post": (
+                {
+                    "path": str(x_post_path.resolve()),
+                    "sha256": sha256(x_post_path),
+                }
+                if x_post_path is not None and legacy_exact8
+                else {"path": None, "sha256": None}
+            ),
             "media": {
                 "headline_image": {
                     "path": str(headline_image.resolve()),
@@ -880,7 +1114,7 @@ class PublicationStore:
                     for path in body_assets
                 ],
             },
-            "pairs": {},
+            "pairs": dormant_pairs,
             "resume_attempts": 0,
             "max_resume_attempts": max_resume_attempts,
             "created_at": utc_now(),
@@ -922,12 +1156,13 @@ class PublicationStore:
         registered, is never eligible, and is refused at every publish
         boundary — while its siblings go live. exact8 stays honestly unmet.
         """
-        if pair not in REQUIRED_PAIRS:
+        if pair not in SUPPORTED_PAIRS:
             raise InvariantError(f"unknown pair {pair}")
         if not reason:
             raise InvariantError("unavailable requires a reason")
         with self._lock():
             state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
             if self._current_ledger_status_locked(state) == "complete":
                 raise InvariantError("terminal publication state is immutable")
             current = state["pairs"].get(pair, {})
@@ -956,6 +1191,7 @@ class PublicationStore:
         pair = "x-post/ja"
         with self._lock():
             state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
             if self._current_ledger_status_locked(state) == "complete":
                 raise InvariantError("terminal publication state is immutable")
             entry = state.get("pairs", {}).get(pair)
@@ -1009,10 +1245,11 @@ class PublicationStore:
         intent from scratch instead of anyone hand-editing state. A live or
         receipted destination is never clearable.
         """
-        if pair not in REQUIRED_PAIRS:
+        if pair not in SUPPORTED_PAIRS:
             raise InvariantError(f"unknown pair {pair}")
         with self._lock():
             state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
             entry = state.get("pairs", {}).get(pair)
             if not entry:
                 return {"cleared": False, "reason": "not-registered"}
@@ -1025,7 +1262,7 @@ class PublicationStore:
             )
             if (
                 not isinstance(reinitialization_pairs, list)
-                or any(item not in REQUIRED_PAIRS for item in reinitialization_pairs)
+                or any(item not in SUPPORTED_PAIRS for item in reinitialization_pairs)
             ):
                 raise InvariantError("invalid destination reinitialization marker")
             if pair not in reinitialization_pairs:
@@ -1034,10 +1271,106 @@ class PublicationStore:
             self._write_locked(state)
             return {"cleared": True, "pair": pair}
 
+    def recover_stale_quality_receipt(self, pair: str) -> dict[str, Any]:
+        """Reopen only an obsolete advisory-receipt rejection.
+
+        The old reason is recoverable only after the immutable boundary,
+        safety decision, and hash-bound identity/safety receipts validate.
+        It never changes draft bytes or quality evidence.
+        """
+        if pair not in {"devto/en", "substack/ja", "substack/en"}:
+            raise InvariantError(f"{pair} cannot recover a stale quality receipt")
+        with self._lock():
+            state = self._read_locked()
+            self._validate_state_boundary_locked(
+                state, Path(str(state.get("run_dir", "")))
+            )
+            if state.get("safety_status") != "ALLOW":
+                raise InvariantError("stale quality recovery blocked by safety")
+            if not self._drafts_intact(state):
+                raise InvariantError("stale quality recovery blocked by changed draft")
+            if not self._quality_receipts_intact(state):
+                raise InvariantError("stale quality recovery requires current quality receipts")
+            entry = state.get("pairs", {}).get(pair)
+            if (
+                not isinstance(entry, dict)
+                or entry.get("status") != "unavailable"
+                or entry.get("error") != "publication-intent-stale-quality-receipt"
+                or entry.get("receipt")
+            ):
+                raise InvariantError(f"{pair} is not a recoverable stale quality rejection")
+            reinitialization_pairs = state.setdefault("reinitialization_pairs", [])
+            if (
+                not isinstance(reinitialization_pairs, list)
+                or any(item not in SUPPORTED_PAIRS for item in reinitialization_pairs)
+            ):
+                raise InvariantError("invalid destination reinitialization marker")
+            if pair not in reinitialization_pairs:
+                reinitialization_pairs.append(pair)
+            state["pairs"].pop(pair)
+            self._write_locked(state)
+            return {"recovered": True, "pair": pair}
+
+    def register_dormant_skip(
+        self, pair: str, reason: str = "dormant-destination"
+    ) -> dict[str, Any]:
+        """Persist a non-publication receipt for a configured dormant pair."""
+        if pair not in DORMANT_PAIRS:
+            raise InvariantError(f"{pair} is not a dormant destination")
+        if not reason:
+            raise InvariantError("dormant skip requires a reason")
+        with self._lock():
+            state = self._read_locked()
+            if self._is_legacy_state(state):
+                raise InvariantError(
+                    "legacy exact8 state does not accept dormant skip receipts"
+                )
+            self._assert_pair_mutation_allowed(
+                state, pair, allow_dormant_skip=True
+            )
+            if state.get("safety_status") != "ALLOW" or not self._drafts_intact(state):
+                raise InvariantError(
+                    "publication intent blocked by safety or changed draft"
+                )
+            if not self._quality_receipts_intact(state):
+                raise InvariantError("publication intent blocked by stale quality receipt")
+            if self._current_ledger_status_locked(state) == "complete":
+                raise InvariantError("terminal publication state is immutable")
+            current = state.get("pairs", {}).get(pair)
+            if current and current.get("status") not in {"skipped"}:
+                raise InvariantError(f"cannot skip an existing intent for {pair}")
+            recorded_at = (
+                current.get("skip_receipt", {}).get("recorded_at")
+                if isinstance(current, dict)
+                else None
+            ) or utc_now()
+            entry = {
+                "platform": pair.split("/", 1)[0],
+                "lang": pair.split("/", 1)[1],
+                "status": "skipped",
+                "skip_receipt": {
+                    "type": "dormant-destination",
+                    "pair": pair,
+                    "reason": reason,
+                    "slo": "not-applicable",
+                    "recorded_at": recorded_at,
+                },
+            }
+            state.setdefault("pairs", {})[pair] = entry
+            self._write_locked(state)
+            return dict(entry)
+
     def register_intent(self, pair: str, target_kind: str, target: str) -> dict[str, Any]:
         validate_target(pair, target_kind, target)
         with self._lock():
             state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
+            if state.get("safety_status") != "ALLOW" or not self._drafts_intact(state):
+                raise InvariantError(
+                    "publication intent blocked by safety or changed draft"
+                )
+            if not self._quality_receipts_intact(state):
+                raise InvariantError("publication intent blocked by stale quality receipt")
             if self._current_ledger_status_locked(state) == "complete":
                 raise InvariantError("terminal publication state is immutable")
             current = state["pairs"].get(pair)
@@ -1116,6 +1449,7 @@ class PublicationStore:
             raise InvariantError("existing published_at has no timezone")
         with self._lock():
             state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
             if self._current_ledger_status_locked(state) == "complete":
                 raise InvariantError("terminal publication state is immutable")
             current = state.get("pairs", {}).get(pair)
@@ -1376,6 +1710,7 @@ class PublicationStore:
             )
         with self._lock():
             state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
             entry = state.get("pairs", {}).get(pair, {})
             validate_target(
                 pair,
@@ -1494,6 +1829,59 @@ class PublicationStore:
             self._write_locked(state)
             return dict(entry)
 
+    def recover_unavailable_live(
+        self,
+        pair: str,
+        remote: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Mint a receipt when a post-PUT Dev.to target becomes visible later.
+
+        Dev.to can remove a just-published article from the unpublished list
+        before the public article endpoint starts returning it. Older workers
+        quarantined that exact propagation gap as unavailable. Recovery is
+        deliberately narrower than clearing/re-staging: only the persisted
+        numeric ID and exact failure class may become live, and the ordinary
+        strong receipt validator still proves content, media, identity, and
+        immutable hashes. No publisher call occurs on this path.
+        """
+        if pair != "devto/en" or not isinstance(remote, dict):
+            raise InvariantError(
+                "pair has no bounded unavailable-live recovery rule"
+            )
+        with self._lock():
+            state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
+            entry = state.get("pairs", {}).get(pair, {})
+            validate_target(
+                pair,
+                str(entry.get("target_kind", "")),
+                str(entry.get("target", "")),
+            )
+            if (
+                entry.get("status") != "unavailable"
+                or entry.get("error")
+                != "devto-target-missing-from-owned-drafts-after-publish-put"
+                or entry.get("receipt")
+            ):
+                raise InvariantError(
+                    "persisted state is not a recoverable unavailable Dev.to publish"
+                )
+            if (
+                remote.get("status") != "live"
+                or remote.get("verified") is not True
+            ):
+                return {
+                    "action": "still-unavailable",
+                    "pair": pair,
+                    "target": entry["target"],
+                }
+            return self._record_live_locked(
+                state,
+                pair,
+                str(remote.get("live_url", "")),
+                remote,
+            )
+
     def _drafts_intact(self, state: dict[str, Any]) -> bool:
         run_dir = Path(str(state.get("run_dir", "")))
         if not run_dir.is_dir() or run_dir.is_symlink():
@@ -1515,14 +1903,18 @@ class PublicationStore:
             ):
                 return False
         x_post = state.get("x_post", {})
-        x_post_path = Path(str(x_post.get("path", "")))
-        if (
-            x_post_path.is_symlink()
-            or not x_post_path.is_file()
-            or x_post_path.resolve() != resolved_run / "x-post-ja.txt"
-            or sha256(x_post_path) != x_post.get("sha256")
-        ):
-            return False
+        x_post_value = x_post.get("path") if isinstance(x_post, dict) else None
+        if self._is_legacy_state(state):
+            if not x_post_value:
+                return False
+            x_post_path = Path(str(x_post_value))
+            if (
+                x_post_path.is_symlink()
+                or not x_post_path.is_file()
+                or x_post_path.resolve() != resolved_run / "x-post-ja.txt"
+                or sha256(x_post_path) != x_post.get("sha256")
+            ):
+                return False
         media = state.get("media", {})
         headline = media.get("headline_image", {})
         headline_path = Path(str(headline.get("path", "")))
@@ -1553,6 +1945,38 @@ class PublicationStore:
             resolved_assets.add(path.resolve())
         return True
 
+    @staticmethod
+    def _quality_receipts_intact(state: dict[str, Any]) -> bool:
+        """Keep persisted quality proof bound to the current frozen hashes."""
+        receipts = state.get("quality_receipts")
+        if receipts is None:
+            # Legacy unarmed fixtures predate quality receipts and remain
+            # resumable; armed/current states always carry this object.
+            return True
+        if not isinstance(receipts, dict):
+            return False
+        drafts = state.get("drafts", {})
+        for lang in ("ja", "en"):
+            receipt = receipts.get(lang)
+            draft = drafts.get(lang, {}) if isinstance(drafts, dict) else {}
+            if not isinstance(receipt, dict) or any(
+                receipt.get(key) != expected
+                for key, expected in {
+                    "status": "terminal",
+                    "lang": lang,
+                    "article_sha256": draft.get("sha256"),
+                    "identity_gate": "PASS",
+                    "safety_gate": "ALLOW",
+                }.items()
+            ):
+                return False
+            if (
+                receipt.get("editorial_gate") not in {"PASS", "ADVISORY"}
+                or receipt.get("reader_gate") not in {"PASS", "ADVISORY"}
+            ):
+                return False
+        return True
+
     def _all_intents_valid(
         self, state: dict[str, Any], *, allow_ambiguous: bool = False
     ) -> bool:
@@ -1570,10 +1994,10 @@ class PublicationStore:
             # registered but never publishes; siblings must not be held
             # hostage by it (Dais 2026-07-25).
             allowed = allowed | {"ambiguous", "unavailable", "terminal-invalid"}
-        if set(state.get("pairs", {})) != set(REQUIRED_PAIRS):
+        if not self._pair_set_valid(state) or not self._quality_receipts_intact(state):
             return False
         try:
-            for pair in REQUIRED_PAIRS:
+            for pair in self._required_pairs_for_state(state):
                 entry = state["pairs"][pair]
                 if entry.get("status") == "unavailable":
                     continue
@@ -1611,19 +2035,33 @@ class PublicationStore:
             if row.get("run_id") == state.get("run_id")
             and row.get("topic_id") == state.get("topic_id")
             and row.get("published") is True
+            and not is_self_owned_publication_receipt(row, state)
         ]
         receipts: dict[str, str] = {}
+        required = set(self._required_pairs_for_state(state))
+        historical_alias = self._is_active_alias_state(state)
         for row in current:
             pair = f"{row.get('platform', '')}/{row.get('lang', '')}"
+            if pair not in required and historical_alias and pair in {
+                "zenn-article/ja",
+                "devto/en",
+            }:
+                continue
             if (
-                pair not in REQUIRED_PAIRS
+                pair not in required
                 or pair in receipts
                 or row.get("reality_gate") != "PASS"
                 or not valid_http_url(row.get("live_url"))
             ):
                 raise InvariantError("ambiguous current-run publication ledger")
             try:
-                validate_receipt_evidence(state, pair, str(row["live_url"]), row)
+                validate_receipt_evidence(
+                    state,
+                    pair,
+                    str(row["live_url"]),
+                    row,
+                    reread_remote_assets=False,
+                )
             except InvariantError as error:
                 raise InvariantError(
                     f"invalid current-run publication receipt for {pair}: {error}"
@@ -1643,7 +2081,11 @@ class PublicationStore:
             receipts = self._current_ledger_receipts_locked(state)
         except InvariantError:
             return "ambiguous"
-        return "complete" if set(receipts) == set(REQUIRED_PAIRS) else "incomplete"
+        return (
+            "complete"
+            if set(receipts) == set(self._required_pairs_for_state(state))
+            else "incomplete"
+        )
 
     def _repair_ledger_locked(
         self,
@@ -1720,6 +2162,7 @@ class PublicationStore:
     def _record_live_locked(
         self, state: dict[str, Any], pair: str, live_url: str, evidence: dict[str, Any]
     ) -> dict[str, Any]:
+        self._assert_pair_mutation_allowed(state, pair)
         if self._current_ledger_status_locked(state) == "complete":
             raise InvariantError("terminal publication state is immutable")
         if pair not in state.get("pairs", {}):
@@ -1814,12 +2257,13 @@ class PublicationStore:
     def guard(self, pair: str, remote: dict[str, Any]) -> dict[str, Any]:
         with self._lock():
             state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
             if pair not in state.get("pairs", {}):
                 raise InvariantError(f"no persisted intent for {pair}")
             if state["safety_status"] != "ALLOW" or not self._drafts_intact(state):
                 raise InvariantError("publication is blocked by safety or changed draft")
             if not self._all_intents_valid(state, allow_ambiguous=True):
-                raise InvariantError("all eight valid stable intents must exist before publication")
+                raise InvariantError(self._intent_requirement_message(state))
             if state["pairs"][pair].get("status") in {
                 "ambiguous",
                 "unavailable",
@@ -1893,12 +2337,13 @@ class PublicationStore:
         """Read-only pre-probe check used by mandatory publisher boundaries."""
         with self._lock():
             state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
             if pair not in state.get("pairs", {}):
                 raise InvariantError(f"no persisted intent for {pair}")
             if state.get("safety_status") != "ALLOW" or not self._drafts_intact(state):
                 raise InvariantError("publication is blocked by safety or changed draft")
             if not self._all_intents_valid(state, allow_ambiguous=True):
-                raise InvariantError("all eight valid stable intents must exist before publication")
+                raise InvariantError(self._intent_requirement_message(state))
             if state["pairs"][pair].get("status") in {
                 "ambiguous",
                 "unavailable",
@@ -1925,13 +2370,13 @@ class PublicationStore:
             return {"resumable": False, "reason": "safety-not-terminal"}
         if not self._drafts_intact(state):
             return {"resumable": False, "reason": "draft-changed-or-missing"}
-        if set(state.get("pairs", {})) != set(REQUIRED_PAIRS):
+        if not self._pair_set_valid(state):
             return {"resumable": False, "reason": "missing-targets"}
         if not self._all_intents_valid(state, allow_ambiguous=True):
             return {"resumable": False, "reason": "ambiguous-target-or-reality"}
         recovery_pairs = [
             pair
-            for pair in REQUIRED_PAIRS
+            for pair in self._required_pairs_for_state(state)
             if (
                 state["pairs"][pair].get("status") == "ambiguous"
                 and pair in self.AMBIGUITY_RECOVERY_RULES
@@ -1941,7 +2386,7 @@ class PublicationStore:
         ]
         repair_pairs = [
             pair
-            for pair in REQUIRED_PAIRS
+            for pair in self._required_pairs_for_state(state)
             if state["pairs"][pair].get("status") == "repair-required"
         ]
         ledger_status = self._current_ledger_status_locked(state)
@@ -1958,7 +2403,7 @@ class PublicationStore:
                     "recovery_pairs": recovery_pairs,
                     "pairs": {
                         pair: state["pairs"][pair]
-                        for pair in REQUIRED_PAIRS
+                        for pair in self._required_pairs_for_state(state)
                     },
                     "next_attempt": int(state.get("resume_attempts", 0)) + 1,
                     "max_resume_attempts": int(
@@ -1977,7 +2422,7 @@ class PublicationStore:
         ]
         pending = [
             pair
-            for pair in REQUIRED_PAIRS
+            for pair in self._required_pairs_for_state(state)
             if pair not in ledger_receipts
             # A frozen ambiguous pair waits for bounded recovery; it is never
             # eligible work, and it no longer blocks its siblings.
@@ -1985,6 +2430,22 @@ class PublicationStore:
             not in {"ambiguous", "unavailable", "terminal-invalid"}
         ]
         if not pending and not recovery_pairs:
+            frozen_unavailable = [
+                pair
+                for pair in self._required_pairs_for_state(state)
+                if state["pairs"][pair].get("status") == "unavailable"
+            ]
+            if frozen_unavailable:
+                # An unavailable destination is deliberately excluded from
+                # automatic publication, but it is not completion evidence.
+                # Returning all-complete here made an armed run look finished
+                # forever after a transient staging failure and suppressed the
+                # explicit re-arm path (clear-unavailable/register-intent).
+                return {
+                    "resumable": False,
+                    "reason": "frozen-incomplete-pairs",
+                    "frozen_pairs": frozen_unavailable,
+                }
             if any(
                 entry.get("status") == "terminal-invalid"
                 for entry in state["pairs"].values()
@@ -2009,7 +2470,10 @@ class PublicationStore:
             "drafts": state["drafts"],
             "pending_pairs": pending,
             "recovery_pairs": recovery_pairs,
-            "pairs": {pair: state["pairs"][pair] for pair in REQUIRED_PAIRS},
+            "pairs": {
+                pair: state["pairs"][pair]
+                for pair in self._required_pairs_for_state(state)
+            },
             "next_attempt": int(state.get("resume_attempts", 0)) + 1,
             "max_resume_attempts": int(state["max_resume_attempts"]),
         }
@@ -2042,10 +2506,32 @@ class PublicationStore:
                     "reason": "draft-changed-or-missing",
                 }
             pairs = state.get("pairs", {})
+            required = self._required_pairs_for_state(state)
+            pair_keys = set(pairs) if isinstance(pairs, dict) else set()
+            active_keys = pair_keys & set(required)
+            dormant_only_alias = (
+                self._is_active_alias_state(state)
+                and bool(pair_keys)
+                and not active_keys
+                and pair_keys <= {"x-article/en", "x-post/ja"}
+            )
             if (
                 not isinstance(pairs, dict)
                 or not pairs
-                or not set(pairs) < set(REQUIRED_PAIRS)
+                or (not dormant_only_alias and not active_keys)
+                or (not dormant_only_alias and not active_keys < set(required))
+                or not pair_keys <= set(SUPPORTED_PAIRS)
+                or any(
+                    pair not in DORMANT_PAIRS
+                    or not isinstance(pairs[pair], dict)
+                    or (
+                        pairs[pair].get("status") not in HISTORICAL_DORMANT_STATUSES
+                        if self._is_active_alias_state(state)
+                        and pair in {"zenn-article/ja", "devto/en"}
+                        else pairs[pair].get("status") != "skipped"
+                    )
+                    for pair in pair_keys - set(required)
+                )
             ):
                 return {
                     "initializable": False,
@@ -2058,7 +2544,7 @@ class PublicationStore:
                     or len(set(reinitialization_pairs))
                     != len(reinitialization_pairs)
                     or any(
-                        pair not in REQUIRED_PAIRS
+                        pair not in required
                         for pair in reinitialization_pairs
                     )
                 ):
@@ -2066,13 +2552,9 @@ class PublicationStore:
                         "initializable": False,
                         "reason": "invalid-destination-reinitialization-marker",
                     }
-                missing = [
-                    pair for pair in REQUIRED_PAIRS if pair not in pairs
-                ]
+                missing = [pair for pair in required if pair not in pairs]
                 marked = [
-                    pair
-                    for pair in REQUIRED_PAIRS
-                    if pair in reinitialization_pairs
+                    pair for pair in required if pair in reinitialization_pairs
                 ]
                 if missing != marked:
                     return {
@@ -2086,9 +2568,12 @@ class PublicationStore:
                     "run_dir": state["run_dir"],
                     "topic_id": state["topic_id"],
                     "initialization_pairs": marked,
+                    "missing_dormant_skip_pairs": [
+                        pair for pair in DORMANT_PAIRS if pair not in pairs
+                    ],
                     "existing_pairs": {
                         pair: dict(pairs[pair])
-                        for pair in REQUIRED_PAIRS
+                        for pair in required
                         if pair in pairs
                     },
                 }
@@ -2100,10 +2585,11 @@ class PublicationStore:
             if any(
                 not (
                     _is_nonpublication_quality_audit(row, state)
+                    or is_self_owned_publication_receipt(row, state)
                     or (
                         row.get("topic_id") == state.get("topic_id")
                         and f"{row.get('platform')}/{row.get('lang')}"
-                        in REQUIRED_PAIRS
+                        in required
                         and row.get("published") is False
                         and row.get("verified_logged_in") is False
                         and isinstance(row.get("state"), str)
@@ -2123,8 +2609,22 @@ class PublicationStore:
             try:
                 for pair, entry in pairs.items():
                     status = entry.get("status")
+                    if (
+                        self._is_active_alias_state(state)
+                        and pair in {"zenn-article/ja", "devto/en"}
+                        and status in HISTORICAL_DORMANT_STATUSES
+                    ):
+                        continue
                     if entry.get("receipt"):
                         raise InvariantError("existing partial intent is not pristine")
+                    if status == "skipped":
+                        if (
+                            pair not in DORMANT_PAIRS
+                            or entry.get("skip_receipt", {}).get("slo")
+                            != "not-applicable"
+                        ):
+                            raise InvariantError("invalid dormant skip receipt")
+                        continue
                     if status == "unavailable":
                         target_kind = entry.get("target_kind")
                         target = entry.get("target")
@@ -2145,7 +2645,7 @@ class PublicationStore:
                     "initializable": False,
                     "reason": "existing-target-ambiguous",
                 }
-            missing = [pair for pair in REQUIRED_PAIRS if pair not in pairs]
+            missing = [pair for pair in required if pair not in pairs]
             return {
                 "initializable": True,
                 "reason": "partial-target-initialization",
@@ -2153,9 +2653,12 @@ class PublicationStore:
                 "run_dir": state["run_dir"],
                 "topic_id": state["topic_id"],
                 "initialization_pairs": missing,
+                "missing_dormant_skip_pairs": [
+                    pair for pair in DORMANT_PAIRS if pair not in pairs
+                ],
                 "existing_pairs": {
                     pair: dict(pairs[pair])
-                    for pair in REQUIRED_PAIRS
+                    for pair in required
                     if pair in pairs
                 },
             }
@@ -2211,27 +2714,32 @@ def main() -> int:
     init.add_argument("--topic-id", required=True)
     init.add_argument("--draft-ja", required=True)
     init.add_argument("--draft-en", required=True)
-    init.add_argument("--x-post-ja", required=True)
+    init.add_argument("--x-post-ja")
     init.add_argument("--headline-image", required=True)
     init.add_argument("--body-asset", action="append", required=True)
     init.add_argument("--safety", default="ALLOW", choices=("ALLOW", "BLOCK", "PENDING"))
     init.add_argument("--max-resume-attempts", default=3, type=int)
     init.add_argument("--require-quality", action="store_true")
+    init.add_argument("--legacy-exact8", action="store_true")
 
     intent = sub.add_parser("intent")
-    intent.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    intent.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     intent.add_argument("--target-kind", required=True)
     intent.add_argument("--target", required=True)
+
+    dormant_skip = sub.add_parser("dormant-skip")
+    dormant_skip.add_argument("--pair", required=True, choices=DORMANT_PAIRS)
+    dormant_skip.add_argument("--reason", default="dormant-destination")
 
     safety = sub.add_parser("safety")
     safety.add_argument("--status", required=True, choices=("ALLOW", "BLOCK", "PENDING"))
 
     guard = sub.add_parser("guard")
-    guard.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    guard.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     guard.add_argument("--remote-json", required=True)
 
     record = sub.add_parser("record-live")
-    record.add_argument("--pair", required=True, choices=REQUIRED_PAIRS)
+    record.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     record.add_argument("--live-url", required=True)
     record.add_argument("--evidence-json", required=True)
     record.add_argument(
@@ -2254,13 +2762,16 @@ def main() -> int:
             {"ja": Path(args.draft_ja), "en": Path(args.draft_en)},
             args.safety,
             args.max_resume_attempts,
-            Path(args.x_post_ja),
+            Path(args.x_post_ja) if args.x_post_ja else None,
             Path(args.headline_image),
             [Path(path) for path in args.body_asset],
             require_quality=args.require_quality,
+            legacy_exact8=args.legacy_exact8,
         )
     elif args.command == "intent":
         result = store.register_intent(args.pair, args.target_kind, args.target)
+    elif args.command == "dormant-skip":
+        result = store.register_dormant_skip(args.pair, args.reason)
     elif args.command == "safety":
         store.set_safety(args.status)
         result = {"status": args.status}

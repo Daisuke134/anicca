@@ -1,4 +1,4 @@
-# AI Entity Article Writer restoration implementation plan
+# Writer Agent restoration implementation plan
 
 This plan implements
 [model-agnostic-restoration.md](model-agnostic-restoration.md). The specification
@@ -11,8 +11,8 @@ performs the repository work and the Mac mini cutover.
 ## Target folder tree
 
 ```text
-skills/article-writer/
-├── SKILL.md                         # canonical AI Entity Article Writer skill
+skills/writer-agent/
+├── SKILL.md                         # canonical Writer Agent skill
 ├── article-daily.sh                 # only creator of a JST daily run
 ├── article-healthcheck.sh           # read-only health and stale-run diagnosis
 ├── config/
@@ -143,21 +143,21 @@ preserve state. It does not mean re-enable the broken replacement generator.
 ### Source
 
 Use `592a193` as the behavioral foundation. Restore only tracked source and
-assets under `skills/article-writer/`; do not restore runtime state, old logs,
+assets under `skills/writer-agent/`; do not restore runtime state, old logs,
 credentials, browser profiles, or obsolete generated output.
 
 ### Core paths
 
 Restore:
 
-- `skills/article-writer/SKILL.md`
-- `skills/article-writer/article-daily.sh`
-- `skills/article-writer/article-healthcheck.sh`
-- `skills/article-writer/config/`
-- `skills/article-writer/data/`
-- `skills/article-writer/scripts/`
-- `skills/article-writer/topics/`
-- `skills/article-writer/vendor/`
+- `skills/writer-agent/SKILL.md`
+- `skills/writer-agent/article-daily.sh`
+- `skills/writer-agent/article-healthcheck.sh`
+- `skills/writer-agent/config/`
+- `skills/writer-agent/data/`
+- `skills/writer-agent/scripts/`
+- `skills/writer-agent/topics/`
+- `skills/writer-agent/vendor/`
 
 Keep the current restoration specification and implementation plan.
 
@@ -213,7 +213,7 @@ Resume MUST reject missing, conflicting, or cross-run values.
 Create:
 
 ```text
-skills/article-writer/runtime/model-runner.sh
+skills/writer-agent/runtime/model-runner.sh
 ```
 
 Supported calls:
@@ -299,7 +299,7 @@ Replace 18 logical Claude calls across these 16 files:
 16. `topics/make-diary-digest.sh`
 
 Comments, logs, and filenames MUST use provider-neutral terms when they describe
-the boundary. The canonical skill name remains AI Entity Article Writer.
+the boundary. The canonical skill name remains Writer Agent.
 
 ### Gate
 
@@ -524,10 +524,10 @@ last known-good rules and remains independent.
 2. fast-forward the canonical Mac mini repository at
    `~/profitable-claude` to that exact commit
 3. write its hash to
-   `~/profitable-claude/skills/article-writer/state/deployed-commit`
+   `~/profitable-claude/skills/writer-agent/state/deployed-commit`
    and atomically refresh that marker after every successful learning commit/push
 4. restore
-   `~/.claude/skills/ai-entity-article-writer -> ~/profitable-claude/skills/article-writer`
+   `~/.claude/skills/writer-agent -> ~/profitable-claude/skills/writer-agent`
 5. install all article launchd plists
 6. load only health, pending recovery, Zenn recovery, and learning jobs needed
    for the canary

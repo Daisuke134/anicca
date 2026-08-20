@@ -20,6 +20,7 @@ from typing import Any
 
 VERSION = 1
 MAX_GENERATION_ATTEMPTS = 3
+MAX_EMPTY_INTERRUPTION_RECOVERIES = 1
 ALLOWED_PREPUBLICATION_FILES = {
     "article-daily-prompt.txt",
     "git-hash.txt",
@@ -28,6 +29,7 @@ ALLOWED_PREPUBLICATION_FILES = {
     "gates/.generation-state.json.lock",
     "gates/strategy-consumption.json",
     "gates/quality-replacement.json",
+    "gates/media-create-required.json",
 }
 
 # Wrapper-owned runtime infrastructure inside the run dir. These are never
@@ -81,6 +83,36 @@ def _load(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict) or value.get("version") != VERSION:
         raise GenerationInvariant("invalid generation state")
     return value
+
+
+def _charged_attempt_count(state: dict[str, Any]) -> int:
+    """Count generation attempts while forgiving one zero-artifact interruption.
+
+    A terminated provider invocation that created no publication candidate must
+    remain auditable, but charging the only empty interruption against the
+    article budget can permanently strand an otherwise untouched daily run.
+    Further empty interruptions are charged, keeping recovery bounded.
+    """
+
+    attempts = state.get("attempts", [])
+    if not isinstance(attempts, list):
+        raise GenerationInvariant("generation attempts are invalid")
+    empty_interruptions = sum(
+        1
+        for attempt in attempts
+        if isinstance(attempt, dict)
+        and attempt.get("status") == "interrupted-safe"
+        and attempt.get("archive_manifest") == []
+    )
+    free_recoveries = int(
+        state.get(
+            "maximum_empty_interruption_recoveries",
+            MAX_EMPTY_INTERRUPTION_RECOVERIES,
+        )
+    )
+    if free_recoveries < 0 or free_recoveries > MAX_EMPTY_INTERRUPTION_RECOVERIES:
+        raise GenerationInvariant("empty interruption recovery budget is invalid")
+    return len(attempts) - min(empty_interruptions, free_recoveries)
 
 
 def _lock(path: Path):
@@ -182,6 +214,9 @@ def initialize(run_dir: Path, run_id: str, prompt_file: Path, ledger: Path) -> d
             "prompt_sha256": prompt_hash,
             "status": "prepared",
             "maximum_attempts": MAX_GENERATION_ATTEMPTS,
+            "maximum_empty_interruption_recoveries": (
+                MAX_EMPTY_INTERRUPTION_RECOVERIES
+            ),
             "attempts": [],
             "created_at": utc_now(),
             "updated_at": utc_now(),
@@ -206,15 +241,19 @@ def begin(
         if state.get("run_id") != run_id or state.get("prompt_sha256") != file_sha256(prompt_file):
             raise GenerationInvariant("prompt or run identity changed")
         safe, reason = prepublication_empty(resolved, run_id, ledger)
-        if not safe:
+        quality_reroute = _quality_reroute_pending(resolved, run_id, ledger)
+        if not safe and not quality_reroute:
             raise GenerationInvariant(reason)
-        if state.get("status") not in {
+        allowed_statuses = {
             "prepared",
             "provider-failed-safe",
             "interrupted-safe",
-        }:
+        }
+        if quality_reroute:
+            allowed_statuses.add("provider-returned")
+        if state.get("status") not in allowed_statuses:
             raise GenerationInvariant("generation attempt is not safely resumable")
-        if len(state.get("attempts", [])) >= int(
+        if _charged_attempt_count(state) >= int(
             state.get("maximum_attempts", MAX_GENERATION_ATTEMPTS)
         ):
             raise GenerationInvariant("generation attempt limit exhausted")
@@ -231,6 +270,40 @@ def begin(
         state["updated_at"] = utc_now()
         _atomic_write(state_path, state)
         return state
+
+
+def _quality_reroute_pending(
+    run_dir: Path, run_id: str, ledger: Path
+) -> bool:
+    if (run_dir / "gates" / "publication-state.json").exists():
+        return False
+    if _ledger_has_public_row(ledger, run_id):
+        return False
+    quality_path = run_dir / "gates" / "quality-self-heal.json"
+    try:
+        quality = json.loads(quality_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        return False
+    if not (
+        quality
+        and quality.get("version") == 2
+        and quality.get("attempt") == 1
+        and quality.get("action") == "reroute"
+    ):
+        return False
+    records = quality.get("quality")
+    if not isinstance(records, dict):
+        return False
+    for lang in ("ja", "en"):
+        article = run_dir / f"article-{lang}.md"
+        if (
+            not article.is_file()
+            or article.is_symlink()
+            or records.get(lang, {}).get("article_sha256")
+            != file_sha256(article)
+        ):
+            return False
+    return True
 
 
 def _pid_is_alive(pid: int) -> bool:
@@ -496,7 +569,7 @@ def resume_decision(
         maximum = int(
             state.get("maximum_attempts", MAX_GENERATION_ATTEMPTS)
         )
-        if not isinstance(attempts, list) or len(attempts) >= maximum:
+        if not isinstance(attempts, list) or _charged_attempt_count(state) >= maximum:
             return {
                 "resumable": False,
                 "reason": "generation-attempt-limit-exhausted",

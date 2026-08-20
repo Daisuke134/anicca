@@ -10,20 +10,23 @@ exact8_init_state() {
   local topic_id="$5"
   local zenn_slug="$6"
   local state="$run_dir/gates/publication-state.json"
-  local helper="$root/skills/article-writer/scripts/publication_resume.py"
+  local helper="$root/skills/writer-agent/scripts/publication_resume.py"
 
   mkdir -p "$run_dir/gates"
-  printf '# ja\n\nhttps://aniccaai.com/\n' >"$run_dir/article-ja.md"
+  printf '# ja\n\nhttps://aniccaai.com/?product_id=anicca&run_id=%s&artifact_id=article-ja&variant_id=fixture-ja&click_id=%s-article-ja\n' \
+    "$run_id" "$run_id" >"$run_dir/article-ja.md"
   printf '%s\n' '---' 'title: "Exact8 fixture"' 'tags: ai, agents' '---' '# en' '' \
-    'https://aniccaai.com/' \
     >"$run_dir/article-en.md"
+  printf 'https://aniccaai.com/?product_id=anicca&run_id=%s&artifact_id=article-en&variant_id=fixture-en&click_id=%s-article-en\n' \
+    "$run_id" "$run_id" >>"$run_dir/article-en.md"
   # Publication init refuses drafts without the canonical media envelope;
   # attach it through the same mechanical boundary production uses.
-  python3 "$root/skills/article-writer/scripts/canonical_media.py" attach \
+  python3 "$root/skills/writer-agent/scripts/canonical_media.py" attach \
     --file "$run_dir/article-ja.md" >/dev/null
-  python3 "$root/skills/article-writer/scripts/canonical_media.py" attach \
+  python3 "$root/skills/writer-agent/scripts/canonical_media.py" attach \
     --file "$run_dir/article-en.md" >/dev/null
-  printf 'short post\n\nhttps://aniccaai.com/\n' >"$run_dir/x-post-ja.txt"
+  printf 'short post\n\nhttps://aniccaai.com/?product_id=anicca&run_id=%s&artifact_id=x-post-ja&variant_id=fixture-x&click_id=%s-x-post-ja\n' \
+    "$run_id" "$run_id" >"$run_dir/x-post-ja.txt"
   printf 'headline\n' >"$run_dir/headline-image.png"
   printf 'diagram\n' >"$run_dir/body-diagram.png"
   python3 "$helper" --state "$state" --ledger "$ledger" init \
@@ -32,6 +35,7 @@ exact8_init_state() {
     --x-post-ja "$run_dir/x-post-ja.txt" --safety ALLOW --max-resume-attempts 2 \
     --headline-image "$run_dir/headline-image.png" \
     --body-asset "$run_dir/body-diagram.png" \
+    --legacy-exact8 \
     >/dev/null
   python3 "$helper" --state "$state" --ledger "$ledger" intent \
     --pair note/ja --target-kind note-key --target note-current >/dev/null
@@ -105,7 +109,7 @@ exact8_record_other_seven() {
   local root="$1"
   local run_dir="$2"
   local ledger="$3"
-  local helper="$root/skills/article-writer/scripts/publication_resume.py"
+  local helper="$root/skills/writer-agent/scripts/publication_resume.py"
   local state="$run_dir/gates/publication-state.json"
   local pair public_id live_url evidence
   for pair in note/ja devto/en substack/ja substack/en x-article/ja x-article/en x-post/ja; do

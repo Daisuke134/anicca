@@ -12,7 +12,7 @@
 # hand, for the task's verify step.
 set -uo pipefail
 
-SCRIPT_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/article-writer}/scripts"
+SCRIPT_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/writer-agent}/scripts"
 PY=/opt/homebrew/bin/python3
 command -v "$PY" >/dev/null 2>&1 || PY=python3
 TMP="$(mktemp -d)"

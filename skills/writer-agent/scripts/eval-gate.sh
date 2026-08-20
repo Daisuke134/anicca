@@ -10,7 +10,7 @@
 #   "claim_count":N,"artifact_count":N,"claim_artifact_ratio_ok":bool,
 #   "payment_verdict":"yes"|"no","payment_reason":"..."}
 set -uo pipefail
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/article-writer/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
 MD=""; LANG_A=""; TH=56; TITLE_ARG=""
 while [ $# -gt 0 ]; do case "$1" in
   --markdown-file) MD="$2"; shift 2;;

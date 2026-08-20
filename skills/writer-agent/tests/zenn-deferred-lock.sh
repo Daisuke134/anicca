@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-WORKER="$ROOT/skills/article-writer/scripts/zenn-deferred-worker.sh"
+WORKER="$ROOT/skills/writer-agent/scripts/zenn-deferred-worker.sh"
 TMP="$(mktemp -d /tmp/zenn-lock.XXXXXX)"
 HOLDER=''
 cleanup() { touch "$TMP/release" 2>/dev/null || true; test -z "$HOLDER" || wait "$HOLDER" 2>/dev/null || true; rm -rf -- "$TMP"; }

@@ -3,7 +3,7 @@
 <plist version="1.0"><dict>
   <key>Label</key><string>ai.anicca.article-diary-digest</string>
   <key>ProgramArguments</key>
-  <array><string>/bin/bash</string><string>/Users/anicca/profitable-claude/skills/human-funded/article/topics/make-diary-digest.sh</string></array>
+  <array><string>/bin/bash</string><string>/Users/anicca/profitable-claude/skills/writer-agent/topics/make-diary-digest.sh</string></array>
   <key>StartCalendarInterval</key><dict><key>Hour</key><integer>23</integer><key>Minute</key><integer>30</integer></dict>
   <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/article-diary-digest.out</string>
   <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/article-diary-digest.err</string>

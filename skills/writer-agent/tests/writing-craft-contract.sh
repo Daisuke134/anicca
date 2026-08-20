@@ -12,8 +12,8 @@ CRAFT_MD="$CRAFT_DIR/CRAFT.md"
 X_POST="$CRAFT_DIR/formats/x-post.md"
 ARTICLE="$CRAFT_DIR/formats/article.md"
 LONGFORM="$CRAFT_DIR/formats/longform.md"
-TITLE_RULES="$ROOT/skills/article-writer/reference/title-best-practices.md"
-ARTICLE_DAILY="$ROOT/skills/article-writer/article-daily.sh"
+TITLE_RULES="$ROOT/skills/writer-agent/reference/title-best-practices.md"
+ARTICLE_DAILY="$ROOT/skills/writer-agent/article-daily.sh"
 
 PY=/opt/homebrew/bin/python3
 command -v "$PY" >/dev/null 2>&1 || PY=python3

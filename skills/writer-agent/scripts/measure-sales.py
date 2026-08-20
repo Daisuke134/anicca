@@ -23,6 +23,10 @@ Per-platform measurement (MEASURED 2026-07-18 against the real logged-in dashboa
                has not been observed yet in this account, so that layout is reported as
                null+reason rather than guessed at (do not invent a row-counting rule for a layout
                never seen).
+               note.com/sitesettings/stats loads the authenticated, paginated
+               /api/v1/stats/pv response. Article views join by exact note key and owner;
+               absence means zero only after the terminal page, after publication, and when
+               every returned row proves that zero-view articles are omitted.
   - substack:  {pub}/publish/home 's "有料登録者" overview card and
                {pub}/publish/stats/earnings 's "累計収益" label. Both currently render as a literal
                "-" rather than an explicit number. Nearby text ("0から" / no processed Stripe
@@ -45,13 +49,14 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import importlib.util
 import json
 import os
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Every emitted row declares whether its number is per-article or account-wide. The scope rules
@@ -65,12 +70,14 @@ assert _ATTRIBUTION_SPEC.loader is not None
 _ATTRIBUTION_SPEC.loader.exec_module(attribution)
 
 DEFAULT_OUT = os.path.expanduser(
-    "~/profitable-claude/skills/article-writer/state/sales-ledger.jsonl"
+    "~/profitable-claude/skills/writer-agent/state/sales-ledger.jsonl"
 )
 VENV_CLOAK_PYTHON = os.path.expanduser("~/.openclaw/skills/_shared/venv-cloak/bin/python3")
 
 NOTE_SALES_URL = "https://note.com/sitesettings/salesmanage"
 NOTE_PURCHASES_URL = "https://note.com/sitesettings/purchasers"
+NOTE_STATS_URL = "https://note.com/sitesettings/stats"
+JST = timezone(timedelta(hours=9))
 
 
 def run_browser_script(script: str, timeout: int = 90) -> subprocess.CompletedProcess:
@@ -144,9 +151,30 @@ try:
     purchases_url = pg.url
     purchases_body = pg.evaluate("() => document.body.innerText")
 
+    pg.goto({NOTE_STATS_URL!r}, wait_until="domcontentloaded", timeout=40000)
+    time.sleep(3)
+    stats_pages = pg.evaluate('''async () => {{
+        const pages = [];
+        for (let page = 1; page <= 100; page++) {{
+            const response = await fetch(
+                `/api/v1/stats/pv?filter=all&page=${{page}}&sort=pv`,
+                {{credentials: "same-origin", cache: "no-store"}}
+            );
+            if (!response.ok) throw new Error(`note stats HTTP ${{response.status}}`);
+            const envelope = await response.json();
+            const data = envelope && envelope.data;
+            if (!data || !Array.isArray(data.note_stats))
+                throw new Error("note stats response is malformed");
+            pages.push(data);
+            if (data.last_page === true) return pages;
+        }}
+        throw new Error("note stats pagination exceeded 100 pages");
+    }}''')
+
     payload = {{
         "sales_url": sales_url, "sales_body": sales_body,
         "purchases_url": purchases_url, "purchases_body": purchases_body,
+        "stats_url": pg.url, "stats_pages": stats_pages,
     }}
     print("PAYLOAD_B64:" + base64.b64encode(json.dumps(payload).encode("utf-8")).decode("ascii"))
 finally:
@@ -234,6 +262,131 @@ def parse_note_metrics(payload: dict) -> list[tuple[str, object, bool, str | Non
             payload["purchases_url"],
         ))
     return out
+
+
+def _note_stats_time(value: object) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError("note stats calculation time is missing")
+    parsed = datetime.strptime(value, "%Y/%m/%d %H:%M").replace(tzinfo=JST)
+    return parsed.astimezone(timezone.utc)
+
+
+def _iso_time(value: object) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError("artifact publication time is missing")
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("artifact publication time has no timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def parse_note_view_rows(
+    pages: list[dict], artifacts: list[dict]
+) -> list[dict]:
+    """Turn a fully paginated authenticated note stats receipt into article views.
+
+    note omits zero-view articles from this endpoint.  Absence is accepted as
+    zero only after the terminal page, when every returned row has a positive
+    read_count and the dashboard calculation happened after publication.
+    """
+
+    if not pages or pages[-1].get("last_page") is not True:
+        raise ValueError("note stats pagination is incomplete")
+    calculated_values = {page.get("last_calculate_at") for page in pages}
+    ranges = {(page.get("start_date"), page.get("end_date")) for page in pages}
+    if len(calculated_values) != 1 or len(ranges) != 1:
+        raise ValueError("note stats pages do not share one frozen calculation")
+    calculated_raw = next(iter(calculated_values))
+    calculated = _note_stats_time(calculated_raw)
+    observed_at = calculated.isoformat().replace("+00:00", "Z")
+    stats: dict[str, dict] = {}
+    for page in pages:
+        values = page.get("note_stats")
+        if not isinstance(values, list):
+            raise ValueError("note stats page has no article collection")
+        for item in values:
+            if not isinstance(item, dict):
+                raise ValueError("note stats article is malformed")
+            key = item.get("key")
+            read_count = item.get("read_count")
+            if (
+                not isinstance(key, str)
+                or not key
+                or not isinstance(read_count, int)
+                or isinstance(read_count, bool)
+                or read_count < 0
+                or key in stats
+            ):
+                raise ValueError("note stats article identity/count is invalid")
+            stats[key] = item
+    omission_means_zero = bool(stats) and all(
+        int(item["read_count"]) > 0 for item in stats.values()
+    )
+    pages_sha256 = hashlib.sha256(
+        json.dumps(
+            pages, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+    rows = []
+    for artifact in artifacts:
+        if artifact.get("platform") != "note":
+            continue
+        artifact_id = artifact.get("artifact_id")
+        key = artifact.get("public_id")
+        live_url = artifact.get("live_url")
+        if not all(isinstance(value, str) and value for value in (artifact_id, key, live_url)):
+            raise ValueError("note artifact identity is incomplete")
+        published = _iso_time(artifact.get("published_at"))
+        item = stats.get(key)
+        value: int | None = None
+        reason = None
+        ok = False
+        if calculated < published:
+            reason = "note stats calculation predates publication"
+        elif item is not None:
+            owner = item.get("user", {}).get("urlname") if isinstance(item.get("user"), dict) else None
+            if not isinstance(owner, str) or f"note.com/{owner}/n/{key}" not in live_url:
+                reason = "note stats owner/key differs from the live artifact"
+            else:
+                value = int(item["read_count"])
+                ok = True
+        elif omission_means_zero:
+            value = 0
+            ok = True
+        else:
+            reason = "complete note stats response does not prove absent article means zero"
+        receipt = {
+            "schema_version": 1,
+            "artifact_id": artifact_id,
+            "public_id": key,
+            "published_at": artifact.get("published_at"),
+            "observed_at": observed_at,
+            "pages_sha256": pages_sha256,
+            "read_count": value,
+            "status": "scorable" if ok else "unknown",
+        }
+        row = {
+            "ts": observed_at,
+            "platform": "note",
+            "metric": "views",
+            "value": value,
+            "source_url": NOTE_STATS_URL,
+            "ok": ok,
+            "status": "scorable" if ok else "unknown",
+            "unit": "count",
+            "window": "all_since_publication",
+            "scope": "artifact",
+            "artifact_id": artifact_id,
+            "receipt_sha256": hashlib.sha256(
+                json.dumps(
+                    receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                ).encode("utf-8")
+            ).hexdigest(),
+        }
+        if reason:
+            row["reason"] = reason
+        rows.append(row)
+    return rows
 
 
 def parse_substack_metrics(payload: dict) -> list[tuple[str, object, bool, str | None, str]]:
@@ -362,6 +515,57 @@ def build_rows(
     return rows
 
 
+def load_note_artifacts(path: Path) -> list[dict]:
+    artifacts = []
+    if not path.is_file():
+        return artifacts
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        language = row.get("lang") or row.get("language")
+        if not (
+            row.get("platform") == "note"
+            and row.get("state") == "live"
+            and row.get("published") is True
+            and row.get("reality_gate") == "PASS"
+            and row.get("verified") is True
+            and isinstance(row.get("run_id"), str)
+            and isinstance(language, str)
+        ):
+            continue
+        artifacts.append({
+            **row,
+            "lang": language,
+            "artifact_id": f"{row['run_id']}__note__{language}",
+        })
+    return artifacts
+
+
+def unknown_note_view_rows(artifacts: list[dict], reason: str) -> list[dict]:
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return [
+        {
+            "ts": now,
+            "platform": "note",
+            "metric": "views",
+            "value": None,
+            "source_url": NOTE_STATS_URL,
+            "ok": False,
+            "status": "unknown",
+            "unit": "count",
+            "window": "all_since_publication",
+            "scope": "artifact",
+            "artifact_id": artifact["artifact_id"],
+            "reason": reason,
+        }
+        for artifact in artifacts
+    ]
+
+
 def measure_platform(platform: str, metric_sources: list[tuple[str, str]], fetch_fn, parse_fn, cdp_port: int, today: str) -> list[dict]:
     try:
         result = fetch_fn(cdp_port)
@@ -382,6 +586,11 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--out", default=DEFAULT_OUT)
     p.add_argument("--cdp-port", type=int, default=int(os.environ.get("CDP_PORT", 9222)))
+    p.add_argument(
+        "--articles",
+        type=Path,
+        default=Path(__file__).resolve().parent.parent / "state/articles.jsonl",
+    )
     args = p.parse_args(argv)
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -389,11 +598,31 @@ def main(argv: list[str] | None = None) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     rows = []
-    rows += measure_platform(
-        "note",
-        [("sales_revenue", NOTE_SALES_URL), ("sales_count", NOTE_PURCHASES_URL)],
-        measure_note_pages, parse_note_metrics, args.cdp_port, today,
-    )
+    note_artifacts = load_note_artifacts(args.articles)
+    try:
+        note_result = measure_note_pages(args.cdp_port)
+        if "error" in note_result:
+            raise ValueError(str(note_result["error"]))
+        note_payload = note_result["payload"]
+        rows += build_rows(
+            today,
+            "note",
+            parse_note_metrics(note_payload),
+            NOTE_SALES_URL,
+        )
+        rows += parse_note_view_rows(note_payload["stats_pages"], note_artifacts)
+    except Exception as error:
+        reason = f"note dashboard measurement unavailable: {type(error).__name__}: {error}"
+        rows += build_rows(
+            today,
+            "note",
+            [
+                ("sales_revenue", None, False, reason, NOTE_SALES_URL),
+                ("sales_count", None, False, reason, NOTE_PURCHASES_URL),
+            ],
+            NOTE_SALES_URL,
+        )
+        rows += unknown_note_view_rows(note_artifacts, reason)
     substack_pub = os.environ.get("SUBSTACK_PUBLICATION", "aniccabuddha.substack.com")
     rows += measure_platform(
         "substack",

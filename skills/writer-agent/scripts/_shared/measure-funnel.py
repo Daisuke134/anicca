@@ -50,10 +50,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 DEFAULT_MANIFEST = os.path.expanduser(
-    "~/profitable-claude/skills/article-writer/state/live-articles.json"
+    "~/profitable-claude/skills/writer-agent/state/live-articles.json"
 )
 DEFAULT_OUT = os.path.expanduser(
-    "~/profitable-claude/skills/article-writer/state/funnel.jsonl"
+    "~/profitable-claude/skills/writer-agent/state/funnel.jsonl"
 )
 UA = "Mozilla/5.0"
 EXACT8 = (

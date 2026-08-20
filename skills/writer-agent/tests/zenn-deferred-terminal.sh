@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-source "$ROOT/skills/article-writer/tests/_exact8-fixture.sh"
-WORKER="$ROOT/skills/article-writer/scripts/zenn-deferred-worker.sh"
-CONTROL="$ROOT/skills/article-writer/scripts/zenn-deferred-control.py"
+source "$ROOT/skills/writer-agent/tests/_exact8-fixture.sh"
+WORKER="$ROOT/skills/writer-agent/scripts/zenn-deferred-worker.sh"
+CONTROL="$ROOT/skills/writer-agent/scripts/zenn-deferred-control.py"
 TMP="$(mktemp -d /tmp/zenn-terminal.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 RUN=run-terminal

@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-HELPER="$ROOT/skills/article-writer/scripts/publication_resume.py"
-MEDIA="$ROOT/skills/article-writer/scripts/canonical_media.py"
+HELPER="$ROOT/skills/writer-agent/scripts/publication_resume.py"
+MEDIA="$ROOT/skills/writer-agent/scripts/canonical_media.py"
 TMP="$(mktemp -d /tmp/article-cta-boundary.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 

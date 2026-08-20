@@ -7,7 +7,7 @@ set -a
 . "$HOME/.openclaw/.env" 2>/dev/null || true
 set +a
 
-SKILL_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/article-writer}"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/writer-agent}"
 STATE_DIR="$SKILL_DIR/state"
 LOG_DIR="$HOME/.openclaw/logs"
 mkdir -p "$STATE_DIR" "$LOG_DIR"
@@ -25,25 +25,42 @@ bash "$SKILL_DIR/scripts/score-latest-run.sh" >> "$LOG_DIR/writer-beat-rate.log"
 # of warning, which is the difference between refilling calmly and skipping.
 bash "$SKILL_DIR/scripts/topic-supply.sh" >> "$LOG_DIR/writer-topic-supply.log" 2>&1 || true
 
-# The Python controller owns one lock across measurement, proposal/review,
-# pre-application journaling, the exact playbook diff, keep/revert, commit,
-# push, and the durable receipt. Provider failure exits retryable while the
-# last-known-good playbook and the daily publisher remain untouched.
+# Replay-first learning freezes baseline/candidate and completes repeated
+# held-out evaluation before it exposes one bounded canary assignment. It does
+# not mutate the active playbook and cannot turn 0 -> 0 into a KEEP receipt.
 set +e
-RESULT="$(python3 "$SKILL_DIR/scripts/self_improve_control.py" run \
+CLOSE_RESULT="$(python3 "$SKILL_DIR/scripts/writer_learning_worker.py" close-canary \
   --skill-dir "$SKILL_DIR")"
 RC=$?
 set -e
-printf '%s\n' "$RESULT"
+printf '%s\n' "$CLOSE_RESULT"
 if [[ "$RC" -ne 0 ]]; then
   exit "$RC"
 fi
+CLOSE_STATUS="$(printf '%s' "$CLOSE_RESULT" | jq -er '.status')"
+RESULT="$CLOSE_RESULT"
+if [[ "$CLOSE_STATUS" == "NO_APPLIED_CANARY" || "$CLOSE_STATUS" == "CYCLE_COMPLETE" ]]; then
+  set +e
+  RESULT="$(python3 "$SKILL_DIR/scripts/writer_learning_worker.py" offline \
+    --skill-dir "$SKILL_DIR")"
+  RC=$?
+  set -e
+  printf '%s\n' "$RESULT"
+  if [[ "$RC" -ne 0 ]]; then
+    exit "$RC"
+  fi
+fi
 
-RECEIPT_DATE="$(printf '%s' "$RESULT" | jq -er '.observed_at[0:10]')"
-RECEIPT="$STATE_DIR/learning/receipts/$RECEIPT_DATE.json"
+# Preserve the existing exact-publication audit as read-only evidence. It no
+# longer owns proposal application or keep/revert.
 VERIFY_RESULT="$(python3 "$SKILL_DIR/scripts/self_improve_control.py" verify \
   --skill-dir "$SKILL_DIR")"
 printf '%s\n' "$VERIFY_RESULT"
-python3 "$SKILL_DIR/scripts/self-improve-notify.py" \
-  --skill-dir "$SKILL_DIR" \
-  --receipt "$RECEIPT"
+
+# The canonical report worker reads the new experiment receipt into the same
+# Web/Telegram snapshot. Kick it immediately; its durable semantic outbox
+# prevents duplicate delivery. If launchd is unavailable, run the same worker
+# directly rather than waiting for the next five-minute interval.
+# Same executable as ai.anicca.writer-report; direct invocation is immediate
+# and also works in a local install before launchd registration.
+python3 "$SKILL_DIR/scripts/writer_report_worker.py" || true

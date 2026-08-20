@@ -97,7 +97,7 @@ That constraint is gone.
 
 X 投稿の実測解剖（高エンゲージ投稿14本、2026-07-26）: 4〜8行、1行1節、行間に空行。冒頭は断定か場面か数字。中盤で必ず反転。意見投稿はリンクを貼らない。疑問形で終わる投稿は1本も無かった。
 
-de-slop: JP は `~/profitable-claude/skills/article-writer/checklists/stop-ai-slop-jp`、EN は skill 内 `vendor/writing-skills/humanizer`。
+de-slop: JP は `~/profitable-claude/skills/writer-agent/checklists/stop-ai-slop-jp`、EN は skill 内 `vendor/writing-skills/humanizer`。
 
 ## 8. TODO（順に1件ずつ。状態が変わった瞬間にここを更新する）
 
@@ -105,7 +105,7 @@ de-slop: JP は `~/profitable-claude/skills/article-writer/checklists/stop-ai-sl
 
 | # | やること | 状態 |
 |---|---|---|
-| 1 | この spec を作る（`skills/article-writer/reference/articles/` に置く。`state/` と `docs/` は gitignore） | done |
+| 1 | この spec を作る（`skills/writer-agent/reference/articles/` に置く。`state/` と `docs/` は gitignore） | done |
 | 2 | skill に JP タイトル実測と X 投稿解剖を追記（`reference/title-best-practices.md` §2.5/§2.6 が正本。commit 7f1c166） | done |
 | 3 | JP 全文 draft（`2026-07-27-article-ja.md`、9,075字。commit 4103b29） | done |
 | 4 | JP de-slop pass（全角ダッシュ0・偏愛語0・二項対比を9→5に削減・命題型H2を一部名詞句化） | done |

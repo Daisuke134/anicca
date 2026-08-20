@@ -8,7 +8,7 @@ with real engagement numbers, harvested live and re-verified daily (spec 47
 don't invent a title from theory.
 
 Full raw harvest (all titles + metrics + URLs + platform, with scrape gaps
-noted): `skills/article-writer/vendor/exemplars/<date>-title-harvest.md`
+noted): `skills/writer-agent/vendor/exemplars/<date>-title-harvest.md`
 (latest: `2026-07-20-title-harvest.md`). Re-harvest before reusing patterns
 that are more than ~2 weeks old — markets move.
 

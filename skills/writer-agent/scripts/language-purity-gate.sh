@@ -58,7 +58,7 @@ if [ -n "${HITS:-}" ]; then
 fi
 
 # Pick venv python for Lingua (falls back to system if unavailable; lingua check skips itself).
-LINGUA_PY="$HOME/profitable-claude/skills/article-writer/.venv/bin/python"
+LINGUA_PY="$HOME/profitable-claude/skills/writer-agent/.venv/bin/python"
 [[ -x "$LINGUA_PY" ]] || LINGUA_PY="python3"
 export LINGUA_PY
 
@@ -136,7 +136,7 @@ WL
 )
 
 WL_PATTERN="$DEFAULT_WHITELIST"
-TRACKED_WHITELIST="$HOME/profitable-claude/skills/article-writer/reference/language-whitelist.txt"
+TRACKED_WHITELIST="$HOME/profitable-claude/skills/writer-agent/reference/language-whitelist.txt"
 if [[ -f "$TRACKED_WHITELIST" ]]; then
   WL_PATTERN+=$'\n'"$(grep -v '^[[:space:]]*#' "$TRACKED_WHITELIST" || true)"
 fi

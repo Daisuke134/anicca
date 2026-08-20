@@ -78,7 +78,7 @@ def _age_seconds(timestamp: Any) -> float | None:
 
 def _is_quality_block_audit(value: dict[str, Any]) -> bool:
     state = value.get("state")
-    return bool(
+    legacy = bool(
         value.get("platform") == "quality"
         and value.get("lang") == "ja+en"
         and value.get("published") is False
@@ -89,6 +89,21 @@ def _is_quality_block_audit(value: dict[str, Any]) -> bool:
         and isinstance(state, str)
         and state.startswith("carry-over:quality-block:")
     )
+    current = bool(
+        value.get("platform") is None
+        and value.get("lang") in {"ja", "en"}
+        and value.get("published") is False
+        and value.get("verified_logged_in") is False
+        and value.get("draft_url") is None
+        and value.get("live_url") is None
+        and state == "quality-blocked:block_freeze"
+        and isinstance(value.get("topic_id"), str)
+        and value.get("topic_id", "").strip()
+        and value.get("topic_source") == "paid-demand"
+        and isinstance(value.get("editorial_form"), str)
+        and value.get("editorial_form", "").strip()
+    )
+    return legacy or current
 
 
 def _ledger_has_delivery_row(ledger: Path, run_id: str) -> bool:
@@ -106,6 +121,131 @@ def _ledger_has_delivery_row(ledger: Path, run_id: str) -> bool:
         ):
             return True
     return False
+
+
+def _quality_audit_topic_id(ledger: Path, run_id: str) -> str | None:
+    if not ledger.exists():
+        return None
+    rows: list[dict[str, Any]] = []
+    for line in ledger.read_text(encoding="utf-8").splitlines():
+        try:
+            value = json.loads(line)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(value, dict) and value.get("run_id") == run_id:
+            rows.append(value)
+    if (
+        len(rows) != 2
+        or {row.get("lang") for row in rows} != {"ja", "en"}
+        or not all(_is_quality_block_audit(row) for row in rows)
+    ):
+        return None
+    topics = {row.get("topic_id") for row in rows}
+    return next(iter(topics)) if len(topics) == 1 else None
+
+
+def _terminal_quality_block(
+    run_dir: Path, ledger: Path
+) -> dict[str, Any] | None:
+    """Build a hash-bound rejection only for the known exhausted gate shape."""
+    gates = run_dir / "gates"
+    if (gates / "publication-state.json").exists() or _ledger_has_delivery_row(
+        ledger, run_dir.name
+    ):
+        return None
+    quality_path = gates / "quality-self-heal.json"
+    blocker_path = gates / "quality-repair-blocker.json"
+    quality = _read_json(quality_path)
+    blocker = _read_json(blocker_path)
+    route = _read_json(gates / "topic-route.json")
+    if not (
+        quality
+        and quality.get("version") == CURRENT_QUALITY_VERSION
+        and quality.get("attempt") == 2
+        and quality.get("action") == "evaluate_reroute"
+        and blocker
+        and blocker.get("status") == "blocked"
+        and blocker.get("run_id") == run_dir.name
+        and blocker.get("action_from_quality_self_heal") == "evaluate_reroute"
+        and blocker.get("publication") == "not_started"
+        and blocker.get("archived_evidence") == "preserved"
+        and "high-escalation-exhausted" in str(blocker.get("reason", ""))
+        and route
+        and isinstance(route.get("topic_id"), str)
+        and route.get("topic_id", "").strip()
+        and isinstance(route.get("editorial_form"), str)
+        and route.get("editorial_form", "").strip()
+    ):
+        return None
+    records = quality.get("quality")
+    blocker_drafts = blocker.get("drafts")
+    if not isinstance(records, dict) or not isinstance(blocker_drafts, dict):
+        return None
+    drafts: dict[str, str] = {}
+    editorial_receipts: dict[str, str] = {}
+    reader_receipts: dict[str, str] = {}
+    feedback_items: list[dict[str, str]] = []
+    reader_cap_languages: list[str] = []
+    for lang in ("ja", "en"):
+        article = run_dir / f"article-{lang}.md"
+        editorial_path = gates / f"editorial-{lang}.json"
+        reader_path = gates / f"reader-testing-gate-{lang}.terminal.json"
+        attempt_path = gates / ".attempts" / f"reader-testing-gate-{lang}.json"
+        editorial = _read_json(editorial_path)
+        reader = _read_json(reader_path)
+        attempt = _read_json(attempt_path)
+        if not article.is_file() or article.is_symlink() or not editorial or not reader or not attempt:
+            return None
+        digest = _sha256(article)
+        record = records.get(lang)
+        if not (
+            isinstance(record, dict)
+            and record.get("article_sha256") == digest
+            and blocker_drafts.get(lang) == digest
+            and record.get("identity_current") is True
+            and record.get("reader_current") is True
+            and record.get("evaluation_current") is False
+            and record.get("ready") is False
+            and editorial.get("verdict") == "FAIL"
+            and editorial.get("requested_reasoning_effort") == "high"
+            and editorial.get("article_sha256") != digest
+            and reader.get("article_sha256") == digest
+            and attempt.get("article_sha256") == digest
+        ):
+            return None
+        drafts[lang] = digest
+        editorial_receipts[lang] = _sha256(editorial_path)
+        reader_receipts[lang] = _sha256(reader_path)
+        for index, fix in enumerate(editorial.get("fixes", []), start=1):
+            if isinstance(fix, str) and fix.strip():
+                feedback_items.append({"id": f"editorial-{lang}-{index}", "lang": lang, "kind": "editorial_fix", "text": fix.strip()})
+        payload = reader.get("payload")
+        if (
+            int(attempt.get("attempts", 0)) >= 3
+            and isinstance(payload, dict)
+            and payload.get("verdict") == "FAIL"
+            and payload.get("unanswered_questions")
+        ):
+            reader_cap_languages.append(lang)
+    if not reader_cap_languages:
+        return None
+    return {
+        "version": 1,
+        "status": "terminal_quality_blocked",
+        "run_id": run_dir.name,
+        "reason": "evaluation_budget_exhausted",
+        "created_at": _utc_now(),
+        "drafts": drafts,
+        "quality_sha256": _sha256(quality_path),
+        "blocker_sha256": _sha256(blocker_path),
+        "editorial_receipts": editorial_receipts,
+        "reader_receipts": reader_receipts,
+        "reader_cap_languages": reader_cap_languages,
+        "topic_id": route["topic_id"].strip(),
+        "editorial_form": route["editorial_form"].strip(),
+        "quality_failure_feedback": {"version": 1, "source_run_id": run_dir.name, "items": feedback_items},
+        "publication": "not_started",
+    }
 
 
 def _quality_module() -> Any:
@@ -128,7 +268,7 @@ def _tracked_bookmark_source_defect(gates: Path) -> bool:
         and defect.get("verdict") == "FAIL"
         and defect.get("observed_output") == "FAIL names<2"
         and defect.get("source_file")
-        == "skills/article-writer/scripts/bookmark-gate.sh"
+        == "skills/writer-agent/scripts/bookmark-gate.sh"
         and defect.get("source_immutable") is True
         and bookmark
         and bookmark.get("gate") in {"", "bookmark"}
@@ -137,6 +277,159 @@ def _tracked_bookmark_source_defect(gates: Path) -> bool:
         and bookmark.get("exit_code") == 1
         and bookmark.get("stdout") == "FAIL names<2\n"
     )
+
+
+def _tracked_reader_terminal_source_defect(
+    run_dir: Path, gates: Path, canonical: dict[str, Any]
+) -> bool:
+    defect = _read_json(gates / "quality-gate-defect.json")
+    reader_source = Path(__file__).resolve().parent / "reader-testing-gate.sh"
+    try:
+        source_fixed = "READER_STDOUT_SCHEMA_VERSION=2" in reader_source.read_text(
+            encoding="utf-8"
+        )
+    except OSError:
+        return False
+    if not (
+        defect
+        and defect.get("status") == "pending-source-fix"
+        and defect.get("run_id") == run_dir.name
+        and defect.get("component")
+        == "reader-testing-gate.sh / quality_self_heal.py contract"
+        and canonical.get("version") == CURRENT_QUALITY_VERSION
+        and canonical.get("action") == "evaluate_reroute"
+        and source_fixed
+    ):
+        return False
+    quality = canonical.get("quality")
+    if not isinstance(quality, dict):
+        return False
+    for lang in ("ja", "en"):
+        article = run_dir / f"article-{lang}.md"
+        attempt = _read_json(
+            gates / ".attempts" / f"reader-testing-gate-{lang}.json"
+        )
+        terminal = _read_json(gates / f"reader-testing-gate-{lang}.terminal.json")
+        if not article.is_file() or article.is_symlink():
+            return False
+        digest = _sha256(article)
+        if (
+            quality.get(lang, {}).get("article_sha256") != digest
+            or not attempt
+            or attempt.get("gate") != "reader-testing-gate"
+            or attempt.get("lang") != lang
+            or int(attempt.get("attempts", 0)) < 1
+            or attempt.get("article_sha256") != digest
+            or not terminal
+            or terminal.get("verdict") not in {"PASS", "FAIL"}
+            or terminal.get("article_sha256") is not None
+        ):
+            return False
+    return True
+
+
+def _tracked_editorial_hash_scope_source_defect(
+    run_dir: Path, gates: Path, canonical: dict[str, Any]
+) -> bool:
+    blocker = _read_json(gates / "editorial-reroute-blocker.json")
+    editorial_source = Path(__file__).resolve().parent / "editorial-gate.sh"
+    try:
+        source = editorial_source.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    if not (
+        blocker
+        and blocker.get("gate") == "editorial"
+        and blocker.get("status") == "blocked"
+        and blocker.get("exit_code") == 77
+        and blocker.get("reason") == "high-escalation-exhausted"
+        and canonical.get("version") == CURRENT_QUALITY_VERSION
+        and canonical.get("attempt") == 2
+        and canonical.get("action") == "evaluate_reroute"
+        and 'HIGH_CLAIM_ROOT="$ARTICLE_RUN_DIR/gates/.attempts/editorial-high-$LANG_A"'
+        in source
+        and 'mkdir "$HIGH_CLAIM"' in source
+    ):
+        return False
+    quality = canonical.get("quality")
+    if not isinstance(quality, dict):
+        return False
+    for lang in ("ja", "en"):
+        article = run_dir / f"article-{lang}.md"
+        if not article.is_file() or article.is_symlink():
+            return False
+        digest = _sha256(article)
+        if (
+            quality.get(lang, {}).get("article_sha256") != digest
+            or blocker.get(f"{lang}_article_sha256") != digest
+        ):
+            return False
+    return True
+
+
+def _tracked_topic_router_reroute_source_defect(
+    run_dir: Path, gates: Path, canonical: dict[str, Any]
+) -> bool:
+    router_source = Path(__file__).resolve().parent / "topic_router.py"
+    try:
+        source = router_source.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    attempt_one = _read_json(gates / "quality-self-heal-attempt-1.json")
+    attempt_two = _read_json(gates / "quality-self-heal-attempt-2.json")
+    route = _read_json(gates / "topic-route.json")
+    generation = _read_json(gates / "generation-state.json")
+    attempts = generation.get("attempts") if generation else None
+    if not (
+        "current-run reroute must preserve topic_id" in source
+        and "current-run reroute must change editorial_form" in source
+        and canonical.get("version") == CURRENT_QUALITY_VERSION
+        and canonical.get("attempt") == 2
+        and canonical.get("action") == "block_freeze"
+        and canonical.get("reason") == "editorial_form_not_changed"
+        and attempt_two == canonical
+        and attempt_one
+        and attempt_one.get("version") == CURRENT_QUALITY_VERSION
+        and attempt_one.get("attempt") == 1
+        and attempt_one.get("action") == "reroute"
+        and attempt_one.get("required_changes") == ["editorial_form", "outline"]
+        and isinstance(attempt_one.get("forbidden_editorial_form"), str)
+        and attempt_one.get("forbidden_editorial_form")
+        == attempt_one.get("editorial_form")
+        and route
+        and isinstance(route.get("topic_id"), str)
+        and route.get("topic_id", "").strip()
+        and route.get("editorial_form")
+        == attempt_one.get("forbidden_editorial_form")
+        and isinstance(attempts, list)
+        and len(attempts) == 2
+        and all(
+            isinstance(row, dict)
+            and row.get("attempt") == index
+            and row.get("status") == "provider-returned"
+            and row.get("return_code") == 0
+            for index, row in enumerate(attempts, start=1)
+        )
+    ):
+        return False
+    quality = canonical.get("quality")
+    attempt_quality = attempt_one.get("quality")
+    if not isinstance(quality, dict) or not isinstance(attempt_quality, dict):
+        return False
+    for lang in ("ja", "en"):
+        article = run_dir / f"article-{lang}.md"
+        if not article.is_file() or article.is_symlink():
+            return False
+        digest = _sha256(article)
+        prior_digest = attempt_quality.get(lang, {}).get("article_sha256")
+        if (
+            quality.get(lang, {}).get("article_sha256") != digest
+            or not isinstance(prior_digest, str)
+            or len(prior_digest) != 64
+            or prior_digest == digest
+        ):
+            return False
+    return True
 
 
 def _bookmark_gate_now_passes(run_dir: Path, article: Path) -> bool:
@@ -183,6 +476,15 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         return _refused("ledger-row-exists")
     repair_state = _read_json(gates / "quality-repair-state.json")
     if repair_state:
+        if _terminal_quality_block(run_dir, ledger) is not None:
+            return {
+                "status": "READY",
+                "reason": "structurally-exhausted-quality-evaluations",
+                "run_id": run_id,
+                "run_dir": str(run_dir),
+                "repair_epoch": REPAIR_EPOCH,
+                "attempts": int(repair_state.get("attempts", 0)),
+            }
         prompt_path = Path(str(repair_state.get("prompt_path", "")))
         attempts = int(repair_state.get("attempts", 0))
         if (
@@ -250,8 +552,69 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         and canonical.get("action") == "block_freeze"
         and _tracked_bookmark_source_defect(gates)
     )
-    if not legacy and not source_defect:
+    reader_source_defect = bool(
+        canonical
+        and _tracked_reader_terminal_source_defect(run_dir, gates, canonical)
+    )
+    editorial_source_defect = bool(
+        canonical
+        and _tracked_editorial_hash_scope_source_defect(
+            run_dir, gates, canonical
+        )
+    )
+    topic_router_source_defect = bool(
+        canonical
+        and _tracked_topic_router_reroute_source_defect(
+            run_dir, gates, canonical
+        )
+    )
+    if (
+        not legacy
+        and not source_defect
+        and not reader_source_defect
+        and not editorial_source_defect
+        and not topic_router_source_defect
+    ):
         return _refused("quality-block-not-legacy")
+    if topic_router_source_defect:
+        return {
+            "status": "READY",
+            "reason": "tracked-topic-router-reroute-source-defect",
+            "run_id": run_id,
+            "run_dir": str(run_dir),
+            "repair_epoch": REPAIR_EPOCH,
+            "source_defect": "topic-router-reroute",
+            "drafts": {
+                lang: _sha256(run_dir / f"article-{lang}.md")
+                for lang in ("ja", "en")
+            },
+        }
+    if editorial_source_defect:
+        return {
+            "status": "READY",
+            "reason": "tracked-editorial-hash-scope-source-defect",
+            "run_id": run_id,
+            "run_dir": str(run_dir),
+            "repair_epoch": REPAIR_EPOCH,
+            "source_defect": "editorial-hash-scope",
+            "drafts": {
+                lang: _sha256(run_dir / f"article-{lang}.md")
+                for lang in ("ja", "en")
+            },
+        }
+    if reader_source_defect:
+        return {
+            "status": "READY",
+            "reason": "tracked-reader-terminal-source-defect",
+            "run_id": run_id,
+            "run_dir": str(run_dir),
+            "repair_epoch": REPAIR_EPOCH,
+            "source_defect": "reader-terminal-hash",
+            "drafts": {
+                lang: _sha256(run_dir / f"article-{lang}.md")
+                for lang in ("ja", "en")
+            },
+        }
     attempt_one = _read_json(gates / "quality-self-heal-attempt-1.json")
     attempt_two = _read_json(gates / "quality-self-heal-attempt-2.json")
     expected_version = CURRENT_QUALITY_VERSION if source_defect else 1
@@ -331,6 +694,9 @@ def _active_receipts(gates: Path) -> list[Path]:
         "reader-testing-gate-en.terminal.json",
         "bookmark-ja.json",
         "source-defect-bookmark-ja.json",
+        "quality-gate-defect.json",
+        "editorial-reroute-blocker.json",
+        "quality-self-heal-final.json",
     ]
     paths = [gates / name for name in names if (gates / name).is_file()]
     attempts = gates / ".attempts"
@@ -343,8 +709,37 @@ def _active_receipts(gates: Path) -> list[Path]:
     return paths
 
 
-def _repair_prompt(run_dir: Path, ledger: Path, archive: Path) -> str:
+def _repair_prompt(
+    run_dir: Path, ledger: Path, archive: Path, source_defect: str | None
+) -> str:
     scripts = Path(__file__).resolve().parent
+    if source_defect == "topic-router-reroute":
+        return f"""Run ONE bounded reroute repair for the existing unpublished Writer run.
+
+RUN_DIR={run_dir}
+LEDGER={ledger}
+ORIGINAL_PROMPT={run_dir / "article-daily-prompt.txt"}
+ARCHIVED_EVIDENCE={archive}
+
+The canonical quality receipt is the restored attempt-1 action=reroute. Read it and gates/topic-route.json. Run topic_router.py validate through the normal route command, preserve the current topic_id exactly, and select an editorial_form different from forbidden_editorial_form. Do not hand-edit topic-route.json. Rewrite the outline plus article-ja.md and article-en.md for that same topic in the new form.
+
+No staging or publication is allowed until every current-hash editorial, identity, reader, media, CTA, and quality gate passes and quality_self_heal.py returns action=ready_to_freeze. The archived receipts are immutable. If any gate returns block_freeze, preserve evidence, publish nothing, and stop. On ready_to_freeze, continue only STEP 4.8 through STEP 20 of ORIGINAL_PROMPT for this same run, with real remote readback and no local-only publication claim.
+"""
+    if source_defect == "reader-terminal-hash":
+        first_gate = (
+            "Run reader-testing-gate.sh for BOTH languages first and verify "
+            "each terminal carries the current article SHA-256."
+        )
+    elif source_defect == "editorial-hash-scope":
+        first_gate = (
+            "Run editorial-gate.sh for BOTH languages first and verify each "
+            "receipt carries the current article SHA-256."
+        )
+    else:
+        first_gate = (
+            "Run bookmark-gate.sh for JA first; if it does not PASS on the "
+            "current bytes, publish nothing and stop."
+        )
     return f"""Run ONE bounded quality repair for the existing unpublished Writer run.
 
 RUN_DIR={run_dir}
@@ -360,7 +755,7 @@ Hard boundaries:
 - No staging or publication is allowed until quality_self_heal.py returns action=ready_to_freeze and current-hash quality terminals exist.
 - The archived receipts under ARCHIVED_EVIDENCE are immutable evidence. Never edit, delete, or move them.
 
-Read the archived receipts, editorial and reader findings, the current route, and both current drafts. Run bookmark-gate.sh for JA first; if it does not PASS on the current bytes, publish nothing and stop. Run the remaining current deterministic checks. For BOTH languages, run editorial-gate.sh, identity-gate.sh, and reader-testing-gate.sh against the current bytes. Apply only the bounded revisions those gates request; after any revision, restore and validate canonical media and CTA invariants before re-running the relevant gate. A same-hash editorial FAIL must be revised before rejudge. Reader questions remain stable and each language gets at most three evaluations.
+Read the archived receipts, editorial and reader findings, the current route, and both current drafts. {first_gate} Run the remaining current deterministic checks. For BOTH languages, run editorial-gate.sh, identity-gate.sh, and reader-testing-gate.sh against the current bytes. Apply only the bounded revisions those gates request; after any revision, restore and validate canonical media and CTA invariants before re-running the relevant gate. A same-hash editorial FAIL must be revised before rejudge. Reader questions remain stable and each language gets at most three evaluations.
 
 Then run:
 python3 {scripts / "quality_self_heal.py"} assess --run-dir "$ARTICLE_RUN_DIR" --draft-ja "$ARTICLE_RUN_DIR/article-ja.md" --draft-en "$ARTICLE_RUN_DIR/article-en.md"
@@ -397,7 +792,9 @@ def begin(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         "repair_epoch": REPAIR_EPOCH,
         "attempts": 0,
         "drafts": decision["drafts"],
+        "source_defect": decision.get("source_defect"),
         "route_sha256": _sha256(gates / "topic-route.json"),
+        "topic_id": _read_json(gates / "topic-route.json").get("topic_id"),
         "entries": entries,
     }
     _atomic_write(gates / "quality-repair-state.json", state)
@@ -424,22 +821,33 @@ def begin(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
             "entries": entries,
         },
     )
-    quality = _quality_module()
-    current = quality.assess(
-        run_dir,
-        {
-            "ja": run_dir / "article-ja.md",
-            "en": run_dir / "article-en.md",
-        },
-    )
+    if decision.get("source_defect") == "topic-router-reroute":
+        current = _read_json(gates / "quality-self-heal-attempt-1.json")
+        if not current:
+            raise QualityRepairError("quality-reroute-attempt-one-missing")
+        _atomic_write(gates / "quality-self-heal.json", current)
+    else:
+        quality = _quality_module()
+        current = quality.assess(
+            run_dir,
+            {
+                "ja": run_dir / "article-ja.md",
+                "en": run_dir / "article-en.md",
+            },
+        )
     if (
         current.get("version") != CURRENT_QUALITY_VERSION
-        or current.get("action") != "evaluate_reroute"
+        or current.get("action")
+        != (
+            "reroute"
+            if decision.get("source_defect") == "topic-router-reroute"
+            else "evaluate_reroute"
+        )
     ):
         raise QualityRepairError("quality-repair-did-not-open-current-evaluation")
     prompt_path = archive_parent / "repair-prompt.txt"
     prompt_path.write_text(
-        _repair_prompt(run_dir, ledger, archive),
+        _repair_prompt(run_dir, ledger, archive, decision.get("source_defect")),
         encoding="utf-8",
     )
     state.update(
@@ -475,7 +883,31 @@ def mark_invoking(
         raise QualityRepairError("quality-repair-state-missing")
     route = run_dir / "gates" / "topic-route.json"
     if state.get("route_sha256") != _sha256(route):
-        raise QualityRepairError("quality-repair-route-changed")
+        current_route = _read_json(route)
+        archived_attempt = _read_json(
+            run_dir
+            / "gates"
+            / "quality-repair"
+            / f"epoch-{REPAIR_EPOCH}"
+            / "original"
+            / "quality-self-heal.json"
+        )
+        expected_topic = state.get("topic_id") or _quality_audit_topic_id(
+            ledger, run_dir.name
+        )
+        if not (
+            state.get("source_defect") == "topic-router-reroute"
+            and current_route
+            and current_route.get("topic_id") == expected_topic
+            and isinstance(current_route.get("editorial_form"), str)
+            and current_route.get("editorial_form", "").strip()
+            and archived_attempt
+            and current_route.get("editorial_form")
+            != archived_attempt.get("editorial_form")
+        ):
+            raise QualityRepairError("quality-repair-route-changed")
+        state["topic_id"] = expected_topic
+        state["route_sha256"] = _sha256(route)
     attempts = int(state.get("attempts", 0)) + 1
     if attempts > MAX_REPAIR_ATTEMPTS:
         raise QualityRepairError("quality-repair-attempt-limit")
@@ -504,15 +936,16 @@ def mark_invoking(
             / f"repair-prompt-attempt-{attempts}.txt"
         )
         new_prompt.write_text(
-            _repair_prompt(
-                run_dir,
-                ledger,
+                _repair_prompt(
+                    run_dir,
+                    ledger,
                 run_dir
                 / "gates"
                 / "quality-repair"
-                / f"epoch-{REPAIR_EPOCH}"
-                / "original",
-            ),
+                    / f"epoch-{REPAIR_EPOCH}"
+                    / "original",
+                    state.get("source_defect"),
+                ),
             encoding="utf-8",
         )
         state.update(
@@ -551,7 +984,11 @@ def record_result(
         raise QualityRepairError("quality-repair-not-invoking")
     attempts = int(state.get("attempts", 0))
     quality = _read_json(gates / "quality-self-heal.json")
-    if (gates / "publication-state.json").is_file():
+    terminal = _terminal_quality_block(run_dir, ledger)
+    if terminal is not None:
+        _atomic_write(gates / "terminal-quality-blocked.json", terminal)
+        status = "terminal-quality-blocked"
+    elif (gates / "publication-state.json").is_file():
         status = "handed-to-publication"
     elif _ledger_has_delivery_row(ledger, run_dir.name):
         status = "terminal-ambiguous-ledger-without-publication-state"
@@ -572,11 +1009,30 @@ def record_result(
     return state
 
 
+def terminalize(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
+    """Close an already-finished repair without another provider invocation."""
+    run_dir = Path(run_dir).resolve()
+    ledger = Path(ledger).resolve()
+    gates = run_dir / "gates"
+    terminal = _terminal_quality_block(run_dir, ledger)
+    state_path = gates / "quality-repair-state.json"
+    state = _read_json(state_path)
+    if terminal is None or state is None:
+        raise QualityRepairError("quality-evaluations-not-structurally-exhausted")
+    _atomic_write(gates / "terminal-quality-blocked.json", terminal)
+    state.update({
+        "status": "terminal-quality-blocked",
+        "finished_at": terminal["created_at"],
+    })
+    _atomic_write(state_path, state)
+    return state
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "command",
-        choices=("plan", "begin", "invoke", "result"),
+        choices=("plan", "begin", "invoke", "result", "terminalize"),
     )
     parser.add_argument("--run-dir", required=True, type=Path)
     parser.add_argument("--ledger", required=True, type=Path)
@@ -587,6 +1043,8 @@ def main() -> int:
         value = plan(args.run_dir, args.ledger)
     elif args.command == "begin":
         value = begin(args.run_dir, args.ledger)
+    elif args.command == "terminalize":
+        value = terminalize(args.run_dir, args.ledger)
     elif args.command == "invoke":
         if args.owner_pid is None:
             parser.error("--owner-pid is required for invoke")

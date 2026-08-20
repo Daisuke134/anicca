@@ -2,10 +2,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-source "$ROOT/skills/article-writer/tests/_exact8-fixture.sh"
-CONTROL="$ROOT/skills/article-writer/scripts/zenn-deferred-control.py"
-WORKER="$ROOT/skills/article-writer/scripts/zenn-deferred-worker.sh"
-COMPLETE="$ROOT/skills/article-writer/scripts/article-run-complete.py"
+source "$ROOT/skills/writer-agent/tests/_exact8-fixture.sh"
+CONTROL="$ROOT/skills/writer-agent/scripts/zenn-deferred-control.py"
+WORKER="$ROOT/skills/writer-agent/scripts/zenn-deferred-worker.sh"
+COMPLETE="$ROOT/skills/writer-agent/scripts/article-run-complete.py"
 TMP="$(mktemp -d /tmp/zenn-crash-resume.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 RUN=run-crash

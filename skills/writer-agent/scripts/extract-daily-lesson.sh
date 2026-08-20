@@ -2,7 +2,7 @@
 set -uo pipefail
 T=$(TZ=Asia/Tokyo date +%Y-%m-%d)
 EXP="$HOME/.openclaw/workspace/experience-log/$T.jsonl"
-OUT="$HOME/profitable-claude/skills/article-writer/state/daily-lesson-$T.md"
+OUT="$HOME/profitable-claude/skills/writer-agent/state/daily-lesson-$T.md"
 if [ ! -s "$EXP" ]; then
   echo "EMPTY experience-log: $EXP" >&2
   exit 2

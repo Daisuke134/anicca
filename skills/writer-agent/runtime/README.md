@@ -17,7 +17,12 @@ ARTICLE_RUN_ID=<stable run ID>
 ARTICLE_MODEL_LOG=<run-scoped log>
 ```
 
-- Codex uses `gpt-5.6-luna` with `xhigh`.
+- Codex uses `gpt-5.6-terra` with `medium` by default.
+- `ARTICLE_MODEL_ROLE=sol-audit` selects `gpt-5.6-sol` only after a valid
+  run-bound `ARTICLE_SOL_TRIGGER_RECEIPT` is atomically claimed. The same
+  receipt cannot invoke a provider twice, and Sol never falls back to Claude.
+- Deterministic trigger producers and model-cost receipts are later Writer
+  slices; this runner does not claim those routes yet.
 - Claude uses `sonnet` with provider-default effort.
 - `auto` tries an eligible Codex lane before Claude.
 - `judge` and `vision` may fall back after a classified retryable failure

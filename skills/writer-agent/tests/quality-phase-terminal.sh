@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-HELPER="$ROOT/skills/article-writer/scripts/quality-phase-terminal.py"
+HELPER="$ROOT/skills/writer-agent/scripts/quality-phase-terminal.py"
 TMP="$(mktemp -d /tmp/article-quality-terminal.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 RUN="$TMP/run"
@@ -30,8 +30,8 @@ if python3 "$HELPER" check --run-dir "$RUN" --lang en --markdown-file "$MD"; the
   exit 1
 fi
 
-rg -q 'quality-phase-terminal\.py.*check' "$ROOT/skills/article-writer/scripts/run.sh"
-rg -q 'quality-phase-terminal\.py.*check' "$ROOT/skills/article-writer/scripts/x-publish/publish-to-x.sh"
-rg -q 'quality-phase-terminal\.py.*write' "$ROOT/skills/article-writer/scripts/conscience-gate.sh"
+rg -q 'quality-phase-terminal\.py.*check' "$ROOT/skills/writer-agent/scripts/run.sh"
+rg -q 'quality-phase-terminal\.py.*check' "$ROOT/skills/writer-agent/scripts/x-publish/publish-to-x.sh"
+rg -q 'quality-phase-terminal\.py.*write' "$ROOT/skills/writer-agent/scripts/conscience-gate.sh"
 
 echo 'PASS: terminal quality evidence skips channel reruns and new markers are hash-bound'

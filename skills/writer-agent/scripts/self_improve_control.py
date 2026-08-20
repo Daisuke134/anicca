@@ -19,7 +19,13 @@ from typing import Any, Callable
 SCRIPTS = Path(__file__).resolve().parent
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
-from publication_resume import PublicationStore, REQUIRED_PAIRS  # noqa: E402
+from publication_resume import (
+    ACTIVE_PAIRS,
+    LEGACY_EXACT8_PAIRS,
+    PublicationStore,
+)  # noqa: E402
+from publication_contract_resolver import infer_publication_contract  # noqa: E402
+from money_ledger import MoneyLedger  # noqa: E402
 
 
 ALLOWED_AXES = frozenset(
@@ -44,6 +50,14 @@ PROTECTED_PATTERN = re.compile(
     r"provider priority|account identit)"
 )
 HEX64 = re.compile(r"[0-9a-f]{64}")
+
+
+def _required_pairs_for_state(state: dict[str, Any]) -> tuple[str, ...]:
+    return (
+        LEGACY_EXACT8_PAIRS
+        if infer_publication_contract(state) == "legacy-exact8"
+        else ACTIVE_PAIRS
+    )
 
 
 def _sha256_bytes(value: bytes) -> str:
@@ -140,6 +154,31 @@ def _quality(run_dir: Path) -> dict[str, dict[str, float]]:
     return result
 
 
+def _money_snapshot(path: Path, observed_at: datetime) -> dict[str, Any]:
+    if not path.is_file():
+        return {
+            "status": "unavailable",
+            "reason": "canonical money ledger is missing",
+            "verified_revenue_event_count": 0,
+            "verified_net_by_currency": {},
+        }
+    month_start = observed_at.replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0
+    )
+    summary = MoneyLedger(path).summary(
+        start=_iso(month_start),
+        end=_iso(observed_at + timedelta(microseconds=1)),
+    )
+    summary["status"] = (
+        "verified"
+        if summary["verified_revenue_event_count"] > 0
+        else "insufficient"
+    )
+    if summary["status"] == "insufficient":
+        summary["reason"] = "no verified external transaction receipt in the window"
+    return summary
+
+
 def collect_snapshot(
     state_path: Path,
     ledger_path: Path,
@@ -154,6 +193,7 @@ def collect_snapshot(
     run_id = str(state["run_id"])
     topic_id = str(state["topic_id"])
     run_dir = Path(str(state["run_dir"]))
+    required_pairs = _required_pairs_for_state(state)
     rows = [
         row
         for row in _json_lines(ledger_path)
@@ -168,7 +208,7 @@ def collect_snapshot(
     if (
         not rows
         or len(by_pair) != len(rows)
-        or not set(by_pair).issubset(set(REQUIRED_PAIRS))
+        or not set(by_pair).issubset(set(required_pairs))
     ):
         raise ValueError("learning input has no unambiguous live pairs")
     for pair in by_pair:
@@ -178,10 +218,10 @@ def collect_snapshot(
                 f"learning pair lacks a verified receipt: {pair}"
             )
     live_pairs = [
-        pair for pair in REQUIRED_PAIRS if pair in by_pair
+        pair for pair in required_pairs if pair in by_pair
     ]
     pending_pairs = [
-        pair for pair in REQUIRED_PAIRS if pair not in by_pair
+        pair for pair in required_pairs if pair not in by_pair
     ]
     exact8_complete = not pending_pairs
 
@@ -201,6 +241,7 @@ def collect_snapshot(
         "topic_id": topic_id,
         "observed_at": _iso(observed_at),
         "exact8_complete": exact8_complete,
+        "publication_contract": infer_publication_contract(state),
         "learning_eligible_pairs": live_pairs,
         "reconcile_pending_pairs": pending_pairs,
         "live_urls": {
@@ -209,7 +250,7 @@ def collect_snapshot(
         },
         "exact8_urls": {
             pair: str(by_pair[pair]["live_url"])
-            for pair in REQUIRED_PAIRS
+            for pair in required_pairs
             if exact8_complete
         },
         "public_ids": {
@@ -219,6 +260,7 @@ def collect_snapshot(
         "quality": _quality(run_dir),
         "engagement": engagement,
         "sales": sales,
+        "money": _money_snapshot(sales_path.parent / "money.sqlite3", observed_at),
         "source_artifacts": {
             "ja": str(state["drafts"]["ja"]["sha256"]),
             "en": str(state["drafts"]["en"]["sha256"]),
@@ -230,7 +272,7 @@ def collect_snapshot(
             ],
         },
         "measurement_kind": {
-            "revenue": "primary-when-available",
+            "revenue": "verified-external-receipt-only",
             "engagement": "proxy",
             "quality": "proxy",
         },
@@ -422,15 +464,20 @@ def revert_applied(
 
 
 def _real_revenue(snapshot: dict[str, Any]) -> float | None:
-    values = [
-        float(row["value"])
-        for row in snapshot.get("sales", [])
-        if row.get("ok") is True
-        and row.get("metric") in {"sales_revenue", "mrr"}
-        and isinstance(row.get("value"), (int, float))
-        and not isinstance(row.get("value"), bool)
-    ]
-    return sum(values) if values else None
+    money = snapshot.get("money")
+    if not isinstance(money, dict) or money.get("status") != "verified":
+        return None
+    if not isinstance(money.get("verified_revenue_event_count"), int):
+        return None
+    values = money.get("verified_net_by_currency")
+    if not isinstance(values, dict) or len(values) != 1:
+        # No exchange-rate guesses: a multi-currency window is visible but not
+        # collapsed into one optimization score.
+        return None
+    value = next(iter(values.values()))
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return None
+    return float(value)
 
 
 def evaluate_due(
@@ -795,7 +842,7 @@ def update_deployed_commit(repo: Path, commit: str) -> Path:
     ).stdout.strip()
     if current != commit:
         raise RuntimeError("deployed commit does not match the runtime checkout")
-    marker = repo / "skills/article-writer/state/deployed-commit"
+    marker = repo / "skills/writer-agent/state/deployed-commit"
     marker.parent.mkdir(parents=True, exist_ok=True)
     temporary = marker.with_name(f".{marker.name}.{os.getpid()}.tmp")
     with temporary.open("w", encoding="utf-8") as handle:
@@ -846,11 +893,11 @@ def commit_playbook_change(
         if len(line) > 3
     }
     writer_dirty = {
-        path for path in dirty if path.startswith("skills/article-writer/")
+        path for path in dirty if path.startswith("skills/writer-agent/")
     }
     if writer_dirty and writer_dirty != {str(relative)}:
         raise RuntimeError(
-            "tracked article-writer files have unrelated changes: "
+            "tracked writer-agent files have unrelated changes: "
             f"{sorted(writer_dirty)}"
         )
     if str(relative) in dirty:
@@ -987,11 +1034,11 @@ def ensure_repo_synced(
     dirty = {line[3:] for line in status if len(line) > 3}
     allowed = allowed_dirty or set()
     writer_dirty = {
-        path for path in dirty if path.startswith("skills/article-writer/")
+        path for path in dirty if path.startswith("skills/writer-agent/")
     }
     if not writer_dirty.issubset(allowed):
         raise RuntimeError(
-            "learning source has unrelated tracked article-writer changes: "
+            "learning source has unrelated tracked writer-agent changes: "
             f"{sorted(writer_dirty)}"
         )
 
@@ -1014,6 +1061,7 @@ def _latest_sales_rows(path: Path) -> list[dict[str, Any]]:
 def _latest_engagement_rows(
     path: Path,
     run_id: str,
+    required_pairs: tuple[str, ...],
 ) -> list[dict[str, Any]]:
     latest: dict[str, dict[str, Any]] = {}
     for row in _json_lines(path):
@@ -1027,7 +1075,7 @@ def _latest_engagement_rows(
             latest[pair] = row
     return [
         latest[pair]
-        for pair in REQUIRED_PAIRS
+        for pair in required_pairs
         if pair in latest
     ]
 
@@ -1041,6 +1089,15 @@ def _replace_snapshot_dynamic_rows(
     snapshot["engagement"] = _latest_engagement_rows(
         funnel_path,
         str(snapshot["run_id"]),
+        tuple(
+            LEGACY_EXACT8_PAIRS
+            if infer_publication_contract(snapshot) == "legacy-exact8"
+            else ACTIVE_PAIRS
+        ),
+    )
+    snapshot["money"] = _money_snapshot(
+        sales_path.parent / "money.sqlite3",
+        datetime.fromisoformat(str(snapshot["observed_at"])),
     )
     return snapshot
 
@@ -1104,6 +1161,20 @@ def _measure_sales(skill_dir: Path, sales: Path) -> None:
     )
 
 
+def _sync_money(skill_dir: Path) -> None:
+    subprocess.run(
+        [
+            sys.executable,
+            str(skill_dir / "scripts/money_sync.py"),
+            "--state-dir",
+            str(skill_dir / "state"),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
 def _receipt(
     receipts: Path,
     now: datetime,
@@ -1159,6 +1230,10 @@ def run_cycle(
     if new_states and not skip_remote_measurement:
         try:
             _measure_sales(skill_dir, sales)
+        except (OSError, subprocess.CalledProcessError):
+            pass
+        try:
+            _sync_money(skill_dir)
         except (OSError, subprocess.CalledProcessError):
             pass
     for state_path, state in new_states:

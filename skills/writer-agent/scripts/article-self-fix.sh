@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# article-self-fix.sh — TRUE autonomous self-heal launcher for the article-writer loop (part 2/2 of
+# article-self-fix.sh — TRUE autonomous self-heal launcher for the writer-agent loop (part 2/2 of
 # the "render-verify + self-fix" pair, Dais's core ask: the loop must self-heal with no human
 # babysitting). Copy+tweak of the proven pattern at ~/anicca/skills/self/self-fix.sh (see
 # ~/anicca/skills/self/capafy-loop/capafy-loop-daily.sh STEP0 for that script's real calling
@@ -19,12 +19,12 @@
 # only needs to work correctly when invoked directly with a blocker string.
 set -uo pipefail
 
-LOOP="article-writer"
+LOOP="writer-agent"
 BLOCKER="${1:?usage: article-self-fix.sh \"<blocker + concrete fix hint>\"}"
 
 SOCK="/tmp/anicca-selffix-$LOOP-tmux.sock"
 SESSION="anicca-selffix-$LOOP"
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/article-writer/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
 STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
 LOG="$HOME/.openclaw/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
 RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here
@@ -84,7 +84,7 @@ DO, in order:
 (1) Reproduce the failure yourself and find the ROOT cause (read the actual code + run it + watch where it breaks) — for a broken publish script this usually means opening the real draft/editor page and looking at what actually happened, not guessing from the error text alone.
 (2) Fix the code. If the root cause is a brittle DOM-coordinate/selector script that broke on a UI change, do NOT just re-tune coordinates: rebuild the failing step as two-layer agentic (a thin script opens the page, then YOU look at real screenshots and decide each click/type, looping until the real success signal appears).
 (3) VERIFY with a REAL side-effect — re-run render-verify-draft.sh against the actual draft URL and see PASS, or otherwise directly observe the fixed behavior (a draft that now renders cleanly, a publish step that now returns a real URL). A patch that only compiles is NOT done. No dry runs, no fake success, no 'should work'.
-(4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: this loop's own code (article-daily.sh, skills/article-writer/) lives under ~/profitable-claude (remote = github.com/Daisuke134/profitable-claude, PUBLIC). Never commit runtime state, credentials, or anything under state/ or .env files.
+(4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: this loop's own code (article-daily.sh, skills/writer-agent/) lives under ~/profitable-claude (remote = github.com/Daisuke134/profitable-claude, PUBLIC). Never commit runtime state, credentials, or anything under state/ or .env files.
 (5) Write the outcome to ${RESULT} as a single line: 'SUCCESS <utc> <one-line real evidence, e.g. a render-verify PASS or a live draft URL>' or 'FAIL <utc> <why + what is still blocked>'. If the fix resolved a self-heal-request marker, rm it.
 If after honest effort the fix is genuinely impossible (e.g. an external platform is down), write FAIL with a precise diagnosis to ${RESULT} — still never ask a human. Report what you fixed + the real evidence at the end."
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-WRAPPER="$ROOT/skills/article-writer/article-daily.sh"
+WRAPPER="$ROOT/skills/writer-agent/article-daily.sh"
 
 grep -F 'article_daily_start_control.py' "$WRAPPER" >/dev/null
 grep -F 'skip-complete' "$WRAPPER" >/dev/null

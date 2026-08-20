@@ -1,0 +1,282 @@
+{
+ "schema": "writer.note-paid-draftsave-privacy-observation",
+ "version": 1,
+ "ssot": "publish-paid.py save_paid_split_draft / build_paid_draft_save_payload",
+ "observed_at": "2026-08-07T13:10:14Z",
+ "why": "publish-paid.py now persists the paid split on note's own draft before the irreversible PUT, sending free_body, pay_body, separator, limited:true and a non-zero price to POST /api/v1/text_notes/draft_save. That this leaves the draft PRIVATE was inferred, not measured: the earlier draft-surface observation (config/note-422-draft-surface-observation.json) only ever sent a BODY-ONLY draft_save, and limited:true plus a non-zero price are exactly the fields that make an article paid. This file is the measurement of the payload production actually sends.",
+ "method": "Throwaway scratch drafts were created for this measurement and deleted afterwards. The payload was not hand-written: build_paid_publish_payload and build_paid_draft_save_payload were loaded from scripts/note-publish/publish-paid.py unmodified and the request was issued through that file's own save_paid_split_draft, which refuses any payload carrying a status field. The scratch was read back authenticated and then with no session at all, on both the API and the public URL. No publish endpoint was called. The incident article n47735d9811e8 and every real run artifact were never touched. Requests were spaced at least 3 seconds apart.",
+ "scratch_artifact": {
+  "key": "na4ca5fbd24f9",
+  "numeric_id": 173761281,
+  "title": "draftsave-privacy probe scratch (never published)",
+  "created_for": "this measurement only",
+  "public_url": "https://note.com/anicca123/n/na4ca5fbd24f9",
+  "final_status": "deleted"
+ },
+ "sent": {
+  "endpoint": "POST https://note.com/api/v1/text_notes/draft_save?id=173761281&is_temp_saved=true",
+  "builder": "build_paid_draft_save_payload(build_paid_publish_payload(...)) from scripts/note-publish/publish-paid.py, unmodified",
+  "payload_keys": [
+   "body",
+   "body_length",
+   "free_body",
+   "index",
+   "is_lead_form",
+   "limited",
+   "name",
+   "pay_body",
+   "price",
+   "separator"
+  ],
+  "limited": true,
+  "price": 500,
+  "separator": "99a99243-b029-4d96-9d3f-a99595c813e0",
+  "free_body_chars": 112,
+  "pay_body_chars": 223,
+  "body_length": 182,
+  "carries_status_field": false,
+  "request_body_sha256": "8b32a2d24a6131c143f39645cdf5f7ecddf6f94698b0b434cb733054cddbbf42"
+ },
+ "draft_save_result": {
+  "http_status": 201,
+  "response": {
+   "data": {
+    "result": true,
+    "note_days_count": 0,
+    "updated_at": "2026-08-07T22:10:30.000+09:00"
+   }
+  }
+ },
+ "authenticated_readback": {
+  "http_status": 200,
+  "status": "draft",
+  "price": 300,
+  "publish_at": null,
+  "is_limited": false,
+  "is_trial": false,
+  "disable_comment": false,
+  "note_draft_separator": "99a99243-b029-4d96-9d3f-a99595c813e0",
+  "note_draft_price": null,
+  "note_draft_limited": null,
+  "note_draft_free_body_present": false,
+  "note_draft_pay_body_present": false,
+  "note_draft_keys": [
+   "body",
+   "format",
+   "id",
+   "index",
+   "name",
+   "note_id",
+   "separator",
+   "updated_at"
+  ]
+ },
+ "anonymous_readback": {
+  "api_http_status": 404,
+  "api_status": null,
+  "api_price": null,
+  "api_publish_at": null,
+  "api_is_limited": null,
+  "api_is_trial": null,
+  "api_error": {
+   "message": "",
+   "type": "not_found"
+  },
+  "public_url": "https://note.com/anicca123/n/na4ca5fbd24f9",
+  "public_url_http_status": 404,
+  "public_url_title": "note ご指定のページが見つかりません",
+  "public_url_contains_scratch_title": false,
+  "public_url_contains_body_text": false
+ },
+ "separator_persistence": {
+  "sent_separator": "99a99243-b029-4d96-9d3f-a99595c813e0",
+  "note_draft_separator": "99a99243-b029-4d96-9d3f-a99595c813e0",
+  "persisted": true,
+  "fresh_draft_separator_baseline": null,
+  "fresh_draft_separator_baseline_source": "a separate scratch draft nf740baf70253 was created and read back before any draft_save: note_draft.separator was null and price was 0, so the separator observed above came from this write and not from a note default. That scratch was deleted (status deleted).",
+  "significance": "This is the whole point of the two-step. For the rejected article n47735d9811e8, note_draft.separator was null while the PUT asserted a boundary, so note was asked to publish a split its own draft state had never been told about. Measured here: the draft surface DOES accept and store separator. This corrects the structural sentence in config/note-422-draft-surface-observation.json verdict.structural, which said the paid split has no draft representation at all; separator does, even though free_body, pay_body, limited and price do not come back."
+ },
+ "price_field_finding": {
+  "sent_price_run_1": 500,
+  "readback_price_run_1": 300,
+  "sent_price_run_2": 800,
+  "readback_price_run_2": 300,
+  "fresh_draft_price_baseline": 0,
+  "measured": "note-level price read back as 300 in both runs regardless of the price sent (500 and 800), while a fresh draft with no draft_save reads 0. The draft surface therefore does change note-level price away from 0, but it does not store the requested value; note_draft.price and note_draft.limited both read back null.",
+  "impact_on_privacy": "None. In both runs status stayed draft, publish_at stayed null, is_limited stayed false and the anonymous reads returned 404. A non-zero price on a draft is not a published paid article.",
+  "unexplained": "Why note answers 300 specifically is NOT established here. It was not investigated because it does not bear on the privacy question this file answers. The publish price still comes from the PUT, which carries price directly."
+ },
+ "deletion": {
+  "delete_http_status": 200,
+  "delete_response_literal": "{\"data\":{\"result\":true}}",
+  "authenticated_readback_http_status": 200,
+  "authenticated_status_after_delete": "deleted",
+  "authenticated_slug_after_delete": "deleted-na4ca5fbd24f9",
+  "anonymous_public_url_http_status_after_delete": 404
+ },
+ "confirming_run": {
+  "why": "A single observation of a privacy property is thin, so the measurement was repeated with a different price.",
+  "key": null,
+  "key_note": "the confirming script did not print the second scratch's key, only its readback values, so no key is recorded here rather than a reconstructed one. It was deleted in the same run: DELETE returned 200 and the authenticated readback returned status 'deleted'.",
+  "note": "second scratch, seeded body, paid-split draft_save with price 800 through the same production save_paid_split_draft",
+  "sent_price": 800,
+  "sent_limited": true,
+  "draft_save_http_status": 201,
+  "draft_save_result": true,
+  "authenticated_status": "draft",
+  "authenticated_price": 300,
+  "publish_at": null,
+  "is_limited": false,
+  "separator_sent": "db46ceeb-8a12-42ce-a28c-e8a8529cabbb",
+  "separator_persisted": "db46ceeb-8a12-42ce-a28c-e8a8529cabbb",
+  "anonymous_api_http_status": 404,
+  "delete_http_status": 200,
+  "final_status": "deleted"
+ },
+ "requests": [
+  {
+   "label": "create-scratch-draft",
+   "method": "POST",
+   "url": "https://note.com/api/v1/text_notes",
+   "http_status": 201,
+   "request_payload_keys": [
+    "index",
+    "is_lead_form",
+    "name"
+   ],
+   "request_body_sha256": "2f8ab7211b85f0dcd68424e4f2bf4abfad634a232ace52b394be2e667dd675f2",
+   "authenticated": true,
+   "response_bytes": 340,
+   "response_sha256": "23b6db4b246c3c877f543e59bc31c46fdf83cef83b4d294785e334661dfcebdb"
+  },
+  {
+   "label": "seed body-only draft_save",
+   "method": "POST",
+   "url": "https://note.com/api/v1/text_notes/draft_save?id=173761281&is_temp_saved=true",
+   "http_status": 201,
+   "request_payload_keys": [
+    "body",
+    "body_length",
+    "index",
+    "is_lead_form",
+    "name"
+   ],
+   "request_body_sha256": "4e12420835ce8aa2d4dd5aeeeafa2332dda26aa4d82a3303317be017797842fb",
+   "authenticated": true,
+   "response_bytes": 89,
+   "response_sha256": "6c1a8b54a5f7aeb202c684e3dcc9fbe1d301966c10b46b8901ba6b1d5b4bcbb0"
+  },
+  {
+   "label": "readback after seed",
+   "method": "GET",
+   "url": "https://note.com/api/v3/notes/na4ca5fbd24f9",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "authenticated": true,
+   "response_bytes": 7211,
+   "response_sha256": "3514e127cb4568cbed63f118c140a331d51c664edbdecd2677b97d94ca0fb17a"
+  },
+  {
+   "label": "paid-split draft_save (limited:true + non-zero price)",
+   "method": "POST",
+   "url": "https://note.com/api/v1/text_notes/draft_save?id=173761281&is_temp_saved=true",
+   "http_status": 201,
+   "request_payload_keys": [
+    "body",
+    "body_length",
+    "free_body",
+    "index",
+    "is_lead_form",
+    "limited",
+    "name",
+    "pay_body",
+    "price",
+    "separator"
+   ],
+   "request_body_sha256": "8b32a2d24a6131c143f39645cdf5f7ecddf6f94698b0b434cb733054cddbbf42",
+   "authenticated": true,
+   "response_bytes": 95,
+   "response_sha256": "be19e9656ea54c180b7075ce96fe3193f0301833bf577f482325e818e5d98a95"
+  },
+  {
+   "label": "authenticated readback after paid-split draft_save",
+   "method": "GET",
+   "url": "https://note.com/api/v3/notes/na4ca5fbd24f9",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "authenticated": true,
+   "response_bytes": 7281,
+   "response_sha256": "16caf7f97d124e8272381d1c6fcb1ee0752f5e1769074d026a9a1102c4b145da"
+  },
+  {
+   "label": "anonymous api read (no session)",
+   "method": "GET",
+   "url": "https://note.com/api/v3/notes/na4ca5fbd24f9",
+   "http_status": 404,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "authenticated": false,
+   "response_bytes": 43,
+   "response_sha256": "2e394bc6eb0e745c8c4ab7d29f3fdd6de80991bab64ecc7bb179f538526bbd32"
+  },
+  {
+   "label": "anonymous public URL fetch (no session)",
+   "method": "GET",
+   "url": "https://note.com/anicca123/n/na4ca5fbd24f9",
+   "http_status": 404,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "authenticated": false,
+   "response_bytes": 155457,
+   "response_sha256": "b9925e1b5c81d0fc6a41058e226c3c4516f02057ba73c230e30fa47c573cf4ea"
+  },
+  {
+   "label": "cleanup delete scratch (editor headers)",
+   "method": "DELETE",
+   "url": "https://note.com/api/v1/notes/n/na4ca5fbd24f9",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "authenticated": true,
+   "response_bytes": 24,
+   "response_sha256": "7ed4d5764b8ced3a3b59592faf638b30ed069a6ffd6bc09bc3259eace6dd18cf"
+  },
+  {
+   "label": "authenticated readback after delete",
+   "method": "GET",
+   "url": "https://note.com/api/v3/notes/na4ca5fbd24f9",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "authenticated": true,
+   "response_bytes": 5606,
+   "response_sha256": "0921c47f589eb31fb0abd1a2cd377911c961308a294376cb46de2c9dc3fc0549"
+  },
+  {
+   "label": "anonymous public URL fetch after delete",
+   "method": "GET",
+   "url": "https://note.com/anicca123/n/na4ca5fbd24f9",
+   "http_status": 404,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "authenticated": false,
+   "response_bytes": 155457,
+   "response_sha256": "a6f76fa5dd8c29001d47ccc53e132b8560fac8263ea6b941951164573ae6dcaf"
+  }
+ ],
+ "became_public_at_any_point": false,
+ "verdict": {
+  "draft_stayed_private": true,
+  "safe_to_ship": true,
+  "measured": "The exact payload publish-paid.py builds - free_body, pay_body, separator, limited:true, price 500 - was accepted by POST /v1/text_notes/draft_save with HTTP 201 {\"result\":true}. The scratch then read back status draft, publish_at null, is_limited false, is_trial false. With no session at all, GET /api/v3/notes/{key} returned 404 not_found and the public URL returned 404 with note's generic not-found page, containing neither the title nor the body text. Reproduced with price 800. Nothing became publicly visible at any point.",
+  "consequence": "The two-step is safe to ship: the draft_save cannot publish, and it does persist the separator the PUT then asserts, which is the defect it was written to fix."
+ },
+ "not_verified": [
+  "Whether persisting the separator actually makes the publish PUT succeed. This measurement stops before the PUT, because the PUT is the irreversible action that creates a public artifact. That the two-step is SAFE is measured here; that it FIXES the 422 is not.",
+  "Whether note ever exposes a limited draft publicly through a surface other than GET /api/v3/notes/{key} and the author public URL - for example a sitemap, an RSS feed, a search index or the creator top page. Only those two surfaces were read.",
+  "Why note-level price reads back 300 rather than the value sent, and whether a stale 300 could survive onto a note whose publish PUT later fails. Both runs were deleted, so no such draft persists.",
+  "Whether the privacy property holds for a body large enough to trip other note limits. Both scratches used a small three-block synthetic body, not the incident's 13700-character body."
+ ]
+}

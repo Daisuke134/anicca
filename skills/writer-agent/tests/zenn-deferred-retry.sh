@@ -3,12 +3,12 @@ set -euo pipefail
 export ARTICLE_TEST_ONLY=1
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-source "$ROOT/skills/article-writer/tests/_exact8-fixture.sh"
-CONTROL="$ROOT/skills/article-writer/scripts/zenn-deferred-control.py"
-WORKER="$ROOT/skills/article-writer/scripts/zenn-deferred-worker.sh"
-COMPLETE="$ROOT/skills/article-writer/scripts/article-run-complete.py"
-DAILY="$ROOT/skills/article-writer/article-daily.sh"
-WORKER_PY="$ROOT/skills/article-writer/scripts/zenn-deferred-worker.py"
+source "$ROOT/skills/writer-agent/tests/_exact8-fixture.sh"
+CONTROL="$ROOT/skills/writer-agent/scripts/zenn-deferred-control.py"
+WORKER="$ROOT/skills/writer-agent/scripts/zenn-deferred-worker.sh"
+COMPLETE="$ROOT/skills/writer-agent/scripts/article-run-complete.py"
+DAILY="$ROOT/skills/writer-agent/article-daily.sh"
+WORKER_PY="$ROOT/skills/writer-agent/scripts/zenn-deferred-worker.py"
 TMP="$(mktemp -d /tmp/article-zenn-deferred.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 WORKER_STATE_ARGS=(--lock-file "$TMP/worker.lock" --backlog-state "$TMP/backlog.json")
@@ -89,7 +89,7 @@ import sys
 text = open(sys.argv[1], encoding="utf-8").read()
 completion = text.index("if ! pass_is_complete; then")
 deferred = text.index("zenn-deferred-control.py\" handoff", completion)
-pending_owner = text.index("exact8 incomplete; durable pending worker owns", completion)
+pending_owner = text.index("incomplete; durable pending worker owns", completion)
 assert deferred < pending_owner, "Zenn handoff must precede pending-worker ownership"
 assert text.count("run_model_pass") == 2, "one function definition plus one foreground call"
 assert 'zenn-deferred-retry.sh' not in text[completion:], "daily wrapper must not run the retry worker"
@@ -175,7 +175,8 @@ REALITY_MODE="$TMP/reality.mode" \
   --api-json "$TMP/api.json" --now 2026-07-21T17:13:36+00:00 \
   --reality-gate "$TMP/reality-gate.sh" --complete-bin "$COMPLETE" \
   --heartbeat "$TMP/heartbeat" --notify-bin "$TMP/notify.sh" --log "$TMP/worker.log"
-python3 "$COMPLETE" --ledger "$LEDGER" --run-id "$RUN_ID" --armed 1
+python3 "$COMPLETE" --ledger "$LEDGER" --run-id "$RUN_ID" --armed 1 \
+  --publication-state "$RUN_DIR/gates/publication-state.json"
 test "$(jq -r .status "$ARTIFACT")" = complete
 test -f "$TMP/heartbeat"
 test "$(wc -l <"$TMP/notify.calls" | tr -d ' ')" -eq 1

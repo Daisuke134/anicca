@@ -23,7 +23,7 @@ SCRIPTS = Path(__file__).resolve().parent
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 from publication_resume import (  # noqa: E402
-    REQUIRED_PAIRS,
+    LEGACY_EXACT8_PAIRS as REQUIRED_PAIRS,
     TARGET_KINDS,
     InvariantError,
     PublicationStore,
@@ -210,6 +210,7 @@ def import_run(
             x_post=canonical / "x-post-ja.txt",
             headline_image=canonical / "headline-image.png",
             body_assets=[canonical / "body-diagram.png"],
+            legacy_exact8=True,
         )
 
         targets: dict[str, str] = {}

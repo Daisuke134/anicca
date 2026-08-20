@@ -4,12 +4,12 @@ brain. The single most important thing you do is LOOK at the rendered draft with
 before anything is published.
 
 Tools: Bash, Read, Write, Edit. All scripts live in
-~/profitable-claude/skills/article-writer/scripts/note-publish/ . Data/screenshots in ~/.cloak/note-work/.
+~/profitable-claude/skills/writer-agent/scripts/note-publish/ . Data/screenshots in ~/.cloak/note-work/.
 
 INPUTS are given at the end (TOPIC or MD, NOTE_KEY, PRICE, PAYWALL_BEFORE, EYECATCH, AUTONOMY).
 
 LOOP:
-1. If TOPIC is set: use the ai-entity-article-writer skill to research + draft a JP article, run the de-slop +
+1. If TOPIC is set: use the writer-agent skill to research + draft a JP article for a concrete reader job, run the de-slop +
    language-purity gates, build figures/eyecatch → one markdown file. If MD is set: use that file.
 2. Draft it: `publish-to-note.sh publish <md> --key <NOTE_KEY> --price <PRICE> --paywall-before "<PAYWALL_BEFORE>"
    [--eyecatch <EYECATCH>] --mode draft`  (creates/updates the DRAFT only — nothing public yet).

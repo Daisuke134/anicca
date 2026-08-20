@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-GATE="$ROOT/skills/article-writer/scripts/reader-testing-gate.sh"
+GATE="$ROOT/skills/writer-agent/scripts/reader-testing-gate.sh"
 TEST_TMP="$(mktemp -d /tmp/article-reader-cache.XXXXXX)"
 trap 'rm -rf -- "$TEST_TMP"' EXIT
 mkdir -p "$TEST_TMP/bin"
@@ -40,6 +40,13 @@ bash "$GATE" "$ARTICLE" --lang ja --questions-file "$QUESTIONS" >"$TEST_TMP/resu
 test -f "$QUESTIONS"
 test "$(jq '.questions | length' "$QUESTIONS")" -eq 5
 test "$(grep -c '^CALL$' "$FAKE_CLAUDE_COUNT")" -eq 2
+ARTICLE_HASH="$(shasum -a 256 "$ARTICLE" | awk '{print $1}')"
+jq -e --arg hash "$ARTICLE_HASH" '
+  .verdict == "PASS"
+  and .status == "pass"
+  and .article_sha256 == $hash
+  and .payload.verdict == "PASS"
+' "$TEST_TMP/result-1.json" >/dev/null
 
 # Revised article: reuse byte-identical questions and call only the fresh answerer.
 QUESTIONS_HASH="$(shasum -a 256 "$QUESTIONS" | awk '{print $1}')"
@@ -50,6 +57,10 @@ bash "$GATE" "$ARTICLE" --lang ja --questions-file "$QUESTIONS" >"$TEST_TMP/resu
 test "$(grep -c '^CALL$' "$FAKE_CLAUDE_COUNT")" -eq 1
 test "$(shasum -a 256 "$QUESTIONS" | awk '{print $1}')" = "$QUESTIONS_HASH"
 test "$(jq -c '.questions' "$TEST_TMP/result-1.json")" = "$(jq -c '.questions' "$TEST_TMP/result-2.json")"
+REVISED_HASH="$(shasum -a 256 "$ARTICLE" | awk '{print $1}')"
+jq -e --arg hash "$REVISED_HASH" '
+  .status == "pass" and .article_sha256 == $hash and .payload.verdict == "PASS"
+' "$TEST_TMP/result-2.json" >/dev/null
 ! grep -q 'generating a reader-testing question set' "$FAKE_CLAUDE_LOG"
 
 # Existing invalid cache: fail closed for this gate attempt, never overwrite/regenerate.

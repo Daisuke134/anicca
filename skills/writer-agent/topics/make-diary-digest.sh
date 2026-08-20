@@ -24,7 +24,7 @@
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 
-ARTICLE_DIR="$HOME/profitable-claude/skills/article-writer"
+ARTICLE_DIR="$HOME/profitable-claude/skills/writer-agent"
 MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$ARTICLE_DIR/runtime/model-runner.sh}"
 STATE_DIR="$ARTICLE_DIR/state"
 TOPICS_DIR="$STATE_DIR/topics"

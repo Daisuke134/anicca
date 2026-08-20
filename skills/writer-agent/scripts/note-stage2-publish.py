@@ -4,7 +4,7 @@ import sys, json, time, asyncio, urllib.request, os, subprocess, re
 sys.path.insert(0, os.environ.get("NOTE_MCP_SRC", "/Users/anicca/.openclaw/external/note-mcp/src"))
 from note_mcp.models import Session, ArticleInput
 from note_mcp.api.articles import update_article, generate_image_html
-from note_mcp.api.images import upload_body_image
+from note_s3_upload import upload_body_image
 from note_stage2_assets import resolve_mermaid_images
 WORK=os.path.expanduser(os.environ.get("NOTE_WORK","~/.cloak/note-work/note-stage")); os.makedirs(WORK, exist_ok=True)
 mf=json.load(open(f"{WORK}/note-manifest.json")); ck=json.load(open(os.path.expanduser("~/.cloak/note-work/note-cookies.json")))

@@ -71,17 +71,23 @@ def main() -> int:
             raise SystemExit(
                 f"refuse initialization: manifest {key} does not match authoritative plan"
             )
-    for key, expected in {
+    managed_controls = {
         "ARTICLE_AUTOPUBLISH": "1",
         "ARTICLE_PUBLISH_PAIR": args.pair,
-    }.items():
-        if persisted_env.get(key) != expected:
+    }
+    for key, expected in managed_controls.items():
+        # Early dispatch manifests froze only payload-bound paths.  These two
+        # controls are derived from this guarded pair, not article content, so
+        # backfill a missing legacy value but reject an explicit conflict.
+        actual = persisted_env.get(key)
+        if actual is not None and actual != expected:
             raise SystemExit(
                 f"refuse initialization: manifest {key} does not match authoritative plan"
             )
 
     env = os.environ.copy()
     env.update(persisted_env)
+    env.update(managed_controls)
     completed = subprocess.run(argv, env=env, check=False)
     if completed.returncode != 0:
         return completed.returncode

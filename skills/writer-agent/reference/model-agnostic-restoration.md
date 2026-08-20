@@ -1,8 +1,8 @@
-# AI Entity Article Writer model-agnostic restoration
+# Writer Agent model-agnostic restoration
 
 Status: implementation source of truth.
 
-This specification restores the proven AI Entity Article Writer, keeps the
+This specification restores the proven Writer Agent, keeps the
 effective improvements added later, and makes the model process boundary work
 with Codex or Claude. The detailed implementation order is in
 [model-agnostic-restoration-plan.md](model-agnostic-restoration-plan.md).
@@ -50,16 +50,16 @@ daily loops and MUST NOT publish competing copies of the same package.
 
 ### Canonical identity
 
-- repository source: `skills/article-writer/`
-- canonical skill name: `ai-entity-article-writer`
-- user skill alias: `~/.claude/skills/ai-entity-article-writer`
-- daily driver: `skills/article-writer/article-daily.sh`
+- repository source: `skills/writer-agent/`
+- canonical skill name: `writer-agent`
+- user skill alias: `~/.claude/skills/writer-agent`
+- daily driver: `skills/writer-agent/article-daily.sh`
 - production host: the always-on Mac mini
 - scheduler: launchd
 
 `skills/writer-engine/` is an improvement donor, not the production generation
 architecture. Its effective publisher, evidence, recovery, and exact8 behavior
-is backported into `skills/article-writer/`.
+is backported into `skills/writer-agent/`.
 
 ### External basis
 
@@ -274,7 +274,7 @@ and MUST NOT block the next day's article.
 - The installed production tree MUST record the deployed git commit.
 - launchd `ProgramArguments` MUST point to the installed copy of the same
   tracked driver.
-- The skill alias MUST resolve to the installed canonical article-writer tree.
+- The skill alias MUST resolve to the installed canonical writer-agent tree.
 - Production state, credentials, logs, and browser profiles MUST remain outside
   git.
 
@@ -298,7 +298,7 @@ canary. Already-live pairs MUST not be recreated.
 
 | Concern | As-Is | To-Be |
 |---|---|---|
-| canonical loop | replacement Writer Engine | restored AI Entity Article Writer |
+| canonical loop | replacement Writer Engine | restored Writer Agent |
 | scheduler | replacement daily + resume jobs | one article daily job + bounded recovery jobs |
 | model | replacement runtime with Blockrun residue | Codex/Claude runner shim only |
 | generation | JSON/no-tools replacement path | proven foreground tool-using agent |
@@ -308,7 +308,7 @@ canary. Already-live pairs MUST not be recreated.
 | images | URL can pass without visible media | eyecatch/headline/body asset readback required |
 | recovery | repeated replacement resume | same-run pending-pair recovery |
 | self-improvement | installed placeholder exits | daily evidence loop + weekly audit |
-| skill identity | alias absent | `ai-entity-article-writer` alias restored |
+| skill identity | alias absent | `writer-agent` alias restored |
 | completion | internal state can appear green | public exact identity/content/media proof |
 
 ### Retained known-good foundation
@@ -422,7 +422,7 @@ publication, public readback, and production verification.
 
 1. Freeze current runtime and remote publication evidence.
 2. Unload replacement Writer Engine launchd jobs.
-3. Restore the known-good article-writer foreground tree without overwriting
+3. Restore the known-good writer-agent foreground tree without overwriting
    runtime state.
 4. Reapply the retained pre-consolidation safety and recovery changes.
 5. Add one Codex/Claude shim and replace the 18 logical direct Claude calls.

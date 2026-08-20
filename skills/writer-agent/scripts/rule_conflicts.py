@@ -83,7 +83,7 @@ different detector even after detect_dead_gates was fixed. extract_path_
 references now excludes any token that is a gates/ artifact reference;
 gates/ evidence belongs to detect_dead_gates exclusively.
 
-Rule sources (paths relative to skills/article-writer, all overridable via
+Rule sources (paths relative to skills/writer-agent, all overridable via
 --sources): reference/title-best-practices.md, SKILL.md, article-daily.sh
 (only its lines longer than LONG_LINE_THRESHOLD chars -- article-daily.sh
 is mostly shell plumbing; the actual prompt text lives in a handful of very

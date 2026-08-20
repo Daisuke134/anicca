@@ -55,7 +55,7 @@ DATA_DIR_ENV = "WRITER_DATA_DIR"
 MAX_SCAN_CHARS = 4_000_000
 
 # PORT: this skill's own state dir, used only as the last-resort ledger location when neither
-# WRITER_PII_LOG nor WRITER_DATA_DIR is set. `parents[2]` = skills/article-writer.
+# WRITER_PII_LOG nor WRITER_DATA_DIR is set. `parents[2]` = skills/writer-agent.
 _SKILL_ROOT = Path(__file__).resolve().parents[2]
 # PORT: several publish scripts are launched without ~/.openclaw/.env sourced. Read ONLY the two
 # WRITER_PII_* keys out of it, and only when the process environment does not already carry them.

@@ -163,6 +163,72 @@ def _regular_json(path: Path) -> dict[str, Any] | None:
     return value if isinstance(value, dict) else None
 
 
+def _preflight_only_run(run_dir: Path, rows: list[dict[str, Any]], run_id: str) -> bool:
+    """Allow a same-day retry when the earlier wake never reached generation.
+
+    A demand-authority miss happens after the wrapper has created the run record and
+    consumed the baseline strategy.  That record contains no prompt, draft, gate,
+    publication state, or ledger row, so reusing its stable daily id cannot replay an
+    external side effect.  Any additional artifact keeps the normal fail-closed
+    classification below.
+    """
+
+    if run_dir.is_symlink() or not run_dir.is_dir():
+        return False
+    if any(row.get("run_id") == run_id for row in rows):
+        return False
+    git_hash = run_dir / "git-hash.txt"
+    gates = run_dir / "gates"
+    strategy_path = gates / "strategy-consumption.json"
+    if (
+        git_hash.is_symlink()
+        or not git_hash.is_file()
+        or gates.is_symlink()
+        or not gates.is_dir()
+        or strategy_path.is_symlink()
+        or not strategy_path.is_file()
+    ):
+        return False
+    strategy = _regular_json(run_dir / "gates" / "strategy-consumption.json")
+    if not (
+        strategy is not None
+        and strategy.get("run_id") == run_id
+        and strategy.get("status") == "baseline"
+        and strategy.get("versions") == []
+    ):
+        return False
+    # Enumerate every direct descendant rather than only regular files.  A symlink,
+    # FIFO, socket, empty nested directory, or unexpected regular file is evidence
+    # that the run progressed beyond the harmless preflight boundary.
+    if {
+        child.name for child in run_dir.iterdir()
+    } != {"git-hash.txt", "gates"}:
+        return False
+    return {
+        child.name for child in gates.iterdir()
+    } == {"strategy-consumption.json"}
+
+
+def _unpublished_quality_audit(row: dict[str, Any]) -> bool:
+    state = row.get("state")
+    legacy = row.get("platform") == "quality" and row.get("published") is False
+    current = bool(
+        row.get("platform") is None
+        and row.get("lang") in {"ja", "en"}
+        and state == "quality-blocked:block_freeze"
+        and row.get("published") is False
+        and row.get("verified_logged_in") is False
+        and row.get("draft_url") is None
+        and row.get("live_url") is None
+        and isinstance(row.get("topic_id"), str)
+        and row.get("topic_id", "").strip()
+        and row.get("topic_source") == "paid-demand"
+        and isinstance(row.get("editorial_form"), str)
+        and row.get("editorial_form", "").strip()
+    )
+    return legacy or current
+
+
 def _quality_failure_feedback(
     gates: Path,
     run_id: str,
@@ -283,10 +349,52 @@ def terminal_quality_finished_at(
     # action even when the publication-state receipt is missing.
     if any(
         row.get("run_id") == run_id
-        and (row.get("platform") != "quality" or row.get("published") is True)
+        and not _unpublished_quality_audit(row)
         for row in rows
     ):
         return None
+
+    terminal_path = gates / "terminal-quality-blocked.json"
+    terminal = _regular_json(terminal_path)
+    quality_path = gates / "quality-self-heal.json"
+    blocker_path = gates / "quality-repair-blocker.json"
+    route = _regular_json(gates / "topic-route.json")
+    if terminal is not None:
+        drafts = terminal.get("drafts")
+        if not (
+            terminal.get("version") == 1
+            and terminal.get("status") == "terminal_quality_blocked"
+            and terminal.get("run_id") == run_id
+            and terminal.get("publication") in {None, "not_started"}
+            and isinstance(drafts, dict)
+            and quality_path.is_file()
+            and blocker_path.is_file()
+            and terminal.get("quality_sha256") == hashlib.sha256(quality_path.read_bytes()).hexdigest()
+            and terminal.get("blocker_sha256") == hashlib.sha256(blocker_path.read_bytes()).hexdigest()
+            and route
+            and terminal.get("topic_id") == route.get("topic_id")
+            and terminal.get("editorial_form") == route.get("editorial_form")
+            and all(
+                (run_dir / f"article-{lang}.md").is_file()
+                and not (run_dir / f"article-{lang}.md").is_symlink()
+                and drafts.get(lang) == hashlib.sha256((run_dir / f"article-{lang}.md").read_bytes()).hexdigest()
+                for lang in ("ja", "en")
+            )
+            and isinstance(terminal.get("quality_failure_feedback"), dict)
+        ):
+            return None
+        try:
+            finished = datetime.fromisoformat(str(terminal["created_at"]).replace("Z", "+00:00"))
+        except (KeyError, ValueError):
+            return None
+        if finished.tzinfo is None:
+            return None
+        return (
+            finished.astimezone(timezone.utc),
+            str(terminal["topic_id"]),
+            str(terminal["editorial_form"]),
+            terminal["quality_failure_feedback"],
+        )
 
     quality = _regular_json(gates / "quality-self-heal.json")
     generation = _regular_json(gates / "generation-state.json")
@@ -311,6 +419,24 @@ def terminal_quality_finished_at(
     language_quality = quality.get("quality")
     if not isinstance(language_quality, dict):
         return None
+    failed_languages = quality.get("failed_languages")
+    if failed_languages is None:
+        # Version-2 historical terminal receipts predate the explicit summary;
+        # derive it only from their hash-bound per-language readiness.
+        failed_languages = [
+            lang
+            for lang in ("ja", "en")
+            if isinstance(language_quality.get(lang), dict)
+            and language_quality[lang].get("ready") is False
+        ]
+    if (
+        not isinstance(failed_languages, list)
+        or not failed_languages
+        or any(lang not in {"ja", "en"} for lang in failed_languages)
+        or len(set(failed_languages)) != len(failed_languages)
+    ):
+        return None
+    failed_set = set(failed_languages)
     for lang in ("ja", "en"):
         record = language_quality.get(lang)
         article = run_dir / f"article-{lang}.md"
@@ -322,11 +448,18 @@ def terminal_quality_finished_at(
             != hashlib.sha256(article.read_bytes()).hexdigest()
             or record.get("evaluation_current") is not True
             or record.get("identity_current") is not True
-            or record.get("ready") is not False
-            or (
+        ):
+            return None
+        if lang in failed_set:
+            if record.get("ready") is not False or (
                 record.get("editorial") != "FAIL"
                 and record.get("reader") != "FAIL"
-            )
+            ):
+                return None
+        elif (
+            record.get("ready") is not True
+            or record.get("editorial") != "PASS"
+            or record.get("reader") != "PASS"
         ):
             return None
     feedback = _quality_failure_feedback(gates, run_id, language_quality)
@@ -336,7 +469,8 @@ def terminal_quality_finished_at(
     repair = _regular_json(gates / "quality-repair-state.json")
     if repair is not None and (
         repair.get("status") != "terminal-blocked"
-        or repair.get("return_code") != 0
+        or repair.get("attempts") not in {1, 2}
+        or not isinstance(repair.get("return_code"), int)
     ):
         return None
 
@@ -434,6 +568,45 @@ def decide(state_dir: Path | str, local_date: str) -> dict[str, str]:
             "run_id": run_id,
             "reason": reason,
         }
+    if _preflight_only_run(run_dir, rows, run_id):
+        return {
+            "action": "new",
+            "run_id": run_id,
+            "reason": "same-jst-day-preflight-only-run",
+        }
+    generation_state = _regular_json(
+        run_dir / "gates" / "generation-state.json"
+    )
+    quality = _regular_json(run_dir / "gates" / "quality-self-heal.json")
+    records = quality.get("quality") if quality else None
+    quality_reroute = bool(
+        generation_state
+        and generation_state.get("status") == "provider-returned"
+        and quality
+        and quality.get("version") == 2
+        and quality.get("attempt") == 1
+        and quality.get("action") == "reroute"
+        and isinstance(records, dict)
+        and not any(
+            row.get("run_id") == run_id and row.get("published") is True
+            for row in rows
+        )
+        and all(
+            (run_dir / f"article-{lang}.md").is_file()
+            and not (run_dir / f"article-{lang}.md").is_symlink()
+            and records.get(lang, {}).get("article_sha256")
+            == hashlib.sha256(
+                (run_dir / f"article-{lang}.md").read_bytes()
+            ).hexdigest()
+            for lang in ("ja", "en")
+        )
+    )
+    if quality_reroute:
+        return {
+            "action": "resume-generation",
+            "run_id": run_id,
+            "reason": "same-jst-day-quality-reroute",
+        }
     quality_terminal = terminal_quality_finished_at(run_dir, run_id, rows)
     if quality_terminal is not None:
         (
@@ -444,7 +617,7 @@ def decide(state_dir: Path | str, local_date: str) -> dict[str, str]:
         ) = quality_terminal
         if len(run_ids) >= 2:
             return {
-                "action": "block-incomplete",
+                "action": "skip-quality-miss",
                 "run_id": run_id,
                 "reason": "same-jst-day-quality-replacement-limit",
             }

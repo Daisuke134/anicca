@@ -45,7 +45,7 @@ default. See "collect --ledger leaves the default ledger untouched" in
 tests/rule-blame-contract.sh.
 
 INPUT: every <run-dir>/gates/beat-rate-<lang>.json under a state root
-(default skills/article-writer/state/runs), found recursively so both a
+(default skills/writer-agent/state/runs), found recursively so both a
 direct `<root>/gates/...` layout (a single run passed as the root, e.g. for
 manual verification) and the production `<root>/<run-id>/gates/...` layout
 work identically.

@@ -2,14 +2,15 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-source "$ROOT/skills/article-writer/tests/_exact8-fixture.sh"
-CONTROL="$ROOT/skills/article-writer/scripts/zenn-deferred-control.py"
-COMPLETE="$ROOT/skills/article-writer/scripts/article-run-complete.py"
+source "$ROOT/skills/writer-agent/tests/_exact8-fixture.sh"
+CONTROL="$ROOT/skills/writer-agent/scripts/zenn-deferred-control.py"
+COMPLETE="$ROOT/skills/writer-agent/scripts/article-run-complete.py"
 TMP="$(mktemp -d /tmp/article-completion-validator.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 RUN=run-validator
 LEDGER="$TMP/articles.jsonl"
 ARTIFACT="$TMP/runs/$RUN/gates/zenn-deferred.json"
+STATE="$TMP/runs/$RUN/gates/publication-state.json"
 REPO="$TMP/repo"
 mkdir -p "$(dirname "$ARTIFACT")" "$REPO/articles"
 
@@ -37,13 +38,13 @@ fi
 # The final exact-eight validator enforces the same single-topic/http(s) contract.
 cp "$LEDGER" "$TMP/eight.jsonl"
 printf '{"run_id":"%s","topic_id":"topic-2","platform":"zenn-article","lang":"ja","live_url":"https://zenn.dev/anicca/articles/strict-slug-1","published":true,"reality_gate":"PASS"}\n' "$RUN" >>"$TMP/eight.jsonl"
-if python3 "$COMPLETE" --ledger "$TMP/eight.jsonl" --run-id "$RUN" --armed 1; then
+if python3 "$COMPLETE" --ledger "$TMP/eight.jsonl" --run-id "$RUN" --armed 1 --publication-state "$STATE"; then
   echo 'FAIL: mixed-topic exact-eight passed' >&2
   exit 1
 fi
 sed -i.bak 's#https://example.test/note-ja#javascript:alert(1)#' "$TMP/eight.jsonl"
 rm "$TMP/eight.jsonl.bak"
-if python3 "$COMPLETE" --ledger "$TMP/eight.jsonl" --run-id "$RUN" --armed 1; then
+if python3 "$COMPLETE" --ledger "$TMP/eight.jsonl" --run-id "$RUN" --armed 1 --publication-state "$STATE"; then
   echo 'FAIL: invalid live URL passed' >&2
   exit 1
 fi

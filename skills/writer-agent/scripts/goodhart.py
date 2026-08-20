@@ -46,7 +46,7 @@ here rather than asked about):
     floor before either number is trusted enough to flag anything on.
 
 INPUT: every <run-dir>/gates/beat-rate-<lang>.json under a state root
-(default skills/article-writer/state/runs), scanned recursively -- same
+(default skills/writer-agent/state/runs), scanned recursively -- same
 input surface as rule_blame.py, computed independently (no shared module,
 matching the sibling-script isolation already used by title_candidates.py /
 harvest_corpus.py / beat_rate.py).

@@ -29,7 +29,7 @@
 # actually true, not just "true unless craft_train.py itself breaks".
 set -uo pipefail
 
-SKILL_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/article-writer}"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/writer-agent}"
 CRAFT_MD="${CRAFT_MD:-$HOME/profitable-claude/skills/writing-craft/CRAFT.md}"
 VENDOR_DIR="$SKILL_DIR/vendor/skillopt-writing"
 CLIPROXY_CONF="${CLIPROXY_CONF:-/opt/homebrew/etc/cliproxyapi.conf}"

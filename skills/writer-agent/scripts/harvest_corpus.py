@@ -111,7 +111,7 @@ concept zenn's `liked_count` already occupies there):
    "metric_primary": 0.0, "followers": 0, "norm_score": 0.0, "topic_tags": [],
    "slice": "top|baseline", "harvested_at": "..."}
 
-Output: skills/article-writer/state/writing-corpus/<UTC date>-<source>.jsonl,
+Output: skills/writer-agent/state/writing-corpus/<UTC date>-<source>.jsonl,
 append-only, deduped on `id` against whatever is already in that day's file
 so re-running the same day never duplicates rows.
 """

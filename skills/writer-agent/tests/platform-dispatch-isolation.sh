@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-DISPATCH="$ROOT/skills/article-writer/scripts/platform-dispatch.sh"
+DISPATCH="$ROOT/skills/writer-agent/scripts/platform-dispatch.sh"
 TMP="$(mktemp -d /tmp/article-platform-dispatch.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 MANIFEST="$TMP/jobs.jsonl"

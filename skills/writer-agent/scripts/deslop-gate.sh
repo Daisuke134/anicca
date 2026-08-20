@@ -22,7 +22,7 @@
 # guidance -- jargon belongs in the body for the technical reader, not the headline.
 # stdout: one JSON line {"verdict":"PASS|FAIL","violations":[...]} ; exit 0 only on PASS.
 set -uo pipefail
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/article-writer/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
 MD=""; LANG_A=""; DOC_TYPE="note"; TITLE_ARG=""; PLATFORM_ARG=""
 while [ $# -gt 0 ]; do case "$1" in
   --markdown-file) MD="$2"; shift 2;;
@@ -54,7 +54,7 @@ log_gate_verdict() {
 # that does not also have that other repo cloned at that exact path. Checklists now live
 # vendored inside THIS repo tree (profitable-claude), with an env override for anyone who
 # still wants to point elsewhere.
-CHECKLISTS="${ARTICLE_CHECKLISTS_DIR:-$HOME/profitable-claude/skills/article-writer/checklists}"
+CHECKLISTS="${ARTICLE_CHECKLISTS_DIR:-$HOME/profitable-claude/skills/writer-agent/checklists}"
 case "$LANG_A" in
   ja)
     case "$DOC_TYPE" in

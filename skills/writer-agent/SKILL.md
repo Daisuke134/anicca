@@ -1,8 +1,8 @@
 ---
-name: ai-entity-article-writer
-description: Write ONE genuinely great, deeply-researched article about AI entities (= AI that earns money with no/minimal human in the loop) and publish it across platforms. NOT a canonical-corpus mirror — every piece is hand-grade: deepest search (context7 for library docs + firecrawl for web) → actually RUN/verify the thing end-to-end → honest verdict (should you use it, who for) → hamburger template → multi-platform publish. Generalizes to ANY AI-entity topic/repo. The running LLM picks the next topic, researches it to the bone, runs it, writes for a total beginner, and ships JP (note/Zenn/Substack/X Articles/TikTok image) + EN (dev.to/X Articles/TikTok image). Goal: 10k MRR as a writer, then become a no-human-in-the-loop AI writer.
+name: writer-agent
+description: Research, write, publish, monetize, measure, and improve evidence-backed articles on any subject that serves a concrete reader job. The running Agent selects cited demand, verifies claims, writes native Japanese and English, publishes across configured destinations, attributes received money, and operates without daily human approval. Goal: first verified writing revenue, then $10k monthly and $10k MRR with autonomous profitable scaling.
 metadata:
-  spec: ~/anicca-project/docs/superpowers/specs/2026-06-10-ai-entity-content-engine-design.md
+  spec: ~/anicca-project/docs/writer-agent/WRITER-AGENT-SSOT.md
   topic_queue_runtime: state/topics/queue/  # ★ canonical at runtime: select-next-topic.sh claims one card from here. The daily prompt calls this the only operational topic state.
   raw_ideas: state/raw-ideas/            # fallback candidates only, used when the runtime queue is empty
   topic_queue: state/topic-queue.md      # index over raw-ideas/ (human-readable summary only)
@@ -23,21 +23,23 @@ metadata:
   requires:
     bins: [bash, jq, python3, git, curl, firecrawl]
     env: [DEVTO_API_KEY, ZENN_SSH_KEY, ZENN_REPO_PATH, SUBSTACK_SESSION_COOKIE, SUBSTACK_PUBLICATION, NOTE_EMAIL, NOTE_PASSWORD]
-  tags: [article, ai-entities, no-human-in-loop, deep-research, run-it, honest-verdict, note, zenn, substack, devto, x-articles, tiktok, generalized]
+  tags: [writer-agent, article, autonomous, deep-research, reader-job, honest-verdict, monetization, note, zenn, substack, devto, x-articles]
 ---
 
-# ai-entity-article-writer
+# writer-agent
 
-> **Not renamed, not deprecated.** This skill is untouched and remains the canonical pipeline for its
-> specific niche (deep-research "run it and verify" AI-entity explainers, `~/anicca-project` publish
-> matrix). A SEPARATE, general-purpose skill — `skills/profitable-article-writer` in the
-> `~/anicca-human-funded` repo (registry slot `earn/article`) — was built from scratch (VCSDD strict) on
-> 2026-06-29+ for ANY topic/model, explain-not-run, native per-platform ¥500/paid monetization, and a
-> V0->V4 real-money verification ladder. If you came here looking for that, it lives at
-> `~/anicca-human-funded/skills/profitable-article-writer/SKILL.md`. The two skills are independent; do
-> not merge or cross-reference their internals.
+This is the one canonical Writer Agent pipeline. Subject is not restricted by
+an AI-entity allowlist or any other niche allowlist. A valid topic must instead
+name one concrete reader, reader job, useful outcome, and evidence plan. The
+Writer may cover software, business, products built by Life Manager, paid
+assignments for publishers or companies, and any other subject for which it can
+make verified claims and serve the reader better than an internal process diary.
 
-Write the single best article on the internet about a given **AI-entity** topic, then publish it everywhere. The niche: **AI that earns money with no / minimal human in the loop** (sovereign agents, agent economies, on-chain agents, autonomous earners). NOT assistants, NOT human-in-the-loop agents.
+Write the most useful evidence-backed article for the selected reader job, then
+publish it across the configured destinations and measure what readers and
+publishers actually pay. Writing about the loop itself is allowed only when an
+external reader job and new cited evidence make that subject useful; the
+Writer's own internal operation is never a default topic.
 
 This skill is the crystallized, repeatable version of the hand-crafted process used for the Automaton piece (`~/anicca-project/docs/articles/2026-06-11-automaton-jp.md`). It is meant to be ITERATED: every time we learn something about good writing, add it to the PLAYBOOK below.
 
@@ -252,7 +254,7 @@ Footnotes (📌補足) at the very end for tangents (e.g. "why crypto not bank",
 X Articles MUST use `wshuyi/x-article-publisher-skill` (MD → Playwright MCP → X Articles editor, draft-only, needs X Premium Plus).
 
 ## North star
-Hand-craft great pieces now → keep tightening this PLAYBOOK → fully automate so an AI writer earns money by itself with **no human in the loop** → OSS the writer + a TikTok-creator skill → announce on the public OSS repo issues so every human and Anicca can profit by writing about AI entities. Goal: 10k MRR (Substack/X/note), + a book on Zenn.
+Hand-craft great pieces now → keep tightening this PLAYBOOK → fully automate so the Writer earns money with **no daily human in the loop** → OSS the Writer so other users can reproduce verified publication, payment, and learning. Goal: first $10k monthly, then $10k MRR and profitable autonomous scale.
 
 ## NOTE (2026-06-14)
 Old name was `anicca-article-daily` (a canonical-corpus MIRROR — generic, AI slop). Replaced by THIS research-and-run engine. Old publish crons are DISABLED until this skill can auto-produce articles at the Automaton-piece quality.
@@ -606,7 +608,7 @@ violation; only a PUBLIC post is.
 ## ★ ONE-SHOT NOTE PUBLISH PIPELINE (canonical order — get the clean state on the FIRST pass) ★ (2026-06-24)
 The broken multi-day session happened because steps were scattered/ad-hoc + a keyboard demote deleted images +
 /tmp got wiped. THIS is the fixed canonical sequence. publish-to-note.sh `publish` runs these IN ORDER:
-  0. WRITE (ai-entity-article-writer) emits markdown with: `##` = section titles ONLY (these become the auto-目次);
+  0. WRITE (writer-agent) emits markdown with: `##` = section titles ONLY (these become the auto-目次);
      sub-points = `**bold**`, NEVER `###` (so the auto-目次 stays short); NO in-article infographic; tables as
      markdown, diagrams as ```mermaid; setup screenshots as ![](images/automaton/<file>.png).
   1. cookies: extract from the daily-driver profile → ~/.cloak/note-work/note-cookies.json (NEVER /tmp).
@@ -659,7 +661,7 @@ The article is a FREE HONEST explainer — it must NEVER claim a run/result (tha
 ## MORE LESSONS — 体験/観光 récit (2026-06-27, Corgi Cafe SF live ground-truth)
 Dais published a fully-edited version of `docs/articles/corgi-cafe/article-jp.md` to X Articles after I shipped the
 draft; comparing draft↔published surfaced 14 systematic edits worth turning into rules. ★ Apply these to EVERY
-体験/観光 récit (= I visited X, here is what it is) ★ — they are orthogonal to the AI-entity rules above.
+体験/観光 récit (= I visited X, here is what it is) ★ — subject choice still follows the reader-job and evidence rules above.
 
 27. **[0] verdict box is optional, and for récits = DELETE it.** The hamburger [0] box (おすすめ/しない bullets above
     the fold) is correct for mechanism/run pieces where the reader needs a fast verdict. For 体験 récits the

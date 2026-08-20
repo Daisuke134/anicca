@@ -3,9 +3,9 @@ set -euo pipefail
 export ARTICLE_TEST_ONLY=1
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-source "$ROOT/skills/article-writer/tests/_exact8-fixture.sh"
-CONTROL="$ROOT/skills/article-writer/scripts/zenn-deferred-control.py"
-WORKER="$ROOT/skills/article-writer/scripts/zenn-deferred-worker.sh"
+source "$ROOT/skills/writer-agent/tests/_exact8-fixture.sh"
+CONTROL="$ROOT/skills/writer-agent/scripts/zenn-deferred-control.py"
+WORKER="$ROOT/skills/writer-agent/scripts/zenn-deferred-worker.sh"
 TMP="$(mktemp -d /tmp/zenn-init-race.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 RUN_ID="daily-2026-07-27"

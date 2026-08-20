@@ -24,9 +24,24 @@ def verify_once(post_id: str, max_h: int) -> int:
     """
     playwright = sync_playwright().start()
     page = None
+    context = None
     try:
         browser = playwright.chromium.connect_over_cdp(CDP)
-        context = browser.contexts[0]
+        context = browser.new_context()
+        cookie_header = os.environ.get("SUBSTACK_SESSION_COOKIE", "")
+        cookies = []
+        for item in cookie_header.split(";"):
+            name, separator, value = item.strip().partition("=")
+            if separator and name:
+                cookies.append({
+                    "name": name,
+                    "value": value,
+                    "domain": ".substack.com",
+                    "path": "/",
+                })
+        if not cookies:
+            raise RuntimeError("SUBSTACK_SESSION_COOKIE is required")
+        context.add_cookies(cookies)
         page = context.new_page()
         page.goto(
             f"https://{PUB}/publish/post/{post_id}",
@@ -67,6 +82,8 @@ def verify_once(post_id: str, max_h: int) -> int:
     finally:
         if page is not None and not page.is_closed():
             page.close()
+        if context is not None:
+            context.close()
         playwright.stop()
 
 

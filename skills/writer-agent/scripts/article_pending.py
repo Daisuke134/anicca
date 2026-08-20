@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure schedule decisions and durable JST X Post slots for exact8 recovery."""
+"""Pure active-four schedule decisions and durable dormant-destination receipts."""
 
 from __future__ import annotations
 
@@ -15,14 +15,16 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from publication_contract import ACTIVE_PAIRS, DORMANT_PAIRS
+from publication_contract_resolver import infer_publication_contract
+
+
 JST = ZoneInfo("Asia/Tokyo")
-IMMEDIATE_ORDER = (
-    "note/ja",
-    "devto/en",
-    "substack/ja",
-    "substack/en",
-    "x-article/ja",
-)
+IMMEDIATE_ORDER = ACTIVE_PAIRS
 ZENN_OWNER = "ai.anicca.article-zenn-retry"
 
 
@@ -153,34 +155,46 @@ def eligible_pairs(
 ) -> tuple[list[str], dict[str, Any]]:
     """Filter one immutable run's pending pairs by platform schedule only."""
     pending = set(pending_pairs)
+    legacy_exact8 = infer_publication_contract(state) == "legacy-exact8"
     eligible = [pair for pair in IMMEDIATE_ORDER if pair in pending]
     schedule: dict[str, Any] = {}
-    if "zenn-article/ja" in pending:
-        schedule["zenn-article/ja"] = {
-            "action": "DELEGATED",
-            "owner": ZENN_OWNER,
-        }
-    if "x-article/en" in pending:
-        ja_published_at = _published_at(state, "x-article/ja")
-        if ja_published_at is None:
-            schedule["x-article/en"] = {
-                "action": "WAIT",
-                "reason": "missing-remote-ja-published-at",
-                "deadline": None,
+    if legacy_exact8:
+        if "zenn-article/ja" in pending:
+            schedule["zenn-article/ja"] = {
+                "action": "DELEGATED",
+                "owner": ZENN_OWNER,
             }
-        else:
-            decision = x_article_en_decision(ja_published_at, now)
-            schedule["x-article/en"] = decision
-            if decision["action"] == "PUBLISH":
-                eligible.append("x-article/en")
-    if "x-post/ja" in pending:
-        assigned = x_post_owner == state.get("run_id")
-        schedule["x-post/ja"] = {
-            "action": "PUBLISH" if assigned else "WAIT",
-            "owner_run_id": x_post_owner,
-        }
-        if assigned:
-            eligible.append("x-post/ja")
+        if "devto/en" in pending:
+            eligible.append("devto/en")
+        if "x-article/en" in pending:
+            ja_published_at = _published_at(state, "x-article/ja")
+            if ja_published_at is None:
+                schedule["x-article/en"] = {
+                    "action": "WAIT",
+                    "reason": "missing-remote-ja-published-at",
+                    "deadline": None,
+                }
+            else:
+                decision = x_article_en_decision(ja_published_at, now)
+                schedule["x-article/en"] = decision
+                if decision["action"] == "PUBLISH":
+                    eligible.append("x-article/en")
+        if "x-post/ja" in pending:
+            assigned = x_post_owner == state.get("run_id")
+            schedule["x-post/ja"] = {
+                "action": "PUBLISH" if assigned else "WAIT",
+                "owner_run_id": x_post_owner,
+            }
+            if assigned:
+                eligible.append("x-post/ja")
+        return eligible, schedule
+    for dormant_pair in DORMANT_PAIRS:
+        if dormant_pair in pending:
+            schedule[dormant_pair] = {
+                "action": "SKIP",
+                "reason": "dormant-destination",
+                "slo": "not-applicable",
+            }
     return eligible, schedule
 
 
@@ -248,6 +262,25 @@ def _run_date(run_id: str, created_at: str) -> str:
         return "9999-12-31"
 
 
+def run_priority(state: dict[str, Any], now: datetime) -> tuple[Any, ...]:
+    """Prefer today's obligation, then newest active-four, then legacy backlog."""
+    run_id = str(state.get("run_id", ""))
+    created_at = str(state.get("created_at", ""))
+    run_date = _run_date(run_id, created_at)
+    today_jst = now.astimezone(JST).date().isoformat()
+    try:
+        created_epoch = datetime.fromisoformat(
+            created_at.replace("Z", "+00:00")
+        ).timestamp()
+    except ValueError:
+        created_epoch = 0.0
+    if run_date == today_jst:
+        return (0, -created_epoch, run_id)
+    if infer_publication_contract(state) == "active-four":
+        return (1, -created_epoch, run_id)
+    return (2, run_date, created_at, run_id)
+
+
 def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
     """Select the oldest valid incomplete run and return only eligible same-run pairs."""
     scripts = Path(__file__).resolve().parent
@@ -273,6 +306,9 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
                     "initialization_pairs": initialization[
                         "initialization_pairs"
                     ],
+                    "missing_dormant_skip_pairs": initialization.get(
+                        "missing_dormant_skip_pairs", []
+                    ),
                     "existing_pairs": initialization["existing_pairs"],
                 }
             state = store.read()
@@ -287,20 +323,7 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
     # picking the stuck 07-24 run and today's staged drafts never published).
     # Older incomplete runs still get served, oldest-first, once today's run
     # has no eligible work left.
-    today_jst = now.astimezone(JST).date().isoformat()
-    discovered.sort(
-        key=lambda item: (
-            0
-            if _run_date(
-                str(item[1].get("run_id", "")), str(item[1].get("created_at", ""))
-            )
-            == today_jst
-            else 1,
-            _run_date(str(item[1].get("run_id", "")), str(item[1].get("created_at", ""))),
-            str(item[1].get("created_at", "")),
-            str(item[1].get("run_id", "")),
-        )
-    )
+    discovered.sort(key=lambda item: run_priority(item[1], now))
     x_post_candidates = [
         {
             "run_id": str(state["run_id"]),
@@ -337,13 +360,15 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
     selected_recovery = next(
         (
             pair
-            for pair in ("devto/en", "x-article/ja")
+            for pair in ("devto/en", "x-article/ja", "x-post/ja")
             if pair in recovery_pairs and pair not in blocked_pairs
         ),
         "",
     )
     if selected_recovery:
-        eligible = [selected_recovery]
+        eligible = [
+            pair for pair in eligible if pair != selected_recovery
+        ] + [selected_recovery]
         schedule[selected_recovery] = {
             "action": "RECOVER",
             "reason": "bounded-ambiguous-same-id-recovery",
@@ -375,13 +400,21 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
             selected_recovery = next(
                 (
                     pair
-                    for pair in ("devto/en", "x-article/ja")
+                    for pair in (
+                        "devto/en",
+                        "x-article/ja",
+                        "x-post/ja",
+                    )
                     if pair in candidate_recovery and pair not in candidate_blocked
                 ),
                 "",
             )
             if selected_recovery:
-                candidate_eligible = [selected_recovery]
+                candidate_eligible = [
+                    pair
+                    for pair in candidate_eligible
+                    if pair != selected_recovery
+                ] + [selected_recovery]
                 candidate_schedule[selected_recovery] = {
                     "action": "RECOVER",
                     "reason": "bounded-ambiguous-same-id-recovery",
@@ -402,6 +435,9 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
         "pending_pairs": plan["pending_pairs"],
         "recovery_pairs": recovery_pairs,
         "initialization_pairs": initialization_pairs,
+        "missing_dormant_skip_pairs": plan.get(
+            "missing_dormant_skip_pairs", []
+        ),
         "existing_pairs": plan.get("existing_pairs", {}),
         "eligible_pairs": eligible,
         "blocked_pairs": sorted(blocked_pairs),

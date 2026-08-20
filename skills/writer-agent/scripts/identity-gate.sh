@@ -10,7 +10,7 @@
 # Usage: identity-gate.sh <article.md> [--lang ja|en]
 # stdout: one JSON line {"verdict":"PASS|FAIL","violations":[...]} ; exit 0 only on PASS.
 set -uo pipefail
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/article-writer/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
 
 MD=""; LANG_A="ja"
 POSITIONAL=()
@@ -42,6 +42,16 @@ if text.startswith("---\n"):
     text = re.sub(r"\A---\n.*?\n---\n?", "", text, count=1, flags=re.S)
 text = re.sub(
     r"(?ms)^<!-- canonical-media:start -->\n.*?^<!-- canonical-media:end -->\n?",
+    "",
+    text,
+)
+text = re.sub(
+    r"(?m)^<!-- canonical-media: (?:headline-image|body-diagram)\.png -->\n?",
+    "",
+    text,
+)
+text = re.sub(
+    r"(?m)^<!-- mermaid-source: body-diagram\.mmd -->\n?",
     "",
     text,
 )

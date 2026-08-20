@@ -1,0 +1,287 @@
+#!/usr/bin/env python3
+"""Executable contract tests for the Writer's sole model process boundary."""
+
+from __future__ import annotations
+
+import os
+import json
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+RUNNER = ROOT / "runtime" / "model-runner.sh"
+
+
+class ModelRunnerContractTests(unittest.TestCase):
+    def make_environment(self, sandbox: Path, fake_codex: Path) -> dict[str, str]:
+        environment = os.environ.copy()
+        environment.pop("ARTICLE_MODEL_REASONING_EFFORT", None)
+        environment.update(
+            {
+                "ARTICLE_PROVIDER": "codex",
+                "ARTICLE_CODEX_BIN": str(fake_codex),
+                "ARTICLE_MODEL_ROOT": str(sandbox / "model-root"),
+                "ARTICLE_MODEL_STATE_ROOT": str(sandbox / "state"),
+                "ARTICLE_PROVIDER_HEALTH": str(sandbox / "provider-health.json"),
+                "ARTICLE_MODEL_LOG": str(sandbox / "model.log"),
+            }
+        )
+        return environment
+
+    def test_codex_defaults_to_terra_medium_and_preserves_prompt_stdin(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            sandbox = Path(temporary)
+            args_path = sandbox / "args.txt"
+            stdin_path = sandbox / "stdin.txt"
+            fake_codex = sandbox / "codex"
+            fake_codex.write_text(
+                "#!/usr/bin/env bash\n"
+                "printf '%s\\n' \"$@\" >\"$CAPTURE_ARGS\"\n"
+                "cat >\"$CAPTURE_STDIN\"\n"
+                "printf '%s\\n' TERRAMEDIUM\n",
+                encoding="utf-8",
+            )
+            fake_codex.chmod(0o755)
+            prompt = sandbox / "prompt.txt"
+            prompt.write_text("Return exactly TERRAMEDIUM", encoding="utf-8")
+
+            environment = self.make_environment(sandbox, fake_codex)
+            environment.update(
+                {
+                    "ARTICLE_RUN_ID": "terra-medium-contract",
+                    "CAPTURE_ARGS": str(args_path),
+                    "CAPTURE_STDIN": str(stdin_path),
+                }
+            )
+
+            result = subprocess.run(
+                [str(RUNNER), "judge", "--prompt-file", str(prompt)],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            args = args_path.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(args[args.index("--model") + 1], "gpt-5.6-terra")
+            self.assertIn('model_reasoning_effort="medium"', args)
+            self.assertEqual(
+                stdin_path.read_text(encoding="utf-8"), "Return exactly TERRAMEDIUM"
+            )
+
+    def test_valid_sol_receipt_runs_sol_once_and_replay_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            sandbox = Path(temporary)
+            args_path = sandbox / "args.txt"
+            calls_path = sandbox / "calls.txt"
+            fake_codex = sandbox / "codex"
+            fake_codex.write_text(
+                "#!/usr/bin/env bash\n"
+                "printf '%s\\n' \"$@\" >\"$CAPTURE_ARGS\"\n"
+                "printf 'CALL\\n' >>\"$CAPTURE_CALLS\"\n"
+                "cat >/dev/null\n"
+                "printf '%s\\n' SOLAUDIT\n",
+                encoding="utf-8",
+            )
+            fake_codex.chmod(0o755)
+            prompt = sandbox / "prompt.txt"
+            prompt.write_text("Return exactly SOLAUDIT", encoding="utf-8")
+            receipt = sandbox / "sol-trigger.json"
+            receipt.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "trigger": "quality_sample",
+                        "run_id": "sol-contract",
+                        "artifact_id": "article-ja",
+                        "article_sha256": "a" * 64,
+                        "requested_reasoning_effort": "medium",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            environment = self.make_environment(sandbox, fake_codex)
+            environment.update(
+                {
+                    "ARTICLE_RUN_ID": "sol-contract",
+                    "ARTICLE_MODEL_ROLE": "sol-audit",
+                    "ARTICLE_SOL_TRIGGER_RECEIPT": str(receipt),
+                    "CAPTURE_ARGS": str(args_path),
+                    "CAPTURE_CALLS": str(calls_path),
+                }
+            )
+
+            first = subprocess.run(
+                [str(RUNNER), "judge", "--prompt-file", str(prompt)],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(first.returncode, 0, first.stderr)
+            args = args_path.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(args[args.index("--model") + 1], "gpt-5.6-sol")
+            self.assertIn('model_reasoning_effort="medium"', args)
+            self.assertTrue(Path(str(receipt) + ".claim/receipt.sha256").is_file())
+
+            replay = subprocess.run(
+                [str(RUNNER), "judge", "--prompt-file", str(prompt)],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(replay.returncode, 78, replay.stderr)
+            self.assertEqual(calls_path.read_text(encoding="utf-8"), "CALL\n")
+
+    def _capture(
+        self, sandbox: Path, mode: str, *, session: bool = False,
+    ) -> list[str]:
+        args_path = sandbox / f"args-{mode}-{session}.txt"
+        fake_codex = sandbox / f"codex-{mode}-{session}"
+        fake_codex.write_text(
+            "#!/usr/bin/env bash\n"
+            'printf "%s\\n" "$@" >"$CAPTURE_ARGS"\n'
+            "cat >/dev/null\n"
+            "printf 'done\\n'\n",
+            encoding="utf-8",
+        )
+        fake_codex.chmod(0o755)
+        prompt = sandbox / "prompt.txt"
+        prompt.write_text("p", encoding="utf-8")
+        image = sandbox / "image.png"
+        image.write_bytes(b"img")
+        schema = sandbox / "schema.json"
+        schema.write_text("{}", encoding="utf-8")
+
+        environment = self.make_environment(sandbox, fake_codex)
+        environment.update({
+            "ARTICLE_RUN_ID": "caller-contract",
+            "CAPTURE_ARGS": str(args_path),
+        })
+        if session:
+            environment.update({
+                "ARTICLE_CODEX_EVENTS_FILE": str(sandbox / "events.jsonl"),
+                "ARTICLE_CODEX_LAST_MESSAGE_FILE": str(sandbox / "last.txt"),
+                "ARTICLE_CODEX_OUTPUT_SCHEMA": str(schema),
+            })
+        else:
+            for key in (
+                "ARTICLE_CODEX_EVENTS_FILE", "ARTICLE_CODEX_LAST_MESSAGE_FILE",
+                "ARTICLE_CODEX_OUTPUT_SCHEMA",
+            ):
+                environment.pop(key, None)
+        command = [str(RUNNER), mode, "--prompt-file", str(prompt)]
+        if mode == "vision":
+            command += ["--image", str(image)]
+        result = subprocess.run(
+            command, env=environment, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return args_path.read_text(encoding="utf-8").splitlines()
+
+    def test_existing_caller_command_lines_are_unchanged_by_the_repair_mode(
+        self,
+    ) -> None:
+        """Adding a write-capable mode must not move the daily writing, judge,
+        or vision paths by a single argv token. Verified against the pre-change
+        script on 2026-08-07; frozen here so it cannot drift later."""
+        with tempfile.TemporaryDirectory() as temporary:
+            sandbox = Path(temporary)
+            model = ["--model", "gpt-5.6-terra", "-c", 'model_reasoning_effort="medium"']
+
+            self.assertEqual(
+                self._capture(sandbox, "agent"),
+                ["exec", "--ephemeral", *model, "--sandbox", "danger-full-access",
+                 "-C", str(sandbox / "model-root"), "--add-dir", os.environ["HOME"], "-"],
+            )
+            self.assertEqual(
+                self._capture(sandbox, "judge"),
+                ["exec", "--ephemeral", *model, "--sandbox", "read-only",
+                 "-C", str(sandbox / "model-root"),
+                 "--ignore-user-config", "--ignore-rules", "-"],
+            )
+            self.assertEqual(
+                self._capture(sandbox, "vision"),
+                ["exec", "--ephemeral", *model, "--sandbox", "read-only",
+                 "-C", str(sandbox / "model-root"),
+                 "--ignore-user-config", "--ignore-rules",
+                 "--image", str(sandbox / "image.png"), "-"],
+            )
+            self.assertEqual(
+                self._capture(sandbox, "judge", session=True),
+                ["exec", *model, "--sandbox", "read-only",
+                 "-C", str(sandbox / "model-root"),
+                 "--ignore-user-config", "--ignore-rules",
+                 "--json", "-o", str(sandbox / "last.txt"),
+                 "--output-schema", str(sandbox / "schema.json"), "-"],
+            )
+
+    def test_agent_mode_still_has_no_event_stream_so_repair_needs_its_own_mode(
+        self,
+    ) -> None:
+        """The C1 session surface is deliberately off for `agent`, which is why
+        H2 is a fourth mode rather than a widening of an existing one."""
+        with tempfile.TemporaryDirectory() as temporary:
+            sandbox = Path(temporary)
+            args = self._capture(sandbox, "agent", session=True)
+            self.assertNotIn("--json", args)
+            self.assertIn("--ephemeral", args)
+
+    def test_sol_rejects_missing_invalid_or_wrong_run_receipt(self) -> None:
+        cases = (
+            (None, "missing"),
+            ({"schema_version": 1, "trigger": "anything"}, "invalid"),
+            (
+                {
+                    "schema_version": 1,
+                    "trigger": "legal",
+                    "run_id": "other-run",
+                    "artifact_id": "article-ja",
+                    "article_sha256": "b" * 64,
+                    "requested_reasoning_effort": "medium",
+                },
+                "wrong-run",
+            ),
+        )
+        for payload, label in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temporary:
+                sandbox = Path(temporary)
+                calls_path = sandbox / "calls.txt"
+                fake_codex = sandbox / "codex"
+                fake_codex.write_text(
+                    "#!/usr/bin/env bash\nprintf 'CALL\\n' >>\"$CAPTURE_CALLS\"\ncat >/dev/null\n",
+                    encoding="utf-8",
+                )
+                fake_codex.chmod(0o755)
+                prompt = sandbox / "prompt.txt"
+                prompt.write_text("do not run", encoding="utf-8")
+                environment = self.make_environment(sandbox, fake_codex)
+                environment.update(
+                    {
+                        "ARTICLE_RUN_ID": "sol-contract",
+                        "ARTICLE_MODEL_ROLE": "sol-audit",
+                        "CAPTURE_CALLS": str(calls_path),
+                    }
+                )
+                if payload is not None:
+                    receipt = sandbox / "receipt.json"
+                    receipt.write_text(json.dumps(payload), encoding="utf-8")
+                    environment["ARTICLE_SOL_TRIGGER_RECEIPT"] = str(receipt)
+                result = subprocess.run(
+                    [str(RUNNER), "judge", "--prompt-file", str(prompt)],
+                    env=environment,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 64, result.stderr)
+                self.assertFalse(calls_path.exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

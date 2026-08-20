@@ -26,7 +26,9 @@ def _dhash(image: Image.Image) -> str:
     grayscale = image.convert("L").resize(
         (DHASH_SIZE + 1, DHASH_SIZE), Image.Resampling.LANCZOS
     )
-    pixels = list(grayscale.get_flattened_data())
+    # Mode L guarantees one byte per pixel. tobytes() is stable across the
+    # Pillow 10.4 shipped with the launchd system Python and newer releases.
+    pixels = list(grayscale.tobytes())
     value = 0
     for row in range(DHASH_SIZE):
         offset = row * (DHASH_SIZE + 1)
@@ -70,7 +72,9 @@ def descriptor_from_file(path: Path) -> dict[str, Any]:
 
 
 def dhash_distance(left: str, right: str) -> int:
-    return (int(left, 16) ^ int(right, 16)).bit_count()
+    # launchd invokes /usr/bin/python3 (3.9 on the production macOS host),
+    # while int.bit_count() is only available from Python 3.10 onward.
+    return bin(int(left, 16) ^ int(right, 16)).count("1")
 
 
 def _visual_match(expected: dict[str, Any], remote: dict[str, Any]) -> tuple[bool, int | None]:

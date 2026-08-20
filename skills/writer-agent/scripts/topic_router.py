@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from demand_card import DemandCardError, validate_demand_card
+
 
 TOPIC_SOURCES = {
     "customer-pain",
@@ -20,6 +22,7 @@ TOPIC_SOURCES = {
     "build-log",
     "timely-event",
     "explicit-queue",
+    "paid-demand",
 }
 EVIDENCE_METHODS = {
     "browse",
@@ -93,6 +96,7 @@ def route_topic(
     forbidden_topic_id: str | None = None,
     forbidden_editorial_form: str | None = None,
     required_feedback_ids: tuple[str, ...] = (),
+    demand_mode: str = "legacy-migration",
 ) -> dict[str, Any]:
     """Return a validated route; never infer form from source or evidence.
 
@@ -104,12 +108,22 @@ def route_topic(
 
     if not isinstance(topic, dict):
         raise TopicRouteError("topic must be an object")
+    if demand_mode not in {"required", "legacy-migration"}:
+        raise TopicRouteError("demand_mode must be required or legacy-migration")
     topic_id = _required_text(topic, "topic_id", "topic")
     if forbidden_topic_id and topic_id == forbidden_topic_id:
         raise TopicRouteError(f"blocked topic_id cannot be reused: {topic_id}")
     topic_source = _required_text(topic, "topic_source", "topic")
     if topic_source not in TOPIC_SOURCES:
         raise TopicRouteError(f"unsupported topic_source: {topic_source}")
+    if demand_mode == "required" and topic_source != "paid-demand":
+        raise TopicRouteError(
+            "required demand mode accepts only paid-demand topics"
+        )
+    if demand_mode == "required" and not topic_id.startswith("paid-demand:"):
+        raise TopicRouteError(
+            "required demand mode requires a stable paid-demand topic_id"
+        )
 
     reader = topic.get("reader")
     if not isinstance(reader, dict):
@@ -186,6 +200,13 @@ def route_topic(
             "product_link requires at least one of audience, pain, proof, offer"
         )
 
+    demand_card = None
+    if topic_source == "paid-demand":
+        try:
+            demand_card = validate_demand_card(topic.get("demand_card"))
+        except DemandCardError as error:
+            raise TopicRouteError(f"invalid paid-demand card: {error}") from error
+
     routed = {
         "topic_id": topic_id,
         "topic_source": topic_source,
@@ -195,6 +216,8 @@ def route_topic(
         "editorial_form": editorial_form,
         "product_link": product_link_out,
     }
+    if demand_card is not None:
+        routed["demand_card"] = demand_card
     if required_feedback_ids:
         routed["quality_feedback_ids"] = list(required_feedback_ids)
     return routed
@@ -239,9 +262,59 @@ def main() -> int:
     validate.add_argument("--out", required=True, type=Path)
     validate.add_argument("--runs-root", required=True, type=Path)
     validate.add_argument("--current-run-id", required=True)
+    validate.add_argument(
+        "--demand-mode",
+        choices=("required", "legacy-migration"),
+        default="legacy-migration",
+    )
     args = parser.parse_args()
 
     source = json.loads(args.input.read_text(encoding="utf-8"))
+    current_gates = args.runs_root / args.current_run_id / "gates"
+    reroute_path = current_gates / "quality-self-heal.json"
+    current_route_path = current_gates / "topic-route.json"
+    in_run_reroute = False
+    if reroute_path.exists():
+        if reroute_path.is_symlink() or not reroute_path.is_file():
+            raise TopicRouteError("current-run reroute receipt is not a regular file")
+        reroute = json.loads(reroute_path.read_text(encoding="utf-8"))
+        if (
+            isinstance(reroute, dict)
+            and reroute.get("version") == 2
+            and reroute.get("attempt") == 1
+            and reroute.get("action") == "reroute"
+        ):
+            if current_route_path.is_symlink() or not current_route_path.is_file():
+                raise TopicRouteError("current-run reroute route is missing")
+            current_route = json.loads(
+                current_route_path.read_text(encoding="utf-8")
+            )
+            current_topic_id = _required_text(
+                current_route, "topic_id", "current_run_route"
+            )
+            current_form = _required_text(
+                current_route, "editorial_form", "current_run_route"
+            )
+            forbidden_form = _required_text(
+                reroute, "forbidden_editorial_form", "current_run_reroute"
+            )
+            if forbidden_form != current_form:
+                raise TopicRouteError(
+                    "current-run reroute receipt does not bind the current form"
+                )
+            if reroute.get("required_changes") != ["editorial_form", "outline"]:
+                raise TopicRouteError(
+                    "current-run reroute required changes are invalid"
+                )
+            if source.get("topic_id") != current_topic_id:
+                raise TopicRouteError(
+                    "current-run reroute must preserve topic_id"
+                )
+            if source.get("editorial_form") == forbidden_form:
+                raise TopicRouteError(
+                    "current-run reroute must change editorial_form"
+                )
+            in_run_reroute = True
     replacement_path = (
         args.runs_root
         / args.current_run_id
@@ -278,9 +351,15 @@ def main() -> int:
     routed = route_topic(
         source,
         recent_forms=recent_forms,
-        forbidden_topic_id=forbidden_topic_id,
+        # A bounded in-run reroute is explicitly required to retain its topic
+        # identity.  The replacement receipt remains authoritative for its
+        # feedback and forbidden form, but cannot veto that required identity.
+        forbidden_topic_id=(
+            None if in_run_reroute else forbidden_topic_id
+        ),
         forbidden_editorial_form=forbidden_editorial_form,
         required_feedback_ids=required_feedback_ids,
+        demand_mode=args.demand_mode,
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(

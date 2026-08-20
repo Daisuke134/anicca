@@ -37,8 +37,10 @@ class XPostRefused(RuntimeError):
 def validate_text(value: str) -> None:
     if not value or len(value) > 280:
         raise XPostRefused("X Post must contain 1..280 characters")
-    if "http://" in value or "https://" in value:
-        raise XPostRefused("X Post must be standalone and contain no URL")
+    # The frozen X Post contract requires one measurable self-hosted product
+    # CTA, and publication-state initialization has already rerun cta-gate on
+    # these exact bytes. Do not contradict that revenue contract by banning
+    # every URL at the final side-effect boundary.
 
 
 def assigned_date(slots: dict[str, Any], run_id: str) -> str:
@@ -132,6 +134,31 @@ def _guard(command: str) -> dict[str, Any]:
     return json.loads(result.stdout)
 
 
+def reconcile_existing_effect(
+    fence_path: Path,
+) -> dict[str, Any] | None:
+    """Resolve a prior possible effect without ever opening the composer."""
+    if not fence_path.is_file():
+        return None
+    try:
+        fence = json.loads(fence_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise XPostRefused("existing X Post effect fence is unreadable") from error
+    if not isinstance(fence, dict):
+        raise XPostRefused("existing X Post effect fence is malformed")
+    phase = fence.get("phase")
+    if phase == "confirmed-no-effect":
+        return None
+    if phase not in {"effect-possible", "target-known"}:
+        raise XPostRefused("existing X Post effect fence is malformed")
+    result = _guard("recover-ambiguous")
+    if result.get("status") != "live" and result.get("action") != "skip-live":
+        raise XPostRefused(
+            "X Post existing effect readback did not become live"
+        )
+    return result
+
+
 def _account_url() -> str:
     account = (
         os.environ.get("X_ACCOUNT_HANDLE")
@@ -198,11 +225,14 @@ def publish() -> dict[str, Any]:
     date_jst = assigned_date(slots, run_id)
     if datetime.now(JST).date().isoformat() != date_jst:
         raise XPostRefused("X Post assigned slot is not the current JST date")
+    fence_path = Path(str(state["run_dir"])) / "gates/x-post-effect.json"
+    existing = reconcile_existing_effect(fence_path)
+    if existing is not None:
+        return existing
     decision = _guard("preflight")
     if decision.get("action") == "skip-live":
         return decision
     account_url = _account_url()
-    fence_path = Path(str(state["run_dir"])) / "gates/x-post-effect.json"
 
     from playwright.sync_api import sync_playwright
 

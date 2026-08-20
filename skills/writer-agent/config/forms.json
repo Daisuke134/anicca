@@ -15,7 +15,7 @@
       "length": { "target_chars": 8000, "guidance": "hamburger template, beginner-friendly, jargon defined on first use" },
       "exits": ["note", "zenn", "substack-ja", "substack-en", "devto", "x"],
       "exit_status": { "note": "wired", "zenn": "wired", "substack-ja": "wired", "substack-en": "wired", "devto": "wired", "x": "wired (Articles)" },
-      "monetization": "note single-purchase ¥1000 + Substack paid $8/mo + free-tier reach",
+      "monetization": "note single-purchase ¥500 + Substack paid $8/mo + free-tier reach",
       "gate_notes": "full gate skeleton, all axes apply"
     },
     "ebook": {

@@ -27,6 +27,30 @@ NOTE = HERE / "note-publish"
 HOME = Path.home()
 
 
+def adapt_note_eyecatch(source: Path, destination: Path) -> None:
+    """Create note's required 1280:670 center crop from immutable media."""
+    from PIL import Image
+
+    with Image.open(source) as image:
+        image = image.convert("RGB")
+        width, height = image.size
+        target_ratio = 1280 / 670
+        source_ratio = width / height
+        if source_ratio > target_ratio:
+            crop_width = round(height * target_ratio)
+            left = (width - crop_width) // 2
+            box = (left, 0, left + crop_width, height)
+        else:
+            crop_height = round(width / target_ratio)
+            top = (height - crop_height) // 2
+            box = (0, top, width, top + crop_height)
+        adapted = image.crop(box).resize(
+            (1280, 670), Image.Resampling.LANCZOS
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        adapted.save(destination, format="PNG")
+
+
 def command(name: str, default: list[str]) -> list[str]:
     override = os.environ.get(name)
     return shlex.split(override) if override else default
@@ -86,10 +110,22 @@ def main() -> int:
     cloak_python = str(
         HOME / ".openclaw/skills/_shared/venv-cloak/bin/python3"
     )
-    eyecatch_argv = command(
-        "NOTE_EYECATCH_COMMAND",
-        [cloak_python, str(NOTE / "set-eyecatch-draft.py")],
-    )
+    if os.environ.get("NOTE_EYECATCH_COMMAND"):
+        eyecatch_argv = command("NOTE_EYECATCH_COMMAND", [])
+    else:
+        note_mcp = Path(
+            os.environ.get(
+                "NOTE_MCP_DIR", str(HOME / ".openclaw/external/note-mcp")
+            )
+        )
+        run(["bash", str(HERE / "ensure-note-mcp-runtime.sh"), str(note_mcp)])
+        adapted_eyecatch = work / "note-eyecatch-1280x670.png"
+        adapt_note_eyecatch(headline_path, adapted_eyecatch)
+        eyecatch_argv = [
+            str(note_mcp / ".venv/bin/python"),
+            str(NOTE / "set-eyecatch-api.py"),
+            str(adapted_eyecatch),
+        ]
     eyecatch = run(
         eyecatch_argv,
         env={**os.environ, "NOTE_KEY": target},

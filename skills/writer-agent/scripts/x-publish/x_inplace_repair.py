@@ -612,6 +612,59 @@ class XBrowserAdapter:
         return rendered
 
     @staticmethod
+    def _first_reader_visible_anchor(html: str) -> str:
+        """Return a stable text anchor from the first non-empty body block."""
+        def longest_segment(value: str) -> str:
+            segments = []
+            for raw in re.findall(r"[^<>]+", value):
+                visible = html_lib.unescape(raw)
+                visible = " ".join(visible.split())
+                if visible:
+                    segments.append(visible)
+            return max(segments, key=len, default="")[:80]
+
+        block_pattern = re.compile(
+            r"<(?:p|h[1-6]|li|blockquote)\b[^>]*>(.*?)"
+            r"</(?:p|h[1-6]|li|blockquote)>",
+            re.IGNORECASE | re.DOTALL,
+        )
+        for match in block_pattern.finditer(html):
+            visible = longest_segment(match.group(1))
+            if visible:
+                return visible[:80]
+        return longest_segment(html)
+
+    @staticmethod
+    def _bind_leading_content_image_anchor(
+        parsed: dict[str, Any],
+        images: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Give a leading image the first reader-visible body anchor.
+
+        The Markdown parser represents an image immediately after the title or
+        cover with ``block_index=0`` and no preceding text. X's canonical
+        inserter requires a non-empty anchor, so bind only that leading image
+        to the first body block while preserving the parsed list and order.
+        """
+        bound = [dict(image) for image in images]
+        if not bound:
+            return bound
+        first = bound[0]
+        if int(first.get("block_index", 0)) != 0:
+            return bound
+        if str(first.get("after_text") or "").strip():
+            return bound
+        anchor = XBrowserAdapter._first_reader_visible_anchor(
+            str(parsed.get("html", ""))
+        )
+        if not anchor:
+            raise XRepairRefused(
+                "X leading body image has no reader-visible anchor"
+            )
+        first["after_text"] = anchor
+        return bound
+
+    @staticmethod
     def _chunks(parsed: dict[str, Any]) -> list[tuple[str, str]]:
         html = str(parsed.get("html", ""))
         position = 0
@@ -731,6 +784,10 @@ class XBrowserAdapter:
                 for image in parsed.get("content_images", [])
                 if isinstance(image, dict)
             ]
+        )
+        content_images = self._bind_leading_content_image_anchor(
+            parsed,
+            content_images,
         )
         expected_images = len(content_images)
         inserted_image_sha256 = [

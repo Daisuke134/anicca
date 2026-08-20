@@ -5,7 +5,7 @@ assert no Automaton value leaks — including the partial-override cases (NOTE_N
 Exit 0=PASS, 1=FAIL. Spec: anicca/docs/superpowers/specs/2026-06-26-A3-de-automaton-note-publisher.md
 Run with the venv-cloak python: ~/.openclaw/skills/_shared/venv-cloak/bin/python3 test-de-automaton.py"""
 import re, sys, os, json, subprocess, tempfile, shutil
-R   = os.path.expanduser("~/profitable-claude/skills/article-writer/scripts")
+R   = os.path.expanduser("~/profitable-claude/skills/writer-agent/scripts")
 VC  = os.path.expanduser("~/.openclaw/skills/_shared/venv-cloak/bin/python3")
 FIX = f"{R}/note-publish/a3_fixtures"
 NOTE_ENVS = ("NOTE_SRC","NOTE_WORK","NOTE_NUM","NOTE_KEY","NOTE_TAGS","NOTE_INFOG","NOTE_IMG_DIR","NOTE_ASSETS","NOTE_MCP_SRC")

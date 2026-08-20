@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-RUBRIC="$ROOT/skills/article-writer/scripts/rubric-judge.sh"
-READER="$ROOT/skills/article-writer/scripts/reader-testing-gate.sh"
+RUBRIC="$ROOT/skills/writer-agent/scripts/rubric-judge.sh"
+READER="$ROOT/skills/writer-agent/scripts/reader-testing-gate.sh"
 TMP="$(mktemp -d /tmp/article-gate-control.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 mkdir -p "$TMP/bin"

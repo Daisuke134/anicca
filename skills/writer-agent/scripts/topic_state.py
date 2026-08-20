@@ -60,7 +60,8 @@ def _load_manifest(path: Path) -> dict[str, Any]:
 def initialize(skill_dir: Path) -> dict[str, Any]:
     skill_dir = Path(skill_dir).resolve(strict=True)
     source_root = skill_dir / "topics"
-    runtime_root = skill_dir / "state/topics"
+    state_dir = Path(os.environ.get("ARTICLE_STATE_DIR", str(skill_dir / "state")))
+    runtime_root = state_dir / "topics"
     manifest_path = runtime_root / "seed-manifest.json"
     lock_path = runtime_root / ".seed.lock"
     for stage in STAGES:
@@ -120,7 +121,7 @@ def main() -> int:
     parser.add_argument(
         "--skill-dir",
         type=Path,
-        default=Path.home() / "profitable-claude/skills/article-writer",
+        default=Path.home() / "profitable-claude/skills/writer-agent",
     )
     args = parser.parse_args()
     print(json.dumps(initialize(args.skill_dir), ensure_ascii=False, separators=(",", ":")))

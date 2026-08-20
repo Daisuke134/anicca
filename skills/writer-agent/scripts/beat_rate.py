@@ -53,12 +53,12 @@ tests; see tests/beat-rate-contract.sh.
 
 Judge process boundary: exactly `scripts/editorial-gate.sh` and
 `self_improve_control.py`'s `model_judge` -- `$ARTICLE_MODEL_RUNNER judge
---prompt-file -`, default $HOME/profitable-claude/skills/article-writer/
+--prompt-file -`, default $HOME/profitable-claude/skills/writer-agent/
 runtime/model-runner.sh. No second model path is invented here; the broker
 discovery inside that runner is what keeps judging alive outside the agent
 sandbox.
 
-CORPUS INPUT: skills/article-writer/state/writing-corpus/*.jsonl, the
+CORPUS INPUT: skills/writer-agent/state/writing-corpus/*.jsonl, the
 harvest_corpus.py (19-2) schema -- rows carry `lang`, `slice`
 ("top"|"baseline"), and `metric_primary` (the raw number norm_score was
 computed from).

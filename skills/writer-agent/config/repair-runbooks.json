@@ -1,0 +1,27 @@
+{
+  "schema": "writer.self-heal.runbooks",
+  "version": 1,
+  "runbooks": [
+    {
+      "runbook_id": "publication-plan-v1",
+      "version": 1,
+      "match": {"classification": "publication-readback"},
+      "mode": "read-only-plan",
+      "command": ["python3", "{scripts}/publication_resume.py", "--state", "{run_dir}/gates/publication-state.json", "--ledger", "{state_dir}/articles.jsonl", "worker-plan"]
+    },
+    {
+      "runbook_id": "money-sync-v1",
+      "version": 1,
+      "match": {"classification": "money-invariant", "reason": "expected_receipt_missing"},
+      "mode": "bounded-local-write",
+      "command": ["python3", "{scripts}/money_sync.py", "--state-dir", "{state_dir}"]
+    },
+    {
+      "runbook_id": "report-refresh-v1",
+      "version": 1,
+      "match": {"phase": "reporting", "reason": "expected_receipt_missing"},
+      "mode": "bounded-external-report",
+      "command": ["python3", "{scripts}/writer_report_worker.py", "--state-dir", "{state_dir}"]
+    }
+  ]
+}

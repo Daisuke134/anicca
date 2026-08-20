@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-DAILY="$ROOT/skills/article-writer/article-daily.sh"
-SKILL="$ROOT/skills/article-writer/SKILL.md"
+DAILY="$ROOT/skills/writer-agent/article-daily.sh"
+SKILL="$ROOT/skills/writer-agent/SKILL.md"
 
 # Quality exhaustion must no longer terminate the topic as carry-over.
 ! rg -q 'carry-over:bounded-revise|carry-over:reader-testing' "$DAILY" "$SKILL"

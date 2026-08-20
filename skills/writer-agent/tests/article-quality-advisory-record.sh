@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-RECORDER="$ROOT/skills/article-writer/scripts/record-quality-advisory.py"
+RECORDER="$ROOT/skills/writer-agent/scripts/record-quality-advisory.py"
 TMP="$(mktemp -d /tmp/article-quality-advisory.XXXXXX)"
 trap 'rm -rf -- "$TMP"' EXIT
 

@@ -13,7 +13,7 @@
 # Contract: same IO shape as the gates it replaces.
 #   editorial-gate.sh <article.md> [--lang ja|en]
 #   stdout: {"verdict":"PASS"|"FAIL","fixes":[...],"strengths":[...]}
-#   exit 0 = PASS, 1 = FAIL (advisory: quality never blocks publication),
+#   exit 0 = PASS, 1 = FAIL (FAIL blocks publication until current bytes pass),
 #   3 = the judge returned no JSON (infrastructure failure, never a fake PASS)
 #
 # Safety gates (identity, conscience) stay SEPARATE and keep their
@@ -21,8 +21,9 @@
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/article-writer/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
 CTA_GATE="${ARTICLE_CTA_GATE:-$DIR/cta-gate.sh}"
+SOL_SAMPLE_GATE="${ARTICLE_SOL_SAMPLE_GATE:-$DIR/sol-quality-sample-gate.sh}"
 GATES_LOG="${ARTICLE_GATES_LOG:-}"
 
 MD=""; LANG_A="ja"
@@ -31,6 +32,18 @@ while [ $# -gt 0 ]; do case "$1" in
   *) MD="$1"; shift ;;
 esac; done
 [ -f "$MD" ] || { echo "FATAL: usage: editorial-gate.sh <article.md> [--lang ja|en]" >&2; exit 2; }
+case "$LANG_A" in
+  ja) FEEDBACK_LANGUAGE="Japanese" ;;
+  en) FEEDBACK_LANGUAGE="English" ;;
+  *) echo "FATAL: --lang must be ja or en" >&2; exit 2 ;;
+esac
+
+# Some managed callers historically exported the run's gates directory rather
+# than a filename. Preserve that useful intent and choose the canonical log
+# inside it; never try to append bytes to a directory.
+if [ -n "$GATES_LOG" ] && [ -d "$GATES_LOG" ]; then
+  GATES_LOG="$GATES_LOG/editorial-gates.log"
+fi
 
 # Judge broker routing must survive agent subshells that drop env vars.
 if [ -z "${ARTICLE_RUN_DIR:-}" ] && [ -f "$MD" ]; then
@@ -39,21 +52,54 @@ fi
 
 log_gate_verdict() {
   [ -n "$GATES_LOG" ] || return 0
+  mkdir -p "$(dirname "$GATES_LOG")" 2>/dev/null || return 0
   printf '%s script=editorial-gate.sh md=%s lang=%s verdict=%s\n' \
-    "$(date '+%F %T')" "$MD" "$LANG_A" "$1" >> "$GATES_LOG"
+    "$(date '+%F %T')" "$MD" "$LANG_A" "$1" >>"$GATES_LOG" 2>/dev/null || true
 }
 
 ARTICLE="$(cat "$MD")"
 ARTICLE_HASH=$(shasum -a 256 "$MD" | awk '{print $1}')
+REQUESTED_REASONING_EFFORT="medium"
 if [ -n "${ARTICLE_RUN_DIR:-}" ]; then
   PREVIOUS_RECEIPT="$ARTICLE_RUN_DIR/gates/editorial-$LANG_A.json"
   if [ -f "$PREVIOUS_RECEIPT" ]; then
     PREVIOUS_VERDICT=$(jq -r '.verdict // empty' "$PREVIOUS_RECEIPT" 2>/dev/null)
     PREVIOUS_HASH=$(jq -r '.article_sha256 // empty' "$PREVIOUS_RECEIPT" 2>/dev/null)
-    if [ "$PREVIOUS_VERDICT" = "FAIL" ] && [ "$PREVIOUS_HASH" = "$ARTICLE_HASH" ]; then
-      log_gate_verdict "BLOCK:revision-required-before-rejudge"
-      echo "FATAL: revision-required-before-rejudge: editorial FAIL already exists for article_sha256=$ARTICLE_HASH" >&2
-      exit 76
+    PREVIOUS_EFFORT=$(jq -r '.requested_reasoning_effort // "medium"' "$PREVIOUS_RECEIPT" 2>/dev/null)
+    if [ "$PREVIOUS_HASH" = "$ARTICLE_HASH" ]; then
+      if [ "$PREVIOUS_VERDICT" = "FAIL" ]; then
+        log_gate_verdict "BLOCK:revision-required-before-rejudge"
+        echo "FATAL: revision-required-before-rejudge: editorial FAIL already exists for article_sha256=$ARTICLE_HASH" >&2
+        exit 76
+      fi
+      if [ "$PREVIOUS_VERDICT" = "PASS" ]; then
+        cat "$PREVIOUS_RECEIPT"
+        log_gate_verdict "PASS:replayed-current-hash"
+        if [ -x "$SOL_SAMPLE_GATE" ]; then
+          bash "$SOL_SAMPLE_GATE" "$MD" "$LANG_A"
+          exit $?
+        fi
+        exit 0
+      fi
+    fi
+    if [ "$PREVIOUS_HASH" != "$ARTICLE_HASH" ] && [ "$PREVIOUS_EFFORT" = "high" ]; then
+      REROUTE_RECEIPT="$ARTICLE_RUN_DIR/gates/quality-self-heal.json"
+      AUTHORIZED_REROUTE=0
+      if [ -f "$REROUTE_RECEIPT" ] && jq -e \
+        --arg lang "$LANG_A" --arg hash "$ARTICLE_HASH" \
+        '.version == 2 and .attempt == 2 and .action == "evaluate_reroute"
+         and .quality[$lang].article_sha256 == $hash' \
+        "$REROUTE_RECEIPT" >/dev/null 2>&1; then
+        AUTHORIZED_REROUTE=1
+      fi
+      if [ "$AUTHORIZED_REROUTE" -ne 1 ]; then
+        log_gate_verdict "BLOCK:high-escalation-exhausted"
+        echo "FATAL: high-escalation-exhausted: editorial high evaluation already consumed for this language/run" >&2
+        exit 77
+      fi
+      REQUESTED_REASONING_EFFORT="high"
+    elif [ "$PREVIOUS_VERDICT" = "FAIL" ] && [ "$PREVIOUS_HASH" != "$ARTICLE_HASH" ]; then
+      REQUESTED_REASONING_EFFORT="high"
     fi
   fi
 fi
@@ -101,11 +147,27 @@ Return EXACTLY one JSON object and nothing else:
 - fixes: ordered by impact, each one concrete and locally applicable. Empty
   when the verdict is PASS.
 - strengths: at most three, so a revision does not destroy what works.
+- Write every item in fixes and strengths in ${FEEDBACK_LANGUAGE}, matching the
+  article under review. Keep the JSON keys in English.
 
 === ARTICLE (${LANG_A}) ===
 ${ARTICLE}"
 
-OUT=$(printf '%s' "$PROMPT" | "$MODEL_RUNNER" judge --prompt-file - 2>/dev/null)
+if [ "$REQUESTED_REASONING_EFFORT" = "high" ] && [ -n "${ARTICLE_RUN_DIR:-}" ]; then
+  HIGH_CLAIM_ROOT="$ARTICLE_RUN_DIR/gates/.attempts/editorial-high-$LANG_A"
+  HIGH_CLAIM="$HIGH_CLAIM_ROOT/$ARTICLE_HASH"
+  mkdir -p "$HIGH_CLAIM_ROOT"
+  if ! mkdir "$HIGH_CLAIM" 2>/dev/null; then
+    log_gate_verdict "BLOCK:high-escalation-exhausted"
+    echo "FATAL: high-escalation-exhausted: editorial high evaluation already claimed for article_sha256=$ARTICLE_HASH" >&2
+    exit 77
+  fi
+  printf '{"version":1,"language":"%s","article_sha256":"%s","reasoning_effort":"high","status":"claimed"}\n' \
+    "$LANG_A" "$ARTICLE_HASH" >"$HIGH_CLAIM/claim.json"
+fi
+
+OUT=$(printf '%s' "$PROMPT" | ARTICLE_MODEL_REASONING_EFFORT="$REQUESTED_REASONING_EFFORT" \
+  "$MODEL_RUNNER" judge --prompt-file - 2>/dev/null)
 JSON=$(printf '%s\n' "$OUT" | grep -o '{"verdict".*}' | tail -1)
 if [ -z "$JSON" ]; then
   log_gate_verdict "FATAL:no-json-from-judge"
@@ -207,10 +269,15 @@ if [ -n "${ARTICLE_RUN_DIR:-}" ]; then
 import json, sys
 payload = json.load(sys.stdin)
 payload['article_sha256'] = sys.argv[1]
+payload['requested_reasoning_effort'] = sys.argv[2]
 print(json.dumps(payload, ensure_ascii=False, separators=(',', ':')))
-" "$ARTICLE_HASH")
+" "$ARTICLE_HASH" "$REQUESTED_REASONING_EFFORT")
   printf '%s\n' "$RECEIPT" > "$ARTICLE_RUN_DIR/gates/editorial-$LANG_A.json"
 fi
 log_gate_verdict "$VERDICT"
-[ "$VERDICT" = "PASS" ] && exit 0
-exit 1
+[ "$VERDICT" = "PASS" ] || exit 1
+if [ -x "$SOL_SAMPLE_GATE" ]; then
+  bash "$SOL_SAMPLE_GATE" "$MD" "$LANG_A"
+  exit $?
+fi
+exit 0

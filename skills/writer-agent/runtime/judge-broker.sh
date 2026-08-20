@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper-side judge broker for AI Entity Article Writer.
+# Wrapper-side judge broker for Writer Agent.
 #
 # The bounded agent sandbox cannot start another provider process, so nested
 # judge/vision calls write request files into the run-scoped state tree. This
@@ -19,13 +19,22 @@ mkdir -p "$BROKER_DIR/requests" "$BROKER_DIR/responses" "$BROKER_DIR/done"
 # Env-independent discovery: register this broker at a fixed state-root path
 # so the model-runner client can route even when an agent subshell dropped
 # every ARTICLE_* variable (observed repeatedly on 2026-07-25).
-STATE_ROOT="${ARTICLE_MODEL_STATE_ROOT:-$HOME/profitable-claude/skills/article-writer/state}"
+STATE_ROOT="${ARTICLE_MODEL_STATE_ROOT:-$HOME/profitable-claude/skills/writer-agent/state}"
 REGISTRY="$STATE_ROOT/.judge-broker-active"
 mkdir -p "$STATE_ROOT"
-# The registry deliberately outlives the broker: the heartbeat freshness
-# check (<180s) already prevents routing to a dead broker, and a persistent
-# pointer lets post-mortem tooling see which broker served last.
+# The registry deliberately outlives the broker for post-mortem discovery.
+# Clients require both a fresh heartbeat and this broker's live PID, so an
+# abrupt parent exit cannot create a 180-second false-live routing window.
 printf '%s\n' "$BROKER_DIR" > "$REGISTRY.tmp" && mv "$REGISTRY.tmp" "$REGISTRY"
+PID_FILE="$BROKER_DIR/pid"
+printf '%s\n' "$$" > "$PID_FILE.tmp" && mv "$PID_FILE.tmp" "$PID_FILE"
+cleanup_pid() {
+  [ -f "$PID_FILE" ] || return 0
+  [ "$(cat "$PID_FILE" 2>/dev/null)" = "$$" ] && rm -f "$PID_FILE"
+}
+trap cleanup_pid EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
 
 # Startup GC: a request much older than any live client wait predates this
 # broker (a wedged predecessor stranded 23 on 2026-07-25). Serving corpses
@@ -80,7 +89,8 @@ serve_one() {
         "$timeout_bin" "$exec_timeout" "$RUNNER" "${args[@]}" \
         >"$BROKER_DIR/responses/$id.out" 2>"$err_snap"
     else
-      ARTICLE_NESTED_SANDBOX= ARTICLE_JUDGE_BROKER_SERVER=1 "$RUNNER" "${args[@]}" \
+      ARTICLE_NESTED_SANDBOX= ARTICLE_JUDGE_BROKER_SERVER=1 \
+        python3 "$SCRIPT_DIR/bounded-exec.py" "$exec_timeout" "$RUNNER" "${args[@]}" \
         >"$BROKER_DIR/responses/$id.out" 2>"$err_snap"
     fi
     rc=$?

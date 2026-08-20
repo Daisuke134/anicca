@@ -16,6 +16,7 @@ from typing import Any
 
 
 MAX_INVOCATIONS = 2
+MAX_PUBLICATION_HANDOFFS = 2
 STATE_NAME = "quality-feedback-recovery-state.json"
 
 
@@ -133,6 +134,27 @@ def _feedback_for_terminal(gates: Path, run_id: str) -> dict[str, Any] | None:
     return feedback
 
 
+def _publication_handoff_ready(run_dir: Path) -> bool:
+    quality = _read_json(run_dir / "gates/quality-self-heal.json")
+    if quality is None or quality.get("action") != "ready_to_freeze":
+        return False
+    languages = quality.get("quality")
+    if not isinstance(languages, dict):
+        return False
+    for lang in ("ja", "en"):
+        draft = run_dir / f"article-{lang}.md"
+        receipt = languages.get(lang)
+        if (
+            draft.is_symlink()
+            or not draft.is_file()
+            or not isinstance(receipt, dict)
+            or receipt.get("ready") is not True
+            or receipt.get("article_sha256") != _sha256(draft)
+        ):
+            return False
+    return validate_consumption(run_dir).get("status") == "PASS"
+
+
 def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
     run_dir = Path(run_dir).resolve()
     ledger = Path(ledger).resolve()
@@ -159,6 +181,39 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
     if state is not None:
         prompt = Path(str(state.get("prompt_path", "")))
         attempts = int(state.get("attempts", 0))
+        publication_attempts = int(state.get("publication_attempts", 0))
+        if (
+            state.get("status")
+            in {"terminal-blocked", "terminal-ready-not-published"}
+            and _publication_handoff_ready(run_dir)
+            and publication_attempts < MAX_PUBLICATION_HANDOFFS
+        ):
+            return {
+                "status": "READY",
+                "reason": "terminal-quality-publication-handoff",
+                "run_id": run_dir.name,
+                "run_dir": str(run_dir),
+                "attempts": attempts,
+                "publication_attempts": publication_attempts,
+            }
+        if (
+            state.get("status")
+            in {"publication-prepared", "publication-retryable-incomplete"}
+            and publication_attempts < MAX_PUBLICATION_HANDOFFS
+            and prompt.is_file()
+            and state.get("prompt_sha256") == _sha256(prompt)
+            and _publication_handoff_ready(run_dir)
+        ):
+            return {
+                "status": "READY",
+                "reason": "prepared-quality-publication-handoff",
+                "run_id": run_dir.name,
+                "run_dir": str(run_dir),
+                "prompt_path": str(prompt),
+                "prompt_sha256": state["prompt_sha256"],
+                "attempts": attempts,
+                "publication_attempts": publication_attempts,
+            }
         if (
             state.get("status") in {"prepared", "retryable-incomplete"}
             and attempts < MAX_INVOCATIONS
@@ -192,6 +247,26 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
                 "prompt_path": str(prompt),
                 "prompt_sha256": state["prompt_sha256"],
                 "attempts": attempts,
+            }
+        if (
+            state.get("status") == "publication-invoking"
+            and publication_attempts < MAX_PUBLICATION_HANDOFFS
+            and not _owner_is_alive(state.get("owner_pid"))
+            and age is not None
+            and age >= 60
+            and prompt.is_file()
+            and state.get("prompt_sha256") == _sha256(prompt)
+            and _publication_handoff_ready(run_dir)
+        ):
+            return {
+                "status": "READY",
+                "reason": "orphaned-quality-publication-handoff",
+                "run_id": run_dir.name,
+                "run_dir": str(run_dir),
+                "prompt_path": str(prompt),
+                "prompt_sha256": state["prompt_sha256"],
+                "attempts": attempts,
+                "publication_attempts": publication_attempts,
             }
         return _refused(
             "quality-feedback-recovery-already-"
@@ -231,6 +306,66 @@ Hard boundaries:
 - Run `python3 {script} verify --run-dir "$ARTICLE_RUN_DIR"` and require status=PASS.
 - Only after assess returns ready_to_freeze and verify returns PASS, read ORIGINAL_PROMPT and continue STEP 4.8 through STEP 20 for this same run. Note remains ¥500 and both Substack posts remain paid-only. Require authenticated and public readback.
 """
+
+
+def _publication_handoff_prompt(run_dir: Path, ledger: Path) -> str:
+    hashes = {
+        lang: _sha256(run_dir / f"article-{lang}.md") for lang in ("ja", "en")
+    }
+    return f"""Continue this exact unpublished Writer run from its frozen quality boundary.
+
+RUN_DIR={run_dir}
+LEDGER={ledger}
+ORIGINAL_PROMPT={run_dir / "article-daily-prompt.txt"}
+JA_SHA256={hashes["ja"]}
+EN_SHA256={hashes["en"]}
+
+Hard boundaries:
+- Do not rewrite either frozen draft, research again, create another run, or choose another topic.
+- Recheck both draft hashes, quality-self-heal action=ready_to_freeze, and quality-feedback verification PASS before any side effect.
+- Read ORIGINAL_PROMPT and execute only STEP 4.8 through STEP 20 for this same run.
+- Reconcile existing publication and ledger receipts before every publish action. Never duplicate a remote post.
+- Note remains ¥500 and both Substack posts remain paid-only.
+- Require authenticated readback and public readback. Record exact live URLs; never claim an unavailable destination as published.
+"""
+
+
+def prepare_publication_handoff(
+    run_dir: Path | str, ledger: Path | str
+) -> dict[str, Any]:
+    run_dir = Path(run_dir).resolve()
+    ledger = Path(ledger).resolve()
+    decision = plan(run_dir, ledger)
+    if (
+        decision.get("status") != "READY"
+        or decision.get("reason") != "terminal-quality-publication-handoff"
+    ):
+        raise QualityFeedbackRecoveryError(str(decision.get("reason", "not-ready")))
+    state_path = run_dir / "gates" / STATE_NAME
+    state = _read_json(state_path)
+    if state is None:
+        raise QualityFeedbackRecoveryError("feedback-recovery-state-missing")
+    prompt_path = (
+        run_dir
+        / "gates/quality-feedback-recovery/epoch-1/publication-handoff.txt"
+    )
+    prompt_text = _publication_handoff_prompt(run_dir, ledger)
+    if prompt_path.exists():
+        if not prompt_path.is_file() or prompt_path.read_text(encoding="utf-8") != prompt_text:
+            raise QualityFeedbackRecoveryError("publication-handoff-prompt-conflicts")
+    else:
+        prompt_path.write_text(prompt_text, encoding="utf-8")
+    state.update(
+        {
+            "status": "publication-prepared",
+            "phase": "publication-handoff",
+            "publication_attempts": int(state.get("publication_attempts", 0)),
+            "prompt_path": str(prompt_path),
+            "prompt_sha256": _sha256(prompt_path),
+        }
+    )
+    _atomic_write(state_path, state)
+    return state
 
 
 def begin(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
@@ -281,6 +416,8 @@ def mark_invoking(
     if decision.get("status") != "READY" or decision.get("reason") not in {
         "prepared-quality-feedback-recovery",
         "orphaned-quality-feedback-recovery",
+        "prepared-quality-publication-handoff",
+        "orphaned-quality-publication-handoff",
     }:
         raise QualityFeedbackRecoveryError(
             str(decision.get("reason", "not-prepared"))
@@ -291,6 +428,25 @@ def mark_invoking(
         raise QualityFeedbackRecoveryError("feedback-recovery-state-missing")
     if state.get("route_sha256") != _sha256(run_dir / "gates/topic-route.json"):
         raise QualityFeedbackRecoveryError("feedback-recovery-route-changed")
+    publication_phase = decision.get("reason") in {
+        "prepared-quality-publication-handoff",
+        "orphaned-quality-publication-handoff",
+    }
+    if publication_phase:
+        publication_attempts = int(state.get("publication_attempts", 0)) + 1
+        if publication_attempts > MAX_PUBLICATION_HANDOFFS:
+            raise QualityFeedbackRecoveryError("publication-handoff-attempt-limit")
+        state.update(
+            {
+                "status": "publication-invoking",
+                "phase": "publication-handoff",
+                "publication_attempts": publication_attempts,
+                "owner_pid": owner_pid,
+                "started_at": _utc_now(),
+            }
+        )
+        _atomic_write(state_path, state)
+        return state
     attempts = int(state.get("attempts", 0)) + 1
     if attempts > MAX_INVOCATIONS:
         raise QualityFeedbackRecoveryError("feedback-recovery-attempt-limit")
@@ -441,18 +597,24 @@ def record_result(
     gates = run_dir / "gates"
     state_path = gates / STATE_NAME
     state = _read_json(state_path)
-    if state is None or state.get("status") != "invoking":
+    if state is None or state.get("status") not in {
+        "invoking",
+        "publication-invoking",
+    }:
         raise QualityFeedbackRecoveryError("feedback-recovery-not-invoking")
     actual_parent_pid = os.getppid() if caller_parent_pid is None else caller_parent_pid
     if state.get("owner_pid") != owner_pid or actual_parent_pid != owner_pid:
         raise QualityFeedbackRecoveryError("feedback-recovery-result-owner-mismatch")
     attempts = int(state.get("attempts", 0))
+    publication_phase = state.get("status") == "publication-invoking"
     quality = _read_json(gates / "quality-self-heal.json")
     if (gates / "publication-state.json").is_file():
         status = "handed-to-publication"
     elif _ledger_has_delivery_row(ledger, run_dir.name):
         status = "terminal-ambiguous-ledger-without-publication-state"
-    elif attempts < MAX_INVOCATIONS:
+    elif publication_phase and int(state.get("publication_attempts", 0)) < MAX_PUBLICATION_HANDOFFS:
+        status = "publication-retryable-incomplete"
+    elif not publication_phase and attempts < MAX_INVOCATIONS:
         status = "retryable-incomplete"
     elif (
         quality is not None
@@ -477,7 +639,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "command",
-        choices=("plan", "begin", "invoke", "verify", "result"),
+        choices=("plan", "begin", "handoff", "invoke", "verify", "result"),
     )
     parser.add_argument("--run-dir", required=True, type=Path)
     parser.add_argument("--ledger", type=Path)
@@ -493,6 +655,8 @@ def main() -> int:
             value = plan(args.run_dir, args.ledger)
         elif args.command == "begin":
             value = begin(args.run_dir, args.ledger)
+        elif args.command == "handoff":
+            value = prepare_publication_handoff(args.run_dir, args.ledger)
         elif args.command == "invoke":
             if args.owner_pid is None:
                 parser.error("--owner-pid is required for invoke")

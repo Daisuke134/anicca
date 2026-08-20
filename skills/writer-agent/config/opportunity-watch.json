@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "appsignal",
+      "publisher": "AppSignal",
+      "official_program_url": "https://blog.appsignal.com/write-for-us.html",
+      "application_url": "https://blog.appsignal.com/write-for-us.html"
+    },
+    {
+      "id": "hygraph",
+      "publisher": "Hygraph Creator Program",
+      "official_program_url": "https://hygraph.com/write-for-hygraph",
+      "application_url": "https://50u53.share.hsforms.com/2Cd7df-CMQvaYsmDrO-V-Kw",
+      "supporting_urls": [
+        "https://50u53.share.hsforms.com/2Cd7df-CMQvaYsmDrO-V-Kw"
+      ]
+    },
+    {
+      "id": "civo",
+      "publisher": "Civo",
+      "official_program_url": "https://www.civo.com/write-for-us",
+      "application_url": "https://www.civo.com/write-for-us",
+      "evidence_profile": "civo-write-for-us-v1"
+    },
+    {
+      "id": "oracle",
+      "publisher": "Oracle Technical Articles",
+      "official_program_url": "https://www.oracle.com/technical-resources/articles/otn-submit.html",
+      "application_url": "https://www.oracle.com/technical-resources/articles/otn-submit.html"
+    },
+    {
+      "id": "digitalocean",
+      "publisher": "DigitalOcean Write for DOnations",
+      "official_program_url": "https://www.digitalocean.com/community/pages/write-for-digitalocean",
+      "application_url": "https://do.co/w4do"
+    },
+    {
+      "id": "better-stack",
+      "publisher": "Better Stack",
+      "official_program_url": "https://betterstack.com/community/write-for-us/",
+      "application_url": "https://betterstack.com/community/write-for-us/"
+    },
+    {
+      "id": "honeybadger",
+      "publisher": "Honeybadger",
+      "official_program_url": "https://www.honeybadger.io/blog/write-for-us/",
+      "application_url": "https://www.honeybadger.io/blog/write-for-us/"
+    },
+    {
+      "id": "earthly",
+      "publisher": "Earthly",
+      "official_program_url": "https://earthly.dev/blog/write-for-us/",
+      "application_url": "https://earthly.dev/blog/write-for-us/"
+    },
+    {
+      "id": "baeldung",
+      "publisher": "Baeldung",
+      "official_program_url": "https://www.baeldung.com/contribution-guidelines",
+      "application_url": "https://www.baeldung.com/contribution-guidelines"
+    },
+    {
+      "id": "techi-author",
+      "publisher": "TECHi Author Program",
+      "official_program_url": "https://www.techi.com/authors/apply/",
+      "application_url": "https://www.techi.com/authors/apply/",
+      "evidence_profile": "techi-author-v1",
+      "supporting_urls": [
+        "https://www.techi.com/editorial-standards/",
+        "https://www.techi.com/publication-principles/"
+      ]
+    }
+  ]
+}

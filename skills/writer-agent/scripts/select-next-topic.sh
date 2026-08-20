@@ -32,6 +32,26 @@ while [ $# -gt 0 ]; do case "$1" in
   *) echo "FATAL: unknown arg: $1" >&2; exit 2;;
 esac; done
 
+# A pre-publication resume has one immutable claimed card.  Prefer that exact
+# basename while it is still in queue; once the model moves it to in-progress,
+# or explicitly excludes it after a conscience block, fall back to normal order
+# so an alternate card can be selected in the same pass.
+RESUME_CARD_BASENAME="${ARTICLE_RESUME_CARD_BASENAME:-}"
+if [ -n "$RESUME_CARD_BASENAME" ]; then
+  RESUME_EXCLUDED=0
+  for excluded in "${EXCLUDED_BASENAMES[@]-}"; do
+    [ "$excluded" = "$RESUME_CARD_BASENAME" ] && RESUME_EXCLUDED=1
+  done
+  RESUME_CARD_PATH="$QUEUE_DIR/$RESUME_CARD_BASENAME"
+  RESUME_CARD_LEAF="${RESUME_CARD_PATH##*/}"
+  if [ "$RESUME_EXCLUDED" -eq 0 ] \
+    && [ "$RESUME_CARD_LEAF" = "$RESUME_CARD_BASENAME" ] \
+    && [ -f "$RESUME_CARD_PATH" ] && [ ! -L "$RESUME_CARD_PATH" ]; then
+    printf '%s\n' "$RESUME_CARD_PATH"
+    exit 0
+  fi
+fi
+
 shopt -s nullglob
 cards=("$QUEUE_DIR"/*.md)
 shopt -u nullglob

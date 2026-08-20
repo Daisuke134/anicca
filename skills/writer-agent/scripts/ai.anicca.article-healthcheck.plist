@@ -8,7 +8,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/profitable-claude/skills/article-writer/article-healthcheck.sh</string>
+    <string>/Users/anicca/profitable-claude/skills/writer-agent/article-healthcheck.sh</string>
   </array>
   <key>RunAtLoad</key>
   <false/>

@@ -70,7 +70,7 @@ def article_sha256(path: str) -> str:
 
 def matches_article(payload: dict[str, Any], current_hash: str) -> bool:
     saved_hash = payload.get("article_sha256")
-    return saved_hash is None or saved_hash == current_hash
+    return isinstance(saved_hash, str) and saved_hash == current_hash
 
 
 def begin(args: argparse.Namespace) -> int:
@@ -88,6 +88,17 @@ def begin(args: argparse.Namespace) -> int:
             return 0
 
         terminal = read_json(terminal_path)
+        if (
+            terminal
+            and terminal.get("status") == "revision-required"
+            and terminal.get("article_sha256") == current_hash
+        ):
+            print(json.dumps({
+                "action": "skip-revision-required",
+                "attempts": int(terminal.get("attempts", 1)),
+                "payload": terminal.get("payload"),
+            }, ensure_ascii=False))
+            return 0
         if (
             terminal
             and terminal.get("status") == "advisory"
@@ -144,7 +155,15 @@ def finish(args: argparse.Namespace) -> int:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     output_path = Path(args.output_file) if args.output_file else None
     payload = payload_from_output(output_path)
-    status = "pass" if args.exit_code == 0 else ("advisory" if args.attempt >= MAX_ATTEMPTS else None)
+    status = (
+        "pass"
+        if args.exit_code == 0
+        else (
+            "revision-required"
+            if args.gate == "reader-testing-gate"
+            else ("advisory" if args.attempt >= MAX_ATTEMPTS else None)
+        )
+    )
     if status is None:
         return 0
     terminal = {
@@ -156,7 +175,11 @@ def finish(args: argparse.Namespace) -> int:
         "article_sha256": article_sha256(args.markdown_file),
     }
     if payload is not None:
-        terminal["payload"] = payload
+        terminal["payload"] = (
+            payload.get("payload", payload)
+            if args.gate == "reader-testing-gate"
+            else payload
+        )
     if output_path and output_path.is_file():
         terminal["output_sha256"] = hashlib.sha256(output_path.read_bytes()).hexdigest()
     with lock_path.open("a+") as lock:
