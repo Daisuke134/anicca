@@ -4,11 +4,14 @@
 import argparse
 import hashlib
 import html
+import ipaddress
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+from urllib.parse import urlsplit
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -66,13 +69,57 @@ def public_row(artifact):
     }
 
 
-def fetch_readback(artifact, base_url):
-    url = f"{base_url.rstrip('/')}/blog/{artifact['slug']}"
+def _read_public_markup(url):
     request = urllib.request.Request(url, headers={"User-Agent": "Life-Manager-Affiliate/1.0"})
     try:
         with urllib.request.urlopen(request, timeout=12) as response:
-            markup = response.read().decode("utf-8")
+            return response.read(), "urllib"
     except Exception:
+        pass
+    parsed = urlsplit(url)
+    curl = shutil.which("curl")
+    dig = shutil.which("dig")
+    if parsed.scheme != "https" or not parsed.hostname or not curl or not dig:
+        return None, None
+    try:
+        port = parsed.port or 443
+        resolved = subprocess.run(
+            [dig, "+short", "@1.1.1.1", parsed.hostname, "A"],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None, None
+    for candidate in resolved.stdout.splitlines():
+        candidate = candidate.strip()
+        try:
+            ipaddress.ip_address(candidate)
+        except ValueError:
+            continue
+        try:
+            result = subprocess.run(
+                [
+                    curl, "--fail", "--silent", "--show-error", "--location",
+                    "--max-time", "12", "--connect-timeout", "5", "--proto",
+                    "=https", "--resolve", f"{parsed.hostname}:{port}:{candidate}",
+                    "-A", "Life-Manager-Affiliate/1.0", url,
+                ],
+                capture_output=True, timeout=20, check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if result.returncode == 0:
+            return result.stdout, "curl-resolved"
+    return None, None
+
+
+def fetch_readback(artifact, base_url):
+    url = f"{base_url.rstrip('/')}/blog/{artifact['slug']}"
+    markup, transport = _read_public_markup(url)
+    if markup is None:
+        return None
+    try:
+        markup = markup.decode("utf-8")
+    except UnicodeDecodeError:
         return None
     visible = html.unescape(re.sub(r"<[^>]+>", " ", markup))
     decoded_markup = html.unescape(markup)
@@ -86,6 +133,7 @@ def fetch_readback(artifact, base_url):
         "public_url": url,
         "rendered_sha256": hashlib.sha256(markup.encode()).hexdigest(),
         "observed_at": datetime.now(timezone.utc).isoformat(),
+        "readback_transport": transport,
     }
 
 
