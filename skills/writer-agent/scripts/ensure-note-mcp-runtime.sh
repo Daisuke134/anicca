@@ -4,6 +4,10 @@ set -euo pipefail
 
 NOTE_MCP_DIR="${1:?usage: ensure-note-mcp-runtime.sh NOTE_MCP_DIR}"
 PY_VENV="$NOTE_MCP_DIR/.venv/bin/python"
+if [[ -L "$NOTE_MCP_DIR/.venv" || -L "$NOTE_MCP_DIR/.venv/bin" ]]; then
+  echo "FATAL: refusing symlinked note-mcp runtime parent at $NOTE_MCP_DIR/.venv" >&2
+  exit 6
+fi
 if [[ -x "$PY_VENV" ]] && "$PY_VENV" -c 'import fastmcp, note_mcp, pathlib, sys; expected = pathlib.Path(sys.argv[1]).resolve(); actual = pathlib.Path(note_mcp.__file__).resolve(); assert expected in actual.parents, (expected, actual)' "$NOTE_MCP_DIR/src/note_mcp" >/dev/null 2>&1; then
   exit 0
 fi
@@ -30,7 +34,6 @@ restore_shared_runtime() {
   fallback="${NOTE_MCP_FALLBACK_PYTHON:-$HOME/.openclaw/skills/_shared/venv-cloak/bin/python3}"
   [[ -x "$fallback" ]] || return 1
   [[ -f "$NOTE_MCP_DIR/src/note_mcp/__init__.py" ]] || return 1
-  [[ ! -L "$NOTE_MCP_DIR/.venv" && ! -L "$NOTE_MCP_DIR/.venv/bin" ]] || return 1
   fallback_site="$($fallback -c 'import site; print(site.getsitepackages()[0])')" || return 1
   PYTHONPATH="$NOTE_MCP_DIR/src:$fallback_site${PYTHONPATH:+:$PYTHONPATH}" \
     "$fallback" -c 'import fastmcp, note_mcp, pathlib, sys; expected = pathlib.Path(sys.argv[1]).resolve(); actual = pathlib.Path(note_mcp.__file__).resolve(); assert expected in actual.parents, (expected, actual)' \

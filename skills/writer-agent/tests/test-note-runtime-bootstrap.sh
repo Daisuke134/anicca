@@ -74,13 +74,22 @@ PROJECT3="$TMP/note-mcp-parent-symlink"
 mkdir -p "$TMP/real-runtime/.venv/bin" "$PROJECT3/src/note_mcp"
 touch "$PROJECT3/pyproject.toml" "$PROJECT3/uv.lock" "$PROJECT3/src/note_mcp/__init__.py"
 ln -s "$TMP/real-runtime/.venv" "$PROJECT3/.venv"
+cat >"$BIN/uv-fail-log" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'called\n' >>"${UV_CALL_LOG:?}"
+exit 42
+SH
+chmod +x "$BIN/uv-fail-log"
 if FALLBACK_SITE="$TMP/fallback-site" \
-  UV_BIN="$BIN/uv-fail" \
+  UV_BIN="$BIN/uv-fail-log" \
+  UV_CALL_LOG="$TMP/uv-parent-calls.log" \
   NOTE_MCP_FALLBACK_PYTHON="$BIN/fallback-python" \
   bash "$HELPER" "$PROJECT3"; then
   echo "expected symlinked parent runtime to fail closed" >&2
   exit 1
 fi
 [[ -L "$PROJECT3/.venv" ]]
+[[ ! -e "$TMP/uv-parent-calls.log" ]]
 
 echo "PASS: note runtime bootstraps once and fails closed"
