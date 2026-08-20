@@ -3,14 +3,18 @@
 **Status:** Canonical program SSOT  
 **Scope owner:** Life Manager  
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
-**Current release:** OpenClaw-to-Life-Manager Portable Runtime Migration
-**First production products:** Anicca iOS and Honne AI  
-**Primary outcome:** every retained loop runs from Life Manager with zero
-OpenClaw dependency, first locally and then from the same runtime in the cloud.
+**Current release:** OpenClaw-to-Life-Manager Portable Runtime Migration (local incident recovery)
+**First production products:** Anicca iOS and Honne AI
+**Primary outcome:** every retained loop runs from a Life Manager-owned local
+process with zero OpenClaw dependency. A hosted/cloud profile is future work
+and is not an incident-recovery gate.
 
-**Current implementation cursor:** the portable local foundation, bounded
+**Current implementation cursor:** the portable contracts, bounded
 financial-report adapter, shared adapter registry, generic video publication
 adapter/chain, and one historical Honne JA shadow receipt are proven in code.
+The checked-in `runtime-up`/I-3 execution path still requires compose and
+PostgreSQL, so it is not accepted as the local incident runtime until the
+direct-process/file-ledger port is complete.
 The current production incident is separate from those proofs: as measured on
 2026-08-20 JST, every relevant OpenClaw marketing cron is disabled in the live
 SQLite scheduler, every Larry/ReelClaw LaunchAgent is explicitly disabled and
@@ -24,6 +28,18 @@ expand to the remaining Anicca/Honne producers. This incident recovery preserves
 existing behavior under Orders 9 and 11; it does not activate post-migration
 feature work.
 
+**Incident recovery execution correction (2026-08-21 JST).** The original
+OpenClaw marketing runtime was not Docker-, Colima-, Railway-, or
+PostgreSQL-based. The current recovery therefore runs locally from the
+canonical checkout as a direct Life Manager process (optionally supervised by
+the local OS after an explicit cutover gate). Its durable state is owned by a
+Life Manager data root (`LM_DATA_DIR`, default
+`~/.local/state/life-manager`) using append-only JSONL ledgers and atomic
+claim/lease/receipt files. No database, container runtime, Railway service, or
+OpenClaw folder/env/assets is a prerequisite. The existing I-3 SQL/`pg`
+implementation is a contract prototype only; it must be ported to this local
+ledger before any real canary or Telegram send.
+
 ## 1. Executive decision
 
 Life Manager becomes the single control plane for personal health and autonomous
@@ -32,16 +48,18 @@ cloud gates pass, new finance, marketing-learning, health, and app-generation
 features are frozen except where they are required to preserve an existing loop
 during migration.
 
-The current release has exactly two sequential outcomes:
+The current incident release has one required outcome and one deferred option:
 
 ```text
-Milestone A — local:
-  all retained loops run from Life Manager-owned code/data/secrets
-  with OpenClaw stopped and ~/.openclaw inaccessible
+Required incident outcome — local:
+  the retained lane runs from a Life Manager-owned direct local process,
+  filesystem ledgers, and local secret boundary with OpenClaw stopped and
+  ~/.openclaw inaccessible
 
-Milestone B — cloud:
-  the same release runs multi-tenant on Railway-managed infrastructure
-  with no Mac Mini dependency and monthly subscription entitlement
+Deferred option — hosted:
+  a future adapter may run the same contracts in a hosted environment;
+  Railway, Docker/Colima, PostgreSQL, and cloud workers are not part of this
+  incident and do not block local recovery
 ```
 
 Repository identity is not inferred from a local directory name:
@@ -57,23 +75,23 @@ hosted mode:
 
 | Plane | Runtime | Responsibility |
 |---|---|---|
-| Portable application | The same Life Manager services and OCI images | accounts, products, schedules, jobs, ledgers, attribution, experiments, reports, panel, Telegram |
-| Local deployment | Docker Compose plus `life-manager` CLI | private/self-hosted operation on Mac/Linux without any OpenClaw process or folder |
-| Cloud deployment | Railway initially; provider-neutral worker pools | always-on multi-tenant operation, horizontal scaling, failover, phone-first use |
-| Data plane | PostgreSQL in both modes | immutable events, financial snapshots, content lineage, metrics, experiments, job state |
-| Object plane | local object adapter or S3-compatible storage | media, evidence, exports, signed migration archives |
-| Secrets | OS keychain/encrypted local vault or tenant-scoped cloud vault | credentials and browser sessions; never stored in prompts, job payloads, logs, or Git |
+| Portable application | Life Manager packages and direct processes; no container requirement | accounts, products, schedules, jobs, ledgers, attribution, experiments, reports, panel, Telegram |
+| Local deployment | direct `life-manager` process from the canonical checkout, with optional local OS supervision | private/self-hosted operation without Docker, Colima, Railway, PostgreSQL, or any OpenClaw process/folder |
+| Hosted deployment (deferred) | provider-neutral processes and storage adapters | future always-on/multi-tenant operation; not an incident-recovery prerequisite |
+| Data plane | Life Manager-owned append-only JSONL ledgers plus atomic claim/lease/receipt files | immutable events, content lineage, metrics, experiments, job state; no mandatory database |
+| Object plane | Life Manager-owned local data root and filesystem artifacts | media, evidence, exports, signed migration archives; never `~/.openclaw` |
+| Secrets | Life Manager-owned local secret boundary (OS keychain or guarded local env file) | credentials and browser sessions; never stored in prompts, job payloads, logs, or Git |
 
 ### 1.1 Deployment and commercial boundary
 
-Local and cloud are two deployment profiles of one codebase, one schema, one
-job protocol, and one release artifact. They are not separate products and
-must not fork business logic.
+Local is the only deployment profile in this incident. A future hosted profile
+may reuse the same contracts, but it is deferred and must not fork or block the
+local recovery.
 
 | Mode | Operator | Availability | Current commercial rule |
 |---|---|---|---|
 | Local/self-hosted | user operates Life Manager on Mac or Linux | depends on the user's machine and internet | no managed-cloud monthly subscription is required; the user supplies hardware and connector/provider costs |
-| Cloud/hosted | Life Manager operates the same versioned services on Railway and provider-neutral workers | always-on within the hosted service SLO; no user computer required | monthly subscription is required; entitlement controls schedules and worker usage, while export and cancellation remain available |
+| Cloud/hosted (deferred) | Life Manager may later operate versioned services on a provider-neutral host | future always-on mode; not used by this incident and no Railway deployment is assumed | any future subscription/entitlement design is outside the local recovery gate |
 
 Annual, lifetime, and usage-only plans are outside the current release. No
 numeric price is authorized until measured per-tenant infrastructure and
@@ -109,10 +127,10 @@ and rollback evidence pass.
 3. Runtime code, config, schedules, secrets, assets, and state contain no read,
    execute, import, or fallback dependency on `~/.openclaw`,
    `/Users/operator/profitable-claude`, or `/Users/operator/anicca`.
-4. `life-manager runtime up --mode local` runs all retained loops locally from
-   Life Manager-owned code and data.
-5. The same versioned services run with `--mode cloud`; moving a tenant between
-   modes changes deployment adapters, not loop behavior or business logic.
+4. The Life Manager local entrypoint runs all retained loops from
+   Life Manager-owned code, a local data root, and local secret boundary.
+5. A future hosted adapter may run the same contracts; hosted parity is not a
+   prerequisite for this incident and must not introduce an OpenClaw fallback.
 6. The Life Manager panel and Telegram show the same reconciled financial
    snapshot, including freshness and unavailable-source states.
 7. Every published mobile creative has lineage:
@@ -186,7 +204,7 @@ measurement.
 | Quarantine evidence | `jobs.json.pre-marketing-quarantine-20260801T0955.bak` and the final launchd logs align with a 2026-08-01 09:55 JST marketing quarantine | the exact actor and intent are unproven; do not mass-enable the old fleet |
 | Postiz account | `GET /public/v1/is-connected` returns `connected=true`; integrations return 29 total, 28 enabled, one disabled | cancellation is not the proximate cause |
 | Target TikTok integrations | Honne JA `@honnevideo`, Honne EN `@honne_reveal`, Anicca `@anicca.jp4`, and Anicca iOS `@anicca.jp` all return `disabled=false` | provider routing remains configured; TikTok-side publishing credentials remain unproven until a controlled canary |
-| Life Manager replacement | generic generation/publication contracts exist, but no Life Manager marketing scheduler or worker process/container is running | migration code has not yet replaced production scheduling |
+| Life Manager replacement | generic generation/publication contracts exist, but no Life Manager-owned local marketing scheduler or worker process is currently running | migration code has not yet replaced production scheduling; Docker, Colima, Railway, and a database are not prerequisites |
 | Telegram observation | the post notifier repeatedly measures zero posts and sends zero publication messages; daily generic reports still send | zero-output silence must become a missed-expected-slot alert |
 | Shared learner | mining fails on judge/source ingestion; scoring skips because only three posts meet the 24-hour cohort and the minimum is ten | there is no closed self-improvement loop today |
 
@@ -487,15 +505,15 @@ or whole-business financial-health report.
        │ finance projector · experiment/learning controller   │
        │ connector + loop + storage + secret interfaces       │
        └───────────────┬───────────────────────┬───────────────┘
-                       │ same contracts/images │
+                       │ same contracts       │
           ┌────────────▼────────────┐  ┌──────▼────────────────────────┐
-          │ LOCAL DEPLOYMENT        │  │ CLOUD DEPLOYMENT             │
-          │ Docker Compose          │  │ Railway control plane        │
-          │ local API/panel         │  │ managed PostgreSQL           │
-          │ PostgreSQL              │  │ S3-compatible object store   │
-          │ local object adapter    │  │ tenant cloud secret vault    │
-          │ OS keychain/vault       │  │ autoscaled worker pools      │
-          │ local worker pools      │  │ multi-tenant fair queue      │
+          │ LOCAL REQUIRED          │  │ HOSTED DEFERRED             │
+          │ direct LM process       │  │ provider-neutral processes   │
+          │ local API/CLI/report    │  │ optional managed control     │
+          │ JSONL ledgers + leases  │  │ optional database adapter    │
+          │ filesystem artifacts    │  │ optional object store        │
+          │ local secret boundary   │  │ tenant vault (future)        │
+          │ local OS supervision    │  │ hosted worker pools (future) │
           └────────────┬────────────┘  └──────┬────────────────────────┘
                        └──────────────┬────────┘
                                       ▼
@@ -510,12 +528,12 @@ or whole-business financial-health report.
                     receipts → metrics → decisions
 ```
 
-Local and cloud are deployment profiles, not separate products. Local mode is
-fully functional and OpenClaw-free. Cloud mode uses the same versioned
-application packages and adds managed availability, tenant isolation, and
-horizontal worker scaling. Codex running on the Mac may submit commands through
-the authenticated API or CLI, but scheduled production work does not depend on
-that Codex session or the Mac when the tenant uses cloud mode.
+The local process is the only required deployment for this incident and must be
+OpenClaw-free. A hosted profile is a later adapter exercise; it may add managed
+availability, tenant isolation, and horizontal worker scaling, but it is not
+allowed to change local business logic or become a reason to start a container
+or database now. Codex may submit local commands through the CLI, but scheduled
+work must be owned by the Life Manager process itself.
 
 ### 6.1 Canonical repository layout
 
@@ -553,8 +571,8 @@ packages/
     honne-ai/
 deploy/
   local/
-    compose.yaml
-  railway/
+    process/                  # direct local process launchers (required path)
+  hosted/                    # deferred; not used by incident recovery
 docs/
   migrations/
     life-manager-v0/        # signed file/behavior disposition and equivalence evidence
@@ -572,6 +590,9 @@ roots rather than either absolute checkout name.
 The actual implementation follows existing repository conventions instead of
 forcing this exact folder shape where it would create churn. Responsibility
 boundaries and single-repository ownership are mandatory even if paths differ.
+The checked-in `deploy/local/compose.yaml` and its `runtime-up` wrapper are
+historical prototype artifacts only; they are not the incident startup path and
+must not be invoked for recovery.
 
 ### 6.2 Job protocol
 
@@ -586,7 +607,7 @@ Every action is a durable job:
 | `worker_pool` | api, browser, media, publish, observe, learn, or report |
 | `resource_class` | cpu/memory/gpu/browser requirements used for placement |
 | `deployment_id` | local or cloud runtime that owns the lease |
-| `input_refs` | immutable database/blob references, never embedded secrets |
+| `input_refs` | immutable `object://` or local-file references, never embedded secrets |
 | `lease_owner`, `lease_until` | single-writer worker claim |
 | `attempt`, `max_attempts` | bounded retry |
 | `effect_class` | read, draft, publish, money |
@@ -599,16 +620,16 @@ Codex, Hermes, or deterministic code. OpenClaw is not an adapter or fallback.
 
 ### 6.3 Runtime adapter contract
 
-| Interface | Local implementation | Cloud implementation |
+| Interface | Local implementation (required now) | Hosted implementation (deferred) |
 |---|---|---|
-| Database | Docker PostgreSQL | managed PostgreSQL |
-| Queue/leases | PostgreSQL claims | the same PostgreSQL claim protocol |
-| Objects | local filesystem adapter or MinIO | S3-compatible object storage |
-| Secrets | OS keychain or encrypted local vault | tenant-scoped cloud vault |
-| Browser profile | encrypted local profile | encrypted tenant-scoped cloud profile |
-| Scheduler | Life Manager scheduler service | the same scheduler service |
-| Workers | local service containers | autoscaled service containers |
-| Observability | local logs/receipts in panel | centralized logs/receipts in panel |
+| State/ledger | Life Manager-owned append-only JSONL and atomic files | optional hosted database adapter |
+| Queue/leases | filesystem claim/lease files with atomic rename | provider-managed claim protocol |
+| Objects | local filesystem under `LM_DATA_DIR` | optional object storage |
+| Secrets | OS keychain or guarded Life Manager env file | tenant-scoped cloud vault |
+| Browser profile | encrypted local profile under the Life Manager data root | encrypted tenant-scoped cloud profile |
+| Scheduler | direct Life Manager local process | the same scheduler contract in a hosted process |
+| Workers | local child processes or OS-supervised processes | hosted worker pool |
+| Observability | local logs/receipts in the data root and panel/Telegram projections | centralized hosted logs/receipts |
 
 Business logic may depend only on these interfaces. It may not branch on
 OpenClaw paths, machine usernames, or repository locations. Migration tests
@@ -1031,6 +1052,16 @@ until a controlled canary. The historical engine details
 below remain useful for migration equivalence, but their launch-state claims are
 not current.
 
+**Local-runtime correction for this incident.** The preceding portable/cloud
+design text is not an instruction to start Docker, Colima, Railway, or
+PostgreSQL. The recovery control plane is a direct local Life Manager process
+with Life Manager-owned append-only JSONL ledgers and atomic filesystem
+claims/receipts under `LM_DATA_DIR` (default
+`~/.local/state/life-manager`). The current I-3 SQL/`pg` path is therefore not
+live-ready: its focused fake-transport contract tests may remain evidence, but
+the adapter must be replaced by the local-ledger implementation before a
+controlled canary. No OpenClaw path, env file, asset, or state may be read.
+
 **Distribution actually in use.** `GET api.postiz.com/public/v1/integrations` returns
 **29 live integrations** (16 TikTok, 7 Instagram, 3 YouTube, 1 X). `anicca-larry`'s
 `post-to-tiktok.js` posts through that API with `POSTIZ_API_KEY`. Instagram
@@ -1300,9 +1331,11 @@ use `life-manager` CLI or the authenticated API in either mode.
 
 ## 12. Ordered delivery plan
 
-The order below is the program source of truth. Milestone A is a hard gate:
-cloud migration work does not begin until every retained loop is demonstrably
-OpenClaw-independent and running under Life Manager locally.
+The order below is the program source of truth. The local incident outcome is a
+hard gate: no hosted/cloud work begins until every retained loop is
+demonstrably OpenClaw-independent and running under the direct Life Manager
+local process. Hosted work is deferred and is not required to restore mobile
+marketing.
 
 Order 0 consolidation completed:
 `AE-X402-SOURCE-CONSOLIDATE-1`. `OSS-SECURITY-BASELINE-1` merged in PR
@@ -1330,10 +1363,10 @@ claim-ineligible until that promotion; it does not activate the lane.
 | 1 | Freeze all scheduler/runtime inventory | machine-readable inventory covers every captured OpenClaw store row and user LaunchAgent, including disabled, unloaded, and parse-error rows, with redacted command, cadence, source boundary, load state, and latest available receipt |
 | 2 | Decide every legacy job | each row is marked `migrate`, `replace`, `retire`, or `retain-external` (vocabulary amendment, decided: third-party/system rows whose command references no openclaw/legacy path stay outside migration scope with owner `system`) with Life Manager owner and rollback action; no unowned enabled/loaded job |
 | 3 | Define portable domain contracts | tenant/product/business/loop/job/artifact/publication/source-event/receipt schemas and adapter interfaces pass contract tests |
-| 4 | Create Life Manager local deployment | one command starts API, panel, scheduler, PostgreSQL, object adapter, and workers without OpenClaw |
+| 4 | Create Life Manager local deployment | one direct local entrypoint starts the Life Manager scheduler/worker processes and creates the Life Manager data root without OpenClaw, Docker, Colima, Railway, or a database |
 | 5 | Establish Life Manager-owned paths | code, prompts, media templates, state, logs, and config live in the monorepo or configured Life Manager data root; dependency scan rejects legacy absolute paths |
 | 6 | Move secrets out of OpenClaw | every retained connector reads OS keychain/encrypted Life Manager vault references; `~/.openclaw/.env` is inaccessible in tests |
-| 7 | Implement durable local scheduler and job protocol | enqueue, claim, heartbeat, retry, dead-letter, idempotency, effect reconciliation, and receipts pass restart tests |
+| 7 | Implement durable local scheduler and job protocol | append-only JSONL enqueue/receipt ledgers, atomic claim/lease files, retry, dead-letter, idempotency, effect reconciliation, and restart recovery pass local tests |
 | 8 | Extract reusable Profitable Claude contracts | registry, schemas, learner, canary, terminalizer, and dashboard logic run from Life Manager packages |
 | 9 | Migrate Telegram command/report delivery | Life Manager owns bot routing, tenant mapping, digest schedules, raw public URLs, receipts, and anti-spam policy; no experiment buttons or public artifact page |
 | 10 | Migrate existing financial-report loop | current x402/TaskMarket/USDC daily and weekly outputs run locally from Life Manager with matching snapshot hashes |
@@ -1343,9 +1376,9 @@ claim-ineligible until that promotion; it does not activate the lane.
 | 14 | Switch local scheduler ownership | launchd, if retained only as a boot trigger, starts Life Manager; no launchd command invokes OpenClaw or legacy repositories |
 | 15 | Prove Milestone A: OpenClaw-free local | stop gateway, deny/rename `~/.openclaw`, run seven expected cycles, reconcile real effects, scan zero runtime references, preserve signed rollback inventory |
 | 16 | Archive non-v0 legacy runtime sources | create signed read-only archives and retention policy for OpenClaw, Profitable Claude, and retired checkouts; no production fallback to archived code (`life-manager-v0` already closes at Order 0) |
-| 17 | Package supported local/self-hosted mode | versioned installer/Compose bundle, upgrade, backup/restore, health check, and local documentation pass on a clean machine |
-| 18 | Implement cloud deployment adapters | managed PostgreSQL, object storage, tenant vault, isolated browser profiles, and provider-neutral worker placement pass the same contracts |
-| 19 | Deploy cloud control plane and worker pools | Railway API/panel/scheduler plus API/browser/media/publish/observe/learn/report workers operate from the same release version |
+| 17 | Package supported local/self-hosted mode | versioned direct-process installer, upgrade, backup/restore, health check, and local documentation pass on a clean machine; Docker/Colima are not required |
+| 18 | Implement hosted deployment adapters (deferred) | optional database/object/tenant-vault/worker adapters pass the same contracts without changing the required local path |
+| 19 | Deploy hosted control plane and worker pools (deferred) | a future provider-neutral API/panel/scheduler plus worker pools operate from the same release version; Railway is not an incident dependency |
 | 20 | Add multi-tenant isolation, fairness, and autoscaling | row/secret/profile isolation, quotas, rate limits, weighted scheduling, queue-depth scaling, and noisy-neighbor tests pass |
 | 21 | Implement local→cloud tenant migration | encrypted export/import preserves IDs, cursors, artifacts, receipts, settings, and secrets; exactly one scheduler owns each loop |
 | 22 | Shadow cloud against local | cloud replays read-only/duplicate-safe work and matches local artifacts, reports, and decision hashes |
@@ -1380,7 +1413,7 @@ schedulers or revive known-broken producers:
 | I-0 | Freeze incident truth and preserve rollback | live OpenClaw SQLite, launchd disabled overrides, Postiz connectivity/integrations, last public URLs, logs, and quarantine backup are read back without changing state | **done** |
 | I-1 | Add expected-slot liveness and Telegram incident reporting in Life Manager | independent liveness service + durable message jobs; fake Telegram proves direct reconciled artifact URL, truthful unavailable miss, replay dedupe, and zero jobs for disabled/default-off/shadow; changed runtime scope scans 0 legacy dependencies | **implementation done; repository-wide scan remains blocked by the pre-existing Connector photo transport at `outbound-guardian.js:176`** |
 | I-2 | Wire the generic Life Manager video chain to a default-off Honne EN schedule | exact 07:00/11:00/20:30 Asia/Tokyo slots generate durable jobs with no OpenClaw path or env read; shadow performs zero provider writes | **done** — `LM_HONNE_EN_SHADOW_ENABLED=false`; generation and publication lineage preserve Honne EN product/locale/creative/account refs; publication jobs are durable but claim-ineligible at the explicit-promotion sentinel, replay creates zero duplicates, and the EN status grid reports passed slots without receipts as missed. Runtime adapters and runtime-up suites pass; changed runtime scope has zero legacy references. The repository-wide scan still exposes only the pre-existing `outbound-guardian.js:176` OpenClaw media fallback recorded by I-1. |
-| I-3 | Run one controlled Honne EN canary from Life Manager | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | **implementation ready; external canary remains open** — explicit one-job promotion and tenant/job/capability claim, Postiz `PUBLISHED` + direct-URL reconciliation, public 2xx verification, Telegram completion receipt with the same URL/message id, and publication/Telegram replay dedupe are covered by focused fake-transport tests; no Life Manager DB/worker/env is currently running/configured, so no external post or Telegram send was attempted |
+| I-3 | Run one controlled Honne EN canary from Life Manager | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | **local-ledger port required before canary** — focused fake-transport tests cover one-job promotion, tenant/job/capability claim, Postiz `PUBLISHED` + direct-URL reconciliation, public 2xx verification, Telegram completion receipt, and replay dedupe; however the current implementation persists claims/receipts through PostgreSQL/`pg`, which is rejected for this local-only recovery. Port the adapter to Life Manager-owned JSONL/atomic files, then run the direct local process. No external post or Telegram send was attempted |
 | I-4 | Prove seven consecutive Honne EN expected cycles | every slot has exactly one verified generation, publication, URL, notification, and initial observation receipt; any miss/duplicate resets the counter | open |
 | I-5 | Repair and migrate Anicca video/slideshow producers one lane at a time | missing hook sources, blank IDs, poster arguments, and secret boundaries are fixed behind Life Manager contracts; each lane passes shadow, canary, and seven expected cycles | open |
 | I-6 | Migrate Honne JA, then remaining Larry/ReelClaw routes | each retained route preserves product/locale/account/cadence behavior and no longer reads OpenClaw or another repository at runtime | open |
@@ -1399,7 +1432,7 @@ and independent product demand.
 |---:|---|---|---|
 | 1 | Repair and freeze the machine-readable scheduler inventory | the OpenClaw store and live scheduler disagree, and launchd is the real owner of many loops | every stored and loaded job has one `migrate`, `replace`, or `retire` decision and an owner; measured: all 399 captured rows and all 269 enabled-or-loaded rows now have exactly one disposition and a non-null owner |
 | 2 | Decide every legacy job and freeze new legacy writes | inventory without disposition cannot drive a safe cutover | each job has a Life Manager owner, target adapter, effect class, verification command, and rollback action; measured: 214 migrate, 40 replace, 132 retire, and 13 retain-external rows are recorded with rollback actions, and verification commands are set only for the five adapters that already exist |
-| 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local service bundle. A legacy-path dependency scan now exists and passes (`apps/life-manager/scripts/scan-legacy-paths.js` + `scan-legacy-paths.test.js`, wired into `npm test` as `test:legacy-paths`): it walks the monorepo runtime (`apps/life-manager`, `runtime/`) plus every skill the runtime actually loads or spawns — `skills/video/daily-lm-video`, `skills/video/lm-distribution`, `skills/tools/telegram-user`, `skills/life-manager`, and `skills/earn/marketing-engine` (whose `run_agent.sh` is spawned by `life-manager-daily.sh` and `life-manager-dev-d0.sh`) — and fails on any non-allowlisted `.openclaw`/`profitable-claude`/`life-manager-v0` reference or legacy anicca code-root reference (`$HOME`-, `${HOME}`-, or `~`-rooted anicca checkout and the anicca-oss checkout). The allowlist holds only (a) line-pinned denial regexes and copy-only migration tooling and (b) an explicitly tracked, line-and-content-pinned set of five pre-Order-12 holes: the x402-sell/taskmarket/payout earn-loop boot defaults that still point at the legacy anicca code roots, each named with its owning Order (Order 12); `verifyAllowlist` fails the scan the moment any pinned line moves, changes, or disappears. The runtime's own legacy-path dependencies in that scope were removed: `daily-dev-loop.js` defaults its state dir to `<data root>/state/life-manager-dev` via `resolveDataRoot` in `runtime-paths.js` (`LM_DATA_DIR`, falling back to `~/.local/state/life-manager`), the four launchd boot scripts (payout, x402 ledger, taskmarket ledger, ugig observer) load `LIFE_MANAGER_ENV_FILE` (default `~/.local/state/life-manager/.env`) through a shared guarded loader that warns-but-boots when the file is absent and refuses (exit 1) any env file beneath a legacy runtime root, the taskmarket/ugig installers and the dev/taskmarket/ugig launchd templates write logs beneath `~/.local/state/life-manager/logs`, and the daily video generator's argless defaults resolve to the same `<data root>/state/lm-video` paths `life-manager-daily.sh` exports. Existing on-disk legacy state (lm-video recordings/render state, dev-loop `done.jsonl` dedup history) is migrated copy-based via `apps/life-manager/scripts/migrate-legacy-state.sh` (idempotent copy with size readback, never move/delete — the legacy loop stays owner until cutover); until that copy has run, `generate.py` and the dev loop fail loudly naming the migration script instead of silently starting empty or silently reading the legacy path. Still OPEN in this row (not claimed): the shared secret vault/provider (Order 6) and the legacy-env-inaccessibility proof (cutover gate 6: denied `~/.openclaw` access without interruption); no Order is marked done by this slice | one command starts API, panel, scheduler, database, objects, and workers while all legacy roots are denied |
+| 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local direct-process bundle. A legacy-path dependency scan now exists and passes (`apps/life-manager/scripts/scan-legacy-paths.js` + `scan-legacy-paths.test.js`, wired into `npm test` as `test:legacy-paths`): it walks the monorepo runtime (`apps/life-manager`, `runtime/`) plus every skill the runtime actually loads or spawns — `skills/video/daily-lm-video`, `skills/video/lm-distribution`, `skills/tools/telegram-user`, `skills/life-manager`, and `skills/earn/marketing-engine` (whose `run_agent.sh` is spawned by `life-manager-daily.sh` and `life-manager-dev-d0.sh`) — and fails on any non-allowlisted `.openclaw`/`profitable-claude`/`life-manager-v0` reference or legacy anicca code-root reference (`$HOME`-, `${HOME}`-, or `~`-rooted anicca checkout and the anicca-oss checkout). The allowlist holds only (a) line-pinned denial regexes and copy-only migration tooling and (b) an explicitly tracked, line-and-content-pinned set of five pre-Order-12 holes: the x402-sell/taskmarket/payout earn-loop boot defaults that still point at the legacy anicca code roots, each named with its owning Order (Order 12); `verifyAllowlist` fails the scan the moment any pinned line moves, changes, or disappears. The runtime's own legacy-path dependencies in that scope were removed: `daily-dev-loop.js` defaults its state dir to `<data root>/state/life-manager-dev` via `resolveDataRoot` in `runtime-paths.js` (`LM_DATA_DIR`, falling back to `~/.local/state/life-manager`), the four launchd boot scripts (payout, x402 ledger, taskmarket ledger, ugig observer) load `LIFE_MANAGER_ENV_FILE` (default `~/.local/state/life-manager/.env`) through a shared guarded loader that warns-but-boots when the file is absent and refuses (exit 1) any env file beneath a legacy runtime root, the taskmarket/ugig installers and the dev/taskmarket/ugig launchd templates write logs beneath `~/.local/state/life-manager/logs`, and the daily video generator's argless defaults resolve to the same `<data root>/state/lm-video` paths `life-manager-daily.sh` exports. Existing on-disk legacy state (lm-video recordings/render state, dev-loop `done.jsonl` dedup history) is migrated copy-based via `apps/life-manager/scripts/migrate-legacy-state.sh` (idempotent copy with size readback, never move/delete — the legacy loop stays owner until cutover); until that copy has run, `generate.py` and the dev loop fail loudly naming the migration script instead of silently starting empty or silently reading the legacy path. Still OPEN in this row (not claimed): the shared secret vault/provider (Order 6), local append-only ledger/atomic lease implementation, and the legacy-env-inaccessibility proof (cutover gate 6: denied `~/.openclaw` access without interruption); no Order is marked done by this slice | one direct local entrypoint starts the scheduler and workers from the Life Manager data root while all legacy roots are denied |
 | 4 | Finish Telegram command migration and shadow the current financial report | the bounded report adapter is complete, but the rest of bot command routing and seven-run cutover evidence remain | **report slice proven:** local Life Manager sent real `message_id=432`, stored matching snapshot/effect receipt, and read no OpenClaw env. **Command routing slice done:** the LM webhook's slash-command surface now covers the legacy telegram_bot.py parity list (/help /status /where /stop /subscribe /connect /payout /reset, plus the already-routed /start and /panel and the edited_message live-location stream) via a generic router (`apps/life-manager/lib/slash-command.js` + `lib/late-notice.js#deleteLiveLocation`) with unit and fake-transport HTTP contract tests (`lib/slash-command.test.js`, `test/telegram-slash-http-contract.test.js`, both wired into `npm test`) proving unknown-/command honesty, branch ordering against the payout intake / feedback / panel / browser-task branches, tenant-scoped /stop deletion, idempotent /payout reopen, and the /connect alias into the existing parsed-control flow. **Adversary follow-ups closed:** (a) /reset now discloses that rewinding `tg_onboard_stage` also pauses browser-task intake (`lib/browser-task-intake.js` accepts only the `"done"` stage) and the coupling is named in code; (b) only an exact `/start` (optionally `@BotName`, optionally followed by a deep-link payload) is a start — `"/startfoo"` is answered as an unknown command, safe because Telegram deep links always deliver the payload space-separated (`core.telegram.org/bots/features` → Deep Linking: `?start=airplane` → `/start airplane`, `?startgroup=spaceship` → `/start@your_bot spaceship`); (c) `/connect <non-calendar>` (e.g. `/connect gmail`) is answered honestly instead of silently connecting Calendar; (d) `/status` distinguishes `active` / `complimentary until <expiry>` / `not active` so a comped row (`lib/comp-window.js`, which already carries it past the paywall) is no longer told its subscription is inactive; the seven-run shadow stays open |
 | 5 | Import shared execution contracts needed by retained loops | the shared adapter registry, content-addressed object import, tenant profile boundary, and financial/first marketing adapters are complete; most marketing and income loops still execute through legacy paths | Life Manager owns the remaining minimum runner, schemas, artifacts, publications, receipts, and verification adapters needed to preserve behavior |
 | 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, an idempotent generation→Instagram/TikTok durable-job chain, a read-only verified Life Manager-owned IG profile, and a generic due-window observation pipeline. Honne JA now also has a generic Life Manager-owned 24-hook/four-media producer with a completed durable `HJA-007` shadow receipt and idempotent replay. A generic (product-agnostic) marketing video publication adapter now exists at `apps/life-manager/lib/marketing-video-publication-adapter.js`, binding product/format/form/locale/slot/creative to one platform-scoped publish effect and passing its contract tests (job build, Instagram+TikTok planning, tenant-scoped provider execution with lineage/URL, and cross-product/mismatched-provider rejection); its job identity now agrees with its effect identity (job_id is derived from tenant + effect_key, slot is lineage only), so a replay of the same bytes+caption+platform at a new slot can never violate the database's `UNIQUE (tenant_id, effect_key)` rule or double-post. Its reconcile path is now proven by passing tests: `distribute.py` writes format/form/locale/slot lineage into every ledger row, a ledger-recovered receipt passes the adapter's own verification before "present" is returned, `provider_reconciled` is propagated from the ledger row (never fabricated), the absent path returns the reconciler-required receipt shape (`lookup: "ledger_no_published_row"`), and legacy shadow rows without lineage resolve to "unknown" without crashing the reader; the distribution subprocess also runs on an allowlisted environment instead of the full parent env. Reconcile provenance is now propagated on all paths (the ledger short-circuit reports the existing row's `provider_reconciled` instead of fabricating true, and the subprocess allowlist passes the real chain's `INSTAGRAPI_PYTHON`/`CDP_HOST`/`CDP_PORT` through), unknown reconciliation now ages (a durable per-attempt counter dead-letters the job with `RECONCILE_UNKNOWN_EXHAUSTED` after 5 consecutive unknown reconcile results, reset on resolution, per `migrations/20260730_runtime_reconcile_unknown_aging.sql`), and the chain's two-platform fanout is sequential fail-fast (a first-platform enqueue collision stops the remaining platform's enqueue in the same scan), all proven by passing python/node/postgres tests. It is not yet wired into any scheduler or the loop-adapter registry manifest. A generic `marketing-video-publication-chain.js` now chains one generic video generation receipt into exactly two independent durable Instagram/TikTok publication jobs product-generically, with an end-to-end fake-store proof (enqueue→claim→execute→complete, then full replay with 0 new jobs, 0 claimable jobs, 0 additional provider executions, under the enforced `(tenant_id, effect_key)` unique rule) and cross-product/hash-mismatch/different-slot rejection all proven by passing tests; it is not yet wired into any scheduler. Honne JA generic video scheduling is now wired into the Life Manager scheduler in shadow mode behind `LM_HONNE_JA_SHADOW_ENABLED` (default `false`, enabled nowhere), with slots encoding exactly the legacy 12:30/21:30 Asia/Tokyo launchd cadence (`lib/honne-ja-shadow-schedule.js`); one real manual shadow cycle (`scripts/honne-ja-shadow-cycle.js`) against the running local durable store completed generation receipt hook `HJA-008` (job `marketing-video-generation:0f19ddbb…`, slot `2026-07-30T03:30:00.000Z`, `video_sha256` equal to the legacy source bytes) through the same worker path as the HJA-007 proof, and enqueued both Instagram/TikTok publication jobs durably in a held state (`queued` + durable `shadow_held` hold row, zero provider calls, idempotent replay with no new rows); a seven-cycle status reader (`scripts/honne-ja-shadow-status.js`) counts, per §13 semantics, only the trailing run of consecutive EXPECTED 12:30/21:30 JST slots each holding exactly one verified receipt — an expected slot that passed with no receipt row (scheduler off/stopped) breaks and resets the count and is reported in `missed_slots`, and a duplicate receipt for one slot is a gate violation that also resets — so scattered receipts can never reach `gate_met`; it reports n/7 toward the §13 seven-expected-run gate. Product attribution, bounded learning, the remaining broken Larry/ReelClaw slices, and all other loops remain open; all new fanout stays disabled during shadowing. A 2026-07-30 local compose override once produced a 1/7 status, but on 2026-08-20 no Life Manager marketing scheduler/worker process or container is running, so the shadow gate is not accruing and no current cutover ownership is claimed | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
@@ -1469,7 +1502,7 @@ Cloud becomes Dais's scheduler owner only after:
 | Check | Result |
 |---|---|
 | Placeholder scan | No unresolved implementation placeholders |
-| Internal consistency | One portable core and job protocol run in local and cloud deployments; Telegram/panel are projections of the same PostgreSQL-ledger contracts |
-| Scope | Program is decomposed into OpenClaw independence, supported local packaging, cloud deployment and SaaS scale, then financial/growth closure and later health/development loops |
-| Ambiguity | Local is a supported full deployment; cloud is Dais's eventual default; cloud never requires a local worker; OpenClaw is neither adapter nor fallback |
+| Internal consistency | The incident path is one direct local process with JSONL/atomic-file ledgers; a hosted adapter is deferred and must not alter the local contract |
+| Scope | Program is decomposed into OpenClaw independence and local recovery first; hosted deployment, financial/growth closure, and later health/development loops remain deferred |
+| Ambiguity | Local is the required full deployment now; hosted mode is optional future work; Docker, Colima, Railway, PostgreSQL, and OpenClaw are not local prerequisites or fallbacks |
 | Evidence honesty | Current ASC snapshots are marked inconsistent; unavailable product metrics never become zero |
