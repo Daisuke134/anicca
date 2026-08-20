@@ -52,6 +52,32 @@ def budget_retry_is_due(skill_root: Path, state_root: Path, bundle: dict, now=No
         return False
 
 
+def capability_receipt_sha256(state_root: Path) -> str | None:
+    path = state_root / "machine" / "codex-capability.json"
+    try:
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+        if receipt.get("status") != "READY":
+            return None
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+
+
+def runner_retry_is_due(state_root: Path, bundle: dict, previous: dict) -> bool:
+    """Retry a preflight-only runner failure after capability repair once."""
+    if not (
+        previous.get("state") == "FAILED"
+        and previous.get("failure_class") == "RUNNER_REJECTED"
+        and previous.get("source_set_sha256") == bundle["source_set_sha256"]
+    ):
+        return False
+    run_id = f"{bundle['plan_id']}-{bundle['source_set_sha256'][:16]}"
+    if (state_root / "composition-runs" / run_id).exists():
+        return False
+    current = capability_receipt_sha256(state_root)
+    return current is not None and current != previous.get("runner_capability_sha256")
+
+
 def valid_experiment(value) -> bool:
     required = (
         "decision_id", "baseline_sha256", "control_plan_id",
@@ -313,6 +339,7 @@ def run_model(skill_root: Path, state_root: Path, bundle: dict) -> dict:
         return _ready_from_seal(evidence_dir, bundle)
     workdir = state_root / "composition-work" / run_id
     workdir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    runner_capability_sha256 = capability_receipt_sha256(state_root)
     environment = {
         "HOME": str(Path.home()),
         "PATH": os.environ.get("PATH", "/usr/bin:/bin:/usr/sbin:/sbin"),
@@ -352,6 +379,7 @@ def run_model(skill_root: Path, state_root: Path, bundle: dict) -> dict:
             "locale": bundle["locale"],
             "source_set_sha256": bundle["source_set_sha256"],
             "failure_class": "RUNNER_UNAVAILABLE",
+            "runner_capability_sha256": runner_capability_sha256,
         }
     if completed.returncode != 0:
         return {
@@ -360,6 +388,7 @@ def run_model(skill_root: Path, state_root: Path, bundle: dict) -> dict:
             "source_set_sha256": bundle["source_set_sha256"],
             "failure_class": "RUNNER_REJECTED",
             "runner_exit_code": completed.returncode,
+            "runner_capability_sha256": runner_capability_sha256,
         }
     try:
         return _ready_from_seal(evidence_dir, bundle)
@@ -369,6 +398,7 @@ def run_model(skill_root: Path, state_root: Path, bundle: dict) -> dict:
             "locale": bundle["locale"],
             "source_set_sha256": bundle["source_set_sha256"],
             "failure_class": "INVALID_RESULT_EVIDENCE",
+            "runner_capability_sha256": runner_capability_sha256,
         }
 
 
@@ -673,10 +703,11 @@ def wake(
                 and previous.get("source_set_sha256") == bundle["source_set_sha256"]
                 and budget_retry_is_due(skill_root, state_root, bundle)
             )
+            runner_retry_due = runner_retry_is_due(state_root, bundle, previous)
             if (
                 previous.get("state") in TERMINAL
                 and previous.get("source_set_sha256") == bundle["source_set_sha256"]
-                and not budget_retry_due
+                and not (budget_retry_due or runner_retry_due)
             ):
                 if (
                     previous.get("state") == "READY_FOR_POLICY"
